@@ -1,0 +1,30 @@
+
+SearchBarVisualElement {
+    /*width:150px;*/
+    justify-content:center;
+}
+
+#searchTextField {
+    padding-left: 19px;
+    padding-right: 0px;
+    border-radius: 2px;
+    -unity-text-align: middle-left;
+}
+
+
+SearchBarVisualElement TextField
+{
+	height:15px;
+}
+
+#searchImg {
+    width: 13px;
+    top: 2px;
+    bottom: 1px;
+    left: 2px;
+    position: absolute;
+    background-color: #464E62;
+    border-radius: 5px;
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/search.png");
+    cursor: text;
+}

@@ -1,0 +1,35 @@
+#mainVisualElement {
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
+}
+
+.boundedButton {
+    border-color: #383838;
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
+}
+.unboundedButton {
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
+}
+
+
+#buildIcon{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/build all L.png");
+}
+#startIcon{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all L.png");
+}
+
+#createNewIcon{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new L.png");
+}
+
+#publishIcon{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/publish L.png");
+}
+
+#infoIcon{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Info_Light.png");
+}
+
+#refreshIcon{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Refresh.png");
+}

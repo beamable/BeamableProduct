@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:engine="UnityEngine.Experimental.UIElements"
+        xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
+        xmlns:beamable="Beamable.Editor.UI.Components"
+        xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
+
+    <engine:VisualElement name="mainVisualElement">
+        <engine:VisualElement name="logHeader">
+            <engine:VisualElement class="leftArea">
+                <beamable:BeamableCheckboxVisualElement name="checkbox"/>
+                <engine:TextField name="microserviceTitle" class="title" text="ANGIE'S TEST"/>
+                <!--                <engine:Label class="title" name="microserviceTitle" text="ANGIE'S TEST"/>-->
+            </engine:VisualElement>
+            <engine:VisualElement class="rightArea">
+                <engine:VisualElement name="remoteStatusIcon"/>
+                <engine:Label name="remoteStatusTitle" class="subTitle"/>
+                <engine:VisualElement name="statusIcon"/>
+                <engine:Label name="statusTitle" class="subTitle"/>
+                <engine:Button name="moreBtn" class="squareBtn"/>
+            </engine:VisualElement>
+        </engine:VisualElement>
+
+        <engine:VisualElement name="SubTitle">
+<!--            <engine:Label text="LOG" name="log" class="title"/>-->
+            <engine:VisualElement class="rightArea">
+<!--                <engine:Button name="popupBtn" class="squareBtn"/>-->
+<!--                <engine:Button name="advanceBtn" class="squareBtn"/>-->
+            </engine:VisualElement>
+        </engine:VisualElement>
+
+        <engine:VisualElement name="logContainer">
+
+        </engine:VisualElement>
+
+        <engine:VisualElement name="buttonRow">
+<!--            <engine:Button name="forceRebuild" text="Force Rebuild" class="confirmBtn"/>-->
+            <engine:Button name="cancelBtn" text="Cancel" class="confirmBtn"/>
+            <engine:Button name="start" text="Start" class="confirmBtn"/>
+            <engine:Button name="buildDropDown" class="confirmBtn">
+                <engine:Label text="Build" name="buildLabel"/>
+                <engine:Image name="dropDown"/>
+            </engine:Button>
+        </engine:VisualElement>
+
+    </engine:VisualElement>
+
+</engine:UXML>

@@ -1,0 +1,16 @@
+{
+    "name": "Unity.Beamable.Runtime.Common",
+    "references": [
+        "Beamable.SmallerJSON",
+        "Unity.Addressables"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "noEngineReferences": false,
+    "defineConstraints": []
+}

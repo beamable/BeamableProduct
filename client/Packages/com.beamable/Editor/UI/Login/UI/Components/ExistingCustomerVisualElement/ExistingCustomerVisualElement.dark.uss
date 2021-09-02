@@ -1,0 +1,8 @@
+.linkText{
+    color: #f4f4f4;
+    border-color: #b4b4b4;
+}
+
+.btnText{
+    color: #f4f4f4;
+}

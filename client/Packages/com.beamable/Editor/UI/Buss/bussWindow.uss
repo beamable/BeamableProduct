@@ -1,0 +1,7 @@
+#_windowRoot {
+    flex-grow: 1;
+}
+
+#buss-inspector-container {
+    flex-grow: 1;
+}

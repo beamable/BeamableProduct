@@ -1,0 +1,15 @@
+﻿{
+	"name": "Unity.Beamable.Server.Runtime.Shared",
+     "references": [
+        "Unity.Beamable.Runtime.Common"
+     ],
+     "optionalUnityReferences": [],
+     "includePlatforms": [],
+     "excludePlatforms": [],
+     "allowUnsafeCode": false,
+     "overrideReferences": false,
+     "precompiledReferences": [],
+     "noEngineReferences": true,
+     "autoReferenced": false,
+     "defineConstraints": []
+}

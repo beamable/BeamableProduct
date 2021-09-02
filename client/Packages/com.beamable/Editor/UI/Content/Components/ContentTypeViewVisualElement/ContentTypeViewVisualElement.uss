@@ -1,0 +1,46 @@
+ContentTypeViewVisualElement {
+    flex-grow: 1;
+}
+ContentTypeViewVisualElement #scroll #HorizontalScroller {
+    left: 1000000px;
+}
+ContentTypeViewVisualElement #scroll #ContentView.content-view {
+    left: 0px;
+    right: 0px;
+}
+ContentTypeViewVisualElement #scroll {
+    flex-grow: 1;
+}
+
+ContentTypeViewVisualElement TemplateContainer {
+    flex-grow: 1;
+}
+ContentTypeViewVisualElement #ContentViewport {
+    border-right-width: 2px;
+    border-color: rgba(0,0,0,.1);
+    padding-bottom: 0px;
+}
+
+ContentTypeViewVisualElement #mainVisualElement {
+    flex-grow: 1;
+    flex-direction: column;
+
+}
+
+ContentTypeViewVisualElement IMGUIContainer {
+    flex-shrink: 1;
+    left: 5px;
+}
+
+ContentTypeViewVisualElement #lowerBackgroundVisualElement {
+	flex-grow:1;
+}
+ContentTypeViewVisualElement #statusBar{
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    width: 2px;
+    left: 0px;
+    color: #4F80F8;
+}
+

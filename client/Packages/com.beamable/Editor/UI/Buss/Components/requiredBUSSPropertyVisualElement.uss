@@ -1,0 +1,22 @@
+.horizontal {
+    flex-direction: row;
+}
+#field {
+    flex-grow: 1;
+}
+#strike-through.show {
+    border-color: rgba(0,0,0,.2);
+    border-top-width: 2px;
+    position: absolute;
+    left: 1px;
+    top: 9px;
+    right: 1px;
+}
+#strike-through.hide {
+    border-color: rgba(64,128,255,.7);
+    border-left-width: 2px;
+    position: absolute;
+    left: 0px;
+    top: 2px;
+    bottom: 2px;
+}

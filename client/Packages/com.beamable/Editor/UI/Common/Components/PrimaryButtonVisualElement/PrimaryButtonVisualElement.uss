@@ -1,0 +1,53 @@
+Button.unity-button,
+Button {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/primaryButton_normal.png");
+    -unity-text-align: middle-center;
+    color: #f4f4f4;
+    margin-bottom: -3px;
+    flex-grow: 1;
+
+}
+
+Button.unity-button:hover,
+Button:hover {
+    color: #f4f4f4;
+}
+
+Button.unity-button:hover:active,
+Button:hover:active {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/primaryButton_pressed.png");
+    color: #f4f4f4;
+}
+TemplateContainer {
+    flex-grow: 1;
+}
+
+LoadingSpinnerVisualElement {
+    position: absolute;
+    opacity: 0;
+}
+
+.disabled.loading LoadingSpinnerVisualElement {
+    opacity: 1;
+}
+.disabled LoadingSpinnerVisualElement {
+    opacity: 0;
+}
+
+.disabled Button.unity-button,
+.disabled Button {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/primaryButton_disabled.png");
+}
+.disabled Button.unity-button:hover:active,
+.disabled Button:hover:active {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/primaryButton_disabled_pressed.png");
+}
+
+.loading LoadingSpinnerVisualElement {
+    opacity: 1;
+}
+
+.loading Button.unity-button,
+.loading Button {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/primaryButton_disabled_pressed.png");
+}

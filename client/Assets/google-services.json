@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "62598844710",
+    "firebase_url": "https://hats-dev-73366994-default-rtdb.firebaseio.com",
+    "project_id": "hats-dev-73366994",
+    "storage_bucket": "hats-dev-73366994.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:62598844710:android:c2c9008589bcb053e471e7",
+        "android_client_info": {
+          "package_name": "com.dbpublishingllc.hats"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "62598844710-33ac2sfag8sdo45c879gofjmsq3fb03o.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC867kxblTVg2mc11t2lPz4J-Dfn8puAgg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "62598844710-33ac2sfag8sdo45c879gofjmsq3fb03o.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "62598844710-7kjpfmn5fvbee9vdvjh7ha2l9tl70f9i.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.dbpublishing.hats"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,53 @@
+using Beamable.Common;
+using UnityEngine;
+
+namespace Beamable.Server.Editor.DockerCommands
+{
+   public class CheckImageReturnableCommand : DockerCommandReturnable<bool>
+   {
+      public string ContainerName { get; }
+      public bool IsRunning { get; private set; }
+
+      public CheckImageReturnableCommand(MicroserviceDescriptor descriptor)
+      {
+         ContainerName = descriptor.ContainerName;
+      }
+
+      public override string GetCommandString()
+      {
+         var command = $"{DockerCmd} ps -f \"name={ContainerName}\"";
+         return command;
+      }
+
+      protected override void HandleStandardOut(string data)
+      {
+         base.HandleStandardOut(data);
+
+         // 7c7e95c20caf        tunafish            "dotnet tunafish.dll"   7 hours ago         Up 7 hours          0.0.0.0:56798->80/tcp   tunafishcontainer
+
+         // TODO: We could use a better text matching system, but for now...
+         // TODO: Support other languages
+         if (data != null && data.Contains($" {ContainerName}") && data.Contains(" Up "))
+         {
+            IsRunning = true;
+         }
+      }
+
+      protected override void Resolve()
+      {
+         Promise.CompleteSuccess(IsRunning);
+      }
+   }
+
+   public class CheckImageCommand : CheckImageReturnableCommand
+   {
+      public CheckImageCommand(MicroserviceDescriptor descriptor) : base(descriptor)
+      {
+      }
+
+      public new Promise<bool> Start()
+      {
+         return Start(null);
+      }
+   }
+}

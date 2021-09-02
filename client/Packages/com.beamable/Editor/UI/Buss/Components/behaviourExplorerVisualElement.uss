@@ -1,0 +1,21 @@
+Label.close.hover {
+    background-color: rgba(63, 128, 255, .1);
+}
+Label.open.hover {
+    background-color: rgba(63, 128, 255, .9);
+}
+
+#container {
+    height: 100px;
+}
+#container #ContentView.content-view {
+    left: 0px;
+    right: 0px;
+}
+
+VisualElement.selected {
+    background-color: rgba(64, 128, 255, .3);
+}
+Label.selected {
+    background-color: rgba(64, 128, 255, .4);
+}

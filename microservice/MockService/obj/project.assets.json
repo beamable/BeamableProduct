@@ -1,0 +1,57 @@
+{
+  "version": 3,
+  "targets": {
+    ".NETCoreApp,Version=v5.0": {}
+  },
+  "libraries": {},
+  "projectFileDependencyGroups": {
+    ".NETCoreApp,Version=v5.0": []
+  },
+  "packageFolders": {
+    "/Users/chris/.nuget/packages/": {}
+  },
+  "project": {
+    "version": "0.0.0",
+    "restore": {
+      "projectUniqueName": "/Users/chris/Perforce/disruptor_engine_channa/microservice/MockService/mockservice.csproj",
+      "projectName": "Beamable.Microservice.MockService",
+      "projectPath": "/Users/chris/Perforce/disruptor_engine_channa/microservice/MockService/mockservice.csproj",
+      "packagesPath": "/Users/chris/.nuget/packages/",
+      "outputPath": "/Users/chris/Perforce/disruptor_engine_channa/microservice/MockService/obj/",
+      "projectStyle": "PackageReference",
+      "configFilePaths": [
+        "/Users/chris/.config/NuGet/NuGet.Config"
+      ],
+      "originalTargetFrameworks": [
+        "net50"
+      ],
+      "sources": {
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "netcoreapp5.0": {
+          "projectReferences": {}
+        }
+      },
+      "warningProperties": {
+        "warnAsError": [
+          "NU1605"
+        ]
+      }
+    },
+    "frameworks": {
+      "netcoreapp5.0": {
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48"
+        ],
+        "assetTargetFallback": true,
+        "warn": true
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+#container {
+    flex-direction: row;
+}
+
+.pseudo-state {
+    flex-direction: row;
+    margin-right: 10px;
+}
+
+
+.pseudo-state Toggle,
+.pseudo-state Label {
+    margin-right: 0px;
+    margin-left: 0px;
+}

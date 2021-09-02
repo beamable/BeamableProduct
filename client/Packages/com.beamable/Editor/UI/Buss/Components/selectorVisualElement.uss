@@ -1,0 +1,12 @@
+Label.readonly {
+    color: rgba(0,0,0,.5);
+}
+
+.hide {
+    position: absolute;
+    left: 99999px;
+}
+.show {
+    position: relative;
+    left: 0px;
+}

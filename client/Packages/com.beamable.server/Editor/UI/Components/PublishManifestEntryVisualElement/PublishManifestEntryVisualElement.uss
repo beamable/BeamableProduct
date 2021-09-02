@@ -1,0 +1,46 @@
+﻿.manifestRow {
+    flex-grow: 1;
+    flex-direction: row;
+    align-content: stretch;
+    justify-content: space-between;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+#nameC {
+    width: 200px;
+    flex-direction: row;
+    align-self: stretch;
+    flex-direction: row;
+    align-content: stretch;
+    flex-grow: 3;
+    padding-left: 10px;
+}
+#CommentsC {
+    width: 250px;
+    padding-left: 20px;
+}
+#SizeC {
+    flex-direction: row;
+    width: 100px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+#commentsText, #SizeC .template{
+    width: 90px;
+}
+
+#enabledC {
+    width: 100px;
+    flex-direction: row;
+    justify-content: center;
+}
+#checkbox{
+    align-self: center;
+    justify-content: center;
+    width: 18px;
+    min-width: 18px;
+    margin-right: 5px;
+}
+.column{
+    flex-direction: row;
+}

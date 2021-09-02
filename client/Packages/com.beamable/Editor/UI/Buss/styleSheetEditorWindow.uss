@@ -1,0 +1,13 @@
+#_windowRoot {
+    flex-grow: 1;
+}
+
+#main-content ScrollView #ContentView.content-view {
+    position: absolute;
+    left: 0px;
+    right: 0px;
+}
+#main-content ScrollView,
+#main-content {
+    flex-grow: 1;
+}

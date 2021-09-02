@@ -1,0 +1,106 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>BeamableMicroserviceBase</name>
+    </assembly>
+    <members>
+        <member name="M:Beamable.Server.EasyWebSocket.Create(System.String)">
+            <summary>
+            Creates a new instance.
+            </summary>
+            <param name="uri">The URI of the WebSocket server.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Beamable.Server.EasyWebSocket.Connect">
+            <summary>
+            Connects to the WebSocket server.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Beamable.Server.EasyWebSocket.OnConnect(System.Action{Beamable.Server.IConnection})">
+            <summary>
+            Set the Action to call when the connection has been established.
+            </summary>
+            <param name="onConnect">The Action to call.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Beamable.Server.EasyWebSocket.OnDisconnect(System.Action{Beamable.Server.IConnection,System.Boolean})">
+            <summary>
+            Set the Action to call when the connection has been terminated.
+            </summary>
+            <param name="onDisconnect">The Action to call</param>
+            <returns></returns>
+        </member>
+        <member name="M:Beamable.Server.EasyWebSocket.OnMessage(System.Action{Beamable.Server.IConnection,System.String,System.Int64})">
+            <summary>
+            Set the Action to call when a messages has been received.
+            </summary>
+            <param name="onMessage">The Action to call.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Beamable.Server.EasyWebSocket.SendMessage(System.String)">
+            <summary>
+            Send a message to the WebSocket server.
+            </summary>
+            <param name="message">The message to send</param>
+        </member>
+        <member name="M:Beamable.Server.EasyWebSocket.Close">
+            <summary>
+            Terminate the socket in a friendly way.
+            </summary>
+        </member>
+        <member name="T:Beamable.Server.MicroserviceLogFormatter">
+            <summary>
+            Taken from the compact renderer; and adapted to work without @ symbols
+            An <see cref="T:Serilog.Formatting.ITextFormatter" /> that writes events in a compact JSON format, for consumption in environments
+            without message template support. Message templates are rendered into text and a hashed event id is included.
+            </summary>
+        </member>
+        <member name="M:Beamable.Server.MicroserviceLogFormatter.Format(Serilog.Events.LogEvent,System.IO.TextWriter)">
+            <summary>
+            Format the log event into the output. Subsequent events will be newline-delimited.
+            </summary>
+            <param name="logEvent">The event to format.</param>
+            <param name="output">The output.</param>
+        </member>
+        <member name="M:Beamable.Server.MicroserviceLogFormatter.FormatEvent(Serilog.Events.LogEvent,System.IO.TextWriter,Serilog.Formatting.Json.JsonValueFormatter)">
+            <summary>Format the log event into the output.</summary>
+            <param name="logEvent">The event to format.</param>
+            <param name="output">The output.</param>
+            <param name="valueFormatter">A value formatter for <see cref="T:Serilog.Events.LogEventPropertyValue" />s on the event.</param>
+        </member>
+        <member name="M:Beamable.Server.MicroserviceRequester.Acknowledge(Beamable.Server.RequestContext,Beamable.Server.WebsocketErrorResponse)">
+            <summary>
+            Acknowledge a message from the websocket.
+            </summary>
+            <param name="ctx">The request you wish to ack</param>
+            <param name="error">an error, or null for a 200 ack.</param>
+            <returns></returns>
+        </member>
+        <member name="M:Beamable.Server.MicroserviceRequester.InitializeSubscription">
+            <summary>
+            Each socket only needs to set up one subscription to the server.
+            All events will get piped to the client.
+            It's the client job to filter the events, and decide what is valuable.
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:microservice.Common.AdminRoutes.HealthCheck">
+            <summary>
+            A simple method to check if the microservice can send and receive network traffic.
+            </summary>
+            <returns>The word "responsive" if all is well.</returns>
+        </member>
+        <member name="M:microservice.Common.AdminRoutes.Docs">
+            <summary>
+            Generates an OpenAPI/Swagger 3.0 document that describes the available service endpoints.
+            </summary>
+            <remarks>
+            Any [ClientCallable] methods on the service will be included in the generated OpenAPI document.
+            Any doc-comments on the methods will be included in the generated document.
+            The summary, remarks, returns, and parameter tags are supported.
+            </remarks>
+            <returns>A json OpenAPI document</returns>
+        </member>
+    </members>
+</doc>

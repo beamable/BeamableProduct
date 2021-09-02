@@ -1,0 +1,53 @@
+
+#header {
+    margin-left: 120px;
+    min-height: 20px;
+}
+#header > Label {
+    font-size: 12px;
+}
+
+#main {
+    flex-direction: row;
+    display: flex;
+}
+
+#main #toc {
+    width: 115px;
+}
+#main #toc Label.active {
+    background-color: rgba(64, 128, 255, .8);
+    color: #FFFFFF;
+    margin-right: 0px;
+}
+
+#main #content{
+
+    border-color: rgba(64, 128, 255, .8);
+    border-left-width: 2px;
+    flex-direction: column;
+    flex-grow: 1;
+    flex-shrink: 1;
+    padding-right: 5px;
+    padding-left: 5px;
+}
+
+#main #content Label {
+    white-space: normal;
+}
+
+#main #content #button-strip {
+    flex-direction: row;
+    margin-top: 35px;
+}
+#main #content #button-strip Button {
+    flex-grow: 1;
+}
+
+/*#main #content #button-strip #btn-back {*/
+/*    background-image: none;*/
+/*    border-right: 0px;*/
+/*    border-left: 0px;*/
+/*    border-top: 0px;*/
+/*    border-color: #000000;*/
+/*}*/

@@ -1,0 +1,10 @@
+---
+version: '3'
+services:
+  microservice:
+    build:
+      context: ../../../
+      dockerfile: build/docker/image.microservice/Dockerfile
+    volumes:
+      - ../../../:/Client
+    

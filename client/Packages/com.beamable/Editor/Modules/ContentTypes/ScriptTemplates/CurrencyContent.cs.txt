@@ -1,0 +1,16 @@
+﻿using Beamable;
+using Beamable.Common.Content;
+using Beamable.Common.Inventory;
+
+[System.Serializable]
+[Agnostic]
+public class #SCRIPTNAME#Ref : CurrencyRef<#SCRIPTNAME#> { }
+
+[ContentType("#SCRIPTNAME#")]
+[System.Serializable]
+[Agnostic]
+public class #SCRIPTNAME# : CurrencyContent
+{
+   
+}
+

@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <PackageId>Beamable.Common</PackageId>
+        <Version>0.0.0</Version>
+        <Authors>Beamable Team</Authors>
+        <Company>Beamable</Company>
+
+        <DefineConstants>DB_MICROSERVICE</DefineConstants>
+        <TargetFramework>net5.0</TargetFramework>
+        <AssemblyName>Beamable.Common</AssemblyName>
+
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\..\microservice\unityEngineStubs\unityenginestubs.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="'\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="'\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="'\**" />
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,5 @@
+
+LoadingIndicatorVisualElement.hide {
+    position: absolute;
+    left: 50000px;
+}

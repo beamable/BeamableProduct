@@ -1,0 +1,48 @@
+
+.squareBtn{
+    border-color: #000000;
+    background-color: #454545;
+}
+
+#clear{
+    border-color: #000000;
+}
+
+#popupBtn{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/popup.png");
+}
+
+#advanceBtn{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/advance.png");
+}
+
+#detailWindow{
+    border-color: #000000;
+}
+#white{
+    border-color: #000000;
+}
+
+#clearContainer{
+    border-color: #000000;
+}
+
+.confirmBtn {
+    border-color: #000000;
+}
+
+#logListRoot{
+    border-color: #000000;
+}
+
+#debug .img{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/debug_Gray.png");
+}
+
+#debug.active .img{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/debug.png");
+}
+#info .img{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/info_Gray.png");
+}
+

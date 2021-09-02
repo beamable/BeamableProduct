@@ -1,0 +1,157 @@
+#mainVisualElement {
+    flex-grow: 1;
+    flex-direction: column;
+}
+
+#warningMessage{
+    margin-top: 15px;
+    flex-direction: row;
+    align-self: center;
+    flex-grow: 1;
+    -unity-font-style: bold;
+    font-size: 12px;
+    padding-bottom: 15px;
+}
+
+#header{
+    flex-grow: 1;
+    margin-top: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-bottom: 10px;
+    -unity-text-align: upper-center;
+    flex-direction: row;
+    align-content: stretch;
+    justify-content: space-between;
+}
+
+#nameMS{
+    align-self: center;
+    margin-left: 3px;
+}
+#nameC {
+    width: 200px;
+    align-self: stretch;
+    flex-direction: row;
+    align-content: stretch;
+    flex-grow: 3;
+    padding-left: 12px;
+}
+#enabledC {
+    width: 100px;
+    justify-content: center;
+}
+#CommentsC {
+    width: 250px;
+    padding-left: 15px;
+    justify-content: center;
+}
+#SizeC {
+    width: 100px;
+    padding-left: 15px;
+}
+#commentsText, #SizeC .template{
+    width: 80px;
+}
+#sizeButton Label {
+    margin-right: 18px;
+    margin-top: 2px;
+    font-size: 10px;
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+}
+
+.column{
+    flex-direction: row;
+}
+#sizeButton Image#dropDownIcon{
+    align-self: flex-end;
+    position: absolute;
+    top: 6px;
+    right: 4px;
+    width: 15px;
+    height: 7px;
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown Close.png")
+}
+.boundedButton {
+    height: 20px;
+    position: relative;
+    top: 0px;
+    left: 0px;
+    margin-left: 0px;
+    margin-right: 10px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    border-radius: 5px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    cursor: pan;
+    background-image: none;
+}
+#selectionArea{
+    align-self: auto;
+    flex-direction: row;
+    flex-grow: 1;
+    max-width: 120px;
+}
+#commentsText{
+    padding-right: 10px;
+    width: 100px;
+}
+#largeCommentsArea{
+    padding-top: 10px;
+    padding-right: 10px;
+    padding-bottom: 10px;
+    padding-left: 10px;
+     min-height: 160px;
+    flex-grow: 1;
+
+}
+#buttonStrip {
+    flex-direction: row;
+    justify-content: flex-end;
+    flex-shrink: 0;
+    margin-top: 15px;
+    margin-bottom: 5px;
+}
+
+#cancelBtn{
+    margin-left: 0px;
+    margin-right: 10px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    border-radius: 5px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    right: 10px;
+    width: 100px;
+    height: 28px;
+    border-color: #DCDCDC;
+    cursor: pan;
+    background-image: none;
+    background-color: #383838;
+}
+
+.SubTitleText{
+    font-size: 14px;
+    -unity-font-style: bold;
+}
+
+
+#buttonStrip {
+    flex-direction: row;
+    justify-content: flex-end;
+    flex-shrink: 0;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+#continueBtn{
+    margin-right: 10px;
+    width: 100px;
+    height: 28px;
+}

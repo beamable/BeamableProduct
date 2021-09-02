@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:engine="UnityEngine.Experimental.UIElements" xmlns:engin="UnityEngine.Experimental.UIElements"
+        xmlns:beamable="Beamable.Editor.UI.Components"
+        xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
+        xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
+
+    <engine:VisualElement class="manifestRow">
+        <engine:VisualElement name="enabledC" class="column">
+            <beamable:BeamableCheckboxVisualElement name="checkbox"/>
+        </engine:VisualElement>
+        <engine:VisualElement name="nameC" class="column">
+                <engine:Label name="nameMS" text="Angie's Test"/>
+        </engine:VisualElement>
+
+        <engine:VisualElement name="SizeC" class="column">
+        </engine:VisualElement>
+
+        <engine:VisualElement name="CommentsC" class="column">
+            <engine:TextField name="commentsText"/>
+        </engine:VisualElement>
+    </engine:VisualElement>
+
+</engine:UXML>

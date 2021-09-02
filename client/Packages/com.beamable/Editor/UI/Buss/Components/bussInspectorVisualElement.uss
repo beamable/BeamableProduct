@@ -1,0 +1,92 @@
+#property-container {
+    height: 300px;
+    flex-direction: column;
+}
+
+.content-view {
+    position: absolute;
+    left: 0px;
+    right: 2px;
+}
+
+#ContentView.content-view {
+    position: absolute;
+    left: 0px;
+    right: 0px;
+
+}
+
+VisualElement.hide {
+    position: absolute;
+    left: 999999px;
+}
+VisualElement.show {
+    position: relative;
+    left: 0px;
+}
+
+#rule-container {
+    /*height: 600px;*/
+}
+
+BussInspectorVisualElement #cascade,
+BussInspectorVisualElement TemplateContainer ScrollView#rule-container,
+BussInspectorVisualElement TemplateContainer,
+BussInspectorVisualElement {
+    flex-grow: 1;
+}
+
+BussInspectorVisualElement #property-container Label:disabled {
+    opacity: .9;
+}
+
+#tab-btns {
+    flex-direction: row;
+}
+#tab-btns Button {
+    flex-grow: 1;
+    margin-left: 0px;
+    margin-right: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    border-left-width: 0px;
+    border-right-width: 0px;
+    border-top-width: 0px;
+    border-bottom-width: 0px;
+    border-radius: 0px;
+    background-image: none;
+    background-color: rgba(0,0,0,0);
+}
+
+#tab-btns Button:hover {
+    background-color: rgba(0, 0, 0, .2);
+}
+
+#tab-btns Button.active {
+    background-color: rgba(64, 128, 255, .8);
+    color: #FFFFFF;
+}
+
+#computed #property-container {
+    background-color: rgba(0,0,0,.1);
+}
+#computed-lbl {
+    margin-bottom: 4px;
+}
+
+#sheet-selector-container{
+    flex-direction: row;
+}
+#btn-add-rule {
+    margin-top: 0px;
+}
+#sheet-selector-container PopupField {
+    flex-grow: 1;
+    margin-bottom: 0px;
+    padding-bottom: 0px;
+}
+#sheet-selector-container Label {
+
+    margin-bottom: 0px;
+    padding-bottom: 0px;
+}

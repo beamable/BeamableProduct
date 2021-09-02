@@ -1,0 +1,14 @@
+{
+    "name": "Beamable.Coroutines",
+    "references": [
+        "Beamable.Service"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": []
+}

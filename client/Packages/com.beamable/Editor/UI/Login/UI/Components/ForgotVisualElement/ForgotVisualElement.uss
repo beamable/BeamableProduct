@@ -1,0 +1,42 @@
+#mainContainer{
+    width: 300px;
+    align-self: center;
+}
+
+.input{
+    height: 30px;
+    -unity-text-align: middle-left;
+    background-color: #f4f4f4;
+    border-radius: 5px;
+    margin-bottom: 5px;
+}
+
+.btnText{
+    min-width:100px;
+}
+.linkText{
+    align-self: flex-end;
+    background-image: none;
+    max-height: 16px;
+    border-bottom-width: 1px;
+    border-right-width: 0px;
+    border-left-width: 0px;
+    border-top-width: 0px;
+    padding-left: 0px;
+    padding-right: 0px;
+}
+
+#getCode {
+    flex-grow: 1;
+    height: 35px;
+}
+
+#newPasswordLabel{
+    margin-top: 15px;
+}
+
+
+.hidden {
+    position: absolute;
+    right: 10000px;
+}

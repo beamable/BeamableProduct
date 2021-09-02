@@ -1,0 +1,13 @@
+---
+version: '2'
+services:
+  disruptor_engine_portal:
+    environment: 
+      - PORTAL_ENV=${PORTAL_ENV}
+      - BUILD_NUMBER=${BUILD_NUMBER}
+    build:
+      context: ../../
+      dockerfile: build/portal/Dockerfile
+    volumes:
+      - ../../portal:/portal
+      - ./scripts:/scripts

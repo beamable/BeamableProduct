@@ -1,0 +1,15 @@
+{
+    "name": "Beamable.Editor.Input",
+    "references": [
+        "Unity.InputSystem",
+        "Beamable.Runtime.Input"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": []
+}

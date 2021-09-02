@@ -1,0 +1,2 @@
+include ':googlesignin'
+rootProject.name = "Google Sign-In Plugin"

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+   <PropertyGroup>
+      <DefineConstants>DB_MICROSERVICE</DefineConstants>
+      <DefineConstants>BEAMABLE_MICROSERVICE</DefineConstants>
+
+      <PackageId>Beamable.UnityEngine</PackageId>
+      <Version>0.0.0</Version>
+      <Authors>Beamable Team</Authors>
+      <Company>Beamable</Company>
+
+      <TargetFramework>net5.0</TargetFramework>
+      <AssemblyName>UnityEngine</AssemblyName>
+   </PropertyGroup>
+   <ItemGroup>
+     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+   </ItemGroup>
+
+</Project>

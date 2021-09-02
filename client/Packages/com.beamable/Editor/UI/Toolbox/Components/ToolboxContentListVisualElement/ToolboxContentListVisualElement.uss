@@ -1,0 +1,51 @@
+
+TemplateContainer{
+    flex-grow: 1;
+}
+
+#mainVisualElement {
+    flex-grow: 1;
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+}
+
+#ContentView.content-view{
+    left: 0px;
+    right:0px;
+}
+
+ScrollView {
+    flex-grow: 1;
+}
+
+
+#gridContainer {
+    top:10px;
+    flex-wrap: wrap;
+    flex-direction: row;
+    justify-content: space-around;
+    margin-bottom: 20px;
+}
+
+#functionIcon{
+    height: 50px;
+    margin-left: 10px;
+    margin-right: 10px;
+    margin-top: 10px;
+    border-radius: 10px;
+}
+#title{
+    -unity-font-style: bold;
+    font-size: 12px;
+    margin-left: 10px;
+}
+#description{
+    font-size: 10px;
+    top:-5px;
+    margin-left: 10px;
+}
+
+

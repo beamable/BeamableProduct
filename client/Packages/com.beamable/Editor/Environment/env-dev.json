@@ -1,0 +1,7 @@
+﻿{
+    "environment": "dev",
+    "apiUrl": "https://dev.api.beamable.com",
+    "portalUrl": "https://dev-portal.beamable.com/",
+    "dockerRegistryUrl": "https://dev-microservices.beamable.com/v2/",
+    "sdkVersion": "BUILD__SDK__VERSION__STRING"
+}

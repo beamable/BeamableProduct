@@ -1,0 +1,17 @@
+{
+    "name": "Beamable.Pooling.Editor",
+    "references": [
+        "Beamable.Service",
+        "Beamable.Pooling"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": []
+}

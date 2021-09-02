@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:engine="UnityEngine.Experimental.UIElements"
+        xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
+        xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
+
+    <engine:VisualElement name="mainVisualElement">
+        <engine:VisualElement name="leftContentVisualElement">
+
+            <engine:Button class="boundedButton" name="startAll">
+                <engine:Image name="startIcon"/>
+                <engine:Label text="Start All" class="buttonText"/>
+            </engine:Button>
+
+            <engine:Button class="boundedButton" name="buildAll">
+                <engine:Image name="buildIcon"/>
+                <engine:Label text="Build All" class="buttonText"/>
+            </engine:Button>
+
+            <engine:Button class="boundedButton" name="createNew">
+                <engine:Image name="createNewIcon"/>
+                <engine:Label text="Create New" class="buttonText"/>
+            </engine:Button>
+
+            <engine:Button  class="boundedButton" name="publish">
+                <engine:Image name="publishIcon"/>
+                <engine:Label text="Publish" class="buttonText"/>
+            </engine:Button>
+        </engine:VisualElement>
+
+        <engine:VisualElement name="rightContentVisualElement">
+            <engine:Button class="unboundedButton" name="refreshButton">
+                <engine:Image name="refreshIcon"/>
+            </engine:Button>
+            <engine:Button class="unboundedButton" name="infoButton">
+                <engine:Image name="infoIcon"/>
+            </engine:Button>
+        </engine:VisualElement>
+        
+    </engine:VisualElement>
+
+</engine:UXML>

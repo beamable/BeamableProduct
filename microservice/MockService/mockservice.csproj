@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+<PropertyGroup>
+        <PackageId>Beamable.Microservice.MockService</PackageId>
+        <Version>0.0.0</Version>
+        <Authors>Beamable Team</Authors>
+        <Company>Beamable</Company>
+
+        <DefineConstants>DB_MICROSERVICE</DefineConstants>
+        <TargetFramework>net5.0</TargetFramework>
+        <AssemblyName>BeamableMockService</AssemblyName>
+        <LangVersion>8</LangVersion>
+        <OutputType>Exe</OutputType>
+    </PropertyGroup>
+
+
+
+</Project>

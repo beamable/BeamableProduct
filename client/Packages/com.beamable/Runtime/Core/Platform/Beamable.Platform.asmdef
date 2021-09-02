@@ -1,0 +1,23 @@
+{
+    "name": "Beamable.Platform",
+    "references": [
+        "PubNub",
+        "Beamable.Config",
+        "Beamable.Coroutines",
+        "Beamable.JsonSerializable",
+        "Beamable.Pooling",
+        "Beamable.Service",
+        "Beamable.Spew",
+        "Beamable.SmallerJSON",
+        "Beamable.ConsoleCommands",
+        "Unity.Beamable.Runtime.Common"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": []
+}

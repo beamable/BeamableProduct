@@ -1,0 +1,28 @@
+// Jenkinsfile for google-signin plugin.
+P4_STREAM = '//disruptor_engine/googlesignin'
+
+node('android') {
+  stage('Sync source') {
+    p4sync(
+      credential: 'perforce-ip',
+      format: 'jenkins-${NODE_NAME}-${JOB_NAME}',
+      populate: forceClean(quiet: true),
+      source: streamSource(P4_STREAM)
+    )
+  }
+
+  stage('Update Android SDK') {
+    sh 'yes | sudo $ANDROID_SDK_ROOT/cmdline-tools/tools/bin/sdkmanager --update'
+    sh 'yes | $ANDROID_SDK_ROOT/cmdline-tools/tools/bin/sdkmanager --licenses'
+  }
+
+  stage('Gradle build') {
+    dir('google-signin') {
+      sh './gradlew clean build'
+    }
+  }
+
+  stage('Archive artifacts') {
+    archiveArtifacts artifacts: 'google-signin/*/build/outputs/aar/*.aar', fingerprint: true
+  }
+}

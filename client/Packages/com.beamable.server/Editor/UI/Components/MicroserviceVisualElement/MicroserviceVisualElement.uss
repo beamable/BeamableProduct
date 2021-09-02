@@ -1,0 +1,132 @@
+
+LogVisualElement {
+    height: 200px;
+}
+
+MicroserviceVisualElement > TemplateContainer > #mainVisualElement> {
+    margin-right: 10px;
+    margin-left: 10px;
+}
+
+#logHeader{
+    flex-direction: row;
+    flex-grow: 1;
+}
+#logHeader > .leftArea{
+    justify-content: center;
+    padding-left: 5px;
+    flex-direction: row;
+    padding-top: 5px;
+}
+#logHeader > .rightArea{
+    padding-right: 5px;
+    flex-grow: 1;
+    flex-direction: row;
+    align-self: flex-end;
+    align-content: flex-end;
+    justify-content: flex-end;
+}
+
+.subTitle{
+    font-size: 12px;
+    -unity-font-style: normal;
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    justify-content: center;
+    -unity-text-align: middle-left;
+}
+
+#statusIcon{
+    /*background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Running L.png");*/
+    width: 25px;
+    height: 25px;
+
+}
+#remoteStatusIcon{
+    width: 25px;
+    height: 25px;
+}
+.localBuilding {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/local Building L.png");
+}
+
+.localRunning {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Running L.png");
+}
+
+.localStopped{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Stopped L.png");
+}
+
+.remoteRunning{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Running L.png");
+}
+.remoteStopped{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Stopped L.png");
+}
+
+.different{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/different L.png");
+}
+
+.remoteDeploying{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Deploying L.png");
+}
+
+#checkbox{
+    align-self: center;
+}
+
+
+#logText{
+    min-height: 100px;
+
+}
+
+#buttonRow{
+    align-content: flex-end;
+    padding-top: 10px;
+    flex-direction: row;
+    padding-bottom: 10px;
+    justify-content: flex-end;
+
+}
+
+#buildDropDown{
+    flex-direction: row;
+    justify-content: space-around;
+}
+
+
+#dropDown{
+    align-content: center;
+    justify-content: center;
+    align-self: center;
+    width: 10px;
+    height: 5px;
+    right: 3px;
+    -unity-text-align: middle-center;
+}
+
+.confirmBtn{
+    font-size: 12px;
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-width: 1px;
+    border-right-width: 1px;
+    margin-right: 0px;
+    background-image: none;
+    width: 120px;
+    height: 28px;
+    cursor: pan;
+    background-image: none;
+}
+#start {
+    -unity-font-style: bold;
+}
+.unity-label{
+    font-size: 12px;
+    -unity-text-align: middle-left;
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+
+}

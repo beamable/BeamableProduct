@@ -1,0 +1,40 @@
+.beamablePlaceholder {
+    position: absolute;
+    opacity: .4;
+    margin-left: 0px;
+    padding-left: 0px;
+}
+.beamablePlaceholder.hidden {
+    opacity: 0;
+}
+
+.beamableErrorLabel {
+    margin-top: 0px;
+    padding-top: 0px;
+    color: #FF0000;
+    font-size: 10px;
+    -unity-text-align: middle-left;
+    -unity-font-style: bold;
+}
+
+.beamableErrorTextField.hasError {
+    border-color: #FF0000;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+}
+.beamableErrorLabel.beamableErrorHidden {
+    position: absolute;
+    right: 100000px;
+}
+
+.beamableErrorToggleField {
+    width: 15px;
+    overflow: visible;
+    flex-direction: column;
+}
+.beamableErrorToggleField Label {
+    overflow: visible;
+    -unity-text-align: middle-left;
+}

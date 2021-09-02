@@ -1,0 +1,11 @@
+#actionBarVisualElement{
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarlight.png");
+}
+#status-bar-container {
+    position: absolute;
+    left: 0px;
+    right: 0px;
+    bottom: 0px;
+    height: 30px;
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarlight.png");
+}

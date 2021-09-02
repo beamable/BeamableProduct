@@ -1,0 +1,16 @@
+{
+    "name": "Unity.Beamable.Samples.Runtime",
+    "references": [
+        "Unity.Beamable",
+        "Unity.Beamable.Editor"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

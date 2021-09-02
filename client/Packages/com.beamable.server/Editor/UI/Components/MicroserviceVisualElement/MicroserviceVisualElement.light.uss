@@ -1,0 +1,51 @@
+#logHeader{
+    background-color: #8d8d8d;
+}
+
+.squareBtn{
+    background-color: #A7A7A7;
+    border-color: #6C6C6C;
+}
+#clear{
+    background-color: #A7A7A7;
+    border-color: #6C6C6C;
+}
+
+#popupBtn{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/popup_dark.png");
+    background-color: #A7A7A7;
+}
+#advanceBtn{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/advance_dark.png");
+    background-color: #A7A7A7;}
+
+#detailWindow{
+    border-color: #6C6C6C;
+}
+#white{
+    border-color: #6C6C6C;
+}
+
+#clearContainer{
+    border-color: #6C6C6C;
+}
+
+.confirmBtn {
+    background-color: #A7A7A7;
+    border-color: #6C6C6C;
+}
+
+#logListRoot{
+    border-color: #6C6C6C;
+}
+
+#dropDown{
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown Close Dark.png");
+}
+
+#moreBtn{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/advance_dark.png");
+    background-color: #8d8d8d;
+    border-color: #8d8d8d;
+
+}

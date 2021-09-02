@@ -1,0 +1,18 @@
+ConsoleLogVisualElement {
+    background-color: #d1d1d1;
+}
+ConsoleLogVisualElement.oddRow {
+    background-color: #c8c8c8;
+}
+#statusIcon.debug {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/debug_dark.png");
+}
+#statusIcon.info {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/info.png");
+}
+#statusIcon.warning {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/warning.png");
+}
+#statusIcon.error {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/error.png");
+}
