@@ -15,5 +15,4 @@ services:
       NPM_LOGLEVEL: ${NPM_LOGLEVEL:-verbose}
       VERSION: ${VERSION:-0.0.0}
       UPDATE_NPM_VERSION: ${UPDATE_NPM_VERSION:-false}
-      RELEASE_NOTES: ${RELEASE_NOTES}
       CHANGELOG_URL: '${CHANGELOG_URL}/com-beamable-changelog.md'

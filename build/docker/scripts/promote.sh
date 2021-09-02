@@ -21,13 +21,6 @@ else
 	echo "Not updating the version."
 fi
 
-# if [ ! -z "$RELEASE_NOTES" ]
-# then
-# 	json -I -f package.json -e "this.description='$RELEASE_NOTES'"
-# else
-# 	echo "Not updating release notes."
-# fi
-
 if [ ! -z "$CHANGELOG_URL" ]
 then
   echo "setting changelog url"
