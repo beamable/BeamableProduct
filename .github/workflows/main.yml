@@ -2,9 +2,10 @@ name: Test
 
 on: [push, pull_request]
 
+
 jobs:
   testAllModes:
-    name: Test in ${{ matrix.unityVersion }} ${{ matrix.testMode }}
+    name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -26,7 +27,7 @@ jobs:
           key: Library-${{ matrix.projectPath }}
           restore-keys: |
             Library-${{ matrix.projectPath }}
-            
+
       - uses: game-ci/unity-test-runner@v2
         id: tests
         env:
