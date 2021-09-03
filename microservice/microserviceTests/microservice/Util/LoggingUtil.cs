@@ -15,7 +15,7 @@ namespace microserviceTests.microservice.Util
          Debug.Instance = new MicroserviceDebug();
          // https://github.com/serilog/serilog/wiki/Configuration-Basics
          Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Debug()
+            .MinimumLevel.Information()
             .WriteTo.Console(new RawFormatter())
             .CreateLogger();
          BeamableSerilogProvider.LogContext.Value = Log.Logger;
