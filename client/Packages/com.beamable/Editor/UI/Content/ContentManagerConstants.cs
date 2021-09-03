@@ -50,7 +50,7 @@ namespace Beamable.Editor.Content
       public const string ValidateButtonDoneWithoutErrorsText = "Okay";
       //
       public const string PublishMessageLoading = "Preparing Content for Publish...";
-      public const string PublishMessagePreview = "Clicking publish will upload the following changes to Beamable.";
+      public const string PublishMessagePreview = "Clicking publish will upload the following changes to {0}/{1}.";
       public const string PublishCompleteMessage = "All Content has been successfully published.";
       public const string PublishMessageInProgress = "Publishing content...";
       public const string PublishNoDataText = "There is no content to Publish.";

@@ -4,6 +4,7 @@ using System.Linq;
 using Beamable.Editor.UI.Components;
 using Beamable.Server.Editor;
 using UnityEditor;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -17,6 +18,8 @@ namespace Beamable.Editor.Microservice.UI.Components
     public class CreateMicroserviceVisualElement : MicroserviceComponent
     {
         public event Action OnCreateMicroserviceClicked;
+
+        private bool CanCreateMicroservice { get; set; }
 
         private VisualElement _logListRoot;
         private ListView _listView;
@@ -86,10 +89,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             _checkbox.SetEnabled(false);
 
             _logContainerElement = Root.Q<VisualElement>("logContainer");
-            _logElement = new LogVisualElement();
-            _logContainerElement.Add(_logElement);
-            _logElement.Refresh();
-            _logElement.SetEnabled(false);
+            _logContainerElement.RemoveFromHierarchy();
             RenameGestureBegin();
         }
 
@@ -112,6 +112,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         void NameLabel_OnKeyup(KeyUpEvent evt)
         {
+            if ((evt.keyCode == KeyCode.KeypadEnter || evt.keyCode == KeyCode.Return) && CanCreateMicroservice)
+            {
+                HandleCreateButtonClicked();
+                return;
+            }
+            
             CheckName();
         }
 
@@ -122,8 +128,8 @@ namespace Beamable.Editor.Microservice.UI.Components
                 ? newName
                 : _newMicroserviceName;
             _nameTextField.value = _newMicroserviceName;
-            bool serviceAlreadyExist = _microservicesNames.Any(s => s.Equals(_newMicroserviceName));
-            _createBtn.SetEnabled(!serviceAlreadyExist && _newMicroserviceName.Length > 2);
+            CanCreateMicroservice = !_microservicesNames.Any(s => s.Equals(_newMicroserviceName)) && _newMicroserviceName.Length > 2;
+            _createBtn.SetEnabled(CanCreateMicroservice);
         }
 
         void RenameGestureBegin()

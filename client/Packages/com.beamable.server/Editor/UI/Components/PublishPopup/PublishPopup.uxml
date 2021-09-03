@@ -18,7 +18,7 @@
             </engine:VisualElement>
             
             <engine:VisualElement name="SizeC" class="column">
-            <engine:Label text="Size" class="SubTitleText"/>
+            <engine:Label text="Profile" class="SubTitleText"/>
             </engine:VisualElement>
                 
             <engine:VisualElement name="CommentsC" class="column">

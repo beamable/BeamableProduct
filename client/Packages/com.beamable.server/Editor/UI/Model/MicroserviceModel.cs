@@ -151,28 +151,26 @@ namespace Beamable.Editor.UI.Model
 
         public void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
         {
-            if (Builder.HasImage)
+            var existsOnRemote = RemoteStatus?.serviceName?.Length > 0;
+            var hasImageSuffix = Builder.HasImage ? string.Empty : " (Build first)";
+            var localCategory = IsRunning ? "Local" : "Local (not running)";
+            var remoteCategory = existsOnRemote ? "Cloud" : "Cloud (not deployed)";
+            var debugToolsSuffix = IncludeDebugTools ? string.Empty : " (Debug tools disabled)";
+            evt.menu.BeamableAppendAction($"Reveal build directory{hasImageSuffix}", pos =>
             {
-                evt.menu.BeamableAppendAction("Reveal build directory", pos =>
-                {
-                    var full = Path.GetFullPath(Descriptor.BuildPath);
-                    EditorUtility.RevealInFinder(full);
-                });
+                var full = Path.GetFullPath(Descriptor.BuildPath);
+                EditorUtility.RevealInFinder(full);
+            }, Builder.HasImage);
 
-                evt.menu.BeamableAppendAction("Run Snyk Tests", pos => RunSnykTests());
-            }
+            evt.menu.BeamableAppendAction($"Run Snyk Tests{hasImageSuffix}", pos => RunSnykTests(), Builder.HasImage);
 
-            if (IsRunning)
-            {
-                evt.menu.BeamableAppendAction("Open in CLI", pos => OpenInCli());
-                evt.menu.BeamableAppendAction("View Local Documentation", pos => { OpenLocalDocs(); });
-            }
+            evt.menu.BeamableAppendAction($"{localCategory}/Open in CLI", pos => OpenInCli(), IsRunning);
+            evt.menu.BeamableAppendAction($"{localCategory}/View Documentation", pos => OpenLocalDocs(), IsRunning);
 
-            if (IncludeDebugTools)
-            {
-                evt.menu.BeamableAppendAction("Copy Visual Studio Code Debug Configuration", pos => { CopyVSCodeDebugTool(); });
-            }
-
+            evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => {OpenOnRemote("docs/remote/");}, existsOnRemote);
+            evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => {OpenOnRemote("metrics");}, existsOnRemote);
+            evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => {OpenOnRemote("logs");}, existsOnRemote);
+            evt.menu.BeamableAppendAction($"Visual Studio Code/Copy Debug Configuration{debugToolsSuffix}", pos => { CopyVSCodeDebugTool(); }, IncludeDebugTools);
         }
 
         private void RunSnykTests()
@@ -224,6 +222,18 @@ $@"{{
         ""/subsrc"": ""{Path.GetFullPath(Descriptor.BuildPath)}/""
      }}
   }}";
+        }
+
+        private void OpenOnRemote(string relativePath)
+        {
+            EditorAPI.Instance.Then(api =>
+            {
+                var path =
+                    $"{BeamableEnvironment.PortalUrl}/{api.CidOrAlias}/" +
+                    $"games/{api.ProductionRealm.Pid}/realms/{api.Pid}/" +
+                    $"microservices/{Descriptor.Name}/{relativePath}?refresh_token={api.Token.RefreshToken}";
+                Application.OpenURL(path);
+            });
         }
 
         private void OpenInCli()

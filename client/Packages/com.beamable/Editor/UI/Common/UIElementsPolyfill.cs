@@ -114,9 +114,13 @@ namespace UnityEngine.Experimental.UIElements
             self.Focus();
         }
 
-        public static void BeamableAppendAction(this DropdownMenu self, string title, Action<Vector2> callback)
+        public static void BeamableAppendAction(this DropdownMenu self, string title, Action<Vector2> callback, bool enabled = true)
         {
-          self.AppendAction(title, evt => callback(evt.eventInfo.mousePosition), DropdownMenu.MenuAction.AlwaysEnabled);
+          if(enabled)
+            self.AppendAction(title, evt => callback(evt.eventInfo.mousePosition),DropdownMenu.MenuAction.AlwaysEnabled);
+          else
+            self.AppendAction(title, evt => callback(evt.eventInfo.mousePosition),DropdownMenu.MenuAction.AlwaysDisabled);
+            
         }
 
         public static bool RegisterValueChangedCallback<T>(
@@ -262,9 +266,9 @@ namespace UnityEngine.UIElements
       self.Q("unity-text-input").Focus();
     }
 
-    public static void BeamableAppendAction(this DropdownMenu self, string title, Action<Vector2> callback)
+    public static void BeamableAppendAction(this DropdownMenu self, string title, Action<Vector2> callback, bool enabled = true)
     {
-      self.AppendAction(title, evt => callback(evt.eventInfo.mousePosition));
+      self.AppendAction(title, evt => callback(evt.eventInfo.mousePosition), enabled ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
     }
   }
 }

@@ -132,7 +132,15 @@ namespace Beamable.Editor.Microservice.UI
 
             _microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
             _microserviceBreadcrumbsVisualElement.Refresh();
+            _microserviceBreadcrumbsVisualElement.SetSelectAllCheckboxValue(Model.Services.All(model => model.IsSelected));
 
+            if (Model?.Services?.Count == 0)
+            {
+                _microserviceBreadcrumbsVisualElement.DisableSelectAllCheckbox();
+                _actionBarVisualElement.HandleNoMicroservicesScenario();
+            }
+            
+            
             _loadingBar = root.Q<LoadingBarElement>("loadingBar");
             _loadingBar.Hidden = true;
             _loadingBar.Refresh();

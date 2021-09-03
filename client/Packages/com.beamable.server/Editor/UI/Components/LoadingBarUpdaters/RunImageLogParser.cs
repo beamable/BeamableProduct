@@ -16,7 +16,6 @@ namespace Beamable.Editor.Microservice.UI.Components {
         };
 
         private static readonly string[] errorElements = new[] {
-            "error",
             "Error",
             "Exception",
             "exception"
