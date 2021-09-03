@@ -1,3 +1,3 @@
 using NUnit.Framework;
 
-[assembly: Timeout(10000), NonParallelizable]
+[assembly: Timeout(3000), NonParallelizable]
