@@ -36,11 +36,13 @@ namespace Beamable.Platform.Tests
    {
       private readonly PromiseBase _promise;
       private float _murderAt;
+      private long tickCounter = 0;
+      private long tickLimit;
 
       public WaitForPromise(PromiseBase promise, float timeOut=.2f)
       {
          _promise = promise;
-
+         tickLimit = (long)(timeOut * 1000 * 1000);
          _murderAt = Time.realtimeSinceStartup + timeOut;
       }
 
@@ -53,7 +55,10 @@ namespace Beamable.Platform.Tests
                return false;
             }
 
-            if (Time.realtimeSinceStartup > _murderAt)
+            tickCounter++;
+
+            if (tickCounter > tickLimit)
+            // if (Time.realtimeSinceStartup > _murderAt)
             {
                Debug.LogError("Yielded timeout");
                return false;
