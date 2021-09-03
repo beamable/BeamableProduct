@@ -48,12 +48,17 @@ namespace Beamable.Platform.Tests
       {
          get
          {
+            if (_promise.IsCompleted)
+            {
+               return false;
+            }
+
             if (Time.realtimeSinceStartup > _murderAt)
             {
                Debug.LogError("Yielded timeout");
                return false;
             }
-            return !_promise.IsCompleted;
+            return true;
          }
       }
    }
