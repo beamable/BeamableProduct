@@ -5,35 +5,45 @@ on: [push, pull_request]
 jobs:
   testMicroserviceBaseImage:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        dotnet-version: ['5.0.x' ]
     steps:
-      - uses: actions/checkout@v2
-      - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
-        uses: actions/setup-dotnet@v1.7.2
+      - name: use this action, test solution dir
+        uses: zyborg/dotnet-tests-report@v1
         with:
-          dotnet-version: ${{ matrix.dotnet-version }}
-      - uses: actions/cache@v2
-        with:
-          path: ~/.nuget/packages
-          # Look to see if there is a cache hit for the corresponding requirements file
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget
-      - name: Install dependencies
-        run: dotnet restore microservice/microserviceTests
-      - name: Build
-        run: dotnet build --configuration Release --no-restore microservice/microserviceTests
-      - name: Test
-        run: dotnet test --no-restore --logger trx --results-directory TestResults microservice/microserviceTests
-      - name: Upload dotnet test results
-        uses: actions/upload-artifact@v2
-        with:
-          name: dotnet-results-${{ matrix.dotnet-version }}
-          path: TestResults
-        # Use always() to always run this step to publish test results when there are test failures
-        if: ${{ always() }}
+          project_path: microservice/microserviceTests
+          report_name: my_project_tests
+          report_title: My Project Tests
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+  # testMicroserviceBaseImage:
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       dotnet-version: ['5.0.x' ]
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
+  #       uses: actions/setup-dotnet@v1.7.2
+  #       with:
+  #         dotnet-version: ${{ matrix.dotnet-version }}
+  #     - uses: actions/cache@v2
+  #       with:
+  #         path: ~/.nuget/packages
+  #         # Look to see if there is a cache hit for the corresponding requirements file
+  #         key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-nuget
+  #     - name: Install dependencies
+  #       run: dotnet restore microservice/microserviceTests
+  #     - name: Build
+  #       run: dotnet build --configuration Release --no-restore microservice/microserviceTests
+  #     - name: Test
+  #       run: dotnet test --no-restore --logger trx --results-directory TestResults microservice/microserviceTests
+  #     - name: Upload dotnet test results
+  #       uses: actions/upload-artifact@v2
+  #       with:
+  #         name: dotnet-results-${{ matrix.dotnet-version }}
+  #         path: TestResults
+  #       # Use always() to always run this step to publish test results when there are test failures
+  #       if: ${{ always() }}
 
   testAllModes:
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
