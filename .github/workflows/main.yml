@@ -14,8 +14,6 @@ jobs:
         uses: actions/setup-dotnet@v1.7.2
         with:
           dotnet-version: ${{ matrix.dotnet-version }}
-      - name: Install dependencies
-        run: dotnet restore microservice/microserviceTests
       - uses: actions/cache@v2
         with:
           path: ~/.nuget/packages
@@ -23,6 +21,8 @@ jobs:
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nuget
+      - name: Install dependencies
+        run: dotnet restore microservice/microserviceTests
       - name: Build
         run: dotnet build --configuration Release --no-restore microservice/microserviceTests
       - name: Test
