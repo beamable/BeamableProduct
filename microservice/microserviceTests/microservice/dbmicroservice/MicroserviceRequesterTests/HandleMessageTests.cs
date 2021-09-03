@@ -19,7 +19,7 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
          ContentApi.Instance = new Promise<IContentApi>();
       }
 
-      [Test, Timeout(5000)]
+      [Test]
       [NonParallelizable]
       public async Task EventSubscriptionMultiThreadedAccess()
       {
