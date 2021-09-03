@@ -26,7 +26,14 @@ jobs:
       - name: Build
         run: dotnet build --configuration Release --no-restore microservice/microserviceTests
       - name: Test
-        run: dotnet test --no-restore --verbosity normal microservice/microserviceTests
+        run: dotnet test --no-restore --logger trx --results-directory "TestResults-${{ matrix.dotnet-version }}" microservice/microserviceTests
+      - name: Upload dotnet test results
+        uses: actions/upload-artifact@v2
+        with:
+          name: dotnet-results-${{ matrix.dotnet-version }}
+          path: TestResults-${{ matrix.dotnet-version }}
+        # Use always() to always run this step to publish test results when there are test failures
+        if: ${{ always() }}
 
   testAllModes:
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
