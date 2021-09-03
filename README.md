@@ -3,7 +3,6 @@ Beamable Project
 
 This repo contains the source code to the Beamable Package
 
-
 Project Structure
 -----------------
 
