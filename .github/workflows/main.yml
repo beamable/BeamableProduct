@@ -28,6 +28,7 @@ jobs:
       - name: Test
         uses: zyborg/dotnet-tests-report@v1
         with:
+          set_check_status_from_test_outcome: true
           project_path: microservice/microserviceTests
           report_name: my_project_tests
           report_title: My Project Tests
