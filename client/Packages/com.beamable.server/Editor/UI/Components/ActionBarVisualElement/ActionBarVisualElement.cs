@@ -106,6 +106,13 @@ namespace Beamable.Editor.Microservice.UI.Components
             var buildLabel = _buildAll.Q<Label>();
             buildLabel.text = allServicesSelected ? "Build all" : "Build selected";
         }
+
+        public void HandleNoMicroservicesScenario()
+        {
+            _startAll.SetEnabled(false);
+            _buildAll.SetEnabled(false);
+            _publish.SetEnabled(false);
+        }
     }
 
     

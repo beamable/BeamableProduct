@@ -38,6 +38,9 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
                   ""longNumber"": { ""data"": 123 },
                   ""bigNumber"": { ""data"": 15000000000000000000 },
                   ""flag"": { ""data"": true },
+                  ""positiveInteger"": { ""data"": 7 },
+                  ""character"": { ""data"": 35 },
+                  ""singleByte"": { ""data"": 2 }
                },
             }";
 
@@ -58,6 +61,9 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
                       Assert.AreEqual(true, Mathf.Abs(o.number - 3.21f) < .001f);
                       Assert.AreEqual("testtext", o.text);
                       Assert.AreEqual(15000000000000000000.0, o.bigNumber);
+                      Assert.AreEqual(7, o.positiveInteger);
+                      Assert.AreEqual('#', o.character);
+                      Assert.AreEqual(2, o.singleByte);
 
                       Thread.Sleep(1);
                    }
@@ -92,6 +98,9 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
                   ""longNumber"": { ""data"": 123 },
                   ""bigNumber"": { ""data"": 15000000000000000000 },
                   ""flag"": { ""data"": true },
+                  ""positiveInteger"": { ""data"": 7 },
+                  ""character"": { ""data"": 35 },
+                  ""singleByte"": { ""data"": 2 }
                },
             }";
 
@@ -103,6 +112,9 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
             Assert.AreEqual(true, Mathf.Abs(o.number - 3.21f) < .001f);
             Assert.AreEqual("testtext", o.text);
             Assert.AreEqual(15000000000000000000.0, o.bigNumber);
+            Assert.AreEqual(7, o.positiveInteger);
+            Assert.AreEqual('#', o.character);
+            Assert.AreEqual(2, o.singleByte);
         }
 
         [Test]
@@ -175,7 +187,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
       ""number"": { ""data"": 3.21 },
       ""longNumber"": { ""data"": 123 },
       ""bigNumber"": { ""data"": 15.22 },
-      ""flag"": { ""data"": true },
+      ""flag"": { ""data"": true }
    },
 }";
 
@@ -201,7 +213,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
                   ""number"": { ""data"": 3.21 },
                   ""longNumber"": { ""data"": -123 },
                   ""bigNumber"": { ""data"": -15000000000000000000 },
-                  ""flag"": { ""data"": true },
+                  ""flag"": { ""data"": true }
                },
             }";
             var s = new TestSerializer();
@@ -873,6 +885,10 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
            var s = new TestSerializer();
            var o = s.Deserialize<SerializeDictStringToString>(json);
 
+           for (int i = 0; i < 66; i++) {
+              s.Deserialize<SerializeDictStringToString>(json);
+           }
+           
            Assert.AreEqual(true, o.Dict.TryGetValue("a", out var aValue));
            Assert.AreEqual("v1", aValue);
 
@@ -897,6 +913,9 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
            var s = new TestSerializer();
            var o = s.Deserialize<SerializeDictStringToInt>(json);
 
+           for (int i = 0; i < 66; i++) {
+              s.Deserialize<SerializeDictStringToInt>(json);
+           }
            Assert.AreEqual(true, o.Dict.TryGetValue("a", out var aValue));
            Assert.AreEqual(2, aValue);
 
@@ -1015,6 +1034,9 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
             public long longNumber;
             public bool flag;
             public double bigNumber;
+            public uint positiveInteger;
+            public char character;
+            public byte singleByte;
         }
 
         class TestContentComplex : TestContentObject

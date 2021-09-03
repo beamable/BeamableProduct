@@ -73,6 +73,11 @@ namespace Beamable.Editor.Microservice.UI.Components
         {
             _checkbox.SetWithoutNotify(value);
         }
+
+        public void DisableSelectAllCheckbox()
+        {
+            _checkbox.SetEnabled(false);
+        }
     }
     
 }

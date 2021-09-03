@@ -30,7 +30,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         private VisualElement _logListRoot;
         private ListView _listView;
-        private string _statusClassName;
 
 
         public MicroserviceVisualElement() : base(nameof(MicroserviceVisualElement))
@@ -374,40 +373,34 @@ namespace Beamable.Editor.Microservice.UI.Components
           }
         private void UpdateRemoteStatusIcon()
         {
-            if (!string.IsNullOrEmpty(_statusClassName))
-            {
-                _remoteStatusIcon.RemoveFromClassList(_statusClassName);
-            }
+            _remoteStatusIcon.ClearClassList();
 
             string statusRemote = "remoteDeploying";
+            string statusClassName;
             switch (statusRemote)
             {
                 case "remoteDeploying":
-                    _statusClassName = "remoteDeploying";
+                    statusClassName = "remoteDeploying";
                     _remoteStatusLabel.text = "Remote Deploying";
                     break;
                 case "remoteRunning":
-                    _statusClassName = "remoteRunning";
+                    statusClassName = "remoteRunning";
                     _remoteStatusLabel.text = "Remote Running";
                     break;
                 default:
-                    _statusClassName = "remoteStopped";
+                    statusClassName = "remoteStopped";
                     _remoteStatusLabel.text = "Remote Stopped";
                     break;
             }
-            _remoteStatusIcon.AddToClassList(_statusClassName);
+            _remoteStatusIcon.AddToClassList(statusClassName);
 
         }
-
-
+        
         private void UpdateStatusIcon()
         {
+            _statusIcon.ClearClassList();
 
-            if (!string.IsNullOrEmpty(_statusClassName))
-            {
-                _statusIcon.RemoveFromClassList(_statusClassName);
-            }
-
+            string statusClassName;
 
             string status = Model.Builder.IsRunning ? "localRunning" :
                 Model.Builder.IsBuilding ? "localBuilding" : "localStopped";
@@ -415,22 +408,22 @@ namespace Beamable.Editor.Microservice.UI.Components
             {
                 case "localRunning":
                     _statusLabel.text = "Local Running";
-                    _statusClassName = "localRunning";
+                    statusClassName = "localRunning";
                     break;
                 case "localBuilding":
-                    _statusClassName = "localBuilding";
+                    statusClassName = "localBuilding";
                     _statusLabel.text = "Local Building";
                     break;
                 case "localStopped":
-                    _statusClassName = "localStopped";
+                    statusClassName = "localStopped";
                     _statusLabel.text = "Local Stopped";
                     break;
                 default:
-                    _statusClassName = "different";
+                    statusClassName = "different";
                     _statusLabel.text = "Different";
                     break;
             }
-            _statusIcon.AddToClassList(_statusClassName);
+            _statusIcon.AddToClassList(statusClassName);
         }
 
         private void HandleBuildButtonClicked(ContextualMenuPopulateEvent evt)

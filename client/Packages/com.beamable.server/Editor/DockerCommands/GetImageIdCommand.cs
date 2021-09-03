@@ -19,7 +19,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
       protected override void Resolve()
       {
-         var imageId = StandardOutBuffer.Trim();
+         var imageId = StandardOutBuffer?.Length > 0 ? StandardOutBuffer.Trim() : string.Empty;
          Promise.CompleteSuccess(imageId);
       }
    }

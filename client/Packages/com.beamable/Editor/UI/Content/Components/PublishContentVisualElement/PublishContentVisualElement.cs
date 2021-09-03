@@ -10,6 +10,7 @@ using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Common.Models;
 using Beamable.Platform.SDK;
 using Beamable.Editor.UI.Components;
+using Modules.Content;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -163,8 +164,9 @@ namespace Beamable.Editor.Content.Components
             var promise = PublishSet.Then(publishSet =>
             {
 //                loadingViewContainer.AddToClassList("hide");
-                _messageLabel.text = ContentManagerConstants.PublishMessagePreview;
 
+                SetPublishMessage();
+                
                 overrideCountElem.SetValue(publishSet.ToModify.Count);
                 addCountElem.SetValue(publishSet.ToAdd.Count);
                 deleteCountElem.SetValue(publishSet.ToDelete.Count);
@@ -290,7 +292,7 @@ namespace Beamable.Editor.Content.Components
         private void HandlePublish()
         {
             var publishSet = PublishSet.GetResult();
-            _messageLabel.text = ContentManagerConstants.PublishMessagePreview;
+            SetPublishMessage();
 
             _loadingBar.RunWithoutUpdater = true;
             OnPublishRequested?.Invoke(publishSet, (progress, processed, total) => { _loadingBar.Progress = progress; },
@@ -378,6 +380,16 @@ namespace Beamable.Editor.Content.Components
             }
 
             return true;
+        }
+
+        private void SetPublishMessage()
+        {
+            EditorAPI.Instance.Then(api =>
+            {
+                _messageLabel.AddTextWrapStyle();
+                _messageLabel.text = string.Format(ContentManagerConstants.PublishMessagePreview,
+                    api.Realm.DisplayName, ContentConfiguration.Instance.EditorManifestID);
+            });
         }
     }
 }

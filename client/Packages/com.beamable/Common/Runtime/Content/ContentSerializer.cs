@@ -100,10 +100,12 @@ namespace Beamable.Common.Content
             case string s:
             case double d:
             case float f:
+            case decimal dec:
             case short sh:
             case byte by:
             case int i:
                return Json.Serialize(arg, new StringBuilder());
+            case char c: return Json.Serialize((int) c, new StringBuilder());
 
             /* SPECIAL TYPES... */
             case IContentRef contentRef:
@@ -130,11 +132,14 @@ namespace Beamable.Common.Content
 
             default:
 
+               if (argType.IsPrimitive) {
+                  return Json.Serialize(arg, new StringBuilder());
+               }
                /*
                 * We can't use the JsonUtility.ToJson because we can't override certain types,
                 *  like optionals, addressables, links or refs.
                 */
-               var fields = GetFieldInfos(arg.GetType());
+               var fields = GetFieldInfos(argType);
                var dict = new ArrayDict();
                foreach (var field in fields)
                {
@@ -269,10 +274,22 @@ namespace Beamable.Common.Content
                case bool _:
                   return Convert.ChangeType(bool.Parse(json), type);
                case int _:
+                  if (type == typeof(Char))
+                     return (char) int.Parse(json, CultureInfo.InvariantCulture);
                   return Convert.ChangeType(int.Parse(json, CultureInfo.InvariantCulture), type);
 
 
                case ArrayDict dictionary when typeof(IDictionaryWithValue).IsAssignableFrom(type):
+
+                  IList GetList(string fieldName, Type t, object ins) {
+                     if (t == typeof(object)) return null;
+                     var field = t.GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+                     if (field == null) {
+                        return GetList(fieldName, t.BaseType, ins);
+                     }
+                     return (IList)field.GetValue(ins);
+                  }
+                  
                   var dictInst = (IDictionaryWithValue) Activator.CreateInstance(type);
 
                   foreach (var kvp in dictionary)
@@ -620,7 +637,7 @@ namespace Beamable.Common.Content
                {
                   var hackResult = DeserializeResult(dataValue, field.FieldType);
                   field.SetValue(instance, hackResult);
-                  if(hackResult is ISerializationCallbackReceiver rec)
+                  if(hackResult is ISerializationCallbackReceiver rec && !(hackResult is IIgnoreSerializationCallbacks))
                      rec.OnAfterDeserialize();
                }
 
