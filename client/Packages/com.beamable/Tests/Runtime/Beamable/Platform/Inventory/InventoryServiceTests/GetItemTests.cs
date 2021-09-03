@@ -14,9 +14,9 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
       {
          // mock out a piece of content.
          var contentName = "test";
-         _content.Provide(new InventoryTestItem {name = "junk", Foo = 1}.SetContentName("junk"));
-         _content.Provide(new InventoryTestItem {name = contentName, Foo = 123}.SetContentName(contentName));
-         _content.Provide(new InventoryTestItem {name = "rando", Foo = 2}.SetContentName("rando"));
+         _content.Provide(InventoryTestItem.New("junk", 1).SetContentName("junk"));
+         _content.Provide(InventoryTestItem.New(contentName, 123).SetContentName(contentName));
+         _content.Provide(InventoryTestItem.New("rando", 2).SetContentName("rando"));
 
          // Mock out a network request that get an item. This semi defines the web API itself.
          _requester
