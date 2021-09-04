@@ -132,8 +132,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
 
          yield return _pendingPromise.AsYield();
 
-
-
+         Assert.AreEqual(true, _pendingPromise.IsCompleted);
          Assert.AreEqual(true, listenerCalled);
          Assert.AreEqual(true, _loadingArg.Promise.IsCompleted);
 
