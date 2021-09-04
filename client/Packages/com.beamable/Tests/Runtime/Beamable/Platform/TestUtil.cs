@@ -42,7 +42,7 @@ namespace Beamable.Platform.Tests
       public WaitForPromise(Promise<T> promise, float timeOut=.2f)
       {
          _promise = promise;
-         tickLimit = long.MaxValue;
+         tickLimit = long.MaxValue - 1;
          _murderAt = Time.realtimeSinceStartup + timeOut;
       }
 
@@ -57,14 +57,11 @@ namespace Beamable.Platform.Tests
 
             tickCounter++;
 
-            if (tickCounter > tickLimit)
-            // if (Time.realtimeSinceStartup > _murderAt)
-            {
-               Debug.LogError("Yielded timeout");
-               _promise.CompleteError(new Exception("The WaitForPromise timed out after " + tickLimit + " ticks.") );
-               return false;
-            }
-            return true;
+            if (tickCounter <= tickLimit) return true;
+
+            Debug.LogError("Yielded timeout");
+            _promise.CompleteError(new Exception("The WaitForPromise timed out after " + tickLimit + " ticks.") );
+            return false;
          }
       }
    }

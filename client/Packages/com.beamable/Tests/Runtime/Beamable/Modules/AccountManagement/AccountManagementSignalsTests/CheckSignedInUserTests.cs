@@ -112,6 +112,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
       {
          var listenerCalled = false;
          _engineUser.email = "";
+         _engineUser.thirdPartyAppAssociations?.Clear();
 
          _signaler.UserAnonymous = new UserEvent();
          _signaler.UserAnonymous.AddListener(arg =>
@@ -120,10 +121,19 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
             listenerCalled = true;
             _pendingPromise.CompleteSuccess(PromiseBase.Unit);
          });
+         _pendingPromise.Error(err =>
+         {
+            Debug.Log("Uh oh, hit a snag " + err.Message);
+            Assert.IsNull(err);
+            throw err;
+         });
 
          _signaler.CheckSignedInUser();
 
          yield return _pendingPromise.AsYield();
+
+
+
          Assert.AreEqual(true, listenerCalled);
          Assert.AreEqual(true, _loadingArg.Promise.IsCompleted);
 
