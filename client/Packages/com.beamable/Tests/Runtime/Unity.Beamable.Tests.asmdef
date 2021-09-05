@@ -3,6 +3,9 @@
     "references": [
         "Unity.Beamable",
         "Beamable.Platform",
+        "Beamable.Coroutines",
+        "Beamable.Service",
+        "Beamable.Content",
         "Beamable.JsonSerializable",
         "Unity.Addressables",
         "Unity.Beamable.Runtime.Common",

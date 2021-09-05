@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using Beamable.AccountManagement;
-using Beamable.Platform.SDK;
-using Beamable.Platform.SDK.Auth;
+using Beamable.Content;
+using Beamable.Coroutines;
 using Beamable.Platform.Tests;
+using Beamable.Service;
 using NUnit.Framework;
 using Packages.Beamable.Runtime.Tests.Beamable;
 using UnityEngine;
@@ -25,6 +26,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
       [SetUp]
       public void Init()
       {
+         EnableCI();
          _engineUser = new User();
          _engine = new MockBeamableApi();
          _engine.User = _engineUser;
@@ -37,6 +39,20 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
          _signaler.PrepareForTesting(_gob, arg => _loadingArg = arg);
 
          _pendingPromise = new Promise<Unit>();
+      }
+
+
+      void EnableCI()
+      {
+         GameObject coroutineServiceGo = new GameObject();
+         var coroutineService = MonoBehaviourServiceContainer<CoroutineService>.CreateComponent(coroutineServiceGo);
+         ServiceManager.Provide(coroutineService);
+         ServiceManager.ProvideWithDefaultContainer(new ContentParameterProvider
+         {
+            manifestID = "global"
+         });
+         ServiceManager.AllowInTests();
+         ContentService.AllowInTests();
       }
 
       [TearDown]
