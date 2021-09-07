@@ -58,6 +58,7 @@ namespace Beamable.Server.Editor.DockerCommands
          var command = $"{DockerCmd} run --rm " +
                           $"-P " +
                           $"-p {DebugPort}:2222  " +
+                          $"-p 9696:9696  " +
                           $"--env CID={Cid} " +
                           $"--env PID={pid} " +
                           $"--env SECRET=\"{Secret}\" " +

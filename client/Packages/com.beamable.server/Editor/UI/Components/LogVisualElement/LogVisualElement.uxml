@@ -38,7 +38,7 @@
                 <engine:VisualElement name="logListRoot"/>
                 <engine:VisualElement name ="detailWindow">
                     <engine:ScrollView>
-                        <engine:Label/>
+                        <engine:TextField/>
                     </engine:ScrollView>
                 </engine:VisualElement>
             </engine:VisualElement>

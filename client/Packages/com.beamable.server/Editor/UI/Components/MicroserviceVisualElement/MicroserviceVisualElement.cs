@@ -47,7 +47,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             }
         }
 
-        private TextField _nameTextField;
+        private Label _nameTextField;
         private string _nameBackup;
         // private List<LogMessageModel> testLogList;
         private Label _statusLabel;
@@ -80,6 +80,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             _loadingBar.Hidden = true;
             _loadingBar.Refresh();
             Root.Q("mainVisualElement").Add(_loadingBar);
+            Root.Q("microserviceNewTitle")?.RemoveFromHierarchy();
             _loadingBar.PlaceBehind(Root.Q("SubTitle"));
 
             Model.OnBuildAndStart -= SetupProgressBarForBuildAndStart;
@@ -97,21 +98,8 @@ namespace Beamable.Editor.Microservice.UI.Components
             Microservices.onBeforeDeploy -= SetupProgressBarForDeployment;
             Microservices.onBeforeDeploy += SetupProgressBarForDeployment;
 
-            RegisterCallback<MouseDownEvent>(OnMouseDownEvent,
-                TrickleDown.TrickleDown);
-
-            _nameTextField = Root.Q<TextField>("microserviceTitle");
-            _nameTextField.SetEnabled(false);
-            _nameTextField.SetValueWithoutNotify(Model.Name);
-
-            _nameTextField.RegisterCallback<FocusEvent>(NameLabel_OnFocus,
-                TrickleDown.TrickleDown);
-            _nameTextField.RegisterCallback<BlurEvent>(NameLabel_OnBlur,
-                TrickleDown.TrickleDown);
-            _nameTextField.RegisterCallback<KeyDownEvent>(NameLabel_OnKeydown,
-                TrickleDown.TrickleDown);
-            _nameTextField.RegisterCallback<KeyUpEvent>(NameLabel_OnKeyup,
-                TrickleDown.TrickleDown);
+            _nameTextField = Root.Q<Label>("microserviceTitle");
+            _nameTextField.text = Model.Name;
 
             _buildDropDown = Root.Q<Button>("buildDropDown");
             var buildDropDownIcon = _buildDropDown.Q<Image>();
@@ -279,98 +267,8 @@ namespace Beamable.Editor.Microservice.UI.Components
             _logContainerElement.Add(_logElement);
             _logElement.Refresh();
         }
-
-         public void RenameGestureBegin()
-         {
-             _nameBackup = _nameTextField.value;
-             _nameTextField.SetEnabled(true);
-             _nameTextField.BeamableFocus();
-          }
-
-
-          private void NameLabel_OnFocus(FocusEvent evt)
-          {
-             _nameTextField.SelectAll();
-          }
-
-          private void NameLabel_OnKeydown(KeyDownEvent evt)
-          {
-             evt.StopPropagation();
-             switch (evt.keyCode)
-             {
-                case KeyCode.Escape:
-                   CancelName();
-                   break;
-                case KeyCode.Return:
-                   CommitName();
-                   break;
-             }
-          }
-
-          private void NameLabel_OnKeyup(KeyUpEvent evt)
-          {
-             CheckName();
-          }
-
-          private void NameLabel_OnBlur(BlurEvent evt)
-          {
-             CommitName();
-          }
-
-          private void CommitName()
-          {
-             //if (string.Equals(_nameBackup, _nameTextField.value)) return;
-
-             _nameTextField.SelectRange(0, 0);
-             _nameTextField.SetEnabled(false);
-             //Invokes internal event
-             try
-             {
-                 //TODO: Assign text field value to model title name
-                // ContentItemDescriptor.Name = _nameTextField.value;
-             }
-             catch(Exception ex)
-             {
-                Debug.LogWarning($"Cannot assign name. message=[{ex.Message}]");
-                CancelName();
-             }
-             finally
-             {
-                _nameTextField.Blur();
-             }
-          }
-
-          private void CancelName()
-          {
-             _nameTextField.SetValueWithoutNotify(_nameBackup);
-             _nameTextField.Blur();
-          }
-
-          public void CheckName()
-          {
-             var name = _nameTextField.value;
-             // TODO: Handle naming exceptions
-             // var content = ContentItemDescriptor?.GetContent();
-             // if (content != null && ContentNameValidationException.HasNameValidationErrors(content, name, out var errors))
-             // {
-             //    foreach (var error in errors)
-             //    {
-             //       var replaceWith = error.InvalidChar == ' ' ? "_" : "";
-             //       name = name.Replace(error.InvalidChar.ToString(), replaceWith);
-             //    }
-             // }
-
-             _nameTextField.value = name;
-          }
-
-          private void OnMouseDownEvent(MouseDownEvent evt)
-          {
-              //Double click
-              if (evt.clickCount == 2)
-              {
-                  RenameGestureBegin();
-              }
-          }
+          
+          
         private void UpdateRemoteStatusIcon()
         {
             _remoteStatusIcon.ClearClassList();

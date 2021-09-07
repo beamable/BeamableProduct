@@ -10,8 +10,8 @@
         <engine:VisualElement name="logHeader">
             <engine:VisualElement class="leftArea">
                 <beamable:BeamableCheckboxVisualElement name="checkbox"/>
-                <engine:TextField name="microserviceTitle" class="title" text="ANGIE'S TEST"/>
-                <!--                <engine:Label class="title" name="microserviceTitle" text="ANGIE'S TEST"/>-->
+                <engine:TextField name="microserviceNewTitle" class="title" text="ANGIE'S TEST"/>
+                <engine:Label class="title" name="microserviceTitle" text="ANGIE'S TEST" />
             </engine:VisualElement>
             <engine:VisualElement class="rightArea">
                 <engine:VisualElement name="remoteStatusIcon"/>
@@ -42,6 +42,9 @@
                 <engine:Label text="Build" name="buildLabel"/>
                 <engine:Image name="dropDown"/>
             </engine:Button>
+<!--            <engine:Button name="buildDropDownIcon">-->
+<!--                <engine:Image name="dropDown"/>-->
+<!--            </engine:Button>    -->
         </engine:VisualElement>
 
     </engine:VisualElement>

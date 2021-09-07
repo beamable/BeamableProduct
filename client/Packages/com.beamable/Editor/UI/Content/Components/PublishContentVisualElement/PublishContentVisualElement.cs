@@ -109,61 +109,67 @@ namespace Beamable.Editor.Content.Components
             }
 
             _messageLabel = Root.Q<Label>("message");
-            _messageLabel.text = ContentManagerConstants.PublishMessageLoading;
+            _messageLabel.visible = false;
 
             var loadingBlocker = Root.Q<LoadingIndicatorVisualElement>();
 
 
-            var overrideCountElem = Root.Q<CountVisualElement>("overrideCount");
-            var addCountElem = Root.Q<CountVisualElement>("addInCount");
-            var deleteCountElem = Root.Q<CountVisualElement>("deleted");
+             var overrideCountElem = Root.Q<CountVisualElement>("overrideCount");
+             var addCountElem = Root.Q<CountVisualElement>("addInCount");
+             var deleteCountElem = Root.Q<CountVisualElement>("deleted");
 
-            var addFoldoutElem = Root.Q<Foldout>("addFoldout");
-            addFoldoutElem.text = "Additions";
-            var addSource = new List<ContentDownloadEntryDescriptor>();
-            var addList = new ListView
-            {
-                itemHeight = 24,
-                itemsSource = addSource,
-                makeItem = MakeElement,
-                bindItem = CreateBinder(addSource)
-            };
+             var addFoldoutElem = Root.Q<Foldout>("addFoldout");
+             addFoldoutElem.text = "Additions";
+             var addSource = new List<ContentDownloadEntryDescriptor>();
+             var addList = new ListView
+             {
+                 itemHeight = 24,
+                 itemsSource = addSource,
+                 makeItem = MakeElement,
+                 bindItem = CreateBinder(addSource)
+             };
 
-            addFoldoutElem.contentContainer.Add(addList);
+             addFoldoutElem.contentContainer.Add(addList);
 
-            var modifyFoldoutElem = Root.Q<Foldout>("modifyFoldout");
-            modifyFoldoutElem.text = "Modifications";
-            var modifySource = new List<ContentDownloadEntryDescriptor>();
-            var modifyList = new ListView
-            {
-                itemHeight = 24,
-                itemsSource = modifySource,
-                makeItem = MakeElement,
-                bindItem = CreateBinder(modifySource)
-            };
-            modifyFoldoutElem.contentContainer.Add(modifyList);
-
-
-            var deleteFoldoutElem = Root.Q<Foldout>("deleteFoldout");
-            deleteFoldoutElem.text = "Deletions";
-            var deleteSource = new List<ContentDownloadEntryDescriptor>();
-            var deleteList = new ListView
-            {
-                itemHeight = 24,
-                itemsSource = deleteSource,
-                makeItem = MakeElement,
-                bindItem = CreateBinder(deleteSource)
-            };
-            deleteFoldoutElem.contentContainer.Add(deleteList);
-
-            var cancelBtn = Root.Q<Button>("cancelBtn");
-            cancelBtn.clickable.clicked += CancelButton_OnClicked;
+             var modifyFoldoutElem = Root.Q<Foldout>("modifyFoldout");
+             modifyFoldoutElem.text = "Modifications";
+             var modifySource = new List<ContentDownloadEntryDescriptor>();
+             var modifyList = new ListView
+             {
+                 itemHeight = 24,
+                 itemsSource = modifySource,
+                 makeItem = MakeElement,
+                 bindItem = CreateBinder(modifySource)
+             };
+             modifyFoldoutElem.contentContainer.Add(modifyList);
 
 
+             var deleteFoldoutElem = Root.Q<Foldout>("deleteFoldout");
+             deleteFoldoutElem.text = "Deletions";
+             var deleteSource = new List<ContentDownloadEntryDescriptor>();
+             var deleteList = new ListView
+             {
+                 itemHeight = 24,
+                 itemsSource = deleteSource,
+                 makeItem = MakeElement,
+                 bindItem = CreateBinder(deleteSource)
+             };
+             deleteFoldoutElem.contentContainer.Add(deleteList);
 
+             var cancelBtn = Root.Q<Button>("cancelBtn");
+             cancelBtn.clickable.clicked += CancelButton_OnClicked;
+
+             var summaryContainer = Root.Q<VisualElement>("summaryContainer");
+             var publishPreviewContainer = Root.Q<VisualElement>("publishPreviewContainer");
+             summaryContainer.visible = false;
+             publishPreviewContainer.visible = false;
+             
             var promise = PublishSet.Then(publishSet =>
             {
 //                loadingViewContainer.AddToClassList("hide");
+
+                summaryContainer.visible = true;
+                publishPreviewContainer.visible = true;
 
                 SetPublishMessage();
                 
@@ -261,8 +267,8 @@ namespace Beamable.Editor.Content.Components
 
 
             });
-            loadingBlocker.SetPromise(promise, mainContent).SetText(ContentManagerConstants.PublishMessageLoading);
 
+            loadingBlocker.SetPromise(promise, mainContent).SetText(ContentManagerConstants.PublishMessageLoading);
         }
 
         private void DetailButton_OnClicked()
@@ -386,6 +392,7 @@ namespace Beamable.Editor.Content.Components
         {
             EditorAPI.Instance.Then(api =>
             {
+                _messageLabel.visible = true;
                 _messageLabel.AddTextWrapStyle();
                 _messageLabel.text = string.Format(ContentManagerConstants.PublishMessagePreview,
                     api.Realm.DisplayName, ContentConfiguration.Instance.EditorManifestID);

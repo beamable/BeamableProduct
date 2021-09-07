@@ -49,6 +49,6 @@ LogVisualElement > TemplateContainer> #mainVisualElement{
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/debug.png");
 }
 #dropDown{
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown Close.png");
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/dropdown_border.png");
 }
 

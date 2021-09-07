@@ -1,7 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Inventory;
-using UnityEngine;
 
 namespace Beamable.Api.Inventory
 {
@@ -35,8 +34,6 @@ namespace Beamable.Api.Inventory
 
       protected override void OnRefresh(InventoryResponse data)
       {
-         Debug.Log("inventory refresh " + GetType().Name);
-
          data.MergeView(view);
          foreach (var scope in data.GetNotifyScopes())
          {

@@ -10,14 +10,6 @@ namespace Beamable.Platform.Tests.Inventory
       public const string CONTENT = "inventoryTestItem";
       public const string FULL_CONTENT_ID = "items." + CONTENT;
       public int Foo;
-
-      public static InventoryTestItem New(string name, int foo)
-      {
-         var instance = InventoryTestItem.CreateInstance<InventoryTestItem>();
-         instance.name = name;
-         instance.Foo = foo;
-         return instance;
-      }
    }
 
    [System.Serializable]

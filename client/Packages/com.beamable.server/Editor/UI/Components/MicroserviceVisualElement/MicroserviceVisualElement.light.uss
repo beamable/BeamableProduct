@@ -40,7 +40,7 @@
 }
 
 #dropDown{
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown Close Dark.png");
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/dropdown_border_dark.png");
 }
 
 #moreBtn{

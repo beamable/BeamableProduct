@@ -393,20 +393,15 @@ namespace Beamable.Api
       public string message;
    }
 
-   public class PlatformRequesterException : Exception, IRequestErrorWithStatus
-   {
+   public class PlatformRequesterException : RequesterException
+    {
       public PlatformError Error { get; }
       public UnityWebRequest Request { get; }
-      public long Status => Request.responseCode;
       public PlatformRequesterException(PlatformError error, UnityWebRequest request, string responsePayload)
-      : base(GenerateMessage(request, responsePayload))
+      : base("HTTP Error", request.method, request.url, request.responseCode, responsePayload)
       {
          Error = error;
          Request = request;
-      }
-      static string GenerateMessage(UnityWebRequest request, string responsePayload)
-      {
-         return $"HTTP Error. method=[{request.method}] uri=[{request.uri}] code=[{request.responseCode}] payload=[{responsePayload}]";
       }
    }
     public class NoConnectivityException : Exception
