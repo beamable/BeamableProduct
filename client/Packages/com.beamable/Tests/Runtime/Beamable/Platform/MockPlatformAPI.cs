@@ -228,6 +228,7 @@ namespace Beamable.Platform.Tests
 
 		public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null, bool useCache = false)
 		{
+			Debug.Log("Mock Request to " + uri);
 			// XXX this won't support multiple calls to the same route with different bodies.
 			var route = _routes.FirstOrDefault(r => r.MatchesRequest<T>(method, uri, AccessToken?.Token, body, includeAuthHeader));
 
@@ -237,6 +238,8 @@ namespace Beamable.Platform.Tests
 			}
 			else
 			{
+				Debug.Log(
+					$"No route mock available for call. method=[{method}] uri=[{uri}] ");
 				throw new Exception($"No route mock available for call. method=[{method}] uri=[{uri}] includeAuth=[{includeAuthHeader}] body=[{JsonUtility.ToJson(body)}] type=[{typeof(T)}]");
 			}
 		}
