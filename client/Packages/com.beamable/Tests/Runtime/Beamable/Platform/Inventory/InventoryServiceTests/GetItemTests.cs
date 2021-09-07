@@ -1,8 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
+using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Inventory;
+using Beamable.Content;
+using Beamable.Coroutines;
+using Beamable.Service;
 using NUnit.Framework;
+using UnityEngine;
 using UnityEngine.TestTools;
 
 namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
@@ -10,8 +15,38 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
    public class GetItemTests : InventoryServiceTestBase
    {
       [UnityTest]
+      public IEnumerator DebugTest_PromiseSequestion()
+      {
+         var p = new Promise<int>();
+         var p2 = Promise.Sequence(Promise<int>.Successful(1), Promise<int>.Successful(2), p);
+
+         p.CompleteSuccess(3);
+         yield return p2.AsYield();
+
+         Assert.IsTrue(p2.IsCompleted);
+      }
+      //
+      // [UnityTest]
+      // public IEnumerator DebugTest_GetCurrent()
+      // {
+      //
+      // }
+      void EnableCI()
+      {
+         GameObject coroutineServiceGo = new GameObject();
+         var coroutineService = MonoBehaviourServiceContainer<CoroutineService>.CreateComponent(coroutineServiceGo);
+         ServiceManager.Provide(coroutineService);
+         ServiceManager.ProvideWithDefaultContainer(new ContentParameterProvider
+         {
+            manifestID = "global"
+         });
+         ServiceManager.AllowInTests();
+         ContentService.AllowInTests();
+      }
+      [UnityTest]
       public IEnumerator GetItemGroupSubset()
       {
+         EnableCI();
          // mock out a piece of content.
          var contentName = "test";
          _content.Provide(InventoryTestItem.New("junk", 1).SetContentName("junk"));
