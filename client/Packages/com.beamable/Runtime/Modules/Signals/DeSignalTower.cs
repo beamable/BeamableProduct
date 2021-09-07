@@ -10,8 +10,7 @@ namespace Beamable.Signals
       private static Dictionary<Type, List<DeSignalTower>> _all = new Dictionary<Type,List<DeSignalTower>>();
       public bool Diagnostic;
 
-
-      protected void OnEnable()
+      private void OnEnable()
       {
          // register to the knick-knacks.
          var selfType = GetType();
@@ -26,7 +25,7 @@ namespace Beamable.Signals
          OnAfterEnable();
       }
 
-      protected void OnDisable()
+      private void OnDisable()
       {
          var selfType = GetType();
 

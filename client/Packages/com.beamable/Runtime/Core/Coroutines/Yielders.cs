@@ -12,7 +12,8 @@ namespace Beamable.Coroutines
       public static WaitForEndOfFrame EndOfFrame => Application.isBatchMode ? null : _endOfFrame;
 
       static WaitForFixedUpdate _fixedUpdate = new WaitForFixedUpdate();
-  
+      public static WaitForFixedUpdate FixedUpdate => _fixedUpdate;
+
       public static WaitForSeconds Seconds(float seconds){
          if(!_timeInterval.ContainsKey(seconds))
             _timeInterval.Add(seconds, new WaitForSeconds(seconds));

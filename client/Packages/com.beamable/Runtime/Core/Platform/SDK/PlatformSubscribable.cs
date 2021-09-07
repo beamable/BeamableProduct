@@ -15,7 +15,7 @@ using UnityEngine;
 namespace Beamable.Api
 {
    // put constants in a separate class so that they are shared across generic params
-
+   
    /// <summary>
    /// This type defines the constants of %Subscribables.
    ///
@@ -25,7 +25,7 @@ namespace Beamable.Api
    /// - See Beamable.API script reference
    ///
    /// ![img beamable-logo]
-   ///
+   /// 
    /// </summary>
    internal static class SubscribableConsts
    {
@@ -41,7 +41,7 @@ namespace Beamable.Api
    /// - See Beamable.API script reference
    ///
    /// ![img beamable-logo]
-   ///
+   /// 
    /// </summary>
    /// <typeparam name="TPlatformSubscriber"></typeparam>
    /// <typeparam name="ScopedRsp"></typeparam>
@@ -54,7 +54,7 @@ namespace Beamable.Api
       /// </summary>
       TPlatformSubscriber Subscribable { get; }
    }
-
+   
    public interface IHasPlatformSubscribers<TPlatformSubscriber, ScopedRsp, Data>
       where TPlatformSubscriber : PlatformSubscribable<ScopedRsp, Data>
    {
@@ -166,10 +166,6 @@ namespace Beamable.Api
             // Refresh if this is the first subscription ever
             if (subscriptions.Count == 1)
                Refresh(scope);
-            else
-            {
-               Debug.LogWarning("A subscription has gone silent. " + subscriptions.Count + " " + scope + " " + this.GetType().Name);
-            }
          }
 
          return subscription;
@@ -224,7 +220,6 @@ namespace Beamable.Api
          if (nextRefreshPromise == null)
          {
             nextRefreshPromise = new Promise<Unit>();
-            Debug.Log("Starting refresh exectuion");
             ServiceManager.Resolve<CoroutineService>().StartCoroutine(ExecuteRefresh());
          }
 
@@ -233,11 +228,7 @@ namespace Beamable.Api
 
       private IEnumerator ExecuteRefresh()
       {
-         Debug.Log("executing refresh " + GetType().Name);
-
-         yield return Yielders.EndOfFrame; // <-- this line is breaking everything. Its never coming back.
-         Debug.Log("executing refresh2 " + GetType().Name);
-
+         yield return Yielders.EndOfFrame;
          var promise = nextRefreshPromise;
          nextRefreshPromise = null;
          var scope = string.Join(",", nextRefreshScopes);
@@ -245,8 +236,6 @@ namespace Beamable.Api
 
          ExecuteRequest(requester, CreateRefreshUrl(scope)).Error(err =>
          {
-            Debug.Log("executing refresh3 error " + GetType().Name + " " + err.Message);
-
             var delay = SubscribableConsts.RETRY_DELAYS[Math.Min(retry, SubscribableConsts.RETRY_DELAYS.Length - 1)];
             PlatformLogger.Log($"PLATFORM SUBSCRIBABLE: Error {service}:{scope}:{err}; Retry {retry + 1} in {delay}");
             promise.CompleteError(err);

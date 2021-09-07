@@ -16,7 +16,7 @@ namespace Beamable.Editor.UI.Components
 
     internal class SplitterVisualElement : ImmediateModeElement
     {
-        const int kDefaultSplitSize = 30;
+        const int kDefaultSplitSize = 10;
         public int splitSize = kDefaultSplitSize;
         public Action<List<float>> OnFlexChanged;
 
@@ -120,21 +120,17 @@ namespace Beamable.Editor.UI.Components
                     float relativeMousePosition;
                     if (isVertical)
                     {
-                        float minHeight = visualElement.resolvedStyle.minHeight == StyleKeyword.Auto ? 0 : visualElement.resolvedStyle.minHeight.value;
-                        float nextMinHeight = nextVisualElement.resolvedStyle.minHeight == StyleKeyword.Auto ? 0 : nextVisualElement.resolvedStyle.minHeight.value;
-                        float availableHeight = visualElement.layout.height + nextVisualElement.layout.height - minHeight - nextMinHeight;
+                        float availableHeight = visualElement.layout.height + nextVisualElement.layout.height;
                         float maxHeight = visualElement.resolvedStyle.maxHeight.value <= 0 ? availableHeight : visualElement.resolvedStyle.maxHeight.value;
 
-                        relativeMousePosition = (Math.Min(e.localMousePosition.y, visualElement.layout.yMin + maxHeight) - visualElement.layout.yMin - minHeight) / availableHeight;
+                        relativeMousePosition = (Math.Min(e.localMousePosition.y, visualElement.layout.yMin + maxHeight) - visualElement.layout.yMin) / availableHeight;
                     }
                     else
                     {
-                        float minWidth = visualElement.resolvedStyle.minWidth == StyleKeyword.Auto ? 0 : visualElement.resolvedStyle.minWidth.value;
-                        float nextMinWidth = nextVisualElement.resolvedStyle.minWidth == StyleKeyword.Auto ? 0 : nextVisualElement.resolvedStyle.minWidth.value;
-                        float availableWidth = visualElement.layout.width + nextVisualElement.layout.width - minWidth - nextMinWidth;
+                        float availableWidth = visualElement.layout.width + nextVisualElement.layout.width;
                         float maxWidth = visualElement.resolvedStyle.maxWidth.value <= 0 ? availableWidth : visualElement.resolvedStyle.maxWidth.value;
 
-                        relativeMousePosition = (Math.Min(e.localMousePosition.x, visualElement.layout.xMin + maxWidth) - visualElement.layout.xMin - minWidth) / availableWidth;
+                        relativeMousePosition = (Math.Min(e.localMousePosition.x, visualElement.layout.xMin + maxWidth) - visualElement.layout.xMin) / availableWidth;
                     }
 
                     relativeMousePosition = Math.Max(0.0f, Math.Min(0.999f, relativeMousePosition));

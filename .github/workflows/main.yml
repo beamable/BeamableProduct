@@ -3,36 +3,36 @@ name: Test
 on: [push, pull_request]
 
 jobs:
-  # testMicroserviceBaseImage:
-  #   runs-on: ubuntu-latest
-  #   strategy:
-  #     matrix:
-  #       dotnet-version: ['5.0.x' ]
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
-  #       uses: actions/setup-dotnet@v1.7.2
-  #       with:
-  #         dotnet-version: ${{ matrix.dotnet-version }}
-  #     - uses: actions/cache@v2
-  #       with:
-  #         path: ~/.nuget/packages
-  #         # Look to see if there is a cache hit for the corresponding requirements file
-  #         key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
-  #         restore-keys: |
-  #           ${{ runner.os }}-nuget
-  #     - name: Install dependencies
-  #       run: dotnet restore microservice/microserviceTests
-  #     - name: Build
-  #       run: dotnet build --configuration Release --no-restore microservice/microserviceTests
-  #     - name: Test
-  #       uses: zyborg/dotnet-tests-report@v1
-  #       with:
-  #         set_check_status_from_test_outcome: true
-  #         project_path: microservice/microserviceTests
-  #         report_name: Microservice_base_image_tests
-  #         report_title: Microservice Base Image Tests
-  #         github_token: ${{ secrets.GITHUB_TOKEN }}
+  testMicroserviceBaseImage:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dotnet-version: ['5.0.x' ]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v1.7.2
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+      - uses: actions/cache@v2
+        with:
+          path: ~/.nuget/packages
+          # Look to see if there is a cache hit for the corresponding requirements file
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget
+      - name: Install dependencies
+        run: dotnet restore microservice/microserviceTests
+      - name: Build
+        run: dotnet build --configuration Release --no-restore microservice/microserviceTests
+      - name: Test
+        uses: zyborg/dotnet-tests-report@v1
+        with:
+          set_check_status_from_test_outcome: true
+          project_path: microservice/microserviceTests
+          report_name: Microservice_base_image_tests
+          report_title: Microservice Base Image Tests
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
   testAllModes:
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
@@ -44,7 +44,7 @@ jobs:
           - client
         testMode:
           - playmode
-          # - editmode
+          - editmode
         unityVersion:
           - 2018.4.18f1
     steps:

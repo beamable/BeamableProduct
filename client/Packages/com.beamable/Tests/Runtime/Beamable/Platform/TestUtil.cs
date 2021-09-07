@@ -11,9 +11,9 @@ namespace Beamable.Platform.Tests
 {
    public static class TestUtil
    {
-      public static WaitForPromise<T> AsYield<T>(this Promise<T> arg, float timeout=.2f)
+      public static WaitForPromise AsYield(this PromiseBase arg, float timeout=.2f)
       {
-         return new WaitForPromise<T>(arg, timeout);
+         return new WaitForPromise(arg, timeout);
       }
 
       public static string GetField(this WWWForm form, string field)
@@ -32,17 +32,15 @@ namespace Beamable.Platform.Tests
       }
    }
 
-   public class WaitForPromise<T> : CustomYieldInstruction
+   public class WaitForPromise : CustomYieldInstruction
    {
-      private readonly Promise<T> _promise;
+      private readonly PromiseBase _promise;
       private float _murderAt;
-      private long tickCounter = 0;
-      private long tickLimit;
 
-      public WaitForPromise(Promise<T> promise, float timeOut=.2f)
+      public WaitForPromise(PromiseBase promise, float timeOut=.2f)
       {
          _promise = promise;
-         tickLimit = (long)(timeOut * 10000);
+
          _murderAt = Time.realtimeSinceStartup + timeOut;
       }
 
@@ -50,18 +48,12 @@ namespace Beamable.Platform.Tests
       {
          get
          {
-            if (_promise.IsCompleted)
+            if (Time.realtimeSinceStartup > _murderAt)
             {
+               Debug.LogError("Yielded timeout");
                return false;
             }
-
-            tickCounter++;
-
-            if (tickCounter <= tickLimit) return true;
-
-            Debug.LogError("Yielded timeout");
-            _promise.CompleteError(new Exception("The WaitForPromise timed out after " + tickLimit + " ticks.") );
-            return false;
+            return !_promise.IsCompleted;
          }
       }
    }

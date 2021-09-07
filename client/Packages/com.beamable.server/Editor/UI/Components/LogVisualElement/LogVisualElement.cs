@@ -17,8 +17,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
     public class LogVisualElement : MicroserviceComponent
     {
-        const string RmbWillCopyTextToClipboard = "RMB will copy text to clipboard";
-        
         private Button _buildDropDown;
         private Button _advanceDropDown;
 
@@ -61,7 +59,8 @@ namespace Beamable.Editor.Microservice.UI.Components
         private Button _startButton;
         private ScrollView _scrollView;
         private VisualElement _detailView;
-        private Label _detailLabel;
+        private VisualElement _logWindowBody;
+        private TextField _detailLabel;
         private int _scrollBlocker;
         private Label _infoCountLbl;
         private Label _warningCountLbl;
@@ -78,8 +77,8 @@ namespace Beamable.Editor.Microservice.UI.Components
         {
             base.OnDestroy();
             if(Model == null) return;
-            Model.Logs.OnMessagesUpdated -= OnMessages_Updated;
-            Model.Logs.OnMessagesUpdated -= OnMessages_Updated;
+            Model.Logs.OnMessagesUpdated -= HandleMessagesUpdated;
+            Model.Logs.OnMessagesUpdated -= HandleMessagesUpdated;
             Model.Logs.OnViewFilterChanged -= LogsOnOnViewFilterChanged;
         }
 
@@ -88,7 +87,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             base.Refresh();
             NoModel = Model == null;
             var clearButton = Root.Q<Button>("clear");
-            clearButton.clickable.clicked += OnClearButton_Clicked;
+            clearButton.clickable.clicked += HandleClearButtonClicked;
 
             _advanceDropDown = Root.Q<Button>("advanceBtn");
             if (!NoModel)
@@ -106,7 +105,6 @@ namespace Beamable.Editor.Microservice.UI.Components
             _warningCountLbl = Root.Q<Label>("warningCount");
             _errorCountLbl = Root.Q<Label>("errorCount");
             _debugCountLbl = Root.Q<Label>("debugCount");
-            UpdateCounts();
 
             if(!NoModel)
             {
@@ -130,22 +128,21 @@ namespace Beamable.Editor.Microservice.UI.Components
             _logListRoot.Add(_listView);
 
             _detailView = Root.Q<VisualElement>("detailWindow");
-            _detailView.tooltip = RmbWillCopyTextToClipboard;
-            _detailLabel = _detailView.Q<Label>();
+            _detailLabel = _detailView.Q<TextField>();
+            _detailLabel.multiline = true;
+            _detailLabel.AddTextWrapStyle();
+
 #if UNITY_2019_1_OR_NEWER
-            _detailLabel.style.whiteSpace = new StyleEnum<WhiteSpace>(WhiteSpace.Normal);
+            _detailLabel.isReadOnly = true;
 #elif UNITY_2018
-            _detailLabel.style.wordWrap = true;
+            _detailLabel.OnValueChanged(evt => UpdateSelectedMessageText());
 #endif
 
-            var detailManipulator = new ContextualMenuManipulator(HandleDetailLogClicked);
-            detailManipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.RightMouse});
-            _detailView.AddManipulator(detailManipulator);
-
-            var splitRoot = Root.Q<VisualElement>("logWindowBody");
-            splitRoot.Remove(_detailView);
-            splitRoot.Remove(_logListRoot);
-            splitRoot.AddSplitPane(_logListRoot, _detailView);
+            _logWindowBody = Root.Q<VisualElement>("logWindowBody");
+            _logWindowBody.Remove(_detailView);
+            _logWindowBody.Remove(_logListRoot);
+            _logWindowBody.AddSplitPane(_logListRoot, _detailView);
+            _logWindowBody.SetEnabled(Model.Logs.FilteredMessages.Count > 0);
 
             _scrollView = _listView.Q<ScrollView>();
             _scrollView.AddToClassList("logScroller");
@@ -163,25 +160,20 @@ namespace Beamable.Editor.Microservice.UI.Components
                     _scrollView.MarkDirtyRepaint();
                 };
 
-                Model.Logs.OnMessagesUpdated -= OnMessages_Updated;
-                Model.Logs.OnMessagesUpdated += OnMessages_Updated;
+                Model.Logs.OnMessagesUpdated -= HandleMessagesUpdated;
+                Model.Logs.OnMessagesUpdated += HandleMessagesUpdated;
 
-                Model.Logs.OnSelectedMessageChanged -= LogsOnOnSelectedMessageChanged;
-                Model.Logs.OnSelectedMessageChanged += LogsOnOnSelectedMessageChanged;
+                Model.Logs.OnSelectedMessageChanged -= UpdateSelectedMessageText;
+                Model.Logs.OnSelectedMessageChanged += UpdateSelectedMessageText;
 
                 Model.Logs.OnViewFilterChanged -= LogsOnOnViewFilterChanged;
                 Model.Logs.OnViewFilterChanged += LogsOnOnViewFilterChanged;
 
                 LogsOnOnViewFilterChanged();
-                LogsOnOnSelectedMessageChanged();
+                UpdateSelectedMessageText();
             }
             _listView.Refresh();
-        }
-
-        private void HandleDetailLogClicked(ContextualMenuPopulateEvent e)
-        {
-            Debug.Log($"Copied to clipboard: {_detailLabel.text}");
-            EditorGUIUtility.systemCopyBuffer = _detailLabel.text;
+            UpdateCounts();
         }
 
         private void OnPopoutButton_Clicked()
@@ -198,30 +190,30 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         private void LogsOnOnViewFilterChanged()
         {
-            const string ACTIVE = "active";
-            _debugViewBtn.RemoveFromClassList(ACTIVE);
-            _infoViewBtn.RemoveFromClassList(ACTIVE);
-            _errorViewBtn.RemoveFromClassList(ACTIVE);
-            _warningViewBtn.RemoveFromClassList(ACTIVE);
-            if (Model.Logs.ViewDebugEnabled) _debugViewBtn.AddToClassList(ACTIVE);
-            if (Model.Logs.ViewInfoEnabled) _infoViewBtn.AddToClassList(ACTIVE);
-            if (Model.Logs.ViewWarningEnabled) _warningViewBtn.AddToClassList(ACTIVE);
-            if (Model.Logs.ViewErrorEnabled) _errorViewBtn.AddToClassList(ACTIVE);
-        }
-
-        private void LogsOnOnSelectedMessageChanged()
-        {
-            if (Model.Logs.Selected == null)
+            void UpdateFilterButton(VisualElement el, bool active)
             {
-                _detailLabel.text = string.Empty;
-                return;
+                const string ACTIVE = "active";
+                if (active)
+                    el.AddToClassList(ACTIVE);
+                else
+                    el.RemoveFromClassList(ACTIVE);
             }
 
-            var detailText = $"{Model.Logs.Selected.Message}\n{Model.Logs.Selected.ParameterText}";
-            _detailLabel.text = detailText;
+            UpdateFilterButton(_debugViewBtn, Model.Logs.ViewDebugEnabled);
+            UpdateFilterButton(_infoViewBtn, Model.Logs.ViewInfoEnabled);
+            UpdateFilterButton(_warningViewBtn, Model.Logs.ViewWarningEnabled);
+            UpdateFilterButton(_errorViewBtn, Model.Logs.ViewErrorEnabled);
         }
 
-        private void OnClearButton_Clicked()
+        private void UpdateSelectedMessageText()
+        {
+            var detailText = Model.Logs.Selected == null
+                ? string.Empty
+                : $"{Model.Logs.Selected.Message}\n{Model.Logs.Selected.ParameterText}";
+            _detailLabel.SetValueWithoutNotify(detailText);
+        }
+
+        private void HandleClearButtonClicked()
         {
             Model.Logs.Clear();
 
@@ -233,11 +225,12 @@ namespace Beamable.Editor.Microservice.UI.Components
             };
         }
 
-        private void OnMessages_Updated()
+        private void HandleMessagesUpdated()
         {
             _listView.Refresh();
             _listView.MarkDirtyRepaint();
 
+            _logWindowBody.SetEnabled(Model.Logs.FilteredMessages.Count > 0);
             UpdateCounts();
             MaybeScrollToBottom();
         }

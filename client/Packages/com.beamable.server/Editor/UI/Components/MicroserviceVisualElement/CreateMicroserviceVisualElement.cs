@@ -63,8 +63,10 @@ namespace Beamable.Editor.Microservice.UI.Components
             _microservicesNames = Microservices.Descriptors.Select(descriptor => descriptor.Name).ToList();
             RegisterCallback<MouseDownEvent>(OnMouseDownEvent,
                 TrickleDown.TrickleDown);
+            
+            Root.Q("microserviceTitle")?.RemoveFromHierarchy();
 
-            _nameTextField = Root.Q<TextField>("microserviceTitle");
+            _nameTextField = Root.Q<TextField>("microserviceNewTitle");
             _nameTextField.SetValueWithoutNotify(_newMicroserviceName);
 
             _nameTextField.RegisterCallback<FocusEvent>(NameLabel_OnFocus,

@@ -199,17 +199,22 @@ ScrollView #ContentView.content-view{
     border-top-width: 1px;
     border-right-width: 1px;
     padding: 2px;
+    cursor: resize-vertical;
 }
 #detailWindow ScrollView #ContentView.content-view {
     flex-grow: 1;
 }
-#detailWindow Label {
+#detailWindow TextField {
     margin-bottom: 0px;
     margin-left: 0px;
     margin-right: 0px;
-    margin-top: 0px;
+    margin-top: 3px;
     -unity-text-align: upper-left;
     background-image: none;
+    background-color: rgba(0,0,0,0);
+    border-color: rgba(0,0,0,0);
+}
+#detailWindow TextField TextInput {
     background-color: rgba(0,0,0,0);
     border-color: rgba(0,0,0,0);
 }

@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Snyk testing for microservices.
 
+### Changed
+- Error structure and paradigm common to Microservices and Unity Client
+
 ### Fixed
 - Visual Studio code debug configuration source maps are now correct
 

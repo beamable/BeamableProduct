@@ -1,15 +1,16 @@
 using System;
 using System.Collections.Generic;
+using Beamable.Common.Api;
 
 namespace Beamable.Server
 {
-   public class MicroserviceException : Exception
+   public class MicroserviceException : RequesterException
    {
       public int ResponseStatus { get; set; }
       public string Error { get; set; }
       public new string Message { get; set; }
 
-      public MicroserviceException(int responseStatus, string error, string message) : base($"Service error. status=[{responseStatus}] error=[{error}] message=[{message}] ")
+      public MicroserviceException(int responseStatus, string error, string message) : base("Service Error", error, string.Empty, responseStatus, message )
       {
          ResponseStatus = responseStatus;
          Error = error;

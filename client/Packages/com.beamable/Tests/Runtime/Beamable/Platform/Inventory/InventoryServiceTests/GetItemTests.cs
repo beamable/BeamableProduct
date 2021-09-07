@@ -1,13 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
-using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Inventory;
-using Beamable.Content;
-using Beamable.Coroutines;
-using Beamable.Service;
 using NUnit.Framework;
-using UnityEngine;
 using UnityEngine.TestTools;
 
 namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
@@ -15,65 +10,13 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
    public class GetItemTests : InventoryServiceTestBase
    {
       [UnityTest]
-      public IEnumerator DebugTest_PromiseSequestion()
-      {
-         var p = new Promise<int>();
-         var p2 = Promise.Sequence(Promise<int>.Successful(1), Promise<int>.Successful(2), p);
-
-         p.CompleteSuccess(3);
-         yield return p2.AsYield();
-
-         Assert.IsTrue(p2.IsCompleted);
-      }
-
-      void EnableCI()
-      {
-         GameObject coroutineServiceGo = new GameObject();
-         var coroutineService = MonoBehaviourServiceContainer<CoroutineService>.CreateComponent(coroutineServiceGo);
-         ServiceManager.Provide(coroutineService);
-         ServiceManager.ProvideWithDefaultContainer(new ContentParameterProvider
-         {
-            manifestID = "global"
-         });
-         ServiceManager.AllowInTests();
-         ContentService.AllowInTests();
-      }
-
-
-      [UnityTest]
       public IEnumerator GetItemGroupSubset()
       {
-         Debug.Log("Testing stuff in GetItemGroupSubset");
-         #if UNITY_EDITOR
-         Debug.Log("The Unity Editor Flag exists");
-         #else
-         Debug.Log("The Unity Editor flag is absent")
-         #endif
-
-         var srv = ServiceManager.ResolveIfAvailable<CoroutineService>();
-
-         IEnumerator Sub()
-         {
-            Debug.Log("1");
-            yield return null;
-            Debug.Log("2");
-
-
-            Debug.Log("3");
-            yield return Yielders.EndOfFrame;
-            Debug.Log("4");
-
-         }
-
-         srv.StartCoroutine(Sub());
-
-         Debug.Log("Service manager is available? " + (srv?.ToString() ?? "nope"));
-
          // mock out a piece of content.
          var contentName = "test";
-         _content.Provide(InventoryTestItem.New("junk", 1).SetContentName("junk"));
-         _content.Provide(InventoryTestItem.New(contentName, 123).SetContentName(contentName));
-         _content.Provide(InventoryTestItem.New("rando", 2).SetContentName("rando"));
+         _content.Provide(new InventoryTestItem {name = "junk", Foo = 1}.SetContentName("junk"));
+         _content.Provide(new InventoryTestItem {name = contentName, Foo = 123}.SetContentName(contentName));
+         _content.Provide(new InventoryTestItem {name = "rando", Foo = 2}.SetContentName("rando"));
 
          // Mock out a network request that get an item. This semi defines the web API itself.
          _requester
