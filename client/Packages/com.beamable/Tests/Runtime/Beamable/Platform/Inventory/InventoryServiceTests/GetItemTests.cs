@@ -25,12 +25,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
 
          Assert.IsTrue(p2.IsCompleted);
       }
-      //
-      // [UnityTest]
-      // public IEnumerator DebugTest_GetCurrent()
-      // {
-      //
-      // }
+
       void EnableCI()
       {
          GameObject coroutineServiceGo = new GameObject();
@@ -46,7 +41,6 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
       [UnityTest]
       public IEnumerator GetItemGroupSubset()
       {
-         EnableCI();
          // mock out a piece of content.
          var contentName = "test";
          _content.Provide(InventoryTestItem.New("junk", 1).SetContentName("junk"));

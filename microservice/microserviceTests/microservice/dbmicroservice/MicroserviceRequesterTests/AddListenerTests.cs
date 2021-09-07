@@ -11,7 +11,7 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
    [TestFixture]
    public class AddListenerTests
    {
-      [Test, Timeout(5000)]
+      [Test]
       [NonParallelizable]
       public async Task MultiThreadedAccess()
       {
