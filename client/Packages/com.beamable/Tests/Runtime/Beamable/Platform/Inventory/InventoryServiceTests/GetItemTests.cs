@@ -38,6 +38,8 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
          ServiceManager.AllowInTests();
          ContentService.AllowInTests();
       }
+
+
       [UnityTest]
       public IEnumerator GetItemGroupSubset()
       {
@@ -49,6 +51,16 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
          #endif
 
          var srv = ServiceManager.ResolveIfAvailable<CoroutineService>();
+
+         IEnumerator Sub()
+         {
+            Debug.Log("1");
+            yield return null;
+            Debug.Log("2");
+
+         }
+
+         srv.StartCoroutine(Sub());
          Debug.Log("Service manager is available? " + (srv?.ToString() ?? "nope"));
 
          // mock out a piece of content.
