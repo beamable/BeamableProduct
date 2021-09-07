@@ -42,7 +42,7 @@ namespace Beamable.Platform.Tests
       public WaitForPromise(Promise<T> promise, float timeOut=.2f)
       {
          _promise = promise;
-         tickLimit = long.MaxValue - 1;
+         tickLimit = (long)(timeOut * 10000);
          _murderAt = Time.realtimeSinceStartup + timeOut;
       }
 
