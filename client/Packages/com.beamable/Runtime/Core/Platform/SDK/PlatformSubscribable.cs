@@ -235,7 +235,7 @@ namespace Beamable.Api
       {
          Debug.Log("executing refresh " + GetType().Name);
 
-         yield return Yielders.EndOfFrame;
+         yield return Yielders.EndOfFrame; // <-- this line is breaking everything. Its never coming back.
          Debug.Log("executing refresh2 " + GetType().Name);
 
          var promise = nextRefreshPromise;
