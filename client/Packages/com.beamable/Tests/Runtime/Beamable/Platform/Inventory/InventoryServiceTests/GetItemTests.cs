@@ -41,6 +41,16 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
       [UnityTest]
       public IEnumerator GetItemGroupSubset()
       {
+         Debug.Log("Testing stuff in GetItemGroupSubset");
+         #if UNITY_EDITOR
+         Debug.Log("The Unity Editor Flag exists");
+         #else
+         Debug.Log("The Unity Editor flag is absent")
+         #endif
+
+         var srv = ServiceManager.ResolveIfAvailable<CoroutineService>();
+         Debug.Log("Service manager is available? " + (srv?.ToString() ?? "nope"));
+
          // mock out a piece of content.
          var contentName = "test";
          _content.Provide(InventoryTestItem.New("junk", 1).SetContentName("junk"));
