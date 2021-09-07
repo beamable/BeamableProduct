@@ -1136,7 +1136,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          var dbid = 123;
          var fakeEmail = "fake@example.com";
          var nonceDelay = 10;
-         var authDelay = 20;
+         var authDelay = 100;
          var ms = new BeamableMicroService(new TestSocketProvider(socket =>
          {
             testSocket = socket;
@@ -1175,7 +1175,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          Assert.IsTrue(ms.HasInitialized);
 
          testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 1, 0, dbid));
-         await Task.Delay(nonceDelay + 1); // simulate a bit of time, while the original auth message is out...
+         await Task.Delay(nonceDelay + 10); // simulate a bit of time, while the original auth message is out...
          testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 2, 0, dbid));
 
          await ms.OnShutdown(this, null);
