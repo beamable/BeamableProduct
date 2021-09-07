@@ -30,8 +30,8 @@ jobs:
         with:
           set_check_status_from_test_outcome: true
           project_path: microservice/microserviceTests
-          report_name: my_project_tests
-          report_title: My Project Tests
+          report_name: Microservice_base_image_tests
+          report_title: Microservice Base Image Tests
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
   testAllModes:

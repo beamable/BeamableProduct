@@ -12,7 +12,6 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
    {
       public static AccountManagementSignals PrepareForTesting(this AccountManagementSignals signaler, GameObject gob, Action<LoadingArg> loadingSetter)
       {
-         signaler.ForceEnabled();
          AccountManagementSignals.SetPending(null, null);
          signaler.Loading = new LoadingEvent();
 
