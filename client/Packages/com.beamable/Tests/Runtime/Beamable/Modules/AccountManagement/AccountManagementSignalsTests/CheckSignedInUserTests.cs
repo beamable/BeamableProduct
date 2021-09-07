@@ -126,7 +126,6 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
       [UnityTest]
       public IEnumerator WhenUserHasNoCredentials_SignalsAnonymousUser()
       {
-         yield return new WaitForEndOfFrame();
          var listenerCalled = false;
          _engineUser.email = "";
          _engineUser.thirdPartyAppAssociations?.Clear();

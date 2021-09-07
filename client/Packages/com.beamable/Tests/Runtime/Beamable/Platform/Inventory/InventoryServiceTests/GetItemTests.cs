@@ -58,9 +58,16 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
             yield return null;
             Debug.Log("2");
 
+            yield return new WaitForEndOfFrame();
+
+            Debug.Log("3");
+            yield return Yielders.EndOfFrame;
+            Debug.Log("4");
+
          }
 
          srv.StartCoroutine(Sub());
+         
          Debug.Log("Service manager is available? " + (srv?.ToString() ?? "nope"));
 
          // mock out a piece of content.
