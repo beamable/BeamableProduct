@@ -68,3 +68,33 @@ LogVisualElement > TemplateContainer> #mainVisualElement{
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/dropdown_border.png");
 }
 
+
+.localBuilding {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/local Building L.png");
+}
+
+.localRunning {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Running L.png");
+}
+
+.localStopped{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Stopped L.png");
+}
+
+.remoteRunning{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Running L.png");
+}
+.remoteStopped{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Stopped L.png");
+}
+
+.different{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/different L.png");
+}
+
+.remoteDeploying{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Deploying L.png");
+}
+.remoteDisabled{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Disable L.png");
+}

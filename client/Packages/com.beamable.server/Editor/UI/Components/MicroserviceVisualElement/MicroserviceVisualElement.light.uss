@@ -60,3 +60,33 @@
     border-bottom-width: 0px;
     border-left-width: 0px;
 }
+
+.localBuilding {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/local Building D.png");
+}
+
+.localRunning {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Running D.png");
+}
+
+.localStopped{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Stopped D.png");
+}
+
+.remoteRunning{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Running D.png");
+}
+.remoteStopped{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Stopped D.png");
+}
+
+.different{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/different D.png");
+}
+
+.remoteDeploying{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Deploying D.png");
+}
+.remoteDisabled{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Disable D.png");
+}
