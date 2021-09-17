@@ -84,28 +84,30 @@ namespace Beamable.Editor.Toolbox.UI
 
             // Refresh if/when the user logs-in or logs-out while this window is open
             EditorAPI.Instance.Then(de => { de.OnUserChange += _ => Refresh(); });
-
-            BeamablePackages.BeamablePackageUpdateMeta.OnPackageUpdated += ShowAnnouncementAfterPackageUpdate;
-            BeamablePackages.IsPackageUpdated().Then(isUpdated =>
-            {
-                if (isUpdated && BeamablePackages.BeamablePackageUpdateMeta.IsBlogSiteAvailable &&
-                    !BeamablePackages.BeamablePackageUpdateMeta.IsBlogVisited &&
-                    !EditorPrefs.GetBool(BeamableEditorPrefsConstants.IS_PACKAGE_WHATSNEW_ANNOUNCEMENT_IGNORED, true))
-                {
-                    ShowAnnouncementAfterPackageUpdate();
-                }
-            });
-            
             // Force refresh to build the initial window
             Refresh();
+            
+            CheckAnnouncements();
+            CheckForDeps();
             CheckForUpdate();
         }
-
         private void OnDisable()
         {
-            BeamablePackages.BeamablePackageUpdateMeta.OnPackageUpdated -= ShowAnnouncementAfterPackageUpdate;
+            BeamablePackageUpdateMeta.OnPackageUpdated -= ShowWhatsNewAnnouncement;
         }
-
+        private void CheckAnnouncements()
+        {
+            BeamablePackageUpdateMeta.OnPackageUpdated += ShowWhatsNewAnnouncement;
+            BeamablePackages.IsPackageUpdated().Then(isUpdated =>
+            {
+                if (isUpdated && BeamablePackageUpdateMeta.IsBlogSiteAvailable &&
+                    !BeamablePackageUpdateMeta.IsBlogVisited &&
+                    !EditorPrefs.GetBool(BeamableEditorPrefsConstants.IS_PACKAGE_WHATSNEW_ANNOUNCEMENT_IGNORED, true))
+                {
+                    ShowWhatsNewAnnouncement();
+                }
+            });
+        }
         private async void Refresh()
         {
             if (Instance != null)
@@ -127,7 +129,6 @@ namespace Beamable.Editor.Toolbox.UI
                 SetForLogin();
             }
         }
-
         private void SetForLogin()
         {
             var root = this.GetRootVisualContainer();
@@ -135,7 +136,6 @@ namespace Beamable.Editor.Toolbox.UI
             var noUserVisualElement = new NoUserVisualElement();
             root.Add(noUserVisualElement);
         }
-
         private void SetForContent()
         {
             var root = this.GetRootVisualContainer();
@@ -169,138 +169,139 @@ namespace Beamable.Editor.Toolbox.UI
                 Debug.Log("Show info");
                 Application.OpenURL(BeamableConstants.URL_TOOL_WINDOW_TOOLBOX);
             };
-
+            
             CheckForDeps();
         }
-
         private void AnnouncementList_OnHeightChanged(float height)
         {
             // TODO: animate the height...
             _contentListVisualElement?.style.SetTop(65 + height);
         }
-
         private void CheckForDeps()
         {
-            EditorAPI.Instance.Then(b =>
+            if (_model.IsSpecificAnnouncementCurrentlyDisplaying(typeof(WelcomeAnnouncementModel)))
             {
-                if (b.HasDependencies()) return;
+                return;
+            }
 
-                var descElement = new VisualElement();
-                descElement.Add(new Label("Welcome to Beamable! This package includes official Unity assets")
-                    .AddTextWrapStyle());
-                var tmpProButton = new Button(() =>
-                    Application.OpenURL("https://docs.unity3d.com/Manual/com.unity.textmeshpro.html"))
+            EditorAPI.Instance.Then(api =>
+            {
+                if (api.HasDependencies())
                 {
-                    text = "TextMeshPro"
-                };
-                tmpProButton.AddToClassList("noBackground");
-                tmpProButton.AddToClassList("announcementButton");
+                    return;
+                }
 
-                descElement.Add(tmpProButton);
+                var descriptionElement = new VisualElement();
+                descriptionElement.AddToClassList("announcement-descriptionSection");
+                
+                var label = new Label("Welcome to Beamable! This package includes official Unity assets");
+                label.AddToClassList("noMarginNoPaddingNoBorder");
+                label.AddToClassList("announcement-text");
+                label.AddTextWrapStyle();
+                descriptionElement.Add(label);
 
-                descElement.Add(new Label("and").AddTextWrapStyle());
-                var addressablesButton = new Button(() =>
-                    Application.OpenURL("https://docs.unity3d.com/Manual/com.unity.addressables.html"))
+                var button = new Button(() => Application.OpenURL("https://docs.unity3d.com/Manual/com.unity.textmeshpro.html"));
+                button.text = "TextMeshPro";
+                button.AddToClassList("noMarginNoPaddingNoBorder");
+                button.AddToClassList("announcement-hiddenButton");
+                descriptionElement.Add(button);
+                
+                label = new Label("and");
+                label.AddToClassList("noMarginNoPaddingNoBorder");
+                label.AddToClassList("announcement-text");
+                label.AddTextWrapStyle();
+                descriptionElement.Add(label);
+                
+                button = new Button(() => Application.OpenURL("https://docs.unity3d.com/Manual/com.unity.addressables.html"));
+                button.text = "Addressables";
+                button.AddToClassList("noMarginNoPaddingNoBorder");
+                button.AddToClassList("announcement-hiddenButton");
+                descriptionElement.Add(button);
+                
+                label = new Label("in order to provide UI prefabs you can easily drag & drop into your game. To complete the installation, we must add them to your project now.");
+                label.AddToClassList("noMarginNoPaddingNoBorder");
+                label.AddToClassList("announcement-text");
+                label.AddTextWrapStyle();
+                descriptionElement.Add(label);
+                
+                var welcomeAnnouncement = new WelcomeAnnouncementModel();
+                welcomeAnnouncement.DescriptionElement = descriptionElement;
+                
+                welcomeAnnouncement.OnImport = () =>
                 {
-                    text = "Addressables"
+                    api.CreateDependencies().Then(_ => { _model.RemoveAnnouncement(welcomeAnnouncement); });
                 };
-                addressablesButton.AddToClassList("noBackground");
-                addressablesButton.AddToClassList("announcementButton");
-
-                descElement.Add(addressablesButton);
-                descElement.Add(
-                    new Label(
-                            "in order to provide UI prefabs you can easily drag & drop into your game. To complete the installation, we must add them to your project now.")
-                        .AddTextWrapStyle());
-
-                var depAnnouncement = new AnnouncementModel
-                {
-                    CustomIcon =
-                        AssetDatabase.LoadAssetAtPath<Texture2D>(
-                            "Packages/com.beamable/Editor/UI/Common/Icons/welcome.png"),
-                    TitleElement = new Label("Beamable + TextMeshPro + Addressables = ♥"),
-                    Status = ToolboxAnnouncementStatus.INFO,
-                    ActionText = "Import Assets",
-                    DescriptionElement = descElement
-                };
-                depAnnouncement.Action = () =>
-                {
-                    b.CreateDependencies().Then(_ => { _model.RemoveAnnouncement(depAnnouncement); });
-                };
-                _model.AddAnnouncement(depAnnouncement);
+                _model.AddAnnouncement(welcomeAnnouncement);
             });
         }
-
         private void CheckForUpdate()
         {
             BeamablePackages.IsPackageUpdated().Then(isUpdated =>
             {
-                if (isUpdated || BeamablePackages.BeamablePackageUpdateMeta.IsInstallationIgnored)
+                if (isUpdated || BeamablePackageUpdateMeta.IsInstallationIgnored)
                 {
                     return;
                 }
-
-                if (EditorPrefs.GetBool(BeamableEditorPrefsConstants.IS_PACKAGE_UPDATE_IGNORED, false))
+                if (EditorPrefs.GetBool(BeamableEditorPrefsConstants.IS_PACKAGE_UPDATE_IGNORED))
                 {
-                    BeamablePackages.BeamablePackageUpdateMeta.IsInstallationIgnored = true;
+                    BeamablePackageUpdateMeta.IsInstallationIgnored = true;
                     return;
                 }
-
-                var updateAvailableAnnouncement = new UpdateAvailableAnnouncementModel
-                {
-                    TitleElement = new Label("New package update is available!").AddTextWrapStyle(),
-                    DescriptionElement = new VisualElement(),
-                    Status = ToolboxAnnouncementStatus.INFO,
-                };
-
-                if (BeamablePackages.BeamablePackageUpdateMeta.IsBlogSiteAvailable)
-                {
-                    updateAvailableAnnouncement.OnWhatsNew = () =>
-                    {
-                        Application.OpenURL(BeamableWebRequester.BlogSpotUrl);
-                        BeamablePackages.BeamablePackageUpdateMeta.IsBlogVisited = true;
-                    };
-                }
-
-                updateAvailableAnnouncement.OnIgnore = () =>
-                {
-                    BeamablePackages.BeamablePackageUpdateMeta.IsInstallationIgnored = true;
-                    EditorPrefs.SetBool(BeamableEditorPrefsConstants.IS_PACKAGE_UPDATE_IGNORED, true);
-                    _model.RemoveAnnouncement(updateAvailableAnnouncement);
-                };
-
-                updateAvailableAnnouncement.OnInstall = () => BeamablePackages.UpdatePackage().Then(_ =>
-                {
-                    _model.RemoveAnnouncement(updateAvailableAnnouncement);
-                    if (!BeamablePackages.BeamablePackageUpdateMeta.IsBlogVisited &&
-                        BeamablePackages.BeamablePackageUpdateMeta.IsBlogSiteAvailable)
-                    {
-                        ShowAnnouncementAfterPackageUpdate();
-                    }
-                });
-
-                _model.AddAnnouncement(updateAvailableAnnouncement);
+                ShowUpdateAvailableAnnouncement();
             });
         }
-
-        private void ShowAnnouncementAfterPackageUpdate()
+        private void ShowUpdateAvailableAnnouncement()
         {
-            if (_model.Announcements.Any(x => x is UpdateAvailableAnnouncementModel))
+            if (_model.IsSpecificAnnouncementCurrentlyDisplaying(typeof(UpdateAvailableAnnouncementModel)))
             {
                 return;
             }
             
-            var whatsNewAnnouncement = new WhatsNewAnnouncementModel
+            BeamablePackageUpdateMeta.IsBlogSiteAvailable = BeamableWebRequester.IsBlogSpotAvailable(BeamablePackageUpdateMeta.NewestVersionNumber);
+            var updateAvailableAnnouncement = new UpdateAvailableAnnouncementModel();
+            updateAvailableAnnouncement.SetPackageVersion(BeamablePackageUpdateMeta.NewestVersionNumber);
+
+            if (BeamablePackageUpdateMeta.IsBlogSiteAvailable)
             {
-                TitleElement = new Label("View the related blog post!").AddTextWrapStyle(),
-                DescriptionElement = new VisualElement(),
-                Status = ToolboxAnnouncementStatus.INFO,
+                updateAvailableAnnouncement.OnWhatsNew = () =>
+                {
+                    Application.OpenURL(BeamableWebRequester.BlogSpotUrl);
+                    BeamablePackageUpdateMeta.IsBlogVisited = true;
+                };
+            }
+
+            updateAvailableAnnouncement.OnIgnore = () =>
+            {
+                BeamablePackageUpdateMeta.IsInstallationIgnored = true;
+                EditorPrefs.SetBool(BeamableEditorPrefsConstants.IS_PACKAGE_UPDATE_IGNORED, true);
+                _model.RemoveAnnouncement(updateAvailableAnnouncement);
             };
+
+            updateAvailableAnnouncement.OnInstall = () => BeamablePackages.UpdatePackage().Then(_ =>
+            {
+                _model.RemoveAnnouncement(updateAvailableAnnouncement);
+                if (!BeamablePackageUpdateMeta.IsBlogVisited &&
+                    BeamablePackageUpdateMeta.IsBlogSiteAvailable)
+                {
+                    ShowWhatsNewAnnouncement();
+                }
+            });
+
+            _model.AddAnnouncement(updateAvailableAnnouncement);
+        }
+        private void ShowWhatsNewAnnouncement()
+        {
+            if (_model.IsSpecificAnnouncementCurrentlyDisplaying(typeof(WhatsNewAnnouncementModel)))
+            {
+                return;
+            }
+            
+            var whatsNewAnnouncement = new WhatsNewAnnouncementModel();
 
             whatsNewAnnouncement.OnWhatsNew = () =>
             {
                 Application.OpenURL(BeamableWebRequester.BlogSpotUrl);
-                BeamablePackages.BeamablePackageUpdateMeta.IsBlogVisited = true;
+                BeamablePackageUpdateMeta.IsBlogVisited = true;
                 _model.RemoveAnnouncement(whatsNewAnnouncement);
             };
             whatsNewAnnouncement.OnIgnore = () =>

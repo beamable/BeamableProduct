@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Beamable.Common;
-using Beamable.Platform.SDK;
-using Beamable.Editor;
 using UnityEditor;
 
 namespace Beamable.Server.Editor.DockerCommands
@@ -79,21 +77,19 @@ namespace Beamable.Server.Editor.DockerCommands
 
       protected override void HandleOnExit()
       {
+         void Callback()
+         {
+            base.HandleOnExit();
+            Resolve();
+         }
+
          if (_context == null)
          {
-            EditorApplication.delayCall += () =>
-            {
-               base.HandleOnExit();
-               Resolve();
-            };
+            EditorApplication.delayCall += Callback;
          }
          else
          {
-            _context.RunOnMainThread(() =>
-            {
-               base.HandleOnExit();
-               Resolve();
-            });
+            _context.RunOnMainThread(Callback);
          }
 
          _finished = true;

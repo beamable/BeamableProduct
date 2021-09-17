@@ -138,7 +138,7 @@ namespace Beamable.Server.Editor
 
       void CaptureLogs()
       {
-         #if !BEAMABLE_NEWMS
+         #if BEAMABLE_LEGACY_MSW
          _logProcess?.Kill();
          _logProcess = new FollowLogCommand(ServiceDescriptor);
          _logProcess.OnExit += i => { };

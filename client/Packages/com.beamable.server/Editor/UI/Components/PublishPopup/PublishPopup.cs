@@ -1,7 +1,11 @@
 using System.Collections.Generic;
 using System;
+using System.Linq;
 using Beamable.Editor.UI.Components;
+using Beamable.Editor.UI.Model;
+using Beamable.Server.Editor;
 using Beamable.Server.Editor.UI.Components;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -40,8 +44,20 @@ namespace Beamable.Editor.Microservice.UI.Components
         public Action OnCloseRequested;
         public Action<ManifestModel> OnSubmit;
 
+        private TextField _generalComments;
+        private Button _cancelButton;
+        private PrimaryButtonVisualElement _continueButton;
+        private ScrollView _scrollContainer;
+        private List<PublishManifestEntryVisualElement> _publishManifestElements;
+
         public PublishPopup() : base(nameof(PublishPopup))
         {
+        }
+
+        public void PrepareParent()
+        {
+            parent.name = "PublishWindowContainer";
+            parent.AddStyleSheet(USSPath);
         }
 
         public override void Refresh()
@@ -51,22 +67,54 @@ namespace Beamable.Editor.Microservice.UI.Components
             if (Model?.Services == null)
                 return;
             
-            var container = Root.Q<VisualElement>("manifestElementsContainer");
+            _scrollContainer = Root.Q<ScrollView>("manifestsContainer");
+            _publishManifestElements = new List<PublishManifestEntryVisualElement>(Model.Services.Count);
+            
             foreach (var kvp in Model.Services)
             {
                 var newElement = new PublishManifestEntryVisualElement {Model = kvp.Value};
                 newElement.Refresh();
-                container.Add(newElement);
+                _publishManifestElements.Add(newElement);
+                _scrollContainer.Add(newElement);
             }
 
-            var generalComments = Root.Q<TextField>("largeCommentsArea");
-            generalComments.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
+            _generalComments = Root.Q<TextField>("largeCommentsArea");
+            _generalComments.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
 
-            var cancelButton = Root.Q<Button>("cancelBtn");
-            cancelButton.clickable.clicked += () => OnCloseRequested?.Invoke();
+            _cancelButton = Root.Q<Button>("cancelBtn");
+            _cancelButton.clickable.clicked += () => OnCloseRequested?.Invoke();
 
-            var continueButton = Root.Q<PrimaryButtonVisualElement>("continueBtn");
-            continueButton.Button.clickable.clicked += () => OnSubmit?.Invoke(Model); 
+            _continueButton = Root.Q<PrimaryButtonVisualElement>("continueBtn");
+            _continueButton.Button.clickable.clicked += () => OnSubmit?.Invoke(Model);
+        }
+
+        public void PrepareForPublish()
+        {
+            Root.Q<VisualElement>("header").RemoveFromHierarchy();
+            _generalComments.RemoveFromHierarchy();
+            _continueButton.RemoveFromHierarchy();
+            _cancelButton.RemoveFromHierarchy();
+            for (int i = 0; i < _publishManifestElements.Count; i++)
+                _publishManifestElements[i].RemoveFromHierarchy();
+            _publishManifestElements.Clear();
+
+            
+            foreach (var kvp in Model.Services)
+            {
+                
+                var microserviceModel = MicroservicesDataModel.Instance.GetModelForName(kvp.Value.ServiceName);
+
+                if (microserviceModel == null)
+                {
+                    Debug.LogError($"Cannot find model: {microserviceModel}");
+                    continue;
+                }
+                
+                var newElement = new LoadingBarElement();
+                newElement.Refresh();
+                _scrollContainer.Add(newElement);
+                new DeployMSLogParser(newElement, microserviceModel, true);
+            }
         }
     }
 }

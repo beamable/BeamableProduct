@@ -57,8 +57,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         public void SetNewModel(LogMessage model)
         {
+            var text = model.Message.Split('\n');
             _model = model;
-            _description.text = model.Message;
+            _description.text = text.Length > 0 ? text[0] : model.Message;
             _time.text = model.Timestamp.ToString("HH:mm:ss");
             SetIcon();
 

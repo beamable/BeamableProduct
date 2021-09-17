@@ -20,3 +20,12 @@
     left: 0px;
 
 }
+
+ToolboxBreadcrumbsVisualElement {
+    height: 30px;
+    min-height: 30px;
+}
+ToolboxActionBarVisualElement {
+    height: 35px;
+    min-height: 35px;
+}

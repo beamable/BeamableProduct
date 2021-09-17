@@ -28,7 +28,7 @@ namespace Beamable.Server.Editor.DockerCommands
          IncludeDebugTools = includeDebugTools;
          ImageName = descriptor.ImageName;
          BuildPath = descriptor.BuildPath;
-         UnityLogLabel = $"Docker Build {descriptor.Name}";
+         UnityLogLabel = "[BUILD]";
          ReadyForExecution = new Promise<Unit>();
          // copy the cs files from the source path to the build path
          // build the Program file, and place it in the temp dir.

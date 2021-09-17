@@ -1,0 +1,19 @@
+﻿/* === BEGIN - ANNOUNCEMENTS === */
+.announcement-main {
+    border-color: #14280B;
+    background-color: #51574A;
+}
+
+.announcement-main * {
+    color: #FFFFFF;
+}
+
+.announcement-buttons {
+    background-color: #565656;
+    border-color: #7A7A7A;
+}
+
+.announcement-hiddenButton {
+    color: #A3A3A3;
+}
+/* === END - ANNOUNCEMENTS === */

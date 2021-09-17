@@ -92,7 +92,7 @@ namespace Beamable.Server.Editor.DockerCommands
             var objsToString = string.Join("\n", objs.Select(kvp => $"{kvp.Key}={Json.Serialize(kvp.Value, new StringBuilder())}"));
 
             // report the log message to the right bucket.
-            #if BEAMABLE_NEWMS
+            #if !BEAMABLE_LEGACY_MSW
             var logMessage = new LogMessage
             {
                Message = message,
@@ -117,7 +117,7 @@ namespace Beamable.Server.Editor.DockerCommands
             return true;
          } else
          {
-#if BEAMABLE_NEWMS
+#if !BEAMABLE_LEGACY_MSW
             var logMessage = new LogMessage
             {
                Message = $"{label}: {data}",

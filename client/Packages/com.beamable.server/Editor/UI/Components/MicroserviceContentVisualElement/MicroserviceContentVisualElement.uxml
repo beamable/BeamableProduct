@@ -9,7 +9,7 @@
     <engine:VisualElement name="mainVisualElement">
     <engine:VisualElement name="announcementList">
     </engine:VisualElement>
-
+        <beamable:MicroserviceActionPrompt name="actionPrompt"/>
         <engine:ScrollView>
             <engine:VisualElement name="listRoot">
             </engine:VisualElement>

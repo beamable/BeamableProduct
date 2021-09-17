@@ -35,6 +35,10 @@
     border-color: #000000;
 }
 
+.squareBtn.active {
+    background-color: #666666;
+}
+
 #debug .img{
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/debug_Gray.png");
 }

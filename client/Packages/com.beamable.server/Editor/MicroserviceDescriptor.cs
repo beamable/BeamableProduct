@@ -1,14 +1,21 @@
 using System;
 using System.IO;
+using UnityEngine;
 
 namespace Beamable.Server.Editor
 {
-   [System.Serializable]
+   [Serializable]
    public class MicroserviceDescriptor
    {
       public const string ASSEMBLY_FOLDER_NAME = "_assemblyReferences";
 
-      public string Name { get; set; }
+      [SerializeField]
+      private string _name;
+      public string Name
+      {
+         get => _name;
+         set => _name = value;
+      }
       public string AttributePath { get; set; }
       public Type Type { get; set; }
 

@@ -5,7 +5,6 @@ Label{
     height: 15px;
     min-width: 15px;
     min-height: 15px;
-    background-color: #6C6C6C;
     -unity-text-align: middle-center;
 }
 

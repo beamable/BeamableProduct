@@ -35,7 +35,6 @@ namespace Beamable.Tests.Runtime
 
       protected virtual void OnSetupBeamable()
       {
-
          // maybe do something to the beamable instance?
       }
    }

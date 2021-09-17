@@ -53,14 +53,15 @@ namespace Beamable.Editor.UI.Model
         public Action OnLogsAttached;
         public Action<bool> OnLogsAttachmentChanged;
         public Action<bool> OnSelectionChanged;
+        public Action OnSortChanged;
 
         public event Action<Task> OnBuildAndRestart;
         public event Action<Task> OnBuildAndStart;
         public event Action<Task> OnBuild;
-        public event Action<Task> OnStart;
+        public event Action<Task> OnStart; // TODO: Currently it exposes us a moment of starting process and not exact moment when MS has started. Maybe rename it in future and add a proper one?? Luke
         public event Action<Task> OnStop;
         public event Action<Promise<Unit>> OnDockerLoginRequired;
-        public Action<float> OnDeployProgress;
+        public Action<float, long, long> OnDeployProgress;
 
         private bool _isSelected;
 
@@ -152,7 +153,7 @@ namespace Beamable.Editor.UI.Model
         public void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
         {
             var existsOnRemote = RemoteStatus?.serviceName?.Length > 0;
-            var hasImageSuffix = Builder.HasImage ? string.Empty : " (Build first)";
+            var hasImageSuffix = Builder.HasBuildDirectory ? string.Empty : " (Build first)";
             var localCategory = IsRunning ? "Local" : "Local (not running)";
             var remoteCategory = existsOnRemote ? "Cloud" : "Cloud (not deployed)";
             var debugToolsSuffix = IncludeDebugTools ? string.Empty : " (Debug tools disabled)";
@@ -160,7 +161,7 @@ namespace Beamable.Editor.UI.Model
             {
                 var full = Path.GetFullPath(Descriptor.BuildPath);
                 EditorUtility.RevealInFinder(full);
-            }, Builder.HasImage);
+            }, Builder.HasBuildDirectory);
 
             evt.menu.BeamableAppendAction($"Run Snyk Tests{hasImageSuffix}", pos => RunSnykTests(), Builder.HasImage);
 
@@ -171,6 +172,21 @@ namespace Beamable.Editor.UI.Model
             evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => {OpenOnRemote("metrics");}, existsOnRemote);
             evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => {OpenOnRemote("logs");}, existsOnRemote);
             evt.menu.BeamableAppendAction($"Visual Studio Code/Copy Debug Configuration{debugToolsSuffix}", pos => { CopyVSCodeDebugTool(); }, IncludeDebugTools);
+            if (MicroserviceConfiguration.Instance.Microservices.Count > 1) {
+                evt.menu.BeamableAppendAction($"Order/Move Up", pos => {
+                    MicroserviceConfiguration.Instance.MoveMicroserviceIndex(Name, -1);
+                    OnSortChanged?.Invoke();
+                }, MicroserviceConfiguration.Instance.GetMicroserviceIndex(Name) > 0);
+                evt.menu.BeamableAppendAction($"Order/Move Down", pos => {
+                    MicroserviceConfiguration.Instance.MoveMicroserviceIndex(Name, 1);
+                    OnSortChanged?.Invoke();
+                }, MicroserviceConfiguration.Instance.GetMicroserviceIndex(Name) < MicroserviceConfiguration.Instance.Microservices.Count - 1);
+            }
+
+            if (!AreLogsAttached)
+            {
+                evt.menu.BeamableAppendAction($"Reattach Logs", pos => AttachLogs());
+            }
         }
 
         private void RunSnykTests()

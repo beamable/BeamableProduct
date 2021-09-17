@@ -21,7 +21,7 @@
       public class DebugWindow : CommandRunnerWindow
       {
 
-          #if !BEAMABLE_NEWMS
+          #if BEAMABLE_LEGACY_MSW
          [MenuItem(
            BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
            BeamableConstants.OPEN + " " +

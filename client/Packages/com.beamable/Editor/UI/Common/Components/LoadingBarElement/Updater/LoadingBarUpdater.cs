@@ -1,8 +1,9 @@
-﻿using Beamable.Common;
+﻿using System;
+using Beamable.Common;
 
 namespace Beamable.Editor.UI.Components {
     public abstract class LoadingBarUpdater {
-        protected ILoadingBar _loadingBar;
+        public ILoadingBar LoadingBar { get; protected set; }
         public int Step { get; protected set; }
         public int TotalSteps { get; protected set; }
         public bool Killed { get; private set; }
@@ -12,15 +13,18 @@ namespace Beamable.Editor.UI.Components {
         public virtual string StepText => $"{Step}/{TotalSteps}";
         public abstract string ProcessName { get; }
 
+        public event Action OnKilledEvent;
+
         public LoadingBarUpdater(ILoadingBar loadingBar) {
-            _loadingBar = loadingBar;
-            _loadingBar.SetUpdater(this);
+            LoadingBar = loadingBar;
+            LoadingBar.SetUpdater(this);
         }
-        
+
         public void Kill() {
             if (Killed) return;
             Killed = true;
             OnKill();
+            OnKilledEvent?.Invoke();
         }
 
         protected abstract void OnKill();

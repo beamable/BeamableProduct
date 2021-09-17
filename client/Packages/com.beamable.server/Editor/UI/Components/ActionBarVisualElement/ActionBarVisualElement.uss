@@ -27,11 +27,12 @@
     margin-right: 0px;
     margin-top: 0px;
     margin-bottom: 0px;
-    border-left-width: 1px;
+    border-left-width: 0px;
     border-right-width: 1px;
     border-top-width: 0px;
-    border-bottom-width: 1px;
+    border-bottom-width: 0px;
     cursor: pan;
+    border-radius: 0px;
 }
 .buttonText{
     font-size: 9px;
@@ -80,16 +81,16 @@
     margin-top: 0px;
     margin-bottom: 0px;
     border-left-width: 1px;
-    border-right-width: 1px;
-    border-top-width: 1px;
-    border-bottom-width: 1px;
+    border-right-width: 0px;
+    border-top-width: 0px;
+    border-bottom-width: 0px;
     padding-left: 0px;
     padding-right: 0px;
     padding-top: 0px;
     padding-bottom: 0px;
     background-image: none;
     cursor: pan;
-    
+    border-radius: 0px;
 }
 #refreshIcon {
     top: 4px;

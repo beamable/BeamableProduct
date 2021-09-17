@@ -23,34 +23,20 @@ namespace Beamable.Editor.Toolbox.Components
       {
          base.Refresh();
          
-         var titleLabel = Root.Q<VisualElement>("title");
-         var descLabel = Root.Q<VisualElement>("desc");
+         var titleLabel = Root.Q<Label>("announcement-title");
+         titleLabel.text = WhatsNewAnnouncementModel.TitleLabelText;
+         titleLabel.AddTextWrapStyle();
          
-         var ignoreButton = Root.Q<Button>("ignore");
-         var whatsnewButton = Root.Q<Button>("whatsnew");
-
-         titleLabel.Add(WhatsNewAnnouncementModel.TitleElement);
-         descLabel.Add(WhatsNewAnnouncementModel.DescriptionElement);
+         var descriptionLabel = Root.Q<Label>("announcement-description");
+         descriptionLabel.text = WhatsNewAnnouncementModel.DescriptionLabelText;
+         descriptionLabel.AddTextWrapStyle();
          
-         ignoreButton.text = WhatsNewAnnouncementModel.IgnoreActionText;
-         whatsnewButton.text = WhatsNewAnnouncementModel.WhatsNewActionText;
-
+         var ignoreButton = Root.Q<Button>("announcement-ignore");
          ignoreButton.clickable.clicked += () => WhatsNewAnnouncementModel.OnIgnore?.Invoke();
-         whatsnewButton.clickable.clicked += () => WhatsNewAnnouncementModel.OnWhatsNew?.Invoke();
 
-         switch (WhatsNewAnnouncementModel.Status)
-         {
-            case ToolboxAnnouncementStatus.INFO:
-               AddToClassList("info");
-               break;
-            case ToolboxAnnouncementStatus.WARNING:
-               AddToClassList("warning");
-               break;
-            case ToolboxAnnouncementStatus.DANGER:
-               AddToClassList("danger");
-               break;
-         }
-         
+         var whatsnewButton = Root.Q<Button>("announcement-whatsnew");
+         whatsnewButton.text = WhatsNewAnnouncementModel.WhatsNewButtonText;
+         whatsnewButton.clickable.clicked += () => WhatsNewAnnouncementModel.OnWhatsNew?.Invoke();
       }
    }
 }

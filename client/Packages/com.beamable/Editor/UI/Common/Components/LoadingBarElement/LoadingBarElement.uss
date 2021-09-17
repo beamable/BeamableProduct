@@ -13,7 +13,7 @@
     color: #ffffff;
     align-self: center;
     flex-grow: 1;
-    font-size: 11px;    
+    font-size: 10px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
 }
 
@@ -26,11 +26,11 @@
 }
 
 #animation{
-    position-type: absolute;
-    position-left: 0;
-    position-top: 0;
-    position-right: 0;
-    position-bottom: 0;
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    right: 0px;
+    bottom: 0px;
 }
 
 .failed{
@@ -56,11 +56,10 @@
     padding-top: 0px;
     padding-left: 0px;
     padding-right: 0px;
-    width: 60px;
+    width: 26px;
     height: 12px;
     margin: 0px;
     margin-top: 1.5px;
     align-self: flex-end;
     right: 5px;
-    font-size: 9px;
 }

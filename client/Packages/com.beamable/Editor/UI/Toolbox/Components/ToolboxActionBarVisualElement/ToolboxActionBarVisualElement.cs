@@ -70,7 +70,7 @@ namespace Beamable.Editor.Toolbox.Components
             
 
             var contentButton = Root.Q<Button>("contentManager");
-            contentButton.clickable.clicked += () => { ContentManagerWindow.Init(); };
+            contentButton.clickable.clicked += async () => { await ContentManagerWindow.Init(); };
 
             var skinningButton = Root.Q<Button>("skinning");
             skinningButton.clickable.clicked += () => { ThemeWindow.Init(); };

@@ -24,6 +24,14 @@ namespace Beamable.Server.Editor.UI.Components
       public static string BUILD_DISABLE_DEBUG = "Disable Debug Tools";
       public static string BUILD_RESET = "Build and Rerun";
 
+      public static string PROMPT_STARTED_FAILURE = "MICROSERVICE HASN'T STARTED...";
+      public static string PROMPT_STOPPED_FAILURE = "MICROSERVICE HASN'T STOPPED...";
+
+      public static string REMOTE_NOT_ENABLED = "Remote Disabled";
+      public static string REMOTE_ENABLED = "Remote Enabled";
+
+      public const string OBSOLETE_WILL_BE_REMOVED = "This is no longer supported, and will be removed in the future.";
+
       public static string GetBuildButtonString(bool includeDebugTools, string text) => includeDebugTools
          ? $"{Constants.BUILD_DEBUG_PREFIX} {text}"
          : text;

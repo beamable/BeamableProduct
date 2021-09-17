@@ -120,17 +120,17 @@ namespace Beamable.Common.Api.Social
    [Serializable]
    public class SocialList
    {
-      public List<Friend> friend;
-      public List<Player> block;
+      public List<Friend> friends;
+      public List<Player> blocked;
 
       public bool IsBlocked(long dbid)
       {
-         return block.Find(p => p.playerId == dbid.ToString()) != null;
+         return blocked.Find(p => p.playerId == dbid.ToString()) != null;
       }
 
       public bool IsFriend(long dbid)
       {
-         return friend.Find(f => f.playerId == dbid.ToString()) != null;
+         return friends.Find(f => f.playerId == dbid.ToString()) != null;
       }
    }
 

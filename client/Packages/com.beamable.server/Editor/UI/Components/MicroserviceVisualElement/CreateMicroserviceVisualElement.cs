@@ -15,8 +15,8 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
-    public class CreateMicroserviceVisualElement : MicroserviceComponent
-    {
+    public class CreateMicroserviceVisualElement : MicroserviceComponent {
+        public const int MaxNameLength = 32;
         public event Action OnCreateMicroserviceClicked;
 
         private bool CanCreateMicroservice { get; set; }
@@ -68,6 +68,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             _nameTextField = Root.Q<TextField>("microserviceNewTitle");
             _nameTextField.SetValueWithoutNotify(_newMicroserviceName);
+            _nameTextField.maxLength = MaxNameLength;
 
             _nameTextField.RegisterCallback<FocusEvent>(NameLabel_OnFocus,
                 TrickleDown.TrickleDown);
@@ -130,7 +131,8 @@ namespace Beamable.Editor.Microservice.UI.Components
                 ? newName
                 : _newMicroserviceName;
             _nameTextField.value = _newMicroserviceName;
-            CanCreateMicroservice = !_microservicesNames.Any(s => s.Equals(_newMicroserviceName)) && _newMicroserviceName.Length > 2;
+            CanCreateMicroservice = !_microservicesNames.Any(s => s.Equals(_newMicroserviceName)) 
+                                    && _newMicroserviceName.Length > 2 && _newMicroserviceName.Length <= MaxNameLength;
             _createBtn.SetEnabled(CanCreateMicroservice);
         }
 

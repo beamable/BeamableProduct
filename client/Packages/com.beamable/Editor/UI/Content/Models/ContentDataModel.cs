@@ -124,7 +124,16 @@ namespace Beamable.Editor.Content.Models
             return;
          }
 
+         if (contentItemDescriptor.Status == ContentModificationStatus.LOCAL_ONLY && SelectedContents.Contains(contentItemDescriptor))
+         {
+            SelectedContents.Remove(contentItemDescriptor);
+         }
+         
          ContentIO.DeleteByType(contentItemDescriptor.ContentType.ContentType, contentObject);
+      }
+
+      public void DeleteLocalOnlyItems() {
+         _content.Where(c => c.Status == ContentModificationStatus.LOCAL_ONLY).ToList().ForEach(DeleteItem);
       }
 
       public void SetLocalContent(LocalContentManifest localManifest)

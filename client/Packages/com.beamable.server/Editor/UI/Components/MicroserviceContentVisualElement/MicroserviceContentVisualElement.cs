@@ -6,7 +6,9 @@ using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
+using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
+using Beamable.Server.Editor.UI.Components;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -26,14 +28,20 @@ namespace Beamable.Editor.Microservice.UI.Components
         private ListView _listView;
         private ScrollView _scrollView;
         private VisualElement _microservicesListElement;
+
+        private Dictionary<MicroserviceModel, MicroserviceVisualElement> _modelToVisual =
+            new Dictionary<MicroserviceModel, MicroserviceVisualElement>();
         private CreateMicroserviceVisualElement _microserviceVisualElement;
+        private MicroserviceActionPrompt _actionPrompt;
 
         public IEnumerable<MicroserviceVisualElement> MicroserviceVisualElements =>
-            _microservicesListElement.Children().Where(ve => ve is MicroserviceVisualElement).Cast<MicroserviceVisualElement>();
+            _microservicesListElement.Children().Where(ve => ve is MicroserviceVisualElement)
+                .Cast<MicroserviceVisualElement>();
 
         public new class UxmlFactory : UxmlFactory<MicroserviceContentVisualElement, UxmlTraits>
         {
         }
+
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
             UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
@@ -67,42 +75,48 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             if (DockerCommand.DockerNotInstalled)
             {
-                var installDockerInfo = new AnnouncementModel
-                {
-                    Status = ToolboxAnnouncementStatus.INFO,
-                    ActionText = "Install Docker",
-                    CustomIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(
-                        "Packages/com.beamable/Editor/UI/Common/Icons/welcome.png"),
-                    Action = () => Application.OpenURL("https://docs.docker.com/get-docker/"),
-                    TitleElement = new Label("Docker not installed"),
-                    DescriptionElement = new Label("Docker was not detected. Make sure it is available on your System Path.")
-                };
-                var element = new AnnouncementVisualElement {AnnouncementModel = installDockerInfo};
+                var dockerAnnouncement = new DockerAnnouncementModel();
+                dockerAnnouncement.OnInstall = () => Application.OpenURL("https://docs.docker.com/get-docker/");
+                var element = new DockerAnnouncementVisualElement() { DockerAnnouncementModel = dockerAnnouncement };
                 Root.Q<VisualElement>("announcementList").Add(element);
                 element.Refresh();
                 return;
             }
-            
-            _microserviceVisualElement  = new CreateMicroserviceVisualElement();
+
+            _microserviceVisualElement = new CreateMicroserviceVisualElement();
             _microservicesListElement.Add(_microserviceVisualElement);
             _microserviceVisualElement.OnCreateMicroserviceClicked += () => Root.SetEnabled(false);
-
+            _modelToVisual.Clear();
             foreach (var service in Model.Services)
             {
                 var serviceElement = new MicroserviceVisualElement {Model = service};
-
-                service.OnLogsDetached += () =>
-                {
-                    ServiceLogWindow.ShowService(service);
-                };
+                _modelToVisual[service] = serviceElement;
+                service.OnLogsDetached += () => { ServiceLogWindow.ShowService(service); };
 
                 serviceElement.Refresh();
                 service.OnSelectionChanged += b =>
                     OnAllServiceSelectedStatusChanged?.Invoke(Model.Services.All(m => m.IsSelected));
-                
+
+                service.OnSortChanged -= SortMicroservices;
+                service.OnSortChanged += SortMicroservices;
+                serviceElement.OnMicroserviceStartFailed = MicroserviceStartFailed;
+                serviceElement.OnMicroserviceStopFailed = MicroserviceStopFailed;
+
                 _microservicesListElement.Add(serviceElement);
             }
 
+            _actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
+            _actionPrompt.Refresh();
+        }
+
+        private void MicroserviceStartFailed()
+        {
+            _actionPrompt.SetVisible(Constants.PROMPT_STARTED_FAILURE, true, false);
+        }
+
+        private void MicroserviceStopFailed()
+        {
+            _actionPrompt.SetVisible(Constants.PROMPT_STOPPED_FAILURE, true, false);
         }
 
         public void DisplayCreatingNewService()
@@ -121,42 +135,55 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         public void BuildAllMicroservices(ILoadingBar loadingBar)
         {
-            var loadingBarUpdater = new MergedBarUpdater(loadingBar, "Building Microservices", true);
+            var children = new List<LoadingBarUpdater>();
+
             foreach (var microservice in Model.Services)
             {
-                if(!microservice.IsSelected)
+                if (!microservice.IsSelected)
                     continue;
-                if(microservice.IsRunning) {
-                    var task = microservice.BuildAndRestart();
-                    var mergedParser = new MergedBarUpdater(loadingBarUpdater.CreateDummyLoadingBar(), "Build and Run");
-                    new StepLogParser(mergedParser.CreateDummyLoadingBar(), microservice, task);
-                    new RunImageLogParser(mergedParser.CreateDummyLoadingBar(), microservice);
-                }
-                else {
-                    var task = microservice.Build();
-                    new StepLogParser(loadingBarUpdater.CreateDummyLoadingBar(), microservice, task);
-                }
+                if (microservice.IsRunning)
+                    microservice.BuildAndRestart();
+                else
+                    microservice.Build();
+
+                var element = _modelToVisual[microservice];
+                var subLoader = element.Q<LoadingBarElement>();
+                children.Add(subLoader.Updater);
             }
+
+            var _ = new GroupLoadingBarUpdater("Building Microservices", loadingBar, false, children.ToArray());
         }
 
         public void BuildAndStartAllMicroservices(ILoadingBar loadingBar)
         {
-            var loadingBarUpdater = new MergedBarUpdater(loadingBar, "Starting Microservices", true);
+            var children = new List<LoadingBarUpdater>();
             foreach (var microservice in Model.Services)
             {
-                if(!microservice.IsSelected)
+                if (!microservice.IsSelected)
                     continue;
-                
-                Task task;
-                if (microservice.IsRunning) 
-                    task = microservice.BuildAndRestart();
-                else
-                    task = microservice.BuildAndStart();
-                var mergedParser = new MergedBarUpdater(loadingBarUpdater.CreateDummyLoadingBar(), "Build and Run");
-                new StepLogParser(mergedParser.CreateDummyLoadingBar(), microservice, task);
-                new RunImageLogParser(mergedParser.CreateDummyLoadingBar(), microservice);
-            }
-        }
 
+                if (microservice.IsRunning)
+                    microservice.BuildAndRestart();
+                else
+                    microservice.BuildAndStart();
+
+                var element = _modelToVisual[microservice];
+                var subLoader = element.Q<LoadingBarElement>();
+                children.Add(subLoader.Updater);
+            }
+
+            var _ = new GroupLoadingBarUpdater("Starting Microservices", loadingBar, false, children.ToArray());
+        }
+        public void SortMicroservices() {
+            var config = MicroserviceConfiguration.Instance;
+            int Comparer(VisualElement a, VisualElement b) {
+                if (a is CreateMicroserviceVisualElement) return -1;
+                if (b is CreateMicroserviceVisualElement) return 1;
+                var aName = ((MicroserviceVisualElement) a).Model.Name;
+                var bName = ((MicroserviceVisualElement) b).Model.Name;
+                return config.MicroserviceOrderComparer(aName, bName);
+            }
+            _microservicesListElement.Sort(Comparer);
+        }
     }
 }

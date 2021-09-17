@@ -8,3 +8,41 @@ Button.noBackground {
 Button.noBackground:hover {
     background-color: rgba(0,0,0,.1);
 }
+
+/* === BEGIN - ANNOUNCEMENTS === */
+.announcement-main {
+    max-height: 100px;
+    min-height: 100px;
+}
+
+#announcement-ignore {
+    background-color: rgba(0,0,0,0);
+    border-width: 0px;
+}
+
+#announcement-title {
+    margin-left: 4px;
+    margin-right: 4px;
+}
+
+#announcement-description {
+    margin-left: 4px;
+    margin-right: 4px;
+}
+
+.announcement-buttons {
+    padding-left: 0px;
+    padding-right: 0px;
+    padding-bottom: 0px;
+    padding-top: 0px;
+    margin-top: 3px;
+    margin-bottom: 3px;
+}
+
+.announcement-hiddenButton {
+    background-color: rgba(0,0,0,0);
+    border-width: 0px;
+    margin-left: 2px;
+    margin-right: 2px;
+}
+/* === END - ANNOUNCEMENTS === */

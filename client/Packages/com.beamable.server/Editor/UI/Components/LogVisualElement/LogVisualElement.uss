@@ -20,10 +20,6 @@ LogVisualElement > TemplateContainer> #mainVisualElement{
     /*padding-right: 5px;*/
     flex-grow: 1;
     flex-direction: row;
-    align-self: flex-end;
-    align-content: flex-end;
-    justify-content: flex-end;
-    
 }
 
 .subTitle{
@@ -90,7 +86,6 @@ LogVisualElement > TemplateContainer> #mainVisualElement{
 
 .squareBtn{
     height: 20px;
-    /*width: 30px;*/
     flex-direction: row;
     position: relative;
     align-items: center;
@@ -98,7 +93,7 @@ LogVisualElement > TemplateContainer> #mainVisualElement{
     margin-right: 0px;
     margin-top: 0px;
     margin-bottom: 0px;
-    border-left-width: 1px;
+    border-left-width: 0px;
     border-right-width: 1px;
     border-top-width: 0px;
     border-bottom-width: 0px;
@@ -115,22 +110,28 @@ LogVisualElement > TemplateContainer> #mainVisualElement{
     width: 20px;
     height: 20px;
     align-self: center;
+    right: 0px;
+    background-color: rgba(0,0,0,0);
 }
 
-.squareBtn.active {
-    background-color: #666666;
-}
+
 
 #advanceBtn{
     width: 20px;
+    right: 0px;
+    -unity-slice-bottom: 0;
+    -unity-slice-top: 0;
+    -unity-slice-right: 0;
+    -unity-slice-left: 0;
 }
 
 #popupBtn{
     width: 20px;
-    border-left-width: 0px;
-    border-right-width: 0px;
-    border-top-width: 0px;
-    border-bottom-width: 0px;
+    right: 0px;
+    -unity-slice-bottom: 0;
+    -unity-slice-top: 0;
+    -unity-slice-right: 0;
+    -unity-slice-left: 0;
 }
 
 ScrollView{
@@ -151,6 +152,12 @@ ScrollView #ContentView.content-view{
     margin-right: 2px;
     margin-left: 5px;
     -unity-font-style: bold;
+}
+
+#searchBar {
+    border-radius: 8px;
+    flex-grow: 1;
+	position: relative;
 }
 
 #log{
@@ -241,13 +248,6 @@ LogVisualElement .splitWrapper > VisualElement {
     bottom: 0px;
 }
 
-/*#white{*/
-/*    border-bottom-width: 1px;*/
-/*    border-left-width: 0px;*/
-/*    border-top-width: 1px;*/
-/*    border-right-width: 1px;*/
-
-/*}*/
 
 #clearContainer{
     padding-top: 0px;
@@ -280,7 +280,9 @@ LogVisualElement .splitWrapper > VisualElement {
 #info.active .img{
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/info.png");
 }
-
+#info{
+    border-left-width: 1px;
+}
 
 #logWindowBody{
     flex-grow: 1;

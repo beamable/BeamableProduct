@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Editor;
@@ -36,6 +37,8 @@ public class ContainerUploader
       private readonly MicroserviceDescriptor _descriptor;
       private readonly string _imageId;
       private readonly MD5 _md5 = MD5.Create();
+      private long _partsCompleted;
+      private long _partsAmount;
 
       public ContainerUploader(EditorAPI api, ContainerUploadHarness harness, MicroserviceDescriptor descriptor, string imageId)
       {
@@ -81,7 +84,12 @@ public class ContainerUploader
          var layers = (List<object>) uploadManifest["layers"];
 
          // Upload the config JSON as a blob.
+         _partsAmount = manifest.layers.Length + 1;
+         _harness.ReportUploadProgress(_descriptor.Name,0,_partsAmount);
+
+         _partsCompleted = 0;
          var configResult = (await UploadFileBlob($"{folder}/{manifest.config}"));
+         _harness.ReportUploadProgress(_descriptor.Name, ++_partsCompleted, _partsAmount);
          config["digest"] = configResult.Digest;
          config["size"] = configResult.Size;
 
@@ -125,6 +133,8 @@ public class ContainerUploader
       private async Task<Dictionary<string, object>> UploadLayer(string layerPath)
       {
          var layerDigest = await UploadFileBlob(layerPath);
+         Interlocked.Increment(ref _partsCompleted);
+         _harness.ReportUploadProgress(_descriptor.Name,Interlocked.Read(ref _partsCompleted),_partsAmount);
          return new Dictionary<string, object>
          {
             {"digest", layerDigest.Digest},
@@ -145,7 +155,6 @@ public class ContainerUploader
             var digest = HashDigest(fileStream);
             if (await CheckBlobExistence(digest))
             {
-               _harness.ReportUploadProgress(digest, fileStream.Length, fileStream.Length);
                return new FileBlobResult
                {
                   Digest = digest,
@@ -159,7 +168,6 @@ public class ContainerUploader
                var chunk = await FileChunk.FromParent(fileStream, ChunkSize);
                var response = await UploadChunk(chunk, location);
                response.EnsureSuccessStatusCode();
-               _harness.ReportUploadProgress(digest, chunk.End, chunk.FullLength);
                location = NormalizeWithDigest(response.Headers.Location, digest);
             }
             return new FileBlobResult

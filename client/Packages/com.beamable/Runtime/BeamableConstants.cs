@@ -42,6 +42,7 @@ public static class BeamableConstants
    public const string URL_FEATURE_LOGIN_FLOW = "https://docs.beamable.com/docs/login-flow";
    public const string URL_FEATURE_INVENTORY_FLOW = "https://docs.beamable.com/docs/inventory-flow";
    public const string URL_FEATURE_STORE_FLOW = "https://docs.beamable.com/docs/store-flow";
+   public const string URL_FEATURE_MICROSERVICES = "https://docs.beamable.com/docs/microservices-feature";
    //
    public const string URL_TOOL_WINDOW_CONTENT_MANAGER = "https://docs.beamable.com/docs/content-manager";
    public const string URL_TOOL_WINDOW_CONTENT_NAMESPACES = "https://docs.beamable.com/docs/content-manager#namespaces";
