@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
+using Beamable.Common;
+using Beamable.Common.Api.Content;
 using Beamable.Server;
 using NUnit.Framework;
 
@@ -9,15 +12,23 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
    [TestFixture]
    public class HandleMessageTests
    {
+      [SetUp]
+      [TearDown]
+      public void ResetContentInstance()
+      {
+         ContentApi.Instance = new Promise<IContentApi>();
+      }
+
       [Test]
-      public void EventSubscriptionMultiThreadedAccess()
+      [Timeout(2 * 60 * 1000)]
+      public async Task EventSubscriptionMultiThreadedAccess()
       {
          var context = new SocketRequesterContext(() =>
             throw new NotImplementedException("This test should never access the socket"));
 
 
          const int threadCount = 500;
-         const int cycleCount = 50000;
+         const int cycleCount = 1000;
 
          const string eventName = "test";
          const string eventPath = "event/test";
@@ -25,13 +36,14 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 
          Exception failure = null;
 
-         Thread Launch(int threadNumber)
+         Task Launch(int threadNumber)
          {
-            var thread = new Thread(() =>
+
+            var task = Task.Run(() =>
             {
                try
                {
-                  context.Subscribe<int>(eventName, _ =>
+                  var subscription = context.Subscribe<int>(eventName, _ =>
                   {
                      // do nothing...
                   });
@@ -49,21 +61,16 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 
                }
             });
-            thread.Start();
-            return thread;
+            return task;
          }
 
-         var threads = new List<Thread>();
+         var threads = new List<Task>();
          for (var i = 0; i < threadCount; i++)
          {
             threads.Add(Launch(i));
          }
 
-         // wait for all threads to terminate...
-         foreach (var thread in threads)
-         {
-            thread.Join(10);
-         }
+         await Task.WhenAll(threads);
 
          if (failure != null)
          {

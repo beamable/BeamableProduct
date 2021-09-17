@@ -23,7 +23,7 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentIOTests
 
       public Promise<Manifest> FetchManifest(string id)
       {
-         throw new NotImplementedException();
+         return FetchManifestResult();
       }
 
       public IEnumerable<ContentObject> FindAll(ContentQuery query=null)

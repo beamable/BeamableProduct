@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Beamable.Editor;
+using Beamable.Editor.Microservice.UI;
+using Beamable.Editor.UI.Model;
 using UnityEditor;
 using UnityEngine;
 
@@ -23,7 +25,7 @@ namespace Beamable.Server.Editor
 
    public class MicroserviceConfiguration : AbsModuleConfigurationObject<MicroserviceConfigConstants>
    {
-#if UNITY_EDITOR && !UNITY_EDITOR_WIN
+#if UNITY_EDITOR_OSX
       const string DOCKER_LOCATION = "/usr/local/bin/docker";
 #else
       const string DOCKER_LOCATION = "docker";
@@ -37,7 +39,7 @@ namespace Beamable.Server.Editor
       public string CustomContainerPrefix;
 
       private string _cachedContainerPrefix = null;
-      
+
       [Tooltip("When you build a microservice, any ContentType class will automatically be referenced if this field is set to true. Beamable recommends that you put your ContentTypes into a shared assembly definition instead.")]
       public bool AutoReferenceContent = true;
 
@@ -48,8 +50,9 @@ namespace Beamable.Server.Editor
       public bool EnableDockerBuildkit = false;
 
       public string DockerCommand = DOCKER_LOCATION;
+      private string _dockerCommandCached = DOCKER_LOCATION;
 
-      #if BEAMABLE_NEWMS
+      #if !BEAMABLE_LEGACY_MSW
       [Tooltip("Microservice Logs are sent to a dedicated logging window. If you enable this field, then service logs will also be sent to the Unity Console.")]
       public bool ForwardContainerLogsToUnityConsole;
       #endif
@@ -81,7 +84,7 @@ namespace Beamable.Server.Editor
             LogStandardOutColor = new Color(.4f, .4f, 1f);
             LogStandardErrColor = new Color(1, .44f, .4f);
          }
-         DockerCommand = DOCKER_LOCATION;
+         _dockerCommandCached = DockerCommand = DOCKER_LOCATION;
       }
       #endif
 
@@ -116,6 +119,50 @@ namespace Beamable.Server.Editor
                EditorAPI.Instance.Then(api => api.SaveConfig(
                   api.CidOrAlias, api.Pid, api.Host, api.Cid, CustomContainerPrefix));
          }
+
+         if (_dockerCommandCached != DockerCommand) {
+            _dockerCommandCached = DockerCommand;
+            if (MicroserviceWindow.IsInstantiated) {
+               MicroserviceWindow.Instance.RefreshWindow(true);
+            }
+         }
+      }
+
+      public int GetMicroserviceIndex(string serviceName) {
+         return Microservices.FindIndex(m => m.ServiceName == serviceName);
+      }
+
+      public void SetMicroserviceIndex(string serviceName, int newIndex) {
+         if (newIndex < 0 || newIndex >= Microservices.Count) {
+            throw new IndexOutOfRangeException();
+         }
+
+         var currentIndex = GetMicroserviceIndex(serviceName);
+         if (currentIndex != -1) {
+            var value = Microservices[currentIndex];
+            Microservices.RemoveAt(currentIndex);
+            Microservices.Insert(newIndex, value);
+            EditorUtility.SetDirty(this);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+         }
+      }
+
+      public void MoveMicroserviceIndex(string serviceName, int offset) {
+         var newIndex = GetMicroserviceIndex(serviceName) + offset;
+         if (newIndex < 0 || newIndex >= Microservices.Count) {
+            return;
+         }
+         SetMicroserviceIndex(serviceName, newIndex);
+      }
+
+      public int MicroserviceOrderComparer(string a, string b) {
+         var aIdx = GetMicroserviceIndex(a);
+         if(aIdx < 0) aIdx = Int32.MaxValue;
+         var bIdx = GetMicroserviceIndex(b);
+         if(bIdx < 0) bIdx = Int32.MaxValue;
+         if (aIdx > bIdx) return 1;
+         return -1;
       }
    }
 

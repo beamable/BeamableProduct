@@ -11,25 +11,24 @@ namespace Beamable.Editor.Microservice.UI.Components {
         };
 
         private static readonly string[] errorElements = new[] {
-            "error",
             "Error",
             "Exception",
             "exception"
         };
-        
+
         public override string StepText => $"(Stopping {base.StepText} MS {_model.Descriptor.Name})";
-        public override string ProcessName => $"Stopping MS {_model.Descriptor.Name}";
+        public override string ProcessName => $"Stopping MS {_model?.Descriptor?.Name}";
 
         public StopImageLogParser(ILoadingBar loadingBar, MicroserviceModel model) : base(loadingBar, model) {
             TotalSteps = expectedLogs.Length;
-            _loadingBar.UpdateProgress(0f, $"({ProcessName})");
+            LoadingBar.UpdateProgress(0f, $"({ProcessName})");
         }
         public override bool DetectSuccess(string message) {
-            return message.StartsWith("All pending tasks completed.");
+            return message.StartsWith("All pending tasks completed.")|| !_model.IsRunning;
         }
 
         public override bool DetectFailure(string message) {
-            return errorElements.Any(message.Contains);
+            return errorElements.Any(message.Contains) ;
         }
 
         public override bool DetectStep(string message, out int step) {

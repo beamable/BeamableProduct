@@ -14,7 +14,7 @@ namespace Beamable.Editor.Microservice.UI.Components {
         private readonly Task _task;
 
         public override string StepText => $"(Building {base.StepText} MS {_model.Descriptor.Name})";
-        public override string ProcessName => $"Building MS {_model.Descriptor.Name}";
+        public override string ProcessName => $"Building MS {_model?.Descriptor?.Name}";
 
         private static readonly string[] errorElements = new[] {
             "error",
@@ -27,16 +27,16 @@ namespace Beamable.Editor.Microservice.UI.Components {
             _model = model;
             _task = task;
 
-            _loadingBar.UpdateProgress(0f, $"({ProcessName})");
+            LoadingBar.UpdateProgress(0f, $"({ProcessName})");
 
             _model.Logs.OnMessagesUpdated += OnMessagesUpdated;
-            task.ContinueWith(_ => Kill());
+            task?.ContinueWith(_ => Kill());
         }
 
         protected override void OnKill() {
-            if (_task.IsFaulted) {
+            if (_task?.IsFaulted ?? false) {
                 GotError = true;
-                _loadingBar.UpdateProgress(0f, "(Error)", true);
+                LoadingBar.UpdateProgress(0f, "(Error)", true);
             }
             _model.Logs.OnMessagesUpdated -= OnMessagesUpdated;
         }
@@ -51,15 +51,15 @@ namespace Beamable.Editor.Microservice.UI.Components {
                 var total = int.Parse(values[1].Value);
                 Step = current;
                 TotalSteps = total;
-                _loadingBar.UpdateProgress((current - 1f) / total, match.Value);
+                LoadingBar.UpdateProgress((current - 1f) / total, match.Value);
             }
             else if (message.Contains("Success")) {
                 Succeeded = true;
-                _loadingBar.UpdateProgress(1f, "(Success)");
+                LoadingBar.UpdateProgress(1f, "(Success)");
             }
             else if (errorElements.Any(message.Contains)) { // TODO: check task exit code to detect errors
                 GotError = true;
-                _loadingBar.UpdateProgress(0f, "(Error)",true);
+                LoadingBar.UpdateProgress(0f, "(Error)",true);
                 Kill();
             }
         }

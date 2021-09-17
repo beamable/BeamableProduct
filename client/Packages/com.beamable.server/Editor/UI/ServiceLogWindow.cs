@@ -29,6 +29,7 @@ namespace Beamable.Editor.Microservice.UI
          }
          var window = CreateInstance<ServiceLogWindow>();
          window.titleContent = new GUIContent($"{service.Descriptor.Name} Logs");
+         window.minSize = new Vector2(450, 200);
          window.SetModel(service);
          window.Init();
          window.Show(true);

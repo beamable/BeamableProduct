@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Beamable.Content;
 using UnityEngine;
 
 namespace Beamable.Common.Content
@@ -20,7 +21,7 @@ namespace Beamable.Common.Content
       public Type ValueType => typeof(T);
    }
 
-   public interface IDictionaryWithValue : IDictionary
+   public interface IDictionaryWithValue : IDictionary, IIgnoreSerializationCallbacks
    {
       Type ValueType { get; }
    }

@@ -4,21 +4,22 @@
         xmlns:engine="UnityEngine.Experimental.UIElements"
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xmlns:beamable="Beamable.Editor.UI.Components"
+        xmlns:beamableMS="Beamable.Editor.Microservice.UI.Components"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:VisualElement name="mainVisualElement">
         <engine:VisualElement name="logHeader">
-            <engine:VisualElement class="leftArea">
+            <engine:VisualElement class="leftArea" name="leftArea">
                 <beamable:BeamableCheckboxVisualElement name="checkbox"/>
-                <engine:TextField name="microserviceTitle" class="title" text="ANGIE'S TEST"/>
-                <!--                <engine:Label class="title" name="microserviceTitle" text="ANGIE'S TEST"/>-->
+                <engine:TextField name="microserviceNewTitle" class="title" text="ANGIE'S TEST"/>
+                <engine:Label class="title" name="microserviceTitle" text="ANGIE'S TEST" />
             </engine:VisualElement>
-            <engine:VisualElement class="rightArea">
+            <engine:VisualElement class="rightArea" name="rightArea">
                 <engine:VisualElement name="remoteStatusIcon"/>
                 <engine:Label name="remoteStatusTitle" class="subTitle"/>
                 <engine:VisualElement name="statusIcon"/>
                 <engine:Label name="statusTitle" class="subTitle"/>
-                <engine:Button name="moreBtn" class="squareBtn"/>
+                <engine:Button name="moreBtn"/>
             </engine:VisualElement>
         </engine:VisualElement>
 
@@ -42,7 +43,11 @@
                 <engine:Label text="Build" name="buildLabel"/>
                 <engine:Image name="dropDown"/>
             </engine:Button>
+<!--            <engine:Button name="buildDropDownIcon">-->
+<!--                <engine:Image name="dropDown"/>-->
+<!--            </engine:Button>    -->
         </engine:VisualElement>
+        <beamableMS:MicroserviceVisualElementSeparator name="separator"/>
 
     </engine:VisualElement>
 

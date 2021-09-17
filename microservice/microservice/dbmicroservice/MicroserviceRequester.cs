@@ -64,30 +64,24 @@ namespace Beamable.Server
       }
    }
 
-   public class RequesterException : Exception
+   public class WebsocketRequesterException : RequesterException
    {
-      public string Uri { get; }
-      public long Id { get; }
-      public WebsocketErrorResponse Error;
-
-      public RequesterException(WebsocketErrorResponse err, string uri, long id) : base($"Requester error. id=[{id}] uri=[{uri}]. {err}")
+      public WebsocketRequesterException(string method, string uri, long responseCode, string responsePayload) : base("Microservice Requester", method,
+         uri, responseCode, responsePayload)
       {
-         Uri = uri;
-         Id = id;
-         Error = err;
+
       }
    }
 
-   public class UnauthenticatedException : Exception
+   public class UnauthenticatedException : WebsocketRequesterException
    {
       public WebsocketErrorResponse Error { get; }
 
-      public UnauthenticatedException(WebsocketErrorResponse error)
+      public UnauthenticatedException(WebsocketErrorResponse error, string method, string uri, long responseCode, string responsePayload) : base(method, uri, responseCode, responsePayload)
       {
          Error = error;
       }
    }
-
 
    public interface IWebsocketResponseListener
    {
@@ -105,55 +99,41 @@ namespace Beamable.Server
 
       public void Resolve(RequestContext ctx)
       {
-         // TODO: handle error response?
-
-         if (ctx.Status == 0 )
+         if (ctx.Status == 0)
          {
-            OnDone.CompleteError(new RequesterException(new WebsocketErrorResponse
-            {
-               status = 0,
-               error = "noconnection",
-               message = "noconnection",
-
-            }, Uri, Id));
-            return;
+            OnDone.CompleteError(new WebsocketRequesterException(ctx.Method, Uri, ctx.Status, "noconnection"));
          }
-
-         if (ctx.Status == 403) // need to re-authenticate the socket and retry.
+         else if (ctx.Status == 403)
          {
             var error = JsonConvert.DeserializeObject<WebsocketErrorResponse>(ctx.Body, UnitySerializationSettings.Instance);
-            OnDone.CompleteError(new UnauthenticatedException(error));
-            return;
+            OnDone.CompleteError(new UnauthenticatedException(error, ctx.Method, Uri, ctx.Status, ctx.Body));
          }
-
-         if (ctx.Status != 200)
+         else if (ctx.Status != 200)
          {
-
-            Log.Error("{Uri} yield bad [{body}] status=[{status}]", Uri, ctx.Body, ctx.Status);
-            var errorPayload = JsonConvert.DeserializeObject<WebsocketErrorResponse>(ctx.Body, UnitySerializationSettings.Instance);
-            Log.Error("error payload={errorPayload}", errorPayload);
-            OnDone.CompleteError(new RequesterException(errorPayload, Uri, Id));
-            return;
+            OnDone.CompleteError(new WebsocketRequesterException(ctx.Method, Uri, ctx.Status, ctx.Body));
          }
-
-         // parse out the data from ctx.
-         if (Parser == null)
+         else
          {
-            T DefaultParser(string json)
+            // parse out the data from ctx.
+
+            if (Parser == null)
             {
-               return JsonConvert.DeserializeObject<T>(json, UnitySerializationSettings.Instance);
+               T DefaultParser(string json)
+               {
+                  return JsonConvert.DeserializeObject<T>(json, UnitySerializationSettings.Instance);
+               }
+               Parser = DefaultParser;
             }
-            Parser = DefaultParser;
-         }
 
-         try
-         {
-            var result = Parser(ctx.Body);
-            OnDone.CompleteSuccess(result);
-         }
-         catch (Exception ex)
-         {
-            OnDone.CompleteError(ex);
+            try
+            {
+               var result = Parser(ctx.Body);
+               OnDone.CompleteSuccess(result);
+            }
+            catch (Exception ex)
+            {
+               OnDone.CompleteError(ex);
+            }
          }
       }
    }

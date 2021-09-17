@@ -1,7 +1,6 @@
 BreadcrumbsVisualElement #mainVisualElement {
 	height:30px;
 	justify-content:flex-end;
-    margin-right: 10px;
 }
 
 BreadcrumbsVisualElement #mainVisualElement {
@@ -38,4 +37,8 @@ BreadcrumbsVisualElement #counterVisualElement > Label {
 	-unity-font-style: bold;
 	font-size:12px;
     padding-left: 8px;
+}
+
+BreadcrumbsVisualElement #realmButton{
+	margin-right: 10px;
 }

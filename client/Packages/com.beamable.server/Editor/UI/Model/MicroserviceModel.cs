@@ -53,14 +53,15 @@ namespace Beamable.Editor.UI.Model
         public Action OnLogsAttached;
         public Action<bool> OnLogsAttachmentChanged;
         public Action<bool> OnSelectionChanged;
+        public Action OnSortChanged;
 
         public event Action<Task> OnBuildAndRestart;
         public event Action<Task> OnBuildAndStart;
         public event Action<Task> OnBuild;
-        public event Action<Task> OnStart;
+        public event Action<Task> OnStart; // TODO: Currently it exposes us a moment of starting process and not exact moment when MS has started. Maybe rename it in future and add a proper one?? Luke
         public event Action<Task> OnStop;
         public event Action<Promise<Unit>> OnDockerLoginRequired;
-        public Action<float> OnDeployProgress;
+        public Action<float, long, long> OnDeployProgress;
 
         private bool _isSelected;
 
@@ -151,28 +152,41 @@ namespace Beamable.Editor.UI.Model
 
         public void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
         {
-            if (Builder.HasImage)
+            var existsOnRemote = RemoteStatus?.serviceName?.Length > 0;
+            var hasImageSuffix = Builder.HasBuildDirectory ? string.Empty : " (Build first)";
+            var localCategory = IsRunning ? "Local" : "Local (not running)";
+            var remoteCategory = existsOnRemote ? "Cloud" : "Cloud (not deployed)";
+            var debugToolsSuffix = IncludeDebugTools ? string.Empty : " (Debug tools disabled)";
+            evt.menu.BeamableAppendAction($"Reveal build directory{hasImageSuffix}", pos =>
             {
-                evt.menu.BeamableAppendAction("Reveal build directory", pos =>
-                {
-                    var full = Path.GetFullPath(Descriptor.BuildPath);
-                    EditorUtility.RevealInFinder(full);
-                });
+                var full = Path.GetFullPath(Descriptor.BuildPath);
+                EditorUtility.RevealInFinder(full);
+            }, Builder.HasBuildDirectory);
 
-                evt.menu.BeamableAppendAction("Run Snyk Tests", pos => RunSnykTests());
+            evt.menu.BeamableAppendAction($"Run Snyk Tests{hasImageSuffix}", pos => RunSnykTests(), Builder.HasImage);
+
+            evt.menu.BeamableAppendAction($"{localCategory}/Open in CLI", pos => OpenInCli(), IsRunning);
+            evt.menu.BeamableAppendAction($"{localCategory}/View Documentation", pos => OpenLocalDocs(), IsRunning);
+
+            evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => {OpenOnRemote("docs/remote/");}, existsOnRemote);
+            evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => {OpenOnRemote("metrics");}, existsOnRemote);
+            evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => {OpenOnRemote("logs");}, existsOnRemote);
+            evt.menu.BeamableAppendAction($"Visual Studio Code/Copy Debug Configuration{debugToolsSuffix}", pos => { CopyVSCodeDebugTool(); }, IncludeDebugTools);
+            if (MicroserviceConfiguration.Instance.Microservices.Count > 1) {
+                evt.menu.BeamableAppendAction($"Order/Move Up", pos => {
+                    MicroserviceConfiguration.Instance.MoveMicroserviceIndex(Name, -1);
+                    OnSortChanged?.Invoke();
+                }, MicroserviceConfiguration.Instance.GetMicroserviceIndex(Name) > 0);
+                evt.menu.BeamableAppendAction($"Order/Move Down", pos => {
+                    MicroserviceConfiguration.Instance.MoveMicroserviceIndex(Name, 1);
+                    OnSortChanged?.Invoke();
+                }, MicroserviceConfiguration.Instance.GetMicroserviceIndex(Name) < MicroserviceConfiguration.Instance.Microservices.Count - 1);
             }
 
-            if (IsRunning)
+            if (!AreLogsAttached)
             {
-                evt.menu.BeamableAppendAction("Open in CLI", pos => OpenInCli());
-                evt.menu.BeamableAppendAction("View Local Documentation", pos => { OpenLocalDocs(); });
+                evt.menu.BeamableAppendAction($"Reattach Logs", pos => AttachLogs());
             }
-
-            if (IncludeDebugTools)
-            {
-                evt.menu.BeamableAppendAction("Copy Visual Studio Code Debug Configuration", pos => { CopyVSCodeDebugTool(); });
-            }
-
         }
 
         private void RunSnykTests()
@@ -224,6 +238,18 @@ $@"{{
         ""/subsrc"": ""{Path.GetFullPath(Descriptor.BuildPath)}/""
      }}
   }}";
+        }
+
+        private void OpenOnRemote(string relativePath)
+        {
+            EditorAPI.Instance.Then(api =>
+            {
+                var path =
+                    $"{BeamableEnvironment.PortalUrl}/{api.CidOrAlias}/" +
+                    $"games/{api.ProductionRealm.Pid}/realms/{api.Pid}/" +
+                    $"microservices/{Descriptor.Name}/{relativePath}?refresh_token={api.Token.RefreshToken}";
+                Application.OpenURL(path);
+            });
         }
 
         private void OpenInCli()

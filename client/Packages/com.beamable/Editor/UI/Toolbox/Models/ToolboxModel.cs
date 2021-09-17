@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Beamable.Common;
 using Beamable.Editor.Modules.Account;
 using Beamable.Editor.Realms;
@@ -26,6 +27,7 @@ namespace Beamable.Editor.Toolbox.Models
 
       private List<AnnouncementModelBase> _announcements = new List<AnnouncementModelBase>();
       public IEnumerable<AnnouncementModelBase> Announcements => _announcements;
+      
 
       public ToolboxModel()
       {
@@ -42,6 +44,11 @@ namespace Beamable.Editor.Toolbox.Models
       {
          _announcements.Remove(announcementModel);
          OnAnnouncementsChanged?.Invoke(Announcements);
+      }
+
+      public bool IsSpecificAnnouncementCurrentlyDisplaying(Type type)
+      { 
+         return Announcements.Any(announcement => announcement.GetType() == type);
       }
 
       public void UseDefaultWidgetSource()

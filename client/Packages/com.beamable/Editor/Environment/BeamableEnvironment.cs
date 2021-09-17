@@ -4,7 +4,6 @@ using System.IO;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
 using UnityEditor;
-using UnityEngine;
 
 namespace Beamable.Editor.Environment
 {
@@ -16,6 +15,15 @@ namespace Beamable.Editor.Environment
       static BeamableEnvironment()
       {
          // load the env on startup.
+         ReloadEnvironment();
+      }
+
+#if UNITY_EDITOR && UNITY_2019_1_OR_NEWER
+      [InitializeOnEnterPlayMode]
+#endif
+      static void Init()
+      {
+         Data = new EnvironmentData();
          ReloadEnvironment();
       }
 

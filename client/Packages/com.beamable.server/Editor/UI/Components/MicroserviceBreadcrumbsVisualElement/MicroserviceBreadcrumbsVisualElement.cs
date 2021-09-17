@@ -53,6 +53,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         
         private RealmButtonVisualElement _realmButton;
         private BeamableCheckboxVisualElement _checkbox;
+        private VisualElement _selectAll;
 
         public MicroserviceBreadcrumbsVisualElement() : base(nameof(MicroserviceBreadcrumbsVisualElement))
         {
@@ -67,11 +68,25 @@ namespace Beamable.Editor.Microservice.UI.Components
             _checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
             _checkbox.Refresh();
             _checkbox.OnValueChanged += b => OnSelectAllCheckboxChanged?.Invoke(b);
+
+            _selectAll = Root.Q<VisualElement>("selectAll");
         }
 
         public void SetSelectAllCheckboxValue(bool value)
         {
             _checkbox.SetWithoutNotify(value);
+        }
+
+        public void SetSelectAllVisibility(bool value)
+        {
+            if (value)
+            {
+                _selectAll.RemoveFromClassList("hidden");
+            }
+            else
+            {
+                _selectAll.AddToClassList("hidden");
+            }
         }
     }
     

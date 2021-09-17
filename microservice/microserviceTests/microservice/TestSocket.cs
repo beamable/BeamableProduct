@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common.Api;
@@ -9,6 +10,7 @@ using Beamable.Server.Content;
 using Microsoft.VisualBasic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using NUnit.Framework;
 
 namespace Beamable.Microservice.Tests.Socket
 {
@@ -459,6 +461,10 @@ namespace Beamable.Microservice.Tests.Socket
       private long id;
       private List<MockTestRequestHandler> _handlers = new List<MockTestRequestHandler>();
 
+      public WebSocketState State => WebSocketState.Open;
+      private bool _failOnException = true;
+      private Exception _failureEx;
+
       public TestSocket()
       {
          MockConnect = () =>
@@ -483,6 +489,20 @@ namespace Beamable.Microservice.Tests.Socket
          // };
       }
 
+      private void Fail(Exception ex)
+      {
+         if (_failOnException)
+         {
+            _failureEx = ex;
+
+            // Assert.Fail(ex.Message + " \n " + ex.StackTrace);
+         }
+         else
+         {
+            throw ex;
+         }
+      }
+
       public async Task HandleRequestWithResponders(string message)
       {
          Console.WriteLine("Handling Socket Request: " + message);
@@ -492,11 +512,13 @@ namespace Beamable.Microservice.Tests.Socket
 
          if (handler == null)
          {
-            throw new NoHandlerException(message, req);
+            Fail(new NoHandlerException(message, req));
+            return;
          }
          if (!handler.Frequency.Call())
          {
-            throw new ExhaustedHandlerException(message, req);
+            Fail(new ExhaustedHandlerException(message, req));
+            return;
             //throw new Exception("No handler available for test socket. There was a mock, but it has been exhausted. " + message);
          }
          try
@@ -717,6 +739,7 @@ namespace Beamable.Microservice.Tests.Socket
 
       public bool AllMocksCalled()
       {
+         Assert.IsNull(UnhandledError());
          return _handlers.All(h => h.Frequency.ValidCount);
       }
 
@@ -724,5 +747,7 @@ namespace Beamable.Microservice.Tests.Socket
       {
          return _handlers.Where(h => !h.Frequency.ValidCount);
       }
+
+      public Exception UnhandledError() => _failureEx;
    }
 }

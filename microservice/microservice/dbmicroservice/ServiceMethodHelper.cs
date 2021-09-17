@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Beamable.Server.Common;
 using LoxSmoke.DocXml;
+using microservice.Extensions;
 using Newtonsoft.Json;
 using Serilog;
 
@@ -43,6 +44,13 @@ namespace Beamable.Server
             var closureMethod = method;
             var attribute = method.GetCustomAttribute<ClientCallableAttribute>();
             if (attribute == null) continue;
+
+            var tag = provider.pathPrefix == "admin/" ? "Admin" : "Uncategorized";
+            var swaggerCategoryAttribute = method.GetCustomAttribute<SwaggerCategoryAttribute>();
+            if (swaggerCategoryAttribute != null)
+            {
+               tag = swaggerCategoryAttribute.CategoryName.FirstCharToUpperRestToLower();
+            }
 
             var serializerAttribute = method.GetCustomAttribute<CustomResponseSerializationAttribute>();
 #pragma warning disable 618
@@ -128,7 +136,8 @@ namespace Beamable.Server
                Deserializers = deserializers,
                Method = method,
                Executor = executor,
-               ResponseSerializer = responseSerializer
+               ResponseSerializer = responseSerializer,
+               Tag = tag
             };
             output.Add(serviceMethod);
          }

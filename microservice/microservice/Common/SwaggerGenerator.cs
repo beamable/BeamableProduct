@@ -90,10 +90,17 @@ namespace microservice.Common
          };
       }
 
+      private static IList<OpenApiTag> GetTags(ServiceMethod method)
+      {
+         return new List<OpenApiTag> { new OpenApiTag {Name = method.Tag} };
+      }
+      
       private static OpenApiPathItem GeneratePathItem(ServiceMethod method)
       {
          var pathItem = new OpenApiPathItem();
          var op = new OpenApiOperation();
+
+         op.Tags = GetTags(method);
 
          XmlDocsHelper.TryGetComments(method.Method, out var comments);
          op.Summary = comments?.Summary;
@@ -299,8 +306,7 @@ namespace microservice.Common
 
          return schema;
       }
-
-
+      
       public static OpenApiDocument GenerateDocument(BeamableMicroService service)
       {
          if (_serviceToDoc.TryGetValue(service, out var existing))

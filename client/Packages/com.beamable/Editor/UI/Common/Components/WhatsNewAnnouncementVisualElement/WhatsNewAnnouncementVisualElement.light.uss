@@ -1,4 +1,7 @@
+#announcement-logo {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/announcement-dark.png");
+}
 
-WhatsNewAnnouncementVisualElement.info {
-    background-color: #b3baaf;
+#announcement-ignore {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/close_dark_SM.png");
 }

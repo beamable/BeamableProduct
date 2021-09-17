@@ -12,6 +12,7 @@ using Beamable.Editor.Content.SaveRequest;
 using Beamable.Platform.SDK;
 using Beamable.Serialization.SmallerJSON;
 using Modules.Content;
+using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Editor.Content
@@ -27,6 +28,12 @@ namespace Beamable.Editor.Content
       {
          _requester = requester;
          _io = io;
+      }
+      
+      [RuntimeInitializeOnLoadMethod]
+      private static void Init()
+      {
+         OnContentPublished = null;
       }
 
       public Promise<ContentPublishSet> CreatePublishSet(string manifestId=null)

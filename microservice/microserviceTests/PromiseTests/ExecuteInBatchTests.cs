@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Beamable.Common;
+using Beamable.Common.Api.Content;
 using NUnit.Framework;
 
 namespace microserviceTests.PromiseTests
@@ -9,7 +10,15 @@ namespace microserviceTests.PromiseTests
    [TestFixture]
    public class ExecuteInBatchTests
    {
+      [SetUp]
+      [TearDown]
+      public void ResetContentInstance()
+      {
+         ContentApi.Instance = new Promise<IContentApi>();
+      }
+
       [Test]
+      [NonParallelizable]
       public async Task AllTestSucceed()
       {
          const int promiseCount = 100000;
@@ -44,6 +53,7 @@ namespace microserviceTests.PromiseTests
          var serialPromise = Promise.ExecuteInBatch(batchSize, promiseGenerators);
 
          var tasks = new List<Task>();
+
          for (var i = 0; i < promiseCount; i++)
          {
             var index = i;
@@ -52,6 +62,7 @@ namespace microserviceTests.PromiseTests
                await Task.Yield();
 
                var promise = promises[index];
+
                promise.CompleteSuccess(index);
             });
             tasks.Add(task);

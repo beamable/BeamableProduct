@@ -75,6 +75,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             
             _refreshButton = Root.Q<Button>("refreshButton");
             _refreshButton.clickable.clicked += () => { OnRefreshButtonClicked?.Invoke(); };
+            _refreshButton.tooltip = "Refresh Window";
 
             _createNew = Root.Q<Button>("createNew");
             _createNew.clickable.clicked += () => { OnCreateNewClicked?.Invoke(); };
@@ -96,6 +97,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             
             _infoButton = Root.Q<Button>("infoButton");
             _infoButton.clickable.clicked += () => { OnInfoButtonClicked?.Invoke(); };
+            _infoButton.tooltip = "Open Documentation";
             UpdateTextButtonTexts(false);
         }
 
@@ -105,6 +107,13 @@ namespace Beamable.Editor.Microservice.UI.Components
             startLabel.text = allServicesSelected ? "Start all" : "Start selected";
             var buildLabel = _buildAll.Q<Label>();
             buildLabel.text = allServicesSelected ? "Build all" : "Build selected";
+        }
+
+        public void HandleNoMicroservicesScenario()
+        {
+            _startAll.SetEnabled(false);
+            _buildAll.SetEnabled(false);
+            _publish.SetEnabled(false);
         }
     }
 

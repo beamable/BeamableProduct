@@ -309,7 +309,7 @@ namespace Beamable.Server
 
       }
 
-      Promise<IConnection> GetWebsocketPromise()
+      public Promise<IConnection> GetWebsocketPromise()
       {
          return _webSocketPromise;
       }

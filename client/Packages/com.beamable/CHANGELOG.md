@@ -5,25 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.16.0]
 ### Added
-- Player Scripting Define Symbols to Diagnostic File
-- New console commands (GET_CONTENT, LIST_CONTENT, CONTENT_NAMESPACE, SET_CONTENT_NAMESPACE)
-- MustBeSlugString content validation with configurable option to allow underscores
-- OptionalBoolean type for content
+- Support for disabling Unity Domain Reload
+- Content console commands (GET_CONTENT, LIST_CONTENT, CONTENT_NAMESPACE, SET_CONTENT_NAMESPACE)
+- Easy custom content class creation in `Create/Beamable/Content Types`
+- Resetting content to the server state under `Window/Beamable/Utilities/Reset Content`
+- `MustBeSlugString` content validation with configurable option to allow underscores
+- `OptionalBoolean` type for content
 - Leaderboard Apis that support fetching partition/cohort cached assignment transparently
-- Templates to create custom content type classes available under RMB -> Create/Beamable/Content Types
+- Ability to disable VIP currency awards on Mail Rewards
+- PlayerSettings scripting define symbols are saved in Diagnostics file
+- Beamable package version Toolbox announcement
 
 ### Changed
-- Platform request bodies are GZip compressed if larger than 1K
-- Support GZip compressed Platform responses
+- Request and Responses to and from Beamable are GZipped if larger than 1K
 - Leaderboard Content supports partitioning, max size, and cohorting
 - Leaderboard Update api will transparently fetch cached assignment
-- PlayerStatRequirements now support providing the domain and access of stats
-- MustBeOneOf content validation attribute now supports Optional types
+- `PlayerStatRequirements` now support providing the domain and access of stats
+- `MustBeOneOf` content validation attribute now supports Optional types
+- Beamable Platform errors all extend from `RequesterException` in Unity Client and microservice code
+- Redesigned internal Toolbox announcements
+- Content Manager publish flow shows Realm and Namespace for confirmation
 
 ### Fixed
-- Added missing attributes for a content classes
+- Added missing attributes for content classes
+- SocialService `SocialList` serialization
+- Account Management Flow third party login buttons use correct third parties
 
 ## [0.15.0]
 ### Added

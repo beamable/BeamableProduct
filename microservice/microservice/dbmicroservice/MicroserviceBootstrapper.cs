@@ -57,6 +57,8 @@ namespace Beamable.Server
 
          var beamableService = new BeamableMicroService();
          var args = new EnviornmentArgs();
+         
+         var localDebug = new LocalDebugService(beamableService);
 
          if (!string.Equals(args.SdkVersionExecution, args.SdkVersionBaseBuild))
          {

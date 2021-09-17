@@ -64,9 +64,42 @@ namespace Beamable.Common.Api
 
       }
    }
+   public class RequesterException : Exception, IRequestErrorWithStatus
+   {
+      public long Status => _responseCode;
+      private readonly long _responseCode;
+
+      public RequesterException(string prefix, string method, string uri, long responseCode, string responsePayload)
+         : base(GenerateMessage(prefix, method, uri, responseCode, responsePayload))
+      {
+         _responseCode = responseCode;
+      }
+      static string GenerateMessage(string prefix, string method, string uri, long responseCode, string responsePayload)
+      {
+         return $"{prefix}. method=[{method}] uri=[{uri}] code=[{responseCode}] payload=[{responsePayload}]";
+      }
+   }
 
    public interface IRequestErrorWithStatus
    {
       long Status { get; }
+   }
+
+   public static class PromiseRequesterExtensions
+   {
+      public static Promise<T> RecoverFrom404<T>(this Promise<T> self, System.Func<RequesterException, T> recovery)
+         => RecoverFromStatus(self, 404, recovery);
+
+      public static Promise<T> RecoverFromStatus<T>(this Promise<T> self, long status, System.Func<RequesterException, T> recovery)
+      {
+         return self.Recover(err =>
+         {
+            if (err is RequesterException platformErr && platformErr.Status == status)
+            {
+               return recovery(platformErr);
+            }
+            throw err;
+         });
+      }
    }
 }

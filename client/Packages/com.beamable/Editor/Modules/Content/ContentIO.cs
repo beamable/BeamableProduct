@@ -167,6 +167,14 @@ namespace Beamable.Editor.Content
          OnContentDeleted += Internal_HandleContentDeleted;
       }
 
+      [RuntimeInitializeOnLoadMethod]
+      private static void Init()
+      {
+         OnContentCreated = null;
+         OnContentDeleted = null;
+         OnContentRenamed = null;
+      }
+      
       private void Internal_HandleContentCreated(IContentObject content)
       {
          ValidationContext.AllContent[content.Id] = content;

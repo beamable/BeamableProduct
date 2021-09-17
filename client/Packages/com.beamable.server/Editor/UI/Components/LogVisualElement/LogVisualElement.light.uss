@@ -32,6 +32,10 @@
     border-color: #9b9b9b;
 }
 
+.squareBtn.active {
+    background-color: #ececec;
+}
+
 .confirmBtn {
     background-color: #c3c3c3;
     border-color: #9b9b9b;

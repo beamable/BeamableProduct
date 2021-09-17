@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <engine:UXML
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns:engine="UnityEngine.Experimental.UIElements" xmlns:engin="UnityEngine.Experimental.UIElements"
+        xmlns:engine="UnityEngine.Experimental.UIElements"
         xmlns:beamable="Beamable.Editor.UI.Components"
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
@@ -18,14 +18,14 @@
             </engine:VisualElement>
             
             <engine:VisualElement name="SizeC" class="column">
-            <engine:Label text="Size" class="SubTitleText"/>
+            <engine:Label text="Profile" class="SubTitleText"/>
             </engine:VisualElement>
                 
             <engine:VisualElement name="CommentsC" class="column">
             <engine:Label text="Comments" class="SubTitleText" name="commentsLabel"/>
             </engine:VisualElement>
         </engine:VisualElement>
-    <engine:VisualElement name="manifestElementsContainer"/>
+        <engine:ScrollView name="manifestsContainer"/>
         <engine:TextField name="largeCommentsArea"/>
         <engine:VisualElement name="buttonStrip">
             <engine:Button name="cancelBtn" text="Cancel"/>

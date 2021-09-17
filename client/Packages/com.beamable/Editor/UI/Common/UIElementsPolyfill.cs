@@ -48,6 +48,12 @@ namespace UnityEngine.Experimental.UIElements
           return self;
         }
 
+        public static VisualElement SetBackgroundScaleModeToFit(this VisualElement self)
+        {
+          self.style.backgroundScaleMode = ScaleMode.ScaleToFit;
+          return self;
+        }
+
         public static TextField BeamableReadOnly(this TextField self)
         {
           self.SetEnabled(false);
@@ -114,9 +120,13 @@ namespace UnityEngine.Experimental.UIElements
             self.Focus();
         }
 
-        public static void BeamableAppendAction(this DropdownMenu self, string title, Action<Vector2> callback)
+        public static void BeamableAppendAction(this DropdownMenu self, string title, Action<Vector2> callback, bool enabled = true)
         {
-          self.AppendAction(title, evt => callback(evt.eventInfo.mousePosition), DropdownMenu.MenuAction.AlwaysEnabled);
+          if(enabled)
+            self.AppendAction(title, evt => callback(evt.eventInfo.mousePosition),DropdownMenu.MenuAction.AlwaysEnabled);
+          else
+            self.AppendAction(title, evt => callback(evt.eventInfo.mousePosition),DropdownMenu.MenuAction.AlwaysDisabled);
+
         }
 
         public static bool RegisterValueChangedCallback<T>(
@@ -193,6 +203,13 @@ namespace UnityEngine.UIElements
       self.style.whiteSpace = WhiteSpace.Normal;
       return self;
     }
+
+    public static VisualElement SetBackgroundScaleModeToFit(this VisualElement self)
+    {
+      self.style.unityBackgroundScaleMode = ScaleMode.ScaleToFit;
+      return self;
+    }
+
     public static TextField BeamableReadOnly(this TextField self)
     {
       // self.isReadOnly = true;
@@ -207,8 +224,13 @@ namespace UnityEngine.UIElements
       var paths = UssLoader.GetAvailableSheetPaths(path);
       foreach (var ussPath in paths)
       {
-        self.styleSheets.Add(AssetDatabase.LoadAssetAtPath<StyleSheet>(ussPath));
-        //self.AddStyleSheetPath(ussPath);
+        var sheetAsset = AssetDatabase.LoadAssetAtPath<StyleSheet>(ussPath);
+        if (sheetAsset == null)
+        {
+          Debug.LogWarning("Failed to load " + path + " for " + self?.name);
+          continue;
+        }
+        self.styleSheets.Add(sheetAsset);
       }
     }
 
@@ -262,9 +284,9 @@ namespace UnityEngine.UIElements
       self.Q("unity-text-input").Focus();
     }
 
-    public static void BeamableAppendAction(this DropdownMenu self, string title, Action<Vector2> callback)
+    public static void BeamableAppendAction(this DropdownMenu self, string title, Action<Vector2> callback, bool enabled = true)
     {
-      self.AppendAction(title, evt => callback(evt.eventInfo.mousePosition));
+      self.AppendAction(title, evt => callback(evt.eventInfo.mousePosition), enabled ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
     }
   }
 }

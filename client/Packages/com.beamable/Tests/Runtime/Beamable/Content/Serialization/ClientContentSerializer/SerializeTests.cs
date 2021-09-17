@@ -22,7 +22,10 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
             s = "test",
             f = 3.2f,
             d = 3.4,
-            l = 101
+            l = 101,
+            u = 7,
+            c = '#',
+            by = 2
          };
          var expected = @"{
    ""id"": ""test.nothing"",
@@ -33,7 +36,10 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
       ""s"": { ""data"": ""test"" },
       ""f"": { ""data"": 3.2 },
       ""d"": { ""data"": 3.4 },
-      ""l"": { ""data"": 101 }
+      ""l"": { ""data"": 101 },
+      ""u"": { ""data"": 7 },
+      ""c"": { ""data"": 35 },
+      ""by"": { ""data"": 2 }
    }
 }".Replace(Environment.NewLine, "").Replace(" ", "");
 
@@ -58,7 +64,10 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
             d = 3.4,
             l = 101,
             y = 9,
-            bb = true
+            bb = true,
+            u = 7,
+            c = '#',
+            by = 2
          };
          var expected = @"{
    ""id"": ""test.nothing"",
@@ -71,7 +80,10 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
       ""s"": { ""data"": ""test"" },
       ""f"": { ""data"": 3.2 },
       ""d"": { ""data"": 3.4 },
-      ""l"": { ""data"": 101 }
+      ""l"": { ""data"": 101 },
+      ""u"": { ""data"": 7 },
+      ""c"": { ""data"": 35 },
+      ""by"": { ""data"": 2 }
    }
 }".Replace(Environment.NewLine, "").Replace(" ", "");
 
@@ -139,7 +151,10 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
             s = "test",
             f = 3.2f,
             d = 3.4,
-            l = 101
+            l = 101,
+            u = 7,
+            c = '#',
+            by = 2
          };
          var expected = @"{
    ""id"": ""test.nothing"",
@@ -150,7 +165,10 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
       ""s"": { ""data"": ""test"" },
       ""f"": { ""data"": 3.2 },
       ""d"": { ""data"": 3.4 },
-      ""l"": { ""data"": 101 }
+      ""l"": { ""data"": 101 },
+      ""u"": { ""data"": 7 },
+      ""c"": { ""data"": 35 },
+      ""by"": { ""data"": 2 }
    }
 }".Replace(Environment.NewLine, "").Replace(" ", "");
 
@@ -174,7 +192,10 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
                s = "test",
                f = 3.2f,
                d = 3.4,
-               l = 101
+               l = 101,
+               u = 7,
+               c = '#',
+               by = 2
             }
          };
          var expected = @"{
@@ -187,7 +208,10 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
          ""s"":  ""test"",
          ""f"":  3.2,
          ""d"":  3.4,
-         ""l"":  101
+         ""l"":  101,
+         ""u"": 7,
+         ""c"": 35,
+         ""by"": 2
       } }
    }
 }".Replace(Environment.NewLine, "").Replace(" ", "");
@@ -779,7 +803,10 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
          ""s"":  null,
          ""f"":  0,
          ""d"":  0,
-         ""l"":  0
+         ""l"":  0,
+         ""u"": 0,
+         ""c"": 0,
+         ""by"": 0
       } }
    }
 }".Replace(Environment.NewLine, "").Replace(" ", "");
@@ -819,6 +846,9 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
          public float f;
          public double d;
          public long l;
+         public uint u;
+         public char c;
+         public byte by;
       }
 
       [System.Serializable]

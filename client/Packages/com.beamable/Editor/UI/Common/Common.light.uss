@@ -1,0 +1,5 @@
+﻿/* === BEGIN - ANNOUNCEMENTS === */
+#announcement-logo {
+    opacity: 0.8;
+}
+/* === END - ANNOUNCEMENTS === */

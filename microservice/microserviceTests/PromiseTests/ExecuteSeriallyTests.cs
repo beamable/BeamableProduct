@@ -54,8 +54,8 @@ namespace microserviceTests.PromiseTests
             tasks.Add(task);
          }
 
-         await Task.WhenAll(tasks);
-
+         //await Task.WhenAll(tasks);
+         Task.WaitAll(tasks.ToArray());
          var result = await serialPromise;
          var finishThread = Thread.CurrentThread;
          Assert.AreEqual(startThread.ManagedThreadId, finishThread.ManagedThreadId);

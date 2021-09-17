@@ -34,7 +34,7 @@ namespace Beamable.Server.Editor.DockerCommands
       protected string DockerCmd => MicroserviceConfiguration.Instance.DockerCommand;
       public Action<int> OnExit;
 
-      public bool WriteLogToUnity { get; set; } = true;
+      public bool WriteLogToUnity { get; set; }
       public bool WriteCommandToUnity { get; set; }
 
       public string UnityLogLabel = "Docker";
@@ -178,7 +178,7 @@ namespace Beamable.Server.Editor.DockerCommands
                   // there still may pending log lines, so we need to make sure they get processed before claiming the process is complete
                   _hasExited = true;
                   _exitCode = _process.ExitCode;
-                  
+
                   OnExit?.Invoke(_process.ExitCode);
                   HandleOnExit();
 
@@ -192,27 +192,25 @@ namespace Beamable.Server.Editor.DockerCommands
                {
                   _process.EnableRaisingEvents = true;
 
-                  _process.OutputDataReceived += (sender, args) =>
-                  {
-                     try
-                     {
-                        HandleStandardOut(args.Data);
-                     }
-                     catch (Exception ex)
-                     {
-                        Debug.LogException(ex);
-                     }
+                  _process.OutputDataReceived += (sender, args) => {
+                     EditorApplication.delayCall += () => {
+                        try {
+                           HandleStandardOut(args.Data);
+                        }
+                        catch (Exception ex) {
+                           Debug.LogException(ex);
+                        }
+                     };
                   };
-                  _process.ErrorDataReceived += (sender, args) =>
-                  {
-                     try
-                     {
-                        HandleStandardErr(args.Data);
-                     }
-                     catch (Exception ex)
-                     {
-                        Debug.LogException(ex);
-                     }
+                  _process.ErrorDataReceived += (sender, args) => {
+                     EditorApplication.delayCall += () => {
+                        try {
+                           HandleStandardErr(args.Data);
+                        }
+                        catch (Exception ex) {
+                           Debug.LogException(ex);
+                        }
+                     };
                   };
 
 

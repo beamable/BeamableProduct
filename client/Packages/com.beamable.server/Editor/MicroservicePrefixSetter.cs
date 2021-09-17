@@ -13,7 +13,7 @@ namespace Beamable.Server.Editor
          EditorApplication.playModeStateChanged += LogPlayModeState;
       }
 
-      private static void LogPlayModeState(PlayModeStateChange state)
+      private static async void LogPlayModeState(PlayModeStateChange state)
       {
          if (DockerCommand.DockerNotInstalled) return;
 
@@ -21,18 +21,18 @@ namespace Beamable.Server.Editor
          {
             foreach (var service in Microservices.ListMicroservices())
             {
-               var command = new CheckImageCommand(service);
-               command.WriteLogToUnity = false;
-               command.Start();
-               command.Join();
-               if (command.IsRunning)
+               var command = new CheckImageCommand(service)
                {
-                  Debug.Log($"Microservice {service.Name} will use local server");
+                  WriteLogToUnity = false
+               };
+               var isRunning = await command.Start();
+               if (isRunning)
+               {
                   MicroserviceIndividualization.UseServicePrefix(service.Name);
                }
                else
                {
-                  Debug.Log($"Microservice {service.Name} will use live server");
+                  Debug.Log($"Microservice {service.Name} will use remote deployed server");
                   MicroserviceIndividualization.ClearServicePrefix(service.Name);
                }
             }

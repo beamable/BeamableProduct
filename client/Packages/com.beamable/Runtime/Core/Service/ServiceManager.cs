@@ -23,6 +23,14 @@ namespace Beamable.Service
 		private const bool RegisterEditorResolversByDefault = true;
 		private static bool _registerEditorResolvers = RegisterEditorResolversByDefault;
 
+#if UNITY_2019_1_OR_NEWER
+		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+#endif
+		static void Init()
+		{
+			ClearResolvers();
+		}
+
 		public class TestScope : IDisposable
 		{
 			internal static readonly TestScope Instance = new TestScope();
@@ -249,6 +257,11 @@ namespace Beamable.Service
 			// Entering play mode already resets this state
 			if (state != PlayModeStateChange.EnteredEditMode) return;
 
+			ClearResolvers();
+		}
+
+		private static void ClearResolvers()
+		{
 			_registerEditorResolvers = RegisterEditorResolversByDefault;
 
 			foreach (var pair in Resolvers)
