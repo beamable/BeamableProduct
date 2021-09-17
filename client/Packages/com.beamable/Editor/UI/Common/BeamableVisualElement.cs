@@ -71,7 +71,14 @@ namespace Beamable.Editor.UI.Buss
 
          this.AddStyleSheet(BeamableComponentsConstants.COMMON_USS_PATH);
          this.AddStyleSheet(USSPath);
+
+
          Add(Root);
+
+         Root?.Query<VisualElement>(className: "--image-scale-to-fit").ForEach(elem =>
+         {
+            elem?.SetBackgroundScaleModeToFit();
+         });
       }
    }
 }

@@ -20,9 +20,9 @@ namespace Beamable.Editor.Microservice.UI.Components
             var wnd = CreateInstance<PublishWindow>();
             wnd.titleContent = new GUIContent(Constants.Publish);
 
-            ((PublishWindow) wnd).Show();
-            wnd.minSize = Constants.WindowSizeMinimum;
-            wnd.position = new Rect(wnd.position.x, wnd.position.y, wnd.minSize.x, wnd.minSize.y);
+            ((PublishWindow) wnd).ShowUtility();
+            wnd.minSize = new Vector2(620, 400);
+            wnd.position = new Rect(wnd.position.x, wnd.position.y + 40, wnd.minSize.x, wnd.minSize.y);
 
             Microservices.GenerateUploadModel().Then(model =>
             {
@@ -55,13 +55,14 @@ namespace Beamable.Editor.Microservice.UI.Components
                  * upload each image that is different than whats in the manifest...
                  * upload the manifest file...
                  */
-                e.parent.Remove(e);
+                e.PrepareForPublish();
 
                 await Microservices.Deploy(model, this);
                 Close();
             };
 
             container.Add(e);
+            e.PrepareParent();
             e.Refresh();
             Repaint();
         }

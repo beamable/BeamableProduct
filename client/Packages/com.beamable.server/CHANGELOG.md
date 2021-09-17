@@ -4,12 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## (Unreleased)
+## [0.16.0]
 ### Added
-- Snyk testing for microservices.
+- New Microservices Manager window
+- Local microservice health checks are accessible on container port 6565
+- Snyk testing for microservices
+- Ability to categorize `[ClientCallable]` methods in documentation with `[SwaggerCategory]`
+
+### Changed
+- Beamable Platform errors all extend from `RequesterException` in Unity Client and microservice code
 
 ### Fixed
-- Visual Studio code debug configuration source maps are now correct
+- Visual Studio Code debug configuration source maps are now correct
+- `AssumeUser()` no longer throws null reference
 
 ## [0.15.0]
 ### Added

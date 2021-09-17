@@ -13,13 +13,20 @@ namespace Beamable.Editor.Toolbox.Models
 {
     public class UpdateAvailableAnnouncementModel : AnnouncementModelBase
     {
-        public string InstallActionText = "Install";
-        public string IgnoreActionText = "Ignore";
-        public string WhatsNewActionText = "What's new?";
+        public string TitleLabelText => "NEW VERSION THAT IS AVAILABLE";
+        public string InstallButtonText => "Install";
+        public string WhatsNewButtonText => "What's New";
+        public string DescriptionLabelText { get; private set; } =
+            "Beamable 0.0.0 has been released! You should upgrade and check out the new features";
 
         public Action OnInstall;
         public Action OnIgnore;
         public Action OnWhatsNew;
+
+        public void SetPackageVersion(string version)
+        {
+            DescriptionLabelText = $"Beamable {version} has been released! You should upgrade and check out the new features";
+        }
         
         public override BeamableVisualElement CreateVisualElement()
         {

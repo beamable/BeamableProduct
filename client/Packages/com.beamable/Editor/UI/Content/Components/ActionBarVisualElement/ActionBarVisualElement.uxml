@@ -14,8 +14,8 @@
             </engine:Button>>
             <engine:Button text="Validate" class="boundedButton" name="validateButton"/>
             <engine:Button class="boundedButton" name="publishButton">
-                <engine:Image name="dropDownImg">
-                    <engine:Button name="publishDropdownButton"/>
+                <engine:Image name="dropDownImg" class="--image-scale-to-fit">
+                    <engine:Button name="publishDropdownButton" class="--noBorder"/>
                 </engine:Image>
                 <engine:Label text="Publish" class="createButtonLabel" name="publicButtonLabel"/>
             </engine:Button>

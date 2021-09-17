@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using Beamable.Server;
 using NUnit.Framework;
 
@@ -11,7 +12,8 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
    public class AddListenerTests
    {
       [Test]
-      public void MultiThreadedAccess()
+      [Timeout(2 * 60 * 1000)]
+      public async Task MultiThreadedAccess()
       {
          var context = new SocketRequesterContext(() =>
             throw new NotImplementedException("This test should never access the socket"));
@@ -24,9 +26,9 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 
          Exception failure = null;
 
-         Thread Launch(int threadNumber)
+         Task<bool> Launch(int threadNumber)
          {
-            var thread = new Thread(() =>
+            var thread = Task.Run(async () =>
             {
                try
                {
@@ -36,30 +38,29 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
                      var id = (threadNumber * cycleCount) + i;
                      var req = new WebsocketRequest {id = id};
                      context.AddListener(req, uri, dumbParser);
-                     Thread.Sleep(1);
+                     await Task.Yield();
                   }
+
+                  return true;
                }
                catch (Exception ex)
                {
                   failure = ex;
-
+                  return false;
                }
             });
-            thread.Start();
             return thread;
          }
 
-         var threads = new List<Thread>();
+         var threads = new List<Task<bool>>();
          for (var i = 0; i < threadCount; i++)
          {
             threads.Add(Launch(i));
          }
 
          // wait for all threads to terminate...
-         foreach (var thread in threads)
-         {
-            thread.Join(10);
-         }
+
+         await Task.WhenAll(threads);
 
          if (failure != null)
          {

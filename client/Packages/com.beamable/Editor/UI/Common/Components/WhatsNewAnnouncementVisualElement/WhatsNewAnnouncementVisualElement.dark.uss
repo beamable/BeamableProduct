@@ -1,8 +1,7 @@
-#action {
-    padding-top: 3px;
-    padding-bottom: 3px;
+#announcement-logo {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/announcement-light.png");
 }
 
-WhatsNewAnnouncementVisualElement.info {
-    background-color: #474c47;
+#announcement-ignore {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/close_light_SM.png");
 }

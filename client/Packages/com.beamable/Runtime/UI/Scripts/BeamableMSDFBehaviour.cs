@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
@@ -457,6 +458,14 @@ namespace Beamable.UI.MSDF
         private static Dictionary<int, MSDFMaterialReferenceWrapper> _hashToMaterial = new Dictionary<int, MSDFMaterialReferenceWrapper>();
 
         public static int MaterialCount => _hashToMaterial.Count;
+
+#if UNITY_EDITOR && UNITY_2019_1_OR_NEWER
+		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+#endif
+        static void Init()
+        {
+            Clean(true);
+        }
 
         static MSDFMaterialManager()
         {

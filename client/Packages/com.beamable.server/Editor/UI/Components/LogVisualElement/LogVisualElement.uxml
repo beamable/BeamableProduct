@@ -3,7 +3,7 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:engine="UnityEngine.Experimental.UIElements"
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
-        xmlns:beamable="Beamable.Editor.Microservice.UI.Components"
+        xmlns:beamable="Beamable.Editor.UI.Components"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:VisualElement name="mainVisualElement">
@@ -16,6 +16,7 @@
                     <engine:Button name="advanceBtn" class="squareBtn"/>
                 </engine:VisualElement>
                 <engine:VisualElement class="rightArea" name="white">
+                  <beamable:SearchBarVisualElement name="searchBar"/>
                     <engine:Button name="info" class="squareBtn">
                         <engine:VisualElement class="img"/>
                         <engine:Label name="infoCount" text="123" class="countNo"/>
@@ -38,7 +39,7 @@
                 <engine:VisualElement name="logListRoot"/>
                 <engine:VisualElement name ="detailWindow">
                     <engine:ScrollView>
-                        <engine:Label/>
+                        <engine:TextField/>
                     </engine:ScrollView>
                 </engine:VisualElement>
             </engine:VisualElement>

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using UnityEngine;
 
 namespace PubNubMessaging.Core
 {
@@ -25,6 +26,14 @@ namespace PubNubMessaging.Core
             remove {
                 multiplexException -= value;
             }
+        }
+        
+#if UNITY_EDITOR && UNITY_2019_1_OR_NEWER
+        [RuntimeInitializeOnLoadMethod]
+#endif
+        private static void Init()
+        {
+            multiplexException = null;
         }
 
         internal static void CreateErrorCodeAndCallErrorCallback<T> (int statusCode, CustomEventArgs<T> cea, RequestState<T> requestState,

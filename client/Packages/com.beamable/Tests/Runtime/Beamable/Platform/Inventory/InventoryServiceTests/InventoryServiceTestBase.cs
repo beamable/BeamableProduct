@@ -5,6 +5,7 @@ using Beamable.Common.Api.Content;
 using Beamable.Common.Inventory;
 using Beamable.Content;
 using Beamable.Platform.Tests.Content;
+using Beamable.Service;
 using NUnit.Framework;
 
 namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
@@ -27,6 +28,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
          _requester = new MockPlatformAPI();
          _platform = new MockPlatformService();
          _content = new MockContentService();
+         ServiceManager.ProvideWithDefaultContainer(new ContentParameterProvider{manifestID = "global"});
          ContentApi.Instance = Promise<IContentApi>.Successful(_content);
 
          _platform.User = new User

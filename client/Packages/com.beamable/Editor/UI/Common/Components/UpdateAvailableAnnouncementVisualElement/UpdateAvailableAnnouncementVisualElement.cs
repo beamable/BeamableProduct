@@ -24,20 +24,21 @@ namespace Beamable.Editor.Toolbox.Components
       {
          base.Refresh();
          
-         var titleLabel = Root.Q<VisualElement>("title");
-         titleLabel.Add(UpdateAvailableAnnouncementModel.TitleElement);
+         var titleLabel = Root.Q<Label>("announcement-title");
+         titleLabel.text = UpdateAvailableAnnouncementModel.TitleLabelText;
+         titleLabel.AddTextWrapStyle();
          
-         var descLabel = Root.Q<VisualElement>("desc");
-         descLabel.Add(UpdateAvailableAnnouncementModel.DescriptionElement);
+         var descriptionLabel = Root.Q<Label>("announcement-description");
+         descriptionLabel.text = UpdateAvailableAnnouncementModel.DescriptionLabelText;
+         descriptionLabel.AddTextWrapStyle();
          
-         var ignoreButton = Root.Q<Button>("ignore");
-         ignoreButton.text = UpdateAvailableAnnouncementModel.IgnoreActionText;
+         var ignoreButton = Root.Q<Button>("announcement-ignore");
          ignoreButton.clickable.clicked += () => UpdateAvailableAnnouncementModel.OnIgnore?.Invoke();
-
-         var whatsnewButton = Root.Q<Button>("whatsnew");
-         if (BeamablePackages.BeamablePackageUpdateMeta.IsBlogSiteAvailable)
+         
+         var whatsnewButton = Root.Q<Button>("announcement-whatsnew");
+         if (BeamablePackageUpdateMeta.IsBlogSiteAvailable)
          {
-            whatsnewButton.text = UpdateAvailableAnnouncementModel.WhatsNewActionText;
+            whatsnewButton.text = UpdateAvailableAnnouncementModel.WhatsNewButtonText;
             whatsnewButton.clickable.clicked += () => UpdateAvailableAnnouncementModel.OnWhatsNew?.Invoke();
             whatsnewButton.visible = true;
          }
@@ -45,24 +46,10 @@ namespace Beamable.Editor.Toolbox.Components
          {
             whatsnewButton.visible = false;
          }
-
-         var installButton = Root.Q<Button>("install");
-         installButton.text = UpdateAvailableAnnouncementModel.InstallActionText;
-         installButton.clickable.clicked += () => UpdateAvailableAnnouncementModel.OnInstall?.Invoke();
-
-         switch (UpdateAvailableAnnouncementModel.Status)
-         {
-            case ToolboxAnnouncementStatus.INFO:
-               AddToClassList("info");
-               break;
-            case ToolboxAnnouncementStatus.WARNING:
-               AddToClassList("warning");
-               break;
-            case ToolboxAnnouncementStatus.DANGER:
-               AddToClassList("danger");
-               break;
-         }
          
+         var installButton = Root.Q<Button>("announcement-install");
+         installButton.text = UpdateAvailableAnnouncementModel.InstallButtonText;
+         installButton.clickable.clicked += () => UpdateAvailableAnnouncementModel.OnInstall?.Invoke();
       }
    }
 }

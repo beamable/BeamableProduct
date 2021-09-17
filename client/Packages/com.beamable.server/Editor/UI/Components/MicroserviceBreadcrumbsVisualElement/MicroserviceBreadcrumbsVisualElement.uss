@@ -38,7 +38,6 @@
     background-color: #ff9c00;
 }
 #realmButton #banner {
-
     position: absolute;
     left: -1px;
     top: 0px;
@@ -71,8 +70,8 @@
     align-self: center;
     align-content: center;
 }
+
 #selectAll{
-    /*right: 10px;*/
     margin-left: 5px;
     position: relative;
     flex-grow: 1;
@@ -81,4 +80,8 @@
     padding-left: 0px;
     padding-top: 0px;
     padding-bottom: 0px;
+}
+
+.hidden {
+    visibility: hidden;
 }

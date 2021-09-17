@@ -14,6 +14,12 @@ namespace Beamable.Server.Editor.DockerCommands
            command.Start();
        }
 #endif
+
+       public BuildBeamServiceCommand()
+       {
+           UnityLogLabel = "BUILD BEAM";
+       }
+       
       protected override void ModifyStartInfo(ProcessStartInfo processStartInfo)
       {
          base.ModifyStartInfo(processStartInfo);

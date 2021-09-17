@@ -37,32 +37,34 @@ namespace Beamable.Platform.Tests.Content
 
       public Promise<TContent> GetContent<TContent>(IContentRef<TContent> reference, string manifestID = "") where TContent : ContentObject, new()
       {
-         throw new NotImplementedException();
+         return Promise<TContent>.Successful((TContent) _idToContent[reference.GetId()]);
       }
 
       public Promise<ClientManifest> GetManifestWithID(string manifestID = "")
       {
-         throw new NotImplementedException();
+         return Promise<ClientManifest>.Successful(_manifest);
+
       }
 
       public Promise<IContentObject> GetContent(string contentId, Type contentType, string manifestID = "")
       {
-         throw new NotImplementedException();
+         return Promise<IContentObject>.Successful(_idToContent[contentId]);
       }
 
       public Promise<IContentObject> GetContent(string contentId, string manifestID = "")
       {
-         throw new NotImplementedException();
+         return Promise<IContentObject>.Successful(_idToContent[contentId]);
       }
 
       public Promise<IContentObject> GetContent(IContentRef reference, string manifestID = "")
       {
-         throw new NotImplementedException();
+         return Promise<IContentObject>.Successful(_idToContent[reference.GetId()]);
       }
 
       public Promise<TContent> GetContent<TContent>(IContentRef reference, string manifestID = "") where TContent : ContentObject, new()
       {
-         throw new NotImplementedException();
+         return Promise<TContent>.Successful((TContent) _idToContent[reference.GetId()]);
+
       }
 
       public Promise<IContentObject> GetContent(string contentId, Type contentType)

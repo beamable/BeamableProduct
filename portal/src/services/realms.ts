@@ -9,6 +9,7 @@ export interface Project {
   readonly name: string;
   readonly parent?: string;
   readonly children?: Array<string>;
+  readonly archived?: boolean;
   // TODO there are more keys in here... config, plan, secret, etc...
 }
 export interface Customer {
@@ -28,9 +29,26 @@ export interface Account {
   readonly email: string;
   readonly id: number;
   readonly roleString: string;
+  readonly roles: Array<RoleMapping>;
   readonly scopes: Array<string>;
   readonly availableRoles: Array<string>;
   readonly thirdPartyAssociations: Array<string>;
+}
+
+export interface RoleMapping {
+  readonly projectId: string;
+  readonly role: string;
+}
+
+export interface AccountRolesReport {
+  readonly accountId: number;
+  readonly email: string;
+  readonly realms: Array<RealmRolesReport>;
+}
+
+export interface RealmRolesReport {
+  readonly realm: string;
+  readonly roles: Array<string>;
 }
 
 export interface RealmPromoteResponse {
@@ -109,13 +127,23 @@ export class RealmsService extends BaseService {
     );
   });
 
-  @bind public async setRole(id: string, role: string | null) {
+  @bind public async setRole(id: string, role: string | null, projectId: string | null) {
     if (role === null) {
       await this.app.http.request(`/object/accounts/${id}/role`, null, 'delete');
     } else {
-      await this.app.http.request(`/object/accounts/${id}/role`, { role }, 'put');
+      await this.app.http.request(`/object/accounts/${id}/role`, { role, realm: projectId }, 'put');
     }
     await this.forceRefreshMembers();
+  }
+
+  @bind public async deleteProjectRole(id: string, role: string, projectId: string) {
+    await this.app.http.request(`/object/accounts/${id}/role`, { role, realm: projectId }, 'delete');
+    await this.forceRefreshMembers();
+  }
+
+  public async getAccountRolesReport(accountId: String): Promise<AccountRolesReport> {
+    const response = await this.app.http.request(`/object/accounts/${accountId}/role/report`, void 0, 'get');    
+    return response.data;
   }
 
   public async addUser(email: string) {
@@ -135,7 +163,8 @@ export class RealmsService extends BaseService {
       displayName: projectView.projectName,
       parent: projectView.parent,
       children: projectView.children,
-      created: 0
+      created: 0,
+      archived: projectView.archived
     };
   }
 

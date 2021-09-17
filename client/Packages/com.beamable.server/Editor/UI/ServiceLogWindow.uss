@@ -1,6 +1,5 @@
 #_windowRoot {
     flex-grow: 1;
-    min-width:500px;
 }
 #window-main {
     flex-direction: column;

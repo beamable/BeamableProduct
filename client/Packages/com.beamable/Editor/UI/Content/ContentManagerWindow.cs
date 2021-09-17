@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Beamable.Common.Api.Auth;
 using Beamable.Editor.Content.Components;
 using Beamable.Editor.Content.Models;
@@ -30,7 +31,7 @@ namespace Beamable.Editor.Content
       BeamableConstants.CONTENT_MANAGER,
       priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_2
       )]
-      public static async void Init()
+      public static async Task Init()
       {
          await LoginWindow.CheckLogin(typeof(ContentManagerWindow), typeof(SceneView));
          // Create Beamable ContentManagerWindow and dock it next to Unity Hierarchy Window
@@ -375,6 +376,26 @@ namespace Beamable.Editor.Content
 
       private void Update() {
          _actionBarVisualElement.RefreshPublishDropdownVisibility();
+      }
+
+      [MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Reset Content")]
+      private static async Task ResetContent() {
+
+         if (!EditorUtility.DisplayDialog(
+            title: "Reset Content",
+            message: "This operation will remove all your local changes. You can't undo this operation. Are you sure you want to proceed?",
+            ok: "Yes",
+            cancel: "No")
+         ) return;
+         
+         if (Instance == null) {
+            await Init();
+         }
+
+         var downloadSummary = await Instance._contentManager.PrepareDownloadSummary();
+         await Instance._contentManager.DownloadContent(downloadSummary, null, null);
+         Instance._contentManager.Model.DeleteLocalOnlyItems();
+         Instance.Refresh();
       }
    }
 }

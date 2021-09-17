@@ -9,8 +9,8 @@ namespace Beamable.Server.Editor
    {
       static PackageAvailability()
       {
-         
-         #if BEAMABLE_NEWMS
+
+         #if !BEAMABLE_LEGACY_MSW
          BeamablePackages.ProvideServerWindow(MicroserviceWindow.Init);
 #else
          BeamablePackages.ProvideServerWindow(DebugWindow.Init);

@@ -9,7 +9,9 @@ namespace Beamable.Server.Editor.DockerCommands
       public StopImageReturnableCommand(MicroserviceDescriptor descriptor)
       {
          ContainerName = descriptor.ContainerName;
-         UnityLogLabel = $"Docker Stop {descriptor.Name}";
+         UnityLogLabel = "STOP";
+         WriteCommandToUnity = false;
+         WriteLogToUnity = false;
       }
 
       public override string GetCommandString()

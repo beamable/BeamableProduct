@@ -19,7 +19,8 @@ namespace Beamable.Server.Editor
    [InitializeOnLoad]
    public static class MicroserviceEditor
    {
-      public static int portCounter = 3000;
+      public const int portCounter = 3000;
+      
       public static string commandoutputfile = "";
       public static bool isVerboseOutput = false;
       public static bool wasCompilerError = true;
