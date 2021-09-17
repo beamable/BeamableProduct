@@ -46,6 +46,7 @@ namespace Beamable.Editor.Content.Components
       private ListView _listView;
       private List<ContentItemDescriptor> _contentItemDescriptorList;
       private List<HeaderSizeChange> _headerSizeChanges;
+      private List<VisualElement> _listViewVisualElements;
 
       public ContentListVisualElement() : base(nameof(ContentListVisualElement))
       {
@@ -138,6 +139,12 @@ namespace Beamable.Editor.Content.Components
             selectionType = ContentManagerConstants.ContentListSelectionType,
             itemHeight = ListViewItemHeight,
             itemsSource = Model.FilteredContents
+         };
+
+         _listViewVisualElements = new List<VisualElement>();
+         view.bindItem += (VisualElement el, int index) =>
+         {
+            _listViewVisualElements.Add(el);
          };
 
          view.BeamableOnItemChosen(ListView_OnItemChosen);
@@ -252,9 +259,7 @@ namespace Beamable.Editor.Content.Components
       /// <returns></returns>
       private ContentVisualElement GetVisualItemByData(ContentItemDescriptor contentItemDescriptor)
       {
-         List<VisualElement> visualElements = _listView.Children().ToList();
-
-         return (ContentVisualElement)visualElements.Find((VisualElement visualElement) =>
+         return (ContentVisualElement)_listViewVisualElements?.Find((VisualElement visualElement) =>
          {
             ContentVisualElement nextContentVisualElement = (ContentVisualElement)visualElement;
             return string.Equals(nextContentVisualElement.ContentItemDescriptor?.Id, contentItemDescriptor?.Id);
