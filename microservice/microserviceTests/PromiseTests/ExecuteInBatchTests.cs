@@ -21,8 +21,8 @@ namespace microserviceTests.PromiseTests
       [NonParallelizable]
       public async Task AllTestSucceed()
       {
-         const int promiseCount = 100;
-         const int batchSize = 30;
+         const int promiseCount = 100000;
+         const int batchSize = 100;
 
          var promiseGenerators = new List<Func<Promise<int>>>();
          var promises = new List<Promise<int>>();

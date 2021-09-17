@@ -15,6 +15,7 @@ namespace Beamable.Server
 
    public class ServiceMethod
    {
+      public string Tag;
       public string Path;
       public Func<RequestContext, object> InstanceFactory;
       public HashSet<string> RequiredScopes;

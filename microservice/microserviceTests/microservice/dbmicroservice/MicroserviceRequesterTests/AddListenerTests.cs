@@ -19,7 +19,7 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
             throw new NotImplementedException("This test should never access the socket"));
 
          const int threadCount = 500;
-         const int cycleCount = 5000;
+         const int cycleCount = 50000;
 
          const string uri = "uri";
          Func<string, object> dumbParser = (raw) => 1;
