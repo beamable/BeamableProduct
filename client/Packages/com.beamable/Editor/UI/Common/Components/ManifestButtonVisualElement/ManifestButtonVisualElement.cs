@@ -70,8 +70,10 @@ namespace Beamable.Editor.UI.Components
 
         private void HandleAvailableManifestsChanged(List<AvailableManifestModel> ids)
         {
-            visible = ids?.Count > 1 ||
-                      (ids?.Count == 1 && ids[0].id != BeamableConstants.DEFAULT_MANIFEST_ID);
+            bool manyManifests = ids?.Count > 1;
+            bool nonDefaultManifest = ids?.Count == 1 && ids[0].id != BeamableConstants.DEFAULT_MANIFEST_ID;
+
+            visible = manyManifests || nonDefaultManifest;
         }
 
 
