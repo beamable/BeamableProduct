@@ -20,7 +20,7 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
       }
 
       [Test]
-      [NonParallelizable]
+      [Timeout(60 * 1000)]
       public async Task EventSubscriptionMultiThreadedAccess()
       {
          var context = new SocketRequesterContext(() =>
