@@ -7,14 +7,15 @@
         xmlns:contentManager="Beamable.Editor.Content.Components"
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd Beamable.Editor.Content.Components">
+    <beamable:LoadingBarElement/>
     <engine:VisualElement name="loadingViewContainer">
         <beamable:LoadingIndicatorVisualElement>
             <beamable:LoadingSpinnerVisualElement/>
         </beamable:LoadingIndicatorVisualElement>
     </engine:VisualElement>
-    <beamable:LoadingBarElement/>
 
-    <engine:VisualElement name="mainVisualElement" >
+
+    <engine:VisualElement name="publish-mainVisualElement">
 
         <engine:VisualElement name="manifestNameContainer">
             <engine:VisualElement name="manifestNameRow">

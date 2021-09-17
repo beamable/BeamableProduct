@@ -19,7 +19,7 @@ namespace Beamable.Server.Editor.Uploader
    {
       private readonly CommandRunnerWindow _context;
 
-      public event Action<float> onProgress; 
+      public event Action<float, long, long> onProgress;
 
       public ContainerUploadHarness(CommandRunnerWindow context)
       {
@@ -44,13 +44,13 @@ namespace Beamable.Server.Editor.Uploader
          var progress = total == 0 ? 1 : (float) amount / total;
          Debug.Log($"PROGRESS HAPPENED. name=[{name}] amount=[{amount}] total=[{total}]");
          //ProgressPanel.ReportLayerProgress(name, progress);
-         onProgress?.Invoke(progress);
+         onProgress?.Invoke(progress, amount, total);
       }
 
       public async Task<string> GetImageId(MicroserviceDescriptor descriptor)
       {
          var command = new GetImageIdCommand(descriptor);
-         var imageId = await command.Start(_context);
+         var imageId = await command.Start(null);
 
          return imageId;
       }
@@ -71,7 +71,7 @@ namespace Beamable.Server.Editor.Uploader
       /// <summary>
       /// Upload the specified container to the private Docker registry.
       /// </summary>
-      public async Task<bool> UploadContainer(MicroserviceDescriptor descriptor, string imageId=null)
+      public async Task UploadContainer(MicroserviceDescriptor descriptor, Action onSuccess, Action onFailure, string imageId=null)
       {
 
          // TODO: Either check disk space prior to extraction, or offer a streaming-only solution? ~ACM 2019-12-18
@@ -96,11 +96,12 @@ namespace Beamable.Server.Editor.Uploader
             await uploader.Upload(folder);
             Debug.Log("Finished upload");
 
-            return true;
+            onSuccess?.Invoke();
          }
          catch (Exception ex)
          {
             Debug.LogError(ex);
+            onFailure?.Invoke();
             throw ex;
          }
          finally
@@ -108,7 +109,6 @@ namespace Beamable.Server.Editor.Uploader
             Directory.Delete(folder, true);
             File.Delete(filename);
          }
-
       }
    }
 }

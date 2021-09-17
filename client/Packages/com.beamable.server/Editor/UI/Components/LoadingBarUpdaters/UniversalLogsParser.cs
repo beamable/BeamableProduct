@@ -1,13 +1,13 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
+﻿using System;
+using System.Linq;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
-using UnityEditor;
-using UnityEngine;
 
 namespace Beamable.Editor.Microservice.UI.Components {
     public abstract class UniversalLogsParser : LoadingBarUpdater {
         protected readonly MicroserviceModel _model;
+
+        public Action OnFailure;
 
         public UniversalLogsParser(ILoadingBar loadingBar, MicroserviceModel model) : base(loadingBar) {
             _model = model;
@@ -23,17 +23,18 @@ namespace Beamable.Editor.Microservice.UI.Components {
 
             if (DetectSuccess(message)) {
                 Succeeded = true;
-                _loadingBar.UpdateProgress(1f, $"(Success: {ProcessName})");
+                LoadingBar.UpdateProgress(1f, $"(Success: {ProcessName})", hideOnFinish: true);
                 Kill();
             }
             else if (DetectFailure(message)) {
+                OnFailure?.Invoke();
                 GotError = true;
-                _loadingBar.UpdateProgress(0f, $"(Error: {ProcessName})", true);
+                LoadingBar.UpdateProgress(0f, $"(Error: {ProcessName})", true);
                 Kill();
             }
             else if (DetectStep(message, out var step)) {
                 Step = step;
-                _loadingBar.UpdateProgress((Step - 1f) / TotalSteps, StepText);
+                LoadingBar.UpdateProgress((Step - 1f) / TotalSteps, StepText);
             }
         }
         public abstract bool DetectSuccess(string message);

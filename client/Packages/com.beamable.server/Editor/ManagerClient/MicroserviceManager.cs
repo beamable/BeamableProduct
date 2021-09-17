@@ -1,9 +1,10 @@
+using System;
 using System.Collections.Generic;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
-using Beamable.Platform.SDK;
 using Beamable.Serialization;
+using Beamable.Server.Editor.UI.Components;
 
 namespace Beamable.Server.Editor.ManagerClient
 {
@@ -18,21 +19,16 @@ namespace Beamable.Server.Editor.ManagerClient
          Requester = requester;
       }
 
+
+
       public Promise<ServiceManifest> GetCurrentManifest()
       {
          return Requester.Request<GetManifestResponse>(Method.GET, $"{SERVICE}/manifest/current", "{}")
             .Map(res => res.manifest)
-            .Recover(ex =>
-            {
-               if (ex is PlatformRequesterException platformEx && platformEx.Status == 404)
-               {
-                  return new ServiceManifest();
-               }
-
-               throw ex;
-            });
+            .RecoverFrom404(ex => new ServiceManifest());
       }
 
+      [Obsolete(Constants.OBSOLETE_WILL_BE_REMOVED)]
       public Promise<GetLogsResponse> GetLogs(MicroserviceDescriptor service, string filter=null)
       {
          return Requester.RequestJson<GetLogsResponse>(Method.POST, $"{SERVICE}/logs", new GetLogsRequest
@@ -42,6 +38,7 @@ namespace Beamable.Server.Editor.ManagerClient
          });
       }
 
+      [Obsolete(Constants.OBSOLETE_WILL_BE_REMOVED)]
       public Promise<ServiceManifest> GetManifest(long id)
       {
          return Requester.Request<GetManifestResponse>(Method.GET, $"{SERVICE}/manifest?id={id}")
@@ -51,7 +48,8 @@ namespace Beamable.Server.Editor.ManagerClient
       public Promise<List<ServiceManifest>> GetManifests()
       {
          return Requester.Request<GetManifestsResponse>(Method.GET, $"{SERVICE}/manifests")
-            .Map(res => res.manifests);
+            .Map(res => res.manifests)
+            .RecoverFrom404(err => new List<ServiceManifest>());
       }
 
       public Promise<Unit> Deploy(ServiceManifest manifest)
@@ -65,7 +63,12 @@ namespace Beamable.Server.Editor.ManagerClient
 
       public Promise<GetStatusResponse> GetStatus()
       {
-         return Requester.Request<GetStatusResponse>(Method.GET, $"{SERVICE}/status");
+         return Requester.Request<GetStatusResponse>(Method.GET, $"{SERVICE}/status")
+            .RecoverFrom404(err => new GetStatusResponse
+            {
+               isCurrent = false,
+               services = new List<ServiceStatus>()
+            });
       }
 
    }

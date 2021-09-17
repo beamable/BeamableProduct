@@ -4,6 +4,7 @@ using Beamable.Editor.UI.Buss;
 using UnityEditor;
 using UnityEditor.Experimental;
 using UnityEngine;
+using Random = UnityEngine.Random;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -38,7 +39,7 @@ namespace Beamable.Editor.UI.Components {
         }
 
         private static Texture _animationTexture;
-        
+
         public LoadingBarElement() : base($"{BeamableComponentsConstants.UI_PACKAGE_PATH}/Common/Components/{nameof(LoadingBarElement)}/{nameof(LoadingBarElement)}") { }
 
         private VisualElement _fillElement;
@@ -47,6 +48,10 @@ namespace Beamable.Editor.UI.Components {
         private Button _button;
         private LoadingBarUpdater _updater;
         private bool _smallBar;
+        private float _animationOffset;
+        public event Action OnUpdated;
+
+        public LoadingBarUpdater Updater => _updater;
 
         public bool SmallBar {
             get => _smallBar;
@@ -56,7 +61,7 @@ namespace Beamable.Editor.UI.Components {
                 UpdateClasses();
             }
         }
-        
+
         public bool RunWithoutUpdater { get; set; }
 
         private float _progress;
@@ -64,6 +69,7 @@ namespace Beamable.Editor.UI.Components {
             get => _progress;
             set {
                 _progress = Mathf.Clamp01(value);
+                OnUpdated?.Invoke();
                 SyncWidth();
             }
         }
@@ -104,10 +110,11 @@ namespace Beamable.Editor.UI.Components {
                 _label.parent.Add(_button);
                 _button.BringToFront();
             }
+            _animationOffset = Random.Range(0.0f, 1.0f);
 
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             UpdateClasses();
-            
+
             _animation = new IMGUIContainer(AnimationOnGUIHandler) {name = "animation"};
             _fillElement.parent.Add(_animation);
             _animation.PlaceInFront(_fillElement);
@@ -123,14 +130,19 @@ namespace Beamable.Editor.UI.Components {
         }
 
         private void Update() {
-            _animation.visible = !Hidden && (RunWithoutUpdater || (_updater != null && !_updater.Killed));
+            var animationVisible = !Hidden && (RunWithoutUpdater || (_updater != null && !_updater.Killed));
+
+            if(animationVisible && !_animation.visible)
+                _animationOffset = Random.value;
+
+            _animation.visible = animationVisible;
             if (_animation.visible) {
                 _animation.MarkDirtyRepaint();
             }
 
             _button.visible = !Hidden && !SmallBar && !_animation.visible;
         }
-        
+
         private void AnimationOnGUIHandler() {
             if (_animationTexture == null) {
                 _animationTexture =
@@ -138,8 +150,8 @@ namespace Beamable.Editor.UI.Components {
             }
             var rect = EditorGUILayout.GetControlRect(false, layout.height);
             var time = (float) ((EditorApplication.timeSinceStartup * .7) % 1);
-            GUI.DrawTextureWithTexCoords(rect, _animationTexture, 
-                new Rect(-time, 0, 1.2f, 1));
+            GUI.DrawTextureWithTexCoords(rect, _animationTexture,
+                new Rect(-time + _animationOffset, 0, 1.2f, 1));
         }
 
         private void OnGeometryChanged(GeometryChangedEvent _) {
@@ -150,11 +162,15 @@ namespace Beamable.Editor.UI.Components {
             Hidden = true;
         }
 
-        public void UpdateProgress(float progress, string message = null, bool failed = false) {
+        public void UpdateProgress(float progress, string message = null, bool failed = false, bool hideOnFinish = false) {
             Progress = progress;
             Message = message;
             Failed = failed;
-            Hidden = false;
+            Hidden = hideOnFinish || progress >= 1f;
+            if (Hidden)
+            {
+                _updater?.Kill();
+            }
         }
 
         public void SetUpdater(LoadingBarUpdater updater) {
@@ -163,6 +179,7 @@ namespace Beamable.Editor.UI.Components {
             _updater = updater;
             Failed = false;
         }
+
 
         private void SyncWidth() {
             try {
@@ -174,7 +191,7 @@ namespace Beamable.Editor.UI.Components {
                 _fillElement.layout = layout;
 #elif  UNITY_2019_1_OR_NEWER
                 _fillElement.style.width = layout.width * Progress;
-                        _fillElement.style.height = 
+                        _fillElement.style.height =
                             layout.height;
 #endif
             }

@@ -83,6 +83,7 @@ namespace Beamable.Server
          Requester = provider.GetService<IBeamableRequester>();
          Services = provider.GetService<IBeamableServices>();
          _serviceProvider = provider;
+         _scopeGenerator = scopeGenerator;
       }
 
 

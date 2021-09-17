@@ -66,7 +66,9 @@ namespace Beamable.Editor.Content.Components
             _loadingBar.SmallBar = true;
             _loadingBar.Refresh();
 
-            var mainContent = Root.Q<VisualElement>("mainVisualElement");
+
+            var mainContent = Root.Q<VisualElement>("publish-mainVisualElement");
+            var loadingBlocker = Root.Q<LoadingIndicatorVisualElement>();
 
             _publishBtn = Root.Q<PrimaryButtonVisualElement>("publishBtn");
 
@@ -74,6 +76,7 @@ namespace Beamable.Editor.Content.Components
             _manifestNameContainer.visible = CreateNewManifest;
             _manifestNameField = _manifestNameContainer.Q<TextField>("manifestName");
             _manifestNameField.AddPlaceholder("Enter new Content Namespace");
+            _manifestNameField.AddTextWrapStyle();
 
             Root.Q<Label>("manifestWarningMessage").AddTextWrapStyle();
             var manifestDocsLink = Root.Q<Label>("manifestDocsLink");
@@ -111,7 +114,6 @@ namespace Beamable.Editor.Content.Components
             _messageLabel = Root.Q<Label>("message");
             _messageLabel.visible = false;
 
-            var loadingBlocker = Root.Q<LoadingIndicatorVisualElement>();
 
 
              var overrideCountElem = Root.Q<CountVisualElement>("overrideCount");
@@ -159,20 +161,10 @@ namespace Beamable.Editor.Content.Components
              var cancelBtn = Root.Q<Button>("cancelBtn");
              cancelBtn.clickable.clicked += CancelButton_OnClicked;
 
-             var summaryContainer = Root.Q<VisualElement>("summaryContainer");
-             var publishPreviewContainer = Root.Q<VisualElement>("publishPreviewContainer");
-             summaryContainer.visible = false;
-             publishPreviewContainer.visible = false;
-             
             var promise = PublishSet.Then(publishSet =>
             {
-//                loadingViewContainer.AddToClassList("hide");
-
-                summaryContainer.visible = true;
-                publishPreviewContainer.visible = true;
-
                 SetPublishMessage();
-                
+
                 overrideCountElem.SetValue(publishSet.ToModify.Count);
                 addCountElem.SetValue(publishSet.ToAdd.Count);
                 deleteCountElem.SetValue(publishSet.ToDelete.Count);

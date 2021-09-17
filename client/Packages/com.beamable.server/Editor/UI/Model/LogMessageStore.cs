@@ -16,6 +16,7 @@ namespace Beamable.Editor.UI.Model
       public float ScrollValue;
       public bool HasScrolled;
       public bool IsTailingLog = true;
+      public string Filter = string.Empty;
 
       public long DebugCount;
       public long InfoCount;
@@ -80,6 +81,13 @@ namespace Beamable.Editor.UI.Model
          OnViewFilterChanged?.Invoke();
       }
 
+      public void SetSearchLogFilter(string filter)
+      {
+         Filter = filter;
+         UpdateFiltered();
+         OnViewFilterChanged?.Invoke();
+      }
+
       public void SetSelectedLog(LogMessage message)
       {
          Selected = message;
@@ -88,6 +96,12 @@ namespace Beamable.Editor.UI.Model
 
       public bool DoesMessagePassFilter(LogMessage message)
       {
+         if (!string.IsNullOrEmpty(Filter))
+         {
+            if (!message.Message.ToLower().Contains(Filter.ToLower()))
+                return false;
+         }
+
          switch (message.Level)
          {
             case LogLevel.INFO:

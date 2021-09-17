@@ -32,6 +32,7 @@ namespace Beamable.Server.Editor.DockerCommands
          LogLevel = logLevel;
          DebugPort = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name).DebugData.SshPort;
 
+         // TODO This log can probably be removed as the message is empty
          UnityLogLabel = $"Docker Run {descriptor.Name}";
       }
 
@@ -58,7 +59,6 @@ namespace Beamable.Server.Editor.DockerCommands
          var command = $"{DockerCmd} run --rm " +
                           $"-P " +
                           $"-p {DebugPort}:2222  " +
-                          $"-p 9696:9696  " +
                           $"--env CID={Cid} " +
                           $"--env PID={pid} " +
                           $"--env SECRET=\"{Secret}\" " +

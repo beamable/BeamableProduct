@@ -33,6 +33,7 @@ using Beamable.Common.Api.Tournaments;
 using Beamable.Experimental;
 using Beamable.Sessions;
 using Modules.Content;
+
 #if BEAMABLE_PURCHASING
 using Beamable.Purchasing;
 #endif
@@ -188,6 +189,14 @@ namespace Beamable
 #if UNITY_EDITOR
             set => _instance = value;
 #endif
+        }
+
+#if UNITY_EDITOR && UNITY_2019_1_OR_NEWER
+		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+#endif
+        static void Init()
+        {
+            _instance = null;
         }
 
         private PlatformService _platform;

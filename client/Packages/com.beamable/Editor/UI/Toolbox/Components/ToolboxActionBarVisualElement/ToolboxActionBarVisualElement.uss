@@ -27,44 +27,45 @@
     margin-right: 0px;
     margin-top: 0px;
     margin-bottom: 0px;
-    border-left-width: 1px;
+    border-left-width: 0px;
     border-right-width: 1px;
     border-top-width: 0px;
-    border-bottom-width: 1px;
+    border-bottom-width: 0px;
     cursor: pan;
     background-image: none;
+    border-radius: 0px;
 }
 .buttonText{
     font-size: 9px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-text-align: middle-center;
-    top: 5px;
+    top: 6px;
     margin-right: 2px;
     margin-left: 2px;
 }
 #contentManagerIcon{
-    top: 3px;
+    top: 4px;
     width: 10px;
     height: 12px;
     align-self: center;
 }
 
 #skinningIcon{
-    top: 3px;
+    top: 4px;
     width: 12px;
     height: 12px;
     align-self: center;
 }
 
 #globalConfigIcon{
-    top: 3px;
+    top: 4px;
     width: 12px;
     height: 12px;
     align-self: center;
 }
 
 #microserviceIcon{
-    top: 3px;
+    top: 4px;
     width: 12px;
     height: 12px;
     align-self: center;
@@ -80,14 +81,15 @@
     margin-top: 0px;
     margin-bottom: 0px;
     border-left-width: 1px;
-    border-right-width: 1px;
-    border-top-width: 1px;
+    border-right-width: 0px;
+    border-top-width: 0px;
     border-bottom-width: 1px;
     padding-left: 0px;
     padding-right: 0px;
     padding-top: 0px;
     padding-bottom: 0px;
     background-image: none;
+    border-radius: 0px;
     cursor: pan;
 }
 

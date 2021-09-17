@@ -13,15 +13,16 @@ namespace Beamable.Editor.Toolbox.Models
 {
     public class WhatsNewAnnouncementModel : AnnouncementModelBase
     {
-        public string IgnoreActionText = "Ignore";
-        public string WhatsNewActionText = "What's new?";
+        public string WhatsNewButtonText = "What's New";
+        public string TitleLabelText => "BEAMABLE PACKAGE IS UPDATED";
+        public string DescriptionLabelText => "Check out the new features on the official blog";
         
         public Action OnIgnore;
         public Action OnWhatsNew;
         
         public override BeamableVisualElement CreateVisualElement()
         {
-            return new WhatsNewAnnouncementVisualElement()
+            return new WhatsNewAnnouncementVisualElement
             {
                 WhatsNewAnnouncementModel = this
             };

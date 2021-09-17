@@ -84,4 +84,22 @@ namespace Beamable.Common.Api
    {
       long Status { get; }
    }
+
+   public static class PromiseRequesterExtensions
+   {
+      public static Promise<T> RecoverFrom404<T>(this Promise<T> self, System.Func<RequesterException, T> recovery)
+         => RecoverFromStatus(self, 404, recovery);
+
+      public static Promise<T> RecoverFromStatus<T>(this Promise<T> self, long status, System.Func<RequesterException, T> recovery)
+      {
+         return self.Recover(err =>
+         {
+            if (err is RequesterException platformErr && platformErr.Status == status)
+            {
+               return recovery(platformErr);
+            }
+            throw err;
+         });
+      }
+   }
 }

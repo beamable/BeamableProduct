@@ -1,0 +1,9 @@
+﻿.announcement-main {
+    max-height: 120px;
+    min-height: 120px;
+}
+
+.announcement-descriptionSection {
+    margin-left: 4px;
+    margin-right: 4px;
+}

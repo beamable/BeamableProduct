@@ -67,36 +67,47 @@ namespace Beamable.Editor.Config
          var descriptors = new List<ConfigModuleDescriptor>();
          foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
          {
-            foreach (var type in asm.GetTypes())
+            try
             {
-               var isConfigurationType = typeof(BaseModuleConfigurationObject).IsAssignableFrom(type);
-               if (!isConfigurationType) continue;
+               var types = asm.GetTypes();
 
-               var staticInstanceProperty = type.GetProperty(nameof(AvatarConfiguration.Instance), BindingFlags.Static | BindingFlags.Public);
 
-               var hasInstanceProperty = staticInstanceProperty != null && staticInstanceProperty.CanRead;
-               if (!hasInstanceProperty) continue;
-
-               MethodInfo staticExistenceGenericMethod = null;
-               var searchType = type.BaseType;
-               while (staticExistenceGenericMethod == null)
+               foreach (var type in types)
                {
-                  staticExistenceGenericMethod = searchType.GetMethod(nameof(AvatarConfiguration.Exists),
+                  var isConfigurationType = typeof(BaseModuleConfigurationObject).IsAssignableFrom(type);
+                  if (!isConfigurationType) continue;
+
+                  var staticInstanceProperty = type.GetProperty(nameof(AvatarConfiguration.Instance),
                      BindingFlags.Static | BindingFlags.Public);
-                  searchType = searchType.BaseType;
+
+                  var hasInstanceProperty = staticInstanceProperty != null && staticInstanceProperty.CanRead;
+                  if (!hasInstanceProperty) continue;
+
+                  MethodInfo staticExistenceGenericMethod = null;
+                  var searchType = type.BaseType;
+                  while (staticExistenceGenericMethod == null)
+                  {
+                     staticExistenceGenericMethod = searchType.GetMethod(nameof(AvatarConfiguration.Exists),
+                        BindingFlags.Static | BindingFlags.Public);
+                     searchType = searchType.BaseType;
+                  }
+
+                  var staticExistenceMethod = staticExistenceGenericMethod.MakeGenericMethod(type);
+                  var exists = (bool) staticExistenceMethod.Invoke(null, new object[] { });
+
+
+                  var descriptor = new ConfigModuleDescriptor
+                  {
+                     Name = type.Name,
+                     Exists = exists,
+                     Getter = () => staticInstanceProperty.GetValue(null) as BaseModuleConfigurationObject
+                  };
+                  descriptors.Add(descriptor);
                }
-
-               var staticExistenceMethod = staticExistenceGenericMethod.MakeGenericMethod(type);
-               var exists = (bool) staticExistenceMethod.Invoke(null, new object[] { });
-
-
-               var descriptor = new ConfigModuleDescriptor
-               {
-                  Name = type.Name,
-                  Exists = exists,
-                  Getter = () => staticInstanceProperty.GetValue(null) as BaseModuleConfigurationObject
-               };
-               descriptors.Add(descriptor);
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+               Debug.LogWarning($"Unable to load asm {asm.FullName} and scan for configurations. {ex.Message}\n{ex.StackTrace}");
             }
          }
 

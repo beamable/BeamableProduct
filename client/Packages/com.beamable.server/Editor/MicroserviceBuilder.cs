@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using Beamable.Editor;
 using Beamable.Server.Editor.DockerCommands;
@@ -13,6 +14,7 @@ namespace Beamable.Server.Editor
       private bool _isRunning;
       private bool _isBuilding;
       private bool _isStopping;
+      private string _lastImageId;
 
       public bool IsRunning
       {
@@ -38,12 +40,23 @@ namespace Beamable.Server.Editor
          }
       }
 
-      public string LastBuildImageId;
+      public string LastBuildImageId
+      {
+         get => _lastImageId;
+         private set
+         {
+            if (value == _lastImageId) return;
+            _lastImageId = value;
+            EditorApplication.delayCall += () => OnLastImageIdChanged?.Invoke(value);
+         } 
+      }
 
-      public bool HasImage => LastBuildImageId?.Length > 0;
+      public bool HasImage => IsRunning || LastBuildImageId?.Length > 0;
+      public bool HasBuildDirectory => Directory.Exists(Path.GetFullPath(Descriptor.BuildPath));
 
       public Action<bool> OnIsRunningChanged;
       public Action<bool> OnIsBuildingChanged;
+      public Action<string> OnLastImageIdChanged;
 
       public MicroserviceDescriptor Descriptor { get; private set; }
 
@@ -55,6 +68,7 @@ namespace Beamable.Server.Editor
          if (oldBuilder == null) return;
          OnIsRunningChanged += oldBuilder.OnIsRunningChanged;
          OnIsBuildingChanged += oldBuilder.OnIsBuildingChanged;
+         OnLastImageIdChanged += oldBuilder.OnLastImageIdChanged;
       }
 
       public async void Init(MicroserviceDescriptor descriptor)
@@ -62,17 +76,22 @@ namespace Beamable.Server.Editor
          Descriptor = descriptor;
 
          IsBuilding = false;
+         await CheckIfIsRunning();
+         if (IsRunning)
+         {
+            CaptureLogs();
+         }
+         await TryToGetLastImageId();
+      }
+
+      public async Task CheckIfIsRunning()
+      {
          var checkProcess = new CheckImageReturnableCommand(Descriptor)
          {
             WriteLogToUnity = false, WriteCommandToUnity = false
          };
 
          IsRunning = await checkProcess.Start(null);
-         if (IsRunning)
-         {
-            CaptureLogs();
-         }
-         await TryToGetLastImageId();
       }
 
 

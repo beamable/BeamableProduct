@@ -1,4 +1,3 @@
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,28 +9,23 @@ using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
+using Beamable.Server.Editor.ManagerClient;
 using Beamable.Server.Editor.UI.Components;
 using Editor.UI.Components.DockerLoginWindow;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
+using UnityEngine.Experimental.UIElements.StyleSheets;
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+
 namespace Beamable.Editor.Microservice.UI.Components
 {
-  public class MicroserviceVisualElement : MicroserviceComponent
+    public class MicroserviceVisualElement : MicroserviceComponent
     {
-        private Button _buildDropDown;
-        private Button _advanceDropDown;
-
-
-        private VisualElement _logListRoot;
-        private ListView _listView;
-
-
         public MicroserviceVisualElement() : base(nameof(MicroserviceVisualElement))
         {
         }
@@ -39,6 +33,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         public new class UxmlFactory : UxmlFactory<MicroserviceVisualElement, UxmlTraits>
         {
         }
+
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -47,19 +42,30 @@ namespace Beamable.Editor.Microservice.UI.Components
             }
         }
 
+        private const float _MIN_HEIGHT = 200.0f;
+        private const float _MAX_HEIGHT = 500.0f;
+        private const float _DETACHED_HEIGHT = 100.0f;
+        private const float _DEFAULT_HEIGHT = 300.0f;
+
+        private Button _buildDropDown;
+        private Button _advanceDropDown;
+
+        private VisualElement _logListRoot;
+        private ListView _listView;
+
         private Label _nameTextField;
+
         private string _nameBackup;
+
         // private List<LogMessageModel> testLogList;
         private Label _statusLabel;
         private VisualElement _statusIcon;
         private VisualElement _remoteStatusIcon;
         private Label _remoteStatusLabel;
-        private Button _popupBtn;
         private Button _moreBtn;
         private BeamableCheckboxVisualElement _checkbox;
         private bool _mouseOverBuildDropdown;
 
-        private object _logVisualElement;
         private Button _startButton;
         private VisualElement _logContainerElement;
         private Label _buildDefaultLabel;
@@ -69,18 +75,47 @@ namespace Beamable.Editor.Microservice.UI.Components
         private LogVisualElement _logElement;
 
         private LoadingBarElement _loadingBar;
+        private VisualElement _leftHeaderArea;
+        private VisualElement _rightHeaderArea;
+        private MicroserviceVisualElementSeparator _separator;
+        private VisualElement _rootVisualElement;
+        private float _storedHeight = 0;
+        private VisualElement _header;
+
+        public Action OnMicroserviceStartFailed { get; set; }
+        public Action OnMicroserviceStopFailed { get; set; }
+
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+            Microservices.onBeforeDeploy -= SetupProgressBarForDeployment;
+
+            if (Model == null) return;
+
+            Model.OnBuildAndStart -= SetupProgressBarForBuildAndStart;
+            Model.OnBuildAndRestart -= SetupProgressBarForBuildAndRestart;
+            Model.OnBuild -= SetupProgressBarForBuild;
+            Model.OnStart -= SetupProgressBarForStart;
+            Model.OnStop -= SetupProgressBarForStop;
+            Model.OnDockerLoginRequired -= LoginToDocker;
+            Model.OnLogsAttachmentChanged -= CreateLogSection;
+            Model.Builder.OnIsRunningChanged -= OnIsRunningChanged;
+            Model.Builder.OnIsBuildingChanged -= OnIsBuildingChanged;
+            Model.Builder.OnLastImageIdChanged -= HandleLastImageIdChanged;
+        }
 
         public override void Refresh()
         {
             base.Refresh();
 
+            _rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
             Root.Q<Button>("cancelBtn").RemoveFromHierarchy();
 
             _loadingBar = new LoadingBarElement();
             _loadingBar.Hidden = true;
             _loadingBar.Refresh();
-            Root.Q("mainVisualElement").Add(_loadingBar);
             Root.Q("microserviceNewTitle")?.RemoveFromHierarchy();
+            _rootVisualElement.Add(_loadingBar);
             _loadingBar.PlaceBehind(Root.Q("SubTitle"));
 
             Model.OnBuildAndStart -= SetupProgressBarForBuildAndStart;
@@ -122,6 +157,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
             _moreBtn.clickable.activators.Clear();
             _moreBtn.AddManipulator(manipulator);
+            _moreBtn.tooltip = "More...";
 
             _checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
             _checkbox.Refresh();
@@ -139,7 +175,13 @@ namespace Beamable.Editor.Microservice.UI.Components
             Model.Builder.OnIsRunningChanged += OnIsRunningChanged;
             Model.Builder.OnIsBuildingChanged -= OnIsBuildingChanged;
             Model.Builder.OnIsBuildingChanged += OnIsBuildingChanged;
+            
+            Model.Builder.OnLastImageIdChanged -= HandleLastImageIdChanged;
+            Model.Builder.OnLastImageIdChanged += HandleLastImageIdChanged;
             CreateLogSection(Model.AreLogsAttached);
+
+            Model.OnRemoteReferenceEnriched -= OnServiceReferenceChanged;
+            Model.OnRemoteReferenceEnriched += OnServiceReferenceChanged;
 
             _statusLabel = Root.Q<Label>("statusTitle");
             _remoteStatusLabel = Root.Q<Label>("remoteStatusTitle");
@@ -150,6 +192,39 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             _remoteStatusIcon = Root.Q<VisualElement>("remoteStatusIcon");
             UpdateRemoteStatusIcon();
+
+            _header = Root.Q("logHeader");
+            _leftHeaderArea = Root.Q<VisualElement>("leftArea");
+            _rightHeaderArea = Root.Q<VisualElement>("rightArea");
+            UpdateHeaderColor();
+
+            _separator = Root.Q<MicroserviceVisualElementSeparator>("separator");
+            _separator.Setup(OnDrag);
+            _separator.Refresh();
+            UpdateModel();
+        }
+
+        async void UpdateModel()
+        {
+            await Model.Builder.CheckIfIsRunning();
+        }
+
+        private void OnDrag(float value)
+        {
+            if (!Model.AreLogsAttached)
+            {
+                return;
+            }
+
+            float layoutHeight = _rootVisualElement.layout.height;
+            float newHeight = layoutHeight + value;
+
+            newHeight = Mathf.Clamp(newHeight, _MIN_HEIGHT, _MAX_HEIGHT);
+#if UNITY_2019_1_OR_NEWER
+            _rootVisualElement.style.height = new StyleLength(newHeight);
+#elif UNITY_2018
+            _rootVisualElement.style.height = StyleValue<float>.Create(newHeight);
+#endif
         }
 
         void LoginToDocker(Promise<Unit> onLogin)
@@ -159,7 +234,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         void HandleStartButtonClicked()
         {
-            DisableBuildAndStart();
             if (Model.IsRunning)
             {
                 Model.Stop();
@@ -172,19 +246,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         void HandleBuildClicked()
         {
-            DisableBuildAndStart();
             Model.Build();
-        }
-
-        private void OnBuildingChanged(bool isBuilding)
-        {
-            _buildDropDown.SetEnabled(!isBuilding);
         }
 
         private void OnIsRunningChanged(bool isRunning)
         {
             UpdateStartAndBuildButtons();
             UpdateStatusIcon();
+            UpdateHeaderColor();
         }
 
         private void OnIsBuildingChanged(bool isBuilding)
@@ -193,61 +262,43 @@ namespace Beamable.Editor.Microservice.UI.Components
             UpdateStatusIcon();
         }
 
+        private void HandleLastImageIdChanged(string newId)
+        {
+            UpdateStartAndBuildButtons();
+        }
+
         private void UpdateStartAndBuildButtons()
+        {
+            _startButton.text = Model.IsRunning ? Constants.STOP : Constants.START;
+            _buildDefaultLabel.text = Constants.GetBuildButtonString(Model.IncludeDebugTools, 
+                Model.IsRunning ? Constants.BUILD_RESET : Constants.BUILD_START);
+            
+            if (Model.IsRunning)
+            {
+                _defaultBuildAction = () => Model.BuildAndRestart();
+            }
+            else
+            {
+                _defaultBuildAction = () => Model.BuildAndStart();
+            }
+            _startButton.SetEnabled(Model.Builder.HasImage && !Model.IsBuilding);
+            _buildDropDown.SetEnabled(!Model.IsBuilding);
+        }
+
+        private void OnServiceReferenceChanged(ServiceReference serviceReference)
+        {
+            UpdateRemoteStatusIcon();
+        }
+
+        private void UpdateHeaderColor()
         {
             if (Model.IsRunning)
             {
-                SetAsRunningService();
+                _header.AddToClassList("running");
             }
             else
             {
-                SetAsStoppedService();
-            }
-
-            if (!Model.IsBuilding)
-            {
-                _buildDropDown.SetEnabled(true);
-            }
-
-        }
-
-        void SetDefaultBuildToStart()
-        {
-            _buildDropDown.SetEnabled(!Model.IsBuilding);
-            _buildDefaultLabel.text = Constants.GetBuildButtonString(Model.IncludeDebugTools, Constants.BUILD_START);
-            _defaultBuildAction = OnClick_BuildAndStart;
-        }
-
-        void SetDefaultBuildToReset()
-        {
-            _buildDropDown.SetEnabled(!Model.IsBuilding);
-            _buildDefaultLabel.text = Constants.GetBuildButtonString(Model.IncludeDebugTools, Constants.BUILD_RESET);
-            _defaultBuildAction = OnClick_BuildAndReset;
-        }
-
-        void SetAsStoppedService()
-        {
-            _startButton.SetEnabled(!Model.IsBuilding);
-            _startButton.text = Constants.START;
-            SetDefaultBuildToStart();
-        }
-
-        void SetAsRunningService()
-        {
-            _startButton.SetEnabled(!Model.IsBuilding);
-            _startButton.text = Constants.STOP;
-            SetDefaultBuildToReset();
-        }
-
-        private void OnPopoutButton_Clicked()
-        {
-            if (Model.AreLogsAttached)
-            {
-                Model.DetachLogs();
-            }
-            else
-            {
-                Model.AttachLogs();
+                _header.RemoveFromClassList("running");
             }
         }
 
@@ -258,69 +309,89 @@ namespace Beamable.Editor.Microservice.UI.Components
             if (areLogsAttached)
             {
                 CreateLogElement();
+
+#if UNITY_2019_1_OR_NEWER
+            _rootVisualElement.style.height = new StyleLength(_storedHeight > 0 ? _storedHeight : _DEFAULT_HEIGHT);
+#elif UNITY_2018
+                _rootVisualElement.style.height =
+                    StyleValue<float>.Create(_storedHeight > 0 ? _storedHeight : _DEFAULT_HEIGHT);
+#endif
+                _storedHeight = 0;
             }
         }
 
         private void CreateLogElement()
         {
             _logElement = new LogVisualElement {Model = Model};
+            _logElement.AddToClassList("logElement");
+            _logElement.OnDetachLogs += OnLogsDetached;
             _logContainerElement.Add(_logElement);
             _logElement.Refresh();
         }
-          
-          
+
+        private void OnLogsDetached()
+        {
+            _logElement.OnDetachLogs -= OnLogsDetached;
+            _storedHeight = _rootVisualElement.layout.height;
+
+#if UNITY_2019_1_OR_NEWER
+            _rootVisualElement.style.height = new StyleLength(_DETACHED_HEIGHT);
+#elif UNITY_2018
+            _rootVisualElement.style.height =
+                StyleValue<float>.Create(_DETACHED_HEIGHT);
+#endif
+        }
+
         private void UpdateRemoteStatusIcon()
         {
             _remoteStatusIcon.ClearClassList();
-
-            string statusRemote = "remoteDeploying";
             string statusClassName;
-            switch (statusRemote)
+            
+            if (Model.RemoteReference?.enabled ?? false)
             {
-                case "remoteDeploying":
-                    statusClassName = "remoteDeploying";
-                    _remoteStatusLabel.text = "Remote Deploying";
-                    break;
-                case "remoteRunning":
-                    statusClassName = "remoteRunning";
-                    _remoteStatusLabel.text = "Remote Running";
-                    break;
-                default:
-                    statusClassName = "remoteStopped";
-                    _remoteStatusLabel.text = "Remote Stopped";
-                    break;
+                statusClassName = "remoteEnabled";
+                _remoteStatusLabel.text = Constants.REMOTE_ENABLED;
             }
-            _remoteStatusIcon.AddToClassList(statusClassName);
+            else
+            {
+                statusClassName = "remoteDisabled";
+                _remoteStatusLabel.text = Constants.REMOTE_NOT_ENABLED;
+            }
 
+            _remoteStatusIcon.tooltip = _remoteStatusLabel.text;
+            _remoteStatusIcon.AddToClassList(statusClassName);
         }
-        
+
         private void UpdateStatusIcon()
         {
             _statusIcon.ClearClassList();
 
             string statusClassName;
+            string statusText;
 
-            string status = Model.Builder.IsRunning ? "localRunning" :
-                Model.Builder.IsBuilding ? "localBuilding" : "localStopped";
+            string status = Model.IsRunning ? "localRunning" :
+                Model.IsBuilding ? "localBuilding" : "localStopped";
             switch (status)
             {
                 case "localRunning":
-                    _statusLabel.text = "Local Running";
+                    statusText = "Local Running";
                     statusClassName = "localRunning";
                     break;
                 case "localBuilding":
                     statusClassName = "localBuilding";
-                    _statusLabel.text = "Local Building";
+                    statusText = "Local Building";
                     break;
                 case "localStopped":
                     statusClassName = "localStopped";
-                    _statusLabel.text = "Local Stopped";
+                    statusText = "Local Stopped";
                     break;
                 default:
                     statusClassName = "different";
-                    _statusLabel.text = "Different";
+                    statusText = "Different";
                     break;
             }
+
+            _statusIcon.tooltip = _statusLabel.text = statusText;
             _statusIcon.AddToClassList(statusClassName);
         }
 
@@ -331,73 +402,73 @@ namespace Beamable.Editor.Microservice.UI.Components
                 evt.menu.BeamableAppendAction("Build", pos => HandleBuildClicked());
                 evt.menu.BeamableAppendAction(Model.IncludeDebugTools
                     ? Constants.BUILD_DISABLE_DEBUG
-                    : Constants.BUILD_ENABLE_DEBUG, pos => {
+                    : Constants.BUILD_ENABLE_DEBUG, pos =>
+                {
                     Model.IncludeDebugTools = !Model.IncludeDebugTools;
                     UpdateStartAndBuildButtons();
-                } );
+                });
             }
             else
             {
-                DisableBuildAndStart();
                 _defaultBuildAction?.Invoke();
             }
         }
 
-        private void OnClick_BuildAndStart()
+        private void SetupProgressBarForBuildAndStart(Task task)
         {
-            DisableBuildAndStart();
-            Model.BuildAndStart();
+            var _ = new GroupLoadingBarUpdater("Build and Run", _loadingBar, false,
+                new StepLogParser(new VirtualLoadingBar(), Model, null),
+                new RunImageLogParser(new VirtualLoadingBar(), Model)
+            );
         }
 
-        private void OnClick_BuildAndReset()
+        private void SetupProgressBarForBuildAndRestart(Task task)
         {
-            DisableBuildAndStart();
-            Model.BuildAndRestart();
+            var _ = new GroupLoadingBarUpdater("Build and Rerun", _loadingBar, false,
+                new StepLogParser(new VirtualLoadingBar(), Model, null),
+                new RunImageLogParser(new VirtualLoadingBar(), Model),
+                new StopImageLogParser(new VirtualLoadingBar(), Model)
+            );
         }
 
-        void EnableBuildAndStart()
+        private void SetupProgressBarForBuild(Task task)
         {
-            _buildDropDown.SetEnabled(true);
-            _startButton.SetEnabled(true);
-        }
-
-        void DisableBuildAndStart()
-        {
-            _buildDropDown.SetEnabled(false);
-            _startButton.SetEnabled(false);
-        }
-
-        private void SetupProgressBarForBuildAndStart(Task task) {
-            var loadingBarUpdater = new MergedBarUpdater(_loadingBar, "Build and Run");
-            new StepLogParser(loadingBarUpdater.CreateDummyLoadingBar(), Model, task);
-            new RunImageLogParser(loadingBarUpdater.CreateDummyLoadingBar(), Model);
-        }
-
-        private void SetupProgressBarForBuildAndRestart(Task task) {
-            var loadingBarUpdater = new MergedBarUpdater(_loadingBar, "Build and Rerun");
-            new StepLogParser(loadingBarUpdater.CreateDummyLoadingBar(), Model, task);
-            new RunImageLogParser(loadingBarUpdater.CreateDummyLoadingBar(), Model);
-            new StopImageLogParser(loadingBarUpdater.CreateDummyLoadingBar(), Model);
-        }
-
-        private void SetupProgressBarForBuild(Task task) {
             new StepLogParser(_loadingBar, Model, task);
         }
 
-        private void SetupProgressBarForStart(Task task) {
-            new RunImageLogParser(_loadingBar, Model);
+        private void SetupProgressBarForStart(Task task)
+        {
+            // We have two ways. Either store reference or return instance as event parameter
+            new RunImageLogParser(_loadingBar, Model)
+            {
+                OnFailure = OnStartFailed
+            };
         }
 
-        private void SetupProgressBarForStop(Task task) {
-            new StopImageLogParser(_loadingBar, Model);
+        private void OnStartFailed()
+        {
+            OnMicroserviceStartFailed?.Invoke();
         }
 
-        private void SetupProgressBarForDeployment(ManifestModel _) {
-            new DeployMSLogParser(_loadingBar, Model);
+        private void SetupProgressBarForStop(Task task)
+        {
+            new StopImageLogParser(_loadingBar, Model)
+            {
+                OnFailure = OnStopFailed
+            };
         }
-    }
 
-    public class PopupBtn
-    {
+        private void OnStopFailed()
+        {
+            OnMicroserviceStopFailed?.Invoke();
+        }
+
+        private void SetupProgressBarForDeployment(ManifestModel _, int __)
+        {
+            var ___ = new GroupLoadingBarUpdater("Build and Deploy", _loadingBar, false,
+                new StepLogParser(new VirtualLoadingBar(), Model, null),
+                new DeployMSLogParser(new VirtualLoadingBar(), Model)
+            );
+        }
     }
 }

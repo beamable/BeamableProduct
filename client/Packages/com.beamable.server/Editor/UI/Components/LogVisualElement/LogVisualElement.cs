@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Model;
+using Beamable.Editor.UI.Components;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -62,6 +63,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         private VisualElement _logWindowBody;
         private TextField _detailLabel;
         private int _scrollBlocker;
+        private SearchBarVisualElement _searchLogBar;
         private Label _infoCountLbl;
         private Label _warningCountLbl;
         private Label _errorCountLbl;
@@ -73,12 +75,14 @@ namespace Beamable.Editor.Microservice.UI.Components
         public MicroserviceModel Model { get; set; }
         bool NoModel { get; set; }
 
+        public event Action OnDetachLogs;
+
         protected override void OnDestroy()
         {
             base.OnDestroy();
             if(Model == null) return;
             Model.Logs.OnMessagesUpdated -= HandleMessagesUpdated;
-            Model.Logs.OnMessagesUpdated -= HandleMessagesUpdated;
+            Model.Logs.OnSelectedMessageChanged -= UpdateSelectedMessageText;
             Model.Logs.OnViewFilterChanged -= LogsOnOnViewFilterChanged;
         }
 
@@ -90,6 +94,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             clearButton.clickable.clicked += HandleClearButtonClicked;
 
             _advanceDropDown = Root.Q<Button>("advanceBtn");
+            _advanceDropDown.tooltip = "More...";
             if (!NoModel)
             {
                 var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
@@ -100,6 +105,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             _popupBtn = Root.Q<Button>("popupBtn");
             _popupBtn.clickable.clicked += OnPopoutButton_Clicked;
+            _popupBtn.tooltip = Model.AreLogsAttached ? "Detach log container." : "Attach log container.";
 
             _infoCountLbl = Root.Q<Label>("infoCount");
             _warningCountLbl = Root.Q<Label>("warningCount");
@@ -108,19 +114,26 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             if(!NoModel)
             {
+                _searchLogBar = Root.Q<SearchBarVisualElement>();
+                _searchLogBar.SetValueWithoutNotify(Model.Logs.Filter);
+                _searchLogBar.OnSearchChanged += Model.Logs.SetSearchLogFilter;
+
                 _debugViewBtn = Root.Q<Button>("debug");
                 _debugViewBtn.clickable.clicked += Model.Logs.ToggleViewDebugEnabled;
+                _debugViewBtn.tooltip = "Debug Logs";
 
                 _infoViewBtn = Root.Q<Button>("info");
                 _infoViewBtn.clickable.clicked += Model.Logs.ToggleViewInfoEnabled;
+                _infoViewBtn.tooltip = "Info Logs";
 
                 _warningViewBtn = Root.Q<Button>("warning");
                 _warningViewBtn.clickable.clicked += Model.Logs.ToggleViewWarningEnabled;
+                _warningViewBtn.tooltip = "Warning Logs";
 
                 _errorViewBtn = Root.Q<Button>("error");
                 _errorViewBtn.clickable.clicked += Model.Logs.ToggleViewErrorEnabled;
+                _errorViewBtn.tooltip = "Error Logs";
             }
-
 
             // Log
             _logListRoot = Root.Q("logListRoot");
@@ -181,11 +194,13 @@ namespace Beamable.Editor.Microservice.UI.Components
             if (Model.AreLogsAttached)
             {
                 Model.DetachLogs();
+                OnDetachLogs?.Invoke();
             }
             else
             {
                 Model.AttachLogs();
             }
+            _popupBtn.tooltip = Model.AreLogsAttached ? "Detach log container." : "Attach log container.";
         }
 
         private void LogsOnOnViewFilterChanged()
@@ -227,12 +242,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         private void HandleMessagesUpdated()
         {
-            _listView.Refresh();
-            _listView.MarkDirtyRepaint();
-
             _logWindowBody.SetEnabled(Model.Logs.FilteredMessages.Count > 0);
             UpdateCounts();
             MaybeScrollToBottom();
+
+            EditorApplication.delayCall += () =>
+            {
+                _listView.Refresh();
+                _listView.MarkDirtyRepaint();
+            };
         }
 
         private void VerticalScrollerOnvalueChanged(float value)

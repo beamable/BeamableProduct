@@ -2,29 +2,55 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Beamable.Common;
+using Beamable.Editor.Microservice.UI;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.ManagerClient;
+using Beamable.Server.Editor.UI.Components;
 using UnityEditor;
 using UnityEngine;
 
 namespace Beamable.Editor.UI.Model
 {
    [System.Serializable]
-   public class MicroservicesDataModel : ScriptableObject
+   public class MicroservicesDataModel
    {
       private static MicroservicesDataModel _instance;
-      public static bool HasInstance => _instance != null;
+      private static bool _hasEnabledYet;
+
       public static MicroservicesDataModel Instance
       {
          get
          {
-            if (_instance != null) return _instance;
-            _instance = CreateInstance<MicroservicesDataModel>();
-            _instance.RefreshLocalServices();
-            _instance.RefreshServerManifest();
+            var instance = GetInstance();
+            if (!_hasEnabledYet)
+            {
+               instance.OnEnable();
+               _hasEnabledYet = true;
+            }
+
+            return instance;
+         }
+         set
+         {
+            _instance = value;
+            if (!_hasEnabledYet)
+            {
+               _instance.OnEnable();
+               _hasEnabledYet = true;
+            }
+         }
+      }
+
+      private static MicroservicesDataModel GetInstance()
+      {
+         if (_instance != null)
+         {
             return _instance;
          }
-         set => _instance = value;
+         _instance = new MicroservicesDataModel();
+         _instance.RefreshLocalServices();
+         _instance.RefreshServerManifest();
+         return _instance;
       }
 
       public List<MicroserviceModel> Services = new List<MicroserviceModel>();
@@ -34,9 +60,10 @@ namespace Beamable.Editor.UI.Model
       public Action<ServiceManifest> OnServerManifestUpdated;
       public Action<GetStatusResponse> OnStatusUpdated;
 
-      public void RefreshLocalServices()
-      {
+      public void RefreshLocalServices() {
+         var config = MicroserviceConfiguration.Instance;
          var unseenServices = new HashSet<MicroserviceModel>(Services);
+
          foreach (var descriptor in Microservices.Descriptors)
          {
             var existingService = GetModelForDescriptor(descriptor);
@@ -49,7 +76,7 @@ namespace Beamable.Editor.UI.Model
                   Logs = new LogMessageStore(),
                   RemoteReference = GetReference(descriptor),
                   RemoteStatus = GetStatus(descriptor),
-                  Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name)
+                  Config = config.GetEntry(descriptor.Name)
                });
             }
             else
@@ -60,7 +87,7 @@ namespace Beamable.Editor.UI.Model
                var oldBuilder = existingService.Builder;
                existingService.Builder = Microservices.GetServiceBuilder(descriptor);
                existingService.Builder.ForwardEventsTo(oldBuilder);
-               existingService.Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name);
+               existingService.Config = config.GetEntry(descriptor.Name);
             }
          }
 
@@ -120,8 +147,22 @@ namespace Beamable.Editor.UI.Model
 
       private void OnEnable()
       {
+         Microservices.onAfterDeploy += MicroservicesOnonAfterDeploy;
          RefreshLocalServices();
       }
 
+      private void MicroservicesOnonAfterDeploy(ManifestModel oldManifest, int serviceCount)
+      {
+         RefreshServerManifest();
+      }
+
+      public void Destroy()
+      {
+         Microservices.onAfterDeploy -= MicroservicesOnonAfterDeploy;
+
+         _instance = null;
+         _hasEnabledYet = false;
+
+      }
    }
 }

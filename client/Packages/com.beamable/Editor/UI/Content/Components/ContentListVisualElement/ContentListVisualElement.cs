@@ -428,28 +428,8 @@ namespace Beamable.Editor.Content.Components
          // Get the bounds of the entire visual element
          VisualElement centerConfirmationPopupWithinMe = this;
 
-         // Center the "Are you Sure?" prompt within
-         var confirmationPopupWindow = BeamablePopupWindow.ShowConfirmationPopup(centerConfirmationPopupWithinMe);
-         var newPos = BeamablePopupWindow.GetCenteredScreenRectForWindow(EditorWindow.GetWindow<ContentManagerWindow>(), confirmationPopupWindow.position.size);
-
-         confirmationPopupWindow.position = newPos;
-
-         ConfirmationPopupVisualElement confirmationPopupVisualElement =
-            (ConfirmationPopupVisualElement) confirmationPopupWindow.ContentElement;
-
-         confirmationPopupVisualElement.OnOKButtonClicked += () =>
-         {
-            confirmationPopupWindow.Close();
-            foreach (var toDelete in contentItemDescriptors)
-            {
-               OnItemDelete?.Invoke(toDelete);
-            }
-         };
-
-         confirmationPopupVisualElement.OnCancelButtonClicked += () =>
-         {
-            confirmationPopupWindow.Close();
-         };
+         BeamablePopupWindow.ShowConfirmationPopup<ContentManagerWindow>(centerConfirmationPopupWithinMe,
+            ()=>contentItemDescriptors.ToList().ForEach(e => OnItemDelete?.Invoke(e)));
       }
 
 

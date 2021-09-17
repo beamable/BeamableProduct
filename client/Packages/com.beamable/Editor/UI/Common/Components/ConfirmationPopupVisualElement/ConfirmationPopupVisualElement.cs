@@ -1,4 +1,5 @@
 ﻿using System;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -34,17 +35,11 @@ namespace Beamable.Editor.UI.Buss.Components
 
          _okButton = Root.Q<Button>("okButton");
          _okButton.text = "OK";
-         _okButton.clickable.clicked += () =>
-         {
-            OkButton_OnClick();
-         };
+         _okButton.clickable.clicked += OkButton_OnClick;
 
          _cancelButton = Root.Q<Button>("cancelButton");
          _cancelButton.text = "Cancel";
-         _cancelButton.clickable.clicked += () =>
-         {
-            CancelButton_OnClick();
-         };
+         _cancelButton.clickable.clicked += CancelButton_OnClick;
       }
 
       private void OkButton_OnClick()

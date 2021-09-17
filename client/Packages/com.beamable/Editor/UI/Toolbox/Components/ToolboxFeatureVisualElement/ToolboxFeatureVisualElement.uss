@@ -13,7 +13,7 @@
 }
 #description{
     font-size: 10px;
-    top:-2px;
+    top:0px;
     margin-left: 10px;
 }
 
@@ -22,6 +22,7 @@ ToolboxFeatureVisualElement.invisible{
 }
 
 #titleAndIcon{
+    margin-top: 2px;
     flex-direction: row;
 }
 #infoIconBtn{

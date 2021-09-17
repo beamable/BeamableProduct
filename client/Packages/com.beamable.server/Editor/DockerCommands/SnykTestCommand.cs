@@ -10,6 +10,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
       public SnykTestCommand(MicroserviceDescriptor descriptor)
       {
+         UnityLogLabel = "SNYK";
          _descriptor = descriptor;
       }
 
