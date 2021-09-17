@@ -12,7 +12,7 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
    public class AddListenerTests
    {
       [Test]
-      [Timeout(60 * 1000)]
+      [Timeout(2 * 60 * 1000)]
       public async Task MultiThreadedAccess()
       {
          var context = new SocketRequesterContext(() =>
