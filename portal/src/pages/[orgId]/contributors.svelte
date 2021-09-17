@@ -1,20 +1,16 @@
 <script>
-  import Navigate from '../../components/Navigate';
-  import Link from '../../components/Link';
   import Tabs from './_tabs';
   import FeatherIcon from '../../components/FeatherIcon';
-  import Dropdown from '../../components/Dropdown';
   import ModalCard from '../../components/ModalCard';
   import WarningPopup from '../../components/WarningPopup';
   import FilterSearch from '../../components/FilterSearch';
   import PaginateArray from '../../components/PaginateArray';
   import RoleGuard from '../../components/RoleGuard';
+  import PermissionsModal from '../../components/PermissionsModal';
 
   import { getServices } from '../../services';
   const { members, setRole } = getServices().realms;
   const { players, realms } = getServices()
-
-  let roles = ['tester', 'developer', 'admin']
 
   function sortMembers(members = []) {
     
@@ -29,18 +25,11 @@
   let memberError;
   let isLoading;
 
-  let roleLoading = {}
   let filteredMembers = [];
   let pagedMembers = [];
 
-  async function setAccountRole(accountId, role){
-    roleLoading[accountId] = true;
-    try {
-      await setRole(accountId, role);
-    } finally {
-      roleLoading[accountId] = false;
-    }
-  }
+  let permissionsModalActive = false;
+  let permissionsModalAccountId = undefined;
 
   async function addNewMember(toggle){
     try {
@@ -79,6 +68,11 @@
         memberError = err.message;
       }
     }
+  }
+
+  function openPermissionsModal(accountId){
+      permissionsModalAccountId = accountId;
+      permissionsModalActive = true;
   }
 
 </script>
@@ -189,7 +183,7 @@
     position="top"
     elements={filteredMembers}
     bind:pagedElements={pagedMembers}/>
-  {#each pagedMembers as { id, email, availableRoles, roleString }, i (id)}
+    {#each pagedMembers as { id, email, availableRoles, roleString }, i(id)}
     <div class="panel is-member">
 
       <div class="flags {roleString}">
@@ -211,35 +205,19 @@
         </div>
       </div>
 
-      <div class="player-role">
-        <Dropdown class="dropdown" disabled={!(availableRoles && availableRoles.length)} style="display: block">
-
-          <div slot="trigger" class="dropdown-trigger">
-            <button disabled={!(availableRoles && availableRoles.length)} class="button {roleString}" class:is-loading={roleLoading[id]} aria-haspopup="true" aria-controls="dropdown-menu6" 
-              style="width: 100%;
-                    display: flex;
-                    flex-direction: row;
-                    justify-content: space-between;">
-
-              <span class="is-capitalized">{roleString}&nbsp;</span>
-              <span class="icon is-small is-triangle" class:is-invisible={!(availableRoles && availableRoles.length)}>
-                <FeatherIcon icon="triangle" width="8" height="8" />
-              </span>
-            </button>
+      <div class="player-role ">
+        <div class="field">
+          <div class="control">
+              <input type="text" class="input is-static {roleString}" readonly bind:value={roleString}>
           </div>
-
-          <div class="dropdown-menu is-edit-role" id="dropdown-menu" role="menu">
-            <div class="dropdown-content">
-              {#each availableRoles.sort() as role, i (role)}
-                <a class="dropdown-item is-capitalized {role}" class:is-active={role === roleString} on:click={evt => setAccountRole(id, role)}>
-                  {role}
-                </a>
-              {/each}
-            </div>
-          </div>
-        </Dropdown>
+        </div>
       </div>
 
+      <div>
+        <button disabled={!(availableRoles && availableRoles.length)} class="button is-small" on:click={evt => openPermissionsModal(id)}>
+          Permissions
+        </button>
+      </div>
       <div class="player-delete ">
         <WarningPopup 
           left={25} 
@@ -264,6 +242,8 @@
     position="bottom"
     elements={filteredMembers}
     bind:pagedElements={pagedMembers}/>
+
+  <PermissionsModal bind:modalActive={permissionsModalActive} bind:accountId={permissionsModalAccountId}/>
 </RoleGuard>
 
 <style lang="scss">
@@ -399,47 +379,26 @@
     }
   }
 
-
-  .dropdown-content {
-    background: #333236;
-    border: solid 1px #5d5d5d;
-    a {
-      $leftPad: 12px;
-      border-left: solid 2px;
-      padding-left: $leftPad;
-      margin-left: $leftPad;
-      width: calc(100% - #{$leftPad}*2);
+  .player-role {
+    width: 120px;
+    button {
+      background: #333236;
+      height: 38px;
+      border-color: grey;
+      position: relative;
     }
-    a:hover {
-      background: lighten(#424242, 5%);
-    }
-    a.is-active {
-      background: #424242;
-    }
-  }
-
-  .player-role button {
-    background: #333236;
-    height: 38px;
-    border-color: grey;
-    position: relative;
-  }
-
-  .button,
-  .dropdown-item {
-    &.admin {
-      color: $adminColor;
-
-      font-weight: bold;
-    }
-    &.developer {
-      font-weight: bold;
-      color: $developerColor;
-    }
-    &.tester {
-      font-weight: bold;
-      color: $testerColor;
+    .button,
+    .dropdown-item,
+    input {
+      &.admin {
+        color: $adminColor!important;
+      }
+      &.developer {
+        color: $developerColor!important;
+      }
+      &.tester {        
+        color: $testerColor!important;
+      }
     }
   }
-
 </style>
