@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common.Api;
@@ -460,9 +461,9 @@ namespace Beamable.Microservice.Tests.Socket
       private long id;
       private List<MockTestRequestHandler> _handlers = new List<MockTestRequestHandler>();
 
+      public WebSocketState State => WebSocketState.Open;
       private bool _failOnException = true;
       private Exception _failureEx;
-
 
       public TestSocket()
       {

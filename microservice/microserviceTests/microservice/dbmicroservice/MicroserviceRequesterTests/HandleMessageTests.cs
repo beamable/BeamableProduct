@@ -28,7 +28,7 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 
 
          const int threadCount = 500;
-         const int cycleCount = 50;
+         const int cycleCount = 50000;
 
          const string eventName = "test";
          const string eventPath = "event/test";
