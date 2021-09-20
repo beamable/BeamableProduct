@@ -51,7 +51,6 @@ CreateMicroserviceVisualElement > TemplateContainer > #mainVisualElement {
     height: 25px;
 }
 
-
 #checkbox{
     align-self: center;
 }

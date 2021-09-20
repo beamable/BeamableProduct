@@ -1,34 +1,42 @@
-#logHeader{
+#logHeader {
     background-color: #8d8d8d;
 }
 
-.squareBtn{
-    background-color: #c3c3c3;
-    border-color: #9b9b9b;
-}
-#clear{
+.squareBtn {
     background-color: #c3c3c3;
     border-color: #9b9b9b;
 }
 
-#popupBtn{
+#clear {
+    background-color: #c3c3c3;
+    border-color: #9b9b9b;
+}
+
+.attached {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/popup_dark.png");
     background-color: #c3c3c3;
 }
-#advanceBtn{
+
+.detached {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/docker_light.png");
+    background-color: #c3c3c3;
+}
+
+#advanceBtn {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/advance_dark.png");
     background-color: #c3c3c3;
 }
 
-#detailWindow{
-    border-color:#9b9b9b;
+#detailWindow {
+    border-color: #9b9b9b;
 
 }
-#white{
+
+#white {
     border-color: #9b9b9b;
 }
 
-#clearContainer{
+#clearContainer {
     border-color: #9b9b9b;
 }
 
@@ -41,24 +49,26 @@
     border-color: #9b9b9b;
 }
 
-#logListRoot{
+#logListRoot {
     border-color: #9b9b9b;
 }
 
-#debug .img{
+#debug .img {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/debug_Gray_light.png");
 }
 
-#debug.active .img{
+#debug.active .img {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/debug_dark.png");
 }
 
-#error .img{
+#error .img {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/error_Gray_light.png");
 }
-#warning .img{
+
+#warning .img {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/warning_Gray_light.png");
 }
-#info .img{
+
+#info .img {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/info_Gray_light.png");
 }

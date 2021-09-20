@@ -73,7 +73,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         private Button _warningViewBtn;
         private Button _errorViewBtn;
         public MicroserviceModel Model { get; set; }
-        bool NoModel { get; set; }
+        private bool NoModel => Model == null;
 
         public event Action OnDetachLogs;
 
@@ -89,7 +89,12 @@ namespace Beamable.Editor.Microservice.UI.Components
         public override void Refresh()
         {
             base.Refresh();
-            NoModel = Model == null;
+
+            if (NoModel)
+            {
+                return;
+            }
+            
             var clearButton = Root.Q<Button>("clear");
             clearButton.clickable.clicked += HandleClearButtonClicked;
 
@@ -105,6 +110,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             _popupBtn = Root.Q<Button>("popupBtn");
             _popupBtn.clickable.clicked += OnPopoutButton_Clicked;
+            _popupBtn.AddToClassList(Model.AreLogsAttached ? "attached" : "detached");
             _popupBtn.tooltip = Model.AreLogsAttached ? "Detach log container." : "Attach log container.";
 
             _infoCountLbl = Root.Q<Label>("infoCount");
