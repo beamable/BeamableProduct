@@ -37,9 +37,9 @@ namespace Beamable.Editor
          // has the blur event been fired?
          var hasFocused = false;
          
-         void Check(bool isAdditionalCheck = false)
+         void Check(bool isForceCheck = false)
          {
-            if ((hasFocused || isAdditionalCheck) && !constraint.IsValid)
+            if ((hasFocused || isForceCheck) && !constraint.IsValid)
             {
                hasFocused = true;
                constraint.ErrorCheck(out var error);
@@ -80,9 +80,9 @@ namespace Beamable.Editor
          // has the blur event been fired?
          var hasFocused = false;
          
-         void Check(bool isAdditionalCheck = false)
+         void Check(bool isForceCheck = false)
          {
-            if ((hasFocused || isAdditionalCheck) && !constraint.IsValid)
+            if ((hasFocused || isForceCheck) && !constraint.IsValid)
             {
                hasFocused = true;
                constraint.ErrorCheck(out var error);

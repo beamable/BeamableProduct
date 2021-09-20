@@ -31,9 +31,9 @@ namespace Beamable.Editor.UI.Common
       public event Action<bool> OnValidate;
       public event Action OnNotify;
 
-      public void Check(bool isAdditionalCheck = false)
+      public void Check(bool isForceCheck = false)
       {
-         OnValidate?.Invoke(isAdditionalCheck);
+         OnValidate?.Invoke(isForceCheck);
 
       }
       public void Notify()

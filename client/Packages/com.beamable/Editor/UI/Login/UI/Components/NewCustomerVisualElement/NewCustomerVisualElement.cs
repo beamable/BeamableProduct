@@ -4,7 +4,6 @@ using Beamable.Editor.Login.UI.Components;
 using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
 using UnityEngine;
-using Debug = System.Diagnostics.Debug;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
