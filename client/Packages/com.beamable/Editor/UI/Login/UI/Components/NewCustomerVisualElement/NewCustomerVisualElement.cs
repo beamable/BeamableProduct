@@ -47,9 +47,7 @@ namespace Beamable.Editor.Login.UI.Components
          
          _gameNameField = Root.Q<TextField>("projectID");
          _gameNameField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_GAMENAME_FIELD);
-         var isGame = _gameNameField.AddErrorLabel("Game", m => m.Length > 0
-            ? null
-            : "Game Name Required");
+         var isGame = _gameNameField.AddErrorLabel("Game", PrimaryButtonVisualElement.GameNameErrorHandler);
 
          _emailField = Root.Q<TextField>("account");
          _emailField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_EMAIL_FIELD);

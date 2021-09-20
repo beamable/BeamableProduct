@@ -28,7 +28,6 @@ namespace Beamable.Editor.UI.Components
 
       public Button Button { get; private set; }
 
-
       public PrimaryButtonVisualElement() : base($"{BeamableComponentsConstants.UI_PACKAGE_PATH}/Common/Components/{nameof(PrimaryButtonVisualElement)}/{nameof(PrimaryButtonVisualElement)}")
       {
       }
@@ -175,6 +174,12 @@ namespace Beamable.Editor.UI.Components
          return null;
       }
 
+      public static string GameNameErrorHandler(string gameName)
+      {
+         return IsGameNameValid(gameName, out var errorMessage)
+            ? null
+            : errorMessage;
+      }
       public static string ExistErrorHandler(string field)
       {
          if (string.IsNullOrEmpty(field)) return "Required";
@@ -227,7 +232,27 @@ namespace Beamable.Editor.UI.Components
          return str;
       }
 
-
+      public static bool IsGameNameValid(string gameName, out string errorMessage)
+      {
+         errorMessage = string.Empty;
+         if (string.IsNullOrWhiteSpace(gameName))
+         {
+            errorMessage = "Game name is required";
+         }
+         else if (gameName.Length < 3)
+         {
+            errorMessage = "A valid game name must be at least 3 characters long";
+         }
+         else if (gameName.Length > 40)
+         {
+            errorMessage = "A valid game name must be no longer than 40 characters long";
+         }
+         else if (!Regex.IsMatch(gameName, "^[a-zA-Z0-9-_ ]+$"))
+         {
+            errorMessage = "Game name can contain letters, numbers, dashes and spaces";
+         }
+         return errorMessage == string.Empty;
+      }
       public static bool IsValidEmail(string email)
       {
          try
