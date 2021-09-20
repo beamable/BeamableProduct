@@ -99,13 +99,13 @@ namespace Beamable.Editor.UI.Buss.Components
       /// <param name="onConfirm">Optional: Action to call on confirm button clicked</param>
       /// <param name="onCancel">Optional: Action to call on cancel button clicked</param>
       /// <returns></returns>
-      public static void ShowConfirmationPopup<T>(VisualElement centerWithMeVisualElement,
+      public static void ShowConfirmationPopup<T>(VisualElement centerWithMeVisualElement, string windowHeader, string contentText,
          Action onConfirm = null, Action onCancel = null) where T : EditorWindow
       {
          //Find the world bounds of the root of the window. Center the Popup within
          var popupWindowRect = GetCenteredScreenRectFromWorldBounds(centerWithMeVisualElement.worldBound, ConfirmationPopupSize);
 
-         var confirmationPopupVisualElement = new ConfirmationPopupVisualElement();
+         var confirmationPopupVisualElement = new ConfirmationPopupVisualElement(windowHeader, contentText);
 
          if(onCancel != null)
          {

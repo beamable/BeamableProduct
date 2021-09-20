@@ -429,6 +429,8 @@ namespace Beamable.Editor.Content.Components
          VisualElement centerConfirmationPopupWithinMe = this;
 
          BeamablePopupWindow.ShowConfirmationPopup<ContentManagerWindow>(centerConfirmationPopupWithinMe,
+            ContentManagerConstants.ConfirmWindowHeader,
+            ContentManagerConstants.ConfirmItemDeletion,
             ()=>contentItemDescriptors.ToList().ForEach(e => OnItemDelete?.Invoke(e)));
       }
 

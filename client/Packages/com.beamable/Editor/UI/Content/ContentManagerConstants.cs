@@ -73,6 +73,10 @@ namespace Beamable.Editor.Content
       public static string CreateNewPopupWindowTitle = "Create New";
       public static string CreateNewPopupAddButtonDisabledText = "New Item";
       public static string CreateNewPopupAddButtonEnabledText = "Create: {0}";
+      
+      // Confirmation window content
+      public static string ConfirmWindowHeader = "Confirmation";
+      public static string ConfirmItemDeletion = "Are You sure You want to delete this item?";
 
       /// <summary>
       /// Creates a name with NO SPACES. Spaces are not allowed by the backend - srivello

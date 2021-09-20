@@ -19,8 +19,13 @@ namespace Beamable.Editor.UI.Buss.Components
       private Button _okButton;
       private Button _cancelButton;
 
-      public ConfirmationPopupVisualElement() :  base($"{BeamableComponentsConstants.COMP_PATH}/{nameof(ConfirmationPopupVisualElement)}/{nameof(ConfirmationPopupVisualElement)}")
+      private readonly string _windowHeader;
+      private readonly string _contentText;
+
+      public ConfirmationPopupVisualElement(string windowHeader, string contentText) :  base($"{BeamableComponentsConstants.COMP_PATH}/{nameof(ConfirmationPopupVisualElement)}/{nameof(ConfirmationPopupVisualElement)}")
       {
+         _windowHeader = windowHeader;
+         _contentText = contentText;
       }
 
       public override void Refresh()
@@ -28,10 +33,10 @@ namespace Beamable.Editor.UI.Buss.Components
          base.Refresh();
 
          _headerLabel = Root.Q<Label>("headerLabel");
-         _headerLabel.text = "Confirmation";
+         _headerLabel.text = _windowHeader;
 
          _bodyLabel = Root.Q<Label>("bodyLabel");
-         _bodyLabel.text = "Are you sure you want to delete this item?";
+         _bodyLabel.text = _contentText;
 
          _okButton = Root.Q<Button>("okButton");
          _okButton.text = "OK";
