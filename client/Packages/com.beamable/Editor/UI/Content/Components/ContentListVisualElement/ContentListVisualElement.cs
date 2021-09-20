@@ -89,7 +89,7 @@ namespace Beamable.Editor.Content.Components
 
          Model.OnSelectedContentChanged += Model_OnSelectedContentChanged;
          Model.OnFilteredContentsChanged += Model_OnFilteredContentChanged;
-         ContentIO.OnManifestChanged += ManifestChanged;
+         Model.OnManifestChanged += ManifestChanged;
 
          var manipulator = new ContextualMenuManipulator(ContentVisualElement_OnContextMenuOpen);
          _listView.AddManipulator(manipulator);
@@ -97,7 +97,7 @@ namespace Beamable.Editor.Content.Components
          _listView.Refresh();
       }
 
-      private void ManifestChanged(string manifestId)
+      private void ManifestChanged()
       {
          _listView.ClearSelection();
       }
