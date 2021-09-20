@@ -313,35 +313,40 @@ namespace Beamable.Server
             {
                 var assemblyDefPath = AssetDatabase.GUIDToAssetPath(assemblyDefGuid);
                 var assemblyDef = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(assemblyDefPath);
-
-                var jsonData = Json.Deserialize(assemblyDef.text) as ArrayDict;
-
-                var assemblyDefInfo = new AssemblyDefinitionInfo();
-                assemblyDefInfo.Location = assemblyDefPath;
-
-                if (jsonData.TryGetValue("name", out var nameObject) && nameObject is string name)
+                var assemblyDefInfo = assemblyDef.ConvertToInfo();
+                if (!string.IsNullOrEmpty(assemblyDefInfo.Name))
                 {
-                    assemblyDefInfo.Name = name;
                     output.Add(assemblyDefInfo);
                 }
 
-                if (jsonData.TryGetValue("references", out var referencesObject) &&
-                    referencesObject is IEnumerable<object> references)
-                {
-                    assemblyDefInfo.References = references
-                        .Cast<string>()
-                        .Where(s => !string.IsNullOrEmpty(s))
-                        .ToArray();
-                }
-
-                if (jsonData.TryGetValue("precompiledReferences", out var referencesDllObject) &&
-                    referencesDllObject is IEnumerable<object> dllReferences)
-                {
-                    assemblyDefInfo.DllReferences = dllReferences
-                        .Cast<string>()
-                        .Where(s => !string.IsNullOrEmpty(s))
-                        .ToArray();
-                }
+                // var jsonData = Json.Deserialize(assemblyDef.text) as ArrayDict;
+                //
+                // var assemblyDefInfo = new AssemblyDefinitionInfo();
+                // assemblyDefInfo.Location = assemblyDefPath;
+                //
+                // if (jsonData.TryGetValue("name", out var nameObject) && nameObject is string name)
+                // {
+                //     assemblyDefInfo.Name = name;
+                //     output.Add(assemblyDefInfo);
+                // }
+                //
+                // if (jsonData.TryGetValue("references", out var referencesObject) &&
+                //     referencesObject is IEnumerable<object> references)
+                // {
+                //     assemblyDefInfo.References = references
+                //         .Cast<string>()
+                //         .Where(s => !string.IsNullOrEmpty(s))
+                //         .ToArray();
+                // }
+                //
+                // if (jsonData.TryGetValue("precompiledReferences", out var referencesDllObject) &&
+                //     referencesDllObject is IEnumerable<object> dllReferences)
+                // {
+                //     assemblyDefInfo.DllReferences = dllReferences
+                //         .Cast<string>()
+                //         .Where(s => !string.IsNullOrEmpty(s))
+                //         .ToArray();
+                // }
             }
 
             return new AssemblyDefinitionInfoCollection(output);
@@ -411,8 +416,8 @@ namespace Beamable.Server
 
         private static List<PluginImporter> GatherDllDependencies(MicroserviceDescriptor descriptor, AssemblyDefinitionInfoGroup knownAssemblies)
         {
-            var importers = PluginImporter.GetImporters(BuildTarget.NoTarget);
 
+            var importers = PluginImporter.GetAllImporters();
             var dllImporters = knownAssemblies.DllReferences.Select(dllReference =>
             {
                 var importer = importers.FirstOrDefault(i =>

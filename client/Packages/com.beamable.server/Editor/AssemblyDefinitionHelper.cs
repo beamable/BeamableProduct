@@ -19,21 +19,21 @@ namespace Beamable.Server.Editor
 
       private static readonly string[] MongoLibraries = new[]
       {
-         "DnsClient.dll",
-         "MongoDB.Bson.dll",
-         "MongoDB.Driver.Core.dll",
-         "MongoDB.Driver.dll",
-         "MongoDB.Libmongocrypt.dll",
-         "System.Buffers.dll",
-         "System.Runtime.CompilerServices.Unsafe.dll",
-         "SharpCompress.dll"
+         "Beamable.Server.ThirdParty.Mongo.DnsClient.dll",
+         "Beamable.Server.ThirdParty.Mongo.MongoDB.Bson.dll",
+         "Beamable.Server.ThirdParty.Mongo.MongoDB.Driver.Core.dll",
+         "Beamable.Server.ThirdParty.Mongo.MongoDB.Driver.dll",
+         "Beamable.Server.ThirdParty.Mongo.MongoDB.Libmongocrypt.dll",
+         "Beamable.Server.ThirdParty.Mongo.System.Buffers.dll",
+         "Beamable.Server.ThirdParty.Mongo.System.Runtime.CompilerServices.Unsafe.dll",
+         "Beamable.Server.ThirdParty.Mongo.SharpCompress.dll"
       };
       //
-      [MenuItem("Assets/Beamable", false, BEAMABLE_PRIORITY)]
-      public static void BeamableSubMenu()
-      {
-
-      }
+      // [MenuItem("Assets/Beamable", false, BEAMABLE_PRIORITY)]
+      // public static void BeamableSubMenu()
+      // {
+      //
+      // }
       [MenuItem(ADD_MONGO, false, BEAMABLE_PRIORITY)]
       public static void AddMongoLibraries() {
          if (Selection.activeObject is AssemblyDefinitionAsset asm)
@@ -53,12 +53,54 @@ namespace Beamable.Server.Editor
       [MenuItem(ADD_MONGO, true, BEAMABLE_PRIORITY )]
       [MenuItem(REMOVE_MONGO, true, BEAMABLE_PRIORITY)]
       public static bool DoSomethingValidation() {
-         var isAsm = Selection.activeObject.GetType() == typeof(AssemblyDefinitionAsset);
-         if (!isAsm) return false;
+         if (!(Selection.activeObject is AssemblyDefinitionAsset asm))
+         {
+            return false;
+         }
 
-         Microservices.Descriptors.
+         var info = asm.ConvertToInfo();
+         var descriptor = Microservices.Descriptors.FirstOrDefault(d =>
+         {
+            var assembly = d.Type.Assembly;
+            var moduleName = assembly.Modules.FirstOrDefault().Name.Replace(".dll", "");
 
-         return true;
+            return string.Equals(moduleName, info.Name);
+         });
+
+         return descriptor != null;
+      }
+
+      public static AssemblyDefinitionInfo ConvertToInfo(this AssemblyDefinitionAsset asm)
+      {
+         var jsonData = Json.Deserialize(asm.text) as ArrayDict;
+         var path = AssetDatabase.GetAssetPath(asm);
+
+         var assemblyDefInfo = new AssemblyDefinitionInfo {Location = path};
+
+         if (jsonData.TryGetValue("name", out var nameObject) && nameObject is string name)
+         {
+            assemblyDefInfo.Name = name;
+         }
+
+         if (jsonData.TryGetValue("references", out var referencesObject) &&
+             referencesObject is IEnumerable<object> references)
+         {
+            assemblyDefInfo.References = references
+               .Cast<string>()
+               .Where(s => !string.IsNullOrEmpty(s))
+               .ToArray();
+         }
+
+         if (jsonData.TryGetValue("precompiledReferences", out var referencesDllObject) &&
+             referencesDllObject is IEnumerable<object> dllReferences)
+         {
+            assemblyDefInfo.DllReferences = dllReferences
+               .Cast<string>()
+               .Where(s => !string.IsNullOrEmpty(s))
+               .ToArray();
+         }
+
+         return assemblyDefInfo;
       }
 
       public static void AddPrecompiledReferences(this AssemblyDefinitionAsset asm, params string[] libraryNames)
@@ -111,6 +153,7 @@ namespace Beamable.Server.Editor
          json = Json.FormatJson(json);
          var path = AssetDatabase.GetAssetPath(asm);
          File.WriteAllText(path,json);
+         AssetDatabase.ImportAsset(path);
       }
    }
 }
