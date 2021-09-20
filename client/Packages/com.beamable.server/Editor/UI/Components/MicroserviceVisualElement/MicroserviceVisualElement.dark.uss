@@ -17,13 +17,7 @@ LogVisualElement > TemplateContainer> #mainVisualElement{
     border-color: #383838;
 }
 
-/*#popupBtn {*/
-/*    !*right: -5px;*!*/
-/*    !*background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/popup.png");*!*/
-/*}*/
-
 #advanceBtn{
-    /*right: -5px;*/
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/advance.png");
 }
 
