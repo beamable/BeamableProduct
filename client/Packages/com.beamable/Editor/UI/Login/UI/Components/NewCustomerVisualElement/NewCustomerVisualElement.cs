@@ -1,7 +1,11 @@
 using System;
+using System.Diagnostics;
+using System.Linq;
 using Beamable.Editor.Login.UI.Components;
+using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
 using UnityEngine;
+using Debug = System.Diagnostics.Debug;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -42,7 +46,7 @@ namespace Beamable.Editor.Login.UI.Components
          _cidTextField = Root.Q<TextField>("organizationID");
          _cidTextField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_ALIAS_FIELD);
          var isAlias = _cidTextField.AddErrorLabel("Alias", PrimaryButtonVisualElement.AliasErrorHandler);
-
+         
          _gameNameField = Root.Q<TextField>("projectID");
          _gameNameField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_GAMENAME_FIELD);
          var isGame = _gameNameField.AddErrorLabel("Game", m => m.Length > 0
@@ -74,14 +78,14 @@ namespace Beamable.Editor.Login.UI.Components
          _legalButton = Root.Q<Button>("legalButton");
          _legalButton.clickable.clicked +=() => { Application.OpenURL(BeamableConstants.BEAMABLE_LEGAL_WEBSITE); };
          
-         
-
          _continueButton = Root.Q<PrimaryButtonVisualElement>();
          _continueButton.Button.clickable.clicked += CreateCustomer_OnClicked;
 
-         _continueButton.AddGateKeeper(doPasswordsMatch, isPasswordValid, isEmail, isAlias, isGame, isLegal);
+         var constraints = new[] { doPasswordsMatch, isPasswordValid, isEmail, isAlias, isGame, isLegal };
+         _continueButton.AddGateKeeper(constraints);
+         _continueButton.RegisterCallback<MouseEnterEvent>(evt => ContinueButton_OnMouseEnter(evt, constraints));
 
-         _switchCustomerButton = Root.Q<Button>("existingOrganization");
+            _switchCustomerButton = Root.Q<Button>("existingOrganization");
          _switchCustomerButton.clickable.clicked += Manager.GotoExistingCustomer;
 
          _errorText = Root.Q<Label>("errorLabel");
@@ -91,9 +95,18 @@ namespace Beamable.Editor.Login.UI.Components
 
       private void CreateCustomer_OnClicked()
       {
-         Model.Customer.SetNewCustomer(_cidTextField.value, _gameNameField.value, _emailField.value, _passwordField.value);
+         Model.Customer.SetNewCustomer(_cidTextField.value, _gameNameField.value, _emailField.value,
+            _passwordField.value);
          var promise = Manager.AttemptNewCustomer(Model);
          _continueButton.Load(AddErrorLabel(promise, _errorText));
+      }
+      private void ContinueButton_OnMouseEnter(MouseEnterEvent evt, FormConstraint[] constraints)
+      {
+         var fieldsWithError = constraints.Where(kvp => !kvp.IsValid);
+         foreach (var fieldWithError in fieldsWithError)
+         {
+            fieldWithError.AdditionalCheck();
+         }
       }
    }
 }

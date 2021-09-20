@@ -36,11 +36,13 @@ namespace Beamable.Editor
          self.Add(errorLabel);
          // has the blur event been fired?
          var hasFocused = false;
-         void Check()
+         
+         void Check(bool isAdditionalCheck = false)
          {
-
-            if (hasFocused && constraint.ErrorCheck(out var error))
+            if ((hasFocused || isAdditionalCheck) && !constraint.IsValid)
             {
+               hasFocused = true;
+               constraint.ErrorCheck(out var error);
                errorLabel.text = error;
                self.AddToClassList("hasError");
                errorLabel.RemoveFromClassList("beamableErrorHidden");
@@ -55,9 +57,10 @@ namespace Beamable.Editor
 
          self.RegisterCallback<FocusEvent>(evt => { hasFocused = true; });
 
-         constraint.OnNotify += Check;
-         constraint.OnValidate += Check;
-         return Check;
+         constraint.OnNotify += delegate { Check(); };
+         constraint.OnValidate += delegate { Check(); };
+         constraint.OnAdditionalCheck += delegate { Check(true); };
+         return delegate { Check(); };
       }
 
       public static Action AddErrorLabel(this TextField self, FormConstraint constraint)
@@ -77,11 +80,13 @@ namespace Beamable.Editor
 
          // has the blur event been fired?
          var hasFocused = false;
-         void Check()
+         
+         void Check(bool isAdditionalCheck = false)
          {
-
-            if (hasFocused && constraint.ErrorCheck(out var error))
+            if ((hasFocused || isAdditionalCheck) && !constraint.IsValid)
             {
+               hasFocused = true;
+               constraint.ErrorCheck(out var error);
                errorLabel.text = error;
                self.AddToClassList("hasError");
                errorLabel.RemoveFromClassList("beamableErrorHidden");
@@ -93,12 +98,13 @@ namespace Beamable.Editor
                errorLabel.AddToClassList("beamableErrorHidden");
             }
          }
-
+         
          self.RegisterCallback<FocusEvent>(evt => { hasFocused = true; });
 
-         constraint.OnNotify += Check;
-         constraint.OnValidate += Check;
-         return Check;
+         constraint.OnNotify += delegate { Check(); };
+         constraint.OnValidate += delegate { Check(); };
+         constraint.OnAdditionalCheck += delegate { Check(true); };
+         return delegate { Check(); };
       }
 
 
