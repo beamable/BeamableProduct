@@ -10,11 +10,6 @@ Button.unity-button.noBackground:hover {
 }
 
 /* === BEGIN - ANNOUNCEMENTS === */
-.announcement-main {
-    max-height: 100px;
-    min-height: 100px;
-}
-
 #announcement-ignore {
     background-color: rgba(0,0,0,0);
     border-width: 0px;
