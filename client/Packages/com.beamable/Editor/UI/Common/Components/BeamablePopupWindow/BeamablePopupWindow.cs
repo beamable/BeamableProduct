@@ -99,12 +99,10 @@ namespace Beamable.Editor.UI.Buss.Components
       /// <param name="onConfirm">Optional: Action to call on confirm button clicked</param>
       /// <param name="onCancel">Optional: Action to call on cancel button clicked</param>
       /// <returns></returns>
-      public static void ShowConfirmationPopup<T>(VisualElement centerWithMeVisualElement, string windowHeader, string contentText,
+      public static void ShowConfirmationPopup<T>(T centerWithMeVisualElement, string windowHeader, string contentText,
          Action onConfirm = null, Action onCancel = null) where T : EditorWindow
       {
-         //Find the world bounds of the root of the window. Center the Popup within
-         var popupWindowRect = GetCenteredScreenRectFromWorldBounds(centerWithMeVisualElement.worldBound, ConfirmationPopupSize);
-
+         var popupWindowRect = GetCenteredScreenRectForWindow(centerWithMeVisualElement, ConfirmationPopupSize);
          var confirmationPopupVisualElement = new ConfirmationPopupVisualElement(windowHeader, contentText);
 
          if(onCancel != null)
@@ -132,12 +130,10 @@ namespace Beamable.Editor.UI.Buss.Components
          };
 
 #else
-         var wnd = BeamablePopupWindow.ShowDropdown("Confirmation",
-            popupWindowRect, popupWindowRect.size, confirmationPopupVisualElement);
+         var wnd = BeamablePopupWindow.ShowDropdown("Confirmation", popupWindowRect, popupWindowRect.size, confirmationPopupVisualElement);
          confirmationPopupVisualElement.OnCancelButtonClicked += wnd.Close;
          confirmationPopupVisualElement.OnOKButtonClicked += wnd.Close;
          var newPos = BeamablePopupWindow.GetCenteredScreenRectForWindow(EditorWindow.GetWindow<T>(), popupWindowRect.size);
-
          wnd.position = newPos;//new Rect(popupWindowRect.x, popupWindowRect.y, popupWindowRect.size.x, popupWindowRect.size.y);
 #endif
       }
