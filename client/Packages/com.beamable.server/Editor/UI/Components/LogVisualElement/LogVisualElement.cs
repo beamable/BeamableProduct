@@ -47,17 +47,6 @@ namespace Beamable.Editor.Microservice.UI.Components
             }
         }
 
-        private TextField _nameTextField;
-        private string _nameBackup;
-        // private List<LogMessageModel> testLogList;
-        private Label _statusLabel;
-        private VisualElement _statusIcon;
-        private VisualElement _remoteStatusIcon;
-        private Label _remoteStatusLabel;
-        private Button _popupBtn;
-
-        private object _logVisualElement;
-        private Button _startButton;
         private ScrollView _scrollView;
         private VisualElement _detailView;
         private VisualElement _logWindowBody;
@@ -68,6 +57,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         private Label _warningCountLbl;
         private Label _errorCountLbl;
         private Label _debugCountLbl;
+        private Button _popupBtn;
         private Button _debugViewBtn;
         private Button _infoViewBtn;
         private Button _warningViewBtn;
@@ -89,11 +79,6 @@ namespace Beamable.Editor.Microservice.UI.Components
         public override void Refresh()
         {
             base.Refresh();
-
-            if (NoModel)
-            {
-                return;
-            }
             
             var clearButton = Root.Q<Button>("clear");
             clearButton.clickable.clicked += HandleClearButtonClicked;
