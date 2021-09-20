@@ -26,6 +26,7 @@ namespace Beamable.Editor.Content.Components
       public event Action<IList<ContentItemDescriptor>> OnSelectionChanged;
       public event Action<ContentItemDescriptor> OnItemDelete;
       public event Action<ContentTypeDescriptor> OnItemAdd;
+      public event Action<ContentItemDescriptor> OnItemRename;
       public event Action<List<ContentItemDescriptor>> OnItemDownload;
 
       /// <summary>
@@ -435,8 +436,7 @@ namespace Beamable.Editor.Content.Components
 
       private void ContentVisualElement_OnItemRenameGestureBegin(ContentItemDescriptor contentItemDescriptor)
       {
-         ContentVisualElement contentVisualElement = GetVisualItemByData(contentItemDescriptor);
-         contentVisualElement?.RenameGestureBegin();
+         OnItemRename?.Invoke(contentItemDescriptor);
       }
 
       private void ContentVisualElement_OnDownloadSingle(ContentItemDescriptor contentItemDescriptor)
