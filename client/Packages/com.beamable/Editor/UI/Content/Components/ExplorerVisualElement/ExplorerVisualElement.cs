@@ -107,7 +107,7 @@ namespace Beamable.Editor.Content.Components
          OnRenameItemRequested?.Invoke(contentItemDescriptor);
       }
 
-        private void ContentListVisualElement_OnItemDelete(ContentItemDescriptor contentItemDescriptor)
+      private void ContentListVisualElement_OnItemDelete(ContentItemDescriptor contentItemDescriptor)
       {
          Model.DeleteItem(contentItemDescriptor);
       }

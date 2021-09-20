@@ -333,7 +333,7 @@ namespace Beamable.Editor.Content
       }
 
       private void ExplorerElement_OnItemRename(ContentItemDescriptor contentItemDescriptor)
-        {
+      {
             EditorApplication.delayCall += () =>
             {
                 if (_contentManager.Model.GetDescriptorForId(contentItemDescriptor.Id, out var item))
