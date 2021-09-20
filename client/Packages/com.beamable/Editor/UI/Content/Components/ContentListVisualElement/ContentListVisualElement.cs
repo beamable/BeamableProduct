@@ -8,6 +8,7 @@ using Beamable.Common.Content;
 using UnityEngine;
 using UnityEditor;
 using Beamable.Editor.UI.Buss.Components;
+using Beamable.Editor.UI.Common;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -43,7 +44,7 @@ namespace Beamable.Editor.Content.Components
 
       private VisualElement _mainVisualElement;
       private HeaderVisualElement _headerVisualElement;
-      private ListView _listView;
+      private ExtendedListView _listView;
       private List<ContentItemDescriptor> _contentItemDescriptorList;
       private List<HeaderSizeChange> _headerSizeChanges;
 
@@ -87,11 +88,17 @@ namespace Beamable.Editor.Content.Components
 
          Model.OnSelectedContentChanged += Model_OnSelectedContentChanged;
          Model.OnFilteredContentsChanged += Model_OnFilteredContentChanged;
+         ContentIO.OnManifestChanged += ManifestChanged;
 
          var manipulator = new ContextualMenuManipulator(ContentVisualElement_OnContextMenuOpen);
          _listView.AddManipulator(manipulator);
 
          _listView.Refresh();
+      }
+
+      private void ManifestChanged(string manifestId)
+      {
+         _listView.ClearSelection();
       }
 
       private void Header_OnValuesResized(List<HeaderSizeChange> headerFlexSizes)
@@ -129,9 +136,9 @@ namespace Beamable.Editor.Content.Components
          _listView.Refresh();
       }
 
-      private ListView CreateListView()
+      private ExtendedListView CreateListView()
       {
-         var view = new ListView()
+         var view = new ExtendedListView()
          {
             makeItem = CreateListViewElement,
             bindItem = BindListViewElement,
