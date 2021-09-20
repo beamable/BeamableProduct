@@ -19,7 +19,7 @@ namespace Beamable.Editor
    {
 
 
-      public static Action AddErrorLabel(this Toggle self, FormConstraint constraint)
+      public static Action<bool> AddErrorLabel(this Toggle self, FormConstraint constraint)
       {
          var errorLabel = new Label();
          errorLabel.AddToClassList("beamableErrorHidden");
@@ -58,12 +58,11 @@ namespace Beamable.Editor
          self.RegisterCallback<FocusEvent>(evt => { hasFocused = true; });
 
          constraint.OnNotify += delegate { Check(); };
-         constraint.OnValidate += delegate { Check(); };
-         constraint.OnAdditionalCheck += delegate { Check(true); };
-         return delegate { Check(); };
+         constraint.OnValidate += Check;
+         return Check;
       }
 
-      public static Action AddErrorLabel(this TextField self, FormConstraint constraint)
+      public static Action<bool> AddErrorLabel(this TextField self, FormConstraint constraint)
       {
          var errorLabel = new Label();
          errorLabel.AddToClassList("beamableErrorHidden");
@@ -102,9 +101,8 @@ namespace Beamable.Editor
          self.RegisterCallback<FocusEvent>(evt => { hasFocused = true; });
 
          constraint.OnNotify += delegate { Check(); };
-         constraint.OnValidate += delegate { Check(); };
-         constraint.OnAdditionalCheck += delegate { Check(true); };
-         return delegate { Check(); };
+         constraint.OnValidate += Check;
+         return Check;
       }
 
 

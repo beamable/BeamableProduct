@@ -28,24 +28,19 @@ namespace Beamable.Editor.UI.Common
 
       public FormErrorCheck ErrorCheck;
       public string Name;
-      public event Action OnValidate;
+      public event Action<bool> OnValidate;
       public event Action OnNotify;
-      public event Action OnAdditionalCheck;
 
-      public void Check()
+      public void Check(bool isAdditionalCheck = false)
       {
-         OnValidate?.Invoke();
+         OnValidate?.Invoke(isAdditionalCheck);
 
       }
       public void Notify()
       {
          OnNotify?.Invoke();
       }
-      public void AdditionalCheck()
-      {
-         OnAdditionalCheck?.Invoke();
-      }
-      
+
       public bool IsValid => !ErrorCheck(out string err);
 
    }

@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Linq;
 using Beamable.Editor.Login.UI.Components;
 using Beamable.Editor.UI.Common;
@@ -105,7 +104,7 @@ namespace Beamable.Editor.Login.UI.Components
          var fieldsWithError = constraints.Where(kvp => !kvp.IsValid);
          foreach (var fieldWithError in fieldsWithError)
          {
-            fieldWithError.AdditionalCheck();
+            fieldWithError.Check(true);
          }
       }
    }
