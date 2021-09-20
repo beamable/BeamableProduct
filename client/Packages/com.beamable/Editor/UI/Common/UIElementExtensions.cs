@@ -19,7 +19,7 @@ namespace Beamable.Editor
    {
 
 
-      public static Action AddErrorLabel(this Toggle self, FormConstraint constraint)
+      public static Action<bool> AddErrorLabel(this Toggle self, FormConstraint constraint)
       {
          var errorLabel = new Label();
          errorLabel.AddToClassList("beamableErrorHidden");
@@ -36,11 +36,13 @@ namespace Beamable.Editor
          self.Add(errorLabel);
          // has the blur event been fired?
          var hasFocused = false;
-         void Check()
+         
+         void Check(bool isForceCheck = false)
          {
-
-            if (hasFocused && constraint.ErrorCheck(out var error))
+            if ((hasFocused || isForceCheck) && !constraint.IsValid)
             {
+               hasFocused = true;
+               constraint.ErrorCheck(out var error);
                errorLabel.text = error;
                self.AddToClassList("hasError");
                errorLabel.RemoveFromClassList("beamableErrorHidden");
@@ -55,12 +57,12 @@ namespace Beamable.Editor
 
          self.RegisterCallback<FocusEvent>(evt => { hasFocused = true; });
 
-         constraint.OnNotify += Check;
+         constraint.OnNotify += delegate { Check(); };
          constraint.OnValidate += Check;
          return Check;
       }
 
-      public static Action AddErrorLabel(this TextField self, FormConstraint constraint)
+      public static Action<bool> AddErrorLabel(this TextField self, FormConstraint constraint)
       {
          var errorLabel = new Label();
          errorLabel.AddToClassList("beamableErrorHidden");
@@ -77,11 +79,13 @@ namespace Beamable.Editor
 
          // has the blur event been fired?
          var hasFocused = false;
-         void Check()
+         
+         void Check(bool isForceCheck = false)
          {
-
-            if (hasFocused && constraint.ErrorCheck(out var error))
+            if ((hasFocused || isForceCheck) && !constraint.IsValid)
             {
+               hasFocused = true;
+               constraint.ErrorCheck(out var error);
                errorLabel.text = error;
                self.AddToClassList("hasError");
                errorLabel.RemoveFromClassList("beamableErrorHidden");
@@ -93,10 +97,10 @@ namespace Beamable.Editor
                errorLabel.AddToClassList("beamableErrorHidden");
             }
          }
-
+         
          self.RegisterCallback<FocusEvent>(evt => { hasFocused = true; });
 
-         constraint.OnNotify += Check;
+         constraint.OnNotify += delegate { Check(); };
          constraint.OnValidate += Check;
          return Check;
       }
