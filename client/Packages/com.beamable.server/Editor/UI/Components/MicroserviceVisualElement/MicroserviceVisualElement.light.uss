@@ -15,14 +15,10 @@
     border-color: #6C6C6C;
 }
 
-/*#popupBtn{*/
-/*    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/popup_dark.png");*/
-/*    background-color: #A7A7A7;*/
-/*}*/
-
 #advanceBtn{
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/advance_dark.png");
-    background-color: #A7A7A7;}
+    background-color: #A7A7A7;
+}
 
 #detailWindow{
     border-color: #6C6C6C;

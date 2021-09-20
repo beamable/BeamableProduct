@@ -13,7 +13,7 @@
 }
 
 .detached {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/docker_light.png");
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/detached.png");
 }
 
 #advanceBtn {

@@ -18,7 +18,7 @@
 }
 
 .detached {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/docker_light.png");
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/detached_dark.png");
     background-color: #c3c3c3;
 }
 
