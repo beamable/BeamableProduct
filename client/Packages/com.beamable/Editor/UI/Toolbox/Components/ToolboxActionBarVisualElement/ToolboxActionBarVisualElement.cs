@@ -152,8 +152,10 @@ namespace Beamable.Editor.Toolbox.Components
                     return;
                 }
 
-                var content = new InstallServerVisualElement();
-                content.Model = meta;
+                var content = new InstallServerVisualElement
+                {
+                    Model = meta
+                };
                 var wnd = BeamablePopupWindow.ShowDropdown("Install Microservices", popupWindowRect, new Vector2(250, 185), content);
                 content.OnClose += () => wnd.Close();
                 content.OnInfo += () =>
