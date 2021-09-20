@@ -123,3 +123,22 @@ CreateMicroserviceVisualElement > TemplateContainer > #mainVisualElement {
     margin-bottom: 3px;
     flex-grow: 1;
 }
+
+#moreBtn{
+    -unity-slice-bottom: 0;
+    -unity-slice-top: 0;
+    -unity-slice-right: 0;
+    -unity-slice-left: 0;
+    border-right-width: 0px;
+    border-top-width: 0px;
+    border-bottom-width: 0px;
+    border-left-width: 0px;
+    padding-left: 11px;
+    padding-right: 11px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    margin-right: 0px;
+    margin-left: 0px;
+    margin-bottom: 0px;
+    margin-top: 0px;
+}
