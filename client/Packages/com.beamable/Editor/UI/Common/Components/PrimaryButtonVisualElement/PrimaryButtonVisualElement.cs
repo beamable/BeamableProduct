@@ -66,7 +66,7 @@ namespace Beamable.Editor.UI.Components
       {
          foreach (var constraint in constraints){
             _constraints.Add(constraint);
-            constraint.OnValidate += () => CheckConstraints(constraint);
+            constraint.OnValidate += _ => CheckConstraints(constraint);
 
             CheckConstraints(constraint);
          }
