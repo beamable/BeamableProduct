@@ -47,17 +47,6 @@ namespace Beamable.Editor.Microservice.UI.Components
             }
         }
 
-        private TextField _nameTextField;
-        private string _nameBackup;
-        // private List<LogMessageModel> testLogList;
-        private Label _statusLabel;
-        private VisualElement _statusIcon;
-        private VisualElement _remoteStatusIcon;
-        private Label _remoteStatusLabel;
-        private Button _popupBtn;
-
-        private object _logVisualElement;
-        private Button _startButton;
         private ScrollView _scrollView;
         private VisualElement _detailView;
         private VisualElement _logWindowBody;
@@ -68,12 +57,13 @@ namespace Beamable.Editor.Microservice.UI.Components
         private Label _warningCountLbl;
         private Label _errorCountLbl;
         private Label _debugCountLbl;
+        private Button _popupBtn;
         private Button _debugViewBtn;
         private Button _infoViewBtn;
         private Button _warningViewBtn;
         private Button _errorViewBtn;
         public MicroserviceModel Model { get; set; }
-        bool NoModel { get; set; }
+        private bool NoModel => Model == null;
 
         public event Action OnDetachLogs;
 
@@ -89,7 +79,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         public override void Refresh()
         {
             base.Refresh();
-            NoModel = Model == null;
+            
             var clearButton = Root.Q<Button>("clear");
             clearButton.clickable.clicked += HandleClearButtonClicked;
 
@@ -105,6 +95,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             _popupBtn = Root.Q<Button>("popupBtn");
             _popupBtn.clickable.clicked += OnPopoutButton_Clicked;
+            _popupBtn.AddToClassList(Model.AreLogsAttached ? "attached" : "detached");
             _popupBtn.tooltip = Model.AreLogsAttached ? "Detach log container." : "Attach log container.";
 
             _infoCountLbl = Root.Q<Label>("infoCount");

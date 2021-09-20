@@ -34,6 +34,7 @@ namespace Beamable.Editor.Content.Models
       public event Action<bool> OnUserCanPublishChanged;
 
       public event Action OnSoftReset;
+      public event Action OnManifestChanged;
 
       public EditorContentQuery Filter { get; private set; }
       public EditorContentQuery SystemFilter { get; private set; } = new EditorContentQuery();
@@ -63,12 +64,18 @@ namespace Beamable.Editor.Content.Models
 
       public ContentDataModel()
       {
-
+         ContentIO.OnManifestChanged += ManifestChanged;
       }
 
       public ContentDataModel (ContentIO contentIO)
       {
          ContentIO = contentIO;
+         ContentIO.OnManifestChanged += ManifestChanged;
+      }
+      
+      private void ManifestChanged(string manifestId)
+      {
+         OnManifestChanged?.Invoke();
       }
 
       public void TriggerSoftReset()

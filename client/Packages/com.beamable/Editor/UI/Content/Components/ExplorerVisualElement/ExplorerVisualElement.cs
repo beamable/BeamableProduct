@@ -20,6 +20,7 @@ namespace Beamable.Editor.Content.Components
    {
       public event Action OnAddItemButtonClicked;
       public event Action<ContentTypeDescriptor> OnAddItemRequested;
+      public event Action<ContentItemDescriptor> OnRenameItemRequested;
       public event Action<List<ContentItemDescriptor>> OnItemDownloadRequested;
       public ContentDataModel Model { get; set; }
 
@@ -62,6 +63,7 @@ namespace Beamable.Editor.Content.Components
          _listElement.OnItemDelete += ContentListVisualElement_OnItemDelete;
          _listElement.OnItemAdd += ContentlistVisualElement_OnItemAdd;
          _listElement.OnItemDownload += ContentListVisualElement_OnDownload;
+         _listElement.OnItemRename += ContentListVisualElement_OnItemRename;
          _listContainer.Add(_listElement);
          _listElement.Model = Model;
          _listElement.Refresh();
@@ -98,6 +100,11 @@ namespace Beamable.Editor.Content.Components
       private void ContentListVisualElement_OnDownload(List<ContentItemDescriptor> itemDescriptors)
       {
          OnItemDownloadRequested?.Invoke(itemDescriptors);
+      }
+
+      private void ContentListVisualElement_OnItemRename(ContentItemDescriptor contentItemDescriptor)
+      {
+         OnRenameItemRequested?.Invoke(contentItemDescriptor);
       }
 
       private void ContentListVisualElement_OnItemDelete(ContentItemDescriptor contentItemDescriptor)

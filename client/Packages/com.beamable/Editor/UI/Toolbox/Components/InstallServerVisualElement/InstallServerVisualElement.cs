@@ -22,6 +22,8 @@ namespace Beamable.Editor.Toolbox.UI.Components
 
       public BeamablePackageMeta Model { get; set; }
 
+      private Button _downloadButton;
+
       public override void Refresh()
       {
          base.Refresh();
@@ -29,13 +31,16 @@ namespace Beamable.Editor.Toolbox.UI.Components
          var lbl = Root.Q<Label>();
          lbl.AddTextWrapStyle();
 
+         _downloadButton = Root.Q<Button>("download");
+
          Root.Q<Button>("cancel").clickable.clicked += () => OnClose?.Invoke();
          Root.Q<Button>("docs").clickable.clicked += () => OnInfo?.Invoke();
-         Root.Q<Button>("download").clickable.clicked += DownloadClicked;
+         _downloadButton.clickable.clicked += DownloadClicked;
       }
 
       private void DownloadClicked()
       {
+         _downloadButton.SetEnabled(false);
          BeamablePackages.DownloadServer(Model).Then(_ => OnDone?.Invoke());
       }
    }
