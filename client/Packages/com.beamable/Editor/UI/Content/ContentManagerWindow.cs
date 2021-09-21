@@ -309,6 +309,7 @@ namespace Beamable.Editor.Content
          _explorerElement.OnAddItemButtonClicked += ExplorerElement_OnAddItemButtonClicked;
          _explorerElement.OnAddItemRequested += ExplorerElement_OnAddItem;
          _explorerElement.OnItemDownloadRequested += ExplorerElement_OnDownloadItem;
+         _explorerElement.OnRenameItemRequested += ExplorerElement_OnItemRename;
 
          _explorerElement.Model = _contentManager.Model;
          _explorerElement.Refresh();
@@ -329,6 +330,17 @@ namespace Beamable.Editor.Content
                item.ForceRename();
             }
          };
+      }
+
+      private void ExplorerElement_OnItemRename(ContentItemDescriptor contentItemDescriptor)
+      {
+            EditorApplication.delayCall += () =>
+            {
+                if (_contentManager.Model.GetDescriptorForId(contentItemDescriptor.Id, out var item))
+                {
+                    item.ForceRename();
+                }
+            };
       }
 
       private void ExplorerElement_OnAddItem(ContentTypeDescriptor type)
