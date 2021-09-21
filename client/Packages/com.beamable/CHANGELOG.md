@@ -17,7 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ability to disable VIP currency awards on Mail Rewards
 - PlayerSettings scripting define symbols are saved in Diagnostics file
 - Beamable package version Toolbox announcement
-- Auto-complete text feature for `AdminFlow` prefab
 
 ### Changed
 - Request and Responses to and from Beamable are GZipped if larger than 1K
