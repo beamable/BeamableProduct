@@ -14,7 +14,7 @@ namespace Beamable.Common.Content
    ///
    /// #### Related Links
    /// - See Beamable.Common.Content.ContentObject script reference
-   /// 
+   ///
    /// ![img beamable-logo]
    ///
    /// </summary>
@@ -23,7 +23,7 @@ namespace Beamable.Common.Content
       public Type Type;
       public string Name;
    }
-   
+
    /// <summary>
    /// This type defines part of the %Beamable %ContentObject system.
    ///
@@ -31,7 +31,7 @@ namespace Beamable.Common.Content
    ///
    /// #### Related Links
    /// - See Beamable.Common.Content.ContentObject script reference
-   /// 
+   ///
    /// ![img beamable-logo]
    ///
    /// </summary>
@@ -93,6 +93,23 @@ namespace Beamable.Common.Content
                   }
                }
             }
+#if UNITY_EDITOR
+            catch (ReflectionTypeLoadException ex)
+            {
+               var isDnsClientException = ex.LoaderExceptions.Any(err => err.Message.Contains("System.Buffers"));
+               if (isDnsClientException) continue;
+               
+               Debug.LogError("The content registry couldn't load a project dll");
+               foreach (var type in ex.Types)
+               {
+                  Debug.LogError($"Cannot load type {type?.Name}");
+               }
+               foreach (var err in ex.LoaderExceptions)
+               {
+                  Debug.LogException(err);
+               }
+            }
+#endif
             catch (Exception ex)
             {
                BeamableLogger.LogError(ex);
