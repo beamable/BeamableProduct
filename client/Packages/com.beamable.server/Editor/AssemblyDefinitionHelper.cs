@@ -28,17 +28,12 @@ namespace Beamable.Server.Editor
          "Beamable.Server.ThirdParty.Mongo.System.Runtime.CompilerServices.Unsafe.dll",
          "Beamable.Server.ThirdParty.Mongo.SharpCompress.dll"
       };
-      //
-      // [MenuItem("Assets/Beamable", false, BEAMABLE_PRIORITY)]
-      // public static void BeamableSubMenu()
-      // {
-      //
-      // }
+
       [MenuItem(ADD_MONGO, false, BEAMABLE_PRIORITY)]
       public static void AddMongoLibraries() {
          if (Selection.activeObject is AssemblyDefinitionAsset asm)
          {
-            asm.AddPrecompiledReferences(MongoLibraries);
+            asm.AddMongoLibraries();
          }
       }
 
@@ -46,28 +41,42 @@ namespace Beamable.Server.Editor
       public static void RemoveMongoLibraries() {
          if (Selection.activeObject is AssemblyDefinitionAsset asm)
          {
-            asm.RemovePrecompiledReferences(MongoLibraries);
+            asm.RemoveMongoLibraries();
          }
       }
 
       [MenuItem(ADD_MONGO, true, BEAMABLE_PRIORITY )]
       [MenuItem(REMOVE_MONGO, true, BEAMABLE_PRIORITY)]
-      public static bool DoSomethingValidation() {
+      public static bool ValidateSelectionIsMicroservice() {
          if (!(Selection.activeObject is AssemblyDefinitionAsset asm))
          {
             return false;
          }
 
          var info = asm.ConvertToInfo();
-         var descriptor = Microservices.Descriptors.FirstOrDefault(d =>
-         {
-            var assembly = d.Type.Assembly;
-            var moduleName = assembly.Modules.FirstOrDefault().Name.Replace(".dll", "");
-
-            return string.Equals(moduleName, info.Name);
-         });
+         var descriptor = Microservices.Descriptors.FirstOrDefault(d => d.IsContainedInAssemblyInfo(info));
 
          return descriptor != null;
+      }
+
+      public static void AddMongoLibraries(this MicroserviceDescriptor service) =>
+         service.AddPrecompiledReferences(MongoLibraries);
+
+      public static void RemoveMongoLibraries(this MicroserviceDescriptor service) =>
+         service.RemovePrecompiledReferences(MongoLibraries);
+
+      public static void AddMongoLibraries(this AssemblyDefinitionAsset asm) =>
+         asm.AddPrecompiledReferences(MongoLibraries);
+
+      public static void RemoveMongoLibraries(this AssemblyDefinitionAsset asm) =>
+         asm.RemovePrecompiledReferences(MongoLibraries);
+
+      public static bool IsContainedInAssemblyInfo(this MicroserviceDescriptor service, AssemblyDefinitionInfo asm)
+      {
+         var assembly = service.Type.Assembly;
+         var moduleName = assembly.Modules.FirstOrDefault().Name.Replace(".dll", "");
+
+         return string.Equals(moduleName, asm.Name);
       }
 
       public static AssemblyDefinitionInfo ConvertToInfo(this AssemblyDefinitionAsset asm)
@@ -103,6 +112,37 @@ namespace Beamable.Server.Editor
          return assemblyDefInfo;
       }
 
+      public static AssemblyDefinitionAsset ConvertToAsset(this MicroserviceDescriptor service)
+         => EnumerateAssemblyDefinitionAssets()
+            .FirstOrDefault(asm => service.IsContainedInAssemblyInfo(asm.ConvertToInfo()));
+
+      public static IEnumerable<AssemblyDefinitionAsset> EnumerateAssemblyDefinitionAssets()
+      {
+         // TODO: We could add a static cache here, because by definition, a recompile will be executed anytime a new ASMDEF shows up.
+         var assemblyDefGuids = AssetDatabase.FindAssets($"t:{nameof(AssemblyDefinitionAsset)}");
+         foreach (var assemblyDefGuid in assemblyDefGuids)
+         {
+            var assemblyDefPath = AssetDatabase.GUIDToAssetPath(assemblyDefGuid);
+            var assemblyDef = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(assemblyDefPath);
+            yield return assemblyDef;
+         }
+      }
+
+      public static IEnumerable<AssemblyDefinitionInfo> EnumerateAssemblyDefinitionInfos()
+      {
+         foreach (var asm in EnumerateAssemblyDefinitionAssets())
+         {
+            var assemblyDefInfo = asm.ConvertToInfo();
+            if (!string.IsNullOrEmpty(assemblyDefInfo.Name))
+            {
+               yield return assemblyDefInfo;
+            }
+         }
+      }
+
+      public static void AddPrecompiledReferences(this MicroserviceDescriptor service, params string[] libraryNames)
+         => service.ConvertToAsset().AddPrecompiledReferences(libraryNames);
+
       public static void AddPrecompiledReferences(this AssemblyDefinitionAsset asm, params string[] libraryNames)
       {
          var jsonData = Json.Deserialize(asm.text) as ArrayDict;
@@ -117,6 +157,9 @@ namespace Beamable.Server.Editor
          WriteAssembly(asm, jsonData);
 
       }
+
+      public static void RemovePrecompiledReferences(this MicroserviceDescriptor service, params string[] libraryNames)
+         => service.ConvertToAsset().RemovePrecompiledReferences(libraryNames);
 
       public static void RemovePrecompiledReferences(this AssemblyDefinitionAsset asm, params string[] libraryNames)
       {
