@@ -113,9 +113,10 @@ namespace Beamable.Editor.UI.Model
             b.GetMicroserviceManager().GetCurrentManifest().Then(manifest =>
             {
                ServerManifest = manifest;
-               foreach (var remoteService in manifest.manifest)
+               foreach (var service in Services)
                {
-                  GetModelForName(remoteService.serviceName)?.EnrichWithRemoteReference(remoteService);
+                  var remoteService = manifest.manifest.FirstOrDefault(remote => string.Equals(remote.serviceName, service.Name));
+                  service.EnrichWithRemoteReference(remoteService);
                }
                OnServerManifestUpdated?.Invoke(manifest);
             });
@@ -149,6 +150,7 @@ namespace Beamable.Editor.UI.Model
       {
          Microservices.onAfterDeploy += MicroservicesOnonAfterDeploy;
          RefreshLocalServices();
+         RefreshServerManifest();
       }
 
       private void MicroservicesOnonAfterDeploy(ManifestModel oldManifest, int serviceCount)
