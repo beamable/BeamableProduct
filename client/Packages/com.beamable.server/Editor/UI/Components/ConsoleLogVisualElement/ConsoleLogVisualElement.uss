@@ -13,7 +13,7 @@ Label {
 }
 
 #description {
-    flex-grow: 1;
+
 }
 
 #time {
@@ -26,6 +26,15 @@ Label {
     width: 25px;
     flex-shrink: 0;
     /*background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/info.png");*/
+}
+
+#postfixIcon{
+    height: 18px;
+    width: 18px;
+}
+
+#postfixIcon.remote_icon {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/remote_wifi_light.png");
 }
 
 #statusIcon.debug {

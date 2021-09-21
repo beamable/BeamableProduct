@@ -32,6 +32,12 @@ namespace Beamable.Server.Editor
                }
                else
                {
+                  if (state == PlayModeStateChange.EnteredPlayMode)
+                  {
+                      MicroserviceLogHelper.HandleLog(service, "Info", BeamableLogConstants.UsingRemoteServiceMessage,
+                          MicroserviceConfiguration.Instance.LogWarningLabelColor, true, "remote_icon");
+                  }
+
                   Debug.Log($"Microservice {service.Name} will use remote deployed server");
                   MicroserviceIndividualization.ClearServicePrefix(service.Name);
                }
