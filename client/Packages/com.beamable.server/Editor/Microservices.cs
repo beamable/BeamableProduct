@@ -253,13 +253,6 @@ namespace Beamable.Server.Editor
       public static event Action<ManifestModel, int> onBeforeDeploy;
       public static event Action<ManifestModel, int> onAfterDeploy;
 
-      [RuntimeInitializeOnLoadMethod]
-      private static void Init()
-      {
-         onBeforeDeploy = null;
-         onAfterDeploy = null;
-      }
-
       public static async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context)
       {
          if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
