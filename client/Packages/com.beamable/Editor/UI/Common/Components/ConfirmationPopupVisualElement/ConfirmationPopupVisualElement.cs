@@ -35,15 +35,13 @@ namespace Beamable.Editor.UI.Buss.Components
          _headerLabel = Root.Q<Label>("headerLabel");
          _headerLabel.text = _windowHeader;
 
-         _bodyLabel = Root.Q<Label>("bodyLabel");
+         _bodyLabel = Root.Q<Label>("contentLabel");
          _bodyLabel.text = _contentText;
 
          _okButton = Root.Q<Button>("okButton");
-         _okButton.text = "OK";
          _okButton.clickable.clicked += OkButton_OnClick;
 
          _cancelButton = Root.Q<Button>("cancelButton");
-         _cancelButton.text = "Cancel";
          _cancelButton.clickable.clicked += CancelButton_OnClick;
       }
 

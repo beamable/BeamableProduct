@@ -1,24 +1,31 @@
-ConfirmationPopupVisualElement {
-    flex-grow:1;
-    justify-content:space-between;
-    align-items: center;
+#mainVisualElement {
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    padding: 10px;
+    height: 300px;
+}
+
+#header {
+    height: 25px;
+    justify-content: center;
+}
+
+#content {
+    height: 50px;
+    justify-content: center;
 }
 
 ConfirmationPopupVisualElement #headerLabel {
-    height:25px;
     align-self: center;
 }
 
-ConfirmationPopupVisualElement #bodyLabel{
-    height: 25px;
+ConfirmationPopupVisualElement #contentLabel {
     align-self: center;
 }
 
 ConfirmationPopupVisualElement #buttonsVisualElement {
     flex-direction: row;
     justify-content: flex-end;
-    flex-shrink:0;
-    top:10px;
+    flex-shrink: 0;
 }
 
 ConfirmationPopupVisualElement Button {
@@ -26,10 +33,10 @@ ConfirmationPopupVisualElement Button {
     border-radius: 4px;
     height: 23px;
     font-size: 10px;
-    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     color: #FFFFFF;
 }
-#okButton{
-background-color: #4F80F8;
+
+#okButton {
+    background-color: #4F80F8;
 }
 
