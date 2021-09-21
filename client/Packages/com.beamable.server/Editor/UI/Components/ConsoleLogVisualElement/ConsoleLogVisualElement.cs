@@ -63,7 +63,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             _model = model;
             _description.text = text.Length > 0 ? text[0] : model.Message;
             _description.style.color = model.MessageColor;
-            _description.style.fontStyleAndWeight = model.IsBoldMessage ? FontStyle.Bold : FontStyle.Normal;
+            _description.SetFontStyle(model.IsBoldMessage ? FontStyle.Bold : FontStyle.Normal);
             _time.text = model.Timestamp.ToString("HH:mm:ss");
             SetIcon();
             SetPostfixMessageIcon(model.PostfixMessageIcon);
