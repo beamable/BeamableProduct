@@ -19,7 +19,7 @@ namespace Beamable.Editor.UI.Buss.Components
 {
    public class BeamablePopupWindow : EditorWindow
    {
-      public static Vector2 ConfirmationPopupSize = new Vector2(250, 100);
+      public static Vector2 ConfirmationPopupSize = new Vector2(300, 150);
 
       /// <summary>
       /// Create screen-relative, parent <see cref="VisualElement"/>-relative
@@ -132,7 +132,7 @@ namespace Beamable.Editor.UI.Buss.Components
          };
 
 #else
-         var wnd = BeamablePopupWindow.ShowDropdown("Confirmation", popupWindowRect, popupWindowRect.size, confirmationPopupVisualElement);
+         var wnd = BeamablePopupWindow.ShowDropdown(windowHeader, popupWindowRect, popupWindowRect.size, confirmationPopupVisualElement);
          confirmationPopupVisualElement.OnCancelButtonClicked += wnd.Close;
          confirmationPopupVisualElement.OnOKButtonClicked += wnd.Close;
          var newPos = BeamablePopupWindow.GetCenteredScreenRectForWindow(EditorWindow.GetWindow<T>(), popupWindowRect.size);
