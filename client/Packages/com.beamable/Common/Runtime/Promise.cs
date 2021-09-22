@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Beamable.Common.Runtime.Collections;
+using UnityEngine;
 
 #if !DISABLE_BEAMABLE_ASYNCMETHODBUILDER
 
@@ -651,9 +652,10 @@ namespace Beamable.Common
       /// </summary>
       /// <param name="maxProcessSize"></param>
       /// <param name="generators"></param>
+      /// <param name="runtimeOnly"></param>
       /// <typeparam name="T"></typeparam>
       /// <returns></returns>
-      public static SequencePromise<T> ExecuteRolling<T>(int maxProcessSize, List<Func<Promise<T>>> generators)
+      public static SequencePromise<T> ExecuteRolling<T>(int maxProcessSize, List<Func<Promise<T>>> generators, bool runtimeOnly = false)
       {
          var current = new AtomicInt();
          var running = new AtomicInt();
@@ -671,6 +673,12 @@ namespace Beamable.Common
 
                while (runningCount < maxProcessSize && currentCount < generators.Count)
                {
+#if UNITY_EDITOR
+                  if (runtimeOnly && !UnityEditor.EditorApplication.isPlaying)
+                  {
+                     break;
+                  }
+#endif
                   var index = currentCount;
                   var generator = generators[index];
 
