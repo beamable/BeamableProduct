@@ -48,7 +48,7 @@ namespace Beamable.Server.Editor
             if (value == _lastImageId) return;
             _lastImageId = value;
             EditorApplication.delayCall += () => OnLastImageIdChanged?.Invoke(value);
-         } 
+         }
       }
 
       public bool HasImage => IsRunning || LastBuildImageId?.Length > 0;
@@ -174,9 +174,10 @@ namespace Beamable.Server.Editor
          var beamable = await EditorAPI.Instance;
          var secret = await beamable.GetRealmSecret();
          var cid = beamable.CustomerView.Cid;
+         var connectionStrings = await Microservices.GetConnectionStringEnvironmentVariables(Descriptor);
 
          if (_runProcess != null) return;
-         _runProcess = new RunImageCommand(Descriptor, cid, secret, "Debug");
+         _runProcess = new RunImageCommand(Descriptor, cid, secret, "Debug", connectionStrings);
 
          // TODO: Send messages to /admin/HealthCheck to see if the service is ready to accept traffic.
 
