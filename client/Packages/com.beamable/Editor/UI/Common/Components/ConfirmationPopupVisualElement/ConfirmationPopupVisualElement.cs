@@ -1,9 +1,7 @@
 ﻿using System;
-using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
-
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -22,9 +20,6 @@ namespace Beamable.Editor.UI.Buss.Components
 
         private readonly string _windowHeader;
         private readonly string _contentText;
-#if UNITY_2018
-        private VisualElement _mainElement;
-#endif
 
         public ConfirmationPopupVisualElement(string windowHeader, string contentText) : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(ConfirmationPopupVisualElement)}/{nameof(ConfirmationPopupVisualElement)}")
@@ -37,11 +32,6 @@ namespace Beamable.Editor.UI.Buss.Components
         {
             base.Refresh();
 
-#if UNITY_2018
-            _mainElement = Root.Q<VisualElement>("mainVisualElement");
-            _mainElement.AddStyleSheetPath(
-                "Packages/com.beamable/Editor/UI/Common/Components/ConfirmationPopupVisualElement/Style.2018.uss");
-#endif
             _headerLabel = Root.Q<Label>("headerLabel");
             _headerLabel.text = _windowHeader;
 
