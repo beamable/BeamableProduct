@@ -4,3 +4,7 @@ ConsoleLogVisualElement {
 ConsoleLogVisualElement.oddRow {
     background-color: #c8c8c8;
 }
+
+#postfixIcon.remote_icon {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/remote_wifi_dark.png");
+}
