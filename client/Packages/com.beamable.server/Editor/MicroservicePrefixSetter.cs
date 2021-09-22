@@ -1,4 +1,5 @@
 using Beamable.Server.Editor.DockerCommands;
+using Beamable.Editor.UI.Model;
 using UnityEditor;
 using UnityEngine;
 
@@ -34,11 +35,10 @@ namespace Beamable.Server.Editor
                {
                   if (state == PlayModeStateChange.EnteredPlayMode)
                   {
-                      MicroserviceLogHelper.HandleLog(service, "Info", BeamableLogConstants.UsingRemoteServiceMessage,
+                      MicroserviceLogHelper.HandleLog(service, LogLevel.INFO, BeamableLogConstants.UsingRemoteServiceMessage,
                           MicroserviceConfiguration.Instance.LogWarningLabelColor, true, "remote_icon");
                   }
 
-                  Debug.Log($"Microservice {service.Name} will use remote deployed server");
                   MicroserviceIndividualization.ClearServicePrefix(service.Name);
                }
             }

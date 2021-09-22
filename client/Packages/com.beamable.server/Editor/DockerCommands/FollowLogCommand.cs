@@ -136,11 +136,8 @@ namespace Beamable.Server.Editor.DockerCommands
          }
       }
 
-      public static bool HandleLog(MicroserviceDescriptor descriptor, string logLevel, string message, Color color, bool isBoldMessage, string postfixIcon)
+      public static bool HandleLog(MicroserviceDescriptor descriptor, LogLevel logLevel, string message, Color color, bool isBoldMessage, string postfixIcon)
       {
-            if (!Enum.TryParse<LogLevel>(logLevel.ToUpper(), out LogLevel level))
-                level = LogLevel.DEBUG;
-
             var logMessage = new LogMessage
             {
                 Message = message,
@@ -148,7 +145,7 @@ namespace Beamable.Server.Editor.DockerCommands
                 IsBoldMessage = isBoldMessage,
                 PostfixMessageIcon = postfixIcon,
                 MessageColor = color,
-                Level = level
+                Level = logLevel
             };
 
             EditorApplication.delayCall += () =>
