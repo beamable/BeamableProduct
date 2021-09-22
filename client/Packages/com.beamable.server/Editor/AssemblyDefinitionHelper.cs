@@ -19,14 +19,14 @@ namespace Beamable.Server.Editor
 
       private static readonly string[] MongoLibraries = new[]
       {
-         "Beamable.Server.ThirdParty.Mongo.DnsClient.dll",
-         "Beamable.Server.ThirdParty.Mongo.MongoDB.Bson.dll",
-         "Beamable.Server.ThirdParty.Mongo.MongoDB.Driver.Core.dll",
-         "Beamable.Server.ThirdParty.Mongo.MongoDB.Driver.dll",
-         "Beamable.Server.ThirdParty.Mongo.MongoDB.Libmongocrypt.dll",
-         "Beamable.Server.ThirdParty.Mongo.System.Buffers.dll",
-         "Beamable.Server.ThirdParty.Mongo.System.Runtime.CompilerServices.Unsafe.dll",
-         "Beamable.Server.ThirdParty.Mongo.SharpCompress.dll"
+         "DnsClient.dll",
+         "MongoDB.Bson.dll",
+         "MongoDB.Driver.Core.dll",
+         "MongoDB.Driver.dll",
+         "MongoDB.Libmongocrypt.dll",
+         "System.Buffers.dll",
+         "System.Runtime.CompilerServices.Unsafe.dll",
+         "SharpCompress.dll"
       };
 
       [MenuItem(ADD_MONGO, false, BEAMABLE_PRIORITY)]
