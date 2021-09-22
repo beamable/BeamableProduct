@@ -30,7 +30,6 @@ namespace Beamable.Server.Editor.DockerCommands
       public string LogLevel { get; }
 
       public Dictionary<string, string> Environment { get; private set; }
-      // public HashSet<string>
 
       public RunImageCommand(MicroserviceDescriptor descriptor, string cid, string secret, string logLevel="Information", Dictionary<string, string> env=null)
       {
@@ -95,13 +94,6 @@ namespace Beamable.Server.Editor.DockerCommands
                           $"-P " +
                           $"-p {DebugPort}:2222  " +
                           $"{GetEnvironmentString()} " +
-                          // $"--env CID={Cid} " +
-                          // $"--env PID={pid} " +
-                          // $"--env SECRET=\"{Secret}\" " +
-                          // $"--env HOST=\"{BeamableEnvironment.SocketUrl}\" " +
-                          // $"--env LOG_LEVEL=\"{LogLevel}\" " +
-                          // $"--env NAME_PREFIX=\"{namePrefix}\" " +
-                          // $"--env STORAGE_CONNSTR_MyDataBase=\"{namePrefix}\" " +
                           $"--name {ContainerName} {ImageName}";
          return command;
       }
