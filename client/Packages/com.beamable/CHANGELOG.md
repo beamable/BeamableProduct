@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Beamable Platform errors all extend from `RequesterException` in Unity Client and microservice code
 - Redesigned internal Toolbox announcements
 - Content Manager publish flow shows Realm and Namespace for confirmation
+- `ExecuteRolling` method of `Promise` now supports a condition on which stop execution
 
 ### Fixed
 - Added missing attributes for content classes
