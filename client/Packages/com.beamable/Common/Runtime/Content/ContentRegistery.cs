@@ -93,23 +93,6 @@ namespace Beamable.Common.Content
                   }
                }
             }
-#if UNITY_EDITOR
-            catch (ReflectionTypeLoadException ex)
-            {
-               var isDnsClientException = ex.LoaderExceptions.Any(err => err.Message.Contains("System.Buffers"));
-               if (isDnsClientException) continue;
-               
-               Debug.LogError("The content registry couldn't load a project dll");
-               foreach (var type in ex.Types)
-               {
-                  Debug.LogError($"Cannot load type {type?.Name}");
-               }
-               foreach (var err in ex.LoaderExceptions)
-               {
-                  Debug.LogException(err);
-               }
-            }
-#endif
             catch (Exception ex)
             {
                BeamableLogger.LogError(ex);
