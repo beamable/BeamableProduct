@@ -14,7 +14,7 @@ namespace Beamable.Common.Content
    ///
    /// #### Related Links
    /// - See Beamable.Common.Content.ContentObject script reference
-   /// 
+   ///
    /// ![img beamable-logo]
    ///
    /// </summary>
@@ -23,7 +23,7 @@ namespace Beamable.Common.Content
       public Type Type;
       public string Name;
    }
-   
+
    /// <summary>
    /// This type defines part of the %Beamable %ContentObject system.
    ///
@@ -31,7 +31,7 @@ namespace Beamable.Common.Content
    ///
    /// #### Related Links
    /// - See Beamable.Common.Content.ContentObject script reference
-   /// 
+   ///
    /// ![img beamable-logo]
    ///
    /// </summary>
