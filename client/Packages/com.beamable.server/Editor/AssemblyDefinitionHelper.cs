@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -12,6 +13,8 @@ namespace Beamable.Server.Editor
    public static class AssemblyDefinitionHelper
    {
       const string PRECOMPILED = "precompiledReferences";
+      const string REFERENCES = "references";
+      const string NAME = "name";
       private const string ASSETS_BEAMABLE = "Assets/Beamable/";
       private const string ADD_MONGO = ASSETS_BEAMABLE + "Add Mongo Libraries";
       private const string REMOVE_MONGO = ASSETS_BEAMABLE + "Remove Mongo Libraries";
@@ -45,18 +48,45 @@ namespace Beamable.Server.Editor
          }
       }
 
-      [MenuItem(ADD_MONGO, true, BEAMABLE_PRIORITY )]
+      [MenuItem(ADD_MONGO, true, BEAMABLE_PRIORITY)]
+      public static bool ValidateAddMongo()
+      {
+         return ValidateSelectionIsMicroservice(out var asm) && !asm.HasMongoLibraries();
+      }
+
       [MenuItem(REMOVE_MONGO, true, BEAMABLE_PRIORITY)]
-      public static bool ValidateSelectionIsMicroservice() {
+      public static bool ValidateRemoveMongo()
+      {
+         return ValidateSelectionIsMicroservice(out var asm) && asm.HasMongoLibraries();
+      }
+
+      public static bool ValidateSelectionIsMicroservice(out AssemblyDefinitionAsset assembly)
+      {
+         assembly = null;
          if (!(Selection.activeObject is AssemblyDefinitionAsset asm))
          {
             return false;
          }
 
+         assembly = asm;
          var info = asm.ConvertToInfo();
          var descriptor = Microservices.Descriptors.FirstOrDefault(d => d.IsContainedInAssemblyInfo(info));
 
-         return descriptor != null;
+         var isService = descriptor != null;
+         return isService;
+      }
+
+      public static bool HasMongoLibraries(this MicroserviceDescriptor service) =>
+         service.ConvertToAsset().HasMongoLibraries();
+
+      public static bool HasMongoLibraries(this AssemblyDefinitionAsset asm)
+      {
+         var existingRefs = new HashSet<string>(asm.ConvertToInfo().DllReferences);
+         foreach (var required in MongoLibraries)
+         {
+            if (!existingRefs.Contains(required)) return false;
+         }
+         return true;
       }
 
       public static void AddMongoLibraries(this MicroserviceDescriptor service) =>
@@ -86,12 +116,12 @@ namespace Beamable.Server.Editor
 
          var assemblyDefInfo = new AssemblyDefinitionInfo {Location = path};
 
-         if (jsonData.TryGetValue("name", out var nameObject) && nameObject is string name)
+         if (jsonData.TryGetValue(NAME, out var nameObject) && nameObject is string name)
          {
             assemblyDefInfo.Name = name;
          }
 
-         if (jsonData.TryGetValue("references", out var referencesObject) &&
+         if (jsonData.TryGetValue(REFERENCES, out var referencesObject) &&
              referencesObject is IEnumerable<object> references)
          {
             assemblyDefInfo.References = references
@@ -100,7 +130,7 @@ namespace Beamable.Server.Editor
                .ToArray();
          }
 
-         if (jsonData.TryGetValue("precompiledReferences", out var referencesDllObject) &&
+         if (jsonData.TryGetValue(PRECOMPILED, out var referencesDllObject) &&
              referencesDllObject is IEnumerable<object> dllReferences)
          {
             assemblyDefInfo.DllReferences = dllReferences

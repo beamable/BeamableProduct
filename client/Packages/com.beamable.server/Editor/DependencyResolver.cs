@@ -90,10 +90,7 @@ namespace Beamable.Server
             catch
             {
                 var dll = System.IO.Path.GetFileName(t.Assembly.Location);
-                var reference = _assemblies.Values.FirstOrDefault(asm =>
-                {
-                    return asm.DllReferences.Contains(dll);
-                });
+                var reference = _assemblies.Values.FirstOrDefault(asm => asm.DllReferences.Contains(dll));
                 var inAnyReference = reference != null;
                 return inAnyReference;
             }
