@@ -651,9 +651,10 @@ namespace Beamable.Common
       /// </summary>
       /// <param name="maxProcessSize"></param>
       /// <param name="generators"></param>
+      /// <param name="stopWhen"></param>
       /// <typeparam name="T"></typeparam>
       /// <returns></returns>
-      public static SequencePromise<T> ExecuteRolling<T>(int maxProcessSize, List<Func<Promise<T>>> generators)
+      public static SequencePromise<T> ExecuteRolling<T>(int maxProcessSize, List<Func<Promise<T>>> generators, Func<bool> stopWhen = null)
       {
          var current = new AtomicInt();
          var running = new AtomicInt();
@@ -671,6 +672,11 @@ namespace Beamable.Common
 
                while (runningCount < maxProcessSize && currentCount < generators.Count)
                {
+                  if (stopWhen != null && stopWhen())
+                  {
+                     break;
+                  }
+                  
                   var index = currentCount;
                   var generator = generators[index];
 
