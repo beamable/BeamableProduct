@@ -41,7 +41,7 @@
 
     <engine:VisualElement name="buttonStrip">
       <engine:Button name="cancelBtn" text="Cancel"/>
-      <beamable:PrimaryButtonVisualElement name="removeBtn" text="Clear"/>
+      <beamable:PrimaryButtonVisualElement name="removeBtn" text="Remove"/>
     </engine:VisualElement>
   </engine:VisualElement>
 

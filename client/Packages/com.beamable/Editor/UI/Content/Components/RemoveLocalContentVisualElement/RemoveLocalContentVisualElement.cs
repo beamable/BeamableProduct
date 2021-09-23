@@ -30,13 +30,6 @@ namespace Beamable.Editor.Content.Components
         {
         }
 
-        public override void OnDetach()
-        {
-
-            base.OnDetach();
-            Refresh();
-        }
-
         public override void Refresh()
         {
             base.Refresh();

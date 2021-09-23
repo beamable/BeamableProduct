@@ -71,7 +71,7 @@ namespace Beamable.Editor.Content
       //
       public static string DownloadContent = "Download Content";
       public static string ValidateContent = "Validate Content";
-      public static string RemoveLocalContent = "Remove Content";
+      public static string RemoveLocalContent = "Reset Content";
       public static string BreadcrumbTokenArrow = ">";
       //
       public static Vector2 CreateNewPopupWindowSize = new Vector2(160, 30);
