@@ -1,21 +1,16 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Beamable.Common;
-using Beamable.Editor.Microservice.UI.Components;
-using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
-using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.ManagerClient;
 using Beamable.Server.Editor.UI.Components;
-using Editor.UI.Components.DockerLoginWindow;
+using Beamable.Server.Editor.UI.Components.DockerLoginWindow;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements.StyleSheets;
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
@@ -175,7 +170,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             Model.Builder.OnIsRunningChanged += OnIsRunningChanged;
             Model.Builder.OnIsBuildingChanged -= OnIsBuildingChanged;
             Model.Builder.OnIsBuildingChanged += OnIsBuildingChanged;
-            
+
             Model.Builder.OnLastImageIdChanged -= HandleLastImageIdChanged;
             Model.Builder.OnLastImageIdChanged += HandleLastImageIdChanged;
             CreateLogSection(Model.AreLogsAttached);
@@ -270,9 +265,9 @@ namespace Beamable.Editor.Microservice.UI.Components
         private void UpdateStartAndBuildButtons()
         {
             _startButton.text = Model.IsRunning ? Constants.STOP : Constants.START;
-            _buildDefaultLabel.text = Constants.GetBuildButtonString(Model.IncludeDebugTools, 
+            _buildDefaultLabel.text = Constants.GetBuildButtonString(Model.IncludeDebugTools,
                 Model.IsRunning ? Constants.BUILD_RESET : Constants.BUILD_START);
-            
+
             if (Model.IsRunning)
             {
                 _defaultBuildAction = () => Model.BuildAndRestart();
@@ -346,7 +341,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         {
             _remoteStatusIcon.ClearClassList();
             string statusClassName;
-            
+
             if (Model.RemoteReference?.enabled ?? false)
             {
                 statusClassName = "remoteEnabled";
