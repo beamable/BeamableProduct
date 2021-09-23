@@ -15,5 +15,7 @@ namespace Beamable.Server.Editor
       }
       public string AttributePath { get; set; }
       public Type Type { get; set; }
+      public string ContainerName => $"{Name}_storage";
+      public string ImageName => "mongo:latest";
    }
 }
