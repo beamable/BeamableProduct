@@ -120,6 +120,11 @@ namespace UnityEngine.Experimental.UIElements
             self.Focus();
         }
 
+        public static void SetFontStyle(this Label self, FontStyle style)
+        {
+            self.style.fontStyleAndWeight = style;
+        }
+
         public static void BeamableAppendAction(this DropdownMenu self, string title, Action<Vector2> callback, bool enabled = true)
         {
           if(enabled)
@@ -282,6 +287,11 @@ namespace UnityEngine.UIElements
     public static void BeamableFocus(this TextField self)
     {
       self.Q("unity-text-input").Focus();
+    }
+
+    public static void SetFontStyle(this Label self, FontStyle style)
+    {
+      self.style.unityFontStyleAndWeight = style;
     }
 
     public static void BeamableAppendAction(this DropdownMenu self, string title, Action<Vector2> callback, bool enabled = true)
