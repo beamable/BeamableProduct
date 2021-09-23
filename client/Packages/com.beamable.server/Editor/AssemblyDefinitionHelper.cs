@@ -76,6 +76,22 @@ namespace Beamable.Server.Editor
          return isService;
       }
 
+      public static IEnumerable<StorageObjectDescriptor> GetStorageReferences(this MicroserviceDescriptor service)
+      {
+         //TODO: This won't work for nested relationships.
+
+         var serviceInfo = service.ConvertToInfo();
+         var storages = Microservices.StorageDescriptors.ToDictionary(kvp => kvp.AttributePath);
+         var infos = Microservices.StorageDescriptors.Select(s => new Tuple<AssemblyDefinitionInfo, StorageObjectDescriptor>(s.ConvertToInfo(), s)).ToDictionary(kvp => kvp.Item1.Name);
+         foreach (var reference in serviceInfo.References)
+         {
+            if (infos.TryGetValue(reference, out var storageInfo))
+            {
+               yield return storageInfo.Item2;
+            }
+         }
+      }
+
       public static bool HasMongoLibraries(this MicroserviceDescriptor service) =>
          service.ConvertToAsset().HasMongoLibraries();
 
@@ -101,7 +117,7 @@ namespace Beamable.Server.Editor
       public static void RemoveMongoLibraries(this AssemblyDefinitionAsset asm) =>
          asm.RemovePrecompiledReferences(MongoLibraries);
 
-      public static bool IsContainedInAssemblyInfo(this MicroserviceDescriptor service, AssemblyDefinitionInfo asm)
+      public static bool IsContainedInAssemblyInfo(this IDescriptor service, AssemblyDefinitionInfo asm)
       {
          var assembly = service.Type.Assembly;
          var moduleName = assembly.Modules.FirstOrDefault().Name.Replace(".dll", "");
@@ -142,7 +158,9 @@ namespace Beamable.Server.Editor
          return assemblyDefInfo;
       }
 
-      public static AssemblyDefinitionAsset ConvertToAsset(this MicroserviceDescriptor service)
+      public static AssemblyDefinitionInfo ConvertToInfo(this IDescriptor service)
+         => service.ConvertToAsset().ConvertToInfo();
+      public static AssemblyDefinitionAsset ConvertToAsset(this IDescriptor service)
          => EnumerateAssemblyDefinitionAssets()
             .FirstOrDefault(asm => service.IsContainedInAssemblyInfo(asm.ConvertToInfo()));
 
