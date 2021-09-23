@@ -21,6 +21,8 @@ namespace Beamable.Server.Editor
       private const string REMOVE_MONGO = ASSETS_BEAMABLE + "Remove Mongo Libraries";
       private const string OPEN_MONGO = ASSETS_BEAMABLE + "Open Mongo Data Explorer"; // TODO: Delete this when we have a UI
       private const string RUN_MONGO = ASSETS_BEAMABLE + "Run Mongo"; // TODO: Delete this when we have a UI
+      private const string KILL_MONGO = ASSETS_BEAMABLE + "Kill Mongo"; // TODO: Delete this when we have a UI
+      private const string CLEAR_MONGO = ASSETS_BEAMABLE + "Clear Mongo Data"; // TODO: Delete this when we have a UI
       private const int BEAMABLE_PRIORITY = 190;
 
       private static readonly string[] MongoLibraries = new[]
@@ -34,6 +36,45 @@ namespace Beamable.Server.Editor
          "System.Runtime.CompilerServices.Unsafe.dll",
          "SharpCompress.dll"
       };
+
+      [MenuItem(CLEAR_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
+      public static void ClearMongo()
+      {
+         if (Selection.activeObject is AssemblyDefinitionAsset asm)
+         {
+            var info = asm.ConvertToInfo();
+            foreach (var storage in Microservices.StorageDescriptors)
+            {
+               if (storage.IsContainedInAssemblyInfo(info))
+               {
+                  var _= Microservices.ClearMongoData(storage);
+                  return;
+               }
+            }
+            Debug.Log("nothing found for " + info.Name);
+         }
+      }
+
+
+      [MenuItem(KILL_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
+      public static void KillMongo()
+      {
+         if (Selection.activeObject is AssemblyDefinitionAsset asm)
+         {
+            var info = asm.ConvertToInfo();
+            foreach (var storage in Microservices.StorageDescriptors)
+            {
+               if (storage.IsContainedInAssemblyInfo(info))
+               {
+                  var comm = new StopImageCommand(storage);
+                  comm.Start();
+                  return;
+               }
+            }
+            Debug.Log("nothing found for " + info.Name);
+         }
+      }
+
 
       [MenuItem(RUN_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
       public static void RunMongo()

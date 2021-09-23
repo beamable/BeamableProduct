@@ -257,6 +257,45 @@ namespace Beamable.Server.Editor
          return true;
       }
 
+      public static async Promise<bool> ClearMongoData(StorageObjectDescriptor storage)
+      {
+         Debug.Log("Clearing mongo");
+         var storageCheck = new CheckImageReturnableCommand(storage);
+         var isStorageRunning = await storageCheck.Start(null);
+         if (isStorageRunning)
+         {
+            Debug.Log("stopping mongo");
+
+            var stopComm = new StopImageCommand(storage);
+            await stopComm.Start(null);
+         }
+
+         Debug.Log("deleting volumes");
+
+         var deleteVolumes = new DeleteVolumeCommand(storage);
+         var results = await deleteVolumes.Start(null);
+         var err = false;
+         if (results.Any(kvp => !kvp.Value))
+         {
+            err = true;
+            Debug.LogError("Failed to remove all volumes");
+            foreach (var kvp in results)
+            {
+               Debug.LogError($"{kvp.Key} -> {kvp.Value}");
+            }
+         }
+
+         if (isStorageRunning)
+         {
+            Debug.Log("restarting mongo");
+
+            var restart = new RunStorageCommand(storage);
+            restart.Start();
+         }
+
+         return err;
+      }
+
       public static void GenerateClientSourceCode(MicroserviceDescriptor service)
       {
          var key = service.Name;

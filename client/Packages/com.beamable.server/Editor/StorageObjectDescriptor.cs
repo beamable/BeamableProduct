@@ -15,10 +15,13 @@ namespace Beamable.Server.Editor
       }
       public string AttributePath { get; set; }
       public Type Type { get; set; }
-      public string ContainerName => $"{Name}_storage";
+      public string ContainerName => $"db_{Name}_storage";
       public string ImageName => "mongo:latest";
 
-      public string LocalToolContainerName => $"{Name}_storage_tool";
+      public string DataVolume => $"beamable_storage_{Name}_data";
+      public string FilesVolume => $"beamable_storage_{Name}_files";
+
+      public string LocalToolContainerName => $"tool_{Name}_storage";
       public string ToolImageName => $"mongo-express:latest";
    }
 }
