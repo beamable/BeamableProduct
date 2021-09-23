@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Beamable.Server.Editor
 {
    [Serializable]
-   public class MicroserviceDescriptor : IDescriptor
+   public class MicroserviceDescriptor
    {
       public const string ASSEMBLY_FOLDER_NAME = "_assemblyReferences";
 

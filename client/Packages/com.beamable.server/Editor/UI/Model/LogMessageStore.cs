@@ -172,9 +172,6 @@ namespace Beamable.Editor.UI.Model
       public string ParameterText;
       public Dictionary<string, object> Parameters;
       public LogLevel Level;
-      public Color MessageColor;
-      public bool IsBoldMessage;
-      public string PostfixMessageIcon;
 
       [SerializeField]
       private string _rawTimestamp;

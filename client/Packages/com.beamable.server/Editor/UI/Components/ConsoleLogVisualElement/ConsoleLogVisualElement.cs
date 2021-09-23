@@ -21,7 +21,6 @@ namespace Beamable.Editor.Microservice.UI.Components
         private VisualElement _statusIcon;
         private Label _time;
         private Label _description;
-        private VisualElement _postfixIcon;
         private LogMessage _model;
 
         public new class UxmlFactory : UxmlFactory<ConsoleLogVisualElement, UxmlTraits>
@@ -53,7 +52,6 @@ namespace Beamable.Editor.Microservice.UI.Components
             _statusIcon = Root.Q<VisualElement>("statusIcon");
             _time = Root.Q<Label>("time");
             _description = Root.Q<Label>("description");
-            _postfixIcon = Root.Q<VisualElement>("postfixIcon");
 
         }
 
@@ -62,14 +60,9 @@ namespace Beamable.Editor.Microservice.UI.Components
             var text = model.Message.Split('\n');
             _model = model;
             _description.text = text.Length > 0 ? text[0] : model.Message;
-
-            if (!model.MessageColor.Equals(Color.clear))
-                _description.style.color = model.MessageColor;
-
-            _description.SetFontStyle(model.IsBoldMessage ? FontStyle.Bold : FontStyle.Normal);
             _time.text = model.Timestamp.ToString("HH:mm:ss");
             SetIcon();
-            SetPostfixMessageIcon(model.PostfixMessageIcon);
+
         }
 
         public void SetIcon()
@@ -98,17 +91,15 @@ namespace Beamable.Editor.Microservice.UI.Components
             }
         }
 
-        public void SetPostfixMessageIcon(string postfixIcon)
-        {
-            _postfixIcon.ClearClassList();
-
-            if (!string.IsNullOrEmpty(postfixIcon))
-                _postfixIcon.AddToClassList(postfixIcon);
-        }
 
         public ConsoleLogVisualElement() : base(nameof(ConsoleLogVisualElement))
         {
 
         }
+
+
+
+
+
     }
 }

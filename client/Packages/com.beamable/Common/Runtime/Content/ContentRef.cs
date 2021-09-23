@@ -154,10 +154,9 @@ namespace Beamable.Common.Content
          {
             var promiseGenerators =
                refs.Select(r => new Func<Promise<IContentObject>>(() => api.GetContent(r))).ToList();
-            var seq = Promise.ExecuteRolling(batchSize, promiseGenerators, () => !Application.isPlaying);
+            var seq = Promise.ExecuteRolling(batchSize, promiseGenerators);
             seq.OnElementSuccess(seqPromise.ReportEntrySuccess);
             seq.OnElementError(seqPromise.ReportEntryError);
-            
             return seq;
          }, () => seqPromise);
 

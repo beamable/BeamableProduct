@@ -26,14 +26,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using UnityEngine;
 
 namespace Beamable.Serialization.SmallerJSON {
-
-
-
 
    public static class Json {
       /// <summary>
@@ -62,43 +58,6 @@ namespace Beamable.Serialization.SmallerJSON {
             var obj = parser.ParseValue();
             return obj;
          }
-      }
-
-      public static string FormatJson(string json, char indent = ' ', int times = 2)
-      {
-         var indentation = 0;
-         var quoteCount = 0;
-         var indentString = string.Concat(Enumerable.Repeat(indent, times));
-         var result = "";
-         foreach (var ch in json) {
-            switch (ch) {
-               case '"':
-                  quoteCount++;
-                  result += ch;
-                  break;
-               case ',':
-                  if (quoteCount % 2 == 0) {
-                     result += ch + Environment.NewLine +
-                               string.Concat(Enumerable.Repeat(indentString, indentation));
-                  }
-                  break;
-               case '{':
-               case '[':
-                  var openFormatted = string.Concat(Enumerable.Repeat(indentString, ++indentation))
-                                      + indent;
-                  result += string.Format("{0}{1}{2}", ch, Environment.NewLine, openFormatted);
-                  break;
-               case '}':
-               case ']':
-                  var closeFormatted = string.Concat(Enumerable.Repeat(indentString, --indentation));
-                  result += string.Format("{0}{1}{2}", Environment.NewLine, closeFormatted, ch);
-                  break;
-               default:
-                  result += ch;
-                  break;
-            }
-         }
-         return result;
       }
 
       // a slice into the byte array representing a utf8 string

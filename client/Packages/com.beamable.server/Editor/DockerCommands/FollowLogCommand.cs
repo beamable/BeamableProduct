@@ -12,6 +12,7 @@ namespace Beamable.Server.Editor.DockerCommands
 {
    public static class MicroserviceLogHelper
    {
+
       public static bool HandleLog(MicroserviceDescriptor descriptor, string label, string data)
       {
          if (Json.Deserialize(data) is ArrayDict jsonDict)
@@ -136,26 +137,7 @@ namespace Beamable.Server.Editor.DockerCommands
          }
       }
 
-      public static bool HandleLog(MicroserviceDescriptor descriptor, LogLevel logLevel, string message, Color color, bool isBoldMessage, string postfixIcon)
-      {
-            var logMessage = new LogMessage
-            {
-                Message = message,
-                Timestamp = DateTime.Now,
-                IsBoldMessage = isBoldMessage,
-                PostfixMessageIcon = postfixIcon,
-                MessageColor = color,
-                Level = logLevel
-            };
-
-            EditorApplication.delayCall += () =>
-            {
-                MicroservicesDataModel.Instance.AddLogMessage(descriptor, logMessage);
-            };
-
-            return true;
-      }
-    }
+   }
 
 
    public class FollowLogCommand : DockerCommand

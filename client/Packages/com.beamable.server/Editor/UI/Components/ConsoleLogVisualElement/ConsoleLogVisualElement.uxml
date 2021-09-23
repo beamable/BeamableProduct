@@ -10,7 +10,6 @@
         <engine:VisualElement name="statusIcon"/>
         <engine:Label name="time" text="[17:26:24]"/>
         <engine:Label name="description" text="TEST CONTENT"/>
-        <engine:VisualElement name="postfixIcon"/>
     </engine:VisualElement>
 
 </engine:UXML>

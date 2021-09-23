@@ -28,87 +28,54 @@ namespace Beamable.Server.Editor
       private static Dictionary<string, MicroserviceBuilder> _serviceToBuilder = new Dictionary<string, MicroserviceBuilder>();
 
       private static List<MicroserviceDescriptor> _descriptors = null;
+      public static List<MicroserviceDescriptor> Descriptors => _descriptors ?? (_descriptors = ListMicroservices());
 
-      public static List<MicroserviceDescriptor> Descriptors
-      {
-         get
-         {
-            if (_descriptors != null) return _descriptors;
-            RefreshDescriptors();
-            return _descriptors;
-         }
-      }
 
-      private static List<StorageObjectDescriptor> _storageDescriptors = null;
-
-      public static List<StorageObjectDescriptor> StorageDescriptors
-      {
-         get
-         {
-            if (_storageDescriptors != null) return _storageDescriptors;
-            RefreshDescriptors();
-            return _storageDescriptors;
-         }
-      }
-
-      public static void RefreshDescriptors()
+      public static List<MicroserviceDescriptor> ListMicroservices()
       {
          var assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
          var dataPath = Application.dataPath;
          var scriptLibraryPath =  dataPath.Substring(0, dataPath.Length - "Assets".Length);
 
-         _descriptors = new List<MicroserviceDescriptor>();
-         _storageDescriptors = new List<StorageObjectDescriptor>();
-
-         bool TryGetAttribute<TAttr, TObj>(Type type, out TAttr attr)
-            where TAttr : Attribute
-         {
-            attr = type.GetCustomAttribute<TAttr>(false);
-            if (!type.IsClass || attr == null) return false;
-
-            if (!typeof(TObj).IsAssignableFrom(type))
-            {
-               Debug.LogError(
-                  $"The {typeof(TAttr).Name} is only valid on classes that are assignable from {typeof(TObj).Name}");
-               return false;
-            }
-
-            return true;
-         }
-
+         var output = new List<MicroserviceDescriptor>();
          foreach (var assembly in assemblies)
          {
+
             try
             {
+//               if (!assembly.Location.StartsWith(scriptLibraryPath))
+//               {
+//                  continue;
+//               }
+
                foreach (var type in assembly.GetTypes())
                {
-                  if (TryGetAttribute<MicroserviceAttribute, Microservice>(type, out var serviceAttribute))
+                  var attribute = type.GetCustomAttribute<MicroserviceAttribute>(false);
+                  if (!type.IsClass || attribute == null)
                   {
-                     if (serviceAttribute.MicroserviceName.ToLower().Equals("xxxx"))
-                     {
-                        continue; // TODO: XXX this is a hacky way to ignore the default microservice...
-                     }
-                     var descriptor = new MicroserviceDescriptor
-                     {
-                        Name = serviceAttribute.MicroserviceName,
-                        Type = type,
-                        AttributePath = serviceAttribute.GetSourcePath()
-                     };
-                     _descriptors.Add(descriptor);
+                     continue;
                   }
 
-                  if (TryGetAttribute<StorageObjectAttribute, StorageObject>(type, out var storageAttribute))
+                  if (attribute.MicroserviceName.ToLower().Equals("xxxx"))
                   {
-                     var descriptor = new StorageObjectDescriptor
-                     {
-                        Name = storageAttribute.StorageName,
-                        Type = type,
-                        AttributePath = storageAttribute.SourcePath
-                     };
-                     _storageDescriptors.Add(descriptor);
+                     continue; // TODO: XXX this is a hacky way to ignore the default microservice...
                   }
 
+                  if (!typeof(Microservice).IsAssignableFrom(type))
+                  {
+                     Debug.LogError(
+                        $"The {nameof(MicroserviceAttribute)} is only valid on classes that are assignable from {nameof(Microservice)}");
+                     continue;
+                  }
+
+                  var descriptor = new MicroserviceDescriptor
+                  {
+                     Name = attribute.MicroserviceName,
+                     Type = type,
+                     AttributePath = attribute.GetSourcePath()
+                  };
+                  output.Add(descriptor);
                }
             }
             catch (Exception)
@@ -116,13 +83,10 @@ namespace Beamable.Server.Editor
                continue; // ignore anything that doesn't have a Location property..
             }
          }
+
+         return output;
       }
 
-      public static List<MicroserviceDescriptor> ListMicroservices()
-      {
-         RefreshDescriptors();
-         return _descriptors;
-      }
 
       [DidReloadScripts]
       static void WatchMicroserviceFiles()
@@ -214,27 +178,6 @@ namespace Beamable.Server.Editor
          {
             // do not do anything.
          }
-      }
-
-      public static async Promise<Dictionary<string, string>> GetConnectionStringEnvironmentVariables(MicroserviceDescriptor service)
-      {
-         var env = new Dictionary<string, string>();
-         foreach (var reference in service.GetStorageReferences())
-         {
-            var key = $"STORAGE_CONNSTR_{reference.Name}";
-            env[key] = await GetConnectionString(reference, service);
-         }
-
-         return env;
-      }
-
-      public static Promise<string> GetConnectionString(StorageObjectDescriptor storage, MicroserviceDescriptor user)
-      {
-         // TODO: Check if the container is actually running. If it isn't, we need to get a connection string to the remote database.
-
-         // TODO: Get port from running container
-         // TODO: Don't use admin:admin, actually read this data from a config somewhere...
-         return Promise<string>.Successful("mongodb://admin:admin@gateway.docker.internal:27017");
       }
 
       public static void GenerateClientSourceCode(MicroserviceDescriptor service)

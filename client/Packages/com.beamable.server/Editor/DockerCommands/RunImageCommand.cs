@@ -13,13 +13,6 @@ namespace Beamable.Server.Editor.DockerCommands
 
    public class RunImageCommand : DockerCommand
    {
-      public const string ENV_CID = "CID";
-      public const string ENV_PID = "PID";
-      public const string ENV_SECRET = "SECRET";
-      public const string ENV_HOST = "HOST";
-      public const string ENV_LOG_LEVEL = "LOG_LEVEL";
-      public const string ENV_NAME_PREFIX = "NAME_PREFIX";
-
       private readonly MicroserviceDescriptor _descriptor;
       public int DebugPort { get; }
       public string ImageName { get; set; }
@@ -29,33 +22,11 @@ namespace Beamable.Server.Editor.DockerCommands
       private string Secret { get; set; }
       public string LogLevel { get; }
 
-      public Dictionary<string, string> Environment { get; private set; }
-
-      public RunImageCommand(MicroserviceDescriptor descriptor, string cid, string secret, string logLevel="Information", Dictionary<string, string> env=null)
+      public RunImageCommand(MicroserviceDescriptor descriptor, string cid, string secret, string logLevel="Information")
       {
          _descriptor = descriptor;
          ImageName = descriptor.ImageName;
          ContainerName = descriptor.ContainerName;
-
-         Environment = new Dictionary<string, string>()
-         {
-            [ENV_CID] = cid,
-            [ENV_PID] = ConfigDatabase.GetString("pid"),
-            [ENV_SECRET] = secret,
-            [ENV_HOST] = BeamableEnvironment.SocketUrl,
-            [ENV_LOG_LEVEL] = logLevel,
-            [ENV_NAME_PREFIX] = MicroserviceIndividualization.Prefix,
-         };
-
-         if (env != null)
-         {
-            foreach (var kvp in env)
-            {
-               Environment[kvp.Key] = kvp.Value;
-            }
-         }
-
-
          Cid = cid;
          Secret = secret;
          LogLevel = logLevel;
@@ -80,20 +51,20 @@ namespace Beamable.Server.Editor.DockerCommands
          }
       }
 
-      public string GetEnvironmentString()
-      {
-         var keys = Environment.Select(kvp => $"--env {kvp.Key}=\"{kvp.Value}\"");
-         var envString = string.Join(" ", keys);
-         return envString;
-      }
-
       public override string GetCommandString()
       {
-         Environment[ENV_NAME_PREFIX] = MicroserviceIndividualization.Prefix;
+         var pid = ConfigDatabase.GetString("pid");
+
+         var namePrefix = MicroserviceIndividualization.Prefix;
          var command = $"{DockerCmd} run --rm " +
                           $"-P " +
                           $"-p {DebugPort}:2222  " +
-                          $"{GetEnvironmentString()} " +
+                          $"--env CID={Cid} " +
+                          $"--env PID={pid} " +
+                          $"--env SECRET=\"{Secret}\" " +
+                          $"--env HOST=\"{BeamableEnvironment.SocketUrl}\" " +
+                          $"--env LOG_LEVEL=\"{LogLevel}\" " +
+                          $"--env NAME_PREFIX=\"{namePrefix}\" " +
                           $"--name {ContainerName} {ImageName}";
          return command;
       }

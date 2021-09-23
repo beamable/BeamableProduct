@@ -433,9 +433,10 @@ namespace Beamable.Editor.Content.Components
 
       private void ContentVisualElement_OnItemDelete(params ContentItemDescriptor[] contentItemDescriptors)
       {
-         BeamablePopupWindow.ShowConfirmationPopup(EditorWindow.GetWindow<ContentManagerWindow>(),
-            ContentManagerConstants.ConfirmWindowHeader,
-            ContentManagerConstants.ConfirmItemDeletion,
+         // Get the bounds of the entire visual element
+         VisualElement centerConfirmationPopupWithinMe = this;
+
+         BeamablePopupWindow.ShowConfirmationPopup<ContentManagerWindow>(centerConfirmationPopupWithinMe,
             ()=>contentItemDescriptors.ToList().ForEach(e => OnItemDelete?.Invoke(e)));
       }
 
