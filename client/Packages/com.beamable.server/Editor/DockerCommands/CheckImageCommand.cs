@@ -9,8 +9,14 @@ namespace Beamable.Server.Editor.DockerCommands
       public bool IsRunning { get; private set; }
 
       public CheckImageReturnableCommand(IDescriptor descriptor)
+         : this(descriptor.ContainerName)
       {
-         ContainerName = descriptor.ContainerName;
+
+      }
+
+      public CheckImageReturnableCommand(string containerName)
+      {
+         ContainerName = containerName;
       }
 
       public override string GetCommandString()
