@@ -20,7 +20,7 @@ namespace Beamable.Server.Editor.DockerCommands
       public const string ENV_LOG_LEVEL = "LOG_LEVEL";
       public const string ENV_NAME_PREFIX = "NAME_PREFIX";
 
-      private readonly MicroserviceDescriptor _descriptor;
+      private readonly IDescriptor _descriptor;
       public int DebugPort { get; }
       public string ImageName { get; set; }
       public string ContainerName { get; set; }
@@ -31,7 +31,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
       public Dictionary<string, string> Environment { get; private set; }
 
-      public RunImageCommand(MicroserviceDescriptor descriptor, string cid, string secret, string logLevel="Information", Dictionary<string, string> env=null)
+      public RunImageCommand(IDescriptor descriptor, string cid, string secret, string logLevel="Information", Dictionary<string, string> env=null)
       {
          _descriptor = descriptor;
          ImageName = descriptor.ImageName;
