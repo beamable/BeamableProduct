@@ -187,13 +187,15 @@ namespace Beamable.Server.Editor
       
       #region NewStorageObject
 
-      [MenuItem("Window/Beamable Dev/Create Storage Object", priority = 50)]
+      #region TEMPORARY_ONLY_FOR_TESTS
+      [MenuItem("TESTING/Create Storage Object")]
       public static void CreateNewStorageObject()
       {
           Debug.LogWarning("=== Using temp method to create new Storage Object ===");
           string randomName = $"StorageObject_{UnityEngine.Random.Range(100000000, 999999999)}";
           CreateNewStorageObject(randomName);
       }
+      #endregion
 
       public static void CreateNewStorageObject(string storageObjectName)
       {
@@ -211,7 +213,7 @@ namespace Beamable.Server.Editor
               storeObjectDirectory.FullName + $"/{storageObjectName}.cs");
       }
 
-      public static void CreateNewFileWithStorageObjectInfo(string storageObjectName, string sourceFile,
+      private static void CreateNewFileWithStorageObjectInfo(string storageObjectName, string sourceFile,
           string targetFile)
       {
           string text = File.ReadAllText(sourceFile);

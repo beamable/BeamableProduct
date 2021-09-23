@@ -2,8 +2,8 @@
 
 namespace Beamable.Server.XXXX
 {
-    //[Storageobject("XXXX")]
-    public class XXXX //: MongoStorageObject
+    [StorageObject("XXXX")]
+    public class XXXX : MongoStorageObject
     {
 
     }
