@@ -123,7 +123,7 @@ namespace Beamable.Editor.UI.Model
          });
       }
 
-      public void AddLogMessage(MicroserviceDescriptor descriptor, LogMessage message)
+      public void AddLogMessage(IDescriptor descriptor, LogMessage message)
       {
          GetModelForDescriptor(descriptor).Logs.AddMessage(message);
       }
@@ -138,7 +138,7 @@ namespace Beamable.Editor.UI.Model
          return ServerManifest?.manifest?.FirstOrDefault(r => r.serviceName.Equals(descriptor.Name));
       }
 
-      public MicroserviceModel GetModelForDescriptor(MicroserviceDescriptor descriptor) =>
+      public MicroserviceModel GetModelForDescriptor(IDescriptor descriptor) =>
          GetModelForName(descriptor.Name);
 
       public MicroserviceModel GetModelForName(string serviceName)

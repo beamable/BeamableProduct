@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI.Components;
@@ -28,6 +27,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         private ListView _listView;
         private ScrollView _scrollView;
         private VisualElement _microservicesListElement;
+        private IDescriptor _testDescriptor;
 
         private Dictionary<MicroserviceModel, MicroserviceVisualElement> _modelToVisual =
             new Dictionary<MicroserviceModel, MicroserviceVisualElement>();
