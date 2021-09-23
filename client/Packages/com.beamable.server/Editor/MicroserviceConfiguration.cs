@@ -195,9 +195,6 @@ namespace Beamable.Server.Editor
       [Tooltip("When running locally, what port will the data tool be available on?")]
       public uint LocalUIPort;
 
-      [Tooltip("When running locally, The MONGO_INITDB_DATABASE env var for Mongo")]
-      public string LocalInitDb = "beamable";
-
       [Tooltip("When running locally, The MONGO_INITDB_ROOT_USERNAME env var for Mongo")]
       public string LocalInitUser = "beamable";
       [Tooltip("When running locally, The MONGO_INITDB_ROOT_PASSWORD env var for Mongo")]
