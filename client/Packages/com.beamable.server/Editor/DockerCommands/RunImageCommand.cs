@@ -4,7 +4,6 @@ using System.Linq;
 using Beamable.Common;
 using Beamable.Config;
 using Beamable.Editor.Environment;
-using UnityEngine;
 
 namespace Beamable.Server.Editor.DockerCommands
 {
@@ -12,18 +11,15 @@ namespace Beamable.Server.Editor.DockerCommands
    {
       public const string ENV_MONGO_INITDB_ROOT_USERNAME = "MONGO_INITDB_ROOT_USERNAME";
       public const string ENV_MONGO_INITDB_ROOT_PASSWORD = "MONGO_INITDB_ROOT_PASSWORD";
-      // public const string ENV_MONGO_INITDB_DATABASE = "MONGO_INITDB_DATABASE";
 
       public RunStorageCommand(StorageObjectDescriptor storage)
          : base(storage.ImageName, storage.ContainerName)
       {
-         // docker run --rm -p 27017:27017 --env MONGO_INITDB_ROOT_USERNAME="admin" --env MONGO_INITDB_ROOT_PASSWORD="admin" --env MONGO_INITDB_DATABASE="admin" --name my_mongo mongo:latest
          var config = MicroserviceConfiguration.Instance.GetStorageEntry(storage.Name);
          Environment = new Dictionary<string, string>
          {
             [ENV_MONGO_INITDB_ROOT_USERNAME] = config.LocalInitUser,
             [ENV_MONGO_INITDB_ROOT_PASSWORD] = config.LocalInitPass,
-            // [ENV_MONGO_INITDB_DATABASE] = config.LocalInitDb,
          };
 
          Ports = new Dictionary<uint, uint>
@@ -83,7 +79,6 @@ namespace Beamable.Server.Editor.DockerCommands
 
       private void OnMessage(string message)
       {
-         Debug.Log(message);
          if (message == null) return;
          if (message.Contains(RUNNING_STRING))
          {
@@ -195,7 +190,6 @@ namespace Beamable.Server.Editor.DockerCommands
 
       public override string GetCommandString()
       {
-         // Environment[ENV_NAME_PREFIX] = MicroserviceIndividualization.Prefix;
          var command = $"{DockerCmd} run --rm " +
                           $"-P " +
                           $"{GetPortString()} " +
