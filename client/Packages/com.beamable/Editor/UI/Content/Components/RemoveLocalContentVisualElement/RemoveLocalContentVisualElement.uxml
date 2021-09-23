@@ -14,11 +14,9 @@
     </beamable:LoadingIndicatorVisualElement>
   </engine:VisualElement>
 
-
   <engine:VisualElement name="removeLocal-mainVisualElement">
-
     <engine:Label name="message" text="placeholder"/>
-    
+
     <engine:VisualElement name="summaryContainer">
       <engine:VisualElement class="summaryAlignLeft">
         <engine:Label name="summary" text="Summary:  "/>
@@ -28,14 +26,12 @@
       </engine:VisualElement>
     </engine:VisualElement>
 
-
     <engine:VisualElement name="removeLocalPreviewContainer">
       <engine:ScrollView>
         <engine:Foldout name="toRemove">
         </engine:Foldout>
         <engine:Label name="noDownloadLbl"/>
       </engine:ScrollView>
-
       <engine:Label name="noRemoveLabel"/>
     </engine:VisualElement>
 

@@ -59,7 +59,6 @@ namespace Beamable.Editor.Content.Components
                 bindItem = CreateBinder(removeSource)
             };
 
-
             toRemoveElem.contentContainer.Add(removeList);
 
             var cancelBtn = Root.Q<Button>("cancelBtn");
