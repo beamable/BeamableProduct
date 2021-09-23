@@ -84,6 +84,8 @@ namespace Beamable.Editor.Content.Components
 
             var tmpModified = GetModiffiedSource(summary);
             SetFold(modifiedFold, tmpModified, modifiedSource, _modifiedList);
+            var overrideCount = Root.Q<CountVisualElement>("overrideCount");
+            overrideCount.SetValue(tmpModified.Count());
 
             var additionFold = Root.Q<Foldout>("addFoldout");
             additionFold.text = "Additions";
@@ -98,6 +100,12 @@ namespace Beamable.Editor.Content.Components
             additionFold.contentContainer.Add(_addList);
 
             var tmpAdditional = GetAdditionSource(summary);
+            var addInCount = Root.Q<CountVisualElement>("addInCount");
+            addInCount.SetValue(tmpAdditional.Count());
+
+            var tmpRemoved = GetRemoveSource(summary);
+            tmpAdditional.AddRange(tmpRemoved);
+
             SetFold(additionFold, tmpAdditional, addSource, _addList);
 
             if (tmpAdditional.Count > 0 || tmpModified.Count > 0)
@@ -105,11 +113,15 @@ namespace Beamable.Editor.Content.Components
                noDownloadLabel.parent.Remove(noDownloadLabel);
             }
 
-            var overrideCount = Root.Q<CountVisualElement>("overrideCount");
-            overrideCount.SetValue(modifiedSource.Count());
-            var addInCount = Root.Q<CountVisualElement>("addInCount");
-            addInCount.SetValue(addSource.Count());
+            var removeCount = Root.Q<CountVisualElement>("removeCount");
+            removeCount.SetValue(tmpRemoved.Count());
+            var removeLabel = Root.Q<Label>("removeLabel");
 
+            if (tmpRemoved.Count == 0)
+            {
+                 removeCount.parent.Remove(removeCount);
+                 removeLabel.parent.Remove(removeLabel);
+            }
          });
          loadingBlocker.SetPromise(promise, mainElement).SetText(ContentManagerConstants.DownloadLoadText);
       }
@@ -138,7 +150,12 @@ namespace Beamable.Editor.Content.Components
             return summary.Additions.ToList();
       }
 
-      protected virtual void SetMessageLabel()
+      protected virtual List<ContentDownloadEntryDescriptor> GetRemoveSource(DownloadSummary summary)
+      {
+            return new List<ContentDownloadEntryDescriptor>();
+      }
+
+        protected virtual void SetMessageLabel()
       {
           _messageLabel = Root.Q<Label>("message");
           _messageLabel.text = ContentManagerConstants.DownloadMessageText;

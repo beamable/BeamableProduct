@@ -23,9 +23,11 @@
             <engine:VisualElement class="summaryAlignLeft">
                 <engine:Label name="summary" text="Summary:  "/>
                 <contentManager:CountVisualElement name="overrideCount"/>
-                <engine:Label text="  Modified  "/>
+                <engine:Label text=" Modified  "/>
                 <contentManager:CountVisualElement name="addInCount"/>
-                <engine:Label text="  Created"/>
+                <engine:Label text=" Created"/>
+                <contentManager:CountVisualElement name="removeCount"/>
+                <engine:Label name="removeLabel" text=" Removed"/>
             </engine:VisualElement>
             <engine:VisualElement class="summaryAlignRight">
 <!--                <engine:Button name="detailBtn" text="Detail"/>-->

@@ -24,9 +24,9 @@ namespace Beamable.Editor.Content.Components
 
         }
 
-        protected override List<ContentDownloadEntryDescriptor> GetAdditionSource(DownloadSummary summary)
+        protected override List<ContentDownloadEntryDescriptor> GetRemoveSource(DownloadSummary summary)
         {
-            List<ContentDownloadEntryDescriptor> tmp = base.GetAdditionSource(summary);
+            List<ContentDownloadEntryDescriptor> tmp = base.GetRemoveSource(summary);
 
             var entries = DataModel.GetAllContents()?.Where(c => c.Status == ContentModificationStatus.LOCAL_ONLY).ToList();
 
