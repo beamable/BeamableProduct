@@ -398,26 +398,36 @@ namespace Beamable.Editor.Content
             await Init();
          }
 
-         var contentManagerWindow = GetWindow<ContentManagerWindow>(BeamableConstants.CONTENT_MANAGER, true, typeof(ContentManagerWindow), typeof(SceneView));
+            var contentManagerWindow = GetWindow<ContentManagerWindow>(BeamableConstants.CONTENT_MANAGER, true, typeof(ContentManagerWindow), typeof(SceneView));
 
-         var clearPopup = new RemoveLocalContentVisualElement();
-         clearPopup.DataModel = Instance._contentManager.Model;
-         clearPopup.RemoveSet = Instance._contentManager.PrepareDownloadSummary();
+            var clearPopup = new ResetContentVisualElement();
+            clearPopup.Model = Instance._contentManager.PrepareDownloadSummary();
+            clearPopup.DataModel = Instance._contentManager.Model;
 
-         contentManagerWindow._currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.RemoveLocalContent, clearPopup, null);
-         contentManagerWindow._currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
+            contentManagerWindow._currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.RemoveLocalContent, clearPopup, null);
+            contentManagerWindow._currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
 
-         clearPopup.OnCancelled += () =>
-         {
-             contentManagerWindow._currentWindow.Close();
-             contentManagerWindow._currentWindow = null;
-         };
+            clearPopup.OnRefreshContentManager += () => Instance._contentManager.RefreshWindow(true);
+            clearPopup.OnClosed += () =>
+            {
+                contentManagerWindow._currentWindow.Close();
+                contentManagerWindow._currentWindow = null;
+            };
 
-         clearPopup.OnCompleted += () =>
-         {
-            contentManagerWindow._currentWindow.Close();
-            contentManagerWindow._currentWindow = null;
-         };
-      }
+            clearPopup.OnCancelled += () =>
+            {
+                contentManagerWindow._currentWindow.Close();
+                contentManagerWindow._currentWindow = null;
+            };
+
+            clearPopup.OnDownloadStarted += (summary, prog, finished) =>
+            {
+                Instance._contentManager?.DownloadContent(summary, prog, finished).Then(_ =>
+                {
+                    Instance._contentManager?.Model.TriggerSoftReset();
+                });
+                ;
+            };
+        }
    }
 }

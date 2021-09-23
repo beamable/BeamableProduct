@@ -38,10 +38,12 @@ namespace Beamable.Editor.Content.Components
       private ListView _modifiedList;
       private ListView _addList;
       private bool _allDownloadsComplete;
-      private Label _messageLabel;
+      protected Label _messageLabel;
 
-      public DownloadContentVisualElement() : base(nameof(DownloadContentVisualElement))
-      {
+      public DownloadContentVisualElement() : base(nameof(DownloadContentVisualElement)){
+      }
+
+      public DownloadContentVisualElement(string name) : base(name){
       }
 
       public override void Refresh()
@@ -51,15 +53,7 @@ namespace Beamable.Editor.Content.Components
          var loadingBlocker = Root.Q<LoadingIndicatorVisualElement>();
          var promise = Model.Then(summary =>
          {
-
-            _messageLabel = Root.Q<Label>("message");
-            _messageLabel.text = ContentManagerConstants.DownloadMessageText;
-            _messageLabel.AddTextWrapStyle();
-
-            var overrideCount = Root.Q<CountVisualElement>("overrideCount");
-            overrideCount.SetValue(summary.Overwrites.Count());
-            var addInCount = Root.Q<CountVisualElement>("addInCount");
-            addInCount.SetValue(summary.Additions.Count());
+            SetMessageLabel();
 
             _cancelBtn = Root.Q<Button>("cancelBtn");
             _cancelBtn.clickable.clicked += CancelButton_OnClicked;
@@ -74,10 +68,6 @@ namespace Beamable.Editor.Content.Components
             var noDownloadLabel = Root.Q<Label>("noDownloadLbl");
             noDownloadLabel.text = ContentManagerConstants.DownloadNoDataText;
             noDownloadLabel.AddTextWrapStyle();
-            if (summary.TotalDownloadEntries > 0)
-            {
-               noDownloadLabel.parent.Remove(noDownloadLabel);
-            }
 
             // TODO show preview of download content.
             var modifiedFold = Root.Q<Foldout>("overwriteFoldout");
@@ -92,6 +82,9 @@ namespace Beamable.Editor.Content.Components
             };
             modifiedFold.contentContainer.Add(_modifiedList);
 
+            var tmpModified = GetModiffiedSource(summary);
+            SetFold(modifiedFold, tmpModified, modifiedSource, _modifiedList);
+
             var additionFold = Root.Q<Foldout>("addFoldout");
             additionFold.text = "Additions";
             var addSource = new List<ContentDownloadEntryDescriptor>();
@@ -104,30 +97,74 @@ namespace Beamable.Editor.Content.Components
             };
             additionFold.contentContainer.Add(_addList);
 
-            if (summary.AnyOverwrites)
+            var tmpAdditional = GetAdditionSource(summary);
+            SetFold(additionFold, tmpAdditional, addSource, _addList);
+
+            if (tmpAdditional.Count > 0 || tmpModified.Count > 0)
             {
-               modifiedSource.AddRange(summary.Overwrites);
-               modifiedFold.Q<ListView>().style.height = _modifiedList.itemHeight * summary.Overwrites.Count();
-               _modifiedList.Refresh();
-            }
-            else
-            {
-               modifiedFold.parent.Remove(modifiedFold);
+               noDownloadLabel.parent.Remove(noDownloadLabel);
             }
 
-            if (summary.AnyAdditions)
-            {
-               addSource.AddRange(summary.Additions);
-               additionFold.Q<ListView>().style.height = _addList.itemHeight * summary.Additions.Count();
-               _addList.Refresh();
+            var overrideCount = Root.Q<CountVisualElement>("overrideCount");
+            overrideCount.SetValue(modifiedSource.Count());
+            var addInCount = Root.Q<CountVisualElement>("addInCount");
+            addInCount.SetValue(addSource.Count());
 
-            }
-            else
-            {
-               additionFold.parent.Remove(additionFold);
-            }
          });
          loadingBlocker.SetPromise(promise, mainElement).SetText(ContentManagerConstants.DownloadLoadText);
+      }
+
+      private void SetFold(Foldout foldout, List<ContentDownloadEntryDescriptor> entries, List<ContentDownloadEntryDescriptor> source, ListView listView)
+      {
+          if (entries.Count > 0)
+          {
+             source.AddRange(entries);
+             foldout.Q<ListView>().style.height = _modifiedList.itemHeight * entries.Count();
+             listView.Refresh();
+          }
+          else
+          {
+             foldout.parent.Remove(foldout);
+          }
+        }
+
+      protected virtual List<ContentDownloadEntryDescriptor> GetModiffiedSource(DownloadSummary summary)
+      {
+          return summary.Overwrites.ToList();
+      }
+
+      protected virtual List<ContentDownloadEntryDescriptor> GetAdditionSource(DownloadSummary summary)
+      {
+            return summary.Additions.ToList();
+      }
+
+      protected virtual void SetMessageLabel()
+      {
+          _messageLabel = Root.Q<Label>("message");
+          _messageLabel.text = ContentManagerConstants.DownloadMessageText;
+          _messageLabel.AddTextWrapStyle();
+      }
+
+      protected virtual void SetDownloadSuccessMessageLabel()
+      {
+          _messageLabel.text = ContentManagerConstants.DownloadCompleteText;
+      }
+
+      protected virtual void OnDownloadSuccess()
+      {
+          _downloadBtn.SetText("Okay");
+          _allDownloadsComplete = true;
+          _loadingBar.Progress = 1;
+          _loadingBar.RunWithoutUpdater = false;
+
+            // Mark all as checked
+          this.MarkDirtyRepaint();
+          EditorApplication.delayCall += () =>
+          {
+             foreach (var contentElement in _contentElements)
+                contentElement.MarkChecked();
+             this.MarkDirtyRepaint();
+          };
       }
 
       private ContentPopupLinkVisualElement MakeElement()
@@ -194,21 +231,8 @@ namespace Beamable.Editor.Content.Components
 
                finalPromise.Then(_ =>
                {
-
-                  _messageLabel.text = ContentManagerConstants.DownloadCompleteText;
-                     _downloadBtn.SetText("Okay");
-                     _allDownloadsComplete = true;
-                     _loadingBar.Progress = 1;
-                     _loadingBar.RunWithoutUpdater = false;
-
-                     // Mark all as checked
-                     this.MarkDirtyRepaint();
-                     EditorApplication.delayCall += () =>
-                     {
-                        foreach (var contentElement in _contentElements)
-                           contentElement.MarkChecked();
-                        this.MarkDirtyRepaint();
-                     };
+                   SetDownloadSuccessMessageLabel();
+                   OnDownloadSuccess();
 
                }).Error(_ =>
                   {
@@ -223,5 +247,5 @@ namespace Beamable.Editor.Content.Components
                   });
             });
       }
-   }
+    }
 }
