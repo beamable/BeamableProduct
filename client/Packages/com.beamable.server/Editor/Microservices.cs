@@ -51,16 +51,6 @@ namespace Beamable.Server.Editor
          }
       }
 
-      public static List<IDescriptor> AllDescriptors
-      {
-         get
-         {
-            List<IDescriptor> descriptors = Descriptors.Select(s => (IDescriptor) s).ToList();
-            List<IDescriptor> storageDescriptors = StorageDescriptors.Select(s => (IDescriptor) s).ToList();
-            return descriptors.Concat(storageDescriptors).ToList();
-         }
-      }
-
       public static void RefreshDescriptors()
       {
          var assemblies = AppDomain.CurrentDomain.GetAssemblies();
