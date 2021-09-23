@@ -393,21 +393,31 @@ namespace Beamable.Editor.Content
       [MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Reset Content")]
       private static async Task ResetContent() {
 
-         if (!EditorUtility.DisplayDialog(
-            title: "Reset Content",
-            message: "This operation will remove all your local changes. You can't undo this operation. Are you sure you want to proceed?",
-            ok: "Yes",
-            cancel: "No")
-         ) return;
-         
-         if (Instance == null) {
+         if (Instance == null)
+         {
             await Init();
          }
 
-         var downloadSummary = await Instance._contentManager.PrepareDownloadSummary();
-         await Instance._contentManager.DownloadContent(downloadSummary, null, null);
-         Instance._contentManager.Model.DeleteLocalOnlyItems();
-         Instance.Refresh();
+         var contentManagerWindow = GetWindow<ContentManagerWindow>(BeamableConstants.CONTENT_MANAGER, true, typeof(ContentManagerWindow), typeof(SceneView));
+
+         var clearPopup = new RemoveLocalContentVisualElement();
+         clearPopup.DataModel = Instance._contentManager.Model;
+         clearPopup.RemoveSet = Instance._contentManager.PrepareDownloadSummary();
+
+         contentManagerWindow._currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.RemoveLocalContent, clearPopup, null);
+         contentManagerWindow._currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
+
+         clearPopup.OnCancelled += () =>
+         {
+             contentManagerWindow._currentWindow.Close();
+             contentManagerWindow._currentWindow = null;
+         };
+
+         clearPopup.OnCompleted += () =>
+         {
+            contentManagerWindow._currentWindow.Close();
+            contentManagerWindow._currentWindow = null;
+         };
       }
    }
 }

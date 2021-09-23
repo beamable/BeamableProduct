@@ -1,0 +1,95 @@
+
+.cover {
+    position: absolute;
+    left: 10000px;
+}
+
+RemoveLocalContentVisualElement,
+RemoveLocalContentVisualElement > TemplateContainer
+{
+    flex-grow: 1;
+}
+
+#removeLocal-mainVisualElement {
+    flex-grow: 1;
+    margin-left: 26px;
+    margin-right: 26px;
+}
+#nameTextField {
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+#summaryContainer {
+    flex-direction: row;
+    margin-bottom: 12px;
+}
+.summaryAlignLeft {
+    flex-grow: 1;
+    flex-direction: row;
+    align-items: center;
+}
+.summaryAlignRight {
+    flex-direction: row-reverse;
+}
+
+#removeLocalPreviewContainer {
+    flex-grow: 1;
+}
+
+#buttonStrip {
+    flex-direction: row;
+    justify-content: flex-end;
+    flex-shrink: 0;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+#removeLocalPreviewContainer .unity-foldout-content {
+    left: 12px;
+}
+#removeBtn{
+    width: 100px;
+    height: 28px;
+}
+
+#removeLocalPreviewContainer .unity-foldout__content, /* 2019 has the .unity-foldout__content class. */
+#removeLocalPreviewContainer .unity-foldout-content /* 2018 has the .unity-foldout-content class. */ {
+    padding-left: 12px;
+}
+
+RemoveLocalContentVisualElement ScrollView  #ContentView {
+    left: 1px;
+    right: 1px;
+}
+RemoveLocalContentVisualElement ScrollView {
+    flex-grow: 1;
+}
+RemoveLocalContentVisualElement Foldout #unity-content > ListView,
+RemoveLocalContentVisualElement Foldout #unity-content,
+RemoveLocalContentVisualElement Foldout {
+    flex-grow: 1;
+}
+
+.hide {
+    position: absolute;
+    left: 50000px;
+}
+
+#loadingViewContainer{
+    align-self: center;
+    align-items: center;
+}
+LoadingIndicatorVisualElement {
+    margin-top: 40px;
+}
+LoadingIndicatorVisualElement.hide {
+    margin-top: 0px;
+}
+LoadingSpinnerVisualElement {
+    align-self: center;
+}
+
+#noRemoveLabel{
+    position: absolute;
+}

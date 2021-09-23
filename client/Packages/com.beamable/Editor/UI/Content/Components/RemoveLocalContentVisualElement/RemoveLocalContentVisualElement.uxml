@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:engine="UnityEngine.Experimental.UIElements"
+        xmlns:editor="UnityEditor.Experimental.UIElements"
+        xmlns:beamable="Beamable.Editor.UI.Components"
+        xmlns:contentManager="Beamable.Editor.Content.Components"
+        xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
+        xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd Beamable.Editor.Content.Components">
+  <beamable:LoadingBarElement/>
+  <engine:VisualElement name="loadingViewContainer">
+    <beamable:LoadingIndicatorVisualElement>
+      <beamable:LoadingSpinnerVisualElement/>
+    </beamable:LoadingIndicatorVisualElement>
+  </engine:VisualElement>
+
+
+  <engine:VisualElement name="removeLocal-mainVisualElement">
+
+    <engine:Label name="message" text="placeholder"/>
+    
+    <engine:VisualElement name="summaryContainer">
+      <engine:VisualElement class="summaryAlignLeft">
+        <engine:Label name="summary" text="Summary:  "/>
+        <contentManager:CountVisualElement name="removed"/>
+      </engine:VisualElement>
+      <engine:VisualElement class="summaryAlignRight">
+      </engine:VisualElement>
+    </engine:VisualElement>
+
+
+    <engine:VisualElement name="removeLocalPreviewContainer">
+      <engine:ScrollView>
+        <engine:Foldout name="toRemove">
+        </engine:Foldout>
+        <engine:Label name="noDownloadLbl"/>
+      </engine:ScrollView>
+
+      <engine:Label name="noRemoveLabel"/>
+    </engine:VisualElement>
+
+    <engine:VisualElement name="buttonStrip">
+      <engine:Button name="cancelBtn" text="Cancel"/>
+      <beamable:PrimaryButtonVisualElement name="removeBtn" text="Clear"/>
+    </engine:VisualElement>
+  </engine:VisualElement>
+
+</engine:UXML>
