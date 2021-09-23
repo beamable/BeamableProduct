@@ -36,6 +36,9 @@ namespace Beamable.Server.Editor
       public const string CONFIG_AUTO_RUN = "auto_run_local_microservices";
       private const string TemplateDirectory = "Packages/com.beamable.server/Template";
       private const string ServicesDirectory = "Assets/Beamable/Microservices";
+      
+      private const string TEMPLATE_STORAGE_OBJECT_DIRECTORY = "Packages/com.beamable.server/Template/Storage Object";
+      private const string STORAGE_OBJECTS_DIRECTORY = "Assets/Beamable/Storage Objects";
 
       static MicroserviceEditor()
       {
@@ -180,6 +183,44 @@ namespace Beamable.Server.Editor
 //         }
 //      }
 
+      #endregion
+      
+      #region NewStorageObject
+
+      [MenuItem("Window/Beamable Dev/Create Storage Object", priority = 50)]
+      public static void CreateNewStorageObject()
+      {
+          Debug.LogWarning("=== Using temp method to create new Storage Object ===");
+          string randomName = $"StorageObject_{UnityEngine.Random.Range(100000000, 999999999)}";
+          CreateNewStorageObject(randomName);
+      }
+
+      public static void CreateNewStorageObject(string storageObjectName)
+      {
+          string rootPath = Application.dataPath.Substring(0, Application.dataPath.Length - "Assets".Length);
+          string servicePath = Path.Combine(rootPath, STORAGE_OBJECTS_DIRECTORY, storageObjectName);
+         
+          DirectoryInfo storeObjectDirectory = Directory.CreateDirectory(servicePath);
+
+          CreateNewFileWithStorageObjectInfo(storageObjectName,
+              Path.Combine(rootPath, TEMPLATE_STORAGE_OBJECT_DIRECTORY, "Unity.Beamable.Runtime.UserStorageObject.XXXX.asmdef"),
+              storeObjectDirectory.FullName + $"/Unity.Beamable.Runtime.UserStorageObject.{storageObjectName}.asmdef");
+
+          CreateNewFileWithStorageObjectInfo(storageObjectName,
+              Path.Combine(rootPath, TEMPLATE_STORAGE_OBJECT_DIRECTORY, "StorageObject.cs"),
+              storeObjectDirectory.FullName + $"/{storageObjectName}.cs");
+      }
+
+      public static void CreateNewFileWithStorageObjectInfo(string storageObjectName, string sourceFile,
+          string targetFile)
+      {
+          string text = File.ReadAllText(sourceFile);
+          text = text.Replace("XXXX", storageObjectName);
+          text = text.Replace("//ZZZZ", "");
+          text = text.Replace("xxxx", storageObjectName.ToLower());
+          File.WriteAllText(targetFile, text);
+      }
+      
       #endregion
 
       #region Docker
