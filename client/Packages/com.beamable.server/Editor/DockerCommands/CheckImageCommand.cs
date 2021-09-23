@@ -8,7 +8,7 @@ namespace Beamable.Server.Editor.DockerCommands
       public string ContainerName { get; }
       public bool IsRunning { get; private set; }
 
-      public CheckImageReturnableCommand(MicroserviceDescriptor descriptor)
+      public CheckImageReturnableCommand(IDescriptor descriptor)
       {
          ContainerName = descriptor.ContainerName;
       }
