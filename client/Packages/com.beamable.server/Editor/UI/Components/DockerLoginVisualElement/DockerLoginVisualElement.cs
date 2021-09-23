@@ -17,7 +17,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
-namespace Editor.UI.Components.DockerLoginWindow
+namespace Beamable.Server.Editor.UI.Components.DockerLoginWindow
 {
    public class DockerLoginVisualElement : MicroserviceComponent
    {

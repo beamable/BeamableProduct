@@ -15,6 +15,7 @@ using Beamable.Server.Editor.Uploader;
 using Beamable.Platform.SDK;
 using Beamable.Editor;
 using Beamable.Editor.UI.Model;
+using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -231,10 +232,29 @@ namespace Beamable.Server.Editor
       public static Promise<string> GetConnectionString(StorageObjectDescriptor storage, MicroserviceDescriptor user)
       {
          // TODO: Check if the container is actually running. If it isn't, we need to get a connection string to the remote database.
+         var config = MicroserviceConfiguration.Instance.GetStorageEntry(storage.Name);
+         return Promise<string>.Successful($"mongodb://{config.LocalInitUser}:{config.LocalInitPass}@gateway.docker.internal:{config.LocalDataPort}");
+      }
 
-         // TODO: Get port from running container
-         // TODO: Don't use admin:admin, actually read this data from a config somewhere...
-         return Promise<string>.Successful("mongodb://admin:admin@gateway.docker.internal:27017");
+      public static async Promise<bool> OpenLocalMongoTool(StorageObjectDescriptor storage)
+      {
+         var config = MicroserviceConfiguration.Instance.GetStorageEntry(storage.Name);
+
+         var toolCheck = new CheckImageReturnableCommand(storage.LocalToolContainerName);
+         var isToolRunning = await toolCheck.Start(null);
+
+         if (!isToolRunning)
+         {
+            var run = new RunStorageToolCommand(storage);
+            run.Start();
+            var success = await run.IsAvailable;
+            if (!success)
+            {
+               return false;
+            }
+         }
+         Application.OpenURL($"http://localhost:{config.LocalUIPort}");
+         return true;
       }
 
       public static void GenerateClientSourceCode(MicroserviceDescriptor service)

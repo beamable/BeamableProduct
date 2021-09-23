@@ -177,7 +177,7 @@ namespace Beamable.Server.Editor
          var connectionStrings = await Microservices.GetConnectionStringEnvironmentVariables(Descriptor);
 
          if (_runProcess != null) return;
-         _runProcess = new RunImageCommand(Descriptor, cid, secret, "Debug", connectionStrings);
+         _runProcess = new RunServiceCommand(Descriptor, cid, secret, connectionStrings);
 
          // TODO: Send messages to /admin/HealthCheck to see if the service is ready to accept traffic.
 
