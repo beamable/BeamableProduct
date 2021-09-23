@@ -1,105 +1,107 @@
-
 using System;
-using System.Diagnostics;
-using System.Reflection;
-using System.Text.RegularExpressions;
+using System.Collections.Generic;
+using System.IO;
+using Beamable.Config;
 using UnityEditor;
 using UnityEngine;
-using System.Text;
-using System.Threading;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Beamable.Config;
-using Debug = UnityEngine.Debug;
+using Random = UnityEngine.Random;
 
 namespace Beamable.Server.Editor
 {
+    [InitializeOnLoad]
+    public static class MicroserviceEditor
+    {
+        public const int portCounter = 3000;
 
-   [InitializeOnLoad]
-   public static class MicroserviceEditor
-   {
-      public const int portCounter = 3000;
-      
-      public static string commandoutputfile = "";
-      public static bool isVerboseOutput = false;
-      public static bool wasCompilerError = true;
+        public static string commandoutputfile = "";
+        public static bool isVerboseOutput = false;
+        public static bool wasCompilerError = true;
 #if UNITY_EDITOR && !UNITY_EDITOR_WIN
    public static string dockerlocation = "/usr/local/bin/docker";
 #else
-      public static string dockerlocation = "docker";
+        public static string dockerlocation = "docker";
 #endif
 
-      private const string MENU_TOGGLE_AUTORUN = BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_MICROSERVICES + "/Auto Run Local Microservices";
-      private const int MENU_TOGGLE_PRIORITY = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3;
+        private const string MENU_TOGGLE_AUTORUN =
+            BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_MICROSERVICES + "/Auto Run Local Microservices";
 
-      public const string CONFIG_AUTO_RUN = "auto_run_local_microservices";
-      private const string TemplateDirectory = "Packages/com.beamable.server/Template";
-      private const string ServicesDirectory = "Assets/Beamable/Microservices";
-      
-      private const string TEMPLATE_STORAGE_OBJECT_DIRECTORY = "Packages/com.beamable.server/Template/Storage Object";
-      private const string STORAGE_OBJECTS_DIRECTORY = "Assets/Beamable/Storage Objects";
+        private const int MENU_TOGGLE_PRIORITY = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3;
 
-      static MicroserviceEditor()
-      {
-         /// Delaying until first editor tick so that the menu
-         /// will be populated before setting check state, and
-         /// re-apply correct action
-         EditorApplication.delayCall += () =>
-         {
-            bool enabled = false;
-            if (ConfigDatabase.HasKey(MicroserviceEditor.CONFIG_AUTO_RUN))
+        public const string CONFIG_AUTO_RUN = "auto_run_local_microservices";
+        private const string TEMPLATE_MICROSERVICE_DIRECTORY = "Packages/com.beamable.server/Template";
+        private const string DESTINATION_MICROSERVICE_DIRECTORY = "Assets/Beamable/Microservices";
+
+        private const string TEMPLATE_STORAGE_OBJECT_DIRECTORY = "Packages/com.beamable.server/Template/StorageObject";
+        private const string DESTINATION_STORAGE_OBJECT_DIRECTORY = "Assets/Beamable/StorageObjects";
+
+        private static Dictionary<ServiceType, ServiceCreateInfo> _serviceCreateInfos =
+            new Dictionary<ServiceType, ServiceCreateInfo>
             {
-               enabled = ConfigDatabase.GetBool(MicroserviceEditor.CONFIG_AUTO_RUN, false);
-            }
-            else
+                {
+                    ServiceType.MicroService,
+                    new ServiceCreateInfo(ServiceType.MicroService, DESTINATION_MICROSERVICE_DIRECTORY, TEMPLATE_MICROSERVICE_DIRECTORY)
+                },
+                {
+                    ServiceType.StorageObject,
+                    new ServiceCreateInfo(ServiceType.StorageObject, DESTINATION_STORAGE_OBJECT_DIRECTORY, TEMPLATE_STORAGE_OBJECT_DIRECTORY)
+                }
+            };
+
+        static MicroserviceEditor()
+        {
+            /// Delaying until first editor tick so that the menu
+            /// will be populated before setting check state, and
+            /// re-apply correct action
+            EditorApplication.delayCall += () =>
             {
-               enabled = EditorPrefs.GetBool(MicroserviceEditor.CONFIG_AUTO_RUN, false);
-            }
+                var enabled = false;
+                if (ConfigDatabase.HasKey(CONFIG_AUTO_RUN))
+                    enabled = ConfigDatabase.GetBool(CONFIG_AUTO_RUN, false);
+                else
+                    enabled = EditorPrefs.GetBool(CONFIG_AUTO_RUN, false);
 
-            setAutoRun(enabled);
-         };
-      }
+                setAutoRun(enabled);
+            };
+        }
 
-      static void setAutoRun(bool value)
-      {
-         Menu.SetChecked(MicroserviceEditor.MENU_TOGGLE_AUTORUN, value);
-         if (ConfigDatabase.HasKey(MicroserviceEditor.CONFIG_AUTO_RUN))
-         {
-            ConfigDatabase.SetBool(MicroserviceEditor.CONFIG_AUTO_RUN, value);
-         }
+        private static void setAutoRun(bool value)
+        {
+            Menu.SetChecked(MENU_TOGGLE_AUTORUN, value);
+            if (ConfigDatabase.HasKey(CONFIG_AUTO_RUN)) ConfigDatabase.SetBool(CONFIG_AUTO_RUN, value);
 
-         EditorPrefs.SetBool(MicroserviceEditor.CONFIG_AUTO_RUN, value);
-      }
+            EditorPrefs.SetBool(CONFIG_AUTO_RUN, value);
+        }
 
-      [MenuItem(MicroserviceEditor.MENU_TOGGLE_AUTORUN, priority = MENU_TOGGLE_PRIORITY)]
-      public static void AutoRunLocalMicroservicesToggle()
-      {
-         bool enabled = EditorPrefs.GetBool(MicroserviceEditor.CONFIG_AUTO_RUN, false);
-         setAutoRun(!enabled);
-      }
+        [MenuItem(MENU_TOGGLE_AUTORUN, priority = MENU_TOGGLE_PRIORITY)]
+        public static void AutoRunLocalMicroservicesToggle()
+        {
+            var enabled = EditorPrefs.GetBool(CONFIG_AUTO_RUN, false);
+            setAutoRun(!enabled);
+        }
 
-      #region NewMicroService
+        #region NewMicroService
 
-      public static void CreateNewMicroservice(string microserviceName)
-      {
-         string rootPath = Application.dataPath.Substring(0, Application.dataPath.Length - "Assets".Length);
-         string servicePath = Path.Combine(rootPath, ServicesDirectory, microserviceName);
-         //string serviceEditorPath = Path.Combine(servicePath, "Editor");
-         string serviceHiddenPath = Path.Combine(servicePath, "~");
-         string serviceDockerPath = Path.Combine(servicePath, "dbmicroservice");
-         string templateHiddenPath = Path.Combine(rootPath, TemplateDirectory, "~");
+        public static void CreateNewMicroservice(string microserviceName)
+        {
+            CreateNewServiceFile(ServiceType.MicroService, microserviceName);
 
-         DirectoryInfo templateDirectory =
-            new DirectoryInfo(Path.Combine(rootPath, TemplateDirectory, "dbmicroservice"));
+//             var rootPath = Application.dataPath.Substring(0, Application.dataPath.Length - "Assets".Length);
+//             var servicePath = Path.Combine(rootPath, DESTINATION_MICROSERVICE_DIRECTORY, microserviceName);
+//             //string serviceEditorPath = Path.Combine(servicePath, "Editor");
+//             var serviceHiddenPath = Path.Combine(servicePath, "~");
+//             var serviceDockerPath = Path.Combine(servicePath, "dbmicroservice");
+//             var templateHiddenPath = Path.Combine(rootPath, TEMPLATE_MICROSERVICE_DIRECTORY, "~");
+//
+//             var templateDirectory =
+//                 new DirectoryInfo(Path.Combine(rootPath, TEMPLATE_MICROSERVICE_DIRECTORY, "dbmicroservice"));
+//
+//             var msDirectory = Directory.CreateDirectory(servicePath);
+//             var msHiddenDirectory = Directory.CreateDirectory(serviceHiddenPath);
+// //         DirectoryInfo msEditorDirectory = Directory.CreateDirectory(serviceEditorPath);
+//             var templateHiddenDirectory = new DirectoryInfo(templateHiddenPath);
 
-         DirectoryInfo msDirectory = Directory.CreateDirectory(servicePath);
-         DirectoryInfo msHiddenDirectory = Directory.CreateDirectory(serviceHiddenPath);
-//         DirectoryInfo msEditorDirectory = Directory.CreateDirectory(serviceEditorPath);
-         DirectoryInfo templateHiddenDirectory = new DirectoryInfo(templateHiddenPath);
 
-
-         //Editor file
+            //Editor file
 //         CreateNewFileWithMicroserviceInfo(microserviceName,
 //            Path.Combine(rootPath, TemplateDirectory, "Editor/XXXXEditor.cs"),
 //            msEditorDirectory.FullName + $"/{microserviceName}Editor.cs");
@@ -109,17 +111,17 @@ namespace Beamable.Server.Editor
 //            msEditorDirectory.FullName + $"/Unity.Beamable.Editor.UserMicroService.{microserviceName}.asmdef");
 
 
+            // ACTUAL SOURCE.
+            // CreateNewFileWithMicroserviceInfo(microserviceName,
+            //     Path.Combine(rootPath, TEMPLATE_MICROSERVICE_DIRECTORY,
+            //         "Unity.Beamable.Runtime.UserMicroService.XXXX.asmdef"),
+            //     msDirectory.FullName + $"/Unity.Beamable.Runtime.UserMicroService.{microserviceName}.asmdef");
+            //
+            // CreateNewFileWithMicroserviceInfo(microserviceName,
+            //     Path.Combine(rootPath, TEMPLATE_MICROSERVICE_DIRECTORY, "Microservice.cs"),
+            //     msDirectory.FullName + $"/{microserviceName}.cs");
 
-         // ACTUAL SOURCE.
-         CreateNewFileWithMicroserviceInfo(microserviceName,
-            Path.Combine(rootPath, TemplateDirectory, "Unity.Beamable.Runtime.UserMicroService.XXXX.asmdef"),
-            msDirectory.FullName + $"/Unity.Beamable.Runtime.UserMicroService.{microserviceName}.asmdef");
-
-         CreateNewFileWithMicroserviceInfo(microserviceName,
-            Path.Combine(rootPath, TemplateDirectory, "Microservice.cs"),
-            msDirectory.FullName + $"/{microserviceName}.cs");
-
-         // HIDDEN SOURCE.
+            // HIDDEN SOURCE.
 //         CreateNewFileWithMicroserviceInfo(microserviceName,
 //            Path.Combine(templateHiddenPath, "Dockerfile"),
 //            msHiddenDirectory.FullName + $"/Dockerfile");
@@ -136,22 +138,22 @@ namespace Beamable.Server.Editor
 //            Path.Combine(templateHiddenPath, "xxxx.sln"),
 //            msHiddenDirectory.FullName + $"/{microserviceName.ToLower()}.sln");
 
-         // copy the dbmicroservice folder into the new microservice (it needs to be there to build the docker container atleast for now.
-         // CopyAllHelper(microserviceName, templateHiddenDirectory, msHiddenDirectory);
-         AssetDatabase.Refresh();
-      }
+            // copy the dbmicroservice folder into the new microservice (it needs to be there to build the docker container atleast for now.
+            // CopyAllHelper(microserviceName, templateHiddenDirectory, msHiddenDirectory);
+            // AssetDatabase.Refresh();
+        }
 
-      public static void CreateNewFileWithMicroserviceInfo(string microserviceName, string sourcefile,
-         string targetfile)
-      {
-         // if files get really big this will have to change
-         // MyMicroservice = XXXX | mymicroservice = xxxx (lower case) ||  "" = //ZZZZ  ie things to remove
-         string text = File.ReadAllText(sourcefile);
-         text = text.Replace("XXXX", microserviceName);
-         text = text.Replace("//ZZZZ", "");
-         text = text.Replace("xxxx", microserviceName.ToLower());
-         File.WriteAllText(targetfile, text);
-      }
+        // public static void CreateNewFileWithMicroserviceInfo(string microserviceName, string sourcefile,
+        //     string targetfile)
+        // {
+        //     // if files get really big this will have to change
+        //     // MyMicroservice = XXXX | mymicroservice = xxxx (lower case) ||  "" = //ZZZZ  ie things to remove
+        //     var text = File.ReadAllText(sourcefile);
+        //     text = text.Replace("XXXX", microserviceName);
+        //     text = text.Replace("//ZZZZ", "");
+        //     text = text.Replace("xxxx", microserviceName.ToLower());
+        //     File.WriteAllText(targetfile, text);
+        // }
 
 //      public static void CopyAllHelper(string microserviceName, DirectoryInfo source, DirectoryInfo target)
 //      {
@@ -183,49 +185,76 @@ namespace Beamable.Server.Editor
 //         }
 //      }
 
-      #endregion
-      
-      #region NewStorageObject
+        #endregion
 
-      #region TEMPORARY_ONLY_FOR_TESTS
-      [MenuItem("TESTING/Create Storage Object")]
-      public static void CreateNewStorageObject()
-      {
-          Debug.LogWarning("=== Using temp method to create new Storage Object ===");
-          string randomName = $"StorageObject_{UnityEngine.Random.Range(100000000, 999999999)}";
-          CreateNewStorageObject(randomName);
-      }
-      #endregion
+        #region TEMPORARY_ONLY_FOR_TESTS
 
-      public static void CreateNewStorageObject(string storageObjectName)
-      {
-          string rootPath = Application.dataPath.Substring(0, Application.dataPath.Length - "Assets".Length);
-          string servicePath = Path.Combine(rootPath, STORAGE_OBJECTS_DIRECTORY, storageObjectName);
-         
-          DirectoryInfo storeObjectDirectory = Directory.CreateDirectory(servicePath);
+        [MenuItem("TESTING/Create Storage Object")]
+        public static void CreateNewStorageObject()
+        {
+            Debug.LogWarning("=== Using temp method to create new Storage Object ===");
+            var randomName = $"StorageObject_{Random.Range(100000000, 999999999)}";
+            CreateNewServiceFile(ServiceType.StorageObject, randomName);
+        }
 
-          CreateNewFileWithStorageObjectInfo(storageObjectName,
-              Path.Combine(rootPath, TEMPLATE_STORAGE_OBJECT_DIRECTORY, "Unity.Beamable.Runtime.UserStorageObject.XXXX.asmdef"),
-              storeObjectDirectory.FullName + $"/Unity.Beamable.Runtime.UserStorageObject.{storageObjectName}.asmdef");
+        #endregion
+        
 
-          CreateNewFileWithStorageObjectInfo(storageObjectName,
-              Path.Combine(rootPath, TEMPLATE_STORAGE_OBJECT_DIRECTORY, "StorageObject.cs"),
-              storeObjectDirectory.FullName + $"/{storageObjectName}.cs");
-      }
+        public static void CreateNewServiceFile(ServiceType serviceType, string serviceName)
+        {
+            if (string.IsNullOrWhiteSpace(serviceName))
+            {
+                return;
+            }
+            
+            var serviceCreateInfo = _serviceCreateInfos[serviceType];
+            var rootPath = Application.dataPath.Substring(0, Application.dataPath.Length - "Assets".Length);
+            var servicePath = Path.Combine(rootPath, serviceCreateInfo.DestinationDirectoryPath, serviceName);
+            var destinationDirectory = Directory.CreateDirectory(servicePath);
 
-      private static void CreateNewFileWithStorageObjectInfo(string storageObjectName, string sourceFile,
-          string targetFile)
-      {
-          string text = File.ReadAllText(sourceFile);
-          text = text.Replace("XXXX", storageObjectName);
-          text = text.Replace("//ZZZZ", "");
-          text = text.Replace("xxxx", storageObjectName.ToLower());
-          File.WriteAllText(targetFile, text);
-      }
-      
-      #endregion
+            SetupServiceFileInfo(serviceName,
+                Path.Combine(rootPath, serviceCreateInfo.TemplateDirectoryPath, $"Unity.Beamable.Runtime.User{serviceCreateInfo.ServiceTypeName}.XXXX.asmdef"),
+                destinationDirectory.FullName + $"/Unity.Beamable.Runtime.User{serviceCreateInfo.ServiceTypeName}.{serviceName}.asmdef");
 
-      #region Docker
+            SetupServiceFileInfo(serviceName,
+                Path.Combine(rootPath, serviceCreateInfo.TemplateDirectoryPath, $"{serviceCreateInfo.ServiceTypeName}.cs"),
+                destinationDirectory.FullName + $"/{serviceName}.cs");
+
+            AssetDatabase.Refresh();
+        }
+        
+        private static void SetupServiceFileInfo(string serviceName, string sourceFile, string targetFile)
+        {
+            var text = File.ReadAllText(sourceFile);
+            text = text.Replace("XXXX", serviceName);
+            text = text.Replace("//ZZZZ", "");
+            text = text.Replace("xxxx", serviceName.ToLower());
+            File.WriteAllText(targetFile, text);
+        }
+
+        private class ServiceCreateInfo
+        {
+            public ServiceType ServiceType { get; }
+            public string ServiceTypeName { get; }
+            public string DestinationDirectoryPath { get; }
+            public string TemplateDirectoryPath { get; }
+
+            public ServiceCreateInfo(ServiceType serviceType, string destinationDirectoryPath, string templateDirectoryPath)
+            {
+                ServiceType = serviceType;
+                ServiceTypeName = Enum.GetName(typeof(ServiceType), serviceType);
+                DestinationDirectoryPath = destinationDirectoryPath;
+                TemplateDirectoryPath = templateDirectoryPath;
+            }
+        }
+
+        public enum ServiceType
+        {
+            MicroService,
+            StorageObject
+        }
+
+        #region Docker
 
 //      public static void BuildDockerImage(string imagename, string path)
 //      {
@@ -326,7 +355,8 @@ namespace Beamable.Server.Editor
 //
 //      }
 
-      #endregion
+        #endregion
+
 //
 //      #region commandline
 //
@@ -428,8 +458,5 @@ namespace Beamable.Server.Editor
 //      }
 //
 //      #endregion
-
-
-   }
-
+    }
 }
