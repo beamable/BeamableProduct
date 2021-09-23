@@ -23,6 +23,7 @@ namespace Beamable.Server.Editor
       private const string RUN_MONGO = ASSETS_BEAMABLE + "Run Mongo"; // TODO: Delete this when we have a UI
       private const string KILL_MONGO = ASSETS_BEAMABLE + "Kill Mongo"; // TODO: Delete this when we have a UI
       private const string CLEAR_MONGO = ASSETS_BEAMABLE + "Clear Mongo Data"; // TODO: Delete this when we have a UI
+      private const string SNAPSHOT_MONGO = ASSETS_BEAMABLE + "Create Mongo Snapshot"; // TODO: Delete this when we have a UI
       private const int BEAMABLE_PRIORITY = 190;
 
       private static readonly string[] MongoLibraries = new[]
@@ -36,6 +37,39 @@ namespace Beamable.Server.Editor
          "System.Runtime.CompilerServices.Unsafe.dll",
          "SharpCompress.dll"
       };
+
+      [MenuItem(SNAPSHOT_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
+      public static void SnapshotMongo()
+      {
+         if (Selection.activeObject is AssemblyDefinitionAsset asm)
+         {
+            var info = asm.ConvertToInfo();
+            foreach (var storage in Microservices.StorageDescriptors)
+            {
+               if (storage.IsContainedInAssemblyInfo(info))
+               {
+                  var dest = EditorUtility.OpenFolderPanel("Select where to save mongo", "", "default");
+                  if (string.IsNullOrEmpty(dest)) return;
+                  Debug.Log("Starting snapshot...");
+                  Microservices.SnapshotMongo(storage, dest).Then(res =>
+                  {
+                     if (res)
+                     {
+                        Debug.Log("Finished Snapshot");
+                        EditorUtility.OpenWithDefaultApp(dest);
+                     }
+                     else
+                     {
+                        Debug.Log("Failed.");
+                     }
+                  });
+
+                  return;
+               }
+            }
+            Debug.Log("nothing found for " + info.Name);
+         }
+      }
 
       [MenuItem(CLEAR_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
       public static void ClearMongo()

@@ -257,6 +257,23 @@ namespace Beamable.Server.Editor
          return true;
       }
 
+      public static async Promise<bool> SnapshotMongo(StorageObjectDescriptor storage, string destPath)
+      {
+         var storageCheck = new CheckImageReturnableCommand(storage);
+         var isStorageRunning = await storageCheck.Start(null);
+         if (!isStorageRunning) return false;
+
+         var dumpCommand = new MongoDumpCommand(storage);
+         var dumpResult = await dumpCommand.Start(null);
+         if (!dumpResult) return false;
+
+         var cpCommand = new DockerCopyCommand(storage, "/beamable", destPath);
+         var cpResult = await cpCommand.Start(null);
+         if (!cpResult) return false;
+
+         return true;
+      }
+
       public static async Promise<bool> ClearMongoData(StorageObjectDescriptor storage)
       {
          Debug.Log("Clearing mongo");
