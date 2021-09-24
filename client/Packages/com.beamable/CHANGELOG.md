@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Auto-complete text feature for `AdminFlow` prefab
+- Steam third party authentication support
 - New default `currency.coins` currency that demonstrates client writable currency.
 
 ## [0.16.0]
