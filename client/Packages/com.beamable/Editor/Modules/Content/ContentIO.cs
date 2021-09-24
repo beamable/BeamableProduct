@@ -388,7 +388,6 @@ namespace Beamable.Editor.Content
       {
          if (query == null) query = ContentQuery.Unit;
          Directory.CreateDirectory(BeamableConstants.DATA_DIR);
-         //AssetDatabase.ImportAsset(BeamableConstants.DATA_DIR);
 
          var assetGuids = AssetDatabase.FindAssets(
             $"t:{typeof(TContent).Name}",
