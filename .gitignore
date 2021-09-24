@@ -96,3 +96,10 @@ client/Assets/AddressableAssetsData/OSX/
 client/Assets/AddressableAssetsData/Android.meta
 client/Assets/AddressableAssetsData/Android/
 client/Assets/Beamable/Resources/config-defaults.txt
+*.meta
+*.asset
+client/.vsconfig
+*.meta
+client/Packages/com.beamable/Editor/UI/Content/Components/DropdownVisualElement.meta
+client/Packages/com.beamable/Tests/Runtime/Beamable/UI/BUSS/StyleObjectTests.meta
+client/ProjectSettings/ProjectSettings.asset
