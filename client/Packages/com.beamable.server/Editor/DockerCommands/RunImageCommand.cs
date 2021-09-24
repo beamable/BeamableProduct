@@ -26,6 +26,12 @@ namespace Beamable.Server.Editor.DockerCommands
          {
             [config.LocalDataPort] = 27017
          };
+
+         NamedVolumes = new Dictionary<string, string>
+         {
+            [storage.DataVolume] = "/data/db", // the actual data of the database.
+            [storage.FilesVolume] = "/beamable" //
+         };
       }
    }
 
@@ -141,13 +147,16 @@ namespace Beamable.Server.Editor.DockerCommands
       public Dictionary<string, string> Environment { get; protected set; }
       public Dictionary<uint, uint> Ports { get; protected set; }
 
+      public Dictionary<string, string> NamedVolumes { get; protected set; }
+
       public Action<string> OnStandardOut;
       public Action<string> OnStandardErr;
 
       public RunImageCommand(string imageName, string containerName,
          IDescriptor descriptor = null,
          Dictionary<string, string> env=null,
-         Dictionary<uint, uint> ports=null)
+         Dictionary<uint, uint> ports=null,
+         Dictionary<string, string> namedVolumes=null)
       {
          _descriptor = descriptor;
          ImageName = imageName;
@@ -155,6 +164,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
          Environment = env ?? new Dictionary<string, string>();
          Ports = ports ?? new Dictionary<uint, uint>();
+         NamedVolumes = namedVolumes ?? new Dictionary<string, string>();
       }
 
       protected override void HandleStandardOut(string data)
@@ -188,10 +198,18 @@ namespace Beamable.Server.Editor.DockerCommands
          return portString;
       }
 
+      string GetNamedVolumeString()
+      {
+         var volumes = NamedVolumes.Select(kvp => $"-v {kvp.Key}:{kvp.Value}");
+         var volumeString = string.Join(" ", volumes);
+         return volumeString;
+      }
+
       public override string GetCommandString()
       {
          var command = $"{DockerCmd} run --rm " +
                           $"-P " +
+                          $"{GetNamedVolumeString()} " +
                           $"{GetPortString()} " +
                           $"{GetEnvironmentString()} " +
                           $"--name {ContainerName} {ImageName}";
