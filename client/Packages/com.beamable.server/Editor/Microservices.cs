@@ -268,10 +268,7 @@ namespace Beamable.Server.Editor
          if (!dumpResult) return false;
 
          var cpCommand = new DockerCopyCommand(storage, "/beamable/.", destPath);
-         var cpResult = await cpCommand.Start(null);
-         if (!cpResult) return false;
-
-         return true;
+         return await cpCommand.Start(null);
       }
 
       public static async Promise<bool> RestoreMongoSnapshot(StorageObjectDescriptor storage, string srcPath, bool hardReset=true)
@@ -316,10 +313,9 @@ namespace Beamable.Server.Editor
 
          var deleteVolumes = new DeleteVolumeCommand(storage);
          var results = await deleteVolumes.Start(null);
-         var err = false;
-         if (results.Any(kvp => !kvp.Value))
+         var err = results.Any(kvp => !kvp.Value);
+         if (err)
          {
-            err = true;
             Debug.LogError("Failed to remove all volumes");
             foreach (var kvp in results)
             {
