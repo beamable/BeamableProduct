@@ -131,8 +131,12 @@ namespace Beamable.Server.Editor.CodeGen
           {
               resultType = typeof(Unit);
           }
+          else if (resultType.IsGenericType && resultType.GetGenericTypeDefinition() == typeof(Promise<>))
+          {
+              resultType = resultType.GetGenericArguments()[0];
+          }
 
-          var isAsync = null != info.MethodInfo.GetCustomAttribute<AsyncStateMachineAttribute>();
+            var isAsync = null != info.MethodInfo.GetCustomAttribute<AsyncStateMachineAttribute>();
           if (isAsync)
           {
               if (typeof(Task).IsAssignableFrom(resultType) && resultType.IsGenericType)
@@ -142,8 +146,16 @@ namespace Beamable.Server.Editor.CodeGen
               }
           }
 
-          var genericPromiseType = promiseType.MakeGenericType(resultType);
-          genMethod.ReturnType = new CodeTypeReference(genericPromiseType);
+          if (info.MethodInfo.IsGenericMethodDefinition)
+          {
+               genMethod.ReturnType = new CodeTypeReference($"{typeof(Promise)}<{resultType}>");
+               genMethod.Name = $"{info.MethodInfo.Name}<{resultType}>";
+          }
+          else
+          {
+               var genericPromiseType = promiseType.MakeGenericType(resultType);
+               genMethod.ReturnType = new CodeTypeReference(genericPromiseType);
+          }
 
           // Declaring a return statement for method ToString.
           var returnStatement = new CodeMethodReturnStatement();

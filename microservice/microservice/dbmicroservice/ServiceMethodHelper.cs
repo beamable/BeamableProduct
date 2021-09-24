@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Beamable.Server.Common;
@@ -31,6 +32,12 @@ namespace Beamable.Server
          return new ServiceMethodCollection(output);
       }
 
+      private static MethodInfo Convert(this MethodInfo method,params Type[] DeclaringTypeArguments)
+      {
+         var baseType = method.DeclaringType.GetGenericTypeDefinition().MakeGenericType(DeclaringTypeArguments);
+         return MethodInfo.GetMethodFromHandle(method.MethodHandle, baseType.TypeHandle) as MethodInfo;
+      }
+      
       private static List<ServiceMethod> ScanType(MicroserviceAttribute serviceAttribute, ServiceMethodProvider provider)
       {
          var type = provider.instanceType;
@@ -42,17 +49,24 @@ namespace Beamable.Server
          foreach (var method in allMethods)
          {
             var closureMethod = method;
-            var attribute = method.GetCustomAttribute<ClientCallableAttribute>();
+            Log.Debug("methodNameX {methodName}", method.Name);
+            if (method.ReturnType.IsGenericType)
+            {
+               Log.Debug("resultTypeX1 {typeName}", method.ReturnType);
+               var resultType = method.ReturnType.GetGenericArguments()[0];
+               Log.Debug("resultTypeX2 {typeName}", resultType);
+            }
+            var attribute = closureMethod.GetCustomAttribute<ClientCallableAttribute>();
             if (attribute == null) continue;
 
             var tag = provider.pathPrefix == "admin/" ? "Admin" : "Uncategorized";
-            var swaggerCategoryAttribute = method.GetCustomAttribute<SwaggerCategoryAttribute>();
+            var swaggerCategoryAttribute = closureMethod.GetCustomAttribute<SwaggerCategoryAttribute>();
             if (swaggerCategoryAttribute != null)
             {
                tag = swaggerCategoryAttribute.CategoryName.FirstCharToUpperRestToLower();
             }
 
-            var serializerAttribute = method.GetCustomAttribute<CustomResponseSerializationAttribute>();
+            var serializerAttribute = closureMethod.GetCustomAttribute<CustomResponseSerializationAttribute>();
 #pragma warning disable 618
             IResponseSerializer responseSerializer = new DefaultResponseSerializer(serviceAttribute.UseLegacySerialization);
 #pragma warning restore 618
@@ -64,14 +78,14 @@ namespace Beamable.Server
             var servicePath = attribute.PathName;
             if (string.IsNullOrEmpty(servicePath))
             {
-               servicePath = method.Name;
+               servicePath = closureMethod.Name;
             }
 
             servicePath = provider.pathPrefix + servicePath;
 
             var requiredScopes = attribute.RequiredScopes;
 
-            Log.Debug("Found {method} for {path}", method.Name, servicePath);
+            Log.Debug("Found {method} for {path}", closureMethod.Name, servicePath);
 
             var parameters = method.GetParameters();
 
@@ -96,15 +110,15 @@ namespace Beamable.Server
                };
                if (namedDeserializers.ContainsKey(parameterName))
                {
-                  throw new Exception($"parameter name is duplicated name=[{parameterName}] method=[{method.Name}]");
+                  throw new Exception($"parameter name is duplicated name=[{parameterName}] method=[{closureMethod.Name}]");
                }
 
                parameterNames.Add(parameterName);
                namedDeserializers.Add(parameterName, deserializer);
                deserializers.Add(deserializer);
             }
-
-            var isAsync = null != method.GetCustomAttribute<AsyncStateMachineAttribute>();
+            
+            var isAsync = null != closureMethod.GetCustomAttribute<AsyncStateMachineAttribute>();
 
             MethodInvocation executor;
 
