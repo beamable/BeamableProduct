@@ -7,5 +7,8 @@ namespace Beamable.Server.Editor
       string Name { get; }
       string AttributePath { get; }
       Type Type { get; }
+      
+      string ContainerName { get; }
+      string ImageName { get; }
    }
 }

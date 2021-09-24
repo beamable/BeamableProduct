@@ -9,7 +9,6 @@ using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.ManagerClient;
-using Editor.UI.Components.DockerLoginWindow;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018

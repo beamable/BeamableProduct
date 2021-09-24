@@ -35,6 +35,8 @@ namespace Beamable.Server.Editor
 
       public List<MicroserviceConfigurationEntry> Microservices;
 
+      public List<StorageConfigurationEntry> StorageObjects;
+
       [Tooltip("When you run a microservice in the Editor, the prefix controls the flow of traffic. By default, the prefix is your MAC address. If two developers use the same prefix, their microservices will share traffic. The prefix is ignored for games running outside of the Editor."), Delayed]
       public string CustomContainerPrefix;
 
@@ -87,6 +89,22 @@ namespace Beamable.Server.Editor
          _dockerCommandCached = DockerCommand = DOCKER_LOCATION;
       }
       #endif
+
+      public StorageConfigurationEntry GetStorageEntry(string storageName)
+      {
+         var existing = StorageObjects.FirstOrDefault(s => string.Equals(s.StorageName, storageName));
+         if (existing == null)
+         {
+            existing = new StorageConfigurationEntry
+            {
+               StorageName = storageName,
+               LocalDataPort = 12100 + (uint) StorageObjects.Count,
+               LocalUIPort = 13100 + (uint) StorageObjects.Count
+            };
+            StorageObjects.Add(existing);
+         }
+         return existing;
+      }
 
       public MicroserviceConfigurationEntry GetEntry(string serviceName)
       {
@@ -164,6 +182,23 @@ namespace Beamable.Server.Editor
          if (aIdx > bIdx) return 1;
          return -1;
       }
+   }
+
+   [System.Serializable]
+   public class StorageConfigurationEntry
+   {
+      public string StorageName;
+
+      [Tooltip("When running locally, what port will the data be available on?")]
+      public uint LocalDataPort;
+
+      [Tooltip("When running locally, what port will the data tool be available on?")]
+      public uint LocalUIPort;
+
+      [Tooltip("When running locally, The MONGO_INITDB_ROOT_USERNAME env var for Mongo")]
+      public string LocalInitUser = "beamable";
+      [Tooltip("When running locally, The MONGO_INITDB_ROOT_PASSWORD env var for Mongo")]
+      public string LocalInitPass = "beamable";
    }
 
    [System.Serializable]
