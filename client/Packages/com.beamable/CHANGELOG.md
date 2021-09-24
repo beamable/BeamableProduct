@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Steam third party authentication support
 - New default `currency.coins` currency that demonstrates client writable currency.
 
+### Fixed
+- No longer re-imports config-defaults without cause
+- Batch imports Module Configuration files to improve speed
+- No longer refreshes asset database on ContentIO FindAll()
+
 ## [0.16.0]
 ### Added
 - Support for disabling Unity Domain Reload
