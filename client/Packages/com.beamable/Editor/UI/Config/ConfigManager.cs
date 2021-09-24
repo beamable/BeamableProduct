@@ -22,6 +22,7 @@ namespace Beamable.Editor.Config
       public string Name;
       public bool Exists;
       public Func<BaseModuleConfigurationObject> Getter;
+      public Type ConfigType;
    }
    public class ConfigManager
    {
@@ -98,6 +99,7 @@ namespace Beamable.Editor.Config
 
                   var descriptor = new ConfigModuleDescriptor
                   {
+                     ConfigType = type,
                      Name = type.Name,
                      Exists = exists,
                      Getter = () => staticInstanceProperty.GetValue(null) as BaseModuleConfigurationObject
@@ -115,10 +117,12 @@ namespace Beamable.Editor.Config
 
       }
 
-      public static void Initialize(bool forceCreation=false)
+      public static void Initialize(bool forceCreation = false)
       {
          ConfigModuleDescriptors = GetConfigDescriptors();
-         ConfigObjects = ConfigModuleDescriptors.Where(d => forceCreation || d.Exists).Select(d => d.Getter()).ToArray();
+         BaseModuleConfigurationObject.PrepareInstances(ConfigModuleDescriptors.Select(c => c.ConfigType).ToArray());
+         ConfigObjects = ConfigModuleDescriptors.Where(d => forceCreation || d.Exists).Select(d => d.Getter())
+            .ToArray();
          ConfigModules = ConfigObjects.Select(c => c.GetType().Name.Replace("Configuration", "")).ToArray();
       }
 
