@@ -29,7 +29,7 @@
                 <contentManager:CountVisualElement name="deleteCount"/>
                 <engine:Label name="deleteLabel" text=" Deleted"/>
             </engine:VisualElement>
-            <engine:VisualElement class="summ\aryAlignRight">
+            <engine:VisualElement class="summaryAlignRight">
 <!--                <engine:Button name="detailBtn" text="Detail"/>-->
             </engine:VisualElement>
         </engine:VisualElement>
