@@ -26,10 +26,10 @@
                 <engine:Label text=" Modified  "/>
                 <contentManager:CountVisualElement name="addInCount"/>
                 <engine:Label text=" Created"/>
-                <contentManager:CountVisualElement name="removeCount"/>
-                <engine:Label name="removeLabel" text=" Deleted"/>
+                <contentManager:CountVisualElement name="deleteCount"/>
+                <engine:Label name="deleteLabel" text=" Deleted"/>
             </engine:VisualElement>
-            <engine:VisualElement class="summaryAlignRight">
+            <engine:VisualElement class="summ\aryAlignRight">
 <!--                <engine:Button name="detailBtn" text="Detail"/>-->
             </engine:VisualElement>
         </engine:VisualElement>
@@ -40,6 +40,8 @@
                 </engine:Foldout>
                 <engine:Foldout name="addFoldout">
                 </engine:Foldout>
+                <engine:Foldout name="deleteFoldout">
+                </engine:Foldout>              
             </engine:ScrollView>
 
             <engine:Label name="noDownloadLbl"/>

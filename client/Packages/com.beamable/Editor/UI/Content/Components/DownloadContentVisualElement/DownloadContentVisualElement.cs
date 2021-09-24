@@ -103,23 +103,38 @@ namespace Beamable.Editor.Content.Components
             var addInCount = Root.Q<CountVisualElement>("addInCount");
             addInCount.SetValue(tmpAdditional.Count());
 
-            var tmpRemoved = GetRemoveSource(summary);
-            tmpAdditional.AddRange(tmpRemoved);
+            //var tmpRemoved = GetRemoveSource(summary);
+            //tmpAdditional.AddRange(tmpRemoved);
 
             SetFold(additionFold, tmpAdditional, addSource, _addList);
 
-            if (tmpAdditional.Count > 0 || tmpModified.Count > 0)
+            var deleteFoldoutElem = Root.Q<Foldout>("deleteFoldout");
+            deleteFoldoutElem.text = "Deletions";
+            var deleteSource = new List<ContentDownloadEntryDescriptor>();
+            var deleteList = new ListView
+             {
+                 itemHeight = 24,
+                 itemsSource = deleteSource,
+                 makeItem = MakeElement,
+                 bindItem = CreateBinder(deleteSource)
+            };
+            deleteFoldoutElem.contentContainer.Add(deleteList);
+
+            var tmpDeletions = GetDeleteSource(summary);
+            SetFold(deleteFoldoutElem, tmpDeletions, deleteSource, deleteList);
+
+            if (tmpAdditional.Count > 0 || tmpModified.Count > 0 || tmpDeletions.Count > 0)
             {
                noDownloadLabel.parent.Remove(noDownloadLabel);
             }
 
-            var removeCount = Root.Q<CountVisualElement>("removeCount");
-            removeCount.SetValue(tmpRemoved.Count());
-            var removeLabel = Root.Q<Label>("removeLabel");
+            var deleteCount = Root.Q<CountVisualElement>("deleteCount");
+            deleteCount.SetValue(tmpDeletions.Count());
+            var removeLabel = Root.Q<Label>("deleteLabel");
 
-            if (tmpRemoved.Count == 0)
+            if (tmpDeletions.Count == 0)
             {
-                 removeCount.parent.Remove(removeCount);
+                 deleteCount.parent.Remove(deleteCount);
                  removeLabel.parent.Remove(removeLabel);
             }
          });
@@ -150,7 +165,7 @@ namespace Beamable.Editor.Content.Components
             return summary.Additions.ToList();
       }
 
-      protected virtual List<ContentDownloadEntryDescriptor> GetRemoveSource(DownloadSummary summary)
+      protected virtual List<ContentDownloadEntryDescriptor> GetDeleteSource(DownloadSummary summary)
       {
             return new List<ContentDownloadEntryDescriptor>();
       }
