@@ -23,11 +23,11 @@
             <engine:VisualElement class="summaryAlignLeft">
                 <engine:Label name="summary" text="Summary:  "/>
                 <contentManager:CountVisualElement name="overrideCount"/>
-                <engine:Label text="  Modified  "/>
+                <engine:Label text=" Modified  "/>
                 <contentManager:CountVisualElement name="addInCount"/>
-                <engine:Label text="  Created"/>
+                <engine:Label text=" Created"/>
                 <contentManager:CountVisualElement name="deleteCount"/>
-                <engine:Label name="deleteLabel" text="  Deleted"/>
+                <engine:Label name="deleteLabel" text=" Deleted"/>
             </engine:VisualElement>
             <engine:VisualElement class="summaryAlignRight">
 <!--                <engine:Button name="detailBtn" text="Detail"/>-->
@@ -41,7 +41,7 @@
                 <engine:Foldout name="addFoldout">
                 </engine:Foldout>
                 <engine:Foldout name="deleteFoldout">
-                </engine:Foldout>
+                </engine:Foldout>              
             </engine:ScrollView>
 
             <engine:Label name="noDownloadLbl"/>
@@ -49,7 +49,7 @@
 
         <engine:VisualElement name="buttonStrip">
             <engine:Button name="cancelBtn" text="Cancel"/>
-            <beamable:PrimaryButtonVisualElement name="downloadBtn" text="Download"/>
+            <beamable:PrimaryButtonVisualElement name="downloadBtn" text="Reset"/>
         </engine:VisualElement>
     </engine:VisualElement>
 

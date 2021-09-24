@@ -55,7 +55,9 @@ namespace Beamable.Editor.Content
       public const string PublishMessageInProgress = "Publishing content...";
       public const string PublishNoDataText = "There is no content to Publish.";
 
-      //
+      public const string ResetContentMessagePreview = "This operation will remove all your local changes. You can't undo this operation. Are you sure you want to proceed?";
+      public const string ResetContentCompleteMessage = "All Local Content has been successfully synchronized.";
+        //
       public static string ContentListHeaderText = "Object Name                       Path                                     Tag";
       public static string ContentListCreateItem = "Create";
       public static string ContentListDeleteItem = "Delete Item";
@@ -67,6 +69,7 @@ namespace Beamable.Editor.Content
       //
       public static string DownloadContent = "Download Content";
       public static string ValidateContent = "Validate Content";
+      public static string RemoveLocalContent = "Reset Content";
       public static string BreadcrumbTokenArrow = ">";
       //
       public static Vector2 CreateNewPopupWindowSize = new Vector2(160, 30);
