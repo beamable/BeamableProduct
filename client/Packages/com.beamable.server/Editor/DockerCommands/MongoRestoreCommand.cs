@@ -1,22 +1,19 @@
-using UnityEngine;
-
 namespace Beamable.Server.Editor.DockerCommands
 {
-   public class MongoDumpCommand : DockerCommandReturnable<bool>
+   public class MongoRestoreCommand : DockerCommandReturnable<bool>
    {
       private readonly StorageObjectDescriptor _storage;
 
-      public MongoDumpCommand(StorageObjectDescriptor storage)
+      public MongoRestoreCommand(StorageObjectDescriptor storage)
       {
          _storage = storage;
          WriteCommandToUnity = true;
          WriteLogToUnity = true;
       }
-
       public override string GetCommandString()
       {
          var config = MicroserviceConfiguration.Instance.GetStorageEntry(_storage.Name);
-         return $"{DockerCmd} exec {_storage.ContainerName} mongodump --out=/beamable -u {config.LocalInitUser} -p {config.LocalInitPass}";
+         return $"{DockerCmd} exec {_storage.ContainerName} mongorestore /beamable -u {config.LocalInitUser} -p {config.LocalInitPass}";
       }
 
       protected override void Resolve()

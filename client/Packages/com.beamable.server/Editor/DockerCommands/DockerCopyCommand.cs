@@ -8,32 +8,38 @@ namespace Beamable.Server.Editor.DockerCommands
       private readonly IDescriptor _descriptor;
       private readonly string _containerPath;
       private readonly string _host;
-      private bool _copyingOutOfContainer;
+      private readonly CopyType _type;
 
-      public DockerCopyCommand(IDescriptor descriptor, string containerPath, string host)
+      public enum CopyType
+      {
+         CONTAINER_TO_HOST,
+         HOST_TO_CONTAINER
+      }
+
+      public DockerCopyCommand(IDescriptor descriptor, string containerPath, string host, CopyType direction = CopyType.CONTAINER_TO_HOST)
       {
          _descriptor = descriptor;
          _containerPath = containerPath;
          _host = host;
-         _copyingOutOfContainer = true;
+         _type = direction;
          WriteCommandToUnity = true;
          WriteLogToUnity = true;
       }
 
-      public DockerCopyCommand(string host, IDescriptor descriptor, string containerPath)
+      private string GetCopyStr()
       {
-         _descriptor = descriptor;
-         _containerPath = containerPath;
-         _host = host;
-         WriteCommandToUnity = true;
-         WriteLogToUnity = true;
+         var containerPart = $"{_descriptor.ContainerName}:{_containerPath}";
+         switch (_type)
+         {
+            case CopyType.CONTAINER_TO_HOST: return $"{containerPart} {_host}";
+            case CopyType.HOST_TO_CONTAINER: return $"{_host} {containerPart}";
+            default: return "";
+         }
       }
 
       public override string GetCommandString()
       {
-         var containerPart = $"{_descriptor.ContainerName}:{_containerPath}";
-         var cpStr = _copyingOutOfContainer ? $"{containerPart} {_host}" : $"{_host} {containerPart}";
-         return $"{DockerCmd} cp {cpStr}";
+         return $"{DockerCmd} cp {GetCopyStr()}";
       }
 
       protected override void Resolve()

@@ -34,19 +34,7 @@ namespace Beamable.Server.Editor.DockerCommands
          if (msg == null) return;
          msg = msg.Trim();
 
-         var successes = new HashSet<string>();
-         foreach (var res in Results)
-         {
-            if (string.Equals(msg, res.Key))
-            {
-               successes.Add(res.Key);
-            }
-         }
-
-         foreach (var success in successes)
-         {
-            Results[success] = true;
-         }
+         if (Results.ContainsKey(msg)) Results[msg] = true;
       }
 
       protected override void Resolve()
