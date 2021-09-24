@@ -257,6 +257,83 @@ namespace Beamable.Server.Editor
          return true;
       }
 
+      public static async Promise<bool> SnapshotMongo(StorageObjectDescriptor storage, string destPath)
+      {
+         var storageCheck = new CheckImageReturnableCommand(storage);
+         var isStorageRunning = await storageCheck.Start(null);
+         if (!isStorageRunning) return false;
+
+         var dumpCommand = new MongoDumpCommand(storage);
+         var dumpResult = await dumpCommand.Start(null);
+         if (!dumpResult) return false;
+
+         var cpCommand = new DockerCopyCommand(storage, "/beamable/.", destPath);
+         return await cpCommand.Start(null);
+      }
+
+      public static async Promise<bool> RestoreMongoSnapshot(StorageObjectDescriptor storage, string srcPath, bool hardReset=true)
+      {
+         if (hardReset)
+         {
+            await ClearMongoData(storage);
+         }
+
+
+         var storageCheck = new CheckImageReturnableCommand(storage);
+         var isStorageRunning = await storageCheck.Start(null);
+         if (!isStorageRunning)
+         {
+            var restart = new RunStorageCommand(storage);
+            restart.Start();
+         }
+
+         srcPath += "/."; // copy _contents_ of folder.
+         var cpCommand = new DockerCopyCommand(storage, "/beamable", srcPath, DockerCopyCommand.CopyType.HOST_TO_CONTAINER);
+         var cpResult = await cpCommand.Start(null);
+         if (!cpResult) return false;
+
+         var restoreCommand = new MongoRestoreCommand(storage);
+         return await restoreCommand.Start(null);
+      }
+
+      public static async Promise<bool> ClearMongoData(StorageObjectDescriptor storage)
+      {
+         Debug.Log("Clearing mongo");
+         var storageCheck = new CheckImageReturnableCommand(storage);
+         var isStorageRunning = await storageCheck.Start(null);
+         if (isStorageRunning)
+         {
+            Debug.Log("stopping mongo");
+
+            var stopComm = new StopImageCommand(storage);
+            await stopComm.Start(null);
+         }
+
+         Debug.Log("deleting volumes");
+
+         var deleteVolumes = new DeleteVolumeCommand(storage);
+         var results = await deleteVolumes.Start(null);
+         var err = results.Any(kvp => !kvp.Value);
+         if (err)
+         {
+            Debug.LogError("Failed to remove all volumes");
+            foreach (var kvp in results)
+            {
+               Debug.LogError($"{kvp.Key} -> {kvp.Value}");
+            }
+         }
+
+         if (isStorageRunning)
+         {
+            Debug.Log("restarting mongo");
+
+            var restart = new RunStorageCommand(storage);
+            restart.Start();
+         }
+
+         return !err;
+      }
+
       public static void GenerateClientSourceCode(MicroserviceDescriptor service)
       {
          var key = service.Name;
