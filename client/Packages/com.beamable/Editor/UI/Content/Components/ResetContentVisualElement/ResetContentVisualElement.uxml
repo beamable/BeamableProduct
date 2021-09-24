@@ -27,7 +27,7 @@
                 <contentManager:CountVisualElement name="addInCount"/>
                 <engine:Label text=" Created"/>
                 <contentManager:CountVisualElement name="removeCount"/>
-                <engine:Label name="removeLabel" text=" Removed"/>
+                <engine:Label name="removeLabel" text=" Deleted"/>
             </engine:VisualElement>
             <engine:VisualElement class="summaryAlignRight">
 <!--                <engine:Button name="detailBtn" text="Detail"/>-->
