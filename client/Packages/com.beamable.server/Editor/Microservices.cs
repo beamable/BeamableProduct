@@ -331,7 +331,7 @@ namespace Beamable.Server.Editor
             restart.Start();
          }
 
-         return err;
+         return !err;
       }
 
       public static void GenerateClientSourceCode(MicroserviceDescriptor service)
