@@ -99,7 +99,7 @@ namespace Beamable.Server.Editor.DockerCommands
                Parameters = objs,
                ParameterText = objsToString,
                Level = logLevelValue,
-               Timestamp = DateTime.Parse(timestamp)
+               Timestamp = LogMessage.GetTimeDisplay(DateTime.Parse(timestamp))
             };
             EditorApplication.delayCall += () =>
             {
@@ -124,7 +124,7 @@ namespace Beamable.Server.Editor.DockerCommands
                Parameters = new Dictionary<string, object>(),
                ParameterText = "",
                Level = LogLevel.INFO,
-               Timestamp = DateTime.Now
+               Timestamp = LogMessage.GetTimeDisplay(DateTime.Now)
             };
             EditorApplication.delayCall += () =>
             {
@@ -136,9 +136,7 @@ namespace Beamable.Server.Editor.DockerCommands
 #endif
          }
       }
-
    }
-
 
    public class FollowLogCommand : DockerCommand
    {
