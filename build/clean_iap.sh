@@ -1,7 +1,6 @@
 
 #!/bin/sh
-echo "Hello world"
-echo "UNITY ${UNITY_VERSION}"
+echo "Unity=[${UNITY_VERSION}]. Checking to see if we should destroy the Unity IAP Plugin, because it gets auto-generated in later versions of Unity."
 
 if [ "$UNITY_VERSION" != "2018.4.18f1" ]
 then
