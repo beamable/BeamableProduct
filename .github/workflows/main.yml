@@ -76,7 +76,7 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
         with:
-          customParameters: -disable-assembly-updater -accept-apiupdate
+          customParameters: -warnaserror+ -warnaserror
           projectPath: ${{ matrix.projectPath }}
           testMode: ${{ matrix.testMode }}
           unityVersion: ${{ matrix.unityVersion }}
