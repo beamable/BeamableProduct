@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Auto-complete text feature for `AdminFlow` prefab
 - Steam third party authentication support
 - New default `currency.coins` currency that demonstrates client writable currency.
+- Cohort Settings to EventContent to support partitioning by player stats
 
 ### Fixed
 - No longer re-imports config-defaults without cause

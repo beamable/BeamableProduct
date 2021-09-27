@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Beamable.Common.Content.Validation;
+using Beamable.Common.Leaderboards;
 using Beamable.Common.Shop;
 using Beamable.Content;
 using UnityEngine;
@@ -74,6 +75,9 @@ namespace Beamable.Common.Content
         [ContentField("partition_size")]
         [MustBePositive]
         public int partitionSize;
+        
+        [Tooltip("Specifies criteria for grouping players together.")]
+        public OptionalCohortSettings cohortSettings;
         
         //Hidden, so no tooltip needed
         [FormerlySerializedAs("phases")]
