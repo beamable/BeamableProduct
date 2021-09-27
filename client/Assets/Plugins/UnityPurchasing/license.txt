@@ -8,9 +8,9 @@ Your use of Unity IAP constitutes your acceptance of such terms. Unless expressl
 
 
 *****************************************************************
-Google Play Billing Library v3.0.1 © 2020 Google, LLC
+Google Play Billing Library v3.0.3 © 2020 Google, LLC
 
 
-Google Play Billing Library v3.0.1 is made available pursuant to the Android Software Development Kit License linked to immediately below:
+Google Play Billing Library v3.0.3 is made available pursuant to the Android Software Development Kit License linked to immediately below:
 
 [Android Software Development Kit License](https://developer.android.com/studio/terms.html)

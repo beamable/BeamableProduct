@@ -11,7 +11,7 @@ using Beamable.Common.Runtime.Collections;
 #if !DISABLE_BEAMABLE_ASYNCMETHODBUILDER
 
 namespace System.Runtime.CompilerServices
-{  
+{
    public sealed class AsyncMethodBuilderAttribute : Attribute
    {
       public AsyncMethodBuilderAttribute(Type taskLike)
@@ -676,7 +676,7 @@ namespace Beamable.Common
                   {
                      break;
                   }
-                  
+
                   var index = currentCount;
                   var generator = generators[index];
 
