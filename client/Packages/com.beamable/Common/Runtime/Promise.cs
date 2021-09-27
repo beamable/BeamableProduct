@@ -11,7 +11,7 @@ using Beamable.Common.Runtime.Collections;
 #if !DISABLE_BEAMABLE_ASYNCMETHODBUILDER
 
 namespace System.Runtime.CompilerServices
-{  
+{
    public sealed class AsyncMethodBuilderAttribute : Attribute
    {
       public AsyncMethodBuilderAttribute(Type taskLike)
@@ -35,6 +35,16 @@ namespace Beamable.Common
    /// </summary>
    public abstract class PromiseBase
    {
+      public async System.Threading.Tasks.Task Test()
+      {
+
+      }
+
+      public void Test2()
+      {
+         Test();
+      }
+
       protected Action<Exception> errbacks;
       public bool HadAnyErrbacks { protected set; get; }
 
@@ -676,7 +686,7 @@ namespace Beamable.Common
                   {
                      break;
                   }
-                  
+
                   var index = currentCount;
                   var generator = generators[index];
 
