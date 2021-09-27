@@ -4,6 +4,7 @@ using System.Linq;
 using Beamable.Editor;
 using Beamable.Editor.Microservice.UI;
 using Beamable.Editor.UI.Model;
+using Beamable.Server.Editor.ManagerClient;
 using UnityEditor;
 using UnityEngine;
 
@@ -98,6 +99,9 @@ namespace Beamable.Server.Editor
             existing = new StorageConfigurationEntry
             {
                StorageName = storageName,
+               StorageType = "mongov1",
+               Enabled = true,
+               TemplateId = "small",
                LocalDataPort = 12100 + (uint) StorageObjects.Count,
                LocalUIPort = 13100 + (uint) StorageObjects.Count
             };
@@ -188,6 +192,9 @@ namespace Beamable.Server.Editor
    public class StorageConfigurationEntry
    {
       public string StorageName;
+      public string StorageType;
+      public bool Enabled;
+      public string TemplateId;
 
       [Tooltip("When running locally, what port will the data be available on?")]
       public uint LocalDataPort;
@@ -214,7 +221,6 @@ namespace Beamable.Server.Editor
 
       [Tooltip("When building locally, should the service be build with debugging tools? If false, you cannot attach breakpoints.")]
       public bool IncludeDebugTools;
-
 
       public MicroserviceConfigurationDebugEntry DebugData;
    }
