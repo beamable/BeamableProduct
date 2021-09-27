@@ -294,7 +294,7 @@ namespace Beamable.Server.Editor
          return _serviceToBuilder[key];
       }
 
-      public static MongoStorageBuilder GetServiceBuilder(StorageObjectDescriptor descriptor)
+      public static MongoStorageBuilder GetStorageBuilder(StorageObjectDescriptor descriptor)
       {
          var key = descriptor.Name;
          

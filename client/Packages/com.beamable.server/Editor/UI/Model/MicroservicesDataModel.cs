@@ -65,12 +65,10 @@ namespace Beamable.Editor.UI.Model
       {
          RefreshLocalServices();
          RefreshLocalStorages();
-         Debug.Log($"There are {Services.Count} services and {Storages.Count} storages.");
       }
 
       void RefreshLocalStorages()
       {
-         var config = MicroserviceConfiguration.Instance;
          var unseenStorages = new HashSet<MongoStorageModel>(Storages);
          
          foreach (var descriptor in Microservices.StorageDescriptors)
@@ -81,7 +79,7 @@ namespace Beamable.Editor.UI.Model
                Storages.Add(new MongoStorageModel
                {
                   Descriptor = descriptor,
-                  Builder = Microservices.GetServiceBuilder(descriptor),
+                  Builder = Microservices.GetStorageBuilder(descriptor),
                   Logs = new LogMessageStore()
                });
             }
@@ -91,7 +89,7 @@ namespace Beamable.Editor.UI.Model
                // reset the descriptor and statemachines; because they aren't system.serializable durable.
                existingService.Descriptor = descriptor;
                var oldBuilder = existingService.Builder;
-               existingService.Builder = Microservices.GetServiceBuilder(descriptor);
+               existingService.Builder = Microservices.GetStorageBuilder(descriptor);
                existingService.Builder.ForwardEventsTo(oldBuilder);
             }
          }
