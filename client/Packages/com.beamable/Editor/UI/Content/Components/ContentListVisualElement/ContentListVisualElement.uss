@@ -18,7 +18,7 @@ ContentListVisualElement HeaderVisualElement .splitWrapper{
     margin-left: 4px;
 }
 
-ListView {
+ExtendedListView {
     flex-grow : 1;
 }
 

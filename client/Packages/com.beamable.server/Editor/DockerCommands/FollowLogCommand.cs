@@ -12,8 +12,7 @@ namespace Beamable.Server.Editor.DockerCommands
 {
    public static class MicroserviceLogHelper
    {
-
-      public static bool HandleLog(MicroserviceDescriptor descriptor, string label, string data)
+      public static bool HandleLog(IDescriptor descriptor, string label, string data)
       {
          if (Json.Deserialize(data) is ArrayDict jsonDict)
          {
@@ -99,7 +98,7 @@ namespace Beamable.Server.Editor.DockerCommands
                Parameters = objs,
                ParameterText = objsToString,
                Level = logLevelValue,
-               Timestamp = DateTime.Parse(timestamp)
+               Timestamp = LogMessage.GetTimeDisplay(DateTime.Parse(timestamp))
             };
             EditorApplication.delayCall += () =>
             {
@@ -124,7 +123,7 @@ namespace Beamable.Server.Editor.DockerCommands
                Parameters = new Dictionary<string, object>(),
                ParameterText = "",
                Level = LogLevel.INFO,
-               Timestamp = DateTime.Now
+               Timestamp = LogMessage.GetTimeDisplay(DateTime.Now)
             };
             EditorApplication.delayCall += () =>
             {
@@ -137,16 +136,35 @@ namespace Beamable.Server.Editor.DockerCommands
          }
       }
 
-   }
+      public static bool HandleLog(MicroserviceDescriptor descriptor, LogLevel logLevel, string message, Color color, bool isBoldMessage, string postfixIcon)
+      {
+            var logMessage = new LogMessage
+            {
+                Message = message,
+                Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
+                IsBoldMessage = isBoldMessage,
+                PostfixMessageIcon = postfixIcon,
+                MessageColor = color,
+                Level = logLevel
+            };
+
+            EditorApplication.delayCall += () =>
+            {
+                MicroservicesDataModel.Instance.AddLogMessage(descriptor, logMessage);
+            };
+
+            return true;
+      }
+    }
 
 
    public class FollowLogCommand : DockerCommand
    {
-      private readonly MicroserviceDescriptor _descriptor;
+      private readonly IDescriptor _descriptor;
       public string ContainerName { get; }
 
 
-      public FollowLogCommand(MicroserviceDescriptor descriptor)
+      public FollowLogCommand(IDescriptor descriptor)
       {
          _descriptor = descriptor;
          ContainerName = descriptor.ContainerName;

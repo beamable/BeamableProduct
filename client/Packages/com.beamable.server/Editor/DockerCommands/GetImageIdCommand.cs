@@ -8,7 +8,7 @@ namespace Beamable.Server.Editor.DockerCommands
    {
       public string ImageName { get; }
 
-      public GetImageIdCommand(MicroserviceDescriptor descriptor)
+      public GetImageIdCommand(IDescriptor descriptor)
       {
          ImageName = descriptor.ImageName;
       }

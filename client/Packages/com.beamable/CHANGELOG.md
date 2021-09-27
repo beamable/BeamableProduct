@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- Auto-complete text feature for `AdminFlow` prefab
+- Steam third party authentication support
+- New default `currency.coins` currency that demonstrates client writable currency.
+
+### Fixed
+- No longer re-imports config-defaults without cause
+- Batch imports Module Configuration files to improve speed
+- No longer refreshes asset database on ContentIO FindAll()
+
 ## [0.16.0]
 ### Added
 - Support for disabling Unity Domain Reload
@@ -27,11 +38,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Beamable Platform errors all extend from `RequesterException` in Unity Client and microservice code
 - Redesigned internal Toolbox announcements
 - Content Manager publish flow shows Realm and Namespace for confirmation
+- `ExecuteRolling` method of `Promise` now supports a condition on which stop execution
 
 ### Fixed
 - Added missing attributes for content classes
 - SocialService `SocialList` serialization
 - Account Management Flow third party login buttons use correct third parties
+- Content Manager Window item selection is cleared after changing the Namespace
+- Adjusted confirm window look while trying to delete any content
 
 ## [0.15.0]
 ### Added

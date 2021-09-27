@@ -13,7 +13,7 @@ namespace Beamable.Common.Api.Auth
       private IBeamableRequester _requester;
       private readonly IAuthSettings _settings;
 
-      public AuthApi(IBeamableRequester requester, IAuthSettings settings=null)
+      public AuthApi(IBeamableRequester requester, IAuthSettings settings = null)
       {
          _requester = requester;
          _settings = settings ?? new DefaultAuthSettings();
@@ -355,7 +355,8 @@ namespace Beamable.Common.Api.Auth
       Apple,
       Google,
       GameCenter,
-      GameCenterLimited
+      GameCenterLimited,
+      Steam
    }
 
    public static class AuthThirdPartyMethods
@@ -376,6 +377,8 @@ namespace Beamable.Common.Api.Auth
                return "gamecenter";
             case AuthThirdParty.GameCenterLimited:
                return "gamecenterlimited";
+            case AuthThirdParty.Steam:
+               return "steam";
             default:
                return null;
          }

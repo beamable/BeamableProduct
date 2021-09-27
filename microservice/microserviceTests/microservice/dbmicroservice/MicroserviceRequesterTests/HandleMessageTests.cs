@@ -20,7 +20,7 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
       }
 
       [Test]
-      [NonParallelizable]
+      [Timeout(2 * 60 * 1000)]
       public async Task EventSubscriptionMultiThreadedAccess()
       {
          var context = new SocketRequesterContext(() =>
@@ -28,7 +28,7 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
 
 
          const int threadCount = 500;
-         const int cycleCount = 50000;
+         const int cycleCount = 1000;
 
          const string eventName = "test";
          const string eventPath = "event/test";
@@ -43,7 +43,7 @@ namespace microserviceTests.microservice.dbmicroservice.MicroserviceRequesterTes
             {
                try
                {
-                  context.Subscribe<int>(eventName, _ =>
+                  var subscription = context.Subscribe<int>(eventName, _ =>
                   {
                      // do nothing...
                   });

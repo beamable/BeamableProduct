@@ -48,31 +48,71 @@ namespace Beamable.Editor.UI.Model
             return _instance;
          }
          _instance = new MicroservicesDataModel();
-         _instance.RefreshLocalServices();
+         _instance.RefreshLocal();
          _instance.RefreshServerManifest();
          return _instance;
       }
 
       public List<MicroserviceModel> Services = new List<MicroserviceModel>();
+      public List<MongoStorageModel> Storages = new List<MongoStorageModel>();
       public ServiceManifest ServerManifest = new ServiceManifest();
       public GetStatusResponse Status = new GetStatusResponse();
 
       public Action<ServiceManifest> OnServerManifestUpdated;
       public Action<GetStatusResponse> OnStatusUpdated;
 
-      public void RefreshLocalServices() {
+      public void RefreshLocal()
+      {
+         RefreshLocalServices();
+         RefreshLocalStorages();
+      }
+
+      void RefreshLocalStorages()
+      {
+         var unseenStorages = new HashSet<MongoStorageModel>(Storages);
+         
+         foreach (var descriptor in Microservices.StorageDescriptors)
+         {
+            var existingService = GetStorageModelForDescriptor(descriptor);
+            if (existingService == null)
+            {
+               Storages.Add(new MongoStorageModel
+               {
+                  Descriptor = descriptor,
+                  Builder = Microservices.GetStorageBuilder(descriptor),
+                  Logs = new LogMessageStore()
+               });
+            }
+            else
+            {
+               unseenStorages.Remove(existingService);
+               // reset the descriptor and statemachines; because they aren't system.serializable durable.
+               existingService.Descriptor = descriptor;
+               var oldBuilder = existingService.Builder;
+               existingService.Builder = Microservices.GetStorageBuilder(descriptor);
+               existingService.Builder.ForwardEventsTo(oldBuilder);
+            }
+         }
+         
+         foreach (var unseen in unseenStorages)
+         {
+            Storages.Remove(unseen);
+         }
+      }
+      void RefreshLocalServices()
+      {
          var config = MicroserviceConfiguration.Instance;
          var unseenServices = new HashSet<MicroserviceModel>(Services);
 
          foreach (var descriptor in Microservices.Descriptors)
          {
-            var existingService = GetModelForDescriptor(descriptor);
+            var existingService = GetMicroserviceModelForDescriptor(descriptor);
             if (existingService == null)
             {
                Services.Add(new MicroserviceModel
                {
                   Descriptor = descriptor,
-                  Builder =  Microservices.GetServiceBuilder(descriptor),
+                  Builder = Microservices.GetServiceBuilder(descriptor),
                   Logs = new LogMessageStore(),
                   RemoteReference = GetReference(descriptor),
                   RemoteStatus = GetStatus(descriptor),
@@ -106,25 +146,26 @@ namespace Beamable.Editor.UI.Model
                Status = status;
                foreach (var serviceStatus in status.services)
                {
-                  GetModelForName(serviceStatus.serviceName)?.EnrichWithStatus(serviceStatus);
+                  GetMicroserviceModelForName(serviceStatus.serviceName)?.EnrichWithStatus(serviceStatus);
                }
                OnStatusUpdated?.Invoke(status);
             });
             b.GetMicroserviceManager().GetCurrentManifest().Then(manifest =>
             {
                ServerManifest = manifest;
-               foreach (var remoteService in manifest.manifest)
+               foreach (var service in Services)
                {
-                  GetModelForName(remoteService.serviceName)?.EnrichWithRemoteReference(remoteService);
+                  var remoteService = manifest.manifest.FirstOrDefault(remote => string.Equals(remote.serviceName, service.Name));
+                  service.EnrichWithRemoteReference(remoteService);
                }
                OnServerManifestUpdated?.Invoke(manifest);
             });
          });
       }
 
-      public void AddLogMessage(MicroserviceDescriptor descriptor, LogMessage message)
+      public void AddLogMessage(IDescriptor descriptor, LogMessage message)
       {
-         GetModelForDescriptor(descriptor).Logs.AddMessage(message);
+         GetMicroserviceModelForDescriptor(descriptor).Logs.AddMessage(message);
       }
 
       public ServiceStatus GetStatus(MicroserviceDescriptor descriptor)
@@ -137,10 +178,18 @@ namespace Beamable.Editor.UI.Model
          return ServerManifest?.manifest?.FirstOrDefault(r => r.serviceName.Equals(descriptor.Name));
       }
 
-      public MicroserviceModel GetModelForDescriptor(MicroserviceDescriptor descriptor) =>
-         GetModelForName(descriptor.Name);
+      public MongoStorageModel GetStorageModelForDescriptor(IDescriptor descriptor) =>
+         GetStorageModelForName(descriptor.Name);
 
-      public MicroserviceModel GetModelForName(string serviceName)
+      public MongoStorageModel GetStorageModelForName(string serviceName)
+      {
+         return Storages?.FirstOrDefault(s => s.Descriptor.Name.Equals(serviceName));
+      }
+
+      public MicroserviceModel GetMicroserviceModelForDescriptor(IDescriptor descriptor) =>
+         GetMicroserviceModelForName(descriptor.Name);
+
+      public MicroserviceModel GetMicroserviceModelForName(string serviceName)
       {
          return Services?.FirstOrDefault(s => s.Descriptor.Name.Equals(serviceName));
       }
@@ -148,7 +197,8 @@ namespace Beamable.Editor.UI.Model
       private void OnEnable()
       {
          Microservices.onAfterDeploy += MicroservicesOnonAfterDeploy;
-         RefreshLocalServices();
+         RefreshLocal();
+         RefreshServerManifest();
       }
 
       private void MicroservicesOnonAfterDeploy(ManifestModel oldManifest, int serviceCount)

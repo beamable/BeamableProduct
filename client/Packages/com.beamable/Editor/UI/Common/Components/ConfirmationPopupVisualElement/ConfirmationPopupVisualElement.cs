@@ -1,5 +1,4 @@
 ﻿using System;
-using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -10,46 +9,50 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Buss.Components
 {
-   public class ConfirmationPopupVisualElement : BeamableVisualElement
-   {
-      public event Action OnOKButtonClicked;
-      public event Action OnCancelButtonClicked;
-      private Label _headerLabel;
-      private Label _bodyLabel;
-      private Button _okButton;
-      private Button _cancelButton;
+    public class ConfirmationPopupVisualElement : BeamableVisualElement
+    {
+        public event Action OnOKButtonClicked;
+        public event Action OnCancelButtonClicked;
+        private Label _headerLabel;
+        private Label _bodyLabel;
+        private Button _okButton;
+        private Button _cancelButton;
 
-      public ConfirmationPopupVisualElement() :  base($"{BeamableComponentsConstants.COMP_PATH}/{nameof(ConfirmationPopupVisualElement)}/{nameof(ConfirmationPopupVisualElement)}")
-      {
-      }
+        private readonly string _windowHeader;
+        private readonly string _contentText;
 
-      public override void Refresh()
-      {
-         base.Refresh();
+        public ConfirmationPopupVisualElement(string windowHeader, string contentText) : base(
+            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(ConfirmationPopupVisualElement)}/{nameof(ConfirmationPopupVisualElement)}")
+        {
+            _windowHeader = windowHeader;
+            _contentText = contentText;
+        }
 
-         _headerLabel = Root.Q<Label>("headerLabel");
-         _headerLabel.text = "Confirmation";
+        public override void Refresh()
+        {
+            base.Refresh();
 
-         _bodyLabel = Root.Q<Label>("bodyLabel");
-         _bodyLabel.text = "Are you sure you want to delete this item?";
+            _headerLabel = Root.Q<Label>("headerLabel");
+            _headerLabel.text = _windowHeader;
 
-         _okButton = Root.Q<Button>("okButton");
-         _okButton.text = "OK";
-         _okButton.clickable.clicked += OkButton_OnClick;
+            _bodyLabel = Root.Q<Label>("contentLabel");
+            _bodyLabel.text = _contentText;
 
-         _cancelButton = Root.Q<Button>("cancelButton");
-         _cancelButton.text = "Cancel";
-         _cancelButton.clickable.clicked += CancelButton_OnClick;
-      }
+            _okButton = Root.Q<Button>("okButton");
+            _okButton.clickable.clicked += OkButton_OnClick;
 
-      private void OkButton_OnClick()
-      {
-         OnOKButtonClicked?.Invoke();
-      }
+            _cancelButton = Root.Q<Button>("cancelButton");
+            _cancelButton.clickable.clicked += CancelButton_OnClick;
+        }
 
-      private void CancelButton_OnClick()
-      {
-         OnCancelButtonClicked?.Invoke();
-      }
-   }
+        private void OkButton_OnClick()
+        {
+            OnOKButtonClicked?.Invoke();
+        }
+
+        private void CancelButton_OnClick()
+        {
+            OnCancelButtonClicked?.Invoke();
+        }
+    }
 }

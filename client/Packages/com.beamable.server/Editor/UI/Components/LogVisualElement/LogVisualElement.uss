@@ -1,48 +1,54 @@
-LogVisualElement > TemplateContainer> #mainVisualElement{
+LogVisualElement > TemplateContainer > #mainVisualElement {
     flex-grow: 1;
     align-content: center;
     border-width: 0px;
     /*margin-top: -2px; 2019looks good but 2018 not good*/
 }
 
-#logHeader{
+#logHeader {
     flex-direction: row;
     flex-grow: 1;
     padding-bottom: 5px;
     min-height: 20px;
 
 }
-.leftArea{
+
+.leftArea {
     justify-content: center;
     flex-direction: row;
 }
-.rightArea{
+
+.rightArea {
     /*padding-right: 5px;*/
     flex-grow: 1;
     flex-direction: row;
 }
 
-.subTitle{
+.subTitle {
     font-size: 12px;
     -unity-font-style: normal;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     justify-content: center;
     -unity-text-align: middle-left;
 }
-.countNo{
+
+.countNo {
     padding-left: 3px;
     margin-right: 3px;
 }
-#statusIcon{
+
+#statusIcon {
     /*background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Running L.png");*/
     min-width: 25px;
     height: 25px;
 
 }
-#remoteStatusIcon{
+
+#remoteStatusIcon {
     width: 25px;
     height: 25px;
 }
+
 .localBuilding {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/local Building L.png");
 }
@@ -52,39 +58,40 @@ LogVisualElement > TemplateContainer> #mainVisualElement{
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Running L.png");
 }
 
-.localStopped{
+.localStopped {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Stopped L.png");
 }
 
-.remoteRunning{
+.remoteRunning {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Running L.png");
 }
-.remoteStopped{
+
+.remoteStopped {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Stopped L.png");
 }
 
-.different{
+.different {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/different L.png");
 }
 
-.remoteDeploying{
+.remoteDeploying {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Deploying L.png");
 }
 
-#checkbox{
-    background-color:#0091FF;
+#checkbox {
+    background-color: #0091FF;
     align-self: center;
     height: 15px;
     width: 15px;
     justify-content: center;
 }
 
-#SubTitle{
+#SubTitle {
     padding-top: 5px;
     flex-direction: row;
 }
 
-.squareBtn{
+.squareBtn {
     height: 20px;
     flex-direction: row;
     position: relative;
@@ -111,12 +118,10 @@ LogVisualElement > TemplateContainer> #mainVisualElement{
     height: 20px;
     align-self: center;
     right: 0px;
-    background-color: rgba(0,0,0,0);
+    background-color: rgba(0, 0, 0, 0);
 }
 
-
-
-#advanceBtn{
+#advanceBtn {
     width: 20px;
     right: 0px;
     -unity-slice-bottom: 0;
@@ -125,27 +130,27 @@ LogVisualElement > TemplateContainer> #mainVisualElement{
     -unity-slice-left: 0;
 }
 
-#popupBtn{
+#popupBtn {
     width: 20px;
-    right: 0px;
+    right: 0;
     -unity-slice-bottom: 0;
     -unity-slice-top: 0;
     -unity-slice-right: 0;
     -unity-slice-left: 0;
 }
 
-ScrollView{
+ScrollView {
     flex-grow: 1;
 }
-ScrollView #ContentView.content-view{
+
+ScrollView #ContentView.content-view {
     flex-grow: 1;
     position: absolute;
     left: 0px;
     right: 0px;
 }
 
-
-.title{
+.title {
     font-size: 12px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-text-align: middle-center;
@@ -157,15 +162,15 @@ ScrollView #ContentView.content-view{
 #searchBar {
     border-radius: 8px;
     flex-grow: 1;
-	position: relative;
+    position: relative;
 }
 
-#log{
+#log {
     left: 5px;
 
 }
 
-#clear{
+#clear {
     height: 20px;
     min-width: 50px;
     position: relative;
@@ -191,11 +196,12 @@ ScrollView #ContentView.content-view{
     flex-grow: 1;
 }
 
-#logWindowHeader{
+#logWindowHeader {
     flex-direction: row;
     /*padding-top: 5px;*/
 }
-#detailWindow{
+
+#detailWindow {
     /*background-color: #373737;*/
     /*min-height: 50px;*/
     /*margin-left: 5px;*/
@@ -208,9 +214,11 @@ ScrollView #ContentView.content-view{
     padding: 2px;
     cursor: resize-vertical;
 }
+
 #detailWindow ScrollView #ContentView.content-view {
     flex-grow: 1;
 }
+
 #detailWindow TextField {
     margin-bottom: 0px;
     margin-left: 0px;
@@ -218,28 +226,34 @@ ScrollView #ContentView.content-view{
     margin-top: 3px;
     -unity-text-align: upper-left;
     background-image: none;
-    background-color: rgba(0,0,0,0);
-    border-color: rgba(0,0,0,0);
+    background-color: rgba(0, 0, 0, 0);
+    border-color: rgba(0, 0, 0, 0);
 }
+
 #detailWindow TextField TextInput {
-    background-color: rgba(0,0,0,0);
-    border-color: rgba(0,0,0,0);
+    background-color: rgba(0, 0, 0, 0);
+    border-color: rgba(0, 0, 0, 0);
 }
-LogVisualElement  #splitter {
+
+LogVisualElement #splitter {
     flex-grow: 1;
 }
+
 LogVisualElement #splitter .splitWrapper.leftSplit {
     flex-grow: 0.8;
     min-height: 40px;
 }
+
 LogVisualElement #splitter .splitWrapper.rightSplit {
     flex-grow: 0.2;
     min-height: 40px;
 }
+
 LogVisualElement .splitWrapper {
     flex-grow: 1;
     min-width: 100px;
 }
+
 LogVisualElement .splitWrapper > VisualElement {
     position: absolute;
     top: 0px;
@@ -248,8 +262,7 @@ LogVisualElement .splitWrapper > VisualElement {
     bottom: 0px;
 }
 
-
-#clearContainer{
+#clearContainer {
     padding-top: 0px;
     /*border-bottom-width: 1px;*/
     /*border-left-width: 1px;*/
@@ -258,42 +271,47 @@ LogVisualElement .splitWrapper > VisualElement {
 
 }
 
-#error .img{
+#error .img {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/error_Gray.png");
     border-left-width: 2px;
 }
-#error.active .img{
+
+#error.active .img {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/error.png");
     border-left-width: 2px;
 }
 
-#warning .img{
+#warning .img {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/warning_Gray.png");
 }
-#warning.active .img{
-    background-image:resource("Packages/com.beamable.server/Editor/UI/Icons/warning.png") ;
+
+#warning.active .img {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/warning.png");
 }
-#info .img{
+
+#info .img {
     top: 1px;
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/info_Gray.png");
 }
-#info.active .img{
+
+#info.active .img {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/info.png");
 }
-#info{
+
+#info {
     border-left-width: 1px;
 }
 
-#logWindowBody{
+#logWindowBody {
     flex-grow: 1;
 }
 
-#logText{
+#logText {
     /*min-height: 100px;*/
 
 }
 
-#buttonRow{
+#buttonRow {
     align-content: flex-end;
     padding-top: 10px;
     flex-direction: row;
@@ -302,13 +320,12 @@ LogVisualElement .splitWrapper > VisualElement {
 
 }
 
-#buildDropDown{
+#buildDropDown {
     flex-direction: row;
     justify-content: space-around;
 }
 
-
-#dropDown{
+#dropDown {
     align-content: center;
     justify-content: center;
     align-self: center;
@@ -318,8 +335,7 @@ LogVisualElement .splitWrapper > VisualElement {
     -unity-text-align: middle-center;
 }
 
-
-.confirmBtn{
+.confirmBtn {
     font-size: 12px;
     -unity-font-style: bold;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
@@ -333,7 +349,8 @@ LogVisualElement .splitWrapper > VisualElement {
     cursor: pan;
     background-image: none;
 }
-#logListRoot{
+
+#logListRoot {
     /*min-height: 100px;*/
     /*margin-left: 5px;*/
     /*margin-right: 5px;*/
@@ -345,7 +362,8 @@ LogVisualElement .splitWrapper > VisualElement {
 
     flex-grow: 1;
 }
-ListView{
+
+ListView {
     flex-grow: 1;
 }
 
@@ -353,7 +371,7 @@ ListView ConsoleLogVisualElement:selected {
     background-color: rgb(58, 127, 214);
 }
 
-.unity-label{
+.unity-label {
     font-size: 12px;
     -unity-text-align: middle-left;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");

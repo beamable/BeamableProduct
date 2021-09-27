@@ -133,7 +133,7 @@ namespace Beamable.Editor.Microservice.UI
 
             _microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
             _microserviceBreadcrumbsVisualElement.Refresh();
-            _microserviceBreadcrumbsVisualElement.SetSelectAllCheckboxValue(Model.Services.All(model => model.IsSelected));
+            _microserviceBreadcrumbsVisualElement.SetSelectAllCheckboxValue(Model?.Services?.Count > 0 && Model.Services.All(model => model.IsSelected));
             _microserviceBreadcrumbsVisualElement.SetSelectAllVisibility(Model?.Services?.Count > 0);
 
             if (Model?.Services?.Count == 0)

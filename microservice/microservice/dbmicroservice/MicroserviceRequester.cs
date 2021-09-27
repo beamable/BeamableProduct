@@ -63,16 +63,16 @@ namespace Beamable.Server
          return $"Websocket Error Response. status=[{status}] service=[{service}] error=[{error}] message=[{message}]";
       }
    }
-   
+
    public class WebsocketRequesterException : RequesterException
    {
-      public WebsocketRequesterException(string method, string uri, long responseCode, string responsePayload) : base("Microservice Requester", method, 
+      public WebsocketRequesterException(string method, string uri, long responseCode, string responsePayload) : base("Microservice Requester", method,
          uri, responseCode, responsePayload)
       {
-         
+
       }
    }
-   
+
    public class UnauthenticatedException : WebsocketRequesterException
    {
       public WebsocketErrorResponse Error { get; }
@@ -82,7 +82,7 @@ namespace Beamable.Server
          Error = error;
       }
    }
-   
+
    public interface IWebsocketResponseListener
    {
       long Id { get; set; }
@@ -115,7 +115,7 @@ namespace Beamable.Server
          else
          {
             // parse out the data from ctx.
-            
+
             if (Parser == null)
             {
                T DefaultParser(string json)
