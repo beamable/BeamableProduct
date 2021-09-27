@@ -48,14 +48,6 @@
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/advance_dark.png");
     background-color: rgba(141, 141, 141, 0);
     border-color: rgba(141, 141, 141, 0);
-    -unity-slice-bottom: 0;
-    -unity-slice-top: 0;
-    -unity-slice-right: 0;
-    -unity-slice-left: 0;
-    border-right-width: 0px;
-    border-top-width: 0px;
-    border-bottom-width: 0px;
-    border-left-width: 0px;
 }
 
 .localBuilding {
