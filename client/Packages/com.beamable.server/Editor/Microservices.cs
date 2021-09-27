@@ -27,6 +27,7 @@ namespace Beamable.Server.Editor
    {
       private static Dictionary<string, MicroserviceStateMachine> _serviceToStateMachine = new Dictionary<string, MicroserviceStateMachine>();
       private static Dictionary<string, MicroserviceBuilder> _serviceToBuilder = new Dictionary<string, MicroserviceBuilder>();
+      private static Dictionary<string, MongoStorageBuilder> _storageToBuilder = new Dictionary<string, MongoStorageBuilder>();
 
       private static List<MicroserviceDescriptor> _descriptors = null;
 
@@ -395,6 +396,19 @@ namespace Beamable.Server.Editor
          return _serviceToBuilder[key];
       }
 
+      public static MongoStorageBuilder GetStorageBuilder(StorageObjectDescriptor descriptor)
+      {
+         var key = descriptor.Name;
+         
+         if (_storageToBuilder.ContainsKey(key)) 
+            return _storageToBuilder[key];
+         
+         var builder = new MongoStorageBuilder();
+         builder.Init(descriptor);
+         _storageToBuilder.Add(key, builder);
+         return _storageToBuilder[key];
+      }
+
       public static MicroserviceStateMachine GetServiceStateMachine(MicroserviceDescriptor descriptor)
       {
          var key = descriptor.Name;
@@ -455,7 +469,7 @@ namespace Beamable.Server.Editor
             await buildCommand.Start(context);
 
             var uploader = new ContainerUploadHarness(context);
-            var msModel = MicroservicesDataModel.Instance.GetModelForDescriptor(descriptor);
+            var msModel = MicroservicesDataModel.Instance.GetMicroserviceModelForDescriptor(descriptor);
             uploader.onProgress += msModel.OnDeployProgress;
 
             Debug.Log($"Getting Id service=[{descriptor.Name}]");
