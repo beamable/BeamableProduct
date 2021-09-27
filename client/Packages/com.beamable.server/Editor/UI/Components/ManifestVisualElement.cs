@@ -85,9 +85,10 @@ namespace Beamable.Server.Editor.UI.Components
       public Dictionary<string, ServiceReference> ServerManifest;
 
       public Dictionary<string, ManifestEntryModel> Services;
+      public Dictionary<string, StorageEntryModel> Storages;
       public string Comment;
    }
-
+   
    public class ManifestEntryModel
    {
       public string ServiceName;
@@ -121,5 +122,42 @@ namespace Beamable.Server.Editor.UI.Components
          var service = MicroserviceConfiguration.Instance.GetEntry(ServiceName);
          service.Enabled = enabled;
       }
+
+      public List<ServiceDependency> Dependencies;
    }
+   public class StorageEntryModel
+   {
+       public string StorageName;
+       public string StorageType;
+    
+       public bool Enabled
+       {
+           get => _enabled;
+           set => SetEnabled(value);
+       }
+
+       public string TemplateId
+       {
+           get => _templateId;
+           set => SetTemplateId(value);
+       }
+
+       private string _templateId;
+
+       private void SetTemplateId(string templateId)
+       {
+           _templateId = templateId;
+           var service = MicroserviceConfiguration.Instance.GetStorageEntry(StorageName);
+           service.TemplateId = templateId;
+       }
+
+       private bool _enabled;
+       private void SetEnabled(bool enabled)
+       {
+           _enabled = enabled;
+           var service = MicroserviceConfiguration.Instance.GetEntry(StorageName);
+           service.Enabled = enabled;
+       }
+   }
+
 }
