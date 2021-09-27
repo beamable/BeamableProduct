@@ -35,16 +35,6 @@ namespace Beamable.Common
    /// </summary>
    public abstract class PromiseBase
    {
-      public async System.Threading.Tasks.Task Test()
-      {
-
-      }
-
-      public void Test2()
-      {
-         Test();
-      }
-
       protected Action<Exception> errbacks;
       public bool HadAnyErrbacks { protected set; get; }
 
