@@ -57,7 +57,8 @@ namespace Beamable.Server.Editor.ManagerClient
          return Requester.Request<EmptyResponse>(Method.POST, $"{SERVICE}/manifest", new PostManifestRequest
          {
             comments = manifest.comments,
-            manifest = manifest.manifest
+            manifest = manifest.manifest,
+            storages = manifest.storages
          }).ToUnit();
       }
 
@@ -88,6 +89,7 @@ namespace Beamable.Server.Editor.ManagerClient
    {
       public string comments;
       public List<ServiceReference> manifest;
+      public List<ServiceStorageReference> storages;
    }
 
    [System.Serializable]
@@ -96,6 +98,7 @@ namespace Beamable.Server.Editor.ManagerClient
       public long id;
       public long created;
       public List<ServiceReference> manifest = new List<ServiceReference>();
+      public List<ServiceStorageReference> storages = new List<ServiceStorageReference>();
       public long createdByAccountId;
       public string comments;
    }
@@ -109,6 +112,24 @@ namespace Beamable.Server.Editor.ManagerClient
       public string imageId;
       public string templateId;
       public string comments;
+      public List<ServiceDependency> dependencies;
+   }
+   
+   
+   [System.Serializable]
+   public class ServiceStorageReference
+   {
+       public string storageName;
+       public string storageType;
+       public bool enabled;
+       public string templateId;
+   }
+
+   [System.Serializable]
+   public class ServiceDependency
+   {
+       public string type;
+       public string id; 
    }
 
    [System.Serializable]
