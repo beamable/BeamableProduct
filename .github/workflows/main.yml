@@ -59,9 +59,9 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: ${{ matrix.projectPath }}/Library
-          key: Library-${{ matrix.projectPath }}
+          key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
           restore-keys: |
-            Library-${{ matrix.projectPath }}
+            Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
 
       - uses: game-ci/unity-test-runner@v2
         id: tests
@@ -70,11 +70,11 @@ jobs:
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
         with:
-          customParameters: -disable-assembly-updater -accept-apiupdate -executeMethod GithubActions.OnBuild
+          customParameters: -disable-assembly-updater -accept-apiupdate
           projectPath: ${{ matrix.projectPath }}
           testMode: ${{ matrix.testMode }}
           unityVersion: ${{ matrix.unityVersion }}
-          artifactsPath: ${{ matrix.testMode }}-artifacts
+          artifactsPath: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           checkName: ${{ matrix.unityVersion }} ${{ matrix.testMode }} Test Results
       - uses: actions/upload-artifact@v2
