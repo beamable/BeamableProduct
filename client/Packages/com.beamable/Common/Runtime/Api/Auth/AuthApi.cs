@@ -1,6 +1,8 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine;
+
 namespace Beamable.Common.Api.Auth
 {
 
@@ -40,6 +42,13 @@ namespace Beamable.Common.Api.Auth
       public Promise<bool> IsThirdPartyAvailable(AuthThirdParty thirdParty, string token)
       {
          return _requester.Request<AvailabilityResponse>(Method.GET, $"{ACCOUNT_URL}/available/third-party?thirdParty={thirdParty.GetString()}&token={token}", null, false)
+            .Map(resp => resp.available);
+      }
+
+      public Promise<bool> IsThisDeviceIdAvailable()
+      {
+        var encodedDeviceId = _requester.EscapeURL(SystemInfo.deviceUniqueIdentifier);
+        return _requester.Request<AvailabilityResponse>(Method.GET, $"{ACCOUNT_URL}/available/device-id?deviceId={encodedDeviceId}", null, false)
             .Map(resp => resp.available);
       }
 
@@ -124,7 +133,24 @@ namespace Beamable.Common.Api.Auth
          public string token;
       }
 
-      public Promise<User> RegisterDBCredentials(string email, string password)
+
+    public Promise<TokenResponse> LoginDeviceId()
+    {
+        var req = new LoginDeviceIdRequest
+        {
+            grant_type = "device",
+            device_id = SystemInfo.deviceUniqueIdentifier
+        };
+        return _requester.Request<TokenResponse>(Method.POST, TOKEN_URL, req);
+    }
+
+    public class LoginDeviceIdRequest
+    {
+        public string grant_type;
+        public string device_id;
+    }
+
+        public Promise<User> RegisterDBCredentials(string email, string password)
       {
          var req = new RegisterDBCredentialsRequest
          {
@@ -157,7 +183,23 @@ namespace Beamable.Common.Api.Auth
          public string token;
       }
 
-      public Promise<EmptyResponse> IssueEmailUpdate(string newEmail)
+
+        public Promise<User> RegisterDeviceId()
+        {
+            var req = new RegisterDeviceIdRequest
+            {
+                deviceId = SystemInfo.deviceUniqueIdentifier
+            };
+            return _requester.Request<User>(Method.PUT, $"{ACCOUNT_URL}/me", req);
+        }
+
+        [Serializable]
+        private class RegisterDeviceIdRequest
+        {
+            public string deviceId;
+        }
+
+        public Promise<EmptyResponse> IssueEmailUpdate(string newEmail)
       {
          var req = new IssueEmailUpdateRequest
          {
