@@ -6,6 +6,7 @@
 
 #clear {
     border-color: #000000;
+    background-color: rgba(12,12,12,0);
 }
 
 .attached {

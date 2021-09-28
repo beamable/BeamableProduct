@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Steam third party authentication support
 - New default `currency.coins` currency that demonstrates client writable currency.
 - RemoveThirdPartyAssociation added to AuthService to allow a player to remove a third party auth from their account
+- Cohort Settings to EventContent to support partitioning by player stats
+
+### Fixed
+- No longer re-imports config-defaults without cause
+- Batch imports Module Configuration files to improve speed
+- No longer refreshes asset database on ContentIO FindAll()
 
 ## [0.16.0]
 ### Added
