@@ -12,7 +12,6 @@ namespace Beamable.Editor.UI.Buss.Components
 {
     public class ConfirmationPopupVisualElement : BeamableVisualElement
     {
-        private Label _headerLabel;
         private Label _bodyLabel;
         private PrimaryButtonVisualElement _okButton;
         private Button _cancelButton;

@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Batch imports Module Configuration files to improve speed
 - No longer refreshes asset database on ContentIO FindAll()
 
+### Changed
+- Content deletion popup opens as separate window
+
 ## [0.16.0]
 ### Added
 - Support for disabling Unity Domain Reload

@@ -45,7 +45,7 @@ namespace Beamable.Editor.Content.Components
         private VisualElement _mainVisualElement;
         private HeaderVisualElement _headerVisualElement;
         private ExtendedListView _listView;
-        private List<ContentItemDescriptor> _contentItemDescriptorList;
+        // private List<ContentItemDescriptor> _contentItemDescriptorList;
         private List<HeaderSizeChange> _headerSizeChanges;
 
         public ContentListVisualElement() : base(nameof(ContentListVisualElement))
@@ -430,7 +430,7 @@ namespace Beamable.Editor.Content.Components
             );
 
             BeamablePopupWindow window = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ConfirmWindowHeader,
-                confirmationPopup, ContentManagerWindow.Instance);
+                confirmationPopup, ContentManagerWindow.Instance, ContentManagerConstants.ConfirmationPopupSize);
             window.minSize = ContentManagerConstants.ConfirmationPopupSize;
             
             ContentManagerWindow.Instance.SetCurrentWindow(window);

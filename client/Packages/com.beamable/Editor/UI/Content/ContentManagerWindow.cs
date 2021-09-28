@@ -174,7 +174,7 @@ namespace Beamable.Editor.Content
             
             var validatePopup = new ValidateContentVisualElement();
             validatePopup.DataModel = _contentManager.Model;
-            _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ValidateContent, validatePopup, this);
+            _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ValidateContent, validatePopup, this, ContentManagerConstants.WindowSizeMinimum);
             _currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
 
             validatePopup.OnCancelled += () =>
@@ -204,7 +204,7 @@ namespace Beamable.Editor.Content
             var validatePopup = new ValidateContentVisualElement();
             validatePopup.DataModel = _contentManager.Model;
 
-            _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ValidateContent, validatePopup, this);
+            _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ValidateContent, validatePopup, this, ContentManagerConstants.WindowSizeMinimum);
             _currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
             
             if (createNew)
@@ -283,7 +283,7 @@ namespace Beamable.Editor.Content
             var downloadPopup = new DownloadContentVisualElement();
 
             downloadPopup.Model = _contentManager.PrepareDownloadSummary();
-            _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.DownloadContent, downloadPopup, this);
+            _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.DownloadContent, downloadPopup, this, ContentManagerConstants.WindowSizeMinimum);
             _currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
             
             downloadPopup.OnRefreshContentManager += () => _contentManager.RefreshWindow(true);
@@ -379,7 +379,7 @@ namespace Beamable.Editor.Content
          var downloadPopup = new DownloadContentVisualElement();
 
          downloadPopup.Model = _contentManager.PrepareDownloadSummary(items.ToArray());
-         _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.DownloadContent, downloadPopup, this);
+         _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.DownloadContent, downloadPopup, this, ContentManagerConstants.WindowSizeMinimum);
          _currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
 
          downloadPopup.OnClosed += () =>
@@ -418,7 +418,7 @@ namespace Beamable.Editor.Content
             clearPopup.Model = Instance._contentManager.PrepareDownloadSummary();
             clearPopup.DataModel = Instance._contentManager.Model;
 
-            contentManagerWindow._currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.RemoveLocalContent, clearPopup, null);
+            contentManagerWindow._currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.RemoveLocalContent, clearPopup, null, ContentManagerConstants.WindowSizeMinimum);
             contentManagerWindow._currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
 
             clearPopup.OnRefreshContentManager += () => Instance._contentManager.RefreshWindow(true);
