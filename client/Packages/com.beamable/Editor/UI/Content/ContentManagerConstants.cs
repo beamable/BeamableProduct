@@ -27,6 +27,7 @@ namespace Beamable.Editor.Content
       public static SelectionType ContentTypeViewSelectionType = SelectionType.Single;
       public static string UssExt => EditorGUIUtility.isProSkin ? "uss" : "light.uss";
 
+      public static Vector2 ConfirmationPopupSize = new Vector2(300, 150);
       public static Vector2 WindowSizeMinimum = new Vector2(400, 300);
 
       // Display Text

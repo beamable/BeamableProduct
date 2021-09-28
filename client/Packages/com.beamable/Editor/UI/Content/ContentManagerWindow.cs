@@ -104,6 +104,20 @@ namespace Beamable.Editor.Content
          SetForContent();
       }
 
+      public void SetCurrentWindow(BeamablePopupWindow window)
+      {
+         _currentWindow = window;
+      }
+
+      public void CloseCurrentWindow()
+      {
+         if (_currentWindow != null)
+         {
+            _currentWindow.Close();
+            _currentWindow = null;
+         }
+      }
+
       void SetForLogin()
       {
          var root = this.GetRootVisualContainer();

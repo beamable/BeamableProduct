@@ -1,4 +1,5 @@
 ﻿using System;
+using Beamable.Editor.UI.Components;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -11,35 +12,32 @@ namespace Beamable.Editor.UI.Buss.Components
 {
     public class ConfirmationPopupVisualElement : BeamableVisualElement
     {
-        public event Action OnOKButtonClicked;
-        public event Action OnCancelButtonClicked;
         private Label _headerLabel;
         private Label _bodyLabel;
-        private Button _okButton;
+        private PrimaryButtonVisualElement _okButton;
         private Button _cancelButton;
 
-        private readonly string _windowHeader;
         private readonly string _contentText;
+        private readonly Action _onConfirm;
+        private readonly Action _onClose;
 
-        public ConfirmationPopupVisualElement(string windowHeader, string contentText) : base(
+        public ConfirmationPopupVisualElement(string contentText, Action onConfirm, Action onClose) : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(ConfirmationPopupVisualElement)}/{nameof(ConfirmationPopupVisualElement)}")
         {
-            _windowHeader = windowHeader;
             _contentText = contentText;
+            _onConfirm = onConfirm;
+            _onClose = onClose;
         }
 
         public override void Refresh()
         {
             base.Refresh();
 
-            _headerLabel = Root.Q<Label>("headerLabel");
-            _headerLabel.text = _windowHeader;
-
             _bodyLabel = Root.Q<Label>("contentLabel");
             _bodyLabel.text = _contentText;
 
-            _okButton = Root.Q<Button>("okButton");
-            _okButton.clickable.clicked += OkButton_OnClick;
+            _okButton = Root.Q<PrimaryButtonVisualElement>("okButton");
+            _okButton.Button.clickable.clicked += OkButton_OnClick;
 
             _cancelButton = Root.Q<Button>("cancelButton");
             _cancelButton.clickable.clicked += CancelButton_OnClick;
@@ -47,12 +45,13 @@ namespace Beamable.Editor.UI.Buss.Components
 
         private void OkButton_OnClick()
         {
-            OnOKButtonClicked?.Invoke();
+            _onConfirm?.Invoke();
+            _onClose?.Invoke();
         }
 
         private void CancelButton_OnClick()
         {
-            OnCancelButtonClicked?.Invoke();
+            _onClose?.Invoke();
         }
     }
 }
