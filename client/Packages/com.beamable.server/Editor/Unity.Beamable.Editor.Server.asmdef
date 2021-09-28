@@ -18,7 +18,7 @@
     ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
-    "overrideReferences": true,
+    "overrideReferences": false,
     "precompiledReferences": [
         "MongoDB.Driver.dll",
         "ICSharpCode.SharpZipLib.dll"
