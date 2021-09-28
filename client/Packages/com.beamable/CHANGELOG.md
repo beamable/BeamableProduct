@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Auto-complete text feature for `AdminFlow` prefab
 - Steam third party authentication support
 - New default `currency.coins` currency that demonstrates client writable currency.
+- RemoveThirdPartyAssociation added to AuthService to allow a player to remove a third party auth from their account
 
 ## [0.16.0]
 ### Added
