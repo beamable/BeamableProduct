@@ -469,7 +469,7 @@ namespace Beamable.Server.Editor
             await buildCommand.Start(context);
 
             var uploader = new ContainerUploadHarness(context);
-            var msModel = MicroservicesDataModel.Instance.GetMicroserviceModelForDescriptor(descriptor);
+            var msModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(descriptor);
             uploader.onProgress += msModel.OnDeployProgress;
 
             Debug.Log($"Getting Id service=[{descriptor.Name}]");

@@ -22,7 +22,7 @@ using UnityEditor.UIElements;
 namespace Beamable.Editor.UI.Model
 {
     [System.Serializable]
-    public class MicroserviceModel
+    public class MicroserviceModel : IBeamableService
     {
         public MicroserviceDescriptor Descriptor;
         // public MicroserviceStateMachine StateMachine;
@@ -320,6 +320,34 @@ $@"{{
             get { return Descriptor.Name; }
         }
 
+        public static MicroserviceModel CreateNew(MicroserviceDescriptor descriptor, MicroservicesDataModel dataModel)
+        {
+            return new MicroserviceModel
+            {
+                Descriptor = descriptor,
+                Builder = Microservices.GetServiceBuilder(descriptor),
+                Logs = new LogMessageStore(),
+                RemoteReference = dataModel.GetReference(descriptor),
+                RemoteStatus = dataModel.GetStatus(descriptor),
+                Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name)
+            };
+        }
+
+        public IDescriptor GetDescriptor() => Descriptor;
+        public LogMessageStore GetLogs() => Logs;
+        public void Refresh(IDescriptor descriptor)
+        {
+            // reset the descriptor and statemachines; because they aren't system.serializable durable.
+            Descriptor = (MicroserviceDescriptor)descriptor;
+            var oldBuilder = Builder;
+            Builder = Microservices.GetServiceBuilder(Descriptor);
+            Builder.ForwardEventsTo(oldBuilder);
+            Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name);
+        }
+        
+
+        public bool Equals(IDescriptor other) => GetDescriptor().Name.Equals(other?.Name);
+        public MicroserviceEditor.ServiceType GetServiceType() => MicroserviceEditor.ServiceType.MicroService;
     }
 
 
