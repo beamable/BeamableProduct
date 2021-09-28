@@ -1,4 +1,7 @@
-
+ToolboxFeatureVisualElement {
+    width: 220px;
+    height: 153px;
+}
 #functionIcon{
     height: 100px;
     width: 200px;
