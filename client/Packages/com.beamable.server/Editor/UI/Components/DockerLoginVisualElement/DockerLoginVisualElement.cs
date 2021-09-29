@@ -2,6 +2,7 @@
 using System;
 using Beamable.Common;
 using Beamable.Editor;
+using Beamable.Editor.Content;
 using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
@@ -29,8 +30,7 @@ namespace Beamable.Server.Editor.UI.Components.DockerLoginWindow
             _window.Close();
          }
          var elem = new DockerLoginVisualElement();
-         _window = BeamablePopupWindow.ShowUtility("DockerHub Login", elem, parent);
-         _window.minSize = new Vector2(100, 250);
+         _window = BeamablePopupWindow.ShowUtility("DockerHub Login", elem, parent, new Vector2(100, 250));
          _window.OnClosing += () => elem?._promise?.CompleteError(new Exception("Window Closed"));
          elem._promise.Then(_ => _window.Close());
 
