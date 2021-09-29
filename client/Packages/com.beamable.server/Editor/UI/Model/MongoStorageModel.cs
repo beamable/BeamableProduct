@@ -1,10 +1,24 @@
-﻿using System;
+﻿
+using System;
+using System.IO;
+using System.Text;
 using System.Threading.Tasks;
+using Beamable.Common;
+using Beamable.Editor.Environment;
+using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.ManagerClient;
 using UnityEditor;
+using UnityEngine;
+#if UNITY_2018
 using UnityEngine.Experimental.UIElements;
+using UnityEditor.Experimental.UIElements;
+#elif UNITY_2019_1_OR_NEWER
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
+#endif
+
 
 namespace Beamable.Editor.UI.Model
 {
@@ -13,6 +27,7 @@ namespace Beamable.Editor.UI.Model
     {
         public StorageObjectDescriptor Descriptor { get; private set; }
         public MongoStorageBuilder Builder { get; private set; }
+        public override IDescriptor GetDescriptor => Descriptor;
         public override bool IsRunning => Builder?.IsRunning ?? false;
 
         public override event Action<Task> OnStart;
@@ -37,14 +52,6 @@ namespace Beamable.Editor.UI.Model
             OnStop?.Invoke(null);
             throw new NotImplementedException();
         }
-        public override void EnrichWithRemoteReference(ServiceReference remoteReference)
-        {
-            throw new NotImplementedException();
-        }
-        public override void EnrichWithStatus(ServiceStatus status)
-        {
-            throw new NotImplementedException();
-        }
         public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
         {
             throw new NotImplementedException();
@@ -53,7 +60,6 @@ namespace Beamable.Editor.UI.Model
         {
             throw new NotImplementedException();
         }
-        public override IDescriptor GetDescriptor() => Descriptor;
         public override void Refresh(IDescriptor descriptor)
         {
             // reset the descriptor and statemachines; because they aren't system.serializable durable.

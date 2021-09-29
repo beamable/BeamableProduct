@@ -1,4 +1,3 @@
-
 using System;
 using System.IO;
 using System.Text;
@@ -137,19 +136,19 @@ namespace Beamable.Editor.UI.Model
                 Application.OpenURL(url);
             });
         }
-       
-        // TODO - When MongoStorageModel will be ready feel free to implement these methods in ServiceModelBase
-        // TODO === BEGIN
-        public override void EnrichWithRemoteReference(ServiceReference remoteReference)
+        public void EnrichWithRemoteReference(ServiceReference remoteReference)
         {
             RemoteReference = remoteReference;
             OnRemoteReferenceEnriched?.Invoke(remoteReference);
         }
-        public override void EnrichWithStatus(ServiceStatus status)
+        public void EnrichWithStatus(ServiceStatus status)
         {
             RemoteStatus = status;
             OnRemoteStatusEnriched?.Invoke(status);
         }
+        
+        // TODO - When MongoStorageModel will be ready feel free to implement these methods
+        // TODO === BEGIN
         public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
         {
             var existsOnRemote = RemoteStatus?.serviceName?.Length > 0;
@@ -291,7 +290,7 @@ $@"{{
             }
 #endif
         }
-        public override IDescriptor GetDescriptor() => Descriptor;
+        public override IDescriptor GetDescriptor => Descriptor;
         public override void Refresh(IDescriptor descriptor)
         {
             // reset the descriptor and statemachines; because they aren't system.serializable durable.

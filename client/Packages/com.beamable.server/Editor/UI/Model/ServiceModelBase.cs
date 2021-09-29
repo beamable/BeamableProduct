@@ -11,7 +11,9 @@ namespace Beamable.Editor.UI.Model
         public abstract bool IsRunning { get; }
         public bool AreLogsAttached { get; protected set; } = true;
         public LogMessageStore Logs { get; } = new LogMessageStore();
-        
+        public abstract IDescriptor GetDescriptor { get; }
+        public ServiceType GetServiceType => GetDescriptor.ServiceType;
+
         public Action OnLogsDetached { get; set; }
         public Action OnLogsAttached { get; set; }
         public Action<bool> OnLogsAttachmentChanged { get; set; }
@@ -36,17 +38,12 @@ namespace Beamable.Editor.UI.Model
             OnLogsAttached?.Invoke();
             OnLogsAttachmentChanged?.Invoke(true);
         }
-
+        
         // TODO - When MongoStorageModel will be ready feel free to implement these methods
         // TODO === BEGIN
-        public abstract void EnrichWithRemoteReference(ServiceReference remoteReference);
-        public abstract void EnrichWithStatus(ServiceStatus status);
         public abstract void PopulateMoreDropdown(ContextualMenuPopulateEvent evt);
         // TODO === END
-
-        public ServiceType GetServiceType() => GetDescriptor().ServiceType;
-        public LogMessageStore GetLogs() => Logs;
-        public abstract IDescriptor GetDescriptor();
+        
         public abstract void Refresh(IDescriptor descriptor);
         public abstract Task Start();
         public abstract Task Stop();

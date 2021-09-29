@@ -1,8 +1,23 @@
-﻿using System;
+﻿
+using System;
+using System.IO;
+using System.Text;
 using System.Threading.Tasks;
+using Beamable.Common;
+using Beamable.Editor.Environment;
+using Beamable.Server;
 using Beamable.Server.Editor;
+using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.ManagerClient;
+using UnityEditor;
+using UnityEngine;
+#if UNITY_2018
 using UnityEngine.Experimental.UIElements;
+using UnityEditor.Experimental.UIElements;
+#elif UNITY_2019_1_OR_NEWER
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
+#endif
 
 namespace Beamable.Editor.UI.Model
 {
@@ -11,6 +26,8 @@ namespace Beamable.Editor.UI.Model
         bool IsRunning { get; }
         bool AreLogsAttached { get; }
         LogMessageStore Logs { get; }
+        ServiceType GetServiceType { get; }
+        IDescriptor GetDescriptor { get; }
 
         Action OnLogsDetached { get; set; }
         Action OnLogsAttached { get; set; }
@@ -20,19 +37,12 @@ namespace Beamable.Editor.UI.Model
         
         event Action<Task> OnStart;
         event Action<Task> OnStop;
-
-        ServiceType GetServiceType();
-        IDescriptor GetDescriptor();
-        LogMessageStore GetLogs();
+        
         void Refresh(IDescriptor descriptor);
-
         void DetachLogs();
         void AttachLogs();
-        void EnrichWithRemoteReference(ServiceReference remoteReference);
-        void EnrichWithStatus(ServiceStatus status);
         void PopulateMoreDropdown(ContextualMenuPopulateEvent evt);
         Task Start();
         Task Stop();
-
     }
 }
