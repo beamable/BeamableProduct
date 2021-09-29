@@ -22,16 +22,15 @@ using UnityEditor.UIElements;
 namespace Beamable.Editor.UI.Model
 {
     [System.Serializable]
-    public class MicroserviceModel : IBeamableService
+    public class MicroserviceModel : ServiceModelBase, IBeamableMicroservice
     {
-        public MicroserviceDescriptor Descriptor;
-        // public MicroserviceStateMachine StateMachine;
-        public MicroserviceBuilder Builder;
-        public LogMessageStore Logs;
-        public ServiceReference RemoteReference;
-        public ServiceStatus RemoteStatus;
-        public MicroserviceConfigurationEntry Config;
-        public bool AreLogsAttached { get; private set; }= true;
+        public MicroserviceDescriptor Descriptor { get; private set; }
+        public MicroserviceBuilder Builder { get; private set; }
+        public ServiceReference RemoteReference { get; private set; }
+        public ServiceStatus RemoteStatus { get; private set; }
+        public MicroserviceConfigurationEntry Config { get; private set; }
+        public override bool IsRunning => Builder?.IsRunning ?? false;
+        public bool IsBuilding => Builder?.IsBuilding ?? false;
         public bool IsSelected
         {
             get => _isSelected;
@@ -41,64 +40,93 @@ namespace Beamable.Editor.UI.Model
                 OnSelectionChanged?.Invoke(value);
             }
         }
-
-        public bool IsBuilding => Builder?.IsBuilding ?? false;
-        public bool IsRunning => Builder?.IsRunning ?? false;
+        private bool _isSelected;
         public bool SameImageOnRemoteAndLocally => string.Equals(Builder?.LastBuildImageId, RemoteReference?.imageId);
+        public bool IncludeDebugTools
+        {
+            get => Config.IncludeDebugTools;
+            set
+            {
+                Config.IncludeDebugTools = value;
+                EditorUtility.SetDirty(MicroserviceConfiguration.Instance);
+            }
+        }
+        public string Name
+        {
+            set
+            {
+                throw new NotImplementedException("Cannot rename services yet.");
+                // if (string.Equals(_name, value)) return;
+                // if (string.IsNullOrWhiteSpace(value)) throw new Exception("Name cannot be empty.");
+                // var oldName = _name;
+                // try
+                // {
+                //     _name = value;
+                //     OnRenamed?.Invoke(this);
+                // }
+                // catch (Exception)
+                // {
+                //     _name = oldName; // clean up the name
+                //     throw;
+                // }
+            }
+            get { return Descriptor.Name; }
+        }
 
         public Action<ServiceReference> OnRemoteReferenceEnriched;
         public Action<ServiceStatus> OnRemoteStatusEnriched;
-        public Action OnLogsDetached;
-        public Action OnLogsAttached;
-        public Action<bool> OnLogsAttachmentChanged;
-        public Action<bool> OnSelectionChanged;
-        public Action OnSortChanged;
-
+        public Action<float, long, long> OnDeployProgress;
+        
+        public override event Action<Task> OnStart;
+        public override event Action<Task> OnStop;
         public event Action<Task> OnBuildAndRestart;
         public event Action<Task> OnBuildAndStart;
         public event Action<Task> OnBuild;
-        public event Action<Task> OnStart; // TODO: Currently it exposes us a moment of starting process and not exact moment when MS has started. Maybe rename it in future and add a proper one?? Luke
-        public event Action<Task> OnStop;
         public event Action<Promise<Unit>> OnDockerLoginRequired;
-        public Action<float, long, long> OnDeployProgress;
 
-        private bool _isSelected;
-
+        public static MicroserviceModel CreateNew(MicroserviceDescriptor descriptor, MicroservicesDataModel dataModel)
+        {
+            return new MicroserviceModel
+            {
+                Descriptor = descriptor,
+                Builder = Microservices.GetServiceBuilder(descriptor),
+                RemoteReference = dataModel.GetReference(descriptor),
+                RemoteStatus = dataModel.GetStatus(descriptor),
+                Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name)
+            };
+        }
+        
+        public override Task Start()
+        {
+            OnLogsAttached.Invoke();
+            var task = Builder.TryToStart();
+            OnStart?.Invoke(task);
+            return task;
+        }
+        public override Task Stop()
+        {
+            var task = Builder.TryToStop();
+            OnStop?.Invoke(task);
+            return task;
+        }
         public Task BuildAndRestart()
         {
             var task = Builder.TryToBuildAndRestart(IncludeDebugTools);
             OnBuildAndRestart?.Invoke(task);
             return task;
         }
-
         public Task BuildAndStart()
         {
             var task = Builder.TryToBuildAndStart(IncludeDebugTools);
             OnBuildAndStart?.Invoke(task);
             return task;
         }
-
         public Task Build()
         {
             var task = Builder.TryToBuild(IncludeDebugTools);
             OnBuild?.Invoke(task);
             return task;
         }
-
-        public Task Start()
-        {
-            var task = Builder.TryToStart();
-            OnStart?.Invoke(task);
-            return task;
-        }
-
-        public Task Stop()
-        {
-            var task = Builder.TryToStop();
-            OnStop?.Invoke(task);
-            return task;
-        }
-
         public void OpenLocalDocs()
         {
             EditorAPI.Instance.Then(de =>
@@ -109,47 +137,20 @@ namespace Beamable.Editor.UI.Model
                 Application.OpenURL(url);
             });
         }
-
-        public bool IncludeDebugTools
-        {
-            get => Config.IncludeDebugTools;
-            set
-            {
-                Config.IncludeDebugTools = value;
-                EditorUtility.SetDirty(MicroserviceConfiguration.Instance);
-            }
-        }
-
-        public void DetachLogs()
-        {
-            if (!AreLogsAttached) return;
-
-            AreLogsAttached = false;
-            OnLogsDetached?.Invoke();
-            OnLogsAttachmentChanged?.Invoke(false);
-        }
-
-        public void AttachLogs()
-        {
-            if (AreLogsAttached) return;
-            AreLogsAttached = true;
-            OnLogsAttached?.Invoke();
-            OnLogsAttachmentChanged?.Invoke(true);
-        }
-
-        public void EnrichWithRemoteReference(ServiceReference remoteReference)
+       
+        // TODO - When MongoStorageModel will be ready feel free to implement these methods in ServiceModelBase
+        // TODO === BEGIN
+        public override void EnrichWithRemoteReference(ServiceReference remoteReference)
         {
             RemoteReference = remoteReference;
             OnRemoteReferenceEnriched?.Invoke(remoteReference);
         }
-
-        public void EnrichWithStatus(ServiceStatus status)
+        public override void EnrichWithStatus(ServiceStatus status)
         {
             RemoteStatus = status;
             OnRemoteStatusEnriched?.Invoke(status);
         }
-
-        public void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
+        public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
         {
             var existsOnRemote = RemoteStatus?.serviceName?.Length > 0;
             var hasImageSuffix = Builder.HasBuildDirectory ? string.Empty : " (Build first)";
@@ -187,7 +188,8 @@ namespace Beamable.Editor.UI.Model
                 evt.menu.BeamableAppendAction($"Reattach Logs", pos => AttachLogs());
             }
         }
-
+        // TODO === END
+        
         private void RunSnykTests()
         {
             var snykCommand = new SnykTestCommand(Descriptor);
@@ -216,7 +218,6 @@ namespace Beamable.Editor.UI.Model
                 }
             });
         }
-
         private void CopyVSCodeDebugTool()
         {
 
@@ -238,7 +239,6 @@ $@"{{
      }}
   }}";
         }
-
         private void OpenOnRemote(string relativePath)
         {
             EditorAPI.Instance.Then(api =>
@@ -250,7 +250,6 @@ $@"{{
                 Application.OpenURL(path);
             });
         }
-
         private void OpenInCli()
         {
             System.Diagnostics.Process GetProcess(string command)
@@ -292,51 +291,8 @@ $@"{{
             }
 #endif
         }
-
-        // Chris took these out because they weren't being used yet, and were throwing warnings on package builds.
-        // public event Action OnRenameRequested;
-        // public event Action<MicroserviceModel> OnEnriched;
-        // private string _name = "";
-
-        public string Name
-        {
-            set
-            {
-                throw new NotImplementedException("Cannot rename services yet.");
-                // if (string.Equals(_name, value)) return;
-                // if (string.IsNullOrWhiteSpace(value)) throw new Exception("Name cannot be empty.");
-                // var oldName = _name;
-                // try
-                // {
-                //     _name = value;
-                //     OnRenamed?.Invoke(this);
-                // }
-                // catch (Exception)
-                // {
-                //     _name = oldName; // clean up the name
-                //     throw;
-                // }
-            }
-            get { return Descriptor.Name; }
-        }
-
-        public static MicroserviceModel CreateNew(MicroserviceDescriptor descriptor, MicroservicesDataModel dataModel)
-        {
-            return new MicroserviceModel
-            {
-                Descriptor = descriptor,
-                Builder = Microservices.GetServiceBuilder(descriptor),
-                Logs = new LogMessageStore(),
-                RemoteReference = dataModel.GetReference(descriptor),
-                RemoteStatus = dataModel.GetStatus(descriptor),
-                Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name)
-            };
-        }
-
-        public ServiceType GetServiceType() => GetDescriptor().ServiceType;
-        public IDescriptor GetDescriptor() => Descriptor;
-        public LogMessageStore GetLogs() => Logs;
-        public void Refresh(IDescriptor descriptor)
+        public override IDescriptor GetDescriptor() => Descriptor;
+        public override void Refresh(IDescriptor descriptor)
         {
             // reset the descriptor and statemachines; because they aren't system.serializable durable.
             Descriptor = (MicroserviceDescriptor)descriptor;
@@ -345,7 +301,10 @@ $@"{{
             Builder.ForwardEventsTo(oldBuilder);
             Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name);
         }
+        
+        // Chris took these out because they weren't being used yet, and were throwing warnings on package builds.
+        // public event Action OnRenameRequested;
+        // public event Action<MicroserviceModel> OnEnriched;
+        // private string _name = "";
     }
-
-
 }
