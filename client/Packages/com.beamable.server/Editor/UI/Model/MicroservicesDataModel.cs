@@ -169,6 +169,10 @@ namespace Beamable.Editor.UI.Model
          return (T)AllServices?.FirstOrDefault(s => s.GetDescriptor().Name.Equals(serviceName));
       }
 
+      public MicroserviceModel GetMicroserviceModel(IDescriptor descriptor) => GetModel<MicroserviceModel>(descriptor);
+
+      public MongoStorageModel GetStorageModel(IDescriptor descriptor) => GetModel<MongoStorageModel>(descriptor);
+
       private void OnEnable()
       {
          Microservices.onAfterDeploy += MicroservicesOnonAfterDeploy;
