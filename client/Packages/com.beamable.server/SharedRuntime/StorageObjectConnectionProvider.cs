@@ -4,7 +4,12 @@ using MongoDB.Driver;
 
 namespace Beamable.Server
 {
-    public class StorageObjectConnectionProvider
+    public interface IStorageObjectConnectionProvider
+    {
+        MongoClient GetClient<TStorage>() where TStorage : MongoStorageObject;
+    }
+    
+    public class StorageObjectConnectionProvider : IStorageObjectConnectionProvider
     {
         private const string CONNSTR_VAR_NAME_FORMAT = "STORAGE_CONNSTR_{0}";
         

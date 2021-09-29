@@ -52,7 +52,7 @@ namespace Beamable.Server
       /// </summary>
       protected IBeamableServices Services;
 
-      protected StorageObjectConnectionProvider StorageObjectConnectionProvider;
+      protected IStorageObjectConnectionProvider Storage;
 
       private RequesterFactory _requesterFactory;
       private ServicesFactory _servicesFactory;
@@ -84,7 +84,7 @@ namespace Beamable.Server
          Context = provider.GetService<RequestContext>();
          Requester = provider.GetService<IBeamableRequester>();
          Services = provider.GetService<IBeamableServices>();
-         StorageObjectConnectionProvider = provider.GetService<StorageObjectConnectionProvider>();
+         Storage = provider.GetService<IStorageObjectConnectionProvider>();
          _serviceProvider = provider;
          _scopeGenerator = scopeGenerator;
       }
