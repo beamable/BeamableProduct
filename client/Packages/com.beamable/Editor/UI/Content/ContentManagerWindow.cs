@@ -352,7 +352,6 @@ namespace Beamable.Editor.Content
       {
             var downloadPopup = new DownloadContentVisualElement();
 
-
             if (_cachedItemsToDownload != null && _cachedItemsToDownload.Count > 0)
             {
                 downloadPopup.Model = _contentManager.PrepareDownloadSummary(_cachedItemsToDownload.ToArray());
@@ -492,7 +491,6 @@ namespace Beamable.Editor.Content
 
       public void OnBeforeSerialize()
       {
-
 
       }
 
