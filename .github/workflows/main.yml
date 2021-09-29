@@ -4,17 +4,10 @@ on:
  push:
   branches:
     - 'main'
-  paths:
-    - 'client/**'
-    - 'microservice/**'
  pull_request:
   branches:
     - 'main'
     - 'staging'
-  paths:
-    - 'client/**'
-    - 'microservice/**'
-
 jobs:
   testMicroserviceBaseImage:
     runs-on: ubuntu-latest
