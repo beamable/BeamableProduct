@@ -91,20 +91,12 @@ namespace Beamable.Editor.Microservice.UI.Components
             {
                 if (serviceStatus.Value == ServiceAvailability.Unknown)
                 {
-                    var label = new Label($"{serviceStatus.Key} status is unknown")
-                    {
-                        name = serviceStatus.Key
-                    };
-                    _microservicesListElement.Add(label);
+                    // todo
                     continue;
                 }
                 if (serviceStatus.Value == ServiceAvailability.RemoteOnly)
                 {
-                    var label = new Label($"{serviceStatus.Key} is remote only")
-                    {
-                        name = serviceStatus.Key
-                    };
-                    _microservicesListElement.Add(label);
+                    // todo
                     continue;
                 }
 
@@ -128,11 +120,7 @@ namespace Beamable.Editor.Microservice.UI.Components
                         _microservicesListElement.Add(serviceElement);
                         break;
                     case ServiceType.StorageObject:
-                        var label = new Label($"{serviceStatus.Key} is new storage")
-                        {
-                            name = serviceStatus.Key
-                        };
-                        _microservicesListElement.Add(label);
+                        // todo
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -213,8 +201,8 @@ namespace Beamable.Editor.Microservice.UI.Components
             int Comparer(VisualElement a, VisualElement b) {
                 if (a is CreateMicroserviceVisualElement) return -1;
                 if (b is CreateMicroserviceVisualElement) return 1;
-                var aName = a is Label ? a.name : ((MicroserviceVisualElement) a).Model.Name;
-                var bName = b is Label ? b.name : ((MicroserviceVisualElement) b).Model.Name;
+                var aName = ((MicroserviceVisualElement) a).Model.Name;
+                var bName = ((MicroserviceVisualElement) b).Model.Name;
                 return config.MicroserviceOrderComparer(aName, bName);
             }
             _microservicesListElement.Sort(Comparer);
