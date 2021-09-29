@@ -5,7 +5,7 @@ namespace Beamable.Editor.UI.Model
 {
     public interface IBeamableService : IEquatable<IDescriptor>
     {
-        MicroserviceEditor.ServiceType GetServiceType();
+        ServiceType GetServiceType();
         IDescriptor GetDescriptor();
         LogMessageStore GetLogs();
         void Refresh(IDescriptor descriptor);

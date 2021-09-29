@@ -333,6 +333,7 @@ $@"{{
             };
         }
 
+        public ServiceType GetServiceType() => GetDescriptor().ServiceType;
         public IDescriptor GetDescriptor() => Descriptor;
         public LogMessageStore GetLogs() => Logs;
         public void Refresh(IDescriptor descriptor)
@@ -347,7 +348,6 @@ $@"{{
         
 
         public bool Equals(IDescriptor other) => GetDescriptor().Name.Equals(other?.Name);
-        public MicroserviceEditor.ServiceType GetServiceType() => MicroserviceEditor.ServiceType.MicroService;
     }
 
 

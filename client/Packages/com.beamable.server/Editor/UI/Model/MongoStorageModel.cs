@@ -36,7 +36,7 @@ namespace Beamable.Editor.UI.Model
             };
         }
 
-        public MicroserviceEditor.ServiceType GetServiceType() => MicroserviceEditor.ServiceType.StorageObject;
+        public ServiceType GetServiceType() => GetDescriptor().ServiceType;
         public bool Equals(IDescriptor other) => GetDescriptor().Name.Equals(other?.Name);
         
     }

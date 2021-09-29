@@ -86,22 +86,57 @@ namespace Beamable.Editor.Microservice.UI.Components
             _microservicesListElement.Add(_microserviceVisualElement);
             _microserviceVisualElement.OnCreateMicroserviceClicked += () => Root.SetEnabled(false);
             _modelToVisual.Clear();
-            foreach (var service in Model.Services)
+
+            foreach (var serviceStatus in Model.GetAllServicesStatus())
             {
-                var serviceElement = new MicroserviceVisualElement {Model = service};
-                _modelToVisual[service] = serviceElement;
-                service.OnLogsDetached += () => { ServiceLogWindow.ShowService(service); };
+                if (serviceStatus.Value == ServiceAvailability.Unknown)
+                {
+                    var label = new Label($"{serviceStatus.Key} status is unknown")
+                    {
+                        name = serviceStatus.Key
+                    };
+                    _microservicesListElement.Add(label);
+                    continue;
+                }
+                if (serviceStatus.Value == ServiceAvailability.RemoteOnly)
+                {
+                    var label = new Label($"{serviceStatus.Key} is remote only")
+                    {
+                        name = serviceStatus.Key
+                    };
+                    _microservicesListElement.Add(label);
+                    continue;
+                }
 
-                serviceElement.Refresh();
-                service.OnSelectionChanged += b =>
-                    OnAllServiceSelectedStatusChanged?.Invoke(Model.Services.All(m => m.IsSelected));
+                switch (Model.GetModelServiceType(serviceStatus.Key))
+                {
+                    case ServiceType.MicroService:
+                        var service = Model.GetModel<MicroserviceModel>(serviceStatus.Key);
+                        var serviceElement = new MicroserviceVisualElement {Model = service};
+                        _modelToVisual[service] = serviceElement;
+                        service.OnLogsDetached += () => { ServiceLogWindow.ShowService(service); };
 
-                service.OnSortChanged -= SortMicroservices;
-                service.OnSortChanged += SortMicroservices;
-                serviceElement.OnMicroserviceStartFailed = MicroserviceStartFailed;
-                serviceElement.OnMicroserviceStopFailed = MicroserviceStopFailed;
+                        serviceElement.Refresh();
+                        service.OnSelectionChanged += b =>
+                            OnAllServiceSelectedStatusChanged?.Invoke(Model.Services.All(m => m.IsSelected));
 
-                _microservicesListElement.Add(serviceElement);
+                        service.OnSortChanged -= SortMicroservices;
+                        service.OnSortChanged += SortMicroservices;
+                        serviceElement.OnMicroserviceStartFailed = MicroserviceStartFailed;
+                        serviceElement.OnMicroserviceStopFailed = MicroserviceStopFailed;
+
+                        _microservicesListElement.Add(serviceElement);
+                        break;
+                    case ServiceType.StorageObject:
+                        var label = new Label($"{serviceStatus.Key} is new storage")
+                        {
+                            name = serviceStatus.Key
+                        };
+                        _microservicesListElement.Add(label);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
             }
 
             _actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
@@ -178,8 +213,8 @@ namespace Beamable.Editor.Microservice.UI.Components
             int Comparer(VisualElement a, VisualElement b) {
                 if (a is CreateMicroserviceVisualElement) return -1;
                 if (b is CreateMicroserviceVisualElement) return 1;
-                var aName = ((MicroserviceVisualElement) a).Model.Name;
-                var bName = ((MicroserviceVisualElement) b).Model.Name;
+                var aName = a is Label ? a.name : ((MicroserviceVisualElement) a).Model.Name;
+                var bName = b is Label ? b.name : ((MicroserviceVisualElement) b).Model.Name;
                 return config.MicroserviceOrderComparer(aName, bName);
             }
             _microservicesListElement.Sort(Comparer);

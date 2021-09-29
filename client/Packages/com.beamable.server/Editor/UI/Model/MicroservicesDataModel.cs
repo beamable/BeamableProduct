@@ -6,6 +6,7 @@ using Beamable.Editor.Microservice.UI;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.ManagerClient;
 using Beamable.Server.Editor.UI.Components;
+using JetBrains.Annotations;
 using UnityEditor;
 using UnityEngine;
 
@@ -41,8 +42,6 @@ namespace Beamable.Editor.UI.Model
          }
       }
 
-      public List<IBeamableService> AllServices = new List<IBeamableService>();
-
       private static MicroservicesDataModel GetInstance()
       {
          if (_instance != null)
@@ -55,6 +54,7 @@ namespace Beamable.Editor.UI.Model
          return _instance;
       }
 
+      public List<IBeamableService> AllServices = new List<IBeamableService>();
       public List<MicroserviceModel> Services = new List<MicroserviceModel>();
       public List<MongoStorageModel> Storages = new List<MongoStorageModel>();
       public ServiceManifest ServerManifest = new ServiceManifest();
@@ -65,11 +65,9 @@ namespace Beamable.Editor.UI.Model
 
       public void RefreshLocal()
       {
+         AllServices = new List<IBeamableService>();
          RefreshLocalServices();
          RefreshLocalStorages();
-         AllServices = new List<IBeamableService>(Services.Count + Storages.Count);
-         AllServices.AddRange(Services.Select(model => model as IBeamableService));
-         AllServices.AddRange(Storages.Select(model => model as IBeamableService));
       }
 
       void RefreshLocalStorages()
@@ -89,9 +87,10 @@ namespace Beamable.Editor.UI.Model
                existingService.Refresh(descriptor);
             }
          }
-
          Storages.RemoveAll(model => unseenStorages.Contains(model));
+         AllServices.AddRange(Services.Select(model => model as IBeamableService));
       }
+
       void RefreshLocalServices()
       {
          var unseenServices = new HashSet<MicroserviceModel>(Services);
@@ -110,6 +109,7 @@ namespace Beamable.Editor.UI.Model
             }
          }
          Services.RemoveAll(model => unseenServices.Contains(model));
+         AllServices.AddRange(Storages.Select(model => model as IBeamableService));
       }
 
       public void RefreshServerManifest()
@@ -148,10 +148,46 @@ namespace Beamable.Editor.UI.Model
          return Status?.services?.FirstOrDefault(r => r.serviceName.Equals(descriptor.Name));
       }
 
+      public Dictionary<string, ServiceAvailability> GetAllServicesStatus()
+      {
+         var getServiceStatus = new Func<bool, bool, ServiceAvailability>((isLocally, isRemotely) =>
+         {
+            if (isLocally && isRemotely)
+               return ServiceAvailability.LocalAndRemote;
+
+            return isLocally ? ServiceAvailability.LocalOnly :
+               isRemotely ? ServiceAvailability.RemoteOnly : ServiceAvailability.Unknown;
+         });
+         
+         var result = new Dictionary<string, ServiceAvailability>();
+         var servicesStatus = Status?.services;
+         
+         // foreach (var configEntry in MicroserviceConfiguration.Instance.StorageObjects)
+         // {
+         //    result.Add(configEntry.StorageName, getServiceStatus(ContainsModel(configEntry.StorageName), false));
+         // }
+         foreach (var configEntry in MicroserviceConfiguration.Instance.Microservices)
+         {
+            bool remotely = servicesStatus?.Find(status => status.serviceName.Equals(configEntry.ServiceName))!= null;
+            result.Add(configEntry.ServiceName, getServiceStatus(ContainsModel(configEntry.ServiceName),remotely));
+         }
+
+         return result;
+      }
+
       public ServiceReference GetReference(MicroserviceDescriptor descriptor)
       {
          return ServerManifest?.manifest?.FirstOrDefault(r => r.serviceName.Equals(descriptor.Name));
       }
+
+      public ServiceType GetModelServiceType(string name)
+      {
+         var service = AllServices
+            .FirstOrDefault(s => s.GetDescriptor().Name.Equals(name));
+         return service?.GetServiceType() ?? ServiceType.MicroService;
+      }
+
+      public bool ContainsModel(string serviceName) => AllServices?.Any(s => s.GetDescriptor().Name.Equals(serviceName)) ?? false;
 
       public T GetModel<T>(IDescriptor descriptor) where T : IBeamableService =>
          GetModel<T>(descriptor.Name);
@@ -181,5 +217,13 @@ namespace Beamable.Editor.UI.Model
          _hasEnabledYet = false;
 
       }
+   }
+
+   public enum ServiceAvailability
+   {
+      LocalOnly,
+      RemoteOnly,
+      LocalAndRemote,
+      Unknown
    }
 }
