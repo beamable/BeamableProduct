@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - No longer refreshes asset database on ContentIO FindAll()
 - Allow Content Deserializer to consume incorrectly typed fields as empty values
 
+### Changed
+- Content deletion popup opens as separate window
+
 ## [0.16.0]
 ### Added
 - Support for disabling Unity Domain Reload
