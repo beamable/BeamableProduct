@@ -31,7 +31,7 @@ namespace Beamable.Editor.UI.Model
             return new MongoStorageModel
             {
                 Descriptor = descriptor,
-                Builder = Microservices.GetStorageBuilder( descriptor),
+                Builder = Microservices.GetStorageBuilder(descriptor),
                 Logs = new LogMessageStore()
             };
         }

@@ -1,14 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Common;
-using Beamable.Editor.Microservice.UI;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.ManagerClient;
 using Beamable.Server.Editor.UI.Components;
-using JetBrains.Annotations;
-using UnityEditor;
-using UnityEngine;
 
 namespace Beamable.Editor.UI.Model
 {
@@ -55,8 +50,8 @@ namespace Beamable.Editor.UI.Model
       }
 
       public List<IBeamableService> AllServices = new List<IBeamableService>();
-      public List<MicroserviceModel> Services = new List<MicroserviceModel>();
-      public List<MongoStorageModel> Storages = new List<MongoStorageModel>();
+      public List<MicroserviceModel> Services => AllServices.Where(service => service.GetServiceType() == ServiceType.MicroService).Select(service => service as MicroserviceModel).ToList();
+      public List<MongoStorageModel> Storages => AllServices.Where(service => service.GetServiceType() == ServiceType.StorageObject).Select(service => service as MongoStorageModel).ToList();
       public ServiceManifest ServerManifest = new ServiceManifest();
       public GetStatusResponse Status = new GetStatusResponse();
 
@@ -65,51 +60,31 @@ namespace Beamable.Editor.UI.Model
 
       public void RefreshLocal()
       {
-         AllServices = new List<IBeamableService>();
-         RefreshLocalServices();
-         RefreshLocalStorages();
-      }
-
-      void RefreshLocalStorages()
-      {
-         var unseenStorages = new HashSet<MongoStorageModel>(Storages);
-         
-         foreach (var descriptor in Microservices.StorageDescriptors)
+         var unseen = new HashSet<IBeamableService>(AllServices);
+         foreach (var descriptor in Microservices.AllDescriptors)
          {
-            var existingService = GetModel<MongoStorageModel>(descriptor);
-            if (existingService == null)
+            var serviceExists = ContainsModel(descriptor.Name);
+            if (serviceExists)
             {
-               Storages.Add(MongoStorageModel.CreateNew(descriptor));
+               var service = GetModel<IBeamableService>(descriptor.Name);
+               unseen.Remove(GetModel<IBeamableService>(descriptor.Name));
+               service.Refresh(descriptor);
+               continue;
+            }
+
+            IBeamableService newService;
+            if (descriptor.ServiceType == ServiceType.StorageObject)
+            {
+               newService = MongoStorageModel.CreateNew(descriptor as StorageObjectDescriptor);
             }
             else
             {
-               unseenStorages.Remove(existingService);
-               existingService.Refresh(descriptor);
+               newService = MicroserviceModel.CreateNew(descriptor as MicroserviceDescriptor, this);
             }
+            AllServices.Add(newService);
          }
-         Storages.RemoveAll(model => unseenStorages.Contains(model));
-         AllServices.AddRange(Services.Select(model => model as IBeamableService));
-      }
 
-      void RefreshLocalServices()
-      {
-         var unseenServices = new HashSet<MicroserviceModel>(Services);
-
-         foreach (var descriptor in Microservices.Descriptors)
-         {
-            var existingService = GetModel<MicroserviceModel>(descriptor);
-            if (existingService == null)
-            {
-               Services.Add(MicroserviceModel.CreateNew(descriptor,this));
-            }
-            else
-            {
-               unseenServices.Remove(existingService);
-               existingService.Refresh(descriptor);
-            }
-         }
-         Services.RemoveAll(model => unseenServices.Contains(model));
-         AllServices.AddRange(Storages.Select(model => model as IBeamableService));
+         AllServices.RemoveAll(model => unseen.Contains(model));
       }
 
       public void RefreshServerManifest()
@@ -140,7 +115,8 @@ namespace Beamable.Editor.UI.Model
 
       public void AddLogMessage(IDescriptor descriptor, LogMessage message)
       {
-         AllServices.FirstOrDefault(r => r.Equals(descriptor))?.GetLogs().AddMessage(message);
+         AllServices.FirstOrDefault(r => r.GetDescriptor().Name.Equals(descriptor.Name))
+            ?.GetLogs().AddMessage(message);
       }
 
       public ServiceStatus GetStatus(MicroserviceDescriptor descriptor)
@@ -158,14 +134,10 @@ namespace Beamable.Editor.UI.Model
             return isLocally ? ServiceAvailability.LocalOnly :
                isRemotely ? ServiceAvailability.RemoteOnly : ServiceAvailability.Unknown;
          });
-         
+
          var result = new Dictionary<string, ServiceAvailability>();
          var servicesStatus = Status?.services;
-         
-         // foreach (var configEntry in MicroserviceConfiguration.Instance.StorageObjects)
-         // {
-         //    result.Add(configEntry.StorageName, getServiceStatus(ContainsModel(configEntry.StorageName), false));
-         // }
+
          foreach (var configEntry in MicroserviceConfiguration.Instance.Microservices)
          {
             bool remotely = servicesStatus?.Find(status => status.serviceName.Equals(configEntry.ServiceName))!= null;
