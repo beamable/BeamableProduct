@@ -1,6 +1,7 @@
-﻿{
-	"name": "Unity.Beamable.Editor.Server",
-     "references": [
+{
+    "name": "Unity.Beamable.Editor.Server",
+    "rootNamespace": "",
+    "references": [
         "Beamable.Config",
         "Beamable.JsonSerializable",
         "Beamable.SmallerJSON",
@@ -11,16 +12,19 @@
         "Unity.Beamable",
         "Unity.Beamable.Editor",
         "Unity.Addressables"
-     ],
-     "optionalUnityReferences": [],
-     "includePlatforms": [
+    ],
+    "includePlatforms": [
         "Editor"
-     ],
-     "includePlatforms": [],
-     "excludePlatforms": [],
-     "allowUnsafeCode": false,
-     "overrideReferences": false,
-     "precompiledReferences": [],
-     "autoReferenced": true,
-     "defineConstraints": []
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [
+        "MongoDB.Driver.dll",
+        "ICSharpCode.SharpZipLib.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

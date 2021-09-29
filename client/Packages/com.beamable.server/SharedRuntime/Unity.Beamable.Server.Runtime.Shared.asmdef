@@ -1,15 +1,18 @@
-﻿{
-	"name": "Unity.Beamable.Server.Runtime.Shared",
-     "references": [
+{
+    "name": "Unity.Beamable.Server.Runtime.Shared",
+    "rootNamespace": "",
+    "references": [
         "Unity.Beamable.Runtime.Common"
-     ],
-     "optionalUnityReferences": [],
-     "includePlatforms": [],
-     "excludePlatforms": [],
-     "allowUnsafeCode": false,
-     "overrideReferences": false,
-     "precompiledReferences": [],
-     "noEngineReferences": true,
-     "autoReferenced": false,
-     "defineConstraints": []
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "MongoDB.Driver.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
 }
