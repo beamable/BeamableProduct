@@ -7,13 +7,37 @@ using UnityEditor;
 namespace Beamable.Editor.UI.Model
 {
     [System.Serializable]
-    public class MongoStorageModel
+    public class MongoStorageModel : IBeamableService
     {
         public StorageObjectDescriptor Descriptor;
         public LogMessageStore Logs;
         public MongoStorageBuilder Builder;
         public bool IsRunning => Builder?.IsRunning ?? false;
         public string Name => Descriptor.Name;
+        public IDescriptor GetDescriptor() => Descriptor;
+        public LogMessageStore GetLogs() => Logs;
+        
+        public void Refresh(IDescriptor descriptor)
+        {
+            // reset the descriptor and statemachines; because they aren't system.serializable durable.
+            Descriptor = (StorageObjectDescriptor)descriptor;
+            var oldBuilder = Builder;
+            Builder = Microservices.GetStorageBuilder(Descriptor);
+            Builder.ForwardEventsTo(oldBuilder);
+        }
+
+        public static MongoStorageModel CreateNew(StorageObjectDescriptor descriptor)
+        {
+            return new MongoStorageModel
+            {
+                Descriptor = descriptor,
+                Builder = Microservices.GetStorageBuilder(descriptor),
+                Logs = new LogMessageStore()
+            };
+        }
+
+        public ServiceType GetServiceType() => GetDescriptor().ServiceType;
+        
     }
 
     public class MongoStorageBuilder

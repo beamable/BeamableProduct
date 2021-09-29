@@ -17,6 +17,7 @@ namespace Beamable.Server.Editor
       public Type Type { get; set; }
       public string ContainerName => $"db_{Name}_storage";
       public string ImageName => "mongo:latest";
+      public ServiceType ServiceType => ServiceType.StorageObject;
 
       public string DataVolume => $"beamable_storage_{Name}_data";
       public string FilesVolume => $"beamable_storage_{Name}_files";

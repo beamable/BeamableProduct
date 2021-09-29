@@ -30,6 +30,16 @@ namespace Beamable.Server.Editor
       private static Dictionary<string, MongoStorageBuilder> _storageToBuilder = new Dictionary<string, MongoStorageBuilder>();
 
       private static List<MicroserviceDescriptor> _descriptors = null;
+      private static List<IDescriptor> _allDescriptors = null;
+      public static List<IDescriptor> AllDescriptors
+      {
+         get
+         {
+            if (_allDescriptors != null) return _allDescriptors;
+            RefreshDescriptors();
+            return _allDescriptors;
+         }
+      }
 
       public static List<MicroserviceDescriptor> Descriptors
       {
@@ -62,6 +72,7 @@ namespace Beamable.Server.Editor
 
          _descriptors = new List<MicroserviceDescriptor>();
          _storageDescriptors = new List<StorageObjectDescriptor>();
+         _allDescriptors = new List<IDescriptor>();
 
          bool TryGetAttribute<TAttr, TObj>(Type type, out TAttr attr)
             where TAttr : Attribute
@@ -98,10 +109,15 @@ namespace Beamable.Server.Editor
                         AttributePath = serviceAttribute.GetSourcePath()
                      };
                      _descriptors.Add(descriptor);
+                     _allDescriptors.Add(descriptor);
                   }
 
                   if (TryGetAttribute<StorageObjectAttribute, StorageObject>(type, out var storageAttribute))
                   {
+                     if (storageAttribute.StorageName.ToLower().Equals("xxxx"))
+                     {
+                        continue; // TODO: XXX this is a hacky way to ignore the default microservice...
+                     }
                      var descriptor = new StorageObjectDescriptor
                      {
                         Name = storageAttribute.StorageName,
@@ -109,6 +125,7 @@ namespace Beamable.Server.Editor
                         AttributePath = storageAttribute.SourcePath
                      };
                      _storageDescriptors.Add(descriptor);
+                     _allDescriptors.Add(descriptor);
                   }
 
                }
@@ -469,7 +486,7 @@ namespace Beamable.Server.Editor
             await buildCommand.Start(context);
 
             var uploader = new ContainerUploadHarness(context);
-            var msModel = MicroservicesDataModel.Instance.GetMicroserviceModelForDescriptor(descriptor);
+            var msModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(descriptor);
             uploader.onProgress += msModel.OnDeployProgress;
 
             Debug.Log($"Getting Id service=[{descriptor.Name}]");

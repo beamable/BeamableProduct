@@ -10,5 +10,6 @@ namespace Beamable.Server.Editor
       
       string ContainerName { get; }
       string ImageName { get; }
+      ServiceType ServiceType { get; }
    }
 }
