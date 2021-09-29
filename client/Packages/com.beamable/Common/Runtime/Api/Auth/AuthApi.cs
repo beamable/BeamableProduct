@@ -9,7 +9,7 @@ namespace Beamable.Common.Api.Auth
 
    public class AuthApi : IAuthApi
    {
-      private const string TOKEN_URL = "/basic/auth/token";
+      protected const string TOKEN_URL = "/basic/auth/token";
       protected const string ACCOUNT_URL = "/basic/accounts";
 
       private IBeamableRequester _requester;
@@ -44,14 +44,6 @@ namespace Beamable.Common.Api.Auth
          return _requester.Request<AvailabilityResponse>(Method.GET, $"{ACCOUNT_URL}/available/third-party?thirdParty={thirdParty.GetString()}&token={token}", null, false)
             .Map(resp => resp.available);
       }
-
-      public Promise<bool> IsThisDeviceIdAvailable()
-      {
-        var encodedDeviceId = _requester.EscapeURL(SystemInfo.deviceUniqueIdentifier);
-        return _requester.Request<AvailabilityResponse>(Method.GET, $"{ACCOUNT_URL}/available/device-id?deviceId={encodedDeviceId}", null, false)
-            .Map(resp => resp.available);
-      }
-
 
       public Promise<TokenResponse> CreateUser()
       {
@@ -134,21 +126,6 @@ namespace Beamable.Common.Api.Auth
       }
 
 
-    public Promise<TokenResponse> LoginDeviceId()
-    {
-        var req = new LoginDeviceIdRequest
-        {
-            grant_type = "device",
-            device_id = SystemInfo.deviceUniqueIdentifier
-        };
-        return _requester.Request<TokenResponse>(Method.POST, TOKEN_URL, req);
-    }
-
-    public class LoginDeviceIdRequest
-    {
-        public string grant_type;
-        public string device_id;
-    }
 
         public Promise<User> RegisterDBCredentials(string email, string password)
       {
@@ -184,20 +161,7 @@ namespace Beamable.Common.Api.Auth
       }
 
 
-        public Promise<User> RegisterDeviceId()
-        {
-            var req = new RegisterDeviceIdRequest
-            {
-                deviceId = SystemInfo.deviceUniqueIdentifier
-            };
-            return _requester.Request<User>(Method.PUT, $"{ACCOUNT_URL}/me", req);
-        }
 
-        [Serializable]
-        private class RegisterDeviceIdRequest
-        {
-            public string deviceId;
-        }
 
         public Promise<EmptyResponse> IssueEmailUpdate(string newEmail)
       {
