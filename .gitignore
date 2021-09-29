@@ -17,6 +17,9 @@
 /client/*-snyk-results*
 /artifacts/
 
+# Private folder for local usage and testing
+/client/Assets/Private/
+
 #Unity Installer generated files.
 /UnityInstaller/Library/
 /UnityInstaller/Temp/
