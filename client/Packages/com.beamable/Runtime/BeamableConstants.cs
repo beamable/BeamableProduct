@@ -25,7 +25,7 @@ public static class BeamableConstants
    public const string BUSS_SHEET_EDITOR = "Sheet Inspector";
    public const string BUSS_WIZARD = "Theme Wizard";
    public const string LOGIN = "Beamble Login";
-
+   public const string SDF_GENERATOR = "SDF Generator";
 
    //Help Urls
    public const string URL_BEAMABLE_MAIN_WEBSITE = "http://www.beamable.com";
@@ -60,13 +60,17 @@ public static class BeamableConstants
    public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_HELP_DIAGNOSTIC_DATA = MENU_ITEM_PATH_WINDOW_BEAMABLE_HELP + "/Generate Diagnostic Info";
    public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES = MENU_ITEM_PATH_WINDOW_BEAMABLE + "/Utilities";
    public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER = MENU_ITEM_PATH_WINDOW_BEAMABLE + "/Beamable Developer";
-  public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_MICROSERVICES = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Microservices";
+   public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_MICROSERVICES = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Microservices";
 
    //Menu Items: Window (#ifdef BEAMABLE_DEVELOPER)
    public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_BEAMABLE_DEVELOPER_SAMPLES = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER + "/Samples";
    public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_UNITY = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER + "/Unity";
    public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_THEME_MANAGER = MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER + "/Theme Manager";
 
+   public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_BUSS = "/New BUSS";
+   public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_SDF_GENERATOR =
+       MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER + MENU_ITEM_PATH_WINDOW_BEAMABLE_BUSS + "/Open SDF Generator";
+   
    public const int MENU_ITEM_PATH_WINDOW_PRIORITY_1 = 0;
    public const int MENU_ITEM_PATH_WINDOW_PRIORITY_2 = 20;
    public const int MENU_ITEM_PATH_WINDOW_PRIORITY_3 = 40;

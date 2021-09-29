@@ -43,16 +43,8 @@ namespace Beamable.Editor.Microservice.UI.Components
         private const float _DEFAULT_HEIGHT = 300.0f;
 
         private Button _buildDropDown;
-        private Button _advanceDropDown;
-
-        private VisualElement _logListRoot;
-        private ListView _listView;
-
         private Label _nameTextField;
 
-        private string _nameBackup;
-
-        // private List<LogMessageModel> testLogList;
         private Label _statusLabel;
         private VisualElement _statusIcon;
         private VisualElement _remoteStatusIcon;
