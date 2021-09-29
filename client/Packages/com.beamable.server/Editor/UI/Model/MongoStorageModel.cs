@@ -37,7 +37,6 @@ namespace Beamable.Editor.UI.Model
         }
 
         public ServiceType GetServiceType() => GetDescriptor().ServiceType;
-        public bool Equals(IDescriptor other) => GetDescriptor().Name.Equals(other?.Name);
         
     }
 

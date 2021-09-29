@@ -345,9 +345,6 @@ $@"{{
             Builder.ForwardEventsTo(oldBuilder);
             Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name);
         }
-        
-
-        public bool Equals(IDescriptor other) => GetDescriptor().Name.Equals(other?.Name);
     }
 
 
