@@ -114,6 +114,10 @@ namespace Beamable.Server.Editor
 
                   if (TryGetAttribute<StorageObjectAttribute, StorageObject>(type, out var storageAttribute))
                   {
+                     if (storageAttribute.StorageName.ToLower().Equals("xxxx"))
+                     {
+                        continue; // TODO: XXX this is a hacky way to ignore the default microservice...
+                     }
                      var descriptor = new StorageObjectDescriptor
                      {
                         Name = storageAttribute.StorageName,
