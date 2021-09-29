@@ -1,7 +1,6 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Beamable.Common.Api.Auth
 {
