@@ -189,7 +189,18 @@ namespace Beamable.Editor.Content
                return new DownloadSummary(de.ContentIO, localManifest, serverManifest, filter.Select(x => x.Id).ToArray());
             });
          });
+      }
 
+      public Promise<DownloadSummary> PrepareDownloadSummary(string[] ids)
+      {
+         return EditorAPI.Instance.FlatMap(de =>
+         {
+             return de.ContentIO.FetchManifest().Map(serverManifest =>
+             {
+                 var localManifest = de.ContentIO.BuildLocalManifest();
+                 return new DownloadSummary(de.ContentIO, localManifest, serverManifest, ids);
+             });
+         });
       }
 
       public void Destroy()

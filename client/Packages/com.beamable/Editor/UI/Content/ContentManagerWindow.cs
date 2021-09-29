@@ -13,6 +13,9 @@ using Beamable.Editor.UI.Buss.Components;
 using Beamable.Platform.SDK;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
+using System.Reflection;
+using Beamable.Editor.UI.Buss;
+using System.Linq;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -23,7 +26,7 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Content
 {
-   public class ContentManagerWindow : EditorWindow
+   public class ContentManagerWindow : EditorWindow, ISerializationCallbackReceiver
    {
       [MenuItem(
       BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
@@ -34,14 +37,38 @@ namespace Beamable.Editor.Content
       public static async Task Init()
       {
          await LoginWindow.CheckLogin(typeof(ContentManagerWindow), typeof(SceneView));
+
          // Create Beamable ContentManagerWindow and dock it next to Unity Hierarchy Window
-         var contentManagerWindow = GetWindow<ContentManagerWindow>(BeamableConstants.CONTENT_MANAGER, true, typeof(ContentManagerWindow),typeof(SceneView));
-         contentManagerWindow.Show(true);
+         ContentManagerWindow.Instance.Show();
       }
-      
-      public static ContentManagerWindow Instance { get; private set; }
-      public static bool IsInstantiated { get { return Instance != null; } }
-      
+
+      private static ContentManagerWindow _instance;
+
+      public static ContentManagerWindow Instance
+      {
+        get
+        {
+            if (_instance == null)
+            {
+                _instance = GetWindow<ContentManagerWindow>(BeamableConstants.CONTENT_MANAGER, true, typeof(ContentManagerWindow), typeof(SceneView));
+            }
+            return _instance;
+        }
+        private set
+        {
+            if (value == null)
+            {
+                _instance = null;
+            }
+            else
+            {
+                var oldModel = _instance?._contentManager;
+                _instance = value;
+                _instance._contentManager = oldModel;
+            }
+        }
+      }
+
       private ContentManager _contentManager;
       private VisualElement _windowRoot;
       private VisualElement _explorerContainer, _statusBarContainer;
@@ -50,6 +77,9 @@ namespace Beamable.Editor.Content
       private ExplorerVisualElement _explorerElement;
       private StatusBarVisualElement _statusBarElement;
       private BeamablePopupWindow _currentWindow;
+
+      private List<string> _cachedItemsToDownload;
+      private bool _cachedCreateNewManifestFlag;
 
       private void OnEnable()
       {
@@ -64,6 +94,7 @@ namespace Beamable.Editor.Content
 
          // Force refresh to build the initial window
          Refresh();
+         RebuildContentPopupsAfterEditorReload();
       }
 
       private void OnDisable()
@@ -119,17 +150,9 @@ namespace Beamable.Editor.Content
 
       void SetForContent()
       {
-         ContentManager oldManager = null;
-         if (Instance != null)
-         {
-            oldManager = Instance._contentManager;
-            oldManager?.Destroy();
-         }
-
          _contentManager?.Destroy();
          _contentManager = new ContentManager();
          _contentManager.Initialize();
-         Instance = this;
 
          var root = this.GetRootVisualContainer();
 
@@ -158,25 +181,8 @@ namespace Beamable.Editor.Content
                _currentWindow.Close();
             }
             
-            var validatePopup = new ValidateContentVisualElement();
-            validatePopup.DataModel = _contentManager.Model;
-            _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ValidateContent, validatePopup, this);
+            _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ValidateContent, GetValidateContentVisualElement(), this);
             _currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
-
-            validatePopup.OnCancelled += () =>
-            {
-               _currentWindow.Close();
-               _currentWindow = null;
-            };
-            
-            validatePopup.OnClosed += () =>
-            {
-               _currentWindow.Close();
-               _currentWindow = null;
-            };
-
-            _contentManager.ValidateContent(validatePopup.SetProgress, validatePopup.HandleValidationErrors)
-               .Then(_ => validatePopup.HandleFinished());
          };
 
          _actionBarVisualElement.OnPublishButtonClicked += (createNew) =>
@@ -217,45 +223,9 @@ namespace Beamable.Editor.Content
 
                   if (errors.Count != 0) return;
 
-                  var publishPopup = new PublishContentVisualElement();
-                  publishPopup.CreateNewManifest = createNew;
-                  publishPopup.DataModel = _contentManager.Model;
-                  publishPopup.PublishSet = _contentManager.CreatePublishSet(createNew);
-
-                  _currentWindow.SwapContent(publishPopup);
+                   _cachedCreateNewManifestFlag = createNew;
+                  _currentWindow.SwapContent(GetPublishContentVisualElement());
                   _currentWindow.titleContent = new GUIContent("Publish Content");
-
-                  publishPopup.OnCancelled += () =>
-                  {
-                     _currentWindow.Close();
-                     _currentWindow = null;
-                  };
-                  
-                  publishPopup.OnCompleted += () =>
-                  {
-                     _currentWindow.Close();
-                     _currentWindow = null;
-                  };
-                  
-                  publishPopup.OnPublishRequested += (set, prog, finished) =>
-                  {
-                     if (createNew)
-                     {
-                        EditorAPI.Instance.Then(api =>
-                        {
-                           api.ContentIO.SwitchManifest(publishPopup.ManifestName).Then(_ =>
-                           {
-                              set.ManifestId = publishPopup.ManifestName;
-                              _contentManager.PublishContent(set, prog, finished).Then(__ => SoftReset());
-                           });
-                        });
-                     }
-                     else
-                     {
-                        _contentManager.PublishContent(set, prog, finished).Then(_ => SoftReset());
-                     }
-                  };
-
                });
          };
 
@@ -265,30 +235,10 @@ namespace Beamable.Editor.Content
             {
                _currentWindow.Close();
             }
-            
-            var downloadPopup = new DownloadContentVisualElement();
 
-            downloadPopup.Model = _contentManager.PrepareDownloadSummary();
-            _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.DownloadContent, downloadPopup, this);
+            _cachedItemsToDownload = null;
+            _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.DownloadContent, GetDownloadContentVisualElement(), this);
             _currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
-            
-            downloadPopup.OnRefreshContentManager += () => _contentManager.RefreshWindow(true);
-            downloadPopup.OnClosed += () =>
-            {
-               _currentWindow.Close();
-               _currentWindow = null;
-            };
-            
-            downloadPopup.OnCancelled += () =>
-            {
-               _currentWindow.Close();
-               _currentWindow = null;
-            };
-            
-            downloadPopup.OnDownloadStarted += (summary, prog, finished) =>
-            {
-               _contentManager.DownloadContent(summary, prog, finished).Then(_ => SoftReset());
-            };
          };
 
          _actionBarVisualElement.OnRefreshButtonClicked += () =>
@@ -361,63 +311,95 @@ namespace Beamable.Editor.Content
          {
             _currentWindow.Close();
          }
-         
-         var downloadPopup = new DownloadContentVisualElement();
 
-         downloadPopup.Model = _contentManager.PrepareDownloadSummary(items.ToArray());
-         _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.DownloadContent, downloadPopup, this);
+         _cachedItemsToDownload = items.Select(x => x.Id).ToList();
+         _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.DownloadContent, GetDownloadContentVisualElement(), this);
          _currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
-
-         downloadPopup.OnClosed += () =>
-         {
-            _currentWindow.Close();
-            _currentWindow = null;
-         };
-         
-         downloadPopup.OnCancelled += () =>
-         {
-            _currentWindow.Close();
-            _currentWindow = null;
-         };
-         
-         downloadPopup.OnDownloadStarted += (summary, prog, finished) =>
-         {
-            _contentManager.DownloadContent(summary, prog, finished).Then(_ => Refresh());
-         };
       }
 
       private void Update() {
          _actionBarVisualElement.RefreshPublishDropdownVisibility();
       }
 
-      [MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Reset Content")]
-      private static async Task ResetContent() {
+      private void RebuildContentPopupsAfterEditorReload()
+      {
+            EditorApplication.delayCall += () =>
+            {
+                if (_currentWindow != null)
+                {
+                    string titleText = _currentWindow.titleContent.text;
 
-         if (Instance == null)
-         {
-            await Init();
-         }
+                    Type thisType = this.GetType();
+                    MethodInfo theMethod = thisType.GetMethod($"Get{_currentWindow.ContentType}", BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (theMethod != null)
+                    {
+                        var returnValue = (BeamableVisualElement)theMethod.Invoke(this, null);
 
-            var contentManagerWindow = GetWindow<ContentManagerWindow>(BeamableConstants.CONTENT_MANAGER, true, typeof(ContentManagerWindow), typeof(SceneView));
+                        if (returnValue != null)
+                        {
+                            _currentWindow?.Close();
+                            _currentWindow = null;
 
+                            _currentWindow = BeamablePopupWindow.ShowUtility(titleText, returnValue, null);
+                            _currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
+                        }
+                    }
+                }
+            };
+      }
+
+      DownloadContentVisualElement GetDownloadContentVisualElement()
+      {
+            var downloadPopup = new DownloadContentVisualElement();
+
+
+            if (_cachedItemsToDownload != null && _cachedItemsToDownload.Count > 0)
+            {
+                downloadPopup.Model = _contentManager.PrepareDownloadSummary(_cachedItemsToDownload.ToArray());
+            }
+            else
+            {
+                downloadPopup.Model = _contentManager.PrepareDownloadSummary();
+            }
+
+            downloadPopup.OnRefreshContentManager += () => _contentManager.RefreshWindow(true);
+            downloadPopup.OnClosed += () =>
+            {
+                _currentWindow.Close();
+                _currentWindow = null;
+            };
+
+            downloadPopup.OnCancelled += () =>
+            {
+                _currentWindow.Close();
+                _currentWindow = null;
+            };
+
+            downloadPopup.OnDownloadStarted += (summary, prog, finished) =>
+            {
+                _contentManager.DownloadContent(summary, prog, finished).Then(_ => SoftReset());
+            };
+
+            return downloadPopup;
+      }
+
+      ResetContentVisualElement GetResetContentVisualElement()
+      {
             var clearPopup = new ResetContentVisualElement();
             clearPopup.Model = Instance._contentManager.PrepareDownloadSummary();
             clearPopup.DataModel = Instance._contentManager.Model;
 
-            contentManagerWindow._currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.RemoveLocalContent, clearPopup, null);
-            contentManagerWindow._currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
-
             clearPopup.OnRefreshContentManager += () => Instance._contentManager.RefreshWindow(true);
             clearPopup.OnClosed += () =>
             {
-                contentManagerWindow._currentWindow.Close();
-                contentManagerWindow._currentWindow = null;
+                _currentWindow.Close();
+                _currentWindow = null;
             };
 
             clearPopup.OnCancelled += () =>
             {
-                contentManagerWindow._currentWindow.Close();
-                contentManagerWindow._currentWindow = null;
+                _currentWindow.Close();
+                _currentWindow = null;
             };
 
             clearPopup.OnDownloadStarted += (summary, prog, finished) =>
@@ -426,8 +408,112 @@ namespace Beamable.Editor.Content
                 {
                     Instance._contentManager?.Model.TriggerSoftReset();
                 });
-                ;
             };
-        }
+
+            return clearPopup;
+      }
+
+      ValidateContentVisualElement GetValidateContentVisualElement()
+      {
+            var validatePopup = new ValidateContentVisualElement();
+            validatePopup.DataModel = _contentManager.Model;
+
+            validatePopup.OnCancelled += () =>
+            {
+                _currentWindow.Close();
+                _currentWindow = null;
+            };
+
+            validatePopup.OnClosed += () =>
+            {
+                _currentWindow.Close();
+                _currentWindow = null;
+            };
+
+            EditorApplication.delayCall += () =>
+            {
+                _contentManager?.ValidateContent(validatePopup.SetProgress, validatePopup.HandleValidationErrors)
+               .Then(_ => validatePopup.HandleFinished());
+            };
+
+            return validatePopup;
+      }
+
+      PublishContentVisualElement GetPublishContentVisualElement()
+      {
+            var publishPopup = new PublishContentVisualElement();
+            publishPopup.CreateNewManifest = _cachedCreateNewManifestFlag;
+            publishPopup.DataModel = _contentManager.Model;
+            publishPopup.PublishSet = _contentManager.CreatePublishSet(_cachedCreateNewManifestFlag);
+
+            publishPopup.OnCancelled += () =>
+            {
+                _currentWindow.Close();
+                _currentWindow = null;
+            };
+
+            publishPopup.OnCompleted += () =>
+            {
+                _currentWindow.Close();
+                _currentWindow = null;
+            };
+
+            bool createNewManifest = _cachedCreateNewManifestFlag;
+
+            publishPopup.OnPublishRequested += (set, prog, finished) =>
+            {
+                if (createNewManifest)
+                {
+                    EditorAPI.Instance.Then(api =>
+                    {
+                        api.ContentIO.SwitchManifest(publishPopup.ManifestName).Then(_ =>
+                        {
+                            set.ManifestId = publishPopup.ManifestName;
+                            _contentManager.PublishContent(set, prog, finished).Then(__ => SoftReset());
+                        });
+                    });
+                }
+                else
+                {
+                    _contentManager.PublishContent(set, prog, finished).Then(_ => SoftReset());
+                }
+            };
+
+            return publishPopup;
+      }
+
+      private void OnDestroy()
+      {
+          if (_instance)
+          {
+              _instance = null;
+          }
+      }
+
+      public void OnBeforeSerialize()
+      {
+
+
+      }
+
+      public void OnAfterDeserialize()
+      {
+          _instance = this;
+      }
+
+      [MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Reset Content")]
+      private static async Task ResetContent()
+      {
+         if (Instance == null)
+         {
+            await Init();
+         }
+
+         Instance._currentWindow?.Close();
+         Instance._currentWindow = null;
+
+         Instance._currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.RemoveLocalContent, Instance.GetResetContentVisualElement(), null);
+         Instance._currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
+      }
    }
 }

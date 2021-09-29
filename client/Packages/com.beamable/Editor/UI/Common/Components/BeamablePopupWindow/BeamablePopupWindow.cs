@@ -145,6 +145,7 @@ namespace Beamable.Editor.UI.Buss.Components
          var wnd = CreateInstance<BeamablePopupWindow>();
          wnd.titleContent = new GUIContent(title);
          wnd.ContentElement = content;
+         wnd.ContentType = content.GetType().Name;
 
          wnd.ShowUtility();
          if (parent != null)
@@ -163,6 +164,7 @@ namespace Beamable.Editor.UI.Buss.Components
       private VisualElement _contentRoot;
       private VisualElement _container;
 
+      public string ContentType; // for Unity Domain Reload
       public event Action OnClosing;
 
       private void OnEnable()
@@ -179,8 +181,8 @@ namespace Beamable.Editor.UI.Buss.Components
       public void SwapContent(BeamableVisualElement other)
       {
          ContentElement = other;
+         ContentType = other?.GetType().Name;
          Refresh();
-
       }
 
       private void OnDestroy()
