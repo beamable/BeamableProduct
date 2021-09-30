@@ -388,16 +388,30 @@ namespace Beamable.Editor
             containerPrefix = containerPrefix
          };
 
-         var asJson = JsonUtility.ToJson(config, true);
-         Directory.CreateDirectory("Assets/Beamable/Resources/");
          string path = "Assets/Beamable/Resources/config-defaults.txt";
-         CheckoutPath(path);
+         var asJson = JsonUtility.ToJson(config, true);
 
-         File.WriteAllText(path, asJson);
-         AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
-         ConfigDatabase.Init();
+         var writeConfig = true;
+         if (File.Exists(path))
+         {
+            var existingJson = File.ReadAllText(path);
+            if (string.Equals(existingJson, asJson))
+            {
+               writeConfig = false;
+            }
+         }
+
+         if (writeConfig)
+         {
+            Directory.CreateDirectory("Assets/Beamable/Resources/");
+            CheckoutPath(path);
+            File.WriteAllText(path, asJson);
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+            ConfigDatabase.Init();
+            AssetDatabase.Refresh();
+         }
+
          HasConfiguration = true;
-         AssetDatabase.Refresh();
          ApplyConfig(alias ?? cid, cid ?? alias, pid, host);
       }
 

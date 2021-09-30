@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
@@ -26,6 +27,8 @@ namespace Beamable
 
    public abstract class BaseModuleConfigurationObject : ScriptableObject
    {
+      protected const string CONFIG_RESOURCES_DIR = "Assets/Beamable/Resources";
+
       /// <summary>
       /// Called by the Configuration.Instance spawn function, the FIRST time the configuration is copied from the Beamable package into the /Assets
       /// </summary>
@@ -33,12 +36,75 @@ namespace Beamable
       {
 
       }
+
+      public static void PrepareInstances(params Type[] configTypes)
+      {
+         var writtenAssetPathToType = new Dictionary<string, Type>();
+
+         try
+         {
+            AssetDatabase.StartAssetEditing();
+            foreach (var type in configTypes)
+            {
+               var name = type.Name;
+               var data = Resources.Load(name, type);
+#if !UNITY_EDITOR
+            continue;
+#endif
+               if (data != null) continue;
+
+               var assetPath = $"{CONFIG_RESOURCES_DIR}/{name}.asset";
+               if (File.Exists(assetPath)) continue;
+
+               MethodInfo FindStaticParentMethod(Type searchType)
+               {
+                  if (searchType == null || searchType == typeof(object)) return null;
+                  var constantsGeneratorMethod = searchType.GetMethod("GetStaticConfigConstants", BindingFlags.Static | BindingFlags.Public);
+                  return constantsGeneratorMethod ?? FindStaticParentMethod(searchType.BaseType);
+               }
+
+               var method = FindStaticParentMethod(type);
+               var constants = method?.Invoke(null, new object[] { }) as IConfigurationConstants;
+
+               // var constants = new TConstants();
+               var sourcePath = constants.GetSourcePath(type);
+               Directory.CreateDirectory(CONFIG_RESOURCES_DIR);
+               var sourceData = File.ReadAllText(sourcePath);
+               File.WriteAllText(assetPath, sourceData);
+               writtenAssetPathToType.Add(assetPath, type);
+               AssetDatabase.ImportAsset(assetPath);
+            }
+         }
+         finally
+         {
+            AssetDatabase.StopAssetEditing();
+         }
+
+         foreach (var kvp in writtenAssetPathToType)
+         {
+            var assetPath = kvp.Key;
+            var assetType = kvp.Value;
+
+            var data = Resources.Load(assetType.Name, assetType) ?? AssetDatabase.LoadAssetAtPath(assetPath, assetType);
+            var configData = data as BaseModuleConfigurationObject;
+            if (configData == null)
+            {
+               throw new ModuleConfigurationNotReadyException(assetType);
+            }
+            configData.OnFreshCopy();
+            EditorUtility.SetDirty(data);
+         }
+
+         if (writtenAssetPathToType.Count > 0)
+         {
+            SettingsService.NotifySettingsProviderChanged();
+         }
+      }
    }
 
    public abstract class AbsModuleConfigurationObject<TConstants> : BaseModuleConfigurationObject
       where TConstants : IConfigurationConstants, new()
    {
-      private const string CONFIG_RESOURCES_DIR = "Assets/Beamable/Resources";
       private static Dictionary<Type, BaseModuleConfigurationObject> _typeToConfig = new Dictionary<Type, BaseModuleConfigurationObject>();
 
       public static bool Exists<TConfig>() where TConfig : BaseModuleConfigurationObject
@@ -53,6 +119,8 @@ namespace Beamable
          var data = Resources.Load<TConfig>(name);
          return data != null;
       }
+
+      public static IConfigurationConstants GetStaticConfigConstants() => new TConstants();
 
       public static TConfig Get<TConfig>() where TConfig : BaseModuleConfigurationObject
       {
@@ -78,11 +146,11 @@ namespace Beamable
             }
 
             Directory.CreateDirectory(CONFIG_RESOURCES_DIR);
-            var sourceData = File.ReadAllText(sourcePath);
             var assetPath = $"{CONFIG_RESOURCES_DIR}/{name}.asset";
+            var sourceData = File.ReadAllText(sourcePath);
             File.WriteAllText(assetPath, sourceData);
-            UnityEditor.AssetDatabase.Refresh();
-            data = Resources.Load<TConfig>(name) ?? AssetDatabase.LoadAssetAtPath<TConfig>(assetPath);
+            AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.DontDownloadFromCacheServer);
+            data =  Resources.Load<TConfig>(name) ?? AssetDatabase.LoadAssetAtPath<TConfig>(assetPath);
             if (data == null)
             {
                throw new ModuleConfigurationNotReadyException(typeof(TConfig));
@@ -107,6 +175,8 @@ namespace Beamable
       }
 
    }
+
+
    public class ModuleConfigurationObject : AbsModuleConfigurationObject<BeamableConfigurationConstants>
    {
 

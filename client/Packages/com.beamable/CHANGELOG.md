@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.1]
+### Fixed
+- `ExecuteRolling` method of `Promise` now supports a condition on which stop execution
+- No longer re-imports config-defaults without cause
+- Batch imports Module Configuration files to improve speed
+- No longer refreshes asset database on ContentIO FindAll()
+- Allow Content Deserializer to consume incorrectly typed fields as empty values
+
 ## [0.16.0]
 ### Added
 - Support for disabling Unity Domain Reload
