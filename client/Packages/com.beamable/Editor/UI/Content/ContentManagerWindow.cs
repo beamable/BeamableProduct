@@ -104,6 +104,20 @@ namespace Beamable.Editor.Content
          SetForContent();
       }
 
+      public void SetCurrentWindow(BeamablePopupWindow window)
+      {
+         _currentWindow = window;
+      }
+
+      public void CloseCurrentWindow()
+      {
+         if (_currentWindow != null)
+         {
+            _currentWindow.Close();
+            _currentWindow = null;
+         }
+      }
+
       void SetForLogin()
       {
          var root = this.GetRootVisualContainer();
@@ -160,7 +174,7 @@ namespace Beamable.Editor.Content
             
             var validatePopup = new ValidateContentVisualElement();
             validatePopup.DataModel = _contentManager.Model;
-            _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ValidateContent, validatePopup, this);
+            _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ValidateContent, validatePopup, this, ContentManagerConstants.WindowSizeMinimum);
             _currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
 
             validatePopup.OnCancelled += () =>
@@ -190,7 +204,7 @@ namespace Beamable.Editor.Content
             var validatePopup = new ValidateContentVisualElement();
             validatePopup.DataModel = _contentManager.Model;
 
-            _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ValidateContent, validatePopup, this);
+            _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ValidateContent, validatePopup, this, ContentManagerConstants.WindowSizeMinimum);
             _currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
             
             if (createNew)
@@ -269,7 +283,7 @@ namespace Beamable.Editor.Content
             var downloadPopup = new DownloadContentVisualElement();
 
             downloadPopup.Model = _contentManager.PrepareDownloadSummary();
-            _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.DownloadContent, downloadPopup, this);
+            _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.DownloadContent, downloadPopup, this, ContentManagerConstants.WindowSizeMinimum);
             _currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
             
             downloadPopup.OnRefreshContentManager += () => _contentManager.RefreshWindow(true);
@@ -365,7 +379,7 @@ namespace Beamable.Editor.Content
          var downloadPopup = new DownloadContentVisualElement();
 
          downloadPopup.Model = _contentManager.PrepareDownloadSummary(items.ToArray());
-         _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.DownloadContent, downloadPopup, this);
+         _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.DownloadContent, downloadPopup, this, ContentManagerConstants.WindowSizeMinimum);
          _currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
 
          downloadPopup.OnClosed += () =>
@@ -393,21 +407,41 @@ namespace Beamable.Editor.Content
       [MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Reset Content")]
       private static async Task ResetContent() {
 
-         if (!EditorUtility.DisplayDialog(
-            title: "Reset Content",
-            message: "This operation will remove all your local changes. You can't undo this operation. Are you sure you want to proceed?",
-            ok: "Yes",
-            cancel: "No")
-         ) return;
-         
-         if (Instance == null) {
+         if (Instance == null)
+         {
             await Init();
          }
 
-         var downloadSummary = await Instance._contentManager.PrepareDownloadSummary();
-         await Instance._contentManager.DownloadContent(downloadSummary, null, null);
-         Instance._contentManager.Model.DeleteLocalOnlyItems();
-         Instance.Refresh();
-      }
+            var contentManagerWindow = GetWindow<ContentManagerWindow>(BeamableConstants.CONTENT_MANAGER, true, typeof(ContentManagerWindow), typeof(SceneView));
+
+            var clearPopup = new ResetContentVisualElement();
+            clearPopup.Model = Instance._contentManager.PrepareDownloadSummary();
+            clearPopup.DataModel = Instance._contentManager.Model;
+
+            contentManagerWindow._currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.RemoveLocalContent, clearPopup, null, ContentManagerConstants.WindowSizeMinimum);
+            contentManagerWindow._currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
+
+            clearPopup.OnRefreshContentManager += () => Instance._contentManager.RefreshWindow(true);
+            clearPopup.OnClosed += () =>
+            {
+                contentManagerWindow._currentWindow.Close();
+                contentManagerWindow._currentWindow = null;
+            };
+
+            clearPopup.OnCancelled += () =>
+            {
+                contentManagerWindow._currentWindow.Close();
+                contentManagerWindow._currentWindow = null;
+            };
+
+            clearPopup.OnDownloadStarted += (summary, prog, finished) =>
+            {
+                Instance._contentManager?.DownloadContent(summary, prog, finished).Then(_ =>
+                {
+                    Instance._contentManager?.Model.TriggerSoftReset();
+                });
+                ;
+            };
+        }
    }
 }
