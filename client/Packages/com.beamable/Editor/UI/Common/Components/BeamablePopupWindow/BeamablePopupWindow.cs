@@ -7,6 +7,8 @@ using UnityEditor;
 using UnityEngine;
 using Beamable.Editor.Content.Components;
 using Beamable.Editor.Content;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.IO;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -17,8 +19,8 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Buss.Components
 {
-   public class BeamablePopupWindow : EditorWindow
-   {
+   public class BeamablePopupWindow : EditorWindow, ISerializationCallbackReceiver
+    {
       public static Vector2 ConfirmationPopupSize = new Vector2(300, 150);
 
       /// <summary>
@@ -140,12 +142,13 @@ namespace Beamable.Editor.UI.Buss.Components
 #endif
       }
 
-      public static BeamablePopupWindow ShowUtility(string title, BeamableVisualElement content, EditorWindow parent)
+
+      public static BeamablePopupWindow ShowUtility(string title, BeamableVisualElement content, EditorWindow parent, Action onDomainReload = null)
       {
          var wnd = CreateInstance<BeamablePopupWindow>();
          wnd.titleContent = new GUIContent(title);
          wnd.ContentElement = content;
-         wnd.ContentType = content.GetType().Name;
+         wnd._onDomainReload = onDomainReload;
 
          wnd.ShowUtility();
          if (parent != null)
@@ -164,8 +167,13 @@ namespace Beamable.Editor.UI.Buss.Components
       private VisualElement _contentRoot;
       private VisualElement _container;
 
-      public string ContentType; // for Unity Domain Reload
+
+      private Action _onDomainReload;
       public event Action OnClosing;
+
+      [SerializeField]
+      private byte[] serializedDomainReloadAction;
+      private bool isSet;  
 
       private void OnEnable()
       {
@@ -176,18 +184,27 @@ namespace Beamable.Editor.UI.Buss.Components
          _windowRoot.name = nameof(_windowRoot);
 
          root.Add(_windowRoot);
+
+         if (isSet)
+         {
+             EditorApplication.delayCall += () => _onDomainReload?.Invoke();
+         }
       }
 
-      public void SwapContent(BeamableVisualElement other)
+      public void SwapContent(BeamableVisualElement other, Action onDomainReload = null)
       {
          ContentElement = other;
-         ContentType = other?.GetType().Name;
          Refresh();
+         this.GetRootVisualContainer().AddToClassList("fill-popup-window");
+
+         if (onDomainReload != null)
+            _onDomainReload = onDomainReload;
       }
 
       private void OnDestroy()
       {
          OnClosing?.Invoke();
+         _onDomainReload = null;
       }
 
       public void Refresh()
@@ -197,6 +214,34 @@ namespace Beamable.Editor.UI.Buss.Components
          _container.Add(ContentElement);
          ContentElement.Refresh();
          Repaint();
+         isSet = true;
       }
-   }
+
+      public void OnBeforeSerialize()
+      {
+           if (_onDomainReload != null)
+           {
+                BinaryFormatter formatter = new BinaryFormatter();
+
+                using (MemoryStream stream = new MemoryStream())
+                {
+                    formatter.Serialize(stream, (object)_onDomainReload);
+                    serializedDomainReloadAction = stream.ToArray();
+                }
+           }
+      }
+
+      public void OnAfterDeserialize()
+      {
+           if (serializedDomainReloadAction != null && serializedDomainReloadAction.Length > 0)
+           {
+                BinaryFormatter formatter = new BinaryFormatter();
+
+                using (MemoryStream stream = new MemoryStream(serializedDomainReloadAction))
+                {
+                    _onDomainReload = (Action)formatter.Deserialize(stream);
+                }
+           }
+      }
+    }
 }

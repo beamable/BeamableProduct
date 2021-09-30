@@ -69,6 +69,7 @@ namespace Beamable.Editor.Content
       //
       public static string DownloadContent = "Download Content";
       public static string ValidateContent = "Validate Content";
+      public static string PublishContent = "Publish Content";
       public static string RemoveLocalContent = "Reset Content";
       public static string BreadcrumbTokenArrow = ">";
       //
