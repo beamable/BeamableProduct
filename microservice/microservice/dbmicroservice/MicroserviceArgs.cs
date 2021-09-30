@@ -3,10 +3,8 @@ using System.IO;
 
 namespace Beamable.Server
 {
-   public interface IMicroserviceArgs
+   public interface IMicroserviceArgs : IRealmInfo
    {
-      string CustomerID { get; }
-      string ProjectName { get; }
       string Host { get; }
       string Secret { get; }
       string NamePrefix { get; }

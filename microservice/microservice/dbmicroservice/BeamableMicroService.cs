@@ -422,6 +422,7 @@ namespace Beamable.Server
             ServiceCollection
                .AddScoped(_microserviceType)
                .AddSingleton(_args)
+               .AddSingleton<IRealmInfo>(_args)
                .AddSingleton<SocketRequesterContext>(_ => _socketRequesterContext)
                .AddTransient<IBeamableRequester, MicroserviceRequester>()
                .AddTransient<IUserContext>(provider => provider.GetService<RequestContext>())
