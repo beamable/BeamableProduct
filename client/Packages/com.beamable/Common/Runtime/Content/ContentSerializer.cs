@@ -391,10 +391,10 @@ namespace Beamable.Common.Content
                   throw new Exception($"Cannot deserialize type [{type.Name}]");
             }
          }
-         catch (Exception ex)
+         catch (Exception)
          {
             Debug.LogError($"Failed to deserialize field. type=[{type.Name}] data=[{preParsedValue}]");
-            throw ex;
+            throw;
          }
       }
       private List<FieldInfoWrapper> GetFieldInfos(Type type)

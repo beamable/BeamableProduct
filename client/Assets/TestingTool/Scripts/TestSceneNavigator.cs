@@ -3,14 +3,15 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+#pragma warning disable CS0649
 
 namespace TestingTool.Scripts
-{ 
+{
     public class TestSceneNavigator : MonoBehaviour
     {
         [SerializeField] private TextMeshProUGUI sceneNameText;
         [SerializeField] private Image testProgressImage;
-    
+
         private TestScenariosRuntime _testScenarios;
         private int _currentBuildIndex;
 

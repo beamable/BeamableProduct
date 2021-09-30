@@ -27,6 +27,7 @@ namespace Beamable.Editor.Content
       public static SelectionType ContentTypeViewSelectionType = SelectionType.Single;
       public static string UssExt => EditorGUIUtility.isProSkin ? "uss" : "light.uss";
 
+      public static Vector2 ConfirmationPopupSize = new Vector2(300, 120);
       public static Vector2 WindowSizeMinimum = new Vector2(400, 300);
 
       // Display Text
@@ -55,7 +56,9 @@ namespace Beamable.Editor.Content
       public const string PublishMessageInProgress = "Publishing content...";
       public const string PublishNoDataText = "There is no content to Publish.";
 
-      //
+      public const string ResetContentMessagePreview = "This operation will remove all your local changes. You can't undo this operation. Are you sure you want to proceed?";
+      public const string ResetContentCompleteMessage = "All Local Content has been successfully synchronized.";
+        //
       public static string ContentListHeaderText = "Object Name                       Path                                     Tag";
       public static string ContentListCreateItem = "Create";
       public static string ContentListDeleteItem = "Delete Item";
@@ -67,12 +70,17 @@ namespace Beamable.Editor.Content
       //
       public static string DownloadContent = "Download Content";
       public static string ValidateContent = "Validate Content";
+      public static string RemoveLocalContent = "Reset Content";
       public static string BreadcrumbTokenArrow = ">";
       //
       public static Vector2 CreateNewPopupWindowSize = new Vector2(160, 30);
       public static string CreateNewPopupWindowTitle = "Create New";
       public static string CreateNewPopupAddButtonDisabledText = "New Item";
       public static string CreateNewPopupAddButtonEnabledText = "Create: {0}";
+      
+      // Confirmation window content
+      public static string ConfirmWindowHeader = "Confirmation";
+      public static string ConfirmItemDeletion = "Are You sure You want to delete this item?";
 
       /// <summary>
       /// Creates a name with NO SPACES. Spaces are not allowed by the backend - srivello

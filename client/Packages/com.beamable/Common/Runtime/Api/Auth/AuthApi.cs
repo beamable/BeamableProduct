@@ -1,19 +1,20 @@
 
 using System;
 using System.Collections.Generic;
+
 namespace Beamable.Common.Api.Auth
 {
 
 
    public class AuthApi : IAuthApi
    {
-      private const string TOKEN_URL = "/basic/auth/token";
+      protected const string TOKEN_URL = "/basic/auth/token";
       protected const string ACCOUNT_URL = "/basic/accounts";
 
       private IBeamableRequester _requester;
       private readonly IAuthSettings _settings;
 
-      public AuthApi(IBeamableRequester requester, IAuthSettings settings=null)
+      public AuthApi(IBeamableRequester requester, IAuthSettings settings = null)
       {
          _requester = requester;
          _settings = settings ?? new DefaultAuthSettings();
@@ -42,7 +43,6 @@ namespace Beamable.Common.Api.Auth
          return _requester.Request<AvailabilityResponse>(Method.GET, $"{ACCOUNT_URL}/available/third-party?thirdParty={thirdParty.GetString()}&token={token}", null, false)
             .Map(resp => resp.available);
       }
-
 
       public Promise<TokenResponse> CreateUser()
       {
@@ -124,7 +124,9 @@ namespace Beamable.Common.Api.Auth
          public string token;
       }
 
-      public Promise<User> RegisterDBCredentials(string email, string password)
+
+
+        public Promise<User> RegisterDBCredentials(string email, string password)
       {
          var req = new RegisterDBCredentialsRequest
          {
@@ -157,7 +159,10 @@ namespace Beamable.Common.Api.Auth
          public string token;
       }
 
-      public Promise<EmptyResponse> IssueEmailUpdate(string newEmail)
+
+
+
+        public Promise<EmptyResponse> IssueEmailUpdate(string newEmail)
       {
          var req = new IssueEmailUpdateRequest
          {
@@ -355,7 +360,8 @@ namespace Beamable.Common.Api.Auth
       Apple,
       Google,
       GameCenter,
-      GameCenterLimited
+      GameCenterLimited,
+      Steam
    }
 
    public static class AuthThirdPartyMethods
@@ -376,6 +382,8 @@ namespace Beamable.Common.Api.Auth
                return "gamecenter";
             case AuthThirdParty.GameCenterLimited:
                return "gamecenterlimited";
+            case AuthThirdParty.Steam:
+               return "steam";
             default:
                return null;
          }

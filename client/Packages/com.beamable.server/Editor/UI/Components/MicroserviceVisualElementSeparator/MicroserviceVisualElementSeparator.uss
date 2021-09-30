@@ -8,7 +8,7 @@
 
 #bar {
     height: 2px;
-    background-color: #8D8D8D;
+    /*background-color: #8D8D8D;*/
     cursor: resize-vertical;
     margin-bottom: 0px;
     margin-top: 0px;
