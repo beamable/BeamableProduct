@@ -88,7 +88,7 @@ namespace Beamable.Editor.UI.Model
         
         public override Task Start()
         {
-            OnLogsAttached.Invoke();
+            OnLogsAttached?.Invoke();
             var task = Builder.TryToStart();
             OnStart?.Invoke(task);
             return task;
