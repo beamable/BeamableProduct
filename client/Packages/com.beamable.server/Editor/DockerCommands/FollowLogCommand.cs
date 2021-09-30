@@ -139,7 +139,7 @@ namespace Beamable.Server.Editor.DockerCommands
 #endif
          }
       }
-   }
+   
 
       public static bool HandleLog(MicroserviceDescriptor descriptor, LogLevel logLevel, string message, Color color, bool isBoldMessage, string postfixIcon)
       {
