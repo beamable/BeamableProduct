@@ -328,7 +328,8 @@ namespace Beamable.UI.Buss
 
         public virtual void ApplyStyleTree()
         {
-            Apply(ComputeStyleObject());
+            BussCascade.Cascade(this);
+            // Apply(ComputeStyleObject());
         }
 
         public List<StyleBundle> GetApplicableStyles()

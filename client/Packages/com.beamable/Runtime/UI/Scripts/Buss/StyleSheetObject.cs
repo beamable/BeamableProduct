@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.UI.Buss
@@ -27,6 +28,11 @@ namespace Beamable.UI.Buss
                continue;
             }
 
+            if (behaviour.Climb().Any())
+            {
+               continue;
+            }
+            
             behaviour.ApplyStyleTree();
          }
 
