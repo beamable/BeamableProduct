@@ -52,6 +52,88 @@ namespace Beamable.Tests.UI.Buss.BussCascadeTests
          Assert.AreEqual(Color.red, b.ComputedStyles.Background.Color.Value);
       }
 
+      [Test]
+      public void CanApplyAtEndOfOfLineage()
+      {
+         var parent = CreateElement<ImageStyleBehaviour>("root");
+         var a = parent.CreateElement<ImageStyleBehaviour>("a");
+         var b = parent.CreateElement<ImageStyleBehaviour>("b");
+
+         var sheet = ScriptableObject.CreateInstance<StyleSheetObject>();
+         sheet.Rules = new List<SelectorWithStyle>
+         {
+            SelectorWithStyle.Create("#root", new StyleObject
+            {
+               Background = new BackgroundBussProperty
+               {
+                  Enabled = true, Color = OptionalColor.CreateInstance<OptionalColor>(Color.red)
+               }
+            })
+         };
+         SetMockFallback(sheet);
+
+         BussCascade.Cascade(a);
+
+         // nothing happens to parent, or b, because they aren't in the child-path of a.
+         Assert.IsNull(parent.InheritedStyles);
+         Assert.IsNotNull(a.InheritedStyles);
+         Assert.IsNull(b.InheritedStyles);
+
+         Assert.IsNull(parent.DirectStyles);
+         Assert.IsNull(a.DirectStyles);
+         Assert.IsNull(b.DirectStyles);
+
+         Assert.IsNull(parent.ComputedStyles);
+         Assert.IsNotNull(a.ComputedStyles);
+         Assert.IsNull(b.ComputedStyles);
+
+         Assert.IsTrue(a.ComputedStyles.Background.Color.HasValue);
+         Assert.AreEqual(Color.red, a.ComputedStyles.Background.Color.Value);
+
+      }
+
+      [Test]
+      public void CanApplyInMiddleOfOfLineage()
+      {
+         var parent = CreateElement<ImageStyleBehaviour>("root");
+         var a = parent.CreateElement<ImageStyleBehaviour>("a");
+         var b = a.CreateElement<ImageStyleBehaviour>("b");
+
+         var sheet = ScriptableObject.CreateInstance<StyleSheetObject>();
+         sheet.Rules = new List<SelectorWithStyle>
+         {
+            SelectorWithStyle.Create("#root", new StyleObject
+            {
+               Background = new BackgroundBussProperty
+               {
+                  Enabled = true, Color = OptionalColor.CreateInstance<OptionalColor>(Color.red)
+               }
+            })
+         };
+         SetMockFallback(sheet);
+
+         BussCascade.Cascade(a);
+
+         // nothing happens to parent, because it isn't in the child-path of a.
+         Assert.IsNull(parent.InheritedStyles);
+         Assert.IsNotNull(a.InheritedStyles);
+         Assert.IsNotNull(b.InheritedStyles);
+
+         Assert.IsNull(parent.DirectStyles);
+         Assert.IsNull(a.DirectStyles);
+         Assert.IsNull(b.DirectStyles);
+
+         Assert.IsNull(parent.ComputedStyles);
+         Assert.IsNotNull(a.ComputedStyles);
+         Assert.IsNotNull(b.ComputedStyles);
+
+         Assert.IsTrue(a.ComputedStyles.Background.Color.HasValue);
+         Assert.AreEqual(Color.red, a.ComputedStyles.Background.Color.Value);
+
+         Assert.IsTrue(b.ComputedStyles.Background.Color.HasValue);
+         Assert.AreEqual(Color.red, b.ComputedStyles.Background.Color.Value);
+      }
+
       /// <summary>
       /// The tree should be
       /// Root

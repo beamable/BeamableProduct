@@ -22,7 +22,18 @@ namespace Beamable.UI.Buss
             }
          }
 
-         void Apply(StyleBehaviour element, StyleObject inherit, List<SelectorWithStyle> parentRules)
+         // the start element may not be the root, and so there may be inheritable styles from parent style sheets.
+         var baseInheritRules = baseRules.ToList();
+         foreach (var parent in start.Climb())
+         {
+            foreach (var sheet in parent.GetStyleSheets())
+            {
+               baseInheritRules.AddRange(sheet.Rules);
+            }
+         }
+
+         // this is the recursive method that we can run for all children, starting with the given element.
+         void Apply(StyleBehaviour element, StyleObject inherit, List<SelectorWithStyle> parentRules, List<SelectorWithStyle> inheritableRules)
          {
             var selfRules = new List<SelectorWithStyle>();
             foreach (var sheet in element.StyleSheets)
@@ -35,7 +46,10 @@ namespace Beamable.UI.Buss
             }
 
             // find and merge any styles from this element's style sheets
-            var potentiallyInheritedRules = selfRules.Where(r => element.MatchSelectorDistance(r.Selector) > 1).ToList();
+            var inheritedRules = selfRules.ToList();
+            if (inheritableRules != null) inheritedRules.AddRange(inheritableRules);
+
+            var potentiallyInheritedRules = inheritedRules.Where(r => element.MatchSelectorDistance(r.Selector) > 1).ToList();
 
             var potentiallyInheritedStyles = potentiallyInheritedRules
                .SortByWeight()
@@ -70,12 +84,13 @@ namespace Beamable.UI.Buss
             // recursively call on all children elements.
             foreach (var child in element.GetChildren())
             {
-               Apply(child, final, selfRules);
+               // always pass null for the inheritableRules, because we've already figured them out.
+               Apply(child, final, selfRules, null);
             }
          }
 
 
-         Apply(start, null, baseRules);
+         Apply(start, null, baseRules, baseInheritRules);
       }
    }
 }

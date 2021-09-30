@@ -444,10 +444,7 @@ namespace Beamable.UI.Buss
 
         public void ApplyStyleTreeChildren()
         {
-            foreach (var elem in All())
-            {
-                elem.ApplyStyleTree();
-            }
+            BussCascade.Cascade(this);
         }
 
 
