@@ -21,10 +21,10 @@ namespace Beamable.Editor.Microservice.UI.Components {
             "exception"
         };
 
-        public override string StepText => $"(Starting {base.StepText} MS {_model.Descriptor.Name})";
-        public override string ProcessName => $"Starting MS {_model?.Descriptor?.Name}";
+        public override string StepText => $"(Starting {base.StepText} MS {_model.GetDescriptor.Name})";
+        public override string ProcessName => $"Starting MS {_model?.GetDescriptor?.Name}";
 
-        public RunImageLogParser(ILoadingBar loadingBar, MicroserviceModel model) : base(loadingBar, model) {
+        public RunImageLogParser(ILoadingBar loadingBar, ServiceModelBase model) : base(loadingBar, model) {
             TotalSteps = expectedLogs.Length;
             LoadingBar.UpdateProgress(0f, $"({ProcessName})");
         }

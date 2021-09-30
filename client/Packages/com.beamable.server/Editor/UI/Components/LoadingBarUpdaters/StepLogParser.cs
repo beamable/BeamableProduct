@@ -10,11 +10,11 @@ namespace Beamable.Editor.Microservice.UI.Components {
     public class StepLogParser : LoadingBarUpdater {
         private static readonly Regex _StepRegex = new Regex("Step [0-9]+/[0-9]+");
         private static readonly Regex _NumberRegex = new Regex("[0-9]+");
-        private readonly MicroserviceModel _model;
+        private readonly ServiceModelBase _model;
         private readonly Task _task;
 
-        public override string StepText => $"(Building {base.StepText} MS {_model.Descriptor.Name})";
-        public override string ProcessName => $"Building MS {_model?.Descriptor?.Name}";
+        public override string StepText => $"(Building {base.StepText} MS {_model.GetDescriptor.Name})";
+        public override string ProcessName => $"Building MS {_model?.GetDescriptor?.Name}";
 
         private static readonly string[] errorElements = new[] {
             "error",
@@ -23,7 +23,7 @@ namespace Beamable.Editor.Microservice.UI.Components {
             "exception"
         };
 
-        public StepLogParser(ILoadingBar loadingBar, MicroserviceModel model, Task task) : base(loadingBar) {
+        public StepLogParser(ILoadingBar loadingBar, ServiceModelBase model, Task task) : base(loadingBar) {
             _model = model;
             _task = task;
 

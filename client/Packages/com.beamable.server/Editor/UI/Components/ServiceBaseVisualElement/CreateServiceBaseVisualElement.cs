@@ -4,7 +4,6 @@ using System.Linq;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
-using Editor.UI.Components.ServiceBaseVisualElement;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -43,7 +42,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         private LogVisualElement _logElement;
         private List<string> _servicesNames;
 
-        public CreateServiceBaseVisualElement() : base(nameof(ServiceBaseVisualElement))
+        public CreateServiceBaseVisualElement() : base(nameof(CreateServiceBaseVisualElement))
         {
         }
 

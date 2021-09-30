@@ -114,8 +114,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
                         service.OnSortChanged -= SortMicroservices;
                         service.OnSortChanged += SortMicroservices;
-                        serviceElement.OnMicroserviceStartFailed = MicroserviceStartFailed;
-                        serviceElement.OnMicroserviceStopFailed = MicroserviceStopFailed;
+                        serviceElement.OnServiceStartFailed = MicroserviceStartFailed;
+                        serviceElement.OnServiceStopFailed = MicroserviceStopFailed;
 
                         _microservicesListElement.Add(serviceElement);
                         break;

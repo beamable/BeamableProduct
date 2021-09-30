@@ -33,7 +33,8 @@ namespace Beamable.Editor.UI.Model
         Action OnLogsAttached { get; set; }
         Action<bool> OnLogsAttachmentChanged { get; set; }
         Action<bool> OnSelectionChanged { get; set; }
-        Action OnSortChanged { get; set; }
+        Action OnSortChanged { get; set; } 
+        Action<float, long, long> OnDeployProgress { get; set; }
         
         event Action<Task> OnStart;
         event Action<Task> OnStop;

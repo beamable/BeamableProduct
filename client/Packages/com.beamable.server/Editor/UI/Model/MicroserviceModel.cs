@@ -32,16 +32,6 @@ namespace Beamable.Editor.UI.Model
         public MicroserviceConfigurationEntry Config { get; private set; }
         public override bool IsRunning => Builder?.IsRunning ?? false;
         public bool IsBuilding => Builder?.IsBuilding ?? false;
-        public bool IsSelected
-        {
-            get => _isSelected;
-            set
-            {
-                _isSelected = value;
-                OnSelectionChanged?.Invoke(value);
-            }
-        }
-        private bool _isSelected;
         public bool SameImageOnRemoteAndLocally => string.Equals(Builder?.LastBuildImageId, RemoteReference?.imageId);
         public bool IncludeDebugTools
         {
@@ -76,8 +66,7 @@ namespace Beamable.Editor.UI.Model
 
         public Action<ServiceReference> OnRemoteReferenceEnriched;
         public Action<ServiceStatus> OnRemoteStatusEnriched;
-        public Action<float, long, long> OnDeployProgress;
-        
+
         public override event Action<Task> OnStart;
         public override event Action<Task> OnStop;
         public event Action<Task> OnBuildAndRestart;
