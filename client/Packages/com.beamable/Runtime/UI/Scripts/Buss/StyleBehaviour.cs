@@ -68,7 +68,19 @@ namespace Beamable.UI.Buss
 
         public abstract string TypeString { get; }
 
+        public StyleObject DirectStyles { get; private set; }
+        public StyleObject InheritedStyles { get; private set; }
+        public StyleObject ComputedStyles { get; private set; }
+
         public Action OnStateUpdated;
+
+        public void SetStyles(StyleObject computed, StyleObject inherited, StyleObject direct)
+        {
+            DirectStyles = direct;
+            InheritedStyles = inherited;
+            ComputedStyles = computed;
+            Apply(computed);
+        }
 
         public abstract void Apply(StyleObject styles);
 
@@ -186,6 +198,36 @@ namespace Beamable.UI.Buss
             return children;
         }
 
+
+        public bool IsDirectMatch(Selector selector)
+        {
+            var iter = selector.Ascend().GetEnumerator();
+
+            if (!iter.MoveNext())
+            {
+                return false;
+            }
+
+            // must match first element.
+            var currentNode = this;
+            var matchesFirstNode = iter.Current.Accept(this);
+            if (!matchesFirstNode) return false;
+
+            var hasMoreSelection = iter.MoveNext();
+            if (!hasMoreSelection) return true; // we are done!
+
+            foreach (var child in currentNode.Climb())
+            {
+                var isMatch = iter.Current.Accept(child);
+                if (isMatch)
+                {
+                    hasMoreSelection = iter.MoveNext();
+                    if (!hasMoreSelection) return true;
+                }
+            }
+
+            return false;
+        }
 
 
         public int MatchSelectorDistance(Selector selector)

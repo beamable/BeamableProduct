@@ -55,8 +55,9 @@ namespace Beamable.UI.Buss
 
             T PreferOther<T>(Func<StyleObject, T> getter) where T : BUSSProperty, IBUSSProperty<T>
             {
-                var otherProp = getter(other);
                 var selfProp = getter(this);
+                if (other == null) return selfProp.Clone();
+                var otherProp = getter(other);
                 return
                     // is the other property enabled, and does is it not null?
                     (otherProp?.Enabled ?? false)
@@ -74,7 +75,7 @@ namespace Beamable.UI.Buss
 //            next.Text = PreferOther(x => x.Text);
 //            next.Vertical = PreferOther(x => x.Vertical);
             next.Border = PreferOther(x => x.Border);
-            next.Scope = Scope.Merge(other.Scope);
+            next.Scope = Scope.Merge(other?.Scope);
             return next;
         }
 

@@ -41,6 +41,14 @@ namespace Beamable.UI.Buss
 
       public StyleObject Style = new StyleObject();
 
+      public static SelectorWithStyle Create(string selector, StyleObject style)
+      {
+         return new SelectorWithStyle
+         {
+            Selector = SelectorParser.Parse(selector),
+            Style = style
+         };
+      }
    }
 
    public class StyleBundle
