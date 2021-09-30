@@ -62,8 +62,6 @@ namespace Beamable.Editor.Microservice.UI.Components
             var text = model.Message.Split('\n');
             _model = model;
             _description.text = text.Length > 0 ? text[0] : model.Message;
-            _time.text = model.Timestamp;
-            SetIcon();
 
             if (!model.MessageColor.Equals(Color.clear))
                 _description.style.color = model.MessageColor;
