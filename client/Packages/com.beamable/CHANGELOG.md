@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Steam third party authentication support
 - New default `currency.coins` currency that demonstrates client writable currency.
 - Cohort Settings to EventContent to support partitioning by player stats
+- Support for archiving manifest namespaces.
 
 ### Changed
 - Content deletion popup opens as separate window
