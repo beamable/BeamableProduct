@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.1]
+### Fixed
+- `ExecuteRolling` method of `Promise` now supports a condition on which stop execution
+
 ## [0.16.0]
 ### Added
 - Support for disabling Unity Domain Reload
@@ -27,7 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Beamable Platform errors all extend from `RequesterException` in Unity Client and microservice code
 - Redesigned internal Toolbox announcements
 - Content Manager publish flow shows Realm and Namespace for confirmation
-- `ExecuteRolling` method of `Promise` now supports a condition on which stop execution
 
 ### Fixed
 - Added missing attributes for content classes
