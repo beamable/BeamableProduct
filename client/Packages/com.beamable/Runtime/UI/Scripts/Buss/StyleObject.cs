@@ -7,6 +7,17 @@ using UnityEngine;
 
 namespace Beamable.UI.Buss
 {
+    public static class StyleObjectExtensions
+    {
+        public static StyleObject MergeStyles(this List<StyleObject> self)
+        {
+            var final = self.Count == 0
+                ? null
+                : self.Aggregate((agg, curr) => agg.Merge(curr));
+            return final;
+        }
+    }
+
     /// <summary>
     /// StyleObject is a class. When it is new'd, we'll create a blank style object with null properties.
     /// </summary>

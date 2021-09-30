@@ -51,6 +51,15 @@ namespace Beamable.UI.Buss
       }
    }
 
+   public static class SelectorWithStyleExtensions
+   {
+      public static List<SelectorWithStyle> SortByWeight(this List<SelectorWithStyle> self)
+      {
+         self.Sort((a, b) => a.Selector.Weight().CompareTo(b.Selector.Weight()));
+         return self;
+      }
+   }
+
    public class StyleBundle
    {
       public SelectorWithStyle Rule;
