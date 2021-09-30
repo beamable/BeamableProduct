@@ -1,4 +1,3 @@
-using System.Linq;
 using Beamable.UI.Buss;
 using UnityEngine;
 
@@ -12,11 +11,6 @@ namespace Beamable.Editor.UI.Buss.Extensions
          foreach (var behaviour in GameObject.FindObjectsOfType<StyleBehaviour>())
          {
             if (!behaviour || !behaviour.isActiveAndEnabled && !behaviour.gameObject.activeInHierarchy)
-            {
-               continue;
-            }
-
-            if (behaviour.Climb().Any())
             {
                continue;
             }
