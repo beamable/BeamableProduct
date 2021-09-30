@@ -15,13 +15,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
     public class PublishWindow : CommandRunnerWindow
     {
+        private static readonly Vector2 MIN_SIZE = new Vector2(850, 400);
+        
         public static PublishWindow ShowPublishWindow()
         {
             var wnd = CreateInstance<PublishWindow>();
             wnd.titleContent = new GUIContent(Constants.Publish);
 
             ((PublishWindow) wnd).ShowUtility();
-            wnd.minSize = new Vector2(620, 400);
+            wnd.minSize = MIN_SIZE;
             wnd.position = new Rect(wnd.position.x, wnd.position.y + 40, wnd.minSize.x, wnd.minSize.y);
 
             Microservices.GenerateUploadModel().Then(model =>

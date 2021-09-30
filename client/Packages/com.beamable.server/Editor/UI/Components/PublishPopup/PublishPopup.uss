@@ -28,17 +28,25 @@
     justify-content: space-between;
 }
 
-#nameMS{
+#nameMS, #depsText {
     align-self: center;
     margin-left: 3px;
 }
-#nameC {
+#nameC, #typeC, #depsC {
     width: 200px;
     align-self: stretch;
     flex-direction: row;
     align-content: stretch;
     flex-grow: 3;
     padding-left: 12px;
+}
+
+#typeC {
+    width: 100px;
+}
+
+#depsC {
+    width: 130px;
 }
 
 #enabledC {
@@ -51,7 +59,7 @@
     justify-content: center;
 }
 #SizeC {
-    width: 100px;
+    width: 80px;
     padding-left: 15px;
 }
 #commentsText, #SizeC .template{

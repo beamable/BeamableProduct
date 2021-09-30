@@ -88,11 +88,23 @@ namespace Beamable.Server.Editor.UI.Components
       public Dictionary<string, StorageEntryModel> Storages;
       public string Comment;
    }
-   
-   public class ManifestEntryModel
+
+   public interface IEntryModel
    {
-      public string ServiceName;
-      public string Comment;
+      string Name { get; }
+      string Type { get; }
+      string Comment { get; set; }
+      bool Enabled { get; set; }
+      string TemplateId { get; set; }
+   }
+   
+   public class ManifestEntryModel : IEntryModel
+   {
+      private const string MICROSERVICE_TYPE = "Microservice";
+      
+      public string Name { get; set; }
+      public string Type { get; } = MICROSERVICE_TYPE;
+      public string Comment { get; set; }
 
       public bool Enabled
       {
@@ -111,7 +123,7 @@ namespace Beamable.Server.Editor.UI.Components
       private void SetTemplateId(string templateId)
       {
          _templateId = templateId;
-         var service = MicroserviceConfiguration.Instance.GetEntry(ServiceName);
+         var service = MicroserviceConfiguration.Instance.GetEntry(Name);
          service.TemplateId = templateId;
       }
 
@@ -119,17 +131,19 @@ namespace Beamable.Server.Editor.UI.Components
       private void SetEnabled(bool enabled)
       {
          _enabled = enabled;
-         var service = MicroserviceConfiguration.Instance.GetEntry(ServiceName);
+         var service = MicroserviceConfiguration.Instance.GetEntry(Name);
          service.Enabled = enabled;
       }
 
       public List<ServiceDependency> Dependencies;
    }
-   public class StorageEntryModel
+   
+   public class StorageEntryModel : IEntryModel
    {
-       public string StorageName;
-       public string StorageType;
-    
+       public string Name { get; set; }
+       public string Type { get; set; }
+       public string Comment { get; set; }
+       
        public bool Enabled
        {
            get => _enabled;
@@ -147,7 +161,7 @@ namespace Beamable.Server.Editor.UI.Components
        private void SetTemplateId(string templateId)
        {
            _templateId = templateId;
-           var service = MicroserviceConfiguration.Instance.GetStorageEntry(StorageName);
+           var service = MicroserviceConfiguration.Instance.GetStorageEntry(Name);
            service.TemplateId = templateId;
        }
 
@@ -155,7 +169,7 @@ namespace Beamable.Server.Editor.UI.Components
        private void SetEnabled(bool enabled)
        {
            _enabled = enabled;
-           var service = MicroserviceConfiguration.Instance.GetEntry(StorageName);
+           var service = MicroserviceConfiguration.Instance.GetEntry(Name);
            service.Enabled = enabled;
        }
    }

@@ -18,10 +18,12 @@ namespace Beamable.Editor.Microservice.UI.Components
    public class PublishManifestEntryVisualElement : MicroserviceComponent
    {
       private static readonly string[] TemplateSizes = {"small", "medium", "large"};
-      public ManifestEntryModel Model { get; set; }
+      
+      public IEntryModel Model { get; }
 
-      public PublishManifestEntryVisualElement() : base(nameof(PublishManifestEntryVisualElement))
+      public PublishManifestEntryVisualElement(IEntryModel model) : base(nameof(PublishManifestEntryVisualElement))
       {
+         Model = model;
       }
 
       public override void Refresh()
@@ -39,12 +41,15 @@ namespace Beamable.Editor.Microservice.UI.Components
          templateDropdown.RegisterValueChangedCallback(ce => { Model.TemplateId = ce.newValue;});
          Root.Q<VisualElement>("SizeC").Add(templateDropdown);
 
+         var typeLabel = Root.Q<Label>("typeLabel");
+         typeLabel.text = Model.Type;
+         
          var nameLabel = Root.Q<Label>("nameMS");
-         nameLabel.text = Model.ServiceName;
+         nameLabel.text = Model.Name;
 
          var commentField = Root.Q<TextField>("commentsText");
          commentField.value = Model.Comment;
          commentField.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
       }
-      }
    }
+}

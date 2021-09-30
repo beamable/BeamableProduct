@@ -69,10 +69,12 @@ namespace Beamable.Editor.Microservice.UI.Components
             
             _scrollContainer = Root.Q<ScrollView>("manifestsContainer");
             _publishManifestElements = new List<PublishManifestEntryVisualElement>(Model.Services.Count);
-            
-            foreach (var kvp in Model.Services)
+
+            List<IEntryModel> entryModels = new List<IEntryModel>(Model.Services.Values);
+            entryModels.AddRange(Model.Storages.Values);
+            foreach (var model in entryModels)
             {
-                var newElement = new PublishManifestEntryVisualElement {Model = kvp.Value};
+                var newElement = new PublishManifestEntryVisualElement(model);
                 newElement.Refresh();
                 _publishManifestElements.Add(newElement);
                 _scrollContainer.Add(newElement);
@@ -101,7 +103,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             
             foreach (var kvp in Model.Services)
             {
-                var microserviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(kvp.Value.ServiceName);
+                var microserviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(kvp.Value.Name);
 
                 if (microserviceModel == null)
                 {

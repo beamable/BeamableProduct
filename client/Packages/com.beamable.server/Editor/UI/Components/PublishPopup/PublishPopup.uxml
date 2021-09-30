@@ -13,8 +13,17 @@
             <engine:VisualElement name="enabledC" class="column">
                 <engine:Label text="Enabled" class="SubTitleText"/>
             </engine:VisualElement>
+
+            <engine:VisualElement name="typeC" class="column">
+                <engine:Label text="Type" class="SubTitleText"/>
+            </engine:VisualElement>
+            
             <engine:VisualElement name="nameC" class="column">
                 <engine:Label text="Name" class="SubTitleText"/>
+            </engine:VisualElement>
+
+            <engine:VisualElement name="depsC" class="column">
+                <engine:Label text="Dependencies" class="SubTitleText"/>
             </engine:VisualElement>
             
             <engine:VisualElement name="SizeC" class="column">
@@ -26,7 +35,7 @@
             </engine:VisualElement>
         </engine:VisualElement>
         <engine:ScrollView name="manifestsContainer"/>
-        <engine:TextField name="largeCommentsArea"/>
+        <engine:TextField name="largeCommentsArea" multiline="true"/>
         <engine:VisualElement name="buttonStrip">
             <engine:Button name="cancelBtn" text="Cancel"/>
             <beamable:PrimaryButtonVisualElement name="continueBtn" text="Publish"/>

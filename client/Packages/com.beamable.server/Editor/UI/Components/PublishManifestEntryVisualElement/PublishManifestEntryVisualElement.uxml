@@ -10,8 +10,17 @@
         <engine:VisualElement name="enabledC" class="column">
             <beamable:BeamableCheckboxVisualElement name="checkbox"/>
         </engine:VisualElement>
+
+        <engine:VisualElement name="typeC" class="column">
+            <engine:Label name="typeLabel" text="Microservice"/>
+        </engine:VisualElement>
+        
         <engine:VisualElement name="nameC" class="column">
                 <engine:Label name="nameMS" text="Angie's Test"/>
+        </engine:VisualElement>
+
+        <engine:VisualElement name="depsC" class="column">
+            <engine:Label name="depsLabel"/>
         </engine:VisualElement>
 
         <engine:VisualElement name="SizeC" class="column">

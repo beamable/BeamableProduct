@@ -201,7 +201,7 @@ namespace Beamable.Server.Editor
                    return new ManifestEntryModel
                    {
                      Comment = "",
-                     ServiceName = name,
+                     Name = name,
                      Enabled = configEntry?.Enabled ?? true,
                      TemplateId = configEntry?.TemplateId ?? "small",
                    };
@@ -222,22 +222,22 @@ namespace Beamable.Server.Editor
                
                var storageEntries = allStorages.Select(name =>
                {
-                   var configEntry = MicroserviceConfiguration.Instance.GetStorageEntry(name);
-                   return new StorageEntryModel
-                   {
-                       StorageName = name,
-                       StorageType = configEntry?.StorageType ?? "mongov1",
-                       Enabled = configEntry?.Enabled ?? true,
-                       TemplateId = configEntry?.TemplateId ?? "small",
-                   };
+                  var configEntry = MicroserviceConfiguration.Instance.GetStorageEntry(name);
+                  return new StorageEntryModel
+                  {
+                     Name = name,
+                     Type = configEntry?.StorageType ?? "mongov1",
+                     Enabled = configEntry?.Enabled ?? true,
+                     TemplateId = configEntry?.TemplateId ?? "small",
+                  };
                }).ToList();
 
                return new ManifestModel
                {
                   ServerManifest = manifest.manifest.ToDictionary(e => e.serviceName),
                   Comment = "",
-                  Services = entries.ToDictionary(e => e.ServiceName),
-                  Storages = storageEntries.ToDictionary(s => s.StorageName)
+                  Services = entries.ToDictionary(e => e.Name),
+                  Storages = storageEntries.ToDictionary(s => s.Name)
                };
             });
          });
@@ -531,10 +531,10 @@ namespace Beamable.Server.Editor
 
          var manifest = model.Services.Select(kvp =>
          {
-            kvp.Value.Enabled &= nameToImageId.TryGetValue(kvp.Value.ServiceName, out var imageId);
+            kvp.Value.Enabled &= nameToImageId.TryGetValue(kvp.Value.Name, out var imageId);
             return new ServiceReference
             {
-               serviceName = kvp.Value.ServiceName,
+               serviceName = kvp.Value.Name,
                templateId = kvp.Value.TemplateId,
                enabled = kvp.Value.Enabled,
                comments = kvp.Value.Comment,
@@ -547,8 +547,8 @@ namespace Beamable.Server.Editor
          {
              return new ServiceStorageReference
              {
-                 storageName = kvp.Value.StorageName,
-                 storageType = kvp.Value.StorageType,
+                 storageName = kvp.Value.Name,
+                 storageType = kvp.Value.Type,
                  templateId = kvp.Value.TemplateId,
                  enabled = kvp.Value.Enabled,
              };
