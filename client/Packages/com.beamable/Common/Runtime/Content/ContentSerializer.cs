@@ -26,7 +26,13 @@ namespace Beamable.Common.Content
          public string SerializedName;
          public string[] FormerlySerializedAs;
          public Type FieldType => RawField.FieldType;
-         public void SetValue(object obj, object value) => RawField.SetValue(obj, value);
+
+         public void SetValue(object obj, object value)
+         {
+            if (!FieldType.IsAssignableFrom(value?.GetType())) return;
+
+            RawField.SetValue(obj, value);
+         }
          public object GetValue(object obj) => RawField.GetValue(obj);
       }
 
@@ -289,7 +295,7 @@ namespace Beamable.Common.Content
                      }
                      return (IList)field.GetValue(ins);
                   }
-                  
+
                   var dictInst = (IDictionaryWithValue) Activator.CreateInstance(type);
 
                   foreach (var kvp in dictionary)
@@ -487,7 +493,7 @@ namespace Beamable.Common.Content
             var fieldType = kvp.Value.RawField.FieldType;
             var fieldValue = fieldInfo.RawField.GetValue(content);
             var fieldDict = new ArrayDict();
-            
+
             if(fieldValue is ISerializationCallbackReceiver receiver)
                receiver.OnBeforeSerialize();
 
@@ -549,7 +555,7 @@ namespace Beamable.Common.Content
             {"id", content.Id},
             {"version", content.Version ?? ""}
          };
-         
+
          if(content is ISerializationCallbackReceiver receiver)
             receiver.OnBeforeSerialize();
 

@@ -116,7 +116,7 @@ namespace Beamable.Editor.Content
          s.Serialize(nameof(createdAt), ref createdAt);
       }
    }
-   
+
    public static class ManifestModelExtensions
    {
       public static bool AreManifestIdsEquals(this IEnumerable<AvailableManifestModel> self,
@@ -143,7 +143,7 @@ namespace Beamable.Editor.Content
    {
       public ContentManager ContentManager => _contentManager ?? (_contentManager = new ContentManager());
       private ContentManager _contentManager;
-      
+
       private readonly IBeamableRequester _requester;
       private Promise<Manifest> _manifestPromise;
       private ContentObject _lastSelected;
@@ -174,7 +174,7 @@ namespace Beamable.Editor.Content
          OnContentDeleted = null;
          OnContentRenamed = null;
       }
-      
+
       private void Internal_HandleContentCreated(IContentObject content)
       {
          ValidationContext.AllContent[content.Id] = content;
@@ -218,7 +218,7 @@ namespace Beamable.Editor.Content
          {
             manifestID = BeamableConstants.DEFAULT_MANIFEST_ID;
          }
-         
+
          if (string.IsNullOrEmpty(_requester?.AccessToken?.Token))
          {
             return Promise<Manifest>.Failed(new Exception("Not logged into Beamable Editor"));
@@ -267,18 +267,18 @@ namespace Beamable.Editor.Content
             return ContentStatus.MODIFIED;
          });
       }
-      
-      
-      
+
+
+
       public Promise<AvailableManifests> GetAllManifestIDs()
       {
          if (string.IsNullOrEmpty(_requester?.AccessToken?.Token))
          {
             return Promise<AvailableManifests>.Failed(new Exception("Not logged into Beamable Editor"));
          }
-         
+
          var manifestUrl = "/basic/content/manifest/checksums";
-         
+
          var manifestIdsPromise = new Promise<AvailableManifests>();
          var webRequest = _requester.Request<AvailableManifests>(Method.GET, manifestUrl, useCache: true);
          webRequest.Error(error =>
@@ -300,10 +300,10 @@ namespace Beamable.Editor.Content
             }
             manifestIdsPromise.CompleteSuccess(source);
          });
-         
+
          return manifestIdsPromise;
       }
-      
+
       public Promise<Unit> SwitchManifest(string manifestID)
       {
          if (!ContentConfiguration.IsValidManifestID(manifestID, out var msg))
@@ -321,12 +321,12 @@ namespace Beamable.Editor.Content
          }
 
          ContentConfiguration.Instance.EditorManifestID = manifestID;
-         
+
          return FetchManifest(manifestID).Then(manifest =>
          {
             ContentManager.Model.SetServerContent(manifest);
             OnManifestChanged?.Invoke(manifestID);
-            
+
          }).ToUnit();
       }
 
@@ -337,10 +337,10 @@ namespace Beamable.Editor.Content
       //    {
       //       return Promise<Unit>.Failed(new Exception("Not logged into Beamable Editor"));
       //    }
-      //    
+      //
       //    //var manifestDeleteUrl = $"/basic/content/manifest/deleteManifests?ids={someIds}";
       //    var manifestDeleteUrl = "";
-      //    
+      //
       //    var manifestIdsPromise = new Promise<Unit>();
       //    var webRequest = _requester.Request<Unit>(Method.POST, manifestDeleteUrl);
       //    webRequest.Error(error =>
@@ -357,11 +357,11 @@ namespace Beamable.Editor.Content
       //    {
       //       manifestIdsPromise.CompleteSuccess(source);
       //    });
-      //    
+      //
       //    return manifestIdsPromise;
       // }
-      
-      
+
+
       public void Select(ContentObject content)
       {
          var actual = Find(content);
@@ -387,8 +387,11 @@ namespace Beamable.Editor.Content
       public IEnumerable<TContent> FindAllContent<TContent>(ContentQuery query = null, bool inherit = true) where TContent : ContentObject, new()
       {
          if (query == null) query = ContentQuery.Unit;
-         Directory.CreateDirectory(BeamableConstants.DATA_DIR);
-         AssetDatabase.ImportAsset(BeamableConstants.DATA_DIR);
+         if (!AssetDatabase.IsValidFolder(BeamableConstants.DATA_DIR))
+         {
+            Directory.CreateDirectory(BeamableConstants.DATA_DIR);
+            yield break; // there is no folder, therefore, no content. Nothing to search for.
+         }
 
          var assetGuids = AssetDatabase.FindAssets(
             $"t:{typeof(TContent).Name}",
@@ -412,7 +415,7 @@ namespace Beamable.Editor.Content
             yield return asset;
          }
       }
-      
+
       public string[] FindAllDirectoriesForSubtypes<TContent>() where TContent : ContentObject, new()
       {
          return FindAllSubtypes<TContent>().Select(contentType =>
@@ -497,7 +500,7 @@ namespace Beamable.Editor.Content
          ContentObject.ValidationContext = ValidationContext;
          return localManifest;
       }
-      
+
       public IEnumerable<Type> GetContentTypes()
       {
          return ContentRegistry.GetContentTypes();
@@ -756,7 +759,7 @@ namespace Beamable.Editor.Content
 
          var firstContentTagCount = firstContentDistinctTags.Count();
          var secondContentTagCount = secondContentDistinctTags.Count();
-         
+
          var countOfSharedTags = firstContentDistinctTags.Intersect(secondContentDistinctTags).Count();
 
          var areTagsEqual = firstContentTagCount == countOfSharedTags && secondContentTagCount == countOfSharedTags;
