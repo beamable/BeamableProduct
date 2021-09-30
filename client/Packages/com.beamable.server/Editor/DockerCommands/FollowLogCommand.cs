@@ -92,13 +92,17 @@ namespace Beamable.Server.Editor.DockerCommands
 
             // report the log message to the right bucket.
             #if !BEAMABLE_LEGACY_MSW
+            if (!DateTime.TryParse(timestamp, out var time))
+            {
+               time = DateTime.Now;
+            }
             var logMessage = new LogMessage
             {
                Message = message,
                Parameters = objs,
                ParameterText = objsToString,
                Level = logLevelValue,
-               Timestamp = LogMessage.GetTimeDisplay(DateTime.Parse(timestamp))
+               Timestamp = LogMessage.GetTimeDisplay(time)
             };
             EditorApplication.delayCall += () =>
             {
