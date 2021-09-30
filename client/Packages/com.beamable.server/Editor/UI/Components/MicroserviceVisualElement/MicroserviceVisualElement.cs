@@ -21,7 +21,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
     public class MicroserviceVisualElement : ServiceBaseVisualElement<MicroserviceModel>
     {
-        public MicroserviceVisualElement() : base(nameof(MicroserviceModel))
+        public MicroserviceVisualElement() : base(nameof(MicroserviceVisualElement))
         {
         }
         
@@ -30,6 +30,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         
         private Label _buildDefaultLabel;
         private Button _buildDropDown;
+        private Image _buildDropDownIcon;
         
         protected override void OnDestroy()
         {
@@ -44,9 +45,22 @@ namespace Beamable.Editor.Microservice.UI.Components
             Model.Builder.OnIsBuildingChanged -= OnIsBuildingChanged;
             Model.Builder.OnLastImageIdChanged -= HandleLastImageIdChanged;
         }
-        public override void Refresh()
+        protected override void QueryVisualElements()
         {
-            base.Refresh();
+            base.QueryVisualElements();
+            _buildDropDown = Root.Q<Button>("buildDropDown");
+            _buildDefaultLabel = _buildDropDown.Q<Label>();
+            _buildDropDownIcon = _buildDropDown.Q<Image>();
+        }
+        protected override void UpdateVisualElements()
+        {
+            base.UpdateVisualElements();
+            _buildDropDownIcon.RegisterCallback<MouseEnterEvent>(evt => _mouseOverBuildDropdown = true);
+            _buildDropDownIcon.RegisterCallback<MouseLeaveEvent>(evt => _mouseOverBuildDropdown = false);
+            var buildBtnManipulator = new ContextualMenuManipulator(HandleBuildButtonClicked);
+            buildBtnManipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
+            _buildDropDown.clickable.activators.Clear();
+            _buildDropDown.AddManipulator(buildBtnManipulator);
             
             Model.OnBuildAndStart -= SetupProgressBarForBuildAndStart;
             Model.OnBuildAndStart += SetupProgressBarForBuildAndStart;
@@ -63,16 +77,6 @@ namespace Beamable.Editor.Microservice.UI.Components
             Model.Builder.OnLastImageIdChanged += HandleLastImageIdChanged;
             Model.OnRemoteReferenceEnriched -= OnServiceReferenceChanged;
             Model.OnRemoteReferenceEnriched += OnServiceReferenceChanged;
-            
-            _buildDropDown = Root.Q<Button>("buildDropDown");
-            var buildDropDownIcon = _buildDropDown.Q<Image>();
-            _buildDefaultLabel = _buildDropDown.Q<Label>();
-            buildDropDownIcon.RegisterCallback<MouseEnterEvent>(evt => _mouseOverBuildDropdown = true);
-            buildDropDownIcon.RegisterCallback<MouseLeaveEvent>(evt => _mouseOverBuildDropdown = false);
-            var buildBtnManipulator = new ContextualMenuManipulator(HandleBuildButtonClicked);
-            buildBtnManipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
-            _buildDropDown.clickable.activators.Clear();
-            _buildDropDown.AddManipulator(buildBtnManipulator);
         }
         private void LoginToDocker(Promise<Unit> onLogin)
         {

@@ -21,7 +21,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
     public abstract class ServiceBaseVisualElement<T> : MicroserviceComponent where T : ServiceModelBase
     {
-        public ServiceBaseVisualElement(string name) : base(name)
+        protected ServiceBaseVisualElement(string name) : base(name)
         {
         }
 
@@ -58,8 +58,6 @@ namespace Beamable.Editor.Microservice.UI.Components
         private BeamableCheckboxVisualElement _checkbox;
         private VisualElement _logContainerElement;
         private LogVisualElement _logElement;
-        // private VisualElement _leftHeaderArea;
-        // private VisualElement _rightHeaderArea;
         private MicroserviceVisualElementSeparator _separator;
         private VisualElement _rootVisualElement;
         private VisualElement _header;
@@ -82,15 +80,32 @@ namespace Beamable.Editor.Microservice.UI.Components
         public override void Refresh()
         {
             base.Refresh();
-
+            QueryVisualElements();
+            UpdateVisualElements();
+        }
+        protected virtual void QueryVisualElements()
+        {
             _rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
             Root.Q<Button>("cancelBtn").RemoveFromHierarchy();
-
+            Root.Q("microserviceNewTitle")?.RemoveFromHierarchy();
+            _nameTextField = Root.Q<Label>("microserviceTitle");
+            _startButton = Root.Q<Button>("start");
+            _moreBtn = Root.Q<Button>("moreBtn");
+            _checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
+            _logContainerElement = Root.Q<VisualElement>("logContainer");
+            _statusLabel = Root.Q<Label>("statusTitle");
+            _remoteStatusLabel = Root.Q<Label>("remoteStatusTitle");
+            _statusIcon = Root.Q<VisualElement>("statusIcon");
+            _remoteStatusIcon = Root.Q<VisualElement>("remoteStatusIcon");
+            _header = Root.Q("logHeader");
+            _separator = Root.Q<MicroserviceVisualElementSeparator>("separator");
             _loadingBar = new LoadingBarElement();
+            _rootVisualElement.Add(_loadingBar);
+        }
+        protected virtual void UpdateVisualElements()
+        {
             _loadingBar.Hidden = true;
             _loadingBar.Refresh();
-            Root.Q("microserviceNewTitle")?.RemoveFromHierarchy();
-            _rootVisualElement.Add(_loadingBar);
             _loadingBar.PlaceBehind(Root.Q("SubTitle"));
 
             Model.OnStart -= SetupProgressBarForStart;
@@ -101,53 +116,36 @@ namespace Beamable.Editor.Microservice.UI.Components
             Microservices.onBeforeDeploy -= SetupProgressBarForDeployment;
             Microservices.onBeforeDeploy += SetupProgressBarForDeployment;
 
-            _nameTextField = Root.Q<Label>("microserviceTitle");
             _nameTextField.text = Model.GetDescriptor.Name;
-            
-            _startButton = Root.Q<Button>("start");
             _startButton.clickable.clicked += HandleStartButtonClicked;
             
-            _moreBtn = Root.Q<Button>("moreBtn");
             var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
             manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
             _moreBtn.clickable.activators.Clear();
             _moreBtn.AddManipulator(manipulator);
             _moreBtn.tooltip = "More...";
 
-            _checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
             _checkbox.Refresh();
             _checkbox.SetWithoutNotify(Model.IsSelected);
             Model.OnSelectionChanged += _checkbox.SetWithoutNotify;
             _checkbox.OnValueChanged += b => Model.IsSelected = b;
             
-            _logContainerElement = Root.Q<VisualElement>("logContainer");
             Model.OnLogsAttachmentChanged -= CreateLogSection;
             Model.OnLogsAttachmentChanged += CreateLogSection;
-            UpdateButtons();
 
             Model.GetBuilder.OnIsRunningChanged -= HandleIsRunningChanged;
             Model.GetBuilder.OnIsRunningChanged += HandleIsRunningChanged;
-            CreateLogSection(Model.AreLogsAttached);
             
-            _statusLabel = Root.Q<Label>("statusTitle");
-            _remoteStatusLabel = Root.Q<Label>("remoteStatusTitle");
-            _statusIcon = Root.Q<VisualElement>("statusIcon");
-            UpdateStatusIcon();
-
-            _remoteStatusIcon = Root.Q<VisualElement>("remoteStatusIcon");
-            UpdateRemoteStatusIcon();
-
-            _header = Root.Q("logHeader");
-            // _leftHeaderArea = Root.Q<VisualElement>("leftArea");
-            // _rightHeaderArea = Root.Q<VisualElement>("rightArea");
-            UpdateHeaderColor();
-
-            _separator = Root.Q<MicroserviceVisualElementSeparator>("separator");
             _separator.Setup(OnDrag);
             _separator.Refresh();
+            
+            UpdateButtons();
+            CreateLogSection(Model.AreLogsAttached);
+            UpdateStatusIcon();
+            UpdateRemoteStatusIcon();
+            UpdateHeaderColor();
             UpdateModel();
         }
-
         protected abstract void UpdateStatusIcon();
         protected abstract void UpdateRemoteStatusIcon();
         protected virtual void UpdateButtons()
