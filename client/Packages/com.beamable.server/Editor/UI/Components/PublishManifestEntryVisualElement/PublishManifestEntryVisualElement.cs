@@ -4,6 +4,7 @@ using System.Linq;
 using Beamable.Server.Editor.ManagerClient;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
+using Beamable.Server.Editor;
 using Beamable.Server.Editor.UI.Components;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -50,6 +51,31 @@ namespace Beamable.Editor.Microservice.UI.Components
          var commentField = Root.Q<TextField>("commentsText");
          commentField.value = Model.Comment;
          commentField.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
+
+         if (Model is ManifestEntryModel serviceModel)
+         {
+            var serviceDescriptor = Microservices.Descriptors.Find(descriptor => descriptor.Name == serviceModel.Name);
+            var serviceDependencies = new List<ServiceDependency>();
+            foreach (var storage in serviceDescriptor.GetStorageReferences())
+            {
+               serviceDependencies.Add(new ServiceDependency
+               {
+                  id = storage.Name, 
+                  type = "storage"
+               });
+            }
+
+            serviceModel.Dependencies = serviceDependencies;
+            
+            if (serviceModel.Dependencies != null)
+            {
+               var depsLabel = Root.Q<Label>("depsLabel");
+               foreach (var dependency in serviceModel.Dependencies)
+               {
+                  depsLabel.text += dependency.id + '\n';
+               }
+            }
+         }
       }
    }
 }
