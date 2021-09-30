@@ -387,7 +387,7 @@ namespace Beamable.Editor.Content
       public IEnumerable<TContent> FindAllContent<TContent>(ContentQuery query = null, bool inherit = true) where TContent : ContentObject, new()
       {
          if (query == null) query = ContentQuery.Unit;
-         if (!Directory.Exists(BeamableConstants.DATA_DIR))
+         if (!AssetDatabase.IsValidFolder(BeamableConstants.DATA_DIR))
          {
             Directory.CreateDirectory(BeamableConstants.DATA_DIR);
             yield break; // there is no folder, therefore, no content. Nothing to search for.
