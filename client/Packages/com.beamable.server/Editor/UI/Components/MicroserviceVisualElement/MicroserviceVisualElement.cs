@@ -94,7 +94,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         public override void Refresh()
         {
             base.Refresh();
-
+            name = Model.Name;
             _rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
             Root.Q<Button>("cancelBtn").RemoveFromHierarchy();
 

@@ -10,7 +10,7 @@ namespace Editor.UI.Components.StorageObjectVisualElement
         
         protected override void CreateService(string serviceName)
         {
-            EditorApplication.delayCall += () => MicroserviceEditor.CreateNewServiceFile(MicroserviceEditor.ServiceType.StorageObject, serviceName);
+            EditorApplication.delayCall += () => MicroserviceEditor.CreateNewServiceFile(ServiceType.StorageObject, serviceName);
         }
     }
 }

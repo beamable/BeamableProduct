@@ -25,6 +25,8 @@ namespace Beamable.Editor.UI.Model
     {
         public MicroserviceDescriptor Descriptor { get; private set; }
         public MicroserviceBuilder Builder { get; private set; }
+        public override IBeamableBuilder GetBuilder => Builder;
+        public override IDescriptor GetDescriptor => Descriptor;
         public ServiceReference RemoteReference { get; private set; }
         public ServiceStatus RemoteStatus { get; private set; }
         public MicroserviceConfigurationEntry Config { get; private set; }
@@ -290,7 +292,6 @@ $@"{{
             }
 #endif
         }
-        public override IDescriptor GetDescriptor => Descriptor;
         public override void Refresh(IDescriptor descriptor)
         {
             // reset the descriptor and statemachines; because they aren't system.serializable durable.

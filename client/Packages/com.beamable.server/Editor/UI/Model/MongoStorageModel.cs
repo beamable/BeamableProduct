@@ -27,6 +27,7 @@ namespace Beamable.Editor.UI.Model
     {
         public StorageObjectDescriptor Descriptor { get; private set; }
         public MongoStorageBuilder Builder { get; private set; }
+        public override IBeamableBuilder GetBuilder => Builder;
         public override IDescriptor GetDescriptor => Descriptor;
         public override bool IsRunning => Builder?.IsRunning ?? false;
 
@@ -67,58 +68,6 @@ namespace Beamable.Editor.UI.Model
             var oldBuilder = Builder;
             Builder = Microservices.GetStorageBuilder(Descriptor);
             Builder.ForwardEventsTo(oldBuilder);
-        }
-    }
-
-    public class MongoStorageBuilder
-    {
-        public Action<bool> OnIsRunningChanged;
-        public bool IsRunning
-        {
-            get => _isRunning;
-            private set
-            {
-                if (value == _isRunning) return;
-                _isRunning = value;
-                // XXX: If OnIsRunningChanged is mutated at before delayCall triggers, non-deterministic behaviour could occur
-                EditorApplication.delayCall += () => OnIsRunningChanged?.Invoke(value);
-            }
-        }
-        public StorageObjectDescriptor Descriptor { get; private set; }
-
-        private DockerCommand _logProcess, _runProcess;
-        private bool _isRunning;
-        
-        public async void Init(StorageObjectDescriptor descriptor)
-        {
-            Descriptor = descriptor;
-
-            _isRunning = false;
-            await CheckIfIsRunning();
-            if (IsRunning)
-            {
-                CaptureLogs();
-            }
-        }
-        private void CaptureLogs()
-        {
-            _logProcess?.Kill();
-            _logProcess = new FollowLogCommand(Descriptor);
-            _logProcess.Start();
-        }
-        public async Task CheckIfIsRunning()
-        {
-            var checkProcess = new CheckImageReturnableCommand(Descriptor)
-            {
-                WriteLogToUnity = false, WriteCommandToUnity = false
-            };
-
-            _isRunning = await checkProcess.Start(null);
-        }
-        public void ForwardEventsTo(MongoStorageBuilder oldBuilder)
-        {
-            if (oldBuilder == null) return;
-            OnIsRunningChanged += oldBuilder.OnIsRunningChanged;
         }
     }
 }
