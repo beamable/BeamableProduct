@@ -8,7 +8,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         protected override string NewServiceName { get; set; } = "NewStorageObject";
         protected override void CreateService(string serviceName)
         {
-            EditorApplication.delayCall += () => MicroserviceEditor.CreateNewServiceFile(ServiceType.StorageObject, serviceName);
+            MicroserviceEditor.CreateNewServiceFile(ServiceType.StorageObject, serviceName);
         }
     }
 }

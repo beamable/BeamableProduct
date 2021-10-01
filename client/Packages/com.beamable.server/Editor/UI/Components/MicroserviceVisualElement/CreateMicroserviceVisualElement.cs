@@ -8,7 +8,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         protected override string NewServiceName { get; set; } = "NewMicroService";
         protected override void CreateService(string serviceName)
         {
-            EditorApplication.delayCall += () => MicroserviceEditor.CreateNewServiceFile(ServiceType.MicroService, serviceName);
+            MicroserviceEditor.CreateNewServiceFile(ServiceType.MicroService, serviceName);
         }
     }
 }

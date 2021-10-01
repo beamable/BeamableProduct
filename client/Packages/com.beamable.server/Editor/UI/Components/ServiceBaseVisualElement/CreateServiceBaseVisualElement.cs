@@ -94,7 +94,7 @@ namespace Beamable.Editor.Microservice.UI.Components
                 return;
             _createBtn.text = "Creating...";
             OnCreateServiceClicked?.Invoke();
-            CreateService(NewServiceName);
+            EditorApplication.delayCall += () => CreateService(NewServiceName);
         }
         protected abstract void CreateService(string serviceName);
         private void HandeMouseDownEvent(MouseDownEvent evt)
