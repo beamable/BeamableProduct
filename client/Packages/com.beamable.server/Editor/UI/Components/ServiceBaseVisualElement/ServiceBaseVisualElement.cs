@@ -21,10 +21,22 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
     public abstract class ServiceBaseVisualElement<T> : MicroserviceComponent where T : ServiceModelBase
     {
-        protected ServiceBaseVisualElement(string name) : base(name)
+        protected ServiceBaseVisualElement() : base(nameof(ServiceBaseVisualElement<T>))
         {
         }
-        
+
+        public new class UxmlFactory : UxmlFactory<MicroserviceVisualElement, UxmlTraits>
+        {
+        }
+
+        public new class UxmlTraits : VisualElement.UxmlTraits
+        {
+            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+            {
+                get { yield break; }
+            }
+        }
+
         public T Model { get; set; }
         
         private const float MIN_HEIGHT = 200.0f;
@@ -231,13 +243,13 @@ namespace Beamable.Editor.Microservice.UI.Components
             // We have two ways. Either store reference or return instance as event parameter
             new RunImageLogParser(_loadingBar, Model) { OnFailure = OnStartFailed };
         }
-        private void SetupProgressBarForStop(Task task)
-        {
-            new StopImageLogParser(_loadingBar, Model) { OnFailure = OnStopFailed };
-        }
         private void OnStartFailed()
         {
             OnServiceStartFailed?.Invoke();
+        }
+        private void SetupProgressBarForStop(Task task)
+        {
+            new StopImageLogParser(_loadingBar, Model) { OnFailure = OnStopFailed };
         }
         private void OnStopFailed()
         {

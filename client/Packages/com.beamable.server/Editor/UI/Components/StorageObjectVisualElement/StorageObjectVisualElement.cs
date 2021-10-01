@@ -22,10 +22,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
     public class StorageObjectVisualElement : ServiceBaseVisualElement<MongoStorageModel>
     {
-        public StorageObjectVisualElement() : base(nameof(StorageObjectVisualElement))
-        {
-        }
-
         protected override void UpdateStatusIcon()
         {
             throw new NotImplementedException();

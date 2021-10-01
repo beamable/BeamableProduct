@@ -21,10 +21,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
     public class MicroserviceVisualElement : ServiceBaseVisualElement<MicroserviceModel>
     {
-        public MicroserviceVisualElement() : base(nameof(MicroserviceVisualElement))
-        {
-        }
-        
         private Action _defaultBuildAction;
         private bool _mouseOverBuildDropdown;
         
