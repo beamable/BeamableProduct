@@ -25,7 +25,7 @@ namespace Beamable.Server
          public string payload;
       }
 
-      private string _prefix;
+      protected string _prefix;
 
       protected string SerializeArgument<T>(T arg)
       {
@@ -90,15 +90,33 @@ namespace Beamable.Server
                return (T) (object) int.Parse(json);
          }
 
+         if (json.StartsWith("[") && json.EndsWith("]"))
+         {
+            json = $"{{\"items\": {json}}}";
+            var wrapped = JsonUtility.FromJson<JsonUtilityWrappedList<T>>(json);
+            return wrapped.items;
+         }
+
          return JsonUtility.FromJson<T>(json);
       }
 
-      protected Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
+      private class JsonUtilityWrappedList<T>
+      {
+         public T items = default;
+      }
+
+      // protected Func<IBeamableRequester> RequesterFactory { get; set; } =
+
+      protected string CreateUrl(string cid, string pid, string serviceName, string endpoint)
       {
          var prefix = _prefix ?? (_prefix = MicroserviceIndividualization.GetServicePrefix(serviceName));
-         var fullPath = $"{prefix}micro_{serviceName}/{endpoint}";
+         var path = $"{prefix}micro_{serviceName}/{endpoint}";
+         var url = $"/basic/{cid}.{pid}.{path}";
+         return url;
+      }
 
-
+      protected async Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
+      {
          Debug.Log($"Client called {endpoint} with {serializedFields.Length} arguments");
          var argArray = "[ " + string.Join(",", serializedFields) + " ]";
          Debug.Log(argArray);
@@ -116,19 +134,15 @@ namespace Beamable.Server
             return result;
          }
 
-         return API.Instance.Map(de => de.Requester).FlatMap(requester =>
-            {
-               var url = $"/basic/{requester.Cid}.{requester.Pid}.{fullPath}";
-
-               var req = new RequestObject
-               {
-                  payload = argArray
-               };
-
-               Debug.Log($"Sending Request uri=[{url}]");
-               return requester.Request<T>(Method.POST, url, req, parser: Parser);
-            })
-            .Error(err => { Debug.LogError(err); });
+         var b = await API.Instance;
+         var requester = b.Requester;
+         var url = CreateUrl(b.Token.Cid, b.Token.Pid, serviceName, endpoint);
+         var req = new RequestObject
+         {
+            payload = argArray
+         };
+         Debug.Log($"Sending Request uri=[{url}]");
+         return await requester.Request<T>(Method.POST, url, req, parser: Parser);
       }
 
       protected static string CreateEndpointPrefix(string serviceName)
