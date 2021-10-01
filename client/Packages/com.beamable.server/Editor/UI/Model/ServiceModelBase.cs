@@ -25,9 +25,9 @@ namespace Beamable.Editor.UI.Model
         public abstract bool IsRunning { get; }
         public bool AreLogsAttached { get; protected set; } = true;
         public LogMessageStore Logs { get; } = new LogMessageStore();
-        public abstract IDescriptor GetDescriptor { get; }
-        public abstract IBeamableBuilder GetBuilder { get; }
-        public ServiceType GetServiceType => GetDescriptor.ServiceType;
+        public abstract IDescriptor Descriptor { get; }
+        public abstract IBeamableBuilder Builder { get; }
+        public ServiceType ServiceType => Descriptor.ServiceType;
         public bool IsSelected
         {
             get => _isSelected;

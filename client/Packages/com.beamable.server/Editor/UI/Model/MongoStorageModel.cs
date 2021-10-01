@@ -25,11 +25,11 @@ namespace Beamable.Editor.UI.Model
     [System.Serializable]
     public class MongoStorageModel : ServiceModelBase, IBeamableStorageObject
     {
-        public StorageObjectDescriptor Descriptor { get; private set; }
-        public MongoStorageBuilder Builder { get; private set; }
-        public override IBeamableBuilder GetBuilder => Builder;
-        public override IDescriptor GetDescriptor => Descriptor;
-        public override bool IsRunning => Builder?.IsRunning ?? false;
+        public StorageObjectDescriptor ServiceDescriptor { get; private set; }
+        public MongoStorageBuilder ServiceBuilder { get; private set; }
+        public override IBeamableBuilder Builder => ServiceBuilder;
+        public override IDescriptor Descriptor => ServiceDescriptor;
+        public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
 
         public override event Action<Task> OnStart;
         public override event Action<Task> OnStop;
@@ -38,8 +38,8 @@ namespace Beamable.Editor.UI.Model
         {
             return new MongoStorageModel
             {
-                Descriptor = descriptor,
-                Builder = Microservices.GetStorageBuilder(descriptor),
+                ServiceDescriptor = descriptor,
+                ServiceBuilder = Microservices.GetStorageBuilder(descriptor),
             };
         }
 
@@ -64,10 +64,10 @@ namespace Beamable.Editor.UI.Model
         public override void Refresh(IDescriptor descriptor)
         {
             // reset the descriptor and statemachines; because they aren't system.serializable durable.
-            Descriptor = (StorageObjectDescriptor)descriptor;
-            var oldBuilder = Builder;
-            Builder = Microservices.GetStorageBuilder(Descriptor);
-            Builder.ForwardEventsTo(oldBuilder);
+            ServiceDescriptor = (StorageObjectDescriptor)descriptor;
+            var oldBuilder = ServiceBuilder;
+            ServiceBuilder = Microservices.GetStorageBuilder(ServiceDescriptor);
+            ServiceBuilder.ForwardEventsTo(oldBuilder);
         }
     }
 }

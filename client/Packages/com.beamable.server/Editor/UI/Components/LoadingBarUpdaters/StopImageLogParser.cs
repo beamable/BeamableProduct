@@ -16,8 +16,8 @@ namespace Beamable.Editor.Microservice.UI.Components {
             "exception"
         };
 
-        public override string StepText => $"(Stopping {base.StepText} MS {_model.GetDescriptor.Name})";
-        public override string ProcessName => $"Stopping MS {_model?.GetDescriptor?.Name}";
+        public override string StepText => $"(Stopping {base.StepText} MS {_model.Descriptor.Name})";
+        public override string ProcessName => $"Stopping MS {_model?.Descriptor?.Name}";
 
         public StopImageLogParser(ILoadingBar loadingBar, ServiceModelBase model) : base(loadingBar, model) {
             TotalSteps = expectedLogs.Length;

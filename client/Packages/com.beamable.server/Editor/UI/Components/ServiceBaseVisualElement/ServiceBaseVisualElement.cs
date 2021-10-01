@@ -63,7 +63,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             Model.OnStart -= SetupProgressBarForStart;
             Model.OnStop -= SetupProgressBarForStop;
             Model.OnLogsAttachmentChanged -= CreateLogSection;
-            Model.GetBuilder.OnIsRunningChanged -= HandleIsRunningChanged;
+            Model.Builder.OnIsRunningChanged -= HandleIsRunningChanged;
         }
         public override void Refresh()
         {
@@ -104,7 +104,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             Microservices.onBeforeDeploy -= SetupProgressBarForDeployment;
             Microservices.onBeforeDeploy += SetupProgressBarForDeployment;
 
-            _nameTextField.text = Model.GetDescriptor.Name;
+            _nameTextField.text = Model.Descriptor.Name;
             _startButton.clickable.clicked += HandleStartButtonClicked;
             
             var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
@@ -121,8 +121,8 @@ namespace Beamable.Editor.Microservice.UI.Components
             Model.OnLogsAttachmentChanged -= CreateLogSection;
             Model.OnLogsAttachmentChanged += CreateLogSection;
 
-            Model.GetBuilder.OnIsRunningChanged -= HandleIsRunningChanged;
-            Model.GetBuilder.OnIsRunningChanged += HandleIsRunningChanged;
+            Model.Builder.OnIsRunningChanged -= HandleIsRunningChanged;
+            Model.Builder.OnIsRunningChanged += HandleIsRunningChanged;
             
             _separator.Setup(OnDrag);
             _separator.Refresh();
@@ -142,7 +142,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         }
         private async void UpdateModel()
         {
-            await Model.GetBuilder.CheckIfIsRunning();
+            await Model.Builder.CheckIfIsRunning();
         }
         private void OnDrag(float value)
         {

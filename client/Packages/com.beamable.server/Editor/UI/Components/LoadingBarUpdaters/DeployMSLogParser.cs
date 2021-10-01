@@ -26,10 +26,10 @@ namespace Beamable.Editor.Microservice.UI.Components {
             Step = 0;
             TotalSteps = 1;
             successLogs = globalSuccessLogs
-                .Select(l => string.Format(l, model.GetDescriptor.Name)).ToArray();
+                .Select(l => string.Format(l, model.Descriptor.Name)).ToArray();
 
             failureLogs = globalFailureLogs
-                .Select(l => string.Format(l, model.GetDescriptor.Name)).ToArray();
+                .Select(l => string.Format(l, model.Descriptor.Name)).ToArray();
 
             OnProgress(0, 0, 1);
             _model.OnDeployProgress += OnProgress;
@@ -39,7 +39,7 @@ namespace Beamable.Editor.Microservice.UI.Components {
         private void HandleLog(string logString, string stackTrace, LogType type)
         {
             if (successLogs.Contains(logString)) {
-                LoadingBar.UpdateProgress(1f, _showName ? $"{_model.GetDescriptor.Name}: Deployed" : $"(Deployed)");
+                LoadingBar.UpdateProgress(1f, _showName ? $"{_model.Descriptor.Name}: Deployed" : $"(Deployed)");
                 Kill();
             }
             else if (failureLogs.Contains(logString)) {
@@ -52,7 +52,7 @@ namespace Beamable.Editor.Microservice.UI.Components {
         {
             TotalSteps = (int) total;
             Step = (int) step;
-            LoadingBar.UpdateProgress(progress, _showName ? $"{_model.GetDescriptor.Name}: {ProcessName}" :$"({ProcessName})");
+            LoadingBar.UpdateProgress(progress, _showName ? $"{_model.Descriptor.Name}: {ProcessName}" :$"({ProcessName})");
         }
 
         protected override void OnKill() {

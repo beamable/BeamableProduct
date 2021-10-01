@@ -4,7 +4,7 @@ namespace Beamable.Editor.UI.Model
 {
     public interface IBeamableStorageObject : IBeamableService
     {
-        StorageObjectDescriptor Descriptor { get; }
-        MongoStorageBuilder Builder { get; }
+        StorageObjectDescriptor ServiceDescriptor { get; }
+        MongoStorageBuilder ServiceBuilder { get; }
     }
 }

@@ -42,8 +42,8 @@ namespace Beamable.Editor.Microservice.UI.Components
             _microserviceModel.OnBuildAndRestart -= SetupProgressBarForBuildAndRestart;
             _microserviceModel.OnBuild -= SetupProgressBarForBuild;
             _microserviceModel.OnDockerLoginRequired -= LoginToDocker;
-            _microserviceModel.Builder.OnIsBuildingChanged -= OnIsBuildingChanged;
-            _microserviceModel.Builder.OnLastImageIdChanged -= HandleLastImageIdChanged;
+            _microserviceModel.ServiceBuilder.OnIsBuildingChanged -= OnIsBuildingChanged;
+            _microserviceModel.ServiceBuilder.OnLastImageIdChanged -= HandleLastImageIdChanged;
         }
         protected override void QueryVisualElements()
         {
@@ -72,10 +72,10 @@ namespace Beamable.Editor.Microservice.UI.Components
             _microserviceModel.OnDockerLoginRequired -= LoginToDocker;
             _microserviceModel.OnDockerLoginRequired += LoginToDocker;
             
-            _microserviceModel.Builder.OnIsBuildingChanged -= OnIsBuildingChanged;
-            _microserviceModel.Builder.OnIsBuildingChanged += OnIsBuildingChanged;
-            _microserviceModel.Builder.OnLastImageIdChanged -= HandleLastImageIdChanged;
-            _microserviceModel.Builder.OnLastImageIdChanged += HandleLastImageIdChanged;
+            _microserviceModel.ServiceBuilder.OnIsBuildingChanged -= OnIsBuildingChanged;
+            _microserviceModel.ServiceBuilder.OnIsBuildingChanged += OnIsBuildingChanged;
+            _microserviceModel.ServiceBuilder.OnLastImageIdChanged -= HandleLastImageIdChanged;
+            _microserviceModel.ServiceBuilder.OnLastImageIdChanged += HandleLastImageIdChanged;
             _microserviceModel.OnRemoteReferenceEnriched -= OnServiceReferenceChanged;
             _microserviceModel.OnRemoteReferenceEnriched += OnServiceReferenceChanged;
         }
@@ -198,7 +198,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             {
                 _defaultBuildAction = () => _microserviceModel.BuildAndStart();
             }
-            _startButton.SetEnabled(_microserviceModel.Builder.HasImage && !_microserviceModel.IsBuilding);
+            _startButton.SetEnabled(_microserviceModel.ServiceBuilder.HasImage && !_microserviceModel.IsBuilding);
             _buildDropDown.SetEnabled(!_microserviceModel.IsBuilding);
         }
     }

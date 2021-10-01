@@ -26,8 +26,8 @@ namespace Beamable.Editor.UI.Model
         bool IsRunning { get; }
         bool AreLogsAttached { get; }
         LogMessageStore Logs { get; }
-        ServiceType GetServiceType { get; }
-        IDescriptor GetDescriptor { get; }
+        ServiceType ServiceType { get; }
+        IDescriptor Descriptor { get; }
 
         Action OnLogsDetached { get; set; }
         Action OnLogsAttached { get; set; }
