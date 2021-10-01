@@ -19,13 +19,13 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
-    public abstract class ServiceBaseVisualElement<T> : MicroserviceComponent where T : ServiceModelBase
+    public abstract class ServiceBaseVisualElement : MicroserviceComponent
     {
-        protected ServiceBaseVisualElement() : base(nameof(ServiceBaseVisualElement<T>))
+        protected ServiceBaseVisualElement() : base(nameof(ServiceBaseVisualElement))
         {
         }
 
-        public T Model { get; set; }
+        public ServiceModelBase Model { get; set; }
         
         private const float MIN_HEIGHT = 200.0f;
         private const float MAX_HEIGHT = 500.0f;

@@ -20,8 +20,10 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
-    public class StorageObjectVisualElement : ServiceBaseVisualElement<MongoStorageModel>
+    public class StorageObjectVisualElement : ServiceBaseVisualElement
     {
+        public new class UxmlFactory : UxmlFactory<StorageObjectVisualElement, UxmlTraits>
+        {}
         protected override void UpdateStatusIcon()
         {
             throw new NotImplementedException();

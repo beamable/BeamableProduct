@@ -186,6 +186,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         public void BuildAndStartAllMicroservices(ILoadingBar loadingBar)
         {
+            Debug.Log("dduddudupa");
             var children = new List<LoadingBarUpdater>();
             foreach (var microservice in Model.Services)
             {
@@ -209,8 +210,8 @@ namespace Beamable.Editor.Microservice.UI.Components
             int Comparer(VisualElement a, VisualElement b) {
                 if (a is CreateMicroserviceVisualElement) return -1;
                 if (b is CreateMicroserviceVisualElement) return 1;
-                var aName = ((MicroserviceVisualElement) a).Model.Name;
-                var bName = ((MicroserviceVisualElement) b).Model.Name;
+                var aName = ((MicroserviceVisualElement) a).Model.GetDescriptor.Name;
+                var bName = ((MicroserviceVisualElement) b).Model.GetDescriptor.Name;
                 return config.MicroserviceOrderComparer(aName, bName);
             }
             _microservicesListElement.Sort(Comparer);

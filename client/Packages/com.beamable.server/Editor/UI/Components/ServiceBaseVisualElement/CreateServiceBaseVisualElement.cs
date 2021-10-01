@@ -19,7 +19,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
     public abstract class CreateServiceBaseVisualElement : MicroserviceComponent
     {
-        protected CreateServiceBaseVisualElement() : base(nameof(ServiceBaseVisualElement<ServiceModelBase>))
+        protected CreateServiceBaseVisualElement() : base(nameof(ServiceBaseVisualElement))
         {
         }
         
