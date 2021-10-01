@@ -186,7 +186,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         public void BuildAndStartAllMicroservices(ILoadingBar loadingBar)
         {
-            Debug.Log("dduddudupa");
             var children = new List<LoadingBarUpdater>();
             foreach (var microservice in Model.Services)
             {
