@@ -198,7 +198,7 @@ namespace Beamable.Editor.Microservice.UI.Components
                 CreateLogElement();
 
 #if UNITY_2019_1_OR_NEWER
-            _rootVisualElement.style.height = new StyleLength(_storedHeight > 0 ? _storedHeight : _DEFAULT_HEIGHT);
+            _rootVisualElement.style.height = new StyleLength(_storedHeight > 0 ? _storedHeight : DEFAULT_HEIGHT);
 #elif UNITY_2018
                 _rootVisualElement.style.height =
                     StyleValue<float>.Create(_storedHeight > 0 ? _storedHeight : DEFAULT_HEIGHT);
@@ -220,7 +220,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             _storedHeight = _rootVisualElement.layout.height;
 
 #if UNITY_2019_1_OR_NEWER
-            _rootVisualElement.style.height = new StyleLength(_DETACHED_HEIGHT);
+            _rootVisualElement.style.height = new StyleLength(DETACHED_HEIGHT);
 #elif UNITY_2018
             _rootVisualElement.style.height =
                 StyleValue<float>.Create(DETACHED_HEIGHT);
