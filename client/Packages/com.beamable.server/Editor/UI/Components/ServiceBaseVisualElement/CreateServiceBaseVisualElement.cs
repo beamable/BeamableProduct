@@ -63,16 +63,15 @@ namespace Beamable.Editor.Microservice.UI.Components
             _buildDropDownBtn = Root.Q<Button>("buildDropDown");
             _checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
             _logContainerElement = Root.Q<VisualElement>("logContainer");
+            _nameTextField = Root.Q<TextField>("microserviceNewTitle");
         }
         protected virtual void UpdateVisualElements()
         {
             _servicesNames = MicroservicesDataModel.Instance.AllServices.Select(x => x.GetDescriptor.Name).ToList();
             RegisterCallback<MouseDownEvent>(HandeMouseDownEvent, TrickleDown.TrickleDown);
             
-            _nameTextField = Root.Q<TextField>("microserviceNewTitle");
             _nameTextField.SetValueWithoutNotify(NewServiceName);
             _nameTextField.maxLength = MAX_NAME_LENGTH;
-
             _nameTextField.RegisterCallback<FocusEvent>(HandleNameLabelFocus, TrickleDown.TrickleDown);
             _nameTextField.RegisterCallback<KeyUpEvent>(HandleNameLabelKeyUp, TrickleDown.TrickleDown);
 
