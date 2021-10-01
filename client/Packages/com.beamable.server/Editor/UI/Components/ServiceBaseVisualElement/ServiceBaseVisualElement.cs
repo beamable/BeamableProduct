@@ -25,18 +25,6 @@ namespace Beamable.Editor.Microservice.UI.Components
         {
         }
 
-        public new class UxmlFactory : UxmlFactory<MicroserviceVisualElement, UxmlTraits>
-        {
-        }
-
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
-        }
-
         public T Model { get; set; }
         
         private const float MIN_HEIGHT = 200.0f;
