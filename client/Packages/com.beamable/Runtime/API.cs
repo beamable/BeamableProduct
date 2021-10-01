@@ -195,9 +195,11 @@ namespace Beamable
         {
             const int SECONDS_UNTIL_RETRY = 2;
 
+            var waitForRetryTime = new WaitForSecondsRealtime(SECONDS_UNTIL_RETRY);
+
             IEnumerator WaitThenTryAgain(Action cb)
             {
-                yield return new WaitForSecondsRealtime(SECONDS_UNTIL_RETRY);
+                yield return waitForRetryTime;
                 cb();
             }
 
