@@ -84,7 +84,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             _microserviceVisualElement = new CreateMicroserviceVisualElement();
             _microservicesListElement.Add(_microserviceVisualElement);
-            _microserviceVisualElement.OnCreateMicroserviceClicked += () => Root.SetEnabled(false);
+            _microserviceVisualElement.OnCreateServiceClicked += () => Root.SetEnabled(false);
             _modelToVisual.Clear();
 
             foreach (var serviceStatus in Model.GetAllServicesStatus())

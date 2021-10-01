@@ -43,27 +43,17 @@ namespace Beamable.Editor.UI.Model
 
             _isRunning = await checkProcess.Start(null);
         }
-
+        
+        protected abstract Task<DockerCommand> PrepareRunCommand();
 
         public async Task TryToStart()
         {
             // if the service is already running; don't do anything.
             if (IsRunning) return;
-            var beamable = await EditorAPI.Instance;
-            var secret = await beamable.GetRealmSecret();
-            var cid = beamable.CustomerView.Cid;
-
             if (_runProcess != null) return;
-            if(Descriptor.ServiceType == ServiceType.MicroService)
-            {
-                var connectionStrings = await Microservices.GetConnectionStringEnvironmentVariables((MicroserviceDescriptor) Descriptor);
-                _runProcess =
-                    new RunServiceCommand((MicroserviceDescriptor) Descriptor, cid, secret, connectionStrings);
-            }
-            else
-            {
-                _runProcess = new RunStorageCommand((StorageObjectDescriptor) Descriptor);
-            }
+            
+            _runProcess = await PrepareRunCommand();
+            
             // TODO: Send messages to /admin/HealthCheck to see if the service is ready to accept traffic.
 
             _runProcess.OnExit += i =>
@@ -112,5 +102,6 @@ namespace Beamable.Editor.UI.Model
             await TryToStop();
             await TryToStart();
         }
+
     }
 }

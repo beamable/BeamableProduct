@@ -1,13 +1,15 @@
-﻿using Beamable.Editor.Microservice.UI.Components;
-using Beamable.Server.Editor;
+﻿using Beamable.Server.Editor;
 using UnityEditor;
 
-namespace Editor.UI.Components.StorageObjectVisualElement
+namespace Beamable.Editor.Microservice.UI.Components
 {
     public class CreateStorageObjectVisualElement : CreateServiceBaseVisualElement
     {
-        protected override string NewServiceName { get; set; } = "NewStorageObject";
+        public CreateStorageObjectVisualElement() : base(nameof(MicroserviceVisualElement))
+        {
+        }
         
+        protected override string NewServiceName { get; set; } = "NewStorageObject";
         protected override void CreateService(string serviceName)
         {
             EditorApplication.delayCall += () => MicroserviceEditor.CreateNewServiceFile(ServiceType.StorageObject, serviceName);

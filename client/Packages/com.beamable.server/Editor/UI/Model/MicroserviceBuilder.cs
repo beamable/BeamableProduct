@@ -56,6 +56,16 @@ namespace Beamable.Editor.UI.Model
             _buildPath = ((MicroserviceDescriptor)descriptor).BuildPath;
             await TryToGetLastImageId();
         }
+
+        protected override async Task<DockerCommand> PrepareRunCommand()
+        {
+            var beamable = await EditorAPI.Instance;
+            var secret = await beamable.GetRealmSecret();
+            var cid = beamable.CustomerView.Cid;
+            var connectionStrings = await Microservices.GetConnectionStringEnvironmentVariables((MicroserviceDescriptor) Descriptor);
+            return new RunServiceCommand((MicroserviceDescriptor) Descriptor, cid, secret, connectionStrings);
+        }
+
         public async Task TryToBuild(bool includeDebuggingTools)
         {
             if (IsBuilding) return;

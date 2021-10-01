@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
@@ -18,54 +19,55 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
     public abstract class CreateServiceBaseVisualElement : MicroserviceComponent
     {
+        protected CreateServiceBaseVisualElement(string name) : base(name)
+        {
+        }
+        
+        protected abstract string NewServiceName { get; set; }
+        
         public event Action OnCreateServiceClicked;
 
-        protected virtual string NewServiceName { get; set; } = "NewService";
-        
         private const int MAX_NAME_LENGTH = 32;
         private bool _canCreateService;
-
+        private string _statusClassName;
+        
         private VisualElement _logListRoot;
         private ListView _listView;
-        private string _statusClassName;
         private TextField _nameTextField;
         private Button _popupBtn;
         private Button _moreBtn;
+        private Button _cancelBtn;
+        private Button _buildDropDownBtn;
         private BeamableCheckboxVisualElement _checkbox;
-
-        private object _logVisualElement;
         private Button _createBtn;
         private VisualElement _logContainerElement;
         private Label _buildDefaultLabel;
-
-        private Action _defaultBuildAction;
         private LogVisualElement _logElement;
         private List<string> _servicesNames;
+        private object _logVisualElement;
 
-        public CreateServiceBaseVisualElement() : base(nameof(CreateServiceBaseVisualElement))
-        {
-        }
-
-        // public new class UxmlFactory : UxmlFactory<CreateServiceBaseVisualElement, UxmlTraits>
-        // {
-        // }
-        //
-        // public new class UxmlTraits : VisualElement.UxmlTraits
-        // {
-        //     public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-        //     {
-        //         get { yield break; }
-        //     }
-        // }
-
+        private Action _defaultBuildAction;
+        
         public override void Refresh()
         {
             base.Refresh();
-            
-            _servicesNames = GetServicesNames();
-            RegisterCallback<MouseDownEvent>(HandeMouseDownEvent, TrickleDown.TrickleDown);
-            
+            QueryVisualElements();
+            UpdateVisualElements();
+
+        }
+        protected virtual void QueryVisualElements()
+        {
             Root.Q("microserviceTitle")?.RemoveFromHierarchy();
+            _cancelBtn = Root.Q<Button>("cancelBtn");
+            _createBtn = Root.Q<Button>("start");
+            _buildDropDownBtn = Root.Q<Button>("buildDropDown");
+            _checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
+            _logContainerElement = Root.Q<VisualElement>("logContainer");
+        }
+        protected virtual void UpdateVisualElements()
+        {
+            _servicesNames = MicroservicesDataModel.Instance.AllServices.Select(x => x.GetDescriptor.Name).ToList();
+            RegisterCallback<MouseDownEvent>(HandeMouseDownEvent, TrickleDown.TrickleDown);
             
             _nameTextField = Root.Q<TextField>("microserviceNewTitle");
             _nameTextField.SetValueWithoutNotify(NewServiceName);
@@ -74,29 +76,19 @@ namespace Beamable.Editor.Microservice.UI.Components
             _nameTextField.RegisterCallback<FocusEvent>(HandleNameLabelFocus, TrickleDown.TrickleDown);
             _nameTextField.RegisterCallback<KeyUpEvent>(HandleNameLabelKeyUp, TrickleDown.TrickleDown);
 
-            var cancelBtn = Root.Q<Button>("cancelBtn");
-            cancelBtn.clickable.clicked += Root.RemoveFromHierarchy;
+            _cancelBtn.clickable.clicked += Root.RemoveFromHierarchy;
 
-            _createBtn = Root.Q<Button>("start");
             _createBtn.text = "Create";
             _createBtn.clickable.clicked += HandleCreateButtonClicked;
+            
+            _buildDropDownBtn.RemoveFromHierarchy();
 
-            var buildDropDown = Root.Q<Button>("buildDropDown");
-            buildDropDown.RemoveFromHierarchy();
-
-            _checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
             _checkbox.Refresh();
             _checkbox.SetWithoutNotify(false);
             _checkbox.SetEnabled(false);
 
-            _logContainerElement = Root.Q<VisualElement>("logContainer");
             _logContainerElement.RemoveFromHierarchy();
             RenameGestureBegin();
-        }
-        private List<string> GetServicesNames()
-        {
-            return new List<string>();
-            //return MicroservicesDataModel.Instance.AllServices.Select(x => x.Name).ToList();
         }
         private void HandleCreateButtonClicked()
         {
@@ -134,12 +126,14 @@ namespace Beamable.Editor.Microservice.UI.Components
         private void CheckName()
         {
             var newName = _nameTextField.value;
-            NewServiceName = newName.All(c => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
-                ? newName
-                : NewServiceName;
+            if (Regex.IsMatch(newName, @"^[a-zA-Z]+$"))
+            {
+                NewServiceName = newName;
+            }
             _nameTextField.value = NewServiceName;
-            _canCreateService = !_servicesNames.Any(s => s.Equals(NewServiceName)) 
-                               && NewServiceName.Length > 2 && NewServiceName.Length <= MAX_NAME_LENGTH;
+            _canCreateService = !_servicesNames.Contains(NewServiceName) 
+                                && NewServiceName.Length > 2 
+                                && NewServiceName.Length <= MAX_NAME_LENGTH;
             _createBtn.SetEnabled(_canCreateService);
         }
     }
