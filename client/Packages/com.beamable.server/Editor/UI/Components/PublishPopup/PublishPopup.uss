@@ -33,7 +33,7 @@
     margin-left: 3px;
 }
 #nameC, #typeC, #depsC {
-    width: 200px;
+    width: 160px;
     align-self: stretch;
     flex-direction: row;
     align-content: stretch;
@@ -42,11 +42,7 @@
 }
 
 #typeC {
-    width: 100px;
-}
-
-#depsC {
-    width: 130px;
+    width: 140px;
 }
 
 #enabledC {
@@ -54,7 +50,7 @@
     justify-content: center;
 }
 #CommentsC {
-    width: 250px;
+    width: 200px;
     padding-left: 15px;
     justify-content: center;
 }

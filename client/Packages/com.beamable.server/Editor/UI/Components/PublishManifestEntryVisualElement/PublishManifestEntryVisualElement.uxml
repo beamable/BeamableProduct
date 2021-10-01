@@ -12,6 +12,7 @@
         </engine:VisualElement>
 
         <engine:VisualElement name="typeC" class="column">
+            <engine:Image name="typeImage"/>
             <engine:Label name="typeLabel" text="Microservice"/>
         </engine:VisualElement>
         
@@ -28,6 +29,10 @@
 
         <engine:VisualElement name="CommentsC" class="column">
             <engine:TextField name="commentsText"/>
+        </engine:VisualElement>
+
+        <engine:VisualElement name="CheckC" class="column">
+            <engine:Image name="checkImage"/>
         </engine:VisualElement>
     </engine:VisualElement>
 

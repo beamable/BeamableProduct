@@ -6,31 +6,38 @@
     padding-left: 10px;
     padding-right: 10px;
 }
-#nameC {
-    width: 200px;
+#nameC, #typeC {
+    width: 160px;
+    height: 20px;
     flex-direction: row;
     align-self: stretch;
-    flex-direction: row;
     align-content: stretch;
     flex-grow: 3;
-    padding-left: 10px;
+    padding-left: 12px;
 }
 #CommentsC {
-    width: 250px;
+    width: 200px;
     padding-left: 20px;
 }
+#typeC {
+    width: 120px;
+}
+
 #SizeC {
     flex-direction: row;
-    width: 100px;
-    padding-left: 10px;
-    padding-right: 10px;
+    width: 80px;
 }
 #commentsText, #SizeC .template{
     width: 90px;
 }
 
+#commentsText {
+    height: 25px;
+}
+
 #enabledC {
     width: 100px;
+    height: 20px;
     flex-direction: row;
     justify-content: center;
 }
@@ -43,4 +50,22 @@
 }
 .column{
     flex-direction: row;
+}
+
+.microserviceImage {
+    width: 20px;
+    height: 20px;
+    background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Microservice_Light.png");
+}
+
+.storageImage {
+    width: 30px;
+    height: 30px;
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/Database_light.png");
+}
+
+#checkImage {
+    width: 20px;
+    height: 20px;
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Checked_Dark.png");    
 }

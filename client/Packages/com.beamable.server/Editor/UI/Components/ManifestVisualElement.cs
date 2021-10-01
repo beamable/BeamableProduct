@@ -103,7 +103,7 @@ namespace Beamable.Server.Editor.UI.Components
       private const string MICROSERVICE_TYPE = "Microservice";
       
       public string Name { get; set; }
-      public string Type { get; } = MICROSERVICE_TYPE;
+      public string Type => MICROSERVICE_TYPE;
       public string Comment { get; set; }
 
       public bool Enabled

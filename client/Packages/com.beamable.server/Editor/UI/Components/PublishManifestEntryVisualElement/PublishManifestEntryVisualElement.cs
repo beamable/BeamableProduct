@@ -19,6 +19,9 @@ namespace Beamable.Editor.Microservice.UI.Components
    public class PublishManifestEntryVisualElement : MicroserviceComponent
    {
       private static readonly string[] TemplateSizes = {"small", "medium", "large"};
+
+      private const string MICROSERVICE_IMAGE_CLASS = "microserviceImage";
+      private const string STORAGE_IMAGE_CLASS = "storageImage";
       
       public IEntryModel Model { get; }
 
@@ -51,9 +54,13 @@ namespace Beamable.Editor.Microservice.UI.Components
          var commentField = Root.Q<TextField>("commentsText");
          commentField.value = Model.Comment;
          commentField.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
+         
+         var icon = Root.Q<Image>("typeImage");
 
          if (Model is ManifestEntryModel serviceModel)
          {
+            icon.AddToClassList(MICROSERVICE_IMAGE_CLASS);  
+            
             var serviceDescriptor = Microservices.Descriptors.Find(descriptor => descriptor.Name == serviceModel.Name);
             var serviceDependencies = new List<ServiceDependency>();
             foreach (var storage in serviceDescriptor.GetStorageReferences())
@@ -75,6 +82,10 @@ namespace Beamable.Editor.Microservice.UI.Components
                   depsLabel.text += dependency.id + '\n';
                }
             }
+         }
+         else
+         {
+            icon.AddToClassList(STORAGE_IMAGE_CLASS);
          }
       }
    }
