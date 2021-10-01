@@ -326,8 +326,7 @@ namespace Beamable.Api
          }
 
          var promise = new Promise<Data>();
-         // TODO: Introduce a shared promise that wraps the last refresh, so we don't make lots of needless promise instances
-         var subscription = Subscribe(scope, nextData => { promise.CompleteSuccess(nextData); });
+         var subscription = Subscribe(scope, nextData => promise.CompleteSuccess(nextData) );
 
          return promise.Then(_ => subscription.Unsubscribe());
       }
@@ -519,6 +518,12 @@ namespace Beamable
          return subscribable.Subscribable.Subscribe(callback);
       }
 
+      /// <summary>
+      /// Send a request and get the latest state of the subscription.
+      /// This method will not trigger existing subscriptions
+      /// </summary>
+      /// <param name="scope"></param>
+      /// <returns></returns>
       public static Promise<TScopedRsp> Fetch<TPlatformSubscribable, TScopedRsp, TData>(
          this IHasPlatformSubscriber<TPlatformSubscribable, TScopedRsp, TData> subscribable,
          string scopes="")
