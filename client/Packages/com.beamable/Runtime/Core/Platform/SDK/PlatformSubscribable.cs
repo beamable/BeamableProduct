@@ -175,7 +175,7 @@ namespace Beamable.Api
       /// Manually refresh the available data.
       /// </summary>
       /// <returns></returns>
-      protected Promise<Unit> Refresh()
+      public Promise<Unit> Refresh()
       {
          return Refresh("");
       }
@@ -302,7 +302,19 @@ namespace Beamable.Api
       }
 
       /// <summary>
-      /// Manually fetch the available data.
+      /// Send a request and get the latest state of the subscription.
+      /// This method will not trigger existing subscriptions
+      /// </summary>
+      /// <param name="scope"></param>
+      /// <returns></returns>
+      public async Promise<ScopedRsp> Fetch(string scope = "")
+      {
+         var scopedRsp = await ExecuteRequest(requester, CreateRefreshUrl(scope));
+         return scopedRsp;
+      }
+
+      /// <summary>
+      /// Manually fetch the available data. If the server hasn't delivered a new update, this method will not return the absolute latest data unless you pass forceRefresh as true.
       /// </summary>
       /// <param name="scope"></param>
       /// <returns></returns>
@@ -312,17 +324,12 @@ namespace Beamable.Api
          {
             return Promise<Data>.Successful(data);
          }
-         else
-         {
-            var promise = new Promise<Data>();
-            // TODO: Introduce a shared promise that wraps the last refresh, so we don't make lots of needless promise instances
-            var subscription = Subscribe(scope, nextData =>
-            {
-               promise.CompleteSuccess(nextData);
-            });
 
-            return promise.Then(_ => subscription.Unsubscribe());
-         }
+         var promise = new Promise<Data>();
+         // TODO: Introduce a shared promise that wraps the last refresh, so we don't make lots of needless promise instances
+         var subscription = Subscribe(scope, nextData => { promise.CompleteSuccess(nextData); });
+
+         return promise.Then(_ => subscription.Unsubscribe());
       }
 
       /// <summary>
@@ -510,6 +517,30 @@ namespace Beamable
          where TPlatformSubscribable : PlatformSubscribable<TScopedRsp, TData>
       {
          return subscribable.Subscribable.Subscribe(callback);
+      }
+
+      public static Promise<TScopedRsp> Fetch<TPlatformSubscribable, TScopedRsp, TData>(
+         this IHasPlatformSubscriber<TPlatformSubscribable, TScopedRsp, TData> subscribable,
+         string scopes="")
+         where TPlatformSubscribable : PlatformSubscribable<TScopedRsp, TData>
+      {
+         return subscribable.Subscribable.Fetch(scopes);
+      }
+
+      /// <summary>
+      /// Manually fetch the available data. If the server hasn't delivered a new update, this method will not return the absolute latest data unless you pass forceRefresh as true.
+      /// </summary>
+      /// <param name="scope"></param>
+      /// <param name="forceRefresh">If true, forces the call to trigger a refresh first. This will trigger all existing subscriptions </param>
+      /// <returns></returns>
+      public static Promise<TData> GetCurrent<TPlatformSubscribable, TScopedRsp, TData>(
+         this IHasPlatformSubscriber<TPlatformSubscribable, TScopedRsp, TData> subscribable,
+         string scopes="", bool forceRefresh=false)
+         where TPlatformSubscribable : PlatformSubscribable<TScopedRsp, TData>
+      {
+         return forceRefresh
+            ? subscribable.Subscribable.Refresh().FlatMap(_ => subscribable.Subscribable.GetCurrent(scopes))
+            : subscribable.Subscribable.GetCurrent(scopes);
       }
 
       public static PlatformSubscription<TData> Subscribe<TPlatformSubscribable, TScopedRsp, TData>(
