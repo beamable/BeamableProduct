@@ -28,6 +28,7 @@ namespace Beamable.Editor.UI.Model
         LogMessageStore Logs { get; }
         ServiceType ServiceType { get; }
         IDescriptor Descriptor { get; }
+        string Name { get; }
 
         Action OnLogsDetached { get; set; }
         Action OnLogsAttached { get; set; }

@@ -28,6 +28,7 @@ namespace Beamable.Editor.UI.Model
         public abstract IDescriptor Descriptor { get; }
         public abstract IBeamableBuilder Builder { get; }
         public ServiceType ServiceType => Descriptor.ServiceType;
+        public string Name => Descriptor.Name;
         public bool IsSelected
         {
             get => _isSelected;

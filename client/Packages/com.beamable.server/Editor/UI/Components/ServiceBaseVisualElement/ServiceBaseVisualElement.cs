@@ -104,7 +104,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             Microservices.onBeforeDeploy -= SetupProgressBarForDeployment;
             Microservices.onBeforeDeploy += SetupProgressBarForDeployment;
 
-            _nameTextField.text = Model.Descriptor.Name;
+            _nameTextField.text = Model.Name;
             _startButton.clickable.clicked += HandleStartButtonClicked;
             
             var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);

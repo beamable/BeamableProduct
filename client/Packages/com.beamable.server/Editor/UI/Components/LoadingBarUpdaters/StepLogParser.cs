@@ -13,7 +13,7 @@ namespace Beamable.Editor.Microservice.UI.Components {
         private readonly ServiceModelBase _model;
         private readonly Task _task;
 
-        public override string StepText => $"(Building {base.StepText} MS {_model.Descriptor.Name})";
+        public override string StepText => $"(Building {base.StepText} MS {_model.Name})";
         public override string ProcessName => $"Building MS {_model?.Descriptor?.Name}";
 
         private static readonly string[] errorElements = new[] {

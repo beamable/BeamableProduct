@@ -42,27 +42,6 @@ namespace Beamable.Editor.UI.Model
                 EditorUtility.SetDirty(MicroserviceConfiguration.Instance);
             }
         }
-        public string Name
-        {
-            set
-            {
-                throw new NotImplementedException("Cannot rename services yet.");
-                // if (string.Equals(_name, value)) return;
-                // if (string.IsNullOrWhiteSpace(value)) throw new Exception("Name cannot be empty.");
-                // var oldName = _name;
-                // try
-                // {
-                //     _name = value;
-                //     OnRenamed?.Invoke(this);
-                // }
-                // catch (Exception)
-                // {
-                //     _name = oldName; // clean up the name
-                //     throw;
-                // }
-            }
-            get { return ServiceDescriptor.Name; }
-        }
 
         public Action<ServiceReference> OnRemoteReferenceEnriched;
         public Action<ServiceStatus> OnRemoteStatusEnriched;
