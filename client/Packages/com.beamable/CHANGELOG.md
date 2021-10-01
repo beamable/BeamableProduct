@@ -1,4 +1,5 @@
 
+
 # Changelog
 All notable changes to this project will be documented in this file.
 
@@ -13,9 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New default `currency.coins` currency that demonstrates client writable currency.
 - RemoveThirdPartyAssociation added to AuthService to allow a player to remove a third party auth from their account
 - Cohort Settings to EventContent to support partitioning by player stats
+- A `Fetch()` method to all subscribable SDKs that requests and returns the raw subscription data
 
 ### Changed
 - Content deletion popup opens as separate window
+- An optional `forceRefresh` parameter to all subscribable SDK's `GetCurrent()` method that forces a network request
 
 
 ## [0.16.1]
