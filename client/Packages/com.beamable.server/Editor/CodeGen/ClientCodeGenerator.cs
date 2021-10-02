@@ -136,7 +136,7 @@ namespace Beamable.Server.Editor.CodeGen
               resultType = resultType.GetGenericArguments()[0];
           }
 
-            var isAsync = null != info.MethodInfo.GetCustomAttribute<AsyncStateMachineAttribute>();
+          var isAsync = null != info.MethodInfo.GetCustomAttribute<AsyncStateMachineAttribute>();
           if (isAsync)
           {
               if (typeof(Task).IsAssignableFrom(resultType) && resultType.IsGenericType)
