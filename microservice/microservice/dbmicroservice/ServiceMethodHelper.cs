@@ -2,14 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Beamable.Common;
 using Beamable.Server.Common;
 using LoxSmoke.DocXml;
 using microservice.Extensions;
 using Newtonsoft.Json;
 using Serilog;
+using TaskExtensions = System.Threading.Tasks.TaskExtensions;
 
 namespace Beamable.Server
 {
@@ -32,12 +33,6 @@ namespace Beamable.Server
          return new ServiceMethodCollection(output);
       }
 
-      private static MethodInfo Convert(this MethodInfo method,params Type[] DeclaringTypeArguments)
-      {
-         var baseType = method.DeclaringType.GetGenericTypeDefinition().MakeGenericType(DeclaringTypeArguments);
-         return MethodInfo.GetMethodFromHandle(method.MethodHandle, baseType.TypeHandle) as MethodInfo;
-      }
-      
       private static List<ServiceMethod> ScanType(MicroserviceAttribute serviceAttribute, ServiceMethodProvider provider)
       {
          var type = provider.instanceType;
@@ -49,26 +44,20 @@ namespace Beamable.Server
          foreach (var method in allMethods)
          {
             var closureMethod = method;
-            Log.Debug("methodNameX {methodName}", method.Name);
-            if (method.ReturnType.IsGenericType)
-            {
-               Log.Debug("resultTypeX1 {typeName}", method.ReturnType);
-               var resultType = method.ReturnType.GetGenericArguments()[0];
-               Log.Debug("resultTypeX2 {typeName}", resultType);
-            }
-            var attribute = closureMethod.GetCustomAttribute<ClientCallableAttribute>();
+            var attribute = method.GetCustomAttribute<ClientCallableAttribute>();
             if (attribute == null) continue;
 
             var tag = provider.pathPrefix == "admin/" ? "Admin" : "Uncategorized";
-            var swaggerCategoryAttribute = closureMethod.GetCustomAttribute<SwaggerCategoryAttribute>();
+            var swaggerCategoryAttribute = method.GetCustomAttribute<SwaggerCategoryAttribute>();
             if (swaggerCategoryAttribute != null)
             {
                tag = swaggerCategoryAttribute.CategoryName.FirstCharToUpperRestToLower();
             }
 
-            var serializerAttribute = closureMethod.GetCustomAttribute<CustomResponseSerializationAttribute>();
+            var serializerAttribute = method.GetCustomAttribute<CustomResponseSerializationAttribute>();
 #pragma warning disable 618
-            IResponseSerializer responseSerializer = new DefaultResponseSerializer(serviceAttribute.UseLegacySerialization);
+            IResponseSerializer responseSerializer =
+               new DefaultResponseSerializer(serviceAttribute.UseLegacySerialization);
 #pragma warning restore 618
             if (serializerAttribute != null)
             {
@@ -78,14 +67,14 @@ namespace Beamable.Server
             var servicePath = attribute.PathName;
             if (string.IsNullOrEmpty(servicePath))
             {
-               servicePath = closureMethod.Name;
+               servicePath = method.Name;
             }
 
             servicePath = provider.pathPrefix + servicePath;
 
             var requiredScopes = attribute.RequiredScopes;
 
-            Log.Debug("Found {method} for {path}", closureMethod.Name, servicePath);
+            Log.Debug("Found {method} for {path}", method.Name, servicePath);
 
             var parameters = method.GetParameters();
 
@@ -105,12 +94,13 @@ namespace Beamable.Server
                      return json.Substring(1, json.Length - 2); // peel off the quotes
                   }
 
-                  var deserializeObject = JsonConvert.DeserializeObject(json, pType, UnitySerializationSettings.Instance);
+                  var deserializeObject =
+                     JsonConvert.DeserializeObject(json, pType, UnitySerializationSettings.Instance);
                   return deserializeObject;
                };
                if (namedDeserializers.ContainsKey(parameterName))
                {
-                  throw new Exception($"parameter name is duplicated name=[{parameterName}] method=[{closureMethod.Name}]");
+                  throw new Exception($"parameter name is duplicated name=[{parameterName}] method=[{method.Name}]");
                }
 
                parameterNames.Add(parameterName);
@@ -118,25 +108,37 @@ namespace Beamable.Server
                deserializers.Add(deserializer);
             }
             
-            var isAsync = null != closureMethod.GetCustomAttribute<AsyncStateMachineAttribute>();
-
             MethodInvocation executor;
 
-            if (isAsync)
+            var resultType = method.ReturnType;
+            if (resultType.IsGenericType && resultType.GetGenericTypeDefinition() == typeof(Promise<>))
             {
                executor = (target, args) =>
                {
-                  var task = (Task)closureMethod.Invoke(target, args);
-                  return task;
+                  dynamic promiseObject = closureMethod.Invoke(target, args);
+                  return BeamableTaskExtensions.TaskFromPromise(promiseObject);
                };
             }
             else
             {
-               executor = (target, args) =>
+               var isAsync = null != method.GetCustomAttribute<AsyncStateMachineAttribute>();
+               
+               if (isAsync)
                {
-                  var invocationResult = closureMethod.Invoke(target, args);
-                  return Task.FromResult(invocationResult);
-               };
+                  executor = (target, args) =>
+                  {
+                     var task = (Task) closureMethod.Invoke(target, args);
+                     return task;
+                  };
+               }
+               else
+               {
+                  executor = (target, args) =>
+                  {
+                     var invocationResult = closureMethod.Invoke(target, args);
+                     return Task.FromResult(invocationResult);
+                  };
+               }
             }
 
             var serviceMethod = new ServiceMethod

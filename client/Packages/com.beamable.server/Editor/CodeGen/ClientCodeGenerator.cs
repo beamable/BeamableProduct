@@ -146,16 +146,8 @@ namespace Beamable.Server.Editor.CodeGen
               }
           }
 
-          if (info.MethodInfo.IsGenericMethodDefinition)
-          {
-               genMethod.ReturnType = new CodeTypeReference($"{typeof(Promise)}<{resultType}>");
-               genMethod.Name = $"{info.MethodInfo.Name}<{resultType}>";
-          }
-          else
-          {
-               var genericPromiseType = promiseType.MakeGenericType(resultType);
-               genMethod.ReturnType = new CodeTypeReference(genericPromiseType);
-          }
+          var genericPromiseType = promiseType.MakeGenericType(resultType);
+          genMethod.ReturnType = new CodeTypeReference(genericPromiseType);
 
           // Declaring a return statement for method ToString.
           var returnStatement = new CodeMethodReturnStatement();
