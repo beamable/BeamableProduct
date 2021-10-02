@@ -262,8 +262,7 @@ namespace microservice.Common
          }
 
          var jsonType = GetJsonTypeName(type);
-         
-         OpenApiSchema schema = new OpenApiSchema
+         var schema = new OpenApiSchema
          {
             Title = type.Name,
             Type = jsonType

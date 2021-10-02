@@ -10,7 +10,6 @@ using LoxSmoke.DocXml;
 using microservice.Extensions;
 using Newtonsoft.Json;
 using Serilog;
-using TaskExtensions = System.Threading.Tasks.TaskExtensions;
 
 namespace Beamable.Server
 {
@@ -56,8 +55,7 @@ namespace Beamable.Server
 
             var serializerAttribute = method.GetCustomAttribute<CustomResponseSerializationAttribute>();
 #pragma warning disable 618
-            IResponseSerializer responseSerializer =
-               new DefaultResponseSerializer(serviceAttribute.UseLegacySerialization);
+            IResponseSerializer responseSerializer = new DefaultResponseSerializer(serviceAttribute.UseLegacySerialization);
 #pragma warning restore 618
             if (serializerAttribute != null)
             {
@@ -94,8 +92,7 @@ namespace Beamable.Server
                      return json.Substring(1, json.Length - 2); // peel off the quotes
                   }
 
-                  var deserializeObject =
-                     JsonConvert.DeserializeObject(json, pType, UnitySerializationSettings.Instance);
+                  var deserializeObject = JsonConvert.DeserializeObject(json, pType, UnitySerializationSettings.Instance);
                   return deserializeObject;
                };
                if (namedDeserializers.ContainsKey(parameterName))
