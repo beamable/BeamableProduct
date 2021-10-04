@@ -40,6 +40,7 @@ namespace Beamable.UI.Buss.Properties
 
       public VariableScope Merge(VariableScope other)
       {
+         if (other == null) return Clone();
          var next = new VariableScope
          {
             Numbers = Numbers.Merge(other.Numbers),

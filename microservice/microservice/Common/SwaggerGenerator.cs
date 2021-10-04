@@ -268,6 +268,9 @@ namespace microservice.Common
             Type = jsonType
          };
 
+         if (type.IsGenericType)
+            schema.Title =  $"{type.GetGenericTypeDefinition().Name.ToUpper()}<{GetJsonTypeName(type.GetGenericArguments()[0])}";
+
          void HandleArray()
          {
             // need to get element type.

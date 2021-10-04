@@ -165,10 +165,10 @@ namespace Beamable.Editor.UI.Model
    }
 
    [System.Serializable]
-   public class LogMessage : ISerializationCallbackReceiver
+   public class LogMessage
    {
       public string Message;
-      public DateTime Timestamp;
+      public string Timestamp;
       public string ParameterText;
       public Dictionary<string, object> Parameters;
       public LogLevel Level;
@@ -176,20 +176,10 @@ namespace Beamable.Editor.UI.Model
       public bool IsBoldMessage;
       public string PostfixMessageIcon;
 
-      [SerializeField]
-      private string _rawTimestamp;
-
-      public void OnBeforeSerialize()
+      public static string GetTimeDisplay(DateTime time)
       {
-         _rawTimestamp = Timestamp.ToString("HH:mm:ss");
+         return time.ToString("HH:mm:ss");
       }
-
-      public void OnAfterDeserialize()
-      {
-         Timestamp = DateTime.Parse(_rawTimestamp);
-         
-      }
-
    }
 
    public enum LogLevel

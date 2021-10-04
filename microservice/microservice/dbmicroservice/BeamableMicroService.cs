@@ -422,6 +422,7 @@ namespace Beamable.Server
             ServiceCollection
                .AddScoped(_microserviceType)
                .AddSingleton(_args)
+               .AddSingleton<IRealmInfo>(_args)
                .AddSingleton<SocketRequesterContext>(_ => _socketRequesterContext)
                .AddTransient<IBeamableRequester, MicroserviceRequester>()
                .AddTransient<IUserContext>(provider => provider.GetService<RequestContext>())
@@ -441,6 +442,7 @@ namespace Beamable.Server
                .AddTransient<IMicroserviceCloudDataApi, MicroserviceCloudDataApi>()
                .AddTransient<IMicroserviceRealmConfigService, RealmConfigService>()
                .AddTransient<IMicroserviceCommerceApi, MicroserviceCommerceApi>()
+               .AddTransient<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>()
 
                .AddTransient<UserDataCache<Dictionary<string, string>>.FactoryFunction>(provider => StatsCacheFactory)
                .AddTransient<UserDataCache<RankEntry>.FactoryFunction>(provider => LeaderboardRankEntryFactory)
