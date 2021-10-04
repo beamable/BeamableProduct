@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Content deletion popup opens as separate window
 - An optional `forceRefresh` parameter to all subscribable SDK's `GetCurrent()` method that forces a network request
 
+### Fixed
+- If no internet connection exists on startup, `API.Instance()` will retry every 2 seconds until a connection is established
 
 ## [0.16.1]
 ### Fixed
