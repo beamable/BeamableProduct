@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New default `currency.coins` currency that demonstrates client writable currency.
 - RemoveThirdPartyAssociation added to AuthService to allow a player to remove a third party auth from their account
 - Cohort Settings to EventContent to support partitioning by player stats
+- Support for archiving manifest namespaces.
 - A `Fetch()` method to all subscribable SDKs that requests and returns the raw subscription data
 
 ### Changed
@@ -60,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Account Management Flow third party login buttons use correct third parties
 - Content Manager Window item selection is cleared after changing the Namespace
 - Adjusted confirm window look while trying to delete any content
+- Content Manager Popups refresh after Unity domain reload
 
 ## [0.15.0]
 ### Added

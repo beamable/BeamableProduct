@@ -17,6 +17,8 @@ namespace Beamable.Editor.Microservice.UI.Components
     {
         private static readonly Vector2 MIN_SIZE = new Vector2(920, 400);
         
+	private bool isSet = false;
+
         public static PublishWindow ShowPublishWindow()
         {
             var wnd = CreateInstance<PublishWindow>();
@@ -40,6 +42,17 @@ namespace Beamable.Editor.Microservice.UI.Components
         private void OnEnable()
         {
             VisualElement root = this.GetRootVisualContainer();
+
+            if (isSet)
+            {
+                this.Refresh();
+
+                Microservices.GenerateUploadModel().Then(model =>
+                {
+                    this._model = model;
+                    this.Refresh();
+                });
+            }
         }
 
         void Refresh()
@@ -67,6 +80,8 @@ namespace Beamable.Editor.Microservice.UI.Components
             e.PrepareParent();
             e.Refresh();
             Repaint();
+
+            isSet = true;
         }
     }
 }

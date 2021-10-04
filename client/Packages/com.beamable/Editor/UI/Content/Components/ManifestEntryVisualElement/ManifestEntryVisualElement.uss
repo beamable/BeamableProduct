@@ -1,0 +1,12 @@
+﻿#mainVisualElement{
+    flex-direction: row;
+    margin: 5px;
+}
+
+#checkbox{
+    width: 40px;
+}
+
+#manifestId{
+    flex-grow: 1;
+}

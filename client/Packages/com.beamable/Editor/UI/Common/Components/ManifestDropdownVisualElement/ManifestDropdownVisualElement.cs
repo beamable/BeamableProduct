@@ -5,6 +5,7 @@ using Beamable.Editor.Content;
 using Beamable.Editor.Realms;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common.Models;
+using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -20,7 +21,10 @@ namespace Beamable.Editor.UI.Components
         private VisualElement _listRoot;
         private string _currentManifestId;
         private List<AvailableManifestModel> _availableManifestModels;
+        private Button _editButton;
         public ManifestModel Model { get; set; }
+
+        private bool _editModeOn;
 
         public event Action<string> OnManifestSelected;
 
@@ -49,6 +53,7 @@ namespace Beamable.Editor.UI.Components
             var mainContent = Root.Q<VisualElement>("mainBlockedContent");
             var searchBar = Root.Q<SearchBarVisualElement>();
             var refreshButton = Root.Q<Button>("refreshButton");
+            _editButton = Root.Q<Button>("editButton");
             _listRoot = Root.Q<VisualElement>("manifestList");
 
             _currentManifestId = Model.CurrentManifestId;
@@ -62,6 +67,9 @@ namespace Beamable.Editor.UI.Components
             {
                 loadingIndicator.SetPromise(Model.RefreshAvailableManifests(), mainContent);
             };
+            
+            _editButton.clickable.clicked -= ToggleEditMode;
+            _editButton.clickable.clicked += ToggleEditMode;
 
             searchBar.OnSearchChanged += filter =>
             {
@@ -69,6 +77,11 @@ namespace Beamable.Editor.UI.Components
             };
             searchBar.DoFocus();
             OnManifestsUpdated(Model.ManifestModels);
+        }
+        
+        private void ToggleEditMode() {
+            _editModeOn = !_editModeOn;
+            Root.ToggleInClassList("editMode");
         }
 
         private void OnManifestsUpdated(List<AvailableManifestModel> manifestModels)
@@ -83,20 +96,41 @@ namespace Beamable.Editor.UI.Components
             foreach (var manifestModel in allManifestModels.OrderBy(x => x.id))
             {
                 var id = manifestModel.id;
-                var realmSelectButton = new Button();
-                realmSelectButton.text = id;
-                realmSelectButton.clickable.clicked += () =>
+                var manifestSelectButton = new Button();
+                manifestSelectButton.text = id;
+                manifestSelectButton.clickable.clicked += () =>
                 {
                     OnManifestSelected?.Invoke(id);
                 };
 
                 if (manifestModel.id.Equals(_currentManifestId))
                 {
-                    realmSelectButton.AddToClassList("selected");
-                    realmSelectButton.SetEnabled(false);
+                    manifestSelectButton.AddToClassList("selected");
+                    manifestSelectButton.SetEnabled(false);
                 }
+                else if (!manifestModel.id.Equals(BeamableConstants.DEFAULT_MANIFEST_ID))
+                {
+                    var deleteManifestButton = new Button();
+                    manifestSelectButton.Add(deleteManifestButton);
+                    deleteManifestButton.AddToClassList("deleteManifestButton");
+                    deleteManifestButton.clickable.clicked += () =>
+                    {
+                        var ifDelete = EditorUtility.DisplayDialog(
+                            "Deleting manifest version",
+                            $"Are you sure you want to archive manifest named '{id}'\n" +
+                            $"This operation will archive it permanently for all users!",
+                            "Yes", "No");
 
-                listRoot.Add(realmSelectButton);
+                        if (ifDelete)
+                        {
+                            EditorAPI.Instance.Then(api => {
+                                api.ContentIO.ArchiveManifests(id);
+                            });
+                        }
+                    };
+                }
+                
+                listRoot.Add(manifestSelectButton);
 
             }
         }

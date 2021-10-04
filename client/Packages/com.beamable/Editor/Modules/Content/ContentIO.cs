@@ -98,6 +98,7 @@ namespace Beamable.Editor.Content
       public string id;
       public string checksum;
       public long createdAt;
+      public bool archived;
 
       public static AvailableManifestModel CreateId(string id)
       {
@@ -155,6 +156,8 @@ namespace Beamable.Editor.Content
       public static event IContentDelegate OnContentCreated, OnContentDeleted;
       public static event IContentRenamedDelegate OnContentRenamed;
       public static Action<string> OnManifestChanged;
+      public static Action<AvailableManifests> OnManifestsListFetched;
+      public static Action<IEnumerable<AvailableManifestModel>> OnArchivedManifestsFetched;
 
       private ValidationContext ValidationContext { get; } = new ValidationContext { AllContent = new Dictionary<string, IContentObject>() };
 
@@ -291,13 +294,16 @@ namespace Beamable.Editor.Content
             {
                manifestIdsPromise.CompleteError(error);
             }
-         }).Then(source =>
-         {
+         }).Then(source => {
+            var archivedManifests = source.manifests.Where(m => m.archived).ToList();
+            source.manifests.RemoveAll(m => m.archived);
             if (source.manifests.Count == 0 ||
                 source.manifests.All(m => m.id != BeamableConstants.DEFAULT_MANIFEST_ID))
             {
                source.manifests.Insert(0, AvailableManifestModel.CreateId(BeamableConstants.DEFAULT_MANIFEST_ID));
             }
+            OnManifestsListFetched?.Invoke(source);
+            OnArchivedManifestsFetched?.Invoke(archivedManifests);
             manifestIdsPromise.CompleteSuccess(source);
          });
 
@@ -330,37 +336,59 @@ namespace Beamable.Editor.Content
          }).ToUnit();
       }
 
-      // TODO: Work in progress
-      // public Promise<Unit> DeleteSpecificManifests()
-      // {
-      //    if (string.IsNullOrEmpty(_requester?.AccessToken?.Token))
-      //    {
-      //       return Promise<Unit>.Failed(new Exception("Not logged into Beamable Editor"));
-      //    }
-      //
-      //    //var manifestDeleteUrl = $"/basic/content/manifest/deleteManifests?ids={someIds}";
-      //    var manifestDeleteUrl = "";
-      //
-      //    var manifestIdsPromise = new Promise<Unit>();
-      //    var webRequest = _requester.Request<Unit>(Method.POST, manifestDeleteUrl);
-      //    webRequest.Error(error =>
-      //    {
-      //       if (error is PlatformRequesterException err && err?.Error?.status == 404)
-      //       {
-      //          manifestIdsPromise.CompleteSuccess(new Unit());
-      //       }
-      //       else
-      //       {
-      //          manifestIdsPromise.CompleteError(error);
-      //       }
-      //    }).Then(source =>
-      //    {
-      //       manifestIdsPromise.CompleteSuccess(source);
-      //    });
-      //
-      //    return manifestIdsPromise;
-      // }
+      public Promise<Unit> ArchiveManifests(params string[] ids)
+      {
+         if (string.IsNullOrEmpty(_requester?.AccessToken?.Token))
+         {
+            return Promise<Unit>.Failed(new Exception("Not logged into Beamable Editor"));
+         }
+         var arg = new ManifestsToArchiveArg(ids);
+         var manifestDeleteUrl = "/basic/content/manifests/archive";
+         
+         var manifestIdsPromise = new Promise<Unit>();
+         var webRequest = _requester.Request<Unit>(Method.POST, manifestDeleteUrl, arg);
+         webRequest.Error(error =>
+         {
+            manifestIdsPromise.CompleteError(error);
+         }).Then(source =>
+         {
+            GetAllManifestIDs();
+            manifestIdsPromise.CompleteSuccess(source);
+         });
+         
+         return manifestIdsPromise;
+      }
 
+      public Promise<Unit> UnarchiveManifest(params string[] ids) {
+         if (string.IsNullOrEmpty(_requester?.AccessToken?.Token))
+         {
+            return Promise<Unit>.Failed(new Exception("Not logged into Beamable Editor"));
+         }
+         
+         var url = "/basic/content/manifests/unarchive";
+         
+         var arg = new ManifestsToArchiveArg(ids);
+         var manifestIdsPromise = new Promise<Unit>();
+         var webRequest = _requester.Request<Unit>(Method.POST, url, arg);
+         webRequest.Error(error =>
+         {
+            manifestIdsPromise.CompleteError(error);
+         }).Then(source =>
+         {
+            manifestIdsPromise.CompleteSuccess(source);
+         });
+         
+         return manifestIdsPromise;
+      }
+
+      [Serializable]
+      private class ManifestsToArchiveArg {
+         public string[] manifestIds;
+
+         public ManifestsToArchiveArg(string[] ids) {
+            manifestIds = ids;
+         }
+      }
 
       public void Select(ContentObject content)
       {
