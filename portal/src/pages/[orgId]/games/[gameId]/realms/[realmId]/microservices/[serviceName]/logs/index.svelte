@@ -87,7 +87,6 @@
         if (serviceName){
             logStore = microservices.createLogStream(serviceName, queryStore, loadMoreStore, startTimeStore, endTimeStore)
             logStore.subscribe(value => {
-                console.log('got log value', value);
                 isLoading = false;
                 hasMore = false;
                 loadingMore = false;
