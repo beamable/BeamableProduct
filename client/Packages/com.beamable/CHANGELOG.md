@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - An optional `forceRefresh` parameter to all subscribable SDK's `GetCurrent()` method that forces a network request
 - `API.Instance.Requester` is now an `IBeamableRequester`
 
+### Fixed
+- If no internet connection exists on startup, `API.Instance()` will retry every 2 seconds until a connection is established
+
 ## [0.16.1]
 ### Fixed
 - `ExecuteRolling` method of `Promise` now supports a condition on which stop execution
@@ -61,6 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Account Management Flow third party login buttons use correct third parties
 - Content Manager Window item selection is cleared after changing the Namespace
 - Adjusted confirm window look while trying to delete any content
+- Content Manager Popups refresh after Unity domain reload
 
 ## [0.15.0]
 ### Added
