@@ -112,8 +112,12 @@ namespace Beamable.Server
             {
                executor = (target, args) =>
                {
-                  dynamic promiseObject = closureMethod.Invoke(target, args);
-                  return BeamableTaskExtensions.TaskFromPromise(promiseObject);
+                  var promiseObject = closureMethod.Invoke(target, args);
+                  var promiseMethod = typeof(BeamableTaskExtensions).GetMethod(
+                     nameof(BeamableTaskExtensions.TaskFromPromise), BindingFlags.Static | BindingFlags.Public);
+                  
+                  return (Task)promiseMethod.MakeGenericMethod(resultType.GetGenericArguments()[0])
+                     .Invoke(null, new[] {promiseObject});
                };
             }
             else
@@ -157,8 +161,5 @@ namespace Beamable.Server
 
          return output;
       }
-
    }
-
-
 }

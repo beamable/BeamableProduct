@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if !UNITY_WEBGL
+using System;
 using System.Threading.Tasks;
 
 namespace Beamable.Common
@@ -21,3 +22,4 @@ namespace Beamable.Common
         }
     }
 }
+#endif
