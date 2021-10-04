@@ -463,7 +463,7 @@ namespace Beamable.Server.Editor
       public static event Action<ManifestModel, int> onBeforeDeploy;
       public static event Action<ManifestModel, int> onAfterDeploy;
 
-      public static async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context)
+      public static async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context, Action<IDescriptor> onServiceDeployed = null)
       {
          if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
 
@@ -498,6 +498,7 @@ namespace Beamable.Server.Editor
                if (existingReference.imageId == imageId)
                {
                   Debug.Log(string.Format(BeamableLogConstants.ContainerAlreadyUploadedMessage, descriptor.Name));
+                  onServiceDeployed?.Invoke(descriptor);
                   continue;
                }
             }
@@ -519,6 +520,7 @@ namespace Beamable.Server.Editor
             await uploader.UploadContainer(descriptor, () =>
             {
                 Debug.Log(string.Format(BeamableLogConstants.UploadedContainerMessage, descriptor.Name));
+                onServiceDeployed?.Invoke(descriptor);
             },
             () =>
             {

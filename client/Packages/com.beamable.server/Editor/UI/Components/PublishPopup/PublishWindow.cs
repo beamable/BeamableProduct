@@ -59,7 +59,7 @@ namespace Beamable.Editor.Microservice.UI.Components
                  */
                 e.PrepareForPublish();
 
-                await Microservices.Deploy(model, this);
+                await Microservices.Deploy(model, this, e.ServiceDeployed);
                 Close();
             };
 

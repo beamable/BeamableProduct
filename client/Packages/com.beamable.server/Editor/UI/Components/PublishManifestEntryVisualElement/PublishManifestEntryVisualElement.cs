@@ -22,12 +22,17 @@ namespace Beamable.Editor.Microservice.UI.Components
 
       private const string MICROSERVICE_IMAGE_CLASS = "microserviceImage";
       private const string STORAGE_IMAGE_CLASS = "storageImage";
+      private const string UNPUBLISHED_IMAGE_CLASS = "unpublished";
+      private const string PUBLISHED_IMAGE_CLASS = "published";
       
       public IEntryModel Model { get; }
 
-      public PublishManifestEntryVisualElement(IEntryModel model) : base(nameof(PublishManifestEntryVisualElement))
+      private bool wasPublished;
+
+      public PublishManifestEntryVisualElement(IEntryModel model, bool argWasPublished) : base(nameof(PublishManifestEntryVisualElement))
       {
          Model = model;
+         wasPublished = argWasPublished;
       }
 
       public override void Refresh()
@@ -87,6 +92,14 @@ namespace Beamable.Editor.Microservice.UI.Components
          {
             icon.AddToClassList(STORAGE_IMAGE_CLASS);
          }
+
+         SetPublishedIcon();
+      }
+
+      private void SetPublishedIcon()
+      {
+         string ussClass = wasPublished ? PUBLISHED_IMAGE_CLASS : UNPUBLISHED_IMAGE_CLASS;
+         Root.Q<Image>("checkImage").AddToClassList(ussClass);
       }
    }
 }

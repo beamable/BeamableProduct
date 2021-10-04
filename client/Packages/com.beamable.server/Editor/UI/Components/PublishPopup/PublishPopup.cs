@@ -5,6 +5,7 @@ using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.UI.Components;
+using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -40,6 +41,8 @@ namespace Beamable.Editor.Microservice.UI.Components
             }
         }
 
+        private const string SERVICE_PUBLISHED_KEY = "service_published_{0}";
+
         public ManifestModel Model { get; set; }
         public Action OnCloseRequested;
         public Action<ManifestModel> OnSubmit;
@@ -48,7 +51,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         private Button _cancelButton;
         private PrimaryButtonVisualElement _continueButton;
         private ScrollView _scrollContainer;
-        private List<PublishManifestEntryVisualElement> _publishManifestElements;
+        private Dictionary<string, PublishManifestEntryVisualElement> _publishManifestElements;
 
         public PublishPopup() : base(nameof(PublishPopup))
         {
@@ -68,15 +71,16 @@ namespace Beamable.Editor.Microservice.UI.Components
                 return;
             
             _scrollContainer = Root.Q<ScrollView>("manifestsContainer");
-            _publishManifestElements = new List<PublishManifestEntryVisualElement>(Model.Services.Count);
+            _publishManifestElements = new Dictionary<string, PublishManifestEntryVisualElement>(Model.Services.Count);
 
             List<IEntryModel> entryModels = new List<IEntryModel>(Model.Services.Values);
             entryModels.AddRange(Model.Storages.Values);
             foreach (var model in entryModels)
             {
-                var newElement = new PublishManifestEntryVisualElement(model);
+                bool wasPublished = EditorPrefs.GetBool(GetPublishedKey(model.Name), false);
+                var newElement = new PublishManifestEntryVisualElement(model, wasPublished);
                 newElement.Refresh();
-                _publishManifestElements.Add(newElement);
+                _publishManifestElements.Add(model.Name, newElement);
                 _scrollContainer.Add(newElement);
             }
 
@@ -96,8 +100,8 @@ namespace Beamable.Editor.Microservice.UI.Components
             _generalComments.RemoveFromHierarchy();
             _continueButton.RemoveFromHierarchy();
             _cancelButton.RemoveFromHierarchy();
-            for (int i = 0; i < _publishManifestElements.Count; i++)
-                _publishManifestElements[i].RemoveFromHierarchy();
+            foreach (var kvp in _publishManifestElements)
+                kvp.Value.RemoveFromHierarchy();
             _publishManifestElements.Clear();
 
             
@@ -116,6 +120,16 @@ namespace Beamable.Editor.Microservice.UI.Components
                 _scrollContainer.Add(newElement);
                 new DeployMSLogParser(newElement, microserviceModel, true);
             }
+        }
+
+        public void ServiceDeployed(IDescriptor descriptor)
+        {
+            EditorPrefs.SetBool(GetPublishedKey(descriptor.Name), true);
+        }
+
+        private string GetPublishedKey(string serviceName)
+        {
+            return string.Format(SERVICE_PUBLISHED_KEY, serviceName);
         }
     }
 }
