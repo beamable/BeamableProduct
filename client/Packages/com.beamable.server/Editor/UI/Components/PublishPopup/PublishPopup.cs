@@ -75,13 +75,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             List<IEntryModel> entryModels = new List<IEntryModel>(Model.Services.Values);
             entryModels.AddRange(Model.Storages.Values);
+            bool isOddRow = true;
             foreach (var model in entryModels)
             {
                 bool wasPublished = EditorPrefs.GetBool(GetPublishedKey(model.Name), false);
-                var newElement = new PublishManifestEntryVisualElement(model, wasPublished);
+                var newElement = new PublishManifestEntryVisualElement(model, wasPublished, isOddRow);
                 newElement.Refresh();
                 _publishManifestElements.Add(model.Name, newElement);
                 _scrollContainer.Add(newElement);
+
+                isOddRow = !isOddRow;
             }
 
             _generalComments = Root.Q<TextField>("largeCommentsArea");

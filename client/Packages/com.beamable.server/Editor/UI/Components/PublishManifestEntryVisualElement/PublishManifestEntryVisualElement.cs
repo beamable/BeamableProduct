@@ -28,11 +28,13 @@ namespace Beamable.Editor.Microservice.UI.Components
       public IEntryModel Model { get; }
 
       private bool wasPublished;
+      private bool oddRow;
 
-      public PublishManifestEntryVisualElement(IEntryModel model, bool argWasPublished) : base(nameof(PublishManifestEntryVisualElement))
+      public PublishManifestEntryVisualElement(IEntryModel model, bool argWasPublished, bool isOddRow) : base(nameof(PublishManifestEntryVisualElement))
       {
          Model = model;
          wasPublished = argWasPublished;
+         oddRow = isOddRow;
       }
 
       public override void Refresh()
@@ -94,6 +96,11 @@ namespace Beamable.Editor.Microservice.UI.Components
          }
 
          SetPublishedIcon();
+
+         if (oddRow)
+         {
+            Root.Q<VisualElement>("row").AddToClassList("oddRow");
+         }
       }
 
       private void SetPublishedIcon()

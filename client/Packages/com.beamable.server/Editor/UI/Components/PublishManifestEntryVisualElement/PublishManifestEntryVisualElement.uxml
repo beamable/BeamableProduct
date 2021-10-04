@@ -6,7 +6,7 @@
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
-    <engine:VisualElement class="manifestRow">
+    <engine:VisualElement name="row" class="manifestRow">
         <engine:VisualElement name="enabledC" class="column">
             <beamable:BeamableCheckboxVisualElement name="checkbox"/>
         </engine:VisualElement>

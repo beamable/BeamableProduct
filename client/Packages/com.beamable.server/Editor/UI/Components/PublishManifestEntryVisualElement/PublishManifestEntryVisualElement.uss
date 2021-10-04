@@ -6,6 +6,11 @@
     padding-left: 10px;
     padding-right: 10px;
 }
+
+.manifestRow.oddRow {
+    background-color: #545454;
+}
+
 #nameC, #typeC {
     width: 160px;
     height: 20px;
@@ -41,6 +46,11 @@
     flex-direction: row;
     justify-content: center;
 }
+
+#CheckC {
+    margin-right: 20px;
+}
+
 #checkbox{
     align-self: center;
     justify-content: center;
@@ -50,18 +60,18 @@
 }
 .column{
     flex-direction: row;
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 .microserviceImage {
     width: 20px;
     height: 20px;
-    background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Microservice_Light.png");
 }
 
 .storageImage {
     width: 30px;
     height: 30px;
-    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/Database_light.png");
 }
 
 #checkImage {

@@ -1,0 +1,11 @@
+﻿.manifestRow.oddRow {
+    background-color: #545454;
+}
+
+.microserviceImage {
+    background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Microservice_Light.png");
+}
+
+.storageImage {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/Database_light.png");
+}
