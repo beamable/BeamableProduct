@@ -1,0 +1,138 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
+using Beamable.Editor.UI.Components;
+using Beamable.Editor.UI.Model;
+using Beamable.Server.Editor;
+using UnityEditor;
+using UnityEngine;
+#if UNITY_2018
+using UnityEngine.Experimental.UIElements;
+using UnityEditor.Experimental.UIElements;
+#elif UNITY_2019_1_OR_NEWER
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
+#endif
+
+namespace Beamable.Editor.Microservice.UI.Components
+{
+    public abstract class CreateServiceBaseVisualElement : MicroserviceComponent
+    {
+        protected CreateServiceBaseVisualElement() : base(nameof(ServiceBaseVisualElement))
+        {
+        }
+        
+        protected abstract string NewServiceName { get; set; }
+        
+        public event Action OnCreateServiceClicked;
+
+        private const int MAX_NAME_LENGTH = 32;
+        private bool _canCreateService;
+        private string _statusClassName;
+        
+        private VisualElement _logListRoot;
+        private ListView _listView;
+        private TextField _nameTextField;
+        private Button _popupBtn;
+        private Button _moreBtn;
+        private Button _cancelBtn;
+        private Button _buildDropDownBtn;
+        private BeamableCheckboxVisualElement _checkbox;
+        private Button _createBtn;
+        private VisualElement _logContainerElement;
+        private Label _buildDefaultLabel;
+        private LogVisualElement _logElement;
+        private List<string> _servicesNames;
+        private object _logVisualElement;
+
+        private Action _defaultBuildAction;
+        
+        public override void Refresh()
+        {
+            base.Refresh();
+            QueryVisualElements();
+            UpdateVisualElements();
+        }
+        protected virtual void QueryVisualElements()
+        {
+            Root.Q("microserviceTitle")?.RemoveFromHierarchy();
+            _cancelBtn = Root.Q<Button>("cancelBtn");
+            _createBtn = Root.Q<Button>("start");
+            _buildDropDownBtn = Root.Q<Button>("buildDropDown");
+            _checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
+            _logContainerElement = Root.Q<VisualElement>("logContainer");
+            _nameTextField = Root.Q<TextField>("microserviceNewTitle");
+        }
+        protected virtual void UpdateVisualElements()
+        {
+            _servicesNames = MicroservicesDataModel.Instance.AllServices.Select(x => x.Descriptor.Name).ToList();
+            RegisterCallback<MouseDownEvent>(HandeMouseDownEvent, TrickleDown.TrickleDown);
+            
+            _nameTextField.SetValueWithoutNotify(NewServiceName);
+            _nameTextField.maxLength = MAX_NAME_LENGTH;
+            _nameTextField.RegisterCallback<FocusEvent>(HandleNameLabelFocus, TrickleDown.TrickleDown);
+            _nameTextField.RegisterCallback<KeyUpEvent>(HandleNameLabelKeyUp, TrickleDown.TrickleDown);
+
+            _cancelBtn.clickable.clicked += Root.RemoveFromHierarchy;
+
+            _createBtn.text = "Create";
+            _createBtn.clickable.clicked += HandleCreateButtonClicked;
+            
+            _buildDropDownBtn.RemoveFromHierarchy();
+
+            _checkbox.Refresh();
+            _checkbox.SetWithoutNotify(false);
+            _checkbox.SetEnabled(false);
+
+            _logContainerElement.RemoveFromHierarchy();
+            RenameGestureBegin();
+        }
+        private void HandleCreateButtonClicked()
+        {
+            if (string.IsNullOrWhiteSpace(NewServiceName)) 
+                return;
+            _createBtn.text = "Creating...";
+            OnCreateServiceClicked?.Invoke();
+            EditorApplication.delayCall += () => CreateService(NewServiceName);
+        }
+        protected abstract void CreateService(string serviceName);
+        private void HandeMouseDownEvent(MouseDownEvent evt)
+        {
+            RenameGestureBegin();
+        }
+        private void HandleNameLabelFocus(FocusEvent evt)
+        {
+            _nameTextField.SelectAll();
+        }
+        private void HandleNameLabelKeyUp(KeyUpEvent evt)
+        {
+            if ((evt.keyCode == KeyCode.KeypadEnter || evt.keyCode == KeyCode.Return) && _canCreateService)
+            {
+                HandleCreateButtonClicked();
+                return;
+            }
+            CheckName();
+        }
+        private void RenameGestureBegin()
+        {
+            NewServiceName = _nameTextField.value;
+            _nameTextField.SetEnabled(true);
+            _nameTextField.BeamableFocus();
+            CheckName();
+        }
+        private void CheckName()
+        {
+            var newName = _nameTextField.value;
+            if (Regex.IsMatch(newName, @"^[a-zA-Z]+$"))
+            {
+                NewServiceName = newName;
+            }
+            _nameTextField.value = NewServiceName;
+            _canCreateService = !_servicesNames.Contains(NewServiceName) 
+                                && NewServiceName.Length > 2 
+                                && NewServiceName.Length <= MAX_NAME_LENGTH;
+            _createBtn.SetEnabled(_canCreateService);
+        }
+    }
+}
