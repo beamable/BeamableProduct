@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Beamable.Common;
 using Beamable.Common.Inventory;
 using Beamable.Server;
 
@@ -48,6 +49,12 @@ namespace microserviceTests.microservice
       {
          await Task.Delay(ms);
          return ms;
+      }
+      
+      [ClientCallable]
+      public async Promise<int> PromiseTestMethod()
+      {
+         return await Promise<int>.Successful(1);
       }
 
       // TODO: Add a test for an empty arg array, or a null
