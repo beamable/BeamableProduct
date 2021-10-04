@@ -61,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Account Management Flow third party login buttons use correct third parties
 - Content Manager Window item selection is cleared after changing the Namespace
 - Adjusted confirm window look while trying to delete any content
+- Content Manager Popups refresh after Unity domain reload
 
 ## [0.15.0]
 ### Added
