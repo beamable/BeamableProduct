@@ -115,10 +115,6 @@
         debounceQuery(value)
     })
 
-    function forceLoad(){
-        loadMoreStore.update(n => n + 1);
-    }
-
     function now() {
         return new Date()
     }
@@ -411,9 +407,6 @@
 </style>
 
 <div class="log-view">
-<button on:click={forceLoad}>
-    Force Load
-</button>
     <div class="log-header" on:click={evt => isDrawerOpen = false}>
         <h2>Logs</h2>
         <h1>{serviceName}</h1>
