@@ -6,8 +6,8 @@ namespace Beamable.Editor.UI.Model
 {
     public interface IBeamableMicroservice : IBeamableService
     {
-        MicroserviceDescriptor Descriptor { get; }
-        MicroserviceBuilder Builder { get; }
+        MicroserviceDescriptor ServiceDescriptor { get; }
+        MicroserviceBuilder ServiceBuilder { get; }
         ServiceStatus RemoteStatus { get; }
         MicroserviceConfigurationEntry Config { get; }
 

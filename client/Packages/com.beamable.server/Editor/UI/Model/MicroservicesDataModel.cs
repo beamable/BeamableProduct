@@ -50,8 +50,8 @@ namespace Beamable.Editor.UI.Model
       }
 
       public List<IBeamableService> AllServices = new List<IBeamableService>();
-      public List<MicroserviceModel> Services => AllServices.Where(service => service.GetServiceType == ServiceType.MicroService).Select(service => service as MicroserviceModel).ToList();
-      public List<MongoStorageModel> Storages => AllServices.Where(service => service.GetServiceType == ServiceType.StorageObject).Select(service => service as MongoStorageModel).ToList();
+      public List<MicroserviceModel> Services => AllServices.Where(service => service.ServiceType == ServiceType.MicroService).Select(service => service as MicroserviceModel).ToList();
+      public List<MongoStorageModel> Storages => AllServices.Where(service => service.ServiceType == ServiceType.StorageObject).Select(service => service as MongoStorageModel).ToList();
       public ServiceManifest ServerManifest = new ServiceManifest();
       public GetStatusResponse Status = new GetStatusResponse();
 
@@ -115,7 +115,7 @@ namespace Beamable.Editor.UI.Model
 
       public void AddLogMessage(IDescriptor descriptor, LogMessage message)
       {
-         AllServices.FirstOrDefault(r => r.GetDescriptor.Name.Equals(descriptor.Name))
+         AllServices.FirstOrDefault(r => r.Descriptor.Name.Equals(descriptor.Name))
             ?.Logs.AddMessage(message);
       }
 
@@ -155,18 +155,18 @@ namespace Beamable.Editor.UI.Model
       public ServiceType GetModelServiceType(string name)
       {
          var service = AllServices
-            .FirstOrDefault(s => s.GetDescriptor.Name.Equals(name));
-         return service?.GetServiceType ?? ServiceType.MicroService;
+            .FirstOrDefault(s => s.Descriptor.Name.Equals(name));
+         return service?.ServiceType ?? ServiceType.MicroService;
       }
 
-      public bool ContainsModel(string serviceName) => AllServices?.Any(s => s.GetDescriptor.Name.Equals(serviceName)) ?? false;
+      public bool ContainsModel(string serviceName) => AllServices?.Any(s => s.Descriptor.Name.Equals(serviceName)) ?? false;
 
       public T GetModel<T>(IDescriptor descriptor) where T : IBeamableService =>
          GetModel<T>(descriptor.Name);
 
       public T GetModel<T>(string serviceName) where T : IBeamableService
       {
-         return (T)AllServices?.FirstOrDefault(s => s.GetDescriptor.Name.Equals(serviceName));
+         return (T)AllServices?.FirstOrDefault(s => s.Descriptor.Name.Equals(serviceName));
       }
 
       public MicroserviceModel GetMicroserviceModel(IDescriptor descriptor) => GetModel<MicroserviceModel>(descriptor);
