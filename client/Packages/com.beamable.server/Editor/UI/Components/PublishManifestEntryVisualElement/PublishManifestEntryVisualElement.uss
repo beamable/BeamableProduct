@@ -82,7 +82,3 @@
 .published {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Checked.png");
 }
-
-.unpublished {
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Checked_Dark.png");
-}
