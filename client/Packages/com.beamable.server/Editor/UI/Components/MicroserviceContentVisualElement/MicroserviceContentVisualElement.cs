@@ -66,6 +66,20 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         public override void Refresh()
         {
+            bool ShouldDisplayService(ServiceType type)
+            {
+                switch (Model.Filter)
+                {
+                    case ServicesDisplayFilter.All:
+                        return true;
+                    case ServicesDisplayFilter.Microservices:
+                        return type == ServiceType.MicroService;
+                    case ServicesDisplayFilter.Storages:
+                        return type == ServiceType.StorageObject;
+                    default:
+                        return false;
+                }
+            }
             base.Refresh();
 
             _mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
@@ -108,7 +122,14 @@ namespace Beamable.Editor.Microservice.UI.Components
                     continue;
                 }
 
-                switch (Model.GetModelServiceType(serviceStatus.Key))
+                var serviceType = Model.GetModelServiceType(serviceStatus.Key);
+                
+                if (!ShouldDisplayService(serviceType))
+                {
+                    continue;
+                }
+                
+                switch (serviceType)
                 {
                     case ServiceType.MicroService:
                         var service = Model.GetModel<MicroserviceModel>(serviceStatus.Key);

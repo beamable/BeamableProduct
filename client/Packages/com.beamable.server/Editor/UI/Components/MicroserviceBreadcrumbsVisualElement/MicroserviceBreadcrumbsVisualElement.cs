@@ -13,6 +13,7 @@ using Beamable.Editor.Modules.Theme;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.Toolbox.UI.Components;
 using Beamable.Editor.UI.Components;
+using Beamable.Editor.UI.Model;
 using UnityEditor;
 using Debug = UnityEngine.Debug;
 #if UNITY_2018
@@ -50,8 +51,11 @@ namespace Beamable.Editor.Microservice.UI.Components
         }
 
         public event Action<bool> OnSelectAllCheckboxChanged;
+        public event Action<ServicesDisplayFilter> OnNewServicesDisplayFilterSelected;
         
         private RealmButtonVisualElement _realmButton;
+        private Button _servicesFilter;
+        private Label _servicesFilterLabel; 
         private BeamableCheckboxVisualElement _checkbox;
         private VisualElement _selectAll;
 
@@ -65,11 +69,33 @@ namespace Beamable.Editor.Microservice.UI.Components
             _realmButton = Root.Q<RealmButtonVisualElement>("realmButton");
             _realmButton.Refresh();
 
+            _servicesFilter = Root.Q<Button>("servicesFilter");
+            _servicesFilterLabel = _servicesFilter.Q<Label>();
+            var manipulator = new ContextualMenuManipulator(PopulateServicesFilterMenu);
+            manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
+            _servicesFilter.clickable.activators.Clear();
+            _servicesFilter.AddManipulator(manipulator);
+            OnNewServicesDisplayFilterSelected += UpdateServicesFilterText;
+            UpdateServicesFilterText(MicroservicesDataModel.Instance.Filter);
+
             _checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
             _checkbox.Refresh();
             _checkbox.OnValueChanged += b => OnSelectAllCheckboxChanged?.Invoke(b);
 
             _selectAll = Root.Q<VisualElement>("selectAll");
+        }
+
+        void UpdateServicesFilterText(ServicesDisplayFilter filter)
+        {
+            _servicesFilterLabel.text = filter.ToString();
+        }
+
+        private void PopulateServicesFilterMenu(ContextualMenuPopulateEvent evt)
+        {
+            var currentFilter = MicroservicesDataModel.Instance.Filter;
+            evt.menu.BeamableAppendAction("All", pos => OnNewServicesDisplayFilterSelected?.Invoke(ServicesDisplayFilter.All), currentFilter != ServicesDisplayFilter.All);
+            evt.menu.BeamableAppendAction("Microservice", pos => OnNewServicesDisplayFilterSelected?.Invoke(ServicesDisplayFilter.Microservices), currentFilter != ServicesDisplayFilter.Microservices);
+            evt.menu.BeamableAppendAction("Storage", pos => OnNewServicesDisplayFilterSelected?.Invoke(ServicesDisplayFilter.Storages), currentFilter != ServicesDisplayFilter.Storages);
         }
 
         public void SetSelectAllCheckboxValue(bool value)

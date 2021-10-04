@@ -154,6 +154,7 @@ namespace Beamable.Editor.Microservice.UI
 
             _microserviceBreadcrumbsVisualElement.OnSelectAllCheckboxChanged +=
                 _microserviceContentVisualElement.SetAllMicroserviceSelectedStatus;
+            _microserviceBreadcrumbsVisualElement.OnNewServicesDisplayFilterSelected += HandleDisplayFilterSelected;
 
             _microserviceContentVisualElement.OnAllServiceSelectedStatusChanged +=
                 _microserviceBreadcrumbsVisualElement.SetSelectAllCheckboxValue;
@@ -186,6 +187,12 @@ namespace Beamable.Editor.Microservice.UI
             Microservices.onBeforeDeploy -= OnBeforeDeploy;
             Microservices.onBeforeDeploy += OnBeforeDeploy;
 
+        }
+
+        private void HandleDisplayFilterSelected(ServicesDisplayFilter filter)
+        {
+            Model.Filter = filter;
+            Refresh();
         }
 
         private void HideAllLoadingBars() {
