@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Beamable.Editor.Microservice.UI.Components {
     public class DeployMSLogParser : LoadingBarUpdater {
-        private readonly MicroserviceModel _model;
+        private readonly ServiceModelBase _model;
         private readonly bool _showName;
         public override string ProcessName { get; } = "Deploying...";
 
@@ -20,7 +20,7 @@ namespace Beamable.Editor.Microservice.UI.Components {
 
         private readonly string[] successLogs, failureLogs;
 
-        public DeployMSLogParser(ILoadingBar loadingBar, MicroserviceModel model, bool showName = false) : base(loadingBar) {
+        public DeployMSLogParser(ILoadingBar loadingBar, ServiceModelBase model, bool showName = false) : base(loadingBar) {
             _model = model;
             _showName = showName;
             Step = 0;

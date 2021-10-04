@@ -5,11 +5,11 @@ using Beamable.Editor.UI.Model;
 
 namespace Beamable.Editor.Microservice.UI.Components {
     public abstract class UniversalLogsParser : LoadingBarUpdater {
-        protected readonly MicroserviceModel _model;
+        protected readonly ServiceModelBase _model;
 
         public Action OnFailure;
 
-        public UniversalLogsParser(ILoadingBar loadingBar, MicroserviceModel model) : base(loadingBar) {
+        public UniversalLogsParser(ILoadingBar loadingBar, ServiceModelBase model) : base(loadingBar) {
             _model = model;
             _model.Logs.OnMessagesUpdated += OnMessagesUpdated;
         }
