@@ -64,7 +64,7 @@
     margin-bottom: 10px;
 }
 
-.microserviceImage {
+.microserviceImage, #checkImage {
     width: 20px;
     height: 20px;
 }
@@ -72,11 +72,6 @@
 .storageImage {
     width: 30px;
     height: 30px;
-}
-
-#checkImage {
-    width: 20px;
-    height: 20px;
 }
 
 .published {
