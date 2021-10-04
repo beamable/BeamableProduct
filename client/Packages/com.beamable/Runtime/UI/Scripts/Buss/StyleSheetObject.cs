@@ -41,6 +41,23 @@ namespace Beamable.UI.Buss
 
       public StyleObject Style = new StyleObject();
 
+      public static SelectorWithStyle Create(string selector, StyleObject style)
+      {
+         return new SelectorWithStyle
+         {
+            Selector = SelectorParser.Parse(selector),
+            Style = style
+         };
+      }
+   }
+
+   public static class SelectorWithStyleExtensions
+   {
+      public static List<SelectorWithStyle> SortByWeight(this List<SelectorWithStyle> self)
+      {
+         self.Sort((a, b) => a.Selector.Weight().CompareTo(b.Selector.Weight()));
+         return self;
+      }
    }
 
    public class StyleBundle
