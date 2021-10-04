@@ -32,7 +32,7 @@ ManifestDropdownVisualElement #mainBlockedContent {
 #searchBar {
     position:absolute;
     left: 0px;
-    right: 10px;
+    right: 28px;
     padding-left: 8px;
     padding-right: 8px;
     align-self: center;
@@ -56,9 +56,9 @@ ScrollView #ContentView.content-view {
 Button.unity-button,
 Button {
     background-image: none;
-    /*height: 15px;*/
+    height: 26px;
     -unity-text-align: middle-left;
-    margin-top: 0px;
+    margin-top: 2px;
     margin-bottom: 0px;
     padding-top: 5px;
     padding-bottom: 5px;
@@ -125,4 +125,55 @@ Button#refreshButton {
 }
 #refreshButtonIcon{
 
+}
+
+Button#editButton {
+     position:absolute;
+     right: 20px;
+     top: 4px;
+     width: 15px;
+     height: 15px;
+     margin-top: -3px;
+     border-left-width: 0px;
+     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/editing_dark.png");
+     -unity-background-image-tint-color: #adadad;
+     margin-left: 0px;
+     margin-right: 0px;
+     margin-bottom: 0px;
+     margin-top: 0px;
+     padding: 0px;
+     -unity-slice-left: -4;
+     -unity-slice-top: -4;
+     -unity-slice-right: -4;
+     -unity-slice-bottom:-4;
+ }
+
+.editMode Button#editButton{
+    background-color: #bbb3b3;
+}
+
+Button.deleteManifestButton{
+    width: 28px;
+    height: 28px;
+    margin: 0px;
+    border-left-width: 0px;
+    padding: 0px;
+    top: 0px;
+    position: absolute;
+    -unity-slice-bottom: 0;
+    -unity-slice-left: 0;
+    -unity-slice-top: 0;
+    -unity-slice-right: 0;
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Remove.png");
+    align-self: flex-end;
+    opacity: .4;
+    visibility: hidden;
+}
+
+.editMode .deleteManifestButton{
+    visibility: visible;
+}
+
+.deleteManifestButton:hover{
+    opacity: .8;
 }
