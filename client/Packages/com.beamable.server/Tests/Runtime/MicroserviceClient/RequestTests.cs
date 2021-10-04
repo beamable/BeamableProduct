@@ -13,7 +13,7 @@ namespace Beamable.Server.Tests.Runtime
       private const string ROUTE = "test";
 
       [UnityTest]
-      public IEnumerator CanDeserializeList()
+      public IEnumerator CanDeserializeList_OfInt()
       {
          var client = new TestClient(ROUTE);
 
@@ -25,6 +25,69 @@ namespace Beamable.Server.Tests.Runtime
 
          yield return req.ToYielder();
          Assert.AreEqual(new List<int>{1,2,3,4,5}, req.GetResult());
+      }
+
+      [UnityTest]
+      public IEnumerator CanDeserializeList_OfStrings()
+      {
+         var client = new TestClient(ROUTE);
+
+         MockRequester.MockRequest<List<string>>(Method.POST,
+               client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+            .WithRawResponse("[\"a\", \"b\", \"c\"]");
+
+         var req = client.Request<List<string>>( ROUTE, new string[] { });
+
+         yield return req.ToYielder();
+         Assert.AreEqual(new List<string>{"a", "b", "c"}, req.GetResult());
+      }
+
+      [UnityTest]
+      public IEnumerator CanDeserializeList_OfTypedObjects()
+      {
+         var client = new TestClient(ROUTE);
+
+         MockRequester.MockRequest<List<SimplePoco>>(Method.POST,
+               client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+            .WithRawResponse("[{\"A\": 1}, {\"A\": 2}]");
+
+         var req = client.Request<List<SimplePoco>>( ROUTE, new string[] { });
+
+         yield return req.ToYielder();
+         Assert.AreEqual(new List<SimplePoco>{new SimplePoco{A = 1}, new SimplePoco{A = 2}}, req.GetResult());
+      }
+
+      [UnityTest]
+      public IEnumerator CanNotDeserializePolymorphicList()
+      {
+         var client = new TestClient(ROUTE);
+
+         MockRequester.MockRequest<List<object>>(Method.POST,
+               client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+            .WithRawResponse("[3, {\"A\": 2}, \"b\", true]");
+
+         var req = client.Request<List<object>>( ROUTE, new string[] { });
+
+         yield return req.ToYielder();
+         Assert.IsNull(req.GetResult());
+      }
+
+      [System.Serializable]
+      public class SimplePoco
+      {
+         public int A;
+
+         public override bool Equals(object obj)
+         {
+            return obj != null && obj is SimplePoco casted && casted.A == A;
+         }
+
+         public override int GetHashCode()
+         {
+            return A;
+         }
+
+         public override string ToString() => $"A=[{A}]";
       }
 
       [UnityTest]

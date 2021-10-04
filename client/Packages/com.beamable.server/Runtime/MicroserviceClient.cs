@@ -100,9 +100,9 @@ namespace Beamable.Server
          return JsonUtility.FromJson<T>(json);
       }
 
-      private class JsonUtilityWrappedList<T>
+      private class JsonUtilityWrappedList<TList>
       {
-         public T items = default;
+         public TList items = default;
       }
 
       // protected Func<IBeamableRequester> RequesterFactory { get; set; } =
