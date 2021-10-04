@@ -92,13 +92,17 @@ namespace Beamable.Server.Editor.DockerCommands
 
             // report the log message to the right bucket.
             #if !BEAMABLE_LEGACY_MSW
+            if (!DateTime.TryParse(timestamp, out var time))
+            {
+               time = DateTime.Now;
+            }
             var logMessage = new LogMessage
             {
                Message = message,
                Parameters = objs,
                ParameterText = objsToString,
                Level = logLevelValue,
-               Timestamp = LogMessage.GetTimeDisplay(DateTime.Parse(timestamp))
+               Timestamp = LogMessage.GetTimeDisplay(time)
             };
             EditorApplication.delayCall += () =>
             {
@@ -135,6 +139,7 @@ namespace Beamable.Server.Editor.DockerCommands
 #endif
          }
       }
+   
 
       public static bool HandleLog(MicroserviceDescriptor descriptor, LogLevel logLevel, string message, Color color, bool isBoldMessage, string postfixIcon)
       {
@@ -156,7 +161,6 @@ namespace Beamable.Server.Editor.DockerCommands
             return true;
       }
     }
-
 
    public class FollowLogCommand : DockerCommand
    {

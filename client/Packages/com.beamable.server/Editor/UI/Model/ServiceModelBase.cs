@@ -25,14 +25,27 @@ namespace Beamable.Editor.UI.Model
         public abstract bool IsRunning { get; }
         public bool AreLogsAttached { get; protected set; } = true;
         public LogMessageStore Logs { get; } = new LogMessageStore();
-        public abstract IDescriptor GetDescriptor { get; }
-        public ServiceType GetServiceType => GetDescriptor.ServiceType;
+        public abstract IDescriptor Descriptor { get; }
+        public abstract IBeamableBuilder Builder { get; }
+        public ServiceType ServiceType => Descriptor.ServiceType;
+        public string Name => Descriptor.Name;
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set
+            {
+                _isSelected = value;
+                OnSelectionChanged?.Invoke(value);
+            }
+        }
+        private bool _isSelected;
 
         public Action OnLogsDetached { get; set; }
         public Action OnLogsAttached { get; set; }
         public Action<bool> OnLogsAttachmentChanged { get; set; }
         public Action<bool> OnSelectionChanged { get; set; }
         public Action OnSortChanged { get; set; }
+        public Action<float, long, long> OnDeployProgress { get; set; }
 
         public abstract event Action<Task> OnStart;
         public abstract event Action<Task> OnStop;

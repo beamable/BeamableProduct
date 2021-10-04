@@ -20,5 +20,6 @@ namespace Beamable.Common.Api.Auth
       Promise<EmptyResponse> IssuePasswordUpdate(string email);
       Promise<EmptyResponse> ConfirmPasswordUpdate(string code, string newPassword);
       Promise<CustomerRegistrationResponse> RegisterCustomer(string email, string password, string projectName, string customerName, string alias);
+      Promise<User> RemoveThirdPartyAssociation(AuthThirdParty thirdParty, string token);
    }
 }

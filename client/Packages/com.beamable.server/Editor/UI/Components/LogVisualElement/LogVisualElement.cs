@@ -62,7 +62,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         private Button _infoViewBtn;
         private Button _warningViewBtn;
         private Button _errorViewBtn;
-        public MicroserviceModel Model { get; set; }
+        public ServiceModelBase Model { get; set; }
         private bool NoModel => Model == null;
 
         public event Action OnDetachLogs;
