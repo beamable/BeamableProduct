@@ -27,6 +27,7 @@ using Beamable.Api.Groups;
 using Beamable.Api.Mail;
 using Beamable.Api.Notification;
 using Beamable.Api.Sessions;
+using Beamable.Common.Api;
 using Beamable.Common.Api.CloudData;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Tournaments;
@@ -66,7 +67,7 @@ namespace Beamable
         ContentService ContentService { get; }
         InventoryService InventoryService { get; }
         LeaderboardService LeaderboardService { get; }
-        PlatformRequester Requester { get; }
+        IBeamableRequester Requester { get; }
         StatsService StatsService { get; }
 
         [Obsolete("Use " + nameof(StatsService) + " instead.")]
@@ -347,7 +348,7 @@ namespace Beamable
         /// <summary>
         /// Entry point for the PlatformRequester.
         /// </summary>
-        public PlatformRequester Requester => _platform.Requester;
+        public IBeamableRequester Requester => _platform.Requester;
 
         /// <summary>
         /// Entry point for the IBeamablePurchaser.
