@@ -54,6 +54,7 @@ namespace Beamable.Editor.UI.Model
       public List<MongoStorageModel> Storages => AllServices.Where(service => service.ServiceType == ServiceType.StorageObject).Select(service => service as MongoStorageModel).ToList();
       public ServiceManifest ServerManifest = new ServiceManifest();
       public GetStatusResponse Status = new GetStatusResponse();
+      public ServicesDisplayFilter Filter = ServicesDisplayFilter.All;
 
       public Action<ServiceManifest> OnServerManifestUpdated;
       public Action<GetStatusResponse> OnStatusUpdated;
@@ -201,5 +202,12 @@ namespace Beamable.Editor.UI.Model
       RemoteOnly,
       LocalAndRemote,
       Unknown
+   }
+
+   public enum ServicesDisplayFilter
+   {
+      All,
+      Microservices,
+      Storages
    }
 }
