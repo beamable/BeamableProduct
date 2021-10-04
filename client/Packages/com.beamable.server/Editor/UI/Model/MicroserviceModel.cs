@@ -1,4 +1,3 @@
-
 using System;
 using System.IO;
 using System.Text;
@@ -22,94 +21,18 @@ using UnityEditor.UIElements;
 namespace Beamable.Editor.UI.Model
 {
     [System.Serializable]
-    public class MicroserviceModel
+    public class MicroserviceModel : ServiceModelBase, IBeamableMicroservice
     {
-        public MicroserviceDescriptor Descriptor;
-        // public MicroserviceStateMachine StateMachine;
-        public MicroserviceBuilder Builder;
-        public LogMessageStore Logs;
-        public ServiceReference RemoteReference;
-        public ServiceStatus RemoteStatus;
-        public MicroserviceConfigurationEntry Config;
-        public bool AreLogsAttached { get; private set; }= true;
-        public bool IsSelected
-        {
-            get => _isSelected;
-            set
-            {
-                _isSelected = value;
-                OnSelectionChanged?.Invoke(value);
-            }
-        }
-
-        public bool IsBuilding => Builder?.IsBuilding ?? false;
-        public bool IsRunning => Builder?.IsRunning ?? false;
-        public bool SameImageOnRemoteAndLocally => string.Equals(Builder?.LastBuildImageId, RemoteReference?.imageId);
-
-        public Action<ServiceReference> OnRemoteReferenceEnriched;
-        public Action<ServiceStatus> OnRemoteStatusEnriched;
-        public Action OnLogsDetached;
-        public Action OnLogsAttached;
-        public Action<bool> OnLogsAttachmentChanged;
-        public Action<bool> OnSelectionChanged;
-        public Action OnSortChanged;
-
-        public event Action<Task> OnBuildAndRestart;
-        public event Action<Task> OnBuildAndStart;
-        public event Action<Task> OnBuild;
-        public event Action<Task> OnStart; // TODO: Currently it exposes us a moment of starting process and not exact moment when MS has started. Maybe rename it in future and add a proper one?? Luke
-        public event Action<Task> OnStop;
-        public event Action<Promise<Unit>> OnDockerLoginRequired;
-        public Action<float, long, long> OnDeployProgress;
-
-        private bool _isSelected;
-
-        public Task BuildAndRestart()
-        {
-            var task = Builder.TryToBuildAndRestart(IncludeDebugTools);
-            OnBuildAndRestart?.Invoke(task);
-            return task;
-        }
-
-        public Task BuildAndStart()
-        {
-            var task = Builder.TryToBuildAndStart(IncludeDebugTools);
-            OnBuildAndStart?.Invoke(task);
-            return task;
-        }
-
-        public Task Build()
-        {
-            var task = Builder.TryToBuild(IncludeDebugTools);
-            OnBuild?.Invoke(task);
-            return task;
-        }
-
-        public Task Start()
-        {
-            var task = Builder.TryToStart();
-            OnStart?.Invoke(task);
-            return task;
-        }
-
-        public Task Stop()
-        {
-            var task = Builder.TryToStop();
-            OnStop?.Invoke(task);
-            return task;
-        }
-
-        public void OpenLocalDocs()
-        {
-            EditorAPI.Instance.Then(de =>
-            {
-                //http://localhost:10001/1323424830305280/games/DE_1323424830305283/realms/DE_1323424830305283/microservices/DeploymentTest/docs/remote/?
-                var url =
-                    $"{BeamableEnvironment.PortalUrl}/{de.CidOrAlias}/games/{de.ProductionRealm.Pid}/realms/{de.Pid}/microservices/{Descriptor.Name}/docs/{MicroserviceIndividualization.Prefix}/?";
-                Application.OpenURL(url);
-            });
-        }
-
+        public MicroserviceDescriptor ServiceDescriptor { get; private set; }
+        public MicroserviceBuilder ServiceBuilder { get; private set; }
+        public override IBeamableBuilder Builder => ServiceBuilder;
+        public override IDescriptor Descriptor => ServiceDescriptor;
+        public ServiceReference RemoteReference { get; private set; }
+        public ServiceStatus RemoteStatus { get; private set; }
+        public MicroserviceConfigurationEntry Config { get; private set; }
+        public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
+        public bool IsBuilding => ServiceBuilder?.IsBuilding ?? false;
+        public bool SameImageOnRemoteAndLocally => string.Equals(ServiceBuilder?.LastBuildImageId, RemoteReference?.imageId);
         public bool IncludeDebugTools
         {
             get => Config.IncludeDebugTools;
@@ -120,49 +43,96 @@ namespace Beamable.Editor.UI.Model
             }
         }
 
-        public void DetachLogs()
-        {
-            if (!AreLogsAttached) return;
+        public Action<ServiceReference> OnRemoteReferenceEnriched;
+        public Action<ServiceStatus> OnRemoteStatusEnriched;
 
-            AreLogsAttached = false;
-            OnLogsDetached?.Invoke();
-            OnLogsAttachmentChanged?.Invoke(false);
+        public override event Action<Task> OnStart;
+        public override event Action<Task> OnStop;
+        public event Action<Task> OnBuildAndRestart;
+        public event Action<Task> OnBuildAndStart;
+        public event Action<Task> OnBuild;
+        public event Action<Promise<Unit>> OnDockerLoginRequired;
+
+        public static MicroserviceModel CreateNew(MicroserviceDescriptor descriptor, MicroservicesDataModel dataModel)
+        {
+            return new MicroserviceModel
+            {
+                ServiceDescriptor = descriptor,
+                ServiceBuilder = Microservices.GetServiceBuilder(descriptor),
+                RemoteReference = dataModel.GetReference(descriptor),
+                RemoteStatus = dataModel.GetStatus(descriptor),
+                Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name)
+            };
         }
-
-        public void AttachLogs()
+        
+        public override Task Start()
         {
-            if (AreLogsAttached) return;
-            AreLogsAttached = true;
             OnLogsAttached?.Invoke();
-            OnLogsAttachmentChanged?.Invoke(true);
+            var task = ServiceBuilder.TryToStart();
+            OnStart?.Invoke(task);
+            return task;
         }
-
+        public override Task Stop()
+        {
+            var task = ServiceBuilder.TryToStop();
+            OnStop?.Invoke(task);
+            return task;
+        }
+        public Task BuildAndRestart()
+        {
+            var task = ServiceBuilder.TryToBuildAndRestart(IncludeDebugTools);
+            OnBuildAndRestart?.Invoke(task);
+            return task;
+        }
+        public Task BuildAndStart()
+        {
+            var task = ServiceBuilder.TryToBuildAndStart(IncludeDebugTools);
+            OnBuildAndStart?.Invoke(task);
+            return task;
+        }
+        public Task Build()
+        {
+            var task = ServiceBuilder.TryToBuild(IncludeDebugTools);
+            OnBuild?.Invoke(task);
+            return task;
+        }
+        public void OpenLocalDocs()
+        {
+            EditorAPI.Instance.Then(de =>
+            {
+                //http://localhost:10001/1323424830305280/games/DE_1323424830305283/realms/DE_1323424830305283/microservices/DeploymentTest/docs/remote/?
+                var url =
+                    $"{BeamableEnvironment.PortalUrl}/{de.CidOrAlias}/games/{de.ProductionRealm.Pid}/realms/{de.Pid}/microservices/{ServiceDescriptor.Name}/docs/{MicroserviceIndividualization.Prefix}/?";
+                Application.OpenURL(url);
+            });
+        }
         public void EnrichWithRemoteReference(ServiceReference remoteReference)
         {
             RemoteReference = remoteReference;
             OnRemoteReferenceEnriched?.Invoke(remoteReference);
         }
-
         public void EnrichWithStatus(ServiceStatus status)
         {
             RemoteStatus = status;
             OnRemoteStatusEnriched?.Invoke(status);
         }
-
-        public void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
+        
+        // TODO - When MongoStorageModel will be ready feel free to implement these methods
+        // TODO === BEGIN
+        public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
         {
             var existsOnRemote = RemoteStatus?.serviceName?.Length > 0;
-            var hasImageSuffix = Builder.HasBuildDirectory ? string.Empty : " (Build first)";
+            var hasImageSuffix = ServiceBuilder.HasBuildDirectory ? string.Empty : " (Build first)";
             var localCategory = IsRunning ? "Local" : "Local (not running)";
             var remoteCategory = existsOnRemote ? "Cloud" : "Cloud (not deployed)";
             var debugToolsSuffix = IncludeDebugTools ? string.Empty : " (Debug tools disabled)";
             evt.menu.BeamableAppendAction($"Reveal build directory{hasImageSuffix}", pos =>
             {
-                var full = Path.GetFullPath(Descriptor.BuildPath);
+                var full = Path.GetFullPath(ServiceDescriptor.BuildPath);
                 EditorUtility.RevealInFinder(full);
-            }, Builder.HasBuildDirectory);
+            }, ServiceBuilder.HasBuildDirectory);
 
-            evt.menu.BeamableAppendAction($"Run Snyk Tests{hasImageSuffix}", pos => RunSnykTests(), Builder.HasImage);
+            evt.menu.BeamableAppendAction($"Run Snyk Tests{hasImageSuffix}", pos => RunSnykTests(), ServiceBuilder.HasImage);
 
             evt.menu.BeamableAppendAction($"{localCategory}/Open in CLI", pos => OpenInCli(), IsRunning);
             evt.menu.BeamableAppendAction($"{localCategory}/View Documentation", pos => OpenLocalDocs(), IsRunning);
@@ -187,11 +157,12 @@ namespace Beamable.Editor.UI.Model
                 evt.menu.BeamableAppendAction($"Reattach Logs", pos => AttachLogs());
             }
         }
-
+        // TODO === END
+        
         private void RunSnykTests()
         {
-            var snykCommand = new SnykTestCommand(Descriptor);
-            Debug.Log($"Starting Snyk Tests for {Descriptor.Name}. Please hold.");
+            var snykCommand = new SnykTestCommand(ServiceDescriptor);
+            Debug.Log($"Starting Snyk Tests for {ServiceDescriptor.Name}. Please hold.");
             snykCommand.Start(null).Then(res =>
             {
                 if (res.RequiresLogin)
@@ -209,36 +180,34 @@ namespace Beamable.Editor.UI.Model
                     Debug.Log(res.Output);
                     var date = DateTime.UtcNow.ToFileTimeUtc().ToString();
                     var filePath =
-                        $"{Directory.GetParent(Application.dataPath)}{Path.DirectorySeparatorChar}{Descriptor.Name}-snyk-results-{date}.txt";
+                        $"{Directory.GetParent(Application.dataPath)}{Path.DirectorySeparatorChar}{ServiceDescriptor.Name}-snyk-results-{date}.txt";
 
                     File.WriteAllText(filePath, res.Output);
                     EditorUtility.OpenWithDefaultApp(filePath);
                 }
             });
         }
-
         private void CopyVSCodeDebugTool()
         {
 
             EditorGUIUtility.systemCopyBuffer =
 $@"{{
-     ""name"": ""Attach {Descriptor.Name}"",
+     ""name"": ""Attach {ServiceDescriptor.Name}"",
      ""type"": ""coreclr"",
      ""request"": ""attach"",
      ""processId"": ""${{command:pickRemoteProcess}}"",
      ""pipeTransport"": {{
         ""pipeProgram"": ""docker"",
-        ""pipeArgs"": [ ""exec"", ""-i"", ""{Descriptor.ContainerName}"" ],
+        ""pipeArgs"": [ ""exec"", ""-i"", ""{ServiceDescriptor.ContainerName}"" ],
         ""debuggerPath"": ""/vsdbg/vsdbg"",
         ""pipeCwd"": ""${{workspaceRoot}}"",
         ""quoteArgs"": false
      }},
      ""sourceFileMap"": {{
-        ""/subsrc"": ""{Path.GetFullPath(Descriptor.BuildPath)}/""
+        ""/subsrc"": ""{Path.GetFullPath(ServiceDescriptor.BuildPath)}/""
      }}
   }}";
         }
-
         private void OpenOnRemote(string relativePath)
         {
             EditorAPI.Instance.Then(api =>
@@ -246,11 +215,10 @@ $@"{{
                 var path =
                     $"{BeamableEnvironment.PortalUrl}/{api.CidOrAlias}/" +
                     $"games/{api.ProductionRealm.Pid}/realms/{api.Pid}/" +
-                    $"microservices/{Descriptor.Name}/{relativePath}?refresh_token={api.Token.RefreshToken}";
+                    $"microservices/{ServiceDescriptor.Name}/{relativePath}?refresh_token={api.Token.RefreshToken}";
                 Application.OpenURL(path);
             });
         }
-
         private void OpenInCli()
         {
             System.Diagnostics.Process GetProcess(string command)
@@ -266,7 +234,7 @@ $@"{{
                 return baseProcess;
             }
             var baseCommand =
-                $"{MicroserviceConfiguration.Instance.DockerCommand} container exec -it {Descriptor.ContainerName} sh";
+                $"{MicroserviceConfiguration.Instance.DockerCommand} container exec -it {ServiceDescriptor.ContainerName} sh";
 #if UNITY_EDITOR_WIN
             var process = GetProcess(baseCommand);
             process.Start();
@@ -292,35 +260,19 @@ $@"{{
             }
 #endif
         }
-
+        public override void Refresh(IDescriptor descriptor)
+        {
+            // reset the descriptor and statemachines; because they aren't system.serializable durable.
+            ServiceDescriptor = (MicroserviceDescriptor)descriptor;
+            var oldBuilder = ServiceBuilder;
+            ServiceBuilder = Microservices.GetServiceBuilder(ServiceDescriptor);
+            ServiceBuilder.ForwardEventsTo(oldBuilder);
+            Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name);
+        }
+        
         // Chris took these out because they weren't being used yet, and were throwing warnings on package builds.
         // public event Action OnRenameRequested;
         // public event Action<MicroserviceModel> OnEnriched;
         // private string _name = "";
-
-        public string Name
-        {
-            set
-            {
-                throw new NotImplementedException("Cannot rename services yet.");
-                // if (string.Equals(_name, value)) return;
-                // if (string.IsNullOrWhiteSpace(value)) throw new Exception("Name cannot be empty.");
-                // var oldName = _name;
-                // try
-                // {
-                //     _name = value;
-                //     OnRenamed?.Invoke(this);
-                // }
-                // catch (Exception)
-                // {
-                //     _name = oldName; // clean up the name
-                //     throw;
-                // }
-            }
-            get { return Descriptor.Name; }
-        }
-
     }
-
-
 }

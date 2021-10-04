@@ -21,14 +21,14 @@ namespace Beamable.Editor.Microservice.UI
    {
       public static void ShowService(MicroserviceModel service)
       {
-         var existing = Resources.FindObjectsOfTypeAll<ServiceLogWindow>().ToList().FirstOrDefault(w => w._serviceName.Equals(service.Descriptor.Name));
+         var existing = Resources.FindObjectsOfTypeAll<ServiceLogWindow>().ToList().FirstOrDefault(w => w._serviceName.Equals(service.ServiceDescriptor.Name));
          if (existing != null)
          {
             existing.Show(true);
             return;
          }
          var window = CreateInstance<ServiceLogWindow>();
-         window.titleContent = new GUIContent($"{service.Descriptor.Name} Logs");
+         window.titleContent = new GUIContent($"{service.ServiceDescriptor.Name} Logs");
          window.minSize = new Vector2(450, 200);
          window.SetModel(service);
          window.Init();
@@ -57,7 +57,7 @@ namespace Beamable.Editor.Microservice.UI
          {
             if (_model == null)
             {
-               _model = MicroservicesDataModel.Instance.GetMicroserviceModelForName(_serviceName);
+               _model = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(_serviceName);
             }
             _model.DetachLogs(); // take note of the fact that logs are detached...
             RegisterEvents();
@@ -85,7 +85,7 @@ namespace Beamable.Editor.Microservice.UI
       private void SetModel(MicroserviceModel model)
       {
          _model = model;
-         _serviceName = model.Descriptor.Name;
+         _serviceName = model.ServiceDescriptor.Name;
       }
 
       private void OnBecameVisible()

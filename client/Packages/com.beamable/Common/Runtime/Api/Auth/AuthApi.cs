@@ -1,13 +1,14 @@
 
 using System;
 using System.Collections.Generic;
+
 namespace Beamable.Common.Api.Auth
 {
 
 
    public class AuthApi : IAuthApi
    {
-      private const string TOKEN_URL = "/basic/auth/token";
+      protected const string TOKEN_URL = "/basic/auth/token";
       protected const string ACCOUNT_URL = "/basic/accounts";
 
       private IBeamableRequester _requester;
@@ -42,7 +43,6 @@ namespace Beamable.Common.Api.Auth
          return _requester.Request<AvailabilityResponse>(Method.GET, $"{ACCOUNT_URL}/available/third-party?thirdParty={thirdParty.GetString()}&token={token}", null, false)
             .Map(resp => resp.available);
       }
-
 
       public Promise<TokenResponse> CreateUser()
       {
@@ -124,7 +124,9 @@ namespace Beamable.Common.Api.Auth
          public string token;
       }
 
-      public Promise<User> RegisterDBCredentials(string email, string password)
+
+
+        public Promise<User> RegisterDBCredentials(string email, string password)
       {
          var req = new RegisterDBCredentialsRequest
          {
@@ -138,6 +140,11 @@ namespace Beamable.Common.Api.Auth
       private class RegisterDBCredentialsRequest
       {
          public string email, password;
+      }
+
+      public Promise<User> RemoveThirdPartyAssociation(AuthThirdParty thirdParty, string token)
+      {
+         return _requester.Request<User>(Method.DELETE, $"{ACCOUNT_URL}/me/third-party?thirdParty={thirdParty.GetString()}&token={token}", null, true);
       }
 
       public Promise<User> RegisterThirdPartyCredentials(AuthThirdParty thirdParty, string accessToken)
@@ -157,7 +164,10 @@ namespace Beamable.Common.Api.Auth
          public string token;
       }
 
-      public Promise<EmptyResponse> IssueEmailUpdate(string newEmail)
+
+
+
+        public Promise<EmptyResponse> IssueEmailUpdate(string newEmail)
       {
          var req = new IssueEmailUpdateRequest
          {
