@@ -147,3 +147,17 @@ LoadingSpinnerVisualElement {
     color: #FF0000;
     font-size: 8px;
 }
+
+#manifestArchivedMessage{
+    color: #C59800;
+    height: 0px;
+    -unity-text-align: middle-left;
+    flex-direction: row;
+    -unity-font-style: bold;
+    white-space: normal;
+    overflow: hidden;
+}
+
+#manifestArchivedMessage.visible{
+    height: 30px;
+ }
