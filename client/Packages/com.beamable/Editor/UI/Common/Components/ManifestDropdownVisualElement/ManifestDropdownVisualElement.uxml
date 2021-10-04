@@ -10,6 +10,8 @@
     <engine:VisualElement name="popupContent">
         <beamable:SearchBarVisualElement name="searchBar"/>
 
+        <engine:Button name="editButton"/>
+
         <engine:Button name="refreshButton">
         </engine:Button>
 
