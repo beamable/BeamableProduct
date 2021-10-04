@@ -105,8 +105,6 @@ namespace Beamable.Server
          public TList items = default;
       }
 
-      // protected Func<IBeamableRequester> RequesterFactory { get; set; } =
-
       protected string CreateUrl(string cid, string pid, string serviceName, string endpoint)
       {
          var prefix = _prefix ?? (_prefix = MicroserviceIndividualization.GetServicePrefix(serviceName));
