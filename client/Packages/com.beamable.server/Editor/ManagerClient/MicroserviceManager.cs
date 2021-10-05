@@ -113,9 +113,10 @@ namespace Beamable.Server.Editor.ManagerClient
       public string templateId;
       public string comments;
       public List<ServiceDependency> dependencies;
+      public long containerHealthCheckPort = SharedConstants.HEALTH_PORT;
    }
-   
-   
+
+
    [System.Serializable]
    public class ServiceStorageReference
    {
