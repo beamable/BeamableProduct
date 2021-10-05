@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using Beamable.Editor.UI.Buss;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -41,6 +42,13 @@ namespace Beamable.Editor.UI.Components
             _dayPicker = Root.Q<LabeledNumberPicker>("dayPicker");
             _dayPicker.Setup(GenerateDays());
             _dayPicker.Refresh();
+        }
+        
+        public string GetHour()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append($"{_yearPicker.Value}:{_monthPicker.Value}:{_dayPicker.Value}");
+            return builder.ToString();
         }
 
         private List<string> GenerateYears()

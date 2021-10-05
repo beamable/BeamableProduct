@@ -45,8 +45,8 @@ namespace Beamable.Editor.UI.Components
         private Button _button;
         private List<string> _options;
 
-        public string Value { get; set; }
-        public string Label { get; set; }
+        public string Value { get; private set; }
+        private string Label { get; set; }
 
         public LabeledNumberPicker() : base($"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledNumberPicker)}/{nameof(LabeledNumberPicker)}")
         {
@@ -81,9 +81,7 @@ namespace Beamable.Editor.UI.Components
 
             if (_options != null && _options.Count > 0)
             {
-                Value = _options[0];
-                _labeledTextFieldComponent.Value = Value;
-                _labeledTextFieldComponent.Refresh();
+                SetOption(_options[0]);
             }
         }
 
@@ -93,11 +91,16 @@ namespace Beamable.Editor.UI.Components
             {
                 evt.menu.BeamableAppendAction(option, (pos) =>
                 {
-                    Value = option;
-                    _labeledTextFieldComponent.Value = Value;
-                    _labeledTextFieldComponent.Refresh();
+                    SetOption(option);
                 });
             }
+        }
+
+        private void SetOption(string value)
+        {
+            Value = value;
+            _labeledTextFieldComponent.Value = Value;
+            _labeledTextFieldComponent.Refresh();
         }
     }
 }

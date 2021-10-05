@@ -10,9 +10,9 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-    public class LabeledTextField : BeamableVisualElement
+    public class LabeledDaysPickerVisualElement : BeamableVisualElement
     {
-        public new class UxmlFactory : UxmlFactory<LabeledTextField, UxmlTraits>
+        public new class UxmlFactory : UxmlFactory<LabeledDaysPickerVisualElement, UxmlTraits>
         {
         }
 
@@ -20,9 +20,6 @@ namespace Beamable.Editor.UI.Components
         {
             readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
                 {name = "label", defaultValue = "Label"};
-
-            readonly UxmlStringAttributeDescription _value = new UxmlStringAttributeDescription
-                {name = "value"};
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -32,25 +29,23 @@ namespace Beamable.Editor.UI.Components
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
-                if (ve is LabeledTextField component)
+                if (ve is LabeledDaysPickerVisualElement component)
                 {
                     component.Label = _label.GetValueFromBag(bag, cc);
-                    component.Value = _value.GetValueFromBag(bag, cc);
                 }
             }
         }
 
         private Label _label;
-        private TextField _textField;
 
+        public DaysPickerVisualElement DaysPicker { get; private set; }
         public string Label { get; set; }
-        public string Value { get; set; }
 
-        public LabeledTextField() : base(
-            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledTextField)}/{nameof(LabeledTextField)}")
+        public LabeledDaysPickerVisualElement() : base(
+            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledDaysPickerVisualElement)}/{nameof(LabeledDaysPickerVisualElement)}")
         {
         }
-
+        
         public override void Refresh()
         {
             base.Refresh();
@@ -58,21 +53,8 @@ namespace Beamable.Editor.UI.Components
             _label = Root.Q<Label>("label");
             _label.text = Label;
 
-            _textField = Root.Q<TextField>("textField");
-            _textField.value = Value;
-
-            _textField.RegisterValueChangedCallback(ValueChanged);
-        }
-
-        protected override void OnDestroy()
-        {
-            _textField.UnregisterValueChangedCallback(ValueChanged);
-        }
-
-        private void ValueChanged(ChangeEvent<string> evt)
-        {
-            // TODO: implement/inject some validation depending on context
-            Value = evt.newValue;
+            DaysPicker = Root.Q<DaysPickerVisualElement>("daysPicker");
+            DaysPicker.Refresh();
         }
     }
 }

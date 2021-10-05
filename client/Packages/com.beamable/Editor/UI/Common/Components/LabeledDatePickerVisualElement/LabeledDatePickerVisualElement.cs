@@ -12,9 +12,6 @@ namespace Beamable.Editor.UI.Components
 {
     public class LabeledDatePickerVisualElement : BeamableVisualElement
     {
-        private Label _label;
-        private DatePickerVisualElement _datePicker;
-
         public new class UxmlFactory : UxmlFactory<LabeledDatePickerVisualElement, UxmlTraits>
         {
         }
@@ -39,7 +36,11 @@ namespace Beamable.Editor.UI.Components
             }
         }
 
-        public string Label { get; set; }
+        private Label _label;
+        private DatePickerVisualElement _datePicker;
+
+        private string Label { get; set; }
+        public string SelectedDate => _datePicker.GetHour();
 
         public LabeledDatePickerVisualElement() : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledDatePickerVisualElement)}/{nameof(LabeledDatePickerVisualElement)}")

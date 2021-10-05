@@ -12,14 +12,25 @@
         <beamable:LabeledTextField name="description" label="Description" value="Optional"/>
         <beamable:LabeledDropdownVisualElement name="dropdown" label="Repeat type:"/>
         <engine:VisualElement name="dailyGroup">
-            <beamable:LabeledDatePickerVisualElement name="activeToDate" label="Active to:"/>
-            <beamable:LabeledHourPickerVisualElement name="activeToHour" label=""/>
+            <beamable:LabeledDatePickerVisualElement name="daily_activeToDate" label="Active to:"/>
+            <beamable:LabeledHourPickerVisualElement name="daily_activeToHour" label=""/>
         </engine:VisualElement>
         <engine:VisualElement name="daysGroup">
-            
+            <beamable:LabeledDaysPickerVisualElement name="days_daysPicker" label="Repeat on:"/>
+            <beamable:LabeledDatePickerVisualElement name="days_activeToDate" label="Active to:"/>
+            <beamable:LabeledHourPickerVisualElement name="days_activeToHour" label=""/>
         </engine:VisualElement>
         <engine:VisualElement name="datesGroup">
-
+            <beamable:LabeledDatePickerVisualElement name="date_activeToDate" label="Active to:"/>
+            <beamable:LabeledHourPickerVisualElement name="date_activeToHour" label=""/>
+        </engine:VisualElement>
+        <engine:VisualElement name="buttonsGroup">
+            <engine:VisualElement name="confirmBtn">
+                <engine:Label text="CONFIRM"/>
+            </engine:VisualElement>
+            <engine:VisualElement name="cancelBtn">
+                <engine:Label text="Cancel"/>
+            </engine:VisualElement>
         </engine:VisualElement>
     </engine:VisualElement>
     

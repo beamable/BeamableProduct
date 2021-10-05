@@ -1,0 +1,89 @@
+﻿using System.Collections.Generic;
+using Beamable.Editor.UI.Buss;
+#if UNITY_2018
+using UnityEngine.Experimental.UIElements;
+using UnityEditor.Experimental.UIElements;
+#elif UNITY_2019_1_OR_NEWER
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
+#endif
+
+namespace Beamable.Editor.UI.Components
+{
+    public class DaysPickerVisualElement : BeamableVisualElement
+    {
+        public new class UxmlFactory : UxmlFactory<DaysPickerVisualElement, UxmlTraits>
+        {
+        }
+
+        private readonly List<DayToggleVisualElement> _daysToggles = new List<DayToggleVisualElement>();
+
+        private DayToggleVisualElement _mondayToggle;
+        private DayToggleVisualElement _tuesdayToggle;
+        private DayToggleVisualElement _wednesdayToggle;
+        private DayToggleVisualElement _thursdayToggle;
+        private DayToggleVisualElement _fridayToggle;
+        private DayToggleVisualElement _saturdayToggle;
+        private DayToggleVisualElement _sundayToggle;
+
+        public DaysPickerVisualElement() : base(
+            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(DaysPickerVisualElement)}/{nameof(DaysPickerVisualElement)}")
+        {
+        }
+
+        public override void Refresh()
+        {
+            base.Refresh();
+
+            _mondayToggle = Root.Q<DayToggleVisualElement>("mon");
+            _mondayToggle.Setup("M", "mon");
+            _daysToggles.Add(_mondayToggle);
+            _mondayToggle.Refresh();
+            
+            _tuesdayToggle = Root.Q<DayToggleVisualElement>("tue");
+            _tuesdayToggle.Setup("T","tue");
+            _daysToggles.Add(_tuesdayToggle);
+            _tuesdayToggle.Refresh();
+            
+            _wednesdayToggle = Root.Q<DayToggleVisualElement>("wed");
+            _wednesdayToggle.Setup("W", "wed");
+            _daysToggles.Add(_wednesdayToggle);
+            _wednesdayToggle.Refresh();
+            
+            _thursdayToggle = Root.Q<DayToggleVisualElement>("thu");
+            _thursdayToggle.Setup("T","thu");
+            _daysToggles.Add(_thursdayToggle);
+            _thursdayToggle.Refresh();
+            
+            _fridayToggle = Root.Q<DayToggleVisualElement>("fri");
+            _fridayToggle.Setup("F","fri");
+            _daysToggles.Add(_fridayToggle);
+            _fridayToggle.Refresh();
+            
+            _saturdayToggle = Root.Q<DayToggleVisualElement>("sat");
+            _saturdayToggle.Setup("S","sat");
+            _daysToggles.Add(_saturdayToggle);
+            _saturdayToggle.Refresh();
+            
+            _sundayToggle = Root.Q<DayToggleVisualElement>("sun");
+            _sundayToggle.Setup("S","sun");
+            _daysToggles.Add(_sundayToggle);
+            _sundayToggle.Refresh();
+        }
+
+        public List<string> GetSelectedDays()
+        {
+            List<string> selectedOptions = new List<string>();
+
+            foreach (DayToggleVisualElement toggle in _daysToggles)
+            {
+                if (toggle.Selected)
+                {
+                    selectedOptions.Add(toggle.Value);
+                }
+            }
+
+            return selectedOptions;
+        }
+    }
+}

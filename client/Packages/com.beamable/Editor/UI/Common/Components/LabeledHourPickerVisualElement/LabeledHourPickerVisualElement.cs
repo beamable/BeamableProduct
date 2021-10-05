@@ -40,6 +40,7 @@ namespace Beamable.Editor.UI.Components
         }
 
         public string Label { get; set; }
+        public string SelectedHour => _hourPicker.GetHour();
 
         public LabeledHourPickerVisualElement() : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledHourPickerVisualElement)}/{nameof(LabeledHourPickerVisualElement)}")

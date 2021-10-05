@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text;
 using Beamable.Editor.UI.Buss;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -40,6 +41,13 @@ namespace Beamable.Editor.UI.Components
             _secondPicker = Root.Q<LabeledNumberPicker>("secondPicker");
             _secondPicker.Setup(GenerateMinutesAndSeconds());
             _secondPicker.Refresh();
+        }
+
+        public string GetHour()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append($"{_hourPicker.Value}:{_minutePicker.Value}:{_secondPicker.Value}");
+            return builder.ToString();
         }
 
         private List<string> GenerateHours()
