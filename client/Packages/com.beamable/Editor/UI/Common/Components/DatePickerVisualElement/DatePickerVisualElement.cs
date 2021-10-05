@@ -1,4 +1,6 @@
-﻿using Beamable.Editor.UI.Buss;
+﻿using System;
+using System.Collections.Generic;
+using Beamable.Editor.UI.Buss;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -29,13 +31,59 @@ namespace Beamable.Editor.UI.Components
             base.Refresh();
 
             _yearPicker = Root.Q<LabeledNumberPicker>("yearPicker");
+            _yearPicker.Setup(GenerateYears());
             _yearPicker.Refresh();
             
             _monthPicker = Root.Q<LabeledNumberPicker>("monthPicker");
+            _monthPicker.Setup(GenerateMonths());
             _monthPicker.Refresh();
             
             _dayPicker = Root.Q<LabeledNumberPicker>("dayPicker");
+            _dayPicker.Setup(GenerateDays());
             _dayPicker.Refresh();
+        }
+
+        private List<string> GenerateYears()
+        {
+            int yearsAdvance = 3;
+            
+            List<string> options = new List<string>();
+
+            DateTime now = DateTime.Now;
+
+            for (int i = 0; i < yearsAdvance; i++)
+            {
+                string option = (now.Year + i).ToString("0000");
+                options.Add(option);
+            }
+
+            return options;
+        }
+
+        private List<string> GenerateMonths()
+        {
+            List<string> options = new List<string>();
+            
+            for (int i = 0; i < 12; i++)
+            {
+                string option = (i+1).ToString("00");
+                options.Add(option);
+            }
+
+            return options;
+        }
+        
+        private List<string> GenerateDays()
+        {
+            List<string> options = new List<string>();
+            
+            for (int i = 0; i < 31; i++)
+            {
+                string option = (i+1).ToString("00");
+                options.Add(option);
+            }
+
+            return options;
         }
     }
 }

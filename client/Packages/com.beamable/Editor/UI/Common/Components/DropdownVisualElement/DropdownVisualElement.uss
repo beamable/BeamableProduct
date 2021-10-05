@@ -1,0 +1,35 @@
+﻿#mainVisualElement {
+    width: 150px;
+    padding: 0;
+    font-size: 16px;
+}
+
+#mainContainer {
+    min-width: 100px;
+    min-height: 30px;
+    border-color: #FFFFFF;
+    border-width: 2px;
+    border-radius: 3px;
+    padding: 0;
+    flex-direction: row;
+    justify-content: space-around;
+}
+
+#valueContainer {
+    flex-grow: 1;
+    width: auto;
+    height: auto;
+}
+
+#value {
+    flex-grow: 1;
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    -unity-text-align: middle-center;
+}
+
+#button {
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown_Line_light.png");
+    width: 30px;
+    height: auto;
+    margin-right: 3px;
+}

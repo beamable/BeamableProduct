@@ -10,8 +10,17 @@
         <beamable:LabeledTextField name="eventName" label="Event name:"/>
         <beamable:LabeledHourPickerVisualElement name="startTime" label="Event start time:"/>
         <beamable:LabeledTextField name="description" label="Description" value="Optional"/>
-        <beamable:LabeledDatePickerVisualElement name="activeToDate" label="Active to:"/>
-        <beamable:LabeledHourPickerVisualElement name="activeToHour" label=""/>
+        <beamable:LabeledDropdownVisualElement name="dropdown" label="Repeat type:"/>
+        <engine:VisualElement name="dailyGroup">
+            <beamable:LabeledDatePickerVisualElement name="activeToDate" label="Active to:"/>
+            <beamable:LabeledHourPickerVisualElement name="activeToHour" label=""/>
+        </engine:VisualElement>
+        <engine:VisualElement name="daysGroup">
+            
+        </engine:VisualElement>
+        <engine:VisualElement name="datesGroup">
+
+        </engine:VisualElement>
     </engine:VisualElement>
     
 </UXML>
