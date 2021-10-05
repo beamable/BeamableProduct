@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Ability to use Promises in ClientCallable methods
+- Container health checks are reported in deployment manifests
 
 
 ## [0.16.0]

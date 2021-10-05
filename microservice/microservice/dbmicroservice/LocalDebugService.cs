@@ -1,15 +1,8 @@
-﻿﻿using System.Net.Mime;
- using System.Net.WebSockets;
- using System.Text;
+﻿using System.Net.WebSockets;
+using System.Text;
 using System.Threading.Tasks;
-using Beamable.Common.Api.Auth;
-using Beamable.Common.Api.Content;
-using Beamable.Content;
 using EmbedIO;
- using EmbedIO.Actions;
- using EmbedIO.Routing;
-using EmbedIO.WebApi;
-using ContentService = Beamable.Server.Content.ContentService;
+using EmbedIO.Actions;
 
 namespace Beamable.Server {
     public class LocalDebugService {
@@ -17,7 +10,7 @@ namespace Beamable.Server {
 
         public LocalDebugService(BeamableMicroService beamableService) {
             _beamableService = beamableService;
-            var server = new WebServer(6565)
+            var server = new WebServer(SharedConstants.HEALTH_PORT)
                 .WithModule(new ActionModule("/health", HttpVerbs.Any, HealthCheck));
             server.RunAsync();
         }
@@ -30,9 +23,12 @@ namespace Beamable.Server {
                 healthy &= connection.State == WebSocketState.Open;
             }
             if (healthy) {
+                context.SetHandled();
                 await context.SendStringAsync("Healthy: true", "text", Encoding.Default);
             }
-            else {
+            else
+            {
+                context.Response.StatusCode = 409;
                 await context.SendStringAsync("Healthy: false", "text", Encoding.Default);
             }
         }

@@ -138,7 +138,7 @@ FROM {(DebuggingEnabled
 
 WORKDIR /subapp
 
-EXPOSE 6565
+EXPOSE {SharedConstants.HEALTH_PORT}
 COPY --from=build-env /subapp .
 COPY --from=build-env /app/baseImageDocs.xml .
 ENV BEAMABLE_SDK_VERSION_EXECUTION={BeamableEnvironment.SdkVersion}
