@@ -385,7 +385,6 @@ namespace Beamable.Common
       }
    }
 
-   // public class Promise : Promise<Unit> {}
    /// <summary>
    /// This type defines the %Beamable %SequencePromise.
    ///
