@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
+using Beamable.Server.Editor.UI.Components;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -24,6 +25,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         }
         
         protected abstract string NewServiceName { get; set; }
+        protected abstract string ScriptName { get; }
         
         public event Action OnCreateServiceClicked;
 
@@ -45,6 +47,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         private LogVisualElement _logElement;
         private List<string> _servicesNames;
         private object _logVisualElement;
+        private VisualElement _rootVisualElement;
 
         private Action _defaultBuildAction;
         
@@ -52,17 +55,25 @@ namespace Beamable.Editor.Microservice.UI.Components
         {
             base.Refresh();
             QueryVisualElements();
+            InjectStyleSheets();
             UpdateVisualElements();
         }
         protected virtual void QueryVisualElements()
         {
+            _rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
             Root.Q("microserviceTitle")?.RemoveFromHierarchy();
+            Root.Q("dependentServicesContainer")?.RemoveFromHierarchy();
             _cancelBtn = Root.Q<Button>("cancelBtn");
             _createBtn = Root.Q<Button>("start");
             _buildDropDownBtn = Root.Q<Button>("buildDropDown");
             _checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
             _logContainerElement = Root.Q<VisualElement>("logContainer");
             _nameTextField = Root.Q<TextField>("microserviceNewTitle");
+        }
+        private void InjectStyleSheets()
+        {
+            if (string.IsNullOrWhiteSpace(ScriptName)) return;
+            _rootVisualElement.AddStyleSheet($"{Constants.COMP_PATH}/{ScriptName}/{ScriptName}.uss");
         }
         protected virtual void UpdateVisualElements()
         {

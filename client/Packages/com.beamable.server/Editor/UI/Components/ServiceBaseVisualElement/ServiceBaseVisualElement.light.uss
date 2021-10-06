@@ -79,3 +79,7 @@
 .remoteDisabled{
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Disable D.png");
 }
+
+#dependentServicesBtn {
+    border-color: #000000;
+}

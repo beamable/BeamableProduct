@@ -1,0 +1,10 @@
+﻿MicroserviceVisualElement > TemplateContainer > #mainVisualElement,
+CreateMicroserviceVisualElement > TemplateContainer > #mainVisualElement {
+    margin-right: 10px;
+    margin-left: 10px;
+}
+
+#serviceIcon {
+    width: 15px;
+    height: 14px;
+}

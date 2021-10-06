@@ -1,7 +1,6 @@
-MicroserviceVisualElement > TemplateContainer > #mainVisualElement,
-CreateMicroserviceVisualElement > TemplateContainer > #mainVisualElement {
-    margin-right: 10px;
-    margin-left: 10px;
+#serviceIcon {
+    align-self: center;
+    margin-left: 4px;
 }
 
 #logHeader{
@@ -33,22 +32,33 @@ CreateMicroserviceVisualElement > TemplateContainer > #mainVisualElement {
 }
 
 .subTitle{
-    font-size: 12px;
+    font-size: 10px;
     -unity-font-style: normal;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     justify-content: center;
     -unity-text-align: middle-left;
+    margin-right: 0px;
+    margin-left: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    padding-right: 0px;
+    padding-left: 0px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    
 }
 
 #statusIcon{
     /*background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Running L.png");*/
     width: 25px;
     height: 25px;
+    align-self: center;
 
 }
 #remoteStatusIcon{
     width: 25px;
     height: 25px;
+    align-self: center;
 }
 
 #checkbox{
@@ -140,4 +150,17 @@ CreateMicroserviceVisualElement > TemplateContainer > #mainVisualElement {
     margin-left: 0px;
     margin-bottom: 0px;
     margin-top: 0px;
+}
+
+#buttonsContainer {
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+#dependentServicesBtn {
+    font-size: 10px;
+    background-image: none;
+    background-color: rgba(0,0,0,0);
+    padding-top: 4px;
+    border-bottom-width: 1px;
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Beamable.Common;
+using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
@@ -23,6 +24,7 @@ namespace Beamable.Editor.Microservice.UI.Components
     {
         public new class UxmlFactory : UxmlFactory<MicroserviceVisualElement, UxmlTraits>
         {}
+        protected override string ScriptName => nameof(MicroserviceVisualElement);
 
         private Action _defaultBuildAction;
         private bool _mouseOverBuildDropdown;

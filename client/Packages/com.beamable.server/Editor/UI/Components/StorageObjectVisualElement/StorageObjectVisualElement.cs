@@ -22,16 +22,49 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
     public class StorageObjectVisualElement : ServiceBaseVisualElement
     {
-        public new class UxmlFactory : UxmlFactory<StorageObjectVisualElement, UxmlTraits>
-        {}
+        public new class UxmlFactory : UxmlFactory<StorageObjectVisualElement, UxmlTraits> {}
+
+        protected override string ScriptName => nameof(StorageObjectVisualElement);
+        
+        private MongoStorageModel _mongoStorageModel;
+        
         protected override void UpdateStatusIcon()
         {
-            throw new NotImplementedException();
-        }
+            _statusIcon.ClearClassList();
 
+            string statusClassName;
+            string statusText;
+
+            var status = _mongoStorageModel.IsRunning ? "localRunning" : "localStopped";
+            switch (status)
+            {
+                case "localRunning":
+                    statusClassName = "localRunning";
+                    statusText = "Local Running";
+                    break;
+                case "localStopped":
+                    statusClassName = "localStopped";
+                    statusText = "Local Stopped";
+                    break;
+                default:
+                    statusClassName = "different";
+                    statusText = "Different";
+                    break;
+            }
+            
+            _statusIcon.tooltip = _statusLabel.text = statusText;
+            _statusIcon.AddToClassList(statusClassName);
+        }
         protected override void UpdateRemoteStatusIcon()
         {
-            throw new NotImplementedException();
+            // TODO
         }
+        protected override void QueryVisualElements()
+        {
+            base.QueryVisualElements();
+            Root.Q("buildDropDown")?.RemoveFromHierarchy();
+            _mongoStorageModel = (MongoStorageModel) Model;
+        }
+
     }
 }

@@ -1,0 +1,10 @@
+﻿StorageObjectVisualElement > TemplateContainer > #mainVisualElement,
+CreateStorageObjectVisualElement > TemplateContainer > #mainVisualElement {
+    margin-right: 10px;
+    margin-left: 10px;
+}
+
+#serviceIcon {
+    width: 21px;
+    height: 22px;
+}
