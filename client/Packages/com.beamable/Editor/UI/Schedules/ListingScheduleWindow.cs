@@ -243,7 +243,7 @@ namespace Beamable.Editor.Schedules
             if (ve != null)
             {
                 ve.visible = _currentMode == mode;
-                ve.style.height = ve.visible ? new StyleLength(StyleKeyword.Auto) : new StyleLength(0.0f);
+                // ve.SetHeight(0);
             }
         }
 

@@ -25,7 +25,7 @@ namespace Beamable.Editor.UI.Components
         public new class UxmlFactory : UxmlFactory<DropdownSingleOptionVisualElement, UxmlTraits>
         {
         }
-        
+
         public DropdownSingleOptionVisualElement() : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(DropdownVisualElement)}/{nameof(DropdownSingleOptionVisualElement)}/{nameof(DropdownSingleOptionVisualElement)}")
         {
@@ -36,10 +36,10 @@ namespace Beamable.Editor.UI.Components
         {
             base.Refresh();
             _root = Root.Q<VisualElement>("mainVisualElement");
-            _root.style.height = new StyleLength(_height);
-            _root.style.width = new StyleLength(_width);
-            _root.style.fontSize = new StyleLength(_height / 2.0f);
-            
+            _root.SetHeight(_height);
+            _root.SetWidth(_width);
+            _root.SetFontSize(_height / 2.0f);
+
             _label = Root.Q<Label>("value");
             _label.text = _labelText;
 

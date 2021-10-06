@@ -1,7 +1,3 @@
-﻿#mainVisualElement {
-    padding: 0;
-}
-
-#yearPicker #labelAndValue #textField {
+﻿#yearPicker #labelAndValue #textField {
     width: 40px;
 }

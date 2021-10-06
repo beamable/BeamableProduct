@@ -17,7 +17,7 @@ namespace Beamable.Editor.UI.Components
     public class DropdownVisualElement : BeamableVisualElement
     {
         private readonly List<DropdownSingleOption> _optionModels;
-        
+
         private VisualElement _button;
         private VisualElement _root;
         private BeamablePopupWindow _optionsPopup;
@@ -100,14 +100,14 @@ namespace Beamable.Editor.UI.Components
             foreach (DropdownSingleOption option in _optionModels)
             {
                 allOptions.Add(new DropdownSingleOptionVisualElement().Setup(option.Label,
-                    option.OnClick, _root.resolvedStyle.width, _root.resolvedStyle.height));
+                    option.OnClick, _root.localBound.width, _root.localBound.height));
             }
 
             DropdownOptionsVisualElement optionsWindow =
                 new DropdownOptionsVisualElement().Setup(allOptions, OnOptionsClosed);
 
             _optionsPopup = BeamablePopupWindow.ShowDropdown("", popupWindowRect,
-                new Vector2(_root.resolvedStyle.width, optionsWindow.GetHeight()), optionsWindow);
+                new Vector2(_root.localBound.width, optionsWindow.GetHeight()), optionsWindow);
         }
 
         private void OnOptionsClosed()

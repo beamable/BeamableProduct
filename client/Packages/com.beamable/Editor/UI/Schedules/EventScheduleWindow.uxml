@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <UXML
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns:engine="UnityEngine.UIElements"
+        xmlns:engine="UnityEngine.Experimental.UIElements"
         xmlns:beamable="Beamable.Editor.UI.Components"
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
@@ -15,7 +15,7 @@
         <engine:VisualElement name="daysGroup">
             <beamable:LabeledDaysPickerVisualElement name="daysPicker" label="Repeat on:"/>
         </engine:VisualElement>
-        
+
         <engine:VisualElement name="datesGroup">
             <!-- CALENDAR COMPONENT -->
             <beamable:LabeledTextField name="datesField" label="Repeat on:"/>
@@ -25,7 +25,7 @@
             <engine:Label name="expirationLabel" text="Never expires"/>
             <beamable:BeamableCheckboxVisualElement name="expiresNever"/>
         </engine:VisualElement>
-        
+
         <beamable:LabeledDatePickerVisualElement name="activeToDate" label="Active to:"/>
         <beamable:LabeledHourPickerVisualElement name="activeToHour" label=""/>
 
@@ -37,7 +37,7 @@
                 <engine:Label text="Cancel"/>
             </engine:VisualElement>
         </engine:VisualElement>
-        
+
     </engine:VisualElement>
-    
+
 </UXML>

@@ -105,6 +105,21 @@ namespace UnityEngine.Experimental.UIElements
           self.positionBottom = value;
         }
 
+        public static void SetFontSize(this IStyle self, float value)
+        {
+          self.fontSize = (int)value;
+        }
+
+        public static void SetWidth(this IStyle self, float value)
+        {
+          self.width = value;
+        }
+
+        public static void SetHeight(this IStyle self, float value)
+        {
+          self.height = value;
+        }
+
         public static float GetMaxHeight(this IStyle self)
         {
             return self.maxHeight;
@@ -273,6 +288,22 @@ namespace UnityEngine.UIElements
     {
       self.bottom = new StyleLength(value);
     }
+
+    public static void SetFontSize(this IStyle self, float value)
+    {
+      self.fontSize = new StyleLength((int)value);
+    }
+
+    public static void SetWidth(this IStyle self, float value)
+    {
+      self.width = new StyleLength(value);
+    }
+
+    public static void SetHeight(this IStyle self, float value)
+    {
+      self.height = new StyleLength(value);
+    }
+
 
     public static float GetMaxHeight(this IStyle self)
     {

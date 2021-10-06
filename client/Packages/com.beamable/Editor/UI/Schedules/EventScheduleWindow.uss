@@ -1,5 +1,8 @@
-#mainVisualElement {
-    padding: 10px;
+EventScheduleWindow > TemplateContainer > #mainVisualElement {
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
     -unity-font: resource("Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
 }
 
@@ -52,7 +55,7 @@ Label {
     padding: 10px;
     flex-direction: row;
     justify-content: space-between;
-    width: auto;
+    /*width: auto;*/
 }
 
 #expirationLabel {

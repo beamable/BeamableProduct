@@ -6,7 +6,7 @@
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
-    <engine:VisualElement name="mainVisualElement">
+    <engine:VisualElement name="mainVisualElement" class="--noPadding">
         <beamable:DayToggleVisualElement name="mon"/>
         <beamable:DayToggleVisualElement name="tue"/>
         <beamable:DayToggleVisualElement name="wed"/>

@@ -5,7 +5,7 @@
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
-    <engine:VisualElement name="mainVisualElement">
+    <engine:VisualElement name="mainVisualElement" class="--noPadding">
         <beamable:LabeledNumberPicker name="hourPicker" label="h"/>
         <beamable:LabeledNumberPicker name="minutePicker" label="m"/>
         <beamable:LabeledNumberPicker name="secondPicker" label="s"/>
