@@ -3,45 +3,21 @@
     -unity-font: resource("Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
 }
 
-#buttonsGroup {
-    padding-top: 20px;
-    padding-right: 10px;
+#buttonStrip {
     flex-direction: row;
-    align-items: flex-end;
     justify-content: flex-end;
+    margin-top: 5px;
+    margin-bottom: 5px;
 }
 
 #confirmBtn {
-    border-radius: 2px;
-    margin-left: 5px;
-    margin-right: 5px;
-    background-color: #0091FF;
     width: 100px;
-    height: 30px;
-    justify-content: center;
-    align-items: center;
-    font-size: 14px;
-}
-
-#confirmBtn:hover {
-    background-color: #00bbff;
+    height: 28px;
 }
 
 #cancelBtn {
-    border-radius: 2px;
-    margin-left: 5px;
-    margin-right: 5px;
     width: 100px;
-    height: 30px;
-    border-width: 2px;
-    border-color: #FFFFFF;
-    justify-content: center;
-    align-items: center;
-    font-size: 14px;
-}
-
-#cancelBtn:hover {
-    background-color: #525252;
+    height: 28px;
 }
 
 Label {

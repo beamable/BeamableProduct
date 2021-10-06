@@ -36,13 +36,9 @@
         <beamable:LabeledDatePickerVisualElement name="activeToDate" label="Active to:"/>
         <beamable:LabeledHourPickerVisualElement name="activeToHour" label=""/>
 
-        <engine:VisualElement name="buttonsGroup">
-            <engine:VisualElement name="confirmBtn">
-                <engine:Label text="CONFIRM"/>
-            </engine:VisualElement>
-            <engine:VisualElement name="cancelBtn">
-                <engine:Label text="Cancel"/>
-            </engine:VisualElement>
+        <engine:VisualElement name="buttonStrip">
+            <beamable:PrimaryButtonVisualElement name="confirmBtn" text="Confirm"/>
+            <engine:Button name="cancelBtn" text="Cancel"/>
         </engine:VisualElement>
         
     </engine:VisualElement>
