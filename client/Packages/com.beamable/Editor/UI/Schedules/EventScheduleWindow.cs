@@ -156,10 +156,10 @@ namespace Beamable.Editor.Schedules
 
             string json = JsonUtility.ToJson(new ScheduleWrapper(newSchedule));
             string replaced = json.Replace("\"\"", "null");
-            
+
             OnConfirm?.Invoke(replaced);
         }
-        
+
         private void CancelClicked()
         {
             OnCancel?.Invoke();
@@ -176,7 +176,7 @@ namespace Beamable.Editor.Schedules
             if (ve != null)
             {
                 ve.visible = _currentMode == mode;
-                ve.style.height = ve.visible ? new StyleLength(StyleKeyword.Auto) : new StyleLength(0.0f);
+                ve.EnableInClassList("--positionHidden", !ve.visible);
             }
         }
 

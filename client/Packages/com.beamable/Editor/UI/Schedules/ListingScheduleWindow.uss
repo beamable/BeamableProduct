@@ -1,7 +1,17 @@
-#mainVisualElement {
-    padding: 10px;
+ListingScheduleWindow > TemplateContainer > #mainVisualElement {
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
     -unity-font: resource("Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
 }
+ListingScheduleWindow > TemplateContainer > #mainVisualElement > * {
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
 
 #buttonStrip {
     flex-direction: row;
@@ -28,7 +38,6 @@ Label {
     padding: 10px;
     flex-direction: row;
     justify-content: space-between;
-    width: auto;
 }
 
 #expirationLabel {

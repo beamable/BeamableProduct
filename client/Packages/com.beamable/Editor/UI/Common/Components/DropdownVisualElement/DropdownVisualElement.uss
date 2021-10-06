@@ -1,5 +1,4 @@
 ﻿#mainVisualElement {
-    padding: 0;
     font-size: 14px;
 }
 
@@ -7,9 +6,11 @@
     min-width: 100px;
     min-height: 30px;
     border-color: #FFFFFF;
-    border-width: 2px;
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
     border-radius: 3px;
-    padding: 0;
     flex-direction: row;
     justify-content: space-around;
 }
@@ -17,7 +18,6 @@
 #valueContainer {
     flex-grow: 1;
     width: 110px;
-    height: auto;
 }
 
 #value {
@@ -29,6 +29,5 @@
 #button {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown_Line_light.png");
     width: 30px;
-    height: auto;
     margin-right: 3px;
 }

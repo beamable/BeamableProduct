@@ -1,4 +1,3 @@
 ﻿#mainVisualElement {
-    padding: 0;
     width: 280px;
 }

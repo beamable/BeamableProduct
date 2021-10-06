@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
-using Codice.Client.Commands;
-using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -22,7 +20,7 @@ namespace Beamable.Editor.UI.Components
         public new class UxmlFactory : UxmlFactory<DropdownOptionsVisualElement, UxmlTraits>
         {
         }
-        
+
         public DropdownOptionsVisualElement() : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(DropdownVisualElement)}/{nameof(DropdownOptionsVisualElement)}/{nameof(DropdownOptionsVisualElement)}")
         {
@@ -59,7 +57,7 @@ namespace Beamable.Editor.UI.Components
             {
                 overallHeight += option.Height;
             }
-            
+
             return overallHeight;
         }
 
@@ -76,8 +74,7 @@ namespace Beamable.Editor.UI.Components
                 option.Refresh();
             }
 
-            IStyle mainContainerStyle = _mainContainer.style;
-            mainContainerStyle.height = new StyleLength(GetHeight());
+            _mainContainer.style.SetHeight(GetHeight());
         }
     }
 }
