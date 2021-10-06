@@ -226,7 +226,6 @@ namespace Beamable.Editor.Microservice.UI.Components
             int Comparer(VisualElement a, VisualElement b) {
                 if (a is CreateMicroserviceVisualElement) return -1;
                 if (b is CreateMicroserviceVisualElement) return 1;
-
                 var aName = ((ServiceBaseVisualElement) a).Model.Name;
                 var bName = ((ServiceBaseVisualElement) b).Model.Name;
                 return config.MicroserviceOrderComparer(aName, bName);

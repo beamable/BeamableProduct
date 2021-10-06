@@ -1,15 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Text;
-using System.Threading.Tasks;
-using Beamable.Common;
-using Beamable.Editor.Environment;
-using Beamable.Server;
-using Beamable.Server.Editor;
-using Beamable.Server.Editor.DockerCommands;
-using Beamable.Server.Editor.ManagerClient;
-using UnityEditor;
-using UnityEngine;
+﻿using Beamable.Server.Editor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
