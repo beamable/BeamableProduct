@@ -67,8 +67,9 @@ namespace Beamable.Editor.UI.Components
             ConfigureOptions();
         }
 
-        public void Setup(List<string> options)
+        public void Setup(List<string> options, bool active = true)
         {
+            SetEnabled(active);
             _options = options;
         }
 

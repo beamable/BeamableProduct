@@ -14,6 +14,9 @@ namespace Beamable.Editor.UI.Components
     {
         private Label _label;
         private HourPickerVisualElement _hourPicker;
+        private bool _activeHour = true;
+        private bool _activeMinute = true;
+        private bool _activeSecond = true;
 
         public new class UxmlFactory : UxmlFactory<LabeledHourPickerVisualElement, UxmlTraits>
         {
@@ -55,7 +58,15 @@ namespace Beamable.Editor.UI.Components
             _label.text = Label;
 
             _hourPicker = Root.Q<HourPickerVisualElement>("hourPicker");
+            _hourPicker.Setup(_activeHour, _activeMinute, _activeSecond);
             _hourPicker.Refresh();
+        }
+        
+        public void Setup(bool activeHour = true, bool activeMinute = true, bool activeSecond = true)
+        {
+            _activeHour = activeHour;
+            _activeMinute = activeMinute;
+            _activeSecond = activeSecond;
         }
     }
 }

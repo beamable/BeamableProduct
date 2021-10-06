@@ -1,7 +1,6 @@
 ﻿#mainVisualElement {
-    width: 150px;
     padding: 0;
-    font-size: 16px;
+    font-size: 14px;
 }
 
 #mainContainer {
@@ -17,7 +16,7 @@
 
 #valueContainer {
     flex-grow: 1;
-    width: auto;
+    width: 110px;
     height: auto;
 }
 

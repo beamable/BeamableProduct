@@ -15,55 +15,54 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Schedules
 {
-    public class ScheduleWindow : BeamableVisualElement
+    public class EventScheduleWindow : BeamableVisualElement
     {
-        public enum Mode
+        private enum Mode
         {
-            DAILY,
-            DAYS,
-            DATES
+            Daily,
+            Days,
+            Dates
         }
 
         private LabeledTextField _eventNameComponent;
         private LabeledTextField _descriptionComponent;
         private LabeledHourPickerVisualElement _startTimeComponent;
-        private LabeledDatePickerVisualElement _dailyActiveToDateComponent;
-        private LabeledHourPickerVisualElement _dailyActiveToHourComponent;
+        private LabeledDatePickerVisualElement _activeToDateComponent;
+        private LabeledHourPickerVisualElement _activeToHourComponent;
         private LabeledDropdownVisualElement _dropdownComponent;
-        private LabeledDatePickerVisualElement _daysActiveToDateComponent;
-        private LabeledHourPickerVisualElement _daysActiveToHourComponent;
+        private BeamableCheckboxVisualElement _neverExpiresComponent;
         private LabeledDaysPickerVisualElement _daysDaysPickerComponent;
-        private LabeledDatePickerVisualElement _dateActiveToDateComponent;
-        private LabeledHourPickerVisualElement _dateActiveToHourComponent;
-
-        private readonly Dictionary<string, Mode> _modes;
-        private Mode _currentMode;
-        private VisualElement _dailyGroup;
+        private LabeledTextField _datesField;
         private VisualElement _daysGroup;
         private VisualElement _datesGroup;
         private VisualElement _confirmButton;
 
+        private readonly Dictionary<string, Mode> _modes;
+        private Mode _currentMode;
+
+#if BEAMABLE_DEVELOPER
         // TODO: remove it before final push
-        [MenuItem("TESTING/Schedule window")]
+        [MenuItem("TESTING/Event schedule window")]
         public static void OpenWindow()
         {
-            ScheduleWindow scheduleWindow = new ScheduleWindow();
+            EventScheduleWindow eventScheduleWindow = new EventScheduleWindow();
 
             BeamablePopupWindow.ShowUtility(BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER,
-                scheduleWindow, null, BeamableComponentsConstants.SchedulesWindowSize);
+                eventScheduleWindow, null, BeamableComponentsConstants.EventSchedulesWindowSize);
         }
+#endif
 
-        public ScheduleWindow() : base(
-            $"{BeamableComponentsConstants.UI_PACKAGE_PATH}/Schedules/{nameof(ScheduleWindow)}")
+        public EventScheduleWindow() : base(
+            $"{BeamableComponentsConstants.SCHEDULES_PATH}/{nameof(EventScheduleWindow)}")
         {
             _modes = new Dictionary<string, Mode>
             {
-                {"Daily", Mode.DAILY},
-                {"Days of week", Mode.DAYS},
-                {"Actual dates", Mode.DATES}
+                {"Daily", Mode.Daily},
+                {"Days of week", Mode.Days},
+                {"Actual dates", Mode.Dates}
             };
 
-            _currentMode = Mode.DAILY;
+            _currentMode = Mode.Daily;
         }
 
         public override void Refresh()
@@ -82,30 +81,25 @@ namespace Beamable.Editor.Schedules
             _dropdownComponent = Root.Q<LabeledDropdownVisualElement>("dropdown");
             _dropdownComponent.Setup(PrepareOptions(), OnModeChanged);
             _dropdownComponent.Refresh();
-            
-            // Daily mode
-            _dailyActiveToDateComponent = Root.Q<LabeledDatePickerVisualElement>("daily_activeToDate");
-            _dailyActiveToDateComponent.Refresh();
 
-            _dailyActiveToHourComponent = Root.Q<LabeledHourPickerVisualElement>("daily_activeToHour");
-            _dailyActiveToHourComponent.Refresh();
+            _neverExpiresComponent = Root.Q<BeamableCheckboxVisualElement>("expiresNever");
+            _neverExpiresComponent.OnValueChanged += OnExpirationChanged;
+            _neverExpiresComponent.Refresh();
+            
+            _activeToDateComponent = Root.Q<LabeledDatePickerVisualElement>("activeToDate");
+            _activeToDateComponent.Refresh();
+
+            _activeToHourComponent = Root.Q<LabeledHourPickerVisualElement>("activeToHour");
+            _activeToHourComponent.Refresh();
 
             // Days mode
-            _daysDaysPickerComponent = Root.Q<LabeledDaysPickerVisualElement>("days_daysPicker");
+            _daysDaysPickerComponent = Root.Q<LabeledDaysPickerVisualElement>("daysPicker");
             _daysDaysPickerComponent.Refresh();
 
-            _daysActiveToDateComponent = Root.Q<LabeledDatePickerVisualElement>("days_activeToDate");
-            _daysActiveToDateComponent.Refresh();
-
-            _daysActiveToHourComponent = Root.Q<LabeledHourPickerVisualElement>("days_activeToHour");
-            _daysActiveToHourComponent.Refresh();
-
             // Date mode
-            _dateActiveToDateComponent = Root.Q<LabeledDatePickerVisualElement>("date_activeToDate");
-            _dateActiveToDateComponent.Refresh();
-
-            _dateActiveToHourComponent = Root.Q<LabeledHourPickerVisualElement>("date_activeToHour");
-            _dateActiveToHourComponent.Refresh();
+            // TODO: add calendar component
+            _datesField = Root.Q<LabeledTextField>("datesField");
+            _datesField.Refresh();
 
             // Buttons
             _confirmButton = Root.Q<VisualElement>("confirmBtn");
@@ -115,31 +109,42 @@ namespace Beamable.Editor.Schedules
             _confirmButton.RegisterCallback<MouseDownEvent>(CancelClicked);
 
             // Groups
-            _dailyGroup = Root.Q<VisualElement>("dailyGroup");
             _daysGroup = Root.Q<VisualElement>("daysGroup");
             _datesGroup = Root.Q<VisualElement>("datesGroup");
 
             RefreshGroups();
+            OnExpirationChanged(_neverExpiresComponent.Value);
+        }
+
+        protected override void OnDestroy()
+        {
+            if (_neverExpiresComponent != null)
+            {
+                _neverExpiresComponent.OnValueChanged -= OnExpirationChanged;
+            }
+        }
+
+        private void OnExpirationChanged(bool value)
+        {
+            _activeToDateComponent.SetEnabled(!value);
+            _activeToHourComponent.SetEnabled(!value);
         }
 
         private void ConfirmClicked(MouseDownEvent evt)
         {
             StringBuilder builder = new StringBuilder();
             PrepareGeneralData(builder);
-            
+
             switch (_currentMode)
             {
-                case Mode.DAILY:
-                    PrepareDailyModeData(builder);
-                    break;
-                case Mode.DAYS:
+                case Mode.Days:
                     PrepareDaysModeData(builder);
                     break;
-                case Mode.DATES:
+                case Mode.Dates:
                     PrepareDateModeData(builder);
                     break;
             }
-            
+
             Debug.Log(builder.ToString());
             //TODO: return data and close window
         }
@@ -149,12 +154,15 @@ namespace Beamable.Editor.Schedules
             builder.Append($"Event name: {_eventNameComponent.Value}\n");
             builder.Append($"Start time: {_startTimeComponent.SelectedHour}\n");
             builder.Append($"Event description: {_descriptionComponent.Value}\n");
-        }
+            builder.Append($"Never expires: {_neverExpiresComponent.Value}\n");
 
-        private void PrepareDailyModeData(StringBuilder builder)
-        {
-            builder.Append($"Active to date: {_dailyActiveToDateComponent.SelectedDate}\n");
-            builder.Append($"Active to hour: {_dailyActiveToHourComponent.SelectedHour}\n");
+            if (_neverExpiresComponent.Value)
+            {
+                return;
+            }
+
+            builder.Append($"Active to date: {_activeToDateComponent.SelectedDate}\n");
+            builder.Append($"Active to hour: {_activeToHourComponent.SelectedHour}\n");
         }
 
         private void PrepareDaysModeData(StringBuilder builder)
@@ -167,15 +175,14 @@ namespace Beamable.Editor.Schedules
                 string day = selectedDays[index];
                 builder.Append(index < selectedDays.Count - 1 ? $"{day.ToUpper()}, " : $"{day.ToUpper()}\n");
             }
-            
-            builder.Append($"Active to date: {_daysActiveToDateComponent.SelectedDate}\n");
-            builder.Append($"Active to hour: {_daysActiveToHourComponent.SelectedHour}\n");
+
+            builder.Append($"Active to date: {_activeToDateComponent.SelectedDate}\n");
+            builder.Append($"Active to hour: {_activeToHourComponent.SelectedHour}\n");
         }
 
         private void PrepareDateModeData(StringBuilder builder)
         {
-            builder.Append($"Active to date: {_dateActiveToDateComponent.SelectedDate}\n");
-            builder.Append($"Active to hour: {_dateActiveToHourComponent.SelectedHour}\n");
+            builder.Append($"Repeat on: {_datesField.Value}\n");
         }
 
         private void CancelClicked(MouseDownEvent evt)
@@ -185,9 +192,8 @@ namespace Beamable.Editor.Schedules
 
         private void RefreshGroups()
         {
-            RefreshSingleGroup(_dailyGroup, Mode.DAILY);
-            RefreshSingleGroup(_daysGroup, Mode.DAYS);
-            RefreshSingleGroup(_datesGroup, Mode.DATES);
+            RefreshSingleGroup(_daysGroup, Mode.Days);
+            RefreshSingleGroup(_datesGroup, Mode.Dates);
         }
 
         private void RefreshSingleGroup(VisualElement ve, Mode mode)

@@ -16,6 +16,9 @@ namespace Beamable.Editor.UI.Components
         private LabeledNumberPicker _hourPicker;
         private LabeledNumberPicker _minutePicker;
         private LabeledNumberPicker _secondPicker;
+        private bool _activeHour = true;
+        private bool _activeMinute = true;
+        private bool _activeSecond = true;
 
         public new class UxmlFactory : UxmlFactory<HourPickerVisualElement, UxmlTraits>
         {
@@ -31,16 +34,23 @@ namespace Beamable.Editor.UI.Components
             base.Refresh();
 
             _hourPicker = Root.Q<LabeledNumberPicker>("hourPicker");
-            _hourPicker.Setup(GenerateHours());
+            _hourPicker.Setup(GenerateHours(), _activeHour);
             _hourPicker.Refresh();
             
             _minutePicker = Root.Q<LabeledNumberPicker>("minutePicker");
-            _minutePicker.Setup(GenerateMinutesAndSeconds());
+            _minutePicker.Setup(GenerateMinutesAndSeconds(), _activeMinute);
             _minutePicker.Refresh();
             
             _secondPicker = Root.Q<LabeledNumberPicker>("secondPicker");
-            _secondPicker.Setup(GenerateMinutesAndSeconds());
+            _secondPicker.Setup(GenerateMinutesAndSeconds(), _activeSecond);
             _secondPicker.Refresh();
+        }
+
+        public void Setup(bool activeHour = true, bool activeMinute = true, bool activeSecond = true)
+        {
+            _activeHour = activeHour;
+            _activeMinute = activeMinute;
+            _activeSecond = activeSecond;
         }
 
         public string GetHour()

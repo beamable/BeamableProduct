@@ -9,21 +9,26 @@
     <engine:VisualElement name="mainVisualElement">
         <beamable:LabeledTextField name="eventName" label="Event name:"/>
         <beamable:LabeledHourPickerVisualElement name="startTime" label="Event start time:"/>
-        <beamable:LabeledTextField name="description" label="Description" value="Optional"/>
+        <beamable:LabeledTextField name="description" label="Description" value=""/>
         <beamable:LabeledDropdownVisualElement name="dropdown" label="Repeat type:"/>
-        <engine:VisualElement name="dailyGroup">
-            <beamable:LabeledDatePickerVisualElement name="daily_activeToDate" label="Active to:"/>
-            <beamable:LabeledHourPickerVisualElement name="daily_activeToHour" label=""/>
-        </engine:VisualElement>
+
         <engine:VisualElement name="daysGroup">
-            <beamable:LabeledDaysPickerVisualElement name="days_daysPicker" label="Repeat on:"/>
-            <beamable:LabeledDatePickerVisualElement name="days_activeToDate" label="Active to:"/>
-            <beamable:LabeledHourPickerVisualElement name="days_activeToHour" label=""/>
+            <beamable:LabeledDaysPickerVisualElement name="daysPicker" label="Repeat on:"/>
         </engine:VisualElement>
+        
         <engine:VisualElement name="datesGroup">
-            <beamable:LabeledDatePickerVisualElement name="date_activeToDate" label="Active to:"/>
-            <beamable:LabeledHourPickerVisualElement name="date_activeToHour" label=""/>
+            <!-- CALENDAR COMPONENT -->
+            <beamable:LabeledTextField name="datesField" label="Repeat on:"/>
         </engine:VisualElement>
+
+        <engine:VisualElement name="expirationRow">
+            <engine:Label name="expirationLabel" text="Never expires"/>
+            <beamable:BeamableCheckboxVisualElement name="expiresNever"/>
+        </engine:VisualElement>
+        
+        <beamable:LabeledDatePickerVisualElement name="activeToDate" label="Active to:"/>
+        <beamable:LabeledHourPickerVisualElement name="activeToHour" label=""/>
+
         <engine:VisualElement name="buttonsGroup">
             <engine:VisualElement name="confirmBtn">
                 <engine:Label text="CONFIRM"/>
@@ -32,6 +37,7 @@
                 <engine:Label text="Cancel"/>
             </engine:VisualElement>
         </engine:VisualElement>
+        
     </engine:VisualElement>
     
 </UXML>

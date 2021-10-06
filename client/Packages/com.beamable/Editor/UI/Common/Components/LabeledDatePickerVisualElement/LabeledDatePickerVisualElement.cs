@@ -57,5 +57,11 @@ namespace Beamable.Editor.UI.Components
             _datePicker = Root.Q<DatePickerVisualElement>("datePicker");
             _datePicker.Refresh();
         }
+
+        // public void SetEnabled(bool value)
+        // {
+        //     _label.SetEnabled(value);
+        //     _datePicker.SetEnabled(value);
+        // }
     }
 }
