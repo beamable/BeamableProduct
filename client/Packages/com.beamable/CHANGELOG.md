@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.17.0]
 ### Added
 - Device id authentication support
 - Auto-complete text feature for `AdminFlow` prefab
@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New default `currency.coins` currency that demonstrates client writable currency.
 - RemoveThirdPartyAssociation added to AuthService to allow a player to remove a third party auth from their account
 - Cohort Settings to EventContent to support partitioning by player stats
-- Event and listings schedules windows
+- Event and listings schedules
 - Support for archiving manifest namespaces.
 - A `Fetch()` method to all subscribable SDKs that requests and returns the raw subscription data
 
@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - If no internet connection exists on startup, `API.Instance()` will retry every 2 seconds until a connection is established
+
 
 ## [0.16.1]
 ### Fixed
