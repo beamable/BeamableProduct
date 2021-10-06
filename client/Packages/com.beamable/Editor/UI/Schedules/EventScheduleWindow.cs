@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Beamable.Common.Content;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
@@ -15,10 +16,11 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Schedules
 {
-    public class EventScheduleWindow : BeamableVisualElement
+    public class EventScheduleWindow : BeamableVisualElement, IScheduleWindow
     {
         public Action OnCancel;
         public Action<string> OnConfirm;
+        public event Action<Schedule> OnScheduleUpdated;
 
         private enum Mode
         {
@@ -108,8 +110,8 @@ namespace Beamable.Editor.Schedules
             // Buttons
             _confirmButton = Root.Q<PrimaryButtonVisualElement>("confirmBtn");
             _confirmButton.Button.clickable.clicked += ConfirmClicked;
-            _confirmButton.Disable();
-            
+            // _confirmButton.Disable();
+
             _cancelButton = Root.Q<Button>("cancelBtn");
             _cancelButton.clickable.clicked += CancelClicked;
 
@@ -158,6 +160,7 @@ namespace Beamable.Editor.Schedules
             string replaced = json.Replace("\"\"", "null");
 
             OnConfirm?.Invoke(replaced);
+            OnScheduleUpdated?.Invoke(newSchedule);
         }
 
         private void CancelClicked()
