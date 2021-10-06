@@ -1,5 +1,5 @@
-﻿using Beamable.Editor.UI.Buss;
-using UnityEngine;
+﻿using System;
+using Beamable.Editor.UI.Buss;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -15,6 +15,8 @@ namespace Beamable.Editor.UI.Components
         public new class UxmlFactory : UxmlFactory<DayToggleVisualElement, UxmlTraits>
         {
         }
+
+        public Action OnValueChanged;
 
         private VisualElement _checkMark;
         private VisualElement _button;
@@ -51,6 +53,7 @@ namespace Beamable.Editor.UI.Components
         private void OnClick(MouseDownEvent evt)
         {
             Selected = !Selected;
+            OnValueChanged?.Invoke();
             Render();
         }
 

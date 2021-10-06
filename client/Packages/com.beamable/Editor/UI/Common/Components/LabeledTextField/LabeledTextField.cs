@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -15,6 +16,8 @@ namespace Beamable.Editor.UI.Components
         public new class UxmlFactory : UxmlFactory<LabeledTextField, UxmlTraits>
         {
         }
+        
+        public Action<string> OnValueChanged;
 
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
@@ -71,7 +74,7 @@ namespace Beamable.Editor.UI.Components
 
         private void ValueChanged(ChangeEvent<string> evt)
         {
-            // TODO: implement/inject some validation depending on context
+            OnValueChanged?.Invoke(evt.newValue);
             Value = evt.newValue;
         }
     }

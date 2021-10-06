@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -15,6 +16,8 @@ namespace Beamable.Editor.UI.Components
         public new class UxmlFactory : UxmlFactory<LabeledDaysPickerVisualElement, UxmlTraits>
         {
         }
+
+        public Action<bool> OnValueChanged;
 
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
@@ -39,7 +42,7 @@ namespace Beamable.Editor.UI.Components
         private Label _label;
 
         public DaysPickerVisualElement DaysPicker { get; private set; }
-        public string Label { get; set; }
+        private string Label { get; set; }
 
         public LabeledDaysPickerVisualElement() : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledDaysPickerVisualElement)}/{nameof(LabeledDaysPickerVisualElement)}")
@@ -54,7 +57,13 @@ namespace Beamable.Editor.UI.Components
             _label.text = Label;
 
             DaysPicker = Root.Q<DaysPickerVisualElement>("daysPicker");
+            DaysPicker.OnValueChanged = OnChanged;
             DaysPicker.Refresh();
+        }
+
+        private void OnChanged(bool value)
+        {
+            OnValueChanged?.Invoke(value);
         }
     }
 }
