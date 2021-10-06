@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
@@ -42,10 +41,11 @@ namespace Beamable.Editor.Schedules
 
         private VisualElement _daysGroup;
         private VisualElement _datesGroup;
-        private VisualElement _confirmButton;
+        private PrimaryButtonVisualElement _confirmButton;
 
         private readonly Dictionary<string, Mode> _modes;
         private Mode _currentMode;
+        private Button _cancelButton;
 
 #if BEAMABLE_DEVELOPER
         // TODO: remove it before final push
@@ -118,11 +118,12 @@ namespace Beamable.Editor.Schedules
             _datesField.Refresh();
 
             // Buttons
-            _confirmButton = Root.Q<VisualElement>("confirmBtn");
-            _confirmButton.RegisterCallback<MouseDownEvent>(ConfirmClicked);
-
-            _confirmButton = Root.Q<VisualElement>("cancelBtn");
-            _confirmButton.RegisterCallback<MouseDownEvent>(CancelClicked);
+            _confirmButton = Root.Q<PrimaryButtonVisualElement>("confirmBtn");
+            _confirmButton.Button.clickable.clicked += ConfirmClicked;
+            _confirmButton.Disable();
+            
+            _cancelButton = Root.Q<Button>("cancelBtn");
+            _cancelButton.clickable.clicked += CancelClicked;
 
             // Groups
             _daysGroup = Root.Q<VisualElement>("daysGroup");
@@ -135,15 +136,10 @@ namespace Beamable.Editor.Schedules
 
         protected override void OnDestroy()
         {
-            if (_neverExpiresComponent != null)
-            {
-                _neverExpiresComponent.OnValueChanged -= OnExpirationChanged;
-            }
-
-            if (_allDayComponent != null)
-            {
-                _allDayComponent.OnValueChanged -= OnAllDayChanged;
-            }
+            if (_neverExpiresComponent != null) _neverExpiresComponent.OnValueChanged -= OnExpirationChanged;
+            if (_allDayComponent != null) _allDayComponent.OnValueChanged -= OnAllDayChanged;
+            if (_confirmButton != null) _confirmButton.Button.clickable.clicked -= ConfirmClicked;
+            if (_cancelButton != null) _cancelButton.clickable.clicked -= CancelClicked;
         }
 
         private void OnAllDayChanged(bool value)
@@ -158,7 +154,7 @@ namespace Beamable.Editor.Schedules
             _activeToHourComponent.SetEnabled(!value);
         }
 
-        private void ConfirmClicked(MouseDownEvent evt)
+        private void ConfirmClicked()
         {
             Schedule newSchedule = new Schedule();
 
@@ -183,7 +179,7 @@ namespace Beamable.Editor.Schedules
             OnConfirm?.Invoke(replaced);
         }
 
-        private void CancelClicked(MouseDownEvent evt)
+        private void CancelClicked()
         {
             OnCancel?.Invoke();
         }

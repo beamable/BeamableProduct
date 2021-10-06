@@ -38,10 +38,11 @@ namespace Beamable.Editor.Schedules
         private LabeledTextField _datesField;
         private VisualElement _daysGroup;
         private VisualElement _datesGroup;
-        private VisualElement _confirmButton;
+        private PrimaryButtonVisualElement _confirmButton;
 
         private readonly Dictionary<string, Mode> _modes;
         private Mode _currentMode;
+        private Button _cancelButton;
 
 #if BEAMABLE_DEVELOPER
         // TODO: remove it before final push
@@ -105,11 +106,12 @@ namespace Beamable.Editor.Schedules
             _datesField.Refresh();
 
             // Buttons
-            _confirmButton = Root.Q<VisualElement>("confirmBtn");
-            _confirmButton.RegisterCallback<MouseDownEvent>(ConfirmClicked);
-
-            _confirmButton = Root.Q<VisualElement>("cancelBtn");
-            _confirmButton.RegisterCallback<MouseDownEvent>(CancelClicked);
+            _confirmButton = Root.Q<PrimaryButtonVisualElement>("confirmBtn");
+            _confirmButton.Button.clickable.clicked += ConfirmClicked;
+            _confirmButton.Disable();
+            
+            _cancelButton = Root.Q<Button>("cancelBtn");
+            _cancelButton.clickable.clicked += CancelClicked;
 
             // Groups
             _daysGroup = Root.Q<VisualElement>("daysGroup");
@@ -133,7 +135,7 @@ namespace Beamable.Editor.Schedules
             _activeToHourComponent.SetEnabled(!value);
         }
 
-        private void ConfirmClicked(MouseDownEvent evt)
+        private void ConfirmClicked()
         {
             Schedule newSchedule = new Schedule();
 
@@ -155,13 +157,10 @@ namespace Beamable.Editor.Schedules
             string json = JsonUtility.ToJson(new ScheduleWrapper(newSchedule));
             string replaced = json.Replace("\"\"", "null");
 
-            // TODO: remove it before push
-            Debug.Log(replaced);
-
             OnConfirm?.Invoke(replaced);
         }
 
-        private void CancelClicked(MouseDownEvent evt)
+        private void CancelClicked()
         {
             OnCancel?.Invoke();
         }
