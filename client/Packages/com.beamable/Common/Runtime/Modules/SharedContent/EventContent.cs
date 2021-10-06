@@ -19,14 +19,14 @@ namespace Beamable.Common.Content
     /// #### Related Links
     /// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-code#contentlink-vs-contentref">ContentLink vs ContentRef</a> documentation
     /// - See Beamable.Common.Content.ContentObject script reference
-    /// 
+    ///
     /// ![img beamable-logo]
     ///
     /// </summary>
     [System.Serializable]
     [Agnostic]
     public class EventLink : ContentLink<EventContent>{}
-    
+
     /// <summary>
     /// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
     ///
@@ -35,7 +35,7 @@ namespace Beamable.Common.Content
     /// #### Related Links
     /// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-code#contentlink-vs-contentref">ContentLink vs ContentRef</a> documentation
     /// - See Beamable.Common.Content.ContentObject script reference
-    /// 
+    ///
     /// ![img beamable-logo]
     ///
     /// </summary>
@@ -51,7 +51,7 @@ namespace Beamable.Common.Content
     /// #### Related Links
     /// - See Beamable.Common.Content.ContentObject script reference
     /// - See Beamable.Api.Events.EventsService script reference
-    /// 
+    ///
     /// ![img beamable-logo]
     ///
     /// </summary>
@@ -75,10 +75,10 @@ namespace Beamable.Common.Content
         [ContentField("partition_size")]
         [MustBePositive]
         public int partitionSize;
-        
+
         [Tooltip("Specifies criteria for grouping players together.")]
         public OptionalCohortSettings cohortSettings;
-        
+
         //Hidden, so no tooltip needed
         [FormerlySerializedAs("phases")]
         [SerializeField]
@@ -99,7 +99,7 @@ namespace Beamable.Common.Content
         [FormerlySerializedAs("rank_rewards")]
         [ContentField("rank_rewards")]
         public List<EventPlayerReward> rankRewards;
-        
+
         [Tooltip(ContentObject.TooltipStore1)]
         public List<StoreRef> stores;
 
@@ -110,6 +110,8 @@ namespace Beamable.Common.Content
         [Tooltip(ContentObject.TooltipClientPermission1)]
         public ClientPermissions permissions;
 
+        [Tooltip(ContentObject.TooltipEventSchedule)]
+        public OptionalEventSchedule schedule;
 
         public void OnBeforeSerialize()
         {
@@ -203,7 +205,7 @@ namespace Beamable.Common.Content
     {
         [Tooltip(ContentObject.TooltipSymbol1)]
         public string symbol; // TODO: Is this inventory? Is this entitlement?
-        
+
         [Tooltip(ContentObject.TooltipCount1)]
         public int count;
     }

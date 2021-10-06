@@ -27,6 +27,7 @@ namespace Beamable.Platform.Tests
 		public bool Called => CallCount > 0;
 
 		public abstract Promise<T> Invoke<T>(object body, bool includeAuth, IAccessToken token);
+		public abstract string Invoke(object body, bool includeAuth, IAccessToken token);
 
 		public abstract bool MatchesRequest<T>(Method method, string uri, string token, object body, bool includeAuthHeader);
 	}
@@ -42,6 +43,12 @@ namespace Beamable.Platform.Tests
 		private delegate bool UriMatcher(string uri);
 
 		public MockPlatformRoute<T> WithResponse(T response)
+		{
+			_response = response;
+			return this;
+		}
+
+		public MockPlatformRoute<T> WithRawResponse(string response)
 		{
 			_response = response;
 			return this;
@@ -139,6 +146,12 @@ namespace Beamable.Platform.Tests
 			return Promise<T1>.Successful((T1)_response);
 		}
 
+		public override string Invoke(object body, bool includeAuth, IAccessToken token)
+		{
+			CallCount++;
+			return _response.ToString();
+		}
+
 		public override bool MatchesRequest<T1>(Method method, string uri, string token, object body, bool includeAuthHeader)
 		{
 			var tokenMatch = string.Equals(Token, token);
@@ -233,7 +246,10 @@ namespace Beamable.Platform.Tests
 
 			if (route != null)
 			{
-				return route.Invoke<T>(body, includeAuthHeader, AccessToken);
+				if (parser == null) return route.Invoke<T>(body, includeAuthHeader, AccessToken);
+
+				var output = route.Invoke(body, includeAuthHeader, AccessToken);
+				return Promise<T>.Successful(parser(output));
 			}
 			else
 			{

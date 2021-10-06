@@ -142,6 +142,11 @@ namespace Beamable.Common.Api.Auth
          public string email, password;
       }
 
+      public Promise<User> RemoveThirdPartyAssociation(AuthThirdParty thirdParty, string token)
+      {
+         return _requester.Request<User>(Method.DELETE, $"{ACCOUNT_URL}/me/third-party?thirdParty={thirdParty.GetString()}&token={token}", null, true);
+      }
+
       public Promise<User> RegisterThirdPartyCredentials(AuthThirdParty thirdParty, string accessToken)
       {
          var req = new RegisterThirdPartyCredentialsRequest

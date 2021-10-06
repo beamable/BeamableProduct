@@ -106,6 +106,10 @@ namespace Packages.Beamable.Runtime.Tests.Beamable
       {
          throw new System.NotImplementedException();
       }
+      public Promise<User> RemoveThirdPartyAssociation(AuthThirdParty thirdParty, string token)
+      {
+         throw new System.NotImplementedException();
+      }
 
         public Promise<bool> IsThisDeviceIdAvailable()
         {

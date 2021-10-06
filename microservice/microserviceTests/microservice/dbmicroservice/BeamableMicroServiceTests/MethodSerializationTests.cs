@@ -228,5 +228,35 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.OnShutdown(this, null);
          Assert.IsTrue(testSocket.AllMocksCalled());
       }
+      
+      [Test]
+      [NonParallelizable]
+      public async Task Call_PromiseMethod()
+      {
+         LoggingUtil.Init();
+         TestSocket testSocket = null;
+         var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+         {
+            testSocket = socket;
+            socket.AddStandardMessageHandlers()
+               .AddMessageHandler(
+                  MessageMatcher
+                     .WithReqId(1)
+                     .WithStatus(200)
+                     .WithPayload<int>(n => n == 1),
+                  MessageResponder.NoResponse(),
+                  MessageFrequency.OnlyOnce()
+               );
+         }));
+
+         await ms.Start<SimpleMicroservice>(new TestArgs());
+         Assert.IsTrue(ms.HasInitialized);
+
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "PromiseTestMethod", 1, 0));
+
+         // simulate shutdown event...
+         await ms.OnShutdown(this, null);
+         Assert.IsTrue(testSocket.AllMocksCalled());
+      }
    }
 }

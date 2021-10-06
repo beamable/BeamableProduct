@@ -1,0 +1,166 @@
+#serviceIcon {
+    align-self: center;
+    margin-left: 4px;
+}
+
+#logHeader{
+    flex-direction: row;
+    height: 30px;
+    flex-shrink: 0;
+}
+
+#logHeader > .leftArea{
+    justify-content: center;
+    padding-left: 5px;
+    flex-direction: row;
+    flex-grow: 1;
+}
+
+#logHeader > .rightArea{
+    padding-right: 5px;
+    flex-direction: row;
+    align-content: flex-end;
+    justify-content: flex-end;
+}
+
+#logContainer {
+    flex-grow: 1;
+}
+
+.logElement {
+    flex-grow: 1;
+}
+
+.subTitle{
+    font-size: 10px;
+    -unity-font-style: normal;
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    justify-content: center;
+    -unity-text-align: middle-left;
+    margin-right: 0px;
+    margin-left: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    padding-right: 0px;
+    padding-left: 0px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    
+}
+
+#statusIcon{
+    /*background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Running L.png");*/
+    width: 25px;
+    height: 25px;
+    align-self: center;
+
+}
+#remoteStatusIcon{
+    width: 25px;
+    height: 25px;
+    align-self: center;
+}
+
+#checkbox{
+    align-self: center;
+}
+
+#logText{
+    min-height: 100px;
+}
+
+#buttonRow{
+    align-content: flex-end;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    flex-direction: row;
+    justify-content: flex-end;
+    flex-shrink: 0;
+}
+
+#buildDropDown{
+    flex-direction: row;
+    justify-content: space-around;
+    padding-right: 0px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    border-right-width: 0px;
+    font-size: 10px;
+}
+
+#buildLabel {
+    align-self: center;
+}
+
+#dropDown{
+    align-content: center;
+    justify-content: center;
+    align-self: center;
+    width: 30px;
+    height: 28px;
+    /*right: 3px;*/
+    -unity-text-align: middle-center;
+}
+
+.confirmBtn{
+    font-size: 12px;
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-top-width: 1px;
+    border-right-width: 1px;
+    margin-right: 0px;
+    background-image: none;
+    height: 28px;
+    cursor: pan;
+    background-image: none;
+}
+
+#start {
+    -unity-font-style: bold;
+}
+
+.unity-label{
+    font-size: 12px;
+    -unity-text-align: middle-left;
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+}
+
+#microserviceNewTitle, #microserviceTitle {
+    -unity-text-align: middle-left;
+    margin-top: 3px;
+    margin-bottom: 3px;
+    flex-grow: 1;
+}
+
+#moreBtn{
+    -unity-slice-bottom: 0;
+    -unity-slice-top: 0;
+    -unity-slice-right: 0;
+    -unity-slice-left: 0;
+    border-right-width: 0px;
+    border-top-width: 0px;
+    border-bottom-width: 0px;
+    border-left-width: 0px;
+    padding-left: 11px;
+    padding-right: 11px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    margin-right: 0px;
+    margin-left: 0px;
+    margin-bottom: 0px;
+    margin-top: 0px;
+}
+
+#buttonsContainer {
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+#dependentServicesBtn {
+    font-size: 10px;
+    background-image: none;
+    background-color: rgba(0,0,0,0);
+    padding-top: 4px;
+    border-bottom-width: 1px;
+}

@@ -26,16 +26,15 @@ namespace Beamable.Editor.Microservice.UI.Components
         private VisualElement _mainVisualElement;
         private ListView _listView;
         private ScrollView _scrollView;
-        private VisualElement _microservicesListElement;
+        private VisualElement _servicesListElement;
 
-        private Dictionary<MicroserviceModel, MicroserviceVisualElement> _modelToVisual =
-            new Dictionary<MicroserviceModel, MicroserviceVisualElement>();
-        private CreateMicroserviceVisualElement _microserviceVisualElement;
+        private Dictionary<ServiceModelBase, ServiceBaseVisualElement> _modelToVisual = new Dictionary<ServiceModelBase, ServiceBaseVisualElement>();
+        private Dictionary<ServiceType, CreateServiceBaseVisualElement> _servicesCreateElements;
         private MicroserviceActionPrompt _actionPrompt;
 
-        public IEnumerable<MicroserviceVisualElement> MicroserviceVisualElements =>
-            _microservicesListElement.Children().Where(ve => ve is MicroserviceVisualElement)
-                .Cast<MicroserviceVisualElement>();
+        public IEnumerable<ServiceBaseVisualElement> ServiceVisualElements =>
+            _servicesListElement.Children().Where(ve => ve is ServiceBaseVisualElement)
+                .Cast<ServiceBaseVisualElement>();
 
         public new class UxmlFactory : UxmlFactory<MicroserviceContentVisualElement, UxmlTraits>
         {
@@ -66,11 +65,26 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         public override void Refresh()
         {
+            bool ShouldDisplayService(ServiceType type)
+            {
+                switch (Model.Filter)
+                {
+                    case ServicesDisplayFilter.AllTypes:
+                        return true;
+                    case ServicesDisplayFilter.Microservices:
+                        return type == ServiceType.MicroService;
+                    case ServicesDisplayFilter.Storages:
+                        return type == ServiceType.StorageObject;
+                    default:
+                        return false;
+                }
+            }
             base.Refresh();
 
             _mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
             _scrollView = Root.Q<ScrollView>();
-            _microservicesListElement = Root.Q<VisualElement>("listRoot");
+            _servicesListElement = Root.Q<VisualElement>("listRoot");
+            _servicesCreateElements = new Dictionary<ServiceType, CreateServiceBaseVisualElement>();
 
             if (DockerCommand.DockerNotInstalled)
             {
@@ -82,9 +96,16 @@ namespace Beamable.Editor.Microservice.UI.Components
                 return;
             }
 
-            _microserviceVisualElement = new CreateMicroserviceVisualElement();
-            _microservicesListElement.Add(_microserviceVisualElement);
-            _microserviceVisualElement.OnCreateMicroserviceClicked += () => Root.SetEnabled(false);
+            var newStorageElement = new CreateStorageObjectVisualElement();
+            newStorageElement.OnCreateServiceClicked += () => Root.SetEnabled(false);
+            _servicesCreateElements.Add(ServiceType.StorageObject, newStorageElement);
+            _servicesListElement.Add(newStorageElement);
+
+            var newMSElement = new CreateMicroserviceVisualElement();
+            newMSElement.OnCreateServiceClicked += () => Root.SetEnabled(false);
+            _servicesCreateElements.Add(ServiceType.MicroService, newMSElement);
+            _servicesListElement.Add(newMSElement);
+
             _modelToVisual.Clear();
 
             foreach (var serviceStatus in Model.GetAllServicesStatus())
@@ -100,7 +121,14 @@ namespace Beamable.Editor.Microservice.UI.Components
                     continue;
                 }
 
-                switch (Model.GetModelServiceType(serviceStatus.Key))
+                var serviceType = Model.GetModelServiceType(serviceStatus.Key);
+                
+                if (!ShouldDisplayService(serviceType))
+                {
+                    continue;
+                }
+                
+                switch (serviceType)
                 {
                     case ServiceType.MicroService:
                         var service = Model.GetModel<MicroserviceModel>(serviceStatus.Key);
@@ -114,13 +142,24 @@ namespace Beamable.Editor.Microservice.UI.Components
 
                         service.OnSortChanged -= SortMicroservices;
                         service.OnSortChanged += SortMicroservices;
-                        serviceElement.OnMicroserviceStartFailed = MicroserviceStartFailed;
-                        serviceElement.OnMicroserviceStopFailed = MicroserviceStopFailed;
+                        serviceElement.OnServiceStartFailed = MicroserviceStartFailed;
+                        serviceElement.OnServiceStopFailed = MicroserviceStopFailed;
 
-                        _microservicesListElement.Add(serviceElement);
+                        _servicesListElement.Add(serviceElement);
                         break;
                     case ServiceType.StorageObject:
-                        // todo
+                        var mongoService = Model.GetModel<MongoStorageModel>(serviceStatus.Key);
+                        var mongoServiceElement = new StorageObjectVisualElement { Model = mongoService };
+                        _modelToVisual[mongoService] = mongoServiceElement;
+                        mongoService.OnLogsDetached += () => { ServiceLogWindow.ShowService(mongoService); };
+                        
+                        mongoServiceElement.Refresh();
+                        mongoService.OnSelectionChanged += b =>
+                            OnAllServiceSelectedStatusChanged?.Invoke(Model.Storages.All(m => m.IsSelected));
+                        
+                        _servicesListElement.Add(mongoServiceElement);
+                        
+                        
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -130,7 +169,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             _actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
             _actionPrompt.Refresh();
         }
-
+        
         private void MicroserviceStartFailed()
         {
             _actionPrompt.SetVisible(Constants.PROMPT_STARTED_FAILURE, true, false);
@@ -141,9 +180,9 @@ namespace Beamable.Editor.Microservice.UI.Components
             _actionPrompt.SetVisible(Constants.PROMPT_STOPPED_FAILURE, true, false);
         }
 
-        public void DisplayCreatingNewService()
+        public void DisplayCreatingNewService(ServiceType serviceType)
         {
-            _microserviceVisualElement.Refresh();
+            _servicesCreateElements[serviceType].Refresh();
             EditorApplication.delayCall += () => _scrollView.verticalScroller.value = 0f;
         }
 
@@ -205,7 +244,7 @@ namespace Beamable.Editor.Microservice.UI.Components
                 var bName = ((MicroserviceVisualElement) b).Model.Name;
                 return config.MicroserviceOrderComparer(aName, bName);
             }
-            _microservicesListElement.Sort(Comparer);
+            _servicesListElement.Sort(Comparer);
         }
     }
 }

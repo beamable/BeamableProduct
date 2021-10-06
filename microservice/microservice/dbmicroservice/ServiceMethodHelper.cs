@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Beamable.Common;
 using Beamable.Server.Common;
 using LoxSmoke.DocXml;
 using microservice.Extensions;
@@ -103,26 +104,42 @@ namespace Beamable.Server
                namedDeserializers.Add(parameterName, deserializer);
                deserializers.Add(deserializer);
             }
-
-            var isAsync = null != method.GetCustomAttribute<AsyncStateMachineAttribute>();
-
+            
             MethodInvocation executor;
 
-            if (isAsync)
+            var resultType = method.ReturnType;
+            if (resultType.IsGenericType && resultType.GetGenericTypeDefinition() == typeof(Promise<>))
             {
                executor = (target, args) =>
                {
-                  var task = (Task)closureMethod.Invoke(target, args);
-                  return task;
+                  var promiseObject = closureMethod.Invoke(target, args);
+                  var promiseMethod = typeof(BeamableTaskExtensions).GetMethod(
+                     nameof(BeamableTaskExtensions.TaskFromPromise), BindingFlags.Static | BindingFlags.Public);
+                  
+                  return (Task)promiseMethod.MakeGenericMethod(resultType.GetGenericArguments()[0])
+                     .Invoke(null, new[] {promiseObject});
                };
             }
             else
             {
-               executor = (target, args) =>
+               var isAsync = null != method.GetCustomAttribute<AsyncStateMachineAttribute>();
+               
+               if (isAsync)
                {
-                  var invocationResult = closureMethod.Invoke(target, args);
-                  return Task.FromResult(invocationResult);
-               };
+                  executor = (target, args) =>
+                  {
+                     var task = (Task) closureMethod.Invoke(target, args);
+                     return task;
+                  };
+               }
+               else
+               {
+                  executor = (target, args) =>
+                  {
+                     var invocationResult = closureMethod.Invoke(target, args);
+                     return Task.FromResult(invocationResult);
+                  };
+               }
             }
 
             var serviceMethod = new ServiceMethod
@@ -144,8 +161,5 @@ namespace Beamable.Server
 
          return output;
       }
-
    }
-
-
 }

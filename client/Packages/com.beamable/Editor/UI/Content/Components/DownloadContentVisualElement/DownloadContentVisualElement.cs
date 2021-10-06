@@ -127,6 +127,11 @@ namespace Beamable.Editor.Content.Components
             {
                noDownloadLabel.parent.Remove(noDownloadLabel);
             }
+            else
+            {
+               _allDownloadsComplete = true;
+               _downloadBtn.SetText("Okay");
+            }
 
             var deleteCount = Root.Q<CountVisualElement>("deleteCount");
             deleteCount.SetValue(tmpDeletions.Count());
