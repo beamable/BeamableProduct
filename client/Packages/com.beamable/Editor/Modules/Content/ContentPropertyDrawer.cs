@@ -32,7 +32,7 @@ namespace Beamable.Editor.Content
          var fieldRect = new Rect(position.x + EditorGUIUtility.labelWidth, position.y, position.width - EditorGUIUtility.labelWidth, position.height);
          var labelRect = new Rect(position.x, position.y, EditorGUIUtility.labelWidth, position.height);
          var fieldValue = GetTargetObjectOfProperty(property) as BaseContentRef;
-         
+
          label.tooltip = PropertyDrawerHelper.SetTooltipWithFallback(fieldInfo, property);
 
          var idVal = fieldValue.GetId();
@@ -82,14 +82,14 @@ namespace Beamable.Editor.Content
                new Vector2(fieldRect.width, 300));
          }
       }
-      public static object GetTargetObjectOfProperty(SerializedProperty prop) 
+      public static object GetTargetObjectOfProperty(SerializedProperty prop)
          => GetTargetObjectOfProperty(prop, prop.serializedObject.targetObject);
       private static object GetTargetObjectOfProperty(SerializedProperty prop, object obj)
       {
          if (prop == null) return null;
          var path = prop.propertyPath.Replace(".Array.data[", "[");
          var elements = path.Split('.');
-         
+
          foreach (var element in elements)
          {
             if (element.Contains("["))
@@ -120,14 +120,14 @@ namespace Beamable.Editor.Content
          }
          return targetObjectsOfProperty;
       }
-      public static object GetTargetParentObjectOfProperty(SerializedProperty prop)
+      public static object GetTargetParentObjectOfProperty(SerializedProperty prop, int parentsUp=1)
       {
          if (prop == null) return null;
 
          var path = prop.propertyPath.Replace(".Array.data[", "[");
          object obj = prop.serializedObject.targetObject;
          var elements = path.Split('.');
-         elements = elements.Take(elements.Length - 1).ToArray();
+         elements = elements.Take(elements.Length - parentsUp).ToArray();
          foreach (var element in elements)
          {
             if (element.Contains("["))
@@ -145,7 +145,7 @@ namespace Beamable.Editor.Content
 
          return obj;
       }
-      
+
       private static object GetValue_Imp(object source, string name)
       {
          if (source == null)
@@ -292,7 +292,7 @@ namespace Beamable.Editor.Content
             EditorGUILayout.PrefixLabel("...fetching");
             return;
          }
-         
+
          GUILayout.BeginHorizontal(GUI.skin.FindStyle("Toolbar"), GUILayout.Height(30));
 
          GUI.SetNextControlName(SearchControlName);
@@ -343,7 +343,7 @@ namespace Beamable.Editor.Content
             {
                fieldValue.SetId(selected.Id);
             }
-            
+
             Property.serializedObject.Update();
             EditorUtility.SetDirty(Object);
 
@@ -354,10 +354,10 @@ namespace Beamable.Editor.Content
                   contentObject.ForceValidate();
                }
             }
-            
+
             Close();
          }
-         
+
          Property.serializedObject.UpdateIfRequiredOrScript();
          Repaint(); // make gui reactive
       }
