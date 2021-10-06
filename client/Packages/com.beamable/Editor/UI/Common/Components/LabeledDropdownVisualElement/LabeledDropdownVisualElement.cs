@@ -16,7 +16,7 @@ namespace Beamable.Editor.UI.Components
         public new class UxmlFactory : UxmlFactory<LabeledDropdownVisualElement, UxmlTraits>
         {
         }
-        
+
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
             readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
@@ -47,9 +47,9 @@ namespace Beamable.Editor.UI.Components
         public LabeledDropdownVisualElement() : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledDropdownVisualElement)}/{nameof(LabeledDropdownVisualElement)}")
         {
-            
+
         }
-        
+
         public override void Refresh()
         {
             base.Refresh();
@@ -66,6 +66,11 @@ namespace Beamable.Editor.UI.Components
         {
             _options = options;
             _onOptionSelected = onOptionSelected;
+        }
+
+        public void Set(string option)
+        {
+            Dropdown.Set(option);
         }
     }
 }

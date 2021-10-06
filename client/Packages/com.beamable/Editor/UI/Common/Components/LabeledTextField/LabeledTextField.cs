@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -15,6 +16,8 @@ namespace Beamable.Editor.UI.Components
         public new class UxmlFactory : UxmlFactory<LabeledTextField, UxmlTraits>
         {
         }
+
+        public Action<string> OnValueChanged;
 
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
@@ -64,6 +67,13 @@ namespace Beamable.Editor.UI.Components
             _textField.RegisterValueChangedCallback(ValueChanged);
         }
 
+        public void SetValueWithoutNotify(string value)
+        {
+            // TODO: we shouldn't need to set it up this way, Ideally we could just use the Property setter
+            Value = value;
+            _textField.SetValueWithoutNotify(value);
+        }
+
         protected override void OnDestroy()
         {
             _textField.UnregisterValueChangedCallback(ValueChanged);
@@ -71,7 +81,7 @@ namespace Beamable.Editor.UI.Components
 
         private void ValueChanged(ChangeEvent<string> evt)
         {
-            // TODO: implement/inject some validation depending on context
+            OnValueChanged?.Invoke(evt.newValue);
             Value = evt.newValue;
         }
     }

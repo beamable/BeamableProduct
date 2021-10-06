@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Beamable.Common.Content;
+using System.Text.RegularExpressions;
+using Beamable.Common.Shop;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
@@ -16,11 +19,12 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Schedules
 {
-    public class ListingScheduleWindow : BeamableVisualElement, IScheduleWindow
+    public class ListingScheduleWindow : BeamableVisualElement, IScheduleWindow<ListingContent>
     {
         public Action OnCancel;
         public Action<string> OnConfirm;
         public event Action<Schedule> OnScheduleUpdated;
+        public event Action OnCancelled;
 
         private enum Mode
         {
@@ -48,18 +52,9 @@ namespace Beamable.Editor.Schedules
         private readonly Dictionary<string, Mode> _modes;
         private Mode _currentMode;
         private Button _cancelButton;
+        private bool _validatedDaysInWeek;
+        private bool _validatedRepeatDays;
 
-#if BEAMABLE_DEVELOPER
-        // TODO: remove it before final push
-        [MenuItem("TESTING/Listing schedule window")]
-#endif
-        public static BeamablePopupWindow OpenWindow()
-        {
-            ListingScheduleWindow listingScheduleWindow = new ListingScheduleWindow();
-
-            return BeamablePopupWindow.ShowUtility(BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER,
-                listingScheduleWindow, null, BeamableComponentsConstants.ListingSchedulesWindowSize);
-        }
 
         public ListingScheduleWindow() : base(
             $"{BeamableComponentsConstants.SCHEDULES_PATH}/{nameof(ListingScheduleWindow)}")
@@ -112,17 +107,19 @@ namespace Beamable.Editor.Schedules
 
             // Days mode
             _daysDaysPickerComponent = Root.Q<LabeledDaysPickerVisualElement>("daysPicker");
+            _daysDaysPickerComponent.OnValueChanged = OnDayValueChanged;
             _daysDaysPickerComponent.Refresh();
 
             // Date mode
             // TODO: add calendar component
             _datesField = Root.Q<LabeledTextField>("datesField");
+            _datesField.OnValueChanged = OnRepeatDaysChanged;
             _datesField.Refresh();
 
             // Buttons
             _confirmButton = Root.Q<PrimaryButtonVisualElement>("confirmBtn");
             _confirmButton.Button.clickable.clicked += ConfirmClicked;
-            // _confirmButton.Disable();
+            _confirmButton.Disable();
 
             _cancelButton = Root.Q<Button>("cancelBtn");
             _cancelButton.clickable.clicked += CancelClicked;
@@ -134,6 +131,7 @@ namespace Beamable.Editor.Schedules
             RefreshGroups();
             OnExpirationChanged(_neverExpiresComponent.Value);
             OnAllDayChanged(_allDayComponent.Value);
+            RefreshConfirmButton();
         }
 
         protected override void OnDestroy()
@@ -144,10 +142,74 @@ namespace Beamable.Editor.Schedules
             if (_cancelButton != null) _cancelButton.clickable.clicked -= CancelClicked;
         }
 
+        public void Set(Schedule schedule, ListingContent content)
+        {
+            _descriptionComponent.SetValueWithoutNotify(schedule.description);
+
+            _eventNameComponent.SetEnabled(false);
+            _eventNameComponent.SetValueWithoutNotify(content.name);
+
+            var neverExpires = !schedule.activeTo.HasValue;
+            if (!neverExpires && schedule.TryGetActiveTo(out var activeToDate))
+            {
+                _activeToDateComponent.Set(activeToDate);
+                _activeToHourComponent.Set(activeToDate);
+            }
+            _neverExpiresComponent.Value = neverExpires;
+
+            var isPeriod = schedule.definitions.Any(definition =>
+                definition.hour.Any(x => x.Contains("-"))
+                || definition.minute.Any(x => x.Contains("-"))
+                || definition.second.Any(x => x.Contains("-"))
+                );
+            _allDayComponent.Value = !isPeriod;
+
+            if (isPeriod)
+            {
+                // TODO: What happens where there is more than one period?
+                _periodFromHourComponent.SetPeriod(schedule.definitions[0], 0);
+                _periodToHourComponent.SetPeriod(schedule.definitions[0], 1);
+            }
+
+            if (schedule.TryGetActiveFrom(out var activeFromDate))
+            {
+                // _startTimeComponent.Set(activeFromDate);
+            }
+
+            var explicitDates = schedule.definitions.Count > 1;
+            var hasDaysOfWeek = schedule.definitions.Any(definition => definition.dayOfWeek.Any(day => day != "*"));
+            if (explicitDates)
+            {
+                _dropdownComponent.Set("Actual dates");
+                // TODO: What happens if the raw data has more than one recurrence?
+                var dateStrings = schedule.definitions.Select(definition =>
+                    $"{definition.year[0]:0000}-{definition.month[0]:00}-{definition.dayOfMonth[0]:00}").ToList();
+                var dates = string.Join(";", dateStrings);
+
+                _datesField.SetValueWithoutNotify(dates);
+
+            } else if (hasDaysOfWeek)
+            {
+                _dropdownComponent.Set("Days of week");
+                var definition = schedule.definitions[0];
+
+                _daysDaysPickerComponent.SetSelectedDays(schedule.definitions[0].dayOfWeek);
+
+                // definition.hour[0].Split()
+
+            }
+        }
+
+        public void ApplyDataTransforms(ListingContent data)
+        {
+            // nothing to do.
+        }
+
+
         private void OnAllDayChanged(bool value)
         {
-            _periodFromHourComponent.SetEnabled(!value);
-            _periodToHourComponent.SetEnabled(!value);
+            _periodFromHourComponent.SetGroupEnabled(!value);
+            _periodToHourComponent.SetGroupEnabled(!value);
         }
 
         private void OnExpirationChanged(bool value)
@@ -185,6 +247,7 @@ namespace Beamable.Editor.Schedules
         private void CancelClicked()
         {
             OnCancel?.Invoke();
+            OnCancelled?.Invoke();
         }
 
         private void RefreshGroups()
@@ -210,6 +273,7 @@ namespace Beamable.Editor.Schedules
             }
 
             RefreshGroups();
+            RefreshConfirmButton();
         }
 
         private List<string> PrepareOptions()
@@ -224,28 +288,71 @@ namespace Beamable.Editor.Schedules
             return options;
         }
 
+        #region Temporary validation
+
+        private void OnDayValueChanged(bool value)
+        {
+            _validatedDaysInWeek = value;
+            RefreshConfirmButton();
+        }
+
+        private void OnRepeatDaysChanged(string value)
+        {
+            string pattern = "^[0-9;-]+$";
+
+            bool isMatch = Regex.IsMatch(value, pattern);
+
+            _validatedRepeatDays = isMatch;
+            RefreshConfirmButton();
+        }
+
+        private void RefreshConfirmButton()
+        {
+            _confirmButton?.Disable();
+
+            bool valid = false;
+
+            switch (_currentMode)
+            {
+                case Mode.Daily:
+                    valid = true;
+                    break;
+                case Mode.Days:
+                    valid = _validatedDaysInWeek;
+                    break;
+                case Mode.Dates:
+                    valid = _validatedRepeatDays;
+                    break;
+            }
+
+            if (valid)
+            {
+                _confirmButton?.Enable();
+            }
+        }
+
+        #endregion
+
         #region Data parsing (to be moved to separate objects)
 
         private void PrepareGeneralData(Schedule newSchedule)
         {
             newSchedule.description = _descriptionComponent.Value;
-            newSchedule.activeFrom = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
-            newSchedule.activeTo = _neverExpiresComponent.Value
-                ? ""
-                : $"{_activeToDateComponent.SelectedDate}:{_activeToHourComponent.SelectedHour}";
+            newSchedule.activeFrom = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ssZ");
+            newSchedule.activeTo.HasValue = !_neverExpiresComponent.Value;
+            newSchedule.activeTo.Value = $"{_activeToDateComponent.SelectedDate}{_activeToHourComponent.SelectedHour}";
         }
 
         private void PrepareDailyModeData(Schedule newSchedule)
         {
             ScheduleDefinition definition =
-                new ScheduleDefinition("*", "*", PreparePeriodRange(), new List<string> {"*"}, "*", "*", new List<string> {"*"});
+                new ScheduleDefinition(PrepareSecondRange(), PrepareMinuteRange(), PreparePeriodRange(), new List<string> {"*"}, "*", "*", new List<string> {"*"});
             newSchedule.AddDefinition(definition);
         }
 
         private void PrepareDaysModeData(Schedule newSchedule)
         {
-            ScheduleDefinition definition = new ScheduleDefinition("*",
-                "*", PreparePeriodRange(), new List<string> {"*"}, "*", "*",
+            ScheduleDefinition definition = new ScheduleDefinition(PrepareSecondRange(), PrepareMinuteRange(), PreparePeriodRange(), new List<string> {"*"}, "*", "*",
                 _daysDaysPickerComponent.DaysPicker.GetSelectedDays());
             newSchedule.AddDefinition(definition);
         }
@@ -284,6 +391,23 @@ namespace Beamable.Editor.Schedules
                 : $"{_periodFromHourComponent.Hour}-{_periodToHourComponent.Hour}";
             return hourString;
         }
+
+        private string PrepareMinuteRange()
+        {
+            string hourString = _allDayComponent.Value
+                ? "*"
+                : $"{_periodFromHourComponent.Minute}-{_periodToHourComponent.Minute}";
+            return hourString;
+        }
+
+        private string PrepareSecondRange()
+        {
+            string hourString = _allDayComponent.Value
+                ? "*"
+                : $"{_periodFromHourComponent.Second}-{_periodToHourComponent.Second}";
+            return hourString;
+        }
+
 
         private Dictionary<string, List<string>> ParseDates(string value)
         {

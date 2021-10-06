@@ -24,6 +24,8 @@ namespace Beamable.Editor.UI.Components
         private Label _label;
         private string _value;
 
+        private Action<string> _onSelection;
+
         public string Value
         {
             get => _value;
@@ -61,7 +63,7 @@ namespace Beamable.Editor.UI.Components
         public void Setup(List<string> options, Action<string> onOptionSelected)
         {
             _optionModels.Clear();
-
+            _onSelection = onOptionSelected;
             foreach (string option in options)
             {
                 _optionModels.Add(new DropdownSingleOption(option, (i) =>
@@ -76,6 +78,12 @@ namespace Beamable.Editor.UI.Components
                 Value = _optionModels[0].Label;
                 onOptionSelected?.Invoke(Value);
             }
+        }
+
+        public void Set(string option)
+        {
+            OnOptionSelectedInternal(option);
+            _onSelection?.Invoke(option);
         }
 
         private void OnButtonClicked(Rect bounds)
@@ -118,8 +126,11 @@ namespace Beamable.Editor.UI.Components
         private void OnOptionSelectedInternal(string option)
         {
             Value = _optionModels.Find(opt => opt.Label == option).Label;
-            _optionsPopup.Close();
-            OnOptionsClosed();
+            if (_optionsPopup && _optionsPopup != null)
+            {
+                _optionsPopup.Close();
+                OnOptionsClosed();
+            }
         }
     }
 }

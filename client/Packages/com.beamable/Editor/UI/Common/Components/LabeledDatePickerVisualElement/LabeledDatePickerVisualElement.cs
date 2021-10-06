@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -57,6 +58,8 @@ namespace Beamable.Editor.UI.Components
             _datePicker = Root.Q<DatePickerVisualElement>("datePicker");
             _datePicker.Refresh();
         }
+
+        public void Set(DateTime date) => _datePicker.Set(date);
 
         // public void SetEnabled(bool value)
         // {

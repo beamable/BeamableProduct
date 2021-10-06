@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using Beamable.Common.Content.Validation;
 using UnityEngine;
 
 namespace Beamable.Common.Content
@@ -25,13 +27,42 @@ namespace Beamable.Common.Content
    public class Schedule
    {
       public string description;
+
+      [MustBeDateString]
       public string activeFrom;
-      public string activeTo;
+
+      [MustBeDateString]
+      public OptionalString activeTo = new OptionalString();
       public List<ScheduleDefinition> definitions = new List<ScheduleDefinition>();
 
       public void AddDefinition(ScheduleDefinition definition)
       {
          definitions.Add(definition);
+      }
+
+      public bool TryGetActiveTo(out DateTime activeToDate)
+      {
+         activeToDate = DateTime.Now;
+         if (!activeTo.HasValue)
+         {
+            return false;
+         }
+
+         if (!DateTime.TryParseExact(activeTo.Value, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out activeToDate)) return false;
+         activeToDate = activeToDate.ToUniversalTime();
+
+         return true;
+      }
+
+      public bool TryGetActiveFrom(out DateTime activeFromDate)
+      {
+         activeFromDate = DateTime.Now;
+
+         if (!DateTime.TryParseExact(activeFrom, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out activeFromDate)) return false;
+         activeFromDate = activeFromDate.ToUniversalTime();
+         return true;
       }
    }
 

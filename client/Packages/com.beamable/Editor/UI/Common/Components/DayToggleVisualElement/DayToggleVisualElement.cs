@@ -1,5 +1,5 @@
-﻿using Beamable.Editor.UI.Buss;
-using UnityEngine;
+﻿using System;
+using Beamable.Editor.UI.Buss;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -16,11 +16,13 @@ namespace Beamable.Editor.UI.Components
         {
         }
 
+        public Action OnValueChanged;
+
         private VisualElement _checkMark;
         private VisualElement _button;
         private Label _label;
         private string _labelValue;
-        
+
         public bool Selected { get; private set; }
         public string Value { get; private set; }
 
@@ -37,7 +39,7 @@ namespace Beamable.Editor.UI.Components
             _button = Root.Q<VisualElement>("button");
             _label = Root.Q<Label>("label");
             _label.text = _labelValue;
-            
+
             _button.RegisterCallback<MouseDownEvent>(OnClick);
 
             Render();
@@ -51,6 +53,7 @@ namespace Beamable.Editor.UI.Components
         private void OnClick(MouseDownEvent evt)
         {
             Selected = !Selected;
+            OnValueChanged?.Invoke();
             Render();
         }
 
@@ -58,6 +61,12 @@ namespace Beamable.Editor.UI.Components
         {
             _labelValue = label;
             Value = option;
+        }
+
+        public void Set(bool value)
+        {
+            Selected = value;
+            Render();
         }
     }
 }

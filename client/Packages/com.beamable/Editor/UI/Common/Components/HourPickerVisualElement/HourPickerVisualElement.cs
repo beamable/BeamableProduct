@@ -1,6 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text;
+using Beamable.Common.Content;
 using Beamable.Editor.UI.Buss;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -61,7 +64,7 @@ namespace Beamable.Editor.UI.Components
         public string GetFullHour()
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append($"{_hourPicker.Value}:{_minutePicker.Value}:{_secondPicker.Value}.000Z");
+            builder.Append($"{int.Parse(_hourPicker.Value):00}:{int.Parse(_minutePicker.Value):00}:{int.Parse(_secondPicker.Value):00}Z");
             return builder.ToString();
         }
 
@@ -71,7 +74,7 @@ namespace Beamable.Editor.UI.Components
 
             for (int i = 0; i < 24; i++)
             {
-                string hour = (i).ToString();
+                string hour = (i).ToString("00");
                 options.Add(hour);
             }
 
@@ -84,11 +87,32 @@ namespace Beamable.Editor.UI.Components
 
             for (int i = 0; i < 4; i++)
             {
-                string hour = (i * 15).ToString();
+                string hour = (i * 15).ToString("00");
                 options.Add(hour);
             }
 
             return options;
+        }
+
+        public void Set(DateTime date)
+        {
+            _hourPicker.Set(date.Hour.ToString());
+            _minutePicker.Set(date.Minute.ToString());
+            _secondPicker.Set(date.Second.ToString());
+        }
+
+        public void SetPeriod(ScheduleDefinition definition, int index)
+        {
+            _hourPicker.Set(definition.hour[0].Split('-')[index]);
+            _minutePicker.Set(definition.minute[0].Split('-')[index]);
+            _secondPicker.Set(definition.second[0].Split('-')[index]);
+        }
+
+        public void SetGroupEnabled(bool b)
+        {
+            _hourPicker.SetEnabled(b);
+            _minutePicker.SetEnabled(b);
+            _secondPicker.SetEnabled(b);
         }
     }
 }

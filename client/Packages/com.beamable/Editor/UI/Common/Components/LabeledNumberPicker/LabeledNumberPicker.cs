@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
 using UnityEngine;
 #if UNITY_2018
@@ -16,7 +17,7 @@ namespace Beamable.Editor.UI.Components
         public new class UxmlFactory : UxmlFactory<LabeledNumberPicker, UxmlTraits>
         {
         }
-        
+
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
             readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
@@ -40,7 +41,7 @@ namespace Beamable.Editor.UI.Components
                 }
             }
         }
-        
+
         private LabeledTextField _labeledTextFieldComponent;
         private Button _button;
         private List<string> _options;
@@ -103,5 +104,7 @@ namespace Beamable.Editor.UI.Components
             _labeledTextFieldComponent.Value = Value;
             _labeledTextFieldComponent.Refresh();
         }
+
+        public void Set(string option) => SetOption(option);
     }
 }
