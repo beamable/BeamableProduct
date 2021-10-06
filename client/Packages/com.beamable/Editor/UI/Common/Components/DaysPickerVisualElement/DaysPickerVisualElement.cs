@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Beamable.Editor.UI.Buss;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -45,37 +47,37 @@ namespace Beamable.Editor.UI.Components
             _mondayToggle.OnValueChanged = OnChange;
             _daysToggles.Add(_mondayToggle);
             _mondayToggle.Refresh();
-            
+
             _tuesdayToggle = Root.Q<DayToggleVisualElement>("tue");
             _tuesdayToggle.Setup("T","2");
             _tuesdayToggle.OnValueChanged = OnChange;
             _daysToggles.Add(_tuesdayToggle);
             _tuesdayToggle.Refresh();
-            
+
             _wednesdayToggle = Root.Q<DayToggleVisualElement>("wed");
             _wednesdayToggle.Setup("W", "3");
             _wednesdayToggle.OnValueChanged = OnChange;
             _daysToggles.Add(_wednesdayToggle);
             _wednesdayToggle.Refresh();
-            
+
             _thursdayToggle = Root.Q<DayToggleVisualElement>("thu");
             _thursdayToggle.Setup("T","4");
             _thursdayToggle.OnValueChanged = OnChange;
             _daysToggles.Add(_thursdayToggle);
             _thursdayToggle.Refresh();
-            
+
             _fridayToggle = Root.Q<DayToggleVisualElement>("fri");
             _fridayToggle.Setup("F","5");
             _fridayToggle.OnValueChanged = OnChange;
             _daysToggles.Add(_fridayToggle);
             _fridayToggle.Refresh();
-            
+
             _saturdayToggle = Root.Q<DayToggleVisualElement>("sat");
             _saturdayToggle.Setup("S","6");
             _saturdayToggle.OnValueChanged = OnChange;
             _daysToggles.Add(_saturdayToggle);
             _saturdayToggle.Refresh();
-            
+
             _sundayToggle = Root.Q<DayToggleVisualElement>("sun");
             _sundayToggle.Setup("S","7");
             _sundayToggle.OnValueChanged = OnChange;
@@ -101,6 +103,22 @@ namespace Beamable.Editor.UI.Components
             }
 
             return selectedOptions;
+        }
+
+        public void SetSelectedDays(IEnumerable<string> dayCodes)
+        {
+            foreach (var dayCode in dayCodes)
+            {
+                var dayToggle = _daysToggles.FirstOrDefault(toggle => toggle.Value == dayCode);
+                if (dayToggle != null)
+                {
+                    dayToggle.Set(true);
+                }
+                else
+                {
+                    Debug.LogWarning("No Day Toggle found for " + dayCode);
+                }
+            }
         }
     }
 }

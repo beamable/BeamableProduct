@@ -16,7 +16,7 @@ namespace Beamable.Editor.UI.Components
         public new class UxmlFactory : UxmlFactory<LabeledTextField, UxmlTraits>
         {
         }
-        
+
         public Action<string> OnValueChanged;
 
         public new class UxmlTraits : VisualElement.UxmlTraits
@@ -65,6 +65,13 @@ namespace Beamable.Editor.UI.Components
             _textField.value = Value;
 
             _textField.RegisterValueChangedCallback(ValueChanged);
+        }
+
+        public void SetValueWithoutNotify(string value)
+        {
+            // TODO: we shouldn't need to set it up this way, Ideally we could just use the Property setter
+            Value = value;
+            _textField.SetValueWithoutNotify(value);
         }
 
         protected override void OnDestroy()

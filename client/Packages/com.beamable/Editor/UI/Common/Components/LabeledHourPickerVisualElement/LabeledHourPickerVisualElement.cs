@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using Beamable.Common.Content;
 using Beamable.Editor.UI.Buss;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -20,13 +22,13 @@ namespace Beamable.Editor.UI.Components
         {
             readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
                 {name = "label", defaultValue = "Label"};
-            
+
             readonly UxmlBoolAttributeDescription _hour = new UxmlBoolAttributeDescription
                 {name = "hour", defaultValue = true};
-            
+
             readonly UxmlBoolAttributeDescription _minute = new UxmlBoolAttributeDescription
                 {name = "minute", defaultValue = true};
-            
+
             readonly UxmlBoolAttributeDescription _second = new UxmlBoolAttributeDescription
                 {name = "second", defaultValue = true};
 
@@ -75,6 +77,15 @@ namespace Beamable.Editor.UI.Components
             _hourPicker = Root.Q<HourPickerVisualElement>("hourPicker");
             _hourPicker.Setup(ActiveHour, ActiveMinute, ActiveSecond);
             _hourPicker.Refresh();
+        }
+
+        public void Set(DateTime date) => _hourPicker.Set(date);
+        public void SetPeriod(ScheduleDefinition definition, int index) => _hourPicker.SetPeriod(definition, index);
+
+        public void SetGroupEnabled(bool b)
+        {
+            SetEnabled(b);
+            _hourPicker.SetGroupEnabled(b);
         }
     }
 }

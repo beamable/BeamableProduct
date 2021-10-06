@@ -48,7 +48,7 @@ namespace Beamable.Editor.UI.Components
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledDaysPickerVisualElement)}/{nameof(LabeledDaysPickerVisualElement)}")
         {
         }
-        
+
         public override void Refresh()
         {
             base.Refresh();
@@ -65,5 +65,7 @@ namespace Beamable.Editor.UI.Components
         {
             OnValueChanged?.Invoke(value);
         }
+
+        public void SetSelectedDays(IEnumerable<string> dayCodes) => DaysPicker.SetSelectedDays(dayCodes);
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Beamable.Common.Content;
 using System.Text.RegularExpressions;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
@@ -17,10 +18,12 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Schedules
 {
-    public class EventScheduleWindow : BeamableVisualElement
+    public class EventScheduleWindow : BeamableVisualElement, IScheduleWindow<EventContent>
     {
         public Action OnCancel;
+        public event Action OnCancelled;
         public Action<string> OnConfirm;
+        public event Action<Schedule> OnScheduleUpdated;
 
         private enum Mode
         {
@@ -48,17 +51,6 @@ namespace Beamable.Editor.Schedules
         private bool _validatedDaysInWeek;
         private bool _validatedRepeatDays;
 
-#if BEAMABLE_DEVELOPER
-        // TODO: remove it before final push
-        [MenuItem("TESTING/Event schedule window")]
-#endif
-        public static BeamablePopupWindow OpenWindow()
-        {
-            EventScheduleWindow eventScheduleWindow = new EventScheduleWindow();
-
-            return BeamablePopupWindow.ShowUtility(BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER,
-                eventScheduleWindow, null, BeamableComponentsConstants.EventSchedulesWindowSize);
-        }
 
         public EventScheduleWindow() : base(
             $"{BeamableComponentsConstants.SCHEDULES_PATH}/{nameof(EventScheduleWindow)}")
@@ -173,6 +165,51 @@ namespace Beamable.Editor.Schedules
 
         #endregion
 
+
+        public void Set(Schedule schedule, EventContent content)
+        {
+            _descriptionComponent.SetValueWithoutNotify(schedule.description);
+
+            _eventNameComponent.SetValueWithoutNotify(content.name);
+
+            var neverExpires = !schedule.activeTo.HasValue;
+            if (!neverExpires && schedule.TryGetActiveTo(out var activeToDate))
+            {
+                _activeToDateComponent.Set(activeToDate);
+                _activeToHourComponent.Set(activeToDate);
+            }
+            _neverExpiresComponent.Value = neverExpires;
+
+            if (schedule.TryGetActiveFrom(out var activeFromDate))
+            {
+                _startTimeComponent.Set(activeFromDate);
+            }
+
+            var explicitDates = schedule.definitions.Count > 1;
+            var hasDaysOfWeek = schedule.definitions.Any(definition => definition.dayOfWeek.Any(day => day != "*"));
+            if (explicitDates)
+            {
+                _dropdownComponent.Set("Actual dates");
+                // TODO: What happens if the raw data has more than one recurrence?
+                var dateStrings = schedule.definitions.Select(definition =>
+                    $"{definition.year[0]:0000}-{definition.month[0]:00}-{definition.dayOfMonth[0]:00}").ToList();
+                var dates = string.Join(";", dateStrings);
+
+                _datesField.SetValueWithoutNotify(dates);
+
+            } else if (hasDaysOfWeek)
+            {
+                _dropdownComponent.Set("Days of week");
+                _daysDaysPickerComponent.SetSelectedDays(schedule.definitions[0].dayOfWeek);
+            }
+        }
+
+        public void ApplyDataTransforms(EventContent data)
+        {
+            data.name = _eventNameComponent.Value;
+        }
+
+
         protected override void OnDestroy()
         {
             if (_neverExpiresComponent != null)
@@ -210,11 +247,13 @@ namespace Beamable.Editor.Schedules
             string replaced = json.Replace("\"\"", "null");
 
             OnConfirm?.Invoke(replaced);
+            OnScheduleUpdated?.Invoke(newSchedule);
         }
 
         private void CancelClicked()
         {
             OnCancel?.Invoke();
+            OnCancelled?.Invoke();
         }
 
         private void RefreshGroups()
@@ -261,9 +300,8 @@ namespace Beamable.Editor.Schedules
         {
             newSchedule.description = _descriptionComponent.Value;
             newSchedule.activeFrom = _startTimeComponent.SelectedHour;
-            newSchedule.activeTo = _neverExpiresComponent.Value
-                ? ""
-                : $"{_activeToDateComponent.SelectedDate}:{_activeToHourComponent.SelectedHour}";
+            newSchedule.activeTo.HasValue = !_neverExpiresComponent.Value;
+            newSchedule.activeTo.Value = $"{_activeToDateComponent.SelectedDate}{_activeToHourComponent.SelectedHour}";
         }
 
         private void PrepareDailyModeData(Schedule newSchedule)
