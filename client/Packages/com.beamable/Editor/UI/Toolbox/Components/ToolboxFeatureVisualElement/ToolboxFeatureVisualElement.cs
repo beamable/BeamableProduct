@@ -57,9 +57,7 @@ namespace Beamable.Editor.Toolbox.Components
 
             Label despLabel = Root.Q<Label>("description");
             despLabel.text = WidgetModel.Description;
-#if UNITY_2018
             despLabel.AddTextWrapStyle();
-#endif
 
             Image functionImage = Root.Q<Image>("functionIcon");
             functionImage.image = WidgetModel.Icon;
