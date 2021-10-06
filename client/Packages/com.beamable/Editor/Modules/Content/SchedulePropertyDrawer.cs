@@ -55,8 +55,6 @@ namespace Beamable.Editor.Content
       }
       public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
       {
-
-         EditorGUI.DrawRect(position, Color.blue);
          var topRect = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
          EditorGUI.LabelField(topRect, label);
 

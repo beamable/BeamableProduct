@@ -67,6 +67,7 @@ namespace Beamable.Common.Shop
       [Tooltip(ContentObject.TooltipOptional0 + ContentObject.ButtonText1)]
       public OptionalString buttonText; // TODO: This is a dictionary, not a string!
 
+      [Tooltip(ContentObject.TooltipOptional0 + "schedule for when the listing will be active")]
       public OptionalListingSchedule schedule;
 
    }
