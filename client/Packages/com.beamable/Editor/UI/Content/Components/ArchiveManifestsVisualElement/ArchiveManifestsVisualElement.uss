@@ -7,8 +7,6 @@
 
 #manifestWarningMessage {
     margin-top: 4px;
-    white-space: normal;
-    word-wrap: true;
 }
 
 #scroll{
