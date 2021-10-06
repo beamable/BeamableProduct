@@ -56,11 +56,6 @@ namespace Beamable.Editor.Microservice.UI.Components
             _microserviceModel.OnDockerLoginRequired -= LoginToDocker;
             _microserviceModel.OnDockerLoginRequired += LoginToDocker;
 
-            _microserviceModel.ServiceBuilder.OnLastImageIdChanged -= HandleLastImageIdChanged;
-            _microserviceModel.ServiceBuilder.OnLastImageIdChanged += HandleLastImageIdChanged;
-            _microserviceModel.OnRemoteReferenceEnriched -= OnServiceReferenceChanged;
-            _microserviceModel.OnRemoteReferenceEnriched += OnServiceReferenceChanged;
-
             _separator.Refresh();
 
             UpdateButtons();
