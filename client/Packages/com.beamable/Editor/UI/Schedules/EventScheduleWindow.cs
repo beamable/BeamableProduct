@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Text.RegularExpressions;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
@@ -155,13 +153,13 @@ namespace Beamable.Editor.Schedules
             }
 
             string json = JsonUtility.ToJson(newSchedule);
+            string replaced = json.Replace("\"\"", "null");
 #if BEAMABLE_DEVELOPER
-            Debug.Log(json);
+            Debug.Log(replaced);
 #endif
-            OnConfirm?.Invoke(json);
+            OnConfirm?.Invoke(replaced);
         }
-
-
+        
         private void CancelClicked(MouseDownEvent evt)
         {
             OnCancel?.Invoke();
