@@ -46,14 +46,14 @@ namespace Beamable.Editor.Schedules
 #if BEAMABLE_DEVELOPER
         // TODO: remove it before final push
         [MenuItem("TESTING/Event schedule window")]
-        public static void OpenWindow()
+#endif
+        public static BeamablePopupWindow OpenWindow()
         {
             EventScheduleWindow eventScheduleWindow = new EventScheduleWindow();
 
-            BeamablePopupWindow.ShowUtility(BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER,
+            return BeamablePopupWindow.ShowUtility(BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER,
                 eventScheduleWindow, null, BeamableComponentsConstants.EventSchedulesWindowSize);
         }
-#endif
 
         public EventScheduleWindow() : base(
             $"{BeamableComponentsConstants.SCHEDULES_PATH}/{nameof(EventScheduleWindow)}")

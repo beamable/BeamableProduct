@@ -50,14 +50,14 @@ namespace Beamable.Editor.Schedules
 #if BEAMABLE_DEVELOPER
         // TODO: remove it before final push
         [MenuItem("TESTING/Listing schedule window")]
-        public static void OpenWindow()
+#endif
+        public static BeamablePopupWindow OpenWindow()
         {
             ListingScheduleWindow listingScheduleWindow = new ListingScheduleWindow();
 
-            BeamablePopupWindow.ShowUtility(BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER,
+            return BeamablePopupWindow.ShowUtility(BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER,
                 listingScheduleWindow, null, BeamableComponentsConstants.ListingSchedulesWindowSize);
         }
-#endif
 
         public ListingScheduleWindow() : base(
             $"{BeamableComponentsConstants.SCHEDULES_PATH}/{nameof(ListingScheduleWindow)}")
