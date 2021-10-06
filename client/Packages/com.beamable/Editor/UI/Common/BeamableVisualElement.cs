@@ -71,8 +71,13 @@ namespace Beamable.Editor.UI.Buss
 
          this.AddStyleSheet(BeamableComponentsConstants.COMMON_USS_PATH);
          this.AddStyleSheet(USSPath);
-
-
+#if UNITY_2018
+         var additionalUSS = USSPath.Replace(".uss", ".2018.uss");
+         if (UnityEngine.Windows.File.Exists(additionalUSS))
+         {
+            this.AddStyleSheetPath(additionalUSS);
+         }
+#endif
          Add(Root);
 
          Root?.Query<VisualElement>(className: "--image-scale-to-fit").ForEach(elem =>
