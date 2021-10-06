@@ -12,7 +12,7 @@ namespace Beamable.Server {
 
         public LocalDebugService(BeamableMicroService beamableService) {
             _beamableService = beamableService;
-            Logger.UnregisterLogger<ConsoleLogger>();
+            Swan.Logging.ConsoleLogger.Instance.LogLevel = LogLevel.Error;
             var server = new WebServer(SharedConstants.HEALTH_PORT)
                 .WithModule(new ActionModule("/health", HttpVerbs.Any, HealthCheck));
             server.RunAsync();
