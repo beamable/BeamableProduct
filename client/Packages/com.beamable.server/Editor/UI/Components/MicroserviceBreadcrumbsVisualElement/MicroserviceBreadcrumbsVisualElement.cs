@@ -71,10 +71,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             _servicesFilter = Root.Q<Button>("servicesFilter");
             _servicesFilterLabel = _servicesFilter.Q<Label>();
-            var manipulator = new ContextualMenuManipulator(PopulateServicesFilterMenu);
-            manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
-            _servicesFilter.clickable.activators.Clear();
-            _servicesFilter.AddManipulator(manipulator);
+            _servicesFilter.clickable.clicked += () => HandleServicesFilterButter(_servicesFilter.worldBound);
             OnNewServicesDisplayFilterSelected += UpdateServicesFilterText;
             UpdateServicesFilterText(MicroservicesDataModel.Instance.Filter);
 
@@ -87,15 +84,38 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         void UpdateServicesFilterText(ServicesDisplayFilter filter)
         {
-            _servicesFilterLabel.text = filter.ToString();
+            switch (filter)
+            {
+                case ServicesDisplayFilter.AllTypes:
+                    _servicesFilterLabel.text = "All types";
+                    break;
+                default:
+                    _servicesFilterLabel.text = filter.ToString();
+                    break;
+            }
         }
 
         private void PopulateServicesFilterMenu(ContextualMenuPopulateEvent evt)
         {
             var currentFilter = MicroservicesDataModel.Instance.Filter;
-            evt.menu.BeamableAppendAction("All", pos => OnNewServicesDisplayFilterSelected?.Invoke(ServicesDisplayFilter.All), currentFilter != ServicesDisplayFilter.All);
+            evt.menu.BeamableAppendAction("All types", pos => OnNewServicesDisplayFilterSelected?.Invoke(ServicesDisplayFilter.AllTypes), currentFilter != ServicesDisplayFilter.AllTypes);
             evt.menu.BeamableAppendAction("Microservice", pos => OnNewServicesDisplayFilterSelected?.Invoke(ServicesDisplayFilter.Microservices), currentFilter != ServicesDisplayFilter.Microservices);
             evt.menu.BeamableAppendAction("Storage", pos => OnNewServicesDisplayFilterSelected?.Invoke(ServicesDisplayFilter.Storages), currentFilter != ServicesDisplayFilter.Storages);
+        }
+        
+        
+        private void HandleServicesFilterButter(Rect visualElementBounds)
+        {
+            var popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
+
+            var content = new ServiceFilterDropdownVisualElement();
+            content.Refresh();
+            var wnd = BeamablePopupWindow.ShowDropdown("Select", popupWindowRect, new Vector2(150, 75), content);
+            content.OnNewServicesDisplayFilterSelected += filter =>
+            {
+                wnd.Close();
+                OnNewServicesDisplayFilterSelected?.Invoke(filter);
+            };
         }
 
         public void SetSelectAllCheckboxValue(bool value)

@@ -70,7 +70,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             {
                 switch (Model.Filter)
                 {
-                    case ServicesDisplayFilter.All:
+                    case ServicesDisplayFilter.AllTypes:
                         return true;
                     case ServicesDisplayFilter.Microservices:
                         return type == ServiceType.MicroService;
