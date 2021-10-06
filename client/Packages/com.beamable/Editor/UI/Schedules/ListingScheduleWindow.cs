@@ -92,11 +92,9 @@ namespace Beamable.Editor.Schedules
             _allDayComponent.Refresh();
 
             _periodFromHourComponent = Root.Q<LabeledHourPickerVisualElement>("periodFromHour");
-            _periodFromHourComponent.Setup(activeMinute: false, activeSecond: false);
             _periodFromHourComponent.Refresh();
 
             _periodToHourComponent = Root.Q<LabeledHourPickerVisualElement>("periodToHour");
-            _periodToHourComponent.Setup(activeMinute: false, activeSecond: false);
             _periodToHourComponent.Refresh();
 
             // Active to
@@ -181,50 +179,8 @@ namespace Beamable.Editor.Schedules
 
             string json = JsonUtility.ToJson(new ScheduleWrapper(newSchedule));
             string replaced = json.Replace("\"\"", "null");
-#if BEAMABLE_DEVELOPER
-            Debug.Log(replaced);
-#endif
+
             OnConfirm?.Invoke(replaced);
-        }
-
-        private void PrepareGeneralData(StringBuilder builder)
-        {
-            builder.Append($"Listing name: {_eventNameComponent.Value}\n");
-            builder.Append($"Event description: {_descriptionComponent.Value}\n");
-
-            builder.Append($"All day: {_allDayComponent.Value}\n");
-            if (!_allDayComponent.Value)
-            {
-                builder.Append($"Period from hour: {_periodFromHourComponent.SelectedHour}\n");
-                builder.Append($"Period to hour: {_periodToHourComponent.SelectedHour}\n");
-            }
-
-            builder.Append($"Never expires: {_neverExpiresComponent.Value}\n");
-            if (!_neverExpiresComponent.Value)
-            {
-                builder.Append($"Active to date: {_activeToDateComponent.SelectedDate}\n");
-                builder.Append($"Active to hour: {_activeToHourComponent.SelectedHour}\n");
-            }
-        }
-
-        private void PrepareDaysModeData(StringBuilder builder)
-        {
-            builder.Append("Selected days: ");
-            List<string> selectedDays = _daysDaysPickerComponent.DaysPicker.GetSelectedDays();
-
-            for (var index = 0; index < selectedDays.Count; index++)
-            {
-                string day = selectedDays[index];
-                builder.Append(index < selectedDays.Count - 1 ? $"{day.ToUpper()}, " : $"{day.ToUpper()}\n");
-            }
-
-            builder.Append($"Active to date: {_activeToDateComponent.SelectedDate}\n");
-            builder.Append($"Active to hour: {_activeToHourComponent.SelectedHour}\n");
-        }
-
-        private void PrepareDateModeData(StringBuilder builder)
-        {
-            builder.Append($"Repeat on: {_datesField.Value}\n");
         }
 
         private void CancelClicked(MouseDownEvent evt)
@@ -276,7 +232,7 @@ namespace Beamable.Editor.Schedules
             newSchedule.description = _descriptionComponent.Value;
             newSchedule.activeFrom = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
             newSchedule.activeTo = _neverExpiresComponent.Value
-                ? null
+                ? ""
                 : $"{_activeToDateComponent.SelectedDate}:{_activeToHourComponent.SelectedHour}";
         }
 

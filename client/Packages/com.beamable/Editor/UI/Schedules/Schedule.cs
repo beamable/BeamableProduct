@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using JetBrains.Annotations;
 
 namespace Beamable.Editor.Schedules
 {
@@ -20,7 +19,7 @@ namespace Beamable.Editor.Schedules
     {
         public string description;
         public string activeFrom;
-        [CanBeNull] public string activeTo;
+        public string activeTo;
         public List<ScheduleDefinition> definitions = new List<ScheduleDefinition>();
 
         public void AddDefinition(ScheduleDefinition definition)

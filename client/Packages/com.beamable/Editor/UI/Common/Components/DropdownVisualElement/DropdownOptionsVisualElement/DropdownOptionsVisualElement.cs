@@ -77,7 +77,7 @@ namespace Beamable.Editor.UI.Components
             }
 
             IStyle mainContainerStyle = _mainContainer.style;
-            mainContainerStyle.width = new StyleLength(GetHeight());
+            mainContainerStyle.height = new StyleLength(GetHeight());
         }
     }
 }

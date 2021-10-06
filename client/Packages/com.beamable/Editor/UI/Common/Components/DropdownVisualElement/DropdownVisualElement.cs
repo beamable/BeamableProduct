@@ -89,7 +89,7 @@ namespace Beamable.Editor.UI.Components
 
             if (_optionModels.Count == 0)
             {
-                Debug.LogWarning("Dropdown has no any options to render");
+                Debug.LogWarning("Dropdown has no options to render");
                 return;
             }
 
