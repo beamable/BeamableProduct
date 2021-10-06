@@ -13,6 +13,10 @@ namespace Beamable.Editor.UI.Components
 {
     public class HourPickerVisualElement : BeamableVisualElement
     {
+        public new class UxmlFactory : UxmlFactory<HourPickerVisualElement, UxmlTraits>
+        {
+        }
+
         private LabeledNumberPicker _hourPicker;
         private LabeledNumberPicker _minutePicker;
         private LabeledNumberPicker _secondPicker;
@@ -20,9 +24,10 @@ namespace Beamable.Editor.UI.Components
         private bool _activeMinute = true;
         private bool _activeSecond = true;
 
-        public new class UxmlFactory : UxmlFactory<HourPickerVisualElement, UxmlTraits>
-        {
-        }
+        public string Hour => _hourPicker.Value;
+        public string Minute => _minutePicker.Value;
+        public string Second => _secondPicker.Value;
+
 
         public HourPickerVisualElement() : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(HourPickerVisualElement)}/{nameof(HourPickerVisualElement)}")
@@ -36,11 +41,11 @@ namespace Beamable.Editor.UI.Components
             _hourPicker = Root.Q<LabeledNumberPicker>("hourPicker");
             _hourPicker.Setup(GenerateHours(), _activeHour);
             _hourPicker.Refresh();
-            
+
             _minutePicker = Root.Q<LabeledNumberPicker>("minutePicker");
             _minutePicker.Setup(GenerateMinutesAndSeconds(), _activeMinute);
             _minutePicker.Refresh();
-            
+
             _secondPicker = Root.Q<LabeledNumberPicker>("secondPicker");
             _secondPicker.Setup(GenerateMinutesAndSeconds(), _activeSecond);
             _secondPicker.Refresh();
@@ -53,10 +58,10 @@ namespace Beamable.Editor.UI.Components
             _activeSecond = activeSecond;
         }
 
-        public string GetHour()
+        public string GetFullHour()
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append($"{_hourPicker.Value}:{_minutePicker.Value}:{_secondPicker.Value}");
+            builder.Append($"{_hourPicker.Value}:{_minutePicker.Value}:{_secondPicker.Value}.000Z");
             return builder.ToString();
         }
 
@@ -66,7 +71,7 @@ namespace Beamable.Editor.UI.Components
 
             for (int i = 0; i < 24; i++)
             {
-                string hour = (i + 1).ToString("00");
+                string hour = (i).ToString();
                 options.Add(hour);
             }
 
@@ -79,7 +84,7 @@ namespace Beamable.Editor.UI.Components
 
             for (int i = 0; i < 4; i++)
             {
-                string hour = (i * 15).ToString("00");
+                string hour = (i * 15).ToString();
                 options.Add(hour);
             }
 

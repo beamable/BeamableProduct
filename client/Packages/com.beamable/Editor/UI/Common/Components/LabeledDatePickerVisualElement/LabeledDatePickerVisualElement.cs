@@ -40,7 +40,7 @@ namespace Beamable.Editor.UI.Components
         private DatePickerVisualElement _datePicker;
 
         private string Label { get; set; }
-        public string SelectedDate => _datePicker.GetHour();
+        public string SelectedDate => _datePicker.GetDate();
 
         public LabeledDatePickerVisualElement() : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledDatePickerVisualElement)}/{nameof(LabeledDatePickerVisualElement)}")

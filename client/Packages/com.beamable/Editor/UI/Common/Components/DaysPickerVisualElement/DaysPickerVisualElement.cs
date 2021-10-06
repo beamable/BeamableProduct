@@ -36,37 +36,37 @@ namespace Beamable.Editor.UI.Components
             base.Refresh();
 
             _mondayToggle = Root.Q<DayToggleVisualElement>("mon");
-            _mondayToggle.Setup("M", "mon");
+            _mondayToggle.Setup("M", "1");
             _daysToggles.Add(_mondayToggle);
             _mondayToggle.Refresh();
             
             _tuesdayToggle = Root.Q<DayToggleVisualElement>("tue");
-            _tuesdayToggle.Setup("T","tue");
+            _tuesdayToggle.Setup("T","2");
             _daysToggles.Add(_tuesdayToggle);
             _tuesdayToggle.Refresh();
             
             _wednesdayToggle = Root.Q<DayToggleVisualElement>("wed");
-            _wednesdayToggle.Setup("W", "wed");
+            _wednesdayToggle.Setup("W", "3");
             _daysToggles.Add(_wednesdayToggle);
             _wednesdayToggle.Refresh();
             
             _thursdayToggle = Root.Q<DayToggleVisualElement>("thu");
-            _thursdayToggle.Setup("T","thu");
+            _thursdayToggle.Setup("T","4");
             _daysToggles.Add(_thursdayToggle);
             _thursdayToggle.Refresh();
             
             _fridayToggle = Root.Q<DayToggleVisualElement>("fri");
-            _fridayToggle.Setup("F","fri");
+            _fridayToggle.Setup("F","5");
             _daysToggles.Add(_fridayToggle);
             _fridayToggle.Refresh();
             
             _saturdayToggle = Root.Q<DayToggleVisualElement>("sat");
-            _saturdayToggle.Setup("S","sat");
+            _saturdayToggle.Setup("S","6");
             _daysToggles.Add(_saturdayToggle);
             _saturdayToggle.Refresh();
             
             _sundayToggle = Root.Q<DayToggleVisualElement>("sun");
-            _sundayToggle.Setup("S","sun");
+            _sundayToggle.Setup("S","7");
             _daysToggles.Add(_sundayToggle);
             _sundayToggle.Refresh();
         }

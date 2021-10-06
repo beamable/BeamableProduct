@@ -44,10 +44,10 @@ namespace Beamable.Editor.UI.Components
             _dayPicker.Refresh();
         }
         
-        public string GetHour()
+        public string GetDate()
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append($"{_yearPicker.Value}:{_monthPicker.Value}:{_dayPicker.Value}");
+            builder.Append($"{_yearPicker.Value}-{_monthPicker.Value}-{_dayPicker.Value}T");
             return builder.ToString();
         }
 
@@ -74,7 +74,7 @@ namespace Beamable.Editor.UI.Components
             
             for (int i = 0; i < 12; i++)
             {
-                string option = (i+1).ToString("00");
+                string option = (i+1).ToString();
                 options.Add(option);
             }
 
@@ -87,7 +87,7 @@ namespace Beamable.Editor.UI.Components
             
             for (int i = 0; i < 31; i++)
             {
-                string option = (i+1).ToString("00");
+                string option = (i+1).ToString();
                 options.Add(option);
             }
 
