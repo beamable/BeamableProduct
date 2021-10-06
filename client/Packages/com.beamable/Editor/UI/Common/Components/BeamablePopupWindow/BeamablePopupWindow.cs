@@ -109,6 +109,7 @@ namespace Beamable.Editor.UI.Buss.Components
             var wnd = CreateInstance<BeamablePopupWindow>();
             wnd.titleContent = new GUIContent(title);
             wnd._contentElement = content;
+            wnd.minSize = defaultSize;
             wnd._onDomainReload = onDomainReload;
 
             wnd.ShowUtility();

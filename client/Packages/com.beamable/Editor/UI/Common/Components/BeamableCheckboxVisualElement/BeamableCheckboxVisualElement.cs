@@ -20,23 +20,7 @@ namespace Beamable.Editor.UI.Components
         public new class UxmlFactory : UxmlFactory<BeamableCheckboxVisualElement, UxmlTraits>
         {
         }
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
-                {name = "custom-text", defaultValue = "nada"};
-
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                var self = ve as BeamableCheckboxVisualElement;
-            }
-        }
-        
+       
         public event Action<bool> OnValueChanged;
 
         public bool Value
