@@ -55,11 +55,13 @@ namespace Beamable.Editor.UI.Model
         }
         public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
         {
-            throw new NotImplementedException();
-        }
-        private void OpenInCli()
-        {
-            throw new NotImplementedException();
+            Debug.LogError("`PopulateMoreDropdown` method need to implement functionality!");
+            
+            evt.menu.BeamableAppendAction($"Erase data", _ => Debug.Log("Not implemented!"), false);
+            evt.menu.BeamableAppendAction($"Copy connection strings", _ => Debug.Log("Not implemented!"), false);
+            evt.menu.BeamableAppendAction($"Goto data explorer", _ => Debug.Log("Not implemented!"), false);
+            evt.menu.BeamableAppendAction($"Create a snapshot", _ => Debug.Log("Not implemented!"), false);
+            evt.menu.BeamableAppendAction($"Download a snapshot", _ => Debug.Log("Not implemented!"), false);
         }
         public override void Refresh(IDescriptor descriptor)
         {

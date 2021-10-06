@@ -189,7 +189,7 @@ namespace Beamable.Editor.Microservice.UI
         }
 
         private void HideAllLoadingBars() {
-            foreach (var microserviceVisualElement in _windowRoot.Q<MicroserviceContentVisualElement>().MicroserviceVisualElements) {
+            foreach (var microserviceVisualElement in _windowRoot.Q<MicroserviceContentVisualElement>().ServiceVisualElements) {
                 microserviceVisualElement.Q<LoadingBarElement>().Hidden = true;
             }
         }
