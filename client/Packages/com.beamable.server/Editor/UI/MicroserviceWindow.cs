@@ -152,6 +152,14 @@ namespace Beamable.Editor.Microservice.UI
             _microserviceContentVisualElement.Model = Model;
             _microserviceContentVisualElement.Refresh();
 
+            if (Model != null)
+            {
+                Model.OnRemoteOnlyServicesUpdated += () =>
+                {
+                    _microserviceContentVisualElement?.Refresh();
+                };
+            }
+
             _microserviceBreadcrumbsVisualElement.OnSelectAllCheckboxChanged +=
                 _microserviceContentVisualElement.SetAllMicroserviceSelectedStatus;
 

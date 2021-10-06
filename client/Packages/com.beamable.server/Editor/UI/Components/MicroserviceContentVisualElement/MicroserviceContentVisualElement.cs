@@ -130,15 +130,18 @@ namespace Beamable.Editor.Microservice.UI.Components
                         else
                         {
                             var service = Model.GetModel<RemoteMicroserviceModel>(serviceStatus.Key);
-                            var serviceElement = new RemoteMicroserviceVisualElement { Model = service };
+                            if (service != null)
+                            {
+                                var serviceElement = new RemoteMicroserviceVisualElement { Model = service };
 
-                            _modelToVisual[service] = serviceElement;
-                            serviceElement.Refresh();
+                                _modelToVisual[service] = serviceElement;
+                                serviceElement.Refresh();
 
-                            service.OnSortChanged -= SortMicroservices;
-                            service.OnSortChanged += SortMicroservices;
+                                service.OnSortChanged -= SortMicroservices;
+                                service.OnSortChanged += SortMicroservices;
 
-                            _microservicesListElement.Add(serviceElement);
+                                _microservicesListElement.Add(serviceElement);
+                            }
                         }
                         break;
                     case ServiceType.StorageObject:
