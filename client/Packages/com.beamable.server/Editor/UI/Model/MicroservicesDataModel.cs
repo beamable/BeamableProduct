@@ -108,7 +108,23 @@ namespace Beamable.Editor.UI.Model
                   var remoteService = manifest.manifest.FirstOrDefault(remote => string.Equals(remote.serviceName, service.Name));
                   service.EnrichWithRemoteReference(remoteService);
                }
+
                OnServerManifestUpdated?.Invoke(manifest);
+
+               // ADD REMOTE MS MODELS 
+
+               foreach(var singleManifest in ServerManifest.manifest)
+               {
+                  if (ContainsModel(singleManifest.serviceName))
+                        continue;
+
+                    var descriptor = new MicroserviceDescriptor{
+                        Name = singleManifest.serviceName
+                    };
+
+                    IBeamableService newService = RemoteMicroserviceModel.CreateNew(descriptor, this);
+                    AllServices.Add(newService);
+               }
             });
          });
       }
@@ -141,7 +157,8 @@ namespace Beamable.Editor.UI.Model
          foreach (var configEntry in MicroserviceConfiguration.Instance.Microservices)
          {
             bool remotely = servicesStatus?.Find(status => status.serviceName.Equals(configEntry.ServiceName))!= null;
-            result.Add(configEntry.ServiceName, getServiceStatus(ContainsModel(configEntry.ServiceName),remotely));
+            bool locally = ContainsModel(configEntry.ServiceName) && !IsRemoteOnlyServiceModel(configEntry.ServiceName);
+            result.Add(configEntry.ServiceName, getServiceStatus(locally, remotely));
          }
 
          return result;
@@ -159,7 +176,14 @@ namespace Beamable.Editor.UI.Model
          return service?.ServiceType ?? ServiceType.MicroService;
       }
 
-      public bool ContainsModel(string serviceName) => AllServices?.Any(s => s.Descriptor.Name.Equals(serviceName)) ?? false;
+      public bool IsRemoteOnlyServiceModel(string name)
+      {
+         var service = AllServices
+            .FirstOrDefault(s => s.Descriptor.Name.Equals(name));
+         return service != null && service is RemoteMicroserviceModel;
+      }
+
+     public bool ContainsModel(string serviceName) => AllServices?.Any(s => s.Descriptor.Name.Equals(serviceName)) ?? false;
 
       public T GetModel<T>(IDescriptor descriptor) where T : IBeamableService =>
          GetModel<T>(descriptor.Name);
