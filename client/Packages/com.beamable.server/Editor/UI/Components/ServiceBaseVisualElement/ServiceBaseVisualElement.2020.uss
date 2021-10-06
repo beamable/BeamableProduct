@@ -1,0 +1,6 @@
+﻿#dependentServicesBtn {
+    border-bottom-left-radius: 0px;
+    border-bottom-right-radius: 0px;
+    border-bottom-top-radius: 0px;
+    border-bottom-bottom-radius: 0px;
+}

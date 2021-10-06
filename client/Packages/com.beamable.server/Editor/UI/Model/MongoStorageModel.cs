@@ -55,8 +55,6 @@ namespace Beamable.Editor.UI.Model
         }
         public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
         {
-            Debug.LogError("`PopulateMoreDropdown` method need to implement functionality!");
-            
             evt.menu.BeamableAppendAction($"Erase data", _ => Debug.Log("Not implemented!"), false);
             evt.menu.BeamableAppendAction($"Copy connection strings", _ => Debug.Log("Not implemented!"), false);
             evt.menu.BeamableAppendAction($"Goto data explorer", _ => Debug.Log("Not implemented!"), false);
