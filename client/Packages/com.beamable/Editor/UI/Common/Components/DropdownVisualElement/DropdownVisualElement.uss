@@ -6,7 +6,10 @@
     min-width: 100px;
     min-height: 30px;
     border-color: #FFFFFF;
-    border-width: 2px;
+    border-left-width: 2px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+    border-bottom-width: 2px;
     border-radius: 3px;
     flex-direction: row;
     justify-content: space-around;

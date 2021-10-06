@@ -183,3 +183,8 @@
     margin-bottom: 0px;
     margin-right: 0px;
 }
+
+.--positionHidden {
+    position: absolute;
+    right: 10000px;
+}

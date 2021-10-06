@@ -199,7 +199,7 @@ namespace Beamable.Editor.Schedules
             if (ve != null)
             {
                 ve.visible = _currentMode == mode;
-                // ve.SetHeight(0);
+                ve.EnableInClassList("--positionHidden", !ve.visible);
             }
         }
 
