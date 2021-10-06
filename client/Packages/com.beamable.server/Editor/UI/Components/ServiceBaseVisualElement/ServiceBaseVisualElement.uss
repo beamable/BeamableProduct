@@ -1,7 +1,6 @@
 #serviceIcon {
     align-self: center;
     margin-left: 4px;
-    margin-right: 4px;
 }
 
 #logHeader{
