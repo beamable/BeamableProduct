@@ -5,6 +5,17 @@ using JetBrains.Annotations;
 namespace Beamable.Editor.Schedules
 {
     [Serializable]
+    public class ScheduleWrapper
+    {
+        public Schedule schedule;
+
+        public ScheduleWrapper(Schedule schedule)
+        {
+            this.schedule = schedule;
+        }
+    }
+    
+    [Serializable]
     public class Schedule
     {
         public string description;

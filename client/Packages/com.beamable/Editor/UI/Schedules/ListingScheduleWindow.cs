@@ -179,7 +179,7 @@ namespace Beamable.Editor.Schedules
                     break;
             }
 
-            string json = JsonUtility.ToJson(newSchedule);
+            string json = JsonUtility.ToJson(new ScheduleWrapper(newSchedule));
             string replaced = json.Replace("\"\"", "null");
 #if BEAMABLE_DEVELOPER
             Debug.Log(replaced);
