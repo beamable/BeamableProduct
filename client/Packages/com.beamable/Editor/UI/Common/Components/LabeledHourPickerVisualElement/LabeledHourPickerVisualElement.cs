@@ -12,12 +12,6 @@ namespace Beamable.Editor.UI.Components
 {
     public class LabeledHourPickerVisualElement : BeamableVisualElement
     {
-        private Label _label;
-        private HourPickerVisualElement _hourPicker;
-        private bool _activeHour = true;
-        private bool _activeMinute = true;
-        private bool _activeSecond = true;
-
         public new class UxmlFactory : UxmlFactory<LabeledHourPickerVisualElement, UxmlTraits>
         {
         }
@@ -26,6 +20,15 @@ namespace Beamable.Editor.UI.Components
         {
             readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
                 {name = "label", defaultValue = "Label"};
+            
+            readonly UxmlBoolAttributeDescription _hour = new UxmlBoolAttributeDescription
+                {name = "hour", defaultValue = true};
+            
+            readonly UxmlBoolAttributeDescription _minute = new UxmlBoolAttributeDescription
+                {name = "minute", defaultValue = true};
+            
+            readonly UxmlBoolAttributeDescription _second = new UxmlBoolAttributeDescription
+                {name = "second", defaultValue = true};
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -38,10 +41,19 @@ namespace Beamable.Editor.UI.Components
                 if (ve is LabeledHourPickerVisualElement component)
                 {
                     component.Label = _label.GetValueFromBag(bag, cc);
+                    component.ActiveHour = _hour.GetValueFromBag(bag, cc);
+                    component.ActiveMinute = _minute.GetValueFromBag(bag, cc);
+                    component.ActiveSecond = _second.GetValueFromBag(bag, cc);
                 }
             }
         }
 
+        private Label _label;
+        private HourPickerVisualElement _hourPicker;
+
+        public bool ActiveHour { get; set; }
+        public bool ActiveMinute { get; set; }
+        public bool ActiveSecond { get; set; }
         public string Label { get; set; }
         public string SelectedHour => _hourPicker.GetFullHour();
         public string Hour => _hourPicker.Hour;
@@ -61,15 +73,8 @@ namespace Beamable.Editor.UI.Components
             _label.text = Label;
 
             _hourPicker = Root.Q<HourPickerVisualElement>("hourPicker");
-            _hourPicker.Setup(_activeHour, _activeMinute, _activeSecond);
+            _hourPicker.Setup(ActiveHour, ActiveMinute, ActiveSecond);
             _hourPicker.Refresh();
-        }
-        
-        public void Setup(bool activeHour = true, bool activeMinute = true, bool activeSecond = true)
-        {
-            _activeHour = activeHour;
-            _activeMinute = activeMinute;
-            _activeSecond = activeSecond;
         }
     }
 }

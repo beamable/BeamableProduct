@@ -74,7 +74,7 @@ namespace Beamable.Editor.UI.Components
                 option.Refresh();
             }
 
-            _mainContainer.SetWidth(GetHeight());
+            _mainContainer.SetHeight(GetHeight());
         }
     }
 }

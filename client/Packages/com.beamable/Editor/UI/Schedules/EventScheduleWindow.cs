@@ -154,9 +154,10 @@ namespace Beamable.Editor.Schedules
 
             string json = JsonUtility.ToJson(new ScheduleWrapper(newSchedule));
             string replaced = json.Replace("\"\"", "null");
-#if BEAMABLE_DEVELOPER
+
+            // TODO: remove it before push
             Debug.Log(replaced);
-#endif
+            
             OnConfirm?.Invoke(replaced);
         }
 
@@ -209,7 +210,7 @@ namespace Beamable.Editor.Schedules
             newSchedule.description = _descriptionComponent.Value;
             newSchedule.activeFrom = _startTimeComponent.SelectedHour;
             newSchedule.activeTo = _neverExpiresComponent.Value
-                ? null
+                ? ""
                 : $"{_activeToDateComponent.SelectedDate}:{_activeToHourComponent.SelectedHour}";
         }
 
