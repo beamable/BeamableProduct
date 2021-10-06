@@ -21,6 +21,10 @@
     cursor: pan;
     background-image: none;
     border-color:#8f8f8f;
+    justify-content: center;
+}
+#servicesFilter {
+    width: 100px;
 }
 
 #realmButton {
@@ -29,7 +33,6 @@
     position: relative;
     justify-content: flex-end;
     margin-right: 10px;
-    align-self: center;
 }
 #realmButton.production #banner{
     background-color: #FF0000;
@@ -46,19 +49,21 @@
     border-bottom-left-radius: 3px;
     border-top-left-radius: 3px;
 }
-#realmButton Label {
+#realmButton Label, #servicesFilter Label {
     margin-right: 18px;
     margin-top: 2px;
     font-size: 10px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    align-self: flex-start;
+    -unity-text-align: middle-left;
 }
-#realmButton Image#dropDownIcon{
+Image#dropDownIcon{
     align-self: flex-end;
     position: absolute;
     top: 6px;
     right: 4px;
-    width: 15px;
-    height: 7px;
+    width: 10px;
+    height: 5px;
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown Close.png")
 }
 #checkbox{

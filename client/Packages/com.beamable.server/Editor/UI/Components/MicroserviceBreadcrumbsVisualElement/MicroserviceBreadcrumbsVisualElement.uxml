@@ -11,6 +11,10 @@
             <beamable:BeamableCheckboxVisualElement name="checkbox"/>
             <engine:Label text="Select All" class="buttonText"/>
         </engine:VisualElement>
+        <engine:Button name="servicesFilter" class="boundedButton">
+            <engine:Image name="dropDownIcon"/>
+            <engine:Label text="Filter" class="buttonText"/>
+        </engine:Button>
         <beamable:RealmButtonVisualElement name="realmButton"/>
         
     </engine:VisualElement>
