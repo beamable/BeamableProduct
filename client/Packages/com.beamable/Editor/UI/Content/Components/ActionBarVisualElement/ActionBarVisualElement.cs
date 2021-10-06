@@ -205,6 +205,7 @@ namespace Beamable.Editor.Content.Components
          if (_mouseOverPublishDropdown)
          {
             evt.menu.BeamableAppendAction("Publish new Content namespace", pos => { OnPublishButtonClicked(true); });
+            evt.menu.BeamableAppendAction("Archive namespaces", pos => ArchiveManifestsVisualElement.OpenAsUtilityWindow());
             evt.menu.BeamableAppendAction("Publish (default)", pos => { OnPublishButtonClicked(false); });
          }
          else

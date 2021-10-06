@@ -101,7 +101,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             
             foreach (var kvp in Model.Services)
             {
-                var microserviceModel = MicroservicesDataModel.Instance.GetMicroserviceModelForName(kvp.Value.ServiceName);
+                var microserviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(kvp.Value.ServiceName);
 
                 if (microserviceModel == null)
                 {

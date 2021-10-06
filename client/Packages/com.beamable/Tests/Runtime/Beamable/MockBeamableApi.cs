@@ -18,6 +18,7 @@ using Beamable.Api.Mail;
 using Beamable.Api.Notification;
 using Beamable.Api.Sessions;
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Tournaments;
 using Beamable.Common.Api.CloudData;
@@ -32,7 +33,7 @@ namespace Packages.Beamable.Runtime.Tests.Beamable
     public class MockBeamableApi : IBeamableAPI
     {
         public User User { get; set; }
-        public AccessToken Token { get; }
+        public AccessToken Token { get; set; }
         public IExperimentalAPI Experimental { get; }
         public AnnouncementsService AnnouncementService { get; set; }
         public MockAuthService MockAuthService { get; set; } = new MockAuthService();
@@ -44,7 +45,7 @@ namespace Packages.Beamable.Runtime.Tests.Beamable
         public GameRelayService GameRelayService { get; set; }
         public InventoryService InventoryService { get; set; }
         public LeaderboardService LeaderboardService { get; set; }
-        public PlatformRequester Requester { get; set; }
+        public IBeamableRequester Requester { get; set; }
         public StatsService StatsService { get; set; }
         [Obsolete("Use " + nameof(StatsService) + " Instead")]
         public StatsService Stats => StatsService;

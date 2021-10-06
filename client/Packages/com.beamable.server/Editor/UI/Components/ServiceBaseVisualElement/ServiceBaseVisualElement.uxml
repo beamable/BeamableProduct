@@ -11,6 +11,7 @@
         <engine:VisualElement name="logHeader">
             <engine:VisualElement class="leftArea" name="leftArea">
                 <beamable:BeamableCheckboxVisualElement name="checkbox"/>
+                <engine:VisualElement name="serviceIcon"/>
                 <engine:TextField name="microserviceNewTitle" class="title" text="ANGIE'S TEST"/>
                 <engine:Label class="title" name="microserviceTitle" text="ANGIE'S TEST" />
             </engine:VisualElement>
@@ -24,28 +25,25 @@
         </engine:VisualElement>
 
         <engine:VisualElement name="SubTitle">
-<!--            <engine:Label text="LOG" name="log" class="title"/>-->
             <engine:VisualElement class="rightArea">
-<!--                <engine:Button name="popupBtn" class="squareBtn"/>-->
-<!--                <engine:Button name="advanceBtn" class="squareBtn"/>-->
             </engine:VisualElement>
         </engine:VisualElement>
 
         <engine:VisualElement name="logContainer">
-
         </engine:VisualElement>
 
-        <engine:VisualElement name="buttonRow">
-<!--            <engine:Button name="forceRebuild" text="Force Rebuild" class="confirmBtn"/>-->
-            <engine:Button name="cancelBtn" text="Cancel" class="confirmBtn"/>
-            <engine:Button name="start" text="Start" class="confirmBtn"/>
-            <engine:Button name="buildDropDown" class="confirmBtn">
-                <engine:Label text="Build" name="buildLabel"/>
-                <engine:Image name="dropDown"/>
-            </engine:Button>
-<!--            <engine:Button name="buildDropDownIcon">-->
-<!--                <engine:Image name="dropDown"/>-->
-<!--            </engine:Button>    -->
+        <engine:VisualElement name="buttonsContainer">
+            <engine:VisualElement name="dependentServicesContainer">
+                <engine:Button name="dependentServicesBtn" text="Dependent services" class="noMarginNoPaddingNoBorder"/>
+            </engine:VisualElement>
+            <engine:VisualElement name="buttonRow">
+                <engine:Button name="cancelBtn" text="Cancel" class="confirmBtn"/>
+                <engine:Button name="start" text="Start" class="confirmBtn"/>
+                <engine:Button name="buildDropDown" class="confirmBtn">
+                    <engine:Label text="Build" name="buildLabel"/>
+                    <engine:Image name="dropDown"/>
+                </engine:Button>
+            </engine:VisualElement>
         </engine:VisualElement>
         <beamableMS:MicroserviceVisualElementSeparator name="separator"/>
 
