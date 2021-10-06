@@ -1,0 +1,3 @@
+﻿#serviceIcon {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Database_dark.png");
+}

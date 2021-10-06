@@ -1,0 +1,99 @@
+#logHeader{
+    background-color: #131313;
+}
+
+#logHeader.running {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/ms_header_green.png");
+}
+
+LogVisualElement > TemplateContainer> #mainVisualElement{
+}
+
+.squareBtn{
+    border-color: #383838;
+}
+
+#clear{
+    border-color: #383838;
+}
+
+#advanceBtn{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/advance.png");
+}
+
+#moreBtn{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/advance.png");
+    background-color: rgba(19, 19, 19, 0);
+    border-color: rgba(19, 19, 19, 0);
+    -unity-slice-bottom: 0;
+    -unity-slice-top: 0;
+    -unity-slice-right: 0;
+    -unity-slice-left: 0;
+    border-right-width: 0px;
+    border-top-width: 0px;
+    border-bottom-width: 0px;
+    border-left-width: 0px;
+}
+
+#detailWindow{
+    border-color: #383838;
+}
+#white{
+    border-color: #383838;
+}
+
+#clearContainer{
+    border-color: #383838;
+}
+
+.confirmBtn {
+    border-color: #838383;
+    background-color: #383838;
+}
+
+#logListRoot{
+    border-color: #383838;
+}
+
+#debug .img{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/debug.png");
+}
+
+#dropDown{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/dropdown_border.png");
+}
+
+
+.localBuilding {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/local Building L.png");
+}
+
+.localRunning {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Running L.png");
+}
+
+.localStopped{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Stopped L.png");
+}
+
+.remoteRunning{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Running L.png");
+}
+.remoteStopped{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Stopped L.png");
+}
+
+.different{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/different L.png");
+}
+
+.remoteDeploying{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Deploying L.png");
+}
+.remoteDisabled{
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Disable L.png");
+}
+
+#dependentServicesBtn {
+    border-color: #FFFFFF;
+}
