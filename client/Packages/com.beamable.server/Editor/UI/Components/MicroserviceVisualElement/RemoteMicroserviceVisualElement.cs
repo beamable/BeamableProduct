@@ -102,7 +102,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         {
             _remoteStatusIcon.ClearClassList();
             string statusClassName = "remoteEnabled";
-            _remoteStatusLabel.text = Constants.REMOTE_ENABLED;
+            _remoteStatusLabel.text = Constants.REMOTE_ONLY;
             _remoteStatusIcon.tooltip = _remoteStatusLabel.text;
             _remoteStatusIcon.AddToClassList(statusClassName);
         }
