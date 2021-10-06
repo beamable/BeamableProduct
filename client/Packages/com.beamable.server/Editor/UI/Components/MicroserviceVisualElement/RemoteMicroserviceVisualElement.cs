@@ -27,7 +27,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             if (_microserviceModel == null) return;
 
-
             _microserviceModel.OnDockerLoginRequired -= LoginToDocker;
             _microserviceModel.ServiceBuilder.OnLastImageIdChanged -= HandleLastImageIdChanged;
         }
