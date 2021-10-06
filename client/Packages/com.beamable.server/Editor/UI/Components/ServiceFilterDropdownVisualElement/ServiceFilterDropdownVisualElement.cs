@@ -50,7 +50,6 @@ namespace Beamable.Editor.Microservice.UI.Components
             realmSelectButton.SetEnabled(currentFilter != filter);
             realmSelectButton.clickable.clicked += () => OnNewServicesDisplayFilterSelected?.Invoke(filter);
             _listRoot.Add(realmSelectButton);
-            _listRoot.parent.style.height = realmSelectButton.style.height * 3;
         }
     }
 }
