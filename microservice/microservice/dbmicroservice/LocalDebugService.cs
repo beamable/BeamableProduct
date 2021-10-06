@@ -3,6 +3,8 @@ using System.Text;
 using System.Threading.Tasks;
 using EmbedIO;
 using EmbedIO.Actions;
+using Swan;
+using Swan.Logging;
 
 namespace Beamable.Server {
     public class LocalDebugService {
@@ -10,6 +12,7 @@ namespace Beamable.Server {
 
         public LocalDebugService(BeamableMicroService beamableService) {
             _beamableService = beamableService;
+            Swan.Logging.ConsoleLogger.Instance.LogLevel = LogLevel.Error;
             var server = new WebServer(SharedConstants.HEALTH_PORT)
                 .WithModule(new ActionModule("/health", HttpVerbs.Any, HealthCheck));
             server.RunAsync();
@@ -17,7 +20,7 @@ namespace Beamable.Server {
 
         private async Task HealthCheck(IHttpContext context) {
             var healthy = _beamableService.HasInitialized;
-            healthy &= _beamableService.GetWebsocketPromise().IsCompleted;
+            healthy &= _beamableService.GetWebsocketPromise()?.IsCompleted ?? false;
             if (healthy && !_beamableService.IsShuttingDown) {
                 var connection = _beamableService.GetWebsocketPromise().GetResult();
                 healthy &= connection.State == WebSocketState.Open;
