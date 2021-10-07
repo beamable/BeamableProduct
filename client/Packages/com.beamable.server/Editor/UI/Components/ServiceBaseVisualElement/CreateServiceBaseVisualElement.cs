@@ -99,7 +99,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             _logContainerElement.RemoveFromHierarchy();
             RenameGestureBegin();
         }
-        private void HandleCreateButtonClicked()
+        protected virtual void HandleCreateButtonClicked()
         {
             if (string.IsNullOrWhiteSpace(NewServiceName)) 
                 return;
