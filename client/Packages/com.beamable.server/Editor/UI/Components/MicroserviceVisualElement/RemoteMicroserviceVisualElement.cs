@@ -14,7 +14,7 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
-    public class RemoteMicroserviceVisualElement : ServiceBaseVisualElement
+    public class RemoteMicroserviceVisualElement : MicroserviceVisualElement
     {
         public new class UxmlFactory : UxmlFactory<RemoteMicroserviceVisualElement, UxmlTraits>
         { }
