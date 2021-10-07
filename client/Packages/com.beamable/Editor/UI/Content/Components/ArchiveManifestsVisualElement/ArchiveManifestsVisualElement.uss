@@ -1,4 +1,11 @@
 ﻿
+ArchiveManifestsVisualElement {
+    flex-grow: 1;
+}
+ArchiveManifestsVisualElement > * {
+    flex-grow: 1;
+}
+
 #mainVisualElement {
     flex-grow: 1;
     margin-left: 26px;
@@ -7,8 +14,6 @@
 
 #manifestWarningMessage {
     margin-top: 4px;
-    white-space: normal;
-    word-wrap: true;
 }
 
 #scroll{
@@ -18,7 +23,7 @@
     flex-grow: 1;
     flex-shrink: 1;
     min-height: 40px;
-    max-height: 120px;
+    margin-bottom: 20px;
 }
 
 #buttonStrip {

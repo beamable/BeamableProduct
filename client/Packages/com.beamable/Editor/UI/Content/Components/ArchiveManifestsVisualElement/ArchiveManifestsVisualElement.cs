@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Beamable.Editor.UI.Buss.Components;
+using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Common.Models;
 using Beamable.Editor.UI.Components;
 using UnityEditor;
@@ -23,6 +24,7 @@ namespace Beamable.Editor.Content.Components
         private VisualElement _listRoot;
         private List<Entry> _entries = new List<Entry>();
         private PrimaryButtonVisualElement _archiveBtn;
+        private FormConstraint _buttonGatekeeper;
 
         private ArchiveManifestsVisualElement() : base(nameof(ArchiveManifestsVisualElement)) { }
 
@@ -53,9 +55,13 @@ namespace Beamable.Editor.Content.Components
                     _entries.Add(new Entry(manifest, _listRoot, enabled, UpdateArchiveButtonInteractivity));
                 }
             });
+
+            Root.Q<Label>("manifestWarningMessage").AddTextWrapStyle();
             
             _archiveBtn = Root.Q<PrimaryButtonVisualElement>("archiveBtn");
             _archiveBtn.Button.clickable.clicked += ArchiveButton_OnClicked;
+            _buttonGatekeeper = FormConstraint.Logical("No namespace selected.", () => _entries.Count(e => e.IsSelected) == 0);
+            _archiveBtn.AddGateKeeper(_buttonGatekeeper);
             UpdateArchiveButtonInteractivity();
             
             var cancelBtn = Root.Q<Button>("cancelBtn");
@@ -63,8 +69,7 @@ namespace Beamable.Editor.Content.Components
         }
 
         private void UpdateArchiveButtonInteractivity() {
-            var enabled = _entries.Count(e => e.IsSelected) > 0;
-            _archiveBtn.SetEnabled(enabled);
+            _buttonGatekeeper.Check();
         }
 
         private void CancelButton_OnClicked()
