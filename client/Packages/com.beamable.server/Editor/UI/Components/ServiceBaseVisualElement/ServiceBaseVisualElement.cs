@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Beamable.Common;
+using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
@@ -24,9 +25,10 @@ namespace Beamable.Editor.Microservice.UI.Components
         protected ServiceBaseVisualElement() : base(nameof(ServiceBaseVisualElement))
         {
         }
-
-        public ServiceModelBase Model { get; set; }
         
+        public ServiceModelBase Model { get; set; }
+        protected abstract string ScriptName { get; }
+
         private const float MIN_HEIGHT = 200.0f;
         private const float MAX_HEIGHT = 500.0f;
         private const float DETACHED_HEIGHT = 100.0f;
@@ -47,8 +49,9 @@ namespace Beamable.Editor.Microservice.UI.Components
         private Label _nameTextField;
         private VisualElement _logContainerElement;
         private LogVisualElement _logElement;
-        private VisualElement _rootVisualElement;
+        private MicroserviceVisualElementSeparator _separator;
         private VisualElement _header;
+        private VisualElement _rootVisualElement;
 
         public Action OnServiceStartFailed { get; set; }
         public Action OnServiceStopFailed { get; set; }
@@ -69,6 +72,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         {
             base.Refresh();
             QueryVisualElements();
+            InjectStyleSheets();
             UpdateVisualElements();
         }
         protected virtual void QueryVisualElements()
@@ -89,6 +93,11 @@ namespace Beamable.Editor.Microservice.UI.Components
             _separator = Root.Q<MicroserviceVisualElementSeparator>("separator");
             _loadingBar = new LoadingBarElement();
             _rootVisualElement.Add(_loadingBar);
+        }
+        private void InjectStyleSheets()
+        {
+            if (string.IsNullOrWhiteSpace(ScriptName)) return;
+            _rootVisualElement.AddStyleSheet($"{Constants.COMP_PATH}/{ScriptName}/{ScriptName}.uss");
         }
         protected virtual void UpdateVisualElements()
         {

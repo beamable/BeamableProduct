@@ -93,3 +93,7 @@ LogVisualElement > TemplateContainer> #mainVisualElement{
 .remoteDisabled{
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Disable L.png");
 }
+
+#dependentServicesBtn {
+    border-color: #FFFFFF;
+}

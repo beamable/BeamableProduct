@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<UXML
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:engine="UnityEngine.Experimental.UIElements"
+        xmlns:beamable="Beamable.Editor.UI.Components"
+        xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
+        xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
+
+    <engine:VisualElement name="mainVisualElement">
+        <beamable:LabeledTextField name="eventName" label="Event name:"/>
+        <beamable:LabeledHourPickerVisualElement name="startTime" label="Event start time:"/>
+        <beamable:LabeledTextField name="description" label="Description" value=""/>
+        <beamable:LabeledDropdownVisualElement name="dropdown" label="Repeat type:"/>
+
+        <engine:VisualElement name="daysGroup">
+            <beamable:LabeledDaysPickerVisualElement name="daysPicker" label="Repeat on:"/>
+        </engine:VisualElement>
+
+        <engine:VisualElement name="datesGroup">
+            <!-- CALENDAR COMPONENT -->
+            <beamable:LabeledTextField name="datesField" label="Repeat on:"/>
+        </engine:VisualElement>
+
+        <engine:VisualElement name="expirationRow">
+            <engine:Label name="expirationLabel" text="Never expires"/>
+            <beamable:BeamableCheckboxVisualElement name="expiresNever"/>
+        </engine:VisualElement>
+
+        <beamable:LabeledDatePickerVisualElement name="activeToDate" label="Active to:"/>
+        <beamable:LabeledHourPickerVisualElement name="activeToHour" label=""/>
+
+        <engine:VisualElement name="buttonStrip">
+            <beamable:PrimaryButtonVisualElement name="confirmBtn" text="Confirm"/>
+            <engine:Button name="cancelBtn" text="Cancel"/>
+        </engine:VisualElement>
+
+    </engine:VisualElement>
+
+</UXML>
