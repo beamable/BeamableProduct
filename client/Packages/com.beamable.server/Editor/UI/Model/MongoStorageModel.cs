@@ -45,13 +45,16 @@ namespace Beamable.Editor.UI.Model
 
         public override Task Start()
         {
-            OnStart?.Invoke(null);
-            throw new NotImplementedException();
+            OnLogsAttached?.Invoke();
+            var task = ServiceBuilder.TryToStart();
+            OnStart?.Invoke(task);
+            return task;
         }
         public override Task Stop()
         {
-            OnStop?.Invoke(null);
-            throw new NotImplementedException();
+            var task = ServiceBuilder.TryToStop();
+            OnStop?.Invoke(task);
+            return task;
         }
         public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
         {
