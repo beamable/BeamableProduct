@@ -157,7 +157,7 @@ namespace Beamable.Editor.Microservice.UI.Components
                                 service.OnSortChanged -= SortMicroservices;
                                 service.OnSortChanged += SortMicroservices;
 
-                                _microservicesListElement.Add(serviceElement);
+                                _servicesListElement.Add(serviceElement);
                             }
                         }
 

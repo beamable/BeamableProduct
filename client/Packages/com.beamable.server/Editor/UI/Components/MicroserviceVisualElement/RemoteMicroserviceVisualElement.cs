@@ -19,6 +19,8 @@ namespace Beamable.Editor.Microservice.UI.Components
         public new class UxmlFactory : UxmlFactory<RemoteMicroserviceVisualElement, UxmlTraits>
         { }
 
+        protected override string ScriptName => nameof(MicroserviceVisualElement);
+
         private RemoteMicroserviceModel _microserviceModel;
 
         protected override void OnDestroy()

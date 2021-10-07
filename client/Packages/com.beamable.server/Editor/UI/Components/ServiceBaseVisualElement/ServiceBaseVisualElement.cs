@@ -33,7 +33,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         private const float MAX_HEIGHT = 500.0f;
         private const float DETACHED_HEIGHT = 100.0f;
         private const float DEFAULT_HEIGHT = 300.0f;
-        protected const float DEFAULT_HEADER_HEIGHT = 50.0f;
+        protected const float DEFAULT_HEADER_HEIGHT = 60.0f;
 
         private float _storedHeight = 0;
         
@@ -49,7 +49,6 @@ namespace Beamable.Editor.Microservice.UI.Components
         private Label _nameTextField;
         private VisualElement _logContainerElement;
         private LogVisualElement _logElement;
-        private MicroserviceVisualElementSeparator _separator;
         private VisualElement _header;
         private VisualElement _rootVisualElement;
 
