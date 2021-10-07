@@ -514,6 +514,18 @@ namespace Beamable.Server.Editor
             }
             entryModel.Dependencies = serviceDependencies;
 
+            if (entryModel.Dependencies.Count > 0)
+            {
+                EditorUtility.DisplayDialog(
+                     title: "Storage Dependency Error",
+                     message: "This feature is in Preview and deployment will be forbidden until a future version of unity.",
+                     ok: "Ok"
+                );
+
+                Debug.LogError(string.Format(BeamableLogConstants.CantUploadContainerMessage, descriptor.Name));
+                return;
+            }
+
             Debug.Log($"Uploading container service=[{descriptor.Name}]");
 
             await uploader.UploadContainer(descriptor, () =>
