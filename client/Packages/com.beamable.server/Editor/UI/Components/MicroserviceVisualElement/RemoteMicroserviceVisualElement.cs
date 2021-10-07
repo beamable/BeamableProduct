@@ -38,7 +38,12 @@ namespace Beamable.Editor.Microservice.UI.Components
             Root.Q<Button>("buildDropDown").RemoveFromHierarchy();
             Root.Q<VisualElement>("buttonRow").RemoveFromHierarchy();
             Root.Q<VisualElement>("logContainer").RemoveFromHierarchy();
+
+#if UNITY_2019_1_OR_NEWER
+            Root.Q<VisualElement>("mainVisualElement").style.height = new StyleLength(DEFAULT_HEADER_HEIGHT);
+#elif UNITY_2018
             Root.Q<VisualElement>("mainVisualElement").style.height = StyleValue<float>.Create(DEFAULT_HEADER_HEIGHT);
+#endif
             Root.Q<Label>("microserviceTitle").text = Model.Name;
 
             _statusIcon.RemoveFromHierarchy();
