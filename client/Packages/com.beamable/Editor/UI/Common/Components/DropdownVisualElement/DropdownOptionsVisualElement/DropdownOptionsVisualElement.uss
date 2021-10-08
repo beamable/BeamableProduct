@@ -1,0 +1,6 @@
+﻿#mainVisualElement {
+    -unity-text-align: middle-center;
+    justify-content: center;
+    /*width: auto;*/
+}
+
