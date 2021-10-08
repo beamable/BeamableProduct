@@ -1,6 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
+using Editor.UI.Verification;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -11,13 +11,11 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-    public class LabeledTextField : BeamableVisualElement
+    public class LabeledTextField : VerifiableVisualElement<string>
     {
         public new class UxmlFactory : UxmlFactory<LabeledTextField, UxmlTraits>
         {
         }
-
-        public Action<string> OnValueChanged;
 
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
@@ -81,8 +79,8 @@ namespace Beamable.Editor.UI.Components
 
         private void ValueChanged(ChangeEvent<string> evt)
         {
-            OnValueChanged?.Invoke(evt.newValue);
             Value = evt.newValue;
+            InvokeVerificationCheck(Value);
         }
     }
 }

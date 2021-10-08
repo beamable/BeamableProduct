@@ -2,11 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using Beamable.Common.Content;
-using System.Text.RegularExpressions;
 using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
-using UnityEditor;
+using Editor.UI.Verification;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -48,9 +46,6 @@ namespace Beamable.Editor.Schedules
 
         private readonly Dictionary<string, Mode> _modes;
         private Mode _currentMode;
-        private bool _validatedDaysInWeek;
-        private bool _validatedRepeatDays;
-
 
         public EventScheduleWindow() : base(
             $"{BeamableComponentsConstants.SCHEDULES_PATH}/{nameof(EventScheduleWindow)}")
@@ -70,9 +65,11 @@ namespace Beamable.Editor.Schedules
             base.Refresh();
 
             _eventNameComponent = Root.Q<LabeledTextField>("eventName");
+            _eventNameComponent.RegisterRule(new IsNotEmptyRule(), RefreshConfirmButton);
             _eventNameComponent.Refresh();
 
             _descriptionComponent = Root.Q<LabeledTextField>("description");
+            _descriptionComponent.RegisterRule(new IsNotEmptyRule(), RefreshConfirmButton);
             _descriptionComponent.Refresh();
 
             _startTimeComponent = Root.Q<LabeledHourPickerVisualElement>("startTime");
@@ -94,13 +91,11 @@ namespace Beamable.Editor.Schedules
 
             // Days mode
             _daysDaysPickerComponent = Root.Q<LabeledDaysPickerVisualElement>("daysPicker");
-            _daysDaysPickerComponent.OnValueChanged = OnDayValueChanged;
             _daysDaysPickerComponent.Refresh();
 
             // Date mode
             // TODO: add calendar component
             _datesField = Root.Q<LabeledTextField>("datesField");
-            _datesField.OnValueChanged = OnRepeatDaysChanged;
             _datesField.Refresh();
 
             // Buttons
@@ -117,54 +112,19 @@ namespace Beamable.Editor.Schedules
 
             RefreshGroups();
             OnExpirationChanged(_neverExpiresComponent.Value);
-            RefreshConfirmButton();
         }
 
-        #region Temporary validation
-
-        private void OnDayValueChanged(bool value)
+        private void RefreshConfirmButton(bool value, string message)
         {
-            _validatedDaysInWeek = value;
-            RefreshConfirmButton();
-        }
-
-        private void OnRepeatDaysChanged(string value)
-        {
-            string pattern = "^[0-9;-]+$";
-
-            bool isMatch = Regex.IsMatch(value, pattern);
-
-            _validatedRepeatDays = isMatch;
-            RefreshConfirmButton();
-        }
-
-        private void RefreshConfirmButton()
-        {
-            _confirmButton?.Disable();
-
-            bool valid = false;
-
-            switch (_currentMode)
+            if (value)
             {
-                case Mode.Daily:
-                    valid = true;
-                    break;
-                case Mode.Days:
-                    valid = _validatedDaysInWeek;
-                    break;
-                case Mode.Dates:
-                    valid = _validatedRepeatDays;
-                    break;
+                _confirmButton.Enable();
             }
-
-            if (valid)
+            else
             {
-                _confirmButton?.Enable();
+                _confirmButton.Disable();
             }
         }
-
-        #endregion
-
 
         public void Set(Schedule schedule, EventContent content)
         {
@@ -279,7 +239,6 @@ namespace Beamable.Editor.Schedules
             }
 
             RefreshGroups();
-            RefreshConfirmButton();
         }
 
         private List<string> PrepareOptions()
