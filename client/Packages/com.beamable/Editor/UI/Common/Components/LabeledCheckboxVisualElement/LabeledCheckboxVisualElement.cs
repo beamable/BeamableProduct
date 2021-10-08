@@ -18,6 +18,15 @@ namespace Beamable.Editor.UI.Components
         }
 
         public Action<bool> OnValueChanged;
+        public bool Value
+        {
+            get => _checkbox.Value;
+            set
+            {
+                SetWithoutNotify(value);
+                OnValueChanged?.Invoke(value);
+            }
+        }
 
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
@@ -43,6 +52,7 @@ namespace Beamable.Editor.UI.Components
         private BeamableCheckboxVisualElement _checkbox;
 
         private string Label { get; set; }
+
 
         public LabeledCheckboxVisualElement() : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledCheckboxVisualElement)}/{nameof(LabeledCheckboxVisualElement)}")

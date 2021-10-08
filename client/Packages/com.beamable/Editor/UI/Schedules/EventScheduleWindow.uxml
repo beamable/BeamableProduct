@@ -21,11 +21,7 @@
             <beamable:LabeledTextField name="datesField" label="Repeat on:"/>
         </engine:VisualElement>
 
-        <engine:VisualElement name="expirationRow">
-            <engine:Label name="expirationLabel" text="Never expires"/>
-            <beamable:BeamableCheckboxVisualElement name="expiresNever"/>
-        </engine:VisualElement>
-
+        <beamable:LabeledCheckboxVisualElement name="expiresNever" label="Never expires"/>
         <beamable:LabeledDatePickerVisualElement name="activeToDate" label="Active to:"/>
         <beamable:LabeledHourPickerVisualElement name="activeToHour" label=""/>
 
