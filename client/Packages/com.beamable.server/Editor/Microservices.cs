@@ -518,11 +518,10 @@ namespace Beamable.Server.Editor
             {
                 EditorUtility.DisplayDialog(
                      title: "Storage Dependency Error",
-                     message: "This feature is in Preview and deployment will be forbidden until a future version of unity.",
+                     message: "This feature is in Preview and deployment will not be possible until a future version of Beamable.",
                      ok: "Ok"
                 );
 
-                Debug.LogError(string.Format(BeamableLogConstants.CantUploadContainerMessage, descriptor.Name));
                 return;
             }
 
