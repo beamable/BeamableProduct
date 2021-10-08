@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
 using Editor.UI.Validation;
-using Editor.UI.Verification;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
