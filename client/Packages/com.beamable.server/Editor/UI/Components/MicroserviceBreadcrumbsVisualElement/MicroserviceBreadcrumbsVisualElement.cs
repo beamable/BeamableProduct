@@ -56,8 +56,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         private RealmButtonVisualElement _realmButton;
         private Button _servicesFilter;
         private Label _servicesFilterLabel; 
-        private BeamableCheckboxVisualElement _checkbox;
-        private VisualElement _selectAll;
+        private LabeledCheckboxVisualElement _selectAllLabeledCheckbox;
 
         public MicroserviceBreadcrumbsVisualElement() : base(nameof(MicroserviceBreadcrumbsVisualElement))
         {
@@ -75,11 +74,10 @@ namespace Beamable.Editor.Microservice.UI.Components
             OnNewServicesDisplayFilterSelected += UpdateServicesFilterText;
             UpdateServicesFilterText(MicroservicesDataModel.Instance.Filter);
 
-            _checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
-            _checkbox.Refresh();
-            _checkbox.OnValueChanged += b => OnSelectAllCheckboxChanged?.Invoke(b);
+            _selectAllLabeledCheckbox = Root.Q<LabeledCheckboxVisualElement>("selectAllLabeledCheckbox");
+            _selectAllLabeledCheckbox.Refresh();
+            _selectAllLabeledCheckbox.OnValueChanged += b => OnSelectAllCheckboxChanged?.Invoke(b);
 
-            _selectAll = Root.Q<VisualElement>("selectAll");
         }
 
         void UpdateServicesFilterText(ServicesDisplayFilter filter)
@@ -120,18 +118,18 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         public void SetSelectAllCheckboxValue(bool value)
         {
-            _checkbox.SetWithoutNotify(value);
+            _selectAllLabeledCheckbox.SetWithoutNotify(value);
         }
 
         public void SetSelectAllVisibility(bool value)
         {
             if (value)
             {
-                _selectAll.RemoveFromClassList("hidden");
+                _selectAllLabeledCheckbox.RemoveFromClassList("hidden");
             }
             else
             {
-                _selectAll.AddToClassList("hidden");
+                _selectAllLabeledCheckbox.AddToClassList("hidden");
             }
         }
     }

@@ -11,9 +11,9 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-    public class LabeledVCheckboxVisualElement : BeamableVisualElement
+    public class LabeledCheckboxVisualElement : BeamableVisualElement
     {
-        public new class UxmlFactory : UxmlFactory<LabeledDatePickerVisualElement, UxmlTraits>
+        public new class UxmlFactory : UxmlFactory<LabeledCheckboxVisualElement, UxmlTraits>
         {
         }
 
@@ -28,6 +28,15 @@ namespace Beamable.Editor.UI.Components
             {
                 get { yield break; }
             }
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+                if (ve is LabeledCheckboxVisualElement component)
+                {
+                    component.Label = _label.GetValueFromBag(bag, cc);
+                }
+            }
         }
 
         private Label _label;
@@ -35,8 +44,8 @@ namespace Beamable.Editor.UI.Components
 
         private string Label { get; set; }
 
-        public LabeledVCheckboxVisualElement() : base(
-            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledVCheckboxVisualElement)}/{nameof(LabeledVCheckboxVisualElement)}")
+        public LabeledCheckboxVisualElement() : base(
+            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledCheckboxVisualElement)}/{nameof(LabeledCheckboxVisualElement)}")
         {
         }
 

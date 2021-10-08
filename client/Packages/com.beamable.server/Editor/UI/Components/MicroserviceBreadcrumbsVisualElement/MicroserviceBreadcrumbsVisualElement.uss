@@ -76,7 +76,7 @@ Image#dropDownIcon{
     align-content: center;
 }
 
-#selectAll{
+#selectAllLabeledCheckbox{
     margin-left: 5px;
     position: relative;
     flex-grow: 1;
