@@ -76,10 +76,29 @@ namespace Beamable.Server.Editor.DockerCommands
       private void CopyAssemblies(MicroserviceDescriptor descriptor, MicroserviceDependencies dependencies)
       {
          string rootPath = Application.dataPath.Substring(0, Application.dataPath.Length - "Assets".Length);
+
+         bool IsBuildPathTooLong()
+         {
+#if !UNITY_EDITOR_WIN
+            return false;
+#endif
+            var fullNamespaceName = $"Unity.Beamable.Runtime.UserMicroService.{ImageName}";
+            var buildPathResult = Path.Combine(rootPath, BuildPath, fullNamespaceName,
+               $"{fullNamespaceName}.asmdef.meta");
+
+            return buildPathResult.Length >= 255;
+         }
+
          // copy over the assembly definition folders...
          if (dependencies.Assemblies.Invalid.Any())
          {
             throw new Exception($"Invalid dependencies discovered for microservice. {string.Join(",", dependencies.Assemblies.Invalid.Select(x => x.Name))}");
+         }
+
+         if (IsBuildPathTooLong())
+         {
+            throw new Exception($"There are problems during building {descriptor.Name}- path is too long. " +
+                                "Consider moving project to another folder so path would be shorter.");
          }
 
          foreach (var assemblyDependency in dependencies.Assemblies.ToCopy)
