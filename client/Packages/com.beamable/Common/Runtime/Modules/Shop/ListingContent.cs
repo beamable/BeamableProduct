@@ -219,11 +219,6 @@ namespace Beamable.Common.Shop
       public OfferConstraint purchases;
    }
 
-   public enum AccessType
-   {
-      Private, Public
-   }
-   
    [System.Serializable]
    public class StatRequirement : ISerializationCallbackReceiver
    {
@@ -232,34 +227,36 @@ namespace Beamable.Common.Shop
       [Tooltip("Domain of the stat (e.g. 'platform', 'game', 'client'). Default is 'game'.")]
       [MustBeOneOf("platform", "game", "client")]
       public OptionalString domain;
-      
-      [SerializeField, HideInInspector]
-      [FormerlySerializedAs("access")]
+
+      [SerializeField, HideInInspector] [FormerlySerializedAs("access")]
       private string accessOld;
 
       public string access
       {
          get => accessType.ToString().ToLower();
-         set => accessType = ParseAccessType(value);
+         set => accessType = EnumConversionHelper.ParseEnumType<AccessType>(value);
       }
 
-      private const string VALUE_CONVERTED_MARKER = "-VALUE CONVERTED-";
-      private const AccessType DEFAULT_ACCESS_TYPE = AccessType.Private;
-
-      [Tooltip("Visibility of the stat (e.g. 'private', 'public'). Default is 'private'.")]
-      [SerializeField]
+      [Tooltip("Visibility of the stat (e.g. 'private', 'public'). Default is 'private'.")] [SerializeField]
       private AccessType accessType;
-      
-      [Tooltip(ContentObject.TooltipStat1)]
-      [CannotBeBlank]
+
+      [Tooltip(ContentObject.TooltipStat1)] [CannotBeBlank]
       public string stat;
 
-      [Tooltip(ContentObject.TooltipConstraint1)]
-      [MustBeComparatorString]
-      public string constraint;
-      
-      [Tooltip(ContentObject.TooltipValue1)]
-      public int value;
+      [FormerlySerializedAs("constraint")] 
+      [SerializeField, HideInInspector]
+      private string constraintOld;
+
+      public string constraint
+      {
+         get => constraintType.ToString().ToLower();
+         set => constraintType = EnumConversionHelper.ParseEnumType<ComparatorType>(value);
+      }
+
+      [Tooltip(ContentObject.TooltipConstraint1)] [SerializeField]
+      private ComparatorType constraintType;
+
+      [Tooltip(ContentObject.TooltipValue1)] public int value;
 
       public void OnBeforeSerialize()
       {
@@ -267,28 +264,11 @@ namespace Beamable.Common.Shop
 
       public void OnAfterDeserialize()
       {
-         if (accessOld != VALUE_CONVERTED_MARKER)
-         {
-            accessType = ParseAccessType(accessOld);
-            accessOld = VALUE_CONVERTED_MARKER;
-         }
-      }
-
-      private AccessType ParseAccessType(string value)
-      {
-         foreach (var name in Enum.GetNames(typeof(AccessType)))
-         {
-            if (accessOld == name.ToLower())
-            {
-               accessType = (AccessType)Enum.Parse(typeof(AccessType), name);
-               return accessType;
-            }
-         }
-
-         return DEFAULT_ACCESS_TYPE;
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref accessType, ref accessOld);
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld);
       }
    }
-   
+
    [System.Serializable]
    public class CohortRequirement
    {
