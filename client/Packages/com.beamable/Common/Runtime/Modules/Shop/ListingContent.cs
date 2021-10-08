@@ -219,8 +219,13 @@ namespace Beamable.Common.Shop
       public OfferConstraint purchases;
    }
 
+   public enum AccessType
+   {
+      Private, Public
+   }
+   
    [System.Serializable]
-   public class StatRequirement
+   public class StatRequirement : ISerializationCallbackReceiver
    {
       // TODO: StatRequirement, by way of OptionalStats, is used by AnnouncementContent too. Should this be in a shared location? ~ACM 2021-04-22
 
@@ -228,9 +233,22 @@ namespace Beamable.Common.Shop
       [MustBeOneOf("platform", "game", "client")]
       public OptionalString domain;
       
+      [SerializeField, HideInInspector]
+      [FormerlySerializedAs("access")]
+      private string accessOld;
+
+      public string access
+      {
+         get => accessType.ToString().ToLower();
+         set => accessType = ParseAccessType(value);
+      }
+
+      private const string VALUE_CONVERTED_MARKER = "-VALUE CONVERTED-";
+      private const AccessType DEFAULT_ACCESS_TYPE = AccessType.Private;
+
       [Tooltip("Visibility of the stat (e.g. 'private', 'public'). Default is 'private'.")]
-      [MustBeOneOf("private", "public")]
-      public OptionalString access;
+      [SerializeField]
+      private AccessType accessType;
       
       [Tooltip(ContentObject.TooltipStat1)]
       [CannotBeBlank]
@@ -242,6 +260,33 @@ namespace Beamable.Common.Shop
       
       [Tooltip(ContentObject.TooltipValue1)]
       public int value;
+
+      public void OnBeforeSerialize()
+      {
+      }
+
+      public void OnAfterDeserialize()
+      {
+         if (accessOld != VALUE_CONVERTED_MARKER)
+         {
+            accessType = ParseAccessType(accessOld);
+            accessOld = VALUE_CONVERTED_MARKER;
+         }
+      }
+
+      private AccessType ParseAccessType(string value)
+      {
+         foreach (var name in Enum.GetNames(typeof(AccessType)))
+         {
+            if (accessOld == name.ToLower())
+            {
+               accessType = (AccessType)Enum.Parse(typeof(AccessType), name);
+               return accessType;
+            }
+         }
+
+         return DEFAULT_ACCESS_TYPE;
+      }
    }
    
    [System.Serializable]
