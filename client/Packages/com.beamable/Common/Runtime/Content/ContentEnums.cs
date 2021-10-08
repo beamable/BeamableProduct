@@ -6,6 +6,11 @@ namespace Beamable.Common.Content
     {
         private const string VALUE_CONVERTED_MARKER = "-VALUE CONVERTED-";
         
+        public static T ParseEnumType<T>(OptionalString value, T defaultValue = default) where T : Enum
+        {
+            return ParseEnumType(value.Value, defaultValue);
+        }
+        
         public static T ParseEnumType<T>(string value, T defaultValue = default) where T : Enum
         {
             foreach (var name in Enum.GetNames(typeof(T)))
@@ -19,11 +24,17 @@ namespace Beamable.Common.Content
             return defaultValue;
         }
 
+        public static void ConvertIfNotDoneAlready<T>(ref T conversionTarget, ref OptionalString value,
+            T defaultValue = default) where T : Enum
+        {
+            ConvertIfNotDoneAlready(ref conversionTarget, ref value.Value, defaultValue);
+        }
+        
         public static void ConvertIfNotDoneAlready<T>(ref T conversionTarget, ref string value, T defaultValue = default) where T : Enum
         {
             if (value != VALUE_CONVERTED_MARKER)
             {
-                conversionTarget = ParseEnumType<T>(value, defaultValue);
+                conversionTarget = ParseEnumType(value, defaultValue);
                 value = VALUE_CONVERTED_MARKER;
             }
         }
@@ -37,5 +48,10 @@ namespace Beamable.Common.Content
     public enum ComparatorType
     {
         Eq, Ne, Gt, Ge, Lt, Le
+    }
+
+    public enum DomainType
+    {
+        Game, Platform, Client
     }
 }

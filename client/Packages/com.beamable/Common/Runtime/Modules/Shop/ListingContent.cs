@@ -227,25 +227,45 @@ namespace Beamable.Common.Shop
    {
       // TODO: StatRequirement, by way of OptionalStats, is used by AnnouncementContent too. Should this be in a shared location? ~ACM 2021-04-22
 
-      [Tooltip("Domain of the stat (e.g. 'platform', 'game', 'client'). Default is 'game'.")]
-      [MustBeOneOf("platform", "game", "client")]
-      public OptionalString domain;
-
-      [SerializeField, HideInInspector] [FormerlySerializedAs("access")]
-      private string accessOld;
-
-      public string access
+      #region domain
+      
+      [FormerlySerializedAs("domain")]
+      [SerializeField, HideInInspector]
+      private OptionalString domainOld;
+      
+      public OptionalString domain
       {
-         get => accessType.ToString().ToLower();
+         get => new OptionalString { Value = domainType.ToString().ToLower() };
+         set => domainType = EnumConversionHelper.ParseEnumType<DomainType>(value);
+      }
+
+      [Tooltip("Domain of the stat (e.g. 'platform', 'game', 'client'). Default is 'game'.")]
+      [SerializeField]
+      private DomainType domainType;
+
+      #endregion
+      
+      #region access
+      
+      [SerializeField, HideInInspector] [FormerlySerializedAs("access")]
+      private OptionalString accessOld;
+
+      public OptionalString access
+      {
+         get => new OptionalString { Value = accessType.ToString().ToLower() };
          set => accessType = EnumConversionHelper.ParseEnumType<AccessType>(value);
       }
 
       [Tooltip("Visibility of the stat (e.g. 'private', 'public'). Default is 'private'.")] [SerializeField]
       private AccessType accessType;
+      
+      #endregion
 
       [Tooltip(ContentObject.TooltipStat1)] [CannotBeBlank]
       public string stat;
 
+      #region constraint
+      
       [FormerlySerializedAs("constraint")] 
       [SerializeField, HideInInspector]
       private string constraintOld;
@@ -258,6 +278,8 @@ namespace Beamable.Common.Shop
 
       [Tooltip(ContentObject.TooltipConstraint1)] [SerializeField]
       private ComparatorType constraintType;
+      
+      #endregion
 
       [Tooltip(ContentObject.TooltipValue1)] public int value;
 
@@ -269,6 +291,7 @@ namespace Beamable.Common.Shop
       {
          EnumConversionHelper.ConvertIfNotDoneAlready(ref accessType, ref accessOld);
          EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld);
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref domainType, ref domainOld);
       }
    }
 
