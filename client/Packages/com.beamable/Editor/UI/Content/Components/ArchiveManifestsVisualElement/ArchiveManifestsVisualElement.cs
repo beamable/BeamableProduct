@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Beamable.Editor.UI.Buss.Components;
+using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Common.Models;
 using Beamable.Editor.UI.Components;
 using UnityEditor;
@@ -18,11 +19,12 @@ namespace Beamable.Editor.Content.Components
     public class ArchiveManifestsVisualElement : ContentManagerComponent {
         public event Action OnCancelled;
         public event Action OnCompleted;
-        
+
         private ManifestModel _model = new ManifestModel();
         private VisualElement _listRoot;
         private List<Entry> _entries = new List<Entry>();
         private PrimaryButtonVisualElement _archiveBtn;
+        private FormConstraint _buttonGatekeeper;
 
         private ArchiveManifestsVisualElement() : base(nameof(ArchiveManifestsVisualElement)) { }
 
@@ -42,6 +44,7 @@ namespace Beamable.Editor.Content.Components
             _listRoot = Root.Q("listRoot");
             _listRoot.Clear();
             _entries.Clear();
+            Root.Q<Label>("manifestWarningMessage")?.AddTextWrapStyle();
             _model.RefreshAvailableManifests().Then(manifests => {
                 if (manifests.manifests.Count < 2) {
                     _listRoot.Add(new Label("No manifest namespaces to archive."));
@@ -53,9 +56,13 @@ namespace Beamable.Editor.Content.Components
                     _entries.Add(new Entry(manifest, _listRoot, enabled, UpdateArchiveButtonInteractivity));
                 }
             });
+
+            Root.Q<Label>("manifestWarningMessage").AddTextWrapStyle();
             
             _archiveBtn = Root.Q<PrimaryButtonVisualElement>("archiveBtn");
             _archiveBtn.Button.clickable.clicked += ArchiveButton_OnClicked;
+            _buttonGatekeeper = FormConstraint.Logical("No namespace selected.", () => _entries.Count(e => e.IsSelected) == 0);
+            _archiveBtn.AddGateKeeper(_buttonGatekeeper);
             UpdateArchiveButtonInteractivity();
             
             var cancelBtn = Root.Q<Button>("cancelBtn");
@@ -63,8 +70,7 @@ namespace Beamable.Editor.Content.Components
         }
 
         private void UpdateArchiveButtonInteractivity() {
-            var enabled = _entries.Count(e => e.IsSelected) > 0;
-            _archiveBtn.SetEnabled(enabled);
+            _buttonGatekeeper.Check();
         }
 
         private void CancelButton_OnClicked()
@@ -88,15 +94,15 @@ namespace Beamable.Editor.Content.Components
         }
 
         private void OkButton_OnClicked() {
-            
+
             OnCompleted?.Invoke();
         }
-        
+
         private class Entry {
             public readonly ManifestEntryVisualElement visualElement;
             public readonly string manifestId;
             public bool IsSelected => visualElement.IsSelected;
-            
+
             public Entry(AvailableManifestModel model, VisualElement listRoot, bool enabled, Action onValueChange) {
                 visualElement = new ManifestEntryVisualElement(model.id);
                 listRoot.Add(visualElement);

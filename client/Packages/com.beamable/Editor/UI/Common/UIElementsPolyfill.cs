@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using Beamable.Editor.UI.Components;
 using UnityEditor;
+
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -103,6 +104,21 @@ namespace UnityEngine.Experimental.UIElements
         public static void SetBottom(this IStyle self, float value)
         {
           self.positionBottom = value;
+        }
+
+        public static void SetFontSize(this IStyle self, float value)
+        {
+          self.fontSize = (int)value;
+        }
+
+        public static void SetWidth(this IStyle self, float value)
+        {
+          self.width = value;
+        }
+
+        public static void SetHeight(this IStyle self, float value)
+        {
+          self.height = value;
         }
 
         public static float GetMaxHeight(this IStyle self)
@@ -273,6 +289,22 @@ namespace UnityEngine.UIElements
     {
       self.bottom = new StyleLength(value);
     }
+
+    public static void SetFontSize(this IStyle self, float value)
+    {
+      self.fontSize = new StyleLength((int)value);
+    }
+
+    public static void SetWidth(this IStyle self, float value)
+    {
+      self.width = new StyleLength(value);
+    }
+
+    public static void SetHeight(this IStyle self, float value)
+    {
+      self.height = new StyleLength(value);
+    }
+
 
     public static float GetMaxHeight(this IStyle self)
     {

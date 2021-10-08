@@ -54,6 +54,7 @@ namespace Beamable.Editor.UI.Model
       public List<MongoStorageModel> Storages => AllServices.Where(service => service.ServiceType == ServiceType.StorageObject).Select(service => service as MongoStorageModel).ToList();
       public ServiceManifest ServerManifest = new ServiceManifest();
       public GetStatusResponse Status = new GetStatusResponse();
+      public ServicesDisplayFilter Filter = ServicesDisplayFilter.AllTypes;
 
       public Action<ServiceManifest> OnServerManifestUpdated;
       public Action<GetStatusResponse> OnStatusUpdated;
@@ -140,10 +141,17 @@ namespace Beamable.Editor.UI.Model
 
          foreach (var configEntry in MicroserviceConfiguration.Instance.Microservices)
          {
-            bool remotely = servicesStatus?.Find(status => status.serviceName.Equals(configEntry.ServiceName))!= null;
-            result.Add(configEntry.ServiceName, getServiceStatus(ContainsModel(configEntry.ServiceName),remotely));
+            var remotely = servicesStatus?.Find(status => status.serviceName.Equals(configEntry.ServiceName))!= null;
+            result.Add(configEntry.ServiceName, getServiceStatus(ContainsModel(configEntry.ServiceName), remotely));
          }
 
+         // TODO - Change `Storages` for `MicroserviceConfiguration.Instance.StorageObjects`
+         foreach (var storage in Storages)
+         {
+             var remotely = servicesStatus?.Find(status => status.serviceName.Equals(storage.Name))!= null;
+             result.Add(storage.Name, getServiceStatus(ContainsModel(storage.Name), remotely));
+         }
+         
          return result;
       }
 
@@ -201,5 +209,12 @@ namespace Beamable.Editor.UI.Model
       RemoteOnly,
       LocalAndRemote,
       Unknown
+   }
+
+   public enum ServicesDisplayFilter
+   {
+      AllTypes,
+      Microservices,
+      Storages
    }
 }
