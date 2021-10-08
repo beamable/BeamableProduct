@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
+using Editor.UI.Validation;
 using Editor.UI.Verification;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -11,7 +13,7 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-    public class LabeledTextField : VerifiableVisualElement<string>
+    public class LabeledTextField : ValidableVisualElement<string>
     {
         public new class UxmlFactory : UxmlFactory<LabeledTextField, UxmlTraits>
         {
@@ -47,8 +49,7 @@ namespace Beamable.Editor.UI.Components
         public string Label { get; set; }
         public string Value { get; set; }
 
-        public LabeledTextField() : base(
-            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledTextField)}/{nameof(LabeledTextField)}")
+        public LabeledTextField() : base($"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledTextField)}/{nameof(LabeledTextField)}")
         {
         }
 
@@ -61,6 +62,8 @@ namespace Beamable.Editor.UI.Components
 
             _textField = Root.Q<TextField>("textField");
             _textField.value = Value;
+            
+            
 
             _textField.RegisterValueChangedCallback(ValueChanged);
         }
@@ -80,7 +83,7 @@ namespace Beamable.Editor.UI.Components
         private void ValueChanged(ChangeEvent<string> evt)
         {
             Value = evt.newValue;
-            InvokeVerificationCheck(Value);
+            InvokeValidationCheck(Value);
         }
     }
 }

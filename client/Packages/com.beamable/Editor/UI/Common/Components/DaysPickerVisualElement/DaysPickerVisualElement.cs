@@ -19,7 +19,7 @@ namespace Beamable.Editor.UI.Components
         {
         }
 
-        public Action<bool> OnValueChanged;
+        public Action<List<string>> OnValueChanged;
 
         private readonly List<DayToggleVisualElement> _daysToggles = new List<DayToggleVisualElement>();
 
@@ -30,8 +30,6 @@ namespace Beamable.Editor.UI.Components
         private DayToggleVisualElement _fridayToggle;
         private DayToggleVisualElement _saturdayToggle;
         private DayToggleVisualElement _sundayToggle;
-
-        public bool IsValid => GetSelectedDays().Count > 0;
 
         public DaysPickerVisualElement() : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(DaysPickerVisualElement)}/{nameof(DaysPickerVisualElement)}")
@@ -87,7 +85,7 @@ namespace Beamable.Editor.UI.Components
 
         private void OnChange()
         {
-            OnValueChanged?.Invoke(GetSelectedDays().Count > 0);
+            OnValueChanged?.Invoke(GetSelectedDays());
         }
 
         public List<string> GetSelectedDays()
