@@ -105,5 +105,7 @@ namespace Beamable.Editor.UI.Components
         public void SetWithoutNotify(bool val) => _checkbox.SetWithoutNotify(val);
 
         public void SetText(string val) => _label.text = val;
+
+        public void SetFlipState(bool val) => Flip = val;
     }
 }

@@ -98,18 +98,22 @@ namespace Beamable.Editor.Content.Components
             OnCompleted?.Invoke();
         }
 
-        private class Entry {
-            public readonly ManifestEntryVisualElement visualElement;
+        private class Entry
+        {
+            public readonly LabeledCheckboxVisualElement visualElement;
             public readonly string manifestId;
-            public bool IsSelected => visualElement.IsSelected;
+            public bool IsSelected => visualElement.Value;
 
-            public Entry(AvailableManifestModel model, VisualElement listRoot, bool enabled, Action onValueChange) {
-                visualElement = new ManifestEntryVisualElement(model.id);
+            public Entry(AvailableManifestModel model, VisualElement listRoot, bool enabled, Action onValueChange)
+            {
+                visualElement = new LabeledCheckboxVisualElement();
                 listRoot.Add(visualElement);
                 manifestId = model.id;
                 visualElement.SetEnabled(enabled);
+                visualElement.SetFlipState(true);
                 visualElement.Refresh();
-                visualElement.Checkbox.OnValueChanged += _ => onValueChange();
+                visualElement.SetText(model.id);
+                visualElement.OnValueChanged += _ => onValueChange();
             }
         }
     }
