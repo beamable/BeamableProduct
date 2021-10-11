@@ -21,7 +21,7 @@
         </engine:VisualElement>
 
         <engine:VisualElement name="depsC" class="column">
-            <engine:Label name="depsLabel"/>
+            <beamable:DropdownVisualElement name="depsDropdown" />
         </engine:VisualElement>
 
         <engine:VisualElement name="SizeC" class="column">

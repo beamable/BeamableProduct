@@ -83,10 +83,28 @@ namespace Beamable.Editor.Microservice.UI.Components
             
             if (serviceModel.Dependencies != null)
             {
-               var depsLabel = Root.Q<Label>("depsLabel");
-               foreach (var dependency in serviceModel.Dependencies)
+               string[] dependencies = new string[serviceModel.Dependencies.Count];
+               for (int i = 0; i < dependencies.Length; i++)
                {
-                  depsLabel.text += dependency.id + '\n';
+                  dependencies[i] = serviceModel.Dependencies[i].id;
+               }
+               
+               var dropdown = Root.Q<DropdownVisualElement>("depsDropdown");
+               if (dependencies.Length > 0)
+               {
+                  dropdown.Setup(dependencies.ToList(), selected =>
+                  {
+                     // don't allow to change selection
+                     if (selected != dependencies[0])
+                     {
+                        dropdown.Set(dependencies[0]);
+                     }
+                  });
+                  dropdown.Refresh();  
+               }
+               else
+               {
+                  dropdown.visible = false;
                }
             }
          }
