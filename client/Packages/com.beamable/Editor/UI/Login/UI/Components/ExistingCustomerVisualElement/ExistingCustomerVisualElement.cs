@@ -1,6 +1,10 @@
+using System.Collections.Generic;
+using System.Linq;
 using Beamable.Common;
 using Beamable.Editor.Login.UI.Components;
+using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -22,6 +26,7 @@ namespace Beamable.Editor.Login.UI.Components
       private Label _errorText;
       private Button _newUserButton;
       private Button _forgotPasswordButton;
+      private readonly List<FormConstraint> _constraints = new List<FormConstraint>();
 
       public ExistingCustomerVisualElement() : base(nameof(ExistingCustomerVisualElement))
       {
@@ -51,7 +56,7 @@ namespace Beamable.Editor.Login.UI.Components
          _newUserButton.clickable.clicked += Manager.GotoNewUser;
 
          _continueButton = Root.Q<PrimaryButtonVisualElement>("signIn");
-         _continueButton.Button.clickable.clicked += Continue_OnClicked;
+         _continueButton.Button.clickable.clicked += HandleContinueClicked;
          _continueButton.tooltip = "Enter all Data";
 
          _cidTextField = Root.Q<TextField>("organizationID");
@@ -70,17 +75,28 @@ namespace Beamable.Editor.Login.UI.Components
 
          _cidTextField.SetValueWithoutNotify(Model.Customer.CidOrAlias);
          _emailTextField.SetValueWithoutNotify(Model.Customer.Email);
+         _passwordTextField.RegisterCallback<KeyDownEvent>(HandlePasswordFieldKeyDown,
+            TrickleDown.TrickleDown);
 
-         _continueButton.AddGateKeeper(isAlias, isEmail, isPassword);
+         _constraints.Add(isAlias);
+         _constraints.Add(isEmail);
+         _constraints.Add(isPassword);
+         _continueButton.AddGateKeeper(_constraints.ToArray());
 
          _errorText = Root.Q<Label>("errorLabel");
          _errorText.AddTextWrapStyle();
          _errorText.text = "";
-
-
       }
 
-      private void Continue_OnClicked()
+      private void HandlePasswordFieldKeyDown(KeyDownEvent evt)
+      {
+         if (evt.keyCode == KeyCode.Return && _constraints.All(constraint => constraint.IsValid))
+         {
+            HandleContinueClicked();
+         }
+      }
+
+      private void HandleContinueClicked()
       {
          _errorText.text = "";
          Model.Customer.SetExistingCustomerData(_cidTextField.value, _emailTextField.value, _passwordTextField.value);
