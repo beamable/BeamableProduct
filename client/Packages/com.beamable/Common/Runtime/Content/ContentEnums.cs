@@ -54,4 +54,14 @@ namespace Beamable.Common.Content
     {
         Game, Platform, Client
     }
+
+    public enum ContentType
+    {
+        Currency, Items
+    }
+
+    public enum PriceType
+    {
+        Sku, Currency
+    }
 }

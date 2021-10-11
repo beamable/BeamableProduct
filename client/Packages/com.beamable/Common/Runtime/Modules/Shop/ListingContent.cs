@@ -184,12 +184,21 @@ namespace Beamable.Common.Shop
    }
 
    [System.Serializable]
-   public class ListingPrice
+   public class ListingPrice : ISerializationCallbackReceiver
    {
-      [Tooltip(ContentObject.TooltipType1)]
-      [MustBeOneOf("sku", "currency")]
-      public string type;
+      [FormerlySerializedAs("type")]
+      [SerializeField, HideInInspector]
+      private string typeOld;
 
+      public string type
+      {
+         get => priceType.ToString().ToLower();
+         set => priceType = EnumConversionHelper.ParseEnumType<PriceType>(value);
+      }
+
+      [SerializeField] [Tooltip(ContentObject.TooltipType1)]
+      private PriceType priceType;
+      
       [Tooltip(ContentObject.TooltipSymbol1)]
       [MustReferenceContent(false, typeof(CurrencyContent), typeof(SKUContent))]
       public string symbol;
@@ -197,6 +206,15 @@ namespace Beamable.Common.Shop
       [Tooltip(ContentObject.TooltipAmount1)]
       [MustBeNonNegative]
       public int amount;
+
+      public void OnBeforeSerialize()
+      {
+      }
+
+      public void OnAfterDeserialize()
+      {
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref priceType, ref typeOld);
+      }
    }
 
    [System.Serializable]
@@ -296,7 +314,7 @@ namespace Beamable.Common.Shop
    }
 
    [System.Serializable]
-   public class CohortRequirement
+   public class CohortRequirement : ISerializationCallbackReceiver
    {
       [Tooltip(ContentObject.TooltipCohortTrial1)]
       [CannotBeBlank]
@@ -306,9 +324,28 @@ namespace Beamable.Common.Shop
       [CannotBeBlank]
       public string cohort;
 
+      [FormerlySerializedAs("constraint")]
+      [SerializeField, HideInInspector]
+      private string constraintOld;
+
+      public string constraint
+      {
+         get => constraintType.ToString().ToLower();
+         set => EnumConversionHelper.ParseEnumType<ComparatorType>(value);
+      }
+
+      [SerializeField]
       [Tooltip(ContentObject.TooltipConstraint1)]
-      [MustBeComparatorString]
-      public string constraint;
+      private ComparatorType constraintType;
+
+      public void OnBeforeSerialize()
+      {
+      }
+
+      public void OnAfterDeserialize()
+      {
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld);
+      }
    }
 
    [System.Serializable]
@@ -318,14 +355,32 @@ namespace Beamable.Common.Shop
    }
 
    [System.Serializable]
-   public class OfferConstraint
+   public class OfferConstraint : ISerializationCallbackReceiver
    {
+      [FormerlySerializedAs("constraint")]
+      public string constraintOld;
+
+      public string constraint
+      {
+         get => comparatorType.ToString().ToLower();
+         set => comparatorType = EnumConversionHelper.ParseEnumType<ComparatorType>(value);
+      }
+      
+      [SerializeField] 
       [Tooltip(ContentObject.TooltipConstraint1)]
-      [MustBeComparatorString]
-      public string constraint;
+      private ComparatorType comparatorType;
 
       [Tooltip(ContentObject.TooltipValue1)]
       public int value;
+
+      public void OnBeforeSerialize()
+      {
+      }
+
+      public void OnAfterDeserialize()
+      {
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref comparatorType, ref constraintOld);
+      }
    }
    [System.Serializable]
    public class OptionalColor : Optional<Color>
