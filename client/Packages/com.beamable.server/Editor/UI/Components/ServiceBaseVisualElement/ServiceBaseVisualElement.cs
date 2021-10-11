@@ -51,6 +51,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         private MicroserviceVisualElementSeparator _separator;
         private VisualElement _header;
         private VisualElement _rootVisualElement;
+        private Button _dependentServicesBtn;
 
         public Action OnServiceStartFailed { get; set; }
         public Action OnServiceStopFailed { get; set; }
@@ -79,6 +80,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             _rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
             Root.Q<Button>("cancelBtn").RemoveFromHierarchy();
             Root.Q("microserviceNewTitle")?.RemoveFromHierarchy();
+            _dependentServicesBtn = Root.Q<Button>("dependentServicesBtn");
             _nameTextField = Root.Q<Label>("microserviceTitle");
             _startButton = Root.Q<Button>("start");
             _moreBtn = Root.Q<Button>("moreBtn");
@@ -120,6 +122,8 @@ namespace Beamable.Editor.Microservice.UI.Components
             _moreBtn.clickable.activators.Clear();
             _moreBtn.AddManipulator(manipulator);
             _moreBtn.tooltip = "More...";
+
+            _dependentServicesBtn.clickable.clicked += () => DependentServicesWindow.ShowWindow();
 
             _checkbox.Refresh();
             _checkbox.SetWithoutNotify(Model.IsSelected);
