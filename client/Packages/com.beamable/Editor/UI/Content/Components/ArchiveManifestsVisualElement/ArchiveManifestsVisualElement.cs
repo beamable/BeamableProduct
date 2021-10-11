@@ -32,7 +32,11 @@ namespace Beamable.Editor.Content.Components
         
         public static BeamablePopupWindow OpenAsUtilityWindow(EditorWindow parent, out ArchiveManifestsVisualElement content) {
             content = new ArchiveManifestsVisualElement();
-            var window = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ArchiveManifests, content, parent, ContentManagerConstants.WindowSizeMinimum);
+            var window = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ArchiveManifests, content, parent, ContentManagerConstants.WindowSizeMinimum, (callbackWindow) =>
+            {
+                callbackWindow?.Close();
+                OpenAsUtilityWindow();
+            });
             window.minSize = ContentManagerConstants.WindowSizeMinimum;
             content.OnCompleted += window.Close;
             content.OnCancelled += window.Close;

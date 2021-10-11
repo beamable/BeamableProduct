@@ -27,7 +27,7 @@ namespace Beamable.Editor.UI.Buss.Components
         private VisualElement _windowRoot;
         private VisualElement _container;
 
-        private Action _onDomainReload;
+        private Action<BeamablePopupWindow> _onDomainReload;
    
         [SerializeField]
         private byte[] serializedDomainReloadAction;
@@ -104,7 +104,7 @@ namespace Beamable.Editor.UI.Buss.Components
             return wnd;
         }
 
-        public static BeamablePopupWindow ShowUtility(string title, BeamableVisualElement content, EditorWindow parent, Vector2 defaultSize, Action onDomainReload = null)
+        public static BeamablePopupWindow ShowUtility(string title, BeamableVisualElement content, EditorWindow parent, Vector2 defaultSize, Action<BeamablePopupWindow> onDomainReload = null)
         {
             var wnd = CreateInstance<BeamablePopupWindow>();
             wnd.titleContent = new GUIContent(title);
@@ -139,11 +139,11 @@ namespace Beamable.Editor.UI.Buss.Components
 
             if (isSet)
             {
-                EditorApplication.delayCall += () => _onDomainReload?.Invoke();
+                EditorApplication.delayCall += () => _onDomainReload?.Invoke(this);
             }
         }
 
-        public void SwapContent(BeamableVisualElement other, Action onDomainReload = null)
+        public void SwapContent(BeamableVisualElement other, Action<BeamablePopupWindow> onDomainReload = null)
         {
             _contentElement = other;
             Refresh();
@@ -191,7 +191,7 @@ namespace Beamable.Editor.UI.Buss.Components
 
                 using (MemoryStream stream = new MemoryStream(serializedDomainReloadAction))
                 {
-                    _onDomainReload = (Action)formatter.Deserialize(stream);
+                    _onDomainReload = (Action<BeamablePopupWindow>)formatter.Deserialize(stream);
                 }
             }
         }
