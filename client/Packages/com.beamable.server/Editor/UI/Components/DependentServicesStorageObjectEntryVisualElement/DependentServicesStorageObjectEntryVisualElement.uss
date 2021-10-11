@@ -1,0 +1,9 @@
+﻿DependentServicesStorageObjectEntryVisualElement {
+    justify-content: center;
+}
+
+#storageObjectName {
+    -unity-text-align: middle-center;
+    word-wrap: true;  /* MOVE TO SCRIPT! */
+    width: 60px;
+}
