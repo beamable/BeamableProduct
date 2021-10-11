@@ -7,7 +7,7 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:VisualElement name="mainVisualElement">
-        <beamable:LabeledCheckboxVisualElement name="selectAllLabeledCheckbox" label="Select All"/>
+        <beamable:LabeledCheckboxVisualElement name="selectAllLabeledCheckbox" label="Select All" flip = "false"/>
         <engine:Button name="servicesFilter" class="boundedButton">
             <engine:Image name="dropDownIcon"/>
             <engine:Label text="Filter" class="buttonText"/>

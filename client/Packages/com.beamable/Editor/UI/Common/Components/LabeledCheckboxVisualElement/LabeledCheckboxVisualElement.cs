@@ -33,6 +33,9 @@ namespace Beamable.Editor.UI.Components
             readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
             { name = "label", defaultValue = "Label" };
 
+            readonly UxmlBoolAttributeDescription _flip = new UxmlBoolAttributeDescription
+            { name = "flip", defaultValue = false };
+
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
                 get { yield break; }
@@ -44,13 +47,14 @@ namespace Beamable.Editor.UI.Components
                 if (ve is LabeledCheckboxVisualElement component)
                 {
                     component.Label = _label.GetValueFromBag(bag, cc);
+                    component.Flip = _flip.GetValueFromBag(bag, cc);
                 }
             }
         }
 
         private Label _label;
         private BeamableCheckboxVisualElement _checkbox;
-
+        private bool Flip { get; set; }
         private string Label { get; set; }
 
 
@@ -70,6 +74,11 @@ namespace Beamable.Editor.UI.Components
             _checkbox.OnValueChanged -= OnChanged;
             _checkbox.OnValueChanged += OnChanged;
             _checkbox.Refresh();
+
+            if (Flip)
+            {
+                _checkbox.SendToBack();
+            }
         }
 
         private void OnChanged(bool value)
