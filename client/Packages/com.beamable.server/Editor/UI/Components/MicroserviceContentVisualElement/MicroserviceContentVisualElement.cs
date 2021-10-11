@@ -238,11 +238,9 @@ namespace Beamable.Editor.Microservice.UI.Components
         public void SortMicroservices() {
             var config = MicroserviceConfiguration.Instance;
             int Comparer(VisualElement a, VisualElement b) {
-                if (a is CreateMicroserviceVisualElement) return -1;
-                if (b is CreateMicroserviceVisualElement) return 1;
-                var aName = ((MicroserviceVisualElement) a).Model.Name;
-                var bName = ((MicroserviceVisualElement) b).Model.Name;
-                return config.MicroserviceOrderComparer(aName, bName);
+                if (a is CreateServiceBaseVisualElement) return -1;
+                if (b is CreateServiceBaseVisualElement) return 1;
+                return config.MicroserviceOrderComparer(a.name, b.name);
             }
             _servicesListElement.Sort(Comparer);
         }

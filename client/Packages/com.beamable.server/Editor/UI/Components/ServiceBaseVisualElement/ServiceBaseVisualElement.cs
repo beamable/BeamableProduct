@@ -70,6 +70,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         public override void Refresh()
         {
             base.Refresh();
+            name = Model.Name;
             QueryVisualElements();
             InjectStyleSheets();
             UpdateVisualElements();
