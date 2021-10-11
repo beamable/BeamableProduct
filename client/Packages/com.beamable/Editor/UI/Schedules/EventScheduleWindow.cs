@@ -117,6 +117,7 @@ namespace Beamable.Editor.Schedules
             OnExpirationChanged(_neverExpiresComponent.Value);
 
             _dailyModeValidator = new ComponentsValidator(RefreshConfirmButton);
+            // TODO: remove both rules before release (showcase only)
             _dailyModeValidator.RegisterRuleForComponent(new IsNotEmptyRule(_eventNameComponent.Label), _eventNameComponent);
             _dailyModeValidator.RegisterRuleForComponent(new IsNotEmptyRule(_descriptionComponent.Label), _descriptionComponent);
             

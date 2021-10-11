@@ -20,7 +20,7 @@ namespace Editor.UI.Validation
     {
         private readonly string _pattern;
 
-        public override string ErrorMessage => $"{ComponentName} field doesn't mach pattern";
+        public override string ErrorMessage => $"{ComponentName} field doesn't match pattern";
 
         public PatternMatchRule(string pattern, string componentLabel) : base(componentLabel)
         {

@@ -7,6 +7,7 @@ using Beamable.Common.Shop;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
+using Editor.UI.Validation;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -39,7 +40,7 @@ namespace Beamable.Editor.Schedules
         private LabeledHourPickerVisualElement _activeToHourComponent;
         private LabeledDropdownVisualElement _dropdownComponent;
         private BeamableCheckboxVisualElement _neverExpiresComponent;
-        private LabeledDaysPickerVisualElement _daysDaysPickerComponent;
+        private LabeledDaysPickerVisualElement _daysPickerComponent;
         private BeamableCheckboxVisualElement _allDayComponent;
         private LabeledHourPickerVisualElement _periodFromHourComponent;
         private LabeledHourPickerVisualElement _periodToHourComponent;
@@ -52,7 +53,11 @@ namespace Beamable.Editor.Schedules
         private readonly Dictionary<string, Mode> _modes;
         private Mode _currentMode;
         private Button _cancelButton;
-        
+        private ComponentsValidator _dailyModeValidator;
+        private ComponentsValidator _daysModeValidator;
+        private ComponentsValidator _datesModeValidator;
+        private ComponentsValidator _currentValidator;
+
         public ListingScheduleWindow() : base(
             $"{BeamableComponentsConstants.SCHEDULES_PATH}/{nameof(ListingScheduleWindow)}")
         {
@@ -103,8 +108,8 @@ namespace Beamable.Editor.Schedules
             _activeToHourComponent.Refresh();
 
             // Days mode
-            _daysDaysPickerComponent = Root.Q<LabeledDaysPickerVisualElement>("daysPicker");
-            _daysDaysPickerComponent.Refresh();
+            _daysPickerComponent = Root.Q<LabeledDaysPickerVisualElement>("daysPicker");
+            _daysPickerComponent.Refresh();
 
             // Date mode
             // TODO: add calendar component
@@ -126,6 +131,31 @@ namespace Beamable.Editor.Schedules
             RefreshGroups();
             OnExpirationChanged(_neverExpiresComponent.Value);
             OnAllDayChanged(_allDayComponent.Value);
+            
+            _dailyModeValidator = new ComponentsValidator(RefreshConfirmButton);
+            
+            _daysModeValidator = new ComponentsValidator(RefreshConfirmButton);
+            _daysModeValidator.RegisterRuleForComponent(new AtLeastOneOptionSelectedRule(_daysPickerComponent.Label), _daysPickerComponent);
+            
+            _datesModeValidator = new ComponentsValidator(RefreshConfirmButton);
+            _datesModeValidator.RegisterRuleForComponent(new SchedulesDatesRule(_datesField.Label), _datesField);
+
+            _currentValidator = _dailyModeValidator;
+            _currentValidator.ForceValidationCheck();
+        }
+        
+        private void RefreshConfirmButton(bool value, string message)
+        {
+            if (value)
+            {
+                _confirmButton.Enable();
+                _confirmButton.tooltip = string.Empty;
+            }
+            else
+            {
+                _confirmButton.Disable();
+                _confirmButton.tooltip = message;
+            }
         }
 
         protected override void OnDestroy()
@@ -187,7 +217,7 @@ namespace Beamable.Editor.Schedules
                 _dropdownComponent.Set("Days of week");
                 var definition = schedule.definitions[0];
 
-                _daysDaysPickerComponent.SetSelectedDays(schedule.definitions[0].dayOfWeek);
+                _daysPickerComponent.SetSelectedDays(schedule.definitions[0].dayOfWeek);
 
                 // definition.hour[0].Split()
 
@@ -265,6 +295,21 @@ namespace Beamable.Editor.Schedules
             {
                 _currentMode = newMode;
             }
+            
+            switch (_currentMode)
+            {
+                case Mode.Daily:
+                    _currentValidator = _dailyModeValidator;
+                    break;
+                case Mode.Days:
+                    _currentValidator = _daysModeValidator;
+                    break;
+                case Mode.Dates:
+                    _currentValidator = _datesModeValidator;
+                    break;
+            }
+            
+            _currentValidator?.ForceValidationCheck();
 
             RefreshGroups();
         }
@@ -301,7 +346,7 @@ namespace Beamable.Editor.Schedules
         private void PrepareDaysModeData(Schedule newSchedule)
         {
             ScheduleDefinition definition = new ScheduleDefinition(PrepareSecondRange(), PrepareMinuteRange(), PreparePeriodRange(), new List<string> {"*"}, "*", "*",
-                _daysDaysPickerComponent.DaysPicker.GetSelectedDays());
+                _daysPickerComponent.DaysPicker.GetSelectedDays());
             newSchedule.AddDefinition(definition);
         }
 

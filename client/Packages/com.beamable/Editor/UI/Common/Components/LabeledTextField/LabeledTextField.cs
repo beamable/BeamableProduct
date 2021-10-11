@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
 using Editor.UI.Validation;
 #if UNITY_2018
