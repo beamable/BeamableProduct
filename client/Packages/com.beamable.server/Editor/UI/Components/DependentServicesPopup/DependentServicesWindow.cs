@@ -19,10 +19,17 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
     public class DependentServicesWindow : EditorWindow
     {
+        public static DependentServicesWindow Instance { get; private set; }
+        public static bool IsAlreadyOpened => Instance != null; 
         public static DependentServicesWindow ShowWindow()
         {
+            if (IsAlreadyOpened)
+            {
+                return null;
+            }
+
             var wnd = CreateInstance<DependentServicesWindow>();
-            
+
             wnd.titleContent = new GUIContent(Constants.DEPENDENT_SERVICES_WINDOW_TITLE);
             wnd.ShowUtility();
             wnd.minSize = new Vector2(620, 400);
@@ -32,6 +39,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             return wnd;
         }
+        private void OnEnable() => Instance = this;
+        private void OnDisable() => Instance = null;
         private void Refresh()
         {
             var container = this.GetRootVisualContainer();
