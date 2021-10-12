@@ -17,8 +17,7 @@
         </engine:VisualElement>
 
         <engine:VisualElement name="datesGroup">
-            <!-- CALENDAR COMPONENT -->
-            <beamable:LabeledTextField name="datesField" label="Repeat on"/>
+            <beamable:LabeledCalendarVisualElement name="calendar" label="Repeat on"/>
         </engine:VisualElement>
 
         <engine:VisualElement name="expirationRow">

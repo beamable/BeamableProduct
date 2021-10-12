@@ -18,9 +18,7 @@ namespace Beamable.Editor.Schedules
 {
     public class EventScheduleWindow : BeamableVisualElement, IScheduleWindow<EventContent>
     {
-        public Action OnCancel;
         public event Action OnCancelled;
-        public Action<string> OnConfirm;
         public event Action<Schedule> OnScheduleUpdated;
 
         private enum Mode
@@ -38,7 +36,6 @@ namespace Beamable.Editor.Schedules
         private LabeledDropdownVisualElement _dropdownComponent;
         private BeamableCheckboxVisualElement _neverExpiresComponent;
         private LabeledDaysPickerVisualElement _daysPickerComponent;
-        private LabeledTextField _datesField;
         private VisualElement _daysGroup;
         private VisualElement _datesGroup;
         private PrimaryButtonVisualElement _confirmButton;
@@ -51,6 +48,7 @@ namespace Beamable.Editor.Schedules
         private ComponentsValidator _dailyModeValidator;
         private ComponentsValidator _daysModeValidator;
         private ComponentsValidator _datesModeValidator;
+        private LabeledCalendarVisualElement _calendarComponent;
 
         public EventScheduleWindow() : base(
             $"{BeamableComponentsConstants.SCHEDULES_PATH}/{nameof(EventScheduleWindow)}")
@@ -97,9 +95,8 @@ namespace Beamable.Editor.Schedules
             _daysPickerComponent.Refresh();
 
             // Date mode
-            // TODO: add calendar component
-            _datesField = Root.Q<LabeledTextField>("datesField");
-            _datesField.Refresh();
+            _calendarComponent = Root.Q<LabeledCalendarVisualElement>("calendar");
+            _calendarComponent.Refresh();
 
             // Buttons
             _confirmButton = Root.Q<PrimaryButtonVisualElement>("confirmBtn");
@@ -117,15 +114,12 @@ namespace Beamable.Editor.Schedules
             OnExpirationChanged(_neverExpiresComponent.Value);
 
             _dailyModeValidator = new ComponentsValidator(RefreshConfirmButton);
-            // TODO: remove both rules before release (showcase only)
-            _dailyModeValidator.RegisterRuleForComponent(new IsNotEmptyRule(_eventNameComponent.Label), _eventNameComponent);
-            _dailyModeValidator.RegisterRuleForComponent(new IsNotEmptyRule(_descriptionComponent.Label), _descriptionComponent);
             
             _daysModeValidator = new ComponentsValidator(RefreshConfirmButton);
             _daysModeValidator.RegisterRuleForComponent(new AtLeastOneOptionSelectedRule(_daysPickerComponent.Label), _daysPickerComponent);
             
             _datesModeValidator = new ComponentsValidator(RefreshConfirmButton);
-            _datesModeValidator.RegisterRuleForComponent(new SchedulesDatesRule(_datesField.Label), _datesField);
+            _datesModeValidator.RegisterRuleForComponent(new AtLeastOneOptionSelectedRule(_calendarComponent.Label), _calendarComponent);
 
             _currentValidator = _dailyModeValidator;
             _currentValidator.ForceValidationCheck();
@@ -148,7 +142,6 @@ namespace Beamable.Editor.Schedules
         public void Set(Schedule schedule, EventContent content)
         {
             _descriptionComponent.SetValueWithoutNotify(schedule.description);
-
             _eventNameComponent.SetValueWithoutNotify(content.name);
 
             var neverExpires = !schedule.activeTo.HasValue;
@@ -164,19 +157,14 @@ namespace Beamable.Editor.Schedules
                 _startTimeComponent.Set(activeFromDate);
             }
 
-            var explicitDates = schedule.definitions.Count > 1;
+            var explicitDates = schedule.definitions.Any(definition => definition.dayOfMonth.Any(day => day != "*"));
             var hasDaysOfWeek = schedule.definitions.Any(definition => definition.dayOfWeek.Any(day => day != "*"));
             if (explicitDates)
             {
                 _dropdownComponent.Set("Actual dates");
-                // TODO: What happens if the raw data has more than one recurrence?
-                var dateStrings = schedule.definitions.Select(definition =>
-                    $"{definition.year[0]:0000}-{definition.month[0]:00}-{definition.dayOfMonth[0]:00}").ToList();
-                var dates = string.Join(";", dateStrings);
-
-                _datesField.SetValueWithoutNotify(dates);
-
-            } else if (hasDaysOfWeek)
+                _calendarComponent.Calendar.SetInitialValues(schedule.definitions);
+            }
+            else if (hasDaysOfWeek)
             {
                 _dropdownComponent.Set("Days of week");
                 _daysPickerComponent.SetSelectedDays(schedule.definitions[0].dayOfWeek);
@@ -221,16 +209,11 @@ namespace Beamable.Editor.Schedules
                     break;
             }
 
-            string json = JsonUtility.ToJson(new ScheduleWrapper(newSchedule));
-            string replaced = json.Replace("\"\"", "null");
-
-            OnConfirm?.Invoke(replaced);
             OnScheduleUpdated?.Invoke(newSchedule);
         }
 
         private void CancelClicked()
         {
-            OnCancel?.Invoke();
             OnCancelled?.Invoke();
         }
 
@@ -313,7 +296,7 @@ namespace Beamable.Editor.Schedules
 
         private void PrepareDateModeData(Schedule newSchedule)
         {
-            Dictionary<string, List<string>> sortedDates = ParseDates(_datesField.Value);
+            Dictionary<string, List<string>> sortedDates = ParseDates(_calendarComponent.SelectedDays);
 
             foreach (KeyValuePair<string, List<string>> pair in sortedDates)
             {
@@ -338,17 +321,9 @@ namespace Beamable.Editor.Schedules
             }
         }
 
-        private Dictionary<string, List<string>> ParseDates(string value)
+        private Dictionary<string, List<string>> ParseDates(List<string> dates)
         {
-            // TODO: add some input string validation
-            if (string.IsNullOrEmpty(value))
-            {
-                return new Dictionary<string, List<string>>();
-            }
-
             Dictionary<string, List<string>> sortedDates = new Dictionary<string, List<string>>();
-
-            string[] dates = value.Split(';');
 
             foreach (string date in dates)
             {
@@ -356,7 +331,7 @@ namespace Beamable.Editor.Schedules
                 string month = dateElements[1];
                 string year = dateElements[2];
                 string monthAndYear = $"{month}-{year}";
-
+                
                 if (sortedDates.ContainsKey(monthAndYear))
                 {
                     if (sortedDates.TryGetValue(monthAndYear, out var list))

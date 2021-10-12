@@ -60,8 +60,6 @@ namespace Beamable.Editor.UI.Components
 
             _textField = Root.Q<TextField>("textField");
             _textField.value = Value;
-            
-            
 
             _textField.RegisterValueChangedCallback(ValueChanged);
         }

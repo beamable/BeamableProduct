@@ -117,6 +117,9 @@ namespace Beamable.Editor.UI.Components
                     Debug.LogWarning("No Day Toggle found for " + dayCode);
                 }
             }
+            
+            // Forcing to ensure validation check
+            OnValueChanged?.Invoke(GetSelectedDays());
         }
     }
 }

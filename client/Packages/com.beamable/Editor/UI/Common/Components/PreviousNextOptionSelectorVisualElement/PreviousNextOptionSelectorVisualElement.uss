@@ -1,0 +1,25 @@
+﻿#mainVisualElement {
+    background-color: #616161;
+    height: 25px;
+    flex-direction: row;
+    justify-content: center;
+}
+
+#currentOptionLabel {
+    -unity-text-align: middle-center;
+    width: 100px;
+}
+
+.selectorBtn {
+    width: 50px;
+    height: 20px;
+    background-color: aliceblue;
+}
+
+.right {
+    /*background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all L.png");*/
+}
+
+.left {
+    /*background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all L.png");*/
+}

@@ -18,10 +18,10 @@ namespace Beamable.Editor.UI.Components
 
         public Action OnValueChanged;
 
-        private VisualElement _checkMark;
         private VisualElement _button;
         private Label _label;
         private string _labelValue;
+        private bool _active;
 
         public bool Selected { get; private set; }
         public string Value { get; private set; }
@@ -34,10 +34,8 @@ namespace Beamable.Editor.UI.Components
         public override void Refresh()
         {
             base.Refresh();
-            base.Refresh();
-            _checkMark = Root.Q<VisualElement>("checkmark");
             _button = Root.Q<VisualElement>("button");
-            _label = Root.Q<Label>("label");
+            _label = Root.Q<Label>("buttonLabel");
             _label.text = _labelValue;
 
             _button.RegisterCallback<MouseDownEvent>(OnClick);
@@ -47,11 +45,33 @@ namespace Beamable.Editor.UI.Components
 
         private void Render()
         {
-            _checkMark.visible = Selected;
+            if (!_active)
+            {
+                _button?.AddToClassList("inactive");
+                return;
+            }
+
+            _button?.RemoveFromClassList("inactive");
+
+            if (Selected)
+            {
+                _button?.AddToClassList("checked");
+                _button?.RemoveFromClassList("unchecked");
+            }
+            else
+            {
+                _button?.AddToClassList("unchecked");
+                _button?.RemoveFromClassList("checked");
+            }
         }
 
         private void OnClick(MouseDownEvent evt)
         {
+            if (!_active)
+            {
+                return;
+            }
+            
             Selected = !Selected;
             OnValueChanged?.Invoke();
             Render();
@@ -61,11 +81,18 @@ namespace Beamable.Editor.UI.Components
         {
             _labelValue = label;
             Value = option;
+            _active = true;
         }
 
         public void Set(bool value)
         {
             Selected = value;
+            Render();
+        }
+
+        public void SetInactive()
+        {
+            _active = false;
             Render();
         }
     }
