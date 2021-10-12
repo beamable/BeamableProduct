@@ -1,0 +1,49 @@
+ListingScheduleWindow > TemplateContainer > #mainVisualElement {
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    -unity-font: resource("Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+}
+ListingScheduleWindow > TemplateContainer > #mainVisualElement > * {
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+
+#buttonStrip {
+    flex-direction: row;
+    justify-content: flex-end;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+#confirmBtn {
+    width: 100px;
+    height: 28px;
+}
+
+#cancelBtn {
+    width: 100px;
+    height: 28px;
+}
+
+Label {
+    color: #FFFFFF
+}
+
+#expirationRow {
+    padding: 10px;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+#expirationLabel {
+    width: 120px;
+}
+
+#dropdown #mainVisualElement {
+    justify-content: space-between;
+}

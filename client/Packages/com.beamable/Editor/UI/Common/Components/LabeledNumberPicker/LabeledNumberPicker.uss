@@ -1,0 +1,22 @@
+﻿#mainVisualElement {
+    margin-left: 5px;
+}
+
+LabeledTextField #label {
+    width: 15px;
+    -unity-text-align: middle-center;
+}
+
+LabeledTextField #textField {
+    width: 25px;
+}
+
+LabeledTextField #textField > TextInput {
+    -unity-text-align: middle-center;
+}
+
+#button {
+    width: 20px;
+    height: 20px;
+    /*background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/close_light_SM.png");*/
+}
