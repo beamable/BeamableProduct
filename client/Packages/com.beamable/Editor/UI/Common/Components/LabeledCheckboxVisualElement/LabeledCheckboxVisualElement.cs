@@ -106,5 +106,7 @@ namespace Beamable.Editor.UI.Components
         public void SetFlipState(bool val) => Flip = val;
 
         public void DisableIcon() => _icon.RemoveFromHierarchy();
+
+        public void DisableLabel() => _label.RemoveFromHierarchy();
     }
 }

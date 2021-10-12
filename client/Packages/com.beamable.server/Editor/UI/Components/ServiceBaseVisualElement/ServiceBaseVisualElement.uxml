@@ -9,9 +9,8 @@
 
     <engine:VisualElement name="mainVisualElement">
         <engine:VisualElement name="logHeader">
+          <beamable:LabeledCheckboxVisualElement name="checkbox" flip ="True"/>
             <engine:VisualElement class="leftArea" name="leftArea">
-                <beamable:LabeledCheckboxVisualElement name="checkbox" flip ="True"/>
-                <engine:VisualElement name="serviceIcon"/>
                 <engine:TextField name="microserviceNewTitle" class="title" text="ANGIE'S TEST"/>
             </engine:VisualElement>
             <engine:VisualElement class="rightArea" name="rightArea">
