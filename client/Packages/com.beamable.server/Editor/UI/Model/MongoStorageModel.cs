@@ -31,6 +31,7 @@ namespace Beamable.Editor.UI.Model
         public override IDescriptor Descriptor => ServiceDescriptor;
         public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
         public StorageConfigurationEntry Config { get; private set; }
+
         public override event Action<Task> OnStart;
         public override event Action<Task> OnStop;
         
