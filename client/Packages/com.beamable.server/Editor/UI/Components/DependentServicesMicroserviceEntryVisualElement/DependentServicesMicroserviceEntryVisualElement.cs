@@ -23,7 +23,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         public MicroserviceModel Model { get; set; }
         public List<DependentServicesCheckboxVisualElement> DependentServices { get; private set; }
 
-        private Label _microserviceName;
+        public Label MicroserviceName { get; private set; }
         private VisualElement _dependencyCheckboxes;
         
         public DependentServicesMicroserviceEntryVisualElement() : base(nameof(DependentServicesMicroserviceEntryVisualElement))
@@ -37,12 +37,12 @@ namespace Beamable.Editor.Microservice.UI.Components
         }
         private void QueryVisualElements()
         {
-            _microserviceName = Root.Q<Label>("microserviceName");
+            MicroserviceName = Root.Q<Label>("microserviceName");
             _dependencyCheckboxes = Root.Q("dependencyCheckboxes");
         }
         private void UpdateVisualElements()
         {
-            _microserviceName.text = Model.Name;
+            MicroserviceName.text = Model.Name;
             DependentServices = new List<DependentServicesCheckboxVisualElement>(MicroservicesDataModel.Instance.Storages.Count);
             
             foreach (var storageObjectModel in MicroservicesDataModel.Instance.Storages)

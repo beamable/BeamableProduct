@@ -49,3 +49,11 @@ DependentServicesPopup {
     margin-right: 0px;
     margin-left: 0px;
 }
+
+.sectionHighlight {
+    background-color: #8D8D8D;
+}
+
+.sectionHighlightLabel {
+    color: #FFFF00;
+}

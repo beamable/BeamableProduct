@@ -20,10 +20,8 @@ namespace Beamable.Editor.Microservice.UI.Components
     public class DependentServicesStorageObjectEntryVisualElement : MicroserviceComponent
     {
         public MongoStorageModel Model { get; set; }
-        
-        private Label _storageObjectName;
+        public Label StorageObjectName { get; private set; }
 
-        
         public DependentServicesStorageObjectEntryVisualElement() : base(nameof(DependentServicesStorageObjectEntryVisualElement))
         {
         }
@@ -35,11 +33,11 @@ namespace Beamable.Editor.Microservice.UI.Components
         }
         private void QueryVisualElements()
         {
-            _storageObjectName = Root.Q<Label>("storageObjectName");
+            StorageObjectName = Root.Q<Label>("storageObjectName");
         }
         private void UpdateVisualElements()
         {
-            _storageObjectName.text = Model.Name;
+            StorageObjectName.text = Model.Name;
         }
     }
 }
