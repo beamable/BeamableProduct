@@ -85,6 +85,7 @@ namespace Beamable.Editor.Schedules
             _neverExpiresComponent = Root.Q<LabeledCheckboxVisualElement>("expiresNever");
             _neverExpiresComponent.OnValueChanged += OnExpirationChanged;
             _neverExpiresComponent.Refresh();
+            _neverExpiresComponent.DisableIcon();
 
             _activeToDateComponent = Root.Q<LabeledDatePickerVisualElement>("activeToDate");
             _activeToDateComponent.Refresh();

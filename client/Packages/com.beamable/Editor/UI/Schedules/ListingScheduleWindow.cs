@@ -87,6 +87,7 @@ namespace Beamable.Editor.Schedules
             _allDayComponent = Root.Q<LabeledCheckboxVisualElement>("allDay");
             _allDayComponent.OnValueChanged += OnAllDayChanged;
             _allDayComponent.Refresh();
+            _allDayComponent.DisableIcon();
 
             _periodFromHourComponent = Root.Q<LabeledHourPickerVisualElement>("periodFromHour");
             _periodFromHourComponent.Refresh();
@@ -98,6 +99,7 @@ namespace Beamable.Editor.Schedules
             _neverExpiresComponent = Root.Q<LabeledCheckboxVisualElement>("expiresNever");
             _neverExpiresComponent.OnValueChanged += OnExpirationChanged;
             _neverExpiresComponent.Refresh();
+            _neverExpiresComponent.DisableIcon();
 
             _activeToDateComponent = Root.Q<LabeledDatePickerVisualElement>("activeToDate");
             _activeToDateComponent.Refresh();

@@ -116,6 +116,7 @@ namespace Beamable.Editor.Content.Components
                 visualElement.SetEnabled(enabled);
                 visualElement.SetFlipState(true);
                 visualElement.Refresh();
+                visualElement.DisableIcon();
                 visualElement.SetText(model.id);
                 visualElement.OnValueChanged += _ => onValueChange();
             }

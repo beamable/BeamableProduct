@@ -82,9 +82,6 @@ namespace Beamable.Editor.UI.Components
             _icon = Root.Q<Image>("icon");
             _icon.image = !string.IsNullOrEmpty(Icon) ? (Texture)EditorGUIUtility.Load(Icon): null;
 
-            if (_icon.image.value == null)
-                _icon.RemoveFromHierarchy();
-
             _checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
             _checkbox.OnValueChanged -= OnChanged;
             _checkbox.OnValueChanged += OnChanged;
@@ -107,5 +104,7 @@ namespace Beamable.Editor.UI.Components
         public void SetText(string val) => _label.text = val;
 
         public void SetFlipState(bool val) => Flip = val;
+
+        public void DisableIcon() => _icon.RemoveFromHierarchy();
     }
 }

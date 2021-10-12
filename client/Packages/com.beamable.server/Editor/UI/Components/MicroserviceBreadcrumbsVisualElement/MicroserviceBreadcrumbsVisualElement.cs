@@ -76,6 +76,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             _selectAllLabeledCheckbox = Root.Q<LabeledCheckboxVisualElement>("selectAllLabeledCheckbox");
             _selectAllLabeledCheckbox.Refresh();
+            _selectAllLabeledCheckbox.DisableIcon();
             _selectAllLabeledCheckbox.OnValueChanged += b => OnSelectAllCheckboxChanged?.Invoke(b);
 
         }
