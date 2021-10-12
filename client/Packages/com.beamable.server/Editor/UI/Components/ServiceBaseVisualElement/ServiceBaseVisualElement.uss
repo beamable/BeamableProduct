@@ -164,3 +164,7 @@
     padding-top: 4px;
     border-bottom-width: 1px;
 }
+
+LabeledCheckboxVisualElement{
+    flex-grow: 1;
+}
