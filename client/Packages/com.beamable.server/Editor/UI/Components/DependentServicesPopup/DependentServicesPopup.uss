@@ -1,5 +1,6 @@
-DependentServicesPopup {
+Label {
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    font-size: 11px;
 }
 
 #mainContainer {

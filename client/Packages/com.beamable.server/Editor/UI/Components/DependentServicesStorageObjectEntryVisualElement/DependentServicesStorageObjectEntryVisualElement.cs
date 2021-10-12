@@ -38,6 +38,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         private void UpdateVisualElements()
         {
             StorageObjectName.text = Model.Name;
+            StorageObjectName.AddTextWrapStyle();
         }
     }
 }

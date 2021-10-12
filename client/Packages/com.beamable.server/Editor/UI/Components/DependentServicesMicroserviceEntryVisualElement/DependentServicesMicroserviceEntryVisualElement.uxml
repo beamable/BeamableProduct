@@ -8,7 +8,7 @@
 
     <engine:VisualElement name="microserviceContainer">
         <engine:VisualElement name="microserviceNameContainer">
-            <engine:Label name="microserviceName" text="Microservice 1" class="noMarginNoPaddingNoBorder"/>
+            <engine:Label name="microserviceName" class="noMarginNoPaddingNoBorder"/>
         </engine:VisualElement>
         <engine:VisualElement name="dependencyCheckboxes"/>
     </engine:VisualElement>

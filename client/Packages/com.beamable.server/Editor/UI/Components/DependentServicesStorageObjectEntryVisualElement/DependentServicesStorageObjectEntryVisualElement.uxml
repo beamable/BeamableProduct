@@ -6,6 +6,6 @@
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
     
-    <engine:Label name="storageObjectName" text="Storage object name 1" class="noMarginNoPaddingNoBorder"/>
+    <engine:Label name="storageObjectName"/>
 
 </engine:UXML>

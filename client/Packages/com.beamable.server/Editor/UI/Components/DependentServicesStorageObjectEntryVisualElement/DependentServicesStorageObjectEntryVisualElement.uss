@@ -2,8 +2,22 @@
     justify-content: center;
 }
 
+Label {
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    margin-left: 0px;
+    margin-right: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    border-bottom-width: 0px;
+    border-top-width: 0px;
+    border-left-width: 0px;
+    border-right-width: 0px;
+}
+
 #storageObjectName {
     -unity-text-align: middle-center;
-    word-wrap: true;  /* MOVE TO SCRIPT! */
     width: 60px;
 }
