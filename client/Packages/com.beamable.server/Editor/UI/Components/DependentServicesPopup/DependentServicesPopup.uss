@@ -14,7 +14,6 @@ Label, Button {
     min-width: 580px;
     min-height: 330px;
     flex-direction: column;
-    background-color: #A7A7A7;
 }
 
 #storageObjectContainer {
@@ -51,10 +50,4 @@ Label, Button {
     margin-left: 0px;
 }
 
-.sectionHighlight {
-    background-color: #8D8D8D;
-}
 
-.sectionHighlightLabel {
-    color: #EAAC03;
-}
