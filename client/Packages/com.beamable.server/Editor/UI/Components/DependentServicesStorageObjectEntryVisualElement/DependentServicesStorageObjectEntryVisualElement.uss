@@ -2,7 +2,9 @@
     justify-content: center;
 }
 
-Label {
+#storageObjectName {
+    -unity-text-align: middle-center;
+    width: 60px;
     padding-left: 5px;
     padding-right: 5px;
     padding-top: 0px;
@@ -15,9 +17,4 @@ Label {
     border-top-width: 0px;
     border-left-width: 0px;
     border-right-width: 0px;
-}
-
-#storageObjectName {
-    -unity-text-align: middle-center;
-    width: 60px;
 }
