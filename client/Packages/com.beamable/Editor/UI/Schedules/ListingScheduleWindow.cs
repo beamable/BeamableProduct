@@ -22,8 +22,6 @@ namespace Beamable.Editor.Schedules
 {
     public class ListingScheduleWindow : BeamableVisualElement, IScheduleWindow<ListingContent>
     {
-        public Action OnCancel;
-        public Action<string> OnConfirm;
         public event Action<Schedule> OnScheduleUpdated;
         public event Action OnCancelled;
 
@@ -57,6 +55,7 @@ namespace Beamable.Editor.Schedules
         private ComponentsValidator _datesModeValidator;
         private ComponentsValidator _currentValidator;
         private LabeledCalendarVisualElement _calendarComponent;
+        private readonly ScheduleParser _scheduleParser;
 
         public ListingScheduleWindow() : base(
             $"{BeamableComponentsConstants.SCHEDULES_PATH}/{nameof(ListingScheduleWindow)}")
@@ -69,6 +68,7 @@ namespace Beamable.Editor.Schedules
             };
 
             _currentMode = Mode.Daily;
+            _scheduleParser = new ScheduleParser();
         }
 
         public override void Refresh()
@@ -130,19 +130,21 @@ namespace Beamable.Editor.Schedules
             RefreshGroups();
             OnExpirationChanged(_neverExpiresComponent.Value);
             OnAllDayChanged(_allDayComponent.Value);
-            
+
             _dailyModeValidator = new ComponentsValidator(RefreshConfirmButton);
-            
+
             _daysModeValidator = new ComponentsValidator(RefreshConfirmButton);
-            _daysModeValidator.RegisterRuleForComponent(new AtLeastOneOptionSelectedRule(_daysPickerComponent.Label), _daysPickerComponent);
-            
+            _daysModeValidator.RegisterRuleForComponent(new AtLeastOneOptionSelectedRule(_daysPickerComponent.Label),
+                _daysPickerComponent);
+
             _datesModeValidator = new ComponentsValidator(RefreshConfirmButton);
-            _datesModeValidator.RegisterRuleForComponent(new AtLeastOneOptionSelectedRule(_calendarComponent.Label), _calendarComponent);
+            _datesModeValidator.RegisterRuleForComponent(new AtLeastOneOptionSelectedRule(_calendarComponent.Label),
+                _calendarComponent);
 
             _currentValidator = _dailyModeValidator;
             _currentValidator.ForceValidationCheck();
         }
-        
+
         private void RefreshConfirmButton(bool value, string message)
         {
             if (value)
@@ -178,13 +180,14 @@ namespace Beamable.Editor.Schedules
                 _activeToDateComponent.Set(activeToDate);
                 _activeToHourComponent.Set(activeToDate);
             }
+
             _neverExpiresComponent.Value = neverExpires;
 
             var isPeriod = schedule.definitions.Any(definition =>
                 definition.hour.Any(x => x.Contains("-"))
                 || definition.minute.Any(x => x.Contains("-"))
                 || definition.second.Any(x => x.Contains("-"))
-                );
+            );
             _allDayComponent.Value = !isPeriod;
 
             if (isPeriod)
@@ -205,8 +208,8 @@ namespace Beamable.Editor.Schedules
             {
                 _dropdownComponent.Set("Actual dates");
                 _calendarComponent.Calendar.SetInitialValues(schedule.definitions);
-
-            } else if (hasDaysOfWeek)
+            }
+            else if (hasDaysOfWeek)
             {
                 _dropdownComponent.Set("Days of week");
                 _daysPickerComponent.SetSelectedDays(schedule.definitions[0].dayOfWeek);
@@ -234,31 +237,29 @@ namespace Beamable.Editor.Schedules
         {
             Schedule newSchedule = new Schedule();
 
-            PrepareGeneralData(newSchedule);
+            _scheduleParser.PrepareGeneralData(newSchedule, _descriptionComponent.Value,
+                DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ssZ"), _neverExpiresComponent.Value,
+                $"{_activeToDateComponent.SelectedDate}{_activeToHourComponent.SelectedHour}");
 
             switch (_currentMode)
             {
                 case Mode.Daily:
-                    PrepareDailyModeData(newSchedule);
+                    _scheduleParser.PrepareDailyModeData(newSchedule, PrepareSecondRange(), PrepareMinuteRange(),
+                        PreparePeriodRange());
                     break;
                 case Mode.Days:
-                    PrepareDaysModeData(newSchedule);
+                    _scheduleParser.PrepareDaysModeData(newSchedule, PrepareSecondRange(), PrepareMinuteRange(), PreparePeriodRange(), _daysPickerComponent.DaysPicker.GetSelectedDays());
                     break;
                 case Mode.Dates:
-                    PrepareDateModeData(newSchedule);
+                    _scheduleParser.PrepareDateModeData(newSchedule, _calendarComponent.SelectedDays, PreparePeriodRange(), "*", "*");
                     break;
             }
 
-            string json = JsonUtility.ToJson(new ScheduleWrapper(newSchedule));
-            string replaced = json.Replace("\"\"", "null");
-
-            OnConfirm?.Invoke(replaced);
             OnScheduleUpdated?.Invoke(newSchedule);
         }
 
         private void CancelClicked()
         {
-            OnCancel?.Invoke();
             OnCancelled?.Invoke();
         }
 
@@ -283,7 +284,7 @@ namespace Beamable.Editor.Schedules
             {
                 _currentMode = newMode;
             }
-            
+
             switch (_currentMode)
             {
                 case Mode.Daily:
@@ -296,7 +297,7 @@ namespace Beamable.Editor.Schedules
                     _currentValidator = _datesModeValidator;
                     break;
             }
-            
+
             _currentValidator?.ForceValidationCheck();
 
             RefreshGroups();
@@ -312,57 +313,6 @@ namespace Beamable.Editor.Schedules
             }
 
             return options;
-        }
-
-        #region Data parsing (to be moved to separate objects)
-
-        private void PrepareGeneralData(Schedule newSchedule)
-        {
-            newSchedule.description = _descriptionComponent.Value;
-            newSchedule.activeFrom = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ssZ");
-            newSchedule.activeTo.HasValue = !_neverExpiresComponent.Value;
-            newSchedule.activeTo.Value = $"{_activeToDateComponent.SelectedDate}{_activeToHourComponent.SelectedHour}";
-        }
-
-        private void PrepareDailyModeData(Schedule newSchedule)
-        {
-            ScheduleDefinition definition =
-                new ScheduleDefinition(PrepareSecondRange(), PrepareMinuteRange(), PreparePeriodRange(), new List<string> {"*"}, "*", "*", new List<string> {"*"});
-            newSchedule.AddDefinition(definition);
-        }
-
-        private void PrepareDaysModeData(Schedule newSchedule)
-        {
-            ScheduleDefinition definition = new ScheduleDefinition(PrepareSecondRange(), PrepareMinuteRange(), PreparePeriodRange(), new List<string> {"*"}, "*", "*",
-                _daysPickerComponent.DaysPicker.GetSelectedDays());
-            newSchedule.AddDefinition(definition);
-        }
-
-        private void PrepareDateModeData(Schedule newSchedule)
-        {
-            Dictionary<string, List<string>> sortedDates = ParseDates(_calendarComponent.SelectedDays);
-
-            foreach (KeyValuePair<string, List<string>> pair in sortedDates)
-            {
-                string[] monthAndYear = pair.Key.Split('-');
-                string month = monthAndYear[0];
-                string year = monthAndYear[1];
-
-                List<string> daysInCurrentMonthAndYear = new List<string>();
-
-                foreach (string dateString in pair.Value)
-                {
-                    string[] splitDate = dateString.Split('-');
-                    string day = splitDate[0];
-                    daysInCurrentMonthAndYear.Add(day);
-                }
-
-                ScheduleDefinition definition = new ScheduleDefinition("*",
-                    "*", PreparePeriodRange(), daysInCurrentMonthAndYear, month, year,
-                    new List<string> {"*"});
-
-                newSchedule.AddDefinition(definition);
-            }
         }
 
         private string PreparePeriodRange()
@@ -388,34 +338,5 @@ namespace Beamable.Editor.Schedules
                 : $"{_periodFromHourComponent.Second}-{_periodToHourComponent.Second}";
             return hourString;
         }
-
-        private Dictionary<string, List<string>> ParseDates(List<string> dates)
-        {
-            Dictionary<string, List<string>> sortedDates = new Dictionary<string, List<string>>();
-
-            foreach (string date in dates)
-            {
-                string[] dateElements = date.Split('-');
-                string month = dateElements[1];
-                string year = dateElements[2];
-                string monthAndYear = $"{month}-{year}";
-                
-                if (sortedDates.ContainsKey(monthAndYear))
-                {
-                    if (sortedDates.TryGetValue(monthAndYear, out var list))
-                    {
-                        list.Add(date);
-                    }
-                }
-                else
-                {
-                    sortedDates.Add(monthAndYear, new List<string> {date});
-                }
-            }
-
-            return sortedDates;
-        }
-
-        #endregion
     }
 }
