@@ -21,19 +21,25 @@ namespace Beamable.Editor.Microservice.UI.Components
     {
         public MongoStorageModel Model { get; set; }
         
+        private Label _storageObjectName;
+
+        
         public DependentServicesStorageObjectEntryVisualElement() : base(nameof(DependentServicesStorageObjectEntryVisualElement))
         {
         }
-        
         public override void Refresh()
         {
             base.Refresh();
+            QueryVisualElements();
             UpdateVisualElements();
         }
-        
+        private void QueryVisualElements()
+        {
+            _storageObjectName = Root.Q<Label>("storageObjectName");
+        }
         private void UpdateVisualElements()
         {
-            Root.Q<Label>("storageObjectName").text = Model.Name;
+            _storageObjectName.text = Model.Name;
         }
     }
 }

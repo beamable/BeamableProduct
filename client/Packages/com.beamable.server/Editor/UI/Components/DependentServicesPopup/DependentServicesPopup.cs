@@ -46,10 +46,8 @@ namespace Beamable.Editor.Microservice.UI.Components
         {
             _confirmButton = Root.Q<PrimaryButtonVisualElement>("confirmBtn");
             _cancelButton = Root.Q<Button>("cancelBtn");
-
             _storageObjectsContainer = Root.Q("storageObjectsContainer");
             _microservicesContainer = Root.Q("microservicesContainer");
-
         }
         private void UpdateVisualElements()
         {

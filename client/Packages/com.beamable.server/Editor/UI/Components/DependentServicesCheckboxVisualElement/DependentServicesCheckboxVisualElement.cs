@@ -30,20 +30,30 @@ namespace Beamable.Editor.Microservice.UI.Components
             }
         }
         private bool _isServiceRelation;
+        
+        private BeamableCheckboxVisualElement _checkbox;
 
         public DependentServicesCheckboxVisualElement(bool isServiceRelation) : base(nameof(DependentServicesCheckboxVisualElement))
         {
             // Silent set
             _isServiceRelation = isServiceRelation;
         }
-
         public override void Refresh()
         {
             base.Refresh();
-            var checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
-            checkbox.Refresh();
-            checkbox.SetWithoutNotify(_isServiceRelation);
-            checkbox.OnValueChanged += state => IsServiceRelation = state;
+            QueryVisualElements();
+            UpdateVisualElements();
+
+        }
+        private void QueryVisualElements()
+        {
+            _checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
+        }
+        private void UpdateVisualElements()
+        {
+            _checkbox.Refresh();
+            _checkbox.SetWithoutNotify(_isServiceRelation);
+            _checkbox.OnValueChanged += state => IsServiceRelation = state;
         }
     }
 }

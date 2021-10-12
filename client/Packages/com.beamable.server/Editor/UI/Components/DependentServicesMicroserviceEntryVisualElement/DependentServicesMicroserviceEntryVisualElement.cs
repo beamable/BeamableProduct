@@ -19,31 +19,39 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
     public class DependentServicesMicroserviceEntryVisualElement : MicroserviceComponent
     {
-        public Action<MongoStorageModel> OnServiceRelationChanged; 
+        public Action<MongoStorageModel> OnServiceRelationChanged;
         public MicroserviceModel Model { get; set; }
         public List<DependentServicesCheckboxVisualElement> DependentServices { get; private set; }
 
+        private Label _microserviceName;
+        private VisualElement _dependencyCheckboxes;
+        
         public DependentServicesMicroserviceEntryVisualElement() : base(nameof(DependentServicesMicroserviceEntryVisualElement))
         {
         }
         public override void Refresh()
         {
             base.Refresh();
+            QueryVisualElements();
             UpdateVisualElements();
+        }
+        private void QueryVisualElements()
+        {
+            _microserviceName = Root.Q<Label>("microserviceName");
+            _dependencyCheckboxes = Root.Q("dependencyCheckboxes");
         }
         private void UpdateVisualElements()
         {
-            Root.Q<Label>("microserviceName").text = Model.Name;
-            var dependencyCheckboxes = Root.Q("dependencyCheckboxes");
-
+            _microserviceName.text = Model.Name;
             DependentServices = new List<DependentServicesCheckboxVisualElement>(MicroservicesDataModel.Instance.Storages.Count);
+            
             foreach (var storageObjectModel in MicroservicesDataModel.Instance.Storages)
             {
                 var isRelation = Model.Dependencies.Contains(storageObjectModel);
                 var newElement = new DependentServicesCheckboxVisualElement(isRelation) { MongoStorageModel = storageObjectModel };
                 newElement.OnServiceRelationChanged += TriggerServiceRelationChanged;
                 newElement.Refresh();
-                dependencyCheckboxes.Add(newElement);
+                _dependencyCheckboxes.Add(newElement);
                 DependentServices.Add(newElement);
             }
         }
