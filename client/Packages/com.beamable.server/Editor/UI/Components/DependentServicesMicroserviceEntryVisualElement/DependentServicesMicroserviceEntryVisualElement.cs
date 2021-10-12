@@ -43,6 +43,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         private void UpdateVisualElements()
         {
             MicroserviceName.text = Model.Name;
+            MicroserviceName.AddTextWrapStyle();
             DependentServices = new List<DependentServicesCheckboxVisualElement>(MicroservicesDataModel.Instance.Storages.Count);
             
             foreach (var storageObjectModel in MicroservicesDataModel.Instance.Storages)

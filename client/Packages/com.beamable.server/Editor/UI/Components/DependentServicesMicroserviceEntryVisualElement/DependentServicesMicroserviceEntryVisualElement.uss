@@ -4,7 +4,8 @@
 }
 
 #microserviceNameContainer {
-    min-width: 125px;
+    min-width: 130px;
+    max-width: 130px;
     justify-content: center;
 }
 

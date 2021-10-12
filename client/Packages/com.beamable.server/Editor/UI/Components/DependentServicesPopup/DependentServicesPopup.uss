@@ -1,4 +1,4 @@
-Label {
+Label, Button {
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     font-size: 11px;
 }
@@ -23,7 +23,7 @@ Label {
 }
 
 #emptyCornerBox {
-    min-width: 125px;
+    min-width: 130px;
 }
 
 #storageObjectsContainer {
@@ -56,5 +56,5 @@ Label {
 }
 
 .sectionHighlightLabel {
-    color: #FFFF00;
+    color: #EAAC03;
 }
