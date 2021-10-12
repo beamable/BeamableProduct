@@ -31,6 +31,7 @@ Label, Button {
 
 #microservicesContainer {
     flex-direction: column;
+    flex-grow: 1;
 }
 
 #buttonsContainer {

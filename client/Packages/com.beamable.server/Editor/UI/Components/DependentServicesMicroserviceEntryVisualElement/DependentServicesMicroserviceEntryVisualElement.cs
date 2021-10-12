@@ -43,7 +43,6 @@ namespace Beamable.Editor.Microservice.UI.Components
         private void UpdateVisualElements()
         {
             MicroserviceName.text = Model.Name;
-            MicroserviceName.AddTextWrapStyle();
             DependentServices = new List<DependentServicesCheckboxVisualElement>(MicroservicesDataModel.Instance.Storages.Count);
             
             foreach (var storageObjectModel in MicroservicesDataModel.Instance.Storages)
@@ -59,6 +58,23 @@ namespace Beamable.Editor.Microservice.UI.Components
         private void TriggerServiceRelationChanged(MongoStorageModel storageObjectModel)
         {
             OnServiceRelationChanged?.Invoke(storageObjectModel);
+        }
+        public void SetEmptyEntries()
+        {
+            base.Refresh();
+            QueryVisualElements();
+            MicroserviceName.RemoveFromHierarchy();
+            Root.AddToClassList("emptyColumnEntry");
+
+            DependentServices = new List<DependentServicesCheckboxVisualElement>(MicroservicesDataModel.Instance.Storages.Count);
+            foreach (var storageObjectModel in MicroservicesDataModel.Instance.Storages)
+            {
+                var newElement = new DependentServicesCheckboxVisualElement(false) { MongoStorageModel = storageObjectModel};
+                newElement.Refresh();
+                newElement.Q<BeamableCheckboxVisualElement>("checkbox").RemoveFromHierarchy();
+                _dependencyCheckboxes.Add(newElement);
+                DependentServices.Add(newElement);
+            }
         }
     }
 }

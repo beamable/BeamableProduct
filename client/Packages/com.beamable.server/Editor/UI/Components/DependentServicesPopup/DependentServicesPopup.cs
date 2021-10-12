@@ -33,7 +33,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         private MicroserviceModel _lastRelactionChangedMicroservice;
         private MongoStorageModel _lastRelactionChangedStorageObject;
-
+        private DependentServicesMicroserviceEntryVisualElement _emptyRowFillEntry;
+        
         public DependentServicesPopup() : base(nameof(DependentServicesPopup))
         {
         }
@@ -85,6 +86,14 @@ namespace Beamable.Editor.Microservice.UI.Components
                 _microservicesContainer.Add(newElement);
                 MicroserviceEntries.Add(microserviceModel, newElement);
             }
+
+            _emptyRowFillEntry = new DependentServicesMicroserviceEntryVisualElement
+            {
+                name = "EmptyRowFillEntry", 
+                style = { flexGrow = 1 }
+            };
+            _emptyRowFillEntry.SetEmptyEntries();
+            _microservicesContainer.Add(_emptyRowFillEntry);
         }
         public void SetServiceDependencies()
         {
@@ -104,8 +113,9 @@ namespace Beamable.Editor.Microservice.UI.Components
         private void HandleServiceRelationChange(MicroserviceModel microserviceModel ,MongoStorageModel storageObjectModel)
         {
             DependentServicesMicroserviceEntryVisualElement microserviceEntry; 
-            DependentServicesStorageObjectEntryVisualElement storageObjectEntry; 
-            
+            DependentServicesStorageObjectEntryVisualElement storageObjectEntry;
+            DependentServicesCheckboxVisualElement checkboxVisualElement;
+
             if (_lastRelactionChangedStorageObject != null && _lastRelactionChangedMicroservice != null)
             {
                 //Remove Highlight - Row 
@@ -120,9 +130,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 
                 foreach (var entry in MicroserviceEntries.Values)
                 {
-                    var checkboxVisualElement = entry.DependentServices.FirstOrDefault(x => x.MongoStorageModel == _lastRelactionChangedStorageObject);
+                    checkboxVisualElement = entry.DependentServices.FirstOrDefault(x => x.MongoStorageModel == _lastRelactionChangedStorageObject);
                     checkboxVisualElement?.RemoveFromClassList("sectionHighlight");
                 }
+                checkboxVisualElement = _emptyRowFillEntry.DependentServices.FirstOrDefault(x => x.MongoStorageModel == _lastRelactionChangedStorageObject);
+                checkboxVisualElement?.RemoveFromClassList("sectionHighlight");
             }
                 
             _lastRelactionChangedMicroservice = microserviceModel;
@@ -139,9 +151,11 @@ namespace Beamable.Editor.Microservice.UI.Components
             
             foreach (var entry in MicroserviceEntries.Values)
             {
-                var checkboxVisualElement = entry.DependentServices.FirstOrDefault(x => x.MongoStorageModel == _lastRelactionChangedStorageObject);
+                checkboxVisualElement = entry.DependentServices.FirstOrDefault(x => x.MongoStorageModel == _lastRelactionChangedStorageObject);
                 checkboxVisualElement?.AddToClassList("sectionHighlight");
             }
+            checkboxVisualElement = _emptyRowFillEntry.DependentServices.FirstOrDefault(x => x.MongoStorageModel == _lastRelactionChangedStorageObject);
+            checkboxVisualElement?.AddToClassList("sectionHighlight");
             
             IsAnyRelationChanged = true;
         }
