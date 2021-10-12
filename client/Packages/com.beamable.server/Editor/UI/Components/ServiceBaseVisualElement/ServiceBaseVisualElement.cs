@@ -124,8 +124,12 @@ namespace Beamable.Editor.Microservice.UI.Components
             _moreBtn.AddManipulator(manipulator);
             _moreBtn.tooltip = "More...";
 
+            var dependentServicesBtnState = MicroserviceConfiguration.Instance.Microservices.Count > 0 &&
+                                           MicroserviceConfiguration.Instance.StorageObjects.Count > 0;
+            
             _dependentServicesBtn.clickable.clicked += () => DependentServicesWindow.ShowWindow();
-
+            _dependentServicesBtn.SetEnabled(dependentServicesBtnState);
+            
             _checkbox.Refresh();
             _checkbox.SetWithoutNotify(Model.IsSelected);
             Model.OnSelectionChanged += _checkbox.SetWithoutNotify;
