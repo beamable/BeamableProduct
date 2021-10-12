@@ -5,8 +5,8 @@
 }
 
 #icon{
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
     align-self: center;
 	margin-right: 4px;
 	margin-left: 4px;
