@@ -6,6 +6,8 @@ using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.UI.Components;
+using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -34,6 +36,8 @@ namespace Beamable.Editor.Microservice.UI.Components
         private MicroserviceModel _lastRelactionChangedMicroservice;
         private MongoStorageModel _lastRelactionChangedStorageObject;
         private DependentServicesMicroserviceEntryVisualElement _emptyRowFillEntry;
+        
+        private const string STORAGE_OBJECT_ASSEMBLY_DEFINITION_PREFIX = "Unity.Beamable.Runtime.UserStorageObject";
         
         public DependentServicesPopup() : base(nameof(DependentServicesPopup))
         {
@@ -80,14 +84,15 @@ namespace Beamable.Editor.Microservice.UI.Components
             MicroserviceEntries = new Dictionary<MicroserviceModel, DependentServicesMicroserviceEntryVisualElement>(MicroservicesDataModel.Instance.Services.Count);
             foreach (var microserviceModel in MicroservicesDataModel.Instance.Services)
             {
-                var newElement = new DependentServicesMicroserviceEntryVisualElement { Model = microserviceModel };
+                var storageObjectsRelations = GetServiceDependencies(microserviceModel);
+                var newElement = new DependentServicesMicroserviceEntryVisualElement(storageObjectsRelations) { Model = microserviceModel };
                 newElement.Refresh();
                 newElement.OnServiceRelationChanged += storageObjectModel => HandleServiceRelationChange(microserviceModel, storageObjectModel);
                 _microservicesContainer.Add(newElement);
                 MicroserviceEntries.Add(microserviceModel, newElement);
             }
 
-            _emptyRowFillEntry = new DependentServicesMicroserviceEntryVisualElement
+            _emptyRowFillEntry = new DependentServicesMicroserviceEntryVisualElement(new List<string>())
             {
                 name = "EmptyRowFillEntry", 
                 style = { flexGrow = 1 }
@@ -99,16 +104,63 @@ namespace Beamable.Editor.Microservice.UI.Components
         {
             foreach (var service in MicroserviceEntries)
             {
-                var microservice = service.Key;
-                microservice.Dependencies.Clear();
+                var microserviceModel = service.Key;
+                microserviceModel.Dependencies.Clear();
+
+                var microserviceAssemblyDefinitionFileName = MicroserviceEditor.GetServiceAssemblyDefinitionFileName(ServiceType.MicroService, microserviceModel.Name);
+                var microserviceAssemblyDefinitionAsset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>($"{MicroserviceEditor.DESTINATION_MICROSERVICE_DIRECTORY}/{microserviceModel.Name}/{microserviceAssemblyDefinitionFileName}.asmdef");
+                var assemblyReferencesToAdd = new List<string>(); 
                 
                 foreach (var dependentService in service.Value.DependentServices)
                 {
                     if (!dependentService.IsServiceRelation)
                         continue;
-                    microservice.Dependencies.Add(dependentService.MongoStorageModel);
+                    
+                    microserviceModel.Dependencies.Add(dependentService.MongoStorageModel);
+                    var storageObjectAssemblyDefinitionFileName = MicroserviceEditor.GetServiceAssemblyDefinitionFileName(ServiceType.StorageObject, dependentService.MongoStorageModel.Name);
+                    
+                    if (string.IsNullOrEmpty(storageObjectAssemblyDefinitionFileName))
+                        continue;
+                    
+                    assemblyReferencesToAdd.Add(storageObjectAssemblyDefinitionFileName);
                 }
+                
+                SetAssemblyReferences(microserviceAssemblyDefinitionAsset, assemblyReferencesToAdd);
             }
+        }
+        private IEnumerable<string> GetServiceDependencies(MicroserviceModel microserviceModel)
+        {
+            var microserviceAssemblyDefinitionFileName = MicroserviceEditor.GetServiceAssemblyDefinitionFileName(ServiceType.MicroService, microserviceModel.Name);
+            var microserviceAssemblyDefinitionAsset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>($"{MicroserviceEditor.DESTINATION_MICROSERVICE_DIRECTORY}/{microserviceModel.Name}/{microserviceAssemblyDefinitionFileName}.asmdef");
+            var storageObjectAssemblyDefinitionFileNames = microserviceAssemblyDefinitionAsset.GetReferencesAssemblies().Where(x => x.Contains(STORAGE_OBJECT_ASSEMBLY_DEFINITION_PREFIX));
+            var storageObjectModelNames = new List<string>();
+            
+            foreach (var storageObjectAssemblyDefinitionFileName in storageObjectAssemblyDefinitionFileNames)
+            {
+                var splittedString = storageObjectAssemblyDefinitionFileName.Split(new[] { $"{STORAGE_OBJECT_ASSEMBLY_DEFINITION_PREFIX}." }, StringSplitOptions.None);
+                storageObjectModelNames.Add(splittedString[1]);
+            }
+            
+            return storageObjectModelNames;
+        }
+        private void SetAssemblyReferences(AssemblyDefinitionAsset asmdef, IReadOnlyCollection<string> assemblyReferencesToAdd)
+        {
+            var storageObjectAssemblyDefinitionFileNames = GetAllAvailableStorageObjectAssemblyReferenceNames();
+            var intersect = storageObjectAssemblyDefinitionFileNames.Intersect(assemblyReferencesToAdd).ToArray();
+            var nonIntersect = storageObjectAssemblyDefinitionFileNames.Except(assemblyReferencesToAdd).ToArray();
+            asmdef.AddAndRemoveReferences(intersect, nonIntersect);
+        }
+        private List<string> GetAllAvailableStorageObjectAssemblyReferenceNames()
+        { 
+            var storageObjectAssemblyDefinitionFileNames = new List<string>();
+            foreach (var storageObjectModel in MicroservicesDataModel.Instance.Storages)
+            {
+                var storageObjectAssemblyDefinitionFileName = MicroserviceEditor.GetServiceAssemblyDefinitionFileName(ServiceType.StorageObject, storageObjectModel.Name);
+                if (string.IsNullOrWhiteSpace(storageObjectAssemblyDefinitionFileName))
+                    continue;
+                storageObjectAssemblyDefinitionFileNames.Add(storageObjectAssemblyDefinitionFileName);
+            }
+            return storageObjectAssemblyDefinitionFileNames;
         }
         private void HandleServiceRelationChange(MicroserviceModel microserviceModel ,MongoStorageModel storageObjectModel)
         {

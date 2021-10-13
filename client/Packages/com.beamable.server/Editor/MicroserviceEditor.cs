@@ -29,7 +29,7 @@ namespace Beamable.Server.Editor
 
         public const string CONFIG_AUTO_RUN = "auto_run_local_microservices";
         private const string TEMPLATE_MICROSERVICE_DIRECTORY = "Packages/com.beamable.server/Template";
-        private const string DESTINATION_MICROSERVICE_DIRECTORY = "Assets/Beamable/Microservices";
+        public static string DESTINATION_MICROSERVICE_DIRECTORY = "Assets/Beamable/Microservices";
 
         private const string TEMPLATE_STORAGE_OBJECT_DIRECTORY = "Packages/com.beamable.server/Template/StorageObject";
         private const string DESTINATION_STORAGE_OBJECT_DIRECTORY = "Assets/Beamable/StorageObjects";
@@ -117,6 +117,31 @@ namespace Beamable.Server.Editor
             File.WriteAllText(targetFile, text);
         }
 
+        public static string GetServiceAssemblyDefinitionFileName(ServiceType serviceType, string serviceName)
+        {
+            if (string.IsNullOrWhiteSpace(serviceName))
+            {
+                Debug.LogError("Service name cannot be null or empty!");
+                return string.Empty;
+            }
+
+            string serviceCategoryName;
+            switch (serviceType)
+            {
+                case ServiceType.MicroService:
+                    serviceCategoryName = "UserMicroService";
+                    break;
+                case ServiceType.StorageObject:
+                    serviceCategoryName = "UserStorageObject";
+                    break;
+                default:
+                    Debug.LogError($"Service type `{Enum.GetName(typeof(ServiceType), serviceType)}` not found.");
+                    return string.Empty;
+            }
+
+            return $"Unity.Beamable.Runtime.{serviceCategoryName}.{serviceName.ToLower()}";
+        }
+        
         private class ServiceCreateInfo
         {
             public ServiceType ServiceType { get; }

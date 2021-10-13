@@ -365,7 +365,6 @@ namespace Beamable.Server.Editor
 
          jsonData[PRECOMPILED] = dllReferences.ToArray();
          WriteAssembly(asm, jsonData);
-
       }
 
       public static void RemovePrecompiledReferences(this MicroserviceDescriptor service, params string[] libraryNames)
@@ -399,6 +398,26 @@ namespace Beamable.Server.Editor
 
          return dllReferences;
       }
+      private static HashSet<string> GetReferencesAssemblies(ArrayDict jsonData)
+      {
+          var dllReferences = new HashSet<string>();
+          if (jsonData.TryGetValue(REFERENCES, out var referencesDllObject) &&
+              referencesDllObject is IEnumerable<object> existingReferences)
+          {
+              dllReferences = new HashSet<string>(existingReferences
+                  .Cast<string>()
+                  .Where(s => !string.IsNullOrEmpty(s))
+                  .ToArray());
+          }
+
+          return dllReferences;
+      }
+
+      public static HashSet<string> GetReferencesAssemblies(this AssemblyDefinitionAsset asm)
+      {
+          var jsonData = Json.Deserialize(asm.text) as ArrayDict;
+          return GetReferencesAssemblies(jsonData);
+      }
 
       private static void WriteAssembly(AssemblyDefinitionAsset asm, ArrayDict jsonData)
       {
@@ -407,6 +426,25 @@ namespace Beamable.Server.Editor
          var path = AssetDatabase.GetAssetPath(asm);
          File.WriteAllText(path,json);
          AssetDatabase.ImportAsset(path);
+      }
+
+      public static void AddAndRemoveReferences(this AssemblyDefinitionAsset asm, string[] referencesNamesToAdd, string[] referencesNamesToRemove)
+      {
+          var jsonData = Json.Deserialize(asm.text) as ArrayDict;
+          var dllReferences = GetReferencesAssemblies(jsonData);
+          
+          foreach (var lib in referencesNamesToAdd)
+          {
+              dllReferences.Add(lib);
+          }
+
+          foreach (var lib in referencesNamesToRemove)
+          {
+              dllReferences.Remove(lib);
+          }
+
+          jsonData[REFERENCES] = dllReferences.ToArray();
+          WriteAssembly(asm, jsonData);
       }
    }
 }
