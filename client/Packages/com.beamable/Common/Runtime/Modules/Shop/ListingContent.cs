@@ -246,16 +246,28 @@ namespace Beamable.Common.Shop
    {
       // TODO: StatRequirement, by way of OptionalStats, is used by AnnouncementContent too. Should this be in a shared location? ~ACM 2021-04-22
 
+      public StatRequirement()
+      {
+         domainCached = new OptionalString { Value = domainType.ToString().ToLower() };
+         accessCached = new OptionalString { Value = accessType.ToString().ToLower() };
+      }
+      
       #region domain
       
       [FormerlySerializedAs("domain")]
       [SerializeField, HideInInspector]
       private OptionalString domainOld;
+
+      private OptionalString domainCached;
       
       public OptionalString domain
       {
-         get => new OptionalString { Value = domainType.ToString().ToLower() };
-         set => domainType = EnumConversionHelper.ParseEnumType<DomainType>(value);
+         get => domainCached;
+         set
+         {
+            domainType = EnumConversionHelper.ParseEnumType<DomainType>(value);
+            domainCached.Value = domainType.ToString().ToLower();
+         }
       }
 
       [Tooltip("Domain of the stat (e.g. 'platform', 'game', 'client'). Default is 'game'.")]
@@ -269,10 +281,16 @@ namespace Beamable.Common.Shop
       [SerializeField, HideInInspector] [FormerlySerializedAs("access")]
       private OptionalString accessOld;
 
+      private OptionalString accessCached;
+
       public OptionalString access
       {
-         get => new OptionalString { Value = accessType.ToString().ToLower() };
-         set => accessType = EnumConversionHelper.ParseEnumType<AccessType>(value);
+         get => accessCached;
+         set
+         {
+            accessType = EnumConversionHelper.ParseEnumType<AccessType>(value);
+            accessCached.Value = accessType.ToString().ToLower();
+         }
       }
 
       [Tooltip("Visibility of the stat (e.g. 'private', 'public'). Default is 'private'.")] [SerializeField]
