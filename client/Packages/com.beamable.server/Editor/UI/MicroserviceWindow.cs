@@ -154,7 +154,7 @@ namespace Beamable.Editor.Microservice.UI
 
             if (Model != null)
             {
-                Model.OnRemoteOnlyServicesUpdated += () =>
+                Model.OnServerManifestUpdated += (manifest) =>
                 {
                     _microserviceContentVisualElement?.Refresh();
                 };

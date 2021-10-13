@@ -59,7 +59,6 @@ namespace Beamable.Editor.UI.Model
 
       public Action<ServiceManifest> OnServerManifestUpdated;
       public Action<GetStatusResponse> OnStatusUpdated;
-      public Action OnRemoteOnlyServicesUpdated;
 
       public void RefreshLocal()
       {
@@ -111,10 +110,7 @@ namespace Beamable.Editor.UI.Model
                   var remoteService = manifest.manifest.FirstOrDefault(remote => string.Equals(remote.serviceName, service.Name));
                   service.EnrichWithRemoteReference(remoteService);
                }
-               OnServerManifestUpdated?.Invoke(manifest);
-
-               bool getAnyOnlyRemote = false;
-
+    
                foreach(var singleManifest in ServerManifest.manifest)
                {
                   if (ContainsRemoteOnlyModel(singleManifest.serviceName))
@@ -125,11 +121,9 @@ namespace Beamable.Editor.UI.Model
                     };
 
                     AllRemoteOnlyServices.Add(RemoteMicroserviceModel.CreateNew(descriptor, this));
-                    getAnyOnlyRemote = true;
                }
 
-               if (getAnyOnlyRemote)
-                   OnRemoteOnlyServicesUpdated?.Invoke();
+               OnServerManifestUpdated?.Invoke(manifest);
             });
          });
       }
