@@ -30,9 +30,14 @@
 
 #SizeC {
     flex-direction: row;
-    width: 80px;
+    width: 140px;
 }
-#commentsText, #SizeC .template{
+
+#sizeDropdown {
+    width: 140px;
+}
+
+#commentsText {
     width: 90px;
 }
 

@@ -25,6 +25,7 @@
         </engine:VisualElement>
 
         <engine:VisualElement name="SizeC" class="column">
+            <beamable:DropdownVisualElement name="sizeDropdown" />
         </engine:VisualElement>
 
         <engine:VisualElement name="CommentsC" class="column">

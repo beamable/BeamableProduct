@@ -20,7 +20,7 @@
 #header{
     margin-top: 10px;
     padding-left: 10px;
-    padding-right: 10px;
+    padding-right: 40px;
     padding-bottom: 10px;
     -unity-text-align: upper-center;
     flex-direction: row;
@@ -32,17 +32,17 @@
     align-self: center;
     margin-left: 3px;
 }
-#nameC, #typeC, #depsC {
+#nameC, #depsC {
     width: 160px;
     align-self: stretch;
     flex-direction: row;
     align-content: stretch;
     flex-grow: 3;
-    padding-left: 12px;
 }
 
 #typeC {
     width: 140px;
+    padding-left: 12px;
 }
 
 #enabledC {
@@ -51,12 +51,10 @@
 }
 #CommentsC {
     width: 200px;
-    padding-left: 15px;
     justify-content: center;
 }
 #SizeC {
     width: 80px;
-    padding-left: 15px;
 }
 #commentsText, #SizeC .template{
     width: 80px;
@@ -166,8 +164,6 @@
     border-color: #000000;
     border-width: 1px;
     padding: 10px;
-    margin-right: 13px;
-    margin-left: 13px;
     min-height: 100px;
     flex-grow: 1;
 }

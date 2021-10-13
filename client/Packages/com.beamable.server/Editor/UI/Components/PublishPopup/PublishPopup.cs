@@ -41,8 +41,6 @@ namespace Beamable.Editor.Microservice.UI.Components
             }
         }
 
-        private const string SERVICE_PUBLISHED_KEY = "service_published_{0}";
-
         public ManifestModel Model { get; set; }
         public Action OnCloseRequested;
         public Action<ManifestModel> OnSubmit;
@@ -130,9 +128,6 @@ namespace Beamable.Editor.Microservice.UI.Components
             EditorPrefs.SetBool(GetPublishedKey(descriptor.Name), true);
         }
 
-        private string GetPublishedKey(string serviceName)
-        {
-            return string.Format(SERVICE_PUBLISHED_KEY, serviceName);
-        }
+        private string GetPublishedKey(string serviceName) => string.Format(Microservices.SERVICE_PUBLISHED_KEY, serviceName);
     }
 }

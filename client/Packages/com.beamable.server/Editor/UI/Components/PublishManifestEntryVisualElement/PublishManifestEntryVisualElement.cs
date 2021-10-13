@@ -46,11 +46,9 @@ namespace Beamable.Editor.Microservice.UI.Components
          checkbox.SetWithoutNotify(Model.Enabled);
          checkbox.OnValueChanged += b => Model.Enabled = b;
 
-         var templateDropdown = new PopupField<string>(TemplateSizes.ToList(), 0);
-         templateDropdown.AddToClassList("template");
-         templateDropdown.SetValueWithoutNotify(Model.TemplateId);
-         templateDropdown.RegisterValueChangedCallback(ce => { Model.TemplateId = ce.newValue;});
-         Root.Q<VisualElement>("SizeC").Add(templateDropdown);
+         var sizeDropdown = Root.Q<DropdownVisualElement>("sizeDropdown");
+         sizeDropdown.Setup(TemplateSizes.ToList(), null);
+         sizeDropdown.Refresh();
 
          var typeLabel = Root.Q<Label>("typeLabel");
          typeLabel.text = Model.Type;

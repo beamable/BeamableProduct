@@ -62,6 +62,8 @@ namespace Beamable.Server.Editor
             return _storageDescriptors;
          }
       }
+      
+      public const string SERVICE_PUBLISHED_KEY = "service_published_{0}";
 
       public static void RefreshDescriptors()
       {
@@ -569,5 +571,10 @@ namespace Beamable.Server.Editor
          Debug.Log("Service Deploy Complete");
       }
 
+      public static void MicroserviceCreated(string serviceName)
+      {
+         var key = string.Format(SERVICE_PUBLISHED_KEY, serviceName);
+         EditorPrefs.SetBool(key, false);
+      }
    }
 }
