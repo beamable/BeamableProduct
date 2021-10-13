@@ -23,6 +23,8 @@ namespace Beamable.Editor.Microservice.UI.Components
     public class MicroserviceContentVisualElement : MicroserviceComponent
     {
         public event Action<bool> OnAllServiceSelectedStatusChanged;
+        public event Action<bool> OnPreviewFatureWarningMessageShowed;
+
         private VisualElement _mainVisualElement;
         private ListView _listView;
         private ScrollView _scrollView;
@@ -108,6 +110,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             _modelToVisual.Clear();
 
+            bool hasStorageDependency = false;
+
             foreach (var serviceStatus in Model.GetAllServicesStatus())
             {
                 if (serviceStatus.Value == ServiceAvailability.Unknown)
@@ -146,6 +150,16 @@ namespace Beamable.Editor.Microservice.UI.Components
                         serviceElement.OnServiceStopFailed = MicroserviceStopFailed;
 
                         _servicesListElement.Add(serviceElement);
+
+                        if (service.Descriptor is MicroserviceDescriptor)
+                        {
+                            MicroserviceDescriptor desc = (MicroserviceDescriptor)service.Descriptor;
+                            if (desc.GetStorageReferences()?.Count() > 0 || desc.HasMongoLibraries())
+                            {
+                                hasStorageDependency = true;
+                            }
+                        }
+
                         break;
                     case ServiceType.StorageObject:
                         var mongoService = Model.GetModel<MongoStorageModel>(serviceStatus.Key);
@@ -165,6 +179,16 @@ namespace Beamable.Editor.Microservice.UI.Components
                         throw new ArgumentOutOfRangeException();
                 }
             }
+
+            if (hasStorageDependency)
+            {
+                var storagePreviewWarning = new StorageDepencencyWarningModel();
+                var previewElement = new StorageDepencencyWarningVisualElement() { StorageDepencencyWarningModel = storagePreviewWarning };
+                Root.Q<VisualElement>("announcementList").Add(previewElement);
+                previewElement.Refresh();
+            }
+
+            OnPreviewFatureWarningMessageShowed?.Invoke(!hasStorageDependency);
 
             _actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
             _actionPrompt.Refresh();

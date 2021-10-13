@@ -150,6 +150,10 @@ namespace Beamable.Editor.Microservice.UI
 
             _microserviceContentVisualElement = root.Q<MicroserviceContentVisualElement>("microserviceContentVisualElement");
             _microserviceContentVisualElement.Model = Model;
+
+            _microserviceContentVisualElement.OnPreviewFatureWarningMessageShowed +=
+                (state) => _actionBarVisualElement?.SetPublishButtonState(state);
+
             _microserviceContentVisualElement.Refresh();
 
             _microserviceBreadcrumbsVisualElement.OnSelectAllCheckboxChanged +=

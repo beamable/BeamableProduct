@@ -514,17 +514,6 @@ namespace Beamable.Server.Editor
             }
             entryModel.Dependencies = serviceDependencies;
 
-            if (entryModel.Dependencies.Count > 0)
-            {
-                EditorUtility.DisplayDialog(
-                     title: "Storage Dependency Error",
-                     message: "This feature is in Preview and deployment will not be possible until a future version of Beamable.",
-                     ok: "Ok"
-                );
-
-                return;
-            }
-
             Debug.Log($"Uploading container service=[{descriptor.Name}]");
 
             await uploader.UploadContainer(descriptor, () =>
