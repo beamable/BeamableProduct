@@ -19,13 +19,15 @@ namespace Beamable.Editor.UI.Buss.Components
         private readonly string _contentText;
         private readonly Action _onConfirm;
         private readonly Action _onClose;
+        private readonly bool _showCancelButton;
 
-        public ConfirmationPopupVisualElement(string contentText, Action onConfirm, Action onClose) : base(
+        public ConfirmationPopupVisualElement(string contentText, Action onConfirm, Action onClose, bool showCancelButton = true) : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(ConfirmationPopupVisualElement)}/{nameof(ConfirmationPopupVisualElement)}")
         {
             _contentText = contentText;
             _onConfirm = onConfirm;
             _onClose = onClose;
+            _showCancelButton = showCancelButton;
         }
 
         public override void Refresh()
@@ -36,19 +38,27 @@ namespace Beamable.Editor.UI.Buss.Components
             _bodyLabel.text = _contentText;
 
             _okButton = Root.Q<PrimaryButtonVisualElement>("okButton");
-            _okButton.Button.clickable.clicked += OkButton_OnClick;
+            _okButton.Button.clickable.clicked += HandleOkButtonClicked;
 
             _cancelButton = Root.Q<Button>("cancelButton");
-            _cancelButton.clickable.clicked += CancelButton_OnClick;
+
+            if (_showCancelButton)
+            {
+                _cancelButton.clickable.clicked += HandleCancelButtonClicked;
+            }
+            else
+            {
+                _cancelButton.RemoveFromHierarchy();
+            }
         }
 
-        private void OkButton_OnClick()
+        private void HandleOkButtonClicked()
         {
             _onConfirm?.Invoke();
             _onClose?.Invoke();
         }
 
-        private void CancelButton_OnClick()
+        private void HandleCancelButtonClicked()
         {
             _onClose?.Invoke();
         }

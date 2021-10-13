@@ -120,6 +120,13 @@ namespace Beamable.Editor.UI.Buss.Components
 
             // TODO: Somehow position the utility based on the parent view.
             wnd.Refresh();
+            EditorApplication.delayCall += () =>
+            {
+                Debug.Log($"${content.contentRect}");
+                wnd.minSize = new Vector2(content.contentRect.width, content.contentRect.height);
+                wnd.maxSize = new Vector2(content.contentRect.width, content.contentRect.height);
+                Debug.Log($"${content.contentRect}");
+            };
             wnd.GetRootVisualContainer().AddToClassList("fill-popup-window");
             return wnd;
         }

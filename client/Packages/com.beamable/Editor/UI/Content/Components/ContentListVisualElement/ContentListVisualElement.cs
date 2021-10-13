@@ -431,7 +431,6 @@ namespace Beamable.Editor.Content.Components
 
             BeamablePopupWindow window = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ConfirmWindowHeader,
                 confirmationPopup, ContentManagerWindow.Instance, ContentManagerConstants.ConfirmationPopupSize);
-            window.minSize = ContentManagerConstants.ConfirmationPopupSize;
             
             ContentManagerWindow.Instance.SetCurrentWindow(window);
         }
