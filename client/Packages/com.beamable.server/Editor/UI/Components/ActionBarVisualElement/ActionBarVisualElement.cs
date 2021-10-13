@@ -131,6 +131,11 @@ namespace Beamable.Editor.Microservice.UI.Components
             _buildAll.SetEnabled(false);
             _publish.SetEnabled(false);
         }
+
+        public void SetPublishButtonState(bool isEnabled)
+        {
+            _publish.SetEnabled(isEnabled);
+        }
     }
 
     
