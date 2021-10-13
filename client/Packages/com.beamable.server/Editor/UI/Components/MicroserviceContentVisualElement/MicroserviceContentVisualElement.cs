@@ -149,7 +149,7 @@ namespace Beamable.Editor.Microservice.UI.Components
                         serviceElement.OnServiceStartFailed = MicroserviceStartFailed;
                         serviceElement.OnServiceStopFailed = MicroserviceStopFailed;
 
-                        hasStorageDependency |= service.Descriptor.IsPublishAvailable();
+                        hasStorageDependency |= service.Descriptor.IsPublishFeatureAvailable();
 
                         _servicesListElement.Add(serviceElement);
                         break;

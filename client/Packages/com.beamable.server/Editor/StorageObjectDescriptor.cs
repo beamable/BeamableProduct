@@ -25,7 +25,7 @@ namespace Beamable.Server.Editor
       public string LocalToolContainerName => $"tool_{Name}_storage";
       public string ToolImageName => $"mongo-express:latest";
 
-      public bool IsPublishAvailable()
+      public bool IsPublishFeatureAvailable()
       {
          return false;
       }
