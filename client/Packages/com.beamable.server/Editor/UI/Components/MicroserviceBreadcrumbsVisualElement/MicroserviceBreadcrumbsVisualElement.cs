@@ -109,15 +109,6 @@ namespace Beamable.Editor.Microservice.UI.Components
                     break;
             }
         }
-
-        private void PopulateServicesFilterMenu(ContextualMenuPopulateEvent evt)
-        {
-            var currentFilter = MicroservicesDataModel.Instance.Filter;
-            evt.menu.BeamableAppendAction("All types", pos => OnNewServicesDisplayFilterSelected?.Invoke(ServicesDisplayFilter.AllTypes), currentFilter != ServicesDisplayFilter.AllTypes);
-            evt.menu.BeamableAppendAction("Microservice", pos => OnNewServicesDisplayFilterSelected?.Invoke(ServicesDisplayFilter.Microservices), currentFilter != ServicesDisplayFilter.Microservices);
-            evt.menu.BeamableAppendAction("Storage", pos => OnNewServicesDisplayFilterSelected?.Invoke(ServicesDisplayFilter.Storages), currentFilter != ServicesDisplayFilter.Storages);
-        }
-        
         
         private void HandleServicesFilterButter(Rect visualElementBounds)
         {
