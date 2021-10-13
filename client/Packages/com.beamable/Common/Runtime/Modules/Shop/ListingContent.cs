@@ -184,12 +184,22 @@ namespace Beamable.Common.Shop
    }
 
    [System.Serializable]
-   public class ListingPrice
+   public class ListingPrice : ISerializationCallbackReceiver
    {
-      [Tooltip(ContentObject.TooltipType1)]
-      [MustBeOneOf("sku", "currency")]
-      public string type;
+      [FormerlySerializedAs("type")]
+      [SerializeField, HideInInspector]
+      private string typeOld;
 
+      public string type
+      {
+         get => priceType.ToString().ToLower();
+         set => priceType = EnumConversionHelper.ParseEnumType<PriceType>(value);
+      }
+
+      [SerializeField] [Tooltip(ContentObject.TooltipType1)]
+      [MustBeNonDefault]
+      private PriceType priceType;
+      
       [Tooltip(ContentObject.TooltipSymbol1)]
       [MustReferenceContent(false, typeof(CurrencyContent), typeof(SKUContent))]
       public string symbol;
@@ -197,6 +207,15 @@ namespace Beamable.Common.Shop
       [Tooltip(ContentObject.TooltipAmount1)]
       [MustBeNonNegative]
       public int amount;
+
+      public void OnBeforeSerialize()
+      {
+      }
+
+      public void OnAfterDeserialize()
+      {
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref priceType, ref typeOld);
+      }
    }
 
    [System.Serializable]
@@ -223,32 +242,99 @@ namespace Beamable.Common.Shop
    }
 
    [System.Serializable]
-   public class StatRequirement
+   public class StatRequirement : ISerializationCallbackReceiver
    {
       // TODO: StatRequirement, by way of OptionalStats, is used by AnnouncementContent too. Should this be in a shared location? ~ACM 2021-04-22
 
+      public StatRequirement()
+      {
+         domainCached = new OptionalString { Value = domainType.ToString().ToLower() };
+         accessCached = new OptionalString { Value = accessType.ToString().ToLower() };
+      }
+      
+      #region domain
+      
+      [FormerlySerializedAs("domain")]
+      [SerializeField, HideInInspector]
+      private OptionalString domainOld;
+
+      private OptionalString domainCached;
+      
+      public OptionalString domain
+      {
+         get => domainCached;
+         set
+         {
+            domainType = EnumConversionHelper.ParseEnumType<DomainType>(value);
+            domainCached.Value = domainType.ToString().ToLower();
+         }
+      }
+
       [Tooltip("Domain of the stat (e.g. 'platform', 'game', 'client'). Default is 'game'.")]
-      [MustBeOneOf("platform", "game", "client")]
-      public OptionalString domain;
+      [SerializeField]
+      private DomainType domainType;
 
-      [Tooltip("Visibility of the stat (e.g. 'private', 'public'). Default is 'private'.")]
-      [MustBeOneOf("private", "public")]
-      public OptionalString access;
+      #endregion
+      
+      #region access
+      
+      [SerializeField, HideInInspector] [FormerlySerializedAs("access")]
+      private OptionalString accessOld;
 
-      [Tooltip(ContentObject.TooltipStat1)]
-      [CannotBeBlank]
+      private OptionalString accessCached;
+
+      public OptionalString access
+      {
+         get => accessCached;
+         set
+         {
+            accessType = EnumConversionHelper.ParseEnumType<AccessType>(value);
+            accessCached.Value = accessType.ToString().ToLower();
+         }
+      }
+
+      [Tooltip("Visibility of the stat (e.g. 'private', 'public'). Default is 'private'.")] [SerializeField]
+      private AccessType accessType;
+      
+      #endregion
+
+      [Tooltip(ContentObject.TooltipStat1)] [CannotBeBlank]
       public string stat;
 
-      [Tooltip(ContentObject.TooltipConstraint1)]
-      [MustBeComparatorString]
-      public string constraint;
+      #region constraint
+      
+      [FormerlySerializedAs("constraint")] 
+      [SerializeField, HideInInspector]
+      private string constraintOld;
 
-      [Tooltip(ContentObject.TooltipValue1)]
-      public int value;
+      public string constraint
+      {
+         get => constraintType.ToString().ToLower();
+         set => constraintType = EnumConversionHelper.ParseEnumType<ComparatorType>(value);
+      }
+
+      [Tooltip(ContentObject.TooltipConstraint1)] [SerializeField]
+      [MustBeNonDefault]
+      private ComparatorType constraintType;
+      
+      #endregion
+
+      [Tooltip(ContentObject.TooltipValue1)] public int value;
+
+      public void OnBeforeSerialize()
+      {
+      }
+
+      public void OnAfterDeserialize()
+      {
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref accessType, ref accessOld);
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld);
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref domainType, ref domainOld);
+      }
    }
 
    [System.Serializable]
-   public class CohortRequirement
+   public class CohortRequirement : ISerializationCallbackReceiver
    {
       [Tooltip(ContentObject.TooltipCohortTrial1)]
       [CannotBeBlank]
@@ -258,9 +344,28 @@ namespace Beamable.Common.Shop
       [CannotBeBlank]
       public string cohort;
 
+      [FormerlySerializedAs("constraint")]
+      [SerializeField, HideInInspector]
+      private string constraintOld;
+
+      public string constraint
+      {
+         get => constraintType.ToString().ToLower();
+         set => EnumConversionHelper.ParseEnumType<ComparatorType>(value);
+      }
+
+      [SerializeField]
       [Tooltip(ContentObject.TooltipConstraint1)]
-      [MustBeComparatorString]
-      public string constraint;
+      private ComparatorType constraintType;
+
+      public void OnBeforeSerialize()
+      {
+      }
+
+      public void OnAfterDeserialize()
+      {
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld);
+      }
    }
 
    [System.Serializable]
@@ -270,14 +375,32 @@ namespace Beamable.Common.Shop
    }
 
    [System.Serializable]
-   public class OfferConstraint
+   public class OfferConstraint : ISerializationCallbackReceiver
    {
+      [FormerlySerializedAs("constraint")]
+      public string constraintOld;
+
+      public string constraint
+      {
+         get => comparatorType.ToString().ToLower();
+         set => comparatorType = EnumConversionHelper.ParseEnumType<ComparatorType>(value);
+      }
+      
+      [SerializeField] 
       [Tooltip(ContentObject.TooltipConstraint1)]
-      [MustBeComparatorString]
-      public string constraint;
+      private ComparatorType comparatorType;
 
       [Tooltip(ContentObject.TooltipValue1)]
       public int value;
+
+      public void OnBeforeSerialize()
+      {
+      }
+
+      public void OnAfterDeserialize()
+      {
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref comparatorType, ref constraintOld);
+      }
    }
    [System.Serializable]
    public class OptionalColor : Optional<Color>
