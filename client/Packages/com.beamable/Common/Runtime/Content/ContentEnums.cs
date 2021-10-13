@@ -65,7 +65,7 @@ namespace Beamable.Common.Content
 
     public enum ComparatorType
     {
-        Eq, Ne, Gt, Ge, Lt, Le
+        None, Eq, Ne, Gt, Ge, Lt, Le
     }
 
     public enum DomainType

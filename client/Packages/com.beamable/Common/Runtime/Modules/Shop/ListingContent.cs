@@ -296,6 +296,7 @@ namespace Beamable.Common.Shop
       }
 
       [Tooltip(ContentObject.TooltipConstraint1)] [SerializeField]
+      [MustBeNonDefault]
       private ComparatorType constraintType;
       
       #endregion
