@@ -62,6 +62,16 @@ namespace Beamable.Editor.Microservice.UI.Components
         {
         }
 
+        protected override void OnDestroy()
+        {
+            if (_selectAllLabeledCheckbox != null)
+            {
+                _selectAllLabeledCheckbox.OnValueChanged -= TriggerSelectAll;
+            }
+
+            base.OnDestroy();
+        }
+
         public override void Refresh()
         {
             base.Refresh();
@@ -77,8 +87,14 @@ namespace Beamable.Editor.Microservice.UI.Components
             _selectAllLabeledCheckbox = Root.Q<LabeledCheckboxVisualElement>("selectAllLabeledCheckbox");
             _selectAllLabeledCheckbox.Refresh();
             _selectAllLabeledCheckbox.DisableIcon();
-            _selectAllLabeledCheckbox.OnValueChanged += b => OnSelectAllCheckboxChanged?.Invoke(b);
+            _selectAllLabeledCheckbox.OnValueChanged -= TriggerSelectAll;
+            _selectAllLabeledCheckbox.OnValueChanged += TriggerSelectAll;
 
+        }
+
+        void TriggerSelectAll(bool value)
+        {
+            OnSelectAllCheckboxChanged?.Invoke(value);
         }
 
         void UpdateServicesFilterText(ServicesDisplayFilter filter)

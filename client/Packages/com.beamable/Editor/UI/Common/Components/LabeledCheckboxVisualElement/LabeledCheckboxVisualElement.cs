@@ -16,6 +16,8 @@ namespace Beamable.Editor.UI.Components
 {
     public class LabeledCheckboxVisualElement : BeamableVisualElement
     {
+        public static readonly string ComponentPath = $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledCheckboxVisualElement)}/{nameof(LabeledCheckboxVisualElement)}";
+
         public new class UxmlFactory : UxmlFactory<LabeledCheckboxVisualElement, UxmlTraits>
         {
         }
@@ -39,6 +41,7 @@ namespace Beamable.Editor.UI.Components
             readonly UxmlStringAttributeDescription _icon = new UxmlStringAttributeDescription
             { name = "icon", defaultValue = "" };
 
+            // used for flip order of child elements from Label-Icon-Checkbox to Checkbox-Icon-Label
             readonly UxmlBoolAttributeDescription _flip = new UxmlBoolAttributeDescription
             { name = "flip", defaultValue = false };
 
@@ -67,8 +70,7 @@ namespace Beamable.Editor.UI.Components
         private string Label { get; set; }
         private string Icon { get; set; }
 
-        public LabeledCheckboxVisualElement() : base(
-            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledCheckboxVisualElement)}/{nameof(LabeledCheckboxVisualElement)}")
+        public LabeledCheckboxVisualElement() : base(ComponentPath)
         {
         }
 
