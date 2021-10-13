@@ -81,12 +81,13 @@ namespace Beamable.Server.Editor.DockerCommands
          {
 #if !UNITY_EDITOR_WIN
             return false;
-#endif
+#else
             var fullNamespaceName = $"Unity.Beamable.Runtime.UserMicroService.{ImageName}";
             var buildPathResult = Path.Combine(rootPath, BuildPath, fullNamespaceName,
                $"{fullNamespaceName}.asmdef.meta");
 
             return buildPathResult.Length >= 255;
+#endif
          }
 
          // copy over the assembly definition folders...
