@@ -26,7 +26,7 @@ namespace Beamable.Editor.Login.UI.Components
       private Label _errorText;
       private Button _newUserButton;
       private Button _forgotPasswordButton;
-      private readonly List<FormConstraint> _constraints = new List<FormConstraint>();
+      private FormConstraint[] _constraints;
 
       public ExistingCustomerVisualElement() : base(nameof(ExistingCustomerVisualElement))
       {
@@ -78,10 +78,8 @@ namespace Beamable.Editor.Login.UI.Components
          _passwordTextField.RegisterCallback<KeyDownEvent>(HandlePasswordFieldKeyDown,
             TrickleDown.TrickleDown);
 
-         _constraints.Add(isAlias);
-         _constraints.Add(isEmail);
-         _constraints.Add(isPassword);
-         _continueButton.AddGateKeeper(_constraints.ToArray());
+         _constraints = new[] {isAlias, isEmail, isPassword};
+         _continueButton.AddGateKeeper(_constraints);
 
          _errorText = Root.Q<Label>("errorLabel");
          _errorText.AddTextWrapStyle();
