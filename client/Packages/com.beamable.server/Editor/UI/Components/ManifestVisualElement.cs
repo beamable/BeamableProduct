@@ -169,7 +169,7 @@ namespace Beamable.Server.Editor.UI.Components
        private void SetEnabled(bool enabled)
        {
            _enabled = enabled;
-           var service = MicroserviceConfiguration.Instance.GetEntry(Name);
+           var service = MicroserviceConfiguration.Instance.GetStorageEntry(Name);
            service.Enabled = enabled;
        }
    }

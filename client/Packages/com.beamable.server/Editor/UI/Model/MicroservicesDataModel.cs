@@ -141,8 +141,18 @@ namespace Beamable.Editor.UI.Model
 
          foreach (var configEntry in MicroserviceConfiguration.Instance.Microservices)
          {
-            var remotely = servicesStatus?.Find(status => status.serviceName.Equals(configEntry.ServiceName))!= null;
-            result.Add(configEntry.ServiceName, getServiceStatus(ContainsModel(configEntry.ServiceName), remotely));
+            var name = configEntry.ServiceName;
+            var remotely = servicesStatus?.Find(status => status.serviceName.Equals(name))!= null;
+            if (!result.ContainsKey(name))
+               result.Add(name, getServiceStatus(ContainsModel(configEntry.ServiceName), remotely));
+         }
+
+         foreach (var storage in MicroserviceConfiguration.Instance.StorageObjects)
+         {
+            var name = storage.StorageName;
+            var remotely = servicesStatus?.Find(status => status.serviceName.Equals(name)) != null;
+            if (!result.ContainsKey(name))
+               result.Add(name, getServiceStatus(ContainsModel(name), remotely));
          }
          
          return result;

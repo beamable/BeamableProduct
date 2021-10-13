@@ -30,6 +30,7 @@ namespace Beamable.Editor.UI.Model
         public override IBeamableBuilder Builder => ServiceBuilder;
         public override IDescriptor Descriptor => ServiceDescriptor;
         public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
+        public StorageConfigurationEntry Config { get; private set; }
 
         public override event Action<Task> OnStart;
         public override event Action<Task> OnStop;
@@ -40,6 +41,7 @@ namespace Beamable.Editor.UI.Model
             {
                 ServiceDescriptor = descriptor,
                 ServiceBuilder = Microservices.GetStorageBuilder(descriptor),
+                Config = MicroserviceConfiguration.Instance.GetStorageEntry(descriptor.Name)
             };
         }
 
