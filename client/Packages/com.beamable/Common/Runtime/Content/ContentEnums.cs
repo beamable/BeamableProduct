@@ -80,6 +80,6 @@ namespace Beamable.Common.Content
 
     public enum PriceType
     {
-        Sku, Currency
+        None, Sku, Currency
     }
 }

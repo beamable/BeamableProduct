@@ -197,6 +197,7 @@ namespace Beamable.Common.Shop
       }
 
       [SerializeField] [Tooltip(ContentObject.TooltipType1)]
+      [MustBeNonDefault]
       private PriceType priceType;
       
       [Tooltip(ContentObject.TooltipSymbol1)]
