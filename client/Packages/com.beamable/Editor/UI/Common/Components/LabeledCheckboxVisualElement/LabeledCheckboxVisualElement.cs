@@ -74,6 +74,10 @@ namespace Beamable.Editor.UI.Components
         {
         }
 
+        public LabeledCheckboxVisualElement(string uxmlPath, string ussPath) : base(uxmlPath, ussPath)
+        {
+        }
+
         public override void Refresh()
         {
             base.Refresh();
