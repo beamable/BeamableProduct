@@ -77,12 +77,18 @@ namespace Beamable.Editor.Microservice.UI.Components
             _refreshButton = Root.Q<Button>("refreshButton");
             _refreshButton.clickable.clicked += () => { OnRefreshButtonClicked?.Invoke(); };
             _refreshButton.tooltip = "Refresh Window";
-
             _createNew = Root.Q<Button>("createNew");
-            var manipulator = new ContextualMenuManipulator(PopulateCreateMenu);
-            manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
-            _createNew.clickable.activators.Clear();
-            _createNew.AddManipulator(manipulator);
+            if (MicroserviceConfiguration.Instance.EnableStoragePreview)
+            {
+                var manipulator = new ContextualMenuManipulator(PopulateCreateMenu);
+                manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
+                _createNew.clickable.activators.Clear();
+                _createNew.AddManipulator(manipulator);
+            }
+            else
+            {
+                _createNew.clickable.clicked += () => OnCreateNewClicked?.Invoke(ServiceType.MicroService);
+            }
             _createNew.SetEnabled(!DockerCommand.DockerNotInstalled);
             
             _startAll = Root.Q<Button>("startAll");
