@@ -31,7 +31,6 @@ namespace Beamable.Editor.UI.Components
         public string Minute => _minutePicker.Value;
         public string Second => _secondPicker.Value;
 
-
         public HourPickerVisualElement() : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(HourPickerVisualElement)}/{nameof(HourPickerVisualElement)}")
         {

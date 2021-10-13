@@ -145,8 +145,8 @@ namespace Beamable.Editor.Schedules
 
         public void Set(Schedule schedule, EventContent content)
         {
-            _descriptionComponent.SetValueWithoutNotify(schedule.description);
-            _eventNameComponent.SetValueWithoutNotify(content.name);
+            _descriptionComponent.Value = schedule.description;
+            _eventNameComponent.Value = content.name; 
 
             var neverExpires = !schedule.activeTo.HasValue;
             if (!neverExpires && schedule.TryGetActiveTo(out var activeToDate))

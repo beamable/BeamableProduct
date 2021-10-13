@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
 using Editor.UI.Validation;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -43,9 +44,19 @@ namespace Beamable.Editor.UI.Components
 
         private Label _label;
         private TextField _textField;
+        private string _value;
 
         public string Label { get; set; }
-        public string Value { get; set; }
+
+        public string Value
+        {
+            get => _value;
+            set
+            {
+                _value = value;
+                _textField?.SetValueWithoutNotify(_value);
+            } 
+        }
 
         public LabeledTextField() : base($"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledTextField)}/{nameof(LabeledTextField)}")
         {
@@ -60,15 +71,7 @@ namespace Beamable.Editor.UI.Components
 
             _textField = Root.Q<TextField>("textField");
             _textField.value = Value;
-
             _textField.RegisterValueChangedCallback(ValueChanged);
-        }
-
-        public void SetValueWithoutNotify(string value)
-        {
-            // TODO: we shouldn't need to set it up this way, Ideally we could just use the Property setter
-            Value = value;
-            _textField.SetValueWithoutNotify(value);
         }
 
         protected override void OnDestroy()

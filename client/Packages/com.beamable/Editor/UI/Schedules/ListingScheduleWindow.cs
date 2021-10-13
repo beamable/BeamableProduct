@@ -169,10 +169,10 @@ namespace Beamable.Editor.Schedules
 
         public void Set(Schedule schedule, ListingContent content)
         {
-            _descriptionComponent.SetValueWithoutNotify(schedule.description);
+            _descriptionComponent.Value = schedule.description;
 
             _eventNameComponent.SetEnabled(false);
-            _eventNameComponent.SetValueWithoutNotify(content.name);
+            _eventNameComponent.Value = content.name;
 
             var neverExpires = !schedule.activeTo.HasValue;
             if (!neverExpires && schedule.TryGetActiveTo(out var activeToDate))

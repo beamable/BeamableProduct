@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
-using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -23,9 +21,6 @@ namespace Beamable.Editor.UI.Components
             readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
                 {name = "label", defaultValue = "Label"};
 
-            readonly UxmlStringAttributeDescription _value = new UxmlStringAttributeDescription
-                {name = "value"};
-
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
                 get { yield break; }
@@ -37,7 +32,6 @@ namespace Beamable.Editor.UI.Components
                 if (ve is LabeledNumberPicker component)
                 {
                     component.Label = _label.GetValueFromBag(bag, cc);
-                    component.Value = _value.GetValueFromBag(bag, cc);
                 }
             }
         }
@@ -46,7 +40,7 @@ namespace Beamable.Editor.UI.Components
         private Button _button;
         private List<string> _options;
 
-        public string Value { get; private set; }
+        public string Value => _labeledTextFieldComponent.Value;
         private string Label { get; set; }
 
         public LabeledNumberPicker() : base($"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledNumberPicker)}/{nameof(LabeledNumberPicker)}")
@@ -100,8 +94,7 @@ namespace Beamable.Editor.UI.Components
 
         private void SetOption(string value)
         {
-            Value = value;
-            _labeledTextFieldComponent.Value = Value;
+            _labeledTextFieldComponent.Value = value;
             _labeledTextFieldComponent.Refresh();
         }
 
