@@ -23,7 +23,7 @@ namespace Beamable.Editor.Microservice.UI.Components
     public class MicroserviceContentVisualElement : MicroserviceComponent
     {
         public event Action<bool> OnAllServiceSelectedStatusChanged;
-        public event Action<bool> OnPreviewFatureWarningMessageShowed;
+        public event Action<bool> OnPreviewFeatureWarningMessageShowed;
 
         private VisualElement _mainVisualElement;
         private ListView _listView;
@@ -149,17 +149,9 @@ namespace Beamable.Editor.Microservice.UI.Components
                         serviceElement.OnServiceStartFailed = MicroserviceStartFailed;
                         serviceElement.OnServiceStopFailed = MicroserviceStopFailed;
 
+                        hasStorageDependency |= service.Descriptor.IsPublishAvailable();
+
                         _servicesListElement.Add(serviceElement);
-
-                        if (service.Descriptor is MicroserviceDescriptor)
-                        {
-                            MicroserviceDescriptor desc = (MicroserviceDescriptor)service.Descriptor;
-                            if (desc.GetStorageReferences()?.Count() > 0 || desc.HasMongoLibraries())
-                            {
-                                hasStorageDependency = true;
-                            }
-                        }
-
                         break;
                     case ServiceType.StorageObject:
                         var mongoService = Model.GetModel<MongoStorageModel>(serviceStatus.Key);
@@ -188,7 +180,7 @@ namespace Beamable.Editor.Microservice.UI.Components
                 previewElement.Refresh();
             }
 
-            OnPreviewFatureWarningMessageShowed?.Invoke(!hasStorageDependency);
+            OnPreviewFeatureWarningMessageShowed?.Invoke(!hasStorageDependency);
 
             _actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
             _actionPrompt.Refresh();
