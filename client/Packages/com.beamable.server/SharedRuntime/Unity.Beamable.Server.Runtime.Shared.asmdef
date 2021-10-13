@@ -1,10 +1,10 @@
-{
+﻿{
     "name": "Unity.Beamable.Server.Runtime.Shared",
     "rootNamespace": "",
     "references": [
         "Unity.Beamable.Runtime.Common"
     ],
-    "includePlatforms": [],
+    "includePlatforms": ["Editor"],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
