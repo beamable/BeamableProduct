@@ -40,5 +40,5 @@ ArchiveManifestsVisualElement > * {
 
 LabeledCheckboxVisualElement #checkbox {
 
-    width: 40;
+    width: 40px;
 }

@@ -128,7 +128,7 @@
     margin-top: 3px;
     margin-bottom: 3px;
     flex-grow: 1;
-	margin-right: 0;
+	margin-right: 0px;
 }
 
 #moreBtn{

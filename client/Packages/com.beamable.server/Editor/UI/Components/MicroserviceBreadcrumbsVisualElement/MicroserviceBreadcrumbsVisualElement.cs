@@ -131,14 +131,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         public void SetSelectAllVisibility(bool value)
         {
-            if (value)
-            {
-                _selectAllLabeledCheckbox.RemoveFromClassList("hidden");
-            }
-            else
-            {
-                _selectAllLabeledCheckbox.AddToClassList("hidden");
-            }
+            _selectAllLabeledCheckbox.EnableInClassList("hidden", !value);
         }
     }
     
