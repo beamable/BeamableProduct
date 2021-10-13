@@ -148,6 +148,10 @@ namespace Beamable.Editor.Microservice.UI.Components
                         _servicesListElement.Add(serviceElement);
                         break;
                     case ServiceType.StorageObject:
+                        if (!MicroserviceConfiguration.Instance.EnableStoragePreview)
+                        {
+                            continue;
+                        }
                         var mongoService = Model.GetModel<MongoStorageModel>(serviceStatus.Key);
                         var mongoServiceElement = new StorageObjectVisualElement { Model = mongoService };
                         _modelToVisual[mongoService] = mongoServiceElement;
