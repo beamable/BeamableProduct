@@ -25,9 +25,9 @@ namespace Beamable.Editor.Microservice.UI.Components
         public new class UxmlFactory : UxmlFactory<StorageObjectVisualElement, UxmlTraits> {}
 
         protected override string ScriptName => nameof(StorageObjectVisualElement);
-        
+
         private MongoStorageModel _mongoStorageModel;
-        
+
         protected override void UpdateStatusIcon()
         {
             _statusIcon.ClearClassList();
@@ -51,7 +51,7 @@ namespace Beamable.Editor.Microservice.UI.Components
                     statusText = "Different";
                     break;
             }
-            
+
             _statusIcon.tooltip = _statusLabel.text = statusText;
             _statusIcon.AddToClassList(statusClassName);
         }
@@ -59,6 +59,17 @@ namespace Beamable.Editor.Microservice.UI.Components
         {
             // TODO
         }
+
+        protected override void SetupProgressBarForStart(Task _)
+        {
+            // new RunMongoImageLogParser(_loadingBar, _mongoStorageModel) { OnFailure = OnStartFailed };
+        }
+
+        protected override void SetupProgressBarForStop(Task _)
+        {
+            // new StopMongoImageLogParser(_loadingBar, _mongoStorageModel) { OnFailure = OnStopFailed };
+        }
+
         protected override void QueryVisualElements()
         {
             base.QueryVisualElements();

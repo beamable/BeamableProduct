@@ -12,6 +12,44 @@ namespace Beamable.Server.Editor.DockerCommands
 {
    public static class MicroserviceLogHelper
    {
+
+      public static bool HandleMongoLog(StorageObjectDescriptor storage, string data)
+      {
+         Debug.Log("MESSAGE FROM MONGO: " + data);
+         LogLevel ParseMongoLevel(string level)
+         {
+            switch (level)
+            {
+               case "I": return LogLevel.INFO;
+               case "F": return LogLevel.FATAL;
+               case "E": return LogLevel.ERROR;
+               case "W": return LogLevel.WARNING;
+               default: return LogLevel.DEBUG;
+            }
+         }
+
+         if (!(Json.Deserialize(data) is ArrayDict jsonDict)) return false;
+
+         var attrs = ((ArrayDict) jsonDict["attr"]);
+         var logMessage = new LogMessage
+         {
+            Message = $" Ctx=[{jsonDict["ctx"] as string}] {jsonDict["msg"] as string}",
+            Timestamp = ((ArrayDict)jsonDict["t"])["$date"] as string,
+            Level = ParseMongoLevel(jsonDict["s"] as string),
+            ParameterText = attrs == null
+               ? ""
+               : string.Join("\n", attrs.Select(kvp => $"{kvp.Key}={Json.Serialize(kvp.Value, new StringBuilder())}")),
+            Parameters = new Dictionary<string, object>()
+         };
+
+         EditorApplication.delayCall += () =>
+         {
+            MicroservicesDataModel.Instance.AddLogMessage(storage, logMessage);
+         };
+         return true;
+
+      }
+
       public static bool HandleLog(IDescriptor descriptor, string label, string data)
       {
          if (Json.Deserialize(data) is ArrayDict jsonDict)
@@ -139,7 +177,7 @@ namespace Beamable.Server.Editor.DockerCommands
 #endif
          }
       }
-   
+
 
       public static bool HandleLog(MicroserviceDescriptor descriptor, LogLevel logLevel, string message, Color color, bool isBoldMessage, string postfixIcon)
       {

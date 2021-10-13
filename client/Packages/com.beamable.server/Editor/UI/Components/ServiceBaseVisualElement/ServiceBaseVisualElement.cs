@@ -25,7 +25,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         protected ServiceBaseVisualElement() : base(nameof(ServiceBaseVisualElement))
         {
         }
-        
+
         public ServiceModelBase Model { get; set; }
         protected abstract string ScriptName { get; }
 
@@ -33,16 +33,16 @@ namespace Beamable.Editor.Microservice.UI.Components
         private const float MAX_HEIGHT = 500.0f;
         private const float DETACHED_HEIGHT = 100.0f;
         private const float DEFAULT_HEIGHT = 300.0f;
-        
+
         private float _storedHeight = 0;
-        
+
         protected Button _startButton;
         protected LoadingBarElement _loadingBar;
         protected VisualElement _statusIcon;
         protected Label _statusLabel;
         protected Label _remoteStatusLabel;
         protected VisualElement _remoteStatusIcon;
-        
+
         private Label _nameTextField;
         private Button _moreBtn;
         private BeamableCheckboxVisualElement _checkbox;
@@ -61,7 +61,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             Microservices.onBeforeDeploy -= SetupProgressBarForDeployment;
 
             if (Model == null) return;
-            
+
             Model.OnStart -= SetupProgressBarForStart;
             Model.OnStop -= SetupProgressBarForStop;
             Model.OnLogsAttachmentChanged -= CreateLogSection;
@@ -115,7 +115,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             _nameTextField.text = Model.Name;
             _startButton.clickable.clicked += HandleStartButtonClicked;
-            
+
             var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
             manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
             _moreBtn.clickable.activators.Clear();
@@ -126,16 +126,16 @@ namespace Beamable.Editor.Microservice.UI.Components
             _checkbox.SetWithoutNotify(Model.IsSelected);
             Model.OnSelectionChanged += _checkbox.SetWithoutNotify;
             _checkbox.OnValueChanged += b => Model.IsSelected = b;
-            
+
             Model.OnLogsAttachmentChanged -= CreateLogSection;
             Model.OnLogsAttachmentChanged += CreateLogSection;
 
             Model.Builder.OnIsRunningChanged -= HandleIsRunningChanged;
             Model.Builder.OnIsRunningChanged += HandleIsRunningChanged;
-            
+
             _separator.Setup(OnDrag);
             _separator.Refresh();
-            
+
             UpdateButtons();
             CreateLogSection(Model.AreLogsAttached);
             UpdateStatusIcon();
@@ -235,7 +235,7 @@ namespace Beamable.Editor.Microservice.UI.Components
                 StyleValue<float>.Create(DETACHED_HEIGHT);
 #endif
         }
-        private void SetupProgressBarForStart(Task task)
+        protected virtual void SetupProgressBarForStart(Task task)
         {
             // We have two ways. Either store reference or return instance as event parameter
             new RunImageLogParser(_loadingBar, Model) { OnFailure = OnStartFailed };
@@ -244,7 +244,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         {
             OnServiceStartFailed?.Invoke();
         }
-        private void SetupProgressBarForStop(Task task)
+        protected virtual void SetupProgressBarForStop(Task task)
         {
             new StopImageLogParser(_loadingBar, Model) { OnFailure = OnStopFailed };
         }
