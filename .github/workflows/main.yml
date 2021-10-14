@@ -139,14 +139,13 @@ jobs:
       #     allowDirtyBuild: true
       #     buildsPath: dist
 
-      - name: Upload to S3
+      - uses: wixplosives/action-upload-to-s3@v1
         id: upload-to-s3
-        uses: wixplosives/action-upload-to-s3@v1
         with:
           accessKeyId:  ${{ secrets.AWS_SECRET_ACCESS_KEY}}
           secretAccessKey:  ${{ secrets.AWS_KEY_ID }}
           awsBucket: ${{ secrets.AWS_BUCKET_BUILDS }}
-          s3Subfolder: "upload-${{GITHUB_SHA}}"
+          s3Subfolder: upload-${{GITHUB_SHA}}
           sourceFolder: build
       #   uses: shallwefootball/s3-upload-action@master
       #   env:
