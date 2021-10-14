@@ -125,7 +125,8 @@ jobs:
           chmod +x ./build/clean_iap.sh
           UNITY_VERSION=${{ matrix.unityVersion }} ./build/clean_iap.sh
         shell: bash
-      - uses: game-ci/unity-builder@v2
+      - name: Build the game
+        uses: game-ci/unity-builder@v2
         env:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
@@ -138,22 +139,8 @@ jobs:
           versioning: Semantic
           allowDirtyBuild: true
           buildsPath: dist
-
-      # - uses: wixplosives/action-upload-to-s3@v10
-      #   id: upload-to-s3
-      #   with:
-      #     accessKeyId: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
-      #     secretAccessKey: ${{ secrets.AWS_KEY_ID }}
-      #     awsBucket: ${{ secrets.AWS_BUCKET_BUILDS }}
-      #     s3Subfolder: upload-${{GITHUB_SHA}}
-      #     sourceFolder: build
-      # - uses: actions/upload-artifact@v2
-      #   with:
-      #     name: Build-${{ matrix.targetPlatform }}
-      #     path: dist/${{ matrix.targetPlatform }}
       - name: upload
         run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./dist s3://${{secrets.AWS_BUCKET_BUILDS}}/uploads/${{GITHUB_SHA}}
-
       - uses: github-actions-up-and-running/pr-comment@v1.0.1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
