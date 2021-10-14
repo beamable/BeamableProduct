@@ -120,7 +120,11 @@ jobs:
           key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
           restore-keys: |
             Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
-
+      - name: Run script file
+        run: |
+          chmod +x ./build/clean_iap.sh
+          UNITY_VERSION=${{ matrix.unityVersion }} ./build/clean_iap.sh
+        shell: bash
       - uses: game-ci/unity-builder@v2
         env:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
