@@ -151,7 +151,9 @@ jobs:
       #   with:
       #     name: Build-${{ matrix.targetPlatform }}
       #     path: dist/${{ matrix.targetPlatform }}
-
+      - name: upload
+          run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp -r ./build s3://${{secrets.AWS_BUCKET_BUILDS}}/uploads/{{GITHUB_SHA}}
+          working-directory: /
       - uses: github-actions-up-and-running/pr-comment@v1.0.1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
