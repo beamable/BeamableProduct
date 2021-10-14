@@ -126,7 +126,7 @@ namespace Beamable.Editor.UI.Buss.Components
         }
 
         public static BeamablePopupWindow ShowConfirmationUtility(string title, ConfirmationPopupVisualElement element,
-            EditorWindow parent, Action onDomainReload = null)
+            EditorWindow parent, Action<BeamablePopupWindow> onDomainReload = null)
         {
             var window = ShowUtility(title, element, parent, ContentManagerConstants.ConfirmationPopupSize,
                 onDomainReload).FitToContent();
