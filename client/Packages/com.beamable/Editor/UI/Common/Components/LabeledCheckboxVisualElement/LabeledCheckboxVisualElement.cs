@@ -23,6 +23,7 @@ namespace Beamable.Editor.UI.Components
         }
 
         public Action<bool> OnValueChanged;
+        public Action OnValueChangedNotifier;
         public bool Value
         {
             get => _checkbox.Value;
@@ -30,6 +31,7 @@ namespace Beamable.Editor.UI.Components
             {
                 SetWithoutNotify(value);
                 OnValueChanged?.Invoke(value);
+                OnValueChangedNotifier?.Invoke();
             }
         }
 

@@ -35,7 +35,7 @@ namespace Beamable.Editor.Schedules
         private LabeledDropdownVisualElement _dropdownComponent;
         private LabeledCheckboxVisualElement _neverExpiresComponent;
         private LabeledDaysPickerVisualElement _daysPickerComponent;
-        private BeamableCheckboxVisualElement _allDayComponent;
+        private LabeledCheckboxVisualElement _allDayComponent;
         private LabeledHourPickerVisualElement _periodFromHourComponent;
         private LabeledHourPickerVisualElement _periodToHourComponent;
 
