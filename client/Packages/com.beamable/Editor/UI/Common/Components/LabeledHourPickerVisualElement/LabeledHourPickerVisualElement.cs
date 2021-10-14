@@ -61,7 +61,6 @@ namespace Beamable.Editor.UI.Components
         private bool ActiveSecond { get; set; }
         public string Label { get; private set; }
         public string SelectedHour => _hourPicker.GetFullHour();
-        public string SimpleHour => _hourPicker.GetSimpleHour();
         public string Hour => _hourPicker.Hour;
         public string Minute => _hourPicker.Minute;
         public string Second => _hourPicker.Second;

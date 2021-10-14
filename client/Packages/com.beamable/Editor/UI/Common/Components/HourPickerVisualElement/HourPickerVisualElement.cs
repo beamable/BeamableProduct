@@ -73,16 +73,6 @@ namespace Beamable.Editor.UI.Components
             return builder.ToString();
         }
 
-        public string GetSimpleHour()
-        {
-            if (_hourPicker != null && _minutePicker != null && _secondPicker != null)
-            {
-                return $"{_hourPicker.Value}:{_minutePicker.Value}:{_secondPicker.Value}";                
-            }
-
-            return string.Empty;
-        }
-
         private List<string> GenerateHours()
         {
             List<string> options = new List<string>();

@@ -71,28 +71,7 @@ namespace Beamable.Editor.UI.Validation
 
         private string BuildErrorMessage(List<string> elements)
         {
-            StringBuilder errorBuilder = new StringBuilder();
-            
-            if (elements.Count == 1)
-            {
-                errorBuilder.Append(elements[0]);
-            }
-            else
-            {
-                for (int i = 0; i < elements.Count; i++)
-                {
-                    if (i < elements.Count - 1)
-                    {
-                        errorBuilder.AppendLine(elements[i]);
-                    }
-                    else
-                    {
-                        errorBuilder.Append(elements[i]);
-                    }
-                }
-            }
-
-            return errorBuilder.ToString();
+            return $"{string.Join("\n", elements)}";
         }
     }
 }

@@ -1,7 +1,13 @@
 ﻿using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Validation;
+#if UNITY_2018
+using UnityEngine.Experimental.UIElements;
+using UnityEditor.Experimental.UIElements;
+#elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
+using UnityEditor.UIElements;
+#endif
 
 namespace Beamable.Editor.UI.Components
 {

@@ -53,16 +53,8 @@ namespace Beamable.Editor.UI.Components
 
             _button?.RemoveFromClassList("inactive");
 
-            if (Selected)
-            {
-                _button?.AddToClassList("checked");
-                _button?.RemoveFromClassList("unchecked");
-            }
-            else
-            {
-                _button?.AddToClassList("unchecked");
-                _button?.RemoveFromClassList("checked");
-            }
+            _button?.EnableInClassList("checked", Selected);
+            _button?.EnableInClassList("unchecked", !Selected);
         }
 
         private void OnClick(MouseDownEvent evt)

@@ -161,7 +161,7 @@ namespace Beamable.Editor.Schedules
             else
             {
                 HoursValidationRule rule = new HoursValidationRule(_periodFromHourComponent.Label, _periodToHourComponent.Label);
-                rule.Validate(_periodFromHourComponent.SimpleHour, _periodToHourComponent.SimpleHour);
+                rule.Validate(_periodFromHourComponent.SelectedHour, _periodToHourComponent.SelectedHour);
                 _isPeriodValid = rule.Satisfied;
                 _invalidPeriodMessage = rule.ErrorMessage;
             }
