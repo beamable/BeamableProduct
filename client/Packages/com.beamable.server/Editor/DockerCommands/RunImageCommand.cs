@@ -9,12 +9,14 @@ namespace Beamable.Server.Editor.DockerCommands
 {
    public class RunStorageCommand : RunImageCommand
    {
+      private readonly StorageObjectDescriptor _storage;
       public const string ENV_MONGO_INITDB_ROOT_USERNAME = "MONGO_INITDB_ROOT_USERNAME";
       public const string ENV_MONGO_INITDB_ROOT_PASSWORD = "MONGO_INITDB_ROOT_PASSWORD";
 
       public RunStorageCommand(StorageObjectDescriptor storage)
          : base(storage.ImageName, storage.ContainerName)
       {
+         _storage = storage;
          var config = MicroserviceConfiguration.Instance.GetStorageEntry(storage.Name);
          Environment = new Dictionary<string, string>
          {
@@ -33,6 +35,24 @@ namespace Beamable.Server.Editor.DockerCommands
             [storage.FilesVolume] = "/beamable" //
          };
       }
+
+      protected override void HandleStandardOut(string data)
+      {
+         if (!MicroserviceLogHelper.HandleMongoLog(_storage, data))
+         {
+            base.HandleStandardOut(data);
+         }
+         OnStandardOut?.Invoke(data);
+      }
+      protected override void HandleStandardErr(string data)
+      {
+         if (!MicroserviceLogHelper.HandleMongoLog(_storage, data))
+         {
+            base.HandleStandardErr(data);
+         }
+         OnStandardErr?.Invoke(data);
+      }
+
    }
 
    public class RunStorageToolCommand : RunImageCommand
