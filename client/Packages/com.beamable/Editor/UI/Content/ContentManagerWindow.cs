@@ -331,7 +331,8 @@ namespace Beamable.Editor.Content
          {
              // trigger after Unity domain reload
              Instance._currentWindow?.SwapContent(Instance.GetDownloadContentVisualElement());
-         });
+             Instance._currentWindow?.FitToContent();
+         }).FitToContent();
 
          _currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
       }
@@ -546,6 +547,7 @@ namespace Beamable.Editor.Content
          {
              // trigger after Unity domain reload
              Instance._currentWindow?.SwapContent(Instance.GetResetContentVisualElement());
+             Instance._currentWindow?.FitToContent();
          });
 
          Instance._currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
