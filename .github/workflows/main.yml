@@ -112,8 +112,6 @@ jobs:
         with:
           fetch-depth: 0
           lfs: true
-
-      # TODO: When more build types are added, we need to change the cache key
       - uses: actions/cache@v2
         with:
           path: ${{ matrix.projectPath }}/Library
@@ -125,8 +123,7 @@ jobs:
           chmod +x ./build/clean_iap.sh
           UNITY_VERSION=${{ matrix.unityVersion }} ./build/clean_iap.sh
         shell: bash
-      - name: Build the game
-        uses: game-ci/unity-builder@v2
+      - uses: game-ci/unity-builder@v2
         env:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
