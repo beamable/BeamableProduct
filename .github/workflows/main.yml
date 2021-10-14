@@ -125,19 +125,19 @@ jobs:
           chmod +x ./build/clean_iap.sh
           UNITY_VERSION=${{ matrix.unityVersion }} ./build/clean_iap.sh
         shell: bash
-      # - uses: game-ci/unity-builder@v2
-      #   env:
-      #     UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-      #     UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-      #     UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
-      #   with:
-      #     targetPlatform: ${{ matrix.targetPlatform }}
-      #     unityVersion: ${{ matrix.unityVersion }}
-      #     projectPath: ${{ matrix.projectPath }}
-      #     githubToken: ${{ secrets.GITHUB_TOKEN }}
-      #     versioning: Semantic
-      #     allowDirtyBuild: true
-      #     buildsPath: dist
+      - uses: game-ci/unity-builder@v2
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+        with:
+          targetPlatform: ${{ matrix.targetPlatform }}
+          unityVersion: ${{ matrix.unityVersion }}
+          projectPath: ${{ matrix.projectPath }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          versioning: Semantic
+          allowDirtyBuild: true
+          buildsPath: dist
 
       # - uses: wixplosives/action-upload-to-s3@v10
       #   id: upload-to-s3
@@ -152,9 +152,9 @@ jobs:
       #     name: Build-${{ matrix.targetPlatform }}
       #     path: dist/${{ matrix.targetPlatform }}
       - name: upload
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./build s3://${{secrets.AWS_BUCKET_BUILDS}}/uploads/{{GITHUB_SHA}}
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./dist s3://${{secrets.AWS_BUCKET_BUILDS}}/uploads/${{GITHUB_SHA}}
 
       - uses: github-actions-up-and-running/pr-comment@v1.0.1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          message: Nice PR!👍
+          message: Have a build, pal. https://beamable-product-github-builds.s3.us-west-2.amazonaws.com/uploads/${{GITHUB_SHA}}/index.html
