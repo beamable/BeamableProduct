@@ -57,11 +57,20 @@ namespace Beamable.Editor.Microservice.UI.Components
         private RealmButtonVisualElement _realmButton;
         private Button _servicesFilter;
         private Label _servicesFilterLabel; 
-        private BeamableCheckboxVisualElement _checkbox;
-        private VisualElement _selectAll;
+        private LabeledCheckboxVisualElement _selectAllLabeledCheckbox;
 
         public MicroserviceBreadcrumbsVisualElement() : base(nameof(MicroserviceBreadcrumbsVisualElement))
         {
+        }
+
+        protected override void OnDestroy()
+        {
+            if (_selectAllLabeledCheckbox != null)
+            {
+                _selectAllLabeledCheckbox.OnValueChanged -= TriggerSelectAll;
+            }
+
+            base.OnDestroy();
         }
 
         public override void Refresh()
@@ -87,12 +96,16 @@ namespace Beamable.Editor.Microservice.UI.Components
                 UpdateServicesFilterText(ServicesDisplayFilter.AllTypes);
             }
 
-            _checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
-            _checkbox.Refresh();
-            _checkbox.OnValueChanged -= OnCheckboxValueChanged;
-            _checkbox.OnValueChanged += OnCheckboxValueChanged;
+            _selectAllLabeledCheckbox = Root.Q<LabeledCheckboxVisualElement>("selectAllLabeledCheckbox");
+            _selectAllLabeledCheckbox.Refresh();
+            _selectAllLabeledCheckbox.DisableIcon();
+            _selectAllLabeledCheckbox.OnValueChanged -= TriggerSelectAll;
+            _selectAllLabeledCheckbox.OnValueChanged += TriggerSelectAll;
+        }
 
-            _selectAll = Root.Q<VisualElement>("selectAll");
+        void TriggerSelectAll(bool value)
+        {
+            OnSelectAllCheckboxChanged?.Invoke(value);
         }
 
         private void OnCheckboxValueChanged(bool b) {
@@ -132,19 +145,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         public void SetSelectAllCheckboxValue(bool value)
         {
-            _checkbox.SetWithoutNotify(value);
+            _selectAllLabeledCheckbox.SetWithoutNotify(value);
         }
 
         public void SetSelectAllVisibility(bool value)
         {
-            if (value)
-            {
-                _selectAll.RemoveFromClassList("hidden");
-            }
-            else
-            {
-                _selectAll.AddToClassList("hidden");
-            }
+            _selectAllLabeledCheckbox.EnableInClassList("hidden", !value);
         }
     }
     

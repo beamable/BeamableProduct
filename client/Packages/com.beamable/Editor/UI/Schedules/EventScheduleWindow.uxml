@@ -20,9 +20,9 @@
             <beamable:LabeledCalendarVisualElement name="calendar" label="Repeat on"/>
         </engine:VisualElement>
 
+
         <engine:VisualElement name="expirationRow">
-            <engine:Label name="expirationLabel" text="Never expires"/>
-            <beamable:BeamableCheckboxVisualElement name="expiresNever"/>
+			<beamable:LabeledCheckboxVisualElement name="expiresNever" label="Never expires"/>
         </engine:VisualElement>
 
         <beamable:LabeledDatePickerVisualElement name="activeToDate" label="Active to"/>
