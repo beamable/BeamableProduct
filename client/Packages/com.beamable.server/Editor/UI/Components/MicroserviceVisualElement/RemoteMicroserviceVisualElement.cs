@@ -45,7 +45,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 #elif UNITY_2018
             Root.Q<VisualElement>("mainVisualElement").style.height = StyleValue<float>.Create(DEFAULT_HEADER_HEIGHT);
 #endif
-            Root.Q<Label>("microserviceTitle").text = Model.Name;
 
             _statusIcon.RemoveFromHierarchy();
             _statusLabel.RemoveFromHierarchy();
@@ -57,6 +56,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             _moreBtn.tooltip = "More...";
 
             _checkbox.Refresh();
+            _checkbox.SetText(Model.Name);
             _checkbox.SetWithoutNotify(Model.IsSelected);
             Model.OnSelectionChanged += _checkbox.SetWithoutNotify;
             _checkbox.OnValueChanged += b => Model.IsSelected = b;
