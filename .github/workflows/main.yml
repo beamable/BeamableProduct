@@ -149,14 +149,14 @@ jobs:
           source_dir: build
           destination_dir: tests
 
-      - uses: actions/upload-artifact@v2
-        with:
-          name: Build-${{ matrix.targetPlatform }}
-          path: dist/${{ matrix.targetPlatform }}
+      # - uses: actions/upload-artifact@v2
+      #   with:
+      #     name: Build-${{ matrix.targetPlatform }}
+      #     path: dist/${{ matrix.targetPlatform }}
 
-      - name: comment PR
-        uses: khezen/cmtpr@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          msg: "Looks good to me! {{ steps.upload-to-s3.outputs.object_key }} "
+      # - name: comment PR
+      #   uses: khezen/cmtpr@master
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     msg: "Looks good to me! {{ steps.upload-to-s3.outputs.object_key }} "
