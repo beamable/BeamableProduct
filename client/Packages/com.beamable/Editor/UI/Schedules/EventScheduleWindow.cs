@@ -33,8 +33,10 @@ namespace Beamable.Editor.Schedules
         private LabeledDatePickerVisualElement _activeToDateComponent;
         private LabeledHourPickerVisualElement _activeToHourComponent;
         private LabeledDropdownVisualElement _dropdownComponent;
-        private BeamableCheckboxVisualElement _neverExpiresComponent;
+
+        private LabeledCheckboxVisualElement _neverExpiresComponent;
         private LabeledDaysPickerVisualElement _daysPickerComponent;
+
         private VisualElement _daysGroup;
         private VisualElement _datesGroup;
         private PrimaryButtonVisualElement _confirmButton;
@@ -81,9 +83,10 @@ namespace Beamable.Editor.Schedules
             _dropdownComponent.Setup(PrepareOptions(), OnModeChanged);
             _dropdownComponent.Refresh();
 
-            _neverExpiresComponent = Root.Q<BeamableCheckboxVisualElement>("expiresNever");
+            _neverExpiresComponent = Root.Q<LabeledCheckboxVisualElement>("expiresNever");
             _neverExpiresComponent.OnValueChanged += OnExpirationChanged;
             _neverExpiresComponent.Refresh();
+            _neverExpiresComponent.DisableIcon();
 
             _activeToDateComponent = Root.Q<LabeledDatePickerVisualElement>("activeToDate");
             _activeToDateComponent.Refresh();

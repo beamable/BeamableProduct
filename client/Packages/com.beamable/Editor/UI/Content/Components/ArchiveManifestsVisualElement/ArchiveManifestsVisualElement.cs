@@ -32,7 +32,11 @@ namespace Beamable.Editor.Content.Components
         
         public static BeamablePopupWindow OpenAsUtilityWindow(EditorWindow parent, out ArchiveManifestsVisualElement content) {
             content = new ArchiveManifestsVisualElement();
-            var window = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ArchiveManifests, content, parent, ContentManagerConstants.WindowSizeMinimum);
+            var window = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ArchiveManifests, content, parent, ContentManagerConstants.WindowSizeMinimum, (callbackWindow) =>
+            {
+                callbackWindow?.Close();
+                OpenAsUtilityWindow();
+            });
             window.minSize = ContentManagerConstants.WindowSizeMinimum;
             content.OnCompleted += window.Close;
             content.OnCancelled += window.Close;
@@ -98,18 +102,23 @@ namespace Beamable.Editor.Content.Components
             OnCompleted?.Invoke();
         }
 
-        private class Entry {
-            public readonly ManifestEntryVisualElement visualElement;
+        private class Entry
+        {
+            public readonly LabeledCheckboxVisualElement visualElement;
             public readonly string manifestId;
-            public bool IsSelected => visualElement.IsSelected;
+            public bool IsSelected => visualElement.Value;
 
-            public Entry(AvailableManifestModel model, VisualElement listRoot, bool enabled, Action onValueChange) {
-                visualElement = new ManifestEntryVisualElement(model.id);
+            public Entry(AvailableManifestModel model, VisualElement listRoot, bool enabled, Action onValueChange)
+            {
+                visualElement = new LabeledCheckboxVisualElement();
                 listRoot.Add(visualElement);
                 manifestId = model.id;
                 visualElement.SetEnabled(enabled);
+                visualElement.SetFlipState(true);
                 visualElement.Refresh();
-                visualElement.Checkbox.OnValueChanged += _ => onValueChange();
+                visualElement.DisableIcon();
+                visualElement.SetText(model.id);
+                visualElement.OnValueChanged += _ => onValueChange();
             }
         }
     }
