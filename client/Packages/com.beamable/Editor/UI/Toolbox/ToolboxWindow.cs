@@ -186,7 +186,8 @@ namespace Beamable.Editor.Toolbox.UI
 
             EditorAPI.Instance.Then(api =>
             {
-                if (api.HasDependencies())
+                if (api.HasDependencies() ||
+                    _model.IsSpecificAnnouncementCurrentlyDisplaying(typeof(WelcomeAnnouncementModel)))
                 {
                     return;
                 }
