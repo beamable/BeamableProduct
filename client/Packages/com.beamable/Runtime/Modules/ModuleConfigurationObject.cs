@@ -76,6 +76,7 @@ namespace Beamable
          finally
          {
             UnityEditor.AssetDatabase.StopAssetEditing();
+            UnityEditor.AssetDatabase.Refresh();
          }
 
          foreach (var kvp in writtenAssetPathToType)
