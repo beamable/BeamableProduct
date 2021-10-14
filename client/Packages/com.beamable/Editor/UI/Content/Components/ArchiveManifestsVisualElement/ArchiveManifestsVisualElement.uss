@@ -1,4 +1,11 @@
 ﻿
+ArchiveManifestsVisualElement {
+    flex-grow: 1;
+}
+ArchiveManifestsVisualElement > * {
+    flex-grow: 1;
+}
+
 #mainVisualElement {
     flex-grow: 1;
     margin-left: 26px;
@@ -16,7 +23,7 @@
     flex-grow: 1;
     flex-shrink: 1;
     min-height: 40px;
-    max-height: 120px;
+    margin-bottom: 20px;
 }
 
 #buttonStrip {
@@ -29,4 +36,9 @@
 #archiveBtn{
     width: 100px;
     height: 28px;
+}
+
+LabeledCheckboxVisualElement #checkbox {
+
+    width: 40px;
 }
