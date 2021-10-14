@@ -26,11 +26,15 @@ namespace Beamable.Editor.UI.Components
         private bool _activeHour = true;
         private bool _activeMinute = true;
         private bool _activeSecond = true;
+        private Action _onHourChanged;
 
         public string Hour => _hourPicker.Value;
         public string Minute => _minutePicker.Value;
         public string Second => _secondPicker.Value;
 
+        public LabeledNumberPicker HourPickerComponent => _hourPicker;
+        public LabeledNumberPicker MinutePickerComponent => _minutePicker;
+        public LabeledNumberPicker SecondPickerComponent => _secondPicker;
 
         public HourPickerVisualElement() : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(HourPickerVisualElement)}/{nameof(HourPickerVisualElement)}")
@@ -42,20 +46,21 @@ namespace Beamable.Editor.UI.Components
             base.Refresh();
 
             _hourPicker = Root.Q<LabeledNumberPicker>("hourPicker");
-            _hourPicker.Setup(GenerateHours(), _activeHour);
+            _hourPicker.Setup(_onHourChanged, GenerateHours(), _activeHour);
             _hourPicker.Refresh();
 
             _minutePicker = Root.Q<LabeledNumberPicker>("minutePicker");
-            _minutePicker.Setup(GenerateMinutesAndSeconds(), _activeMinute);
+            _minutePicker.Setup(_onHourChanged, GenerateMinutesAndSeconds(), _activeMinute);
             _minutePicker.Refresh();
 
             _secondPicker = Root.Q<LabeledNumberPicker>("secondPicker");
-            _secondPicker.Setup(GenerateMinutesAndSeconds(), _activeSecond);
+            _secondPicker.Setup(_onHourChanged, GenerateMinutesAndSeconds(), _activeSecond);
             _secondPicker.Refresh();
         }
 
-        public void Setup(bool activeHour = true, bool activeMinute = true, bool activeSecond = true)
+        public void Setup(Action onHourChanged, bool activeHour = true, bool activeMinute = true, bool activeSecond = true)
         {
+            _onHourChanged = onHourChanged;
             _activeHour = activeHour;
             _activeMinute = activeMinute;
             _activeSecond = activeSecond;

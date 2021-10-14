@@ -150,6 +150,10 @@ namespace Beamable.Editor.Microservice.UI
 
             _microserviceContentVisualElement = root.Q<MicroserviceContentVisualElement>("microserviceContentVisualElement");
             _microserviceContentVisualElement.Model = Model;
+
+            _microserviceContentVisualElement.OnPreviewFeatureWarningMessageShowed +=
+                (state) => _actionBarVisualElement?.SetPublishButtonState(state);
+
             _microserviceContentVisualElement.Refresh();
 
             if (Model != null)
@@ -228,7 +232,9 @@ namespace Beamable.Editor.Microservice.UI
 
         private void Refresh() {
             new CheckDockerCommand().Start(null).Then(_ => {
-                _microserviceContentVisualElement.Refresh();
+                _microserviceBreadcrumbsVisualElement?.Refresh();
+                _actionBarVisualElement?.Refresh();
+                _microserviceContentVisualElement?.Refresh();
             });
         }
 

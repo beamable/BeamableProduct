@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Validation;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -11,13 +12,11 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-    public class LabeledTextField : BeamableVisualElement
+    public class LabeledTextField : ValidableVisualElement<string>
     {
         public new class UxmlFactory : UxmlFactory<LabeledTextField, UxmlTraits>
         {
         }
-
-        public Action<string> OnValueChanged;
 
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
@@ -43,14 +42,26 @@ namespace Beamable.Editor.UI.Components
             }
         }
 
+        public Action OnValueChanged;
+
         private Label _label;
         private TextField _textField;
+        private string _value;
 
         public string Label { get; set; }
-        public string Value { get; set; }
 
-        public LabeledTextField() : base(
-            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledTextField)}/{nameof(LabeledTextField)}")
+        public string Value
+        {
+            get => _value;
+            set
+            {
+                _value = value;
+                _textField?.SetValueWithoutNotify(_value);
+                OnValueChanged?.Invoke();
+            } 
+        }
+
+        public LabeledTextField() : base($"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledTextField)}/{nameof(LabeledTextField)}")
         {
         }
 
@@ -63,15 +74,7 @@ namespace Beamable.Editor.UI.Components
 
             _textField = Root.Q<TextField>("textField");
             _textField.value = Value;
-
             _textField.RegisterValueChangedCallback(ValueChanged);
-        }
-
-        public void SetValueWithoutNotify(string value)
-        {
-            // TODO: we shouldn't need to set it up this way, Ideally we could just use the Property setter
-            Value = value;
-            _textField.SetValueWithoutNotify(value);
         }
 
         protected override void OnDestroy()
@@ -81,8 +84,8 @@ namespace Beamable.Editor.UI.Components
 
         private void ValueChanged(ChangeEvent<string> evt)
         {
-            OnValueChanged?.Invoke(evt.newValue);
             Value = evt.newValue;
+            InvokeValidationCheck(Value);
         }
     }
 }

@@ -15,8 +15,18 @@ LabeledTextField #textField > TextInput {
     -unity-text-align: middle-center;
 }
 
+#buttonGroup {
+    align-items: center;
+    justify-content: center;
+}
+
+#buttonImage {
+    width: 10px;
+    height: 6px;
+    position: absolute;
+}
+
 #button {
     width: 20px;
     height: 20px;
-    /*background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/close_light_SM.png");*/
 }
