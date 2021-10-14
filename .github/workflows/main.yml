@@ -152,9 +152,7 @@ jobs:
       #     name: Build-${{ matrix.targetPlatform }}
       #     path: dist/${{ matrix.targetPlatform }}
 
-      - name: comment PR
-        uses: khezen/cmtpr@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: github-actions-up-and-running/pr-comment@v1.0.0
         with:
-          msg: "Looks good to me!"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          message: Nice PR!👍
