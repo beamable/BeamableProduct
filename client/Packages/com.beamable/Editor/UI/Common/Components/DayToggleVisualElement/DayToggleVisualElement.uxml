@@ -6,8 +6,7 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:VisualElement name="button" class="--noPadding --noMargin">
-        <engine:VisualElement name="checkmark"/>
-        <engine:Label name="label"/>
+        <engine:Label name="buttonLabel"/>
     </engine:VisualElement>
 
 </engine:UXML>
