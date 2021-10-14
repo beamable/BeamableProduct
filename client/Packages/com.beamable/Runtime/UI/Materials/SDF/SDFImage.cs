@@ -86,7 +86,7 @@ namespace Beamable.UI.SDF {
             var coordsValues = new Vector2[] {
                 Vector2.zero, 
                 new Vector2(borders.x / size.x, borders.y / size.y),
-                new Vector2(borders.z / size.x, borders.w / size.y) - Vector2.one,
+                Vector2.one - new Vector2(borders.z / size.x, borders.w / size.y),
                 Vector2.one, 
             };
 
@@ -98,7 +98,7 @@ namespace Beamable.UI.SDF {
                     var uvMin = new Vector2(uvValues[xi].x, uvValues[yi].y);
                     var uvSize = new Vector2(uvValues[xi + 1].x, uvValues[yi + 1].y) - uvMin;
                     var uvRect = new Rect(uvMin, uvSize);
-                    var coordsRect = new Rect(coordsValues[xi].x, coordsValues[yi].y, coordsValues[xi + 1].x, coordsValues[yi + 1].y);
+                    var coordsRect = Rect.MinMaxRect(coordsValues[xi].x, coordsValues[yi].y, coordsValues[xi + 1].x, coordsValues[yi + 1].y);
                     AddRect(vh, positionRect, uvRect, coordsRect, size);
                 }
             }
