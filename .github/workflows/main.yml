@@ -95,7 +95,7 @@ jobs:
           name: Test results for ${{ matrix.unityVersion }} ${{ matrix.testMode }}
           path: ${{ steps.tests.outputs.artifactsPath }}
 
-  build:
+  buildGame:
     name: Build for ${{ matrix.targetPlatform }}
     runs-on: ubuntu-latest
     strategy:
@@ -137,17 +137,17 @@ jobs:
           name: Build-${{ matrix.targetPlatform }}
           path: outputs/${{ matrix.targetPlatform }}
 
-  artifacts-url-comments:
-    needs: build
-    name: add artifact links to pull request and related issues job
-    runs-on: ubuntu-latest
-    steps:
-      - name: add artifact links to pull request and related issues step
-        uses: tonyhallett/artifacts-url-comments@v1.1.0
-        env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-            prefix: Here are the artifacts 
-            suffix: Have a nice day.
-            format: name
-            addTo: pullandissues
+  # artifacts-url-comments:
+  #   needs: build
+  #   name: add artifact links to pull request and related issues job
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: add artifact links to pull request and related issues step
+  #       uses: tonyhallett/artifacts-url-comments@v1.1.0
+  #       env:
+  #           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       with:
+  #           prefix: Here are the artifacts 
+  #           suffix: Have a nice day.
+  #           format: name
+  #           addTo: pullandissues
