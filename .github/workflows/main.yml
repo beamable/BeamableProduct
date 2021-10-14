@@ -139,26 +139,14 @@ jobs:
       #     allowDirtyBuild: true
       #     buildsPath: dist
 
-      - uses: wixplosives/action-upload-to-s3@v1
+      - uses: wixplosives/action-upload-to-s3@v10
         id: upload-to-s3
         with:
-          accessKeyId:  ${{ secrets.AWS_SECRET_ACCESS_KEY}}
-          secretAccessKey:  ${{ secrets.AWS_KEY_ID }}
+          accessKeyId: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
+          secretAccessKey: ${{ secrets.AWS_KEY_ID }}
           awsBucket: ${{ secrets.AWS_BUCKET_BUILDS }}
           s3Subfolder: upload-${{GITHUB_SHA}}
           sourceFolder: build
-      #   uses: shallwefootball/s3-upload-action@master
-      #   env:
-      #     AWS_REGION: "us-west-2"
-      #   with:
-      #     aws_key_id: ${{ secrets.AWS_KEY_ID }}
-      #     aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
-      #     aws_bucket: ${{ secrets.AWS_BUCKET_BUILDS }}
-      #     source_dir: build
-      #     destination_dir: tests
-
-     
-
       # - uses: actions/upload-artifact@v2
       #   with:
       #     name: Build-${{ matrix.targetPlatform }}
