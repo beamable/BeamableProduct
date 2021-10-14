@@ -36,7 +36,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         
         private float _storedHeight = 0;
         
-        protected Button _startButton;
+        protected Button _stopButton;
         protected LoadingBarElement _loadingBar;
         protected VisualElement _statusIcon;
         protected Label _statusLabel;
@@ -79,7 +79,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             _rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
             Root.Q<Button>("cancelBtn").RemoveFromHierarchy();
             Root.Q("microserviceNewTitle")?.RemoveFromHierarchy();
-            _startButton = Root.Q<Button>("start");
+            _stopButton = Root.Q<Button>("stopBtn");
             _moreBtn = Root.Q<Button>("moreBtn");
             _checkbox = Root.Q<LabeledCheckboxVisualElement>("checkbox");
             _logContainerElement = Root.Q<VisualElement>("logContainer");
@@ -111,7 +111,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             Microservices.onBeforeDeploy -= SetupProgressBarForDeployment;
             Microservices.onBeforeDeploy += SetupProgressBarForDeployment;
 
-            _startButton.clickable.clicked += HandleStartButtonClicked;
+            _stopButton.clickable.clicked += HandleStopButtonClicked;
             
             var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
             manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
@@ -130,6 +130,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             Model.Builder.OnIsRunningChanged -= HandleIsRunningChanged;
             Model.Builder.OnIsRunningChanged += HandleIsRunningChanged;
+
+            Root.Q("dependentServicesContainer").visible = MicroserviceConfiguration.Instance.EnableStoragePreview;
             
             _separator.Setup(OnDrag);
             _separator.Refresh();
@@ -145,7 +147,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         protected abstract void UpdateRemoteStatusIcon();
         protected virtual void UpdateButtons()
         {
-            _startButton.text = Model.IsRunning ? Constants.STOP : Constants.START;
+            _stopButton.visible = Model.IsRunning;
         }
         private async void UpdateModel()
         {
@@ -168,15 +170,11 @@ namespace Beamable.Editor.Microservice.UI.Components
             _rootVisualElement.style.height = StyleValue<float>.Create(newHeight);
 #endif
         }
-        private void HandleStartButtonClicked()
+        private void HandleStopButtonClicked()
         {
             if (Model.IsRunning)
             {
                 Model.Stop();
-            }
-            else
-            {
-                Model.Start();
             }
         }
         private void HandleIsRunningChanged(bool isRunning)

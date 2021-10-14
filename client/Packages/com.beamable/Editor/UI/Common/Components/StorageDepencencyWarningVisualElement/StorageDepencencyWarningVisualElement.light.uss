@@ -1,0 +1,7 @@
+#announcement-logo {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Database_dark.png");
+}
+
+#announcement-ignore {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/close_dark_SM.png");
+}

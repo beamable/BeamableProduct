@@ -23,6 +23,8 @@ namespace Beamable.Editor.Microservice.UI.Components
     public class MicroserviceContentVisualElement : MicroserviceComponent
     {
         public event Action<bool> OnAllServiceSelectedStatusChanged;
+        public event Action<bool> OnPreviewFeatureWarningMessageShowed;
+
         private VisualElement _mainVisualElement;
         private ListView _listView;
         private ScrollView _scrollView;
@@ -108,6 +110,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             _modelToVisual.Clear();
 
+            bool hasStorageDependency = false;
+
             foreach (var serviceStatus in Model.GetAllServicesStatus())
             {
                 if (serviceStatus.Value == ServiceAvailability.Unknown)
@@ -145,6 +149,8 @@ namespace Beamable.Editor.Microservice.UI.Components
                         serviceElement.OnServiceStartFailed = MicroserviceStartFailed;
                         serviceElement.OnServiceStopFailed = MicroserviceStopFailed;
 
+                        hasStorageDependency |= service.Descriptor.IsPublishFeatureAvailable();
+
                         _servicesListElement.Add(serviceElement);
                         break;
                     case ServiceType.StorageObject:
@@ -169,6 +175,16 @@ namespace Beamable.Editor.Microservice.UI.Components
                         throw new ArgumentOutOfRangeException();
                 }
             }
+
+            if (hasStorageDependency)
+            {
+                var storagePreviewWarning = new StorageDepencencyWarningModel();
+                var previewElement = new StorageDepencencyWarningVisualElement() { StorageDepencencyWarningModel = storagePreviewWarning };
+                Root.Q<VisualElement>("announcementList").Add(previewElement);
+                previewElement.Refresh();
+            }
+
+            OnPreviewFeatureWarningMessageShowed?.Invoke(!hasStorageDependency);
 
             _actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
             _actionPrompt.Refresh();
