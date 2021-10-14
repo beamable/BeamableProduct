@@ -1,3 +1,4 @@
+using System;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using UnityEngine;
@@ -69,6 +70,7 @@ namespace Beamable.Common.Announcements
       // TODO: [MustMatchReference(nameof(symbol))]
       private string typeOld;
 
+      [Obsolete("Use 'contentType' instead")]
       public string type
       {
          get => contentType.ToString().ToLower();
@@ -76,8 +78,7 @@ namespace Beamable.Common.Announcements
       }
 
       [Tooltip("Must specify the type of the attachment symbol. If you referenced an item in the symbol, this should be \"items\", otherwise it should be \"currency\"")]
-      [SerializeField] 
-      private ContentType contentType;
+      public ContentType contentType;
 
       public void OnBeforeSerialize()
       {
