@@ -104,7 +104,8 @@ namespace Beamable.Editor.UI.Buss.Components
             return wnd;
         }
 
-        public static BeamablePopupWindow ShowUtility(string title, BeamableVisualElement content, EditorWindow parent, Vector2 defaultSize, Action onDomainReload = null)
+        public static BeamablePopupWindow ShowUtility(string title, BeamableVisualElement content, EditorWindow parent, 
+            Vector2 defaultSize, Action onDomainReload = null)
         {
             var wnd = CreateInstance<BeamablePopupWindow>();
             wnd.titleContent = new GUIContent(title);
@@ -120,17 +121,30 @@ namespace Beamable.Editor.UI.Buss.Components
 
             // TODO: Somehow position the utility based on the parent view.
             wnd.Refresh();
-            EditorApplication.delayCall += () =>
-            {
-                Debug.Log($"${content.contentRect}");
-                wnd.minSize = new Vector2(content.contentRect.width, content.contentRect.height);
-                wnd.maxSize = new Vector2(content.contentRect.width, content.contentRect.height);
-                Debug.Log($"${content.contentRect}");
-            };
             wnd.GetRootVisualContainer().AddToClassList("fill-popup-window");
             return wnd;
         }
 
+        public static BeamablePopupWindow ShowConfirmationUtility(string title, ConfirmationPopupVisualElement element,
+            EditorWindow parent, Action onDomainReload = null)
+        {
+            var window = ShowUtility(title, element, parent, ContentManagerConstants.ConfirmationPopupSize,
+                onDomainReload).FitToContent();
+
+            return window;
+        }
+
+        public BeamablePopupWindow FitToContent()
+        {
+            EditorApplication.delayCall += () =>
+            {
+                var newSize = new Vector2(_contentElement.contentRect.width, _contentElement.contentRect.height);
+
+                if(newSize.SqrMagnitude() > 0)
+                    minSize = maxSize = newSize;
+            };
+            return this;
+        }
 
         private void OnEnable()
         {
