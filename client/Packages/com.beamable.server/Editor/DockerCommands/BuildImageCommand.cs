@@ -76,6 +76,7 @@ namespace Beamable.Server.Editor.DockerCommands
       private void CopyAssemblies(MicroserviceDescriptor descriptor, MicroserviceDependencies dependencies)
       {
          string rootPath = Application.dataPath.Substring(0, Application.dataPath.Length - "Assets".Length);
+
          // copy over the assembly definition folders...
          if (dependencies.Assemblies.Invalid.Any())
          {
@@ -135,11 +136,18 @@ namespace Beamable.Server.Editor.DockerCommands
             foreach (var file in files)
             {
                var subPath = file.Substring(sourceFolderPath.Length + 1);
-
                var destinationFile = Path.Combine(descriptor.BuildPath, subFolder, subPath);
 
-               Directory.CreateDirectory(Path.GetDirectoryName(destinationFile));
+#if UNITY_EDITOR_WIN
+               var fullPath = Path.GetFullPath(destinationFile);
+               if (fullPath.Length >= 255)
+               {
+                  Debug.LogError($"There could be problems during building {descriptor.Name}- path is too long. " +
+                                      "Consider moving project to another folder so path would be shorter.");
+               }
+#endif
 
+               Directory.CreateDirectory(Path.GetDirectoryName(destinationFile));
                File.Copy(file, destinationFile, true);
             }
 
