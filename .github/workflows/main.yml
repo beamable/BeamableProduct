@@ -97,45 +97,45 @@ jobs:
 
   build:
     name: Build for ${{ matrix.targetPlatform }}
-      runs-on: ubuntu-latest
-      strategy:
-        fail-fast: false
-        matrix:
-          targetPlatform:
-            - WebGL # WebGL.
-          unityVersion:
-            - 2018.4.18f1
-          projectPath:
-            - client
-      steps:
-        - uses: actions/checkout@v2
-          with:
-            fetch-depth: 0
-            lfs: true
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        targetPlatform:
+          - WebGL # WebGL.
+        unityVersion:
+          - 2018.4.18f1
+        projectPath:
+          - client
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          lfs: true
 
-        # TODO: When more build types are added, we need to change the cache key
-        - uses: actions/cache@v2
-          with:
-            path: ${{ matrix.projectPath }}/Library
-            key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
-            restore-keys: |
-              Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
+      # TODO: When more build types are added, we need to change the cache key
+      - uses: actions/cache@v2
+        with:
+          path: ${{ matrix.projectPath }}/Library
+          key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
+          restore-keys: |
+            Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
 
-        - uses: game-ci/unity-builder@v2
-          env:
-            UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-            UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-            UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
-          with:
-            targetPlatform: ${{ matrix.targetPlatform }}
-            unityVersion: ${{ matrix.unityVersion }}
-            projectPath: ${{ matrix.projectPath }}
-            githubToken: ${{ secrets.GITHUB_TOKEN }}
+      - uses: game-ci/unity-builder@v2
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+        with:
+          targetPlatform: ${{ matrix.targetPlatform }}
+          unityVersion: ${{ matrix.unityVersion }}
+          projectPath: ${{ matrix.projectPath }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
 
-        - uses: actions/upload-artifact@v2
-          with:
-            name: Build-${{ matrix.targetPlatform }}
-            path: outputs/${{ matrix.targetPlatform }}
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Build-${{ matrix.targetPlatform }}
+          path: outputs/${{ matrix.targetPlatform }}
 
   artifacts-url-comments:
     needs: build
