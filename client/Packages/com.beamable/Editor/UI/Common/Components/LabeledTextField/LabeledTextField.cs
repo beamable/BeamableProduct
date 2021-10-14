@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
 using Editor.UI.Validation;
 using UnityEngine;
@@ -42,6 +43,8 @@ namespace Beamable.Editor.UI.Components
             }
         }
 
+        public Action OnValueChanged;
+
         private Label _label;
         private TextField _textField;
         private string _value;
@@ -55,6 +58,7 @@ namespace Beamable.Editor.UI.Components
             {
                 _value = value;
                 _textField?.SetValueWithoutNotify(_value);
+                OnValueChanged?.Invoke();
             } 
         }
 

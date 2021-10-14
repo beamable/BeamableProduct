@@ -23,14 +23,14 @@ namespace Editor.UI.Validation
             ValidateOnChange();
         }
 
-        public void RegisterRuleForComponent(ValidationRule<string> rule, ValidableVisualElement<string> ve)
+        public void RegisterRule(ValidationRule<string> rule, ValidableVisualElement<string> ve)
         {
             ve.RegisterRule(rule);
             ve.PostVerification = ValidateOnChange;
             _stringRules.Add(rule);
         }
 
-        public void RegisterRuleForComponent(ValidationRule<int> rule, ValidableVisualElement<int> ve)
+        public void RegisterRule(ValidationRule<int> rule, ValidableVisualElement<int> ve)
         {
             ve.RegisterRule(rule);
             ve.PostVerification = ValidateOnChange;

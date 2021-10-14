@@ -56,6 +56,10 @@ namespace Beamable.Editor.Schedules
         private ComponentsValidator _currentValidator;
         private LabeledCalendarVisualElement _calendarComponent;
         private readonly ScheduleParser _scheduleParser;
+        
+        // TODO: create some generic composite rules for cases like this one and then remove below fields
+        private bool _isPeriodValid;
+        private string _invalidPeriodMessage;
 
         public ListingScheduleWindow() : base(
             $"{BeamableComponentsConstants.SCHEDULES_PATH}/{nameof(ListingScheduleWindow)}")
@@ -134,20 +138,46 @@ namespace Beamable.Editor.Schedules
             _dailyModeValidator = new ComponentsValidator(RefreshConfirmButton);
 
             _daysModeValidator = new ComponentsValidator(RefreshConfirmButton);
-            _daysModeValidator.RegisterRuleForComponent(new AtLeastOneOptionSelectedRule(_daysPickerComponent.Label),
+            _daysModeValidator.RegisterRule(new AtLeastOneOptionSelectedRule(_daysPickerComponent.Label),
                 _daysPickerComponent);
-
+                
             _datesModeValidator = new ComponentsValidator(RefreshConfirmButton);
-            _datesModeValidator.RegisterRuleForComponent(new AtLeastOneOptionSelectedRule(_calendarComponent.Label),
+            _datesModeValidator.RegisterRule(new AtLeastOneOptionSelectedRule(_calendarComponent.Label),
                 _calendarComponent);
-
+            
+            // TODO: create some generic composite rules for cases like this one and then remove below lines
+            _periodFromHourComponent.OnValueChanged = PerformPeriodValidation;
+            _periodToHourComponent.OnValueChanged = PerformPeriodValidation;
+            _allDayComponent.OnValueChangedNotifier = PerformPeriodValidation;
+            
             _currentValidator = _dailyModeValidator;
+            _currentValidator.ForceValidationCheck();
+        }
+
+        // TODO: create some generic composite rules for cases like this one and then remove below lines
+        private void PerformPeriodValidation()
+        {
+            if (_allDayComponent.Value)
+            {
+                _isPeriodValid = true;
+                _invalidPeriodMessage = string.Empty;
+            }
+            else
+            {
+                HoursValidationRule rule = new HoursValidationRule(_periodFromHourComponent.Label, _periodToHourComponent.Label);
+                rule.Validate(_periodFromHourComponent.SimpleHour, _periodToHourComponent.SimpleHour);
+                _isPeriodValid = rule.Satisfied;
+                _invalidPeriodMessage = rule.ErrorMessage;
+            }
+
             _currentValidator.ForceValidationCheck();
         }
 
         private void RefreshConfirmButton(bool value, string message)
         {
-            if (value)
+            bool validated = value && _isPeriodValid;
+            
+            if (validated)
             {
                 _confirmButton.Enable();
                 _confirmButton.tooltip = string.Empty;
@@ -155,7 +185,15 @@ namespace Beamable.Editor.Schedules
             else
             {
                 _confirmButton.Disable();
-                _confirmButton.tooltip = message;
+
+                string fullMessage = message;
+                
+                if (!_isPeriodValid)
+                {
+                    fullMessage += $"\n{_invalidPeriodMessage}";
+                }
+
+                _confirmButton.tooltip = fullMessage;
             }
         }
 

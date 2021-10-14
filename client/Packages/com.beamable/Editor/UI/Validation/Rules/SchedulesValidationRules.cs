@@ -1,7 +1,26 @@
-﻿using System.Text.RegularExpressions;
+﻿using System;
+using System.Text.RegularExpressions;
 
 namespace Editor.UI.Validation
 {
+    public class IsProperHour : ValidationRule<string>
+    {
+        public IsProperHour(string componentName) : base(componentName)
+        {
+        }
+
+        public override string ErrorMessage => $"{ComponentName} doesn't match hour. Check values";
+        
+        public override void Validate(string value)
+        {
+            string[] split = value.Split(':');
+            string pattern = "[0-9]";
+
+            Satisfied = Regex.IsMatch(split[0], pattern) && Regex.IsMatch(split[1], pattern) &&
+                        Regex.IsMatch(split[2], pattern);
+        }
+    }
+
     public class SchedulesDatesRule : ValidationRule<string>
     {
         public override string ErrorMessage =>
@@ -24,6 +43,39 @@ namespace Editor.UI.Validation
                     Satisfied = false;
                 }
             }
+        }
+    }
+    
+    public class HoursValidationRule : CompositeValidationRule<string, string>
+    {
+        public override string ErrorMessage => $"{BComponentName} should be higher than {AComponentName}";
+
+        public HoursValidationRule(string aComponentName, string bComponentName) : base(aComponentName, bComponentName)
+        {
+        }
+
+        public override void Validate(string aValue, string bValue)
+        {
+            DateTime aTime = ParseHourString(aValue, out bool aParsed);
+            DateTime bTime = ParseHourString(bValue, out bool bParsed);
+
+            Satisfied = aParsed && bParsed && aTime.CompareTo(bTime) < 0;
+        }
+
+        private DateTime ParseHourString(string value, out bool success)
+        {
+            string[] split = value.Split(':');
+
+            if (!int.TryParse(split[0], out int hour) || 
+                !int.TryParse(split[1], out int minute) ||
+                !int.TryParse(split[2], out int second))
+            {
+                success = false;
+                return new DateTime(2000, 1, 1, 0, 0, 0);
+            }
+            
+            success = true;
+            return new DateTime(2000, 1, 1, hour , minute, second);
         }
     }
 }

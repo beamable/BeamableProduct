@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -39,6 +40,7 @@ namespace Beamable.Editor.UI.Components
         private LabeledTextField _labeledTextFieldComponent;
         private Button _button;
         private List<string> _options;
+        private Action _onValueChanged;
 
         public string Value => _labeledTextFieldComponent.Value;
         private string Label { get; set; }
@@ -55,6 +57,7 @@ namespace Beamable.Editor.UI.Components
             _labeledTextFieldComponent = Root.Q<LabeledTextField>("labelAndValue");
             _labeledTextFieldComponent.Label = Label;
             _labeledTextFieldComponent.Value = Value;
+            _labeledTextFieldComponent.OnValueChanged = _onValueChanged;
             _labeledTextFieldComponent.Refresh();
 
             _button = Root.Q<Button>("button");
@@ -62,8 +65,9 @@ namespace Beamable.Editor.UI.Components
             ConfigureOptions();
         }
 
-        public void Setup(List<string> options, bool active = true)
+        public void Setup(Action onValueChanged, List<string> options, bool active = true)
         {
+            _onValueChanged = onValueChanged;
             SetEnabled(active);
             _options = options;
         }
