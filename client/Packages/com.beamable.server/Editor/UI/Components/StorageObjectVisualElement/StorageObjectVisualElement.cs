@@ -62,12 +62,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         protected override void SetupProgressBarForStart(Task _)
         {
-            // new RunMongoImageLogParser(_loadingBar, _mongoStorageModel) { OnFailure = OnStartFailed };
+            // left blank for no loading bar
         }
 
         protected override void SetupProgressBarForStop(Task _)
         {
-            // new StopMongoImageLogParser(_loadingBar, _mongoStorageModel) { OnFailure = OnStopFailed };
+            // left blank for no loading bar
         }
 
         protected override void QueryVisualElements()
