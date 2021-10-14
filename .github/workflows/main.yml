@@ -4,12 +4,14 @@ on:
  push:
   branches:
     - 'main'
+    - 'next'
   paths:
     - 'client/**'
     - 'microservice/**'
  pull_request:
   branches:
     - 'main'
+    - 'next'
     - 'staging'
   paths:
     - 'client/**'
