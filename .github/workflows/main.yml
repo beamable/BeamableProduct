@@ -135,7 +135,6 @@ jobs:
           unityVersion: ${{ matrix.unityVersion }}
           projectPath: ${{ matrix.projectPath }}
           githubToken: ${{ secrets.GITHUB_TOKEN }}
-          versioning: Semantic
           buildsPath: dist
 
       - uses: actions/upload-artifact@v2
