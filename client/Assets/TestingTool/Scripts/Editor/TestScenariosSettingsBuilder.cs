@@ -115,12 +115,13 @@ namespace TestingTool.Scripts.Editor
         }
         public static TestingToolConfig GetConfig()
         {
-            var config = Resources.Load<TestingToolConfig>(ConstantsHelper.TEST_CONFIG);
+            var config = AssetDatabase.LoadAssetAtPath<TestingToolConfig>($"{ConstantsHelper.TEST_TOOL_DIRECTORY}/{ConstantsHelper.TEST_CONFIG_FILENAME}.asset");
             if (config == null)
             {
                 var asset = ScriptableObject.CreateInstance<TestingToolConfig>();
                 AssetDatabase.CreateAsset(asset, $"{ConstantsHelper.TEST_TOOL_DIRECTORY}/{ConstantsHelper.TEST_CONFIG_FILENAME}.asset");
                 AssetDatabase.SaveAssets();
+                config = asset;
             }
             return config;
         }

@@ -6,6 +6,6 @@ namespace TestingTool.Scripts
     {
         public bool IsTestingToolEnabled => enableTestingTool;
         
-        [SerializeField] private bool enableTestingTool;
+        [SerializeField] private bool enableTestingTool = false;
     }
 }

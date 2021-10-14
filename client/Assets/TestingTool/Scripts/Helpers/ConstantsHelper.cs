@@ -5,7 +5,6 @@
         public static readonly string TEST_CREATOR_FILENAME = "TestScenariosCreator";
         public static readonly string TEST_CONFIG_FILENAME = "TestingToolConfig";
         public static readonly string TEST_SCENARIOS_RUNTIME_FILENAME = "TestScenariosRuntime";
-        public static readonly string TEST_CONFIG = "TestingToolConfig";
         public static readonly string MAIN_TESTING_SCENE_NAME = "MainMenu";
         public static readonly string NEW_SCENE_NAME = "NewTestScene_RenameMe";
 

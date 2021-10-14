@@ -9,7 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3abc1aff17164fbea7c86269f2a18476, type: 3}
+  m_Script: {fileID: 11500000, guid: 15a16c2d4a054798aa56c47b2847a379, type: 3}
   m_Name: TestingToolConfig
   m_EditorClassIdentifier: 
   enableTestingTool: 0
