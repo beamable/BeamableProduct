@@ -152,7 +152,7 @@ jobs:
       #     name: Build-${{ matrix.targetPlatform }}
       #     path: dist/${{ matrix.targetPlatform }}
 
-      - uses: github-actions-up-and-running/pr-comment@v1.0.0
+      - uses: github-actions-up-and-running/pr-comment@v1.0.1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           message: Nice PR!👍
