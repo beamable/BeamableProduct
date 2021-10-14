@@ -133,12 +133,13 @@ namespace Beamable.Editor.Microservice.UI.Components
                 {
                     case ServiceType.MicroService:
 
+                        bool val = false;
                         if (serviceStatus.Value != ServiceAvailability.RemoteOnly)
-                            serviceElement = GetMicroserviceVisualElement(serviceStatus.Key);
+                            serviceElement = GetMicroserviceVisualElement(serviceStatus.Key, out val);
                         else
                             serviceElement = GetRemoteMicroserviceVisualElement(serviceStatus.Key);
 
-                        hasStorageDependency |= service.Descriptor.IsPublishFeatureAvailable();
+                        hasStorageDependency |= val;
 
                         break;
 
@@ -173,7 +174,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             _actionPrompt.Refresh();
         }
 
-        private MicroserviceVisualElement GetMicroserviceVisualElement(string serviceName)
+        private MicroserviceVisualElement GetMicroserviceVisualElement(string serviceName, out bool isPublishFeatureDisabled)
         {
             var service = Model.GetModel<MicroserviceModel>(serviceName);
 
@@ -192,9 +193,11 @@ namespace Beamable.Editor.Microservice.UI.Components
                 serviceElement.OnServiceStartFailed = MicroserviceStartFailed;
                 serviceElement.OnServiceStopFailed = MicroserviceStopFailed;
 
+                isPublishFeatureDisabled = service.Descriptor.IsPublishFeatureDisabled();
                 return serviceElement;
             }
 
+            isPublishFeatureDisabled = false;
             return null;
         }
 
