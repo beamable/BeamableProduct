@@ -23,6 +23,8 @@ namespace Beamable.Editor.Microservice.UI.Components
     public class MicroserviceContentVisualElement : MicroserviceComponent
     {
         public event Action<bool> OnAllServiceSelectedStatusChanged;
+        public event Action<bool> OnPreviewFeatureWarningMessageShowed;
+
         private VisualElement _mainVisualElement;
         private ListView _listView;
         private ScrollView _scrollView;
@@ -108,6 +110,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             _modelToVisual.Clear();
 
+            bool hasStorageDependency = false;
+
             foreach (var serviceStatus in Model.GetAllServicesStatus())
             {
                 if (serviceStatus.Value == ServiceAvailability.Unknown)
@@ -145,9 +149,15 @@ namespace Beamable.Editor.Microservice.UI.Components
                         serviceElement.OnServiceStartFailed = MicroserviceStartFailed;
                         serviceElement.OnServiceStopFailed = MicroserviceStopFailed;
 
+                        hasStorageDependency |= service.Descriptor.IsPublishFeatureAvailable();
+
                         _servicesListElement.Add(serviceElement);
                         break;
                     case ServiceType.StorageObject:
+                        if (!MicroserviceConfiguration.Instance.EnableStoragePreview)
+                        {
+                            continue;
+                        }
                         var mongoService = Model.GetModel<MongoStorageModel>(serviceStatus.Key);
                         var mongoServiceElement = new StorageObjectVisualElement { Model = mongoService };
                         _modelToVisual[mongoService] = mongoServiceElement;
@@ -165,6 +175,16 @@ namespace Beamable.Editor.Microservice.UI.Components
                         throw new ArgumentOutOfRangeException();
                 }
             }
+
+            if (hasStorageDependency)
+            {
+                var storagePreviewWarning = new StorageDepencencyWarningModel();
+                var previewElement = new StorageDepencencyWarningVisualElement() { StorageDepencencyWarningModel = storagePreviewWarning };
+                Root.Q<VisualElement>("announcementList").Add(previewElement);
+                previewElement.Refresh();
+            }
+
+            OnPreviewFeatureWarningMessageShowed?.Invoke(!hasStorageDependency);
 
             _actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
             _actionPrompt.Refresh();
@@ -238,11 +258,9 @@ namespace Beamable.Editor.Microservice.UI.Components
         public void SortMicroservices() {
             var config = MicroserviceConfiguration.Instance;
             int Comparer(VisualElement a, VisualElement b) {
-                if (a is CreateMicroserviceVisualElement) return -1;
-                if (b is CreateMicroserviceVisualElement) return 1;
-                var aName = ((MicroserviceVisualElement) a).Model.Name;
-                var bName = ((MicroserviceVisualElement) b).Model.Name;
-                return config.MicroserviceOrderComparer(aName, bName);
+                if (a is CreateServiceBaseVisualElement) return -1;
+                if (b is CreateServiceBaseVisualElement) return 1;
+                return config.MicroserviceOrderComparer(a.name, b.name);
             }
             _servicesListElement.Sort(Comparer);
         }

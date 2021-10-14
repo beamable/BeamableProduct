@@ -30,6 +30,7 @@ namespace Beamable.Editor.UI.Model
         public override IBeamableBuilder Builder => ServiceBuilder;
         public override IDescriptor Descriptor => ServiceDescriptor;
         public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
+        public StorageConfigurationEntry Config { get; private set; }
 
         public override event Action<Task> OnStart;
         public override event Action<Task> OnStop;
@@ -40,18 +41,22 @@ namespace Beamable.Editor.UI.Model
             {
                 ServiceDescriptor = descriptor,
                 ServiceBuilder = Microservices.GetStorageBuilder(descriptor),
+                Config = MicroserviceConfiguration.Instance.GetStorageEntry(descriptor.Name)
             };
         }
 
         public override Task Start()
         {
-            OnStart?.Invoke(null);
-            throw new NotImplementedException();
+            OnLogsAttached?.Invoke();
+            var task = ServiceBuilder.TryToStart();
+            OnStart?.Invoke(task);
+            return task;
         }
         public override Task Stop()
         {
-            OnStop?.Invoke(null);
-            throw new NotImplementedException();
+            var task = ServiceBuilder.TryToStop();
+            OnStop?.Invoke(task);
+            return task;
         }
         public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
         {
