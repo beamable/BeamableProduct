@@ -46,21 +46,28 @@ namespace Editor.UI.Validation
         }
     }
     
-    public class HoursValidationRule : CompositeValidationRule<string, string>
+    public class HoursValidationRule
     {
-        public override string ErrorMessage => $"{BComponentName} should be higher than {AComponentName}";
+        private readonly string _bComponentName;
+        public string ErrorMessage => $"{BComponentName} should be higher than {AComponentName}";
+        public string AComponentName { get; set; }
+        public string BComponentName { get; set; }
 
-        public HoursValidationRule(string aComponentName, string bComponentName) : base(aComponentName, bComponentName)
+        public HoursValidationRule(string aComponentName, string bComponentName)
         {
+            _bComponentName = bComponentName;
+            AComponentName = aComponentName;
         }
 
-        public override void Validate(string aValue, string bValue)
+        public void Validate(string aValue, string bValue)
         {
             DateTime aTime = ParseHourString(aValue, out bool aParsed);
             DateTime bTime = ParseHourString(bValue, out bool bParsed);
 
             Satisfied = aParsed && bParsed && aTime.CompareTo(bTime) < 0;
         }
+
+        public bool Satisfied { get; set; }
 
         private DateTime ParseHourString(string value, out bool success)
         {
