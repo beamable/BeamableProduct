@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.17.0]
 ### Added
 - Ability to use Promises in ClientCallable methods
+- RemoteOnly MS visible in Miscroservice window
 - Container health checks are reported in deployment manifests
 - Local Mongo Storage Preview
 
