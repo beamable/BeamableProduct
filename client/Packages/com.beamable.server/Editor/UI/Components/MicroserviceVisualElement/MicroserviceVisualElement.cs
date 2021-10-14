@@ -200,7 +200,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             {
                 _defaultBuildAction = () => _microserviceModel.BuildAndStart();
             }
-            _startButton.SetEnabled(_microserviceModel.ServiceBuilder.HasImage && !_microserviceModel.IsBuilding);
+            _stopButton.SetEnabled(_microserviceModel.ServiceBuilder.HasImage && !_microserviceModel.IsBuilding);
             _buildDropDown.SetEnabled(!_microserviceModel.IsBuilding);
         }
     }
