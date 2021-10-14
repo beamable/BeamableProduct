@@ -1,21 +1,24 @@
 ﻿#button{
-    background-color:#616161;
     justify-content: center;
+    align-items: center;
     height: 30px;
     width: 30px;
 }
 
-#checkmark {
-    background-color:#0091FF;
-    align-self: center;
-    height: 30px;
-    width: 30px;
-}
-
-Label {
+#buttonLabel {
     font-size: 16px;
     -unity-font: resource("Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
-    color: #FFFFFF;
-    align-self: center;
-    position: absolute;
+    -unity-text-align: middle-center;
+}
+
+.unchecked {
+    background-color:#616161;
+}
+
+.checked {
+    background-color:#0091FF;
+}
+
+.inactive {
+    background-color: #989898;
 }
