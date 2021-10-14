@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text.RegularExpressions;
 
-namespace Editor.UI.Validation
+namespace Beamable.Editor.UI.Validation
 {
     public class IsProperHour : ValidationRule<string>
     {

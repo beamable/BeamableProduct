@@ -1,4 +1,4 @@
-﻿namespace Editor.UI.Validation
+﻿namespace Beamable.Editor.UI.Validation
 {
     public abstract class ValidationRule<T>
     {

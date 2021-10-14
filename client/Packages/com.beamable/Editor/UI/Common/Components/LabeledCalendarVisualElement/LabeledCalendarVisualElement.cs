@@ -1,7 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
-using Editor.UI.Validation;
+using Beamable.Editor.UI.Validation;
 using UnityEngine.UIElements;
 
 namespace Beamable.Editor.UI.Components

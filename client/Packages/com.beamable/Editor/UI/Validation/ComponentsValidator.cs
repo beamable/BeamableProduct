@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Editor.UI.Validation
+namespace Beamable.Editor.UI.Validation
 {
     public class ComponentsValidator
     {

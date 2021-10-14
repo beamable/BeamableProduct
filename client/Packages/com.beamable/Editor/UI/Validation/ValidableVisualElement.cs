@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
 
-namespace Editor.UI.Validation
+namespace Beamable.Editor.UI.Validation
 {
     public abstract class ValidableVisualElement<T> : BeamableVisualElement
     {

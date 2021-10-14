@@ -2,14 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using Beamable.Common.Content;
-using System.Text.RegularExpressions;
 using Beamable.Common.Shop;
 using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
-using Editor.UI.Validation;
-using UnityEditor;
-using UnityEngine;
+using Beamable.Editor.UI.Validation;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
