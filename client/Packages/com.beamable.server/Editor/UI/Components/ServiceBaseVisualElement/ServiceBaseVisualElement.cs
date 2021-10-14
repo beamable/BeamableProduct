@@ -44,8 +44,10 @@ namespace Beamable.Editor.Microservice.UI.Components
         protected Label _remoteStatusLabel;
         protected VisualElement _remoteStatusIcon;
         protected LabeledCheckboxVisualElement _checkbox;
+        private Button _moreBtn;
         private VisualElement _logContainerElement;
         private LogVisualElement _logElement;
+        private MicroserviceVisualElementSeparator _separator;
         private VisualElement _header;
         private VisualElement _rootVisualElement;
 
