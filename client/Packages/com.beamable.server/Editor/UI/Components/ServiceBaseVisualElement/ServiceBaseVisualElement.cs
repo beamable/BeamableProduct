@@ -42,9 +42,8 @@ namespace Beamable.Editor.Microservice.UI.Components
         protected Label _remoteStatusLabel;
         protected VisualElement _remoteStatusIcon;
 
-        private Label _nameTextField;
         private Button _moreBtn;
-        private BeamableCheckboxVisualElement _checkbox;
+        private LabeledCheckboxVisualElement _checkbox;
         private VisualElement _logContainerElement;
         private LogVisualElement _logElement;
         private MicroserviceVisualElementSeparator _separator;
@@ -79,10 +78,9 @@ namespace Beamable.Editor.Microservice.UI.Components
             _rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
             Root.Q<Button>("cancelBtn").RemoveFromHierarchy();
             Root.Q("microserviceNewTitle")?.RemoveFromHierarchy();
-            _nameTextField = Root.Q<Label>("microserviceTitle");
             _stopButton = Root.Q<Button>("stopBtn");
             _moreBtn = Root.Q<Button>("moreBtn");
-            _checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
+            _checkbox = Root.Q<LabeledCheckboxVisualElement>("checkbox");
             _logContainerElement = Root.Q<VisualElement>("logContainer");
             _statusLabel = Root.Q<Label>("statusTitle");
             _remoteStatusLabel = Root.Q<Label>("remoteStatusTitle");
@@ -112,8 +110,6 @@ namespace Beamable.Editor.Microservice.UI.Components
             Microservices.onBeforeDeploy -= SetupProgressBarForDeployment;
             Microservices.onBeforeDeploy += SetupProgressBarForDeployment;
 
-            _nameTextField.text = Model.Name;
-
             _stopButton.clickable.clicked += HandleStopButtonClicked;
             var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
             manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
@@ -122,6 +118,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             _moreBtn.tooltip = "More...";
 
             _checkbox.Refresh();
+            _checkbox.SetText(Model.Name);
             _checkbox.SetWithoutNotify(Model.IsSelected);
             Model.OnSelectionChanged += _checkbox.SetWithoutNotify;
             _checkbox.OnValueChanged += b => Model.IsSelected = b;

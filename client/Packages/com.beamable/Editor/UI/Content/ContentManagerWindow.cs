@@ -202,10 +202,10 @@ namespace Beamable.Editor.Content
             }
             
             _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ValidateContent, GetValidateContentVisualElement(), this, 
-            ContentManagerConstants.WindowSizeMinimum, () =>
+            ContentManagerConstants.WindowSizeMinimum, (window) =>
             {
                 // trigger after Unity domain reload
-                Instance._currentWindow?.SwapContent(Instance.GetValidateContentVisualElement());
+                window?.SwapContent(Instance.GetValidateContentVisualElement());
             });
 
             _currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
@@ -223,10 +223,10 @@ namespace Beamable.Editor.Content
              _cachedCreateNewManifestFlag = createNew;
 
              _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ValidateContent, GetValidateContentVisualElementWithPublish(), this,
-             ContentManagerConstants.WindowSizeMinimum, () =>
+             ContentManagerConstants.WindowSizeMinimum, (window) =>
              {
                  // trigger after Unity domain reload
-                 Instance._currentWindow?.SwapContent(Instance.GetValidateContentVisualElementWithPublish());
+                 window?.SwapContent(Instance.GetValidateContentVisualElementWithPublish());
              });
 
              _currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
@@ -246,10 +246,10 @@ namespace Beamable.Editor.Content
 
              _cachedItemsToDownload = null;
              _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.DownloadContent, GetDownloadContentVisualElement(), this,
-             ContentManagerConstants.WindowSizeMinimum, () =>
+             ContentManagerConstants.WindowSizeMinimum, (window) =>
              {
                  // trigger after Unity domain reload
-                 Instance._currentWindow?.SwapContent(Instance.GetDownloadContentVisualElement());
+                 window?.SwapContent(Instance.GetDownloadContentVisualElement());
              });
              _currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
          };
@@ -327,11 +327,12 @@ namespace Beamable.Editor.Content
 
          _cachedItemsToDownload = items.Select(x => x.Id).ToList();
          _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.DownloadContent, GetDownloadContentVisualElement(), this,
-         ContentManagerConstants.WindowSizeMinimum, () =>
+         ContentManagerConstants.WindowSizeMinimum, (window) =>
          {
              // trigger after Unity domain reload
-             Instance._currentWindow?.SwapContent(Instance.GetDownloadContentVisualElement());
-             Instance._currentWindow?.FitToContent();
+             window?.SwapContent(Instance.GetDownloadContentVisualElement());
+             window?.FitToContent();
+
          }).FitToContent();
 
          _currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
@@ -457,10 +458,10 @@ namespace Beamable.Editor.Content
 
                         if (errors.Count != 0) return;
 
-                        _currentWindow.SwapContent(GetPublishContentVisualElement(), () =>
+                        _currentWindow.SwapContent(GetPublishContentVisualElement(), (window) =>
                         {
                             // trigger after domain reload
-                            Instance._currentWindow?.SwapContent(Instance.GetPublishContentVisualElement());
+                            window?.SwapContent(Instance.GetPublishContentVisualElement());
                         });
 
                         _currentWindow.titleContent = new GUIContent(ContentManagerConstants.PublishContent);
@@ -543,11 +544,13 @@ namespace Beamable.Editor.Content
          Instance._currentWindow = null;
 
          Instance._currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.RemoveLocalContent, Instance.GetResetContentVisualElement(), null ,
-         ContentManagerConstants.WindowSizeMinimum, () =>
+         ContentManagerConstants.WindowSizeMinimum, (window) =>
          {
              // trigger after Unity domain reload
-             Instance._currentWindow?.SwapContent(Instance.GetResetContentVisualElement());
-             Instance._currentWindow?.FitToContent();
+
+             window?.SwapContent(Instance.GetResetContentVisualElement());
+             window?.FitToContent();
+
          });
 
          Instance._currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
