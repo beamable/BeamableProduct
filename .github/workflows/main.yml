@@ -104,7 +104,7 @@ jobs:
         targetPlatform:
           - WebGL # WebGL.
         unityVersion:
-          - 2020.3.19f1
+          - 2018.4.18f1
         projectPath:
           - client
     steps:
