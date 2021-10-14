@@ -15,7 +15,6 @@ namespace Beamable.Server.Editor.DockerCommands
 
       public static bool HandleMongoLog(StorageObjectDescriptor storage, string data)
       {
-         Debug.Log("MESSAGE FROM MONGO: " + data);
          LogLevel ParseMongoLevel(string level)
          {
             switch (level)
