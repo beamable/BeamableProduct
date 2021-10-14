@@ -19,12 +19,6 @@ namespace Beamable.Server.Editor
       private const string ASSETS_BEAMABLE = "Assets/Beamable/";
       private const string ADD_MONGO = ASSETS_BEAMABLE + "Add Mongo Libraries";
       private const string REMOVE_MONGO = ASSETS_BEAMABLE + "Remove Mongo Libraries";
-      // private const string OPEN_MONGO = ASSETS_BEAMABLE + "Open Mongo Data Explorer"; // TODO: Delete this when we have a UI
-      // private const string RUN_MONGO = ASSETS_BEAMABLE + "Run Mongo"; // TODO: Delete this when we have a UI
-      // private const string KILL_MONGO = ASSETS_BEAMABLE + "Kill Mongo"; // TODO: Delete this when we have a UI
-      // private const string CLEAR_MONGO = ASSETS_BEAMABLE + "Clear Mongo Data"; // TODO: Delete this when we have a UI
-      // private const string SNAPSHOT_MONGO = ASSETS_BEAMABLE + "Create Mongo Snapshot"; // TODO: Delete this when we have a UI
-      // private const string RESTORE_MONGO = ASSETS_BEAMABLE + "Restore Mongo Snapshot"; // TODO: Delete this when we have a UI
       private const int BEAMABLE_PRIORITY = 190;
 
       private static readonly string[] MongoLibraries = new[]
@@ -39,7 +33,6 @@ namespace Beamable.Server.Editor
          "SharpCompress.dll"
       };
 
-      // [MenuItem(RESTORE_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
       public static void RestoreMongo()
       {
          if (Selection.activeObject is AssemblyDefinitionAsset asm)
@@ -71,7 +64,6 @@ namespace Beamable.Server.Editor
          }
       }
 
-      // [MenuItem(SNAPSHOT_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
       public static void SnapshotMongo()
       {
          if (Selection.activeObject is AssemblyDefinitionAsset asm)
@@ -104,7 +96,6 @@ namespace Beamable.Server.Editor
          }
       }
 
-      // [MenuItem(CLEAR_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
       public static void ClearMongo()
       {
          if (Selection.activeObject is AssemblyDefinitionAsset asm)
@@ -121,9 +112,7 @@ namespace Beamable.Server.Editor
             Debug.Log("nothing found for " + info.Name);
          }
       }
-
-
-      // [MenuItem(KILL_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
+      
       public static void KillMongo()
       {
          if (Selection.activeObject is AssemblyDefinitionAsset asm)
@@ -142,8 +131,6 @@ namespace Beamable.Server.Editor
          }
       }
 
-
-      // [MenuItem(RUN_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
       public static void RunMongo()
       {
          if (Selection.activeObject is AssemblyDefinitionAsset asm)
@@ -162,7 +149,6 @@ namespace Beamable.Server.Editor
          }
       }
 
-      // [MenuItem(OPEN_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
       public static void OpenMongoExplorer()
       {
          if (Selection.activeObject is AssemblyDefinitionAsset asm)
