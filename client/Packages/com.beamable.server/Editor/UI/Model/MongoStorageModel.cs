@@ -62,11 +62,11 @@ namespace Beamable.Editor.UI.Model
         {
             // TODO - Implement copy connection strings
             
-            evt.menu.BeamableAppendAction($"Erase data", _ => AssemblyDefinitionHelper.ClearMongo());
+            evt.menu.BeamableAppendAction($"Erase data", _ => AssemblyDefinitionHelper.ClearMongo(ServiceDescriptor));
             //evt.menu.BeamableAppendAction($"Copy connection strings", _ => Debug.Log("Not implemented!"));
-            evt.menu.BeamableAppendAction($"Goto data explorer", _ => AssemblyDefinitionHelper.OpenMongoExplorer());
-            evt.menu.BeamableAppendAction($"Create a snapshot", _ => AssemblyDefinitionHelper.SnapshotMongo());
-            evt.menu.BeamableAppendAction($"Download a snapshot", _ => AssemblyDefinitionHelper.RestoreMongo());
+            evt.menu.BeamableAppendAction($"Goto data explorer", _ => AssemblyDefinitionHelper.OpenMongoExplorer(ServiceDescriptor));
+            evt.menu.BeamableAppendAction($"Create a snapshot", _ => AssemblyDefinitionHelper.SnapshotMongo(ServiceDescriptor));
+            evt.menu.BeamableAppendAction($"Download a snapshot", _ => AssemblyDefinitionHelper.RestoreMongo(ServiceDescriptor));
         }
         public override void Refresh(IDescriptor descriptor)
         {

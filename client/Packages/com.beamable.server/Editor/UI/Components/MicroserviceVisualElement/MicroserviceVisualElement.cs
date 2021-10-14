@@ -189,6 +189,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         protected override void UpdateButtons()
         {
             base.UpdateButtons();
+            _stopButton.visible = Model.IsRunning;
             _buildDefaultLabel.text = Constants.GetBuildButtonString(_microserviceModel.IncludeDebugTools,
                 _microserviceModel.IsRunning ? Constants.BUILD_RESET : Constants.BUILD_START);
 
