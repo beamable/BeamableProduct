@@ -62,7 +62,7 @@ namespace TestingTool.Scripts.Editor
                 testScenariosRuntime = ScriptableObject.CreateInstance<TestScenariosRuntime>();
                 AssetDatabase.CreateAsset(testScenariosRuntime, ConstantsHelper.TEST_SCENARIOS_RUNTIME_PATH);
             }
-            
+
             testScenariosRuntime.CurrentScenario = null;
             testScenariosRuntime.Scenarios.Clear();
 
@@ -72,7 +72,7 @@ namespace TestingTool.Scripts.Editor
                 testScenariosRuntime.Scenarios.Add(new TestScenarioRuntime(testScenario.SceneAsset.name, testScenario.ShortDescription,
                     testScenario.FullDescription, testStepsRuntime));
             }
-            
+
             EditorUtility.SetDirty(testScenariosRuntime);
             AssetDatabase.SaveAssets();
         }
@@ -98,7 +98,7 @@ namespace TestingTool.Scripts.Editor
                     {
                         return false;
                     }
-                } 
+                }
             }
             return true;
         }
@@ -107,13 +107,13 @@ namespace TestingTool.Scripts.Editor
             return _testScenarios.Scenarios.All(scenario => scenario.SceneAsset != null);
         }
     }
-    
+
     public class TestBuilderProcessor : IPreprocessBuildWithReport
     {
         public int callbackOrder { get; }
 
         private TestScenariosRuntime _testScenariosRuntime;
-        
+
         public void OnPreprocessBuild(BuildReport report)
         {
             _testScenariosRuntime = Resources.Load<TestScenariosRuntime>(ConstantsHelper.TEST_SCENARIOS_RUNTIME_FILENAME);
@@ -142,16 +142,18 @@ namespace TestingTool.Scripts.Editor
         }
         private bool IsAnySceneCorrupted(out string corruptedSceneName)
         {
-            corruptedSceneName = string.Empty;
-            foreach (var testScenario in _testScenariosRuntime.Scenarios)
-            {
-                if (!Application.CanStreamedLevelBeLoaded(testScenario.SceneName))
-                {
-                    corruptedSceneName = testScenario.SceneName;
-                    return true;
-                }
-            }
+            corruptedSceneName = "";
             return false;
+            // corruptedSceneName = string.Empty;
+            // foreach (var testScenario in _testScenariosRuntime.Scenarios)
+            // {
+            //     if (!Application.CanStreamedLevelBeLoaded(testScenario.SceneName))
+            //     {
+            //         corruptedSceneName = testScenario.SceneName;
+            //         return true;
+            //     }
+            // }
+            // return false;
         }
     }
 }
