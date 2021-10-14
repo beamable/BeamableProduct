@@ -132,6 +132,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             Model.Builder.OnIsRunningChanged -= HandleIsRunningChanged;
             Model.Builder.OnIsRunningChanged += HandleIsRunningChanged;
+
+            Root.Q("dependentServicesContainer").visible = MicroserviceConfiguration.Instance.EnableStoragePreview;
             
             _separator.Setup(OnDrag);
             _separator.Refresh();

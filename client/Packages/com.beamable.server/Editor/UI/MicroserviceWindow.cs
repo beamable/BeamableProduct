@@ -224,7 +224,9 @@ namespace Beamable.Editor.Microservice.UI
 
         private void Refresh() {
             new CheckDockerCommand().Start(null).Then(_ => {
-                _microserviceContentVisualElement.Refresh();
+                _microserviceBreadcrumbsVisualElement?.Refresh();
+                _actionBarVisualElement?.Refresh();
+                _microserviceContentVisualElement?.Refresh();
             });
         }
 
