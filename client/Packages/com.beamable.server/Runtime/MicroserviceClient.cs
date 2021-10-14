@@ -125,7 +125,7 @@ namespace Beamable.Server
             if (!(json?.StartsWith("{\"payload\":\"") ?? false)) return DeserializeResult<T>(json);
 
 #pragma warning disable 618
-            Debug.LogWarning($"Using legacy payload string. Redeploy the {serviceName} service without the {nameof(MicroserviceAttribute.UseLegacySerialization)} setting.");
+            Debug.LogWarning($"Using legacy payload string. Redeploy the {serviceName} service without the UseLegacySerialization setting.");
 #pragma warning restore 618
             var responseObject = DeserializeResult<ResponseObject>(json);
             var result = DeserializeResult<T>(responseObject.payload);
