@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Beamable.Editor.UI.Buss.Components;
+using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Common.Models;
 using Beamable.Editor.UI.Components;
 using UnityEditor;
@@ -23,14 +24,19 @@ namespace Beamable.Editor.Content.Components
         private VisualElement _listRoot;
         private List<Entry> _entries = new List<Entry>();
         private PrimaryButtonVisualElement _archiveBtn;
+        private FormConstraint _buttonGatekeeper;
 
         private ArchiveManifestsVisualElement() : base(nameof(ArchiveManifestsVisualElement)) { }
 
         public static BeamablePopupWindow OpenAsUtilityWindow() => OpenAsUtilityWindow(null, out var _);
-
+        
         public static BeamablePopupWindow OpenAsUtilityWindow(EditorWindow parent, out ArchiveManifestsVisualElement content) {
             content = new ArchiveManifestsVisualElement();
-            var window = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ArchiveManifests, content, parent, ContentManagerConstants.WindowSizeMinimum);
+            var window = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ArchiveManifests, content, parent, ContentManagerConstants.WindowSizeMinimum, (callbackWindow) =>
+            {
+                callbackWindow?.Close();
+                OpenAsUtilityWindow();
+            });
             window.minSize = ContentManagerConstants.WindowSizeMinimum;
             content.OnCompleted += window.Close;
             content.OnCancelled += window.Close;
@@ -55,17 +61,20 @@ namespace Beamable.Editor.Content.Components
                 }
             });
 
+            Root.Q<Label>("manifestWarningMessage").AddTextWrapStyle();
+            
             _archiveBtn = Root.Q<PrimaryButtonVisualElement>("archiveBtn");
             _archiveBtn.Button.clickable.clicked += ArchiveButton_OnClicked;
+            _buttonGatekeeper = FormConstraint.Logical("No namespace selected.", () => _entries.Count(e => e.IsSelected) == 0);
+            _archiveBtn.AddGateKeeper(_buttonGatekeeper);
             UpdateArchiveButtonInteractivity();
-
+            
             var cancelBtn = Root.Q<Button>("cancelBtn");
             cancelBtn.clickable.clicked += CancelButton_OnClicked;
         }
 
         private void UpdateArchiveButtonInteractivity() {
-            var enabled = _entries.Count(e => e.IsSelected) > 0;
-            _archiveBtn.SetEnabled(enabled);
+            _buttonGatekeeper.Check();
         }
 
         private void CancelButton_OnClicked()
@@ -93,18 +102,23 @@ namespace Beamable.Editor.Content.Components
             OnCompleted?.Invoke();
         }
 
-        private class Entry {
-            public readonly ManifestEntryVisualElement visualElement;
+        private class Entry
+        {
+            public readonly LabeledCheckboxVisualElement visualElement;
             public readonly string manifestId;
-            public bool IsSelected => visualElement.IsSelected;
+            public bool IsSelected => visualElement.Value;
 
-            public Entry(AvailableManifestModel model, VisualElement listRoot, bool enabled, Action onValueChange) {
-                visualElement = new ManifestEntryVisualElement(model.id);
+            public Entry(AvailableManifestModel model, VisualElement listRoot, bool enabled, Action onValueChange)
+            {
+                visualElement = new LabeledCheckboxVisualElement();
                 listRoot.Add(visualElement);
                 manifestId = model.id;
                 visualElement.SetEnabled(enabled);
+                visualElement.SetFlipState(true);
                 visualElement.Refresh();
-                visualElement.Checkbox.OnValueChanged += _ => onValueChange();
+                visualElement.DisableIcon();
+                visualElement.SetText(model.id);
+                visualElement.OnValueChanged += _ => onValueChange();
             }
         }
     }

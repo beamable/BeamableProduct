@@ -60,11 +60,5 @@ namespace Beamable.Editor.UI.Components
         }
 
         public void Set(DateTime date) => _datePicker.Set(date);
-
-        // public void SetEnabled(bool value)
-        // {
-        //     _label.SetEnabled(value);
-        //     _datePicker.SetEnabled(value);
-        // }
     }
 }

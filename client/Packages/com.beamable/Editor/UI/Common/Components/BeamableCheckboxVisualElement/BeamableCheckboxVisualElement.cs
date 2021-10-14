@@ -20,7 +20,9 @@ namespace Beamable.Editor.UI.Components
         public new class UxmlFactory : UxmlFactory<BeamableCheckboxVisualElement, UxmlTraits>
         {
         }
-       
+
+        // TODO: remove after implementing composite validation rules
+        public Action OnValueChangedNotifier;
         public event Action<bool> OnValueChanged;
 
         public bool Value
@@ -30,6 +32,7 @@ namespace Beamable.Editor.UI.Components
             {
                 SetWithoutNotify(value);
                 OnValueChanged?.Invoke(value);
+                OnValueChangedNotifier?.Invoke();
             }
         }
 

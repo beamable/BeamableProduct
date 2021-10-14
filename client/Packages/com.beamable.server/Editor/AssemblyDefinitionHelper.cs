@@ -39,159 +39,75 @@ namespace Beamable.Server.Editor
          "SharpCompress.dll"
       };
 
-      // [MenuItem(RESTORE_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
-      public static void RestoreMongo()
+      public static void RestoreMongo(StorageObjectDescriptor descriptor)
       {
-         if (Selection.activeObject is AssemblyDefinitionAsset asm)
+         var dest = EditorUtility.OpenFolderPanel("Select where to load mongo", "", "default");
+         if (string.IsNullOrEmpty(dest)) return;
+         Debug.Log("Starting restore...");
+         Microservices.RestoreMongoSnapshot(descriptor, dest).Then(res =>
          {
-            var info = asm.ConvertToInfo();
-            foreach (var storage in Microservices.StorageDescriptors)
+            if (res)
             {
-               if (storage.IsContainedInAssemblyInfo(info))
-               {
-                  var dest = EditorUtility.OpenFolderPanel("Select where to load mongo", "", "default");
-                  if (string.IsNullOrEmpty(dest)) return;
-                  Debug.Log("Starting restore...");
-                  Microservices.RestoreMongoSnapshot(storage, dest).Then(res =>
-                  {
-                     if (res)
-                     {
-                        Debug.Log("Finished restoring");
-                     }
-                     else
-                     {
-                        Debug.Log("Failed.");
-                     }
-                  });
-
-                  return;
-               }
+               Debug.Log("Finished restoring");
             }
-            Debug.Log("nothing found for " + info.Name);
-         }
+            else
+            {
+               Debug.Log("Failed.");
+            }
+         });
       }
 
-      // [MenuItem(SNAPSHOT_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
-      public static void SnapshotMongo()
+      public static void SnapshotMongo(StorageObjectDescriptor descriptor)
       {
-         if (Selection.activeObject is AssemblyDefinitionAsset asm)
+         var dest = EditorUtility.OpenFolderPanel("Select where to save mongo", "", "default");
+         if (string.IsNullOrEmpty(dest)) return;
+         Debug.Log("Starting snapshot...");
+         Microservices.SnapshotMongo(descriptor, dest).Then(res =>
          {
-            var info = asm.ConvertToInfo();
-            foreach (var storage in Microservices.StorageDescriptors)
+            if (res)
             {
-               if (storage.IsContainedInAssemblyInfo(info))
-               {
-                  var dest = EditorUtility.OpenFolderPanel("Select where to save mongo", "", "default");
-                  if (string.IsNullOrEmpty(dest)) return;
-                  Debug.Log("Starting snapshot...");
-                  Microservices.SnapshotMongo(storage, dest).Then(res =>
-                  {
-                     if (res)
-                     {
-                        Debug.Log("Finished Snapshot");
-                        EditorUtility.OpenWithDefaultApp(dest);
-                     }
-                     else
-                     {
-                        Debug.Log("Failed.");
-                     }
-                  });
-
-                  return;
-               }
+               Debug.Log("Finished Snapshot");
+               EditorUtility.OpenWithDefaultApp(dest);
             }
-            Debug.Log("nothing found for " + info.Name);
-         }
+            else
+            {
+               Debug.Log("Failed.");
+            }
+         });
       }
 
-      // [MenuItem(CLEAR_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
-      public static void ClearMongo()
+      public static void ClearMongo(StorageObjectDescriptor descriptor)
       {
-         if (Selection.activeObject is AssemblyDefinitionAsset asm)
+         var work= Microservices.ClearMongoData(descriptor);
+         work.Then(success =>
          {
-            var info = asm.ConvertToInfo();
-            foreach (var storage in Microservices.StorageDescriptors)
+            if (success)
             {
-               if (storage.IsContainedInAssemblyInfo(info))
-               {
-                  var _= Microservices.ClearMongoData(storage);
-                  return;
-               }
+               Debug.Log($"Cleared {descriptor.Name} database.");
             }
-            Debug.Log("nothing found for " + info.Name);
-         }
+            else
+            {
+               Debug.LogWarning($"Failed to clear {descriptor.Name} database.");
+            }
+         });
       }
 
-
-      // [MenuItem(KILL_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
-      public static void KillMongo()
+      public static void OpenMongoExplorer(StorageObjectDescriptor descriptor)
       {
-         if (Selection.activeObject is AssemblyDefinitionAsset asm)
+         Debug.Log("opening tool");
+         var work = Microservices.OpenLocalMongoTool(descriptor);
+         work.Then(success =>
          {
-            var info = asm.ConvertToInfo();
-            foreach (var storage in Microservices.StorageDescriptors)
+            if (success)
             {
-               if (storage.IsContainedInAssemblyInfo(info))
-               {
-                  var comm = new StopImageCommand(storage);
-                  comm.Start();
-                  return;
-               }
+               Debug.Log("Opened tool.");
+
             }
-            Debug.Log("nothing found for " + info.Name);
-         }
-      }
-
-
-      // [MenuItem(RUN_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
-      public static void RunMongo()
-      {
-         if (Selection.activeObject is AssemblyDefinitionAsset asm)
-         {
-            var info = asm.ConvertToInfo();
-            foreach (var storage in Microservices.StorageDescriptors)
+            else
             {
-               if (storage.IsContainedInAssemblyInfo(info))
-               {
-                  var comm = new RunStorageCommand(storage);
-                  comm.Start();
-                  return;
-               }
+               Debug.LogWarning("Failed to open tool.");
             }
-            Debug.Log("nothing found for " + info.Name);
-         }
-      }
-
-      // [MenuItem(OPEN_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
-      public static void OpenMongoExplorer()
-      {
-         if (Selection.activeObject is AssemblyDefinitionAsset asm)
-         {
-            var info = asm.ConvertToInfo();
-
-            foreach (var storage in Microservices.StorageDescriptors)
-            {
-               if (storage.IsContainedInAssemblyInfo(info))
-               {
-                  Debug.Log("opening tool");
-                  var work = Microservices.OpenLocalMongoTool(storage);
-                  work.Then(success =>
-                  {
-                     if (success)
-                     {
-                        Debug.Log("opened tool");
-
-                     }
-                     else
-                     {
-                        Debug.Log("Failed to open tool");
-                     }
-                  });
-                  return;
-               }
-            }
-            Debug.Log("nothing found for " + info.Name);
-         }
+         });
       }
 
       [MenuItem(ADD_MONGO, false, BEAMABLE_PRIORITY)]

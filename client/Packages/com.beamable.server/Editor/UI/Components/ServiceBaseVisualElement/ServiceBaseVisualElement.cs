@@ -25,7 +25,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         protected ServiceBaseVisualElement() : base(nameof(ServiceBaseVisualElement))
         {
         }
-        
+
         public ServiceModelBase Model { get; set; }
         protected abstract string ScriptName { get; }
 
@@ -33,22 +33,20 @@ namespace Beamable.Editor.Microservice.UI.Components
         private const float MAX_HEIGHT = 500.0f;
         private const float DETACHED_HEIGHT = 100.0f;
         private const float DEFAULT_HEIGHT = 300.0f;
-        
+        protected const float DEFAULT_HEADER_HEIGHT = 60.0f;
+
         private float _storedHeight = 0;
-        
-        protected Button _startButton;
+        protected Button _stopButton;
         protected LoadingBarElement _loadingBar;
         protected VisualElement _statusIcon;
         protected Label _statusLabel;
         protected Label _remoteStatusLabel;
         protected VisualElement _remoteStatusIcon;
-        
-        private Label _nameTextField;
-        private Button _moreBtn;
-        private BeamableCheckboxVisualElement _checkbox;
+        protected LabeledCheckboxVisualElement _checkbox;
+        protected Button _moreBtn;
+        protected MicroserviceVisualElementSeparator _separator;
         private VisualElement _logContainerElement;
         private LogVisualElement _logElement;
-        private MicroserviceVisualElementSeparator _separator;
         private VisualElement _header;
         private VisualElement _rootVisualElement;
 
@@ -61,7 +59,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             Microservices.onBeforeDeploy -= SetupProgressBarForDeployment;
 
             if (Model == null) return;
-            
+
             Model.OnStart -= SetupProgressBarForStart;
             Model.OnStop -= SetupProgressBarForStop;
             Model.OnLogsAttachmentChanged -= CreateLogSection;
@@ -70,6 +68,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         public override void Refresh()
         {
             base.Refresh();
+            name = Model.Name;
             QueryVisualElements();
             InjectStyleSheets();
             UpdateVisualElements();
@@ -79,10 +78,9 @@ namespace Beamable.Editor.Microservice.UI.Components
             _rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
             Root.Q<Button>("cancelBtn").RemoveFromHierarchy();
             Root.Q("microserviceNewTitle")?.RemoveFromHierarchy();
-            _nameTextField = Root.Q<Label>("microserviceTitle");
-            _startButton = Root.Q<Button>("start");
+            _stopButton = Root.Q<Button>("stopBtn");
             _moreBtn = Root.Q<Button>("moreBtn");
-            _checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
+            _checkbox = Root.Q<LabeledCheckboxVisualElement>("checkbox");
             _logContainerElement = Root.Q<VisualElement>("logContainer");
             _statusLabel = Root.Q<Label>("statusTitle");
             _remoteStatusLabel = Root.Q<Label>("remoteStatusTitle");
@@ -112,9 +110,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             Microservices.onBeforeDeploy -= SetupProgressBarForDeployment;
             Microservices.onBeforeDeploy += SetupProgressBarForDeployment;
 
-            _nameTextField.text = Model.Name;
-            _startButton.clickable.clicked += HandleStartButtonClicked;
-            
+            _stopButton.clickable.clicked += HandleStopButtonClicked;
             var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
             manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
             _moreBtn.clickable.activators.Clear();
@@ -122,19 +118,22 @@ namespace Beamable.Editor.Microservice.UI.Components
             _moreBtn.tooltip = "More...";
 
             _checkbox.Refresh();
+            _checkbox.SetText(Model.Name);
             _checkbox.SetWithoutNotify(Model.IsSelected);
             Model.OnSelectionChanged += _checkbox.SetWithoutNotify;
             _checkbox.OnValueChanged += b => Model.IsSelected = b;
-            
+
             Model.OnLogsAttachmentChanged -= CreateLogSection;
             Model.OnLogsAttachmentChanged += CreateLogSection;
 
             Model.Builder.OnIsRunningChanged -= HandleIsRunningChanged;
             Model.Builder.OnIsRunningChanged += HandleIsRunningChanged;
-            
+
+            Root.Q("dependentServicesContainer").visible = MicroserviceConfiguration.Instance.EnableStoragePreview;
+
             _separator.Setup(OnDrag);
             _separator.Refresh();
-            
+
             UpdateButtons();
             CreateLogSection(Model.AreLogsAttached);
             UpdateStatusIcon();
@@ -146,9 +145,9 @@ namespace Beamable.Editor.Microservice.UI.Components
         protected abstract void UpdateRemoteStatusIcon();
         protected virtual void UpdateButtons()
         {
-            _startButton.text = Model.IsRunning ? Constants.STOP : Constants.START;
+            _stopButton.text = Model.IsRunning ? Constants.STOP : Constants.START;
         }
-        private async void UpdateModel()
+        protected async void UpdateModel()
         {
             await Model.Builder.CheckIfIsRunning();
         }
@@ -169,7 +168,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             _rootVisualElement.style.height = StyleValue<float>.Create(newHeight);
 #endif
         }
-        private void HandleStartButtonClicked()
+        private void HandleStopButtonClicked()
         {
             if (Model.IsRunning)
             {
@@ -186,7 +185,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             UpdateStatusIcon();
             UpdateHeaderColor();
         }
-        private void UpdateHeaderColor()
+        protected void UpdateHeaderColor()
         {
             if (Model.IsRunning)
             {
@@ -234,7 +233,7 @@ namespace Beamable.Editor.Microservice.UI.Components
                 StyleValue<float>.Create(DETACHED_HEIGHT);
 #endif
         }
-        private void SetupProgressBarForStart(Task task)
+        protected virtual void SetupProgressBarForStart(Task task)
         {
             // We have two ways. Either store reference or return instance as event parameter
             new RunImageLogParser(_loadingBar, Model) { OnFailure = OnStartFailed };
@@ -243,7 +242,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         {
             OnServiceStartFailed?.Invoke();
         }
-        private void SetupProgressBarForStop(Task task)
+        protected virtual void SetupProgressBarForStop(Task task)
         {
             new StopImageLogParser(_loadingBar, Model) { OnFailure = OnStopFailed };
         }

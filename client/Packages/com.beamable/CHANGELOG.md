@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+[Unreleased]
+### Fixed
+- Able to build game
+
 ## [0.17.0]
 ### Added
 - Device id authentication support
@@ -23,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - An optional `forceRefresh` parameter to all subscribable SDK's `GetCurrent()` method that forces a network request
 - `API.Instance.Requester` is now an `IBeamableRequester`
 - The `Promise` class is no longer static, and extends from `Promise<Unit>`
+- Validated string fields of `ListingPrice`, `StatRequirement`, `CohortRequirement`, `OfferConstraint` and `AnnouncementAttachment` in Content Manager were changed to dropdowns
 
 ### Fixed
 - If no internet connection exists on startup, `API.Instance()` will retry every 2 seconds until a connection is established

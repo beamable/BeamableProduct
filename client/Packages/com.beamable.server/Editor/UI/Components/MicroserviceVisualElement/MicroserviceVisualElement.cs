@@ -189,6 +189,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         protected override void UpdateButtons()
         {
             base.UpdateButtons();
+            _stopButton.visible = Model.IsRunning;
             _buildDefaultLabel.text = Constants.GetBuildButtonString(_microserviceModel.IncludeDebugTools,
                 _microserviceModel.IsRunning ? Constants.BUILD_RESET : Constants.BUILD_START);
 
@@ -200,7 +201,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             {
                 _defaultBuildAction = () => _microserviceModel.BuildAndStart();
             }
-            _startButton.SetEnabled(_microserviceModel.ServiceBuilder.HasImage && !_microserviceModel.IsBuilding);
+            _stopButton.SetEnabled(_microserviceModel.ServiceBuilder.HasImage && !_microserviceModel.IsBuilding);
             _buildDropDown.SetEnabled(!_microserviceModel.IsBuilding);
         }
     }

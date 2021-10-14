@@ -296,7 +296,10 @@ namespace Beamable.Server.Editor
                return false;
             }
          }
-         Application.OpenURL($"http://localhost:{config.LocalUIPort}");
+
+         var path = $"http://localhost:{config.LocalUIPort}";
+         Debug.Log($"Opening {path}");
+         Application.OpenURL(path);
          return true;
       }
 

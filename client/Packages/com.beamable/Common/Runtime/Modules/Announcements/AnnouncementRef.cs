@@ -1,6 +1,8 @@
+using System;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Beamable.Common.Announcements
 {
@@ -53,7 +55,7 @@ namespace Beamable.Common.Announcements
 
    [System.Serializable]
    [Agnostic]
-   public class AnnouncementAttachment
+   public class AnnouncementAttachment :ISerializationCallbackReceiver
    {
       [Tooltip("This should be the contentId of the attachment. Either an item id, or a currency id.")]
       [MustBeCurrencyOrItem]
@@ -63,9 +65,28 @@ namespace Beamable.Common.Announcements
       [MustBePositive]
       public int count = 1;
 
-      [Tooltip("Must specify the type of the attachment symbol. If you referenced an item in the symbol, this should be \"items\", otherwise it should be \"currency\"")]
-      [MustBeOneOf("currency", "items")]
+      [FormerlySerializedAs("type")]
+      [SerializeField, HideInInspector]
       // TODO: [MustMatchReference(nameof(symbol))]
-      public string type;
+      private string typeOld;
+
+      [Obsolete("Use 'contentType' instead")]
+      public string type
+      {
+         get => contentType.ToString().ToLower();
+         set => contentType = EnumConversionHelper.ParseEnumType<ContentType>(value);
+      }
+
+      [Tooltip("Must specify the type of the attachment symbol. If you referenced an item in the symbol, this should be \"items\", otherwise it should be \"currency\"")]
+      public ContentType contentType;
+
+      public void OnBeforeSerialize()
+      {
+      }
+
+      public void OnAfterDeserialize()
+      {
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref contentType, ref typeOld);
+      }
    }
 }

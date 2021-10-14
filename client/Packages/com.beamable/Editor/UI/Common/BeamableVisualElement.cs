@@ -33,15 +33,13 @@ namespace Beamable.Editor.UI.Buss
          UXMLPath = uxmlPath;
          USSPath = ussPath;
          TreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UXMLPath);
-
-
+         
          RegisterCallback<DetachFromPanelEvent>(evt =>
          {
             OnDetach();
          });
 
       }
-
 
       public virtual void OnDetach()
       {
