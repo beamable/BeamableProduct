@@ -40,13 +40,12 @@ namespace Beamable.Editor.Toolbox.Components
          {
             whatsnewButton.text = UpdateAvailableAnnouncementModel.WhatsNewButtonText;
             whatsnewButton.clickable.clicked += () => UpdateAvailableAnnouncementModel.OnWhatsNew?.Invoke();
-            whatsnewButton.visible = true;
          }
          else
          {
-            whatsnewButton.visible = false;
+             whatsnewButton.RemoveFromHierarchy();
          }
-         
+
          var installButton = Root.Q<Button>("announcement-install");
          installButton.text = UpdateAvailableAnnouncementModel.InstallButtonText;
          installButton.clickable.clicked += () => UpdateAvailableAnnouncementModel.OnInstall?.Invoke();
