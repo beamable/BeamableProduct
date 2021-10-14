@@ -125,41 +125,38 @@ jobs:
           chmod +x ./build/clean_iap.sh
           UNITY_VERSION=${{ matrix.unityVersion }} ./build/clean_iap.sh
         shell: bash
-      - uses: game-ci/unity-builder@v2
-        env:
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
-        with:
-          targetPlatform: ${{ matrix.targetPlatform }}
-          unityVersion: ${{ matrix.unityVersion }}
-          projectPath: ${{ matrix.projectPath }}
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
-          versioning: Semantic
-          allowDirtyBuild: true
-          buildsPath: dist
+      # - uses: game-ci/unity-builder@v2
+      #   env:
+      #     UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+      #     UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      #     UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+      #   with:
+      #     targetPlatform: ${{ matrix.targetPlatform }}
+      #     unityVersion: ${{ matrix.unityVersion }}
+      #     projectPath: ${{ matrix.projectPath }}
+      #     githubToken: ${{ secrets.GITHUB_TOKEN }}
+      #     versioning: Semantic
+      #     allowDirtyBuild: true
+      #     buildsPath: dist
 
       - name: Upload to S3
+        id: upload-to-s3
         uses: shallwefootball/s3-upload-action@master
         with:
           aws_key_id: ${{ secrets.AWS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
           aws_bucket: ${{ secrets.AWS_BUCKET_BUILDS }}
-          source_dir: dist/${{ matrix.targetPlatform }}
+          source_dir: build
+          destination_dir: tests
 
       - uses: actions/upload-artifact@v2
         with:
           name: Build-${{ matrix.targetPlatform }}
           path: dist/${{ matrix.targetPlatform }}
 
-  postMessage:
-      name: example
-      needs: build
-      runs-on: ubuntu-latest
-      steps:
-        - name: comment PR
-          uses: khezen/cmtpr@master
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          with:
-            msg: "Looks good to me!"
+      - name: comment PR
+        uses: khezen/cmtpr@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          msg: "Looks good to me! {{ steps.upload-to-s3.outputs.object_key }} "
