@@ -188,7 +188,6 @@ namespace Beamable.Common.Shop
    {
       [FormerlySerializedAs("type")]
       [SerializeField, HideInInspector]
-      [Obsolete("Use 'priceType' instead")]
       private string typeOld;
 
       [Obsolete("Use 'priceType' instead")]
@@ -216,9 +215,7 @@ namespace Beamable.Common.Shop
 
       public void OnAfterDeserialize()
       {
-#pragma warning disable CS0618
          EnumConversionHelper.ConvertIfNotDoneAlready(ref priceType, ref typeOld);
-#pragma warning restore CS0618
       }
    }
 
@@ -252,20 +249,16 @@ namespace Beamable.Common.Shop
 
       public StatRequirement()
       {
-#pragma warning disable CS0618
          domainCached = new OptionalString { Value = domainType.ToString().ToLower() };
          accessCached = new OptionalString { Value = accessType.ToString().ToLower() };
-#pragma warning restore CS0618
       }
       
       #region domain
       
       [FormerlySerializedAs("domain")]
       [SerializeField, HideInInspector]
-      [Obsolete("Use 'domainType' instead")]
       private OptionalString domainOld;
 
-      [Obsolete("Use 'domainType' instead")]
       private OptionalString domainCached;
       
       [Obsolete("Use 'domainType' instead")]
@@ -287,10 +280,8 @@ namespace Beamable.Common.Shop
       #region access
       
       [SerializeField, HideInInspector] [FormerlySerializedAs("access")]
-      [Obsolete("Use 'accessType' instead")]
       private OptionalString accessOld;
 
-      [Obsolete("Use 'accessType' instead")]
       private OptionalString accessCached;
 
       [Obsolete("Use 'accessType' instead")]
@@ -316,7 +307,6 @@ namespace Beamable.Common.Shop
       
       [FormerlySerializedAs("constraint")] 
       [SerializeField, HideInInspector]
-      [Obsolete("Use 'constraintType' instead")]
       private string constraintOld;
 
       [Obsolete("Use 'constraintType' instead")]
@@ -340,11 +330,9 @@ namespace Beamable.Common.Shop
 
       public void OnAfterDeserialize()
       {
-#pragma warning disable CS0618
          EnumConversionHelper.ConvertIfNotDoneAlready(ref accessType, ref accessOld);
          EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld);
          EnumConversionHelper.ConvertIfNotDoneAlready(ref domainType, ref domainOld);
-#pragma warning restore CS0618
       }
    }
 
@@ -361,7 +349,6 @@ namespace Beamable.Common.Shop
 
       [FormerlySerializedAs("constraint")]
       [SerializeField, HideInInspector]
-      [Obsolete("Use 'constraintType' instead")]
       private string constraintOld;
 
       [Obsolete("Use 'constraintType' instead")]
@@ -380,9 +367,7 @@ namespace Beamable.Common.Shop
 
       public void OnAfterDeserialize()
       {
-#pragma warning disable CS0618
          EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld);
-#pragma warning restore CS0618
       }
    }
 
@@ -396,7 +381,6 @@ namespace Beamable.Common.Shop
    public class OfferConstraint : ISerializationCallbackReceiver
    {
       [FormerlySerializedAs("constraint"), HideInInspector]
-      [Obsolete("Use 'constraintType' instead")]
       public string constraintOld;
 
       [Obsolete("Use 'constraintType' instead")]
@@ -418,9 +402,7 @@ namespace Beamable.Common.Shop
 
       public void OnAfterDeserialize()
       {
-#pragma warning disable CS0618
          EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld);
-#pragma warning restore CS0618
       }
    }
    [System.Serializable]

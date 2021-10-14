@@ -67,7 +67,6 @@ namespace Beamable.Common.Announcements
 
       [FormerlySerializedAs("type")]
       [SerializeField, HideInInspector]
-      [Obsolete("Use 'contentType' instead")]
       // TODO: [MustMatchReference(nameof(symbol))]
       private string typeOld;
 
@@ -87,9 +86,7 @@ namespace Beamable.Common.Announcements
 
       public void OnAfterDeserialize()
       {
-#pragma warning disable CS0618
          EnumConversionHelper.ConvertIfNotDoneAlready(ref contentType, ref typeOld);
-#pragma warning restore CS0618
       }
    }
 }
