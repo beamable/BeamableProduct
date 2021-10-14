@@ -33,6 +33,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         private const float MAX_HEIGHT = 500.0f;
         private const float DETACHED_HEIGHT = 100.0f;
         private const float DEFAULT_HEIGHT = 300.0f;
+        protected const float DEFAULT_HEADER_HEIGHT = 60.0f;
 
         private float _storedHeight = 0;
         protected Button _stopButton;
@@ -41,12 +42,11 @@ namespace Beamable.Editor.Microservice.UI.Components
         protected Label _statusLabel;
         protected Label _remoteStatusLabel;
         protected VisualElement _remoteStatusIcon;
-
-        private Button _moreBtn;
-        private LabeledCheckboxVisualElement _checkbox;
+        protected LabeledCheckboxVisualElement _checkbox;
+        protected Button _moreBtn;
+        protected MicroserviceVisualElementSeparator _separator;
         private VisualElement _logContainerElement;
         private LogVisualElement _logElement;
-        private MicroserviceVisualElementSeparator _separator;
         private VisualElement _header;
         private VisualElement _rootVisualElement;
 
@@ -147,7 +147,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         {
             _stopButton.text = Model.IsRunning ? Constants.STOP : Constants.START;
         }
-        private async void UpdateModel()
+        protected async void UpdateModel()
         {
             await Model.Builder.CheckIfIsRunning();
         }
@@ -185,7 +185,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             UpdateStatusIcon();
             UpdateHeaderColor();
         }
-        private void UpdateHeaderColor()
+        protected void UpdateHeaderColor()
         {
             if (Model.IsRunning)
             {

@@ -76,7 +76,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         }
         protected virtual void UpdateVisualElements()
         {
-            _servicesNames = MicroservicesDataModel.Instance.AllServices.Select(x => x.Descriptor.Name).ToList();
+            _servicesNames = MicroservicesDataModel.Instance.AllLocalServices.Select(x => x.Descriptor.Name).ToList();
             RegisterCallback<MouseDownEvent>(HandeMouseDownEvent, TrickleDown.TrickleDown);
             
             _nameTextField.SetValueWithoutNotify(NewServiceName);
