@@ -63,7 +63,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             _rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
             Root.Q("dependentServicesContainer")?.RemoveFromHierarchy();
             _cancelBtn = Root.Q<Button>("cancelBtn");
-            _createBtn = Root.Q<Button>("start");
+            _createBtn = Root.Q<Button>("stopBtn");
             _buildDropDownBtn = Root.Q<Button>("buildDropDown");
             _checkbox = Root.Q<LabeledCheckboxVisualElement>("checkbox");
             _logContainerElement = Root.Q<VisualElement>("logContainer");

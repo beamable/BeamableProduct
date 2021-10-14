@@ -98,7 +98,7 @@ namespace Beamable.Editor.Content
       {
          var element = new TWindow();
          var window = BeamablePopupWindow.ShowUtility(BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER,
-            element, null, BeamableComponentsConstants.ListingSchedulesWindowSize);
+            element, null, BeamableComponentsConstants.SchedulesWindowSize);
 
 
          var data = GetDataObject(property);

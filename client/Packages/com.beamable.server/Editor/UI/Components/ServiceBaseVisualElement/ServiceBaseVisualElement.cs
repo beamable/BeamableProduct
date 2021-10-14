@@ -147,7 +147,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         protected abstract void UpdateRemoteStatusIcon();
         protected virtual void UpdateButtons()
         {
-            _stopButton.visible = Model.IsRunning;
+            _stopButton.text = Model.IsRunning ? Constants.STOP : Constants.START;
         }
         private async void UpdateModel()
         {
@@ -175,6 +175,10 @@ namespace Beamable.Editor.Microservice.UI.Components
             if (Model.IsRunning)
             {
                 Model.Stop();
+            }
+            else
+            {
+                Model.Start();
             }
         }
         private void HandleIsRunningChanged(bool isRunning)
