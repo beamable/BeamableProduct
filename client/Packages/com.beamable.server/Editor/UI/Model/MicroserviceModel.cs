@@ -23,13 +23,13 @@ namespace Beamable.Editor.UI.Model
     [System.Serializable]
     public class MicroserviceModel : ServiceModelBase, IBeamableMicroservice
     {
-        public MicroserviceDescriptor ServiceDescriptor { get; private set; }
-        public MicroserviceBuilder ServiceBuilder { get; private set; }
+        public MicroserviceDescriptor ServiceDescriptor { get; protected set; }
+        public MicroserviceBuilder ServiceBuilder { get; protected set; }
         public override IBeamableBuilder Builder => ServiceBuilder;
         public override IDescriptor Descriptor => ServiceDescriptor;
-        public ServiceReference RemoteReference { get; private set; }
-        public ServiceStatus RemoteStatus { get; private set; }
-        public MicroserviceConfigurationEntry Config { get; private set; }
+        public ServiceReference RemoteReference { get; protected set; }
+        public ServiceStatus RemoteStatus { get; protected set; }
+        public MicroserviceConfigurationEntry Config { get; protected set; }
         public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
         public bool IsBuilding => ServiceBuilder?.IsBuilding ?? false;
         public bool SameImageOnRemoteAndLocally => string.Equals(ServiceBuilder?.LastBuildImageId, RemoteReference?.imageId);
@@ -208,7 +208,7 @@ $@"{{
      }}
   }}";
         }
-        private void OpenOnRemote(string relativePath)
+        protected void OpenOnRemote(string relativePath)
         {
             EditorAPI.Instance.Then(api =>
             {

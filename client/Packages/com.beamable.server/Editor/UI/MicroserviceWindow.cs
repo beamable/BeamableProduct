@@ -156,6 +156,14 @@ namespace Beamable.Editor.Microservice.UI
 
             _microserviceContentVisualElement.Refresh();
 
+            if (Model != null)
+            {
+                Model.OnServerManifestUpdated += (manifest) =>
+                {
+                    _microserviceContentVisualElement?.Refresh();
+                };
+            }
+
             _microserviceBreadcrumbsVisualElement.OnSelectAllCheckboxChanged +=
                 _microserviceContentVisualElement.SetAllMicroserviceSelectedStatus;
             _microserviceBreadcrumbsVisualElement.OnNewServicesDisplayFilterSelected += HandleDisplayFilterSelected;
