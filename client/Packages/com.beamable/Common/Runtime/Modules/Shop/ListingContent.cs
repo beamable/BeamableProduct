@@ -188,17 +188,19 @@ namespace Beamable.Common.Shop
    {
       [FormerlySerializedAs("type")]
       [SerializeField, HideInInspector]
+      [Obsolete("Use 'priceType' instead")]
       private string typeOld;
 
+      [Obsolete("Use 'priceType' instead")]
       public string type
       {
          get => priceType.ToString().ToLower();
          set => priceType = EnumConversionHelper.ParseEnumType<PriceType>(value);
       }
 
-      [SerializeField] [Tooltip(ContentObject.TooltipType1)]
+      [Tooltip(ContentObject.TooltipType1)]
       [MustBeNonDefault]
-      private PriceType priceType;
+      public PriceType priceType;
       
       [Tooltip(ContentObject.TooltipSymbol1)]
       [MustReferenceContent(false, typeof(CurrencyContent), typeof(SKUContent))]
@@ -214,7 +216,9 @@ namespace Beamable.Common.Shop
 
       public void OnAfterDeserialize()
       {
+#pragma warning disable CS0618
          EnumConversionHelper.ConvertIfNotDoneAlready(ref priceType, ref typeOld);
+#pragma warning restore CS0618
       }
    }
 
@@ -248,18 +252,23 @@ namespace Beamable.Common.Shop
 
       public StatRequirement()
       {
+#pragma warning disable CS0618
          domainCached = new OptionalString { Value = domainType.ToString().ToLower() };
          accessCached = new OptionalString { Value = accessType.ToString().ToLower() };
+#pragma warning restore CS0618
       }
       
       #region domain
       
       [FormerlySerializedAs("domain")]
       [SerializeField, HideInInspector]
+      [Obsolete("Use 'domainType' instead")]
       private OptionalString domainOld;
 
+      [Obsolete("Use 'domainType' instead")]
       private OptionalString domainCached;
       
+      [Obsolete("Use 'domainType' instead")]
       public OptionalString domain
       {
          get => domainCached;
@@ -271,18 +280,20 @@ namespace Beamable.Common.Shop
       }
 
       [Tooltip("Domain of the stat (e.g. 'platform', 'game', 'client'). Default is 'game'.")]
-      [SerializeField]
-      private DomainType domainType;
+      public DomainType domainType;
 
       #endregion
       
       #region access
       
       [SerializeField, HideInInspector] [FormerlySerializedAs("access")]
+      [Obsolete("Use 'accessType' instead")]
       private OptionalString accessOld;
 
+      [Obsolete("Use 'accessType' instead")]
       private OptionalString accessCached;
 
+      [Obsolete("Use 'accessType' instead")]
       public OptionalString access
       {
          get => accessCached;
@@ -293,8 +304,8 @@ namespace Beamable.Common.Shop
          }
       }
 
-      [Tooltip("Visibility of the stat (e.g. 'private', 'public'). Default is 'private'.")] [SerializeField]
-      private AccessType accessType;
+      [Tooltip("Visibility of the stat (e.g. 'private', 'public'). Default is 'private'.")]
+      public AccessType accessType;
       
       #endregion
 
@@ -305,17 +316,19 @@ namespace Beamable.Common.Shop
       
       [FormerlySerializedAs("constraint")] 
       [SerializeField, HideInInspector]
+      [Obsolete("Use 'constraintType' instead")]
       private string constraintOld;
 
+      [Obsolete("Use 'constraintType' instead")]
       public string constraint
       {
          get => constraintType.ToString().ToLower();
          set => constraintType = EnumConversionHelper.ParseEnumType<ComparatorType>(value);
       }
 
-      [Tooltip(ContentObject.TooltipConstraint1)] [SerializeField]
+      [Tooltip(ContentObject.TooltipConstraint1)]
       [MustBeNonDefault]
-      private ComparatorType constraintType;
+      public ComparatorType constraintType;
       
       #endregion
 
@@ -327,9 +340,11 @@ namespace Beamable.Common.Shop
 
       public void OnAfterDeserialize()
       {
+#pragma warning disable CS0618
          EnumConversionHelper.ConvertIfNotDoneAlready(ref accessType, ref accessOld);
          EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld);
          EnumConversionHelper.ConvertIfNotDoneAlready(ref domainType, ref domainOld);
+#pragma warning restore CS0618
       }
    }
 
@@ -346,17 +361,18 @@ namespace Beamable.Common.Shop
 
       [FormerlySerializedAs("constraint")]
       [SerializeField, HideInInspector]
+      [Obsolete("Use 'constraintType' instead")]
       private string constraintOld;
 
+      [Obsolete("Use 'constraintType' instead")]
       public string constraint
       {
          get => constraintType.ToString().ToLower();
          set => EnumConversionHelper.ParseEnumType<ComparatorType>(value);
       }
 
-      [SerializeField]
       [Tooltip(ContentObject.TooltipConstraint1)]
-      private ComparatorType constraintType;
+      public ComparatorType constraintType;
 
       public void OnBeforeSerialize()
       {
@@ -364,7 +380,9 @@ namespace Beamable.Common.Shop
 
       public void OnAfterDeserialize()
       {
+#pragma warning disable CS0618
          EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld);
+#pragma warning restore CS0618
       }
    }
 
@@ -377,18 +395,19 @@ namespace Beamable.Common.Shop
    [System.Serializable]
    public class OfferConstraint : ISerializationCallbackReceiver
    {
-      [FormerlySerializedAs("constraint")]
+      [FormerlySerializedAs("constraint"), HideInInspector]
+      [Obsolete("Use 'constraintType' instead")]
       public string constraintOld;
 
+      [Obsolete("Use 'constraintType' instead")]
       public string constraint
       {
-         get => comparatorType.ToString().ToLower();
-         set => comparatorType = EnumConversionHelper.ParseEnumType<ComparatorType>(value);
+         get => constraintType.ToString().ToLower();
+         set => constraintType = EnumConversionHelper.ParseEnumType<ComparatorType>(value);
       }
       
-      [SerializeField] 
       [Tooltip(ContentObject.TooltipConstraint1)]
-      private ComparatorType comparatorType;
+      public ComparatorType constraintType;
 
       [Tooltip(ContentObject.TooltipValue1)]
       public int value;
@@ -399,7 +418,9 @@ namespace Beamable.Common.Shop
 
       public void OnAfterDeserialize()
       {
-         EnumConversionHelper.ConvertIfNotDoneAlready(ref comparatorType, ref constraintOld);
+#pragma warning disable CS0618
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld);
+#pragma warning restore CS0618
       }
    }
    [System.Serializable]
