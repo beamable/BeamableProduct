@@ -114,7 +114,10 @@ jobs:
           lfs: true
       - uses: actions/cache@v2
         with:
-          path: ${{ matrix.projectPath }}/Library
+          path: |
+            ${{ matrix.projectPath }}/Library
+            ${{ matrix.projectPath }}/Temp
+            ${{ matrix.projectPath }}/obj
           key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
           restore-keys: |
             Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
