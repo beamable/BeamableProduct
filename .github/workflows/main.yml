@@ -139,22 +139,27 @@ jobs:
           allowDirtyBuild: true
           buildsPath: dist
 
+      - name: Upload to S3
+        uses: shallwefootball/s3-upload-action@master
+        with:
+          aws_key_id: ${{ secrets.AWS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
+          aws_bucket: ${{ secrets.AWS_BUCKET_BUILDS }}
+          source_dir: dist/${{ matrix.targetPlatform }}
+
       - uses: actions/upload-artifact@v2
         with:
           name: Build-${{ matrix.targetPlatform }}
           path: dist/${{ matrix.targetPlatform }}
 
-  artifacts-url-comments:
-    needs: build
-    name: add artifact links to pull request and related issues job
-    runs-on: ubuntu-latest
-    steps:
-      - name: add artifact links to pull request and related issues step
-        uses: tonyhallett/artifacts-url-comments@v1.1.0
-        env:
+  postMessage:
+      name: example
+      needs: build
+      runs-on: ubuntu-latest
+      steps:
+        - name: comment PR
+          uses: khezen/cmtpr@master
+          env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-            prefix: Here are the artifacts 
-            suffix: Have a nice day.
-            format: name
-            addTo: pullandissues
+          with:
+            msg: "Looks good to me!"
