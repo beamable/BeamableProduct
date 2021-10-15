@@ -120,10 +120,14 @@ namespace Beamable.Editor.Config
       public static void Initialize(bool forceCreation = false)
       {
          ConfigModuleDescriptors = GetConfigDescriptors();
-         BaseModuleConfigurationObject.PrepareInstances(ConfigModuleDescriptors.Select(c => c.ConfigType).ToArray());
-         ConfigObjects = ConfigModuleDescriptors.Where(d => forceCreation || d.Exists).Select(d => d.Getter())
-            .ToArray();
-         ConfigModules = ConfigObjects.Select(c => c.GetType().Name.Replace("Configuration", "")).ToArray();
+         BaseModuleConfigurationObject.PrepareInstances(ConfigModuleDescriptors.Select(c => c.ConfigType).ToArray())
+            .Then(
+               _ =>
+               {
+                  ConfigObjects = ConfigModuleDescriptors.Where(d => forceCreation || d.Exists).Select(d => d.Getter())
+                     .ToArray();
+                  ConfigModules = ConfigObjects.Select(c => c.GetType().Name.Replace("Configuration", "")).ToArray();
+               });
       }
 
       public void Destroy()
