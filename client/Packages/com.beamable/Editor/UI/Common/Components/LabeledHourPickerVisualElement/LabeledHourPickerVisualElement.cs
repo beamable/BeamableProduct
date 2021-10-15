@@ -101,28 +101,21 @@ namespace Beamable.Editor.UI.Components
                 return;
             }
 
-            int.TryParse(_hourPicker.HourPickerComponent.Value, out int resultHour);
-            if (!Enumerable.Range(0, 23).Contains(resultHour))
-            {
-                resultHour = Mathf.Clamp(resultHour, 0, 23);
-                _hourPicker.HourPickerComponent.Value = resultHour.ToString();
-            }
-
-            int.TryParse(_hourPicker.MinutePickerComponent.Value, out int resultMinute);
-            if (!Enumerable.Range(0, 59).Contains(resultMinute))
-            {
-                resultMinute = Mathf.Clamp(resultMinute, 0, 59);
-                _hourPicker.MinutePickerComponent.Value = resultMinute.ToString();
-            }
-
-            int.TryParse(_hourPicker.SecondPickerComponent.Value, out int resultSecond);
-            if (!Enumerable.Range(0, 59).Contains(resultSecond))
-            {
-                resultSecond = Mathf.Clamp(resultSecond, 0, 59);
-                _hourPicker.SecondPickerComponent.Value = resultSecond.ToString();
-            }
+            Validate(_hourPicker.HourPickerComponent, 0, 23);
+            Validate(_hourPicker.MinutePickerComponent, 0,59);
+            Validate(_hourPicker.SecondPickerComponent, 0, 59);
 
             OnValueChanged?.Invoke();
+        }
+
+        private void Validate(LabeledNumberPicker component, int min, int max)
+        {
+            int.TryParse(component.Value, out int result);
+            if (!Enumerable.Range(min, max).Contains(result))
+            {
+                result = Mathf.Clamp(result, min, max);
+                component.Value = result.ToString();
+            }
         }
     }
 }
