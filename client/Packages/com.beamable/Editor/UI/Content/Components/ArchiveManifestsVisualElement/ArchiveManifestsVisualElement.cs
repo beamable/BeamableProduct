@@ -114,8 +114,10 @@ namespace Beamable.Editor.Content.Components
                 listRoot.Add(visualElement);
                 manifestId = model.id;
                 visualElement.SetEnabled(enabled);
+                visualElement.EnableInClassList("disabled", !enabled);
                 visualElement.SetFlipState(true);
                 visualElement.Refresh();
+                visualElement.Checkbox.Button.pickingMode = enabled ? PickingMode.Position : PickingMode.Ignore;
                 visualElement.DisableIcon();
                 visualElement.SetText(model.id);
                 visualElement.OnValueChanged += _ => onValueChange();

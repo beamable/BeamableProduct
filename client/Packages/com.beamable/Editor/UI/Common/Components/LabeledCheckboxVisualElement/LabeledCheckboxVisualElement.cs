@@ -70,6 +70,8 @@ namespace Beamable.Editor.UI.Components
         private string Label { get; set; }
         private string Icon { get; set; }
 
+        public BeamableCheckboxVisualElement Checkbox => _checkbox;
+
         public LabeledCheckboxVisualElement() : base(ComponentPath)
         {
         }
