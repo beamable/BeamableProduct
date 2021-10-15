@@ -268,11 +268,14 @@ namespace Beamable.Server.Editor
 
       public static void AddPrecompiledReferences(this MicroserviceDescriptor service, params string[] libraryNames)
          => service.ConvertToAsset().AddPrecompiledReferences(libraryNames);
+      
+      public static void AddAndRemoveReferences(this MicroserviceDescriptor service, List<string> toAddReferences, List<string> toRemoveReferences)
+          => service.ConvertToAsset().AddAndRemoveReferences(toAddReferences, toRemoveReferences);
 
       public static void AddPrecompiledReferences(this AssemblyDefinitionAsset asm, params string[] libraryNames)
       {
          var jsonData = Json.Deserialize(asm.text) as ArrayDict;
-         var dllReferences = GetPrecompiledAssemblies(jsonData);
+         var dllReferences = GetReferences(PRECOMPILED, jsonData);
 
          foreach (var lib in libraryNames)
          {
@@ -281,7 +284,23 @@ namespace Beamable.Server.Editor
 
          jsonData[PRECOMPILED] = dllReferences.ToArray();
          WriteAssembly(asm, jsonData);
+      }
+      public static void AddAndRemoveReferences(this AssemblyDefinitionAsset asm, List<string> toAddReferences, List<string> toRemoveReferences)
+      {
+          var jsonData = Json.Deserialize(asm.text) as ArrayDict;
+          var dllReferences = GetReferences(REFERENCES, jsonData);
 
+          foreach (var toAdd in toAddReferences)
+          {
+              dllReferences.Add(toAdd);
+          }
+          foreach (var toRemove in toRemoveReferences)
+          {
+              dllReferences.Remove(toRemove);
+          }
+
+          jsonData[REFERENCES] = dllReferences.ToArray();
+          WriteAssembly(asm, jsonData);
       }
 
       public static void RemovePrecompiledReferences(this MicroserviceDescriptor service, params string[] libraryNames)
@@ -290,7 +309,7 @@ namespace Beamable.Server.Editor
       public static void RemovePrecompiledReferences(this AssemblyDefinitionAsset asm, params string[] libraryNames)
       {
          var jsonData = Json.Deserialize(asm.text) as ArrayDict;
-         var dllReferences = GetPrecompiledAssemblies(jsonData);
+         var dllReferences = GetReferences(PRECOMPILED, jsonData);
 
          foreach (var lib in libraryNames)
          {
@@ -300,20 +319,20 @@ namespace Beamable.Server.Editor
          jsonData[PRECOMPILED] = dllReferences.ToArray();
          WriteAssembly(asm, jsonData);
       }
-
-      private static HashSet<string> GetPrecompiledAssemblies(ArrayDict jsonData)
+      
+      private static HashSet<string> GetReferences(string referenceType, ArrayDict jsonData)
       {
-         var dllReferences = new HashSet<string>();
-         if (jsonData.TryGetValue(PRECOMPILED, out var referencesDllObject) &&
-             referencesDllObject is IEnumerable<object> existingReferences)
-         {
-            dllReferences = new HashSet<string>(existingReferences
-               .Cast<string>()
-               .Where(s => !string.IsNullOrEmpty(s))
-               .ToArray());
-         }
+          var dllReferences = new HashSet<string>();
+          if (jsonData.TryGetValue(referenceType, out var referencesDllObject) &&
+              referencesDllObject is IEnumerable<object> existingReferences)
+          {
+              dllReferences = new HashSet<string>(existingReferences
+                  .Cast<string>()
+                  .Where(s => !string.IsNullOrEmpty(s))
+                  .ToArray());
+          }
 
-         return dllReferences;
+          return dllReferences;
       }
 
       private static void WriteAssembly(AssemblyDefinitionAsset asm, ArrayDict jsonData)

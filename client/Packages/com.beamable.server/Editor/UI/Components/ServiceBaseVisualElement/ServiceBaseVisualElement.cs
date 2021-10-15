@@ -37,6 +37,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         private float _storedHeight = 0;
         protected Button _stopButton;
+        protected Button _startButton;
         protected LoadingBarElement _loadingBar;
         protected VisualElement _statusIcon;
         protected Label _statusLabel;
@@ -49,6 +50,8 @@ namespace Beamable.Editor.Microservice.UI.Components
         private LogVisualElement _logElement;
         private VisualElement _header;
         private VisualElement _rootVisualElement;
+        private Button _dependentServicesBtn;
+        private Label _nameTextField;
 
         public Action OnServiceStartFailed { get; set; }
         public Action OnServiceStopFailed { get; set; }
@@ -78,6 +81,9 @@ namespace Beamable.Editor.Microservice.UI.Components
             _rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
             Root.Q<Button>("cancelBtn").RemoveFromHierarchy();
             Root.Q("microserviceNewTitle")?.RemoveFromHierarchy();
+            _dependentServicesBtn = Root.Q<Button>("dependentServicesBtn");
+            _nameTextField = Root.Q<Label>("microserviceTitle");
+            _startButton = Root.Q<Button>("start");
             _stopButton = Root.Q<Button>("stopBtn");
             _moreBtn = Root.Q<Button>("moreBtn");
             _checkbox = Root.Q<LabeledCheckboxVisualElement>("checkbox");
@@ -117,6 +123,12 @@ namespace Beamable.Editor.Microservice.UI.Components
             _moreBtn.AddManipulator(manipulator);
             _moreBtn.tooltip = "More...";
 
+            var dependentServicesBtnState = MicroserviceConfiguration.Instance.Microservices.Count > 0 &&
+                                           MicroserviceConfiguration.Instance.StorageObjects.Count > 0;
+            
+            _dependentServicesBtn.clickable.clicked += () => DependentServicesWindow.ShowWindow();
+            _dependentServicesBtn.SetEnabled(dependentServicesBtnState);
+            
             _checkbox.Refresh();
             _checkbox.SetText(Model.Name);
             _checkbox.SetWithoutNotify(Model.IsSelected);
