@@ -2,6 +2,7 @@ using Beamable.Editor.Content.Models;
 using Beamable.Editor.Content;
 using Beamable.Editor.UI.Buss.Components;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -44,6 +45,7 @@ namespace Beamable.Editor.Content.Components
         private ManifestModel _manifestModel;
         private FormConstraint _isManifestNameValid;
         private Label _manifestArchivedMessage;
+        private List<ContentPopupLinkVisualElement> _contentElements = new List<ContentPopupLinkVisualElement>();
 
         public bool CreateNewManifest
         {
@@ -315,13 +317,27 @@ namespace Beamable.Editor.Content.Components
                         _messageLabel.text = ContentManagerConstants.PublishCompleteMessage;
                         _publishBtn.SetText("Okay");
                         _loadingBar.RunWithoutUpdater = false;
+                        MarkChecked();
                     });
                 });
         }
 
         private ContentPopupLinkVisualElement MakeElement()
         {
-            return new ContentPopupLinkVisualElement();
+            var contentPopupLinkVisualElement = new ContentPopupLinkVisualElement();
+            _contentElements.Add(contentPopupLinkVisualElement);
+            return contentPopupLinkVisualElement;
+        }
+
+        private void MarkChecked()
+        {
+            MarkDirtyRepaint();
+            EditorApplication.delayCall += () =>
+            {
+                foreach (var contentElement in _contentElements)
+                    contentElement.MarkChecked();
+                MarkDirtyRepaint();
+            };
         }
 
         private Action<VisualElement, int> CreateBinder(List<ContentDownloadEntryDescriptor> source)
