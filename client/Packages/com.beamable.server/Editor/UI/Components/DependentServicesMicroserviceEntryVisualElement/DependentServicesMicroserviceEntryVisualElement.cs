@@ -25,11 +25,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         public Label MicroserviceName { get; private set; }
         private VisualElement _dependencyCheckboxes;
-        private readonly IEnumerable<string> _storageObjectsRelations;
         
-        public DependentServicesMicroserviceEntryVisualElement(IEnumerable<string> storageObjectsRelations) : base(nameof(DependentServicesMicroserviceEntryVisualElement))
+        public DependentServicesMicroserviceEntryVisualElement() : base(nameof(DependentServicesMicroserviceEntryVisualElement))
         {
-            _storageObjectsRelations = storageObjectsRelations;
         }
         public override void Refresh()
         {
@@ -49,7 +47,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             
             foreach (var storageObjectModel in MicroservicesDataModel.Instance.Storages)
             {
-                var isRelation = _storageObjectsRelations.Contains(storageObjectModel.Name.ToLower());
+                var isRelation = Model.Dependencies.Contains(storageObjectModel);
                 var newElement = new DependentServicesCheckboxVisualElement(isRelation) { MongoStorageModel = storageObjectModel };
                 newElement.OnServiceRelationChanged += TriggerServiceRelationChanged;
                 newElement.Refresh();
