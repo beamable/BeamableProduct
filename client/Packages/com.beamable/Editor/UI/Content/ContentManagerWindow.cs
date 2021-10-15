@@ -38,6 +38,7 @@ namespace Beamable.Editor.Content
 
          // Create Beamable ContentManagerWindow and dock it next to Unity Hierarchy Window
          ContentManagerWindow.Instance.Show();
+         ContentManagerWindow.Instance.Focus();
       }
       
       private static ContentManagerWindow _instance;
