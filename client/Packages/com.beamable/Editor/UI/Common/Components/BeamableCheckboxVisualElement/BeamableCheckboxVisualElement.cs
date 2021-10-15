@@ -36,6 +36,8 @@ namespace Beamable.Editor.UI.Components
             }
         }
 
+        public Button Button => _button;
+
         private bool _value;
 
         private VisualElement _onNotifier;
