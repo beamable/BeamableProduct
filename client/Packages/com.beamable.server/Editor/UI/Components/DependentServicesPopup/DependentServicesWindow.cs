@@ -33,7 +33,6 @@ namespace Beamable.Editor.Microservice.UI.Components
             wnd.titleContent = new GUIContent(Constants.DEPENDENT_SERVICES_WINDOW_TITLE);
             wnd.ShowUtility();
             wnd.minSize = new Vector2(620, 400);
-            wnd.maxSize = wnd.minSize;
             wnd.position = new Rect((Screen.width + wnd.minSize.x) * 0.5f, Screen.width * 0.5f, wnd.minSize.x, wnd.minSize.y);
             wnd.Refresh();
 

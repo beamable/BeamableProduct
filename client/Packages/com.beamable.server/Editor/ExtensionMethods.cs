@@ -1,4 +1,4 @@
-﻿namespace Editor
+﻿namespace Beamable.Editor
 {
     public static class ExtensionMethods
     {

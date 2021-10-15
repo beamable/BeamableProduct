@@ -100,14 +100,14 @@ namespace Beamable.Editor.Microservice.UI.Components
             {
                 var microservice = service.Key;
                 microservice.Dependencies.Clear();
-                
+            
                 foreach (var dependentService in service.Value.DependentServices)
                 {
                     if (!dependentService.IsServiceRelation)
                         continue;
                     microservice.Dependencies.Add(dependentService.MongoStorageModel);
                 }
-                
+            
                 SetAssemblyReferences(microservice, storageObjectAssemblyDefinitionsAssets);
             }
         }
@@ -197,8 +197,13 @@ namespace Beamable.Editor.Microservice.UI.Components
                 .Contains(x.Key))
                 .ToDictionary(x => x.Key, x => 
                     AssemblyDefinitionHelper.ConvertToInfo(storageObjectAssemblyDefinitionsAssets[x.Key]).Name).Values.ToList();
-
+            
             AssemblyDefinitionHelper.AddAndRemoveReferences(microserviceModel.ServiceDescriptor, intersect, nonIntersect);
+            
+            if (GetDependentServices(microserviceModel).Any())
+                AssemblyDefinitionHelper.AddMongoLibraries(microserviceModel.ServiceDescriptor);
+            else
+                AssemblyDefinitionHelper.RemoveMongoLibraries(microserviceModel.ServiceDescriptor);
         }
 
         private class ServiceRelationInfo
