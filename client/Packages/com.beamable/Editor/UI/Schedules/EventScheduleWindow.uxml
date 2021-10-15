@@ -21,10 +21,7 @@
         </engine:VisualElement>
 
 
-        <engine:VisualElement name="expirationRow">
-			<beamable:LabeledCheckboxVisualElement name="expiresNever" label="Never expires"/>
-        </engine:VisualElement>
-
+			  <beamable:LabeledCheckboxVisualElement name="expiresNever" label="Never expires"/>
         <beamable:LabeledDatePickerVisualElement name="activeToDate" label="Active to"/>
         <beamable:LabeledHourPickerVisualElement name="activeToHour" label=""/>
 
