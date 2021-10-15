@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Microservice clients can now deserialize json lists
+- Microservice can log view stays focused on bottom of log feed
 
 ### Changed
 - Generated services no longer include the class name in the namespace
