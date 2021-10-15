@@ -73,7 +73,7 @@ Image#dropDownIcon{
 }
 
 #selectAllLabeledCheckbox{
-    margin-left: 10px;
+    margin-left: 20px;
 	align-self: center;
     position: relative;
     flex-grow: 1;

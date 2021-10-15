@@ -147,8 +147,6 @@ namespace Beamable.Editor.Schedules
             // TODO: create some generic composite rules for cases like this one and then remove below lines
             _periodFromHourComponent.OnValueChanged = PerformPeriodValidation;
             _periodToHourComponent.OnValueChanged = PerformPeriodValidation;
-            _allDayComponent.OnValueChangedNotifier = PerformPeriodValidation;
-
             _currentValidator = _dailyModeValidator;
             _currentValidator.ForceValidationCheck();
         }
@@ -170,7 +168,7 @@ namespace Beamable.Editor.Schedules
                 _invalidPeriodMessage = rule.ErrorMessage;
             }
 
-            _currentValidator.ForceValidationCheck();
+            _currentValidator?.ForceValidationCheck();
         }
 
         private void RefreshConfirmButton(bool value, string message)
@@ -263,6 +261,7 @@ namespace Beamable.Editor.Schedules
         {
             _periodFromHourComponent.SetGroupEnabled(!value);
             _periodToHourComponent.SetGroupEnabled(!value);
+            PerformPeriodValidation();
         }
 
         private void OnExpirationChanged(bool value)
