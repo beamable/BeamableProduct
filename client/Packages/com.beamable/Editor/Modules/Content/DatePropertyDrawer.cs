@@ -177,7 +177,7 @@ namespace Beamable.Editor.Content {
 
         private static void ApplyNewDate(SerializedProperty property, DateTime date) {
             var stringProperty = GetStringProperty(property);
-            var dateString = date.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
+            var dateString = date.ToUniversalTime().ToString(DateUtility.ISO_FORMAT, CultureInfo.InvariantCulture);
             if (dateString != stringProperty.stringValue) {
                 stringProperty.stringValue = dateString;
                 Undo.RecordObjects(property.serializedObject.targetObjects, "change date");
@@ -187,10 +187,11 @@ namespace Beamable.Editor.Content {
         }
 
         private static DateTime GetCurrentDateTime(SerializedProperty property) {
-            if (!DateTime.TryParseExact(GetStringProperty(property).stringValue, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture,
+            if (!DateTime.TryParseExact(GetStringProperty(property).stringValue, DateUtility.ISO_FORMAT, CultureInfo.InvariantCulture,
                 DateTimeStyles.None, out var date)) {
                 var now = DateTime.UtcNow;
                 date = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second); // skipping milliseconds
+                ApplyNewDate(property, date);
             }
 
             date = date.ToUniversalTime();
