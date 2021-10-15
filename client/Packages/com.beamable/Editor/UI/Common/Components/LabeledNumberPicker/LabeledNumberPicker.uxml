@@ -9,8 +9,9 @@
     <engine:VisualElement name="mainVisualElement">
         <beamable:LabeledTextField name="labelAndValue"/>
         <engine:VisualElement name="buttonGroup">
-            <engine:Button name="button"/>
+            <engine:Button name="buttonBackground"/>
             <engine:VisualElement name="buttonImage"/>
+            <engine:Button name="button"/>
         </engine:VisualElement>
     </engine:VisualElement>
 

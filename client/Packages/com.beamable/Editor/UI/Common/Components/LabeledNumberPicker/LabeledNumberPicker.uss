@@ -20,6 +20,12 @@ LabeledTextField #textField > TextInput {
     justify-content: center;
 }
 
+#buttonBackground {
+    width: 20px;
+    height: 20px;
+    position: absolute;
+}
+
 #buttonImage {
     width: 10px;
     height: 6px;
@@ -27,6 +33,7 @@ LabeledTextField #textField > TextInput {
 }
 
 #button {
+    background-color: rgba(0,0,0,0);
     width: 20px;
     height: 20px;
 }
