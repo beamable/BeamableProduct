@@ -31,8 +31,8 @@ namespace Beamable.Editor.Microservice.UI.Components
         private PrimaryButtonVisualElement _confirmButton;
         private Button _cancelButton;
 
-        private MicroserviceModel _lastRelactionChangedMicroservice;
-        private MongoStorageModel _lastRelactionChangedStorageObject;
+        private MicroserviceModel _lastRelationChangedMicroservice;
+        private MongoStorageModel _lastRelationChangedStorageObject;
         private DependentServicesMicroserviceEntryVisualElement _emptyRowFillEntry;
         
         public DependentServicesPopup() : base(nameof(DependentServicesPopup))
@@ -112,52 +112,34 @@ namespace Beamable.Editor.Microservice.UI.Components
         }
         private void HandleServiceRelationChange(MicroserviceModel microserviceModel ,MongoStorageModel storageObjectModel)
         {
-            DependentServicesMicroserviceEntryVisualElement microserviceEntry; 
-            DependentServicesStorageObjectEntryVisualElement storageObjectEntry;
+            if (_lastRelationChangedStorageObject != null && _lastRelationChangedMicroservice != null)
+                ChangeSelectionHighlight(false);
+
+            _lastRelationChangedMicroservice = microserviceModel;
+            _lastRelationChangedStorageObject = storageObjectModel;
+            ChangeSelectionHighlight(true);
+            IsAnyRelationChanged = true;
+        }
+        private void ChangeSelectionHighlight(bool state)
+        {
+            // Row Highlight
+            var microserviceEntry = MicroserviceEntries[_lastRelationChangedMicroservice];
+            microserviceEntry.EnableInClassList("sectionHighlight", state);
+            microserviceEntry.MicroserviceName.EnableInClassList("sectionHighlightLabel", state);
+
+            // Column Highlight
+            var storageObjectEntry = StorageObjectEntries[_lastRelationChangedStorageObject];
+            storageObjectEntry.EnableInClassList("sectionHighlight", state);
+            storageObjectEntry.StorageObjectName.EnableInClassList("sectionHighlightLabel", state);
+
             DependentServicesCheckboxVisualElement checkboxVisualElement;
-
-            if (_lastRelactionChangedStorageObject != null && _lastRelactionChangedMicroservice != null)
-            {
-                //Remove Highlight - Row 
-                microserviceEntry = MicroserviceEntries[_lastRelactionChangedMicroservice];
-                microserviceEntry.RemoveFromClassList("sectionHighlight");
-                microserviceEntry.MicroserviceName.RemoveFromClassList("sectionHighlightLabel");
-                
-                //Remove Highlight - Column 
-                storageObjectEntry = StorageObjectEntries[_lastRelactionChangedStorageObject];
-                storageObjectEntry.RemoveFromClassList("sectionHighlight");
-                storageObjectEntry.StorageObjectName.RemoveFromClassList("sectionHighlightLabel");
-
-                foreach (var entry in MicroserviceEntries.Values)
-                {
-                    checkboxVisualElement = entry.DependentServices.FirstOrDefault(x => x.MongoStorageModel == _lastRelactionChangedStorageObject);
-                    checkboxVisualElement?.RemoveFromClassList("sectionHighlight");
-                }
-                checkboxVisualElement = _emptyRowFillEntry.DependentServices.FirstOrDefault(x => x.MongoStorageModel == _lastRelactionChangedStorageObject);
-                checkboxVisualElement?.RemoveFromClassList("sectionHighlight");
-            }
-                
-            _lastRelactionChangedMicroservice = microserviceModel;
-            _lastRelactionChangedStorageObject = storageObjectModel;
-            
-            //Add Highlight - Row 
-            microserviceEntry = MicroserviceEntries[_lastRelactionChangedMicroservice];
-            microserviceEntry.AddToClassList("sectionHighlight");
-            microserviceEntry.MicroserviceName.AddToClassList("sectionHighlightLabel");
-            //Add Highlight - Column 
-            storageObjectEntry = StorageObjectEntries[_lastRelactionChangedStorageObject];
-            storageObjectEntry.AddToClassList("sectionHighlight");
-            storageObjectEntry.StorageObjectName.AddToClassList("sectionHighlightLabel");
-            
             foreach (var entry in MicroserviceEntries.Values)
             {
-                checkboxVisualElement = entry.DependentServices.FirstOrDefault(x => x.MongoStorageModel == _lastRelactionChangedStorageObject);
-                checkboxVisualElement?.AddToClassList("sectionHighlight");
+                checkboxVisualElement = entry.DependentServices.FirstOrDefault(x => x.MongoStorageModel == _lastRelationChangedStorageObject);
+                checkboxVisualElement?.EnableInClassList("sectionHighlight", state);;
             }
-            checkboxVisualElement = _emptyRowFillEntry.DependentServices.FirstOrDefault(x => x.MongoStorageModel == _lastRelactionChangedStorageObject);
-            checkboxVisualElement?.AddToClassList("sectionHighlight");
-            
-            IsAnyRelationChanged = true;
+            checkboxVisualElement = _emptyRowFillEntry.DependentServices.FirstOrDefault(x => x.MongoStorageModel == _lastRelationChangedStorageObject);
+            checkboxVisualElement?.EnableInClassList("sectionHighlight", state);;
         }
     }
 }
