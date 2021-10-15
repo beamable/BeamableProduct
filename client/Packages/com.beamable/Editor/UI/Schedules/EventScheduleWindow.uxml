@@ -7,26 +7,22 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:VisualElement name="mainVisualElement">
-        <beamable:LabeledTextField name="eventName" label="Event name:"/>
-        <beamable:LabeledHourPickerVisualElement name="startTime" label="Event start time:"/>
+        <beamable:LabeledTextField name="eventName" label="Event name"/>
+        <beamable:LabeledHourPickerVisualElement name="startTime" label="Event start time"/>
         <beamable:LabeledTextField name="description" label="Description" value=""/>
-        <beamable:LabeledDropdownVisualElement name="dropdown" label="Repeat type:"/>
+        <beamable:LabeledDropdownVisualElement name="dropdown" label="Repeat type"/>
 
         <engine:VisualElement name="daysGroup">
-            <beamable:LabeledDaysPickerVisualElement name="daysPicker" label="Repeat on:"/>
+            <beamable:LabeledDaysPickerVisualElement name="daysPicker" label="Repeat on"/>
         </engine:VisualElement>
 
         <engine:VisualElement name="datesGroup">
-            <!-- CALENDAR COMPONENT -->
-            <beamable:LabeledTextField name="datesField" label="Repeat on:"/>
+            <beamable:LabeledCalendarVisualElement name="calendar" label="Repeat on"/>
         </engine:VisualElement>
 
-        <engine:VisualElement name="expirationRow">
-            <engine:Label name="expirationLabel" text="Never expires"/>
-            <beamable:BeamableCheckboxVisualElement name="expiresNever"/>
-        </engine:VisualElement>
 
-        <beamable:LabeledDatePickerVisualElement name="activeToDate" label="Active to:"/>
+        <beamable:LabeledCheckboxVisualElement name="expiresNever" label="Never expires"/>
+        <beamable:LabeledDatePickerVisualElement name="activeToDate" label="Active to"/>
         <beamable:LabeledHourPickerVisualElement name="activeToHour" label=""/>
 
         <engine:VisualElement name="buttonStrip">

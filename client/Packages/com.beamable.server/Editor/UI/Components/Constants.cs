@@ -31,6 +31,7 @@ namespace Beamable.Server.Editor.UI.Components
 
       public static string REMOTE_NOT_ENABLED = "Remote Disabled";
       public static string REMOTE_ENABLED = "Remote Enabled";
+      public static string REMOTE_ONLY = "Remote Only";
 
       public const string OBSOLETE_WILL_BE_REMOVED = "This is no longer supported, and will be removed in the future.";
 

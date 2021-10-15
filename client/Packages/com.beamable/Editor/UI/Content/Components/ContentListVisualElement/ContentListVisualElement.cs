@@ -83,6 +83,7 @@ namespace Beamable.Editor.Content.Components
 
             Model.OnSelectedContentChanged += Model_OnSelectedContentChanged;
             Model.OnFilteredContentsChanged += Model_OnFilteredContentChanged;
+            Model.OnContentDeleted += Model_OnContentDeleted;
             Model.OnManifestChanged += ManifestChanged;
 
             var manipulator = new ContextualMenuManipulator(ContentVisualElement_OnContextMenuOpen);
@@ -284,6 +285,10 @@ namespace Beamable.Editor.Content.Components
             }
         }
 
+        private void Model_OnContentDeleted(ContentItemDescriptor obj)
+        {
+            _listView.ClearSelection();
+        }
 
         private void ContentVisualElement_OnRightMouseButtonClicked(ContentItemDescriptor contentItemDescriptor)
         {
@@ -429,9 +434,9 @@ namespace Beamable.Editor.Content.Components
                 ContentManagerWindow.Instance.CloseCurrentWindow
             );
 
-            BeamablePopupWindow window = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ConfirmWindowHeader,
-                confirmationPopup, ContentManagerWindow.Instance, ContentManagerConstants.ConfirmationPopupSize);
-            window.minSize = ContentManagerConstants.ConfirmationPopupSize;
+            BeamablePopupWindow window = BeamablePopupWindow.ShowConfirmationUtility(
+                ContentManagerConstants.ConfirmWindowHeader,
+                confirmationPopup, ContentManagerWindow.Instance);
             
             ContentManagerWindow.Instance.SetCurrentWindow(window);
         }

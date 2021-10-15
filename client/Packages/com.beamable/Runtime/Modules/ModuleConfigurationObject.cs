@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using UnityEditor;
 using UnityEngine;
 
 namespace Beamable
@@ -37,20 +36,19 @@ namespace Beamable
 
       }
 
+#if UNITY_EDITOR
       public static void PrepareInstances(params Type[] configTypes)
       {
          var writtenAssetPathToType = new Dictionary<string, Type>();
 
          try
          {
-            AssetDatabase.StartAssetEditing();
+            UnityEditor.AssetDatabase.StartAssetEditing();
             foreach (var type in configTypes)
             {
                var name = type.Name;
                var data = Resources.Load(name, type);
-#if !UNITY_EDITOR
-            continue;
-#endif
+
                if (data != null) continue;
 
                var assetPath = $"{CONFIG_RESOURCES_DIR}/{name}.asset";
@@ -72,12 +70,13 @@ namespace Beamable
                var sourceData = File.ReadAllText(sourcePath);
                File.WriteAllText(assetPath, sourceData);
                writtenAssetPathToType.Add(assetPath, type);
-               AssetDatabase.ImportAsset(assetPath);
+               UnityEditor.AssetDatabase.ImportAsset(assetPath);
             }
          }
          finally
          {
-            AssetDatabase.StopAssetEditing();
+            UnityEditor.AssetDatabase.StopAssetEditing();
+            UnityEditor.AssetDatabase.Refresh();
          }
 
          foreach (var kvp in writtenAssetPathToType)
@@ -85,21 +84,22 @@ namespace Beamable
             var assetPath = kvp.Key;
             var assetType = kvp.Value;
 
-            var data = Resources.Load(assetType.Name, assetType) ?? AssetDatabase.LoadAssetAtPath(assetPath, assetType);
+            var data = Resources.Load(assetType.Name, assetType) ?? UnityEditor.AssetDatabase.LoadAssetAtPath(assetPath, assetType);
             var configData = data as BaseModuleConfigurationObject;
             if (configData == null)
             {
                throw new ModuleConfigurationNotReadyException(assetType);
             }
             configData.OnFreshCopy();
-            EditorUtility.SetDirty(data);
+            UnityEditor.EditorUtility.SetDirty(data);
          }
 
          if (writtenAssetPathToType.Count > 0)
          {
-            SettingsService.NotifySettingsProviderChanged();
+            UnityEditor.SettingsService.NotifySettingsProviderChanged();
          }
       }
+      #endif
    }
 
    public abstract class AbsModuleConfigurationObject<TConstants> : BaseModuleConfigurationObject
@@ -149,16 +149,16 @@ namespace Beamable
             var assetPath = $"{CONFIG_RESOURCES_DIR}/{name}.asset";
             var sourceData = File.ReadAllText(sourcePath);
             File.WriteAllText(assetPath, sourceData);
-            AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.DontDownloadFromCacheServer);
-            data =  Resources.Load<TConfig>(name) ?? AssetDatabase.LoadAssetAtPath<TConfig>(assetPath);
+            UnityEditor.AssetDatabase.ImportAsset(assetPath, UnityEditor.ImportAssetOptions.DontDownloadFromCacheServer);
+            data =  Resources.Load<TConfig>(name) ?? UnityEditor.AssetDatabase.LoadAssetAtPath<TConfig>(assetPath);
             if (data == null)
             {
                throw new ModuleConfigurationNotReadyException(typeof(TConfig));
             }
             data.OnFreshCopy();
 
-            EditorUtility.SetDirty(data);
-            SettingsService.NotifySettingsProviderChanged();
+            UnityEditor.EditorUtility.SetDirty(data);
+            UnityEditor.SettingsService.NotifySettingsProviderChanged();
          }
 #endif
          _typeToConfig[type] = data;

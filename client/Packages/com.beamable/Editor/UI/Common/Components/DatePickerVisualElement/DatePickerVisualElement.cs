@@ -32,15 +32,15 @@ namespace Beamable.Editor.UI.Components
             base.Refresh();
 
             _yearPicker = Root.Q<LabeledNumberPicker>("yearPicker");
-            _yearPicker.Setup(GenerateYears());
+            _yearPicker.Setup(OnYearChanged, GenerateYears());
             _yearPicker.Refresh();
 
             _monthPicker = Root.Q<LabeledNumberPicker>("monthPicker");
-            _monthPicker.Setup(GenerateMonths());
+            _monthPicker.Setup(OnYearChanged, GenerateMonths());
             _monthPicker.Refresh();
 
             _dayPicker = Root.Q<LabeledNumberPicker>("dayPicker");
-            _dayPicker.Setup(GenerateDays());
+            _dayPicker.Setup(OnYearChanged, GenerateDays());
             _dayPicker.Refresh();
         }
 
@@ -49,6 +49,11 @@ namespace Beamable.Editor.UI.Components
             StringBuilder builder = new StringBuilder();
             builder.Append($"{int.Parse(_yearPicker.Value):0000}-{int.Parse(_monthPicker.Value):00}-{int.Parse(_dayPicker.Value):00}T");
             return builder.ToString();
+        }
+
+        private void OnYearChanged()
+        {
+            
         }
 
         private List<string> GenerateYears()
