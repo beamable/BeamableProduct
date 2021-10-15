@@ -13,7 +13,6 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Config
 {
-   [InitializeOnLoad]
    public static class BeamableSettingsProvider
    {
 
@@ -29,10 +28,6 @@ namespace Beamable.Editor.Config
          SettingsService.OpenProjectSettings("Project/Beamable");
       }
 
-      static BeamableSettingsProvider()
-      {
-         ConfigManager.Initialize();
-      }
 
       [SettingsProvider]
       public static SettingsProvider CreateBeamableProjectSettings()
