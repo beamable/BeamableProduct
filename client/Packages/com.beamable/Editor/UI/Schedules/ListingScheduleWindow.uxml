@@ -19,10 +19,10 @@
             <beamable:LabeledCalendarVisualElement name="calendar" label="Repeat on"/>
         </engine:VisualElement>
 
-			  <beamable:LabeledCheckboxVisualElement name="allDay" label="All day"/>
+        <beamable:LabeledCheckboxVisualElement name="allDay" label="All day"/>
         <beamable:LabeledHourPickerVisualElement name="periodFromHour" label="Active period from" minute="false" second="false"/>
         <beamable:LabeledHourPickerVisualElement name="periodToHour" label="Active period to" minute="false" second="false"/>
-			  <beamable:LabeledCheckboxVisualElement name="expiresNever" label="Never expires"/>
+        <beamable:LabeledCheckboxVisualElement name="expiresNever" label="Never expires"/>
         <beamable:LabeledDatePickerVisualElement name="activeToDate" label="Active to"/>
         <beamable:LabeledHourPickerVisualElement name="activeToHour" label=""/>
 
