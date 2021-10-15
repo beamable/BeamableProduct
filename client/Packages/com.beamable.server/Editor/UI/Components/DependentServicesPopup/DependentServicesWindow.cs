@@ -83,7 +83,6 @@ namespace Beamable.Editor.Microservice.UI.Components
             };
             
             container.Add(dependentServicesPopup);
-            dependentServicesPopup.PrepareParent();
             dependentServicesPopup.Refresh();
             Repaint();
         }

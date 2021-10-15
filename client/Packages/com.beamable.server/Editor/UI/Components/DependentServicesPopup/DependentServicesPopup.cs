@@ -61,11 +61,6 @@ namespace Beamable.Editor.Microservice.UI.Components
             SetStorageObjectsContainer();
             SetMicroservicesContainer();
         }
-        public void PrepareParent()
-        {
-            parent.name = "PublishWindowContainer";
-            parent.AddStyleSheet(USSPath);
-        }
         private void SetStorageObjectsContainer()
         {
             StorageObjectEntries = new Dictionary<MongoStorageModel, DependentServicesStorageObjectEntryVisualElement>(MicroservicesDataModel.Instance.Storages.Count);
