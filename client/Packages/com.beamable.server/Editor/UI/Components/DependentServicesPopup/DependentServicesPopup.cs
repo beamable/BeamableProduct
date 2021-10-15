@@ -6,6 +6,7 @@ using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.UI.Components;
+using UnityEditorInternal;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -34,6 +35,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         private MicroserviceModel _lastRelationChangedMicroservice;
         private MongoStorageModel _lastRelationChangedStorageObject;
         private DependentServicesMicroserviceEntryVisualElement _emptyRowFillEntry;
+        private readonly Dictionary<MicroserviceModel, List<ServiceRelationInfo>> _changedDependencies = new Dictionary<MicroserviceModel, List<ServiceRelationInfo>>();
         
         public DependentServicesPopup() : base(nameof(DependentServicesPopup))
         {
@@ -80,14 +82,15 @@ namespace Beamable.Editor.Microservice.UI.Components
             MicroserviceEntries = new Dictionary<MicroserviceModel, DependentServicesMicroserviceEntryVisualElement>(MicroservicesDataModel.Instance.Services.Count);
             foreach (var microserviceModel in MicroservicesDataModel.Instance.Services)
             {
-                var newElement = new DependentServicesMicroserviceEntryVisualElement { Model = microserviceModel };
+                var dependentServices = GetDependentServices(microserviceModel);
+                var newElement = new DependentServicesMicroserviceEntryVisualElement(dependentServices) { Model = microserviceModel };
                 newElement.Refresh();
-                newElement.OnServiceRelationChanged += storageObjectModel => HandleServiceRelationChange(microserviceModel, storageObjectModel);
+                newElement.OnServiceRelationChanged += (storageObjectModel, isServiceRelation) => HandleServiceRelationChange(microserviceModel, storageObjectModel, isServiceRelation);
                 _microservicesContainer.Add(newElement);
                 MicroserviceEntries.Add(microserviceModel, newElement);
             }
 
-            _emptyRowFillEntry = new DependentServicesMicroserviceEntryVisualElement
+            _emptyRowFillEntry = new DependentServicesMicroserviceEntryVisualElement(new List<MongoStorageModel>())
             {
                 name = "EmptyRowFillEntry", 
                 style = { flexGrow = 1 }
@@ -97,6 +100,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         }
         public void SetServiceDependencies()
         {
+            var storageObjectAssemblyDefinitionsAssets = GetAllStorageObjectAssemblyDefinitionAssets();
             foreach (var service in MicroserviceEntries)
             {
                 var microservice = service.Key;
@@ -108,9 +112,11 @@ namespace Beamable.Editor.Microservice.UI.Components
                         continue;
                     microservice.Dependencies.Add(dependentService.MongoStorageModel);
                 }
+                
+                SetAssemblyReferences(microservice, storageObjectAssemblyDefinitionsAssets);
             }
         }
-        private void HandleServiceRelationChange(MicroserviceModel microserviceModel ,MongoStorageModel storageObjectModel)
+        private void HandleServiceRelationChange(MicroserviceModel microserviceModel, MongoStorageModel storageObjectModel, bool isServiceRelation)
         {
             if (_lastRelationChangedStorageObject != null && _lastRelationChangedMicroservice != null)
                 ChangeSelectionHighlight(false);
@@ -119,6 +125,16 @@ namespace Beamable.Editor.Microservice.UI.Components
             _lastRelationChangedStorageObject = storageObjectModel;
             ChangeSelectionHighlight(true);
             IsAnyRelationChanged = true;
+
+            var serviceRelationInfo = new ServiceRelationInfo(storageObjectModel, isServiceRelation);
+            
+            if (!_changedDependencies.ContainsKey(microserviceModel))
+                _changedDependencies[microserviceModel] = new List<ServiceRelationInfo>();
+
+            if (_changedDependencies[microserviceModel].Contains(serviceRelationInfo))
+                _changedDependencies[microserviceModel].Remove(serviceRelationInfo);
+            else
+                _changedDependencies[microserviceModel].Add(serviceRelationInfo);
         }
         private void ChangeSelectionHighlight(bool state)
         {
@@ -140,6 +156,66 @@ namespace Beamable.Editor.Microservice.UI.Components
             }
             checkboxVisualElement = _emptyRowFillEntry.DependentServices.FirstOrDefault(x => x.MongoStorageModel == _lastRelationChangedStorageObject);
             checkboxVisualElement?.EnableInClassList("sectionHighlight", state);;
+        }
+        private IEnumerable<MongoStorageModel> GetDependentServices(MicroserviceModel microserviceModel)
+        { 
+            var microserviceAssemblyDefinition = AssemblyDefinitionHelper.ConvertToInfo(microserviceModel.Descriptor); 
+            var storageObjectAssemblyDefinitionsAssets = GetAllStorageObjectAssemblyDefinitionAssets();
+
+            var serviceDependencies = new List<MongoStorageModel>();
+            foreach (var storageObjectAssemblyDefinitionsAsset in storageObjectAssemblyDefinitionsAssets)
+            {
+                if (microserviceAssemblyDefinition.References.Contains(AssemblyDefinitionHelper.ConvertToInfo(storageObjectAssemblyDefinitionsAsset.Value).Name))
+                {
+                    serviceDependencies.Add(storageObjectAssemblyDefinitionsAsset.Key);
+                }
+            }
+            return serviceDependencies;
+        }
+        private Dictionary<MongoStorageModel, AssemblyDefinitionAsset> GetAllStorageObjectAssemblyDefinitionAssets()
+        {
+            var storageObjectAssemblyDefinitionsAssets = new Dictionary<MongoStorageModel, AssemblyDefinitionAsset>();
+            foreach (var storageObject in MicroservicesDataModel.Instance.Storages)
+            {
+                var assemblyDefinition = AssemblyDefinitionHelper.ConvertToAsset(storageObject.Descriptor);
+                if(assemblyDefinition == null)
+                    continue;
+                storageObjectAssemblyDefinitionsAssets.Add(storageObject, assemblyDefinition);
+            }
+            return storageObjectAssemblyDefinitionsAssets;
+        }
+        private void SetAssemblyReferences(MicroserviceModel microserviceModel, Dictionary<MongoStorageModel, AssemblyDefinitionAsset> storageObjectAssemblyDefinitionsAssets)
+        {
+            if (!_changedDependencies.ContainsKey(microserviceModel))
+                return;
+            
+            var intersect = storageObjectAssemblyDefinitionsAssets.Where(x => _changedDependencies[microserviceModel]
+                .Where(y => y.IsServiceRelation)
+                .Select(z => z.Model)
+                .Contains(x.Key))
+                .ToDictionary(x => x.Key, x => 
+                    AssemblyDefinitionHelper.ConvertToInfo(storageObjectAssemblyDefinitionsAssets[x.Key]).Name).Values.ToList();
+            
+            var nonIntersect = storageObjectAssemblyDefinitionsAssets.Where(x => _changedDependencies[microserviceModel]
+                .Where(y => !y.IsServiceRelation)
+                .Select(z => z.Model)
+                .Contains(x.Key))
+                .ToDictionary(x => x.Key, x => 
+                    AssemblyDefinitionHelper.ConvertToInfo(storageObjectAssemblyDefinitionsAssets[x.Key]).Name).Values.ToList();
+
+            AssemblyDefinitionHelper.AddAndRemoveReferences(microserviceModel.ServiceDescriptor, intersect, nonIntersect);
+        }
+
+        private class ServiceRelationInfo
+        {
+            public MongoStorageModel Model { get; }
+            public bool IsServiceRelation { get; }
+
+            public ServiceRelationInfo(MongoStorageModel model, bool isServiceRelation)
+            {
+                Model = model;
+                IsServiceRelation = isServiceRelation;
+            }
         }
     }
 }

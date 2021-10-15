@@ -19,15 +19,17 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
     public class DependentServicesMicroserviceEntryVisualElement : MicroserviceComponent
     {
-        public Action<MongoStorageModel> OnServiceRelationChanged;
+        public Action<MongoStorageModel, bool> OnServiceRelationChanged;
         public MicroserviceModel Model { get; set; }
         public List<DependentServicesCheckboxVisualElement> DependentServices { get; private set; }
 
         public Label MicroserviceName { get; private set; }
         private VisualElement _dependencyCheckboxes;
-        
-        public DependentServicesMicroserviceEntryVisualElement() : base(nameof(DependentServicesMicroserviceEntryVisualElement))
+        private readonly IEnumerable<MongoStorageModel> _dependentServices;
+
+        public DependentServicesMicroserviceEntryVisualElement(IEnumerable<MongoStorageModel> dependentServices) : base(nameof(DependentServicesMicroserviceEntryVisualElement))
         {
+            _dependentServices = dependentServices;
         }
         public override void Refresh()
         {
@@ -47,7 +49,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             
             foreach (var storageObjectModel in MicroservicesDataModel.Instance.Storages)
             {
-                var isRelation = Model.Dependencies.Contains(storageObjectModel);
+                var isRelation = _dependentServices.Contains(storageObjectModel);
                 var newElement = new DependentServicesCheckboxVisualElement(isRelation) { MongoStorageModel = storageObjectModel };
                 newElement.OnServiceRelationChanged += TriggerServiceRelationChanged;
                 newElement.Refresh();
@@ -55,9 +57,9 @@ namespace Beamable.Editor.Microservice.UI.Components
                 DependentServices.Add(newElement);
             }
         }
-        private void TriggerServiceRelationChanged(MongoStorageModel storageObjectModel)
+        private void TriggerServiceRelationChanged(MongoStorageModel storageObjectModel, bool isServiceRelation)
         {
-            OnServiceRelationChanged?.Invoke(storageObjectModel);
+            OnServiceRelationChanged?.Invoke(storageObjectModel, isServiceRelation);
         }
         public void SetEmptyEntries()
         {

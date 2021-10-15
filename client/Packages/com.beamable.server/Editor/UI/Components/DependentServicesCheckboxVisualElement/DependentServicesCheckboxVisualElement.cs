@@ -18,7 +18,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
     public class DependentServicesCheckboxVisualElement : MicroserviceComponent
     {
-        public Action<MongoStorageModel> OnServiceRelationChanged; 
+        public Action<MongoStorageModel, bool> OnServiceRelationChanged; 
         public MongoStorageModel MongoStorageModel { get; set; }
         public bool IsServiceRelation
         {
@@ -26,7 +26,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             private set
             {
                 _isServiceRelation = value;
-                OnServiceRelationChanged?.Invoke(MongoStorageModel);
+                OnServiceRelationChanged?.Invoke(MongoStorageModel, _isServiceRelation);
             }
         }
         private bool _isServiceRelation;
