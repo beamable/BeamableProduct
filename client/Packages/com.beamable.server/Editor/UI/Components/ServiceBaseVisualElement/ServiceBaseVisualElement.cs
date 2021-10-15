@@ -37,6 +37,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         private float _storedHeight = 0;
         protected Button _stopButton;
+        protected Button _startButton;
         protected LoadingBarElement _loadingBar;
         protected VisualElement _statusIcon;
         protected Label _statusLabel;
@@ -50,6 +51,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         private VisualElement _header;
         private VisualElement _rootVisualElement;
         private Button _dependentServicesBtn;
+        private Label _nameTextField;
 
         public Action OnServiceStartFailed { get; set; }
         public Action OnServiceStopFailed { get; set; }
