@@ -67,6 +67,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         public event Action OnDetachLogs;
 
+        private float ScrollerHeight => _scrollView.contentContainer.contentRect.height;
+
         protected override void OnDestroy()
         {
             base.OnDestroy();
@@ -246,44 +248,48 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         private void VerticalScrollerOnvalueChanged(float value)
         {
+            var scrollValue = _scrollView.verticalScroller.value;
+            var highValue = _scrollView.verticalScroller.highValue;
+
+            var tolerance = .0001f;
+            var isAtBottom = Math.Abs(scrollValue - highValue) < tolerance;
+
             if (_scrollBlocker == 0)
             {
                 Model.Logs.HasScrolled = true;
                 Model.Logs.ScrollValue = value;
 
-                var scrollValue = _scrollView.verticalScroller.value;
-                var highValue = _scrollView.verticalScroller.highValue;
-
-                var tolerance = .0001f;
-                var isAtBottom = Math.Abs(scrollValue - highValue) < tolerance;
 
                 Model.Logs.IsTailingLog = isAtBottom;
             }
             else
             {
+                if (Model.Logs.IsTailingLog)
+                {
+                    MaybeScrollToBottom();
+                }
+
                 _scrollBlocker = 0;
             }
         }
 
         void MaybeScrollToBottom()
         {
-            var highValue = _scrollView.verticalScroller.highValue;
             Model.Logs.IsTailingLog |= !Model.Logs.HasScrolled;
-
 
             if (!Model.Logs.IsTailingLog)
             {
                 return; // don't do anything. We aren't tailing.
             }
 
-            ScrollToWithoutNotify(_listView.itemHeight * _listView.itemsSource.Count); // always jump to the end.
+            ScrollToWithoutNotify(ScrollerHeight); // always jump to the end.
         }
 
         void ScrollToWithoutNotify(float value)
         {
+            _scrollBlocker++;
             EditorApplication.delayCall += () =>
             {
-                _scrollBlocker++;
                 _scrollView.scrollOffset = new Vector2(0, value);
                 _scrollView.MarkDirtyRepaint();
             };
