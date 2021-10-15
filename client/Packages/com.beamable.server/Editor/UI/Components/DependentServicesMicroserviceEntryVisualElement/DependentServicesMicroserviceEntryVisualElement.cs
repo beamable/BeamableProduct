@@ -7,6 +7,7 @@ using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.UI.Components;
+using Editor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -44,7 +45,11 @@ namespace Beamable.Editor.Microservice.UI.Components
         }
         private void UpdateVisualElements()
         {
-            MicroserviceName.text = Model.Name;
+            if (Model.Name.TryEllipseText(15, out var microserviceName))
+            {
+                MicroserviceName.tooltip = Model.Name;
+            }
+            MicroserviceName.text = microserviceName;
             DependentServices = new List<DependentServicesCheckboxVisualElement>(MicroservicesDataModel.Instance.Storages.Count);
             
             foreach (var storageObjectModel in MicroservicesDataModel.Instance.Storages)
