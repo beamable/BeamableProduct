@@ -1,6 +1,6 @@
 ﻿using Beamable.Server;
 
-namespace Beamable.Server.XXXX
+namespace Beamable.Server
 {
     [StorageObject("XXXX")]
     public class XXXX : MongoStorageObject
