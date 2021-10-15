@@ -188,6 +188,7 @@ namespace Beamable.Common.Shop
    {
       [FormerlySerializedAs("type")]
       [SerializeField, HideInInspector]
+      [IgnoreContentField]
       private string typeOld;
 
       [Obsolete("Use 'priceType' instead")]
@@ -199,7 +200,15 @@ namespace Beamable.Common.Shop
 
       [Tooltip(ContentObject.TooltipType1)]
       [MustBeNonDefault]
+      [IgnoreContentField]
       public PriceType priceType;
+
+      /// <summary>
+      /// Don't use this field. It's used only for JSON serialization.
+      /// </summary>
+      [SerializeField, HideInInspector]
+      [ContentField("type")]
+      private string priceSerializedValue;
       
       [Tooltip(ContentObject.TooltipSymbol1)]
       [MustReferenceContent(false, typeof(CurrencyContent), typeof(SKUContent))]
@@ -211,6 +220,7 @@ namespace Beamable.Common.Shop
 
       public void OnBeforeSerialize()
       {
+         priceSerializedValue = priceType.ToString().ToLower();
       }
 
       public void OnAfterDeserialize()
@@ -257,6 +267,7 @@ namespace Beamable.Common.Shop
       
       [FormerlySerializedAs("domain")]
       [SerializeField, HideInInspector]
+      [IgnoreContentField]
       private OptionalString domainOld;
 
       private OptionalString domainCached;
@@ -273,6 +284,7 @@ namespace Beamable.Common.Shop
       }
 
       [Tooltip("Domain of the stat (e.g. 'platform', 'game', 'client'). Default is 'game'.")]
+      [ContentField("domain")]
       public DomainType domainType;
 
       #endregion
@@ -280,6 +292,7 @@ namespace Beamable.Common.Shop
       #region access
       
       [SerializeField, HideInInspector] [FormerlySerializedAs("access")]
+      [IgnoreContentField]
       private OptionalString accessOld;
 
       private OptionalString accessCached;
@@ -296,6 +309,7 @@ namespace Beamable.Common.Shop
       }
 
       [Tooltip("Visibility of the stat (e.g. 'private', 'public'). Default is 'private'.")]
+      [ContentField("access")]
       public AccessType accessType;
       
       #endregion
@@ -307,6 +321,7 @@ namespace Beamable.Common.Shop
       
       [FormerlySerializedAs("constraint")] 
       [SerializeField, HideInInspector]
+      [IgnoreContentField]
       private string constraintOld;
 
       [Obsolete("Use 'constraintType' instead")]
@@ -318,6 +333,7 @@ namespace Beamable.Common.Shop
 
       [Tooltip(ContentObject.TooltipConstraint1)]
       [MustBeNonDefault]
+      [ContentField("constraint")]
       public ComparatorType constraintType;
       
       #endregion
@@ -349,6 +365,7 @@ namespace Beamable.Common.Shop
 
       [FormerlySerializedAs("constraint")]
       [SerializeField, HideInInspector]
+      [IgnoreContentField]
       private string constraintOld;
 
       [Obsolete("Use 'constraintType' instead")]
@@ -359,6 +376,7 @@ namespace Beamable.Common.Shop
       }
 
       [Tooltip(ContentObject.TooltipConstraint1)]
+      [ContentField("constraint")]
       public ComparatorType constraintType;
 
       public void OnBeforeSerialize()
@@ -381,6 +399,7 @@ namespace Beamable.Common.Shop
    public class OfferConstraint : ISerializationCallbackReceiver
    {
       [FormerlySerializedAs("constraint"), HideInInspector]
+      [IgnoreContentField]
       public string constraintOld;
 
       [Obsolete("Use 'constraintType' instead")]
@@ -391,6 +410,7 @@ namespace Beamable.Common.Shop
       }
       
       [Tooltip(ContentObject.TooltipConstraint1)]
+      [ContentField("constraint")]
       public ComparatorType constraintType;
 
       [Tooltip(ContentObject.TooltipValue1)]
