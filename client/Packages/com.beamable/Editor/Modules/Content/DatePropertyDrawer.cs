@@ -105,9 +105,9 @@ namespace Beamable.Editor.Content {
             EditorGUI.BeginChangeCheck();
             var text = EditorGUI.DelayedTextField(
                 rectController.ReserveWidth(rectController.rect.width - CalendarButtonWidth - SpaceWidth),
-                date.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ"));
+                date.ToUniversalTime().ToString(DateUtility.ISO_FORMAT));
             if (EditorGUI.EndChangeCheck() && DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out date)) {
-                ApplyNewDate(property, date);
+                ApplyNewDate(property, date.ToUniversalTime());
             }
             rectController.ReserveWidth(SpaceWidth);
 
@@ -177,7 +177,7 @@ namespace Beamable.Editor.Content {
 
         private static void ApplyNewDate(SerializedProperty property, DateTime date) {
             var stringProperty = GetStringProperty(property);
-            var dateString = date.ToUniversalTime().ToString(DateUtility.ISO_FORMAT, CultureInfo.InvariantCulture);
+            var dateString = date.ToString(DateUtility.ISO_FORMAT, CultureInfo.InvariantCulture);
             if (dateString != stringProperty.stringValue) {
                 stringProperty.stringValue = dateString;
                 Undo.RecordObjects(property.serializedObject.targetObjects, "change date");
@@ -191,7 +191,7 @@ namespace Beamable.Editor.Content {
                 DateTimeStyles.None, out var date)) {
                 var now = DateTime.UtcNow;
                 date = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second); // skipping milliseconds
-                ApplyNewDate(property, date);
+                ApplyNewDate(property, date.ToUniversalTime());
             }
 
             date = date.ToUniversalTime();
