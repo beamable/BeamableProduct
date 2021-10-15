@@ -87,23 +87,23 @@ namespace Beamable.Editor.Microservice.UI.Components
                   dependencies[i] = serviceModel.Dependencies[i].id;
                }
                
-               var dropdown = Root.Q<DropdownVisualElement>("depsDropdown");
-               if (dependencies.Length > 0)
-               {
-                  dropdown.Setup(dependencies.ToList(), selected =>
-                  {
-                     // don't allow to change selection
-                     if (selected != dependencies[0])
-                     {
-                        dropdown.Set(dependencies[0]);
-                     }
-                  });
-                  dropdown.Refresh();  
-               }
-               else
-               {
-                  dropdown.visible = false;
-               }
+               // var dropdown = Root.Q<DropdownVisualElement>("depsDropdown");
+               // if (dependencies.Length > 0)
+               // {
+               //    dropdown.Setup(dependencies.ToList(), selected =>
+               //    {
+               //       // don't allow to change selection
+               //       if (selected != dependencies[0])
+               //       {
+               //          dropdown.Set(dependencies[0]);
+               //       }
+               //    });
+               //    dropdown.Refresh();  
+               // }
+               // else
+               // {
+               //    dropdown.visible = false;
+               // }
             }
          }
          else

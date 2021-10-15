@@ -33,6 +33,10 @@
     width: 140px;
 }
 
+#depsC {
+    flex-direction: column;
+}
+
 #sizeDropdown {
     width: 140px;
 }

@@ -16,12 +16,14 @@
             <engine:Label name="typeLabel" text="Microservice"/>
         </engine:VisualElement>
         
-        <engine:VisualElement name="nameC" class="column">
+        <engine:VisualElement name="nameC" class="column" display="none">
                 <engine:Label name="nameMS" text="Angie's Test"/>
         </engine:VisualElement>
 
         <engine:VisualElement name="depsC" class="column">
-            <beamable:DropdownVisualElement name="depsDropdown" />
+<!--            <beamable:DropdownVisualElement name="depsDropdown" />-->
+<!--            <engine:Label text="TEST"/>-->
+            <beamable:ExpandableListVisualElement />
         </engine:VisualElement>
 
         <engine:VisualElement name="SizeC" class="column">
