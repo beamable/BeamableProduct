@@ -30,10 +30,17 @@ namespace Beamable.Server.Editor.DockerCommands
          if (!(Json.Deserialize(data) is ArrayDict jsonDict)) return false;
 
          var attrs = ((ArrayDict) jsonDict["attr"]);
+         var time = ((ArrayDict) jsonDict["t"])["$date"] as string;
+
+         if (DateTime.TryParse(time, out var logDate))
+         {
+            time = LogMessage.GetTimeDisplay(logDate);
+         }
+
          var logMessage = new LogMessage
          {
             Message = $" Ctx=[{jsonDict["ctx"] as string}] {jsonDict["msg"] as string}",
-            Timestamp = ((ArrayDict)jsonDict["t"])["$date"] as string,
+            Timestamp = time,
             Level = ParseMongoLevel(jsonDict["s"] as string),
             ParameterText = attrs == null
                ? ""
