@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [Unreleased]
 ### Fixed
 - Able to build game
+- Content Inspector datepicker with no user given value no longer constantly updates
 
 ## [0.17.0]
 ### Added

@@ -87,6 +87,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             }
             else
             {
+                _createNew.AddToClassList("disabledStorage");
                 _createNew.clickable.clicked += () => OnCreateNewClicked?.Invoke(ServiceType.MicroService);
             }
             _createNew.SetEnabled(!DockerCommand.DockerNotInstalled);

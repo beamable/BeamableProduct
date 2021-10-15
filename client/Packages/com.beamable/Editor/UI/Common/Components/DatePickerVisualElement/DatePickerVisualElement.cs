@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Validation;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -12,15 +13,17 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-    public class DatePickerVisualElement : BeamableVisualElement
+    public class DatePickerVisualElement : ValidableVisualElement<string>
     {
-        private LabeledNumberPicker _yearPicker;
-        private LabeledNumberPicker _monthPicker;
-        private LabeledNumberPicker _dayPicker;
-
         public new class UxmlFactory : UxmlFactory<DatePickerVisualElement, UxmlTraits>
         {
         }
+
+        private Action _onDateChanged;
+
+        public LabeledNumberPicker YearPicker { get; private set; }
+        public LabeledNumberPicker MonthPicker { get; private set; }
+        public LabeledNumberPicker DayPicker { get; private set; }
 
         public DatePickerVisualElement() : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(DatePickerVisualElement)}/{nameof(DatePickerVisualElement)}")
@@ -31,29 +34,41 @@ namespace Beamable.Editor.UI.Components
         {
             base.Refresh();
 
-            _yearPicker = Root.Q<LabeledNumberPicker>("yearPicker");
-            _yearPicker.Setup(OnYearChanged, GenerateYears());
-            _yearPicker.Refresh();
+            YearPicker = Root.Q<LabeledNumberPicker>("yearPicker");
+            YearPicker.Setup(OnDateChanged, GenerateYears());
+            YearPicker.Refresh();
 
-            _monthPicker = Root.Q<LabeledNumberPicker>("monthPicker");
-            _monthPicker.Setup(OnYearChanged, GenerateMonths());
-            _monthPicker.Refresh();
+            MonthPicker = Root.Q<LabeledNumberPicker>("monthPicker");
+            MonthPicker.Setup(OnDateChanged, GenerateMonths());
+            MonthPicker.Refresh();
 
-            _dayPicker = Root.Q<LabeledNumberPicker>("dayPicker");
-            _dayPicker.Setup(OnYearChanged, GenerateDays());
-            _dayPicker.Refresh();
+            DayPicker = Root.Q<LabeledNumberPicker>("dayPicker");
+            DayPicker.Setup(OnDateChanged, GenerateDays());
+            DayPicker.Refresh();
         }
 
-        public string GetDate()
+        public string GetIsoDate()
         {
-            StringBuilder builder = new StringBuilder();
-            builder.Append($"{int.Parse(_yearPicker.Value):0000}-{int.Parse(_monthPicker.Value):00}-{int.Parse(_dayPicker.Value):00}T");
-            return builder.ToString();
+            return $"{GetSimpleDate()}T";
         }
 
-        private void OnYearChanged()
+        private void OnDateChanged()
         {
+            InvokeValidationCheck(GetSimpleDate());
+            _onDateChanged?.Invoke();
+        }
+
+        private string GetSimpleDate()
+        {
+            if (YearPicker == null || MonthPicker == null || DayPicker == null)
+            {
+                return string.Empty;
+            }
             
+            StringBuilder builder = new StringBuilder();
+            builder.Append(
+                $"{int.Parse(YearPicker.Value):0000}-{int.Parse(MonthPicker.Value):00}-{int.Parse(DayPicker.Value):00}");
+            return builder.ToString();
         }
 
         private List<string> GenerateYears()
@@ -79,7 +94,7 @@ namespace Beamable.Editor.UI.Components
 
             for (int i = 0; i < 12; i++)
             {
-                string option = (i+1).ToString("00");
+                string option = (i + 1).ToString("00");
                 options.Add(option);
             }
 
@@ -92,7 +107,7 @@ namespace Beamable.Editor.UI.Components
 
             for (int i = 0; i < 31; i++)
             {
-                string option = (i+1).ToString("00");
+                string option = (i + 1).ToString("00");
                 options.Add(option);
             }
 
@@ -101,10 +116,14 @@ namespace Beamable.Editor.UI.Components
 
         public void Set(DateTime date)
         {
+            YearPicker.Set(date.Year.ToString());
+            MonthPicker.Set(date.Month.ToString());
+            DayPicker.Set((date.Day).ToString());
+        }
 
-            _yearPicker.Set(date.Year.ToString());
-            _monthPicker.Set(date.Month.ToString());
-            _dayPicker.Set((date.Day).ToString());
+        public void Setup(Action onDateChanged)
+        {
+            _onDateChanged = onDateChanged;
         }
     }
 }

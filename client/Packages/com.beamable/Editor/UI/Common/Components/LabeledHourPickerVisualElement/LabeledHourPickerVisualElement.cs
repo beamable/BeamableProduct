@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Beamable.Common.Content;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Validation;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -82,11 +84,6 @@ namespace Beamable.Editor.UI.Components
             _hourPicker.Refresh();
         }
 
-        private void OnHourChanged()
-        {
-            OnValueChanged?.Invoke();
-        }
-
         public void Set(DateTime date) => _hourPicker.Set(date);
         public void SetPeriod(ScheduleDefinition definition, int index) => _hourPicker.SetPeriod(definition, index);
 
@@ -94,6 +91,31 @@ namespace Beamable.Editor.UI.Components
         {
             SetEnabled(b);
             _hourPicker.SetGroupEnabled(b);
+        }
+
+        private void OnHourChanged()
+        {
+            if (_hourPicker == null || _hourPicker.HourPickerComponent == null ||
+                _hourPicker.MinutePickerComponent == null || _hourPicker.SecondPickerComponent == null)
+            {
+                return;
+            }
+
+            Validate(_hourPicker.HourPickerComponent, 0, 23);
+            Validate(_hourPicker.MinutePickerComponent, 0,59);
+            Validate(_hourPicker.SecondPickerComponent, 0, 59);
+
+            OnValueChanged?.Invoke();
+        }
+
+        private void Validate(LabeledNumberPicker component, int min, int max)
+        {
+            int.TryParse(component.Value, out int result);
+            if (!Enumerable.Range(min, max).Contains(result))
+            {
+                result = Mathf.Clamp(result, min, max);
+                component.Value = result.ToString();
+            }
         }
     }
 }

@@ -83,6 +83,7 @@ namespace Beamable.Editor.Content.Components
 
             Model.OnSelectedContentChanged += Model_OnSelectedContentChanged;
             Model.OnFilteredContentsChanged += Model_OnFilteredContentChanged;
+            Model.OnContentDeleted += Model_OnContentDeleted;
             Model.OnManifestChanged += ManifestChanged;
 
             var manipulator = new ContextualMenuManipulator(ContentVisualElement_OnContextMenuOpen);
@@ -284,6 +285,10 @@ namespace Beamable.Editor.Content.Components
             }
         }
 
+        private void Model_OnContentDeleted(ContentItemDescriptor obj)
+        {
+            _listView.ClearSelection();
+        }
 
         private void ContentVisualElement_OnRightMouseButtonClicked(ContentItemDescriptor contentItemDescriptor)
         {
