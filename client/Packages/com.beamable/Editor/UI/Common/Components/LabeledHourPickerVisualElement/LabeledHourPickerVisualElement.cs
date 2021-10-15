@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Beamable.Common.Content;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Validation;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -82,11 +84,6 @@ namespace Beamable.Editor.UI.Components
             _hourPicker.Refresh();
         }
 
-        private void OnHourChanged()
-        {
-            OnValueChanged?.Invoke();
-        }
-
         public void Set(DateTime date) => _hourPicker.Set(date);
         public void SetPeriod(ScheduleDefinition definition, int index) => _hourPicker.SetPeriod(definition, index);
 
@@ -94,6 +91,38 @@ namespace Beamable.Editor.UI.Components
         {
             SetEnabled(b);
             _hourPicker.SetGroupEnabled(b);
+        }
+
+        private void OnHourChanged()
+        {
+            if (_hourPicker == null || _hourPicker.HourPickerComponent == null ||
+                _hourPicker.MinutePickerComponent == null || _hourPicker.SecondPickerComponent == null)
+            {
+                return;
+            }
+
+            int.TryParse(_hourPicker.HourPickerComponent.Value, out int resultHour);
+            if (!Enumerable.Range(0, 23).Contains(resultHour))
+            {
+                resultHour = Mathf.Clamp(resultHour, 0, 23);
+                _hourPicker.HourPickerComponent.Value = resultHour.ToString();
+            }
+
+            int.TryParse(_hourPicker.MinutePickerComponent.Value, out int resultMinute);
+            if (!Enumerable.Range(0, 59).Contains(resultMinute))
+            {
+                resultMinute = Mathf.Clamp(resultMinute, 0, 59);
+                _hourPicker.MinutePickerComponent.Value = resultMinute.ToString();
+            }
+
+            int.TryParse(_hourPicker.SecondPickerComponent.Value, out int resultSecond);
+            if (!Enumerable.Range(0, 59).Contains(resultSecond))
+            {
+                resultSecond = Mathf.Clamp(resultSecond, 0, 59);
+                _hourPicker.SecondPickerComponent.Value = resultSecond.ToString();
+            }
+
+            OnValueChanged?.Invoke();
         }
     }
 }
