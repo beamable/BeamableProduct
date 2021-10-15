@@ -42,7 +42,12 @@ namespace Beamable.Editor.UI.Components
         private List<string> _options;
         private Action _onValueChanged;
 
-        public string Value => _labeledTextFieldComponent.Value;
+        public string Value
+        {
+            get => _labeledTextFieldComponent.Value;
+            set => _labeledTextFieldComponent.Value = value;
+        }
+
         private string Label { get; set; }
 
         public LabeledNumberPicker() : base($"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledNumberPicker)}/{nameof(LabeledNumberPicker)}")

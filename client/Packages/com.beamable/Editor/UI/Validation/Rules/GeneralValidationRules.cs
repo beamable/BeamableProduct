@@ -1,7 +1,22 @@
-﻿using System.Text.RegularExpressions;
+﻿using System;
+using System.Text.RegularExpressions;
 
 namespace Beamable.Editor.UI.Validation
 {
+    public class IsProperDate : ValidationRule<string>
+    {
+        public override string ErrorMessage => $"{ComponentName} has invalid date";
+
+        public IsProperDate(string componentName) : base(componentName)
+        {
+        }
+
+        public override void Validate(string value)
+        {
+            Satisfied = DateTime.TryParse(value, out _);
+        }
+    }
+
     public class IsNotEmptyRule : ValidationRule<string>
     {
         public override string ErrorMessage => $"{ComponentName} field can't be empty";

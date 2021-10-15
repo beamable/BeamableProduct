@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Beamable.Editor.UI.Buss;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -36,12 +38,14 @@ namespace Beamable.Editor.UI.Components
                 }
             }
         }
+        
+        public Action OnValueChanged;
 
         private Label _label;
-        private DatePickerVisualElement _datePicker;
-
-        private string Label { get; set; }
-        public string SelectedDate => _datePicker.GetDate();
+        
+        public DatePickerVisualElement DatePicker { get; private set; }
+        public string Label { get; private set; }
+        public string SelectedDate => DatePicker.GetIsoDate();
 
         public LabeledDatePickerVisualElement() : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledDatePickerVisualElement)}/{nameof(LabeledDatePickerVisualElement)}")
@@ -55,10 +59,41 @@ namespace Beamable.Editor.UI.Components
             _label = Root.Q<Label>("label");
             _label.text = Label;
 
-            _datePicker = Root.Q<DatePickerVisualElement>("datePicker");
-            _datePicker.Refresh();
+            DatePicker = Root.Q<DatePickerVisualElement>("datePicker");
+            DatePicker.Setup(OnDateChanged);
+            DatePicker.Refresh();
         }
+        
+        public void Set(DateTime date) => DatePicker.Set(date);
 
-        public void Set(DateTime date) => _datePicker.Set(date);
+        private void OnDateChanged()
+        {
+            if (DatePicker == null || DatePicker.YearPicker == null ||
+                DatePicker.MonthPicker == null || DatePicker.DayPicker == null)
+            {
+                return;
+            }
+
+            if (DatePicker.YearPicker.Value.Length > 4)
+            {
+                DatePicker.YearPicker.Value = DatePicker.YearPicker.Value.Substring(0, 4);
+            }
+            
+            int.TryParse(DatePicker.MonthPicker.Value, out int resultMonth);
+            if (!Enumerable.Range(1, 12).Contains(resultMonth))
+            {
+                resultMonth = Mathf.Clamp(resultMonth, 1, 12);
+                DatePicker.MonthPicker.Value = resultMonth.ToString();
+            }
+            
+            int.TryParse(DatePicker.DayPicker.Value, out int resultDay);
+            if (!Enumerable.Range(1, 31).Contains(resultDay))
+            {
+                resultDay = Mathf.Clamp(resultDay, 1, 31);
+                DatePicker.DayPicker.Value = resultDay.ToString();
+            }
+
+            OnValueChanged?.Invoke(); 
+        }
     }
 }

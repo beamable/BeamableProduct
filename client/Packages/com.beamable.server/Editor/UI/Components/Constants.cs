@@ -16,6 +16,8 @@ namespace Beamable.Server.Editor.UI.Components
       public static string Publish = "Publish";
       public static string PopUpBtn = "Console Log";
 
+      public static string DEPENDENT_SERVICES_WINDOW_TITLE = "Dependent services";
+
       public static string START = "Run";
       public static string STOP = "Stop";
       public static string BUILD_DEBUG_PREFIX = "[DEBUG]";

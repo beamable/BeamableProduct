@@ -33,3 +33,7 @@
 #refreshIcon{
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Refresh.png");
 }
+
+#dropDownImg{
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown_Line_light.png")
+}

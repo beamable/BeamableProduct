@@ -38,6 +38,10 @@ ArchiveManifestsVisualElement > * {
     height: 28px;
 }
 
+.disabled *{
+    opacity: .5;
+}
+
 LabeledCheckboxVisualElement #checkbox {
 
     width: 40px;
