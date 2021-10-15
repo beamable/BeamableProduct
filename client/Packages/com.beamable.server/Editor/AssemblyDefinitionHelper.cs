@@ -19,12 +19,12 @@ namespace Beamable.Server.Editor
       private const string ASSETS_BEAMABLE = "Assets/Beamable/";
       private const string ADD_MONGO = ASSETS_BEAMABLE + "Add Mongo Libraries";
       private const string REMOVE_MONGO = ASSETS_BEAMABLE + "Remove Mongo Libraries";
-      private const string OPEN_MONGO = ASSETS_BEAMABLE + "Open Mongo Data Explorer"; // TODO: Delete this when we have a UI
-      private const string RUN_MONGO = ASSETS_BEAMABLE + "Run Mongo"; // TODO: Delete this when we have a UI
-      private const string KILL_MONGO = ASSETS_BEAMABLE + "Kill Mongo"; // TODO: Delete this when we have a UI
-      private const string CLEAR_MONGO = ASSETS_BEAMABLE + "Clear Mongo Data"; // TODO: Delete this when we have a UI
-      private const string SNAPSHOT_MONGO = ASSETS_BEAMABLE + "Create Mongo Snapshot"; // TODO: Delete this when we have a UI
-      private const string RESTORE_MONGO = ASSETS_BEAMABLE + "Restore Mongo Snapshot"; // TODO: Delete this when we have a UI
+      // private const string OPEN_MONGO = ASSETS_BEAMABLE + "Open Mongo Data Explorer"; // TODO: Delete this when we have a UI
+      // private const string RUN_MONGO = ASSETS_BEAMABLE + "Run Mongo"; // TODO: Delete this when we have a UI
+      // private const string KILL_MONGO = ASSETS_BEAMABLE + "Kill Mongo"; // TODO: Delete this when we have a UI
+      // private const string CLEAR_MONGO = ASSETS_BEAMABLE + "Clear Mongo Data"; // TODO: Delete this when we have a UI
+      // private const string SNAPSHOT_MONGO = ASSETS_BEAMABLE + "Create Mongo Snapshot"; // TODO: Delete this when we have a UI
+      // private const string RESTORE_MONGO = ASSETS_BEAMABLE + "Restore Mongo Snapshot"; // TODO: Delete this when we have a UI
       private const int BEAMABLE_PRIORITY = 190;
 
       private static readonly string[] MongoLibraries = new[]
@@ -39,159 +39,75 @@ namespace Beamable.Server.Editor
          "SharpCompress.dll"
       };
 
-      [MenuItem(RESTORE_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
-      public static void RestoreMongo()
+      public static void RestoreMongo(StorageObjectDescriptor descriptor)
       {
-         if (Selection.activeObject is AssemblyDefinitionAsset asm)
+         var dest = EditorUtility.OpenFolderPanel("Select where to load mongo", "", "default");
+         if (string.IsNullOrEmpty(dest)) return;
+         Debug.Log("Starting restore...");
+         Microservices.RestoreMongoSnapshot(descriptor, dest).Then(res =>
          {
-            var info = asm.ConvertToInfo();
-            foreach (var storage in Microservices.StorageDescriptors)
+            if (res)
             {
-               if (storage.IsContainedInAssemblyInfo(info))
-               {
-                  var dest = EditorUtility.OpenFolderPanel("Select where to load mongo", "", "default");
-                  if (string.IsNullOrEmpty(dest)) return;
-                  Debug.Log("Starting restore...");
-                  Microservices.RestoreMongoSnapshot(storage, dest).Then(res =>
-                  {
-                     if (res)
-                     {
-                        Debug.Log("Finished restoring");
-                     }
-                     else
-                     {
-                        Debug.Log("Failed.");
-                     }
-                  });
-
-                  return;
-               }
+               Debug.Log("Finished restoring");
             }
-            Debug.Log("nothing found for " + info.Name);
-         }
+            else
+            {
+               Debug.Log("Failed.");
+            }
+         });
       }
 
-      [MenuItem(SNAPSHOT_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
-      public static void SnapshotMongo()
+      public static void SnapshotMongo(StorageObjectDescriptor descriptor)
       {
-         if (Selection.activeObject is AssemblyDefinitionAsset asm)
+         var dest = EditorUtility.OpenFolderPanel("Select where to save mongo", "", "default");
+         if (string.IsNullOrEmpty(dest)) return;
+         Debug.Log("Starting snapshot...");
+         Microservices.SnapshotMongo(descriptor, dest).Then(res =>
          {
-            var info = asm.ConvertToInfo();
-            foreach (var storage in Microservices.StorageDescriptors)
+            if (res)
             {
-               if (storage.IsContainedInAssemblyInfo(info))
-               {
-                  var dest = EditorUtility.OpenFolderPanel("Select where to save mongo", "", "default");
-                  if (string.IsNullOrEmpty(dest)) return;
-                  Debug.Log("Starting snapshot...");
-                  Microservices.SnapshotMongo(storage, dest).Then(res =>
-                  {
-                     if (res)
-                     {
-                        Debug.Log("Finished Snapshot");
-                        EditorUtility.OpenWithDefaultApp(dest);
-                     }
-                     else
-                     {
-                        Debug.Log("Failed.");
-                     }
-                  });
-
-                  return;
-               }
+               Debug.Log("Finished Snapshot");
+               EditorUtility.OpenWithDefaultApp(dest);
             }
-            Debug.Log("nothing found for " + info.Name);
-         }
+            else
+            {
+               Debug.Log("Failed.");
+            }
+         });
       }
 
-      [MenuItem(CLEAR_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
-      public static void ClearMongo()
+      public static void ClearMongo(StorageObjectDescriptor descriptor)
       {
-         if (Selection.activeObject is AssemblyDefinitionAsset asm)
+         var work= Microservices.ClearMongoData(descriptor);
+         work.Then(success =>
          {
-            var info = asm.ConvertToInfo();
-            foreach (var storage in Microservices.StorageDescriptors)
+            if (success)
             {
-               if (storage.IsContainedInAssemblyInfo(info))
-               {
-                  var _= Microservices.ClearMongoData(storage);
-                  return;
-               }
+               Debug.Log($"Cleared {descriptor.Name} database.");
             }
-            Debug.Log("nothing found for " + info.Name);
-         }
+            else
+            {
+               Debug.LogWarning($"Failed to clear {descriptor.Name} database.");
+            }
+         });
       }
 
-
-      [MenuItem(KILL_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
-      public static void KillMongo()
+      public static void OpenMongoExplorer(StorageObjectDescriptor descriptor)
       {
-         if (Selection.activeObject is AssemblyDefinitionAsset asm)
+         Debug.Log("opening tool");
+         var work = Microservices.OpenLocalMongoTool(descriptor);
+         work.Then(success =>
          {
-            var info = asm.ConvertToInfo();
-            foreach (var storage in Microservices.StorageDescriptors)
+            if (success)
             {
-               if (storage.IsContainedInAssemblyInfo(info))
-               {
-                  var comm = new StopImageCommand(storage);
-                  comm.Start();
-                  return;
-               }
+               Debug.Log("Opened tool.");
+
             }
-            Debug.Log("nothing found for " + info.Name);
-         }
-      }
-
-
-      [MenuItem(RUN_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
-      public static void RunMongo()
-      {
-         if (Selection.activeObject is AssemblyDefinitionAsset asm)
-         {
-            var info = asm.ConvertToInfo();
-            foreach (var storage in Microservices.StorageDescriptors)
+            else
             {
-               if (storage.IsContainedInAssemblyInfo(info))
-               {
-                  var comm = new RunStorageCommand(storage);
-                  comm.Start();
-                  return;
-               }
+               Debug.LogWarning("Failed to open tool.");
             }
-            Debug.Log("nothing found for " + info.Name);
-         }
-      }
-
-      [MenuItem(OPEN_MONGO, false, BEAMABLE_PRIORITY)] // TODO: Delete this when we have a UI
-      public static void OpenMongoExplorer()
-      {
-         if (Selection.activeObject is AssemblyDefinitionAsset asm)
-         {
-            var info = asm.ConvertToInfo();
-
-            foreach (var storage in Microservices.StorageDescriptors)
-            {
-               if (storage.IsContainedInAssemblyInfo(info))
-               {
-                  Debug.Log("opening tool");
-                  var work = Microservices.OpenLocalMongoTool(storage);
-                  work.Then(success =>
-                  {
-                     if (success)
-                     {
-                        Debug.Log("opened tool");
-
-                     }
-                     else
-                     {
-                        Debug.Log("Failed to open tool");
-                     }
-                  });
-                  return;
-               }
-            }
-            Debug.Log("nothing found for " + info.Name);
-         }
+         });
       }
 
       [MenuItem(ADD_MONGO, false, BEAMABLE_PRIORITY)]
@@ -352,11 +268,14 @@ namespace Beamable.Server.Editor
 
       public static void AddPrecompiledReferences(this MicroserviceDescriptor service, params string[] libraryNames)
          => service.ConvertToAsset().AddPrecompiledReferences(libraryNames);
+      
+      public static void AddAndRemoveReferences(this MicroserviceDescriptor service, List<string> toAddReferences, List<string> toRemoveReferences)
+          => service.ConvertToAsset().AddAndRemoveReferences(toAddReferences, toRemoveReferences);
 
       public static void AddPrecompiledReferences(this AssemblyDefinitionAsset asm, params string[] libraryNames)
       {
          var jsonData = Json.Deserialize(asm.text) as ArrayDict;
-         var dllReferences = GetPrecompiledAssemblies(jsonData);
+         var dllReferences = GetReferences(PRECOMPILED, jsonData);
 
          foreach (var lib in libraryNames)
          {
@@ -365,7 +284,23 @@ namespace Beamable.Server.Editor
 
          jsonData[PRECOMPILED] = dllReferences.ToArray();
          WriteAssembly(asm, jsonData);
+      }
+      public static void AddAndRemoveReferences(this AssemblyDefinitionAsset asm, List<string> toAddReferences, List<string> toRemoveReferences)
+      {
+          var jsonData = Json.Deserialize(asm.text) as ArrayDict;
+          var dllReferences = GetReferences(REFERENCES, jsonData);
 
+          foreach (var toAdd in toAddReferences)
+          {
+              dllReferences.Add(toAdd);
+          }
+          foreach (var toRemove in toRemoveReferences)
+          {
+              dllReferences.Remove(toRemove);
+          }
+
+          jsonData[REFERENCES] = dllReferences.ToArray();
+          WriteAssembly(asm, jsonData);
       }
 
       public static void RemovePrecompiledReferences(this MicroserviceDescriptor service, params string[] libraryNames)
@@ -374,7 +309,7 @@ namespace Beamable.Server.Editor
       public static void RemovePrecompiledReferences(this AssemblyDefinitionAsset asm, params string[] libraryNames)
       {
          var jsonData = Json.Deserialize(asm.text) as ArrayDict;
-         var dllReferences = GetPrecompiledAssemblies(jsonData);
+         var dllReferences = GetReferences(PRECOMPILED, jsonData);
 
          foreach (var lib in libraryNames)
          {
@@ -384,20 +319,20 @@ namespace Beamable.Server.Editor
          jsonData[PRECOMPILED] = dllReferences.ToArray();
          WriteAssembly(asm, jsonData);
       }
-
-      private static HashSet<string> GetPrecompiledAssemblies(ArrayDict jsonData)
+      
+      private static HashSet<string> GetReferences(string referenceType, ArrayDict jsonData)
       {
-         var dllReferences = new HashSet<string>();
-         if (jsonData.TryGetValue(PRECOMPILED, out var referencesDllObject) &&
-             referencesDllObject is IEnumerable<object> existingReferences)
-         {
-            dllReferences = new HashSet<string>(existingReferences
-               .Cast<string>()
-               .Where(s => !string.IsNullOrEmpty(s))
-               .ToArray());
-         }
+          var dllReferences = new HashSet<string>();
+          if (jsonData.TryGetValue(referenceType, out var referencesDllObject) &&
+              referencesDllObject is IEnumerable<object> existingReferences)
+          {
+              dllReferences = new HashSet<string>(existingReferences
+                  .Cast<string>()
+                  .Where(s => !string.IsNullOrEmpty(s))
+                  .ToArray());
+          }
 
-         return dllReferences;
+          return dllReferences;
       }
 
       private static void WriteAssembly(AssemblyDefinitionAsset asm, ArrayDict jsonData)

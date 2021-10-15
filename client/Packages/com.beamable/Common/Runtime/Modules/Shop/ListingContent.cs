@@ -18,7 +18,7 @@ namespace Beamable.Common.Shop
    /// #### Related Links
    /// - See the <a target="_blank" href="https://docs.beamable.com/docs/store-feature">Store</a> feature documentation
    /// - See Beamable.Api.Commerce.CommerceService script reference
-   /// 
+   ///
    /// ![img beamable-logo]
    ///
    /// </summary>
@@ -29,10 +29,10 @@ namespace Beamable.Common.Shop
    {
       [Tooltip(ContentObject.TooltipListingPrice1)]
       public ListingPrice price;
-      
+
       [Tooltip(ContentObject.TooltipListingOffer1)]
       public ListingOffer offer;
-      
+
       [Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipActivePeriod1)]
       public OptionalPeriod activePeriod;
 
@@ -42,20 +42,20 @@ namespace Beamable.Common.Shop
 
       [Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipCohort1 + ContentObject.TooltipRequirement2)]
       public OptionalCohort cohortRequirements;
-      
+
       [Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipStat1 + ContentObject.TooltipRequirement2)]
       public OptionalStats playerStatRequirements;
-      
+
       [Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipActivePeriod1 + ContentObject.TooltipRequirement2)]
       public OptionalOffers offerRequirements;
-      
+
       [Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipActivePeriod1)]
       public OptionalSerializableDictionaryStringToString clientData;
 
       [MustBePositive]
       [Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipDurationSeconds1 + ContentObject.TooltipActive2)]
       public OptionalInt activeDurationSeconds;
-      
+
       [Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipDurationSeconds1 + ContentObject.TooltipActiveCooldown2)]
       [MustBePositive]
       public OptionalInt activeDurationCoolDownSeconds;
@@ -63,9 +63,12 @@ namespace Beamable.Common.Shop
       [Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipDurationPurchaseLimit1)]
       [MustBePositive]
       public OptionalInt activeDurationPurchaseLimit;
-      
+
       [Tooltip(ContentObject.TooltipOptional0 + ContentObject.ButtonText1)]
       public OptionalString buttonText; // TODO: This is a dictionary, not a string!
+
+      [Tooltip(ContentObject.TooltipOptional0 + "schedule for when the listing will be active")]
+      public OptionalListingSchedule schedule;
 
    }
 
@@ -82,7 +85,7 @@ namespace Beamable.Common.Shop
 
       [Tooltip(ContentObject.TooltipObtainCurrency1)]
       public List<OfferObtainCurrency> obtainCurrency;
-      
+
       [Tooltip(ContentObject.TooltipObtainItem1)]
       public List<OfferObtainItem> obtainItems;
    }
@@ -175,25 +178,45 @@ namespace Beamable.Common.Shop
       [Tooltip(ContentObject.TooltipName1)]
       [CannotBeBlank]
       public string name;
-      
+
       [Tooltip(ContentObject.TooltipValue1)]
       public string value;
    }
 
    [System.Serializable]
-   public class ListingPrice
+   public class ListingPrice : ISerializationCallbackReceiver
    {
+      [FormerlySerializedAs("type")]
+      [SerializeField, HideInInspector]
+      private string typeOld;
+
+      [Obsolete("Use 'priceType' instead")]
+      public string type
+      {
+         get => priceType.ToString().ToLower();
+         set => priceType = EnumConversionHelper.ParseEnumType<PriceType>(value);
+      }
+
       [Tooltip(ContentObject.TooltipType1)]
-      [MustBeOneOf("sku", "currency")]
-      public string type;
+      [MustBeNonDefault]
+      public PriceType priceType;
       
       [Tooltip(ContentObject.TooltipSymbol1)]
       [MustReferenceContent(false, typeof(CurrencyContent), typeof(SKUContent))]
       public string symbol;
-      
+
       [Tooltip(ContentObject.TooltipAmount1)]
       [MustBeNonNegative]
       public int amount;
+
+      public void OnBeforeSerialize()
+      {
+      }
+
+      public void OnAfterDeserialize()
+      {
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref priceType, ref typeOld);
+      }
    }
 
    [System.Serializable]
@@ -214,38 +237,107 @@ namespace Beamable.Common.Shop
       [Tooltip(ContentObject.TooltipSymbol1)]
       [MustReferenceContent(AllowedTypes = new []{typeof(ListingContent)})]
       public string offerSymbol;
-      
+
       [Tooltip(ContentObject.TooltipPurchase1)]
       public OfferConstraint purchases;
    }
 
    [System.Serializable]
-   public class StatRequirement
+   public class StatRequirement : ISerializationCallbackReceiver
    {
       // TODO: StatRequirement, by way of OptionalStats, is used by AnnouncementContent too. Should this be in a shared location? ~ACM 2021-04-22
 
+      public StatRequirement()
+      {
+         domainCached = new OptionalString { Value = domainType.ToString().ToLower() };
+         accessCached = new OptionalString { Value = accessType.ToString().ToLower() };
+      }
+      
+      #region domain
+      
+      [FormerlySerializedAs("domain")]
+      [SerializeField, HideInInspector]
+      private OptionalString domainOld;
+
+      private OptionalString domainCached;
+      
+      [Obsolete("Use 'domainType' instead")]
+      public OptionalString domain
+      {
+         get => domainCached;
+         set
+         {
+            domainType = EnumConversionHelper.ParseEnumType<DomainType>(value);
+            domainCached.Value = domainType.ToString().ToLower();
+         }
+      }
+
       [Tooltip("Domain of the stat (e.g. 'platform', 'game', 'client'). Default is 'game'.")]
-      [MustBeOneOf("platform", "game", "client")]
-      public OptionalString domain;
+      public DomainType domainType;
+
+      #endregion
       
+      #region access
+      
+      [SerializeField, HideInInspector] [FormerlySerializedAs("access")]
+      private OptionalString accessOld;
+
+      private OptionalString accessCached;
+
+      [Obsolete("Use 'accessType' instead")]
+      public OptionalString access
+      {
+         get => accessCached;
+         set
+         {
+            accessType = EnumConversionHelper.ParseEnumType<AccessType>(value);
+            accessCached.Value = accessType.ToString().ToLower();
+         }
+      }
+
       [Tooltip("Visibility of the stat (e.g. 'private', 'public'). Default is 'private'.")]
-      [MustBeOneOf("private", "public")]
-      public OptionalString access;
+      public AccessType accessType;
       
-      [Tooltip(ContentObject.TooltipStat1)]
-      [CannotBeBlank]
+      #endregion
+
+      [Tooltip(ContentObject.TooltipStat1)] [CannotBeBlank]
       public string stat;
 
-      [Tooltip(ContentObject.TooltipConstraint1)]
-      [MustBeComparatorString]
-      public string constraint;
+      #region constraint
       
-      [Tooltip(ContentObject.TooltipValue1)]
-      public int value;
+      [FormerlySerializedAs("constraint")] 
+      [SerializeField, HideInInspector]
+      private string constraintOld;
+
+      [Obsolete("Use 'constraintType' instead")]
+      public string constraint
+      {
+         get => constraintType.ToString().ToLower();
+         set => constraintType = EnumConversionHelper.ParseEnumType<ComparatorType>(value);
+      }
+
+      [Tooltip(ContentObject.TooltipConstraint1)]
+      [MustBeNonDefault]
+      public ComparatorType constraintType;
+      
+      #endregion
+
+      [Tooltip(ContentObject.TooltipValue1)] public int value;
+
+      public void OnBeforeSerialize()
+      {
+      }
+
+      public void OnAfterDeserialize()
+      {
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref accessType, ref accessOld);
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld);
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref domainType, ref domainOld);
+      }
    }
-   
+
    [System.Serializable]
-   public class CohortRequirement
+   public class CohortRequirement : ISerializationCallbackReceiver
    {
       [Tooltip(ContentObject.TooltipCohortTrial1)]
       [CannotBeBlank]
@@ -254,10 +346,29 @@ namespace Beamable.Common.Shop
       [Tooltip(ContentObject.TooltipCohort1)]
       [CannotBeBlank]
       public string cohort;
-      
+
+      [FormerlySerializedAs("constraint")]
+      [SerializeField, HideInInspector]
+      private string constraintOld;
+
+      [Obsolete("Use 'constraintType' instead")]
+      public string constraint
+      {
+         get => constraintType.ToString().ToLower();
+         set => EnumConversionHelper.ParseEnumType<ComparatorType>(value);
+      }
+
       [Tooltip(ContentObject.TooltipConstraint1)]
-      [MustBeComparatorString]
-      public string constraint;
+      public ComparatorType constraintType;
+
+      public void OnBeforeSerialize()
+      {
+      }
+
+      public void OnAfterDeserialize()
+      {
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld);
+      }
    }
 
    [System.Serializable]
@@ -267,14 +378,32 @@ namespace Beamable.Common.Shop
    }
 
    [System.Serializable]
-   public class OfferConstraint
+   public class OfferConstraint : ISerializationCallbackReceiver
    {
-      [Tooltip(ContentObject.TooltipConstraint1)]
-      [MustBeComparatorString]
-      public string constraint;
+      [FormerlySerializedAs("constraint"), HideInInspector]
+      public string constraintOld;
+
+      [Obsolete("Use 'constraintType' instead")]
+      public string constraint
+      {
+         get => constraintType.ToString().ToLower();
+         set => constraintType = EnumConversionHelper.ParseEnumType<ComparatorType>(value);
+      }
       
+      [Tooltip(ContentObject.TooltipConstraint1)]
+      public ComparatorType constraintType;
+
       [Tooltip(ContentObject.TooltipValue1)]
       public int value;
+
+      public void OnBeforeSerialize()
+      {
+      }
+
+      public void OnAfterDeserialize()
+      {
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld);
+      }
    }
    [System.Serializable]
    public class OptionalColor : Optional<Color>
@@ -296,7 +425,7 @@ namespace Beamable.Common.Shop
 
    [System.Serializable]
    public class OptionalDict : Optional<ContentDictionary> { }
-   
+
    [System.Serializable]
    public class OptionalCohort : Optional<List<CohortRequirement>> {}
 }

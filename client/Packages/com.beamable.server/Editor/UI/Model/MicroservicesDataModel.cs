@@ -1,13 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Common;
-using Beamable.Editor.Microservice.UI;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.ManagerClient;
 using Beamable.Server.Editor.UI.Components;
-using UnityEditor;
-using UnityEngine;
 
 namespace Beamable.Editor.UI.Model
 {
@@ -53,88 +49,44 @@ namespace Beamable.Editor.UI.Model
          return _instance;
       }
 
-      public List<MicroserviceModel> Services = new List<MicroserviceModel>();
-      public List<MongoStorageModel> Storages = new List<MongoStorageModel>();
+      public List<IBeamableService> AllLocalServices = new List<IBeamableService>();
+      public List<IBeamableService> AllRemoteOnlyServices = new List<IBeamableService>();
+      public List<MicroserviceModel> Services => AllLocalServices.Where(service => service.ServiceType == ServiceType.MicroService).Select(service => service as MicroserviceModel).ToList();
+      public List<MongoStorageModel> Storages => AllLocalServices.Where(service => service.ServiceType == ServiceType.StorageObject).Select(service => service as MongoStorageModel).ToList();
       public ServiceManifest ServerManifest = new ServiceManifest();
       public GetStatusResponse Status = new GetStatusResponse();
+      public ServicesDisplayFilter Filter = ServicesDisplayFilter.AllTypes;
 
       public Action<ServiceManifest> OnServerManifestUpdated;
       public Action<GetStatusResponse> OnStatusUpdated;
 
       public void RefreshLocal()
       {
-         RefreshLocalServices();
-         RefreshLocalStorages();
-      }
-
-      void RefreshLocalStorages()
-      {
-         var unseenStorages = new HashSet<MongoStorageModel>(Storages);
-         
-         foreach (var descriptor in Microservices.StorageDescriptors)
+         var unseen = new HashSet<IBeamableService>(AllLocalServices);
+         foreach (var descriptor in Microservices.AllDescriptors)
          {
-            var existingService = GetStorageModelForDescriptor(descriptor);
-            if (existingService == null)
+            var serviceExists = ContainsModel(descriptor.Name);
+            if (serviceExists)
             {
-               Storages.Add(new MongoStorageModel
-               {
-                  Descriptor = descriptor,
-                  Builder = Microservices.GetStorageBuilder(descriptor),
-                  Logs = new LogMessageStore()
-               });
+               var service = GetModel<IBeamableService>(descriptor.Name);
+               unseen.Remove(GetModel<IBeamableService>(descriptor.Name));
+               service.Refresh(descriptor);
+               continue;
+            }
+
+            IBeamableService newService;
+            if (descriptor.ServiceType == ServiceType.StorageObject)
+            {
+               newService = MongoStorageModel.CreateNew(descriptor as StorageObjectDescriptor);
             }
             else
             {
-               unseenStorages.Remove(existingService);
-               // reset the descriptor and statemachines; because they aren't system.serializable durable.
-               existingService.Descriptor = descriptor;
-               var oldBuilder = existingService.Builder;
-               existingService.Builder = Microservices.GetStorageBuilder(descriptor);
-               existingService.Builder.ForwardEventsTo(oldBuilder);
+               newService = MicroserviceModel.CreateNew(descriptor as MicroserviceDescriptor, this);
             }
-         }
-         
-         foreach (var unseen in unseenStorages)
-         {
-            Storages.Remove(unseen);
-         }
-      }
-      void RefreshLocalServices()
-      {
-         var config = MicroserviceConfiguration.Instance;
-         var unseenServices = new HashSet<MicroserviceModel>(Services);
-
-         foreach (var descriptor in Microservices.Descriptors)
-         {
-            var existingService = GetMicroserviceModelForDescriptor(descriptor);
-            if (existingService == null)
-            {
-               Services.Add(new MicroserviceModel
-               {
-                  Descriptor = descriptor,
-                  Builder = Microservices.GetServiceBuilder(descriptor),
-                  Logs = new LogMessageStore(),
-                  RemoteReference = GetReference(descriptor),
-                  RemoteStatus = GetStatus(descriptor),
-                  Config = config.GetEntry(descriptor.Name)
-               });
-            }
-            else
-            {
-               unseenServices.Remove(existingService);
-               // reset the descriptor and statemachines; because they aren't system.serializable durable.
-               existingService.Descriptor = descriptor;
-               var oldBuilder = existingService.Builder;
-               existingService.Builder = Microservices.GetServiceBuilder(descriptor);
-               existingService.Builder.ForwardEventsTo(oldBuilder);
-               existingService.Config = config.GetEntry(descriptor.Name);
-            }
+            AllLocalServices.Add(newService);
          }
 
-         foreach (var unseenService in unseenServices)
-         {
-            Services.Remove(unseenService);
-         }
+         AllLocalServices.RemoveAll(model => unseen.Contains(model));
       }
 
       public void RefreshServerManifest()
@@ -146,7 +98,7 @@ namespace Beamable.Editor.UI.Model
                Status = status;
                foreach (var serviceStatus in status.services)
                {
-                  GetMicroserviceModelForName(serviceStatus.serviceName)?.EnrichWithStatus(serviceStatus);
+                  GetModel<MicroserviceModel>(serviceStatus.serviceName)?.EnrichWithStatus(serviceStatus);
                }
                OnStatusUpdated?.Invoke(status);
             });
@@ -158,6 +110,19 @@ namespace Beamable.Editor.UI.Model
                   var remoteService = manifest.manifest.FirstOrDefault(remote => string.Equals(remote.serviceName, service.Name));
                   service.EnrichWithRemoteReference(remoteService);
                }
+    
+               foreach(var singleManifest in ServerManifest.manifest)
+               {
+                  if (ContainsRemoteOnlyModel(singleManifest.serviceName))
+                        continue;
+
+                    var descriptor = new MicroserviceDescriptor{
+                        Name = singleManifest.serviceName
+                    };
+
+                    AllRemoteOnlyServices.Add(RemoteMicroserviceModel.CreateNew(descriptor, this));
+               }
+
                OnServerManifestUpdated?.Invoke(manifest);
             });
          });
@@ -165,7 +130,8 @@ namespace Beamable.Editor.UI.Model
 
       public void AddLogMessage(IDescriptor descriptor, LogMessage message)
       {
-         GetMicroserviceModelForDescriptor(descriptor).Logs.AddMessage(message);
+         AllLocalServices.FirstOrDefault(r => r.Descriptor.Name.Equals(descriptor.Name))
+            ?.Logs.AddMessage(message);
       }
 
       public ServiceStatus GetStatus(MicroserviceDescriptor descriptor)
@@ -173,26 +139,73 @@ namespace Beamable.Editor.UI.Model
          return Status?.services?.FirstOrDefault(r => r.serviceName.Equals(descriptor.Name));
       }
 
+      public Dictionary<string, ServiceAvailability> GetAllServicesStatus()
+      {
+         var getServiceStatus = new Func<bool, bool, ServiceAvailability>((isLocally, isRemotely) =>
+         {
+            if (isLocally && isRemotely)
+               return ServiceAvailability.LocalAndRemote;
+
+            return isLocally ? ServiceAvailability.LocalOnly :
+               isRemotely ? ServiceAvailability.RemoteOnly : ServiceAvailability.Unknown;
+         });
+
+         var result = new Dictionary<string, ServiceAvailability>();
+         var servicesStatus = Status?.services;
+
+         foreach (var configEntry in MicroserviceConfiguration.Instance.Microservices)
+         {
+            var name = configEntry.ServiceName;
+            var remotely = servicesStatus?.Find(status => status.serviceName.Equals(name))!= null;
+            if (!result.ContainsKey(name))
+               result.Add(name, getServiceStatus(ContainsModel(configEntry.ServiceName), remotely));
+         }
+
+         foreach (var storage in MicroserviceConfiguration.Instance.StorageObjects)
+         {
+            var name = storage.StorageName;
+            var remotely = servicesStatus?.Find(status => status.serviceName.Equals(name)) != null;
+            if (!result.ContainsKey(name))
+               result.Add(name, getServiceStatus(ContainsModel(name), remotely));
+         }
+         
+         return result;
+      }
+
       public ServiceReference GetReference(MicroserviceDescriptor descriptor)
       {
          return ServerManifest?.manifest?.FirstOrDefault(r => r.serviceName.Equals(descriptor.Name));
       }
 
-      public MongoStorageModel GetStorageModelForDescriptor(IDescriptor descriptor) =>
-         GetStorageModelForName(descriptor.Name);
-
-      public MongoStorageModel GetStorageModelForName(string serviceName)
+      public ServiceType GetModelServiceType(string name)
       {
-         return Storages?.FirstOrDefault(s => s.Descriptor.Name.Equals(serviceName));
+         var allServices = new List<IBeamableService>();
+         allServices.AddRange(AllLocalServices);
+         allServices.AddRange(AllRemoteOnlyServices);
+
+         var service = allServices
+            .FirstOrDefault(s => s.Descriptor.Name.Equals(name));
+         return service?.ServiceType ?? ServiceType.MicroService;
       }
 
-      public MicroserviceModel GetMicroserviceModelForDescriptor(IDescriptor descriptor) =>
-         GetMicroserviceModelForName(descriptor.Name);
+      public bool ContainsRemoteOnlyModel(string serviceName) => AllRemoteOnlyServices?.Any(s => s.Descriptor.Name.Equals(serviceName)) ?? false;
+      public bool ContainsModel(string serviceName) => AllLocalServices?.Any(s => s.Descriptor.Name.Equals(serviceName)) ?? false;
 
-      public MicroserviceModel GetMicroserviceModelForName(string serviceName)
+      public T GetModel<T>(IDescriptor descriptor) where T : IBeamableService =>
+         GetModel<T>(descriptor.Name);
+
+      public T GetModel<T>(string serviceName) where T : IBeamableService
       {
-         return Services?.FirstOrDefault(s => s.Descriptor.Name.Equals(serviceName));
+         var allServices = new List<IBeamableService>();
+         allServices.AddRange(AllLocalServices);
+         allServices.AddRange(AllRemoteOnlyServices);
+
+         return (T)allServices?.FirstOrDefault(s => s.Descriptor.Name.Equals(serviceName));
       }
+
+      public MicroserviceModel GetMicroserviceModel(IDescriptor descriptor) => GetModel<MicroserviceModel>(descriptor);
+
+      public MongoStorageModel GetStorageModel(IDescriptor descriptor) => GetModel<MongoStorageModel>(descriptor);
 
       private void OnEnable()
       {
@@ -214,5 +227,20 @@ namespace Beamable.Editor.UI.Model
          _hasEnabledYet = false;
 
       }
+   }
+
+   public enum ServiceAvailability
+   {
+      LocalOnly,
+      RemoteOnly,
+      LocalAndRemote,
+      Unknown
+   }
+
+   public enum ServicesDisplayFilter
+   {
+      AllTypes,
+      Microservices,
+      Storages
    }
 }

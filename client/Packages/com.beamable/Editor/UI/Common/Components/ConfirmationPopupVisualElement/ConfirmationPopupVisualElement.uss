@@ -3,18 +3,9 @@
     padding: 10px;
 }
 
-#header {
-    height: 25px;
-    justify-content: center;
-}
-
 #content {
     height: 50px;
     justify-content: center;
-}
-
-ConfirmationPopupVisualElement #headerLabel {
-    align-self: center;
 }
 
 ConfirmationPopupVisualElement #contentLabel {
@@ -27,15 +18,8 @@ ConfirmationPopupVisualElement #buttonsVisualElement {
     flex-shrink: 0;
 }
 
-ConfirmationPopupVisualElement Button {
-    background-image: none;
-    border-radius: 4px;
-    height: 23px;
-    font-size: 10px;
-    color: #FFFFFF;
+PrimaryButtonVisualElement{
+    width: 100px;
+    height: 28px;
+    margin-bottom: 5px;
 }
-
-#okButton {
-    background-color: #4F80F8;
-}
-

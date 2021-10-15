@@ -1,4 +1,5 @@
 ﻿using System;
+using Beamable.Editor.UI.Components;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -11,48 +12,65 @@ namespace Beamable.Editor.UI.Buss.Components
 {
     public class ConfirmationPopupVisualElement : BeamableVisualElement
     {
-        public event Action OnOKButtonClicked;
-        public event Action OnCancelButtonClicked;
-        private Label _headerLabel;
         private Label _bodyLabel;
-        private Button _okButton;
+        private PrimaryButtonVisualElement _okButton;
         private Button _cancelButton;
 
-        private readonly string _windowHeader;
         private readonly string _contentText;
+        private readonly Action _onConfirm;
+        private readonly Action _onClose;
+        private readonly bool _showCancelButton;
 
-        public ConfirmationPopupVisualElement(string windowHeader, string contentText) : base(
+        public ConfirmationPopupVisualElement(string contentText, Action onConfirm, Action onClose, bool showCancelButton = true) : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(ConfirmationPopupVisualElement)}/{nameof(ConfirmationPopupVisualElement)}")
         {
-            _windowHeader = windowHeader;
             _contentText = contentText;
+            _onConfirm = onConfirm;
+            _onClose = onClose;
+            _showCancelButton = showCancelButton;
         }
 
         public override void Refresh()
         {
             base.Refresh();
 
-            _headerLabel = Root.Q<Label>("headerLabel");
-            _headerLabel.text = _windowHeader;
-
             _bodyLabel = Root.Q<Label>("contentLabel");
             _bodyLabel.text = _contentText;
 
-            _okButton = Root.Q<Button>("okButton");
-            _okButton.clickable.clicked += OkButton_OnClick;
+            _okButton = Root.Q<PrimaryButtonVisualElement>("okButton");
+            _okButton.Button.clickable.clicked += HandleOkButtonClicked;
 
             _cancelButton = Root.Q<Button>("cancelButton");
-            _cancelButton.clickable.clicked += CancelButton_OnClick;
+
+            if (_showCancelButton)
+            {
+                _cancelButton.clickable.clicked += HandleCancelButtonClicked;
+            }
+            else
+            {
+                _cancelButton.RemoveFromHierarchy();
+            }
         }
 
-        private void OkButton_OnClick()
+        public void SetCancelButtonText(string text)
         {
-            OnOKButtonClicked?.Invoke();
+            _cancelButton.text = text;
         }
 
-        private void CancelButton_OnClick()
+        public void SetConfirmButtonText(string text)
         {
-            OnCancelButtonClicked?.Invoke();
+            _okButton.SetText(text);
+        }
+
+        private void HandleOkButtonClicked()
+        {
+            _onConfirm?.Invoke();
+            _onClose?.Invoke();
+        }
+
+        private void HandleCancelButtonClicked()
+        {
+            _onClose?.Invoke();
         }
     }
 }

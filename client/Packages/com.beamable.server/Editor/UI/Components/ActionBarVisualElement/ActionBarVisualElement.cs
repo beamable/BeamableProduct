@@ -13,6 +13,7 @@ using Beamable.Editor.Modules.Theme;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.Toolbox.UI.Components;
 using Beamable.Editor.UI.Components;
+using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using UnityEditor;
 using Debug = UnityEngine.Debug;
@@ -58,7 +59,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         public event Action OnBuildAllClicked;
         public event Action OnPublishClicked;
         public event Action OnRefreshButtonClicked;
-        public event Action OnCreateNewClicked;
+        public event Action<ServiceType> OnCreateNewClicked;
         private Button _refreshButton;
         private Button _createNew;
         private Button _startAll;
@@ -76,9 +77,19 @@ namespace Beamable.Editor.Microservice.UI.Components
             _refreshButton = Root.Q<Button>("refreshButton");
             _refreshButton.clickable.clicked += () => { OnRefreshButtonClicked?.Invoke(); };
             _refreshButton.tooltip = "Refresh Window";
-
             _createNew = Root.Q<Button>("createNew");
-            _createNew.clickable.clicked += () => { OnCreateNewClicked?.Invoke(); };
+            if (MicroserviceConfiguration.Instance.EnableStoragePreview)
+            {
+                var manipulator = new ContextualMenuManipulator(PopulateCreateMenu);
+                manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
+                _createNew.clickable.activators.Clear();
+                _createNew.AddManipulator(manipulator);
+            }
+            else
+            {
+                _createNew.AddToClassList("disabledStorage");
+                _createNew.clickable.clicked += () => OnCreateNewClicked?.Invoke(ServiceType.MicroService);
+            }
             _createNew.SetEnabled(!DockerCommand.DockerNotInstalled);
             
             _startAll = Root.Q<Button>("startAll");
@@ -101,6 +112,12 @@ namespace Beamable.Editor.Microservice.UI.Components
             UpdateTextButtonTexts(false);
         }
 
+        private void PopulateCreateMenu(ContextualMenuPopulateEvent evt)
+        {
+            evt.menu.BeamableAppendAction("Microservice", pos => OnCreateNewClicked?.Invoke(ServiceType.MicroService));
+            evt.menu.BeamableAppendAction("Storage", pos => OnCreateNewClicked?.Invoke(ServiceType.StorageObject));
+        }
+
         public void UpdateTextButtonTexts(bool allServicesSelected)
         {
             var startLabel = _startAll.Q<Label>();
@@ -114,6 +131,11 @@ namespace Beamable.Editor.Microservice.UI.Components
             _startAll.SetEnabled(false);
             _buildAll.SetEnabled(false);
             _publish.SetEnabled(false);
+        }
+
+        public void SetPublishButtonState(bool isEnabled)
+        {
+            _publish.SetEnabled(isEnabled);
         }
     }
 

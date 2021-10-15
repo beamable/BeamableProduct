@@ -84,25 +84,14 @@ namespace Beamable.Server.Editor
             CreateNewServiceFile(ServiceType.MicroService, microserviceName);
         }
 
-        #region TEMPORARY_ONLY_FOR_TESTS
 
-        [MenuItem("TESTING/Create Storage Object")]
-        public static void CreateNewStorageObject()
-        {
-            Debug.LogWarning("=== Using temp method to create new Storage Object ===");
-            var randomName = $"StorageObject_{Random.Range(100000000, 999999999)}";
-            CreateNewServiceFile(ServiceType.StorageObject, randomName);
-        }
-
-        #endregion
-        
         public static void CreateNewServiceFile(ServiceType serviceType, string serviceName)
         {
             if (string.IsNullOrWhiteSpace(serviceName))
             {
                 return;
             }
-            
+
             var serviceCreateInfo = _serviceCreateInfos[serviceType];
             var rootPath = Application.dataPath.Substring(0, Application.dataPath.Length - "Assets".Length);
             var servicePath = Path.Combine(rootPath, serviceCreateInfo.DestinationDirectoryPath, serviceName);
@@ -118,7 +107,7 @@ namespace Beamable.Server.Editor
 
             AssetDatabase.Refresh();
         }
-        
+
         private static void SetupServiceFileInfo(string serviceName, string sourceFile, string targetFile)
         {
             var text = File.ReadAllText(sourceFile);
@@ -140,7 +129,7 @@ namespace Beamable.Server.Editor
                 ServiceType = serviceType;
                 DestinationDirectoryPath = destinationDirectoryPath;
                 TemplateDirectoryPath = templateDirectoryPath;
-                
+
                 switch (serviceType)
                 {
                     case ServiceType.MicroService: ServiceTypeName = "MicroService"; break;
@@ -148,11 +137,11 @@ namespace Beamable.Server.Editor
                 }
             }
         }
+    }
 
-        public enum ServiceType
-        {
-            MicroService,
-            StorageObject
-        }
+    public enum ServiceType
+    {
+        MicroService,
+        StorageObject
     }
 }

@@ -131,12 +131,13 @@ LoadingSpinnerVisualElement {
 
 #manifestNameLabel{
     -unity-font-style: bold;
+    -unity-text-align: middle-left;
+    max-height: 20px;
 }
 
 #manifestName{
     min-height: 20px;
-    /*min-width: 120px;*/
-    /*flex: auto;*/
+    -unity-text-align: middle-left;
 }
 
 .invalidManifestName{
@@ -146,4 +147,23 @@ LoadingSpinnerVisualElement {
 #manifestNameMessage{
     color: #FF0000;
     font-size: 8px;
+}
+
+#manifestArchivedMessage{
+    color: #C59800;
+    height: 0px;
+    -unity-text-align: middle-left;
+    flex-direction: row;
+    -unity-font-style: bold;
+    white-space: normal;
+    overflow: hidden;
+}
+
+#manifestArchivedMessage.visible{
+    height: 30px;
+ }
+
+.beamableErrorLabel {
+    margin-left: 4px;
+    margin-right: 4px;
 }

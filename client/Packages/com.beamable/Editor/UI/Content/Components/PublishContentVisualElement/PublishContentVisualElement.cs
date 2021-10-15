@@ -2,8 +2,10 @@ using Beamable.Editor.Content.Models;
 using Beamable.Editor.Content;
 using Beamable.Editor.UI.Buss.Components;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Editor.UI.Common;
@@ -42,6 +44,8 @@ namespace Beamable.Editor.Content.Components
         private bool _createNewManifest;
         private ManifestModel _manifestModel;
         private FormConstraint _isManifestNameValid;
+        private Label _manifestArchivedMessage;
+        private List<ContentPopupLinkVisualElement> _contentElements = new List<ContentPopupLinkVisualElement>();
 
         public bool CreateNewManifest
         {
@@ -78,6 +82,9 @@ namespace Beamable.Editor.Content.Components
             _manifestNameField.AddPlaceholder("Enter new Content Namespace");
             _manifestNameField.AddTextWrapStyle();
 
+            _manifestArchivedMessage = Root.Q<Label>("manifestArchivedMessage");
+            _manifestArchivedMessage.AddTextWrapStyle();
+            
             Root.Q<Label>("manifestWarningMessage").AddTextWrapStyle();
             var manifestDocsLink = Root.Q<Label>("manifestDocsLink");
             manifestDocsLink.RegisterCallback<MouseDownEvent>(evt =>
@@ -87,20 +94,22 @@ namespace Beamable.Editor.Content.Components
 
             if (CreateNewManifest)
             {
-                _isManifestNameValid = _manifestNameField.AddErrorLabel("Manifest Namespace", x =>
-                {
-                    if (!_completed && !ValidateManifestName(x, out var msg)) return msg;
-                    return null;
-                });
-                _isManifestNameValid.Check();
-                _publishBtn.AddGateKeeper(_isManifestNameValid);
-
                 if (_manifestModel == null)
                 {
                     _manifestModel = new ManifestModel();
                     _manifestModel.OnAvailableManifestsChanged += _ => _isManifestNameValid.Check();
                     _manifestModel.Initialize();
                 }
+                
+                _isManifestNameValid = _manifestNameField.AddErrorLabel("Manifest Namespace", name =>
+                {
+                    _manifestArchivedMessage.EnableInClassList("visible", 
+                        _manifestModel.ArchivedManifestModels?.Any(m => m.id == name) ?? false);
+                    if (!_completed && !ValidateManifestName(name, out var msg)) return msg;
+                    return null;
+                });
+                _isManifestNameValid.Check();
+                _publishBtn.AddGateKeeper(_isManifestNameValid);
 
                 _manifestModel.RefreshAvailableManifests();
             }
@@ -281,14 +290,19 @@ namespace Beamable.Editor.Content.Components
             {
                 OnCompleted?.Invoke();
             }
-            else
-            {
-                HandlePublish();
+            else {
+                var _ = HandlePublish();
             }
         }
 
-        private void HandlePublish()
+        private async Task HandlePublish()
         {
+            if (_createNewManifest && _manifestModel.ArchivedManifestModels.Any(m => m.id == ManifestName)) {
+                var api = await EditorAPI.Instance;
+                var unarchiveTask = api.ContentIO.UnarchiveManifest(ManifestName);
+                _publishBtn.Load(unarchiveTask);
+                await unarchiveTask;
+            }
             var publishSet = PublishSet.GetResult();
             SetPublishMessage();
 
@@ -303,13 +317,27 @@ namespace Beamable.Editor.Content.Components
                         _messageLabel.text = ContentManagerConstants.PublishCompleteMessage;
                         _publishBtn.SetText("Okay");
                         _loadingBar.RunWithoutUpdater = false;
+                        MarkChecked();
                     });
                 });
         }
 
         private ContentPopupLinkVisualElement MakeElement()
         {
-            return new ContentPopupLinkVisualElement();
+            var contentPopupLinkVisualElement = new ContentPopupLinkVisualElement();
+            _contentElements.Add(contentPopupLinkVisualElement);
+            return contentPopupLinkVisualElement;
+        }
+
+        private void MarkChecked()
+        {
+            MarkDirtyRepaint();
+            EditorApplication.delayCall += () =>
+            {
+                foreach (var contentElement in _contentElements)
+                    contentElement.MarkChecked();
+                MarkDirtyRepaint();
+            };
         }
 
         private Action<VisualElement, int> CreateBinder(List<ContentDownloadEntryDescriptor> source)

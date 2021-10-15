@@ -19,16 +19,16 @@ namespace Beamable.Editor.Microservice.UI
    [System.Serializable]
    public class ServiceLogWindow : EditorWindow
    {
-      public static void ShowService(MicroserviceModel service)
+      public static void ShowService(ServiceModelBase service)
       {
-         var existing = Resources.FindObjectsOfTypeAll<ServiceLogWindow>().ToList().FirstOrDefault(w => w._serviceName.Equals(service.Descriptor.Name));
+         var existing = Resources.FindObjectsOfTypeAll<ServiceLogWindow>().ToList().FirstOrDefault(w => w._serviceName.Equals(service.Name));
          if (existing != null)
          {
             existing.Show(true);
             return;
          }
          var window = CreateInstance<ServiceLogWindow>();
-         window.titleContent = new GUIContent($"{service.Descriptor.Name} Logs");
+         window.titleContent = new GUIContent($"{service.Name} Logs");
          window.minSize = new Vector2(450, 200);
          window.SetModel(service);
          window.Init();
@@ -38,7 +38,7 @@ namespace Beamable.Editor.Microservice.UI
       private VisualElement _windowRoot;
 
       [NonSerialized] // we need this to get repulled every time, so that the event registration lines up.
-      private MicroserviceModel _model;
+      private ServiceModelBase _model;
 
       [SerializeField]
       private string _serviceName;
@@ -57,7 +57,7 @@ namespace Beamable.Editor.Microservice.UI
          {
             if (_model == null)
             {
-               _model = MicroservicesDataModel.Instance.GetMicroserviceModelForName(_serviceName);
+               _model = MicroservicesDataModel.Instance.GetModel<ServiceModelBase>(_serviceName);
             }
             _model.DetachLogs(); // take note of the fact that logs are detached...
             RegisterEvents();
@@ -82,10 +82,10 @@ namespace Beamable.Editor.Microservice.UI
          }
       }
 
-      private void SetModel(MicroserviceModel model)
+      private void SetModel(ServiceModelBase model)
       {
          _model = model;
-         _serviceName = model.Descriptor.Name;
+         _serviceName = model.Name;
       }
 
       private void OnBecameVisible()

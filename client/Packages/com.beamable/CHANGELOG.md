@@ -1,20 +1,47 @@
 
+
 # Changelog
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+[Unreleased]
+### Fixed
+- Able to build game
+- Content Inspector datepicker with no user given value no longer constantly updates
+
+## [0.17.0]
 ### Added
+- Device id authentication support
 - Auto-complete text feature for `AdminFlow` prefab
 - Steam third party authentication support
 - New default `currency.coins` currency that demonstrates client writable currency.
+- RemoveThirdPartyAssociation added to AuthService to allow a player to remove a third party auth from their account
+- Cohort Settings to EventContent to support partitioning by player stats
+- Event and listings schedules
+- Support for archiving manifest namespaces.
+- A `Fetch()` method to all subscribable SDKs that requests and returns the raw subscription data
+
+### Changed
+- Content deletion popup opens as separate window
+- An optional `forceRefresh` parameter to all subscribable SDK's `GetCurrent()` method that forces a network request
+- `API.Instance.Requester` is now an `IBeamableRequester`
+- The `Promise` class is no longer static, and extends from `Promise<Unit>`
+- Validated string fields of `ListingPrice`, `StatRequirement`, `CohortRequirement`, `OfferConstraint` and `AnnouncementAttachment` in Content Manager were changed to dropdowns
 
 ### Fixed
+- If no internet connection exists on startup, `API.Instance()` will retry every 2 seconds until a connection is established
+
+
+## [0.16.1]
+### Fixed
+- `ExecuteRolling` method of `Promise` now supports a condition on which stop execution
 - No longer re-imports config-defaults without cause
 - Batch imports Module Configuration files to improve speed
 - No longer refreshes asset database on ContentIO FindAll()
+- Allow Content Deserializer to consume incorrectly typed fields as empty values
+
 
 ## [0.16.0]
 ### Added
@@ -46,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Account Management Flow third party login buttons use correct third parties
 - Content Manager Window item selection is cleared after changing the Namespace
 - Adjusted confirm window look while trying to delete any content
+- Content Manager Popups refresh after Unity domain reload
 
 ## [0.15.0]
 ### Added

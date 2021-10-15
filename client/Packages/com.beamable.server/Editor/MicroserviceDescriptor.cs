@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Server.Editor
@@ -25,5 +26,11 @@ namespace Beamable.Server.Editor
       public string BuildPath => $"./Assets/../Temp/beamservicebuild/{Name}";
       public string ContainerName => $"{Name}_container";
       public string ImageName => Name.ToLower();
-   }
+      public ServiceType ServiceType => ServiceType.MicroService;
+
+      public bool IsPublishFeatureDisabled()
+      {
+         return this.GetStorageReferences()?.Count() > 0 || this.HasMongoLibraries();
+      }
+    }
 }

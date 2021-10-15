@@ -1,6 +1,6 @@
 using Beamable.Server;
 
-namespace Beamable.Server.XXXX
+namespace Beamable.Server
 {
    [Microservice("XXXX")]
    public class XXXX : Microservice

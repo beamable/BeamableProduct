@@ -131,6 +131,10 @@ namespace Beamable.Server.Editor.CodeGen
           {
               resultType = typeof(Unit);
           }
+          else if (resultType.IsGenericType && resultType.GetGenericTypeDefinition() == typeof(Promise<>))
+          {
+              resultType = resultType.GetGenericArguments()[0];
+          }
 
           var isAsync = null != info.MethodInfo.GetCustomAttribute<AsyncStateMachineAttribute>();
           if (isAsync)

@@ -1,72 +1,80 @@
-﻿using System;
+﻿
+using System;
+using System.IO;
+using System.Text;
 using System.Threading.Tasks;
+using Beamable.Common;
+using Beamable.Editor.Environment;
+using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
+using Beamable.Server.Editor.ManagerClient;
 using UnityEditor;
+using UnityEngine;
+#if UNITY_2018
+using UnityEngine.Experimental.UIElements;
+using UnityEditor.Experimental.UIElements;
+#elif UNITY_2019_1_OR_NEWER
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
+#endif
+
 
 namespace Beamable.Editor.UI.Model
 {
     [System.Serializable]
-    public class MongoStorageModel
+    public class MongoStorageModel : ServiceModelBase, IBeamableStorageObject
     {
-        public StorageObjectDescriptor Descriptor;
-        public LogMessageStore Logs;
-        public MongoStorageBuilder Builder;
-        public bool IsRunning => Builder?.IsRunning ?? false;
-        public string Name => Descriptor.Name;
-    }
+        public StorageObjectDescriptor ServiceDescriptor { get; private set; }
+        public MongoStorageBuilder ServiceBuilder { get; private set; }
+        public override IBeamableBuilder Builder => ServiceBuilder;
+        public override IDescriptor Descriptor => ServiceDescriptor;
+        public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
+        public StorageConfigurationEntry Config { get; private set; }
 
-    public class MongoStorageBuilder
-    {
-        public Action<bool> OnIsRunningChanged;
-        public bool IsRunning
-        {
-            get => _isRunning;
-            private set
-            {
-                if (value == _isRunning) return;
-                _isRunning = value;
-                // XXX: If OnIsRunningChanged is mutated at before delayCall triggers, non-deterministic behaviour could occur
-                EditorApplication.delayCall += () => OnIsRunningChanged?.Invoke(value);
-            }
-        }
-        public StorageObjectDescriptor Descriptor { get; private set; }
-
-        private DockerCommand _logProcess, _runProcess;
-        private bool _isRunning;
+        public override event Action<Task> OnStart;
+        public override event Action<Task> OnStop;
         
-        public async void Init(StorageObjectDescriptor descriptor)
+        public static MongoStorageModel CreateNew(StorageObjectDescriptor descriptor)
         {
-            Descriptor = descriptor;
-
-            _isRunning = false;
-            await CheckIfIsRunning();
-            if (IsRunning)
+            return new MongoStorageModel
             {
-                CaptureLogs();
-            }
-        }
-        void CaptureLogs()
-        {
-            _logProcess?.Kill();
-            _logProcess = new FollowLogCommand(Descriptor);
-            _logProcess.Start();
-        }
-        
-        public async Task CheckIfIsRunning()
-        {
-            var checkProcess = new CheckImageReturnableCommand(Descriptor)
-            {
-                WriteLogToUnity = false, WriteCommandToUnity = false
+                ServiceDescriptor = descriptor,
+                ServiceBuilder = Microservices.GetStorageBuilder(descriptor),
+                Config = MicroserviceConfiguration.Instance.GetStorageEntry(descriptor.Name)
             };
-
-            _isRunning = await checkProcess.Start(null);
         }
-        
-        public void ForwardEventsTo(MongoStorageBuilder oldBuilder)
+
+        public override Task Start()
         {
-            if (oldBuilder == null) return;
-            OnIsRunningChanged += oldBuilder.OnIsRunningChanged;
+            OnLogsAttached?.Invoke();
+            var task = ServiceBuilder.TryToStart();
+            OnStart?.Invoke(task);
+            return task;
+        }
+        public override Task Stop()
+        {
+            var task = ServiceBuilder.TryToStop();
+            OnStop?.Invoke(task);
+            return task;
+        }
+        public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
+        {
+            // TODO - Implement copy connection strings
+            
+            evt.menu.BeamableAppendAction($"Erase data", _ => AssemblyDefinitionHelper.ClearMongo(ServiceDescriptor));
+            //evt.menu.BeamableAppendAction($"Copy connection strings", _ => Debug.Log("Not implemented!"));
+            evt.menu.BeamableAppendAction($"Goto data explorer", _ => AssemblyDefinitionHelper.OpenMongoExplorer(ServiceDescriptor));
+            evt.menu.BeamableAppendAction($"Create a snapshot", _ => AssemblyDefinitionHelper.SnapshotMongo(ServiceDescriptor));
+            evt.menu.BeamableAppendAction($"Download a snapshot", _ => AssemblyDefinitionHelper.RestoreMongo(ServiceDescriptor));
+        }
+        public override void Refresh(IDescriptor descriptor)
+        {
+            // reset the descriptor and statemachines; because they aren't system.serializable durable.
+            ServiceDescriptor = (StorageObjectDescriptor)descriptor;
+            var oldBuilder = ServiceBuilder;
+            ServiceBuilder = Microservices.GetStorageBuilder(ServiceDescriptor);
+            ServiceBuilder.ForwardEventsTo(oldBuilder);
         }
     }
 }

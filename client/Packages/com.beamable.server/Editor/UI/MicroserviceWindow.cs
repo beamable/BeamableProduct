@@ -150,10 +150,27 @@ namespace Beamable.Editor.Microservice.UI
 
             _microserviceContentVisualElement = root.Q<MicroserviceContentVisualElement>("microserviceContentVisualElement");
             _microserviceContentVisualElement.Model = Model;
+
+            _microserviceContentVisualElement.OnPreviewFeatureWarningMessageShowed +=
+                (state) =>
+                {
+                    if(Model?.Services?.Count > 0)
+                        _actionBarVisualElement?.SetPublishButtonState(state);
+                };
+
             _microserviceContentVisualElement.Refresh();
+
+            if (Model != null)
+            {
+                Model.OnServerManifestUpdated += (manifest) =>
+                {
+                    _microserviceContentVisualElement?.Refresh();
+                };
+            }
 
             _microserviceBreadcrumbsVisualElement.OnSelectAllCheckboxChanged +=
                 _microserviceContentVisualElement.SetAllMicroserviceSelectedStatus;
+            _microserviceBreadcrumbsVisualElement.OnNewServicesDisplayFilterSelected += HandleDisplayFilterSelected;
 
             _microserviceContentVisualElement.OnAllServiceSelectedStatusChanged +=
                 _microserviceBreadcrumbsVisualElement.SetSelectAllCheckboxValue;
@@ -188,8 +205,14 @@ namespace Beamable.Editor.Microservice.UI
 
         }
 
+        private void HandleDisplayFilterSelected(ServicesDisplayFilter filter)
+        {
+            Model.Filter = filter;
+            Refresh();
+        }
+
         private void HideAllLoadingBars() {
-            foreach (var microserviceVisualElement in _windowRoot.Q<MicroserviceContentVisualElement>().MicroserviceVisualElements) {
+            foreach (var microserviceVisualElement in _windowRoot.Q<MicroserviceContentVisualElement>().ServiceVisualElements) {
                 microserviceVisualElement.Q<LoadingBarElement>().Hidden = true;
             }
         }
@@ -213,7 +236,9 @@ namespace Beamable.Editor.Microservice.UI
 
         private void Refresh() {
             new CheckDockerCommand().Start(null).Then(_ => {
-                _microserviceContentVisualElement.Refresh();
+                _microserviceBreadcrumbsVisualElement?.Refresh();
+                _actionBarVisualElement?.Refresh();
+                _microserviceContentVisualElement?.Refresh();
             });
         }
 
