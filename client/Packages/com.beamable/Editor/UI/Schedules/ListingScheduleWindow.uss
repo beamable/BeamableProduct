@@ -12,6 +12,7 @@ ListingScheduleWindow > TemplateContainer > #mainVisualElement > * {
     padding-bottom: 10px;
 }
 
+
 #buttonStrip {
     flex-direction: row;
     justify-content: flex-end;
@@ -45,9 +46,4 @@ Label {
 
 #dropdown #mainVisualElement {
     justify-content: space-between;
-}
-
-#periodFromHour #mainVisualElement {
-    /*flex-direction: row;*/
-    background-color: #FFFFFF;
 }
