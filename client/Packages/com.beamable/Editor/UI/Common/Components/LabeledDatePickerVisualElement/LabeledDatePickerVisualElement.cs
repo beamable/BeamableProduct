@@ -38,11 +38,10 @@ namespace Beamable.Editor.UI.Components
                 }
             }
         }
-        
-        public Action OnValueChanged;
 
+        private Action _onValueChanged;
         private Label _label;
-        
+
         public DatePickerVisualElement DatePicker { get; private set; }
         public string Label { get; private set; }
         public string SelectedDate => DatePicker.GetIsoDate();
@@ -63,37 +62,17 @@ namespace Beamable.Editor.UI.Components
             DatePicker.Setup(OnDateChanged);
             DatePicker.Refresh();
         }
+
+        public void Setup(Action onValueChanged)
+        {
+            _onValueChanged = onValueChanged;
+        }
         
         public void Set(DateTime date) => DatePicker.Set(date);
 
         private void OnDateChanged()
         {
-            if (DatePicker == null || DatePicker.YearPicker == null ||
-                DatePicker.MonthPicker == null || DatePicker.DayPicker == null)
-            {
-                return;
-            }
-
-            if (DatePicker.YearPicker.Value.Length > 4)
-            {
-                DatePicker.YearPicker.Value = DatePicker.YearPicker.Value.Substring(0, 4);
-            }
-            
-            int.TryParse(DatePicker.MonthPicker.Value, out int resultMonth);
-            if (!Enumerable.Range(1, 12).Contains(resultMonth))
-            {
-                resultMonth = Mathf.Clamp(resultMonth, 1, 12);
-                DatePicker.MonthPicker.Value = resultMonth.ToString();
-            }
-            
-            int.TryParse(DatePicker.DayPicker.Value, out int resultDay);
-            if (!Enumerable.Range(1, 31).Contains(resultDay))
-            {
-                resultDay = Mathf.Clamp(resultDay, 1, 31);
-                DatePicker.DayPicker.Value = resultDay.ToString();
-            }
-
-            OnValueChanged?.Invoke(); 
+            _onValueChanged?.Invoke(); 
         }
     }
 }

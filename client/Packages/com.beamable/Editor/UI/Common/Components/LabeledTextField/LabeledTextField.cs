@@ -16,10 +16,10 @@ namespace Beamable.Editor.UI.Components
 {
     public class LabeledTextField : ValidableVisualElement<string>
     {
-        public enum Mode
+        private enum Mode
         {
             Default,
-            DigitsOnly
+            DigitsOnly,
         }
 
         public new class UxmlFactory : UxmlFactory<LabeledTextField, UxmlTraits>
@@ -56,25 +56,27 @@ namespace Beamable.Editor.UI.Components
             }
         }
 
-        public Action OnValueChanged;
 
-        private Label _label;
-        private TextField _textField;
+        private Action _onValueChanged;
+        private Label _labelComponent;
+        private TextField _textFieldComponent;
         private string _value;
-
-        public Mode WorkingMode { get; set; }
-        public string Label { get; set; }
+        private int _minValue;
+        private int _maxValue;
 
         public string Value
         {
-            get => _value;
+            get => ValidateOutputValue(_value);
             set
             {
                 _value = value;
-                _textField?.SetValueWithoutNotify(_value);
-                OnValueChanged?.Invoke();
+                _textFieldComponent?.SetValueWithoutNotify(_value);
+                _onValueChanged?.Invoke();
             }
         }
+
+        private Mode WorkingMode { get; set; }
+        private string Label { get; set; }
 
         public LabeledTextField() : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledTextField)}/{nameof(LabeledTextField)}")
@@ -85,40 +87,71 @@ namespace Beamable.Editor.UI.Components
         {
             base.Refresh();
 
-            _label = Root.Q<Label>("label");
-            _label.text = Label;
+            _labelComponent = Root.Q<Label>("label");
+            _labelComponent.text = Label;
 
-            _textField = Root.Q<TextField>("textField");
-            _textField.value = Value;
-            _textField.RegisterValueChangedCallback(ValueChanged);
+            _textFieldComponent = Root.Q<TextField>("textField");
+            _textFieldComponent.value = Value;
+            _textFieldComponent.RegisterValueChangedCallback(ValueChanged);
+        }
+
+        public void Setup(string label, string value, Action onValueChanged, int minValue, int maxValue)
+        {
+            Label = label;
+            Value = value;
+            _onValueChanged = onValueChanged;
+            _minValue = minValue;
+            _maxValue = maxValue;
         }
 
         protected override void OnDestroy()
         {
-            _textField.UnregisterValueChangedCallback(ValueChanged);
+            _textFieldComponent.UnregisterValueChangedCallback(ValueChanged);
         }
 
         private void ValueChanged(ChangeEvent<string> evt)
         {
-            Value = ValidateValue(evt.newValue);
+            Value = ValidateInputValue(evt.newValue);
             InvokeValidationCheck(Value);
         }
 
-        private string ValidateValue(string value)
+        private string ValidateInputValue(string value)
         {
             switch (WorkingMode)
             {
                 case Mode.Default:
                     return value;
                 case Mode.DigitsOnly:
-                    if (string.IsNullOrEmpty(value))
-                    {
-                        value = "0";
-                    }
                     return new string(value.Where(Char.IsDigit).ToArray());
             }
 
             return value;
+        }
+
+        private string ValidateOutputValue(string value)
+        {
+            string finalValue = value;
+            
+            switch (WorkingMode)
+            {
+                case Mode.DigitsOnly:
+                    if (string.IsNullOrEmpty(value))
+                    {
+                        finalValue = _minValue.ToString();
+                    }
+                    else
+                    {
+                        if (int.TryParse(value, out int result))
+                        {
+                            result = Mathf.Clamp(result, _minValue, _maxValue);
+                            finalValue = result.ToString();
+                        }
+                    }
+
+                    break;
+            }
+
+            return finalValue;
         }
     }
 }
