@@ -14,6 +14,7 @@ using Beamable.Server.Editor.UI.Components;
 using Beamable.Server.Editor.Uploader;
 using Beamable.Platform.SDK;
 using Beamable.Editor;
+using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.UI.Model;
 using UnityEditor;
 using UnityEditor.Callbacks;
@@ -477,13 +478,16 @@ namespace Beamable.Server.Editor
          var de = await EditorAPI.Instance;
 
          var client = de.GetMicroserviceManager();
+
+         ContainerUploadHarness.SetupProgress("Fetching current manifest..",0.5f);
          var existingManifest = await client.GetCurrentManifest();
          var existingServiceToState = existingManifest.manifest.ToDictionary(s => s.serviceName);
 
          var nameToImageId = new Dictionary<string, string>();
 
          foreach (var descriptor in Descriptors)
-         {
+         { 
+             ContainerUploadHarness.SetupProgress(descriptor.Name, "Building service..", 0.25f);
             Debug.Log($"Building service=[{descriptor.Name}]");
             var buildCommand = new BuildImageCommand(descriptor, false);
             await buildCommand.Start(context);
@@ -492,6 +496,7 @@ namespace Beamable.Server.Editor
             var msModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(descriptor);
             uploader.onProgress += msModel.OnDeployProgress;
 
+            ContainerUploadHarness.SetupProgress(descriptor.Name, "Getting service image Id..", 0.5f);
             Debug.Log($"Getting Id service=[{descriptor.Name}]");
             var imageId = await uploader.GetImageId(descriptor);
             nameToImageId.Add(descriptor.Name, imageId);
@@ -517,6 +522,7 @@ namespace Beamable.Server.Editor
             }
             entryModel.Dependencies = serviceDependencies;
 
+            ContainerUploadHarness.SetupProgress(descriptor.Name,"Uploading container service..", 0.75f);
             Debug.Log($"Uploading container service=[{descriptor.Name}]");
 
             await uploader.UploadContainer(descriptor, () =>
