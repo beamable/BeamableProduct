@@ -2,7 +2,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
+using Beamable.Common.Announcements;
 using Beamable.Common.Content;
+using Beamable.Common.Shop;
 using Beamable.Tests.Content.Serialization.Support;
 using Beamable.Content;
 using Beamable.UI;
@@ -1024,6 +1026,92 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
            Assert.AreEqual("bogus.nothing", o.Id);
         }
 
+        [Test]
+        public void ListingEnumsDeserialization()
+        {
+           string json = @"{
+           ""id"": ""bogus.nothing"",
+               ""version"": """",
+               ""properties"":
+               {
+                  ""price"":
+                  {
+                     ""data"":
+                     {
+                        ""symbol"": null,
+                        ""amount"": 100,
+                        ""type"": ""currency""
+                     }
+                  },
+                  ""requirement"":
+                  {
+                     ""data"":
+                     {
+                        ""stat"": null,
+                        ""value"": 0,
+                        ""domain"": ""client"",
+                        ""access"": ""public"",
+                        ""constraint"": ""lt""
+                     }
+                  },
+                  ""cohort"":
+                  {
+                     ""data"":
+                     {
+                        ""trial"": ""trial"",
+                        ""cohort"": ""cohort"",
+                        ""constraint"": ""eq""
+                     }
+                  },
+                  ""offer"":
+                  {
+                     ""data"":
+                     {
+                        ""value"": 0,
+                        ""constraint"": ""ge""
+                     }
+                  }
+               }
+           }";
+           
+           var serializer = new TestSerializer();
+           var deserialized = serializer.Deserialize<ListingTestContent>(json);
+
+           Assert.AreEqual(PriceType.Currency, deserialized.price.priceType);
+           Assert.AreEqual(DomainType.Client, deserialized.requirement.domainType);
+           Assert.AreEqual(AccessType.Public, deserialized.requirement.accessType);
+           Assert.AreEqual(ComparatorType.Lt, deserialized.requirement.constraintType);
+           Assert.AreEqual(ComparatorType.Eq, deserialized.cohort.constraintType);
+           Assert.AreEqual(ComparatorType.Ge, deserialized.offer.constraintType);
+        }
+
+        [Test]
+        public void AnnouncementDeserialization()
+        {
+           string json =
+              @"{
+                ""id"": ""bogus.nothing"",
+                ""version"": """",
+                ""properties"":
+                {
+                    ""announcement"":
+                    {
+                        ""data"":
+                        {
+                            ""symbol"": null,
+                            ""count"": 5,
+                            ""type"": ""items""
+                        }
+                    }
+                }
+              }";
+           
+           var serializer = new TestSerializer();
+           var deserialized = serializer.Deserialize<AnnouncementContent>(json);
+           
+           Assert.AreEqual(ContentType.Items, deserialized.announcement.contentType);
+        }
+
 
 #pragma warning disable CS0649
 
@@ -1149,6 +1237,19 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
         class FormerlyContentNestedContent : TestContentObject
         {
             public FormerlyContentField Nested;
+        }
+        
+        class ListingTestContent : TestContentObject
+        {
+           public ListingPrice price;
+           public StatRequirement requirement;
+           public CohortRequirement cohort;
+           public OfferConstraint offer;
+        }
+
+        class AnnouncementContent : TestContentObject
+        {
+           public AnnouncementAttachment announcement;
         }
 
         [ContentType("test")]
