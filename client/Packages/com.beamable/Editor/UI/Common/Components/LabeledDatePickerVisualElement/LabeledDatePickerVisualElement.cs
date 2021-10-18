@@ -39,7 +39,7 @@ namespace Beamable.Editor.UI.Components
             }
         }
 
-        private Action _onValueChanged;
+        public event Action OnValueChanged;
         private Label _label;
 
         public DatePickerVisualElement DatePicker { get; private set; }
@@ -62,17 +62,12 @@ namespace Beamable.Editor.UI.Components
             DatePicker.Setup(OnDateChanged);
             DatePicker.Refresh();
         }
-
-        public void Setup(Action onValueChanged)
-        {
-            _onValueChanged = onValueChanged;
-        }
         
         public void Set(DateTime date) => DatePicker.Set(date);
 
         private void OnDateChanged()
         {
-            _onValueChanged?.Invoke(); 
+            OnValueChanged?.Invoke(); 
         }
     }
 }
