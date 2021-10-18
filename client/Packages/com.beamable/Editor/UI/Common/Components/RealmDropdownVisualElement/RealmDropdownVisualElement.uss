@@ -7,8 +7,8 @@
 }
 
 RealmDropdownVisualElement LoadingIndicatorVisualElement {
-    position: absolute;
     top: 20px;
+    align-items: center;
 }
 RealmDropdownVisualElement {
     flex-grow: 1;
@@ -16,6 +16,7 @@ RealmDropdownVisualElement {
 RealmDropdownVisualElement > TemplateContainer {
     flex-grow: 1;
 }
+RealmDropdownVisualElement .cover,
 RealmDropdownVisualElement #mainBlockedContent.cover {
     position: absolute;
     left: 100000px;

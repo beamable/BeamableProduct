@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `API.Instance.Requester` is now an `IBeamableRequester`
 - The `Promise` class is no longer static, and extends from `Promise<Unit>`
 - Validated string fields of `ListingPrice`, `StatRequirement`, `CohortRequirement`, `OfferConstraint` and `AnnouncementAttachment` in Content Manager were changed to dropdowns
+- The realm dropdown now has a loading spinner on realm switches
 
 ### Fixed
 - If no internet connection exists on startup, `API.Instance()` will retry every 2 seconds until a connection is established
