@@ -7,8 +7,8 @@
 
     <engine:VisualElement name="mainVisualElement" class="--noPadding">
         <beamable:LabeledNumberPicker name="yearPicker" label="Y"/>
-        <beamable:LabeledNumberPicker name="monthPicker" label="M"/>
-        <beamable:LabeledNumberPicker name="dayPicker" label="D"/>
+        <beamable:LabeledNumberPicker name="monthPicker" label="M" min="1" max="12"/>
+        <beamable:LabeledNumberPicker name="dayPicker" label="D" min="1" max="31"/>
     </engine:VisualElement>
 
 </UXML>
