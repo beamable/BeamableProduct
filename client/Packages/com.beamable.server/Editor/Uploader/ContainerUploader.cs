@@ -108,6 +108,7 @@ public class ContainerUploader
          }
 
          // Upload manifest JSON.
+         ContainerUploadHarness.SetupProgress("Uploading manifest..", 0.98f);
          await UploadManifestJson(uploadManifest, _imageId);
       }
 
@@ -117,7 +118,7 @@ public class ContainerUploader
       /// <param name="uploadManifest">Data structure containing image data.</param>
       private async Task UploadManifestJson(Dictionary<string, object> uploadManifest, string imageId)
       {
-         var manifestJson = Json.Serialize(uploadManifest, new StringBuilder());
+          var manifestJson = Json.Serialize(uploadManifest, new StringBuilder());
          var uri = new Uri($"{_uploadBaseUri}/manifests/{imageId}");
          var content = new StringContent(manifestJson, Encoding.Default, MediaManifest);
          var response = await _client.PutAsync(uri, content);
@@ -153,6 +154,7 @@ public class ContainerUploader
          using (var fileStream = File.OpenRead(filename))
          {
             var digest = HashDigest(fileStream);
+            ContainerUploadHarness.SetupProgress(_descriptor.Name, "Checking existence..", 0.5f);
             if (await CheckBlobExistence(digest))
             {
                return new FileBlobResult
@@ -162,10 +164,13 @@ public class ContainerUploader
                };
             }
             fileStream.Position = 0;
+            ContainerUploadHarness.SetupProgress(_descriptor.Name, "Preparing upload location..", 0.5f);
             var location = NormalizeWithDigest(await PrepareUploadLocation(), digest);
             while (fileStream.Position < fileStream.Length)
             {
-               var chunk = await FileChunk.FromParent(fileStream, ChunkSize);
+                var chunk = await FileChunk.FromParent(fileStream, ChunkSize);
+                var progress = (float) fileStream.Position / fileStream.Length;
+               ContainerUploadHarness.SetupProgress(_descriptor.Name, $"Uploading chunk {fileStream.Position}/{fileStream.Length}", progress);
                var response = await UploadChunk(chunk, location);
                response.EnsureSuccessStatusCode();
                location = NormalizeWithDigest(response.Headers.Location, digest);
@@ -219,7 +224,7 @@ public class ContainerUploader
       /// <returns></returns>
       private async Task<bool> CheckBlobExistence(string digest)
       {
-         var uri = new Uri($"{_uploadBaseUri}/blobs/{digest}");
+          var uri = new Uri($"{_uploadBaseUri}/blobs/{digest}");
          var request = new HttpRequestMessage(HttpMethod.Head, uri);
          var response = await _client.SendAsync(request);
          return response.StatusCode == HttpStatusCode.OK;

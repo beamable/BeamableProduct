@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Editor;
+using Beamable.Server.Editor.UI.Components;
 using ICSharpCode.SharpZipLib.Tar;
 
 using UnityEditor;
@@ -43,6 +44,7 @@ namespace Beamable.Server.Editor.Uploader
       {
          var progress = total == 0 ? 1 : (float) amount / total;
          Debug.Log($"PROGRESS HAPPENED. name=[{name}] amount=[{amount}] total=[{total}]");
+         SetupProgress(name, $"Uploading service part {amount}/{total}", progress);
          //ProgressPanel.ReportLayerProgress(name, progress);
          onProgress?.Invoke(progress, amount, total);
       }
@@ -106,9 +108,21 @@ namespace Beamable.Server.Editor.Uploader
          }
          finally
          {
+             EditorUtility.ClearProgressBar();
             Directory.Delete(folder, true);
             File.Delete(filename);
          }
+      }
+      
+      public static void SetupProgress(string text, float progress)
+      {
+          EditorUtility.ClearProgressBar();
+          EditorUtility.DisplayProgressBar(Constants.PUBLISHING_TITLE, text, progress);
+      }
+      public static void SetupProgress(string serviceName, string text, float progress)
+      {
+          EditorUtility.ClearProgressBar();
+          EditorUtility.DisplayProgressBar($"Publishing \"{serviceName}\" service", text, progress);
       }
    }
 }

@@ -15,6 +15,7 @@ namespace Beamable.Server.Editor.UI.Components
 
       public static string Publish = "Publish";
       public static string PopUpBtn = "Console Log";
+      public static string PUBLISHING_TITLE = "Publishing services";
 
       public static string DEPENDENT_SERVICES_WINDOW_TITLE = "Dependent services";
 
