@@ -272,6 +272,9 @@ namespace Beamable.Common.Shop
 
       private OptionalString domainCached;
 
+      /// <summary>
+      /// Don't use this field. It's used only for JSON serialization.
+      /// </summary>
       [SerializeField, HideInInspector]
       [ContentField("domain")]
       private string domainSerializedValue;
@@ -301,6 +304,9 @@ namespace Beamable.Common.Shop
 
       private OptionalString accessCached;
 
+      /// <summary>
+      /// Don't use this field. It's used only for JSON serialization.
+      /// </summary>
       [ContentField("access")] 
       [SerializeField, HideInInspector]
       private string accessSerializedValue;
@@ -332,6 +338,9 @@ namespace Beamable.Common.Shop
       [IgnoreContentField]
       private string constraintOld;
 
+      /// <summary>
+      /// Don't use this field. It's used only for JSON serialization.
+      /// </summary>
       [SerializeField, HideInInspector]
       [ContentField("constraint")]
       private string constraintSerializedValue;
@@ -383,6 +392,9 @@ namespace Beamable.Common.Shop
       [IgnoreContentField]
       private string constraintOld;
 
+      /// <summary>
+      /// Don't use this field. It's used only for JSON serialization.
+      /// </summary>
       [SerializeField, HideInInspector]
       [ContentField("constraint")]
       private string constraintSerializedValue;
@@ -422,6 +434,9 @@ namespace Beamable.Common.Shop
       [IgnoreContentField]
       public string constraintOld;
 
+      /// <summary>
+      /// Don't use this field. It's used only for JSON serialization.
+      /// </summary>
       [SerializeField, HideInInspector]
       [ContentField("constraint")]
       private string constraintSerializedValue;

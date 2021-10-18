@@ -72,6 +72,9 @@ namespace Beamable.Common.Announcements
       // TODO: [MustMatchReference(nameof(symbol))]
       private string typeOld;
 
+      /// <summary>
+      /// Don't use this field. It's used only for JSON serialization.
+      /// </summary>
       [SerializeField, HideInInspector]
       [ContentField("type")]
       private string typeSerializedValue;
