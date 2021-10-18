@@ -225,7 +225,10 @@ namespace Beamable.Common.Shop
 
       public void OnAfterDeserialize()
       {
-         EnumConversionHelper.ConvertIfNotDoneAlready(ref priceType, ref typeOld);
+         if (!EnumConversionHelper.ConvertIfNotDoneAlready(ref priceType, ref typeOld))
+         {
+            priceType = EnumConversionHelper.ParseEnumType<PriceType>(priceSerializedValue);
+         }
       }
    }
 
@@ -370,9 +373,20 @@ namespace Beamable.Common.Shop
 
       public void OnAfterDeserialize()
       {
-         EnumConversionHelper.ConvertIfNotDoneAlready(ref accessType, ref accessOld);
-         EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld);
-         EnumConversionHelper.ConvertIfNotDoneAlready(ref domainType, ref domainOld);
+         if (!EnumConversionHelper.ConvertIfNotDoneAlready(ref accessType, ref accessOld))
+         {
+            accessType = EnumConversionHelper.ParseEnumType<AccessType>(accessSerializedValue);
+         }
+
+         if (!EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld))
+         {
+            constraintType = EnumConversionHelper.ParseEnumType<ComparatorType>(constraintSerializedValue);
+         }
+
+         if (!EnumConversionHelper.ConvertIfNotDoneAlready(ref domainType, ref domainOld))
+         {
+            domainType = EnumConversionHelper.ParseEnumType<DomainType>(domainSerializedValue);
+         }
       }
    }
 
@@ -417,7 +431,10 @@ namespace Beamable.Common.Shop
 
       public void OnAfterDeserialize()
       {
-         EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld);
+         if (!EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld))
+         {
+            constraintType = EnumConversionHelper.ParseEnumType<ComparatorType>(constraintSerializedValue);
+         }
       }
    }
 
@@ -462,7 +479,10 @@ namespace Beamable.Common.Shop
 
       public void OnAfterDeserialize()
       {
-         EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld);
+         if (!EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld))
+         {
+            constraintType = EnumConversionHelper.ParseEnumType<ComparatorType>(constraintSerializedValue);
+         }
       }
    }
    [System.Serializable]

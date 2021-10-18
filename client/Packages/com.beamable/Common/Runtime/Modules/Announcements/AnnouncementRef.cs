@@ -97,7 +97,10 @@ namespace Beamable.Common.Announcements
 
       public void OnAfterDeserialize()
       {
-         EnumConversionHelper.ConvertIfNotDoneAlready(ref contentType, ref typeOld);
+         if (!EnumConversionHelper.ConvertIfNotDoneAlready(ref contentType, ref typeOld))
+         {
+            contentType = EnumConversionHelper.ParseEnumType<ContentType>(typeSerializedValue);
+         }
       }
    }
 }
