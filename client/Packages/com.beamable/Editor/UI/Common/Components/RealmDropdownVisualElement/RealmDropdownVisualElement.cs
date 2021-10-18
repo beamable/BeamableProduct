@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Beamable.Common;
 using Beamable.Editor.Realms;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common.Models;
+using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -19,9 +21,15 @@ namespace Beamable.Editor.UI.Components
         private VisualElement _listRoot;
         private RealmView _selectedRealm;
         private List<RealmView> _realmViews;
+        private LoadingIndicatorVisualElement _loadingIndicator;
+        private VisualElement _mainContent;
+        private SearchBarVisualElement _searchBar;
+        private Button _refreshButton;
         public RealmModel Model { get; set; }
 
+#pragma warning disable 67
         public event Action<RealmView> OnRealmSelected;
+#pragma warning restore 67
 
         public RealmDropdownVisualElement() : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(RealmDropdownVisualElement)}/{nameof(RealmDropdownVisualElement)}")
@@ -46,16 +54,16 @@ namespace Beamable.Editor.UI.Components
         {
             base.Refresh();
 
-            var loadingIndicator = Root.Q<LoadingIndicatorVisualElement>();
-            var mainContent = Root.Q<VisualElement>("mainBlockedContent");
-            var searchBar = Root.Q<SearchBarVisualElement>();
-            var refreshButton = Root.Q<Button>("refreshButton");
+            _loadingIndicator = Root.Q<LoadingIndicatorVisualElement>();
+            _mainContent = Root.Q<VisualElement>("mainBlockedContent");
+            _searchBar = Root.Q<SearchBarVisualElement>();
+            _refreshButton = Root.Q<Button>("refreshButton");
             _listRoot = Root.Q<VisualElement>("realmList");
 
-            loadingIndicator.SetPromise(Model.RefreshAvailableRealms(), mainContent);
-            refreshButton.clickable.clicked += () =>
+            _loadingIndicator.SetPromise(Model.RefreshAvailableRealms(), _mainContent);
+            _refreshButton.clickable.clicked += () =>
                 {
-                    loadingIndicator.SetPromise(Model.RefreshAvailableRealms(), mainContent);
+                    _loadingIndicator.SetPromise(Model.RefreshAvailableRealms(), _mainContent);
                 };
 
             _selectedRealm = Model.CurrentRealm;
@@ -64,11 +72,11 @@ namespace Beamable.Editor.UI.Components
             Model.OnRealmChanged -= OnActiveRealmChanged;
             Model.OnRealmChanged += OnActiveRealmChanged;
 
-            searchBar.OnSearchChanged += filter =>
+            _searchBar.OnSearchChanged += filter =>
             {
                 SetRealmList(Model.Realms, _listRoot, filter.ToLower());
             };
-            searchBar.DoFocus();
+            _searchBar.DoFocus();
             OnRealmsUpdated(Model.Realms);
         }
 
@@ -92,7 +100,10 @@ namespace Beamable.Editor.UI.Components
                 realmSelectButton.text = realm.DisplayName;
                 realmSelectButton.clickable.clicked += () =>
                 {
-                    OnRealmSelected?.Invoke(realm);
+                    _loadingIndicator.SetText("Switching Realm");
+                    _loadingIndicator.SetPromise(new Promise<int>(), _mainContent, _refreshButton);
+                    _searchBar.SetEnabled(false);
+                    EditorApplication.delayCall += () => OnRealmSelected?.Invoke(realm);
                 };
 
                 if (realm.Equals(_selectedRealm))
