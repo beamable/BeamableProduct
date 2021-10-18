@@ -1,12 +1,29 @@
 ListingScheduleWindow > TemplateContainer > #mainVisualElement {
-    padding-left: 10px;
-    padding-right: 10px;
-    padding-top: 10px;
-    padding-bottom: 10px;
+
     -unity-font: resource("Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
 }
 
 ListingScheduleWindow > TemplateContainer > #mainVisualElement > * {
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+ListingScheduleWindow {
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+}
+ListingScheduleWindow > TemplateContainer > #mainVisualElement,
+ListingScheduleWindow > TemplateContainer {
+    flex-grow: 1;
+}
+ListingScheduleWindow ScrollView #ContentView.content-view {
+    position: absolute;
+    left: 0px;
+    right: 0px;
     padding-left: 10px;
     padding-right: 10px;
     padding-top: 10px;
