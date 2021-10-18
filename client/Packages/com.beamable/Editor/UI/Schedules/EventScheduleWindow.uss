@@ -38,7 +38,6 @@ Label {
 #expirationRow {
     flex-direction: row;
     justify-content: space-between;
-    /*width: auto;*/
 }
 
 #expirationLabel {
@@ -47,4 +46,12 @@ Label {
 
 #dropdown #mainVisualElement {
     justify-content: space-between;
+}
+
+#scroll {
+    flex-grow: 1;
+}
+
+#scroll > * {
+    padding-bottom: 10px;
 }

@@ -5,13 +5,13 @@ ListingScheduleWindow > TemplateContainer > #mainVisualElement {
     padding-bottom: 10px;
     -unity-font: resource("Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
 }
+
 ListingScheduleWindow > TemplateContainer > #mainVisualElement > * {
     padding-left: 10px;
     padding-right: 10px;
     padding-top: 10px;
     padding-bottom: 10px;
 }
-
 
 #buttonStrip {
     flex-direction: row;
@@ -46,4 +46,12 @@ Label {
 
 #dropdown #mainVisualElement {
     justify-content: space-between;
+}
+
+#scroll {
+    flex-grow: 1;
+}
+
+#scroll > * {
+    padding-bottom: 10px;
 }
