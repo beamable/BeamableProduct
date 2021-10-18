@@ -35,7 +35,8 @@ namespace Beamable.Editor.UI.Components
             base.Refresh();
 
             YearPicker = Root.Q<LabeledNumberPicker>("yearPicker");
-            YearPicker.Setup(OnDateChanged, GenerateYears());
+            YearPicker.Setup(OnDateChanged, GenerateYears(out int startYear, out int endYear));
+            YearPicker.SetupMinMax(startYear, endYear);
             YearPicker.Refresh();
 
             MonthPicker = Root.Q<LabeledNumberPicker>("monthPicker");
@@ -71,9 +72,11 @@ namespace Beamable.Editor.UI.Components
             return builder.ToString();
         }
 
-        private List<string> GenerateYears()
+        private List<string> GenerateYears(out int startYear, out int endYear)
         {
             int yearsAdvance = 3;
+            startYear = 0;
+            endYear = 0;
 
             List<string> options = new List<string>();
 
@@ -81,7 +84,17 @@ namespace Beamable.Editor.UI.Components
 
             for (int i = 0; i < yearsAdvance; i++)
             {
-                string option = (now.Year + i).ToString("0000");
+                int currentYear = now.Year + i;
+                if (i == 0)
+                {
+                    startYear = currentYear;
+                }
+                else if (i == yearsAdvance - 1)
+                {
+                    endYear = currentYear;
+                }
+                
+                string option = currentYear.ToString("0000");
                 options.Add(option);
             }
 

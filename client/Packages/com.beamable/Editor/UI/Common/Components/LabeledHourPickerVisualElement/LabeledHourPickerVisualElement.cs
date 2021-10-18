@@ -95,27 +95,7 @@ namespace Beamable.Editor.UI.Components
 
         private void OnHourChanged()
         {
-            if (_hourPicker == null || _hourPicker.HourPickerComponent == null ||
-                _hourPicker.MinutePickerComponent == null || _hourPicker.SecondPickerComponent == null)
-            {
-                return;
-            }
-
-            Validate(_hourPicker.HourPickerComponent, 0, 23);
-            Validate(_hourPicker.MinutePickerComponent, 0,59);
-            Validate(_hourPicker.SecondPickerComponent, 0, 59);
-
             OnValueChanged?.Invoke();
-        }
-
-        private void Validate(LabeledNumberPicker component, int min, int max)
-        {
-            int.TryParse(component.Value, out int result);
-            if (!Enumerable.Range(min, max).Contains(result))
-            {
-                result = Mathf.Clamp(result, min, max);
-                component.Value = result.ToString();
-            }
         }
     }
 }

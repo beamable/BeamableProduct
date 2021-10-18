@@ -5,6 +5,7 @@ using Beamable.Common.Content;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Validation;
+using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -128,7 +129,11 @@ namespace Beamable.Editor.Schedules
                 _calendarComponent);
 
             _currentValidator = _dailyModeValidator;
-            _currentValidator.ForceValidationCheck();
+            
+            EditorApplication.delayCall += () =>
+            {
+                _currentValidator.ForceValidationCheck();
+            };
         }
 
         private void RefreshConfirmButton(bool value, string message)
