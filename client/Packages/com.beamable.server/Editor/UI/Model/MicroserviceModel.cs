@@ -24,7 +24,15 @@ namespace Beamable.Editor.UI.Model
     [System.Serializable]
     public class MicroserviceModel : ServiceModelBase, IBeamableMicroservice
     {
-        public MicroserviceDescriptor ServiceDescriptor { get; protected set; }
+        [SerializeField]
+        private MicroserviceDescriptor _serviceDescriptor;
+
+        public MicroserviceDescriptor ServiceDescriptor
+        {
+            get => _serviceDescriptor;
+            set => _serviceDescriptor = value;
+        }
+
         public MicroserviceBuilder ServiceBuilder { get; protected set; }
         public override IBeamableBuilder Builder => ServiceBuilder;
         public override IDescriptor Descriptor => ServiceDescriptor;

@@ -23,8 +23,17 @@ namespace Beamable.Editor.UI.Model
     public abstract class ServiceModelBase : IBeamableService
     {
         public abstract bool IsRunning { get; }
-        public bool AreLogsAttached { get; protected set; } = true;
-        public LogMessageStore Logs { get; } = new LogMessageStore();
+        public bool AreLogsAttached
+        {
+            get => _areLogsAttached;
+            protected set => _areLogsAttached = value;
+        }
+
+        [SerializeField] private bool _areLogsAttached = true;
+        [SerializeField] private LogMessageStore _logs = new LogMessageStore();
+
+        public LogMessageStore Logs => _logs;
+
         public abstract IDescriptor Descriptor { get; }
         public abstract IBeamableBuilder Builder { get; }
         public ServiceType ServiceType => Descriptor.ServiceType;
