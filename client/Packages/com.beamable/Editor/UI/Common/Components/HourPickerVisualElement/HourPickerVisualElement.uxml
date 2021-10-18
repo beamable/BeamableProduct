@@ -6,9 +6,9 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:VisualElement name="mainVisualElement" class="--noPadding">
-        <beamable:LabeledNumberPicker name="hourPicker" label="h"/>
-        <beamable:LabeledNumberPicker name="minutePicker" label="m"/>
-        <beamable:LabeledNumberPicker name="secondPicker" label="s"/>
+        <beamable:LabeledNumberPicker name="hourPicker" label="h" min="0" max="23"/>
+        <beamable:LabeledNumberPicker name="minutePicker" label="m" min="0" max="59"/>
+        <beamable:LabeledNumberPicker name="secondPicker" label="s" min="0" max="59"/>
     </engine:VisualElement>
 
 </UXML>
