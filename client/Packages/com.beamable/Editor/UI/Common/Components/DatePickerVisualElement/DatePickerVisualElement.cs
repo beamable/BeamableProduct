@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Validation;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -47,6 +48,18 @@ namespace Beamable.Editor.UI.Components
             DayPicker.Refresh();
         }
 
+        public void Setup(Action onDateChanged)
+        {
+            _onDateChanged = onDateChanged;
+        }
+
+        public void Set(DateTime date)
+        {
+            YearPicker.Set(date.Year.ToString());
+            MonthPicker.Set(date.Month.ToString());
+            DayPicker.Set((date.Day).ToString());
+        }
+
         public string GetIsoDate()
         {
             return $"{GetSimpleDate()}T";
@@ -55,6 +68,16 @@ namespace Beamable.Editor.UI.Components
         private void OnDateChanged()
         {
             InvokeValidationCheck(GetSimpleDate());
+            if (YearPicker != null && MonthPicker != null)
+            {
+                int daysInMonth = DateTime.DaysInMonth(int.Parse(YearPicker.Value), int.Parse(MonthPicker.Value));
+                DayPicker?.Setup(OnDateChanged, GenerateDays(daysInMonth));
+            }
+            else
+            {
+                DayPicker?.Setup(OnDateChanged, GenerateDays());
+            }
+
             _onDateChanged?.Invoke();
         }
 
@@ -64,10 +87,14 @@ namespace Beamable.Editor.UI.Components
             {
                 return string.Empty;
             }
-            
+
+            int daysInMonth = DateTime.DaysInMonth(int.Parse(YearPicker.Value), int.Parse(MonthPicker.Value));
+            int day = int.Parse(DayPicker.Value);
+            day = Mathf.Clamp(day, 1, daysInMonth);
+
             StringBuilder builder = new StringBuilder();
             builder.Append(
-                $"{int.Parse(YearPicker.Value):0000}-{int.Parse(MonthPicker.Value):00}-{int.Parse(DayPicker.Value):00}");
+                $"{int.Parse(YearPicker.Value):0000}-{int.Parse(MonthPicker.Value):00}-{day:00}");
             return builder.ToString();
         }
 
@@ -101,29 +128,17 @@ namespace Beamable.Editor.UI.Components
             return options;
         }
 
-        private List<string> GenerateDays()
+        private List<string> GenerateDays(int daysInMonth = 31)
         {
             List<string> options = new List<string>();
 
-            for (int i = 0; i < 31; i++)
+            for (int i = 0; i < daysInMonth; i++)
             {
                 string option = (i + 1).ToString("00");
                 options.Add(option);
             }
 
             return options;
-        }
-
-        public void Set(DateTime date)
-        {
-            YearPicker.Set(date.Year.ToString());
-            MonthPicker.Set(date.Month.ToString());
-            DayPicker.Set((date.Day).ToString());
-        }
-
-        public void Setup(Action onDateChanged)
-        {
-            _onDateChanged = onDateChanged;
         }
     }
 }
