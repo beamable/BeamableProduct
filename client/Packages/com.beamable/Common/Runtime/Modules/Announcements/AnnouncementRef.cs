@@ -72,6 +72,10 @@ namespace Beamable.Common.Announcements
       // TODO: [MustMatchReference(nameof(symbol))]
       private string typeOld;
 
+      [SerializeField, HideInInspector]
+      [ContentField("type")]
+      private string typeSerializedValue;
+
       [Obsolete("Use 'contentType' instead")]
       public string type
       {
@@ -80,11 +84,12 @@ namespace Beamable.Common.Announcements
       }
 
       [Tooltip("Must specify the type of the attachment symbol. If you referenced an item in the symbol, this should be \"items\", otherwise it should be \"currency\"")]
-      [ContentField("type")]
+      [IgnoreContentField]
       public ContentType contentType;
 
       public void OnBeforeSerialize()
       {
+         typeSerializedValue = contentType.ToString().ToLower();
       }
 
       public void OnAfterDeserialize()

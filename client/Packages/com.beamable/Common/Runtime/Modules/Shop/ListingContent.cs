@@ -271,6 +271,10 @@ namespace Beamable.Common.Shop
       private OptionalString domainOld;
 
       private OptionalString domainCached;
+
+      [SerializeField, HideInInspector]
+      [ContentField("domain")]
+      private string domainSerializedValue;
       
       [Obsolete("Use 'domainType' instead")]
       public OptionalString domain
@@ -284,7 +288,7 @@ namespace Beamable.Common.Shop
       }
 
       [Tooltip("Domain of the stat (e.g. 'platform', 'game', 'client'). Default is 'game'.")]
-      [ContentField("domain")]
+      [IgnoreContentField]
       public DomainType domainType;
 
       #endregion
@@ -296,6 +300,10 @@ namespace Beamable.Common.Shop
       private OptionalString accessOld;
 
       private OptionalString accessCached;
+
+      [ContentField("access")] 
+      [SerializeField, HideInInspector]
+      private string accessSerializedValue;
 
       [Obsolete("Use 'accessType' instead")]
       public OptionalString access
@@ -309,7 +317,7 @@ namespace Beamable.Common.Shop
       }
 
       [Tooltip("Visibility of the stat (e.g. 'private', 'public'). Default is 'private'.")]
-      [ContentField("access")]
+      [IgnoreContentField]
       public AccessType accessType;
       
       #endregion
@@ -324,6 +332,10 @@ namespace Beamable.Common.Shop
       [IgnoreContentField]
       private string constraintOld;
 
+      [SerializeField, HideInInspector]
+      [ContentField("constraint")]
+      private string constraintSerializedValue;
+      
       [Obsolete("Use 'constraintType' instead")]
       public string constraint
       {
@@ -333,7 +345,7 @@ namespace Beamable.Common.Shop
 
       [Tooltip(ContentObject.TooltipConstraint1)]
       [MustBeNonDefault]
-      [ContentField("constraint")]
+      [IgnoreContentField]
       public ComparatorType constraintType;
       
       #endregion
@@ -342,6 +354,9 @@ namespace Beamable.Common.Shop
 
       public void OnBeforeSerialize()
       {
+         domainSerializedValue = domainType.ToString().ToLower();
+         accessSerializedValue = accessType.ToString().ToLower();
+         constraintSerializedValue = constraintType.ToString().ToLower();
       }
 
       public void OnAfterDeserialize()
@@ -368,6 +383,10 @@ namespace Beamable.Common.Shop
       [IgnoreContentField]
       private string constraintOld;
 
+      [SerializeField, HideInInspector]
+      [ContentField("constraint")]
+      private string constraintSerializedValue;
+
       [Obsolete("Use 'constraintType' instead")]
       public string constraint
       {
@@ -376,11 +395,12 @@ namespace Beamable.Common.Shop
       }
 
       [Tooltip(ContentObject.TooltipConstraint1)]
-      [ContentField("constraint")]
+      [IgnoreContentField]
       public ComparatorType constraintType;
 
       public void OnBeforeSerialize()
       {
+         constraintSerializedValue = constraintType.ToString().ToLower();
       }
 
       public void OnAfterDeserialize()
@@ -402,6 +422,10 @@ namespace Beamable.Common.Shop
       [IgnoreContentField]
       public string constraintOld;
 
+      [SerializeField, HideInInspector]
+      [ContentField("constraint")]
+      private string constraintSerializedValue;
+
       [Obsolete("Use 'constraintType' instead")]
       public string constraint
       {
@@ -410,7 +434,7 @@ namespace Beamable.Common.Shop
       }
       
       [Tooltip(ContentObject.TooltipConstraint1)]
-      [ContentField("constraint")]
+      [IgnoreContentField]
       public ComparatorType constraintType;
 
       [Tooltip(ContentObject.TooltipValue1)]
@@ -418,6 +442,7 @@ namespace Beamable.Common.Shop
 
       public void OnBeforeSerialize()
       {
+         constraintSerializedValue = constraintType.ToString().ToLower();
       }
 
       public void OnAfterDeserialize()
