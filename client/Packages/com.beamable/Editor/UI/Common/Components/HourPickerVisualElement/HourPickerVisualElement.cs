@@ -29,9 +29,9 @@ namespace Beamable.Editor.UI.Components
         private Action _onHourChanged;
         private VisualElement _root;
 
-        public string Hour => _hourPicker.Value;
-        public string Minute => _minutePicker.Value;
-        public string Second => _secondPicker.Value;
+        public string Hour => _hourPicker?.Value;
+        public string Minute => _minutePicker?.Value;
+        public string Second => _secondPicker?.Value;
         
         public HourPickerVisualElement() : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(HourPickerVisualElement)}/{nameof(HourPickerVisualElement)}")
