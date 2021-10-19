@@ -101,7 +101,7 @@ namespace Beamable.Server.Editor
                }).Map(secret =>
                {
                   var logLevel = UseDebug ? "Debug" : "Information";
-                  StartProcess(new RunImageCommand(ServiceDescriptor, cid, secret, logLevel));
+                  StartProcess(new RunServiceCommand(ServiceDescriptor, cid, secret, null));
 
                   // also, always start a log process...
                   // CaptureLogs();

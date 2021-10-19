@@ -1,8 +1,10 @@
 using System;
+using System.IO;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Assertions;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -26,18 +28,18 @@ namespace Beamable.Editor.UI.Buss
 
       public BeamableVisualElement(string uxmlPath, string ussPath)
       {
+         Assert.IsTrue(File.Exists(uxmlPath), $"Cannot find {uxmlPath}");
+         Assert.IsTrue(File.Exists(ussPath), $"Cannot find {ussPath}");
          UXMLPath = uxmlPath;
          USSPath = ussPath;
          TreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UXMLPath);
-
-
+         
          RegisterCallback<DetachFromPanelEvent>(evt =>
          {
             OnDetach();
          });
 
       }
-
 
       public virtual void OnDetach()
       {

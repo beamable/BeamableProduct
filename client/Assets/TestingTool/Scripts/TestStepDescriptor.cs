@@ -4,20 +4,21 @@ using TestingTool.Scripts.Helpers;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+#pragma warning disable CS0649
 
 namespace TestingTool.Scripts
 {
     public class TestStepDescriptor : MonoBehaviour
     {
         public TestStepRuntime CurrentTestStep => _testSteps[_currentStepIndex];
-        
+
         [SerializeField] private TextMeshProUGUI descriptionText;
         [SerializeField] private Image progressImage;
         [SerializeField] private TextMeshProUGUI indexText;
         [Space]
         [SerializeField] private GameObject descriptionBackground;
         [SerializeField] private GameObject previousStep, nextStep;
-        
+
         private TestScenariosRuntime _testScenarios;
         private List<TestStepRuntime> _testSteps;
         private int _currentStepIndex = 0;
@@ -104,11 +105,11 @@ namespace TestingTool.Scripts
             }
             SetState(ProgressStatus.NotPassed);
         }
-    
+
         private void SetState(ProgressStatus progress)
         {
             CurrentTestStep.Progress = progress;
-        
+
             if (_testSteps.All(x => x.Progress == ProgressStatus.Passed))
             {
                 _testScenarios.CurrentScenario.Progress = ProgressStatus.Passed;

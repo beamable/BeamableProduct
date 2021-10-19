@@ -2,16 +2,17 @@
 <engine:UXML
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:engine="UnityEngine.Experimental.UIElements"
+        xmlns:beamable="Beamable.Editor.UI.Components"
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:VisualElement name="mainVisualElement">
-      <engine:Label name="headerLabel" />
-        <engine:Label name="bodyLabel"/>
+        <engine:VisualElement name="content">
+            <engine:Label name="contentLabel"/>
+        </engine:VisualElement>
         <engine:VisualElement name="buttonsVisualElement">
-          <engine:Button name="okButton" text="OK"/>
-          <engine:Button name="cancelButton" text="Cancel"/>
+            <beamable:PrimaryButtonVisualElement name="okButton" text="OK"/>
+            <engine:Button name="cancelButton" text="Cancel"/>
         </engine:VisualElement>
     </engine:VisualElement>
-
 </engine:UXML>

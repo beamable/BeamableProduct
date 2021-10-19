@@ -4,6 +4,7 @@ using System.Linq;
 using Beamable.Editor;
 using Beamable.Editor.Microservice.UI;
 using Beamable.Editor.UI.Model;
+using Beamable.Server.Editor.ManagerClient;
 using UnityEditor;
 using UnityEngine;
 
@@ -35,6 +36,8 @@ namespace Beamable.Server.Editor
 
       public List<MicroserviceConfigurationEntry> Microservices;
 
+      public List<StorageConfigurationEntry> StorageObjects;
+
       [Tooltip("When you run a microservice in the Editor, the prefix controls the flow of traffic. By default, the prefix is your MAC address. If two developers use the same prefix, their microservices will share traffic. The prefix is ignored for games running outside of the Editor."), Delayed]
       public string CustomContainerPrefix;
 
@@ -49,8 +52,17 @@ namespace Beamable.Server.Editor
       [Tooltip("Docker Buildkit may speed up and increase performance on your microservice builds. However, it is not fully supported with Beamable microservices, and you may encounter issues using it. ")]
       public bool EnableDockerBuildkit = false;
 
+      [Header("Warning- remember that for now it is not possible to upload storages to cloud.")]
+      public bool EnableStoragePreview = false;
+
       public string DockerCommand = DOCKER_LOCATION;
       private string _dockerCommandCached = DOCKER_LOCATION;
+      
+      public string ValidatedDockerCommand => string.IsNullOrWhiteSpace(DockerCommand) ? 
+         DOCKER_LOCATION :
+         DockerCommand;
+      
+      private bool _enableStoragePreviewCached = false;
 
       #if !BEAMABLE_LEGACY_MSW
       [Tooltip("Microservice Logs are sent to a dedicated logging window. If you enable this field, then service logs will also be sent to the Unity Console.")]
@@ -85,8 +97,28 @@ namespace Beamable.Server.Editor
             LogStandardErrColor = new Color(1, .44f, .4f);
          }
          _dockerCommandCached = DockerCommand = DOCKER_LOCATION;
+         _enableStoragePreviewCached = EnableStoragePreview = false;
       }
       #endif
+
+      public StorageConfigurationEntry GetStorageEntry(string storageName)
+      {
+         var existing = StorageObjects.FirstOrDefault(s => string.Equals(s.StorageName, storageName));
+         if (existing == null)
+         {
+            existing = new StorageConfigurationEntry
+            {
+               StorageName = storageName,
+               StorageType = "mongov1",
+               Enabled = true,
+               TemplateId = "small",
+               LocalDataPort = 12100 + (uint) StorageObjects.Count,
+               LocalUIPort = 13100 + (uint) StorageObjects.Count
+            };
+            StorageObjects.Add(existing);
+         }
+         return existing;
+      }
 
       public MicroserviceConfigurationEntry GetEntry(string serviceName)
       {
@@ -120,8 +152,9 @@ namespace Beamable.Server.Editor
                   api.CidOrAlias, api.Pid, api.Host, api.Cid, CustomContainerPrefix));
          }
 
-         if (_dockerCommandCached != DockerCommand) {
+         if (_dockerCommandCached != DockerCommand || _enableStoragePreviewCached != EnableStoragePreview) {
             _dockerCommandCached = DockerCommand;
+            _enableStoragePreviewCached = EnableStoragePreview;
             if (MicroserviceWindow.IsInstantiated) {
                MicroserviceWindow.Instance.RefreshWindow(true);
             }
@@ -167,6 +200,26 @@ namespace Beamable.Server.Editor
    }
 
    [System.Serializable]
+   public class StorageConfigurationEntry
+   {
+      public string StorageName;
+      public string StorageType;
+      public bool Enabled;
+      public string TemplateId;
+
+      [Tooltip("When running locally, what port will the data be available on?")]
+      public uint LocalDataPort;
+
+      [Tooltip("When running locally, what port will the data tool be available on?")]
+      public uint LocalUIPort;
+
+      [Tooltip("When running locally, The MONGO_INITDB_ROOT_USERNAME env var for Mongo")]
+      public string LocalInitUser = "beamable";
+      [Tooltip("When running locally, The MONGO_INITDB_ROOT_PASSWORD env var for Mongo")]
+      public string LocalInitPass = "beamable";
+   }
+
+   [System.Serializable]
    public class MicroserviceConfigurationEntry
    {
       public string ServiceName;
@@ -179,7 +232,6 @@ namespace Beamable.Server.Editor
 
       [Tooltip("When building locally, should the service be build with debugging tools? If false, you cannot attach breakpoints.")]
       public bool IncludeDebugTools;
-
 
       public MicroserviceConfigurationDebugEntry DebugData;
    }

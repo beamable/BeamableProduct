@@ -2,6 +2,7 @@
 using TestingTool.Scripts.Helpers;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+#pragma warning disable CS0649
 
 namespace TestingTool.Scripts
 {
@@ -35,7 +36,7 @@ namespace TestingTool.Scripts
                 _scenarioButtons.Add(SetupButton(scenario));
             }
         }
-        
+
         private TestScenarioButton SetupButton(TestScenarioRuntime scenario)
         {
             var button = Instantiate(sceneButton, scrollViewContent).GetComponent<TestScenarioButton>();

@@ -7,6 +7,8 @@ using UnityEditor;
 using UnityEngine;
 using Beamable.Editor.Content.Components;
 using Beamable.Editor.Content;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.IO;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -17,186 +19,202 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Buss.Components
 {
-   public class BeamablePopupWindow : EditorWindow
-   {
-      public static Vector2 ConfirmationPopupSize = new Vector2(250, 120);
+    public class BeamablePopupWindow : EditorWindow, ISerializationCallbackReceiver
+    {
+        public event Action OnClosing;
 
-      /// <summary>
-      /// Create screen-relative, parent <see cref="VisualElement"/>-relative
-      /// <see cref="Rect"/> for new <see cref="BeamablePopupWindow"/>
-      /// </summary>
-      /// <param name="visualElementBounds"></param>
-      public static Rect GetLowerLeftOfBounds(Rect visualElementBounds)
-      {
-         var newWindowPosition = new Vector2(visualElementBounds.xMin, visualElementBounds.yMax);
-         newWindowPosition = GUIUtility.GUIToScreenPoint(newWindowPosition);
-         return new Rect(newWindowPosition.x, newWindowPosition.y, 0, 0);
-      }
-      public static Rect GetLowerRightOfBounds(Rect visualElementBounds)
-      {
-         var newWindowPosition = new Vector2(visualElementBounds.xMax, visualElementBounds.yMax);
-         newWindowPosition = GUIUtility.GUIToScreenPoint(newWindowPosition);
-         return new Rect(newWindowPosition.x, newWindowPosition.y, 0, 0);
-      }
+        private BeamableVisualElement _contentElement;
+        private VisualElement _windowRoot;
+        private VisualElement _container;
 
+        private Action<BeamablePopupWindow> _onDomainReload;
+   
+        [SerializeField]
+        private byte[] serializedDomainReloadAction;
+        private bool isSet;
 
-      /// <summary>
-      /// Create CENTERED screen-relative, parent <see cref="VisualElement"/>-relative
-      /// <see cref="Rect"/> for new <see cref="ConfirmationPopupVisualElement"/>
-      /// </summary>
-      /// <param name="visualElementBounds"></param>
-      public static Rect GetCenteredScreenRectFromWorldBounds(Rect visualElementBounds, Vector2 newWindowSize)
-      {
-         //Get relative position
-         //TODO: Make this truely sit in the dead center of the window - WIP - srivello
-         var newWindowPosition = new Vector2(visualElementBounds.center.x, 0);
-         newWindowPosition = GUIUtility.GUIToScreenPoint(newWindowPosition);
+        /// <summary>
+        /// Create screen-relative, parent <see cref="VisualElement"/>-relative
+        /// <see cref="Rect"/> for new <see cref="BeamablePopupWindow"/>
+        /// </summary>
+        /// <param name="visualElementBounds"></param>
+        public static Rect GetLowerLeftOfBounds(Rect visualElementBounds)
+        {
+            var newWindowPosition = new Vector2(visualElementBounds.xMin, visualElementBounds.yMax);
+            newWindowPosition = GUIUtility.GUIToScreenPoint(newWindowPosition);
+            return new Rect(newWindowPosition.x, newWindowPosition.y, 0, 0);
+        }
 
-         //Adjust by absolute size
-         newWindowPosition.x -= newWindowSize.x/2;
+        public static Rect GetLowerRightOfBounds(Rect visualElementBounds)
+        {
+            var newWindowPosition = new Vector2(visualElementBounds.xMax, visualElementBounds.yMax);
+            newWindowPosition = GUIUtility.GUIToScreenPoint(newWindowPosition);
+            return new Rect(newWindowPosition.x, newWindowPosition.y, 0, 0);
+        }
 
-         return new Rect(newWindowPosition.x, newWindowPosition.y, newWindowSize.x, newWindowSize.y);
-      }
+        /// <summary>
+        /// Create CENTERED screen-relative, parent <see cref="VisualElement"/>-relative
+        /// <see cref="Rect"/> for new <see cref="ConfirmationPopupVisualElement"/>
+        /// </summary>
+        /// <param name="visualElementBounds"></param>
+        public static Rect GetCenteredScreenRectFromWorldBounds(Rect visualElementBounds, Vector2 newWindowSize)
+        {
+            //Get relative position
+            //TODO: Make this truely sit in the dead center of the window - WIP - srivello
+            var newWindowPosition = new Vector2(visualElementBounds.center.x, 0);
+            newWindowPosition = GUIUtility.GUIToScreenPoint(newWindowPosition);
 
-      /// <summary>
-      /// Create a Centered screen-relative rectangle, given a parent editor window
-      /// </summary>
-      /// <param name="window"></param>
-      public static Rect GetCenteredScreenRectForWindow(EditorWindow window, Vector2 size)
-      {
-         var pt = window.position.center;
+            //Adjust by absolute size
+            newWindowPosition.x -= newWindowSize.x / 2;
 
-         var halfSize = size * .5f;
-         return new Rect(pt.x - halfSize.x, pt.y - halfSize.y, size.x, size.y);
-      }
+            return new Rect(newWindowPosition.x, newWindowPosition.y, newWindowSize.x, newWindowSize.y);
+        }
 
-      /// <summary>
-      /// Create new popup with contents of any <see cref="BeamableVisualElement"/>
-      /// </summary>
-      /// <param name="title"></param>
-      /// <param name="sourceRect"></param>
-      /// <param name="size"></param>
-      /// <param name="content"></param>
-      /// <returns></returns>
-      public static BeamablePopupWindow ShowDropdown(string title, Rect sourceRect, Vector2 size, BeamableVisualElement content)
-      {
-         var wnd = CreateInstance<BeamablePopupWindow>();
-         wnd.titleContent = new GUIContent(title);
-         wnd.ContentElement = content;
-         wnd.ShowAsDropDown(sourceRect, size);
-         wnd.GetRootVisualContainer().AddToClassList("fill-popup-window");
+        /// <summary>
+        /// Create a Centered screen-relative rectangle, given a parent editor window
+        /// </summary>
+        /// <param name="window"></param>
+        public static Rect GetCenteredScreenRectForWindow(EditorWindow window, Vector2 size)
+        {
+            var pt = window.position.center;
 
-         wnd.Refresh();
+            var halfSize = size * .5f;
+            return new Rect(pt.x - halfSize.x, pt.y - halfSize.y, size.x, size.y);
+        }
 
-         return wnd;
-      }
+        /// <summary>
+        /// Create new popup with contents of any <see cref="BeamableVisualElement"/>
+        /// </summary>
+        /// <param name="title"></param>
+        /// <param name="sourceRect"></param>
+        /// <param name="size"></param>
+        /// <param name="content"></param>
+        /// <returns></returns>
+        public static BeamablePopupWindow ShowDropdown(string title, Rect sourceRect, Vector2 size,
+            BeamableVisualElement content)
+        {
+            var wnd = CreateInstance<BeamablePopupWindow>();
+            wnd.titleContent = new GUIContent(title);
+            wnd._contentElement = content;
+            wnd.ShowAsDropDown(sourceRect, size);
+            wnd.GetRootVisualContainer().AddToClassList("fill-popup-window");
 
-      /// <summary>
-      /// Create new popup with contents of <see cref="ConfirmationPopupVisualElement"/>.
-      /// Useful for an "Are you Sure?" user experience.
-      /// </summary>
-      /// <param name="popupWindowRect"></param>
-      /// <param name="onConfirm">Optional: Action to call on confirm button clicked</param>
-      /// <param name="onCancel">Optional: Action to call on cancel button clicked</param>
-      /// <returns></returns>
-      public static void ShowConfirmationPopup<T>(VisualElement centerWithMeVisualElement,
-         Action onConfirm = null, Action onCancel = null) where T : EditorWindow
-      {
-         //Find the world bounds of the root of the window. Center the Popup within
-         var popupWindowRect = GetCenteredScreenRectFromWorldBounds(centerWithMeVisualElement.worldBound, ConfirmationPopupSize);
+            wnd.Refresh();
 
-         var confirmationPopupVisualElement = new ConfirmationPopupVisualElement();
+            return wnd;
+        }
 
-         if(onCancel != null)
-         {
-            confirmationPopupVisualElement.OnCancelButtonClicked += onCancel.Invoke;
-         }
+        public static BeamablePopupWindow ShowUtility(string title, BeamableVisualElement content, EditorWindow parent, 
+            Vector2 defaultSize, Action<BeamablePopupWindow> onDomainReload = null)
+        {
+            var wnd = CreateInstance<BeamablePopupWindow>();
+            wnd.titleContent = new GUIContent(title);
+            wnd._contentElement = content;
+            wnd.minSize = defaultSize;
+            wnd._onDomainReload = onDomainReload;
 
-         if(onConfirm != null)
-         {
-            confirmationPopupVisualElement.OnOKButtonClicked += onConfirm.Invoke;
-         }
-#if UNITY_2020_1_OR_NEWER
-         var wnd = CreateInstance<BeamablePopupWindow>();
-         wnd.titleContent = new GUIContent("");
-         wnd.ContentElement = confirmationPopupVisualElement;
-         wnd.GetRootVisualContainer().AddToClassList("fill-popup-window");
-         wnd.Refresh();
-         confirmationPopupVisualElement.OnCancelButtonClicked += wnd.Close;
-         confirmationPopupVisualElement.OnOKButtonClicked += wnd.Close;
+            wnd.ShowUtility();
+            if (parent != null)
+            {
+                wnd.position = GetCenteredScreenRectForWindow(parent, defaultSize);
+            }
 
-         EditorApplication.delayCall += () =>
-         {
-            wnd.position = new Rect(popupWindowRect.x, popupWindowRect.y, popupWindowRect.size.x, popupWindowRect.size.y);
-            wnd.ShowModalUtility();
-         };
+            // TODO: Somehow position the utility based on the parent view.
+            wnd.Refresh();
+            wnd.GetRootVisualContainer().AddToClassList("fill-popup-window");
+            return wnd;
+        }
 
-#else
-         var wnd = BeamablePopupWindow.ShowDropdown("Confirmation",
-            popupWindowRect, popupWindowRect.size, confirmationPopupVisualElement);
-         confirmationPopupVisualElement.OnCancelButtonClicked += wnd.Close;
-         confirmationPopupVisualElement.OnOKButtonClicked += wnd.Close;
-         var newPos = BeamablePopupWindow.GetCenteredScreenRectForWindow(EditorWindow.GetWindow<T>(), popupWindowRect.size);
+        public static BeamablePopupWindow ShowConfirmationUtility(string title, ConfirmationPopupVisualElement element,
+            EditorWindow parent, Action<BeamablePopupWindow> onDomainReload = null)
+        {
+            var window = ShowUtility(title, element, parent, ContentManagerConstants.ConfirmationPopupSize,
+                onDomainReload).FitToContent();
 
-         wnd.position = newPos;//new Rect(popupWindowRect.x, popupWindowRect.y, popupWindowRect.size.x, popupWindowRect.size.y);
-#endif
-      }
+            return window;
+        }
 
-      public static BeamablePopupWindow ShowUtility(string title, BeamableVisualElement content, EditorWindow parent)
-      {
-         var wnd = CreateInstance<BeamablePopupWindow>();
-         wnd.titleContent = new GUIContent(title);
-         wnd.ContentElement = content;
+        public BeamablePopupWindow FitToContent()
+        {
+            EditorApplication.delayCall += () =>
+            {
+                var newSize = new Vector2(_contentElement.contentRect.width, _contentElement.contentRect.height);
 
-         wnd.ShowUtility();
-         if (parent != null)
-         {
-            wnd.position = GetCenteredScreenRectForWindow(parent, ContentManagerConstants.WindowSizeMinimum);
-         }
+                if(newSize.SqrMagnitude() > 0)
+                    minSize = maxSize = newSize;
+            };
+            return this;
+        }
 
-         // TODO: Somehow position the utility based on the parent view.
-         wnd.Refresh();
-         wnd.GetRootVisualContainer().AddToClassList("fill-popup-window");
-         return wnd;
-      }
+        private void OnEnable()
+        {
+            VisualElement root = this.GetRootVisualContainer();
+            var uiAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(
+                $"{BeamableComponentsConstants.COMP_PATH}/BeamablePopupWindow/beamablePopupWindow.uxml");
+            _windowRoot = uiAsset.CloneTree();
+            this.GetRootVisualContainer()
+                .AddStyleSheet($"{BeamableComponentsConstants.COMP_PATH}/BeamablePopupWindow/beamablePopupWindow.uss");
+            _windowRoot.name = nameof(_windowRoot);
 
-      public BeamableVisualElement ContentElement;
-      private VisualElement _windowRoot;
-      private VisualElement _contentRoot;
-      private VisualElement _container;
+            root.Add(_windowRoot);
 
-      public event Action OnClosing;
+            if (isSet)
+            {
+                EditorApplication.delayCall += () => _onDomainReload?.Invoke(this);
+            }
+        }
 
-      private void OnEnable()
-      {
-         VisualElement root = this.GetRootVisualContainer();
-         var uiAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{BeamableComponentsConstants.COMP_PATH}/BeamablePopupWindow/beamablePopupWindow.uxml");
-         _windowRoot = uiAsset.CloneTree();
-         this.GetRootVisualContainer().AddStyleSheet($"{BeamableComponentsConstants.COMP_PATH}/BeamablePopupWindow/beamablePopupWindow.uss");
-         _windowRoot.name = nameof(_windowRoot);
+        public void SwapContent(BeamableVisualElement other, Action<BeamablePopupWindow> onDomainReload = null)
+        {
+            _contentElement = other;
+            Refresh();
+            this.GetRootVisualContainer().AddToClassList("fill-popup-window");
 
-         root.Add(_windowRoot);
-      }
+            if (onDomainReload != null)
+                _onDomainReload = onDomainReload;
+        }
 
-      public void SwapContent(BeamableVisualElement other)
-      {
-         ContentElement = other;
-         Refresh();
+        private void OnDestroy()
+        {
+            OnClosing?.Invoke();
+            _onDomainReload = null;
+        }
 
-      }
+        public void Refresh()
+        {
+            _container = _windowRoot.Q<VisualElement>("container");
+            _container.Clear();
+            _container.Add(_contentElement);
+            _contentElement.Refresh();
+            Repaint();
+            isSet = true;
+        }
 
-      private void OnDestroy()
-      {
-         OnClosing?.Invoke();
-      }
+        public void OnBeforeSerialize()
+        {
+            if (_onDomainReload != null)
+            {
+                BinaryFormatter formatter = new BinaryFormatter();
 
-      public void Refresh()
-      {
-         _container = _windowRoot.Q<VisualElement>("container");
-         _container.Clear();
-         _container.Add(ContentElement);
-         ContentElement.Refresh();
-         Repaint();
-      }
-   }
+                using (MemoryStream stream = new MemoryStream())
+                {
+                    formatter.Serialize(stream, (object)_onDomainReload);
+                    serializedDomainReloadAction = stream.ToArray();
+                }
+            }
+        }
+
+        public void OnAfterDeserialize()
+        {
+            if (serializedDomainReloadAction != null && serializedDomainReloadAction.Length > 0)
+            {
+                BinaryFormatter formatter = new BinaryFormatter();
+
+                using (MemoryStream stream = new MemoryStream(serializedDomainReloadAction))
+                {
+                    _onDomainReload = (Action<BeamablePopupWindow>)formatter.Deserialize(stream);
+                }
+            }
+        }
+    }
 }

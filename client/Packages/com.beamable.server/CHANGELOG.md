@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0]
+### Added
+- Local Mongo Storage Preview
+- Ability to use Promises as a return type for `ClientCallable` methods
+- RemoteOnly Microservices visible in Miscroservice window
+- Deployed Microservice instances will be automatically re-run if they become unhealthy
+
+### Fixed
+- Microservice clients can now deserialize Json lists
+- Microservice log view stays focused on bottom of log feed
+
+### Changed
+- Generated services no longer include the class name in the namespace
+
 ## [0.16.0]
 ### Added
 - New Microservices Manager window

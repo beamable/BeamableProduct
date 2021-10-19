@@ -7,6 +7,17 @@ using UnityEngine;
 
 namespace Beamable.UI.Buss
 {
+    public static class StyleObjectExtensions
+    {
+        public static StyleObject MergeStyles(this List<StyleObject> self)
+        {
+            var final = self.Count == 0
+                ? null
+                : self.Aggregate((agg, curr) => agg.Merge(curr));
+            return final;
+        }
+    }
+
     /// <summary>
     /// StyleObject is a class. When it is new'd, we'll create a blank style object with null properties.
     /// </summary>
@@ -55,8 +66,9 @@ namespace Beamable.UI.Buss
 
             T PreferOther<T>(Func<StyleObject, T> getter) where T : BUSSProperty, IBUSSProperty<T>
             {
-                var otherProp = getter(other);
                 var selfProp = getter(this);
+                if (other == null) return selfProp.Clone();
+                var otherProp = getter(other);
                 return
                     // is the other property enabled, and does is it not null?
                     (otherProp?.Enabled ?? false)
@@ -74,7 +86,7 @@ namespace Beamable.UI.Buss
 //            next.Text = PreferOther(x => x.Text);
 //            next.Vertical = PreferOther(x => x.Vertical);
             next.Border = PreferOther(x => x.Border);
-            next.Scope = Scope.Merge(other.Scope);
+            next.Scope = Scope.Merge(other?.Scope);
             return next;
         }
 

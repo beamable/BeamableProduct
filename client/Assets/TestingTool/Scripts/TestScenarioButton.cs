@@ -3,6 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
+#pragma warning disable CS0649
 
 namespace TestingTool.Scripts
 {
@@ -13,7 +14,7 @@ namespace TestingTool.Scripts
         [SerializeField] private Image statusImage;
 
         private TestScenarioRuntime _testScenario;
- 
+
         public void Init(TestScenarioRuntime testScenario, UnityAction sceneButtonAction)
         {
             _testScenario = testScenario;

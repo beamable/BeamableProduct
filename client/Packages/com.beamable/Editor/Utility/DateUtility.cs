@@ -3,7 +3,11 @@ using System.Globalization;
 using UnityEngine;
 
 namespace Beamable.Editor {
-    public static class DateUtility {
+    public static class DateUtility
+    {
+
+        public const string ISO_FORMAT = "yyyy-MM-ddTHH:mm:ssZ";
+
         public static bool TryToCreateDateTime(int year, int month, int day, int hour, int minute, int second, out DateTime dateTime) {
             try {
                 dateTime = new DateTime(year, month, day, hour, minute, second);

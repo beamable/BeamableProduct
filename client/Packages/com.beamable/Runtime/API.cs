@@ -27,6 +27,7 @@ using Beamable.Api.Groups;
 using Beamable.Api.Mail;
 using Beamable.Api.Notification;
 using Beamable.Api.Sessions;
+using Beamable.Common.Api;
 using Beamable.Common.Api.CloudData;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Tournaments;
@@ -66,7 +67,7 @@ namespace Beamable
         ContentService ContentService { get; }
         InventoryService InventoryService { get; }
         LeaderboardService LeaderboardService { get; }
-        PlatformRequester Requester { get; }
+        IBeamableRequester Requester { get; }
         StatsService StatsService { get; }
 
         [Obsolete("Use " + nameof(StatsService) + " instead.")]
@@ -181,7 +182,7 @@ namespace Beamable
                     return _instance;
                 }
 
-                _instance = new API().Initialize();
+                _instance = ApiFactory();
                 return _instance;
             }
 
@@ -189,6 +190,48 @@ namespace Beamable
 #if UNITY_EDITOR
             set => _instance = value;
 #endif
+        }
+
+        private static Promise<IBeamableAPI> ApiFactory()
+        {
+            const int SECONDS_UNTIL_RETRY = 2;
+
+            var waitForRetryTime = new WaitForSecondsRealtime(SECONDS_UNTIL_RETRY);
+
+            IEnumerator WaitThenTryAgain(Action cb)
+            {
+                yield return waitForRetryTime;
+                cb();
+            }
+
+            var api = new API();
+            return api.Initialize().RecoverWith(ex =>
+            {
+                if (!(ex is NoConnectivityException)) throw ex;
+
+                Debug.LogWarning($"Beamable requires an internet connection to initialize the first session. Will retry in {SECONDS_UNTIL_RETRY} seconds...");
+
+                // wait for a few seconds, and then try again...
+                if (!ServiceManager.CanResolve<CoroutineService>())
+                {
+                    Debug.LogError("Coroutine service hasn't initialized yet, so a retry cannot be rescheduled.");
+                    throw ex;
+                }
+
+                var p = new Promise<Unit>();
+                ServiceManager
+                    .Resolve<CoroutineService>()
+                    .StartCoroutine(WaitThenTryAgain(() => p.CompleteSuccess(PromiseBase.Unit)));
+
+                return p.FlatMap(_ =>
+                {
+                    Object.Destroy(api._gameObject);
+                    api._platform?.Dispose();
+
+                    Debug.LogWarning("Retrying internet connection for initial session.");
+                    return ApiFactory();
+                });
+            });
         }
 
 #if UNITY_EDITOR && UNITY_2019_1_OR_NEWER
@@ -305,7 +348,7 @@ namespace Beamable
         /// <summary>
         /// Entry point for the PlatformRequester.
         /// </summary>
-        public PlatformRequester Requester => _platform.Requester;
+        public IBeamableRequester Requester => _platform.Requester;
 
         /// <summary>
         /// Entry point for the IBeamablePurchaser.

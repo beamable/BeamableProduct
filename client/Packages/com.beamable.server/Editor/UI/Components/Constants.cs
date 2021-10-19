@@ -16,6 +16,8 @@ namespace Beamable.Server.Editor.UI.Components
       public static string Publish = "Publish";
       public static string PopUpBtn = "Console Log";
 
+      public static string DEPENDENT_SERVICES_WINDOW_TITLE = "Dependent services";
+
       public static string START = "Run";
       public static string STOP = "Stop";
       public static string BUILD_DEBUG_PREFIX = "[DEBUG]";
@@ -29,6 +31,7 @@ namespace Beamable.Server.Editor.UI.Components
 
       public static string REMOTE_NOT_ENABLED = "Remote Disabled";
       public static string REMOTE_ENABLED = "Remote Enabled";
+      public static string REMOTE_ONLY = "Remote Only";
 
       public const string OBSOLETE_WILL_BE_REMOVED = "This is no longer supported, and will be removed in the future.";
 

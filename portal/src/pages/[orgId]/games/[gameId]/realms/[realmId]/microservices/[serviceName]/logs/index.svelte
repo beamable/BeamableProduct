@@ -87,7 +87,6 @@
         if (serviceName){
             logStore = microservices.createLogStream(serviceName, queryStore, loadMoreStore, startTimeStore, endTimeStore)
             logStore.subscribe(value => {
-                console.log('got log value', value);
                 isLoading = false;
                 hasMore = false;
                 loadingMore = false;
@@ -115,10 +114,6 @@
     queryStr.subscribe(value => {
         debounceQuery(value)
     })
-
-    function forceLoad(){
-        loadMoreStore.update(n => n + 1);
-    }
 
     function now() {
         return new Date()
@@ -412,9 +407,6 @@
 </style>
 
 <div class="log-view">
-<button on:click={forceLoad}>
-    Force Load
-</button>
     <div class="log-header" on:click={evt => isDrawerOpen = false}>
         <h2>Logs</h2>
         <h1>{serviceName}</h1>

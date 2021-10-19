@@ -1,3 +1,29 @@
+## [2.3.0] - 2021-05-17
+
+### Note
+* Future updates - The In-App Purchasing SDK is fully available in the Unity Package Manager. Please see our [migration instructions](https://forum.unity.com/threads/a-combined-com-unity-purchasing-package-merges-the-unity-iap-plugin-3-0-0.1009678/#post-6918290).
+* GooglePlay - This SDK 2.3.0 version matches the Google Play Billing functionality found in `com.unity.purchasing@3.2.0`, which is the preferred version of Unity IAP and is available for Unity 2019 and higher. 
+
+### Added
+- GooglePlay - Automatic resumption of initialization when a user's device initially does not have a Google account, and they correct that Android setting without killing the app, then they resume the app. NOTE this does not impact Unity IAP's behavior when a user removes their Google account after initialization.
+- GooglePlay - API `IGooglePlayConfiguration.SetServiceDisconnectAtInitializeListener(Action)` called when Unity IAP fails to connect to the underlying Google Play Billing service. The `Action` may be called multiple times after `UnityPurchasing.Initialize` if a user does not have a Google account added to their Android device. Initialization of Unity IAP will remain paused until this is corrected. Inform the user they must add a Google account in order to be able to purchase. See documentation "Store Guides" > "Google Play" for a sample usage.
+- GooglePlay - It is now possible to check if a purchased product is pending or not by calling `IsPurchasedProductDeferred()` from `IGooglePlayStoreExtensions`.
+
+### Fixed
+- GooglePlay - Receipts for Pending purchases are now UnifiedReceipts and not raw Google receipts. Any parsers you have for these can extract the raw receipt json by parsing the "Payload" field.
+- GooglePlay - Subscription upgrade/downgrade using proration mode [DEFERRED](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.ProrationMode#DEFERRED) (via `IGooglePlayStoreExtensions.UpgradeDowngradeSubscription(string oldSku, string newSku, int desiredProrationMode)`) reported `OnPurchaseFailed` with `PurchaseFailureReason.Unknown`, when the deferred subscription upgrade/downgrade succeeded. This subscription change generates no immediate transaction and no receipt. Now a custom `Action<Product>` can be called when the change succeeds, and is set by the new `SetDeferredProrationUpgradeDowngradeSubscriptionListener` API:
+  - Adds `IGooglePlayStoreExtensions.SetDeferredProrationUpgradeDowngradeSubscriptionListener(Action<Product> action)`. Sets listener for deferred subscription change events. Deferred subscription changes only take effect at the renewal cycle and no transaction is done immediately, therefore there is no receipt nor token. The `Action<Product>` is the deferred subscription change event. No payout is granted here. Instead, notify the user that the subscription change will take effect at the next renewal cycle.
+
+
+## [2.2.8] - 2021-04-20
+
+### Known issue
+- SDK 2.2.8 version number (in `StandardPurchasingModule.k_PackageVersion`) was not updated to `"2.2.8"` and instead incorrectly is `"2.2.7"`.
+
+### Added
+- GooglePlay - Google Play Billing Library version 3.0.3.
+  - Fixes a broken purchase flow when user resumed their app through the Android Launcher after interrupting an ongoing purchase. Now `IStoreListener.OnPurchaseFailed(PurchaseFailureDescription.reason: PurchaseFailureReason.UserCancelled)` is called on resumption. E.g. first the user initiates a purchase, then sees the Google purchasing dialog, and sends their app to the background via the device's Home key. They tap the app's icon in the Launcher, see no dialog, and, finally, the app will now receive this callback.
+
 ## [2.2.7] - 2021-01-27
 
 ### Changed

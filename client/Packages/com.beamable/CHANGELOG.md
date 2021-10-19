@@ -1,9 +1,37 @@
 
+
 # Changelog
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.17.0]
+### Added
+- Device id authentication support
+- Steam third party authentication support
+- Auto-complete text feature for `AdminFlow` prefab
+- New default `currency.coins` currency that demonstrates client writable currency.
+- Ability to remove a third party authorization with `RemoveThirdPartyAssociation` method in AuthService
+- Cohort Settings for EventContent that support partitioning by player stats
+- Event schedules for repeating events
+- Listing schedules for repeating listings
+- Support for archiving manifest namespaces.
+- A `Fetch()` method to all subscribable SDKs that requests and returns the raw subscription data
+
+### Changed
+- An optional `forceRefresh` parameter to all subscribable SDK's `GetCurrent()` method that forces a network request
+- `API.Instance.Requester` is now an `IBeamableRequester`
+- The `Promise` class is no longer static, and extends from `Promise<Unit>`
+- The realm dropdown now has a loading spinner on realm switches
+- Content Inspector datepicker with no user given value no longer constantly updates
+- Content deletion popup opens as separate window
+- Microservice separator (draggable) moved directly under log group
+
+### Fixed
+- If no internet connection exists on startup, `API.Instance()` will retry every 2 seconds until a connection is established
+- Able to build games to device
+
 
 ## [0.16.1]
 ### Fixed
@@ -12,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Batch imports Module Configuration files to improve speed
 - No longer refreshes asset database on ContentIO FindAll()
 - Allow Content Deserializer to consume incorrectly typed fields as empty values
+
 
 ## [0.16.0]
 ### Added
@@ -35,12 +64,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Beamable Platform errors all extend from `RequesterException` in Unity Client and microservice code
 - Redesigned internal Toolbox announcements
 - Content Manager publish flow shows Realm and Namespace for confirmation
+- `ExecuteRolling` method of `Promise` now supports a condition on which stop execution
 
 ### Fixed
 - Added missing attributes for content classes
 - SocialService `SocialList` serialization
 - Account Management Flow third party login buttons use correct third parties
 - Content Manager Window item selection is cleared after changing the Namespace
+- Adjusted confirm window look while trying to delete any content
+- Content Manager Popups refresh after Unity domain reload
 
 ## [0.15.0]
 ### Added

@@ -11,7 +11,7 @@ using Beamable.Common.Runtime.Collections;
 #if !DISABLE_BEAMABLE_ASYNCMETHODBUILDER
 
 namespace System.Runtime.CompilerServices
-{  
+{
    public sealed class AsyncMethodBuilderAttribute : Attribute
    {
       public AsyncMethodBuilderAttribute(Type taskLike)
@@ -486,10 +486,9 @@ namespace Beamable.Common
 
    // Do not add doxygen comments to "public static class Promise" because
    // it confuses this with the doxygen output with "public class Promise" - srivello
-   public static class Promise
+   [AsyncMethodBuilder(typeof(PromiseAsyncMethodBuilder))]
+   public class Promise : Promise<Unit>
    {
-
-
       /// <summary>
       /// Create a <see cref="SequencePromise{T}"/> from List of <see cref="Promise{T}"/>
       /// </summary>
@@ -676,7 +675,7 @@ namespace Beamable.Common
                   {
                      break;
                   }
-                  
+
                   var index = currentCount;
                   var generator = generators[index];
 
@@ -993,5 +992,64 @@ namespace Beamable.Common
       }
 
       public Promise<T> Task => _promise;
+   }
+
+   public sealed class PromiseAsyncMethodBuilder
+   {
+      private IAsyncStateMachine _stateMachine;
+      private Promise _promise = new Promise(); // TODO: allocation.
+
+      public static PromiseAsyncMethodBuilder Create()
+      {
+         return new PromiseAsyncMethodBuilder();
+      }
+
+      public void SetResult()
+      {
+         _promise.CompleteSuccess(PromiseBase.Unit);
+      }
+
+      public void SetException(Exception ex)
+      {
+         _promise.CompleteError(ex);
+      }
+
+      public void SetStateMachine(IAsyncStateMachine machine)
+      {
+         _stateMachine = machine;
+      }
+
+      public void AwaitOnCompleted<TAwaiter, TStateMachine>(
+         ref TAwaiter awaiter, ref TStateMachine stateMachine)
+         where TAwaiter : INotifyCompletion
+         where TStateMachine : IAsyncStateMachine
+      {
+         if (_stateMachine == null)
+         {
+            _stateMachine = stateMachine;
+            _stateMachine.SetStateMachine(stateMachine);
+         }
+
+         awaiter.OnCompleted(() =>
+         {
+            _stateMachine.MoveNext();
+         });
+      }
+
+      public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(
+         ref TAwaiter awaiter, ref TStateMachine stateMachine)
+         where TAwaiter : ICriticalNotifyCompletion
+         where TStateMachine : IAsyncStateMachine
+      {
+         AwaitOnCompleted(ref awaiter, ref stateMachine);
+      }
+
+      public void Start<TStateMachine>(ref TStateMachine stateMachine)
+         where TStateMachine : IAsyncStateMachine
+      {
+         stateMachine.MoveNext();
+      }
+
+      public Promise Task => _promise;
    }
 }

@@ -28,6 +28,7 @@ namespace Beamable.Editor.Config
          SettingsService.OpenProjectSettings("Project/Beamable");
       }
 
+
       [SettingsProvider]
       public static SettingsProvider CreateBeamableProjectSettings()
       {
@@ -80,8 +81,9 @@ namespace Beamable.Editor.Config
 
             return provider;
          }
-         catch (Exception)
+         catch (Exception ex)
          {
+            Debug.LogException(ex);
             return null;
          }
       }
@@ -115,8 +117,9 @@ namespace Beamable.Editor.Config
 
             return providers;
          }
-         catch (Exception)
+         catch (Exception ex)
          {
+            Debug.LogException(ex);
             return null;
          }
       }
