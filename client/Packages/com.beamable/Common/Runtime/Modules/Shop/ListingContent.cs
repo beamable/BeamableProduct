@@ -18,7 +18,7 @@ namespace Beamable.Common.Shop
    /// #### Related Links
    /// - See the <a target="_blank" href="https://docs.beamable.com/docs/store-feature">Store</a> feature documentation
    /// - See Beamable.Api.Commerce.CommerceService script reference
-   /// 
+   ///
    /// ![img beamable-logo]
    ///
    /// </summary>
@@ -29,10 +29,10 @@ namespace Beamable.Common.Shop
    {
       [Tooltip(ContentObject.TooltipListingPrice1)]
       public ListingPrice price;
-      
+
       [Tooltip(ContentObject.TooltipListingOffer1)]
       public ListingOffer offer;
-      
+
       [Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipActivePeriod1)]
       public OptionalPeriod activePeriod;
 
@@ -42,20 +42,20 @@ namespace Beamable.Common.Shop
 
       [Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipCohort1 + ContentObject.TooltipRequirement2)]
       public OptionalCohort cohortRequirements;
-      
+
       [Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipStat1 + ContentObject.TooltipRequirement2)]
       public OptionalStats playerStatRequirements;
-      
+
       [Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipActivePeriod1 + ContentObject.TooltipRequirement2)]
       public OptionalOffers offerRequirements;
-      
+
       [Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipActivePeriod1)]
       public OptionalSerializableDictionaryStringToString clientData;
 
       [MustBePositive]
       [Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipDurationSeconds1 + ContentObject.TooltipActive2)]
       public OptionalInt activeDurationSeconds;
-      
+
       [Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipDurationSeconds1 + ContentObject.TooltipActiveCooldown2)]
       [MustBePositive]
       public OptionalInt activeDurationCoolDownSeconds;
@@ -63,9 +63,12 @@ namespace Beamable.Common.Shop
       [Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipDurationPurchaseLimit1)]
       [MustBePositive]
       public OptionalInt activeDurationPurchaseLimit;
-      
+
       [Tooltip(ContentObject.TooltipOptional0 + ContentObject.ButtonText1)]
       public OptionalString buttonText; // TODO: This is a dictionary, not a string!
+
+      [Tooltip(ContentObject.TooltipOptional0 + "schedule for when the listing will be active")]
+      public OptionalListingSchedule schedule;
 
    }
 
@@ -82,7 +85,7 @@ namespace Beamable.Common.Shop
 
       [Tooltip(ContentObject.TooltipObtainCurrency1)]
       public List<OfferObtainCurrency> obtainCurrency;
-      
+
       [Tooltip(ContentObject.TooltipObtainItem1)]
       public List<OfferObtainItem> obtainItems;
    }
@@ -175,7 +178,7 @@ namespace Beamable.Common.Shop
       [Tooltip(ContentObject.TooltipName1)]
       [CannotBeBlank]
       public string name;
-      
+
       [Tooltip(ContentObject.TooltipValue1)]
       public string value;
    }
@@ -190,7 +193,7 @@ namespace Beamable.Common.Shop
       [Tooltip(ContentObject.TooltipSymbol1)]
       [MustReferenceContent(false, typeof(CurrencyContent), typeof(SKUContent))]
       public string symbol;
-      
+
       [Tooltip(ContentObject.TooltipAmount1)]
       [MustBeNonNegative]
       public int amount;
@@ -214,7 +217,7 @@ namespace Beamable.Common.Shop
       [Tooltip(ContentObject.TooltipSymbol1)]
       [MustReferenceContent(AllowedTypes = new []{typeof(ListingContent)})]
       public string offerSymbol;
-      
+
       [Tooltip(ContentObject.TooltipPurchase1)]
       public OfferConstraint purchases;
    }
@@ -223,7 +226,7 @@ namespace Beamable.Common.Shop
    public class StatRequirement
    {
       // TODO: StatRequirement, by way of OptionalStats, is used by AnnouncementContent too. Should this be in a shared location? ~ACM 2021-04-22
-
+      
       [Tooltip("Domain of the stat (e.g. 'platform', 'game', 'client'). Default is 'game'.")]
       [MustBeOneOf("platform", "game", "client")]
       public OptionalString domain;
@@ -231,19 +234,18 @@ namespace Beamable.Common.Shop
       [Tooltip("Visibility of the stat (e.g. 'private', 'public'). Default is 'private'.")]
       [MustBeOneOf("private", "public")]
       public OptionalString access;
-      
+
       [Tooltip(ContentObject.TooltipStat1)]
       [CannotBeBlank]
       public string stat;
-
+      
       [Tooltip(ContentObject.TooltipConstraint1)]
       [MustBeComparatorString]
       public string constraint;
-      
-      [Tooltip(ContentObject.TooltipValue1)]
-      public int value;
+
+      [Tooltip(ContentObject.TooltipValue1)] public int value;
    }
-   
+
    [System.Serializable]
    public class CohortRequirement
    {
@@ -254,7 +256,7 @@ namespace Beamable.Common.Shop
       [Tooltip(ContentObject.TooltipCohort1)]
       [CannotBeBlank]
       public string cohort;
-      
+
       [Tooltip(ContentObject.TooltipConstraint1)]
       [MustBeComparatorString]
       public string constraint;
@@ -276,6 +278,7 @@ namespace Beamable.Common.Shop
       [Tooltip(ContentObject.TooltipValue1)]
       public int value;
    }
+   
    [System.Serializable]
    public class OptionalColor : Optional<Color>
    {
@@ -296,7 +299,7 @@ namespace Beamable.Common.Shop
 
    [System.Serializable]
    public class OptionalDict : Optional<ContentDictionary> { }
-   
+
    [System.Serializable]
    public class OptionalCohort : Optional<List<CohortRequirement>> {}
 }

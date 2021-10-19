@@ -61,7 +61,6 @@ export class Microservices extends BaseService {
         return this.derived(
             [this.app.realms.cid, this.forceUpdate, period, startTime, endTime],
             (args: [any, any, number,number, number], set: any) => {
-                console.log('METRIC STREAM INPUTS CHANGED')
                 clearTimeout(debouncedAction);
                 debouncedAction = setTimeout(() => {
                     const cid = args[0]
@@ -70,7 +69,6 @@ export class Microservices extends BaseService {
                     const endTimeValue = args[4];
 
                     if (!cid) return;
-                    console.log('FETCHING NEW METRIC DATA')
                     set({
                         data: [],
                         label: 'Loading',
@@ -100,61 +98,77 @@ export class Microservices extends BaseService {
         let lastStartTime = -1;
         let lastEndTime = -1;
         let lastData: Array<LogMessage> = [];
+        let reqId = 1;
+        let cancelledReqIdThreshold = 0;
+        let pendingProcess: any = undefined;
 
         return this.derived(
             [this.app.realms.cid, this.forceUpdate, queryStore, next, startTime, endTime],
             (args: Array<any>, set: any) => {
-                const realm = args[0];
-                const rowLoad = args[3];
-                const filter = args[2];
-                const startTimeValue = args[4];
-                const endTimeValue = args[5];
-                if (realm && rowLoad >= 0 && filter){
-                    let currFilter = filter;
-                    let firstPage = false;
-                    let filterDifferent = currFilter != lastFilter;
-                    let startTimeDifferent = startTimeValue != lastStartTime;
-                    let endTimeDifferent = endTimeValue != lastEndTime;
-                    if (filterDifferent || startTimeDifferent || endTimeDifferent){
 
-                        firstPage = true;
-                    }
-                    lastFilter = currFilter;
-                    lastStartTime = startTimeValue;
-                    lastEndTime = endTimeValue;
+                const debounceTime = 50;
+                clearTimeout(pendingProcess);
+                pendingProcess = setTimeout( () => {
+                    const realm = args[0];
+                    const rowLoad = args[3];
+                    const filter = args[2];
+                    const startTimeValue = args[4];
+                    const endTimeValue = args[5];
+                    if (realm && rowLoad >= 0 && filter){
+                        let currFilter = filter;
+                        let firstPage = false;
+                        let filterDifferent = currFilter != lastFilter;
+                        let startTimeDifferent = startTimeValue != lastStartTime;
+                        let endTimeDifferent = endTimeValue != lastEndTime;
 
-                    this.fetchLogProcess(serviceName, currFilter, nextToken, startTimeValue, endTimeValue)
-                        .then(result => {
-                            if (firstPage){
-                                lastData = [];
-                                nextToken = undefined;
-                            }
+                        if (filterDifferent || startTimeDifferent || endTimeDifferent){
+                            firstPage = true;
+                            nextToken = undefined;
+                            cancelledReqIdThreshold = reqId;
+                        }
 
-                            const tokenIdff = nextToken != result.nextToken;
-                            nextToken = result.nextToken;
-                            lastData = [...lastData, ...result.logs]
+                        lastFilter = currFilter;
+                        lastStartTime = startTimeValue;
+                        lastEndTime = endTimeValue;
+
+                        reqId += 1;
+                        const id = reqId;
+
+                        this.fetchLogProcess(serviceName, currFilter, nextToken, startTimeValue, endTimeValue)
+                            .then(result => {
+                                if (cancelledReqIdThreshold >= id){
+                                    set({
+                                        logs: [],
+                                        nextToken: undefined,
+                                        firstPage: true
+                                    });
+                                    return; // ignore this, we've moved on. 
+                                }
+
+                                if (firstPage){
+                                    lastData = [];
+                                    nextToken = undefined;
+                                }
+
+                                nextToken = result.nextToken;
+                                lastData = [...lastData, ...result.logs]
                             
-                            if (result.logs.length == 0 && result.nextToken && tokenIdff){
-                                console.log('manually getting more data', result.nextToken, '', result)
-                                next.update(n => n + 1);
-                            } else {
-                                console.log('done searching.')
                                 set({
                                     logs: lastData,
                                     nextToken: result.nextToken,
                                     firstPage
                                 });
-                            }
-                        }).catch(err => {
-                            console.error('log error', err);
-                            nextToken = undefined;
-                            set({
-                                logs: [],
-                                nextToken: undefined,
-                                error: 'Invalid Search: ' + err.message
+                            }).catch(err => {
+                                console.error('log error', err);
+                                nextToken = undefined;
+                                set({
+                                    logs: [],
+                                    nextToken: undefined,
+                                    error: 'Invalid Search: ' + err.message
+                                })
                             })
-                        })
-                }
+                    }
+                }, debounceTime);
             }
         )
     }
@@ -238,20 +252,19 @@ export class Microservices extends BaseService {
         const { http } = this.app;
         let req:any ={
             serviceName,
-            // filter,
+            filter,
         }
 
         if (token){
             req.nextToken = token;
         }
-        // if (startTime >= 0){
-        //     req.startTime =startTime;
-        // }
-        // if (endTime >= 0){
-        //     req.endTime =endTime;
-        // }
+        if (startTime >= 0){
+            req.startTime =startTime;
+        }
+        if (endTime >= 0){
+            req.endTime =endTime;
+        }
 
-        console.log('sending beamo request', req);
         const response = await http.request(`basic/beamo/logsUrl`, req, 'post');
         const data = response.data as LogUrlResponse;
 

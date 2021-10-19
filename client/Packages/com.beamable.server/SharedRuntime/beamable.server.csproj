@@ -16,4 +16,14 @@
       <ProjectReference Include="..\..\com.beamable\Common\beamable.common.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+
+        <Reference Include="MongoDB.Driver">
+
+            <HintPath>..\Editor\ThirdParty\Mongo\MongoDB.Driver.dll</HintPath>
+
+        </Reference>
+
+    </ItemGroup>
+
 </Project>

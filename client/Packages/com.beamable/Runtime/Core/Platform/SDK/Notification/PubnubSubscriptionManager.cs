@@ -154,6 +154,13 @@ namespace Beamable.Api.Notification
 
       void DoSubscribeToPubnub()
       {
+#if UNITY_EDITOR
+         if (!Application.isPlaying)
+         {
+            Debug.Log("Subscribing to Pubnub done after quiting Play Mode, aborting.");
+            return;
+         }
+#endif
          if (subscriberDetails.subscribeKey == null)
          {
             Debug.LogError("Missing Subscription Key");

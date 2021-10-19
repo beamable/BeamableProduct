@@ -1,10 +1,4 @@
-#if UNITY_2018
-using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
-#elif UNITY_2019_1_OR_NEWER
-using UnityEngine.UIElements;
-using UnityEditor.UIElements;
-#endif
+using UnityEngine;
 
 namespace Beamable.Editor.UI.Buss
 {
@@ -13,5 +7,10 @@ namespace Beamable.Editor.UI.Buss
       public const string UI_PACKAGE_PATH = "Packages/com.beamable/Editor/UI";
       public const string COMP_PATH = UI_PACKAGE_PATH  +"/Common/Components";
       public const string COMMON_USS_PATH = UI_PACKAGE_PATH + "/Common/Common.uss";
+
+      // Schedules
+      public static readonly Vector2 SchedulesWindowSize = new Vector2(450, 420);
+      public const string SCHEDULES_PATH = UI_PACKAGE_PATH + "/Schedules";
+      public const string SCHEDULES_WINDOW_HEADER = "Schedules";
    }
 }
