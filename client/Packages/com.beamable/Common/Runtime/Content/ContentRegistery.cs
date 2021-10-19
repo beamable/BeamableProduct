@@ -25,6 +25,78 @@ namespace Beamable.Common.Content
       public string Name;
    }
 
+   public static class ReflectionBasedSystemCache
+   {
+      public static Dictionary<Type, List<Type>> perBaseTypeLists =  new Dictionary<Type, List<Type>>();
+
+      /// <summary>
+      /// TODO: Implement on systems that require access to cached type information.
+      /// </summary>
+      public interface IReflectionBasedSystem
+      {
+         List<Type> TypesOfInterest { get; }
+
+         void OnTypeOfInterestCacheLoaded(Type typeOfInterest, List<Type> typeOfInterestSubTypes);
+         void OnTypeCacheLoaded(Dictionary<Type, List<Type>> typeCache);
+      }
+      
+      public static void InitializeReflectionBasedSystemsCache(List<IReflectionBasedSystem> systems)
+      {
+         var baseTypes = systems.SelectMany(sys => sys.TypesOfInterest).ToList();
+         
+         // Parse Types
+         BuildTypeCaches(baseTypes, out perBaseTypeLists);
+         
+         // Pass down to each given system only the types they are interested in
+         foreach (var reflectionBasedSystem in systems)
+         {
+            reflectionBasedSystem.OnTypeCacheLoaded(perBaseTypeLists);
+            foreach (var type in reflectionBasedSystem.TypesOfInterest)
+            {
+               reflectionBasedSystem.OnTypeOfInterestCacheLoaded(type, perBaseTypeLists[type]);
+            }
+         }
+      }
+      
+      private static void BuildTypeCaches(IReadOnlyList<Type> baseTypes, out Dictionary<Type, List<Type>> perBaseTypeLists)
+      {
+         // TODO: Use TypeCache in editor and Unity 2019 and above
+         var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+         perBaseTypeLists = new Dictionary<Type, List<Type>>();
+
+         foreach (var assembly in assemblies)
+         {
+            var asmName = assembly.GetName().Name;
+            if ("Tests".Equals(asmName)) continue; // TODO think harder about this.
+
+            var types = assembly.GetTypes();
+            foreach (var type in types)
+            {
+               var idxOfBaseType = FindBaseTypeIdx(type);
+               if (idxOfBaseType == -1) continue;
+
+               var baseType = baseTypes[idxOfBaseType];
+               if (!perBaseTypeLists.TryGetValue(baseType, out var baseTypesList))
+                  perBaseTypeLists[baseType] = baseTypesList = new List<Type>();
+               
+               baseTypesList.Add(type);
+            }
+         }
+
+         int FindBaseTypeIdx(Type type)
+         {
+            for (var i = 0; i < baseTypes.Count; i++)
+            {
+               var baseType = baseTypes[i];
+               if (baseType.IsAssignableFrom(type)) return i;
+            }
+
+            return -1;
+         }
+      }
+      
+   }
+   
    /// <summary>
    /// This type defines part of the %Beamable %ContentObject system.
    ///
@@ -77,12 +149,12 @@ namespace Beamable.Common.Content
          BuildTypeCaches(new []{typeof(ContentObject)}, out var perBaseTypeLists);
 
          // Check for containing ContentType and ContentFormerlySerializedAs  Attributes
-         BakeTypeToNameMappings<ContentTypeAttribute>(perBaseTypeLists[typeof(ContentObject)], 
+         BakeTypeToUniqueNameMappings<ContentTypeAttribute>(perBaseTypeLists[typeof(ContentObject)], 
             out var mappingsCurrent,
             false, 
             (type) => $"Type [{type.FullName}] does not have an attribute of type [{typeof(ContentTypeAttribute).FullName}] --- it will not be deserializable.");
          
-         BakeTypeToNameMappings<ContentFormerlySerializedAsAttribute>(perBaseTypeLists[typeof(ContentObject)], out var mappingsFormer, false);
+         BakeTypeToUniqueNameMappings<ContentFormerlySerializedAsAttribute>(perBaseTypeLists[typeof(ContentObject)], out var mappingsFormer, false);
          
          var currentNames = mappingsCurrent.Select(map => map.Item1);
          var formerNames = mappingsFormer.Select(map => map.Item1);
@@ -165,7 +237,7 @@ namespace Beamable.Common.Content
          }
       }
       
-      public static void BakeTypeToNameMappings<TAttribute>(IReadOnlyCollection<Type> types, out HashSet<(string, Type)> mappings,
+      public static void BakeTypeToUniqueNameMappings<TAttribute>(IReadOnlyCollection<Type> types, out HashSet<(string, Type)> mappings,
          bool forceExistence = true, Func<Type, string> missingAttributeWarning = null)
          where TAttribute  : Attribute, IUniqueNamingAttribute<TAttribute>
       {
@@ -229,7 +301,7 @@ namespace Beamable.Common.Content
                collisionErrorMessage.AppendLine($"Please change the names of the ones declared on these types so that they are unique across your project [");
                foreach (var collidedType in collidingTypes)
                {
-                  collisionErrorMessage.AppendLine($"{collidedType}, ");
+                  collisionErrorMessage.AppendLine($"    {collidedType}, ");
                }
                collisionErrorMessage.AppendLine("]");
             }
