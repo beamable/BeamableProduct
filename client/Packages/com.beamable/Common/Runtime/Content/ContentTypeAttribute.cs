@@ -58,7 +58,7 @@ namespace Beamable.Common.Content
    ///
    /// </summary>
    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
-   public class ContentFormerlySerializedAsAttribute : Attribute, ContentRegistry.IUniqueNamingAttribute<ContentTypeAttribute>
+   public class ContentFormerlySerializedAsAttribute : Attribute, ContentRegistry.IUniqueNamingAttribute<ContentFormerlySerializedAsAttribute>
    {
       public string OldTypeName { get; }
       public ContentFormerlySerializedAsAttribute(string oldTypeName)
@@ -79,7 +79,7 @@ namespace Beamable.Common.Content
 #endif
          if (!(isAssignableFromIContentObject && isAssignableFromScriptableObject))
             errorMessage =
-               $"Type [{type}] must not have a [{typeof(ContentTypeAttribute).FullName}]." +
+               $"Type [{type}] must not have a [{typeof(ContentFormerlySerializedAsAttribute).FullName}]." +
                $"\nThis attribute should only be used on ScriptableObjects that implement the [{typeof(IContentObject).FullName}] interface.";
 
          errorMessage = "";
