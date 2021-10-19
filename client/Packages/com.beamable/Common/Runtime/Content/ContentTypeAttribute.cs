@@ -14,7 +14,7 @@ namespace Beamable.Common.Content
    ///
    /// </summary>
    [AttributeUsage(AttributeTargets.Class)]
-   public class ContentTypeAttribute : UnityEngine.Scripting.PreserveAttribute, IHasSourcePath
+   public class ContentTypeAttribute : UnityEngine.Scripting.PreserveAttribute, IHasSourcePath, ContentRegistry.IUniqueNamingAttribute<ContentTypeAttribute>
    {
       public string TypeName { get; }
       public string SourcePath { get; }
@@ -23,6 +23,26 @@ namespace Beamable.Common.Content
       {
          TypeName = typeName;
          SourcePath = sourcePath;
+      }
+
+      public string Name => TypeName;
+
+      public bool IsAllowedOnType(Type type, out string errorMessage)
+      {
+         bool isAssignableFromIContentObject = typeof(IContentObject).IsAssignableFrom(type);
+
+#if !DB_MICROSERVICE
+         bool isAssignableFromScriptableObject = typeof(UnityEngine.ScriptableObject).IsAssignableFrom(type);
+#else
+         bool isAssignableFromScriptableObject = true;
+#endif
+         if (!(isAssignableFromIContentObject && isAssignableFromScriptableObject))
+            errorMessage =
+               $"Type [{type}] must not have a [{typeof(ContentTypeAttribute).FullName}]." +
+               $"\nThis attribute should only be used on ScriptableObjects that implement the [{typeof(IContentObject).FullName}] interface.";
+
+         errorMessage = "";
+         return isAssignableFromIContentObject && isAssignableFromScriptableObject;
       }
    }
 
@@ -38,12 +58,32 @@ namespace Beamable.Common.Content
    ///
    /// </summary>
    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
-   public class ContentFormerlySerializedAsAttribute : Attribute
+   public class ContentFormerlySerializedAsAttribute : Attribute, ContentRegistry.IUniqueNamingAttribute<ContentTypeAttribute>
    {
       public string OldTypeName { get; }
       public ContentFormerlySerializedAsAttribute(string oldTypeName)
       {
          OldTypeName = oldTypeName;
+      }
+      
+      public string Name => OldTypeName;
+
+      public bool IsAllowedOnType(Type type, out string errorMessage)
+      {
+         bool isAssignableFromIContentObject = typeof(IContentObject).IsAssignableFrom(type);
+
+#if !DB_MICROSERVICE
+         bool isAssignableFromScriptableObject = typeof(UnityEngine.ScriptableObject).IsAssignableFrom(type);
+#else
+         bool isAssignableFromScriptableObject = true;
+#endif
+         if (!(isAssignableFromIContentObject && isAssignableFromScriptableObject))
+            errorMessage =
+               $"Type [{type}] must not have a [{typeof(ContentTypeAttribute).FullName}]." +
+               $"\nThis attribute should only be used on ScriptableObjects that implement the [{typeof(IContentObject).FullName}] interface.";
+
+         errorMessage = "";
+         return isAssignableFromIContentObject && isAssignableFromScriptableObject;
       }
    }
 }
