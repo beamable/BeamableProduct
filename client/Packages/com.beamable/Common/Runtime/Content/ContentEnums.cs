@@ -33,16 +33,10 @@ namespace Beamable.Common.Content
         /// <param name="value">Value to be converted</param>
         /// <param name="defaultValue">Value to be set if conversion fails</param>
         /// <typeparam name="T">Target enum type</typeparam>
-        /// /// <returns>True if value was actually converted</returns>
-        public static bool ConvertIfNotDoneAlready<T>(ref T conversionTarget, ref OptionalString value,
+        public static void ConvertIfNotDoneAlready<T>(ref T conversionTarget, ref OptionalString value,
             T defaultValue = default) where T : Enum
         {
-            if (value == null)
-            {
-                return false;
-            }
-            
-            return ConvertIfNotDoneAlready(ref conversionTarget, ref value.Value, defaultValue);
+            ConvertIfNotDoneAlready(ref conversionTarget, ref value.Value, defaultValue);
         }
         
         /// <summary>
@@ -54,18 +48,13 @@ namespace Beamable.Common.Content
         /// <param name="value">Value to be converted</param>
         /// <param name="defaultValue">Value to be set if conversion fails</param>
         /// <typeparam name="T">Target enum type</typeparam>
-        /// <returns>True if value was actually converted</returns>
-        public static bool ConvertIfNotDoneAlready<T>(ref T conversionTarget, ref string value, T defaultValue = default) where T : Enum
+        public static void ConvertIfNotDoneAlready<T>(ref T conversionTarget, ref string value, T defaultValue = default) where T : Enum
         {
-            if (value != null && value != VALUE_CONVERTED_MARKER)
+            if (value != VALUE_CONVERTED_MARKER)
             {
                 conversionTarget = ParseEnumType(value, defaultValue);
                 value = VALUE_CONVERTED_MARKER;
-
-                return true;
             }
-
-            return false;
         }
     }
     
