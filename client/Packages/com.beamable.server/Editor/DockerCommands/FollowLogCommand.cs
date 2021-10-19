@@ -13,7 +13,8 @@ namespace Beamable.Server.Editor.DockerCommands
    public static class MicroserviceLogHelper
    {
 
-      public static bool HandleMongoLog(StorageObjectDescriptor storage, string data, bool forceDisplay = false)
+      public static bool HandleMongoLog(StorageObjectDescriptor storage, string data, 
+         LogLevel defaultLogLevel = LogLevel.INFO, bool forceDisplay = false)
       {
          LogLevel ParseMongoLevel(string level)
          {
@@ -38,7 +39,7 @@ namespace Beamable.Server.Editor.DockerCommands
             {
                Message = data,
                Timestamp = DateTime.Now.ToString(),
-               Level = LogLevel.ERROR,
+               Level = defaultLogLevel,
                ParameterText = data,
                Parameters = new Dictionary<string, object>()
             };

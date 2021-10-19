@@ -4,6 +4,7 @@ using System.Linq;
 using Beamable.Common;
 using Beamable.Config;
 using Beamable.Editor.Environment;
+using Beamable.Editor.UI.Model;
 using UnityEngine;
 
 namespace Beamable.Server.Editor.DockerCommands
@@ -48,7 +49,7 @@ namespace Beamable.Server.Editor.DockerCommands
       }
       protected override void HandleStandardErr(string data)
       {
-         if (!MicroserviceLogHelper.HandleMongoLog(_storage, data, true))
+         if (!MicroserviceLogHelper.HandleMongoLog(_storage, data, LogLevel.ERROR, true))
          {
             base.HandleStandardErr(data);
          }
