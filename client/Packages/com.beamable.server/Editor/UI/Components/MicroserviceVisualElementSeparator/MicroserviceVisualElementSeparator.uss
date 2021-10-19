@@ -1,5 +1,5 @@
 #mainVisualElement {
-    height: 20px;
+    height: 5px;
     cursor: resize-vertical;
     flex-shrink: 0;
 }
