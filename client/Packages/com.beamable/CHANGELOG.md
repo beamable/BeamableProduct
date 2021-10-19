@@ -23,7 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - An optional `forceRefresh` parameter to all subscribable SDK's `GetCurrent()` method that forces a network request
 - `API.Instance.Requester` is now an `IBeamableRequester`
 - The `Promise` class is no longer static, and extends from `Promise<Unit>`
-- Validated string fields of `ListingPrice`, `StatRequirement`, `CohortRequirement`, `OfferConstraint` and `AnnouncementAttachment` in Content Manager were changed to dropdowns
 - The realm dropdown now has a loading spinner on realm switches
 - Content Inspector datepicker with no user given value no longer constantly updates
 - Content deletion popup opens as separate window
