@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The realm dropdown now has a loading spinner on realm switches
 - Content Inspector datepicker with no user given value no longer constantly updates
 - Content deletion popup opens as separate window
+- Microservice separator (draggable) moved directly under log group
 
 ### Fixed
 - If no internet connection exists on startup, `API.Instance()` will retry every 2 seconds until a connection is established
