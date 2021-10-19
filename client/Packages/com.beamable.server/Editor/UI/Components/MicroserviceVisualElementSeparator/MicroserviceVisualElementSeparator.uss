@@ -1,14 +1,11 @@
 #mainVisualElement {
     height: 20px;
-    margin-left: 50px;
-    margin-right: 50px;
     cursor: resize-vertical;
     flex-shrink: 0;
 }
 
 #bar {
     height: 2px;
-    /*background-color: #8D8D8D;*/
     cursor: resize-vertical;
     margin-bottom: 0px;
     margin-top: 0px;
