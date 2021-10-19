@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Fixed
 - calls to Leaderboard scoring API support large numbers
+- schedule UI validation for daily and day-of-week schedules
 
 ## [0.17.0]
 ### Added
