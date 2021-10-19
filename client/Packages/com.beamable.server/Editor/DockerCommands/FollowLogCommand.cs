@@ -13,7 +13,7 @@ namespace Beamable.Server.Editor.DockerCommands
    public static class MicroserviceLogHelper
    {
 
-      public static bool HandleMongoLog(StorageObjectDescriptor storage, string data)
+      public static bool HandleMongoLog(StorageObjectDescriptor storage, string data, bool forceDisplay = false)
       {
          LogLevel ParseMongoLevel(string level)
          {
@@ -27,7 +27,28 @@ namespace Beamable.Server.Editor.DockerCommands
             }
          }
 
-         if (!(Json.Deserialize(data) is ArrayDict jsonDict)) return false;
+         if (!(Json.Deserialize(data) is ArrayDict jsonDict))
+         {
+            if (!forceDisplay || data == null)
+            {
+               return false;
+            }
+
+            var errorMessage = new LogMessage
+            {
+               Message = data,
+               Timestamp = DateTime.Now.ToString(),
+               Level = LogLevel.ERROR,
+               ParameterText = data,
+               Parameters = new Dictionary<string, object>()
+            };
+
+            EditorApplication.delayCall += () =>
+            {
+               MicroservicesDataModel.Instance.AddLogMessage(storage, errorMessage);
+            };
+            return true;
+         }
 
          var attrs = ((ArrayDict) jsonDict["attr"]);
          var time = ((ArrayDict) jsonDict["t"])["$date"] as string;

@@ -11,7 +11,6 @@ namespace Beamable.Server.Editor.DockerCommands
    public class RunStorageCommand : RunImageCommand
    {
       private readonly StorageObjectDescriptor _storage;
-      private string StandardErrorBuffer;
 
       public const string ENV_MONGO_INITDB_ROOT_USERNAME = "MONGO_INITDB_ROOT_USERNAME";
       public const string ENV_MONGO_INITDB_ROOT_PASSWORD = "MONGO_INITDB_ROOT_PASSWORD";
@@ -49,35 +48,12 @@ namespace Beamable.Server.Editor.DockerCommands
       }
       protected override void HandleStandardErr(string data)
       {
-         if (!MicroserviceLogHelper.HandleMongoLog(_storage, data))
+         if (!MicroserviceLogHelper.HandleMongoLog(_storage, data, true))
          {
             base.HandleStandardErr(data);
          }
-
-         if (data != null)
-         {
-            // sometimes we get error after exit instead of before
-            if (_exitCode > 0)
-            {
-               Debug.LogError(data);
-            }
-            else
-            {
-               StandardErrorBuffer += data;
-            }
-         }
          OnStandardErr?.Invoke(data);
       }
-
-      protected override void HandleOnExit()
-      {
-         if (_exitCode != 0 && StandardErrorBuffer != null)
-         {
-            Debug.LogError(StandardErrorBuffer);
-         }
-         base.HandleOnExit();
-      }
-
    }
 
    public class RunStorageToolCommand : RunImageCommand
