@@ -138,12 +138,13 @@ namespace Beamable.Editor.Schedules
             _dailyModeValidator = new ComponentsValidator(RefreshConfirmButton);
 
             _daysModeValidator = new ComponentsValidator(RefreshConfirmButton);
-            _daysModeValidator.RegisterRule(new AtLeastOneOptionSelectedRule(_daysPickerComponent.Label),
+            _daysModeValidator.RegisterRule(new AtLeastOneDaySelectedRule(_daysPickerComponent.Label),
                 _daysPickerComponent);
+            _daysModeValidator.RegisterRule(new NotAllDaysSelectedRule(_daysPickerComponent.Label), _daysPickerComponent);
             _daysModeValidator.RegisterRule(new IsProperDate(_activeToDateComponent.Label), _activeToDateComponent.DatePicker);
 
             _datesModeValidator = new ComponentsValidator(RefreshConfirmButton);
-            _datesModeValidator.RegisterRule(new AtLeastOneOptionSelectedRule(_calendarComponent.Label),
+            _datesModeValidator.RegisterRule(new AtLeastOneDaySelectedRule(_calendarComponent.Label),
                 _calendarComponent);
 
             // TODO: create some generic composite rules for cases like this one and then remove below lines
@@ -160,10 +161,15 @@ namespace Beamable.Editor.Schedules
         // TODO: create some generic composite rules for cases like this one and then remove below lines
         private void PerformPeriodValidation()
         {
+            if (_allDayComponent == null)
+            {
+                return;
+            }
+            
             if (_allDayComponent.Value)
             {
-                _isPeriodValid = true;
-                _invalidPeriodMessage = string.Empty;
+                _isPeriodValid = _currentMode != Mode.Daily;
+                _invalidPeriodMessage = _currentMode == Mode.Daily ? "Daily mode can't have All day option selected" : string.Empty;
             }
             else
             {
@@ -346,6 +352,7 @@ namespace Beamable.Editor.Schedules
             _currentValidator?.ForceValidationCheck();
 
             RefreshGroups();
+            PerformPeriodValidation();
         }
 
         private List<string> PrepareOptions()
