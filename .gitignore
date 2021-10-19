@@ -99,3 +99,6 @@ client/Assets/AddressableAssetsData/OSX/
 client/Assets/AddressableAssetsData/Android.meta
 client/Assets/AddressableAssetsData/Android/
 client/Assets/Beamable/Resources/config-defaults.txt
+
+# Every developer's Editor.meta is going to be different by virtue of different layouts and stuff. If Editor.meta is missing, Unity will regenerate it from scratch.
+client/Assets/Editor.meta
