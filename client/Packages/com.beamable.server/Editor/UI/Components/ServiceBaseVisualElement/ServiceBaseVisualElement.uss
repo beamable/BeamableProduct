@@ -169,11 +169,3 @@ LabeledCheckboxVisualElement{
 
     justify-content: flex-start;
 }
-
-#endSeparator {
-    height: 2px;
-    flex-shrink: 0;
-    margin-bottom: 10px;
-    margin-right: 50px;
-    margin-left: 50px;
-}

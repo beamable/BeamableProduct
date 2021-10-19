@@ -43,8 +43,6 @@
                 </engine:Button>
             </engine:VisualElement>
         </engine:VisualElement>
-        
-        <engine:VisualElement name="endSeparator"/>
 
     </engine:VisualElement>
 
