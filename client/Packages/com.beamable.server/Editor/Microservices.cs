@@ -572,7 +572,7 @@ namespace Beamable.Server.Editor
 
 
          onAfterDeploy?.Invoke(model, descriptorsCount);
-
+         EditorUtility.ClearProgressBar();
          Debug.Log("Service Deploy Complete");
       }
 

@@ -108,7 +108,6 @@ namespace Beamable.Server.Editor.Uploader
          }
          finally
          {
-             EditorUtility.ClearProgressBar();
             Directory.Delete(folder, true);
             File.Delete(filename);
          }
