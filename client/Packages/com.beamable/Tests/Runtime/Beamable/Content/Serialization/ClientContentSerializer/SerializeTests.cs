@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Beamable.Common.Announcements;
 using Beamable.Common.Content;
-using Beamable.Common.Shop;
 using Beamable.Tests.Content.Serialization.Support;
 using Beamable.Content;
 using NUnit.Framework;
@@ -837,117 +835,6 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
          Assert.AreEqual(expected, json);
       }
 
-      [Test]
-      public void ListingEnumsSerialization()
-      {
-         string expected = 
-         @"{
-          ""id"": null,
-               ""version"": """",
-               ""properties"":
-               {
-                  ""price"":
-                  {
-                     ""data"":
-                     {
-                        ""symbol"": null,
-                        ""amount"": 100,
-                        ""type"": ""currency""
-                     }
-                  },
-                  ""requirement"":
-                  {
-                     ""data"":
-                     {
-                        ""stat"": null,
-                        ""value"": 0,
-                        ""domain"": ""client"",
-                        ""access"": ""public"",
-                        ""constraint"": ""lt""
-                     }
-                  },
-                  ""cohort"":
-                  {
-                     ""data"":
-                     {
-                        ""trial"": ""trial"",
-                        ""cohort"": ""cohort"",
-                        ""constraint"": ""eq""
-                     }
-                  },
-                  ""offer"":
-                  {
-                     ""data"":
-                     {
-                        ""value"": 0,
-                        ""constraint"": ""ge""
-                     }
-                  }
-               }
-         }".Replace(Environment.NewLine, "").Replace(" ", "");
-         
-         var content = new ListingTestContent
-         {
-            price = new ListingPrice
-            {
-               amount = 100, priceType = PriceType.Currency
-            },
-            cohort = new CohortRequirement
-            {
-               cohort= "cohort", constraintType =  ComparatorType.Eq, trial = "trial"
-            },
-            offer = new OfferConstraint
-            {
-               value = 0, constraintType = ComparatorType.Ge
-            },
-            requirement = new StatRequirement
-            {
-               accessType = AccessType.Public, domainType = DomainType.Client, 
-               constraintType = ComparatorType.Lt, value = 0
-            }
-         };
-         
-         var serializer = new TestSerializer();
-         string serialized = serializer.Serialize(content);
-         
-         Assert.AreEqual(expected, serialized);
-      }
-
-      [Test]
-      public void AnnouncementSerialization()
-      {
-         string expected = 
-         @"{
-             ""id"": null,
-             ""version"": """",
-             ""properties"":
-             {
-                 ""announcement"":
-                 {
-                     ""data"":
-                     {
-                         ""symbol"": null,
-                         ""count"": 5,
-                         ""type"": ""items""
-                     }
-                 }
-             }
-         }".Replace(Environment.NewLine, "").Replace(" ", "");
-         
-         var content = new AnnouncementContent
-         {
-            announcement = new AnnouncementAttachment
-            {
-               contentType = ContentType.Items, count = 5
-            }
-         };
-
-         var serializer = new TestSerializer();
-         string serialized = serializer.Serialize(content);
-         
-         Assert.AreEqual(expected, serialized);
-      }
-
 
       [System.Serializable]
       class PrimitiveContent : TestContentObject
@@ -1051,19 +938,6 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
       class LinkListContent : TestContentObject
       {
          public List<PrimitiveLink> links;
-      }
-
-      class ListingTestContent : TestContentObject
-      {
-         public ListingPrice price;
-         public StatRequirement requirement;
-         public CohortRequirement cohort;
-         public OfferConstraint offer;
-      }
-
-      class AnnouncementContent : TestContentObject
-      {
-         public AnnouncementAttachment announcement;
       }
 
       enum TestEnum

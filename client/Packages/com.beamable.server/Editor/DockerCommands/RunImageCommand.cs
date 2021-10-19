@@ -4,12 +4,15 @@ using System.Linq;
 using Beamable.Common;
 using Beamable.Config;
 using Beamable.Editor.Environment;
+using Beamable.Editor.UI.Model;
+using UnityEngine;
 
 namespace Beamable.Server.Editor.DockerCommands
 {
    public class RunStorageCommand : RunImageCommand
    {
       private readonly StorageObjectDescriptor _storage;
+
       public const string ENV_MONGO_INITDB_ROOT_USERNAME = "MONGO_INITDB_ROOT_USERNAME";
       public const string ENV_MONGO_INITDB_ROOT_PASSWORD = "MONGO_INITDB_ROOT_PASSWORD";
 
@@ -46,13 +49,12 @@ namespace Beamable.Server.Editor.DockerCommands
       }
       protected override void HandleStandardErr(string data)
       {
-         if (!MicroserviceLogHelper.HandleMongoLog(_storage, data))
+         if (!MicroserviceLogHelper.HandleMongoLog(_storage, data, LogLevel.ERROR, true))
          {
             base.HandleStandardErr(data);
          }
          OnStandardErr?.Invoke(data);
       }
-
    }
 
    public class RunStorageToolCommand : RunImageCommand

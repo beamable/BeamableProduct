@@ -31,7 +31,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
       private bool _started, _hasExited;
       protected int _exitCode = -1;
-      protected string DockerCmd => MicroserviceConfiguration.Instance.DockerCommand;
+      protected string DockerCmd => MicroserviceConfiguration.Instance.ValidatedDockerCommand;
       public Action<int> OnExit;
 
       public bool WriteLogToUnity { get; set; }
