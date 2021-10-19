@@ -49,11 +49,13 @@ MonoBehaviour:
       Username: root
       Password: Password!
       SshPort: 11103
+  StorageObjects: []
   CustomContainerPrefix: 
   AutoReferenceContent: 0
   ColorLogs: 0
   EnableDockerBuildkit: 0
-  DockerCommand: /usr/local/bin/docker
+  EnableStoragePreview: 0
+  DockerCommand: 
   ForwardContainerLogsToUnityConsole: 1
   LogProcessLabelColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   LogStandardOutColor: {r: 0.4, g: 0.4, b: 1, a: 1}

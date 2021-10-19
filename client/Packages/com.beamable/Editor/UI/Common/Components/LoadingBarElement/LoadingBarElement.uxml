@@ -9,7 +9,7 @@
     <engine:VisualElement name="mainVisualElement">
         <engine:VisualElement name="fill"/>
         <engine:Label name="label"/>
-        <engine:Button name="button" text="confirm"/>
+        <engine:Button name="button"/>
     </engine:VisualElement>
 
 </engine:UXML>
