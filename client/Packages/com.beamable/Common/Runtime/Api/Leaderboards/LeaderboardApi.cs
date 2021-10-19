@@ -167,7 +167,10 @@ namespace Beamable.Common.Api.Leaderboards
             {
                var req = new ArrayDict
                {
-                  {"stats", new ArrayDict(stats)}
+                  {"stats", new ArrayDict(stats)},
+                  {"score", score},
+                  {"id", UserContext.UserId},
+                  {"increment", increment}
                };
                body = Json.Serialize(req, new StringBuilder());
             }
@@ -175,7 +178,7 @@ namespace Beamable.Common.Api.Leaderboards
             string encodedBoardId = Requester.EscapeURL(assignment.leaderboardId);
             return Requester.Request<EmptyResponse>(
                Method.PUT,
-               $"/object/leaderboards/{encodedBoardId}/entry?id={UserContext.UserId}&score={score}&increment={increment}", // TODO: move url params into request body.
+               $"/object/leaderboards/{encodedBoardId}/entry",
                body
             ).Then(_ => GetCache(boardId).Remove(UserContext.UserId));
          });
