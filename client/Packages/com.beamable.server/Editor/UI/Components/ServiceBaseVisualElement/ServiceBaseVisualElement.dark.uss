@@ -1,4 +1,4 @@
-#logHeader{
+#logHeader {
     background-color: #131313;
 }
 
@@ -6,22 +6,22 @@
     background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/ms_header_green.png");
 }
 
-LogVisualElement > TemplateContainer> #mainVisualElement{
+LogVisualElement > TemplateContainer > #mainVisualElement {
 }
 
-.squareBtn{
+.squareBtn {
     border-color: #383838;
 }
 
-#clear{
+#clear {
     border-color: #383838;
 }
 
-#advanceBtn{
+#advanceBtn {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/advance.png");
 }
 
-#moreBtn{
+#moreBtn {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/advance.png");
     background-color: rgba(19, 19, 19, 0);
     border-color: rgba(19, 19, 19, 0);
@@ -35,14 +35,15 @@ LogVisualElement > TemplateContainer> #mainVisualElement{
     border-left-width: 0px;
 }
 
-#detailWindow{
-    border-color: #383838;
-}
-#white{
+#detailWindow {
     border-color: #383838;
 }
 
-#clearContainer{
+#white {
+    border-color: #383838;
+}
+
+#clearContainer {
     border-color: #383838;
 }
 
@@ -51,18 +52,17 @@ LogVisualElement > TemplateContainer> #mainVisualElement{
     background-color: #383838;
 }
 
-#logListRoot{
+#logListRoot {
     border-color: #383838;
 }
 
-#debug .img{
+#debug .img {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/debug.png");
 }
 
-#dropDown{
+#dropDown {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/dropdown_border.png");
 }
-
 
 .localBuilding {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/local Building L.png");
@@ -72,25 +72,27 @@ LogVisualElement > TemplateContainer> #mainVisualElement{
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Running L.png");
 }
 
-.localStopped{
+.localStopped {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Stopped L.png");
 }
 
-.remoteRunning{
+.remoteRunning {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Running L.png");
 }
-.remoteStopped{
+
+.remoteStopped {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Stopped L.png");
 }
 
-.different{
+.different {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/different L.png");
 }
 
-.remoteDeploying{
+.remoteDeploying {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Deploying L.png");
 }
-.remoteDisabled{
+
+.remoteDisabled {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Disable L.png");
 }
 

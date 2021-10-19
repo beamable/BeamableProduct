@@ -184,31 +184,11 @@ namespace Beamable.Common.Shop
    }
 
    [System.Serializable]
-   public class ListingPrice : ISerializationCallbackReceiver
+   public class ListingPrice
    {
-      [FormerlySerializedAs("type")]
-      [SerializeField, HideInInspector]
-      [IgnoreContentField]
-      private string typeOld;
-
-      [Obsolete("Use 'priceType' instead")]
-      public string type
-      {
-         get => priceType.ToString().ToLower();
-         set => priceType = EnumConversionHelper.ParseEnumType<PriceType>(value);
-      }
-
       [Tooltip(ContentObject.TooltipType1)]
-      [MustBeNonDefault]
-      [IgnoreContentField]
-      public PriceType priceType;
-
-      /// <summary>
-      /// Don't use this field. It's used only for JSON serialization.
-      /// </summary>
-      [SerializeField, HideInInspector]
-      [ContentField("type")]
-      private string priceSerializedValue;
+      [MustBeOneOf("sku", "currency")]
+      public string type;
       
       [Tooltip(ContentObject.TooltipSymbol1)]
       [MustReferenceContent(false, typeof(CurrencyContent), typeof(SKUContent))]
@@ -217,19 +197,6 @@ namespace Beamable.Common.Shop
       [Tooltip(ContentObject.TooltipAmount1)]
       [MustBeNonNegative]
       public int amount;
-
-      public void OnBeforeSerialize()
-      {
-         priceSerializedValue = priceType.ToString().ToLower();
-      }
-
-      public void OnAfterDeserialize()
-      {
-         if (!EnumConversionHelper.ConvertIfNotDoneAlready(ref priceType, ref typeOld))
-         {
-            priceType = EnumConversionHelper.ParseEnumType<PriceType>(priceSerializedValue);
-         }
-      }
    }
 
    [System.Serializable]
@@ -256,142 +223,31 @@ namespace Beamable.Common.Shop
    }
 
    [System.Serializable]
-   public class StatRequirement : ISerializationCallbackReceiver
+   public class StatRequirement
    {
       // TODO: StatRequirement, by way of OptionalStats, is used by AnnouncementContent too. Should this be in a shared location? ~ACM 2021-04-22
-
-      public StatRequirement()
-      {
-         domainCached = new OptionalString { Value = domainType.ToString().ToLower() };
-         accessCached = new OptionalString { Value = accessType.ToString().ToLower() };
-      }
       
-      #region domain
-      
-      [FormerlySerializedAs("domain")]
-      [SerializeField, HideInInspector]
-      [IgnoreContentField]
-      private OptionalString domainOld;
-
-      private OptionalString domainCached;
-
-      /// <summary>
-      /// Don't use this field. It's used only for JSON serialization.
-      /// </summary>
-      [SerializeField, HideInInspector]
-      [ContentField("domain")]
-      private string domainSerializedValue;
-      
-      [Obsolete("Use 'domainType' instead")]
-      public OptionalString domain
-      {
-         get => domainCached;
-         set
-         {
-            domainType = EnumConversionHelper.ParseEnumType<DomainType>(value);
-            domainCached.Value = domainType.ToString().ToLower();
-         }
-      }
-
       [Tooltip("Domain of the stat (e.g. 'platform', 'game', 'client'). Default is 'game'.")]
-      [IgnoreContentField]
-      public DomainType domainType;
-
-      #endregion
+      [MustBeOneOf("platform", "game", "client")]
+      public OptionalString domain;
       
-      #region access
-      
-      [SerializeField, HideInInspector] [FormerlySerializedAs("access")]
-      [IgnoreContentField]
-      private OptionalString accessOld;
-
-      private OptionalString accessCached;
-
-      /// <summary>
-      /// Don't use this field. It's used only for JSON serialization.
-      /// </summary>
-      [ContentField("access")] 
-      [SerializeField, HideInInspector]
-      private string accessSerializedValue;
-
-      [Obsolete("Use 'accessType' instead")]
-      public OptionalString access
-      {
-         get => accessCached;
-         set
-         {
-            accessType = EnumConversionHelper.ParseEnumType<AccessType>(value);
-            accessCached.Value = accessType.ToString().ToLower();
-         }
-      }
-
       [Tooltip("Visibility of the stat (e.g. 'private', 'public'). Default is 'private'.")]
-      [IgnoreContentField]
-      public AccessType accessType;
-      
-      #endregion
+      [MustBeOneOf("private", "public")]
+      public OptionalString access;
 
-      [Tooltip(ContentObject.TooltipStat1)] [CannotBeBlank]
+      [Tooltip(ContentObject.TooltipStat1)]
+      [CannotBeBlank]
       public string stat;
-
-      #region constraint
       
-      [FormerlySerializedAs("constraint")] 
-      [SerializeField, HideInInspector]
-      [IgnoreContentField]
-      private string constraintOld;
-
-      /// <summary>
-      /// Don't use this field. It's used only for JSON serialization.
-      /// </summary>
-      [SerializeField, HideInInspector]
-      [ContentField("constraint")]
-      private string constraintSerializedValue;
-      
-      [Obsolete("Use 'constraintType' instead")]
-      public string constraint
-      {
-         get => constraintType.ToString().ToLower();
-         set => constraintType = EnumConversionHelper.ParseEnumType<ComparatorType>(value);
-      }
-
       [Tooltip(ContentObject.TooltipConstraint1)]
-      [MustBeNonDefault]
-      [IgnoreContentField]
-      public ComparatorType constraintType;
-      
-      #endregion
+      [MustBeComparatorString]
+      public string constraint;
 
       [Tooltip(ContentObject.TooltipValue1)] public int value;
-
-      public void OnBeforeSerialize()
-      {
-         domainSerializedValue = domainType.ToString().ToLower();
-         accessSerializedValue = accessType.ToString().ToLower();
-         constraintSerializedValue = constraintType.ToString().ToLower();
-      }
-
-      public void OnAfterDeserialize()
-      {
-         if (!EnumConversionHelper.ConvertIfNotDoneAlready(ref accessType, ref accessOld))
-         {
-            accessType = EnumConversionHelper.ParseEnumType<AccessType>(accessSerializedValue);
-         }
-
-         if (!EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld))
-         {
-            constraintType = EnumConversionHelper.ParseEnumType<ComparatorType>(constraintSerializedValue);
-         }
-
-         if (!EnumConversionHelper.ConvertIfNotDoneAlready(ref domainType, ref domainOld))
-         {
-            domainType = EnumConversionHelper.ParseEnumType<DomainType>(domainSerializedValue);
-         }
-      }
    }
 
    [System.Serializable]
-   public class CohortRequirement : ISerializationCallbackReceiver
+   public class CohortRequirement
    {
       [Tooltip(ContentObject.TooltipCohortTrial1)]
       [CannotBeBlank]
@@ -401,41 +257,9 @@ namespace Beamable.Common.Shop
       [CannotBeBlank]
       public string cohort;
 
-      [FormerlySerializedAs("constraint")]
-      [SerializeField, HideInInspector]
-      [IgnoreContentField]
-      private string constraintOld;
-
-      /// <summary>
-      /// Don't use this field. It's used only for JSON serialization.
-      /// </summary>
-      [SerializeField, HideInInspector]
-      [ContentField("constraint")]
-      private string constraintSerializedValue;
-
-      [Obsolete("Use 'constraintType' instead")]
-      public string constraint
-      {
-         get => constraintType.ToString().ToLower();
-         set => EnumConversionHelper.ParseEnumType<ComparatorType>(value);
-      }
-
       [Tooltip(ContentObject.TooltipConstraint1)]
-      [IgnoreContentField]
-      public ComparatorType constraintType;
-
-      public void OnBeforeSerialize()
-      {
-         constraintSerializedValue = constraintType.ToString().ToLower();
-      }
-
-      public void OnAfterDeserialize()
-      {
-         if (!EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld))
-         {
-            constraintType = EnumConversionHelper.ParseEnumType<ComparatorType>(constraintSerializedValue);
-         }
-      }
+      [MustBeComparatorString]
+      public string constraint;
    }
 
    [System.Serializable]
@@ -445,46 +269,16 @@ namespace Beamable.Common.Shop
    }
 
    [System.Serializable]
-   public class OfferConstraint : ISerializationCallbackReceiver
+   public class OfferConstraint
    {
-      [FormerlySerializedAs("constraint"), HideInInspector]
-      [IgnoreContentField]
-      public string constraintOld;
-
-      /// <summary>
-      /// Don't use this field. It's used only for JSON serialization.
-      /// </summary>
-      [SerializeField, HideInInspector]
-      [ContentField("constraint")]
-      private string constraintSerializedValue;
-
-      [Obsolete("Use 'constraintType' instead")]
-      public string constraint
-      {
-         get => constraintType.ToString().ToLower();
-         set => constraintType = EnumConversionHelper.ParseEnumType<ComparatorType>(value);
-      }
-      
       [Tooltip(ContentObject.TooltipConstraint1)]
-      [IgnoreContentField]
-      public ComparatorType constraintType;
-
+      [MustBeComparatorString]
+      public string constraint;
+      
       [Tooltip(ContentObject.TooltipValue1)]
       public int value;
-
-      public void OnBeforeSerialize()
-      {
-         constraintSerializedValue = constraintType.ToString().ToLower();
-      }
-
-      public void OnAfterDeserialize()
-      {
-         if (!EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld))
-         {
-            constraintType = EnumConversionHelper.ParseEnumType<ComparatorType>(constraintSerializedValue);
-         }
-      }
    }
+   
    [System.Serializable]
    public class OptionalColor : Optional<Color>
    {

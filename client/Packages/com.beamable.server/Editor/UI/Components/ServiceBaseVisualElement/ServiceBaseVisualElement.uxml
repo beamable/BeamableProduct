@@ -27,8 +27,8 @@
             </engine:VisualElement>
         </engine:VisualElement>
 
-        <engine:VisualElement name="logContainer">
-        </engine:VisualElement>
+        <engine:VisualElement name="logContainer"/>
+        <beamableMS:MicroserviceVisualElementSeparator name="separator"/>
 
         <engine:VisualElement name="buttonsContainer">
             <engine:VisualElement name="dependentServicesContainer">
@@ -43,7 +43,6 @@
                 </engine:Button>
             </engine:VisualElement>
         </engine:VisualElement>
-        <beamableMS:MicroserviceVisualElementSeparator name="separator"/>
 
     </engine:VisualElement>
 
