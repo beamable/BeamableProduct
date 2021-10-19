@@ -1,7 +1,7 @@
 {
-    "cid": "",
-    "alias": "",
-    "pid": "",
+    "cid": "1415062710161408",
+    "alias": "prauiz-dev",
+    "pid": "DE_1415062710161409",
     "platform": "https://dev.api.beamable.com",
     "socket": "https://dev.api.beamable.com",
     "containerPrefix": ""

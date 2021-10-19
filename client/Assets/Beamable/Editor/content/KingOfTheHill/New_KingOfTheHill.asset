@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8309feed34249544986c04e3844c3fbc, type: 3}
+  m_Name: New_KingOfTheHill
+  m_EditorClassIdentifier: 
+  _tags:
+  - base
+  id: 
+  version: 
+  properties:
+    maxPlayers:
+      data: 0
+    teams:
+      data: []
+    numericRules:
+      data: []
+    stringRules:
+      data: []
+    leaderboardUpdates:
+      data: []
+    rewards:
+      data: []
