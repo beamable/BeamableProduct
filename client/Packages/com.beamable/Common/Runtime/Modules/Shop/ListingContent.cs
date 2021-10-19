@@ -188,7 +188,6 @@ namespace Beamable.Common.Shop
    {
       [FormerlySerializedAs("type")]
       [SerializeField, HideInInspector]
-      [IgnoreContentField]
       private string typeOld;
 
       [Obsolete("Use 'priceType' instead")]
@@ -200,15 +199,7 @@ namespace Beamable.Common.Shop
 
       [Tooltip(ContentObject.TooltipType1)]
       [MustBeNonDefault]
-      [IgnoreContentField]
       public PriceType priceType;
-
-      /// <summary>
-      /// Don't use this field. It's used only for JSON serialization.
-      /// </summary>
-      [SerializeField, HideInInspector]
-      [ContentField("type")]
-      private string priceSerializedValue;
       
       [Tooltip(ContentObject.TooltipSymbol1)]
       [MustReferenceContent(false, typeof(CurrencyContent), typeof(SKUContent))]
@@ -220,15 +211,11 @@ namespace Beamable.Common.Shop
 
       public void OnBeforeSerialize()
       {
-         priceSerializedValue = priceType.ToString().ToLower();
       }
 
       public void OnAfterDeserialize()
       {
-         if (!EnumConversionHelper.ConvertIfNotDoneAlready(ref priceType, ref typeOld))
-         {
-            priceType = EnumConversionHelper.ParseEnumType<PriceType>(priceSerializedValue);
-         }
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref priceType, ref typeOld);
       }
    }
 
@@ -270,17 +257,9 @@ namespace Beamable.Common.Shop
       
       [FormerlySerializedAs("domain")]
       [SerializeField, HideInInspector]
-      [IgnoreContentField]
       private OptionalString domainOld;
 
       private OptionalString domainCached;
-
-      /// <summary>
-      /// Don't use this field. It's used only for JSON serialization.
-      /// </summary>
-      [SerializeField, HideInInspector]
-      [ContentField("domain")]
-      private string domainSerializedValue;
       
       [Obsolete("Use 'domainType' instead")]
       public OptionalString domain
@@ -294,7 +273,6 @@ namespace Beamable.Common.Shop
       }
 
       [Tooltip("Domain of the stat (e.g. 'platform', 'game', 'client'). Default is 'game'.")]
-      [IgnoreContentField]
       public DomainType domainType;
 
       #endregion
@@ -302,17 +280,9 @@ namespace Beamable.Common.Shop
       #region access
       
       [SerializeField, HideInInspector] [FormerlySerializedAs("access")]
-      [IgnoreContentField]
       private OptionalString accessOld;
 
       private OptionalString accessCached;
-
-      /// <summary>
-      /// Don't use this field. It's used only for JSON serialization.
-      /// </summary>
-      [ContentField("access")] 
-      [SerializeField, HideInInspector]
-      private string accessSerializedValue;
 
       [Obsolete("Use 'accessType' instead")]
       public OptionalString access
@@ -326,7 +296,6 @@ namespace Beamable.Common.Shop
       }
 
       [Tooltip("Visibility of the stat (e.g. 'private', 'public'). Default is 'private'.")]
-      [IgnoreContentField]
       public AccessType accessType;
       
       #endregion
@@ -338,16 +307,8 @@ namespace Beamable.Common.Shop
       
       [FormerlySerializedAs("constraint")] 
       [SerializeField, HideInInspector]
-      [IgnoreContentField]
       private string constraintOld;
 
-      /// <summary>
-      /// Don't use this field. It's used only for JSON serialization.
-      /// </summary>
-      [SerializeField, HideInInspector]
-      [ContentField("constraint")]
-      private string constraintSerializedValue;
-      
       [Obsolete("Use 'constraintType' instead")]
       public string constraint
       {
@@ -357,7 +318,6 @@ namespace Beamable.Common.Shop
 
       [Tooltip(ContentObject.TooltipConstraint1)]
       [MustBeNonDefault]
-      [IgnoreContentField]
       public ComparatorType constraintType;
       
       #endregion
@@ -366,27 +326,13 @@ namespace Beamable.Common.Shop
 
       public void OnBeforeSerialize()
       {
-         domainSerializedValue = domainType.ToString().ToLower();
-         accessSerializedValue = accessType.ToString().ToLower();
-         constraintSerializedValue = constraintType.ToString().ToLower();
       }
 
       public void OnAfterDeserialize()
       {
-         if (!EnumConversionHelper.ConvertIfNotDoneAlready(ref accessType, ref accessOld))
-         {
-            accessType = EnumConversionHelper.ParseEnumType<AccessType>(accessSerializedValue);
-         }
-
-         if (!EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld))
-         {
-            constraintType = EnumConversionHelper.ParseEnumType<ComparatorType>(constraintSerializedValue);
-         }
-
-         if (!EnumConversionHelper.ConvertIfNotDoneAlready(ref domainType, ref domainOld))
-         {
-            domainType = EnumConversionHelper.ParseEnumType<DomainType>(domainSerializedValue);
-         }
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref accessType, ref accessOld);
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld);
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref domainType, ref domainOld);
       }
    }
 
@@ -403,15 +349,7 @@ namespace Beamable.Common.Shop
 
       [FormerlySerializedAs("constraint")]
       [SerializeField, HideInInspector]
-      [IgnoreContentField]
       private string constraintOld;
-
-      /// <summary>
-      /// Don't use this field. It's used only for JSON serialization.
-      /// </summary>
-      [SerializeField, HideInInspector]
-      [ContentField("constraint")]
-      private string constraintSerializedValue;
 
       [Obsolete("Use 'constraintType' instead")]
       public string constraint
@@ -421,20 +359,15 @@ namespace Beamable.Common.Shop
       }
 
       [Tooltip(ContentObject.TooltipConstraint1)]
-      [IgnoreContentField]
       public ComparatorType constraintType;
 
       public void OnBeforeSerialize()
       {
-         constraintSerializedValue = constraintType.ToString().ToLower();
       }
 
       public void OnAfterDeserialize()
       {
-         if (!EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld))
-         {
-            constraintType = EnumConversionHelper.ParseEnumType<ComparatorType>(constraintSerializedValue);
-         }
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld);
       }
    }
 
@@ -448,15 +381,7 @@ namespace Beamable.Common.Shop
    public class OfferConstraint : ISerializationCallbackReceiver
    {
       [FormerlySerializedAs("constraint"), HideInInspector]
-      [IgnoreContentField]
       public string constraintOld;
-
-      /// <summary>
-      /// Don't use this field. It's used only for JSON serialization.
-      /// </summary>
-      [SerializeField, HideInInspector]
-      [ContentField("constraint")]
-      private string constraintSerializedValue;
 
       [Obsolete("Use 'constraintType' instead")]
       public string constraint
@@ -466,7 +391,6 @@ namespace Beamable.Common.Shop
       }
       
       [Tooltip(ContentObject.TooltipConstraint1)]
-      [IgnoreContentField]
       public ComparatorType constraintType;
 
       [Tooltip(ContentObject.TooltipValue1)]
@@ -474,15 +398,11 @@ namespace Beamable.Common.Shop
 
       public void OnBeforeSerialize()
       {
-         constraintSerializedValue = constraintType.ToString().ToLower();
       }
 
       public void OnAfterDeserialize()
       {
-         if (!EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld))
-         {
-            constraintType = EnumConversionHelper.ParseEnumType<ComparatorType>(constraintSerializedValue);
-         }
+         EnumConversionHelper.ConvertIfNotDoneAlready(ref constraintType, ref constraintOld);
       }
    }
    [System.Serializable]
