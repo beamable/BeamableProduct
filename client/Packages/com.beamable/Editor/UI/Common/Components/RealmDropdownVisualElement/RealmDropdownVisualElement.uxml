@@ -14,7 +14,9 @@
         </engine:Button>
 
         <engine:VisualElement>
-            <beamable:LoadingIndicatorVisualElement/>
+            <beamable:LoadingIndicatorVisualElement>
+                <beamable:LoadingSpinnerVisualElement/>
+            </beamable:LoadingIndicatorVisualElement>
         </engine:VisualElement>
 
         <engine:VisualElement name="mainBlockedContent">
@@ -23,6 +25,7 @@
                     <!-- list of realm -->
                 </engine:VisualElement>
             </engine:ScrollView>
+
         </engine:VisualElement>
 
     </engine:VisualElement>
