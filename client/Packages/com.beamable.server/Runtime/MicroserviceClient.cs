@@ -8,6 +8,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
+using Beamable.Serialization.SmallerJSON;
 
 namespace Beamable.Server
 {
@@ -52,7 +53,7 @@ namespace Beamable.Server
             case long prim:
                return prim.ToString();
             case string prim:
-               return "\"" + prim + "\"";
+               return IsJsonString(prim) ? "[" + prim + "]" : "\"" + prim + "\"";
             case double prim:
                return prim.ToString();
             case float prim:
@@ -142,6 +143,28 @@ namespace Beamable.Server
          Debug.Log($"Sending Request uri=[{url}]");
          return await requester.Request<T>(Method.POST, url, req, parser: Parser);
       }
+
+      private bool IsJsonString(string str)
+      {
+            if (string.IsNullOrWhiteSpace(str)) { return false; }
+            str = str.Trim();
+            if (str.StartsWith("{") && str.EndsWith("}"))
+            {
+                try
+                {
+                    var obj = JsonUtility.ToJson(str);
+                    return true;
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
 
       protected static string CreateEndpointPrefix(string serviceName)
       {
