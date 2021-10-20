@@ -134,7 +134,6 @@ namespace TestingTool.Scripts.Editor
         private TestScenariosRuntime _testScenariosRuntime;
         private TestingToolConfig _config;
 
-
         public void OnPreprocessBuild(BuildReport report)
         {
             _config = TestScenariosSettingsBuilder.GetConfig();
