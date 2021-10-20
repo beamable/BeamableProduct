@@ -17,6 +17,13 @@ namespace TestingTool.Scripts.Editor
         [MenuItem("Window/Beamable Dev/Setup Test Scenarios Into Build", false, 50)]
         public static void Execute()
         {
+            var config = GetConfig();
+            if (config == null || !config.IsTestingToolEnabled)
+            {
+                EditorUtility.DisplayDialog("Testing Tool Status", "Testing Tool is disabled. If you want to use Testing Tool, enable it in TestingToolConfig", "Ok");
+                return;
+            }
+            
             _testScenarios = AssetDatabase.LoadAssetAtPath<TestScenarios>(ConstantsHelper.TEST_SCENARIOS_CREATOR_PATH);
             Validate();
             SetupScenesInBuildSettings();
@@ -106,6 +113,18 @@ namespace TestingTool.Scripts.Editor
         {
             return _testScenarios.Scenarios.All(scenario => scenario.SceneAsset != null);
         }
+        public static TestingToolConfig GetConfig()
+        {
+            var config = AssetDatabase.LoadAssetAtPath<TestingToolConfig>($"{ConstantsHelper.TEST_TOOL_DIRECTORY}/{ConstantsHelper.TEST_CONFIG_FILENAME}.asset");
+            if (config == null)
+            {
+                var asset = ScriptableObject.CreateInstance<TestingToolConfig>();
+                AssetDatabase.CreateAsset(asset, $"{ConstantsHelper.TEST_TOOL_DIRECTORY}/{ConstantsHelper.TEST_CONFIG_FILENAME}.asset");
+                AssetDatabase.SaveAssets();
+                config = asset;
+            }
+            return config;
+        }
     }
 
     public class TestBuilderProcessor : IPreprocessBuildWithReport
@@ -113,14 +132,17 @@ namespace TestingTool.Scripts.Editor
         public int callbackOrder { get; }
 
         private TestScenariosRuntime _testScenariosRuntime;
+        private TestingToolConfig _config;
 
         public void OnPreprocessBuild(BuildReport report)
         {
+            _config = TestScenariosSettingsBuilder.GetConfig();
+            if (_config == null || !_config.IsTestingToolEnabled)
+                return;
             _testScenariosRuntime = Resources.Load<TestScenariosRuntime>(ConstantsHelper.TEST_SCENARIOS_RUNTIME_FILENAME);
             Validate();
             _testScenariosRuntime.ResetForBuild();
         }
-
         private void Validate()
         {
             if (_testScenariosRuntime == null)
