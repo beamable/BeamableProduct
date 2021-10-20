@@ -85,4 +85,32 @@ namespace Beamable.Editor.UI.Validation
             return new DateTime(2000, 1, 1, hour , minute, second);
         }
     }
+    
+    public class NotAllDaysSelectedRule : ValidationRule<int>
+    {
+        public NotAllDaysSelectedRule(string componentName) : base(componentName)
+        {
+        }
+
+        public override string ErrorMessage => $"{ComponentName} can't have all days selected";
+        
+        public override void Validate(int value)
+        {
+            Satisfied = value < 7;
+        }
+    }
+    
+    public class AtLeastOneDaySelectedRule : ValidationRule<int>
+    {
+        public AtLeastOneDaySelectedRule(string componentName) : base(componentName)
+        {
+        }
+
+        public override string ErrorMessage => $"{ComponentName} must have minimum one day selected";
+        
+        public override void Validate(int value)
+        {
+            Satisfied = value > 0;
+        }
+    }
 }
