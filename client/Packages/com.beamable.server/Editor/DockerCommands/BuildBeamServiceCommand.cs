@@ -35,6 +35,8 @@ namespace Beamable.Server.Editor.DockerCommands
          return "../microservice/build.sh";
 #elif UNITY_EDITOR_WIN
          return "..\\microservice\\build.bat";
+#else
+         return "";
 #endif
 
       }
