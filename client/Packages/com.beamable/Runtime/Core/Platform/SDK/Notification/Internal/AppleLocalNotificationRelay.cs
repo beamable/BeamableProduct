@@ -1,4 +1,5 @@
 #if UNITY_IOS
+#pragma warning disable CS0618
 using System;
 using System.Collections.Generic;
 using UnityEngine.iOS;
@@ -72,4 +73,5 @@ namespace Beamable.Api.Notification.Internal
       //private static extern void clearAllNotification();
    }
 }
+#pragma warning restore CS0618
 #endif
