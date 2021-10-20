@@ -144,8 +144,9 @@ jobs:
           allowDirtyBuild: true
           buildsPath: dist
       - name: upload
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./dist s3://${{secrets.AWS_BUCKET_BUILDS}}/uploads/${{github.sha}}
+        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./dist/WebGL s3://${{secrets.AWS_BUCKET_BUILDS}}/uploads/${{github.sha}}
       - uses: github-actions-up-and-running/pr-comment@v1.0.1
+        if: ${{ matrix.targetPlatform == 'WebGL' }}
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          message: Have a ${{ matrix.targetPlatform }} build, friend. [${{github.sha}}](https://beamable-product-github-builds.s3.us-west-2.amazonaws.com/uploads/${{github.sha}}/${{ matrix.targetPlatform }}/${{ matrix.targetPlatform }})
+          message: Have a ${{ matrix.targetPlatform }} build, friend. [${{github.sha}}](https://beamable-product-github-builds.s3.us-west-2.amazonaws.com/uploads/${{github.sha}}/WebGL/index.html)
