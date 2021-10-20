@@ -102,7 +102,11 @@ jobs:
       fail-fast: false
       matrix:
         targetPlatform:
-          - WebGL # WebGL.
+          - WebGL
+          - Android
+          - StandaloneWindows
+          - iOS
+          - StandaloneOSX
         unityVersion:
           - 2020.3.19f1
         projectPath:
@@ -118,9 +122,9 @@ jobs:
             ${{ matrix.projectPath }}/Library
             ${{ matrix.projectPath }}/Temp
             ${{ matrix.projectPath }}/obj
-          key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
+          key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
           restore-keys: |
-            Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
+            Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
       - name: Run script file
         run: |
           chmod +x ./build/clean_iap.sh
@@ -144,4 +148,4 @@ jobs:
       - uses: github-actions-up-and-running/pr-comment@v1.0.1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          message: Have a build, friend. [${{github.sha}}](https://beamable-product-github-builds.s3.us-west-2.amazonaws.com/uploads/${{github.sha}}/WebGL/WebGL/index.html)
+          message: Have a ${{ matrix.targetPlatform }} build, friend. [${{github.sha}}](https://beamable-product-github-builds.s3.us-west-2.amazonaws.com/uploads/${{github.sha}}/${{ matrix.targetPlatform }}/${{ matrix.targetPlatform }})
