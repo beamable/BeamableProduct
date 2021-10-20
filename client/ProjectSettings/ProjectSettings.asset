@@ -11,6 +11,7 @@ PlayerSettings:
   defaultScreenOrientation: 4
   targetDevice: 2
   useOnDemandResources: 0
+  useCustomGradlePropertiesTemplate: 1
   accelerometerFrequency: 60
   companyName: Beamable
   productName: Beamable
