@@ -56,6 +56,12 @@ namespace microserviceTests.microservice
       {
          return await Promise<int>.Successful(1);
       }
+      
+      [ClientCallable]
+      public int MethodWithJSON_AsParameter(string jsonString)
+      {
+         return 1;
+      }
 
       // TODO: Add a test for an empty arg array, or a null
 

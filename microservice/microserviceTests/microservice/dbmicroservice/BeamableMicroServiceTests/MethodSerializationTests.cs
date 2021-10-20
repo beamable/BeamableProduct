@@ -1,7 +1,9 @@
+using System.Text;
 using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Api.Content;
 using Beamable.Microservice.Tests.Socket;
+using Beamable.Serialization.SmallerJSON;
 using Beamable.Server;
 using microserviceTests.microservice.Util;
 using NUnit.Framework;
@@ -258,5 +260,44 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.OnShutdown(this, null);
          Assert.IsTrue(testSocket.AllMocksCalled());
       }
+      
+      [Test]
+      [NonParallelizable]
+      public async Task Call_MethodWithJSON_AsParameter()
+      {
+         LoggingUtil.Init();
+         TestSocket testSocket = null;
+         
+         var req = new ArrayDict
+         {
+            {"testInt", 12345}
+         };
+         var jsonStr = Json.Serialize(req, new StringBuilder());
+
+         var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+         {
+            testSocket = socket;
+            socket.AddStandardMessageHandlers()
+               .AddMessageHandler(
+                  MessageMatcher
+                     .WithReqId(1)
+                     .WithStatus(200)
+                     .WithPayload<int>(n => n == 1),
+                  MessageResponder.NoResponse(),
+                  MessageFrequency.OnlyOnce()
+               );
+         }));
+
+         await ms.Start<SimpleMicroservice>(new TestArgs());
+         Assert.IsTrue(ms.HasInitialized);
+
+
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "MethodWithJSON_AsParameter", 1, 0, jsonStr));
+
+         // simulate shutdown event...
+         await ms.OnShutdown(this, null);
+         Assert.IsTrue(testSocket.AllMocksCalled());
+      }
+     
    }
 }
