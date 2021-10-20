@@ -156,16 +156,6 @@ jobs:
           name: Build-${{ matrix.targetPlatform }}
           path: dist/${{ matrix.targetPlatform }}
           retention-days: 3
-      - name: add artifact links to pull request and related issues step
-        uses: tonyhallett/artifacts-url-comments@v1.1.0
-        if: ${{ matrix.targetPlatform != 'WebGL' }}
-        env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-            prefix: Here are the ${{ matrix.targetPlatform }} artifacts 
-            suffix: Have a nice day.
-            format: name
-            addTo: pullandissues
       - name: upload
         if: ${{ matrix.targetPlatform == 'WebGL' }}
         run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp --recursive ./dist/WebGL s3://${{secrets.AWS_BUCKET_BUILDS}}/uploads/${{github.sha}}
