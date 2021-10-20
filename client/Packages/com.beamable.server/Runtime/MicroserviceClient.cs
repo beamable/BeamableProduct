@@ -8,6 +8,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
+using Beamable.Serialization.SmallerJSON;
 
 namespace Beamable.Server
 {
@@ -147,12 +148,12 @@ namespace Beamable.Server
       {
             if (string.IsNullOrWhiteSpace(strInput)) { return false; }
             strInput = strInput.Trim();
-            if ((strInput.StartsWith("{") && strInput.EndsWith("}")) || //For object
-                (strInput.StartsWith("[") && strInput.EndsWith("]"))) //For array
+            if ((strInput.StartsWith("{") && strInput.EndsWith("}")) || 
+                (strInput.StartsWith("[") && strInput.EndsWith("]")))
             {
                 try
                 {
-                    var obj = JsonUtility.ToJson(strInput);
+                    var obj = Json.Deserialize(strInput);
                     return true;
                 }
                 catch (Exception)
