@@ -22,6 +22,11 @@ namespace Beamable.Editor.UI.Components
             readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
                 {name = "label", defaultValue = "Label"};
 
+            private readonly UxmlIntAttributeDescription _minValue = new UxmlIntAttributeDescription
+                {name = "min", defaultValue = Int32.MinValue};
+
+            private readonly UxmlIntAttributeDescription _maxValue = new UxmlIntAttributeDescription
+                {name = "max", defaultValue = Int32.MaxValue};
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
                 get { yield break; }
@@ -33,6 +38,8 @@ namespace Beamable.Editor.UI.Components
                 if (ve is LabeledNumberPicker component)
                 {
                     component.Label = _label.GetValueFromBag(bag, cc);
+                    component.MinValue = _minValue.GetValueFromBag(bag, cc);
+                    component.MaxValue = _maxValue.GetValueFromBag(bag, cc);
                 }
             }
         }
@@ -42,8 +49,15 @@ namespace Beamable.Editor.UI.Components
         private List<string> _options;
         private Action _onValueChanged;
 
-        public string Value => _labeledTextFieldComponent.Value;
-        private string Label { get; set; }
+        public string Value
+        {
+            get => _labeledTextFieldComponent.Value;
+            set => _labeledTextFieldComponent.Value = value;
+        }
+
+        private int MinValue { get; set; }
+        private int MaxValue { get; set; }
+        public string Label { get; set; }
 
         public LabeledNumberPicker() : base($"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledNumberPicker)}/{nameof(LabeledNumberPicker)}")
         {
@@ -55,9 +69,7 @@ namespace Beamable.Editor.UI.Components
             base.Refresh();
 
             _labeledTextFieldComponent = Root.Q<LabeledTextField>("labelAndValue");
-            _labeledTextFieldComponent.Label = Label;
-            _labeledTextFieldComponent.Value = Value;
-            _labeledTextFieldComponent.OnValueChanged = _onValueChanged;
+            _labeledTextFieldComponent.Setup(Label, Value, _onValueChanged, MinValue, MaxValue);
             _labeledTextFieldComponent.Refresh();
 
             _button = Root.Q<Button>("button");
@@ -70,6 +82,12 @@ namespace Beamable.Editor.UI.Components
             _onValueChanged = onValueChanged;
             SetEnabled(active);
             _options = options;
+        }
+
+        public void SetupMinMax(int min, int max)
+        {
+            MinValue = min;
+            MaxValue = max;
         }
 
         private void ConfigureOptions()

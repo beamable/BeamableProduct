@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Beamable.Common.Content;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Validation;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -82,11 +84,6 @@ namespace Beamable.Editor.UI.Components
             _hourPicker.Refresh();
         }
 
-        private void OnHourChanged()
-        {
-            OnValueChanged?.Invoke();
-        }
-
         public void Set(DateTime date) => _hourPicker.Set(date);
         public void SetPeriod(ScheduleDefinition definition, int index) => _hourPicker.SetPeriod(definition, index);
 
@@ -94,6 +91,11 @@ namespace Beamable.Editor.UI.Components
         {
             SetEnabled(b);
             _hourPicker.SetGroupEnabled(b);
+        }
+
+        private void OnHourChanged()
+        {
+            OnValueChanged?.Invoke();
         }
     }
 }

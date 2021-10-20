@@ -7,10 +7,10 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:VisualElement name="mainVisualElement">
-        <beamable:LabeledTextField name="labelAndValue"/>
+        <beamable:LabeledTextField name="labelAndValue" mode="digitsOnly"/>
         <engine:VisualElement name="buttonGroup">
-            <engine:Button name="button"/>
             <engine:VisualElement name="buttonImage"/>
+            <engine:Button name="button"/>
         </engine:VisualElement>
     </engine:VisualElement>
 

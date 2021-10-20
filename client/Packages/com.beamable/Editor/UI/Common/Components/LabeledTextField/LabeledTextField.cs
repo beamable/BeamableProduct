@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Validation;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -14,6 +16,12 @@ namespace Beamable.Editor.UI.Components
 {
     public class LabeledTextField : ValidableVisualElement<string>
     {
+        private enum Mode
+        {
+            Default,
+            DigitsOnly,
+        }
+
         public new class UxmlFactory : UxmlFactory<LabeledTextField, UxmlTraits>
         {
         }
@@ -25,6 +33,9 @@ namespace Beamable.Editor.UI.Components
 
             readonly UxmlStringAttributeDescription _value = new UxmlStringAttributeDescription
                 {name = "value"};
+
+            readonly UxmlStringAttributeDescription _mode = new UxmlStringAttributeDescription
+                {name = "mode", defaultValue = "default"};
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -38,30 +49,37 @@ namespace Beamable.Editor.UI.Components
                 {
                     component.Label = _label.GetValueFromBag(bag, cc);
                     component.Value = _value.GetValueFromBag(bag, cc);
+
+                    bool parse = Enum.TryParse(_mode.GetValueFromBag(bag, cc), true, out Mode parsedMode);
+                    component.WorkingMode = parse ? parsedMode : Mode.Default;
                 }
             }
         }
 
-        public Action OnValueChanged;
 
-        private Label _label;
-        private TextField _textField;
+        private Action _onValueChanged;
+        private Label _labelComponent;
+        private TextField _textFieldComponent;
         private string _value;
-
-        public string Label { get; set; }
+        private int _minValue;
+        private int _maxValue;
 
         public string Value
         {
-            get => _value;
+            get => ValidateOutputValue(_value);
             set
             {
                 _value = value;
-                _textField?.SetValueWithoutNotify(_value);
-                OnValueChanged?.Invoke();
-            } 
+                _textFieldComponent?.SetValueWithoutNotify(_value);
+                _onValueChanged?.Invoke();
+            }
         }
 
-        public LabeledTextField() : base($"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledTextField)}/{nameof(LabeledTextField)}")
+        private Mode WorkingMode { get; set; }
+        private string Label { get; set; }
+
+        public LabeledTextField() : base(
+            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledTextField)}/{nameof(LabeledTextField)}")
         {
         }
 
@@ -69,23 +87,71 @@ namespace Beamable.Editor.UI.Components
         {
             base.Refresh();
 
-            _label = Root.Q<Label>("label");
-            _label.text = Label;
+            _labelComponent = Root.Q<Label>("label");
+            _labelComponent.text = Label;
 
-            _textField = Root.Q<TextField>("textField");
-            _textField.value = Value;
-            _textField.RegisterValueChangedCallback(ValueChanged);
+            _textFieldComponent = Root.Q<TextField>("textField");
+            _textFieldComponent.value = Value;
+            _textFieldComponent.RegisterValueChangedCallback(ValueChanged);
+        }
+
+        public void Setup(string label, string value, Action onValueChanged, int minValue, int maxValue)
+        {
+            Label = label;
+            Value = value;
+            _onValueChanged = onValueChanged;
+            _minValue = minValue;
+            _maxValue = maxValue;
         }
 
         protected override void OnDestroy()
         {
-            _textField.UnregisterValueChangedCallback(ValueChanged);
+            _textFieldComponent.UnregisterValueChangedCallback(ValueChanged);
         }
 
         private void ValueChanged(ChangeEvent<string> evt)
         {
-            Value = evt.newValue;
+            Value = ValidateInputValue(evt.newValue);
             InvokeValidationCheck(Value);
+        }
+
+        private string ValidateInputValue(string value)
+        {
+            switch (WorkingMode)
+            {
+                case Mode.Default:
+                    return value;
+                case Mode.DigitsOnly:
+                    return new string(value.Where(Char.IsDigit).ToArray());
+            }
+
+            return value;
+        }
+
+        private string ValidateOutputValue(string value)
+        {
+            string finalValue = value;
+            
+            switch (WorkingMode)
+            {
+                case Mode.DigitsOnly:
+                    if (string.IsNullOrEmpty(value))
+                    {
+                        finalValue = _minValue.ToString();
+                    }
+                    else
+                    {
+                        if (int.TryParse(value, out int result))
+                        {
+                            result = Mathf.Clamp(result, _minValue, _maxValue);
+                            finalValue = result.ToString();
+                        }
+                    }
+
+                    break;
+            }
+
+            return finalValue;
         }
     }
 }

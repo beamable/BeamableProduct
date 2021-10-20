@@ -4,11 +4,12 @@ using System.Linq;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.ManagerClient;
 using Beamable.Server.Editor.UI.Components;
+using UnityEngine;
 
 namespace Beamable.Editor.UI.Model
 {
    [System.Serializable]
-   public class MicroservicesDataModel
+   public class MicroservicesDataModel : ISerializationCallbackReceiver
    {
       private static MicroservicesDataModel _instance;
       private static bool _hasEnabledYet;
@@ -48,6 +49,9 @@ namespace Beamable.Editor.UI.Model
          _instance.RefreshServerManifest();
          return _instance;
       }
+
+      [SerializeField] private List<MicroserviceModel> _localMicroserviceModels;
+      [SerializeField] private List<MongoStorageModel> _localStorageModels;
 
       public List<IBeamableService> AllLocalServices = new List<IBeamableService>();
       public List<IBeamableService> AllRemoteOnlyServices = new List<IBeamableService>();
@@ -200,7 +204,7 @@ namespace Beamable.Editor.UI.Model
          allServices.AddRange(AllLocalServices);
          allServices.AddRange(AllRemoteOnlyServices);
 
-         return (T)allServices?.FirstOrDefault(s => s.Descriptor.Name.Equals(serviceName));
+         return (T)allServices?.FirstOrDefault(s => s is T && s.Descriptor.Name.Equals(serviceName));
       }
 
       public MicroserviceModel GetMicroserviceModel(IDescriptor descriptor) => GetModel<MicroserviceModel>(descriptor);
@@ -226,6 +230,42 @@ namespace Beamable.Editor.UI.Model
          _instance = null;
          _hasEnabledYet = false;
 
+      }
+
+      public void OnBeforeSerialize()
+      {
+         _localMicroserviceModels = new List<MicroserviceModel>();
+         _localStorageModels = new List<MongoStorageModel>();
+         foreach (var service in AllLocalServices)
+         {
+            switch (service)
+            {
+               case MicroserviceModel microserviceModel:
+                  _localMicroserviceModels.Add(microserviceModel);
+                  break;
+               case MongoStorageModel mongoModel:
+                  _localStorageModels.Add(mongoModel);
+                  break;
+            }
+         }
+      }
+
+      public void OnAfterDeserialize()
+      {
+         void AddModels<T>(List<T> models, List<IBeamableService> listToPopulate) where T: ServiceModelBase
+         {
+            foreach (var service in models)
+            {
+               var existing =
+                  listToPopulate.FirstOrDefault(s => string.Equals(s.Descriptor.Name, service.Descriptor.Name));
+               if (existing == null)
+               {
+                  listToPopulate.Add(service);
+               }
+            }
+         }
+         AddModels(_localMicroserviceModels, AllLocalServices);
+         AddModels(_localStorageModels, AllLocalServices);
       }
    }
 
