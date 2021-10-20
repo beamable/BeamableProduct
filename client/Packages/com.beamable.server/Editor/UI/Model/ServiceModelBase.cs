@@ -86,7 +86,7 @@ namespace Beamable.Editor.UI.Model
         protected void OpenCode()
         {
             var path = Path.GetDirectoryName(AssemblyDefinitionHelper.ConvertToInfo(Descriptor).Location);
-            System.Diagnostics.Process.Start($@"{path}/{Descriptor.Name}.cs");
+            Application.OpenURL($@"{path}/{Descriptor.Name}.cs");
         }
     }
 }
