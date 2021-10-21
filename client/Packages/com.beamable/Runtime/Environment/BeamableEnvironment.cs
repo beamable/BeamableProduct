@@ -1,6 +1,7 @@
 
 using System;
 using System.IO;
+using Beamable.Common;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
 using UnityEngine;
@@ -35,7 +36,7 @@ namespace Beamable
       public static string ApiUrl => Data.ApiUrl;
       public static string PortalUrl => Data.PortalUrl;
       public static string Environment => Data.Environment;
-      public static string SdkVersion => Data.SdkVersion;
+      public static PackageVersion SdkVersion => Data.SdkVersion;
       public static string DockerRegistryUrl => Data.DockerRegistryUrl;
 
       // See https://disruptorbeam.atlassian.net/browse/PLAT-3838
@@ -65,11 +66,14 @@ namespace Beamable
       [SerializeField] private string sdkVersion;
       [SerializeField] private string dockerRegistryUrl;
 
+      private PackageVersion _version;
+
       public string Environment => environment;
       public string ApiUrl => apiUrl;
       public string PortalUrl => portalUrl;
-      public string SdkVersion => sdkVersion;
+      public PackageVersion SdkVersion => _version ?? (_version = sdkVersion);
       public string DockerRegistryUrl => dockerRegistryUrl;
+
 
       public void Serialize(JsonSerializable.IStreamSerializer s)
       {
@@ -79,7 +83,7 @@ namespace Beamable
          s.Serialize("sdkVersion", ref sdkVersion);
          s.Serialize("dockerRegistryUrl", ref dockerRegistryUrl);
 
-         if (SdkVersion.Equals(BUILD__SDK__VERSION__STRING))
+         if (sdkVersion.Equals(BUILD__SDK__VERSION__STRING))
          {
             sdkVersion = "0.0.0";
          }
