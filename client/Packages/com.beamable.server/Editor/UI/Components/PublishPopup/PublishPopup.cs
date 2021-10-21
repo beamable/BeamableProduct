@@ -74,8 +74,15 @@ namespace Beamable.Editor.Microservice.UI.Components
             List<IEntryModel> entryModels = new List<IEntryModel>(Model.Services.Values);
             entryModels.AddRange(Model.Storages.Values);
             bool isOddRow = true;
+            bool isPublishDisabled = false;
             foreach (var model in entryModels)
             {
+                if (model is ManifestEntryModel)
+                {
+                    var descriptor = Microservices.Descriptors.Find(desc => desc.Name == model.Name);
+                    isPublishDisabled |= descriptor.IsPublishFeatureDisabled();
+                }
+                
                 bool wasPublished = EditorPrefs.GetBool(GetPublishedKey(model.Name), false);
                 var newElement = new PublishManifestEntryVisualElement(model, wasPublished, isOddRow);
                 newElement.Refresh();
@@ -93,6 +100,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             _continueButton = Root.Q<PrimaryButtonVisualElement>("continueBtn");
             _continueButton.Button.clickable.clicked += () => OnSubmit?.Invoke(Model);
+            _continueButton.SetEnabled(!isPublishDisabled);
         }
 
         public void PrepareForPublish()

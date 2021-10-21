@@ -23,7 +23,7 @@
         <engine:VisualElement name="depsC" class="column">
 <!--            <beamable:DropdownVisualElement name="depsDropdown" />-->
 <!--            <engine:Label text="TEST"/>-->
-            <beamable:ExpandableListVisualElement />
+            <beamable:ExpandableListVisualElement name="depsList" />
         </engine:VisualElement>
 
         <engine:VisualElement name="SizeC" class="column">
