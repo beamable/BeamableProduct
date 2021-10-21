@@ -168,5 +168,7 @@ namespace Beamable.Editor {
             foldouts[path] = expanded;
             return expanded;
         }
+        
+        public static EditorGUIRectController ToRectController(this Rect rect) => new EditorGUIRectController(rect);
     }
 }

@@ -1,10 +1,12 @@
-﻿using UnityEngine;
+﻿using Beamable.UI.SDF.Styles;
+using UnityEngine;
 using UnityEngine.Sprites;
 using UnityEngine.UI;
 
 namespace Beamable.UI.SDF {
     [ExecuteAlways]
     public class SDFImage : Image {
+        public ColorRect colorRect;
         public float threshold;
         public float rounding;
         public Texture2D backgroundTexture;
@@ -165,7 +167,7 @@ namespace Beamable.UI.SDF {
                 position,
                 spriteRect,
                 coordsRect,
-                color,
+                colorRect,
                 size,
                 threshold,
                 _uvToCoordsFactor,

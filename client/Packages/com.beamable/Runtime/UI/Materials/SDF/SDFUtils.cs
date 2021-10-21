@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Beamable.UI.SDF.Styles;
+using UnityEngine;
 using UnityEngine.UI;
 #if !UNITY_2019_1_OR_NEWER
 using UnityEngine.Experimental.UI;
@@ -10,7 +11,7 @@ namespace Beamable.UI.SDF {
         /// Packs SDFImage parameters in vertex data and adds quad to the vertex helper;
         /// </summary>
         public static void AddRect(this VertexHelper vh, 
-            Rect position, Rect uvs, Rect coords, Color32 vertexColor,
+            Rect position, Rect uvs, Rect coords, ColorRect vertexColor,
             Vector2 size,
             float threshold,
             Vector2 uvToCoordsFactor,
@@ -40,7 +41,7 @@ namespace Beamable.UI.SDF {
             float z, 
             Rect uvs, 
             Rect coords, 
-            Color32 vertexColor, 
+            ColorRect vertexColor, 
             Vector2 uv1,
             Vector2 uv2,
             Vector3 normal,
@@ -48,7 +49,7 @@ namespace Beamable.UI.SDF {
             var startVertexIndex = vh.currentVertCount;
             vh.AddVert(
                 new Vector3(position.xMin, position.yMin, z),
-                vertexColor,
+                vertexColor.BottomLeftColor,
                 new Vector2(uvs.xMin, uvs.yMin),
                 uv1,
                 uv2,
@@ -57,7 +58,7 @@ namespace Beamable.UI.SDF {
                 tangent);
             vh.AddVert(
                 new Vector3(position.xMax, position.yMin, z),
-                vertexColor,
+                vertexColor.BottomRightColor,
                 new Vector2(uvs.xMax, uvs.yMin),
                 uv1,
                 uv2,
@@ -66,7 +67,7 @@ namespace Beamable.UI.SDF {
                 tangent);
             vh.AddVert(
                 new Vector3(position.xMax, position.yMax, z),
-                vertexColor,
+                vertexColor.TopRightColor,
                 new Vector2(uvs.xMax, uvs.yMax),
                 uv1,
                 uv2,
@@ -75,7 +76,7 @@ namespace Beamable.UI.SDF {
                 tangent);
             vh.AddVert(
                 new Vector3(position.xMin, position.yMax, z),
-                vertexColor,
+                vertexColor.TopLeftColor,
                 new Vector2(uvs.xMin, uvs.yMax),
                 uv1,
                 uv2,
