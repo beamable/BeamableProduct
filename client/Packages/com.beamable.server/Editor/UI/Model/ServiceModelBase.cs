@@ -22,6 +22,8 @@ namespace Beamable.Editor.UI.Model
 {
     public abstract class ServiceModelBase : IBeamableService
     {
+        private const float DEFAULT_HEIGHT = 300.0f;
+
         public abstract bool IsRunning { get; }
         public bool AreLogsAttached
         {
@@ -31,8 +33,15 @@ namespace Beamable.Editor.UI.Model
 
         [SerializeField] private bool _areLogsAttached = true;
         [SerializeField] private LogMessageStore _logs = new LogMessageStore();
+        [SerializeField] private float _visualHeight = DEFAULT_HEIGHT;
 
         public LogMessageStore Logs => _logs;
+
+        public float VisualElementHeight
+        {
+            get => _visualHeight;
+            set => _visualHeight = value;
+        }
 
         public abstract IDescriptor Descriptor { get; }
         public abstract IBeamableBuilder Builder { get; }
