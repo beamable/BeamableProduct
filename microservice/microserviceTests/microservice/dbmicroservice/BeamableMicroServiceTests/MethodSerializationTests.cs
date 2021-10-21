@@ -273,7 +273,9 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             testIntVal1 = 12345,
             testIntVal2 = 12345
          };
+         
          string serialized = JsonConvert.SerializeObject(req);
+         JToken  json = JToken.Parse(serialized);
          
          var ms = new BeamableMicroService(new TestSocketProvider(socket =>
             {
@@ -285,7 +287,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                         .WithStatus(200)
                         .WithPayload<string>(n =>
                            {
-                              return true;
+                              return JToken.DeepEquals((JToken)n, json);
                            }
                         ),
                   MessageResponder.NoResponse(),
