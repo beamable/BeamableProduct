@@ -1,12 +1,10 @@
 {
     "name": "Unity.Beamable.Server.Runtime.Shared",
+    "rootNamespace": "",
     "references": [
         "Unity.Beamable.Runtime.Common"
     ],
-    "optionalUnityReferences": [],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "includePlatforms": ["Editor"],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
@@ -15,5 +13,7 @@
         "MongoDB.Bson.dll"
     ],
     "autoReferenced": false,
-    "defineConstraints": []
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
 }
