@@ -3,6 +3,7 @@ using System;
 using System.IO;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
+using UnityEngine;
 
 namespace Beamable
 {
@@ -58,22 +59,29 @@ namespace Beamable
    {
       private const string BUILD__SDK__VERSION__STRING = "BUILD__SDK__VERSION__STRING";
 
-      public string Environment;
-      public string ApiUrl;
-      public string PortalUrl;
-      public string SdkVersion;
-      public string DockerRegistryUrl;
+      [SerializeField] private string environment;
+      [SerializeField] private string apiUrl;
+      [SerializeField] private string portalUrl;
+      [SerializeField] private string sdkVersion;
+      [SerializeField] private string dockerRegistryUrl;
+
+      public string Environment => environment;
+      public string ApiUrl => apiUrl;
+      public string PortalUrl => portalUrl;
+      public string SdkVersion => sdkVersion;
+      public string DockerRegistryUrl => dockerRegistryUrl;
+
       public void Serialize(JsonSerializable.IStreamSerializer s)
       {
-         s.Serialize("environment", ref Environment);
-         s.Serialize("apiUrl", ref ApiUrl);
-         s.Serialize("portalUrl", ref PortalUrl);
-         s.Serialize("sdkVersion", ref SdkVersion);
-         s.Serialize("dockerRegistryUrl", ref DockerRegistryUrl);
+         s.Serialize("environment", ref environment);
+         s.Serialize("apiUrl", ref apiUrl);
+         s.Serialize("portalUrl", ref portalUrl);
+         s.Serialize("sdkVersion", ref sdkVersion);
+         s.Serialize("dockerRegistryUrl", ref dockerRegistryUrl);
 
          if (SdkVersion.Equals(BUILD__SDK__VERSION__STRING))
          {
-            SdkVersion = "0.0.0";
+            sdkVersion = "0.0.0";
          }
       }
    }
