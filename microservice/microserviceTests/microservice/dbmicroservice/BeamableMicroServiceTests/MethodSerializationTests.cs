@@ -1,19 +1,12 @@
-using System;
-using System.Text;
 using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Api.Content;
 using Beamable.Microservice.Tests.Socket;
-using Beamable.Serialization.SmallerJSON;
 using Beamable.Server;
 using microserviceTests.microservice.Util;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
-using Serilog.Core;
-using Serilog.Debugging;
-using Swan;
-using JsonConverter = System.Text.Json.Serialization.JsonConverter;
 
 namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTests
 {
