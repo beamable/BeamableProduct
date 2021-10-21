@@ -1,6 +1,5 @@
 using System;
 using Beamable.Common;
-using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace Beamable.Server
@@ -11,9 +10,6 @@ namespace Beamable.Server
         IMongoDatabase this[string name] { get; }
 
         IMongoCollection<TCollection> GetCollection<TStorage, TCollection>(string name)
-            where TStorage : MongoStorageObject;
-
-        IMongoCollection<BsonDocument> GetBsonCollection<TStorage>(string collectionName)
             where TStorage : MongoStorageObject;
     }
 
@@ -53,12 +49,6 @@ namespace Beamable.Server
             where TStorage : MongoStorageObject
         {
             return GetDatabase<TStorage>().GetCollection<TCollection>(collectionName);
-        }
-
-        public IMongoCollection<BsonDocument> GetBsonCollection<TStorage>(string collectionName)
-            where TStorage : MongoStorageObject
-        {
-            return GetDatabase<TStorage>().GetCollection<BsonDocument>(collectionName);
         }
 
         public IMongoDatabase this[string name] => GetDatabaseByStorageName(name);
