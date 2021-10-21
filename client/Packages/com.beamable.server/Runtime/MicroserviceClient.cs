@@ -53,7 +53,7 @@ namespace Beamable.Server
             case long prim:
                return prim.ToString();
             case string prim:
-               return IsValidJson(prim) ? "[" + prim + "]" : "\"" + prim + "\"";
+               return Json.IsValidJson(prim) ? "[" + prim + "]" : "\"" + prim + "\"";
             case double prim:
                return prim.ToString();
             case float prim:
@@ -142,29 +142,6 @@ namespace Beamable.Server
          };
          Debug.Log($"Sending Request uri=[{url}]");
          return await requester.Request<T>(Method.POST, url, req, parser: Parser);
-      }
-
-      private static bool IsValidJson(string strInput)
-      {
-            if (string.IsNullOrWhiteSpace(strInput)) { return false; }
-            strInput = strInput.Trim();
-            if ((strInput.StartsWith("{") && strInput.EndsWith("}")) || 
-                (strInput.StartsWith("[") && strInput.EndsWith("]")))
-            {
-                try
-                {
-                    var obj = Json.Deserialize(strInput);
-                    return true;
-                }
-                catch (Exception)
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                return false;
-            }
       }
 
       protected static string CreateEndpointPrefix(string serviceName)
