@@ -21,7 +21,7 @@ namespace Beamable
       }
 
 #if UNITY_EDITOR && UNITY_2019_1_OR_NEWER
-      [InitializeOnEnterPlayMode]
+		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
 #endif
       static void Init()
       {
