@@ -2,10 +2,8 @@
 using Beamable.Common.Inventory;
 using Beamable.Coroutines;
 using Beamable.Service;
-using Beamable.UI.Scripts;
 using TMPro;
 using UnityEngine;
-using UnityEngine.AddressableAssets;
 using UnityEngine.UI;
 
 namespace Beamable.CurrencyHUD

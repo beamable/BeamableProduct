@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using Beamable.Common;
+﻿using Beamable.Common;
 using Beamable.UI.Scripts;
 using UnityEngine;
 using UnityEngine.AddressableAssets;

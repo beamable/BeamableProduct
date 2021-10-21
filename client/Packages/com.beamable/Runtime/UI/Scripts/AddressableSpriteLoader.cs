@@ -1,10 +1,8 @@
-
 using Beamable.Common;
 using Core.Platform;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
-using UnityEngine.UI;
 
 namespace Beamable.UI.Scripts
 {
