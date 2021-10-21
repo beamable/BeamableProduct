@@ -14,7 +14,9 @@ namespace Beamable.UI.SDF.Styles {
             set => _color = value;
         }
 
-        public SingleColorProperty(Color color = default) {
+        public SingleColorProperty() { }
+
+        public SingleColorProperty(Color color) {
             Color = color;
         }
 
@@ -32,7 +34,9 @@ namespace Beamable.UI.SDF.Styles {
             set => _colorRect = value;
         }
         
-        public VertexColorProperty(Color color = default) {
+        public VertexColorProperty() { }
+        
+        public VertexColorProperty(Color color) {
             _colorRect = new ColorRect(color);
         }
         

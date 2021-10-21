@@ -12,7 +12,9 @@ namespace Beamable.UI.SDF.Styles {
             set => _floatValue = value;
         }
 
-        public FloatProperty(float floatValue = default) {
+        public FloatProperty() { }
+
+        public FloatProperty(float floatValue) {
             _floatValue = floatValue;
         }
 
@@ -22,8 +24,9 @@ namespace Beamable.UI.SDF.Styles {
     [Serializable]
     public class FractionFloatProperty : IFloatFromFloatProperty {
         public float Fraction;
-        
-        public FractionFloatProperty(float fraction = default) {
+        public FractionFloatProperty() { }
+
+        public FractionFloatProperty(float fraction) {
             Fraction = fraction;
         }
 

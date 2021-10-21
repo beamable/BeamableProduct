@@ -5,7 +5,9 @@ namespace Beamable.UI.SDF.Styles {
         [SerializeField]
         private Vector2 _vector2Value;
 
-        public Vector2Property(Vector2 vector2Value = default) {
+        public Vector2Property() { }
+
+        public Vector2Property(Vector2 vector2Value) {
             _vector2Value = vector2Value;
         }
 
