@@ -360,9 +360,9 @@ namespace Beamable.Common
             }
 
             
-            // If we are in the editor, sweep the invalid assemblies to enforce that 
+            // If we are in the editor, sweep the invalid assemblies to enforce that
+            invalidTypesInAssembliesErrorData = new List<ValueTuple<Assembly, Type, BeamableReflectionSystems>>();
 #if UNITY_EDITOR
-
             var invalidAssembliesData = assemblies
                 .Where(asm => asm.GetCustomAttributes(typeof(IgnoreFromBeamableAssemblySweepAttribute)).Any())
                 .Select(asm => new ValueTuple<Assembly, IgnoreFromBeamableAssemblySweepAttribute>()
@@ -374,7 +374,6 @@ namespace Beamable.Common
                 })
                 .Where(asmData => asmData.Item2.LogComplianceFailureAsError != BeamableReflectionSystems.None);
 
-            invalidTypesInAssembliesErrorData = new List<ValueTuple<Assembly, Type, BeamableReflectionSystems>>();
             foreach (var (asm, assemblySweepAttribute) in invalidAssembliesData)
             {
                 var types = asm.GetTypes();
