@@ -7,6 +7,8 @@ using Beamable.Platform.Tests;
 using NUnit.Framework;
 using Packages.Beamable.Runtime.Tests.Beamable;
 
+[assembly:IgnoreFromBeamableAssemblySweep(BeamableReflectionSystems.None)]
+
 namespace Beamable.Tests.Runtime
 {
    /// <summary>

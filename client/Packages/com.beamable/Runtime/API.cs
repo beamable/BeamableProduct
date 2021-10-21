@@ -416,6 +416,7 @@ namespace Beamable
             _gameObject = new GameObject("Beamable");
             Object.DontDestroyOnLoad(_gameObject);
 
+            // Initialize Reflection Cache explicitly
             ReflectionCache.InitializeReflectionBasedSystemsCache(new List<IReflectionCacheUserSystem>
             {
                 ContentRegistry.ContentTypeCaches,

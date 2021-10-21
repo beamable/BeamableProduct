@@ -37,9 +37,11 @@ namespace Beamable.ConsoleCommands
             public readonly Dictionary<string, string> commandOrigin = new Dictionary<string, string>();
             public readonly Dictionary<string, ConsoleCommand> consoleCommandsByName = new Dictionary<string, ConsoleCommand>();
 
-            public void OnTypeCachesLoaded(Dictionary<Type, List<Type>> perBaseTypeCache, Dictionary<Type, List<(Type gameMakerType, Attribute attribute)>> perAttributeTypeCache)
+            public void OnTypeCachesLoaded(Dictionary<Type, List<Type>> perBaseTypeCache, 
+                Dictionary<Type, List<(Type gameMakerType, Attribute attribute)>> perAttributeTypeCache,
+                List<(Assembly, Type, BeamableReflectionSystems)> invalidTypesInAssembliesErrorData)
             {
-                // Do nothing when the entire caches are loaded.
+                // TODO: Build a comprehensive error message that informs that the BeamableConsoleCommandProvider declared in a given assembly are not supposed to be there.
             }
             
             public void OnTypeOfInterestCacheLoaded(Type typeOfInterest, List<Type> typeOfInterestSubTypes)

@@ -17,9 +17,23 @@ namespace Beamable.Common
 
         List<Type> AttributesOfInterest { get; }
 
+        /// <summary>
+        /// Gets called once <see cref="TypesOfInterest"/> with a list of all Types that return true for <see cref="Type.IsAssignableFrom"/>.
+        /// </summary>
         void OnTypeOfInterestCacheLoaded(Type typeOfInterest, List<Type> typeOfInterestSubTypes);
+        
+        /// <summary>
+        /// Gets called once per <see cref="AttributesOfInterest"/> with a list of all Types and Attribute that return the <see cref="AttributesOfInterest"/> for <see cref="MemberInfo.GetCustomAttributes()"/>.
+        /// </summary>
         void OnAttributeOfInterestCacheLoaded(Type attributeOfInterestType, List<(Type gameMakerType, Attribute attribute)> typesWithAttributeOfInterest);
-        void OnTypeCachesLoaded(Dictionary<Type, List<Type>> perBaseTypeCache, Dictionary<Type, List<(Type gameMakerType, Attribute attribute)>> perAttributeTypeCache);
+        
+        /// <summary>
+        /// Gets called once the entire cache and all Error data that was gathered during the sweep.
+        /// Can and should be used to display error messages and/or hints of how to organize a project with Beamable.
+        /// </summary>
+        void OnTypeCachesLoaded(Dictionary<Type, List<Type>> perBaseTypeCache, 
+            Dictionary<Type, List<(Type gameMakerType, Attribute attribute)>> perAttributeTypeCache,
+            List<(Assembly, Type, BeamableReflectionSystems)> invalidTypesInAssembliesErrorData);
     }
 
     public interface IReflectionCachingAttribute<T> where T : Attribute, IReflectionCachingAttribute<T>
@@ -53,7 +67,7 @@ namespace Beamable.Common
         public readonly static Dictionary<Type, List<(Type, Attribute)>> PerAttributeCache = new Dictionary<Type, List<(Type, Attribute)>>();
 
         public static bool IsInitialized { get; private set; }
-        
+
         /// <summary>
         /// This gets called during Beamable's initialization with all system instances that care about reflection types.
         /// The list of specific sub-classes that we care about are declared inside each system that implements the <see cref="IReflectionCacheUserSystem"/>.
@@ -61,33 +75,23 @@ namespace Beamable.Common
         public static void InitializeReflectionBasedSystemsCache(List<IReflectionCacheUserSystem> systems)
         {
             if (IsInitialized) return;
+
             
-            var baseTypes = systems.SelectMany(sys => sys.TypesOfInterest).ToList();
-            var attributesOfInterest = systems.SelectMany(sys => sys.AttributesOfInterest).ToList();
 
             // Parse Types
             // As needed, add other cache-ing strategies here (per attribute type, per-assembly, etc...), just keep it inside this method
             // so we don't run over the entire code-base multiple times. If you want to split it, move each strategy to different thread (no need to lock anything)
             // since no simultaneous read/write access to the same data can happen.
-            BuildTypeCaches(baseTypes, attributesOfInterest, in PerBaseTypeCache, in PerAttributeCache);
+            // The Invalid Types in Assemblies Error Data is here so game makers can enforce certain Beamable types to not be declared in specific assembly definitions
+            //   (It, coupled with the IgnoreFromBeamableAssemblySweepAttribute, also lets us ignore test assemblies that we choose to but keep others)
+            BuildTypeCaches(systems, in PerBaseTypeCache, in PerAttributeCache, out var invalidTypesInAssembliesErrorData);
 
             // Pass down to each given system only the types they are interested in
             foreach (var reflectionBasedSystem in systems)
             {
-                reflectionBasedSystem.OnTypeCachesLoaded(PerBaseTypeCache, PerAttributeCache);
+                reflectionBasedSystem.OnTypeCachesLoaded(PerBaseTypeCache, PerAttributeCache, invalidTypesInAssembliesErrorData);
                 foreach (var type in reflectionBasedSystem.TypesOfInterest)
                 {
-                    try
-                    {
-                        Debug.Log(PerBaseTypeCache[type]);
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.Log(type.Name);
-                        Debug.LogException(e);
-                        throw;
-                    }
-
                     reflectionBasedSystem.OnTypeOfInterestCacheLoaded(type, PerBaseTypeCache[type]);
                 }
 
@@ -226,7 +230,7 @@ namespace Beamable.Common
                             else
                             {
                                 if (!collidedTypes.TryGetValue(uniqueName, out var collidedTypeSet))
-                                { 
+                                {
                                     collidedTypeSet = new HashSet<Type>();
                                     collidedTypes.Add(uniqueName, collidedTypeSet);
                                 }
@@ -252,21 +256,21 @@ namespace Beamable.Common
             }
         }
 
-        public static List<(MethodInfo method,TAttribute attr)> GatherInstanceMethodsWithAttributes<TAttribute>(Type type,
+        public static List<(MethodInfo method, TAttribute attr)> GatherInstanceMethodsWithAttributes<TAttribute>(Type type,
             out List<MethodInfo> methodsMissingAttr)
             where TAttribute : Attribute
         {
             return GatherMethodsWithAttributes<TAttribute>(type, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, out methodsMissingAttr);
         }
-        
-        public static List<(MethodInfo method,TAttribute attr)> GatherStaticMethodsWithAttributes<TAttribute>(Type type,
+
+        public static List<(MethodInfo method, TAttribute attr)> GatherStaticMethodsWithAttributes<TAttribute>(Type type,
             out List<MethodInfo> methodsMissingAttr)
             where TAttribute : Attribute
         {
             return GatherMethodsWithAttributes<TAttribute>(type, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static, out methodsMissingAttr);
         }
-        
-        private static List<(MethodInfo method,TAttribute attr)> GatherMethodsWithAttributes<TAttribute>(Type type, BindingFlags flags,
+
+        private static List<(MethodInfo method, TAttribute attr)> GatherMethodsWithAttributes<TAttribute>(Type type, BindingFlags flags,
             out List<MethodInfo> methodsMissingAttr)
             where TAttribute : Attribute
         {
@@ -286,31 +290,34 @@ namespace Beamable.Common
             return foundAttr;
         }
 
-        
+
         /// <summary>
         /// Internal method that generates, given a list of base types, a dictionary of each type that <see cref="Type.IsAssignableFrom"/> to each base type. 
         /// </summary>
-        private static void BuildTypeCaches(IReadOnlyList<Type> baseTypes,
-            IReadOnlyList<Type> attributeTypes,
+        private static void BuildTypeCaches(List<IReflectionCacheUserSystem> systems,
             in Dictionary<Type, List<Type>> perBaseTypeLists,
-            in Dictionary<Type, List<(Type gameMakerType, Attribute attributeOfInterest)>> perAttributeLists)
+            in Dictionary<Type, List<(Type gameMakerType, Attribute attributeOfInterest)>> perAttributeLists,
+            out List<ValueTuple<Assembly, Type, BeamableReflectionSystems>> invalidTypesInAssembliesErrorData)
         {
+            var baseTypesOfInterest = systems.SelectMany(sys => sys.TypesOfInterest).ToList();
+            var attributesOfInterest = systems.SelectMany(sys => sys.AttributesOfInterest).ToList();
+            
             perBaseTypeLists.Clear();
             perAttributeLists.Clear();
 
             // Initialize Per-Base Cache
             {
                 perBaseTypeLists.Clear();
-                foreach (var baseType in baseTypes)
+                foreach (var baseType in baseTypesOfInterest)
                 {
                     perBaseTypeLists.Add(baseType, new List<Type>());
                 }
             }
-            
+
             // Initialize Per-Attribute Cache
             {
                 perAttributeLists.Clear();
-                foreach (var attrType in attributeTypes)
+                foreach (var attrType in attributesOfInterest)
                 {
                     perAttributeLists.Add(attrType, new List<(Type gameMakerType, Attribute attributeOfInterest)>());
                 }
@@ -318,18 +325,17 @@ namespace Beamable.Common
 
             // TODO: Use TypeCache in editor and Unity 2019 and above ---  This path should go through BEAMABLE_MICROSERVICE || DB_MICROSERVICE
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            foreach (var assembly in assemblies)
-            {
-                var asmName = assembly.GetName().Name;
-                if ("Tests".Equals(asmName)) continue; // TODO think harder about this.
 
+            var validAssemblies = assemblies.Where(asm => !asm.GetCustomAttributes(typeof(IgnoreFromBeamableAssemblySweepAttribute)).Any());
+            foreach (var assembly in validAssemblies)
+            {
                 var types = assembly.GetTypes();
                 foreach (var type in types)
                 {
                     // Check for attributes of interest
                     {
                         // Get a list of all attributes of interest that were found on this type.
-                        var matchingAttributes = FindAttributesOfInterest(type);
+                        var matchingAttributes = FindAttributesOfInterest(type, attributesOfInterest);
                         // For each of those, add the attribute and its matching GameMaker-declared Type to the cache. 
                         foreach (var matchingAttribute in matchingAttributes)
                         {
@@ -342,10 +348,10 @@ namespace Beamable.Common
 
                     // Check for base types of interest
                     {
-                        var idxOfBaseType = FindBaseTypeIdx(type);
+                        var idxOfBaseType = FindBaseTypeIdx(type, baseTypesOfInterest);
                         if (idxOfBaseType != -1)
                         {
-                            var baseType = baseTypes[idxOfBaseType];
+                            var baseType = baseTypesOfInterest[idxOfBaseType];
                             if (perBaseTypeLists.TryGetValue(baseType, out var baseTypesList))
                                 baseTypesList.Add(type);
                         }
@@ -353,20 +359,57 @@ namespace Beamable.Common
                 }
             }
 
-            int FindBaseTypeIdx(Type type)
-            {
-                for (var i = 0; i < baseTypes.Count; i++)
+            
+            // If we are in the editor, sweep the invalid assemblies to enforce that 
+#if UNITY_EDITOR
+
+            var invalidAssembliesData = assemblies
+                .Where(asm => asm.GetCustomAttributes(typeof(IgnoreFromBeamableAssemblySweepAttribute)).Any())
+                .Select(asm => new ValueTuple<Assembly, IgnoreFromBeamableAssemblySweepAttribute>()
                 {
-                    var baseType = baseTypes[i];
+                    Item1 = asm,
+                    Item2 = asm.GetCustomAttributes(typeof(IgnoreFromBeamableAssemblySweepAttribute))
+                        .Cast<IgnoreFromBeamableAssemblySweepAttribute>()
+                        .First()
+                })
+                .Where(asmData => asmData.Item2.LogComplianceFailureAsError != BeamableReflectionSystems.None);
+
+            invalidTypesInAssembliesErrorData = new List<ValueTuple<Assembly, Type, BeamableReflectionSystems>>();
+            foreach (var (asm, assemblySweepAttribute) in invalidAssembliesData)
+            {
+                var types = asm.GetTypes();
+
+                foreach (var type in types)
+                {
+                    var isOfBaseTypeOfInterest = FindBaseTypeIdx(type, baseTypesOfInterest) != -1;
+                    var hasOfAttributeOfInterest = FindAttributesOfInterest(type, attributesOfInterest).Any();
+                    if (isOfBaseTypeOfInterest || hasOfAttributeOfInterest)
+                    {
+                        invalidTypesInAssembliesErrorData.Add((asm, type, assemblySweepAttribute.LogComplianceFailureAsError));
+                    }
+                }
+            }
+            
+#else
+
+#endif
+
+
+            int FindBaseTypeIdx(Type type, IEnumerable<Type> baseTypesToSearchIn)
+            {
+                var typesToSearchIn = baseTypesToSearchIn.ToList();
+                for (var i = 0; i < typesToSearchIn.Count; i++)
+                {
+                    var baseType = typesToSearchIn[i];
                     if (baseType.IsAssignableFrom(type)) return i;
                 }
 
                 return -1;
             }
 
-            IEnumerable<Attribute> FindAttributesOfInterest(Type type)
+            IEnumerable<Attribute> FindAttributesOfInterest(Type type, List<Type> attributesToSearchFor)
             {
-                return attributeTypes.Select(attributeType => type.GetCustomAttribute(attributeType, false)).Where(attr => attr != null);
+                return attributesToSearchFor.Select(attributeType => type.GetCustomAttribute(attributeType, false)).Where(attr => attr != null);
             }
         }
     }

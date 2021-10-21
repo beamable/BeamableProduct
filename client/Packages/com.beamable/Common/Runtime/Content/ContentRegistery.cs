@@ -144,9 +144,10 @@ namespace Beamable.Common.Content
             // Do nothing with attributes of interest since we look for content objects via interfaces and inheritances
          }
 
-         public void OnTypeCachesLoaded(Dictionary<Type, List<Type>> perBaseTypeCache, Dictionary<Type, List<(Type gameMakerType, Attribute attribute)>> perAttributeTypeCache)
+         public void OnTypeCachesLoaded(Dictionary<Type, List<Type>> perBaseTypeCache, Dictionary<Type, List<(Type gameMakerType, Attribute attribute)>> perAttributeTypeCache,
+            List<(Assembly, Type, BeamableReflectionSystems)> invalidTypesInAssembliesErrorData)
          {
-            // Do nothing with the Entire Cache
+            // TODO: Build a comprehensive error message that informs that the ContentObject or IContentObject declared in a given assembly are not supposed to be there.
          }
 
       }
