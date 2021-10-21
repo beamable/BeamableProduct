@@ -32,7 +32,7 @@ namespace Beamable.Editor.UI.Components
         private VisualElement _mainVisualElement;
         private readonly List<VisualElement> _dayRows = new List<VisualElement>();
         private readonly List<DayToggleVisualElement> _currentDayToggles = new List<DayToggleVisualElement>();
-        private List<string> _selectedDays = new List<string>();
+        private readonly List<string> _selectedDays = new List<string>();
 
         public List<string> SelectedDays => _selectedDays;
 

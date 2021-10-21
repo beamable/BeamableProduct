@@ -7,7 +7,6 @@ using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Validation;
 using UnityEditor;
-using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -140,8 +139,10 @@ namespace Beamable.Editor.Schedules
             _daysModeValidator = new ComponentsValidator(RefreshConfirmButton);
             _daysModeValidator.RegisterRule(new AtLeastOneDaySelectedRule(_daysPickerComponent.Label),
                 _daysPickerComponent);
-            _daysModeValidator.RegisterRule(new NotAllDaysSelectedRule(_daysPickerComponent.Label), _daysPickerComponent);
-            _daysModeValidator.RegisterRule(new IsProperDate(_activeToDateComponent.Label), _activeToDateComponent.DatePicker);
+            _daysModeValidator.RegisterRule(new NotAllDaysSelectedRule(_daysPickerComponent.Label),
+                _daysPickerComponent);
+            _daysModeValidator.RegisterRule(new IsProperDate(_activeToDateComponent.Label),
+                _activeToDateComponent.DatePicker);
 
             _datesModeValidator = new ComponentsValidator(RefreshConfirmButton);
             _datesModeValidator.RegisterRule(new AtLeastOneDaySelectedRule(_calendarComponent.Label),
@@ -152,10 +153,7 @@ namespace Beamable.Editor.Schedules
             _periodToHourComponent.OnValueChanged = PerformPeriodValidation;
             _currentValidator = _dailyModeValidator;
 
-            EditorApplication.delayCall += () =>
-            {
-                _currentValidator.ForceValidationCheck();
-            };
+            EditorApplication.delayCall += () => { _currentValidator.ForceValidationCheck(); };
         }
 
         // TODO: create some generic composite rules for cases like this one and then remove below lines
@@ -165,11 +163,13 @@ namespace Beamable.Editor.Schedules
             {
                 return;
             }
-            
+
             if (_allDayComponent.Value)
             {
                 _isPeriodValid = _currentMode != Mode.Daily;
-                _invalidPeriodMessage = _currentMode == Mode.Daily ? "Daily mode can't have All day option selected" : string.Empty;
+                _invalidPeriodMessage = _currentMode == Mode.Daily
+                    ? "Daily mode can't have All day option selected"
+                    : string.Empty;
             }
             else
             {
@@ -186,7 +186,7 @@ namespace Beamable.Editor.Schedules
         private void RefreshConfirmButton(bool value, string message)
         {
             bool validated = value && _isPeriodValid;
-            
+
             if (validated)
             {
                 _confirmButton.Enable();
@@ -222,7 +222,7 @@ namespace Beamable.Editor.Schedules
             _eventNameComponent.SetEnabled(false);
             _eventNameComponent.Value = content.name;
 
-            var neverExpires = !schedule.activeTo.HasValue;
+            bool neverExpires = !schedule.activeTo.HasValue;
             if (!neverExpires && schedule.TryGetActiveTo(out var activeToDate))
             {
                 _activeToDateComponent.Set(activeToDate);
@@ -231,23 +231,24 @@ namespace Beamable.Editor.Schedules
 
             _neverExpiresComponent.Value = neverExpires;
 
-            var isPeriod = schedule.definitions.Any(definition =>
-                definition.hour.Any(x => x.Contains("-"))
-                || definition.minute.Any(x => x.Contains("-"))
-                || definition.second.Any(x => x.Contains("-"))
-            );
+            bool isPeriod = schedule.definitions.Count > 1 && schedule.definitions.Any(def => def.hour[0] != "*");
             _allDayComponent.Value = !isPeriod;
 
             if (isPeriod)
             {
-                // TODO: What happens where there is more than one period?
-                _periodFromHourComponent.SetPeriod(schedule.definitions[0], 0);
-                _periodToHourComponent.SetPeriod(schedule.definitions[0], 1);
-            }
+                int startHour = Convert.ToInt32(schedule.definitions[0].hour[0]);
+                int endHour = Convert.ToInt32(schedule.definitions[schedule.definitions.Count - 1].hour[0]);
 
-            if (schedule.TryGetActiveFrom(out var activeFromDate))
-            {
-                // _startTimeComponent.Set(activeFromDate);
+                string startMinutesRange = schedule.definitions[0].minute[0];
+                string[] startSplitRange = startMinutesRange.Split('-');
+                int startMinute = Convert.ToInt32(startSplitRange[0]);
+
+                string endMinutesRange = schedule.definitions[schedule.definitions.Count - 1].minute[0];
+                string[] endSplitRange = endMinutesRange.Split('-');
+                int endMinute = Convert.ToInt32(endSplitRange[1]);
+
+                _periodFromHourComponent.Set(new DateTime(2000, 1, 1, startHour, startMinute, 0));
+                _periodToHourComponent.Set(new DateTime(2000, 1, 1, endHour, endMinute, 0));
             }
 
             var explicitDates = schedule.definitions.Any(definition => definition.dayOfMonth.Any(day => day != "*"));
@@ -290,19 +291,50 @@ namespace Beamable.Editor.Schedules
                 DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ssZ"), _neverExpiresComponent.Value,
                 $"{_activeToDateComponent.SelectedDate}{_activeToHourComponent.SelectedHour}");
 
+            int fromHour = 0;
+            int toHour = 0;
+            int fromMinute = 0;
+            int toMinute = 0;
+            
+            if (!_allDayComponent.Value)
+            {
+                fromHour = int.Parse(_periodFromHourComponent.Hour);
+                toHour = int.Parse(_periodToHourComponent.Hour);
+                fromMinute = int.Parse(_periodFromHourComponent.Minute);
+                toMinute = int.Parse(_periodToHourComponent.Minute);
+            }
+
             switch (_currentMode)
             {
                 case Mode.Daily:
-                    _scheduleParser.PrepareDailyModeData(newSchedule, PrepareSecondRange(), PrepareMinuteRange(),
-                        PreparePeriodRange());
+                    if (!_allDayComponent.Value)
+                    {
+                        _scheduleParser.PrepareListingDailyModeData(newSchedule, fromHour, toHour, fromMinute,
+                            toMinute);
+                    }
                     break;
                 case Mode.Days:
-                    _scheduleParser.PrepareDaysModeData(newSchedule, PrepareSecondRange(), PrepareMinuteRange(),
-                        PreparePeriodRange(), _daysPickerComponent.DaysPicker.GetSelectedDays());
+                    if (!_allDayComponent.Value)
+                    {
+                        _scheduleParser.PrepareListingDaysModeData(newSchedule, fromHour, toHour, fromMinute,
+                            toMinute, _daysPickerComponent.DaysPicker.GetSelectedDays());
+                    }
+                    else
+                    {
+                        _scheduleParser.PrepareDaysModeData(newSchedule, "*", "*",
+                            "*", _daysPickerComponent.DaysPicker.GetSelectedDays());
+                    }
                     break;
                 case Mode.Dates:
-                    _scheduleParser.PrepareDateModeData(newSchedule, _calendarComponent.SelectedDays,
-                        PreparePeriodRange(), "*", "*");
+                    if (!_allDayComponent.Value)
+                    {
+                        _scheduleParser.PrepareListingDatesModeData(newSchedule, fromHour, toHour, fromMinute, toMinute, _calendarComponent.SelectedDays);
+                    }
+                    else
+                    {
+                        _scheduleParser.PrepareDateModeData(newSchedule, _calendarComponent.SelectedDays,
+                            "*", "*", "*");
+                    }
                     break;
             }
 
@@ -365,30 +397,6 @@ namespace Beamable.Editor.Schedules
             }
 
             return options;
-        }
-
-        private string PreparePeriodRange()
-        {
-            string hourString = _allDayComponent.Value
-                ? "*"
-                : $"{_periodFromHourComponent.Hour}-{_periodToHourComponent.Hour}";
-            return hourString;
-        }
-
-        private string PrepareMinuteRange()
-        {
-            string hourString = _allDayComponent.Value
-                ? "*"
-                : $"{_periodFromHourComponent.Minute}-{_periodToHourComponent.Minute}";
-            return hourString;
-        }
-
-        private string PrepareSecondRange()
-        {
-            string hourString = _allDayComponent.Value
-                ? "*"
-                : $"{_periodFromHourComponent.Second}-{_periodToHourComponent.Second}";
-            return hourString;
         }
     }
 }
