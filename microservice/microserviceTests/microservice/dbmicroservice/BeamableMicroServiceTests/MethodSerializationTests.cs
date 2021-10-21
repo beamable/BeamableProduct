@@ -1,3 +1,4 @@
+using System;
 using System.Text;
 using System.Threading.Tasks;
 using Beamable.Common;
@@ -6,7 +7,13 @@ using Beamable.Microservice.Tests.Socket;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Server;
 using microserviceTests.microservice.Util;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using Serilog.Core;
+using Serilog.Debugging;
+using Swan;
+using JsonConverter = System.Text.Json.Serialization.JsonConverter;
 
 namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTests
 {
@@ -267,22 +274,28 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
       {
          LoggingUtil.Init();
          TestSocket testSocket = null;
-         
-         var req = new ArrayDict
-         {
-            {"testInt", 12345}
-         };
-         var jsonStr = Json.Serialize(req, new StringBuilder());
 
-         var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+         var req = new
          {
-            testSocket = socket;
-            socket.AddStandardMessageHandlers()
-               .AddMessageHandler(
-                  MessageMatcher
-                     .WithReqId(1)
-                     .WithStatus(200)
-                     .WithPayload<int>(n => n == 1),
+            testIntVal = 12345
+         };
+         string requestJsonNewtonsoft = JsonConvert.SerializeObject(req);
+         JToken  json = JToken.Parse(requestJsonNewtonsoft);
+
+             // throw new Exception("PPX" + requestJsonNewtonsoft);
+         var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+            {
+               testSocket = socket;
+               socket.AddStandardMessageHandlers()
+                  .AddMessageHandler(
+                     MessageMatcher
+                        .WithReqId(1)
+                        .WithStatus(200)
+                        .WithPayload<object>(n =>
+                           {
+                              return JToken.DeepEquals((JToken)n, json);
+                           }
+                        ),
                   MessageResponder.NoResponse(),
                   MessageFrequency.OnlyOnce()
                );
@@ -292,7 +305,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          Assert.IsTrue(ms.HasInitialized);
 
 
-         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "MethodWithJSON_AsParameter", 1, 0, jsonStr));
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "MethodWithJSON_AsParameter", 1, 0, json));
 
          // simulate shutdown event...
          await ms.OnShutdown(this, null);

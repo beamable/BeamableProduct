@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Beamable.Serialization.SmallerJSON;
 using Beamable.Server.Common;
 using LoxSmoke.DocXml;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Beamable.Server
 {
@@ -38,10 +41,19 @@ namespace Beamable.Server
 
             var resultProperty = task.GetType().GetProperty("Result");
             var result = resultProperty.GetValue(task); // TODO: XXX It stinks that there is active reflection going on the callpath
-
+            
             if (result is string strResult)
             {
-               return strResult; // If the data is already in a string format, then just use that.
+               if (!Json.IsValidJson(ctx.Body))
+               {
+                  return strResult; // If the data is already in a string format, then just use that.
+               }
+               else
+               {
+                  var requestJsonNewtonsoft = JsonConvert.SerializeObject("{" + strResult + "}");
+                  var  json = JToken.Parse(requestJsonNewtonsoft);
+                  return json.ToString();
+               }
             }
 
             return result;
@@ -52,5 +64,4 @@ namespace Beamable.Server
          }
       }
    }
-
 }

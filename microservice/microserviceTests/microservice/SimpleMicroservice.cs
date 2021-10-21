@@ -58,9 +58,9 @@ namespace microserviceTests.microservice
       }
       
       [ClientCallable]
-      public int MethodWithJSON_AsParameter(string jsonString)
+      public string MethodWithJSON_AsParameter(string jsonString)
       {
-         return 1;
+         return jsonString;
       }
 
       // TODO: Add a test for an empty arg array, or a null
