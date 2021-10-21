@@ -42,5 +42,11 @@ namespace Beamable.Editor {
         public Rect ReserveSingleLine() {
             return ReserveHeight(EditorGUIUtility.singleLineHeight);
         }
+
+        public void MoveIndent(int amount) {
+            var indent = 15 * amount;
+            rect.x += indent;
+            rect.width -= indent;
+        }
     }
 }
