@@ -62,6 +62,12 @@ namespace microserviceTests.microservice
       {
          return jsonString;
       }
+      
+      [ClientCallable]
+      public string MethodWithRegularString_AsParameter(string str)
+      {
+         return str;
+      }
 
       // TODO: Add a test for an empty arg array, or a null
 

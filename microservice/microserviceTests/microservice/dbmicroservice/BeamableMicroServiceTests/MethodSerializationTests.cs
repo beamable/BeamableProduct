@@ -270,7 +270,8 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
          var req = new
          {
-            testIntVal = 12345
+            testIntVal1 = 12345,
+            testIntVal2 = 12345
          };
          string serialized = JsonConvert.SerializeObject(req);
          JToken  json = JToken.Parse(serialized);
@@ -303,6 +304,36 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.OnShutdown(this, null);
          Assert.IsTrue(testSocket.AllMocksCalled());
       }
-     
+      
+      [Test]
+      [NonParallelizable]
+      public async Task Call_MethodWithRegularString_AsParameter()
+      {
+         LoggingUtil.Init();
+         TestSocket testSocket = null;
+         
+         var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+         {
+            testSocket = socket;
+            socket.AddStandardMessageHandlers()
+               .AddMessageHandler(
+                  MessageMatcher
+                     .WithReqId(1)
+                     .WithStatus(200)
+                     .WithPayload<string>(n => string.Equals(n, "test_String")),
+                  MessageResponder.NoResponse(),
+                  MessageFrequency.OnlyOnce()
+               );
+         }));
+
+         await ms.Start<SimpleMicroservice>(new TestArgs());
+         Assert.IsTrue(ms.HasInitialized);
+         
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "MethodWithRegularString_AsParameter", 1, 0, "test_String"));
+
+         // simulate shutdown event...
+         await ms.OnShutdown(this, null);
+         Assert.IsTrue(testSocket.AllMocksCalled());
+      }
    }
 }
