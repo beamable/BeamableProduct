@@ -9,8 +9,7 @@
     "allowUnsafeCode": false,
     "overrideReferences": true,
     "precompiledReferences": [
-        "MongoDB.Driver.dll",
-        "MongoDB.Bson.dll"
+        "MongoDB.Driver.dll"
     ],
     "autoReferenced": false,
     "defineConstraints": [],
