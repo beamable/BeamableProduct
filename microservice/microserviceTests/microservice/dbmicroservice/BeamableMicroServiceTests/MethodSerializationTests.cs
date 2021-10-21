@@ -279,10 +279,9 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          {
             testIntVal = 12345
          };
-         string requestJsonNewtonsoft = JsonConvert.SerializeObject(req);
-         JToken  json = JToken.Parse(requestJsonNewtonsoft);
+         string serialized = JsonConvert.SerializeObject(req);
+         JToken  json = JToken.Parse(serialized);
 
-             // throw new Exception("PPX" + requestJsonNewtonsoft);
          var ms = new BeamableMicroService(new TestSocketProvider(socket =>
             {
                testSocket = socket;
