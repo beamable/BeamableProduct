@@ -1,33 +1,41 @@
 ﻿#mainVisualElement {
-    font-size: 14px;
+    font-size: 12px;
 }
 
 #mainContainer {
     min-width: 100px;
     min-height: 30px;
-    border-color: #FFFFFF;
-    border-left-width: 2px;
-    border-right-width: 2px;
-    border-top-width: 2px;
-    border-bottom-width: 2px;
-    border-radius: 3px;
     flex-direction: row;
     justify-content: space-around;
 }
 
 #valueContainer {
     flex-grow: 1;
-    width: 110px;
+    min-width: 100px;
+    flex-direction: column;
 }
 
 #value {
     flex-grow: 1;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
-    -unity-text-align: middle-center;
+    -unity-text-align: middle-left;
 }
 
-#button {
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown_Line_light.png");
-    width: 30px;
-    margin-right: 3px;
+#arrowImage {
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown Close.png");
+    width: 14px;
+    height: 7;
+    margin-right: 8px;
+    flex-direction: column;
+    align-self: flex-start;
+    justify-content: center;
+    margin-top: 12px;
+}
+
+#arrowImage.expanded {
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown Open.png");
+}
+
+.hidden {
+    opacity: 0;
 }
