@@ -205,38 +205,5 @@ namespace Beamable.Tests.Runtime.Environment.PackageVersionTests
          Assert.AreEqual(false, a < b);
          Assert.AreEqual(false, b < a);
       }
-
-      [Test]
-      public void PatchWildCard()
-      {
-         var a = PackageVersion.FromSemanticVersionString("2.4.x");
-         var mid = PackageVersion.FromSemanticVersionString("2.4.5");
-         var min = PackageVersion.FromSemanticVersionString("2.4.1");
-         var max = PackageVersion.FromSemanticVersionString("2.4.9");
-         var inclusiveMin = PackageVersion.FromSemanticVersionString("2.4.0");
-         var inclusiveMax = PackageVersion.FromSemanticVersionString("2.5.0");
-
-         Assert.AreEqual(true, a < max);
-         Assert.AreEqual(true, a <= max);
-         Assert.AreEqual(true, a < mid);
-         Assert.AreEqual(true, a <= mid);
-         Assert.AreEqual(true, a < inclusiveMax);
-         Assert.AreEqual(true, a <= inclusiveMax);
-
-         Assert.AreEqual(false, max < a);
-         Assert.AreEqual(true, max <= a);
-         Assert.AreEqual(true, mid < a);
-         Assert.AreEqual(true, mid <= a);
-         Assert.AreEqual(true, inclusiveMax < a);
-         Assert.AreEqual(true, inclusiveMax <= a);
-
-         Assert.AreEqual(false, a > max);
-         Assert.AreEqual(false, a >= max);
-         Assert.AreEqual(false, a > mid);
-         Assert.AreEqual(false, a >= mid);
-         Assert.AreEqual(false, a > inclusiveMax);
-         Assert.AreEqual(false, a >= inclusiveMax);
-
-      }
    }
 }
