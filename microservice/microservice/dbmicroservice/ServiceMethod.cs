@@ -43,21 +43,28 @@ namespace Beamable.Server
             
             if (result is string strResult)
             {
-               var responseObject = JsonConvert.DeserializeObject<ResponseObject>(ctx.Body);
-               
-               if (!Json.IsValidJson(responseObject.payload.ToString()))
+               if (ctx.Body.Contains(strResult))
                {
-                  return strResult; // If the data is already in a string format, then just use that.
+                  var responseObject = JsonConvert.DeserializeObject<ResponseObject>(ctx.Body);
+
+                  if (!Json.IsValidJson(responseObject.payload.ToString()))
+                  {
+                     return strResult; // If the data is already in a string format, then just use that.
+                  }
+                  else
+                  {
+                     var requestJsonNewtonsoft = JsonConvert.SerializeObject(responseObject.payload);
+                     var json = JToken.Parse(requestJsonNewtonsoft);
+
+                     if (json is JArray)
+                        json = json.First;
+
+                     return json.ToString();
+                  }
                }
                else
                {
-                  var requestJsonNewtonsoft = JsonConvert.SerializeObject(responseObject.payload);
-                  var  json = JToken.Parse(requestJsonNewtonsoft);
-                  
-                  if (json is JArray)
-                     json = json.First;
-                  
-                  return json.ToString();
+                  return strResult; 
                }
             }
 
