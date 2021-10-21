@@ -14,7 +14,7 @@ namespace Beamable.Common.Content
    ///
    /// </summary>
    [AttributeUsage(AttributeTargets.Class)]
-   public class ContentTypeAttribute : UnityEngine.Scripting.PreserveAttribute, IHasSourcePath, ContentRegistry.IUniqueNamingAttribute<ContentTypeAttribute>
+   public class ContentTypeAttribute : UnityEngine.Scripting.PreserveAttribute, IHasSourcePath, IUniqueNamingAttribute<ContentTypeAttribute>
    {
       public string TypeName { get; }
       public string SourcePath { get; }
@@ -26,8 +26,21 @@ namespace Beamable.Common.Content
       }
 
       public string Name => TypeName;
+      public ReflectionCache.ValidationResult IsValidNameForType(string potentialName, out string warningMessage, out string errorMessage)
+      {
+         if (potentialName.Contains("."))
+         {
+            warningMessage = "";
+            errorMessage = $"We do not support...";
+            return ReflectionCache.ValidationResult.Error;
+         }
 
-      public bool IsAllowedOnType(Type type, out string errorMessage)
+         warningMessage = "";
+         errorMessage = "";
+         return ReflectionCache.ValidationResult.Valid;
+      }
+
+      public ReflectionCache.ValidationResult IsAllowedOnType(Type type, out string warningMessage, out string errorMessage)
       {
          bool isAssignableFromIContentObject = typeof(IContentObject).IsAssignableFrom(type);
 
@@ -36,13 +49,19 @@ namespace Beamable.Common.Content
 #else
          bool isAssignableFromScriptableObject = true;
 #endif
-         if (!(isAssignableFromIContentObject && isAssignableFromScriptableObject))
-            errorMessage =
-               $"Type [{type}] must not have a [{typeof(ContentTypeAttribute).FullName}]." +
-               $"\nThis attribute should only be used on ScriptableObjects that implement the [{typeof(IContentObject).FullName}] interface.";
+         if (isAssignableFromIContentObject && isAssignableFromScriptableObject)
+         {
+            errorMessage = "";
+            warningMessage = "";
+            return ReflectionCache.ValidationResult.Valid;
+         }
+         else
+         {
+            warningMessage = "";
 
-         errorMessage = "";
-         return isAssignableFromIContentObject && isAssignableFromScriptableObject;
+            errorMessage = $"This attribute should only be used on ScriptableObjects that implement the [{nameof(IContentObject)}] interface.";
+            return ReflectionCache.ValidationResult.Error;
+         }
       }
    }
 
@@ -58,7 +77,7 @@ namespace Beamable.Common.Content
    ///
    /// </summary>
    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
-   public class ContentFormerlySerializedAsAttribute : Attribute, ContentRegistry.IUniqueNamingAttribute<ContentFormerlySerializedAsAttribute>
+   public class ContentFormerlySerializedAsAttribute : Attribute, IUniqueNamingAttribute<ContentFormerlySerializedAsAttribute>
    {
       public string OldTypeName { get; }
       public ContentFormerlySerializedAsAttribute(string oldTypeName)
@@ -67,23 +86,41 @@ namespace Beamable.Common.Content
       }
       
       public string Name => OldTypeName;
+      public ReflectionCache.ValidationResult IsValidNameForType(string potentialName, out string warningMessage, out string errorMessage)
+      {
+         if (potentialName.Contains("."))
+         {
+            warningMessage = "";
+            errorMessage = $"We do not support...";
+            return ReflectionCache.ValidationResult.Error;
+         }
 
-      public bool IsAllowedOnType(Type type, out string errorMessage)
+         warningMessage = "";
+         errorMessage = "";
+         return ReflectionCache.ValidationResult.Valid;
+      }
+
+      public ReflectionCache.ValidationResult IsAllowedOnType(Type type, out string warningMessage, out string errorMessage)
       {
          bool isAssignableFromIContentObject = typeof(IContentObject).IsAssignableFrom(type);
 
+         // TODO: Check with CHRIS what validation cases does this cover and why, maybe we don't need to enforce this... (especially in TestCases)
+         // TODO: Can easily ignore this from test Assemblies via type.Assembly.Name.Contains("Test") but its not a good long term solution... Or maybe it is?
 #if !DB_MICROSERVICE
          bool isAssignableFromScriptableObject = typeof(UnityEngine.ScriptableObject).IsAssignableFrom(type);
 #else
          bool isAssignableFromScriptableObject = true;
 #endif
          if (!(isAssignableFromIContentObject && isAssignableFromScriptableObject))
-            errorMessage =
-               $"Type [{type}] must not have a [{typeof(ContentFormerlySerializedAsAttribute).FullName}]." +
-               $"\nThis attribute should only be used on ScriptableObjects that implement the [{typeof(IContentObject).FullName}] interface.";
+         {
+            warningMessage = "";
+            errorMessage = $"This attribute should only be used on ScriptableObjects that implement the [{nameof(IContentObject)}] interface.";
+            return ReflectionCache.ValidationResult.Error;
+         }
 
+         warningMessage = "";
          errorMessage = "";
-         return isAssignableFromIContentObject && isAssignableFromScriptableObject;
+         return ReflectionCache.ValidationResult.Valid;
       }
    }
 }

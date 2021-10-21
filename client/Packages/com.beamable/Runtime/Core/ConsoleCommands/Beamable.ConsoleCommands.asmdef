@@ -1,7 +1,16 @@
-﻿{
-	"name": "Beamable.ConsoleCommands",
+{
+    "name": "Beamable.ConsoleCommands",
     "references": [
+        "Unity.Beamable.Runtime.Common",
         "Beamable.Service",
         "Beamable.Coroutines"
-    ]
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": []
 }

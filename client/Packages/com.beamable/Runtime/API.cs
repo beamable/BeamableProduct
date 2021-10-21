@@ -35,6 +35,11 @@ using Beamable.Experimental;
 using Beamable.Sessions;
 using Modules.Content;
 
+#if UNITY_EDITOR
+using Beamable.Common.Content;
+using UnityEditor.Callbacks;
+#endif
+
 #if BEAMABLE_PURCHASING
 using Beamable.Purchasing;
 #endif
@@ -385,6 +390,21 @@ namespace Beamable
         /// </summary>
         public event Action<User> OnUserLoggingOut;
 
+#if UNITY_EDITOR
+
+        [DidReloadScripts] 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void EditorRecompileAttributeChecks()
+        { 
+            ReflectionCache.InitializeReflectionBasedSystemsCache(new List<IReflectionCacheUserSystem>
+            {
+                ContentRegistry.ContentTypeCaches,
+                ConsoleCommands.BeamableConsole.ReflectionCommandCache,
+            }); 
+        } 
+        
+#endif
+        
         private Promise<IBeamableAPI> Initialize()
         {
             if (Application.isPlaying)
@@ -396,6 +416,12 @@ namespace Beamable
             _gameObject = new GameObject("Beamable");
             Object.DontDestroyOnLoad(_gameObject);
 
+            ReflectionCache.InitializeReflectionBasedSystemsCache(new List<IReflectionCacheUserSystem>
+            {
+                ContentRegistry.ContentTypeCaches,
+                ConsoleCommands.BeamableConsole.ReflectionCommandCache,
+            });
+            
             // Initialize platform
             ConfigDatabase.Init();
             //Flush cache that wasn't created with this version of the game.

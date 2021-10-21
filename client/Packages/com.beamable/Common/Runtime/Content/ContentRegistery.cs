@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Mime;
 using System.Reflection;
 using System.Text;
-using Beamable.Content;
 using UnityEngine;
 
 namespace Beamable.Common.Content
@@ -25,78 +25,6 @@ namespace Beamable.Common.Content
       public string Name;
    }
 
-   public static class ReflectionBasedSystemCache
-   {
-      public static Dictionary<Type, List<Type>> perBaseTypeLists =  new Dictionary<Type, List<Type>>();
-
-      /// <summary>
-      /// TODO: Implement on systems that require access to cached type information.
-      /// </summary>
-      public interface IReflectionBasedSystem
-      {
-         List<Type> TypesOfInterest { get; }
-
-         void OnTypeOfInterestCacheLoaded(Type typeOfInterest, List<Type> typeOfInterestSubTypes);
-         void OnTypeCacheLoaded(Dictionary<Type, List<Type>> typeCache);
-      }
-      
-      public static void InitializeReflectionBasedSystemsCache(List<IReflectionBasedSystem> systems)
-      {
-         var baseTypes = systems.SelectMany(sys => sys.TypesOfInterest).ToList();
-         
-         // Parse Types
-         BuildTypeCaches(baseTypes, out perBaseTypeLists);
-         
-         // Pass down to each given system only the types they are interested in
-         foreach (var reflectionBasedSystem in systems)
-         {
-            reflectionBasedSystem.OnTypeCacheLoaded(perBaseTypeLists);
-            foreach (var type in reflectionBasedSystem.TypesOfInterest)
-            {
-               reflectionBasedSystem.OnTypeOfInterestCacheLoaded(type, perBaseTypeLists[type]);
-            }
-         }
-      }
-      
-      private static void BuildTypeCaches(IReadOnlyList<Type> baseTypes, out Dictionary<Type, List<Type>> perBaseTypeLists)
-      {
-         // TODO: Use TypeCache in editor and Unity 2019 and above
-         var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-         perBaseTypeLists = new Dictionary<Type, List<Type>>();
-
-         foreach (var assembly in assemblies)
-         {
-            var asmName = assembly.GetName().Name;
-            if ("Tests".Equals(asmName)) continue; // TODO think harder about this.
-
-            var types = assembly.GetTypes();
-            foreach (var type in types)
-            {
-               var idxOfBaseType = FindBaseTypeIdx(type);
-               if (idxOfBaseType == -1) continue;
-
-               var baseType = baseTypes[idxOfBaseType];
-               if (!perBaseTypeLists.TryGetValue(baseType, out var baseTypesList))
-                  perBaseTypeLists[baseType] = baseTypesList = new List<Type>();
-               
-               baseTypesList.Add(type);
-            }
-         }
-
-         int FindBaseTypeIdx(Type type)
-         {
-            for (var i = 0; i < baseTypes.Count; i++)
-            {
-               var baseType = baseTypes[i];
-               if (baseType.IsAssignableFrom(type)) return i;
-            }
-
-            return -1;
-         }
-      }
-      
-   }
-   
    /// <summary>
    /// This type defines part of the %Beamable %ContentObject system.
    ///
@@ -110,12 +38,127 @@ namespace Beamable.Common.Content
    /// </summary>
    public static class ContentRegistry
    {
+      public class ReflectionRegistry : IReflectionCacheUserSystem
+      {
+         internal static readonly List<Type> InterestTypes = new List<Type> {typeof(IContentObject), typeof(ContentObject)};
+         
+         internal Dictionary<string, Type> ContentTypeToClass = new Dictionary<string, Type>();
+         internal  Dictionary<Type, string> ClassToContentType = new Dictionary<Type, string>();
+         
+         public List<Type> TypesOfInterest => InterestTypes;
+         public List<Type> AttributesOfInterest => new List<Type>();
+
+         public void OnTypeOfInterestCacheLoaded(Type typeOfInterest, List<Type> typeOfInterestSubTypes)
+         {
+            // Gather all Content Type Attributes (builds lists of errors/warnings so we can inform game makers of these).
+            ReflectionCache.GatherReflectionCacheAttributesFromTypes<ContentTypeAttribute>(typeOfInterestSubTypes, 
+               out var currentMappings,
+               out var missingContentTypeAttrs,
+               out var contentTypeAttrsThatAreNotAllowedOnTheirTypes);
+
+            // Error validation for missing attributes --- simple explanation that the type will not be serializable or creatable via the Content Manager.
+            if (missingContentTypeAttrs.Count > 0)
+            { 
+               var warningStringBuilder = new StringBuilder();
+               warningStringBuilder.AppendLine($"The attribute [{nameof(ContentTypeAttribute)}] was not found on the following types:");
+               foreach (var missingAttributesType in missingContentTypeAttrs)
+               {
+                  warningStringBuilder.AppendLine($"\t{missingAttributesType.FullName}");
+               }
+
+               warningStringBuilder.AppendLine();
+               warningStringBuilder.AppendLine("These types are not deserializable by Beamable and you will not be able to create content of this type directly via the Content Manager!");
+               
+               BeamableLogger.Log(warningStringBuilder.ToString());
+            }
+
+            // Error validation for attributes placed on invalid classes/types over which they have no effect.
+            if (contentTypeAttrsThatAreNotAllowedOnTheirTypes.Count > 0)
+            {
+               var validationResultsMessage = new StringBuilder();
+               validationResultsMessage.AppendLine($"The following [{nameof(ContentTypeAttribute)}] are not valid. Please remove them in order to use them with Beamable's Content System.");
+               
+               foreach (var failedAllowedValidationType in contentTypeAttrsThatAreNotAllowedOnTheirTypes)
+               {
+                  var (type, validationResult, message) = failedAllowedValidationType;
+                  validationResultsMessage.AppendLine($"{type.Name} | {validationResult} => {message}");
+               }
+               
+               BeamableLogger.Log(validationResultsMessage.ToString());
+            }
+            
+            
+            ReflectionCache.GatherReflectionCacheAttributesFromTypes<ContentFormerlySerializedAsAttribute>(typeOfInterestSubTypes, 
+               out var formerMappings, 
+               out _, // Discard list of missing attributes since this is a fully optional attribute
+               out var failedAllowedValidationTypes);
+            
+            if (failedAllowedValidationTypes.Count > 0)
+            {
+               var validationResultsMessage = new StringBuilder();
+               validationResultsMessage.AppendLine($"The following [{nameof(ContentFormerlySerializedAsAttribute)}] are not valid. Please correct them in order to use them with Beamable's Content System.");
+               
+               foreach (var failedAllowedValidationType in failedAllowedValidationTypes)
+               {
+                  var (type, validationResult, message) = failedAllowedValidationType;
+                  validationResultsMessage.AppendLine($"{type.Name} | {validationResult} => {message}");
+               }
+               
+               BeamableLogger.Log(validationResultsMessage.ToString());
+            }
+            
+            // Quick hack to "fake" the ContentFormerlySerializedAttribute is a ContentType Attribute --- easy and simple way to verify name collisions is to pretend they are of the same type.
+            var typeConversionOfAttributes = formerMappings.ToList().ConvertAll(input => (input.gameMakerType, new ContentTypeAttribute(input.attribute.Name)));
+            ReflectionCache.BakeUniqueNameCollisionOverTypes(ref ClassToContentType , ref ContentTypeToClass, 
+               out var collidedTypes,
+               currentMappings,
+               typeConversionOfAttributes);
+
+            var mappings = currentMappings.Union(typeConversionOfAttributes).ToList();
+            // If collisions happened, inform the game maker of exactly the types in which the attributes collided. 
+            if (collidedTypes.Count > 0)
+            {
+               var collisionErrorMessage = new StringBuilder();
+               foreach (var collidedNameTypesPair in collidedTypes)
+               {
+                  var uniqueName = collidedNameTypesPair.Key;
+                  var collidingTypes = collidedNameTypesPair.Value;
+                  collidingTypes.Add(mappings.First(map => map.Item2.Name == uniqueName).Item1);
+                  
+                  collisionErrorMessage.AppendLine($"The name [{uniqueName}] is being used in multiple different [{nameof(ContentTypeAttribute)}] or [{typeof(ContentFormerlySerializedAsAttribute).FullName}].");
+                  collisionErrorMessage.AppendLine($"Please change the names of the ones declared on these types so that they are unique across your project:");
+                  foreach (var collidedType in collidingTypes)
+                  {
+                     collisionErrorMessage.AppendLine($"{collidedType}");
+                  }
+                  collisionErrorMessage.AppendLine();
+               }
+               throw new ArgumentException(collisionErrorMessage.ToString());
+            }
+            
+            
+         }
+
+         public void OnAttributeOfInterestCacheLoaded(Type attributeOfInterestType, List<(Type gameMakerType, Attribute attribute)> typesWithAttributeOfInterest)
+         {
+            // Do nothing with attributes of interest since we look for content objects via interfaces and inheritances
+         }
+
+         public void OnTypeCachesLoaded(Dictionary<Type, List<Type>> perBaseTypeCache, Dictionary<Type, List<(Type gameMakerType, Attribute attribute)>> perAttributeTypeCache)
+         {
+            // Do nothing with the Entire Cache
+         }
+
+      }
+
+      public static readonly ReflectionRegistry ContentTypeCaches = new ReflectionRegistry();
+      
       private static readonly Dictionary<string, Type> contentTypeToClass = new Dictionary<string, Type>();
       private static readonly Dictionary<Type, string> classToContentType = new Dictionary<Type, string>();
+      
       static ContentRegistry()
       {
          //LoadRuntimeTypeData();
-         LoadRuntimeTypeData2();
       }
 
       public static void LoadRuntimeTypeData(HashSet<Type> contentTypes=null)
@@ -138,177 +181,6 @@ namespace Beamable.Common.Content
             classToContentType[type] = typeName;
          }
       }
-
-      public static void LoadRuntimeTypeData2()
-      {
-         contentTypeToClass.Clear();
-         classToContentType.Clear();
-        
-         // Fetch all assemblies that are not Test Assemblies (Use Type Cache on 2019 or newer and is in UnityEditor), otherwise we have to go through each assembly...
-         // Fetch all Types inheriting from IContentObject -- we can move this later on into a Reflection Cache of sorts...
-         BuildTypeCaches(new []{typeof(ContentObject)}, out var perBaseTypeLists);
-
-         // Check for containing ContentType and ContentFormerlySerializedAs  Attributes
-         BakeTypeToUniqueNameMappings<ContentTypeAttribute>(perBaseTypeLists[typeof(ContentObject)], 
-            out var mappingsCurrent,
-            false, 
-            (type) => $"Type [{type.FullName}] does not have an attribute of type [{typeof(ContentTypeAttribute).FullName}] --- it will not be deserializable.");
-         
-         BakeTypeToUniqueNameMappings<ContentFormerlySerializedAsAttribute>(perBaseTypeLists[typeof(ContentObject)], out var mappingsFormer, false);
-         
-         var currentNames = mappingsCurrent.Select(map => map.Item1);
-         var formerNames = mappingsFormer.Select(map => map.Item1);
-
-         // Check for ContentType Collisions with Former Names
-         var collisionsBetweenFormerAndCurrent = currentNames.Intersect(formerNames).ToList();
-         if (collisionsBetweenFormerAndCurrent.Count > 0)
-         {
-            var errorBuilder = new StringBuilder();
-            // For each collision, let the user know which Type is colliding with each Type.
-            errorBuilder.AppendLine($"The following Unique names were used in different Content classes already.");
-            errorBuilder.AppendLine($"Please check that all your ContentType and ContentFormerlySerializedAs attributes are unique.");
-            errorBuilder.AppendLine($"These were the ones that collided [");
-            foreach (var collidedType in collisionsBetweenFormerAndCurrent)
-            {
-               errorBuilder.AppendLine($"{collidedType}, ");
-            }
-            errorBuilder.AppendLine("]");
-            throw new ArgumentException(errorBuilder.ToString());
-         }
-
-         // Cache Current Type data into dictionaries here
-         foreach (var mapping in mappingsCurrent)
-         {
-            contentTypeToClass.Add(mapping.Item1, mapping.Item2);
-            classToContentType.Add(mapping.Item2, mapping.Item1);
-         }
-         
-         // Cache Former ContentType names to classes
-         foreach (var mapping in mappingsFormer)
-         {
-            contentTypeToClass.Add(mapping.Item1, mapping.Item2);
-         }
-      }
-
-      public interface IUniqueNamingAttribute<T> where T : Attribute, IUniqueNamingAttribute<T>
-      {
-         string Name { get; }
-
-         bool IsAllowedOnType(Type type, out string errorMessage);
-
-         // Alternatively, we can have the former serialized things here --- a benefit would be that we can generalize detection of former names.
-         // On the other hand, this is not really a serialization thing just an organization attribute, so maybe keep it separate...
-      }
-
-      public static void BuildTypeCaches(IReadOnlyList<Type> baseTypes, out Dictionary<Type, List<Type>> perBaseTypeLists)
-      {
-         // TODO: Use TypeCache in editor and Unity 2019 and above
-         var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-         perBaseTypeLists = new Dictionary<Type, List<Type>>();
-
-         foreach (var assembly in assemblies)
-         {
-            var asmName = assembly.GetName().Name;
-            if ("Tests".Equals(asmName)) continue; // TODO think harder about this.
-
-            var types = assembly.GetTypes();
-            foreach (var type in types)
-            {
-               var idxOfBaseType = FindBaseTypeIdx(type);
-               if (idxOfBaseType == -1) continue;
-
-               var baseType = baseTypes[idxOfBaseType];
-               if (!perBaseTypeLists.TryGetValue(baseType, out var baseTypesList))
-                  perBaseTypeLists[baseType] = baseTypesList = new List<Type>();
-               
-               baseTypesList.Add(type);
-            }
-         }
-
-         int FindBaseTypeIdx(Type type)
-         {
-            for (var i = 0; i < baseTypes.Count; i++)
-            {
-               var baseType = baseTypes[i];
-               if (baseType.IsAssignableFrom(type)) return i;
-            }
-
-            return -1;
-         }
-      }
-      
-      public static void BakeTypeToUniqueNameMappings<TAttribute>(IReadOnlyCollection<Type> types, out HashSet<(string, Type)> mappings,
-         bool forceExistence = true, Func<Type, string> missingAttributeWarning = null)
-         where TAttribute  : Attribute, IUniqueNamingAttribute<TAttribute>
-      {
-         // Declare helper lists to identify collisions and build comprehensive error message
-         var addedTypeNames = new HashSet<string>(); 
-         var collidedTypes = new Dictionary<string, HashSet<Type>>();
-         
-         mappings = new HashSet<(string, Type)>();
-         
-         // Iterate types and validate...
-         foreach (var type in types)
-         {
-            var uniqueNamingAttribute = type.GetCustomAttribute<TAttribute>(false);
-            
-            // Check attribute existence, forceExistence can be used to make an attribute optional over the given type list. 
-            var hasNamingAttribute = uniqueNamingAttribute != null;
-            if (!hasNamingAttribute)
-            {
-               if(forceExistence)
-                  throw new Exception($"Type [{type.FullName}] must have an attribute of type [{typeof(TAttribute).Name}].");
-               
-               if(missingAttributeWarning != null)
-                  BeamableLogger.LogWarning(missingAttributeWarning(type));
-               continue;
-            }
-
-            // Check if the attribute has further restrictions to apply on each individual type
-            // TODO: Allow for warning and error results of this
-            var isAllowedOnType = uniqueNamingAttribute.IsAllowedOnType(type, out var errorMessage);
-            if (!isAllowedOnType) throw new Exception(errorMessage);
-
-            // Verify collision happened and store data to make a nice error message
-            var uniqueName = uniqueNamingAttribute.Name;
-            var didntCollideUniqueName = addedTypeNames.Add(uniqueName);
-            if (didntCollideUniqueName)
-            {
-               mappings.Add((uniqueName, type));
-            }
-            else
-            {
-               if (!collidedTypes.TryGetValue(uniqueName, out var collidedTypeSet))
-               {
-                  collidedTypeSet = new HashSet<Type>();
-                  collidedTypes.Add(uniqueName, collidedTypeSet);
-               }
-               collidedTypeSet.Add(type);
-            }
-         }
-
-         // If collisions happened, inform the game maker of exactly the types in which the attributes collided. 
-         if (collidedTypes.Count > 0)
-         {
-            var collisionErrorMessage = new StringBuilder();
-            foreach (var collidedNameTypesPair in collidedTypes)
-            {
-               var uniqueName = collidedNameTypesPair.Key;
-               var collidingTypes = collidedNameTypesPair.Value;
-               collidingTypes.Add(mappings.First(map => map.Item1 == uniqueName).Item2);
-                  
-               collisionErrorMessage.AppendLine($"The name [{uniqueName}] is being used in multiple different [{typeof(TAttribute).FullName}].");
-               collisionErrorMessage.AppendLine($"Please change the names of the ones declared on these types so that they are unique across your project [");
-               foreach (var collidedType in collidingTypes)
-               {
-                  collisionErrorMessage.AppendLine($"    {collidedType}, ");
-               }
-               collisionErrorMessage.AppendLine("]");
-            }
-            throw new ArgumentException(collisionErrorMessage.ToString());
-         }
-      }
-
       public static HashSet<Type> GetTypesFromAssemblies()
       {
          var types = new HashSet<Type>();
@@ -368,7 +240,7 @@ namespace Beamable.Common.Content
 
          return types;
       }
-
+      
       private static IEnumerable<string> GetAllValidContentTypeNames(Type contentType, bool includeFormerlySerialized)
       {
          if (contentType == null)
@@ -450,7 +322,7 @@ namespace Beamable.Common.Content
 
       public static IEnumerable<ContentTypePair> GetAll()
       {
-         foreach (var kvp in classToContentType)
+         foreach (var kvp in ContentTypeCaches.ClassToContentType)
          {
             yield return new ContentTypePair
             {
@@ -462,12 +334,12 @@ namespace Beamable.Common.Content
 
       public static IEnumerable<Type> GetContentTypes()
       {
-         return classToContentType.Keys;
+         return ContentTypeCaches.ClassToContentType.Keys;
       }
 
       public static IEnumerable<string> GetContentClassIds()
       {
-         return contentTypeToClass.Keys;
+         return ContentTypeCaches.ContentTypeToClass.Keys;
       }
 
       public static string GetTypeNameFromId(string id)
@@ -484,7 +356,7 @@ namespace Beamable.Common.Content
       {
          var typeName = GetTypeNameFromId(id);
 
-         if (!contentTypeToClass.TryGetValue(typeName, out var type))
+         if (!ContentTypeCaches.ContentTypeToClass.TryGetValue(typeName, out var type))
          {
             // the type doesn't exist, but maybe we can try again?
 
@@ -504,17 +376,17 @@ namespace Beamable.Common.Content
 
       public static bool TryGetType(string typeName, out Type type)
       {
-         return contentTypeToClass.TryGetValue(typeName, out type);
+         return ContentTypeCaches.ContentTypeToClass.TryGetValue(typeName, out type);
       }
 
       public static bool TryGetName(Type type, out string name)
       {
-         return classToContentType.TryGetValue(type, out name);
+         return ContentTypeCaches.ClassToContentType.TryGetValue(type, out name);
       }
 
       public static Type NameToType(string name)
       {
-         if (contentTypeToClass.TryGetValue(name, out var type))
+         if (ContentTypeCaches.ContentTypeToClass.TryGetValue(name, out var type))
          {
             return type;
          }
@@ -523,12 +395,14 @@ namespace Beamable.Common.Content
 
       public static string TypeToName(Type type)
       {
-         if (classToContentType.TryGetValue(type, out var name))
+         if (ContentTypeCaches.ClassToContentType.TryGetValue(type, out var name))
          {
             return name;
          }
 
          throw new Exception($"No content name found for type=[{type.Name}]. Did you forget to add a ContentTypeAttribute with a unique name to it?");
       }
+
+      
    }
 }
