@@ -12,7 +12,7 @@ namespace Beamable.Editor.UI.SDF {
     [CustomPropertyDrawer(typeof(SerializableValueObject))]
     public class SerializableValueObjectDrawer : PropertyDrawer {
         private float _cachedHeight = 0f;
-        private static readonly Dictionary<string, bool> _foldouts = new Dictionary<string, bool>();
+        private static readonly Dictionary<string, object> _drawerData = new Dictionary<string, object>();
         private static SerializableValueImplementsAttribute q = new SerializableValueImplementsAttribute(typeof(ISDFProperty));
         
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
@@ -55,7 +55,7 @@ namespace Beamable.Editor.UI.SDF {
             sysType = type == null ? null : Type.GetType(type);
             value = JsonUtility.FromJson(json, sysType);
             EditorGUI.BeginChangeCheck();
-            value = EditorGUIExtension.DrawObject(rc, label, value, _foldouts, property.serializedObject.targetObject.GetInstanceID() + ":" + property.propertyPath);
+            value = EditorGUIExtension.DrawObject(rc, label, value, _drawerData, property.serializedObject.targetObject.GetInstanceID() + ":" + property.propertyPath);
             hasChange |= EditorGUI.EndChangeCheck();
             
             if (hasChange) {

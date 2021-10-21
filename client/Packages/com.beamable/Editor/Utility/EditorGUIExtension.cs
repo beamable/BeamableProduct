@@ -3,6 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Beamable.Editor.UI.SDF;
+using Beamable.UI.SDF.Styles;
 using UnityEditor;
 using UnityEngine;
 
@@ -76,18 +78,18 @@ namespace Beamable.Editor {
             return parent;
         }
 
-        public static void DrawField(EditorGUIRectController rc, object target, FieldInfo fieldInfo,  Dictionary<string, bool> foldouts, string path) {
+        public static void DrawField(EditorGUIRectController rc, object target, FieldInfo fieldInfo,  Dictionary<string, object> drawerData, string path) {
             if (fieldInfo.GetCustomAttribute<NonSerializedAttribute>() != null) return;
             if (!fieldInfo.IsPublic && fieldInfo.GetCustomAttribute<SerializeField>() == null) return;
             var fieldLabel = fieldInfo.Name;
             var value = fieldInfo.GetValue(target);
             var delayed = fieldInfo.GetCustomAttribute<DelayedAttribute>() != null;
 
-            value = DrawObject(rc, new GUIContent(fieldLabel), value, foldouts, $"{path}.{fieldLabel}", delayed);
+            value = DrawObject(rc, new GUIContent(fieldLabel), value, drawerData, $"{path}.{fieldLabel}", delayed);
             fieldInfo.SetValue(target, value);
         }
 
-        public static object DrawObject(EditorGUIRectController rc, GUIContent label, object value, Dictionary<string, bool> foldouts, string path = "", bool delayed = false) {
+        public static object DrawObject(EditorGUIRectController rc, GUIContent label, object value, Dictionary<string, object> drawerData, string path = "", bool delayed = false) {
             switch (value) {
                 case null:
                     EditorGUI.LabelField(rc.ReserveSingleLine(), label);
@@ -122,35 +124,39 @@ namespace Beamable.Editor {
 
                 // --- Arrays or lists
                 case Array array:
-                    if (DrawFoldout(rc, label, foldouts, path)) {
+                    if (DrawFoldout(rc, label, drawerData, path)) {
                         rc.MoveIndent(1);
                         for(int index = 0; index < array.Length; index++) {
                             var elementPath = $"{path}_{index}";
                             array.SetValue(DrawObject(rc, new GUIContent($"Element {index}"), array.GetValue(index),
-                                foldouts, elementPath, delayed), index);
+                                drawerData, elementPath, delayed), index);
                         }
                         rc.MoveIndent(-1);
                     }
                     return array;
                 
                 case IList list:
-                    if (DrawFoldout(rc, label, foldouts, path)) {
+                    if (DrawFoldout(rc, label, drawerData, path)) {
                         rc.MoveIndent(1);
                         for(int index = 0; index < list.Count; index++){
                             var elementPath = $"{path}_{index}";
                             list[index] = DrawObject(rc, new GUIContent($"Element {index++}"), list[index],
-                                foldouts, elementPath, delayed);
+                                drawerData, elementPath, delayed);
                         }
                         rc.MoveIndent(-1);
                     }
                     return list;
                 
+                // --- Types with custom drawers
+                case ColorRect colorRect:
+                    var colorRectDrawer = GetDrawer<ColorRectDrawer>(path, drawerData);
+                    return colorRectDrawer.DrawColorRect(label, rc.ReserveHeight(colorRectDrawer.GetHeight()).ToRectController(), colorRect);
                 // --- Other objects
                 default:
-                    if (DrawFoldout(rc, label, foldouts, path)) {
+                    if (DrawFoldout(rc, label, drawerData, path)) {
                         rc.MoveIndent(1);
                         foreach (var fieldInfo in value.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)) {
-                            DrawField(rc, value, fieldInfo, foldouts, path);
+                            DrawField(rc, value, fieldInfo, drawerData, path);
                         }
                         rc.MoveIndent(-1);
                     }
@@ -158,15 +164,26 @@ namespace Beamable.Editor {
             }
         }
 
-        private static bool DrawFoldout(EditorGUIRectController rc, GUIContent label, Dictionary<string, bool> foldouts, string path) {
+        private static bool DrawFoldout(EditorGUIRectController rc, GUIContent label, Dictionary<string, object> drawerData, string path) {
+            path += "_foldout";
             var expanded = false;
-            if (foldouts.ContainsKey(path)) {
-                expanded = foldouts[path];
+            if (drawerData.ContainsKey(path)) {
+                expanded = (bool) drawerData[path];
             }
 
             expanded = EditorGUI.Foldout(rc.ReserveSingleLine(), expanded, label);
-            foldouts[path] = expanded;
+            drawerData[path] = expanded;
             return expanded;
+        }
+
+        private static T GetDrawer<T>(string path, Dictionary<string, object> drawerData) where T : new() {
+            if (drawerData.ContainsKey(path)) {
+                return (T) drawerData[path];
+            }
+
+            var newT = new T();
+            drawerData[path] = newT;
+            return new T();
         }
         
         public static EditorGUIRectController ToRectController(this Rect rect) => new EditorGUIRectController(rect);

@@ -9,6 +9,10 @@ namespace Beamable.Editor.UI.SDF {
         private Mode _mode = Mode.PerVertexColor;
         
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
+            return GetHeight();
+        }
+
+        public float GetHeight() {
             return EditorGUIUtility.singleLineHeight * (_mode == Mode.SingleColor ? 2 : 3);
         }
 
@@ -20,64 +24,87 @@ namespace Beamable.Editor.UI.SDF {
             var topLeft = property.FindPropertyRelative("TopLeftColor");
             var topRight = property.FindPropertyRelative("TopRightColor");
 
+            var colorRect = new ColorRect(
+                bottomLeft.colorValue, bottomRight.colorValue, 
+                topLeft.colorValue, topRight.colorValue);
+
             EditorGUI.BeginChangeCheck();
             
-            _mode = (Mode) EditorGUI.EnumPopup(rc.ReserveSingleLine(), label, _mode);
-            
-            rc.MoveIndent(1);
-            
-            switch (_mode) {
-                case Mode.SingleColor:
-                    bottomLeft.colorValue = bottomRight.colorValue = topLeft.colorValue = topRight.colorValue =
-                        EditorGUI.ColorField(rc.ReserveSingleLine(), "Color", topLeft.colorValue);
-                    break;
-                case Mode.HorizontalGradient:
-                    bottomLeft.colorValue =  topLeft.colorValue =
-                        EditorGUI.ColorField(rc.ReserveSingleLine(), "Left", topLeft.colorValue);
-                    bottomRight.colorValue = topRight.colorValue =
-                        EditorGUI.ColorField(rc.ReserveSingleLine(), "Right", topRight.colorValue);
-                    break;
-                case Mode.VerticalGradient:
-                    topLeft.colorValue = topRight.colorValue =
-                        EditorGUI.ColorField(rc.ReserveSingleLine(), "Top", topLeft.colorValue);
-                    bottomLeft.colorValue = bottomRight.colorValue =
-                        EditorGUI.ColorField(rc.ReserveSingleLine(), "Bottom", bottomLeft.colorValue);
-                    break;
-                case Mode.DiagonalGradient:
-                    topLeft.colorValue =
-                        EditorGUI.ColorField(rc.ReserveSingleLine(), "Start", topLeft.colorValue);
-                    bottomRight.colorValue =
-                        EditorGUI.ColorField(rc.ReserveSingleLine(), "End", bottomRight.colorValue);
-                    topRight.colorValue = bottomLeft.colorValue =
-                        Color.Lerp(topLeft.colorValue, bottomRight.colorValue, .5f);
-                    break;
-                case Mode.FlippedDiagonalGradient:
-                    bottomLeft.colorValue =
-                        EditorGUI.ColorField(rc.ReserveSingleLine(), "Start", bottomLeft.colorValue);
-                    topRight.colorValue =
-                        EditorGUI.ColorField(rc.ReserveSingleLine(), "End", topRight.colorValue);
-                    bottomRight.colorValue = topLeft.colorValue =
-                        Color.Lerp(bottomLeft.colorValue, topRight.colorValue, .5f);
-                    break;
-                case Mode.PerVertexColor:
-                    var topRow = rc.ReserveSingleLine().ToRectController();
-                    topLeft.colorValue =
-                        EditorGUI.ColorField(topRow.ReserveWidthByFraction(.5f), topLeft.colorValue);
-                    topRight.colorValue =
-                        EditorGUI.ColorField(topRow.rect, topRight.colorValue);
-                    bottomLeft.colorValue =
-                        EditorGUI.ColorField(rc.ReserveWidthByFraction(.5f), bottomLeft.colorValue);
-                    bottomRight.colorValue =
-                        EditorGUI.ColorField(rc.rect, bottomRight.colorValue);
-                    break;
-            }
+            colorRect = DrawColorRect(label, rc, colorRect);
 
             if (EditorGUI.EndChangeCheck()) {
+                bottomLeft.colorValue = colorRect.BottomLeftColor;
+                bottomRight.colorValue = colorRect.BottomRightColor;
+                topLeft.colorValue = colorRect.TopLeftColor;
+                topRight.colorValue = colorRect.TopRightColor;
+                
                 property.serializedObject.ApplyModifiedProperties();
             }
         }
-        
-        private enum Mode {
+
+        public ColorRect DrawColorRect(GUIContent label, EditorGUIRectController rc, ColorRect colorRect) {
+            _mode = (Mode) EditorGUI.EnumPopup(rc.ReserveSingleLine(), label, _mode);
+
+            rc.MoveIndent(1);
+
+            colorRect = DrawColorFields(colorRect, rc);
+
+            rc.MoveIndent(-1);
+            return colorRect;
+        }
+
+        private ColorRect DrawColorFields(ColorRect colorRect, EditorGUIRectController rc) {
+            switch (_mode) {
+                case Mode.SingleColor:
+                    colorRect.BottomLeftColor = colorRect.BottomRightColor = colorRect.TopLeftColor = colorRect.TopRightColor =
+                        EditorGUI.ColorField(rc.ReserveSingleLine(), "Color", colorRect.TopLeftColor);
+                    break;
+                case Mode.HorizontalGradient:
+                    colorRect.BottomLeftColor = colorRect.TopLeftColor =
+                        EditorGUI.ColorField(rc.ReserveSingleLine(), "Left", colorRect.TopLeftColor);
+                    colorRect.BottomRightColor = colorRect.TopRightColor =
+                        EditorGUI.ColorField(rc.ReserveSingleLine(), "Right", colorRect.TopRightColor);
+                    break;
+                case Mode.VerticalGradient:
+                    colorRect.TopLeftColor = colorRect.TopRightColor =
+                        EditorGUI.ColorField(rc.ReserveSingleLine(), "Top", colorRect.TopLeftColor);
+                    colorRect.BottomLeftColor = colorRect.BottomRightColor =
+                        EditorGUI.ColorField(rc.ReserveSingleLine(), "Bottom", colorRect.BottomLeftColor);
+                    break;
+                case Mode.DiagonalGradient:
+                    colorRect.TopLeftColor =
+                        EditorGUI.ColorField(rc.ReserveSingleLine(), "Start", colorRect.TopLeftColor);
+                    colorRect.BottomRightColor =
+                        EditorGUI.ColorField(rc.ReserveSingleLine(), "End", colorRect.BottomRightColor);
+                    colorRect.TopRightColor = colorRect.BottomLeftColor =
+                        Color.Lerp(colorRect.TopLeftColor, colorRect.BottomRightColor, .5f);
+                    break;
+                case Mode.FlippedDiagonalGradient:
+                    colorRect.BottomLeftColor =
+                        EditorGUI.ColorField(rc.ReserveSingleLine(), "Start", colorRect.BottomLeftColor);
+                    colorRect.TopRightColor =
+                        EditorGUI.ColorField(rc.ReserveSingleLine(), "End", colorRect.TopRightColor);
+                    colorRect.BottomRightColor = colorRect.TopLeftColor =
+                        Color.Lerp(colorRect.BottomLeftColor, colorRect.TopRightColor, .5f);
+                    break;
+                case Mode.PerVertexColor:
+                    var topRow = rc.ReserveSingleLine().ToRectController();
+                    var bottomRow = rc.ReserveSingleLine().ToRectController();
+                    colorRect.TopLeftColor =
+                        EditorGUI.ColorField(topRow.ReserveWidthByFraction(.5f), colorRect.TopLeftColor);
+                    colorRect.TopRightColor =
+                        EditorGUI.ColorField(topRow.rect, colorRect.TopRightColor);
+                    colorRect.BottomLeftColor =
+                        EditorGUI.ColorField(bottomRow.ReserveWidthByFraction(.5f), colorRect.BottomLeftColor);
+                    colorRect.BottomRightColor =
+                        EditorGUI.ColorField(bottomRow.rect, colorRect.BottomRightColor);
+                    break;
+            }
+
+            return colorRect;
+        }
+
+        public enum Mode {
             SingleColor,
             HorizontalGradient,
             VerticalGradient,
