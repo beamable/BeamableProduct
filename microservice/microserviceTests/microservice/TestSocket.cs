@@ -140,17 +140,18 @@ namespace Beamable.Microservice.Tests.Socket
                {
                   case string json:// when json.StartsWith("{"):
                   {
-                     try
-                     {
-                        var payload = JsonConvert.DeserializeObject<T>(json);
-                        return matcher(payload);
-                     }
-                     catch (Exception e)
-                     {
-                        //string tmp = json.Replace(@"\", "");
-                        return Json.IsValidJson(json);
-                     }
-                     break;
+                     string tmpJson = json.Replace(@"\", "");
+
+                        if (Json.IsValidJson(tmpJson))
+                        {
+                           var token = JToken.Parse(tmpJson);
+                           return !string.IsNullOrEmpty(token.ToString());
+                        }
+                        else
+                        {
+                           var payload = JsonConvert.DeserializeObject<T>(tmpJson);
+                           return matcher(payload);
+                        }
                   }
                   case JObject payloadJObject when payloadJObject.TryGetValue("payload", out var payloadToken):
                   {
