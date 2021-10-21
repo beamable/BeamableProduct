@@ -30,20 +30,12 @@ namespace Beamable.Editor.Microservice.UI.Components
         public ServiceModelBase Model { get; set; }
         protected abstract string ScriptName { get; }
 
-        protected float StoredHeight
-        {
-            get => EditorPrefs.GetFloat($"{Model.Name}_ServiceBaseVisualElement_Height", DEFAULT_HEIGHT);
-            set => EditorPrefs.SetFloat($"{Model.Name}_ServiceBaseVisualElement_Height", value);
-        }
-
         private const float MIN_HEIGHT = 200.0f;
         private const float MAX_HEIGHT = 500.0f;
         private const float DETACHED_HEIGHT = 100.0f;
-        private const float DEFAULT_HEIGHT = 300.0f;
         protected const float DEFAULT_HEADER_HEIGHT = 60.0f;
 
         protected Button _stopButton;
-        protected Button _startButton;
         protected LoadingBarElement _loadingBar;
         protected VisualElement _statusIcon;
         protected Label _statusLabel;
@@ -89,7 +81,6 @@ namespace Beamable.Editor.Microservice.UI.Components
             Root.Q("microserviceNewTitle")?.RemoveFromHierarchy();
             _dependentServicesBtn = Root.Q<Button>("dependentServicesBtn");
             _nameTextField = Root.Q<Label>("microserviceTitle");
-            _startButton = Root.Q<Button>("start");
             _stopButton = Root.Q<Button>("stopBtn");
             _moreBtn = Root.Q<Button>("moreBtn");
             _checkbox = Root.Q<LabeledCheckboxVisualElement>("checkbox");
@@ -182,11 +173,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         private void SetHeight(float newHeight)
         {
-            StoredHeight = Mathf.Clamp(newHeight, MIN_HEIGHT, MAX_HEIGHT);
+            Model.VisualElementHeight = Mathf.Clamp(newHeight, MIN_HEIGHT, MAX_HEIGHT);
 #if UNITY_2019_1_OR_NEWER
-            _rootVisualElement.style.height = new StyleLength(StoredHeight);
+            _rootVisualElement.style.height = new StyleLength(Model.VisualElementHeight);
 #elif UNITY_2018
-            _rootVisualElement.style.height = StyleValue<float>.Create(StoredHeight);
+            _rootVisualElement.style.height = StyleValue<float>.Create(Model.VisualElementHeight);
 #endif
         }
 
@@ -225,7 +216,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             if (areLogsAttached)
             {
                 CreateLogElement();
-                SetHeight(StoredHeight);
+                SetHeight(Model.VisualElementHeight);
             }
         }
         private void CreateLogElement()
@@ -239,7 +230,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         private void OnLogsDetached()
         {
             _logElement.OnDetachLogs -= OnLogsDetached;
-            StoredHeight = _rootVisualElement.layout.height;
+            Model.VisualElementHeight = _rootVisualElement.layout.height;
 
 #if UNITY_2019_1_OR_NEWER
             _rootVisualElement.style.height = new StyleLength(DETACHED_HEIGHT);
