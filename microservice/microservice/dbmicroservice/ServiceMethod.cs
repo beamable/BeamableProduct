@@ -43,7 +43,7 @@ namespace Beamable.Server
             
             if (result is string strResult)
             {
-               return strResult;
+               return strResult; // If the data is already in a string format, then just use that.
             }
 
             return result;
@@ -52,12 +52,6 @@ namespace Beamable.Server
          {
             return "";
          }
-      }
-      
-      [System.Serializable]
-      public class ResponseObject
-      {
-         public object payload;
       }
    }
 }
