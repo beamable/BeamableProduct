@@ -57,7 +57,7 @@ namespace Beamable.CurrencyHUD
             });
             var currency = await content.Resolve();
             var currencyAddress = currency.icon;
-            if (currencyAddress.Asset != null)
+            if (currencyAddress.IsValid())
                 img.texture = await currencyAddress.LoadTexture();
 
             canvas.enabled = true;
