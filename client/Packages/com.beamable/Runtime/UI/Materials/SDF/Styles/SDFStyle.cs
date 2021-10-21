@@ -4,12 +4,33 @@ using UnityEngine;
 
 namespace Beamable.UI.SDF.Styles {
     public class SDFStyle {
+        
+        #region Property Binders
+        
+        // Background
         public static readonly PropertyBiding<IVertexColorProperty> BackgroundColor = 
-            new PropertyBiding<IVertexColorProperty>("backgroundColor", new SingleColorProperty());
+            new PropertyBiding<IVertexColorProperty>("backgroundColor", new SingleColorProperty(Color.white));
+        public static readonly PropertyBiding<IFloatFromFloatProperty> RoundCorners =
+            new PropertyBiding<IFloatFromFloatProperty>("roundCorners", new FloatProperty());
+        
+        // Border
         public static readonly PropertyBiding<IFloatFromFloatProperty> BorderWidth = 
             new PropertyBiding<IFloatFromFloatProperty>("borderWidth", new FloatProperty());
         public static readonly PropertyBiding<IVertexColorProperty> BorderColor = 
-            new PropertyBiding<IVertexColorProperty>("borderColor", new SingleColorProperty(new Color(0f, 0f, 0f, 0f)));
+            new PropertyBiding<IVertexColorProperty>("borderColor", new SingleColorProperty());
+        
+        // Shadow
+        public static readonly PropertyBiding<IVector2Property> ShadowOffset = 
+            new PropertyBiding<IVector2Property>("shadowOffset", new Vector2Property());
+        public static readonly PropertyBiding<IFloatProperty> ShadowThreshold = 
+            new PropertyBiding<IFloatProperty>("shadowThreshold", new FloatProperty());
+        public static readonly PropertyBiding<IVertexColorProperty> ShadowColor = 
+            new PropertyBiding<IVertexColorProperty>("shadowColor", new SingleColorProperty());
+        
+        // Font
+        // TODO
+
+        #endregion
 
         private Dictionary<string, ISDFProperty> _properties = new Dictionary<string, ISDFProperty>();
         
