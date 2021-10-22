@@ -4,6 +4,7 @@ using System.Linq;
 using Beamable.Server.Editor.ManagerClient;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
+using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.UI.Components;
 #if UNITY_2018
@@ -64,46 +65,20 @@ namespace Beamable.Editor.Microservice.UI.Components
 
          if (Model is ManifestEntryModel serviceModel)
          {
-            icon.AddToClassList(MICROSERVICE_IMAGE_CLASS);  
-            
-            var serviceDescriptor = Microservices.Descriptors.Find(descriptor => descriptor.Name == serviceModel.Name);
-            var serviceDependencies = new List<ServiceDependency>();
-            foreach (var storage in serviceDescriptor.GetStorageReferences())
-            {
-               serviceDependencies.Add(new ServiceDependency
-               {
-                  id = storage.Name, 
-                  type = "storage"
-               });
-            }
+            icon.AddToClassList(MICROSERVICE_IMAGE_CLASS);
 
-            serviceModel.Dependencies = serviceDependencies;
-            
-            if (serviceModel.Dependencies != null)
+            var microserviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(serviceModel.Name);
+
+            if (microserviceModel.Dependencies != null)
             {
-               string[] dependencies = new string[serviceModel.Dependencies.Count];
-               for (int i = 0; i < dependencies.Length; i++)
+               List<string> dependencies = new List<string>();
+               foreach (var dep in microserviceModel.Dependencies)
                {
-                  dependencies[i] = serviceModel.Dependencies[i].id;
+                  dependencies.Add(dep.Name);
                }
                
-               // var dropdown = Root.Q<DropdownVisualElement>("depsDropdown");
-               // if (dependencies.Length > 0)
-               // {
-               //    dropdown.Setup(dependencies.ToList(), selected =>
-               //    {
-               //       // don't allow to change selection
-               //       if (selected != dependencies[0])
-               //       {
-               //          dropdown.Set(dependencies[0]);
-               //       }
-               //    });
-               //    dropdown.Refresh();  
-               // }
-               // else
-               // {
-               //    dropdown.visible = false;
-               // }
+               var depsList = Root.Q<ExpandableListVisualElement>("depsList");
+               depsList.Setup(dependencies);
             }
          }
          else
