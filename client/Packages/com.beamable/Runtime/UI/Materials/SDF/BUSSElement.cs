@@ -93,19 +93,6 @@ namespace Beamable.UI.SDF
             }
         }
 
-        #region TEMPORARY
-        [Header("Temporary, this will be removed soon.")]
-        public KeyWithProperty[] styleSheet = new KeyWithProperty[0];
-        private SDFStyle _style;
-
-        public SDFStyle GetStyle() {
-            if (_style == null) {
-                _style = new SDFStyle();
-            }
-            _style.Clear();
-            foreach (var keyWithProperty in styleSheet) {
-                _style[keyWithProperty.key] = keyWithProperty.property.Get<ISDFProperty>();
-
         private void OnEnable()
         {
             if (_styleObject != null)
