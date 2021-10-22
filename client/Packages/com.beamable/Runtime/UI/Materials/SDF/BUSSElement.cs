@@ -47,9 +47,42 @@ namespace Beamable.UI.SDF {
         private BUSSElement _parent;
         [SerializeField, HideInInspector]
         private List<BUSSElement> _children = new List<BUSSElement>();
+
+        private IEnumerable<BUSSElement> _readonlyChildren;
+
+        public BUSSElement Parent => _parent;
+        public IEnumerable<BUSSElement> Children => _readonlyChildren ?? (_readonlyChildren = _children.AsReadOnly());
         
-        private void OnEnable() {
-            GetComponentInParent<BUSSElement>();
+        private void Awake() {
+            FindParent();
+        }
+
+        private void OnTransformParentChanged() {
+            FindParent();
+        }
+
+        private void OnDestroy() {
+            ClearParent();
+        }
+
+        private void FindParent() {
+            var parent = transform.parent != null ? transform.parent.GetComponentInParent<BUSSElement>() : null;
+            if (parent != _parent) {
+                ClearParent();
+
+                if (parent != null && !parent._children.Contains(this)) {
+                    parent._children.Add(this);
+                }
+
+                _parent = parent;
+            }
+        }
+
+        private void ClearParent() {
+            if (_parent != null) {
+                _parent._children.Remove(this);
+                _parent = null;
+            }
         }
 
         #region TEMPORARY
