@@ -150,7 +150,7 @@ namespace Beamable.Editor {
                 // --- Types with custom drawers
                 case ColorRect colorRect:
                     var colorRectDrawer = GetDrawer<ColorRectDrawer>(path, drawerData);
-                    return colorRectDrawer.DrawColorRect(label, rc.ReserveHeight(colorRectDrawer.GetHeight()).ToRectController(), colorRect);
+                    return colorRectDrawer.DrawColorRect(label, rc, colorRect);
                 // --- Other objects
                 default:
                     if (DrawFoldout(rc, label, drawerData, path)) {

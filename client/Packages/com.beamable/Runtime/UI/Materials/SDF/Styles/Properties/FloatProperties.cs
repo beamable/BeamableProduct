@@ -19,6 +19,9 @@ namespace Beamable.UI.SDF.Styles {
         }
 
         public float GetFloatValue(float input) => FloatValue;
+        public ISDFProperty Clone() {
+            return new FloatProperty(FloatValue);
+        }
     }
 
     [Serializable]
@@ -32,6 +35,10 @@ namespace Beamable.UI.SDF.Styles {
 
         public float GetFloatValue(float input) {
             return input * Fraction;
+        }
+
+        public ISDFProperty Clone() {
+            return new FractionFloatProperty(Fraction);
         }
     }
 }

@@ -14,13 +14,17 @@ namespace Beamable.UI.SDF.Styles {
             set => _color = value;
         }
 
+        public ColorRect ColorRect => new ColorRect(_color);
+
         public SingleColorProperty() { }
 
         public SingleColorProperty(Color color) {
             Color = color;
         }
-
-        public ColorRect ColorRect => new ColorRect(_color);
+        
+        public ISDFProperty Clone() {
+            return new SingleColorProperty(_color);
+        }
     }
 
     // BUSS: color: #232323 #a3a3a3 #a3a3a3 #241321
@@ -46,6 +50,10 @@ namespace Beamable.UI.SDF.Styles {
 
         public VertexColorProperty(ColorRect colorRect) {
             _colorRect = colorRect;
+        }
+
+        public ISDFProperty Clone() {
+            return new VertexColorProperty(_colorRect);
         }
     }
 }

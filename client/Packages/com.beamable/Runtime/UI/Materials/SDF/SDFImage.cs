@@ -6,6 +6,16 @@ using UnityEngine.UI;
 namespace Beamable.UI.SDF {
     [ExecuteAlways]
     public class SDFImage : Image {
+
+        private SDFStyle _style;
+        public SDFStyle Style {
+            get => _style;
+            set {
+                _style = value;
+                SetVerticesDirty();
+            }
+        }
+
         public ColorRect colorRect;
         public float threshold;
         public float rounding;
@@ -38,6 +48,7 @@ namespace Beamable.UI.SDF {
         }
 
         protected override void OnPopulateMesh(VertexHelper vh) {
+            ApplyStyle();
             if (type == Type.Sliced && hasBorder) {
                 GenerateSlicedMesh(vh);
             }
@@ -175,6 +186,18 @@ namespace Beamable.UI.SDF {
                 outlineWidth, outlineColor,
                 shadowColor, shadowThreshold, shadowOffset
             );
+        }
+
+        private void ApplyStyle() {
+            if (_style == null) return;
+            
+            var size = rectTransform.rect.size;
+            var minSize = Mathf.Min(size.x, size.y);
+            colorRect = SDFStyle.BackgroundColor.Get(Style).ColorRect;
+            rounding = SDFStyle.RoundCorners.Get(Style).GetFloatValue(minSize);
+
+            outlineWidth = SDFStyle.BorderWidth.Get(Style).FloatValue;
+            outlineColor = SDFStyle.BorderColor.Get(Style).Color;
         }
     }
 }

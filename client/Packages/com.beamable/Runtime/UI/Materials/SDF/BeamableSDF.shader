@@ -112,7 +112,7 @@
                 coords = coords - float2(.5, .5);
                 coords *= size;
                 float rectDist = sdfRoundedRectangle(coords, size * .5, rounding);
-                return rectDist / size.y;
+                return rectDist;
             }
 
             // returns SDF image distance

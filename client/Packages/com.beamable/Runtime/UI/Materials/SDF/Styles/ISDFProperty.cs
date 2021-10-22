@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Beamable.UI.SDF.Styles {
     public interface ISDFProperty {
-        
+        ISDFProperty Clone();
     }
 
     public interface IColorProperty : ISDFProperty {
@@ -25,5 +25,10 @@ namespace Beamable.UI.SDF.Styles {
 
     public interface IVector2Property : ISDFProperty {
         Vector2 Vector2Value { get; }
+    }
+
+    public interface IEnumProperty : ISDFProperty {
+        Enum EnumValue { get; }
+        T CastEnumValue<T>() where T : Enum;
     }
 }
