@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Beamable.Editor.UI.SDF;
 using Beamable.UI.SDF.Styles;
 using UnityEngine;
@@ -9,29 +10,40 @@ namespace Beamable.UI.SDF
     public class SDFStyleScriptableObject : ScriptableObject
     {
         public Action OnUpdate;
-        
-        public KeyWithProperty[] styleSheet = Array.Empty<KeyWithProperty>();
-        private SDFStyle _style;
 
+        [SerializeField] private List<SingleStyleObject> _styles = new List<SingleStyleObject>();
+        
         private void OnValidate()
         {
             OnUpdate?.Invoke();
         }
 
+        public List<KeyWithProperty> GetProperties(string id)
+        {
+            SingleStyleObject styleObject = _styles.Find(style => style.Name == id);
+            return styleObject != null ? styleObject.Properties : new List<KeyWithProperty>();
+        }
+    }
+
+    [Serializable]
+    public class SingleStyleObject
+    {
+        [SerializeField] private string _name;
+        [SerializeField] private List<KeyWithProperty> _properties = new List<KeyWithProperty>();
+
+        public string Name => _name;
+        public List<KeyWithProperty> Properties => _properties;
+        
         public SDFStyle GetStyle()
         {
-            if (_style == null)
+             SDFStyle style = new SDFStyle();
+        
+            foreach (KeyWithProperty property in _properties)
             {
-                _style = new SDFStyle();
+                style[property.key] = property.property.Get<ISDFProperty>();
             }
-
-            _style.Clear();
-            foreach (var keyWithProperty in styleSheet)
-            {
-                _style[keyWithProperty.key] = keyWithProperty.property.Get<ISDFProperty>();
-            }
-
-            return _style;
+        
+            return style;
         }
     }
 
