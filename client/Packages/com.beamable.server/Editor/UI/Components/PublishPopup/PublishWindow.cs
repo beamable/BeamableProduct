@@ -15,7 +15,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
     public class PublishWindow : CommandRunnerWindow
     {
-        private static readonly Vector2 MIN_SIZE = new Vector2(920, 400);
+        private static readonly Vector2 MIN_SIZE = new Vector2(940, 400);
         
 	private bool isSet = false;
 

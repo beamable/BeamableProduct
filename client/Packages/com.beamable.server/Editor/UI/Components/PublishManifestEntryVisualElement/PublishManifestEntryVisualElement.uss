@@ -20,12 +20,18 @@
     flex-grow: 3;
     padding-left: 12px;
 }
+
 #CommentsC {
     width: 200px;
     padding-left: 20px;
 }
+
 #typeC {
     width: 120px;
+}
+
+#depsList {
+    margin-right: 10px;
 }
 
 #SizeC {
@@ -58,6 +64,11 @@
 
 #CheckC {
     margin-right: 20px;
+}
+
+#typeLabel, #nameMS {
+    -unity-font-style: bold;
+    color: #FFFFFF;
 }
 
 #checkbox{

@@ -28,10 +28,11 @@
     justify-content: space-between;
 }
 
-#nameMS, #depsText {
+#nameMS {
     align-self: center;
     margin-left: 3px;
 }
+
 #nameC, #depsC {
     width: 160px;
     align-self: stretch;
@@ -143,6 +144,7 @@
 .SubTitleText{
     font-size: 14px;
     -unity-font-style: bold;
+    color: #FFFFFF;
 }
 
 
