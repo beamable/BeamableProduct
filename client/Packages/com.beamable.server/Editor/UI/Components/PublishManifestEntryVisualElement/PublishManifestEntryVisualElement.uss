@@ -71,6 +71,10 @@
     color: #FFFFFF;
 }
 
+#typeImage {
+    margin-right: 5px;
+}
+
 #checkbox{
     align-self: center;
     justify-content: center;

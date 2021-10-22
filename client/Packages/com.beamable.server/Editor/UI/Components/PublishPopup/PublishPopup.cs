@@ -77,10 +77,9 @@ namespace Beamable.Editor.Microservice.UI.Components
             bool isPublishDisabled = false;
             foreach (var model in entryModels)
             {
-                if (model is ManifestEntryModel)
+                if (!isPublishDisabled && model is StorageEntryModel)
                 {
-                    var descriptor = Microservices.Descriptors.Find(desc => desc.Name == model.Name);
-                    isPublishDisabled |= descriptor.IsPublishFeatureDisabled();
+                    isPublishDisabled = true;
                 }
                 
                 bool wasPublished = EditorPrefs.GetBool(GetPublishedKey(model.Name), false);
