@@ -24,7 +24,7 @@ namespace Beamable.Editor.Tests.Content
 
             bool parsedDateTime = DateTime.TryParse(schedule.activeFrom, out DateTime _);
             Assert.IsTrue(parsedDateTime, $"{warningHeader} problem with parsing activeFrom field");
-            Assert.IsTrue(schedule.definitions.Count <= 1, $"{warningHeader} should have only one definition");
+            Assert.IsTrue(schedule.definitions.Count == 1, $"{warningHeader} should have only one definition");
         }
 
         [Test]
