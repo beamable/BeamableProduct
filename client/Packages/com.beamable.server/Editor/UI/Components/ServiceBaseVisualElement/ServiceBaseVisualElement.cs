@@ -54,8 +54,6 @@ namespace Beamable.Editor.Microservice.UI.Components
         private Button _collapseButton;
         private Image _collapseBtnIcon;
         private VisualElement _mainParent;
-        
-        private bool _isCollapsed = false;
 
         public Action OnServiceStartFailed { get; set; }
         public Action OnServiceStopFailed { get; set; }
@@ -150,12 +148,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             _dependentServicesContainer.visible = MicroserviceConfiguration.Instance.EnableStoragePreview;
             
-            _separator.AddToClassList("hide");
             _separator.Setup(OnDrag);
             _separator.Refresh();
 
             _collapseButton.clickable.clicked += HandleCollapseButton;
-            _logContainerElement.AddToClassList("hide");
             _mainParent.AddToClassList("collapsedMain");
             _rootVisualElement.AddToClassList("collapsedMain");
             
@@ -282,18 +278,18 @@ namespace Beamable.Editor.Microservice.UI.Components
         }
         private void HandleCollapseButton()
         {
-            _isCollapsed = !_isCollapsed;
+            Model.IsCollapsed = !Model.IsCollapsed;
             ChangeCollapseState();
         }
         private void ChangeCollapseState()
         {
-            _logContainerElement.EnableInClassList("hide", _isCollapsed);
-            _separator.EnableInClassList("hide", _isCollapsed);
-            _collapseBtnIcon.EnableInClassList("foldIcon", !_isCollapsed);
-            _collapseBtnIcon.EnableInClassList("unfoldIcon", _isCollapsed);
-            _rootVisualElement.EnableInClassList("collapsedMain", _isCollapsed);
-            _mainParent.EnableInClassList("collapsedMain", _isCollapsed);
-            _dependentServicesBtn.visible = !_isCollapsed;
+            _logContainerElement.EnableInClassList("--positionHidden",  Model.IsCollapsed);
+            _separator.EnableInClassList("--positionHidden",  Model.IsCollapsed);
+            _collapseBtnIcon.EnableInClassList("foldIcon", !Model.IsCollapsed);
+            _collapseBtnIcon.EnableInClassList("unfoldIcon",  Model.IsCollapsed);
+            _rootVisualElement.EnableInClassList("collapsedMain",  Model.IsCollapsed);
+            _mainParent.EnableInClassList("collapsedMain",  Model.IsCollapsed);
+            _dependentServicesBtn.visible = !Model.IsCollapsed;
         }
     }
 }
