@@ -1,5 +1,8 @@
+using System;
+using Beamable.Serialization.SmallerJSON;
 using Core.Server.Common;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Beamable.Server
 {
@@ -49,13 +52,26 @@ namespace Beamable.Server
             {
                id = ctx.Id,
                status = 200,
-               body = new ClientResponse
-               {
-                  payload = JsonConvert.SerializeObject(result)
-               }
             };
+            
+            string serializedString = JsonConvert.SerializeObject(result);
+            
+            if (result is string strResult && Json.IsValidJson(strResult))
+            {
+               response.body = new
+               {
+                  payload = JToken.Parse(serializedString)
+               };
+            }
+            else
+            {
+               response.body = new ClientResponse
+               {
+                  payload = serializedString
+               };
+            }
          }
-
+ 
          var json = JsonConvert.SerializeObject(response);
          return json;
       }
