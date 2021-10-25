@@ -112,29 +112,33 @@
     padding-right: 10px;
     padding-bottom: 10px;
     padding-left: 10px;
-    min-height: 100px;
+    margin-bottom: 50px;
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-top: 15px;
+    min-height: 100px; 
 }
 #buttonStrip {
     flex-direction: row;
     justify-content: flex-end;
     flex-shrink: 0;
-    margin-top: 15px;
+    margin-right: 50px;
+    padding-bottom: 20px;
+    margin-top: 5px;
     margin-bottom: 5px;
 }
 
 #cancelBtn{
-    margin-left: 0px;
     margin-right: 10px;
-    margin-top: 0px;
-    margin-bottom: 0px;
+    margin-top: 2px;
     border-radius: 5px;
     border-left-width: 1px;
     border-right-width: 1px;
     border-top-width: 1px;
     border-bottom-width: 1px;
     right: 10px;
-    width: 100px;
-    height: 28px;
+    width: 150px;
+    height: 35px;
     border-color: #DCDCDC;
     cursor: pan;
     background-image: none;
@@ -147,19 +151,10 @@
     color: #FFFFFF;
 }
 
-
-#buttonStrip {
-    flex-direction: row;
-    justify-content: flex-end;
-    flex-shrink: 0;
-    margin-top: 5px;
-    margin-bottom: 5px;
-}
-
 #continueBtn{
-    margin-right: 10px;
-    width: 100px;
-    height: 28px;
+    margin-right: 25px;
+    width: 160px;
+    height: 38px;
 }
 
 #manifestsContainer{
