@@ -24,7 +24,15 @@ namespace Beamable.Editor.UI.Model
     [System.Serializable]
     public class MicroserviceModel : ServiceModelBase, IBeamableMicroservice
     {
-        public MicroserviceDescriptor ServiceDescriptor { get; protected set; }
+        [SerializeField]
+        private MicroserviceDescriptor _serviceDescriptor;
+
+        public MicroserviceDescriptor ServiceDescriptor
+        {
+            get => _serviceDescriptor;
+            set => _serviceDescriptor = value;
+        }
+
         public MicroserviceBuilder ServiceBuilder { get; protected set; }
         public override IBeamableBuilder Builder => ServiceBuilder;
         public override IDescriptor Descriptor => ServiceDescriptor;
@@ -143,6 +151,7 @@ namespace Beamable.Editor.UI.Model
             evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => {OpenOnRemote("metrics");}, existsOnRemote);
             evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => {OpenOnRemote("logs");}, existsOnRemote);
             evt.menu.BeamableAppendAction($"Visual Studio Code/Copy Debug Configuration{debugToolsSuffix}", pos => { CopyVSCodeDebugTool(); }, IncludeDebugTools);
+            evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());
             if (MicroserviceConfiguration.Instance.Microservices.Count > 1) {
                 evt.menu.BeamableAppendAction($"Order/Move Up", pos => {
                     MicroserviceConfiguration.Instance.MoveMicroserviceIndex(Name, -1);

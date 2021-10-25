@@ -22,9 +22,27 @@ namespace Beamable.Editor.UI.Model
 {
     public abstract class ServiceModelBase : IBeamableService
     {
+        private const float DEFAULT_HEIGHT = 300.0f;
+
         public abstract bool IsRunning { get; }
-        public bool AreLogsAttached { get; protected set; } = true;
-        public LogMessageStore Logs { get; } = new LogMessageStore();
+        public bool AreLogsAttached
+        {
+            get => _areLogsAttached;
+            protected set => _areLogsAttached = value;
+        }
+
+        [SerializeField] private bool _areLogsAttached = true;
+        [SerializeField] private LogMessageStore _logs = new LogMessageStore();
+        [SerializeField] private float _visualHeight = DEFAULT_HEIGHT;
+
+        public LogMessageStore Logs => _logs;
+
+        public float VisualElementHeight
+        {
+            get => _visualHeight;
+            set => _visualHeight = value;
+        }
+
         public abstract IDescriptor Descriptor { get; }
         public abstract IBeamableBuilder Builder { get; }
         public ServiceType ServiceType => Descriptor.ServiceType;
@@ -39,6 +57,13 @@ namespace Beamable.Editor.UI.Model
             }
         }
         private bool _isSelected;
+        
+        public bool IsCollapsed
+        {
+            get => _isCollapsed;
+            set => _isCollapsed = value;
+        }
+        [SerializeField] private bool _isCollapsed = false;
 
         public Action OnLogsDetached { get; set; }
         public Action OnLogsAttached { get; set; }
@@ -70,9 +95,14 @@ namespace Beamable.Editor.UI.Model
         // TODO === BEGIN
         public abstract void PopulateMoreDropdown(ContextualMenuPopulateEvent evt);
         // TODO === END
-        
         public abstract void Refresh(IDescriptor descriptor);
         public abstract Task Start();
         public abstract Task Stop();
+        
+        protected void OpenCode()
+        {
+            var path = Path.GetDirectoryName(AssemblyDefinitionHelper.ConvertToInfo(Descriptor).Location);
+            EditorUtility.OpenWithDefaultApp($@"{path}/{Descriptor.Name}.cs");
+        }
     }
 }

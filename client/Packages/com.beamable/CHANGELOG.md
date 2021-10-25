@@ -6,33 +6,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-[Unreleased]
+## [Unreleased]
+### Changed
+- `BeamableEnvironment` has moved to the Runtime to enable sdk version checking at runtime
+
+## [0.17.1]
 ### Fixed
-- Able to build game
-- Content Inspector datepicker with no user given value no longer constantly updates
+- calls to Leaderboard scoring API support large numbers
+- schedule UI validation for daily and day-of-week schedules
 
 ## [0.17.0]
 ### Added
 - Device id authentication support
-- Auto-complete text feature for `AdminFlow` prefab
 - Steam third party authentication support
+- Auto-complete text feature for `AdminFlow` prefab
 - New default `currency.coins` currency that demonstrates client writable currency.
-- RemoveThirdPartyAssociation added to AuthService to allow a player to remove a third party auth from their account
-- Cohort Settings to EventContent to support partitioning by player stats
-- Event and listings schedules
+- Ability to remove a third party authorization with `RemoveThirdPartyAssociation` method in AuthService
+- Cohort Settings for EventContent that support partitioning by player stats
+- Event schedules for repeating events
+- Listing schedules for repeating listings
 - Support for archiving manifest namespaces.
 - A `Fetch()` method to all subscribable SDKs that requests and returns the raw subscription data
 
 ### Changed
-- Content deletion popup opens as separate window
 - An optional `forceRefresh` parameter to all subscribable SDK's `GetCurrent()` method that forces a network request
 - `API.Instance.Requester` is now an `IBeamableRequester`
 - The `Promise` class is no longer static, and extends from `Promise<Unit>`
-- Validated string fields of `ListingPrice`, `StatRequirement`, `CohortRequirement`, `OfferConstraint` and `AnnouncementAttachment` in Content Manager were changed to dropdowns
 - The realm dropdown now has a loading spinner on realm switches
+- Content Inspector datepicker with no user given value no longer constantly updates
+- Content deletion popup opens as separate window
+- Microservice separator (draggable) moved directly under log group
 
 ### Fixed
 - If no internet connection exists on startup, `API.Instance()` will retry every 2 seconds until a connection is established
+- Able to build games to device
 
 
 ## [0.16.1]
