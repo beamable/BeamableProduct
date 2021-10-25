@@ -8,6 +8,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
+using Beamable.Serialization.SmallerJSON;
 
 namespace Beamable.Server
 {
@@ -52,7 +53,7 @@ namespace Beamable.Server
             case long prim:
                return prim.ToString();
             case string prim:
-               return "\"" + prim + "\"";
+               return Json.IsValidJson(prim) ? "[" + prim + "]" : "\"" + prim + "\"";
             case double prim:
                return prim.ToString();
             case float prim:
