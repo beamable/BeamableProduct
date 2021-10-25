@@ -61,6 +61,7 @@ namespace Beamable.UI.SDF
             if (_styleObject != null)
             {
                 _styleObject.OnUpdate = Refresh;
+                Refresh();
             }
         }
 
@@ -104,8 +105,9 @@ namespace Beamable.UI.SDF
             }
         }
 
-        private void Refresh()
-        {
+        private void Refresh() {
+            if (!enabled) return;
+            
             if (TryGetComponent<SDFImage>(out var sdfImage))
             {
                 if (_styleObject != null)

@@ -19,16 +19,22 @@ namespace Beamable.Editor.UI.SDF {
 
             var properties = property.FindPropertyRelative("_properties");
             var keys = new string[properties.arraySize];
+            rc.MoveIndent(2);
             for (int i = 0; i < properties.arraySize; i++) {
+                rc.ReserveHeight(5f);
                 var element = properties.GetArrayElementAtIndex(i);
                 var key = element.FindPropertyRelative("key").stringValue;
                 var prop = element.FindPropertyRelative("property");
                 keys[i] = key;
                 var elementLabel = new GUIContent(key);
                 _svoDrawer.baseTypeOverride = SDFStyle.GetBaseType(key);
-                _svoDrawer.OnGUI(rc.ReserveHeight(_svoDrawer.GetPropertyHeight(prop, elementLabel)), prop, elementLabel);
+                var rect = rc.ReserveHeight(_svoDrawer.GetPropertyHeight(prop, elementLabel));
+                GUI.Box(rect, GUIContent.none);
+                _svoDrawer.OnGUI(rect, prop, elementLabel);
                 _svoDrawer.baseTypeOverride = null;
             }
+            
+            rc.MoveIndent(-3);
 
             if (GUI.Button(rc.ReserveWidthFromRight(30f), "-")) {
                 var context = new GenericMenu();
@@ -54,7 +60,12 @@ namespace Beamable.Editor.UI.SDF {
                     context.AddItem(new GUIContent(key), false, () => {
                         var index = properties.arraySize;
                         properties.InsertArrayElementAtIndex(index);
-                        properties.GetArrayElementAtIndex(index).FindPropertyRelative("key").stringValue = key;
+                        var element = properties.GetArrayElementAtIndex(index);
+                        element.FindPropertyRelative("key").stringValue = key;
+                        var defaultProperty = SDFStyle.GetDefaultValue(key);
+                        var prop = element.FindPropertyRelative("property");
+                        prop.FindPropertyRelative("type").stringValue = defaultProperty.GetType().AssemblyQualifiedName;
+                        prop.FindPropertyRelative("json").stringValue = JsonUtility.ToJson(defaultProperty);
                         properties.serializedObject.ApplyModifiedProperties();
                     });
                 }
@@ -75,6 +86,8 @@ namespace Beamable.Editor.UI.SDF {
                 height += _svoDrawer.GetPropertyHeight(prop, elementLabel);
                 _svoDrawer.baseTypeOverride = null;
             }
+
+            height += properties.arraySize * 5f;
 
             return height;
         }
