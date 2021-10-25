@@ -337,7 +337,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.OnShutdown(this, null);
          Assert.IsTrue(testSocket.AllMocksCalled());
       }
-      
+
       [Test]
       [NonParallelizable]
       public async Task Call_MethodWithVector2Int_AsParameter()

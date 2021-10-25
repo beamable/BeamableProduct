@@ -69,7 +69,7 @@ namespace microserviceTests.microservice
       {
          return str;
       }
-      
+
       [ClientCallable]
       public Vector2Int MethodWithVector2Int_AsParameter(Vector2Int vec)
       {
