@@ -57,6 +57,11 @@ namespace Beamable.Server.Editor
 
       public string DockerCommand = DOCKER_LOCATION;
       private string _dockerCommandCached = DOCKER_LOCATION;
+      
+      public string ValidatedDockerCommand => string.IsNullOrWhiteSpace(DockerCommand) ? 
+         DOCKER_LOCATION :
+         DockerCommand;
+      
       private bool _enableStoragePreviewCached = false;
 
       #if !BEAMABLE_LEGACY_MSW

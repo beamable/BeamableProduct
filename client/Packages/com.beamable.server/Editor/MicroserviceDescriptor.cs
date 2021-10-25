@@ -28,7 +28,7 @@ namespace Beamable.Server.Editor
       public string ImageName => Name.ToLower();
       public ServiceType ServiceType => ServiceType.MicroService;
 
-      public bool IsPublishFeatureAvailable()
+      public bool IsPublishFeatureDisabled()
       {
          return this.GetStorageReferences()?.Count() > 0 || this.HasMongoLibraries();
       }

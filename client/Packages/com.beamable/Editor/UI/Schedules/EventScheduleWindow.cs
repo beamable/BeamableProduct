@@ -5,6 +5,7 @@ using Beamable.Common.Content;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Validation;
+using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -120,15 +121,16 @@ namespace Beamable.Editor.Schedules
             _dailyModeValidator = new ComponentsValidator(RefreshConfirmButton);
 
             _daysModeValidator = new ComponentsValidator(RefreshConfirmButton);
-            _daysModeValidator.RegisterRule(new AtLeastOneOptionSelectedRule(_daysPickerComponent.Label),
+            _daysModeValidator.RegisterRule(new AtLeastOneDaySelectedRule(_daysPickerComponent.Label),
                 _daysPickerComponent);
 
             _datesModeValidator = new ComponentsValidator(RefreshConfirmButton);
-            _datesModeValidator.RegisterRule(new AtLeastOneOptionSelectedRule(_calendarComponent.Label),
+            _datesModeValidator.RegisterRule(new AtLeastOneDaySelectedRule(_calendarComponent.Label),
                 _calendarComponent);
 
             _currentValidator = _dailyModeValidator;
-            _currentValidator.ForceValidationCheck();
+
+            EditorApplication.delayCall += () => { _currentValidator.ForceValidationCheck(); };
         }
 
         private void RefreshConfirmButton(bool value, string message)
@@ -148,9 +150,9 @@ namespace Beamable.Editor.Schedules
         public void Set(Schedule schedule, EventContent content)
         {
             _descriptionComponent.Value = schedule.description;
-            
+
             _eventNameComponent.SetEnabled(false);
-            _eventNameComponent.Value = content.name; 
+            _eventNameComponent.Value = content.name;
 
             var neverExpires = !schedule.activeTo.HasValue;
             if (!neverExpires && schedule.TryGetActiveTo(out var activeToDate))

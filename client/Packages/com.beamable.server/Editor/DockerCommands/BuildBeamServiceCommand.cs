@@ -31,10 +31,10 @@ namespace Beamable.Server.Editor.DockerCommands
       public override string GetCommandString()
       {
 
-#if UNITY_EDITOR_OSX
-         return "../microservice/build.sh";
-#elif UNITY_EDITOR_WIN
+#if UNITY_EDITOR_WIN
          return "..\\microservice\\build.bat";
+#else
+         return "../microservice/build.sh";
 #endif
 
       }

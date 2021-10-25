@@ -119,11 +119,6 @@ namespace Beamable.Editor.Microservice.UI.Components
                     // todo
                     continue;
                 }
-                if (serviceStatus.Value == ServiceAvailability.RemoteOnly)
-                {
-                    // todo
-                    continue;
-                }
 
                 var serviceType = Model.GetModelServiceType(serviceStatus.Key);
                 
@@ -131,49 +126,38 @@ namespace Beamable.Editor.Microservice.UI.Components
                 {
                     continue;
                 }
-                
+
+                ServiceBaseVisualElement serviceElement = null;
+
                 switch (serviceType)
                 {
                     case ServiceType.MicroService:
-                        var service = Model.GetModel<MicroserviceModel>(serviceStatus.Key);
-                        var serviceElement = new MicroserviceVisualElement {Model = service};
-                        _modelToVisual[service] = serviceElement;
-                        service.OnLogsDetached += () => { ServiceLogWindow.ShowService(service); };
 
-                        serviceElement.Refresh();
-                        service.OnSelectionChanged += b =>
-                            OnAllServiceSelectedStatusChanged?.Invoke(Model.Services.All(m => m.IsSelected));
+                        bool val = false;
+                        if (serviceStatus.Value != ServiceAvailability.RemoteOnly)
+                            serviceElement = GetMicroserviceVisualElement(serviceStatus.Key, out val);
+                        else
+                            serviceElement = GetRemoteMicroserviceVisualElement(serviceStatus.Key);
 
-                        service.OnSortChanged -= SortMicroservices;
-                        service.OnSortChanged += SortMicroservices;
-                        serviceElement.OnServiceStartFailed = MicroserviceStartFailed;
-                        serviceElement.OnServiceStopFailed = MicroserviceStopFailed;
+                        hasStorageDependency |= val;
 
-                        hasStorageDependency |= service.Descriptor.IsPublishFeatureAvailable();
-
-                        _servicesListElement.Add(serviceElement);
                         break;
+
                     case ServiceType.StorageObject:
+
                         if (!MicroserviceConfiguration.Instance.EnableStoragePreview)
-                        {
                             continue;
-                        }
-                        var mongoService = Model.GetModel<MongoStorageModel>(serviceStatus.Key);
-                        var mongoServiceElement = new StorageObjectVisualElement { Model = mongoService };
-                        _modelToVisual[mongoService] = mongoServiceElement;
-                        mongoService.OnLogsDetached += () => { ServiceLogWindow.ShowService(mongoService); };
-                        
-                        mongoServiceElement.Refresh();
-                        mongoService.OnSelectionChanged += b =>
-                            OnAllServiceSelectedStatusChanged?.Invoke(Model.Storages.All(m => m.IsSelected));
-                        
-                        _servicesListElement.Add(mongoServiceElement);
-                        
-                        
+
+                        serviceElement = GetStorageObjectVisualElement(serviceStatus.Key);
+
                         break;
+
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
+
+                if (serviceElement != null)
+                    _servicesListElement.Add(serviceElement);
             }
 
             if (hasStorageDependency)
@@ -189,7 +173,75 @@ namespace Beamable.Editor.Microservice.UI.Components
             _actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
             _actionPrompt.Refresh();
         }
-        
+
+        private MicroserviceVisualElement GetMicroserviceVisualElement(string serviceName, out bool isPublishFeatureDisabled)
+        {
+            var service = Model.GetModel<MicroserviceModel>(serviceName);
+
+            if (service != null)
+            {
+                var serviceElement = new MicroserviceVisualElement { Model = service };
+                _modelToVisual[service] = serviceElement;
+                service.OnLogsDetached += () => { ServiceLogWindow.ShowService(service); };
+
+                serviceElement.Refresh();
+                service.OnSelectionChanged += b =>
+                    OnAllServiceSelectedStatusChanged?.Invoke(Model.Services.All(m => m.IsSelected));
+
+                service.OnSortChanged -= SortMicroservices;
+                service.OnSortChanged += SortMicroservices;
+                serviceElement.OnServiceStartFailed = MicroserviceStartFailed;
+                serviceElement.OnServiceStopFailed = MicroserviceStopFailed;
+
+                isPublishFeatureDisabled = service.Descriptor.IsPublishFeatureDisabled();
+                return serviceElement;
+            }
+
+            isPublishFeatureDisabled = false;
+            return null;
+        }
+
+        private RemoteMicroserviceVisualElement GetRemoteMicroserviceVisualElement(string serviceName)
+        {
+            var service = Model.GetModel<RemoteMicroserviceModel>(serviceName);
+
+            if (service != null)
+            {
+                var serviceElement = new RemoteMicroserviceVisualElement { Model = service };
+
+                _modelToVisual[service] = serviceElement;
+                serviceElement.Refresh();
+
+                service.OnSortChanged -= SortMicroservices;
+                service.OnSortChanged += SortMicroservices;
+
+                return serviceElement;
+            }
+
+            return null;
+        }
+
+        private StorageObjectVisualElement GetStorageObjectVisualElement(string serviceName)
+        {
+            var mongoService = Model.GetModel<MongoStorageModel>(serviceName);
+
+            if (mongoService != null)
+            {
+                var mongoServiceElement = new StorageObjectVisualElement { Model = mongoService };
+                _modelToVisual[mongoService] = mongoServiceElement;
+                mongoService.OnLogsDetached += () => { ServiceLogWindow.ShowService(mongoService); };
+
+                mongoServiceElement.Refresh();
+                mongoService.OnSelectionChanged += b =>
+                    OnAllServiceSelectedStatusChanged?.Invoke(Model.Storages.All(m => m.IsSelected));
+
+                return mongoServiceElement;
+
+            }
+
+            return null;
+        }
+
         private void MicroserviceStartFailed()
         {
             _actionPrompt.SetVisible(Constants.PROMPT_STARTED_FAILURE, true, false);

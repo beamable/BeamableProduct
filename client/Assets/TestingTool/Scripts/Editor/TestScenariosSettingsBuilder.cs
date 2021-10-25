@@ -23,7 +23,6 @@ namespace TestingTool.Scripts.Editor
                 EditorUtility.DisplayDialog("Testing Tool Status", "Testing Tool is disabled. If you want to use Testing Tool, enable it in TestingToolConfig", "Ok");
                 return;
             }
-            
             _testScenarios = AssetDatabase.LoadAssetAtPath<TestScenarios>(ConstantsHelper.TEST_SCENARIOS_CREATOR_PATH);
             Validate();
             SetupScenesInBuildSettings();
@@ -69,7 +68,7 @@ namespace TestingTool.Scripts.Editor
                 testScenariosRuntime = ScriptableObject.CreateInstance<TestScenariosRuntime>();
                 AssetDatabase.CreateAsset(testScenariosRuntime, ConstantsHelper.TEST_SCENARIOS_RUNTIME_PATH);
             }
-            
+
             testScenariosRuntime.CurrentScenario = null;
             testScenariosRuntime.Scenarios.Clear();
 
@@ -79,7 +78,7 @@ namespace TestingTool.Scripts.Editor
                 testScenariosRuntime.Scenarios.Add(new TestScenarioRuntime(testScenario.SceneAsset.name, testScenario.ShortDescription,
                     testScenario.FullDescription, testStepsRuntime));
             }
-            
+
             EditorUtility.SetDirty(testScenariosRuntime);
             AssetDatabase.SaveAssets();
         }
@@ -105,7 +104,7 @@ namespace TestingTool.Scripts.Editor
                     {
                         return false;
                     }
-                } 
+                }
             }
             return true;
         }
@@ -126,11 +125,10 @@ namespace TestingTool.Scripts.Editor
             return config;
         }
     }
-    
+
     public class TestBuilderProcessor : IPreprocessBuildWithReport
     {
         public int callbackOrder { get; }
-        
         private TestScenariosRuntime _testScenariosRuntime;
         private TestingToolConfig _config;
 

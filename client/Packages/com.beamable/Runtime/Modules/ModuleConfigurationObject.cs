@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using Beamable.Common;
+using UnityEditor;
 using UnityEngine;
 
 namespace Beamable
@@ -37,9 +39,10 @@ namespace Beamable
       }
 
 #if UNITY_EDITOR
-      public static void PrepareInstances(params Type[] configTypes)
+      public static Promise PrepareInstances(params Type[] configTypes)
       {
          var writtenAssetPathToType = new Dictionary<string, Type>();
+         var promise = new Promise();
 
          try
          {
@@ -70,14 +73,16 @@ namespace Beamable
                var sourceData = File.ReadAllText(sourcePath);
                File.WriteAllText(assetPath, sourceData);
                writtenAssetPathToType.Add(assetPath, type);
-               UnityEditor.AssetDatabase.ImportAsset(assetPath);
+               UnityEditor.AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceSynchronousImport);
             }
          }
          finally
          {
             UnityEditor.AssetDatabase.StopAssetEditing();
+            UnityEditor.AssetDatabase.SaveAssets();
          }
 
+         var failedTypes = new HashSet<Type>();
          foreach (var kvp in writtenAssetPathToType)
          {
             var assetPath = kvp.Key;
@@ -87,16 +92,30 @@ namespace Beamable
             var configData = data as BaseModuleConfigurationObject;
             if (configData == null)
             {
-               throw new ModuleConfigurationNotReadyException(assetType);
+               failedTypes.Add(assetType);
+               continue;
             }
             configData.OnFreshCopy();
             UnityEditor.EditorUtility.SetDirty(data);
          }
 
+         if (failedTypes.Count > 0)
+         {
+            EditorApplication.delayCall += () =>
+            {
+               PrepareInstances(configTypes)
+                  .Then(promise.CompleteSuccess)
+                  .Error(promise.CompleteError);
+            };
+            return promise;
+         }
          if (writtenAssetPathToType.Count > 0)
          {
             UnityEditor.SettingsService.NotifySettingsProviderChanged();
          }
+
+         promise.CompleteSuccess(PromiseBase.Unit);
+         return promise;
       }
       #endif
    }
