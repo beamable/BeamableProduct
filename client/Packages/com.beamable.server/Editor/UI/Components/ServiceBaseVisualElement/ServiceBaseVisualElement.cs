@@ -242,7 +242,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         protected virtual void SetupProgressBarForStart(Task task)
         {
             // We have two ways. Either store reference or return instance as event parameter
-            new RunImageLogParser(_loadingBar, Model) { OnFailure = OnStartFailed };
+            new RunImageLogParser(_loadingBar, Model);// { OnFailure = OnStartFailed };
         }
         private void OnStartFailed()
         {

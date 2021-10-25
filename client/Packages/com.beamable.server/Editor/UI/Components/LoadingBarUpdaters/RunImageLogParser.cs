@@ -5,47 +5,47 @@ using Beamable.Editor.UI.Model;
 using UnityEngine;
 
 namespace Beamable.Editor.Microservice.UI.Components {
-    public class RunImageLogParser : UniversalLogsParser {
-        private static readonly string[] expectedLogs = new[] {
-            "Starting...",
-            "Scanning client methods",
-            "Registering standard services",
-            "Registering custom services",
-            "Service provider initialized",
-            "Event provider initialized"
-        };
-
-        private static readonly string[] errorElements = new[] {
-            "Error",
-            "Exception",
-            "exception"
-        };
+    public class RunImageLogParser : LoadingBarUpdater {
+        private readonly ServiceModelBase _model;
 
         public override string StepText => $"(Starting {base.StepText} MS {_model.Name})";
         public override string ProcessName => $"Starting MS {_model?.Descriptor?.Name}";
+        protected override void OnKill()
+        {
+            _model.Builder.OnStartingFinished -= HandleStartingFinished;
+            _model.Builder.OnStartingProgress -= HandleStartingProgress;
+        }
 
-        public RunImageLogParser(ILoadingBar loadingBar, ServiceModelBase model) : base(loadingBar, model) {
-            TotalSteps = expectedLogs.Length;
+        public RunImageLogParser(ILoadingBar loadingBar, ServiceModelBase model) : base(loadingBar)
+        {
+            _model = model;
             LoadingBar.UpdateProgress(0f, $"({ProcessName})");
-        }
-        public override bool DetectSuccess(string message) {
-            return message.StartsWith("Service ready for traffic.");
-        }
-
-        public override bool DetectFailure(string message) {
-            return errorElements.Any(message.Contains);
+            _model.Builder.OnStartingFinished += HandleStartingFinished;
+            _model.Builder.OnStartingProgress += HandleStartingProgress;
         }
 
-        public override bool DetectStep(string message, out int step) {
-            step = 0;
-            for (int i = 0; i < TotalSteps; i++) {
-                if (message.StartsWith(expectedLogs[i])) {
-                    step = i + 1;
-                    return true;
-                }
+        private void HandleStartingFinished(bool success)
+        {
+            var value = success ? 1.0f : 0.0f;
+            var message = success ? "(Success)" : "(Error)";
+            LoadingBar.UpdateProgress(value, message, !success);
+            if (success)
+            {
+                Succeeded = true;
             }
+            else
+            {
+                GotError = true;
+            }
+            Kill();
+        }
 
-            return false;
+        private void HandleStartingProgress(int currentStep, int totalSteps)
+        {
+            var message = _model.Logs.Messages.LastOrDefault()?.Message;
+            Step = currentStep;
+            TotalSteps = totalSteps;
+            LoadingBar.UpdateProgress((currentStep - 1f) / totalSteps, StepText);
         }
     }
 }

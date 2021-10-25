@@ -7,6 +7,9 @@ namespace Beamable.Server.Editor.DockerCommands
 {
    public abstract class DockerCommandReturnable<T> : DockerCommand
    {
+      public Action<string> OnStandardOut;
+      public Action<string> OnStandardErr;
+
       private CommandRunnerWindow _context;
       protected Promise<T> Promise { get; private set; }
 
@@ -65,14 +68,20 @@ namespace Beamable.Server.Editor.DockerCommands
       {
          base.HandleStandardOut(data);
          if (data != null)
+         {
             StandardOutBuffer += data;
+            OnStandardOut?.Invoke(data);
+         }
       }
 
       protected override void HandleStandardErr(string data)
       {
          base.HandleStandardErr(data);
          if (data != null)
+         {
             StandardErrorBuffer += data;
+            OnStandardErr?.Invoke(data);
+         }
       }
 
       protected override void HandleOnExit()
