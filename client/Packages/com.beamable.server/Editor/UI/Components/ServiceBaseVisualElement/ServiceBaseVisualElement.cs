@@ -30,7 +30,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         public ServiceModelBase Model { get; set; }
         protected abstract string ScriptName { get; }
 
-        private const float MIN_HEIGHT = 200.0f;
+        private const float MIN_HEIGHT = 240.0f;
         private const float MAX_HEIGHT = 500.0f;
         private const float DETACHED_HEIGHT = 100.0f;
         protected const float DEFAULT_HEADER_HEIGHT = 60.0f;
@@ -50,6 +50,12 @@ namespace Beamable.Editor.Microservice.UI.Components
         private VisualElement _rootVisualElement;
         private Button _dependentServicesBtn;
         private Label _nameTextField;
+        private VisualElement _dependentServicesContainer;
+        private Button _collapseButton;
+        private Image _collapseBtnIcon;
+        private VisualElement _mainParent;
+        
+        private bool _isCollapsed = false;
 
         public Action OnServiceStartFailed { get; set; }
         public Action OnServiceStopFailed { get; set; }
@@ -93,6 +99,10 @@ namespace Beamable.Editor.Microservice.UI.Components
             _separator = Root.Q<MicroserviceVisualElementSeparator>("separator");
             _loadingBar = new LoadingBarElement();
             _rootVisualElement.Add(_loadingBar);
+            _dependentServicesContainer = Root.Q("dependentServicesContainer");
+            _collapseButton = Root.Q<Button>("collapseBtn");
+            _collapseBtnIcon = Root.Q<Image>("collapseBtnIcon");
+            _mainParent = _rootVisualElement.parent.parent;
         }
         private void InjectStyleSheets()
         {
@@ -138,16 +148,23 @@ namespace Beamable.Editor.Microservice.UI.Components
             Model.Builder.OnIsRunningChanged -= HandleIsRunningChanged;
             Model.Builder.OnIsRunningChanged += HandleIsRunningChanged;
 
-            Root.Q("dependentServicesContainer").visible = MicroserviceConfiguration.Instance.EnableStoragePreview;
-
+            _dependentServicesContainer.visible = MicroserviceConfiguration.Instance.EnableStoragePreview;
+            
+            _separator.AddToClassList("hide");
             _separator.Setup(OnDrag);
             _separator.Refresh();
 
+            _collapseButton.clickable.clicked += HandleCollapseButton;
+            _logContainerElement.AddToClassList("hide");
+            _mainParent.AddToClassList("collapsedMain");
+            _rootVisualElement.AddToClassList("collapsedMain");
+            
             UpdateButtons();
             CreateLogSection(Model.AreLogsAttached);
             UpdateStatusIcon();
             UpdateRemoteStatusIcon();
             UpdateHeaderColor();
+            ChangeCollapseState();
             UpdateModel();
         }
         protected abstract void UpdateStatusIcon();
@@ -262,6 +279,21 @@ namespace Beamable.Editor.Microservice.UI.Components
                 new StepLogParser(new VirtualLoadingBar(), Model, null),
                 new DeployMSLogParser(new VirtualLoadingBar(), Model)
             );
+        }
+        private void HandleCollapseButton()
+        {
+            _isCollapsed = !_isCollapsed;
+            ChangeCollapseState();
+        }
+        private void ChangeCollapseState()
+        {
+            _logContainerElement.EnableInClassList("hide", _isCollapsed);
+            _separator.EnableInClassList("hide", _isCollapsed);
+            _collapseBtnIcon.EnableInClassList("foldIcon", !_isCollapsed);
+            _collapseBtnIcon.EnableInClassList("unfoldIcon", _isCollapsed);
+            _rootVisualElement.EnableInClassList("collapsedMain", _isCollapsed);
+            _mainParent.EnableInClassList("collapsedMain", _isCollapsed);
+            _dependentServicesBtn.visible = !_isCollapsed;
         }
     }
 }

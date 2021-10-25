@@ -44,6 +44,14 @@
             </engine:VisualElement>
         </engine:VisualElement>
 
+        <engine:VisualElement name="collapseContainer">
+            <engine:Button name="collapseBtn" class="noMarginNoPaddingNoBorder">
+                <engine:Image name="leftDashLine"/>
+                <engine:Image name="collapseBtnIcon" class="foldIcon unfoldIcon"/>
+                <engine:Image name="rightDashLine"/>
+            </engine:Button>
+        </engine:VisualElement>
+
     </engine:VisualElement>
 
 </engine:UXML>
