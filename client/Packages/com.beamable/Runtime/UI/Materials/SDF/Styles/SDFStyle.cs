@@ -52,6 +52,15 @@ namespace Beamable.UI.SDF.Styles {
             }
         }
 
+        public static IEnumerable<string> Keys => _bidings.Keys;
+
+        public static Type GetBaseType(string key) {
+            if (_bidings.TryGetValue(key, out var biding)) {
+                return biding.PropertyType;
+            }
+            return null;
+        }
+
         public void Clear() {
             _properties.Clear();
         }

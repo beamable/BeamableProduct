@@ -8,6 +8,7 @@ namespace Beamable.Editor.UI.SDF {
     [CustomPropertyDrawer(typeof(SerializableValueImplementsAttribute))]
     [CustomPropertyDrawer(typeof(SerializableValueObject))]
     public class SerializableValueObjectDrawer : PropertyDrawer {
+        public Type baseTypeOverride;
         private static readonly Dictionary<string, object> _drawerData = new Dictionary<string, object>();
         private readonly Dictionary<string, float> _heightCache = new Dictionary<string, float>();
         
@@ -26,14 +27,15 @@ namespace Beamable.Editor.UI.SDF {
             object value = null;
             
             var implementsAtt = (SerializableValueImplementsAttribute) attribute;
-            if (implementsAtt != null) {
+            if (baseTypeOverride != null || implementsAtt != null) {
+                var data = SerializableValueImplementationHelper.Get(baseTypeOverride != null ? baseTypeOverride : implementsAtt.baseType);
                 var dropdownRect = position;
                 dropdownRect.x += EditorGUIUtility.labelWidth;
                 dropdownRect.width -= EditorGUIUtility.labelWidth;
                 dropdownRect.height = EditorGUIUtility.singleLineHeight;
-                var types = implementsAtt.subTypes;
+                var types = data.subTypes;
                 var dropdownIndex = Array.IndexOf(types, Type.GetType(type));
-                var newIndex = EditorGUI.Popup(dropdownRect, dropdownIndex, implementsAtt.labels);
+                var newIndex = EditorGUI.Popup(dropdownRect, dropdownIndex, data.labels);
                 if (dropdownIndex != newIndex && newIndex != -1) {
                     hasChange = true;
                     sysType = types[newIndex];
