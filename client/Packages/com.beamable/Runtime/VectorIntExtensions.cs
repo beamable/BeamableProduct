@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
-namespace Beamable.Common.BeamableVectorIntExtensions
+namespace Beamable.Server
 {
     [Serializable]
     public class Vector2IntEx
@@ -15,13 +17,11 @@ namespace Beamable.Common.BeamableVectorIntExtensions
             y = vec.y;
         }
 
-#if UNITY_EDITOR || UNITY_ENGINE
         public static Vector2Int DeserializeToVector2(string json)
         {
             Vector2IntEx tmp = JsonUtility.FromJson<Vector2IntEx>(json);
             return new Vector2Int(tmp.x, tmp.y);
         }
-#endif
     }
 
     [Serializable]
@@ -34,12 +34,11 @@ namespace Beamable.Common.BeamableVectorIntExtensions
             z = vec.z;
         }
 
-#if UNITY_EDITOR || UNITY_ENGINE
+
         public static Vector3Int DeserializeToVector3(string json)
         {
             Vector3IntEx tmp = JsonUtility.FromJson<Vector3IntEx>(json);
             return new Vector3Int(tmp.x, tmp.y, tmp.z);
         }
-#endif
     }
 }

@@ -9,7 +9,6 @@ using Beamable.Common.Api;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 using Beamable.Serialization.SmallerJSON;
-using Beamable.Common.BeamableVectorIntExtensions;
 
 namespace Beamable.Server
 {
