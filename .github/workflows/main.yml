@@ -77,9 +77,9 @@ jobs:
         id: cache_docker
         with:
           path: ./docker-cache
-          key: Docker-${{ matrix.unityVersion }} 
+          key: Docker-gzipped-${{ matrix.unityVersion }} 
           restore-keys: |
-            Docker-${{ matrix.unityVersion }}
+            Docker-gzipped-${{ matrix.unityVersion }}
       - name: Load Docker Image If Exits
         if: ${{ steps.cache_docker.outputs.cache-hit }}
         run: |
@@ -170,9 +170,9 @@ jobs:
         id: cache_docker
         with:
           path: ./docker-cache
-          key: Docker-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
+          key: Docker-gzipped-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
           restore-keys: |
-            Docker-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
+            Docker-gzipped-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
       - name: Load Docker Image If Exits
         if: ${{ steps.cache_docker.outputs.cache-hit }}
         run: |

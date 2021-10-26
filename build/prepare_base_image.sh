@@ -26,7 +26,7 @@ esac
 
 # unityci/editor:2020.3.19f1-mac-mono-0
 export IMAGE=unityci/${MODE}:${UNITY_VERSION}-${TAG}-0
-export TAR="unityci_${MODE}_${UNITY_VERSION}_${TAG}_0.tar"
+export TAR="unityci_${MODE}_${UNITY_VERSION}_${TAG}_0.tgz"
 echo "Identified $IMAGE"
 echo "Loading from to $TAR"
 mkdir ./docker-cache
