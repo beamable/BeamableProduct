@@ -16,6 +16,8 @@ namespace Beamable.UI.SDF.Styles {
             new PropertyBiding<IFloatFromFloatProperty>("roundCorners", new FloatProperty());
         
         // Border
+        public static readonly PropertyBiding<BorderModeProperty> BorderMode =
+            new PropertyBiding<BorderModeProperty>("borderMode", new BorderModeProperty());
         public static readonly PropertyBiding<IFloatProperty> BorderWidth = 
             new PropertyBiding<IFloatProperty>("borderWidth", new FloatProperty());
         public static readonly PropertyBiding<IColorProperty> BorderColor = 

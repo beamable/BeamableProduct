@@ -29,4 +29,14 @@ namespace Beamable.UI.SDF.Styles {
             return new ImageTypeProperty(Enum);
         }
     }
+
+    [Serializable]
+    public class BorderModeProperty : EnumProperty<SDFImage.BorderMode> {
+        public BorderModeProperty() { }
+        public BorderModeProperty(SDFImage.BorderMode @enum) : base(@enum) { }
+
+        public override ISDFProperty Clone() {
+            return new BorderModeProperty(Enum);
+        }
+    }
 }

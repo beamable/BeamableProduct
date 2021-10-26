@@ -135,6 +135,7 @@
             
             // returns intersection of SDF image distance and rect distance
             float getMergedDistance(float2 uv, float2 coords, float2 size, float rounding){
+            return getRectDistance(coords, size, rounding); // TODO: Remove
                 return max(getDistance(uv, coords, size, rounding), getRectDistance(coords, size, rounding));
             }
             
@@ -173,11 +174,11 @@
                 final.a = max(outline.a, main.a);
                 
                 // Shadow
-                float shadowDist = getMergedDistance(i.uv - i.shadowOffset.xy, coords - i.shadowOffset.xy / size, size, rounding);
-                float shadowValue = calculateValue(shadowDist, threshold + i.shadowOffset.z);
-                i.shadowColor.a *= shadowValue;
-                final.rgb = lerp(i.shadowColor.rgb, saturate(final.rgb), saturate(final.a / (main.a + 0.001)));
-                final.a += i.shadowColor.a;
+                //float shadowDist = getMergedDistance(i.uv - i.shadowOffset.xy, coords - i.shadowOffset.xy / size, size, rounding);
+                //float shadowValue = calculateValue(shadowDist, threshold + i.shadowOffset.z);
+                //i.shadowColor.a *= shadowValue;
+                //final.rgb = lerp(i.shadowColor.rgb, saturate(final.rgb), saturate(final.a / (main.a + 0.001)));
+                //final.a += i.shadowColor.a;
                 
                 return final;
             }

@@ -65,6 +65,12 @@ namespace Beamable.UI.SDF
             }
         }
 
+        private void OnDisable() {
+            if (TryGetComponent<SDFImage>(out var sdfImage)) {
+                sdfImage.Style = null;
+            }
+        }
+
         private void OnValidate()
         {
             Refresh();

@@ -167,13 +167,17 @@ namespace Beamable.UI.SDF {
             var coordsC = Rect.MinMaxRect(0f, grownCoords.yMin, 1f, 0f);
             var coordsD = Rect.MinMaxRect(0f, 1f, 1f, grownCoords.yMax);
         
-            AddRect(vh, posA, uvA, coordsA, size);
-            AddRect(vh, posB, uvB, coordsB, size);
-            AddRect(vh, posC, uvC, coordsC, size);
-            AddRect(vh, posD, uvD, coordsD, size);
+            AddRect(vh, posA, uvA, coordsA, size, colorRect.LeftEdgeRect);
+            AddRect(vh, posB, uvB, coordsB, size, colorRect.RightEdgeRect);
+            AddRect(vh, posC, uvC, coordsC, size, colorRect.BottomEdgeRect);
+            AddRect(vh, posD, uvD, coordsD, size, colorRect.TopEdgeRect);
         }
 
         private void AddRect(VertexHelper vh, Rect position, Rect spriteRect, Rect coordsRect, Vector2 size) {
+            AddRect(vh, position, spriteRect, coordsRect, size, colorRect);
+        }
+        
+        private void AddRect(VertexHelper vh, Rect position, Rect spriteRect, Rect coordsRect, Vector2 size, ColorRect colorRect) {
             vh.AddRect(
                 position,
                 spriteRect,
@@ -195,9 +199,23 @@ namespace Beamable.UI.SDF {
             var minSize = Mathf.Min(size.x, size.y);
             colorRect = SDFStyle.BackgroundColor.Get(Style).ColorRect;
             rounding = SDFStyle.RoundCorners.Get(Style).GetFloatValue(minSize);
-
+            
             outlineWidth = SDFStyle.BorderWidth.Get(Style).FloatValue;
             outlineColor = SDFStyle.BorderColor.Get(Style).Color;
+
+            switch (SDFStyle.BorderMode.Get(Style).Enum) {
+                case BorderMode.Outside:
+                    threshold = 0f;
+                    break;
+                case BorderMode.Inside:
+                    threshold = -outlineWidth;
+                    break;
+            }
+        }
+        
+        public enum BorderMode {
+            Outside,
+            Inside
         }
     }
 }
