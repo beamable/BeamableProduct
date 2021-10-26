@@ -24,7 +24,7 @@ namespace Beamable
       /// <summary>
       /// Registers Beamable's default Uncaught Promise Handler. This removes all other handlers  
       /// </summary>
-      public static void RegisterUncaughtPromiseHandler(bool replaceExistingHandlers = true)
+      public static void RegisterBeamableDefaultUncaughtPromiseHandler(bool replaceExistingHandlers = true)
       {
          PromiseBase.SetPotentialUncaughtErrorHandler(PromiseBaseOnPotentialOnPotentialUncaughtError, replaceExistingHandlers);
       }

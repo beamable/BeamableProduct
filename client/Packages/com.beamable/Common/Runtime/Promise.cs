@@ -65,6 +65,8 @@ namespace Beamable.Common
 
       private static event PromiseEvent OnPotentialUncaughtError;
 
+      public static bool HasUncaughtErrorHandler => OnPotentialUncaughtError != null;
+      
       /// <summary>
       /// Set error handlers for uncaught promise errors. Beamable has a default handler set in its API initialization. 
       /// </summary>

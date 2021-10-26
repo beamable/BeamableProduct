@@ -389,7 +389,25 @@ namespace Beamable
         {
             if (Application.isPlaying)
             {
-                PromiseExtensions.RegisterUncaughtPromiseHandler();
+                var promiseHandlerConfig = CoreConfiguration.Instance.DefaultUncaughtPromiseHandlerConfiguration;
+                switch (promiseHandlerConfig)
+                {
+                    case CoreConfiguration.EventHandlerConfig.Guarantee:
+                    {
+                        if(!PromiseBase.HasUncaughtErrorHandler)
+                            PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
+                        
+                        break;
+                    }
+                    case CoreConfiguration.EventHandlerConfig.Replace:                        
+                    case CoreConfiguration.EventHandlerConfig.Add:
+                    {
+                        PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler(promiseHandlerConfig == CoreConfiguration.EventHandlerConfig.Replace);
+                        break;
+                    }
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
             }
 
             // Build default game object

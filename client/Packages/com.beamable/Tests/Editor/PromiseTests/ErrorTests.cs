@@ -70,7 +70,7 @@ namespace Beamable.Editor.Tests.PromiseTests
          // Sets our default handler first, replacing all callbacks previously set. Fails if any of the callbacks previously set are called.         
          var mockLogger = new MockLogProvider();
          BeamableLogProvider.Provider = mockLogger;         
-         PromiseExtensions.RegisterUncaughtPromiseHandler();
+         PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
          var ranDefault = false;
          mockLogger.onException += exception =>
          {
@@ -101,14 +101,14 @@ namespace Beamable.Editor.Tests.PromiseTests
                   Assert.AreEqual(err, knownEx);
                   eventRuns[indexIntoEventRan] = true;
                }, 
-               false); // Clears all previously set handlers when setting the first handler so we don't need a cleanup function for this test.   
+               i == 0); // Clears all previously set handlers when setting the first handler so we don't need a cleanup function for this test.   
          }
          
          // Adds our default handler to the list of existing callbacks
          var mockLogger = new MockLogProvider();
          BeamableLogProvider.Provider = mockLogger;
          var ranDefault = false;
-         PromiseExtensions.RegisterUncaughtPromiseHandler(false);
+         PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler(false);
          mockLogger.onException += exception =>
          {
             ranDefault = true;
@@ -153,7 +153,7 @@ namespace Beamable.Editor.Tests.PromiseTests
          BeamableLogProvider.Provider = mockLogger;
 
          var eventRan = false;
-         PromiseExtensions.RegisterUncaughtPromiseHandler();
+         PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
          mockLogger.onException += exception =>
          {
             Assert.Fail("Log should not run");
@@ -188,7 +188,7 @@ namespace Beamable.Editor.Tests.PromiseTests
             logRan = true;
          };
 
-         PromiseExtensions.RegisterUncaughtPromiseHandler();
+         PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
 
          p.CompleteError(knownEx);
 
@@ -235,7 +235,7 @@ namespace Beamable.Editor.Tests.PromiseTests
          {
             Assert.Fail("error log should not be called");
          };
-         PromiseExtensions.RegisterUncaughtPromiseHandler();
+         PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
 
 
          var knownEx = new Exception();
@@ -270,7 +270,7 @@ namespace Beamable.Editor.Tests.PromiseTests
             Assert.AreEqual(knownEx, exception.InnerException);
             logRan = true;
          };
-         PromiseExtensions.RegisterUncaughtPromiseHandler();
+         PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
 
          var p = Promise<int>.Failed(knownEx).FlatMap(Promise<int>.Successful);
 
@@ -293,7 +293,7 @@ namespace Beamable.Editor.Tests.PromiseTests
          {
             Assert.Fail("error log should not be called");
          };
-         PromiseExtensions.RegisterUncaughtPromiseHandler();
+         PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
 
          var knownEx = new Exception();
          var errorCallbackRan = false;
@@ -327,7 +327,7 @@ namespace Beamable.Editor.Tests.PromiseTests
             Assert.AreEqual(knownEx, exception.InnerException);
             logRan = true;
          };
-         PromiseExtensions.RegisterUncaughtPromiseHandler();
+         PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
 
          Promise<int>.Successful(0)
             .FlatMap(_ => Promise<int>.Failed(knownEx));
@@ -351,7 +351,7 @@ namespace Beamable.Editor.Tests.PromiseTests
          {
             Assert.Fail("error log should not be called");
          };
-         PromiseExtensions.RegisterUncaughtPromiseHandler();
+         PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
 
 
          var knownEx = new Exception();
@@ -383,7 +383,7 @@ namespace Beamable.Editor.Tests.PromiseTests
             logRan = true;
             Assert.AreEqual(knownEx, exception.InnerException);
          };
-         PromiseExtensions.RegisterUncaughtPromiseHandler();
+         PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
 
          var p = Promise<int>.Successful(0).Map<int>(_ => throw knownEx);
 
@@ -401,7 +401,7 @@ namespace Beamable.Editor.Tests.PromiseTests
          var mockLogger = new MockLogProvider();
          BeamableLogProvider.Provider = mockLogger;
 
-         PromiseExtensions.RegisterUncaughtPromiseHandler();
+         PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
 
          mockLogger.onException += exception =>
          {
@@ -433,7 +433,7 @@ namespace Beamable.Editor.Tests.PromiseTests
          var mockLogger = new MockLogProvider();
          BeamableLogProvider.Provider = mockLogger;
 
-         PromiseExtensions.RegisterUncaughtPromiseHandler();
+         PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
          var logRan = false;
          var knownEx = new Exception();
 
@@ -457,7 +457,7 @@ namespace Beamable.Editor.Tests.PromiseTests
          var mockLogger = new MockLogProvider();
          BeamableLogProvider.Provider = mockLogger;
 
-         PromiseExtensions.RegisterUncaughtPromiseHandler();
+         PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
          var knownEx = new Exception();
          var recoverRan = false;
          mockLogger.onException += exception =>
