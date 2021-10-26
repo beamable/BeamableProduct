@@ -12,6 +12,7 @@ namespace Beamable.Server.Editor.DockerCommands
 {
     public static class MicroserviceLogHelper
     {
+        public static int RunLogsSteps => ExpectedRunLogs.Length;
         private static readonly Regex StepRegex = new Regex("Step [0-9]+/[0-9]+");
         private static readonly Regex NumberRegex = new Regex("[0-9]+");
         private static readonly string[] ErrorElements = new[] {
@@ -254,17 +255,14 @@ namespace Beamable.Server.Editor.DockerCommands
                 var values = NumberRegex.Matches(match.Value);
                 var current = int.Parse(values[0].Value);
                 var total = int.Parse(values[1].Value);
-                Debug.Log($"OnBuildingProgress: {current} / {total}");
                 builder.OnBuildingProgress?.Invoke(current, total);
             }
             else if (message.Contains("Success"))
             {
-                Debug.Log($"OnBuildingFinished: true");
                 builder.OnBuildingFinished?.Invoke(true);
             }
             else if (ErrorElements.Any(message.Contains))
             {
-                Debug.Log($"OnBuildingFinished: false");
                 builder.OnBuildingFinished?.Invoke(false);
             }
         }
@@ -273,23 +271,18 @@ namespace Beamable.Server.Editor.DockerCommands
         {
             if(message == null)
                 return;
-            var totalSteps = ExpectedRunLogs.Length;
-            var step = 0;
-            for (int i = 0; i < totalSteps; i++) {
+
+            for (int i = 0; i < RunLogsSteps; i++) {
                 if (message.Contains(ExpectedRunLogs[i])) {
-                    step = i + 1;
-                    Debug.Log($"OnStartingProgress: {step} / {totalSteps}");
-                    builder.OnStartingProgress?.Invoke(step, totalSteps);
+                    builder.OnStartingProgress?.Invoke(i + 1, RunLogsSteps);
                 }
             }
-            if (message.StartsWith("Service ready for traffic."))
+            if (message.Contains("Service ready for traffic."))
             {
-                Debug.Log($"OnStartingFinished: true");
                 builder.OnStartingFinished?.Invoke(true);
             }
             else if (ErrorElements.Any(message.Contains))
             {
-                Debug.Log($"OnStartingFinished: false");
                 builder.OnStartingFinished?.Invoke(false);
             }
         }

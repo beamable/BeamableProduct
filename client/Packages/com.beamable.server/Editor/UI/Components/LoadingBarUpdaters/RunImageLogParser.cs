@@ -1,8 +1,7 @@
 ﻿using System.Linq;
-using System.Threading.Tasks;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
-using UnityEngine;
+using Beamable.Server.Editor.DockerCommands;
 
 namespace Beamable.Editor.Microservice.UI.Components {
     public class RunImageLogParser : LoadingBarUpdater {
@@ -19,6 +18,7 @@ namespace Beamable.Editor.Microservice.UI.Components {
         public RunImageLogParser(ILoadingBar loadingBar, ServiceModelBase model) : base(loadingBar)
         {
             _model = model;
+            TotalSteps = MicroserviceLogHelper.RunLogsSteps;
             LoadingBar.UpdateProgress(0f, $"({ProcessName})");
             _model.Builder.OnStartingFinished += HandleStartingFinished;
             _model.Builder.OnStartingProgress += HandleStartingProgress;
@@ -42,7 +42,6 @@ namespace Beamable.Editor.Microservice.UI.Components {
 
         private void HandleStartingProgress(int currentStep, int totalSteps)
         {
-            var message = _model.Logs.Messages.LastOrDefault()?.Message;
             Step = currentStep;
             TotalSteps = totalSteps;
             LoadingBar.UpdateProgress((currentStep - 1f) / totalSteps, StepText);
