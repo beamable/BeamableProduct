@@ -17,6 +17,7 @@ on:
 
 jobs:
   testMicroserviceBaseImage:
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     concurrency: 
       group: base-image-tests-${{ github.head_ref }}
@@ -51,6 +52,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
   testAllModes:
+    timeout-minutes: 20
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
     runs-on: ubuntu-latest
     concurrency: 
@@ -105,6 +107,7 @@ jobs:
   build:
     name: Build for ${{ matrix.targetPlatform }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     concurrency: 
       group: device-builds-${{ matrix.targetPlatform }}-${{ github.head_ref }}
       cancel-in-progress: true
