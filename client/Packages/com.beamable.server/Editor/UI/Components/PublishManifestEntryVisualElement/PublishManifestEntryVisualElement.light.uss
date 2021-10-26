@@ -1,5 +1,9 @@
 ﻿.manifestRow.oddRow {
-    background-color: #8F8F8F;
+    background-color: #B4B4B4;
+}
+
+#nameMS, .SubTitleText {
+    color: #111111;
 }
 
 .microserviceImage {

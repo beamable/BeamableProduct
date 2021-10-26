@@ -82,6 +82,7 @@ namespace Beamable.Editor.Microservice.UI.Components
                 if (!isPublishDisabled && model is StorageEntryModel)
                 {
                     isPublishDisabled = true;
+                    Root.Q<Label>("warningMessage").text = "Warning! Storage objects are in preview and cannot be published.";
                 }
                 
                 bool wasPublished = EditorPrefs.GetBool(GetPublishedKey(model.Name), false);
