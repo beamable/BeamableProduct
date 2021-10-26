@@ -220,6 +220,13 @@ namespace Beamable.Common
          return this;
       }
 
+      public Promise<T> Merge(Promise<T> other)
+      {
+         Then(other.CompleteSuccess);
+         Error(other.CompleteError);
+         return this;
+      }
+
       /// <summary>
       /// Call to register a failure completion handler callback for the %Promise
       /// </summary>
@@ -890,6 +897,14 @@ namespace Beamable.Common
       public static Promise<Unit> ToUnit<T>(this Promise<T> self)
       {
          return self.Map(_ => PromiseBase.Unit);
+      }
+
+      public static Promise ToPromise<T>(this Promise<T> self)
+      {
+         var p = new Promise();
+         self.Then(_ => p.CompleteSuccess(PromiseBase.Unit));
+         self.Error(p.CompleteError);
+         return p;
       }
    }
 

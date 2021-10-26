@@ -31,6 +31,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.CloudData;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Tournaments;
+using Beamable.Common.Player;
 using Beamable.Experimental;
 using Beamable.Sessions;
 using Modules.Content;
@@ -59,6 +60,8 @@ namespace Beamable
 
         event Action<User> OnUserChanged;
         event Action<User> OnUserLoggingOut;
+
+        PlayerSdk Player { get; }
 
         IExperimentalAPI Experimental { get; }
         AnnouncementsService AnnouncementService { get; }
@@ -242,6 +245,9 @@ namespace Beamable
             _instance = null;
         }
 
+        public PlayerSdk Player => _player;
+
+        private PlayerSdk _player;
         private PlatformService _platform;
         private GameObject _gameObject;
 #if BEAMABLE_PURCHASING
@@ -392,6 +398,7 @@ namespace Beamable
                 PromiseExtensions.RegisterUncaughtPromiseHandler();
             }
 
+
             // Build default game object
             _gameObject = new GameObject("Beamable");
             Object.DontDestroyOnLoad(_gameObject);
@@ -412,11 +419,22 @@ namespace Beamable
             ServiceManager.ProvideWithDefaultContainer(ContentConfiguration.Instance.ParameterProvider);
             ServiceManager.ProvideWithDefaultContainer<IAuthSettings>(AccountManagementConfiguration.Instance);
 
+
+
             _platform = new PlatformService(debugMode: false, withLocalNote: false);
             Experimental = new ExperimentalAPI(_platform);
 
             ServiceManager.ProvideWithDefaultContainer(_platform);
             ServiceManager.Provide(new BeamableResolver(this));
+
+            ServiceManager.ProvideWithDefaultContainer<IPlayerStats>(new PlayerStats(_platform.Requester));
+            ServiceManager.ProvideWithDefaultContainer<IPlayerWidgets>(new PlayerWidgets(_platform.Requester));
+
+
+            _player = new PlayerSdk(
+                widgets: ServiceManager.Resolve<IPlayerWidgets>(),
+                stats: ServiceManager.Resolve<IPlayerStats>()
+            );
 
 #if BEAMABLE_PURCHASING
             ServiceManager.Provide(new UnityBeamableIAPServiceResolver());
