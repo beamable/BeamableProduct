@@ -179,11 +179,6 @@ jobs:
           chmod +x ./build/prepare_base_image.sh
           UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/prepare_base_image.sh
         shell: bash
-      - name: Docker load
-        run: |
-          chmod +x ./build/create_config_defaults.sh
-          ./build/create_config_defaults.sh
-        shell: bash
       - name: Cache Unity Folders
         uses: actions/cache@v2
         with:

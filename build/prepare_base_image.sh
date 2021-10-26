@@ -2,7 +2,7 @@
 echo "Running Docker Load for base image"
 # https://github.com/game-ci/unity-builder/blob/main/src/model/image-tag.ts
 
-export TARGET_PLATFORM='base'
+export TAG='base'
 case "$TARGET_PLATFORM" in
    "WebGL") export TAG='webgl'
    ;;
