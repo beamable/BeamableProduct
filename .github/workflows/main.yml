@@ -128,7 +128,7 @@ jobs:
   build:
     name: Build for ${{ matrix.targetPlatform }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     concurrency: 
       group: device-builds-${{ matrix.targetPlatform }}-${{ github.head_ref }}
       cancel-in-progress: true
