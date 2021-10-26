@@ -115,7 +115,7 @@ namespace Beamable.UI.SDF.Styles {
             }
 
             public void Set(SDFStyle style, T property) {
-                style._properties[Key] = property.Clone();
+                style._properties[Key] = property.Clone(); // TODO: allow to override it
             }
         }
     }

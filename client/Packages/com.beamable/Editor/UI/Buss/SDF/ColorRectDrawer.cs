@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using Beamable.UI.SDF.Styles;
 using UnityEditor;
 using UnityEngine;
@@ -6,14 +7,15 @@ using UnityEngine;
 namespace Beamable.Editor.UI.SDF {
     [CustomPropertyDrawer(typeof(ColorRect))]
     public class ColorRectDrawer : PropertyDrawer {
-        private Mode _mode = Mode.PerVertexColor;
+        private static readonly FieldInfo _drawerModeField =
+            typeof(ColorRect).GetField("_drawerMode", BindingFlags.Instance | BindingFlags.NonPublic);
         
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
-            return GetHeight();
+            return GetHeight((Mode)property.FindPropertyRelative("_drawerMode").intValue);
         }
 
-        public float GetHeight() {
-            return EditorGUIUtility.singleLineHeight * (_mode == Mode.SingleColor ? 2 : 3);
+        public float GetHeight(Mode mode) {
+            return EditorGUIUtility.singleLineHeight * (mode == Mode.SingleColor ? 2 : 3);
         }
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
@@ -43,18 +45,27 @@ namespace Beamable.Editor.UI.SDF {
         }
 
         public ColorRect DrawColorRect(GUIContent label, EditorGUIRectController rc, ColorRect colorRect) {
-            _mode = (Mode) EditorGUI.EnumPopup(rc.ReserveSingleLine(), label, _mode);
+            var mode = (Mode) _drawerModeField.GetValue(colorRect);
+            var newMode = (Mode) EditorGUI.EnumPopup(rc.ReserveSingleLine(), label, mode);
+            
+            // Using boxing here, it makes SetValue work for struct.
+            if (newMode != mode) {
+                mode = newMode;
+                object boxed = colorRect;
+                _drawerModeField.SetValue(boxed, (int) mode);
+                colorRect = (ColorRect) boxed;
+            }
 
             rc.MoveIndent(1);
 
-            colorRect = DrawColorFields(colorRect, rc);
+            colorRect = DrawColorFields(colorRect, rc, mode);
 
             rc.MoveIndent(-1);
             return colorRect;
         }
 
-        private ColorRect DrawColorFields(ColorRect colorRect, EditorGUIRectController rc) {
-            switch (_mode) {
+        private ColorRect DrawColorFields(ColorRect colorRect, EditorGUIRectController rc, Mode mode) {
+            switch (mode) {
                 case Mode.SingleColor:
                     colorRect.BottomLeftColor = colorRect.BottomRightColor = colorRect.TopLeftColor = colorRect.TopRightColor =
                         EditorGUI.ColorField(rc.ReserveSingleLine(), "Color", colorRect.TopLeftColor);
@@ -105,12 +116,12 @@ namespace Beamable.Editor.UI.SDF {
         }
 
         public enum Mode {
+            PerVertexColor,
             SingleColor,
             HorizontalGradient,
             VerticalGradient,
             DiagonalGradient,
             FlippedDiagonalGradient,
-            PerVertexColor
         }
     }
 }
