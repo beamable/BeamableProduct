@@ -10,18 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6878a57282fc4d5dae9c2e3538013b26, type: 3}
-  m_Name: ObjectStyle
+  m_Name: ParentStyle
   m_EditorClassIdentifier: 
   _styles:
   - _name: '#button'
     _properties:
-    - key: backgroundColor
+    - key: borderWidth
       property:
-        type: Beamable.UI.SDF.Styles.SingleColorProperty, Unity.Beamable, Version=0.0.0.0,
+        type: Beamable.UI.SDF.Styles.FloatProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_color":{"r":1.0,"g":0.8549020290374756,"b":0.0,"a":1.0}}'
-    - key: borderColor
+        json: '{"_floatValue":17.90999984741211}'
+    - key: roundCorners
       property:
-        type: Beamable.UI.SDF.Styles.SingleColorProperty, Unity.Beamable, Version=0.0.0.0,
+        type: Beamable.UI.SDF.Styles.FloatProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_color":{"r":1.0,"g":0.9555124044418335,"b":0.6933962106704712,"a":1.0}}'
+        json: '{"_floatValue":39.43000030517578}'

@@ -19,7 +19,7 @@ MonoBehaviour:
       property:
         type: Beamable.UI.SDF.Styles.SingleColorProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_color":{"r":0.9528301954269409,"g":0.319108247756958,"b":0.319108247756958,"a":1.0}}'
+        json: '{"_color":{"r":0.6603773832321167,"g":0.6603773832321167,"b":0.6603773832321167,"a":1.0}}'
     - key: borderWidth
       property:
         type: Beamable.UI.SDF.Styles.FloatProperty, Unity.Beamable, Version=0.0.0.0,
@@ -29,4 +29,21 @@ MonoBehaviour:
       property:
         type: Beamable.UI.SDF.Styles.SingleColorProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_color":{"r":0.0,"g":0.5529413223266602,"b":1.0,"a":1.0}}'
+        json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
+  - _name: '#button1'
+    _properties:
+    - key: backgroundColor
+      property:
+        type: Beamable.UI.SDF.Styles.VertexColorProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_colorRect":{"BottomLeftColor":{"r":1.0,"g":0.0,"b":0.0,"a":1.0},"BottomRightColor":{"r":1.0,"g":0.0,"b":0.0,"a":1.0},"TopLeftColor":{"r":1.0,"g":0.0,"b":0.0,"a":1.0},"TopRightColor":{"r":1.0,"g":0.0,"b":0.0,"a":1.0}}}'
+    - key: borderWidth
+      property:
+        type: Beamable.UI.SDF.Styles.FloatProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_floatValue":10.0}'
+    - key: borderColor
+      property:
+        type: Beamable.UI.SDF.Styles.SingleColorProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'

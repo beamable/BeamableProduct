@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Beamable.Editor.UI.SDF;
-using Beamable.UI.Buss;
 using Beamable.UI.SDF.Styles;
 using UnityEngine;
 
@@ -13,10 +12,11 @@ namespace Beamable.UI.SDF
         [SerializeField] private List<SingleStyleObject> _styles = new List<SingleStyleObject>();
 
         public List<SingleStyleObject> Styles => _styles;
+        public Action OnChange { get; set; }
 
         private void OnValidate()
         {
-            BussConfiguration.Instance.InformAboutChange();
+            OnChange?.Invoke();
         }
     }
 
@@ -28,12 +28,12 @@ namespace Beamable.UI.SDF
 
         public string Name => _name;
         public List<KeyWithProperty> Properties => _properties;
-        
+
         public SDFStyle GetStyle()
         {
              SDFStyle style = new SDFStyle();
         
-            foreach (KeyWithProperty property in _properties)
+            foreach (KeyWithProperty property in Properties)
             {
                 style[property.key] = property.property.Get<ISDFProperty>();
             }

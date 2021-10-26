@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Beamable.UI.SDF;
 using Beamable.UI.SDF.Styles;
@@ -34,51 +33,46 @@ namespace Beamable.UI.Buss
       #endregion
 
       // New system
-      public event Action OnUpdate;
-      
       public static BussConfiguration Instance => Get<BussConfiguration>();
       
       [SerializeField] private SDFStyleConfig _globalStyleConfig;
+      [SerializeField] private List<SDFStyleProvider> _styleProviders = new List<SDFStyleProvider>();
 
-      public SDFStyle GetStyle(string id, SDFStyleConfig canvasConfig, SDFStyleConfig objectConfig)
+      public void RegisterObserver(SDFStyleProvider styleProvider)
       {
-         SDFStyle newStyle = new SDFStyle();
-         
-         SingleStyleObject _globalContext = Instance.GetStyleById(id, _globalStyleConfig);
-         foreach (KeyWithProperty property in _globalContext.Properties)
+         if (!_styleProviders.Contains(styleProvider))
          {
-            newStyle[property.key] = property.property.Get<ISDFProperty>();
+            _styleProviders.Add(styleProvider);
          }
-         
-         SingleStyleObject _canvasContext = Instance.GetStyleById(id, canvasConfig);
-         foreach (KeyWithProperty property in _canvasContext.Properties)
-         {
-            newStyle[property.key] = property.property.Get<ISDFProperty>();
-         }
-         
-         SingleStyleObject _objectContext = Instance.GetStyleById(id, objectConfig);
-         foreach (KeyWithProperty property in _objectContext.Properties)
-         {
-            newStyle[property.key] = property.property.Get<ISDFProperty>();
-         }
-
-         return newStyle;
-      }
-      
-      private SingleStyleObject GetStyleById(string id, SDFStyleConfig config)
-      {
-         if (config == null)
-         {
-            return new SingleStyleObject();
-         }
-         
-         SingleStyleObject styleObject = config.Styles.Find(style => style.Name == id);
-         return styleObject ?? new SingleStyleObject();
       }
 
-      public void InformAboutChange()
+      public void UnregisterObserver(SDFStyleProvider styleProvider)
       {
-         OnUpdate?.Invoke();
+         if (_styleProviders.Contains(styleProvider))
+         {
+            _styleProviders.Remove(styleProvider);
+         }
+      }
+
+      public List<SingleStyleObject> GetGlobalStyles()
+      {
+         return _globalStyleConfig ? _globalStyleConfig.Styles : new List<SingleStyleObject>();
+      }
+
+      private void OnValidate()
+      {
+         if (_globalStyleConfig != null)
+         {
+            _globalStyleConfig.OnChange = OnGlobalStyleChanged;
+         }
+      }
+
+      private void OnGlobalStyleChanged()
+      {
+         foreach (SDFStyleProvider styleProvider in _styleProviders)
+         {
+            styleProvider.NotifyOnStyleChanged();
+         }
       }
    }
 }

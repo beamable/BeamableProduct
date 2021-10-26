@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Beamable.UI.Buss;
-using Beamable.UI.SDF.Styles;
+﻿using Beamable.UI.SDF.Styles;
 using UnityEngine;
 
 namespace Beamable.UI.SDF
@@ -13,120 +10,61 @@ namespace Beamable.UI.SDF
         [SerializeField] private string _id;
 #pragma warning restore CS0649
 
-        #region Classes
+        public string Id => _id;
 
-        [SerializeField] private List<string> _classes = new List<string>();
+        [SerializeField] private SDFStyleProvider _parent;
 
-        private IReadOnlyList<string> _readOnlyClasses;
-
-        public IEnumerable<string> Classes => _readOnlyClasses ?? (_readOnlyClasses = _classes.AsReadOnly());
-
-        public bool HasClass(string className)
+        private void OnBeforeTransformParentChanged()
         {
-            return _classes.Contains(className);
-        }
-
-        public void AddClass(string className)
-        {
-            if (!_classes.Contains(className))
+            if (_parent != null)
             {
-                _classes.Add(className);
-                Refresh();
+                _parent.Unregister(this);
+                _parent = null;
             }
         }
 
-        public void RemoveClass(string className)
+        private void OnTransformParentChanged()
         {
-            _classes.Remove(className);
-            Refresh();
-        }
+            Transform currentTransform = gameObject.transform;
+            
+            while (_parent == null)
+            {
+                if (currentTransform.parent == null)
+                {
+                    Debug.LogWarning("Haven't found any SDFStyleProvider");
+                    break;
+                }
+                
+                currentTransform = currentTransform.parent;
 
-        #endregion
+                SDFStyleProvider styleProvider = currentTransform.GetComponent<SDFStyleProvider>();
+                _parent = styleProvider;
+            }
 
-        [SerializeField, HideInInspector] private BUSSElement _parent;
-        [SerializeField, HideInInspector] private List<BUSSElement> _children = new List<BUSSElement>();
-
-        private IEnumerable<BUSSElement> _readonlyChildren;
-
-        public BUSSElement Parent => _parent;
-        public IEnumerable<BUSSElement> Children => _readonlyChildren ?? (_readonlyChildren = _children.AsReadOnly());
-
-        private void Awake()
-        {
-            FindParent();
-        }
-
-        private void OnEnable()
-        {
-            BussConfiguration.Instance.OnUpdate += Refresh;
-        }
-
-        private void OnDisable()
-        {
-            BussConfiguration.Instance.OnUpdate -= Refresh;
-            if (TryGetComponent<SDFImage>(out var sdfImage)) {
-                sdfImage.Style = null;
+            if (_parent != null)
+            {
+                _parent.Register(this);
             }
         }
 
         private void OnValidate()
         {
-            Refresh();
+            // TODO: change this, get style only for current gameobject, not invoke change on everyone
+            _parent.NotifyOnStyleChanged();
         }
 
-        private void OnTransformParentChanged()
+        private void OnDisable()
         {
-            FindParent();
-        }
-
-        private void OnDestroy()
-        {
-            ClearParent();
-        }
-
-        private void FindParent()
-        {
-            var parent = transform.parent != null ? transform.parent.GetComponentInParent<BUSSElement>() : null;
-            if (parent != _parent)
-            {
-                ClearParent();
-
-                if (parent != null && !parent._children.Contains(this))
-                {
-                    parent._children.Add(this);
-                }
-
-                _parent = parent;
+            if (TryGetComponent<SDFImage>(out var sdfImage)) {
+                sdfImage.Style = null;
             }
         }
 
-        private void ClearParent()
+        public void NotifyOnStyleChanged(SDFStyle newStyle)
         {
-            if (_parent != null)
-            {
-                _parent._children.Remove(this);
-                _parent = null;
-            }
-        }
-
-        private void Refresh() {
-            if (!enabled) return;
-            
             if (TryGetComponent<SDFImage>(out var sdfImage))
             {
-                SDFStyle sdfStyle = new SDFStyle();
-
-                if (!string.IsNullOrEmpty(_id) && !string.IsNullOrWhiteSpace(_id))
-                {
-                    Canvas canvas = GetComponentInParent<Canvas>();
-                    SDFStyleConfig canvasConfig = canvas.gameObject.GetComponent<SDFStyleConfigProvider>().Config;
-
-                    sdfStyle = BussConfiguration.Instance.GetStyle(_id,
-                        canvasConfig,
-                        GetComponent<SDFStyleConfigProvider>().Config);
-                }
-
-                sdfImage.Style = sdfStyle;
+                sdfImage.Style = newStyle;
             }
         }
     }
