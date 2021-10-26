@@ -51,6 +51,77 @@ namespace Beamable.Editor.Tests.PromiseTests
 
          Assert.IsTrue(eventRuns.All(ran => ran));
       }
+      
+      [UnityTest]
+      public IEnumerator UncaughtPromise_MultipleHandlers_ReplaceWithDefaultHandler_RaisesEvent()
+      {
+         var handlerCount = 4;
+         var p = new Promise<int>();
+         var knownEx = new Exception();
+
+         // Sets a bunch of events that won't be called         
+         for (var i = 0; i < handlerCount; i++)
+         {                        
+            PromiseBase.SetPotentialUncaughtErrorHandler((promise, err) => {
+                  Assert.Fail("Log should not run");                  
+               }, i == 0); // Clears all previously set handlers when setting the first handler so we don't need a cleanup function for this test.   
+         }
+         
+         // Sets our default handler first, replacing all callbacks previously set. Fails if any of the callbacks previously set are called.         
+         var mockLogger = new MockLogProvider();
+         BeamableLogProvider.Provider = mockLogger;         
+         PromiseExtensions.RegisterUncaughtPromiseHandler();
+         var ranDefault = false;
+         mockLogger.onException += exception =>
+         {
+            ranDefault = true;
+         };
+         p.CompleteError(knownEx);
+         
+         var task = PromiseExtensions.WaitForAllUncaughtHandlers();
+         while (!task.IsCompleted) { yield return null; }
+         if (task.IsFaulted) { throw task.Exception; }
+
+         Assert.IsTrue(ranDefault);
+      }
+      
+      [UnityTest]
+      public IEnumerator UncaughtPromise_MultipleHandlers_AddDefaultHandler_RaisesEvent()
+      {
+         var handlerCount = 4;
+         var p = new Promise<int>();
+         var knownEx = new Exception();         
+         
+         var eventRuns = new bool[handlerCount];
+         for (var i = 0; i < handlerCount; i++)
+         {
+            var indexIntoEventRan = i;
+            eventRuns[i] = false;
+            PromiseBase.SetPotentialUncaughtErrorHandler((promise, err) => {
+                  Assert.AreEqual(err, knownEx);
+                  eventRuns[indexIntoEventRan] = true;
+               }, 
+               false); // Clears all previously set handlers when setting the first handler so we don't need a cleanup function for this test.   
+         }
+         
+         // Adds our default handler to the list of existing callbacks
+         var mockLogger = new MockLogProvider();
+         BeamableLogProvider.Provider = mockLogger;
+         var ranDefault = false;
+         PromiseExtensions.RegisterUncaughtPromiseHandler(false);
+         mockLogger.onException += exception =>
+         {
+            ranDefault = true;
+         };
+
+         p.CompleteError(knownEx);
+         
+         var task = PromiseExtensions.WaitForAllUncaughtHandlers();
+         while (!task.IsCompleted) { yield return null; }
+         if (task.IsFaulted) { throw task.Exception; }
+
+         Assert.IsTrue(ranDefault && eventRuns.All(ran => ran));
+      }
 
       [Test]
       public void CaughtPromise_Before_DoesntRaiseEvent()

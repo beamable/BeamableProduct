@@ -64,7 +64,6 @@ namespace Beamable.Common
       public bool IsCompleted => done;
 
       private static event PromiseEvent OnPotentialUncaughtError;
-      private static readonly List<PromiseEvent> RegisteredUncaughtErrorHandlers = new List<PromiseEvent>();
 
       /// <summary>
       /// Set error handlers for uncaught promise errors. Beamable has a default handler set in its API initialization. 
@@ -76,19 +75,11 @@ namespace Beamable.Common
          // This overwrites it everytime, blowing away any other listeners.
          if (replaceExistingHandlers)
          {
-            foreach (var registeredUncaughtErrorHandler in RegisteredUncaughtErrorHandlers)
-            {
-               OnPotentialUncaughtError -= registeredUncaughtErrorHandler;
-            }
-            
-            RegisteredUncaughtErrorHandlers.Clear();
-            OnPotentialUncaughtError = handler;
-            RegisteredUncaughtErrorHandlers.Add(handler);
+            OnPotentialUncaughtError = handler;            
          }
          else // This allows someone to override the functionality.
          {
-            OnPotentialUncaughtError += handler;
-            RegisteredUncaughtErrorHandlers.Add(handler);
+            OnPotentialUncaughtError += handler;            
          }
       }
 
