@@ -121,6 +121,8 @@ namespace Beamable.Editor {
                     return EditorGUI.Vector2IntField(rc.ReserveSingleLine(), label, v2);
                 case Vector3Int v3:
                     return EditorGUI.Vector3IntField(rc.ReserveSingleLine(), label, v3);
+                case Enum e:
+                    return EditorGUI.EnumPopup(rc.ReserveSingleLine(), e);
 
                 // --- Arrays or lists
                 case Array array:

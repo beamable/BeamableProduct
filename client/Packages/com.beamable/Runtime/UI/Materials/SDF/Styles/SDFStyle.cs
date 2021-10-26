@@ -16,6 +16,8 @@ namespace Beamable.UI.SDF.Styles {
             new PropertyBiding<IFloatFromFloatProperty>("roundCorners", new FloatProperty());
         
         // Border
+        public static readonly PropertyBiding<BorderModeProperty> BorderMode =
+            new PropertyBiding<BorderModeProperty>("borderMode", new BorderModeProperty());
         public static readonly PropertyBiding<IFloatProperty> BorderWidth = 
             new PropertyBiding<IFloatProperty>("borderWidth", new FloatProperty());
         public static readonly PropertyBiding<IColorProperty> BorderColor = 
@@ -52,6 +54,22 @@ namespace Beamable.UI.SDF.Styles {
             }
         }
 
+        public static IEnumerable<string> Keys => _bidings.Keys;
+
+        public static Type GetBaseType(string key) {
+            if (_bidings.TryGetValue(key, out var biding)) {
+                return biding.PropertyType;
+            }
+            return null;
+        }
+
+        public static ISDFProperty GetDefaultValue(string key) {
+            if (_bidings.TryGetValue(key, out var biding)) {
+                return biding.GetDefaultValue();
+            }
+            return null;
+        }
+
         public void Clear() {
             _properties.Clear();
         }
@@ -61,6 +79,7 @@ namespace Beamable.UI.SDF.Styles {
             Type PropertyType { get; }
             ISDFProperty GetProperty(SDFStyle style);
             void SetProperty(SDFStyle style, ISDFProperty property);
+            ISDFProperty GetDefaultValue();
         }
         
         public sealed class PropertyBiding<T> : IPropertyBiding where T : ISDFProperty {
@@ -82,7 +101,11 @@ namespace Beamable.UI.SDF.Styles {
                     Set(style, t);
                 }
             }
-            
+
+            public ISDFProperty GetDefaultValue() {
+                return DefaultValue;
+            }
+
             public T Get(SDFStyle style) {
                 if (style._properties.TryGetValue(Key, out var property)) {
                     return (T) property;

@@ -64,6 +64,9 @@ namespace Beamable.UI.SDF
         private void OnDisable()
         {
             BussConfiguration.Instance.OnUpdate -= Refresh;
+            if (TryGetComponent<SDFImage>(out var sdfImage)) {
+                sdfImage.Style = null;
+            }
         }
 
         private void OnValidate()
@@ -106,8 +109,9 @@ namespace Beamable.UI.SDF
             }
         }
 
-        private void Refresh()
-        {
+        private void Refresh() {
+            if (!enabled) return;
+            
             if (TryGetComponent<SDFImage>(out var sdfImage))
             {
                 SDFStyle sdfStyle = new SDFStyle();

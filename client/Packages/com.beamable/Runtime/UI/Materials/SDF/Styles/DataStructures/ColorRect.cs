@@ -17,5 +17,10 @@ namespace Beamable.UI.SDF.Styles {
         }
 
         public ColorRect(Color color = default) : this(color, color, color, color) { }
+        
+        public ColorRect TopEdgeRect => new ColorRect(TopLeftColor, TopRightColor, TopLeftColor, TopRightColor);
+        public ColorRect BottomEdgeRect => new ColorRect(BottomLeftColor, BottomRightColor, BottomLeftColor, BottomRightColor);
+        public ColorRect LeftEdgeRect => new ColorRect(BottomLeftColor, BottomLeftColor, TopLeftColor, TopLeftColor);
+        public ColorRect RightEdgeRect => new ColorRect(BottomRightColor, BottomRightColor, TopRightColor, TopRightColor);
     }
 }
