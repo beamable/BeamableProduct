@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Beamable.UI.Buss;
 using Beamable.UI.SDF.Styles;
 using UnityEngine;
 
@@ -9,7 +10,6 @@ namespace Beamable.UI.SDF
     public class BUSSElement : MonoBehaviour
     {
 #pragma warning disable CS0649
-        [SerializeField] private SDFStyleScriptableObject _styleObject;
         [SerializeField] private string _id;
 #pragma warning restore CS0649
 
@@ -58,10 +58,12 @@ namespace Beamable.UI.SDF
 
         private void OnEnable()
         {
-            if (_styleObject != null)
-            {
-                _styleObject.OnUpdate = Refresh;
-            }
+            BussConfiguration.Instance.OnUpdate += Refresh;
+        }
+
+        private void OnDisable()
+        {
+            BussConfiguration.Instance.OnUpdate -= Refresh;
         }
 
         private void OnValidate()
@@ -108,32 +110,19 @@ namespace Beamable.UI.SDF
         {
             if (TryGetComponent<SDFImage>(out var sdfImage))
             {
-                if (_styleObject != null)
+                SDFStyle sdfStyle = new SDFStyle();
+
+                if (!string.IsNullOrEmpty(_id) && !string.IsNullOrWhiteSpace(_id))
                 {
-                    SDFStyle style = new SDFStyle();
-                    
-                    if (!string.IsNullOrEmpty(_id) && !string.IsNullOrWhiteSpace(_id))
-                    {
-                        List<KeyWithProperty> properties = _styleObject.GetProperties(_id);
+                    Canvas canvas = GetComponentInParent<Canvas>();
+                    SDFStyleConfig canvasConfig = canvas.gameObject.GetComponent<SDFStyleConfigProvider>().Config;
 
-                        foreach (KeyWithProperty property in properties)
-                        {
-                            style[property.key] = property.property.Get<ISDFProperty>();
-                        }
-                    }
-
-                    foreach (string classSelector in _classes)
-                    {
-                        List<KeyWithProperty> properties = _styleObject.GetProperties(classSelector);
-
-                        foreach (KeyWithProperty property in properties)
-                        {
-                            style[property.key] = property.property.Get<ISDFProperty>();
-                        }
-                    }
-
-                    sdfImage.Style = style;
+                    sdfStyle = BussConfiguration.Instance.GetStyle(_id,
+                        canvasConfig,
+                        GetComponent<SDFStyleConfigProvider>().Config);
                 }
+
+                sdfImage.Style = sdfStyle;
             }
         }
     }

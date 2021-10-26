@@ -1,27 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using Beamable.Editor.UI.SDF;
+using Beamable.UI.Buss;
 using Beamable.UI.SDF.Styles;
 using UnityEngine;
 
 namespace Beamable.UI.SDF
 {
     [CreateAssetMenu(fileName = "SDFStyle", menuName = "Beamable/Buss/Create SDF Style", order = 0)]
-    public class SDFStyleScriptableObject : ScriptableObject
+    public class SDFStyleConfig : ScriptableObject
     {
-        public Action OnUpdate;
-
         [SerializeField] private List<SingleStyleObject> _styles = new List<SingleStyleObject>();
-        
+
+        public List<SingleStyleObject> Styles => _styles;
+
         private void OnValidate()
         {
-            OnUpdate?.Invoke();
-        }
-
-        public List<KeyWithProperty> GetProperties(string id)
-        {
-            SingleStyleObject styleObject = _styles.Find(style => style.Name == id);
-            return styleObject != null ? styleObject.Properties : new List<KeyWithProperty>();
+            BussConfiguration.Instance.InformAboutChange();
         }
     }
 
