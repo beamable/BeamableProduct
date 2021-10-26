@@ -22,6 +22,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Tournaments;
 using Beamable.Common.Api.CloudData;
+using Beamable.Common.Player;
 using Beamable.Content;
 using Beamable.Experimental;
 using Beamable.Experimental.Api.Chat;
@@ -33,6 +34,7 @@ namespace Packages.Beamable.Runtime.Tests.Beamable
     public class MockBeamableApi : IBeamableAPI
     {
         public User User { get; set; }
+        public PlayerSdk Player { get; set; }
         public AccessToken Token { get; set; }
         public IExperimentalAPI Experimental { get; }
         public AnnouncementsService AnnouncementService { get; set; }

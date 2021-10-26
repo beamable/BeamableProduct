@@ -152,6 +152,8 @@ namespace Beamable.Service
 			throw new InvalidOperationException("No service found of type " + typeof(T).Name);
 		}
 
+
+
 		/// <summary>
 		/// Convenience function for resolving a service only if it is available
 		/// to be resolved.
