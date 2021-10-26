@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq.Expressions;
 using Beamable.Common.Api;
+using Beamable.Common.Api.Stats;
 
 namespace Beamable.Common.Player
 {
@@ -12,9 +13,30 @@ namespace Beamable.Common.Player
       Public, Private
    }
 
+   public enum StatDomain
+   {
+      Game, Client
+   }
+
+
+   public static class StatAccessExtensions
+   {
+      public static string ToNetworkString(this StatAccess access)
+      {
+         switch (access)
+         {
+            case StatAccess.Private: return "private";
+            case StatAccess.Public: return "public";
+         }
+
+         return access.ToString().ToLower();
+      }
+   }
+
    public interface IPlayerStats : IObservable<Dictionary<string, string>>
    {
       StatAccess Access { get; }
+      StatDomain Domain { get; }
       Promise Set(string key, string value);
 
       string this[string key] { get; }
@@ -23,6 +45,7 @@ namespace Beamable.Common.Player
    public class PlayerStats : DefaultObservable<Dictionary<string, string>>, IPlayerStats, IActionStackMiddleware
    {
       public StatAccess Access { get; }
+      public StatDomain Domain { get; }
 
 
       public PlayerStats(StatAccess access, IBeamableRequester requester) : base(requester)
