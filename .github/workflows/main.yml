@@ -72,6 +72,9 @@ jobs:
           - 2020.3.19f1
     steps:
       - uses: actions/checkout@v2
+      - name: Privledge Docker Directory
+        run: chmod +rwx /var/lib/docker/
+        shell: bash
       - name: Cache Docker Layers
         uses: actions/cache@v2
         with:
@@ -137,6 +140,9 @@ jobs:
         with:
           fetch-depth: 0
           lfs: true
+      - name: Privledge Docker Directory
+        run: chmod +rwx /var/lib/docker/
+        shell: bash
       - name: Prepare Config-Defaults
         run: |
           chmod +x ./build/create_config_defaults.sh
