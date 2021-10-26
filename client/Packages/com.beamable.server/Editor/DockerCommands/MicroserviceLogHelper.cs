@@ -280,10 +280,12 @@ namespace Beamable.Server.Editor.DockerCommands
             if (message.Contains("Service ready for traffic."))
             {
                 builder.OnStartingFinished?.Invoke(true);
+                builder.IsRunning = true;
             }
             else if (ErrorElements.Any(message.Contains))
             {
                 builder.OnStartingFinished?.Invoke(false);
+                builder.IsRunning = false;
             }
         }
     }

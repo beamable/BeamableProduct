@@ -76,8 +76,6 @@ namespace Beamable.Editor.UI.Model
         public virtual async void Init(IDescriptor descriptor)
         {
             Descriptor = descriptor;
-            OnStartingFinished -= HandleStartingFinished;
-            OnStartingFinished += HandleStartingFinished;
 
             _isRunning = false;
             await CheckIfIsRunning();
@@ -112,7 +110,5 @@ namespace Beamable.Editor.UI.Model
             await TryToStop();
             await TryToStart();
         }
-
-        private void HandleStartingFinished(bool success) => IsRunning = success;
     }
 }
