@@ -72,16 +72,20 @@ jobs:
           - 2020.3.19f1
     steps:
       - uses: actions/checkout@v2
-      - name: Privledge Docker Directory
-        run: chmod +rwx /var/lib/docker/
-        shell: bash
       - name: Cache Docker Layers
         uses: actions/cache@v2
+        id: cache_docker
         with:
-          path: /var/lib/docker/
-          key: Docker-${{ matrix.unityVersion }}
+          path: ./docker-cache
+          key: Docker-${{ matrix.unityVersion }} 
           restore-keys: |
             Docker-${{ matrix.unityVersion }}
+      - name: Load Docker Image If Exits
+        if: ${{ steps.cache_docker.outputs.cache-hit }}
+        run: |
+          chmod +x ./build/prepare_base_image.sh
+          UNITY_VERSION=${{ matrix.unityVersion }} ./build/prepare_base_image.sh
+        shell: bash
       - name: Cache Unity Folders
         uses: actions/cache@v2
         with:
@@ -114,6 +118,12 @@ jobs:
           name: Test results for ${{ matrix.unityVersion }} ${{ matrix.testMode }}
           path: ${{ steps.tests.outputs.artifactsPath }}
           retention-days: 3
+      - name: Save Docker Image If Exits
+        if: ${{ !steps.cache_docker.outputs.cache-hit }}
+        run: |
+          chmod +x ./build/save_base_image.sh
+          UNITY_VERSION=${{ matrix.unityVersion }} ./build/save_base_image.sh
+        shell: bash
 
   build:
     name: Build for ${{ matrix.targetPlatform }}
@@ -140,9 +150,6 @@ jobs:
         with:
           fetch-depth: 0
           lfs: true
-      - name: Privledge Docker Directory
-        run: chmod +rwx /var/lib/docker/
-        shell: bash
       - name: Prepare Config-Defaults
         run: |
           chmod +x ./build/create_config_defaults.sh
@@ -160,11 +167,23 @@ jobs:
         shell: bash
       - name: Cache Docker Layers
         uses: actions/cache@v2
+        id: cache_docker
         with:
-          path: /var/lib/docker/
-          key: Docker-${{ matrix.unityVersion }}
+          path: ./docker-cache
+          key: Docker-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
           restore-keys: |
-            Docker-${{ matrix.unityVersion }}
+            Docker-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
+      - name: Load Docker Image If Exits
+        if: ${{ steps.cache_docker.outputs.cache-hit }}
+        run: |
+          chmod +x ./build/prepare_base_image.sh
+          UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/prepare_base_image.sh
+        shell: bash
+      - name: Docker load
+        run: |
+          chmod +x ./build/create_config_defaults.sh
+          ./build/create_config_defaults.sh
+        shell: bash
       - name: Cache Unity Folders
         uses: actions/cache@v2
         with:
@@ -189,6 +208,12 @@ jobs:
           allowDirtyBuild: true
           buildsPath: dist
 
+      - name: Save Docker Image If Exits
+        if: ${{ !steps.cache_docker.outputs.cache-hit }}
+        run: |
+          chmod +x ./build/save_base_image.sh
+          UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/save_base_image.sh
+        shell: bash
       - uses: actions/upload-artifact@v2
         if: ${{ matrix.targetPlatform != 'WebGL' }}
         with:
