@@ -298,7 +298,7 @@ namespace Beamable.Server
             await ProvideService(QualifiedName);
 
             HasInitialized = true;
-            Log.Information("Service ready for traffic. baseVersion={baseVersion} executionVersion={executionVersion}", _args.SdkVersionBaseBuild, _args.SdkVersionExecution);
+            Log.Information(LogConstants.READY_FOR_TRAFFIC_PREFIX + "baseVersion={baseVersion} executionVersion={executionVersion}", _args.SdkVersionBaseBuild, _args.SdkVersionExecution);
             _serviceInitialized.CompleteSuccess(PromiseBase.Unit);
          }
          catch (Exception ex)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Beamable.Common;
 using Beamable.Editor.UI.Model;
 using Beamable.Serialization.SmallerJSON;
 using UnityEditor;
@@ -277,7 +278,7 @@ namespace Beamable.Server.Editor.DockerCommands
                     builder.OnStartingProgress?.Invoke(i + 1, RunLogsSteps);
                 }
             }
-            if (message.Contains("Service ready for traffic."))
+            if (message.Contains(LogConstants.READY_FOR_TRAFFIC_PREFIX))
             {
                 builder.OnStartingFinished?.Invoke(true);
                 builder.IsRunning = true;
