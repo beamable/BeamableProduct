@@ -6,7 +6,7 @@ using UnityEngine;
 namespace Beamable.Server
 {
     [Serializable]
-    public class Vector2IntEx
+    public struct Vector2IntEx
     {
         public int x;
         public int y;
@@ -25,15 +25,18 @@ namespace Beamable.Server
     }
 
     [Serializable]
-    public class Vector3IntEx : Vector2IntEx
+    public struct Vector3IntEx
     {
+        public int x;
+        public int y;
         public int z;
 
-        public Vector3IntEx(Vector3Int vec) : base(new Vector2Int(vec.x, vec.y))
+        public Vector3IntEx(Vector3Int vec)
         {
+            x = vec.x;
+            y = vec.y;
             z = vec.z;
         }
-
 
         public static Vector3Int DeserializeToVector3(string json)
         {
