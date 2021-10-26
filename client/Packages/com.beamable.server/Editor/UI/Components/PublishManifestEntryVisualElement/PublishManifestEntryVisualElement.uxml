@@ -13,14 +13,13 @@
 
         <engine:VisualElement name="typeC" class="column">
             <engine:Image name="typeImage"/>
-            <engine:Label name="typeLabel" text="Microservice"/>
         </engine:VisualElement>
         
-        <engine:VisualElement name="nameC" class="column" display="none">
+        <engine:VisualElement name="nameColumn" class="column" display="none">
                 <engine:Label name="nameMS" text="Angie's Test"/>
         </engine:VisualElement>
 
-        <engine:VisualElement name="depsC" class="column">
+        <engine:VisualElement name="depsColumn" class="column">
             <beamable:ExpandableListVisualElement name="depsList" />
         </engine:VisualElement>
 

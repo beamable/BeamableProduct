@@ -34,16 +34,17 @@
 }
 
 #nameC, #depsC {
-    width: 160px;
-    align-self: stretch;
     flex-direction: row;
-    align-content: stretch;
-    flex-grow: 3;
+    flex: 1;
+    margin-right: 10px;
+}
+
+#depsC {
+    margin-right: 10px;
 }
 
 #typeC {
-    width: 140px;
-    padding-left: 12px;
+    width: 90px;
 }
 
 #enabledC {
@@ -51,11 +52,11 @@
     justify-content: center;
 }
 #CommentsC {
-    width: 200px;
-    justify-content: center;
+    width: 155px;
+    padding-left: 20px;
 }
 #SizeC {
-    width: 80px;
+    width: 140px;
 }
 #commentsText, #SizeC .template{
     width: 80px;
@@ -116,14 +117,14 @@
     margin-left: 20px;
     margin-right: 20px;
     margin-top: 15px;
-    min-height: 100px; 
+    min-height: 140px; 
 }
 #buttonStrip {
     flex-direction: row;
     justify-content: flex-end;
     flex-shrink: 0;
     margin-right: 50px;
-    padding-bottom: 20px;
+    padding-bottom: 10px;
     margin-top: 5px;
     margin-bottom: 5px;
 }

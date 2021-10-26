@@ -11,23 +11,17 @@
     background-color: #545454;
 }
 
-#nameC, #typeC {
-    width: 160px;
-    height: 20px;
+#nameColumn, #depsColumn {
     flex-direction: row;
-    align-self: stretch;
-    align-content: stretch;
-    flex-grow: 3;
-    padding-left: 12px;
+    flex: 1;
+}
+
+#depsColumn {
+    flex-direction: column;
 }
 
 #CommentsC {
-    width: 200px;
-    padding-left: 20px;
-}
-
-#typeC {
-    width: 120px;
+    width: 130px;
 }
 
 #depsList {
@@ -37,10 +31,6 @@
 #SizeC {
     flex-direction: row;
     width: 140px;
-}
-
-#depsC {
-    flex-direction: column;
 }
 
 #sizeDropdown {
@@ -66,13 +56,19 @@
     margin-right: 20px;
 }
 
-#typeLabel, #nameMS {
+#nameMS {
     -unity-font-style: bold;
     color: #FFFFFF;
 }
 
 #typeImage {
-    margin-right: 5px;
+    align-self: center;
+}
+
+#typeC {
+    width: 80px;
+    margin-left: 10px;
+    align-self: flex-start;
 }
 
 #checkbox{
@@ -91,6 +87,11 @@
 .microserviceImage, #checkImage {
     width: 20px;
     height: 20px;
+}
+
+.microserviceImage {
+    margin-left: 5px;
+    margin-top: 5px;
 }
 
 .storageImage {

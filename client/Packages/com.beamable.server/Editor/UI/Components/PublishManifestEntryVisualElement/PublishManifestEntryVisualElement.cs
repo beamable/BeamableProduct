@@ -51,9 +51,6 @@ namespace Beamable.Editor.Microservice.UI.Components
          sizeDropdown.Setup(TemplateSizes.ToList(), null);
          sizeDropdown.Refresh();
 
-         var typeLabel = Root.Q<Label>("typeLabel");
-         typeLabel.text = Model.Type;
-         
          var nameLabel = Root.Q<Label>("nameMS");
          nameLabel.text = Model.Name;
 

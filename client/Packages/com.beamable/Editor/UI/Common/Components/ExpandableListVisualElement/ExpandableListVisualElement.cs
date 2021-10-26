@@ -47,8 +47,7 @@ namespace Beamable.Editor.UI.Components
         private void OnLabelSizeChanged(GeometryChangedEvent evt)
         {
             float width = evt.newRect.width;
-            float charactersNumberFactor = elements.Count > 1 ? width / 12 : width / 10;
-            int maxCharacters = Mathf.CeilToInt(charactersNumberFactor);
+            int maxCharacters = GetMaxNumberOfCharacters(width);
             displayValues = new string[elements.Count];
             for (int i = 0; i < elements.Count; i++)
             {
@@ -56,6 +55,17 @@ namespace Beamable.Editor.UI.Components
             }
 
             SetupLabel();
+        }
+
+        private int GetMaxNumberOfCharacters(float width)
+        {
+            float charactersNumberFactor = width / 10;
+            if (elements.Count > 1)
+            {
+                charactersNumberFactor = expanded ? width / 11 : width / 14;
+            }
+
+            return Mathf.CeilToInt(charactersNumberFactor);
         }
 
         private void SetupLabel()

@@ -41,18 +41,20 @@ namespace Beamable.Editor.Microservice.UI.Components
             }
         }
 
-        public ManifestModel Model { get; set; }
         public Action OnCloseRequested;
         public Action<ManifestModel> OnSubmit;
 
+        private ManifestModel Model { get; }
+        
         private TextField _generalComments;
         private Button _cancelButton;
         private PrimaryButtonVisualElement _continueButton;
         private ScrollView _scrollContainer;
         private Dictionary<string, PublishManifestEntryVisualElement> _publishManifestElements;
 
-        public PublishPopup() : base(nameof(PublishPopup))
+        public PublishPopup(ManifestModel model) : base(nameof(PublishPopup))
         {
+            Model = model;
         }
 
         public void PrepareParent()
