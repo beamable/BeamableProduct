@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Linq;
 using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Platform.SDK;
@@ -26,6 +27,29 @@ namespace Beamable.Editor.Tests.PromiseTests
          p.CompleteError(knownEx);
 
          Assert.IsTrue(eventRan);
+      }
+
+      [Test, TestCase(1), TestCase(2), TestCase(4)]
+      public void UncaughtPromise_MultipleHandlers_RaisesEvent(int handlerCount)
+      {
+         var p = new Promise<int>();
+         var knownEx = new Exception();
+
+         var eventRuns = new bool[handlerCount];
+         for (var i = 0; i < handlerCount; i++)
+         {
+            var indexIntoEventRan = i;
+            eventRuns[i] = false;
+            PromiseBase.SetPotentialUncaughtErrorHandler((promise, err) => {
+               Assert.AreEqual(err, knownEx);
+               eventRuns[indexIntoEventRan] = true;
+            }, 
+            i == 0); // Clears all previously set handlers when setting the first handler so we don't need a cleanup function for this test.   
+         }
+
+         p.CompleteError(knownEx);
+
+         Assert.IsTrue(eventRuns.All(ran => ran));
       }
 
       [Test]
