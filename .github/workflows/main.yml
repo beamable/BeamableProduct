@@ -17,6 +17,7 @@ on:
 
 jobs:
   testMicroserviceBaseImage:
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     concurrency: 
       group: base-image-tests-${{ github.head_ref }}
@@ -51,6 +52,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
   testAllModes:
+    timeout-minutes: 20
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
     runs-on: ubuntu-latest
     concurrency: 
@@ -70,7 +72,22 @@ jobs:
           - 2020.3.19f1
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/cache@v2
+      - name: Cache Docker Layers
+        uses: actions/cache@v2
+        id: cache_docker
+        with:
+          path: ./docker-cache
+          key: Docker-gzipped-${{ matrix.unityVersion }} 
+          restore-keys: |
+            Docker-gzipped-${{ matrix.unityVersion }}
+      - name: Load Docker Image If Exits
+        if: ${{ steps.cache_docker.outputs.cache-hit }}
+        run: |
+          chmod +x ./build/prepare_base_image.sh
+          UNITY_VERSION=${{ matrix.unityVersion }} ./build/prepare_base_image.sh
+        shell: bash
+      - name: Cache Unity Folders
+        uses: actions/cache@v2
         with:
           path: ${{ matrix.projectPath }}/Library
           key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
@@ -101,10 +118,17 @@ jobs:
           name: Test results for ${{ matrix.unityVersion }} ${{ matrix.testMode }}
           path: ${{ steps.tests.outputs.artifactsPath }}
           retention-days: 3
+      - name: Save Docker Image If Exits
+        if: ${{ !steps.cache_docker.outputs.cache-hit }}
+        run: |
+          chmod +x ./build/save_base_image.sh
+          UNITY_VERSION=${{ matrix.unityVersion }} ./build/save_base_image.sh
+        shell: bash
 
   build:
     name: Build for ${{ matrix.targetPlatform }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     concurrency: 
       group: device-builds-${{ matrix.targetPlatform }}-${{ github.head_ref }}
       cancel-in-progress: true
@@ -141,7 +165,22 @@ jobs:
           chmod +x ./build/clean_gradle.sh
           UNITY_VERSION=${{ matrix.unityVersion }} ./build/clean_gradle.sh
         shell: bash
-      - uses: actions/cache@v2
+      - name: Cache Docker Layers
+        uses: actions/cache@v2
+        id: cache_docker
+        with:
+          path: ./docker-cache
+          key: Docker-gzipped-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
+          restore-keys: |
+            Docker-gzipped-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
+      - name: Load Docker Image If Exits
+        if: ${{ steps.cache_docker.outputs.cache-hit }}
+        run: |
+          chmod +x ./build/prepare_base_image.sh
+          UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/prepare_base_image.sh
+        shell: bash
+      - name: Cache Unity Folders
+        uses: actions/cache@v2
         with:
           path: |
             ${{ matrix.projectPath }}/Library
@@ -164,6 +203,12 @@ jobs:
           allowDirtyBuild: true
           buildsPath: dist
 
+      - name: Save Docker Image If Exits
+        if: ${{ !steps.cache_docker.outputs.cache-hit }}
+        run: |
+          chmod +x ./build/save_base_image.sh
+          UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/save_base_image.sh
+        shell: bash
       - uses: actions/upload-artifact@v2
         if: ${{ matrix.targetPlatform != 'WebGL' }}
         with:
