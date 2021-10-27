@@ -33,6 +33,7 @@ using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Tournaments;
 using Beamable.Common.Player;
 using Beamable.Experimental;
+using Beamable.Player;
 using Beamable.Sessions;
 using Modules.Content;
 
@@ -427,13 +428,10 @@ namespace Beamable
             ServiceManager.ProvideWithDefaultContainer(_platform);
             ServiceManager.Provide(new BeamableResolver(this));
 
-            ServiceManager.ProvideWithDefaultContainer<IPlayerStats>(new PlayerStats(_platform.Requester));
-            ServiceManager.ProvideWithDefaultContainer<IPlayerWidgets>(new PlayerWidgets(_platform.Requester));
-
 
             _player = new PlayerSdk(
-                widgets: ServiceManager.Resolve<IPlayerWidgets>(),
-                stats: ServiceManager.Resolve<IPlayerStats>()
+                widgets: new PlayerWidgets(_platform.Requester),
+                stats: new PlayerStats(StatAccess.Public, User.id, _platform.Requester)
             );
 
 #if BEAMABLE_PURCHASING
