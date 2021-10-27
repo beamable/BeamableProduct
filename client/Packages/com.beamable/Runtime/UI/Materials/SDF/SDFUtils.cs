@@ -11,10 +11,9 @@ namespace Beamable.UI.SDF {
         /// Packs SDFImage parameters in vertex data and adds quad to the vertex helper;
         /// </summary>
         public static void AddRect(this VertexHelper vh, 
-            Rect position, Rect uvs, Rect coords, ColorRect vertexColor,
+            Rect position, Rect uvs, Rect backgroundUvs, Rect coords, ColorRect vertexColor,
             Vector2 size,
             float threshold,
-            Vector2 uvToCoordsFactor,
             float rounding,
             float outlineWidth, Color outlineColor,
             Color shadowColor, float shadowThreshold, Vector2 shadowOffset) {
@@ -23,13 +22,13 @@ namespace Beamable.UI.SDF {
                 PackVector3ToFloat(outlineColor.r, outlineColor.g, outlineColor.b));
             var normal = new Vector3(
                 threshold,
-                uvToCoordsFactor.x,
-                uvToCoordsFactor.y);
+                size.x,
+                size.y);
             var tangent = new Vector4(shadowOffset.x, shadowOffset.y, 
-                PackVector3ToFloat(shadowThreshold, shadowColor.a, 0), 
+                PackVector3ToFloat((shadowThreshold / size.x) + .5f, shadowColor.a, outlineColor.a), 
                 PackVector3ToFloat(shadowColor.r, shadowColor.g, shadowColor.b));
         
-            AddRect(vh, position, rounding, uvs, coords, vertexColor, size, uv2, normal, tangent);
+            AddRect(vh, position, rounding, uvs, coords, vertexColor, backgroundUvs, uv2, normal, tangent);
         }
 
         /// <summary>
@@ -42,7 +41,7 @@ namespace Beamable.UI.SDF {
             Rect uvs, 
             Rect coords, 
             ColorRect vertexColor, 
-            Vector2 uv1,
+            Rect uvs1,
             Vector2 uv2,
             Vector3 normal,
             Vector4 tangent) {
@@ -51,7 +50,7 @@ namespace Beamable.UI.SDF {
                 new Vector3(position.xMin, position.yMin, z),
                 vertexColor.BottomLeftColor,
                 new Vector2(uvs.xMin, uvs.yMin),
-                uv1,
+                new Vector2(uvs1.xMin, uvs1.yMin),
                 uv2,
                 new Vector2(coords.xMin, coords.yMin),
                 normal,
@@ -60,7 +59,7 @@ namespace Beamable.UI.SDF {
                 new Vector3(position.xMax, position.yMin, z),
                 vertexColor.BottomRightColor,
                 new Vector2(uvs.xMax, uvs.yMin),
-                uv1,
+                new Vector2(uvs1.xMax, uvs1.yMin),
                 uv2,
                 new Vector2(coords.xMax, coords.yMin),
                 normal,
@@ -69,7 +68,7 @@ namespace Beamable.UI.SDF {
                 new Vector3(position.xMax, position.yMax, z),
                 vertexColor.TopRightColor,
                 new Vector2(uvs.xMax, uvs.yMax),
-                uv1,
+                new Vector2(uvs1.xMax, uvs1.yMax),
                 uv2,
                 new Vector2(coords.xMax, coords.yMax),
                 normal,
@@ -78,7 +77,7 @@ namespace Beamable.UI.SDF {
                 new Vector3(position.xMin, position.yMax, z),
                 vertexColor.TopLeftColor,
                 new Vector2(uvs.xMin, uvs.yMax),
-                uv1,
+                new Vector2(uvs1.xMin, uvs1.yMax),
                 uv2,
                 new Vector2(coords.xMin, coords.yMax),
                 normal,

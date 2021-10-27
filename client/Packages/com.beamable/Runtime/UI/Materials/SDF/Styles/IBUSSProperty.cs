@@ -1,5 +1,7 @@
 ﻿using System;
+using TMPro;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Beamable.UI.SDF.Styles
 {
@@ -39,6 +41,14 @@ namespace Beamable.UI.SDF.Styles
         T CastEnumValue<T>() where T : Enum;
     }
 
+    public interface ISpriteProperty : IBUSSProperty {
+        Sprite SpriteValue { get; }
+    }
+
+    public interface IFontProperty : IBUSSProperty {
+        TMP_FontAsset FontAsset { get; }
+    }
+
     public interface IUniversalProperty : IColorProperty, IVertexColorProperty, IFloatProperty, IFloatFromFloatProperty,
-        IVector2Property, IEnumProperty { }
+        IVector2Property, IEnumProperty, ISpriteProperty, IFontProperty { }
 }

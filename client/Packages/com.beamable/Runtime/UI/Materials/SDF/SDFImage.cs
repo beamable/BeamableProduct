@@ -1,4 +1,5 @@
-﻿using Beamable.UI.SDF.Styles;
+﻿using System;
+using Beamable.UI.SDF.Styles;
 using UnityEngine;
 using UnityEngine.Sprites;
 using UnityEngine.UI;
@@ -13,13 +14,15 @@ namespace Beamable.UI.SDF {
             set {
                 _style = value;
                 SetVerticesDirty();
+                SetMaterialDirty();
             }
         }
 
-        public ColorRect colorRect;
+        public SdfMode mode;
+        public ColorRect colorRect = new ColorRect(Color.white);
         public float threshold;
         public float rounding;
-        public Texture2D backgroundTexture;
+        public Sprite backgroundSprite;
         public float meshFrame;
         public float outlineWidth;
         public Color outlineColor;
@@ -28,19 +31,16 @@ namespace Beamable.UI.SDF {
         public float shadowThreshold;
 
         private Material _materialWithBackgroundTexture;
-#pragma warning disable 649
-        private Vector2 _uvToCoordsFactor;
-#pragma warning restore 649
         private static readonly int BackgroundTexture = Shader.PropertyToID("_BackgroundTexture");
 
         public override Material material {
             get {
-                if (backgroundTexture == null) return base.material;
+                if (backgroundSprite == null) return base.material;
             
                 if (_materialWithBackgroundTexture == null) {
                     _materialWithBackgroundTexture = new Material(base.material);
                 }
-                _materialWithBackgroundTexture.SetTexture(BackgroundTexture, backgroundTexture);
+                _materialWithBackgroundTexture.SetTexture(BackgroundTexture, backgroundSprite.texture);
 
                 return _materialWithBackgroundTexture;
             }
@@ -48,6 +48,12 @@ namespace Beamable.UI.SDF {
         }
 
         protected override void OnPopulateMesh(VertexHelper vh) {
+            switch (mode) {
+                case SdfMode.Default:
+                    break;
+                case SdfMode.RectOnly:
+                    break;
+            }
             ApplyStyle();
             if (type == Type.Sliced && hasBorder) {
                 GenerateSlicedMesh(vh);
@@ -60,11 +66,12 @@ namespace Beamable.UI.SDF {
         private void GenerateSpriteMesh(VertexHelper vh) {
             vh.Clear();
             var rt = rectTransform;
-            var spriteRect = sprite == null ? new Rect(Vector2.zero, Vector2.one) : GetNormalizedSpriteRect();
+            var spriteRect = GetNormalizedSpriteRect(sprite);
+            var bgRect = GetNormalizedSpriteRect(backgroundSprite);
             var position = new Rect(
                 -rt.rect.size * rt.pivot,
                 rt.rect.size);
-            AddRect(vh, position, spriteRect, new Rect(Vector2.zero, Vector2.one), rt.rect.size);
+            AddRect(vh, position, spriteRect, bgRect, new Rect(Vector2.zero, Vector2.one), rt.rect.size);
             AddFrame(vh, position, spriteRect);
         }
 
@@ -103,6 +110,8 @@ namespace Beamable.UI.SDF {
                 Vector2.one, 
             };
 
+            var bgRect = GetNormalizedSpriteRect(backgroundSprite);
+
             for (int xi = 0; xi < 3; xi++) {
                 for (int yi = 0; yi < 3; yi++) {
                     var posMin = new Vector2(positionValues[xi].x, positionValues[yi].y);
@@ -112,7 +121,12 @@ namespace Beamable.UI.SDF {
                     var uvSize = new Vector2(uvValues[xi + 1].x, uvValues[yi + 1].y) - uvMin;
                     var uvRect = new Rect(uvMin, uvSize);
                     var coordsRect = Rect.MinMaxRect(coordsValues[xi].x, coordsValues[yi].y, coordsValues[xi + 1].x, coordsValues[yi + 1].y);
-                    AddRect(vh, positionRect, uvRect, coordsRect, size);
+                    var localBgRect = Rect.MinMaxRect(
+                        Mathf.Lerp(bgRect.xMin, bgRect.xMax, coordsRect.xMin),
+                        Mathf.Lerp(bgRect.yMin, bgRect.yMax, coordsRect.yMin),
+                        Mathf.Lerp(bgRect.xMin, bgRect.xMax, coordsRect.xMin),
+                        Mathf.Lerp(bgRect.yMin, bgRect.yMax, coordsRect.yMax));
+                    AddRect(vh, positionRect, uvRect, localBgRect, coordsRect, size);
                 }
             }
         
@@ -121,7 +135,8 @@ namespace Beamable.UI.SDF {
                 new Rect(uvValues[0], uvValues[3]));
         }
 
-        private Rect GetNormalizedSpriteRect() {
+        private Rect GetNormalizedSpriteRect(Sprite sprite) {
+            if (sprite == null) return new Rect(Vector2.zero, Vector2.one);
             var spriteRect = sprite.rect;
             spriteRect.x /= sprite.texture.width;
             spriteRect.width /= sprite.texture.width;
@@ -166,26 +181,28 @@ namespace Beamable.UI.SDF {
             var coordsB = Rect.MinMaxRect(1f, grownCoords.yMin, grownCoords.xMax, grownCoords.yMax);
             var coordsC = Rect.MinMaxRect(0f, grownCoords.yMin, 1f, 0f);
             var coordsD = Rect.MinMaxRect(0f, 1f, 1f, grownCoords.yMax);
+            
+            var bgRect = new Rect(0f, 0f, 0f, 0f);
         
-            AddRect(vh, posA, uvA, coordsA, size, colorRect.LeftEdgeRect);
-            AddRect(vh, posB, uvB, coordsB, size, colorRect.RightEdgeRect);
-            AddRect(vh, posC, uvC, coordsC, size, colorRect.BottomEdgeRect);
-            AddRect(vh, posD, uvD, coordsD, size, colorRect.TopEdgeRect);
+            AddRect(vh, posA, uvA, bgRect, coordsA, size, colorRect.LeftEdgeRect);
+            AddRect(vh, posB, uvB, bgRect, coordsB, size, colorRect.RightEdgeRect);
+            AddRect(vh, posC, uvC, bgRect, coordsC, size, colorRect.BottomEdgeRect);
+            AddRect(vh, posD, uvD, bgRect, coordsD, size, colorRect.TopEdgeRect);
         }
 
-        private void AddRect(VertexHelper vh, Rect position, Rect spriteRect, Rect coordsRect, Vector2 size) {
-            AddRect(vh, position, spriteRect, coordsRect, size, colorRect);
+        private void AddRect(VertexHelper vh, Rect position, Rect spriteRect, Rect bgRect, Rect coordsRect, Vector2 size) {
+            AddRect(vh, position, spriteRect, bgRect, coordsRect, size, colorRect);
         }
         
-        private void AddRect(VertexHelper vh, Rect position, Rect spriteRect, Rect coordsRect, Vector2 size, ColorRect colorRect) {
+        private void AddRect(VertexHelper vh, Rect position, Rect spriteRect, Rect bgRect, Rect coordsRect, Vector2 size, ColorRect colorRect) {
             vh.AddRect(
                 position,
                 spriteRect,
+                bgRect,
                 coordsRect,
                 colorRect,
                 size,
                 threshold,
-                _uvToCoordsFactor,
                 rounding,
                 outlineWidth, outlineColor,
                 shadowColor, shadowThreshold, shadowOffset
@@ -198,19 +215,27 @@ namespace Beamable.UI.SDF {
             var size = rectTransform.rect.size;
             var minSize = Mathf.Min(size.x, size.y);
             colorRect = BUSSStyle.BackgroundColor.Get(Style).ColorRect;
+            backgroundSprite = BUSSStyle.BackgroundImage.Get(Style).SpriteValue;
             rounding = BUSSStyle.RoundCorners.Get(Style).GetFloatValue(minSize);
             
             outlineWidth = BUSSStyle.BorderWidth.Get(Style).FloatValue;
             outlineColor = BUSSStyle.BorderColor.Get(Style).Color;
 
+            threshold = BUSSStyle.Threshold.Get(Style).FloatValue;
+            sprite = BUSSStyle.SdfImage.Get(Style).SpriteValue;
+
             switch (BUSSStyle.BorderMode.Get(Style).Enum) {
                 case BorderMode.Outside:
-                    threshold = 0f;
                     break;
                 case BorderMode.Inside:
-                    threshold = -outlineWidth;
+                    threshold -= outlineWidth;
                     break;
             }
+        }
+
+        public enum SdfMode {
+            Default,
+            RectOnly
         }
         
         public enum BorderMode {

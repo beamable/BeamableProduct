@@ -10,11 +10,19 @@ namespace Beamable.UI.SDF.Styles
         
         internal static Dictionary<string, IPropertyBiding> _bidings = new Dictionary<string, IPropertyBiding>();
         
+        // Shape
+        public static readonly PropertyBiding<IFloatProperty> Threshold = 
+            new PropertyBiding<IFloatProperty>("borderWidth", new FloatProperty());
+        public static readonly PropertyBiding<ISpriteProperty> SdfImage =
+            new PropertyBiding<ISpriteProperty>("sdfImage", new SpriteProperty());
+        
         // Background
         public static readonly PropertyBiding<IVertexColorProperty> BackgroundColor = 
             new PropertyBiding<IVertexColorProperty>("backgroundColor", new SingleColorProperty(Color.white));
         public static readonly PropertyBiding<IFloatFromFloatProperty> RoundCorners =
             new PropertyBiding<IFloatFromFloatProperty>("roundCorners", new FloatProperty());
+        public static readonly PropertyBiding<ISpriteProperty> BackgroundImage =
+            new PropertyBiding<ISpriteProperty>("backgroundImage", new SpriteProperty());
         
         // Border
         public static readonly PropertyBiding<BorderModeProperty> BorderMode =

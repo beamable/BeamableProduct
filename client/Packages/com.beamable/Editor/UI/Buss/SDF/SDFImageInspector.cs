@@ -15,10 +15,11 @@ namespace Beamable.Editor.UI.SDF {
             }
             else {
                 EditorGUI.BeginChangeCheck();
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("mode"), new GUIContent("Mode"));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("m_Sprite"), new GUIContent("Sprite"));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("colorRect"), new GUIContent("Color"));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("threshold"), new GUIContent("Threshold"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("backgroundTexture"),
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("backgroundSprite"),
                     new GUIContent("Background"));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("meshFrame"), new GUIContent("Frame"));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("m_Type"), new GUIContent("Type"));

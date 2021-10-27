@@ -1,5 +1,20 @@
 #include "UnityCG.cginc"
 
+float4 blend_cutIn(float4 bottom, float4 top, float opacity){
+    float4 result;
+    float v = saturate((opacity + step(bottom.a, .001)) * ((top.a + .01) / (bottom.a + .01)));
+    result.rgb = lerp(bottom.rgb, top.rgb, v);
+    result.a = saturate(bottom.a + top.a);
+    return result;
+}
+
+float4 blend_overlay(float4 bottom, float4 top){
+    float4 result;
+    result.rgb = lerp(bottom.rgb, top.rgb, top.a);
+    result.a = saturate(bottom.a + top.a);
+    return result;
+}
+
 //smooth version of step
 float aaStep(float compValue, float gradient){
   float change = fwidth(gradient) * .5; // * .5 to make aa thiner

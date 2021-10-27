@@ -23,7 +23,11 @@ namespace Beamable.UI.SDF.Styles {
             _drawerMode = 0;
         }
 
-        public ColorRect(Color color = default) : this(color, color, color, color) { }
+        public ColorRect(Color color = default) : this(color, color, color, color) {
+#if UNITY_EDITOR
+            _drawerMode = 1;
+#endif
+        }
         
         public ColorRect TopEdgeRect => new ColorRect(TopLeftColor, TopRightColor, TopLeftColor, TopRightColor);
         public ColorRect BottomEdgeRect => new ColorRect(BottomLeftColor, BottomRightColor, BottomLeftColor, BottomRightColor);

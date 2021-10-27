@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Beamable.Editor.UI.SDF {
     [CustomPropertyDrawer(typeof(BUSSStyleDescription))]
-    public class SingleStyleObjectPropertyDrawer : PropertyDrawer {
+    public class BUSSStyleDescriptionDrawer : PropertyDrawer {
         
         private SerializableValueObjectDrawer _svoDrawer = new SerializableValueObjectDrawer();
         
