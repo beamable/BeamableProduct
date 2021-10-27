@@ -443,15 +443,15 @@ MonoBehaviour:
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
   colorRect:
-    BottomLeftColor: {r: 1, g: 0.16509432, b: 0.16509432, a: 1}
-    BottomRightColor: {r: 1, g: 0.16509432, b: 0.16509432, a: 1}
-    TopLeftColor: {r: 1, g: 0.16509432, b: 0.16509432, a: 1}
-    TopRightColor: {r: 1, g: 0.16509432, b: 0.16509432, a: 1}
+    BottomLeftColor: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
+    BottomRightColor: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
+    TopLeftColor: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
+    TopRightColor: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
   threshold: 0
-  rounding: 0
+  rounding: 1.35
   backgroundTexture: {fileID: 0}
   meshFrame: 100
-  outlineWidth: 19.54
+  outlineWidth: 17.5
   outlineColor: {r: 1, g: 1, b: 1, a: 1}
   shadowColor: {r: 0, g: 0, b: 0, a: 0}
   shadowOffset: {x: 0, y: 0}
@@ -547,10 +547,10 @@ MonoBehaviour:
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
   colorRect:
-    BottomLeftColor: {r: 1, g: 0.16509432, b: 0.16509432, a: 1}
-    BottomRightColor: {r: 1, g: 0.16509432, b: 0.16509432, a: 1}
-    TopLeftColor: {r: 1, g: 0.16509432, b: 0.16509432, a: 1}
-    TopRightColor: {r: 1, g: 0.16509432, b: 0.16509432, a: 1}
+    BottomLeftColor: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
+    BottomRightColor: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
+    TopLeftColor: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
+    TopRightColor: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
   threshold: 0
   rounding: 0
   backgroundTexture: {fileID: 0}
@@ -617,7 +617,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5cca00195ccb425390f8319435343426, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _config: {fileID: 0}
+  _config: {fileID: 11400000, guid: bbb5972fe11a1c849ba6ac3e845438dd, type: 2}
   _bussElements:
   - {fileID: 1089353500}
 --- !u!1 &1707984703

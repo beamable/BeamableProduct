@@ -17,7 +17,7 @@ namespace UI.Materials.SDF.Styles
             {
                 lock (_padlock)
                 {
-                    return _instance ??= new SDFStylesManager();
+                    return _instance = _instance ?? new SDFStylesManager();
                 }
             }
         }
