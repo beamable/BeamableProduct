@@ -166,7 +166,7 @@ namespace Beamable.Server
          }
 
          _args = args.Copy();
-         Log.Debug("Starting... {host} {prefix} {cid} {pid} {sdkVersionExecution} {sdkVersionBuild}", args.Host, args.NamePrefix, args.CustomerID, args.ProjectName, args.SdkVersionExecution, args.SdkVersionBaseBuild);
+         Log.Debug(LogConstants.STARTING_PREFIX + " {host} {prefix} {cid} {pid} {sdkVersionExecution} {sdkVersionBuild}", args.Host, args.NamePrefix, args.CustomerID, args.ProjectName, args.SdkVersionExecution, args.SdkVersionBaseBuild);
 
 
 
@@ -298,7 +298,7 @@ namespace Beamable.Server
             await ProvideService(QualifiedName);
 
             HasInitialized = true;
-            Log.Information("Service ready for traffic. baseVersion={baseVersion} executionVersion={executionVersion}", _args.SdkVersionBaseBuild, _args.SdkVersionExecution);
+            Log.Information(LogConstants.READY_FOR_TRAFFIC_PREFIX + "baseVersion={baseVersion} executionVersion={executionVersion}", _args.SdkVersionBaseBuild, _args.SdkVersionExecution);
             _serviceInitialized.CompleteSuccess(PromiseBase.Unit);
          }
          catch (Exception ex)
@@ -415,7 +415,7 @@ namespace Beamable.Server
 
       void InitServices()
       {
-         Log.Debug("Registering standard services");
+         Log.Debug(LogConstants.REGISTERING_STANDARD_SERVICES);
          try
          {
             ServiceCollection = new ServiceCollection();
@@ -449,7 +449,7 @@ namespace Beamable.Server
                .AddScoped<IBeamableServices>(ExtractSdks)
                ;
 
-            Log.Debug("Registering custom services");
+            Log.Debug(LogConstants.REGISTERING_CUSTOM_SERVICES);
             var builder = new DefaultServiceBuilder(ServiceCollection);
 
 
@@ -705,11 +705,11 @@ namespace Beamable.Server
          };
          var serviceProvider = _requester.Request<MicroserviceProviderResponse>(Method.POST, "gateway/provider", req).Then(res =>
          {
-            Log.Debug("Service provider initialized");
+            Log.Debug(LogConstants.SERVICE_PROVIDER_INITIALIZED);
          }).ToUnit();
          var eventProvider = _requester.InitializeSubscription().Then(res =>
          {
-            Log.Debug("Event provider initialized");
+            Log.Debug(LogConstants.EVENT_PROVIDER_INITIALIZED);
          }).ToUnit();
          return Promise.Sequence(serviceProvider, eventProvider).ToUnit();
       }
