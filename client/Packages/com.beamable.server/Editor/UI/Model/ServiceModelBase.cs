@@ -57,6 +57,13 @@ namespace Beamable.Editor.UI.Model
             }
         }
         private bool _isSelected;
+        
+        public bool IsCollapsed
+        {
+            get => _isCollapsed;
+            set => _isCollapsed = value;
+        }
+        [SerializeField] private bool _isCollapsed = false;
 
         public Action OnLogsDetached { get; set; }
         public Action OnLogsAttached { get; set; }
