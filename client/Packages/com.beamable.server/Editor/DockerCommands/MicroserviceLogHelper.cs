@@ -16,19 +16,19 @@ namespace Beamable.Server.Editor.DockerCommands
         public static int RunLogsSteps => ExpectedRunLogs.Length;
         private static readonly Regex StepRegex = new Regex("Step [0-9]+/[0-9]+");
         private static readonly Regex NumberRegex = new Regex("[0-9]+");
-        private static readonly string[] ErrorElements = new[] {
+        private static readonly string[] ErrorElements = {
             "error",
             "Error",
             "Exception",
             "exception"
         };
-        static readonly string[] ExpectedRunLogs = new[] {
-            "Starting...",
-            "Scanning client methods",
-            "Registering standard services",
-            "Registering custom services",
-            "Service provider initialized",
-            "Event provider initialized"
+        private static readonly string[] ExpectedRunLogs = {
+            LogConstants.STARTING_PREFIX,
+            LogConstants.SCANNING_CLIENT_PREFIX,
+            LogConstants.REGISTERING_STANDARD_SERVICES,
+            LogConstants.REGISTERING_CUSTOM_SERVICES,
+            LogConstants.SERVICE_PROVIDER_INITIALIZED,
+            LogConstants.EVENT_PROVIDER_INITIALIZED
         };
 
         public static bool HandleMongoLog(StorageObjectDescriptor storage, string data, 
