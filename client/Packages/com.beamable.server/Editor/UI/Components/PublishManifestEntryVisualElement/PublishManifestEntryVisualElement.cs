@@ -64,18 +64,21 @@ namespace Beamable.Editor.Microservice.UI.Components
          {
             icon.AddToClassList(MICROSERVICE_IMAGE_CLASS);
 
-            var microserviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(serviceModel.Name);
-
-            if (microserviceModel.Dependencies != null)
+            if (MicroserviceConfiguration.Instance.EnableStoragePreview)
             {
-               List<string> dependencies = new List<string>();
-               foreach (var dep in microserviceModel.Dependencies)
+               var microserviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(serviceModel.Name);
+
+               if (microserviceModel != null && microserviceModel.Dependencies != null)
                {
-                  dependencies.Add(dep.Name);
-               }
+                  List<string> dependencies = new List<string>();
+                  foreach (var dep in microserviceModel.Dependencies)
+                  {
+                     dependencies.Add(dep.Name);
+                  }
                
-               var depsList = Root.Q<ExpandableListVisualElement>("depsList");
-               depsList.Setup(dependencies);
+                  var depsList = Root.Q<ExpandableListVisualElement>("depsList");
+                  depsList.Setup(dependencies);
+               }  
             }
          }
          else

@@ -61,7 +61,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             container.Clear();
 
 
-            var e = new PublishPopup(_model);
+            var e = new PublishPopup { Model = _model };
             
             e.OnCloseRequested += Close;
             e.OnSubmit += async (model) =>

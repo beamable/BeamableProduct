@@ -44,17 +44,17 @@ namespace Beamable.Editor.Microservice.UI.Components
         public Action OnCloseRequested;
         public Action<ManifestModel> OnSubmit;
 
-        private ManifestModel Model { get; }
+        public ManifestModel Model { get; set; }
         
         private TextField _generalComments;
         private Button _cancelButton;
         private PrimaryButtonVisualElement _continueButton;
         private ScrollView _scrollContainer;
         private Dictionary<string, PublishManifestEntryVisualElement> _publishManifestElements;
+        private bool _isPublishDisabled;
 
-        public PublishPopup(ManifestModel model) : base(nameof(PublishPopup))
+        public PublishPopup() : base(nameof(PublishPopup))
         {
-            Model = model;
         }
 
         public void PrepareParent()
@@ -72,17 +72,31 @@ namespace Beamable.Editor.Microservice.UI.Components
             
             _scrollContainer = Root.Q<ScrollView>("manifestsContainer");
             _publishManifestElements = new Dictionary<string, PublishManifestEntryVisualElement>(Model.Services.Count);
-
+            
             List<IEntryModel> entryModels = new List<IEntryModel>(Model.Services.Values);
             entryModels.AddRange(Model.Storages.Values);
+
             bool isOddRow = true;
-            bool isPublishDisabled = false;
+            _isPublishDisabled = false;
             foreach (var model in entryModels)
             {
-                if (!isPublishDisabled && model is StorageEntryModel)
+                if (!MicroserviceConfiguration.Instance.EnableStoragePreview && model is StorageEntryModel)
                 {
-                    isPublishDisabled = true;
-                    Root.Q<Label>("warningMessage").text = "Warning! Storage objects are in preview and cannot be published.";
+                    continue;
+                }
+                
+                if (MicroserviceConfiguration.Instance.EnableStoragePreview)
+                {
+                    DisablePublishFeature("Warning! In order to publish services you must disable Storage Preview first.");
+                }
+
+                if (model is ManifestEntryModel)
+                {
+                    var serviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(model.Name);
+                    if (!(serviceModel is RemoteMicroserviceModel) && serviceModel.Descriptor.IsPublishFeatureDisabled())
+                    {
+                        DisablePublishFeature("Warning! Publish feature is disabled due to Microservices dependent on Storage Objects.");
+                    }
                 }
                 
                 bool wasPublished = EditorPrefs.GetBool(GetPublishedKey(model.Name), false);
@@ -102,7 +116,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             _continueButton = Root.Q<PrimaryButtonVisualElement>("continueBtn");
             _continueButton.Button.clickable.clicked += () => OnSubmit?.Invoke(Model);
-            _continueButton.SetEnabled(!isPublishDisabled);
+            _continueButton.SetEnabled(!_isPublishDisabled);
         }
 
         public void PrepareForPublish()
@@ -139,5 +153,11 @@ namespace Beamable.Editor.Microservice.UI.Components
         }
 
         private string GetPublishedKey(string serviceName) => string.Format(Microservices.SERVICE_PUBLISHED_KEY, serviceName);
+
+        private void DisablePublishFeature(string message)
+        {
+            Root.Q<Label>("warningMessage").text = message;
+            _isPublishDisabled = true;
+        }
     }
 }
