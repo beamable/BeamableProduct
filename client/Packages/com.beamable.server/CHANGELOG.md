@@ -6,8 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unpublished]
 
+### Added
+- Folding/Unfolding services cards in `Microservice Manager`
+
 ### Fixed
-- store Microservice window height between reloads
+- Store Microservice window height between reloads
+- Ability to send JSON strings as input parameters to `ClientCallable` methods
 
 ## [0.17.1]
 - no changes
