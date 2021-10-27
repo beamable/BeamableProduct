@@ -155,8 +155,20 @@ namespace Beamable.Microservice.Tests.Socket
                   }
                   case JObject payloadJObject when payloadJObject.TryGetValue("payload", out var payloadToken):
                   {
-                     var payload = payloadToken.ToObject<T>();
-                     return Check(payload);
+                     bool success = true;
+                     var settings = new JsonSerializerSettings
+                     {
+                        Error = (sender, args) =>
+                        {
+                           success = false;
+                           args.ErrorContext.Handled = true;
+                        },
+                        MissingMemberHandling = MissingMemberHandling.Error
+                     };
+                     
+                     // validate that object could be deserializabled if not check again (json string etc.)
+                     var payload = JsonConvert.DeserializeObject<T>(payloadToken.ToString(), settings);
+                     return success ? matcher(payload) : Check(payloadToken.ToObject<T>());
                   }
                   case JObject payloadJObject:
                   {

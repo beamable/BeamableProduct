@@ -81,6 +81,7 @@ jobs:
           restore-keys: |
             Docker-gzipped-${{ matrix.unityVersion }}
       - name: Load Docker Image If Exits
+        continue-on-error: true
         if: ${{ steps.cache_docker.outputs.cache-hit }}
         run: |
           chmod +x ./build/prepare_base_image.sh
@@ -176,6 +177,7 @@ jobs:
             Docker-gzipped-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
       - name: Load Docker Image If Exits
         if: ${{ steps.cache_docker.outputs.cache-hit }}
+        continue-on-error: true
         run: |
           chmod +x ./build/prepare_base_image.sh
           UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/prepare_base_image.sh
