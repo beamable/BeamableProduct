@@ -7,11 +7,11 @@ using UnityEngine;
 namespace Beamable.UI.SDF
 {
     [CreateAssetMenu(fileName = "SDFStyle", menuName = "Beamable/Buss/Create SDF Style", order = 0)]
-    public class SDFStyleConfig : ScriptableObject
+    public class BUSSStyleConfig : ScriptableObject
     {
-        [SerializeField] private List<SingleStyleObject> _styles = new List<SingleStyleObject>();
+        [SerializeField] private List<BUSSStyleDescription> _styles = new List<BUSSStyleDescription>();
 
-        public List<SingleStyleObject> Styles => _styles;
+        public List<BUSSStyleDescription> Styles => _styles;
         public Action OnChange { get; set; }
 
         private void OnValidate()
@@ -21,21 +21,21 @@ namespace Beamable.UI.SDF
     }
 
     [Serializable]
-    public class SingleStyleObject
+    public class BUSSStyleDescription
     {
         [SerializeField] private string _name;
-        [SerializeField] private List<KeyWithProperty> _properties = new List<KeyWithProperty>();
+        [SerializeField] private List<BUSSProperty> _properties = new List<BUSSProperty>();
 
         public string Name => _name;
-        public List<KeyWithProperty> Properties => _properties;
+        public List<BUSSProperty> Properties => _properties;
 
-        public SDFStyle GetStyle()
+        public BUSSStyle GetStyle()
         {
-             SDFStyle style = new SDFStyle();
+             BUSSStyle style = new BUSSStyle();
         
-            foreach (KeyWithProperty property in Properties)
+            foreach (BUSSProperty property in Properties)
             {
-                style[property.key] = property.property.Get<ISDFProperty>();
+                style[property.key] = property.property.Get<IBUSSProperty>();
             }
         
             return style;
@@ -43,11 +43,11 @@ namespace Beamable.UI.SDF
     }
 
     [Serializable]
-    public class KeyWithProperty
+    public class BUSSProperty
     {
         public string key;
 
-        [SerializableValueImplements(typeof(ISDFProperty))]
+        [SerializableValueImplements(typeof(IBUSSProperty))]
         public SerializableValueObject property;
     }
 }

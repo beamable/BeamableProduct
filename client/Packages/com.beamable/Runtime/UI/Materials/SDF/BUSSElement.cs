@@ -12,21 +12,25 @@ namespace Beamable.UI.SDF
 
         public string Id => _id;
 
-        [SerializeField] private SDFStyleProvider _parent;
+        [SerializeField] private BUSSStyleProvider _parent;
+
+        public void NotifyOnStyleChanged(BUSSStyle newStyle)
+        {
+            if (TryGetComponent<SDFImage>(out var sdfImage))
+            {
+                sdfImage.Style = newStyle;
+            }
+        }
 
         private void OnBeforeTransformParentChanged()
         {
-            if (_parent != null)
-            {
-                _parent.Unregister(this);
-                _parent = null;
-            }
+            Unregister();
         }
 
         private void OnTransformParentChanged()
         {
             Transform currentTransform = gameObject.transform;
-            
+
             while (_parent == null)
             {
                 if (currentTransform.parent == null)
@@ -34,17 +38,14 @@ namespace Beamable.UI.SDF
                     Debug.LogWarning("Haven't found any SDFStyleProvider");
                     break;
                 }
-                
+
                 currentTransform = currentTransform.parent;
 
-                SDFStyleProvider styleProvider = currentTransform.GetComponent<SDFStyleProvider>();
+                BUSSStyleProvider styleProvider = currentTransform.GetComponent<BUSSStyleProvider>();
                 _parent = styleProvider;
             }
 
-            if (_parent != null)
-            {
-                _parent.Register(this);
-            }
+            Register();
         }
 
         private void OnValidate()
@@ -53,18 +54,41 @@ namespace Beamable.UI.SDF
             _parent.NotifyOnStyleChanged();
         }
 
+        private void OnEnable()
+        {
+            Register();
+        }
+
         private void OnDisable()
         {
-            if (TryGetComponent<SDFImage>(out var sdfImage)) {
+            // TODO: do we need this? When element will be enabled again, it will be validated and updated with new/another style
+            if (TryGetComponent<SDFImage>(out var sdfImage))
+            {
                 sdfImage.Style = null;
+            }
+
+            Unregister();
+        }
+
+        private void OnDestroy()
+        {
+            Unregister();
+        }
+
+        private void Register()
+        {
+            if (_parent != null)
+            {
+                _parent.Register(this);
             }
         }
 
-        public void NotifyOnStyleChanged(SDFStyle newStyle)
+        private void Unregister()
         {
-            if (TryGetComponent<SDFImage>(out var sdfImage))
+            if (_parent != null)
             {
-                sdfImage.Style = newStyle;
+                _parent.Unregister(this);
+                _parent = null;
             }
         }
     }

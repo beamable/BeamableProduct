@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using Beamable.UI.SDF;
-using Beamable.UI.SDF.Styles;
 using UnityEngine;
 
 namespace Beamable.UI.Buss
@@ -35,10 +34,10 @@ namespace Beamable.UI.Buss
       // New system
       public static BussConfiguration Instance => Get<BussConfiguration>();
       
-      [SerializeField] private SDFStyleConfig _globalStyleConfig;
-      [SerializeField] private List<SDFStyleProvider> _styleProviders = new List<SDFStyleProvider>();
+      [SerializeField] private BUSSStyleConfig _globalStyleConfig;
+      [SerializeField] private List<BUSSStyleProvider> _styleProviders = new List<BUSSStyleProvider>();
 
-      public void RegisterObserver(SDFStyleProvider styleProvider)
+      public void RegisterObserver(BUSSStyleProvider styleProvider)
       {
          if (!_styleProviders.Contains(styleProvider))
          {
@@ -46,7 +45,7 @@ namespace Beamable.UI.Buss
          }
       }
 
-      public void UnregisterObserver(SDFStyleProvider styleProvider)
+      public void UnregisterObserver(BUSSStyleProvider styleProvider)
       {
          if (_styleProviders.Contains(styleProvider))
          {
@@ -54,9 +53,9 @@ namespace Beamable.UI.Buss
          }
       }
 
-      public List<SingleStyleObject> GetGlobalStyles()
+      public List<BUSSStyleDescription> GetGlobalStyles()
       {
-         return _globalStyleConfig ? _globalStyleConfig.Styles : new List<SingleStyleObject>();
+         return _globalStyleConfig ? _globalStyleConfig.Styles : new List<BUSSStyleDescription>();
       }
 
       private void OnValidate()
@@ -69,7 +68,7 @@ namespace Beamable.UI.Buss
 
       private void OnGlobalStyleChanged()
       {
-         foreach (SDFStyleProvider styleProvider in _styleProviders)
+         foreach (BUSSStyleProvider styleProvider in _styleProviders)
          {
             styleProvider.NotifyOnStyleChanged();
          }

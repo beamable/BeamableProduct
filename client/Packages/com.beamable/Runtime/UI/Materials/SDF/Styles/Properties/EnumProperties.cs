@@ -17,7 +17,7 @@ namespace Beamable.UI.SDF.Styles {
             return (T1) EnumValue;
         }
 
-        public abstract ISDFProperty Clone();
+        public abstract IBUSSProperty Clone();
     }
     
     [Serializable]
@@ -25,7 +25,7 @@ namespace Beamable.UI.SDF.Styles {
         public ImageTypeProperty() { }
         public ImageTypeProperty(Image.Type @enum) : base(@enum) { }
 
-        public override ISDFProperty Clone() {
+        public override IBUSSProperty Clone() {
             return new ImageTypeProperty(Enum);
         }
     }
@@ -35,7 +35,7 @@ namespace Beamable.UI.SDF.Styles {
         public BorderModeProperty() { }
         public BorderModeProperty(SDFImage.BorderMode @enum) : base(@enum) { }
 
-        public override ISDFProperty Clone() {
+        public override IBUSSProperty Clone() {
             return new BorderModeProperty(Enum);
         }
     }

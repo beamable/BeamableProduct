@@ -19,12 +19,12 @@ MonoBehaviour:
       property:
         type: Beamable.UI.SDF.Styles.SingleColorProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_color":{"r":0.6603773832321167,"g":0.6603773832321167,"b":0.6603773832321167,"a":1.0}}'
+        json: '{"_color":{"r":1.0,"g":0.1650943160057068,"b":0.1650943160057068,"a":1.0}}'
     - key: borderWidth
       property:
         type: Beamable.UI.SDF.Styles.FloatProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_floatValue":10.0}'
+        json: '{"_floatValue":19.540000915527345}'
     - key: borderColor
       property:
         type: Beamable.UI.SDF.Styles.SingleColorProperty, Unity.Beamable, Version=0.0.0.0,
@@ -41,7 +41,7 @@ MonoBehaviour:
       property:
         type: Beamable.UI.SDF.Styles.FloatProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_floatValue":10.0}'
+        json: '{"_floatValue":8.630000114440918}'
     - key: borderColor
       property:
         type: Beamable.UI.SDF.Styles.SingleColorProperty, Unity.Beamable, Version=0.0.0.0,

@@ -6,17 +6,17 @@ using UnityEngine.UI;
 
 namespace Beamable.UI.SDF.Styles {
     [ExecuteAlways]
-    public class SDFTest : MonoBehaviour {
+    public class BUSSTest : MonoBehaviour {
         public KeyWithProperty[] styleSheet;
-        private SDFStyle _style;
+        private BUSSStyle _style;
 
-        public SDFStyle GetStyle() {
+        public BUSSStyle GetStyle() {
             if (_style == null) {
-                _style = new SDFStyle();
+                _style = new BUSSStyle();
             }
             _style.Clear();
             foreach (var keyWithProperty in styleSheet) {
-                _style[keyWithProperty.key] = keyWithProperty.property.Get<ISDFProperty>();
+                _style[keyWithProperty.key] = keyWithProperty.property.Get<IBUSSProperty>();
             }
 
             return _style;
@@ -27,11 +27,11 @@ namespace Beamable.UI.SDF.Styles {
             if (TryGetComponent<SDFImage>(out var sdfImage)) {
                 var size = sdfImage.rectTransform.rect.size;
                 var minSize = Mathf.Min(size.x, size.y);
-                sdfImage.colorRect = SDFStyle.BackgroundColor.Get(style).ColorRect;
-                sdfImage.rounding = SDFStyle.RoundCorners.Get(style).GetFloatValue(minSize);
+                sdfImage.colorRect = BUSSStyle.BackgroundColor.Get(style).ColorRect;
+                sdfImage.rounding = BUSSStyle.RoundCorners.Get(style).GetFloatValue(minSize);
 
-                sdfImage.outlineWidth = SDFStyle.BorderWidth.Get(style).FloatValue;
-                sdfImage.outlineColor = SDFStyle.BorderColor.Get(style).Color;
+                sdfImage.outlineWidth = BUSSStyle.BorderWidth.Get(style).FloatValue;
+                sdfImage.outlineColor = BUSSStyle.BorderColor.Get(style).Color;
             
                 sdfImage.SetVerticesDirty();
             }
@@ -40,7 +40,7 @@ namespace Beamable.UI.SDF.Styles {
         [Serializable]
         public class KeyWithProperty {
             public string key;
-            [SerializableValueImplements(typeof(ISDFProperty))]
+            [SerializableValueImplements(typeof(IBUSSProperty))]
             public SerializableValueObject property;
         }
     }

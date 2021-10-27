@@ -6,10 +6,10 @@ using UnityEngine;
 namespace Beamable.UI.SDF
 {
     [ExecuteInEditMode, DisallowMultipleComponent]
-    public class SDFStyleProvider : MonoBehaviour
+    public class BUSSStyleProvider : MonoBehaviour
     {
 #pragma warning disable CS0649
-        [SerializeField] private SDFStyleConfig _config;
+        [SerializeField] private BUSSStyleConfig _config;
 #pragma warning restore CS0649
 
         // TODO: remove SerializeField attribute
@@ -38,10 +38,10 @@ namespace Beamable.UI.SDF
         public void NotifyOnStyleChanged()
         {
             // TODO: Prepare cascade styles from global and context configs
-            List<SingleStyleObject> globalStyleObjects = BussConfiguration.Instance.GetGlobalStyles();
-            List<SingleStyleObject> localStyleObjects = GetLocalStyles();
+            List<BUSSStyleDescription> globalStyleObjects = BussConfiguration.Instance.GetGlobalStyles();
+            List<BUSSStyleDescription> localStyleObjects = GetLocalStyles();
 
-            Dictionary<string, SDFStyle> parsedStyles = ParseStyles(globalStyleObjects, localStyleObjects);
+            Dictionary<string, BUSSStyle> parsedStyles = ParseStyles(globalStyleObjects, localStyleObjects);
 
             foreach (BUSSElement bussElement in _bussElements)
             {
@@ -85,43 +85,43 @@ namespace Beamable.UI.SDF
             }
         }
 
-        private List<SingleStyleObject> GetLocalStyles()
+        private List<BUSSStyleDescription> GetLocalStyles()
         {
-            return _config ? _config.Styles : new List<SingleStyleObject>();
+            return _config ? _config.Styles : new List<BUSSStyleDescription>();
         }
 
-        private SDFStyle GetStyleById(string id, Dictionary<string, SDFStyle> styleObjects)
+        private BUSSStyle GetStyleById(string id, Dictionary<string, BUSSStyle> styleObjects)
         {
-            return styleObjects.TryGetValue(id, out SDFStyle style) ? style : new SDFStyle();
+            return styleObjects.TryGetValue(id, out BUSSStyle style) ? style : new BUSSStyle();
         }
 
-        private Dictionary<string, SDFStyle> ParseStyles(List<SingleStyleObject> globalStyles,
-            List<SingleStyleObject> localStyles)
+        private Dictionary<string, BUSSStyle> ParseStyles(List<BUSSStyleDescription> globalStyles,
+            List<BUSSStyleDescription> localStyles)
         {
-            Dictionary<string, SDFStyle> styles = new Dictionary<string, SDFStyle>();
+            Dictionary<string, BUSSStyle> styles = new Dictionary<string, BUSSStyle>();
             ParseStyleObjects(globalStyles, ref styles);
             ParseStyleObjects(localStyles, ref styles);
             return styles;
         }
 
-        private void ParseStyleObjects(List<SingleStyleObject> stylesObjects, ref Dictionary<string, SDFStyle> stylesDictionary)
+        private void ParseStyleObjects(List<BUSSStyleDescription> stylesObjects, ref Dictionary<string, BUSSStyle> stylesDictionary)
         {
-            foreach (SingleStyleObject styleObject in stylesObjects)
+            foreach (BUSSStyleDescription styleObject in stylesObjects)
             {
-                if (stylesDictionary.TryGetValue(styleObject.Name, out SDFStyle style))
+                if (stylesDictionary.TryGetValue(styleObject.Name, out BUSSStyle style))
                 {
-                    foreach (KeyWithProperty pair in styleObject.Properties)
+                    foreach (BUSSProperty pair in styleObject.Properties)
                     {
-                        style[pair.key] = pair.property.Get<ISDFProperty>();
+                        style[pair.key] = pair.property.Get<IBUSSProperty>();
                     }
                 }
                 else
                 {
-                    SDFStyle newStyle = new SDFStyle();
+                    BUSSStyle newStyle = new BUSSStyle();
                     
-                    foreach (KeyWithProperty pair in styleObject.Properties)
+                    foreach (BUSSProperty pair in styleObject.Properties)
                     {
-                        newStyle[pair.key] = pair.property.Get<ISDFProperty>();
+                        newStyle[pair.key] = pair.property.Get<IBUSSProperty>();
                     }
                     stylesDictionary.Add(styleObject.Name, newStyle);
                 }

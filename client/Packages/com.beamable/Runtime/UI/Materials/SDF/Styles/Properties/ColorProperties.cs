@@ -22,7 +22,7 @@ namespace Beamable.UI.SDF.Styles {
             Color = color;
         }
         
-        public ISDFProperty Clone() {
+        public IBUSSProperty Clone() {
             return new SingleColorProperty(_color);
         }
     }
@@ -52,7 +52,7 @@ namespace Beamable.UI.SDF.Styles {
             _colorRect = colorRect;
         }
 
-        public ISDFProperty Clone() {
+        public IBUSSProperty Clone() {
             return new VertexColorProperty(_colorRect);
         }
     }

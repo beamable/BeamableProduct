@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Beamable.UI.SDF.Styles {
-    public class SDFStyle {
+namespace Beamable.UI.SDF.Styles 
+{
+    public class BUSSStyle {
         
         #region Property Binders
         
@@ -36,9 +37,9 @@ namespace Beamable.UI.SDF.Styles {
 
         #endregion
         
-        private readonly Dictionary<string, ISDFProperty> _properties = new Dictionary<string, ISDFProperty>();
+        private readonly Dictionary<string, IBUSSProperty> _properties = new Dictionary<string, IBUSSProperty>();
         
-        public ISDFProperty this[string key] {
+        public IBUSSProperty this[string key] {
             get {
                 if (_bidings.TryGetValue(key, out var biding)) {
                     return biding.GetProperty(this);
@@ -63,7 +64,7 @@ namespace Beamable.UI.SDF.Styles {
             return null;
         }
 
-        public static ISDFProperty GetDefaultValue(string key) {
+        public static IBUSSProperty GetDefaultValue(string key) {
             if (_bidings.TryGetValue(key, out var biding)) {
                 return biding.GetDefaultValue();
             }
@@ -77,12 +78,12 @@ namespace Beamable.UI.SDF.Styles {
         internal interface IPropertyBiding {
             string Key { get; }
             Type PropertyType { get; }
-            ISDFProperty GetProperty(SDFStyle style);
-            void SetProperty(SDFStyle style, ISDFProperty property);
-            ISDFProperty GetDefaultValue();
+            IBUSSProperty GetProperty(BUSSStyle style);
+            void SetProperty(BUSSStyle style, IBUSSProperty property);
+            IBUSSProperty GetDefaultValue();
         }
         
-        public sealed class PropertyBiding<T> : IPropertyBiding where T : ISDFProperty {
+        public sealed class PropertyBiding<T> : IPropertyBiding where T : IBUSSProperty {
             public string Key { get; }
 
             public T DefaultValue { get; }
@@ -94,19 +95,19 @@ namespace Beamable.UI.SDF.Styles {
                 _bidings[key] = this;
             }
             
-            ISDFProperty IPropertyBiding.GetProperty(SDFStyle style) => Get(style);
+            IBUSSProperty IPropertyBiding.GetProperty(BUSSStyle style) => Get(style);
 
-            void IPropertyBiding.SetProperty(SDFStyle style, ISDFProperty property) {
+            void IPropertyBiding.SetProperty(BUSSStyle style, IBUSSProperty property) {
                 if (property is T t) {
                     Set(style, t);
                 }
             }
 
-            public ISDFProperty GetDefaultValue() {
+            public IBUSSProperty GetDefaultValue() {
                 return DefaultValue;
             }
 
-            public T Get(SDFStyle style) {
+            public T Get(BUSSStyle style) {
                 if (style._properties.TryGetValue(Key, out var property)) {
                     return (T) property;
                 }
@@ -114,7 +115,7 @@ namespace Beamable.UI.SDF.Styles {
                 return DefaultValue;
             }
 
-            public void Set(SDFStyle style, T property) {
+            public void Set(BUSSStyle style, T property) {
                 style._properties[Key] = property.Clone();
             }
         }

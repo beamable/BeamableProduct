@@ -18,7 +18,7 @@ namespace Beamable.UI.SDF.Styles {
             _vector2Value = vector2Value;
         }
 
-        public ISDFProperty Clone() {
+        public IBUSSProperty Clone() {
             return new Vector2Property(_vector2Value);
         }
     }

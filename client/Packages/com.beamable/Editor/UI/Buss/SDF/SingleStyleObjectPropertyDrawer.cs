@@ -5,7 +5,7 @@ using UnityEditor;
 using UnityEngine;
 
 namespace Beamable.Editor.UI.SDF {
-    [CustomPropertyDrawer(typeof(SingleStyleObject))]
+    [CustomPropertyDrawer(typeof(BUSSStyleDescription))]
     public class SingleStyleObjectPropertyDrawer : PropertyDrawer {
         
         private SerializableValueObjectDrawer _svoDrawer = new SerializableValueObjectDrawer();
@@ -27,7 +27,7 @@ namespace Beamable.Editor.UI.SDF {
                 var prop = element.FindPropertyRelative("property");
                 keys[i] = key;
                 var elementLabel = new GUIContent(key);
-                _svoDrawer.baseTypeOverride = SDFStyle.GetBaseType(key);
+                _svoDrawer.baseTypeOverride = BUSSStyle.GetBaseType(key);
                 var rect = rc.ReserveHeight(_svoDrawer.GetPropertyHeight(prop, elementLabel));
                 GUI.Box(rect, GUIContent.none);
                 _svoDrawer.OnGUI(rect, prop, elementLabel);
@@ -55,14 +55,14 @@ namespace Beamable.Editor.UI.SDF {
             
             if (GUI.Button(rc.ReserveWidthFromRight(30f), "+")) {
                 var context = new GenericMenu();
-                foreach (var key in SDFStyle.Keys) {
+                foreach (var key in BUSSStyle.Keys) {
                     if(keys.Contains(key)) continue;
                     context.AddItem(new GUIContent(key), false, () => {
                         var index = properties.arraySize;
                         properties.InsertArrayElementAtIndex(index);
                         var element = properties.GetArrayElementAtIndex(index);
                         element.FindPropertyRelative("key").stringValue = key;
-                        var defaultProperty = SDFStyle.GetDefaultValue(key);
+                        var defaultProperty = BUSSStyle.GetDefaultValue(key);
                         var prop = element.FindPropertyRelative("property");
                         prop.FindPropertyRelative("type").stringValue = defaultProperty.GetType().AssemblyQualifiedName;
                         prop.FindPropertyRelative("json").stringValue = JsonUtility.ToJson(defaultProperty);
@@ -82,7 +82,7 @@ namespace Beamable.Editor.UI.SDF {
                 var key = element.FindPropertyRelative("key").stringValue;
                 var prop = element.FindPropertyRelative("property");
                 var elementLabel = new GUIContent(key);
-                _svoDrawer.baseTypeOverride = SDFStyle.GetBaseType(key);
+                _svoDrawer.baseTypeOverride = BUSSStyle.GetBaseType(key);
                 height += _svoDrawer.GetPropertyHeight(prop, elementLabel);
                 _svoDrawer.baseTypeOverride = null;
             }

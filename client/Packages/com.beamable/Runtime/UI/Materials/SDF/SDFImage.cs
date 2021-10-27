@@ -7,8 +7,8 @@ namespace Beamable.UI.SDF {
     [ExecuteAlways]
     public class SDFImage : Image {
 
-        private SDFStyle _style;
-        public SDFStyle Style {
+        private BUSSStyle _style;
+        public BUSSStyle Style {
             get => _style;
             set {
                 _style = value;
@@ -197,13 +197,13 @@ namespace Beamable.UI.SDF {
             
             var size = rectTransform.rect.size;
             var minSize = Mathf.Min(size.x, size.y);
-            colorRect = SDFStyle.BackgroundColor.Get(Style).ColorRect;
-            rounding = SDFStyle.RoundCorners.Get(Style).GetFloatValue(minSize);
+            colorRect = BUSSStyle.BackgroundColor.Get(Style).ColorRect;
+            rounding = BUSSStyle.RoundCorners.Get(Style).GetFloatValue(minSize);
             
-            outlineWidth = SDFStyle.BorderWidth.Get(Style).FloatValue;
-            outlineColor = SDFStyle.BorderColor.Get(Style).Color;
+            outlineWidth = BUSSStyle.BorderWidth.Get(Style).FloatValue;
+            outlineColor = BUSSStyle.BorderColor.Get(Style).Color;
 
-            switch (SDFStyle.BorderMode.Get(Style).Enum) {
+            switch (BUSSStyle.BorderMode.Get(Style).Enum) {
                 case BorderMode.Outside:
                     threshold = 0f;
                     break;
