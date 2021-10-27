@@ -62,7 +62,6 @@ namespace Beamable
         event Action<User> OnUserChanged;
         event Action<User> OnUserLoggingOut;
 
-        PlayerSdk Player { get; }
 
         IExperimentalAPI Experimental { get; }
         AnnouncementsService AnnouncementService { get; }
@@ -246,9 +245,6 @@ namespace Beamable
             _instance = null;
         }
 
-        public PlayerSdk Player => _player;
-
-        private PlayerSdk _player;
         private PlatformService _platform;
         private GameObject _gameObject;
 #if BEAMABLE_PURCHASING
@@ -428,11 +424,6 @@ namespace Beamable
             ServiceManager.ProvideWithDefaultContainer(_platform);
             ServiceManager.Provide(new BeamableResolver(this));
 
-
-            _player = new PlayerSdk(
-                widgets: new PlayerWidgets(_platform.Requester),
-                stats: new PlayerStats(StatAccess.Public, User.id, _platform.Requester)
-            );
 
 #if BEAMABLE_PURCHASING
             ServiceManager.Provide(new UnityBeamableIAPServiceResolver());
