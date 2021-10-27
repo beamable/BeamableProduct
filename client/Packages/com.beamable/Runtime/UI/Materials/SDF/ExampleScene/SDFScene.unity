@@ -256,8 +256,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _config: {fileID: 0}
-  _bussElements:
-  - {fileID: 1113258058}
+  _bussElements: []
 --- !u!1 &324197946
 GameObject:
   m_ObjectHideFlags: 0
@@ -447,11 +446,12 @@ MonoBehaviour:
     BottomRightColor: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
     TopLeftColor: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
     TopRightColor: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
+    _drawerMode: 0
   threshold: 0
-  rounding: 1.35
+  rounding: 51.13
   backgroundTexture: {fileID: 0}
   meshFrame: 100
-  outlineWidth: 17.5
+  outlineWidth: 32
   outlineColor: {r: 1, g: 1, b: 1, a: 1}
   shadowColor: {r: 0, g: 0, b: 0, a: 0}
   shadowOffset: {x: 0, y: 0}
@@ -551,11 +551,12 @@ MonoBehaviour:
     BottomRightColor: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
     TopLeftColor: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
     TopRightColor: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
+    _drawerMode: 0
   threshold: 0
   rounding: 0
   backgroundTexture: {fileID: 0}
   meshFrame: 100
-  outlineWidth: 19.54
+  outlineWidth: 23.54
   outlineColor: {r: 1, g: 1, b: 1, a: 1}
   shadowColor: {r: 0, g: 0, b: 0, a: 0}
   shadowOffset: {x: 0, y: 0}
@@ -618,8 +619,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _config: {fileID: 11400000, guid: bbb5972fe11a1c849ba6ac3e845438dd, type: 2}
-  _bussElements:
-  - {fileID: 1089353500}
+  _bussElements: []
 --- !u!1 &1707984703
 GameObject:
   m_ObjectHideFlags: 0
