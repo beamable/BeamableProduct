@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using UnityEngine.Networking;
 using UnityEngine;
 using System.Collections;
+using System.Globalization;
 using Beamable.Coroutines;
 using Beamable.Api.Connectivity;
 using Beamable.Common;
@@ -262,7 +263,7 @@ namespace Beamable.Api.CloudSaving
             uploadMap.TryAdd(fullPathToFile, objectKey);
             var contentInfo = new FileInfo(fullPathToFile);
             var contentLength = contentInfo.Length;
-            var lastModified = long.Parse(contentInfo.LastWriteTime.ToString("yyyyMMddHHmmss"));
+            var lastModified = long.Parse(contentInfo.LastWriteTime.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture));
             GenerateChecksum(fullPathToFile).Then(checksum =>
             {
                var uploadObjectRequest = new ManifestEntry(objectKey,
