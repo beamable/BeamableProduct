@@ -12,7 +12,7 @@ namespace Beamable.UI.SDF
 
         public string Id => _id;
 
-        [SerializeField] private BUSSStyleProvider _parent;
+        private BUSSStyleProvider _styleProvider;
 
         public void NotifyOnStyleChanged(BUSSStyle newStyle)
         {
@@ -29,9 +29,15 @@ namespace Beamable.UI.SDF
 
         private void OnTransformParentChanged()
         {
+            LookForStyleProvider();
+            Register();
+        }
+
+        private void LookForStyleProvider()
+        {
             Transform currentTransform = gameObject.transform;
 
-            while (_parent == null)
+            while (_styleProvider == null)
             {
                 if (currentTransform.parent == null)
                 {
@@ -42,16 +48,16 @@ namespace Beamable.UI.SDF
                 currentTransform = currentTransform.parent;
 
                 BUSSStyleProvider styleProvider = currentTransform.GetComponent<BUSSStyleProvider>();
-                _parent = styleProvider;
+                _styleProvider = styleProvider;
             }
-
-            Register();
         }
 
         private void OnValidate()
         {
+            Register();
+            
             // TODO: change this, get style only for current gameobject, not invoke change on everyone
-            _parent.NotifyOnStyleChanged();
+            _styleProvider.NotifyOnStyleChanged();
         }
 
         private void OnEnable()
@@ -77,18 +83,23 @@ namespace Beamable.UI.SDF
 
         private void Register()
         {
-            if (_parent != null)
+            if (_styleProvider == null)
             {
-                _parent.Register(this);
+                LookForStyleProvider();
+            }
+            
+            if (_styleProvider != null)
+            {
+                _styleProvider.Register(this);
             }
         }
 
         private void Unregister()
         {
-            if (_parent != null)
+            if (_styleProvider != null)
             {
-                _parent.Unregister(this);
-                _parent = null;
+                _styleProvider.Unregister(this);
+                _styleProvider = null;
             }
         }
     }
