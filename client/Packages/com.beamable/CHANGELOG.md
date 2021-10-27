@@ -9,9 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - `CoreConfiguration` to project settings to tweak how our Promise library handles uncaught promises by default
+- `matchingIntervalSecs` for `SimGameType` allows game makers to specify the rate by which matchmaking occurs
+
 ### Changed
 - `BeamableEnvironment` has moved to the Runtime to enable sdk version checking at runtime
-- `PromiseBase.SetPotentialUncaughtErrorHandler(handler, replace)` -- replaces by default, but supports adding handlers by passing `false` to second parameter 
+- `PromiseBase.SetPotentialUncaughtErrorHandler(handler, replace)` -- replaces by default, but supports adding handlers by passing `false` to second parameter
 
 ### Fixed
 - `CloudSavingService` error during using Hijri calendar
