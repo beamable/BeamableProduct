@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed
 - `BeamableEnvironment` has moved to the Runtime to enable sdk version checking at runtime
+- New design of Microservices Publish Window with support for Storage Objects
 
 ## [0.17.1]
 ### Fixed
