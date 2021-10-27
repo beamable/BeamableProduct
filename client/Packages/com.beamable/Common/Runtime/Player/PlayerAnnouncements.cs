@@ -23,18 +23,27 @@ namespace Beamable.Common.Player2
       public event Action OnLoadingFinished;
 
       private int _lastBroadcastHashcode;
+      private Promise _pendingRefresh;
 
       public async Promise Refresh()
       {
+         if (IsLoading)
+         {
+            await _pendingRefresh;
+            return;
+         }
+
          IsLoading = true;
          try
          {
             OnLoadingStarted?.Invoke();
-            await PerformRefresh();
+            _pendingRefresh = PerformRefresh();
+            await _pendingRefresh;
             TriggerUpdate();
          }
          finally
          {
+            _pendingRefresh = null;
             IsLoading = false;
             OnLoadingFinished?.Invoke();
          }
@@ -163,6 +172,7 @@ namespace Beamable.Common.Player2
          await PromiseBase.SuccessfulUnit; // pending an actual API...
 
          // end up with a list of announcement...
+         await _announcementsApi.GetCurrent()
          var nextAnnouncements = new List<Announcement>
          {
             new Announcement(this)
