@@ -38,4 +38,7 @@ namespace Beamable.UI.SDF.Styles
         Enum EnumValue { get; }
         T CastEnumValue<T>() where T : Enum;
     }
+
+    public interface IUniversalProperty : IColorProperty, IVertexColorProperty, IFloatProperty, IFloatFromFloatProperty,
+        IVector2Property, IEnumProperty { }
 }
