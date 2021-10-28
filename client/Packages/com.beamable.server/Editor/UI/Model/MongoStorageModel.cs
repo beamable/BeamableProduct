@@ -67,6 +67,7 @@ namespace Beamable.Editor.UI.Model
             evt.menu.BeamableAppendAction($"Goto data explorer", _ => AssemblyDefinitionHelper.OpenMongoExplorer(ServiceDescriptor));
             evt.menu.BeamableAppendAction($"Create a snapshot", _ => AssemblyDefinitionHelper.SnapshotMongo(ServiceDescriptor));
             evt.menu.BeamableAppendAction($"Download a snapshot", _ => AssemblyDefinitionHelper.RestoreMongo(ServiceDescriptor));
+            evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());
         }
         public override void Refresh(IDescriptor descriptor)
         {

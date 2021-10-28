@@ -276,15 +276,23 @@ namespace Beamable.Editor.Environment
          EditorApplication.update += Callback;
          return promise;
       }
-      
+
+      private static bool _isDownloading = false;
       public static Promise<bool> IsPackageUpdated()
       {
-         var listReq = Client.List(false);
-         var promise = new Promise<bool>();
+          var promise = new Promise<bool>();
 
-         void Check()
+          if (_isDownloading)
+          {
+              promise.CompleteSuccess(false);
+              return promise;
+          }
+          
+          var listReq = Client.List(false);
+          
+          void Check()
          {
-            if (!listReq.IsCompleted)
+             if (!listReq.IsCompleted)
             {
                EditorApplication.delayCall += Check;
                return;
@@ -300,8 +308,19 @@ namespace Beamable.Editor.Environment
             var package = listReq.Result.FirstOrDefault(p => p.name.Equals(BeamablePackageName));
             if (package == null)
             {
-               promise.CompleteError(new Exception($"Cannot find package: {package.displayName}"));
-               return;
+                var serverPackage = listReq.Result.FirstOrDefault(p => p.name.Equals(ServerPackageName));
+                if (serverPackage == null)
+                {
+                    promise.CompleteError(new Exception($"Cannot find package: {serverPackage.displayName}"));
+                    return;
+                }
+                if (_isDownloading)
+                    return;
+                
+                EditorApplication.delayCall -= Check;
+                _isDownloading = true;
+                DownloadMissingPackage(serverPackage.version).Then(_ => EditorApplication.delayCall += Check);
+                return;
             }
 
             // Quick hack to skip not production updates
@@ -383,6 +402,35 @@ namespace Beamable.Editor.Environment
 
          EditorApplication.update += Check;
          return promise;
+      }
+      
+      private static Promise<Unit> DownloadMissingPackage(string version)
+      {
+          var req = Client.Add($"{BeamablePackageName}@{version}");
+          var promise = new Promise<Unit>();
+
+          void Callback()
+          {
+              if (!req.IsCompleted) 
+                  return;
+
+              EditorApplication.update -= Callback;
+
+              if (req.Status == StatusCode.Success)
+              {
+                  promise.CompleteSuccess(PromiseBase.Unit);
+                  _isDownloading = false;
+              }
+              else if (req.Status >= StatusCode.Failure)
+              {
+                  promise.CompleteError(new Exception(req.Error.message));
+                  BeamableLogger.Log(req.Error.message);
+                  _isDownloading = false;
+              }
+          }
+
+          EditorApplication.update += Callback;
+          return promise;
       }
    }
 }
