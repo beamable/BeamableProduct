@@ -3,6 +3,7 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using Beamable.Api.Notification.Internal;
+using Beamable.Common.Api.Notifications;
 using Beamable.Spew;
 
 #if UNITY_IOS
@@ -21,17 +22,17 @@ namespace Beamable.Api.Notification
 {
     /// <summary>
     /// This type defines the %Client main entry point for the %Notifications feature.
-    /// 
+    ///
     /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-    /// 
+    ///
     /// #### Related Links
     /// - See the <a target="_blank" href="https://docs.beamable.com/docs/notifications-feature">Mail</a> feature documentation
     /// - See Beamable.API script reference
-    /// 
+    ///
     /// ![img beamable-logo]
-    /// 
+    ///
     /// </summary>
-    public class NotificationService : MonoBehaviour
+    public class NotificationService : MonoBehaviour, INotificationService
     {
         DateTime timeOfLastUpdate = DateTime.MinValue;
         Dictionary<string, InGameNotification> inGameNotifications = new Dictionary<string, InGameNotification>();
