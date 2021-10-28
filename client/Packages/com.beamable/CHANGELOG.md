@@ -7,8 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- `CoreConfiguration` to project settings to tweak how our Promise library handles uncaught promises by default
 ### Changed
 - `BeamableEnvironment` has moved to the Runtime to enable sdk version checking at runtime
+- `PromiseBase.SetPotentialUncaughtErrorHandler(handler, replace)` -- replaces by default, but supports adding handlers by passing `false` to second parameter 
 
 ## [0.17.1]
 ### Fixed
