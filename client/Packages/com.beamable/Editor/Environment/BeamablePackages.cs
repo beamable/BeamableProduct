@@ -289,10 +289,10 @@ namespace Beamable.Editor.Environment
           }
           
           var listReq = Client.List(false);
-
+          
           void Check()
-         { 
-            if (!listReq.IsCompleted)
+         {
+             if (!listReq.IsCompleted)
             {
                EditorApplication.delayCall += Check;
                return;
@@ -317,8 +317,9 @@ namespace Beamable.Editor.Environment
                 if (_isDownloading)
                     return;
                 
+                EditorApplication.delayCall -= Check;
                 _isDownloading = true;
-                DownloadMissingPackage(serverPackage.version);
+                DownloadMissingPackage(serverPackage.version).Then(_ => EditorApplication.delayCall += Check);
                 return;
             }
 
