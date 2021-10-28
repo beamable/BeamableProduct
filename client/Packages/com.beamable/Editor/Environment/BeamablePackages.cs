@@ -307,7 +307,7 @@ namespace Beamable.Editor.Environment
                     promise.CompleteError(new Exception($"Cannot find package: {package.displayName}"));
                     return;
                 }
-                if (!isDownloading)
+                if (isDownloading)
                     return;
                 
                 isDownloading = true;
