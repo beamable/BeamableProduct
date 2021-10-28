@@ -6,6 +6,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.2]
+### Added
+- `CoreConfiguration` to project settings to tweak how our Promise library handles uncaught promises by default
+### Changed
+- `PromiseBase.SetPotentialUncaughtErrorHandler(handler, replace)` -- replaces by default, but supports adding handlers by passing `false` to second parameter 
+
+### Fixed
+- `CloudSavingService` serialization error caused by Invariant Culture
+- Content Manager Publish window loading bar width
+- Current Hud no longer emits null reference error if no image is assigned
+
+
 ## [0.17.1]
 ### Fixed
 - calls to Leaderboard scoring API support large numbers
