@@ -13,13 +13,13 @@ namespace Beamable.Common.Content
    /// #### Related Links
    /// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-code#contentlink-vs-contentref">ContentLink vs ContentRef</a> documentation
    /// - See Beamable.Common.Content.ContentObject script reference
-   ///
+   /// 
    /// ![img beamable-logo]
    ///
    /// </summary>
    [System.Serializable]
    public class SimGameTypeLink : ContentLink<SimGameType>{}
-
+   
    /// <summary>
    /// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
    ///
@@ -28,13 +28,13 @@ namespace Beamable.Common.Content
    /// #### Related Links
    /// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-code#contentlink-vs-contentref">ContentLink vs ContentRef</a> documentation
    /// - See Beamable.Common.Content.ContentObject script reference
-   ///
+   /// 
    /// ![img beamable-logo]
    ///
    /// </summary>
    [Serializable]
    public class SimGameTypeRef : ContentRef<SimGameType> {}
-
+   
    /// <summary>
    /// This type defines a %Beamable %ContentObject subclass for the %Multiplayer feature.
    ///
@@ -44,7 +44,7 @@ namespace Beamable.Common.Content
    /// - See Beamable.Common.Content.ContentObject script reference
    /// - See Beamable.Experimental.Api.Matchmaking.MatchmakingService script reference
    /// - See the <a target="_blank" href="https://docs.beamable.com/docs/multiplayer-feature">Multiplayer</a> feature documentation
-   ///
+   /// 
    /// ![img beamable-logo]
    ///
    /// </summary>
@@ -57,13 +57,13 @@ namespace Beamable.Common.Content
       // XXX: maxPlayers is not necessary in the future but is needed until we update game relay server
       [MustBePositive]
       public int maxPlayers;
-
+      
       [Tooltip(ContentObject.TooltipTeamContent1)]
       public List<TeamContent> teams;
-
+      
       [Tooltip(ContentObject.TooltipMatchmakingRule1)]
       public List<NumericMatchmakingRule> numericRules;
-
+      
       [Tooltip(ContentObject.TooltipMatchmakingRule1)]
       public List<StringMatchmakingRule> stringRules;
 
@@ -75,13 +75,9 @@ namespace Beamable.Common.Content
       [MustBePositive]
       public OptionalInt maxWaitDurationSecs;
 
-      [Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipMatchingIntervalSecs1)]
-      [MustBePositive]
-      public OptionalInt matchingIntervalSecs;
-
       [Tooltip(ContentObject.TooltipLeaderboardUpdate1)]
       public List<LeaderboardUpdate> leaderboardUpdates;
-
+      
       [Tooltip(ContentObject.TooltipRewardsPerRank1)]
       public List<RewardsPerRank> rewards;
    }
@@ -91,11 +87,11 @@ namespace Beamable.Common.Content
    {
       [Tooltip(ContentObject.TooltipName1)]
       public string name;
-
+      
       [Tooltip(ContentObject.TooltipPlayersMax1)]
       [MustBePositive]
       public int maxPlayers;
-
+      
       [Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipPlayersMin1)]
       [MustBePositive(allowZero: true)]
       public OptionalInt minPlayers;
@@ -106,11 +102,11 @@ namespace Beamable.Common.Content
    {
       [Tooltip(ContentObject.TooltipProperty1)]
       public string property;
-
+      
       [Tooltip(ContentObject.TooltipDeltaMax1)]
       [MustBePositive]
       public double maxDelta;
-
+      
       [Tooltip(ContentObject.TooltipOptional0 + ContentObject.DefaultValue1)]
       public OptionalDouble Default;
    }
@@ -120,7 +116,7 @@ namespace Beamable.Common.Content
    {
       [Tooltip(ContentObject.TooltipProperty1)]
       public string property;
-
+      
       [Tooltip(ContentObject.TooltipValue1)]
       public string value;
    }
@@ -136,7 +132,7 @@ namespace Beamable.Common.Content
       [Tooltip(ContentObject.TooltipEndRank1)]
       [MustBeNonNegative]
       public int endRank;
-
+      
       [Tooltip(ContentObject.TooltipReward1)]
       public List<Reward> rewards;
    }
@@ -152,7 +148,7 @@ namespace Beamable.Common.Content
       [MustBeCurrency]
       // TODO: This should be a CurrencyRef but the serialization isn't supported on the backend.
       public string name;
-
+      
       [Tooltip(ContentObject.TooltipAmount1)]
       public long amount;
    }
@@ -172,7 +168,7 @@ namespace Beamable.Common.Content
       // TODO: This should be a LeaderboardRef but the serialization isn't supported on the backend.
       [MustBeLeaderboard]
       public string leaderboard;
-
+      
       [Tooltip(ContentObject.TooltipScoringAlgorithm1)]
       public ScoringAlgorithm scoringAlgorithm;
    }
@@ -183,7 +179,7 @@ namespace Beamable.Common.Content
    {
       [Tooltip(ContentObject.TooltipScoringAlgorithm1)]
       public AlgorithmType algorithm;
-
+      
       [Tooltip(ContentObject.TooltipScoringAlgorithmOption1)]
       public List<ScoringAlgoOption> options; // TODO: [MustBeUnique(nameof(ScoringAlgoOption.key))]
    }
@@ -195,7 +191,7 @@ namespace Beamable.Common.Content
       [Tooltip(ContentObject.TooltipKey1)]
       [CannotBeBlank] // TODO: Add [MustBeUniqueInArray]
       public string key;
-
+      
       [Tooltip(ContentObject.TooltipValue1)]
       public string value;
    }
@@ -207,3 +203,4 @@ namespace Beamable.Common.Content
       MultiplayerElo
    }
 }
+

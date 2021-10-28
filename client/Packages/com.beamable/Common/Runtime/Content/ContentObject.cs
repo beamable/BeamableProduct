@@ -161,7 +161,6 @@ namespace Beamable.Common.Content
          "The wait time after the minimum players is reached, in seconds.";
 
       internal const string TooltipWaitDurationSecsMax1 = "The maximum wait time in seconds";
-      internal const string TooltipMatchingIntervalSecs1 = "The rate by which the matchmaking system finds matches. Defaults to 10 seconds.";
       internal const string WriteSelf1 = "True, content is writeable via client C# and server. False, only via server";
 
       // 2 Postpends (Keep leading spaces)

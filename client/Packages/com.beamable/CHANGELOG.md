@@ -13,8 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.17.2]
 ### Added
 - `CoreConfiguration` to project settings to tweak how our Promise library handles uncaught promises by default
-- `matchingIntervalSecs` for `SimGameType` allows game makers to specify the rate by which matchmaking occurs
-
 ### Changed
 - `PromiseBase.SetPotentialUncaughtErrorHandler(handler, replace)` -- replaces by default, but supports adding handlers by passing `false` to second parameter 
 
