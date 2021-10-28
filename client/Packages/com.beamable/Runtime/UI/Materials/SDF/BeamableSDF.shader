@@ -94,6 +94,7 @@
                 o.uv.xy = TRANSFORM_TEX(v.uv, _MainTex);
                 o.uv.zw = TRANSFORM_TEX(v.backgroundUV, _BackgroundTexture);
                 o.color = v.color;
+                o.color.a *= step(.0045, o.color.a); // hack to avoid object disappear when alpha is equal to zero (see SDFUtile.ClipColorAlpha)
                 o.sizeNCoords.xy = v.normal.yz;
                 o.sizeNCoords.zw = v.coords;
                 o.outlineColor.rgb = floatToRGB(v.params.y);
@@ -178,7 +179,7 @@
                 
                 // Shadow
                 float shadowDist = getMergedDistance(i.uv - i.shadowOffset.xy, coords - (i.shadowOffset.xy / size), size, rounding);
-                float shadowValue = calculateValue(shadowDist, threshold + i.shadowOffset.z);
+                float shadowValue = calculateValue(shadowDist, threshold + outlineWidth + i.shadowOffset.z);
                 i.shadowColor.a *= shadowValue;
                 final = blend_overlay(i.shadowColor, final);
                 

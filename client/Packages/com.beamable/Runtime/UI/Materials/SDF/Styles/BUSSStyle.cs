@@ -12,7 +12,7 @@ namespace Beamable.UI.SDF.Styles
         
         // Shape
         public static readonly PropertyBiding<IFloatProperty> Threshold = 
-            new PropertyBiding<IFloatProperty>("borderWidth", new FloatProperty());
+            new PropertyBiding<IFloatProperty>("threshold", new FloatProperty());
         public static readonly PropertyBiding<ISpriteProperty> SdfImage =
             new PropertyBiding<ISpriteProperty>("sdfImage", new SpriteProperty());
         
@@ -37,8 +37,8 @@ namespace Beamable.UI.SDF.Styles
             new PropertyBiding<IVector2Property>("shadowOffset", new Vector2Property());
         public static readonly PropertyBiding<IFloatProperty> ShadowThreshold = 
             new PropertyBiding<IFloatProperty>("shadowThreshold", new FloatProperty());
-        public static readonly PropertyBiding<IVertexColorProperty> ShadowColor = 
-            new PropertyBiding<IVertexColorProperty>("shadowColor", new SingleColorProperty());
+        public static readonly PropertyBiding<IColorProperty> ShadowColor = 
+            new PropertyBiding<IColorProperty>("shadowColor", new SingleColorProperty());
         
         // Font
         // TODO

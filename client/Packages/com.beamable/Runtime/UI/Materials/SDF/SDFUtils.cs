@@ -48,7 +48,7 @@ namespace Beamable.UI.SDF {
             var startVertexIndex = vh.currentVertCount;
             vh.AddVert(
                 new Vector3(position.xMin, position.yMin, z),
-                vertexColor.BottomLeftColor,
+                ClipColorAlpha(vertexColor.BottomLeftColor),
                 new Vector2(uvs.xMin, uvs.yMin),
                 new Vector2(uvs1.xMin, uvs1.yMin),
                 uv2,
@@ -57,7 +57,7 @@ namespace Beamable.UI.SDF {
                 tangent);
             vh.AddVert(
                 new Vector3(position.xMax, position.yMin, z),
-                vertexColor.BottomRightColor,
+                ClipColorAlpha(vertexColor.BottomRightColor),
                 new Vector2(uvs.xMax, uvs.yMin),
                 new Vector2(uvs1.xMax, uvs1.yMin),
                 uv2,
@@ -66,7 +66,7 @@ namespace Beamable.UI.SDF {
                 tangent);
             vh.AddVert(
                 new Vector3(position.xMax, position.yMax, z),
-                vertexColor.TopRightColor,
+                ClipColorAlpha(vertexColor.TopRightColor),
                 new Vector2(uvs.xMax, uvs.yMax),
                 new Vector2(uvs1.xMax, uvs1.yMax),
                 uv2,
@@ -75,7 +75,7 @@ namespace Beamable.UI.SDF {
                 tangent);
             vh.AddVert(
                 new Vector3(position.xMin, position.yMax, z),
-                vertexColor.TopLeftColor,
+                ClipColorAlpha(vertexColor.TopLeftColor),
                 new Vector2(uvs.xMin, uvs.yMax),
                 new Vector2(uvs1.xMin, uvs1.yMax),
                 uv2,
@@ -92,6 +92,14 @@ namespace Beamable.UI.SDF {
     
         private static float PackVector3ToFloat(this Vector3 vector) {
             return Vector3.Dot(Vector3Int.RoundToInt(vector * 255), new Vector3(65536, 256, 1));
+        }
+
+        private static Color32 ClipColorAlpha(Color32 color32) {
+            if (color32.a == 0) { // hack to avoid object disappear when alpha is equal to zero
+                color32.a = 1;
+            }
+
+            return color32;
         }
     }
 }

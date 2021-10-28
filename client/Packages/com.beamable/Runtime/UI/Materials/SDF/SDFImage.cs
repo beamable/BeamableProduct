@@ -214,13 +214,18 @@ namespace Beamable.UI.SDF {
             
             var size = rectTransform.rect.size;
             var minSize = Mathf.Min(size.x, size.y);
+
+            meshFrame = 0f;
+            
+            // color
             colorRect = BUSSStyle.BackgroundColor.Get(Style).ColorRect;
             backgroundSprite = BUSSStyle.BackgroundImage.Get(Style).SpriteValue;
-            rounding = BUSSStyle.RoundCorners.Get(Style).GetFloatValue(minSize);
             
+            // outline
             outlineWidth = BUSSStyle.BorderWidth.Get(Style).FloatValue;
             outlineColor = BUSSStyle.BorderColor.Get(Style).Color;
-
+            // shape
+            rounding = BUSSStyle.RoundCorners.Get(Style).GetFloatValue(minSize);
             threshold = BUSSStyle.Threshold.Get(Style).FloatValue;
             sprite = BUSSStyle.SdfImage.Get(Style).SpriteValue;
 
@@ -231,6 +236,19 @@ namespace Beamable.UI.SDF {
                     threshold -= outlineWidth;
                     break;
             }
+            
+            // shadow
+            shadowColor = BUSSStyle.ShadowColor.Get(Style).Color;
+            shadowOffset = BUSSStyle.ShadowOffset.Get(Style).Vector2Value;
+            shadowThreshold = BUSSStyle.ShadowThreshold.Get(Style).FloatValue;
+            
+            meshFrame = Mathf.Max(meshFrame,
+                threshold +
+                Mathf.Abs(shadowThreshold) 
+                + outlineWidth
+                + Mathf.Max(
+                    Mathf.Abs(shadowOffset.x), 
+                    Mathf.Abs(shadowOffset.y)));
         }
 
         public enum SdfMode {

@@ -30,7 +30,6 @@ namespace UI.Materials.SDF.Styles
 
         private void Refresh()
         {
-            Debug.Log("!!!");
         }
     }
 }
