@@ -60,7 +60,11 @@ namespace Beamable.Server
                return prim.ToString();
             case int prim:
                return prim.ToString();
-         }
+            case Vector2Int prim:
+               return JsonUtility.ToJson(new Vector2IntEx(prim));
+            case Vector3Int prim:
+               return JsonUtility.ToJson(new Vector3IntEx(prim));
+            }
          return JsonUtility.ToJson(arg);
       }
 
@@ -89,7 +93,11 @@ namespace Beamable.Server
                return (T) (object) bool.Parse(json);
             case int _:
                return (T) (object) int.Parse(json);
-         }
+            case Vector2Int _:
+               return (T)(object)Vector2IntEx.DeserializeToVector2(json);
+            case Vector3Int _:
+               return (T)(object)Vector3IntEx.DeserializeToVector3(json);
+            }
 
          if (json.StartsWith("[") && json.EndsWith("]"))
          {
