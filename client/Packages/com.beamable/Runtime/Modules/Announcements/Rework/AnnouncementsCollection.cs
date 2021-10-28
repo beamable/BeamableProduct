@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using Beamable;
 using Beamable.Api;
 using Beamable.Api.Announcements;
-using Beamable.Common.Announcements;
 using Beamable.Common.Api.Announcements;
 using Modules.Inventory.Prototype;
 using UnityEngine;
