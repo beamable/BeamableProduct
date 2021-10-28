@@ -63,11 +63,6 @@
         return next;
     }
 
-    async function handleDeviceIdWrite(next, old){
-        await players.updateDeviceId(player, next);
-        return next;
-    }
-
 </script>
 
 <style lang="scss">
@@ -216,20 +211,6 @@
                     <!-- only exists to provide consisten spacing with email input. -->
                 </div>
             </div>
-        </div>
-
-        <div class="field">
-            <label class="label">Device Id</label>
-            <AsyncInput
-                value={player.deviceId}
-                inputType="text"
-                placeholder="No Device Id Provided"
-                onWrite={handleDeviceIdWrite}
-                editable={true}
-                floatError={true}
-                buttonTopPadding={4}
-            />
-       
         </div>
 
         <div class="field">
