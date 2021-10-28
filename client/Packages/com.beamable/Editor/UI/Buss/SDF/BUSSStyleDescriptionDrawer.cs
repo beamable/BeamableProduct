@@ -22,6 +22,21 @@ namespace Beamable.Editor.UI.SDF {
             rc.MoveIndent(2);
             for (int i = 0; i < properties.arraySize; i++) {
                 rc.ReserveHeight(5f);
+                
+                var buttonRc = rc.ReserveWidth(0).ToRectController().ReserveSingleLine().ToRectController();
+                buttonRc.ReserveWidthFromRight(15f);
+                buttonRc.MoveIndent(-2);
+                var buttonRect = buttonRc.ReserveHeightByFraction(.5f);
+                if (i > 0 && GUI.Button(buttonRect, GUIContent.none)) {
+                    properties.MoveArrayElement(i, i - 1);
+                    properties.serializedObject.ApplyModifiedProperties();
+                }
+
+                if (i < properties.arraySize - 1 && GUI.Button(buttonRc.rect, GUIContent.none)) {
+                    properties.MoveArrayElement(i, i + 1);
+                    properties.serializedObject.ApplyModifiedProperties();
+                }
+
                 var element = properties.GetArrayElementAtIndex(i);
                 var key = element.FindPropertyRelative("key").stringValue;
                 var prop = element.FindPropertyRelative("property");
