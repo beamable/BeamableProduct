@@ -9,6 +9,8 @@
         _SDF_SamplingDistance("Sampling Distance", Range(0, .1)) = .01
         
         [KeywordEnum(Default, Rect)] _Mode("Mode", Float) = 0
+        [KeywordEnum(Default, Inner)] _ShadowMode("Shadow Mode", Float) = 0
+        [KeywordEnum(Default, Outline, Full)] _BgMode("Background Mode", Float) = 0
         
         [HideInInspector]_StencilComp("Stencil Comparison", Float) = 8
         [HideInInspector]_Stencil("Stencil ID", Float) = 0
@@ -50,8 +52,10 @@
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            #pragma multi_compile MULTISAMPLING
-            #pragma multi_compile _MODE_DEFAULT _MODE_RECT
+            #pragma multi_compile_fragment MULTISAMPLING
+            #pragma multi_compile_fragment _MODE_DEFAULT _MODE_RECT
+            #pragma multi_compile_fragment _SHADOWMODE_DEFAULT _SHADOWMODE_INNER
+            #pragma multi_compile_fragment _BGMODE_DEFAULT _BGMODE_OUTLINE _BGMODE_FULL
 
             #include "UnityCG.cginc"
             #include "Packages\com.beamable\Runtime\UI\Materials\SDF\SDFFunctions.cginc"
@@ -75,6 +79,7 @@
                 float3 roundingNThresholdNOutlineWidth : TEXCOORD3;
                 float3 shadowOffset : TEXCOORD4;
                 float4 shadowColor : TEXCOORD5;
+                float shadowSoftness : TEXCOORD2;
                 float4 vertex : SV_POSITION;
                 float4 color : COLOR;
                 float4 outlineColor : NORMAL;
@@ -105,7 +110,9 @@
                 float3 tangentZ = floatToRGB(v.tangent.z);
                 o.outlineColor.a = tangentZ.z;
                 o.shadowColor.a = tangentZ.y;
-                o.shadowOffset = v.tangent.rgb;
+                o.shadowSoftness = v.tangent.x;
+                o.shadowOffset.xy = floatToRG(v.tangent.y) * 4;
+                o.shadowOffset.z = v.tangent.z;
                 o.shadowOffset.z = (tangentZ.x - .5) * o.sizeNCoords.x;
                 return o;
             }
@@ -153,7 +160,17 @@
             // returns main color
             float4 mainColor(v2f i){
                 float4 color = i.color;
-                color *= tex2D(_BackgroundTexture, i.uv.wz);
+                #if _BGMODE_DEFAULT || _BGMODE_FULL
+                color *= tex2D(_BackgroundTexture, i.uv.zw);
+                #endif
+                return color;
+            }
+            
+            float4 outlineColor(v2f i){
+                float4 color = i.outlineColor;
+                #if _BGMODE_OUTLINE || _BGMODE_FULL
+                color *= tex2D(_BackgroundTexture, i.uv.zw);
+                #endif
                 return color;
             }
 
@@ -171,17 +188,30 @@
                 float4 main = mainColor(i);
                 // Outline
                 float outlineValue = calculateValue(dist, threshold + outlineWidth) - calculateValue(dist, threshold);
-                float4 outline = i.outlineColor;
+                float4 outline = outlineColor(i);
                 outline.a *= outlineValue;
                 main.a *= mainColorValue;
                 // Blending main and outline
                 float4 final = blend_cutIn(outline, main, mainColorValue);
                 
                 // Shadow
+                #if _SHADOWMODE_DEFAULT
+                
                 float shadowDist = getMergedDistance(i.uv - i.shadowOffset.xy, coords - (i.shadowOffset.xy / size), size, rounding);
-                float shadowValue = calculateValue(shadowDist, threshold + outlineWidth + i.shadowOffset.z);
+                float shadowEdge = threshold + outlineWidth + i.shadowOffset.z;
+                float shadowValue = 1 - smoothstep(shadowEdge - i.shadowSoftness, shadowEdge, shadowDist);
                 i.shadowColor.a *= shadowValue;
                 final = blend_overlay(i.shadowColor, final);
+               
+                #elif _SHADOWMODE_INNER
+                
+                float shadowDist = getMergedDistance(i.uv - i.shadowOffset.xy, coords - (i.shadowOffset.xy / size), size, rounding);
+                float shadowEdge = threshold + -i.shadowOffset.z;
+                float shadowValue = smoothstep(shadowEdge, shadowEdge + i.shadowSoftness, shadowDist) * saturate(mainColorValue / outlineValue);
+                i.shadowColor.a *= shadowValue;
+                final = blend_overlay(final, i.shadowColor);
+                
+                #endif
                 
                 return final;
             }

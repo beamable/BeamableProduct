@@ -39,6 +39,8 @@ namespace Beamable.UI.SDF.Styles
             new PropertyBiding<IFloatProperty>("shadowThreshold", new FloatProperty());
         public static readonly PropertyBiding<IColorProperty> ShadowColor = 
             new PropertyBiding<IColorProperty>("shadowColor", new SingleColorProperty());
+        public static readonly PropertyBiding<IFloatProperty> ShadowSoftness = 
+            new PropertyBiding<IFloatProperty>("shadowSoftness", new FloatProperty());
         
         // Font
         // TODO

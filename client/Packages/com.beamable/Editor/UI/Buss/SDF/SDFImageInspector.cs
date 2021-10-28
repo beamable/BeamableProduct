@@ -39,6 +39,8 @@ namespace Beamable.Editor.UI.SDF {
                     new GUIContent("Shadow Color"));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("shadowThreshold"),
                     new GUIContent("Shadow Threshold"));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("shadowSoftness"),
+                    new GUIContent("Shadow Softness"));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("shadowOffset"),
                     new GUIContent("Shadow Offset"));
 

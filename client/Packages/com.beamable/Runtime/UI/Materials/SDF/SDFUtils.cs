@@ -16,7 +16,7 @@ namespace Beamable.UI.SDF {
             float threshold,
             float rounding,
             float outlineWidth, Color outlineColor,
-            Color shadowColor, float shadowThreshold, Vector2 shadowOffset) {
+            Color shadowColor, float shadowThreshold, Vector2 shadowOffset, float shadowSoftness) {
         
             var uv2 = new Vector2(outlineWidth,
                 PackVector3ToFloat(outlineColor.r, outlineColor.g, outlineColor.b));
@@ -24,7 +24,8 @@ namespace Beamable.UI.SDF {
                 threshold,
                 size.x,
                 size.y);
-            var tangent = new Vector4(shadowOffset.x, shadowOffset.y, 
+            shadowOffset *= .25f; // hack to have higher range, but lower precision
+            var tangent = new Vector4(shadowSoftness, PackVector2ToFloat(shadowOffset.x, shadowOffset.y), 
                 PackVector3ToFloat((shadowThreshold / size.x) + .5f, shadowColor.a, outlineColor.a), 
                 PackVector3ToFloat(shadowColor.r, shadowColor.g, shadowColor.b));
         
@@ -92,6 +93,11 @@ namespace Beamable.UI.SDF {
     
         private static float PackVector3ToFloat(this Vector3 vector) {
             return Vector3.Dot(Vector3Int.RoundToInt(vector * 255), new Vector3(65536, 256, 1));
+        }
+
+        private static float PackVector2ToFloat(float x, float y) {
+            var max = Mathf.Max(Mathf.Abs(x) * 2f, Mathf.Abs(y) * 2f, 1);
+            return PackVector3ToFloat(x / max + .5f, y / max + .5f, max / 255);
         }
 
         private static Color32 ClipColorAlpha(Color32 color32) {

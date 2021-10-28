@@ -29,6 +29,7 @@ namespace Beamable.UI.SDF {
         public Color shadowColor;
         public Vector2 shadowOffset;
         public float shadowThreshold;
+        public float shadowSoftness;
 
         private Material _materialWithBackgroundTexture;
         private static readonly int BackgroundTexture = Shader.PropertyToID("_BackgroundTexture");
@@ -205,7 +206,7 @@ namespace Beamable.UI.SDF {
                 threshold,
                 rounding,
                 outlineWidth, outlineColor,
-                shadowColor, shadowThreshold, shadowOffset
+                shadowColor, shadowThreshold, shadowOffset, shadowSoftness
             );
         }
 
@@ -241,6 +242,7 @@ namespace Beamable.UI.SDF {
             shadowColor = BUSSStyle.ShadowColor.Get(Style).Color;
             shadowOffset = BUSSStyle.ShadowOffset.Get(Style).Vector2Value;
             shadowThreshold = BUSSStyle.ShadowThreshold.Get(Style).FloatValue;
+            shadowSoftness = BUSSStyle.ShadowSoftness.Get(Style).FloatValue;
             
             meshFrame = Mathf.Max(meshFrame,
                 threshold +
