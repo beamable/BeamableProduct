@@ -281,9 +281,10 @@ namespace Beamable.Editor.Environment
       {
          var listReq = Client.List(false);
          var promise = new Promise<bool>();
+         var isDownloading = false;
 
          void Check()
-         {
+         { 
             if (!listReq.IsCompleted)
             {
                EditorApplication.delayCall += Check;
@@ -300,8 +301,18 @@ namespace Beamable.Editor.Environment
             var package = listReq.Result.FirstOrDefault(p => p.name.Equals(BeamablePackageName));
             if (package == null)
             {
-               promise.CompleteError(new Exception($"Cannot find package: {package.displayName}"));
-               return;
+                var serverPackage = listReq.Result.FirstOrDefault(p => p.name.Equals(ServerPackageName));
+                if (serverPackage == null)
+                {
+                    promise.CompleteError(new Exception($"Cannot find package: {package.displayName}"));
+                    return;
+                }
+                if (!isDownloading)
+                    return;
+                
+                isDownloading = true;
+                DownloadMissingPackage(serverPackage.version).Then(_ => { isDownloading = false; });
+                return;
             }
 
             // Quick hack to skip not production updates
@@ -383,6 +394,33 @@ namespace Beamable.Editor.Environment
 
          EditorApplication.update += Check;
          return promise;
+      }
+      
+      private static Promise<Unit> DownloadMissingPackage(string version)
+      {
+          var req = Client.Add($"{BeamablePackageName}@{version}");
+          var promise = new Promise<Unit>();
+
+          void Callback()
+          {
+              if (!req.IsCompleted) 
+                  return;
+
+              EditorApplication.update -= Callback;
+
+              if (req.Status == StatusCode.Success)
+              {
+                  promise.CompleteSuccess(PromiseBase.Unit);
+              }
+              else if (req.Status >= StatusCode.Failure)
+              {
+                  promise.CompleteError(new Exception(req.Error.message));
+                  BeamableLogger.Log(req.Error.message);
+              }
+          }
+
+          EditorApplication.update += Callback;
+          return promise;
       }
    }
 }
