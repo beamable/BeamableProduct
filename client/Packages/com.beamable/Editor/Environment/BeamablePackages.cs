@@ -276,14 +276,21 @@ namespace Beamable.Editor.Environment
          EditorApplication.update += Callback;
          return promise;
       }
-      
+
+      private static bool _isDownloading = false;
       public static Promise<bool> IsPackageUpdated()
       {
-         var listReq = Client.List(false);
-         var promise = new Promise<bool>();
-         var isDownloading = false;
+          var promise = new Promise<bool>();
 
-         void Check()
+          if (_isDownloading)
+          {
+              promise.CompleteSuccess(false);
+              return promise;
+          }
+          
+          var listReq = Client.List(false);
+
+          void Check()
          { 
             if (!listReq.IsCompleted)
             {
@@ -304,14 +311,14 @@ namespace Beamable.Editor.Environment
                 var serverPackage = listReq.Result.FirstOrDefault(p => p.name.Equals(ServerPackageName));
                 if (serverPackage == null)
                 {
-                    promise.CompleteError(new Exception($"Cannot find package: {package.displayName}"));
+                    promise.CompleteError(new Exception($"Cannot find package: {serverPackage.displayName}"));
                     return;
                 }
-                if (isDownloading)
+                if (_isDownloading)
                     return;
                 
-                isDownloading = true;
-                DownloadMissingPackage(serverPackage.version).Then(_ => { isDownloading = false; });
+                _isDownloading = true;
+                DownloadMissingPackage(serverPackage.version);
                 return;
             }
 
@@ -411,11 +418,13 @@ namespace Beamable.Editor.Environment
               if (req.Status == StatusCode.Success)
               {
                   promise.CompleteSuccess(PromiseBase.Unit);
+                  _isDownloading = false;
               }
               else if (req.Status >= StatusCode.Failure)
               {
                   promise.CompleteError(new Exception(req.Error.message));
                   BeamableLogger.Log(req.Error.message);
+                  _isDownloading = false;
               }
           }
 
