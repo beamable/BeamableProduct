@@ -93,7 +93,7 @@ namespace Beamable.Editor.Microservice.UI.Components
                 if (model is ManifestEntryModel)
                 {
                     var serviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(model.Name);
-                    if (!(serviceModel is RemoteMicroserviceModel) && serviceModel.Descriptor.IsPublishFeatureDisabled())
+                    if (serviceModel != null && !(serviceModel is RemoteMicroserviceModel) && serviceModel.Descriptor.IsPublishFeatureDisabled())
                     {
                         DisablePublishFeature("Warning! Publish feature is disabled due to Microservices dependent on Storage Objects.");
                     }
