@@ -17,9 +17,11 @@ namespace Beamable.Purchasing
     public class UnityBeamablePurchaser : IStoreListener, IBeamablePurchaser
     {
         private IStoreController _storeController;
+        #pragma warning disable CS0649
         private IAppleExtensions _appleExtensions;
         private IGooglePlayStoreExtensions _googleExtensions;
-
+        #pragma warning restore CS0649
+        
         private readonly Promise<Unit> _initPromise = new Promise<Unit>();
         private long _txid;
         private Action<CompletedTransaction> _success;
@@ -43,7 +45,7 @@ namespace Beamable.Purchasing
                     _initPromise.CompleteSuccess(PromiseBase.Unit);
                     return;
                 }
-                
+
                 #if USE_STEAMWORKS && !UNITY_EDITOR
                 var builder = ConfigurationBuilder.Instance(new Steam.SteamPurchasingModule());
                 foreach (var sku in rsp.skus.definitions)

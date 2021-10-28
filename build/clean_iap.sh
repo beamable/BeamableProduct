@@ -6,6 +6,7 @@ if [ "$UNITY_VERSION" != "2018.4.18f1" ]
 then
     echo "Deleting Unity IAP Plugin folder"
     rm -rf ./client/Assets/Plugins/UnityPurchasing
+    rm -f ./client/Assets/Plugins/UnityPurchasing.meta
 else
     echo "Leaving Unity IAP Plugin alone"
 fi

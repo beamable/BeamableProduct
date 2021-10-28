@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Inventory;
 using Beamable.Server;
+using UnityEngine;
 
 namespace microserviceTests.microservice
 {
@@ -55,6 +56,24 @@ namespace microserviceTests.microservice
       public async Promise<int> PromiseTestMethod()
       {
          return await Promise<int>.Successful(1);
+      }
+      
+      [ClientCallable]
+      public string MethodWithJSON_AsParameter(string jsonString)
+      {
+         return jsonString;
+      }
+      
+      [ClientCallable]
+      public string MethodWithRegularString_AsParameter(string str)
+      {
+         return str;
+      }
+
+      [ClientCallable]
+      public Vector2Int MethodWithVector2Int_AsParameter(Vector2Int vec)
+      {
+         return vec;
       }
 
       // TODO: Add a test for an empty arg array, or a null
