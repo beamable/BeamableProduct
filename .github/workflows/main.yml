@@ -17,7 +17,11 @@ on:
 
 jobs:
   testMicroserviceBaseImage:
+    timeout-minutes: 10
     runs-on: ubuntu-latest
+    concurrency: 
+      group: base-image-tests-${{ github.head_ref }}
+      cancel-in-progress: true
     strategy:
       matrix:
         dotnet-version: ['5.0.x' ]
@@ -48,8 +52,12 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
   testAllModes:
+    timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
     runs-on: ubuntu-latest
+    concurrency: 
+      group: unity-tests-${{ matrix.unityVersion }}-${{ matrix.testMode }}-${{ github.head_ref }}
+      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:
@@ -93,6 +101,7 @@ jobs:
         shell: bash
       - uses: game-ci/unity-test-runner@v2
         id: tests
+        timeout-minutes: 20
         env:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
