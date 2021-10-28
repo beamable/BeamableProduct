@@ -63,6 +63,28 @@ namespace Beamable.Serialization.SmallerJSON {
             return obj;
          }
       }
+      public static bool IsValidJson(string strInput)
+      {
+         if (string.IsNullOrWhiteSpace(strInput)) { return false; }
+         strInput = strInput.Trim();
+         if ((strInput.StartsWith("{") && strInput.EndsWith("}")) || 
+             (strInput.StartsWith("[") && strInput.EndsWith("]")))
+         {
+            try
+            {
+               var obj = Json.Deserialize(strInput);
+               return true;
+            }
+            catch (Exception)
+            {
+               return false;
+            }
+         }
+         else
+         {
+            return false;
+         }
+      }
 
       public static string FormatJson(string json, char indent = ' ', int times = 2)
       {
