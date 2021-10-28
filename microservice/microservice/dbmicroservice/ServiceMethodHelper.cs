@@ -37,7 +37,7 @@ namespace Beamable.Server
          var type = provider.instanceType;
          var output = new List<ServiceMethod>();
 
-         Log.Debug(LogConstants.SCANNING_CLIENT_PREFIX + type.Name);
+         Log.Debug("Scanning client methods for {typeName}", type.Name);
 
          var allMethods = type.GetMethods(BindingFlags.Instance | BindingFlags.Public);
          foreach (var method in allMethods)

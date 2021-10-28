@@ -166,42 +166,6 @@
 LabeledCheckboxVisualElement{
     margin-left: 10px;
 	align-self: center;
+
     justify-content: flex-start;
 }
-
-.hide {
-    position: absolute;
-    left: 999999px;
-}
-
-.collapsedMain {
-    max-height: 120px;
-}
-
-#collapseContainer {
-    width: 200px;
-    align-self: center;
-    margin-bottom: 20px;
-}
-
-#collapseBtn {
-    height: 20px;
-    flex-direction: row;
-    justify-content: space-between;
-    background-color: rgba(0,0,0,0);
-    background-image: none;
-}
-
-#leftDashLine, #rightDashLine {
-    flex-grow: 1;
-    height: 1px;
-    align-self: center;
-}
-
-#collapseBtnIcon {
-    width: 35px;
-    height: 35px;
-    align-self: center;
-}
-
-

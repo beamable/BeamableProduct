@@ -12,7 +12,7 @@ namespace Beamable.Editor.UI.Model
             OnIsRunningChanged += oldBuilder.OnIsRunningChanged;
         }
 
-        protected override async Task<RunImageCommand> PrepareRunCommand()
+        protected override async Task<DockerCommand> PrepareRunCommand()
         {
             await Task.Delay(0);
             return new RunStorageCommand((StorageObjectDescriptor) Descriptor);

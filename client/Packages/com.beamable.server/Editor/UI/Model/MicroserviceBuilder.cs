@@ -57,7 +57,7 @@ namespace Beamable.Editor.UI.Model
             await TryToGetLastImageId();
         }
 
-        protected override async Task<RunImageCommand> PrepareRunCommand()
+        protected override async Task<DockerCommand> PrepareRunCommand()
         {
             var beamable = await EditorAPI.Instance;
             var secret = await beamable.GetRealmSecret();
@@ -72,8 +72,6 @@ namespace Beamable.Editor.UI.Model
 
             IsBuilding = true;
             var command = new BuildImageCommand((MicroserviceDescriptor)Descriptor, includeDebuggingTools);
-            command.OnStandardOut += message => MicroserviceLogHelper.HandleBuildCommandOutput(this, message);
-            command.OnStandardErr += message => MicroserviceLogHelper.HandleBuildCommandOutput(this, message);
             try
             {
                 await command.Start(null);

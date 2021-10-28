@@ -27,8 +27,8 @@
             </engine:VisualElement>
         </engine:VisualElement>
 
-        <engine:VisualElement name="logContainer" class="--positionHidden"/>
-        <beamableMS:MicroserviceVisualElementSeparator name="separator" class="--positionHidden"/>
+        <engine:VisualElement name="logContainer"/>
+        <beamableMS:MicroserviceVisualElementSeparator name="separator"/>
 
         <engine:VisualElement name="buttonsContainer">
             <engine:VisualElement name="dependentServicesContainer">
@@ -42,14 +42,6 @@
                     <engine:Image name="dropDown"/>
                 </engine:Button>
             </engine:VisualElement>
-        </engine:VisualElement>
-
-        <engine:VisualElement name="collapseContainer">
-            <engine:Button name="collapseBtn" class="noMarginNoPaddingNoBorder">
-                <engine:Image name="leftDashLine"/>
-                <engine:Image name="collapseBtnIcon" class="foldIcon unfoldIcon"/>
-                <engine:Image name="rightDashLine"/>
-            </engine:Button>
         </engine:VisualElement>
 
     </engine:VisualElement>

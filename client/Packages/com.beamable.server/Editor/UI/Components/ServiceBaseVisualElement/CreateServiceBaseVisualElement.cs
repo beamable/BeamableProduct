@@ -31,16 +31,26 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         private const int MAX_NAME_LENGTH = 32;
         private bool _canCreateService;
+        private string _statusClassName;
         
+        private VisualElement _logListRoot;
+        private ListView _listView;
         private TextField _nameTextField;
+        private Button _popupBtn;
+        private Button _moreBtn;
         private Button _cancelBtn;
         private Button _buildDropDownBtn;
         private LabeledCheckboxVisualElement _checkbox;
         private Button _createBtn;
         private VisualElement _logContainerElement;
+        private Label _buildDefaultLabel;
+        private LogVisualElement _logElement;
         private List<string> _servicesNames;
+        private object _logVisualElement;
         private VisualElement _rootVisualElement;
 
+        private Action _defaultBuildAction;
+        
         public override void Refresh()
         {
             base.Refresh();
@@ -52,7 +62,6 @@ namespace Beamable.Editor.Microservice.UI.Components
         {
             _rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
             Root.Q("dependentServicesContainer")?.RemoveFromHierarchy();
-            Root.Q("collapseContainer")?.RemoveFromHierarchy();
             _cancelBtn = Root.Q<Button>("cancelBtn");
             _createBtn = Root.Q<Button>("stopBtn");
             _buildDropDownBtn = Root.Q<Button>("buildDropDown");

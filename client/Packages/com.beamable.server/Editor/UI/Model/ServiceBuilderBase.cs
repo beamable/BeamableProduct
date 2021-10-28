@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
@@ -13,10 +11,6 @@ namespace Beamable.Editor.UI.Model
     {
         public IDescriptor Descriptor { get; private set; }
         public Action<bool> OnIsRunningChanged { get; set; }
-        public Action<int, int> OnBuildingProgress { get; set; }
-        public Action<int, int> OnStartingProgress { get; set; }
-        public Action<bool> OnBuildingFinished { get; set; }
-        public Action<bool> OnStartingFinished { get; set; }
         public bool IsRunning
         {
             get => _isRunning;
@@ -29,8 +23,7 @@ namespace Beamable.Editor.UI.Model
             }
         }
 
-        protected DockerCommand _logProcess;
-        protected RunImageCommand _runProcess;
+        protected DockerCommand _logProcess, _runProcess;
         protected bool _isRunning;
         private bool _isStopping;
         
@@ -51,7 +44,7 @@ namespace Beamable.Editor.UI.Model
             _isRunning = await checkProcess.Start(null);
         }
         
-        protected abstract Task<RunImageCommand> PrepareRunCommand();
+        protected abstract Task<DockerCommand> PrepareRunCommand();
 
         public async Task TryToStart()
         {
@@ -60,8 +53,6 @@ namespace Beamable.Editor.UI.Model
             if (_runProcess != null) return;
             
             _runProcess = await PrepareRunCommand();
-            _runProcess.OnStandardOut += message => MicroserviceLogHelper.HandleRunCommandOutput(this,message);
-            _runProcess.OnStandardErr += message => MicroserviceLogHelper.HandleRunCommandOutput(this,message);
             
             // TODO: Send messages to /admin/HealthCheck to see if the service is ready to accept traffic.
 
@@ -70,6 +61,7 @@ namespace Beamable.Editor.UI.Model
                 IsRunning = false;
                 _runProcess = null;
             };
+            IsRunning = true;
             _runProcess?.Start();
         }
 
@@ -110,5 +102,6 @@ namespace Beamable.Editor.UI.Model
             await TryToStop();
             await TryToStart();
         }
+
     }
 }

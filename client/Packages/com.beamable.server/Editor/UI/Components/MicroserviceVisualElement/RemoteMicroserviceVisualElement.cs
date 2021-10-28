@@ -39,7 +39,6 @@ namespace Beamable.Editor.Microservice.UI.Components
             Root.Q<VisualElement>("buttonRow").RemoveFromHierarchy();
             Root.Q<VisualElement>("logContainer").RemoveFromHierarchy();
             Root.Q<VisualElement>("dependentServicesContainer").RemoveFromHierarchy();
-            Root.Q("collapseContainer")?.RemoveFromHierarchy();
 
 #if UNITY_2019_1_OR_NEWER
             Root.Q<VisualElement>("mainVisualElement").style.height = new StyleLength(DEFAULT_HEADER_HEIGHT);

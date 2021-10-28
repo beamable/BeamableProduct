@@ -151,7 +151,6 @@ namespace Beamable.Editor.UI.Model
             evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => {OpenOnRemote("metrics");}, existsOnRemote);
             evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => {OpenOnRemote("logs");}, existsOnRemote);
             evt.menu.BeamableAppendAction($"Visual Studio Code/Copy Debug Configuration{debugToolsSuffix}", pos => { CopyVSCodeDebugTool(); }, IncludeDebugTools);
-            evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());
             if (MicroserviceConfiguration.Instance.Microservices.Count > 1) {
                 evt.menu.BeamableAppendAction($"Order/Move Up", pos => {
                     MicroserviceConfiguration.Instance.MoveMicroserviceIndex(Name, -1);

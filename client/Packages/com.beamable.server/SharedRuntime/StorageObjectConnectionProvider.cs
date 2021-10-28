@@ -7,10 +7,6 @@ namespace Beamable.Server
     public interface IStorageObjectConnectionProvider
     {
         IMongoDatabase GetDatabase<TStorage>() where TStorage : MongoStorageObject;
-        IMongoDatabase this[string name] { get; }
-
-        IMongoCollection<TCollection> GetCollection<TStorage, TCollection>(string name)
-            where TStorage : MongoStorageObject;
     }
 
     public class StorageObjectConnectionProvider : IStorageObjectConnectionProvider
@@ -42,19 +38,6 @@ namespace Beamable.Server
                 return null;
             }
 
-            return GetDatabaseByStorageName(storageName);
-        }
-
-        public IMongoCollection<TCollection> GetCollection<TStorage, TCollection>(string collectionName)
-            where TStorage : MongoStorageObject
-        {
-            return GetDatabase<TStorage>().GetCollection<TCollection>(collectionName);
-        }
-
-        public IMongoDatabase this[string name] => GetDatabaseByStorageName(name);
-
-        private IMongoDatabase GetDatabaseByStorageName(string storageName)
-        {
             var client = new MongoClient(GetConnectionString(storageName));
             var db = client.GetDatabase($"{_realmInfo.CustomerID}_{_realmInfo.ProjectName}");
             return db;
@@ -67,8 +50,7 @@ namespace Beamable.Server
 
             if (string.IsNullOrEmpty(connectionString))
             {
-                BeamableLogger.LogError(
-                    $"Connection string to storage '{storageName}' is empty or not present in environment variables.");
+                BeamableLogger.LogError($"Connection string to storage '{storageName}' is empty or not present in environment variables.");
             }
 
             return connectionString;
