@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Server;
 using Beamable.Platform.SDK;
+using System;
 
 namespace Beamable.Server.Editor.CodeGen
 {
@@ -29,12 +30,13 @@ namespace Beamable.Server.Editor.CodeGen
 
       private string TargetClassName => $"{Descriptor.Name}Client";
 
-        private List<CallableMethodInfo> _callableMethods = new List<CallableMethodInfo>();
+      private List<CallableMethodInfo> _callableMethods = new List<CallableMethodInfo>();
+      private List<DependencyClassInfo> _dependencyClasses = new List<DependencyClassInfo>();
 
-      /// <summary>
-      /// Define the class.
-      /// </summary>
-      /// <param name="serviceObject"></param>
+        /// <summary>
+        /// Define the class.
+        /// </summary>
+        /// <param name="serviceObject"></param>
       public ClientCodeGenerator(MicroserviceDescriptor descriptor)
       {
           Descriptor = descriptor;
@@ -51,11 +53,13 @@ namespace Beamable.Server.Editor.CodeGen
               TypeAttributes.Public | TypeAttributes.Sealed;
           targetClass.BaseTypes.Add(new CodeTypeReference(typeof(MicroserviceClient)));
 
-
           targetClass.Comments.Add(new CodeCommentStatement($"<summary> A generated client for <see cref=\"{Descriptor.Type.FullName}\"/> </summary", true));
 
           samples.Types.Add(targetClass);
           targetUnit.Namespaces.Add(samples);
+
+          ExtractDependencyClasses(descriptor);
+          GenerateMockedDependencyClasses();
 
           // need to scan and get methods.
           var allMethods = descriptor.Type.GetMethods(BindingFlags.Instance | BindingFlags.Public);
@@ -76,7 +80,157 @@ namespace Beamable.Server.Editor.CodeGen
 
               AddCallableMethod(callable);
           }
+      }
 
+      void ExtractDependencyClasses(MicroserviceDescriptor descriptor)
+      {
+            var storageRef = descriptor.GetStorageReferences().ToArray();
+
+            if (storageRef.Length > 0)
+            {
+                var allTypes = storageRef[0].Type.Assembly.GetTypes();
+
+                if (allTypes.Length > 0)
+                {
+                    for (int i = 0; i < allTypes.Length; i++)
+                    {
+                        if (!typeof(StorageObject).IsAssignableFrom(allTypes[i]))
+                        {
+                            ExtractType(allTypes[i]);
+                        }
+                    }
+                }
+            }
+      }
+
+      void ExtractType(Type type)
+      {
+            if (Type.GetType(type.ToString()) != null) // type is not available in current namespace
+                return;
+
+            var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public);
+            var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public);
+            var constructors = type.GetConstructors();
+
+            if (fields.Length > 0 || properties.Length > 0)
+            {
+                _dependencyClasses.Add(new DependencyClassInfo()
+                {
+                    Name = type.Name,
+                    FullName = type.FullName,
+                    Fields = fields,
+                    Properties = properties,
+                    Constructors = constructors
+                });
+
+                if (fields.Length > 0)
+                {
+                    for (int k = 0; k < fields.Length; k++)
+                        ExtractType(fields[k].FieldType);
+                }
+
+                if (properties.Length > 0)
+                {
+                    for (int k = 0; k < properties.Length; k++)
+                        ExtractType(properties[k].PropertyType);
+                }
+
+                if (constructors.Length > 0)
+                {
+                    for (int k = 0; k < constructors.Length; k++)
+                    {
+                        var constructorParams = constructors[k].GetParameters();
+
+                        foreach (var singleConstructorParam in constructorParams)
+                            ExtractType(singleConstructorParam.ParameterType);
+                    }
+
+                }
+            }
+      }
+
+      void GenerateMockedDependencyClasses()
+      {
+            const string stringGetterSetter = " { get; set; }//";
+
+            foreach (var single in _dependencyClasses)
+            {
+                CodeTypeDeclaration tmpClass = new CodeTypeDeclaration(single.Name)
+                {
+                    IsClass = true,
+                };
+
+                foreach (var fieldData in single.Fields)
+                {
+                    CodeMemberField field = new CodeMemberField();
+                    field.Attributes = MemberAttributes.Public | MemberAttributes.Final;
+                    field.Type = new CodeTypeReference(fieldData.FieldType.Name);
+                    field.Name = fieldData.Name;
+
+                    tmpClass.Members.Add(field);
+                }
+
+
+                foreach (var propertyData in single.Properties)
+                {
+                    CodeMemberField property = new CodeMemberField();
+                    property.Attributes = MemberAttributes.Public | MemberAttributes.Final;
+                    property.Type = new CodeTypeReference(propertyData.PropertyType.Name);
+                    property.Name = propertyData.Name;
+
+                    property.Name += stringGetterSetter;
+                    tmpClass.Members.Add(property);
+                }
+
+                foreach (var constructorData in single.Constructors)
+                {
+                    CodeConstructor constructor = new CodeConstructor();
+                    constructor.Attributes = MemberAttributes.Public | MemberAttributes.Final;
+
+                    var constructorParam = constructorData.GetParameters();
+
+                    foreach (var singleConstructorParam in constructorParam)
+                    {
+                        constructor.Parameters.Add(new CodeParameterDeclarationExpression(singleConstructorParam.ParameterType.Name, singleConstructorParam.Name));
+
+                        // assignConstructorParam
+                        foreach(CodeTypeMember member in tmpClass.Members)
+                        {
+                            string tmpName = member.Name.Replace(stringGetterSetter, "");
+                            if (string.Equals(tmpName.ToLower(), singleConstructorParam.Name.ToLower()))
+                            {
+                                if (member is CodeMemberField field && string.Equals(field.Type.BaseType, singleConstructorParam.ParameterType.Name))
+                                {
+                                    CodeFieldReferenceExpression reference = new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), tmpName);
+                                    constructor.Statements.Add(new CodeAssignStatement(reference, new CodeArgumentReferenceExpression(singleConstructorParam.Name)));
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (constructor.Statements.Count > 0)
+                        tmpClass.Members.Add(constructor);
+                }
+
+
+                tmpClass.Comments.Add(new CodeCommentStatement($"<summary> A generated mock class for <see cref=\"{single.FullName}\"/> </summary", true));
+
+                //samples.Types.Add(tmpClass); // we want mock in root or in service class?
+
+                targetClass.Members.Add(tmpClass);
+            }
+        }
+
+      bool IsDependencyClassName(string name)
+      {
+            for (int i = 0; i < _dependencyClasses.Count; i++)
+            {
+                if (string.Equals(name, _dependencyClasses[i].Name))
+                    return true;
+            }
+
+            return false;
       }
 
       void AddCallableMethod(CallableMethodInfo info)
@@ -94,7 +248,23 @@ namespace Beamable.Server.Editor.CodeGen
               var methodParam = methodParams[i];
               var paramType = methodParam.ParameterType;
               var paramName = methodParam.Name;
-              genMethod.Parameters.Add(new CodeParameterDeclarationExpression(paramType, paramName));
+
+                bool isDependencyClassType = IsDependencyClassName(paramType.Name);
+
+                CodeTypeReference paramTypeReference;
+
+                if (isDependencyClassType)
+                {
+                    genMethod.Parameters.Add(new CodeParameterDeclarationExpression(paramType.Name, paramName));
+                    paramTypeReference = new CodeTypeReference(paramType.Name);
+                }
+                else
+                {
+                    genMethod.Parameters.Add(new CodeParameterDeclarationExpression(paramType, paramName));
+                    paramTypeReference = new CodeTypeReference(paramType);
+                }
+
+
 
               var serializationFieldName = $"serialized_{paramName}";
               var declare = new CodeParameterDeclarationExpression(typeof(string), serializationFieldName);
@@ -106,7 +276,7 @@ namespace Beamable.Server.Editor.CodeGen
                       "SerializeArgument",
                       new CodeTypeReference[]
                       {
-                          new CodeTypeReference(paramType),
+                          paramTypeReference,
                       }), new CodeExpression[]
                   {
                     new CodeArgumentReferenceExpression(paramName),
@@ -210,9 +380,18 @@ namespace Beamable.Server.Editor.CodeGen
       }
 
       public class CallableMethodInfo
-        {
+      {
             public MethodInfo MethodInfo;
             public ClientCallableAttribute ClientCallable;
+      }
+
+      public class DependencyClassInfo
+      {
+            public string Name;
+            public string FullName;
+            public FieldInfo[] Fields;
+            public PropertyInfo[] Properties;
+            public ConstructorInfo[] Constructors;
         }
    }
 }
