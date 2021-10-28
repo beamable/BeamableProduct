@@ -30,10 +30,10 @@ using Beamable.Api.Sessions;
 using Beamable.Common.Api;
 using Beamable.Common.Api.CloudData;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Api.Notifications;
 using Beamable.Common.Api.Tournaments;
 using Beamable.Common.Player;
 using Beamable.Experimental;
-using Beamable.Player;
 using Beamable.Sessions;
 using Modules.Content;
 
@@ -86,6 +86,7 @@ namespace Beamable
         EventsService EventsService { get; }
         Promise<IBeamablePurchaser> BeamableIAP { get; }
         IConnectivityService ConnectivityService { get; }
+        INotificationService NotificationService { get; }
         ITournamentApi TournamentsService { get; }
         ICloudDataApi TrialDataService { get; }
 
@@ -352,6 +353,11 @@ namespace Beamable
         /// Entry point for the PlatformRequester.
         /// </summary>
         public IBeamableRequester Requester => _platform.Requester;
+
+        /// <summary>
+        /// Entry point for the INotificationService.
+        /// </summary>
+        public INotificationService NotificationService => _platform.Notification;
 
         /// <summary>
         /// Entry point for the IBeamablePurchaser.

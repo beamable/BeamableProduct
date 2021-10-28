@@ -1,113 +1,16 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
+using System.Linq;
 using Beamable.Common.Api.Announcements;
+using Beamable.Common.Api.Notifications;
+using UnityEngine;
 
-namespace Beamable.Common.Player2
+namespace Beamable.Common.Player
 {
 
-   public interface IObservable
-   {
-      bool IsLoading { get; }
-      event Action OnUpdated;
-      event Action OnLoadingStarted;
-      event Action OnLoadingFinished;
-      Promise Refresh();
-   }
 
-   public abstract class AbsObservable : IObservable
-   {
-      public bool IsLoading { get; private set; }
-      public event Action OnUpdated;
-      public event Action OnLoadingStarted;
-      public event Action OnLoadingFinished;
-
-      private int _lastBroadcastHashcode;
-      private Promise _pendingRefresh;
-
-      public async Promise Refresh()
-      {
-         if (IsLoading)
-         {
-            await _pendingRefresh;
-            return;
-         }
-
-         IsLoading = true;
-         try
-         {
-            OnLoadingStarted?.Invoke();
-            _pendingRefresh = PerformRefresh();
-            await _pendingRefresh;
-            TriggerUpdate();
-         }
-         finally
-         {
-            _pendingRefresh = null;
-            IsLoading = false;
-            OnLoadingFinished?.Invoke();
-         }
-      }
-
-      protected void TriggerUpdate()
-      {
-         // is the data the same as it was before?
-         // we make that decision based on the hash code of the element...
-         var hash = GetBroadcastHashCode();
-         var isDifferent = hash != _lastBroadcastHashcode;
-         _lastBroadcastHashcode = hash;
-
-         if (isDifferent)
-         {
-            OnUpdated?.Invoke();
-         }
-      }
-
-      protected virtual int GetBroadcastHashCode()
-      {
-         return GetHashCode();
-      }
-
-      protected abstract Promise PerformRefresh();
-   }
-
-   public interface IObservableReadonlyList<out T> : IReadOnlyCollection<T>, IObservable
-   {
-      T this[int index] { get; }
-   }
-
-   public abstract class AbsObservableReadonlyList<T> : AbsObservable, IObservableReadonlyList<T>
-   {
-      private List<T> _data = new List<T>(); // set to new() to avoid null
-      public IEnumerator<T> GetEnumerator() => _data.GetEnumerator();
-      IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-      public int Count => _data.Count;
-      public T this[int index] => _data[index];
-
-      protected override int GetBroadcastHashCode()
-      {
-         /*
-          * We want to use a hash code based on the elements of the list at the given moment.
-          */
-         var res = 0x2D2816FE;
-         foreach(var item in this)
-         {
-            res = res * 31 + (item == null ? 0 : item.GetHashCode());
-         }
-         return res;
-      }
-
-      protected void SetData(List<T> nextData)
-      {
-         _data = nextData;
-      }
-
-   }
-
+   [Serializable]
    public class Announcement
    {
-
       private readonly PlayerAnnouncements _group;
 
       public string Id;
@@ -115,12 +18,19 @@ namespace Beamable.Common.Player2
       public string Channel;
       public string Body;
 
+      // public AnnouncementRef ContentRef; // TODO: It would be cool to know which piece of content spawned this.
+
       public bool IsRead, IsClaimed, IsIgnored;
+
+
 
       internal Announcement(PlayerAnnouncements group)
       {
          _group = group;
       }
+
+      // TODO: _could_ have custom editor tooling to perform this method.
+
 
       public Promise Read() => _group.Read(this);
 
@@ -156,31 +66,45 @@ namespace Beamable.Common.Player2
       #endregion
    }
 
+   [Serializable]
    public class PlayerAnnouncements : AbsObservableReadonlyList<Announcement>
    {
       private readonly IAnnouncementsApi _announcementsApi;
+      private readonly INotificationService _notifications;
 
-      public PlayerAnnouncements(IAnnouncementsApi announcementsApi)
+      public PlayerAnnouncements(IAnnouncementsApi announcementsApi, INotificationService notifications)
       {
          _announcementsApi = announcementsApi;
+         _notifications = notifications;
+
+         // TODO: How do we handle multiple users? The dependencies here have the user id baked into them?
+         // TODO: How do we handle user sign out?
+
+         _notifications.Subscribe(_notifications.GetRefreshTokenForService("announcements"), HandleSubscriptionUpdate);
+
+         var _ = Refresh(); // automatically start.
       }
 
+      private void HandleSubscriptionUpdate(object raw)
+      {
+         var _ = Refresh(); // fire-and-forget.
+      }
 
       protected override async Promise PerformRefresh()
       {
-         // goto the swagger, and update everything...
-         await PromiseBase.SuccessfulUnit; // pending an actual API...
-
          // end up with a list of announcement...
-         await _announcementsApi.GetCurrent()
-         var nextAnnouncements = new List<Announcement>
+         var data = await _announcementsApi.GetCurrent();
+
+         var nextAnnouncements = data.announcements.Select(view => new Announcement(this)
          {
-            new Announcement(this)
-            {
-               Id = "abc",
-               Title = "abc"
-            }
-         };
+            // TODO: fill in rest of properties.
+            Id = view.id,
+            Title = view.title,
+            Body = view.body,
+            Channel = view.channel,
+            IsRead = view.isRead,
+            IsClaimed = view.isClaimed,
+         }).ToList();
 
          SetData(nextAnnouncements);
       }
