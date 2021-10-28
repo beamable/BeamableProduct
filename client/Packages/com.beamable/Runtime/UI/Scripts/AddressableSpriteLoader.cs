@@ -1,4 +1,3 @@
-
 using Beamable.Common;
 using Core.Platform;
 using UnityEngine;
@@ -36,10 +35,7 @@ namespace Beamable.UI.Scripts
    /// </summary>
    public static class AddressableSpriteLoader
    {
-
-
-
-      /// <summary>
+       /// <summary>
       /// Given a sprite asset reference, load the sprite itself.
       /// </summary>
       /// <param name="reference">The addressable sprite.</param>
@@ -89,11 +85,14 @@ namespace Beamable.UI.Scripts
       /// <returns>The 2D texture of that sprite.</returns>
       public static Promise<Texture2D> LoadTexture(this AssetReferenceSprite reference)
       {
-         var sprite = LoadSprite(reference);
-         return sprite == null ? null : sprite.Map(s =>
+          if (!reference.RuntimeKeyIsValid())
+              return Promise<Texture2D>.Failed(null);
+
+          var sprite = LoadSprite(reference);
+          return sprite?.Map(s =>
          {
-            var isDone = sprite.IsCompleted;
-            return s.texture;
+             var isDone = sprite.IsCompleted;
+             return s.texture;
          });
       }
    }
