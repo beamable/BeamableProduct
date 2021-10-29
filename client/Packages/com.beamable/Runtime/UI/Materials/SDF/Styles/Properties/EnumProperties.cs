@@ -1,4 +1,5 @@
 ﻿using System;
+using Beamable.UI.SDF.MaterialManagement;
 using UnityEngine.UI;
 
 namespace Beamable.UI.SDF.Styles {
@@ -31,12 +32,42 @@ namespace Beamable.UI.SDF.Styles {
     }
 
     [Serializable]
+    public class SdfModeProperty : EnumProperty<SDFImage.SdfMode> {
+        public SdfModeProperty() { }
+        public SdfModeProperty(SDFImage.SdfMode @enum) : base(@enum) { }
+
+        public override IBUSSProperty Clone() {
+            return new SdfModeProperty(Enum);
+        }
+    }
+
+    [Serializable]
     public class BorderModeProperty : EnumProperty<SDFImage.BorderMode> {
         public BorderModeProperty() { }
         public BorderModeProperty(SDFImage.BorderMode @enum) : base(@enum) { }
 
         public override IBUSSProperty Clone() {
             return new BorderModeProperty(Enum);
+        }
+    }
+
+    [Serializable]
+    public class BackgroundModeProperty : EnumProperty<SdfBackgroundMode> {
+        public BackgroundModeProperty(){}
+        public BackgroundModeProperty(SdfBackgroundMode @enum) : base(@enum) { }
+
+        public override IBUSSProperty Clone() {
+            return new BackgroundModeProperty(Enum);
+        }
+    }
+
+    [Serializable]
+    public class ShadowModeProperty : EnumProperty<SdfShadowMode> {
+        public ShadowModeProperty(){}
+        public ShadowModeProperty(SdfShadowMode @enum) : base(@enum) { }
+
+        public override IBUSSProperty Clone() {
+            return new ShadowModeProperty(Enum);
         }
     }
 }

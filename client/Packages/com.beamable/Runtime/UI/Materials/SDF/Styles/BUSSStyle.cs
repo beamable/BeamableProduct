@@ -16,6 +16,8 @@ namespace Beamable.UI.SDF.Styles
             new PropertyBiding<IFloatProperty>("threshold", new FloatProperty());
         public static readonly PropertyBiding<ISpriteProperty> SdfImage =
             new PropertyBiding<ISpriteProperty>("sdfImage", new SpriteProperty());
+        public static readonly PropertyBiding<SdfModeProperty> SdfMode =
+            new PropertyBiding<SdfModeProperty>("sdfMode", new SdfModeProperty());
         
         // Background
         public static readonly PropertyBiding<IVertexColorProperty> BackgroundColor = 
@@ -24,6 +26,8 @@ namespace Beamable.UI.SDF.Styles
             new PropertyBiding<IFloatFromFloatProperty>("roundCorners", new FloatProperty());
         public static readonly PropertyBiding<ISpriteProperty> BackgroundImage =
             new PropertyBiding<ISpriteProperty>("backgroundImage", new SpriteProperty());
+        public static readonly PropertyBiding<BackgroundModeProperty> BackgroundMode =
+            new PropertyBiding<BackgroundModeProperty>("backgroundMode", new BackgroundModeProperty());
         
         // Border
         public static readonly PropertyBiding<BorderModeProperty> BorderMode =
@@ -42,6 +46,8 @@ namespace Beamable.UI.SDF.Styles
             new PropertyBiding<IColorProperty>("shadowColor", new SingleColorProperty());
         public static readonly PropertyBiding<IFloatProperty> ShadowSoftness = 
             new PropertyBiding<IFloatProperty>("shadowSoftness", new FloatProperty());
+        public static readonly PropertyBiding<ShadowModeProperty> ShadowMode =
+            new PropertyBiding<ShadowModeProperty>("shadowMode", new ShadowModeProperty());
         
         // Font
         public static readonly PropertyBiding<IFontProperty> Font =
