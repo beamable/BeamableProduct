@@ -10,15 +10,17 @@ namespace Beamable.UI.BUSS
     [CreateAssetMenu(fileName = "BUSSStyleConfig", menuName = "Beamable/Buss/Create BUSS Style", order = 0)]
     public class BUSSStyleConfig : ScriptableObject
     {
-        public event Action<List<BUSSStyleDescription>> OnChange;
+        public event Action OnChange;
 
 #pragma warning disable CS0649
         [SerializeField] private List<BUSSStyleDescription> _styles = new List<BUSSStyleDescription>();
 #pragma warning restore CS0649
 
+        public List<BUSSStyleDescription> Styles => _styles;
+        
         private void OnValidate()
         {
-            OnChange?.Invoke(_styles);
+            OnChange?.Invoke();
         }
     }
 

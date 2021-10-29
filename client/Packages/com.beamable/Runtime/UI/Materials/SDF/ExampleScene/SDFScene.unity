@@ -216,6 +216,7 @@ GameObject:
   m_Component:
   - component: {fileID: 189675106}
   - component: {fileID: 189675108}
+  - component: {fileID: 189675107}
   m_Layer: 5
   m_Name: Window
   m_TagString: Untagged
@@ -243,6 +244,22 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &189675107
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 189675105}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 16811512df1848df8e79972e62e99493, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _config: {fileID: 0}
+  _childProviders: []
+  _parentProvider: {fileID: 0}
+  _bussElement: {fileID: 189675108}
 --- !u!114 &189675108
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -404,21 +421,25 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+  mode: 0
   colorRect:
-    BottomLeftColor: {r: 0.81434673, g: 0.9383945, b: 0.9433962, a: 1}
-    BottomRightColor: {r: 0.81434673, g: 0.9383945, b: 0.9433962, a: 1}
-    TopLeftColor: {r: 0.81434673, g: 0.9383945, b: 0.9433962, a: 1}
-    TopRightColor: {r: 0.81434673, g: 0.9383945, b: 0.9433962, a: 1}
-    _drawerMode: 0
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
+    _drawerMode: 1
   threshold: 0
-  rounding: 13.4
-  backgroundTexture: {fileID: 0}
-  meshFrame: 100
-  outlineWidth: 2.6
+  rounding: 0
+  backgroundSprite: {fileID: 0}
+  backgroundMode: 0
+  meshFrame: 0
+  outlineWidth: 0
   outlineColor: {r: 0, g: 0, b: 0, a: 0}
   shadowColor: {r: 0, g: 0, b: 0, a: 0}
   shadowOffset: {x: 0, y: 0}
   shadowThreshold: 0
+  shadowSoftness: 0
+  shadowMode: 0
 --- !u!222 &1089353502
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -529,21 +550,25 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+  mode: 0
   colorRect:
-    BottomLeftColor: {r: 0.99215686, g: 0.94509804, b: 0.7882353, a: 1}
-    BottomRightColor: {r: 0.99215686, g: 0.94509804, b: 0.7882353, a: 1}
-    TopLeftColor: {r: 0.99215686, g: 0.94509804, b: 0.7882353, a: 1}
-    TopRightColor: {r: 0.99215686, g: 0.94509804, b: 0.7882353, a: 1}
-    _drawerMode: 0
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
+    _drawerMode: 1
   threshold: 0
-  rounding: 24.1
-  backgroundTexture: {fileID: 0}
-  meshFrame: 100
+  rounding: 0
+  backgroundSprite: {fileID: 0}
+  backgroundMode: 0
+  meshFrame: 0
   outlineWidth: 0
   outlineColor: {r: 0, g: 0, b: 0, a: 0}
   shadowColor: {r: 0, g: 0, b: 0, a: 0}
   shadowOffset: {x: 0, y: 0}
   shadowThreshold: 0
+  shadowSoftness: 0
+  shadowMode: 0
 --- !u!222 &1113258060
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -592,11 +617,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _config: {fileID: 11400000, guid: bbb5972fe11a1c849ba6ac3e845438dd, type: 2}
   _childProviders:
-  - {fileID: 1089353503}
   - {fileID: 1286049172}
+  - {fileID: 1089353503}
   - {fileID: 1547596618}
   _parentProvider: {fileID: 0}
-  _bussElement: {fileID: 189675108}
+  _bussElement: {fileID: 1113258058}
 --- !u!1 &1286049170
 GameObject:
   m_ObjectHideFlags: 0
@@ -695,21 +720,25 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+  mode: 0
   colorRect:
-    BottomLeftColor: {r: 0.81434673, g: 0.9383945, b: 0.9433962, a: 1}
-    BottomRightColor: {r: 0.81434673, g: 0.9383945, b: 0.9433962, a: 1}
-    TopLeftColor: {r: 0.81434673, g: 0.9383945, b: 0.9433962, a: 1}
-    TopRightColor: {r: 0.81434673, g: 0.9383945, b: 0.9433962, a: 1}
-    _drawerMode: 0
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
+    _drawerMode: 1
   threshold: 0
-  rounding: 13.4
-  backgroundTexture: {fileID: 0}
-  meshFrame: 100
-  outlineWidth: 2.6
+  rounding: 0
+  backgroundSprite: {fileID: 0}
+  backgroundMode: 0
+  meshFrame: 0
+  outlineWidth: 0
   outlineColor: {r: 0, g: 0, b: 0, a: 0}
   shadowColor: {r: 0, g: 0, b: 0, a: 0}
   shadowOffset: {x: 0, y: 0}
   shadowThreshold: 0
+  shadowSoftness: 0
+  shadowMode: 0
 --- !u!222 &1286049175
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -800,21 +829,25 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+  mode: 0
   colorRect:
-    BottomLeftColor: {r: 0.81434673, g: 0.9383945, b: 0.9433962, a: 1}
-    BottomRightColor: {r: 0.81434673, g: 0.9383945, b: 0.9433962, a: 1}
-    TopLeftColor: {r: 0.81434673, g: 0.9383945, b: 0.9433962, a: 1}
-    TopRightColor: {r: 0.81434673, g: 0.9383945, b: 0.9433962, a: 1}
-    _drawerMode: 0
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
+    _drawerMode: 1
   threshold: 0
-  rounding: 13.4
-  backgroundTexture: {fileID: 0}
-  meshFrame: 100
-  outlineWidth: 2.6
+  rounding: 0
+  backgroundSprite: {fileID: 0}
+  backgroundMode: 0
+  meshFrame: 0
+  outlineWidth: 0
   outlineColor: {r: 0, g: 0, b: 0, a: 0}
   shadowColor: {r: 0, g: 0, b: 0, a: 0}
   shadowOffset: {x: 0, y: 0}
   shadowThreshold: 0
+  shadowSoftness: 0
+  shadowMode: 0
 --- !u!222 &1547596617
 CanvasRenderer:
   m_ObjectHideFlags: 0

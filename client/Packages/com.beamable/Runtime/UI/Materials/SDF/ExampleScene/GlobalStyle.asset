@@ -17,23 +17,23 @@ MonoBehaviour:
     _properties:
     - key: backgroundColor
       property:
-        type: Beamable.UI.SDF.Styles.SingleColorProperty, Unity.Beamable, Version=0.0.0.0,
+        type: Beamable.UI.BUSS.SingleColorProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_color":{"r":0.9921568632125855,"g":0.9450980424880981,"b":0.7882353067398071,"a":1.0}}'
+        json: '{"_color":{"r":0.8867924213409424,"g":0.020914912223815919,"b":0.020914912223815919,"a":1.0}}'
     - key: roundCorners
       property:
-        type: Beamable.UI.SDF.Styles.FloatProperty, Unity.Beamable, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
-        json: '{"_floatValue":27.100000381469728}'
+        type: Beamable.UI.BUSS.FloatProperty, Unity.Beamable, Version=0.0.0.0, Culture=neutral,
+          PublicKeyToken=null
+        json: '{"_floatValue":24.8799991607666}'
   - _name: '#playerTile'
     _properties:
     - key: backgroundColor
       property:
-        type: Beamable.UI.SDF.Styles.SingleColorProperty, Unity.Beamable, Version=0.0.0.0,
+        type: Beamable.UI.BUSS.SingleColorProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_color":{"r":0.9882352948188782,"g":0.7960784435272217,"b":0.3333333432674408,"a":1.0}}'
+        json: '{"_color":{"r":0.18014216423034669,"g":0.886274516582489,"b":0.019607825204730035,"a":1.0}}'
     - key: roundCorners
       property:
-        type: Beamable.UI.SDF.Styles.FloatProperty, Unity.Beamable, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
-        json: '{"_floatValue":22.899999618530275}'
+        type: Beamable.UI.BUSS.FloatProperty, Unity.Beamable, Version=0.0.0.0, Culture=neutral,
+          PublicKeyToken=null
+        json: '{"_floatValue":26.360000610351564}'

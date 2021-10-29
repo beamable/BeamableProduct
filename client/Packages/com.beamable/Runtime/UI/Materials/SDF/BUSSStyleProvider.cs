@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using Beamable.UI.Buss;
-using Beamable.UI.SDF.Styles;
 using UnityEngine;
 
 namespace Beamable.UI.BUSS
@@ -17,89 +16,54 @@ namespace Beamable.UI.BUSS
         [SerializeField] private List<BUSSStyleProvider> _childProviders = new List<BUSSStyleProvider>();
         [SerializeField] private BUSSStyleProvider _parentProvider;
         [SerializeField] private BUSSElement _bussElement;
+        [SerializeField] private List<BUSSStyleProvider> _providersTree = new List<BUSSStyleProvider>();
 
-        public void OnGlobalStyleChanged(List<BUSSStyleDescription> globalStyles)
+        private BUSSStyleProvider ParentProvider => _parentProvider;
+
+        public void OnGlobalStyleChanged()
         {
-            Debug.Log($"{name}: Global style changed");
-            
+            // Debug.Log($"{name}: Global style changed");
+
             // TODO: take local style and apply to local buss element
 
             foreach (BUSSStyleProvider childProvider in _childProviders)
             {
-                childProvider.OnParentStyleChanged(globalStyles);
+                childProvider.OnParentStyleChanged();
             }
         }
 
-        private void OnParentStyleChanged(List<BUSSStyleDescription> parentStyles)
+        private void OnParentStyleChanged()
         {
-            Debug.Log($"{name}: Parent style changed");
-            
-            Dictionary<string,BUSSStyle> styles = ParseStyles(parentStyles);
-            
+            // Debug.Log($"{name}: Parent style changed");
+
             if (_bussElement != null)
             {
-                _bussElement.ApplyStyle(GetStyleById(_bussElement.Id, styles));
+                BUSSStyle style = BussConfiguration.Instance.PrepareStyle(_providersTree, _bussElement.Id);
+                _bussElement.ApplyStyle(style);
             }
 
             foreach (BUSSStyleProvider childProvider in _childProviders)
             {
-                childProvider.OnParentStyleChanged(parentStyles);
+                childProvider.OnParentStyleChanged();
             }
         }
 
-        private void OnLocalStyleChanged(List<BUSSStyleDescription> localStyles)
+        private void OnLocalStyleChanged()
         {
-            Debug.Log($"{name}: Local style changed");
+            // Debug.Log($"{name}: Local style changed");
 
-            Dictionary<string,BUSSStyle> styles = ParseStyles(localStyles);
-            
             if (_bussElement != null)
             {
-                _bussElement.ApplyStyle(GetStyleById(_bussElement.Id, styles));
+                BUSSStyle style = BussConfiguration.Instance.PrepareStyle(_providersTree, _bussElement.Id);
+                _bussElement.ApplyStyle(style);
             }
 
             foreach (BUSSStyleProvider childProvider in _childProviders)
             {
-                childProvider.OnParentStyleChanged(localStyles);
+                childProvider.OnParentStyleChanged();
             }
-        }
-         
-        private BUSSStyle GetStyleById(string id, Dictionary<string, BUSSStyle> styleObjects)
-        {
-            return id != null && styleObjects.TryGetValue(id, out BUSSStyle style) ? style : new BUSSStyle();
-        }
-        
-        private Dictionary<string, BUSSStyle> ParseStyles(List<BUSSStyleDescription> stylesList)
-        {
-            Dictionary<string, BUSSStyle> styles = new Dictionary<string, BUSSStyle>();
-            ParseStyleObjects(stylesList, ref styles);
-            return styles;
         }
 
-        private void ParseStyleObjects(List<BUSSStyleDescription> stylesObjects, ref Dictionary<string, BUSSStyle> stylesDictionary)
-        {
-            foreach (BUSSStyleDescription styleObject in stylesObjects)
-            {
-                if (stylesDictionary.TryGetValue(styleObject.Name, out BUSSStyle style))
-                {
-                    foreach (BUSSProperty pair in styleObject.Properties)
-                    {
-                        style[pair.key] = pair.property.Get<IBUSSProperty>();
-                    }
-                }
-                else
-                {
-                    BUSSStyle newStyle = new BUSSStyle();
-                    
-                    foreach (BUSSProperty pair in styleObject.Properties)
-                    {
-                        newStyle[pair.key] = pair.property.Get<IBUSSProperty>();
-                    }
-                    stylesDictionary.Add(styleObject.Name, newStyle);
-                }
-            }
-        }
-        
         private void OnBeforeTransformParentChanged()
         {
             UnregisterFromParent();
@@ -116,12 +80,12 @@ namespace Beamable.UI.BUSS
             {
                 _bussElement = GetComponent<BUSSElement>();
             }
-            
+
             if (_config != null)
             {
                 _config.OnChange += OnLocalStyleChanged;
             }
-            
+
             RegisterToParent();
         }
 
@@ -151,7 +115,7 @@ namespace Beamable.UI.BUSS
             {
                 _config.OnChange -= OnLocalStyleChanged;
             }
-            
+
             UnregisterFromParent();
         }
 
@@ -159,7 +123,7 @@ namespace Beamable.UI.BUSS
         {
             Transform currentTransform = gameObject.transform;
 
-            while (_parentProvider == null)
+            while (ParentProvider == null)
             {
                 if (currentTransform.parent == null)
                 {
@@ -175,34 +139,50 @@ namespace Beamable.UI.BUSS
 
         private void RegisterToParent()
         {
-            if (_parentProvider == null)
+            if (ParentProvider == null)
             {
                 LookForParentStyleProvider();
             }
 
-            if (_parentProvider != null)
+            if (ParentProvider != null)
             {
-                _parentProvider.RegisterObserver(this);
+                ParentProvider.RegisterObserver(this);
             }
             else
             {
                 BussConfiguration.Instance.RegisterObserver(this);
             }
+
+            BuildParentProvidersTree();
         }
 
         private void UnregisterFromParent()
         {
-            if (_parentProvider != null)
+            if (ParentProvider != null)
             {
-                _parentProvider.UnregisterObserver(this);
+                ParentProvider.UnregisterObserver(this);
                 _parentProvider = null;
             }
             else
             {
                 BussConfiguration.Instance.UnregisterObserver(this);
             }
+
+            _providersTree.Clear();
         }
 
+        private void BuildParentProvidersTree()
+        {
+            _providersTree.Clear();
+
+            BUSSStyleProvider currentProvider = this;
+            while (currentProvider != null)
+            {
+                _providersTree.Add(currentProvider);
+                currentProvider = currentProvider.ParentProvider != null ? currentProvider.ParentProvider : null;
+            }
+        }
+        
         private void RegisterObserver(BUSSStyleProvider childProvider)
         {
             if (!_childProviders.Contains(childProvider))

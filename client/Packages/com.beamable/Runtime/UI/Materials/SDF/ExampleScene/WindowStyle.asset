@@ -17,16 +17,16 @@ MonoBehaviour:
     _properties:
     - key: borderWidth
       property:
-        type: Beamable.UI.SDF.Styles.FloatProperty, Unity.Beamable, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
-        json: '{"_floatValue":2.5999999046325685}'
+        type: Beamable.UI.BUSS.FloatProperty, Unity.Beamable, Version=0.0.0.0, Culture=neutral,
+          PublicKeyToken=null
+        json: '{"_floatValue":18.899999618530275}'
     - key: roundCorners
       property:
-        type: Beamable.UI.SDF.Styles.FloatProperty, Unity.Beamable, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
-        json: '{"_floatValue":13.399999618530274}'
+        type: Beamable.UI.BUSS.FloatProperty, Unity.Beamable, Version=0.0.0.0, Culture=neutral,
+          PublicKeyToken=null
+        json: '{"_floatValue":15.859999656677246}'
     - key: backgroundColor
       property:
-        type: Beamable.UI.SDF.Styles.SingleColorProperty, Unity.Beamable, Version=0.0.0.0,
+        type: Beamable.UI.BUSS.SingleColorProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_color":{"r":0.8143467307090759,"g":0.9383944869041443,"b":0.9433962106704712,"a":1.0}}'
+        json: '{"_color":{"r":0.7735849022865295,"g":0.06203276291489601,"b":0.06203276291489601,"a":1.0}}'
