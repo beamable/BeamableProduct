@@ -115,18 +115,18 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
             {
                 if (stylesDictionary.TryGetValue(styleObject.Name, out BUSSStyle style))
                 {
-                    foreach (BUSSProperty pair in styleObject.Properties)
+                    foreach (BussPropertyProvider pair in styleObject.Properties)
                     {
-                        style[pair.key] = pair.property.Get<IBUSSProperty>();
+                        style[pair.Key] = pair.GetProperty();
                     }
                 }
                 else
                 {
                     BUSSStyle newStyle = new BUSSStyle();
                     
-                    foreach (BUSSProperty pair in styleObject.Properties)
+                    foreach (BussPropertyProvider pair in styleObject.Properties)
                     {
-                        newStyle[pair.key] = pair.property.Get<IBUSSProperty>();
+                        newStyle[pair.Key] = pair.GetProperty();
                     }
                     stylesDictionary.Add(styleObject.Name, newStyle);
                 }

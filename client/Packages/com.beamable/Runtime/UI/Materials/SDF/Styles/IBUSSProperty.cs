@@ -48,7 +48,4 @@ namespace Beamable.UI.BUSS
     public interface IFontProperty : IBUSSProperty {
         TMP_FontAsset FontAsset { get; }
     }
-
-    public interface IUniversalProperty : IColorProperty, IVertexColorProperty, IFloatProperty, IFloatFromFloatProperty,
-        IVector2Property, IEnumProperty, ISpriteProperty, IFontProperty { }
 }
