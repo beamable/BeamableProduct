@@ -1,7 +1,8 @@
-﻿using Beamable.UI.SDF.Styles;
+﻿using Beamable.UI.SDF;
+using Beamable.UI.SDF.Styles;
 using UnityEngine;
 
-namespace Beamable.UI.SDF
+namespace Beamable.UI.BUSS
 {
     [ExecuteAlways, DisallowMultipleComponent]
     public class BUSSElement : MonoBehaviour
@@ -12,57 +13,13 @@ namespace Beamable.UI.SDF
 
         public string Id => _id;
 
-        private BUSSStyleProvider _styleProvider;
-
-        public void NotifyOnStyleChanged(BUSSStyle newStyle)
+        public void ApplyStyle(BUSSStyle newStyle)
         {
+            // TODO: try to avoid using SDF classes and namespaces
             if (TryGetComponent<SDFImage>(out var sdfImage))
             {
                 sdfImage.Style = newStyle;
             }
-        }
-
-        private void OnBeforeTransformParentChanged()
-        {
-            Unregister();
-        }
-
-        private void OnTransformParentChanged()
-        {
-            LookForStyleProvider();
-            Register();
-        }
-
-        private void LookForStyleProvider()
-        {
-            Transform currentTransform = gameObject.transform;
-
-            while (_styleProvider == null)
-            {
-                if (currentTransform.parent == null)
-                {
-                    Debug.LogWarning("Haven't found any SDFStyleProvider");
-                    break;
-                }
-
-                currentTransform = currentTransform.parent;
-
-                BUSSStyleProvider styleProvider = currentTransform.GetComponent<BUSSStyleProvider>();
-                _styleProvider = styleProvider;
-            }
-        }
-
-        private void OnValidate()
-        {
-            Register();
-            
-            // TODO: change this, get style only for current gameobject, not invoke change on everyone
-            _styleProvider.NotifyOnStyleChanged();
-        }
-
-        private void OnEnable()
-        {
-            Register();
         }
 
         private void OnDisable()
@@ -71,35 +28,6 @@ namespace Beamable.UI.SDF
             if (TryGetComponent<SDFImage>(out var sdfImage))
             {
                 sdfImage.Style = null;
-            }
-
-            Unregister();
-        }
-
-        private void OnDestroy()
-        {
-            Unregister();
-        }
-
-        private void Register()
-        {
-            if (_styleProvider == null)
-            {
-                LookForStyleProvider();
-            }
-            
-            if (_styleProvider != null)
-            {
-                _styleProvider.Register(this);
-            }
-        }
-
-        private void Unregister()
-        {
-            if (_styleProvider != null)
-            {
-                _styleProvider.Unregister(this);
-                _styleProvider = null;
             }
         }
     }

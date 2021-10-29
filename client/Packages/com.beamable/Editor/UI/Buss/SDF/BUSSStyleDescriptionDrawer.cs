@@ -1,22 +1,26 @@
-﻿using System.Linq;
-using Beamable.UI.SDF;
+﻿using System;
+using System.Linq;
+using Beamable.UI.BUSS;
 using Beamable.UI.SDF.Styles;
 using UnityEditor;
 using UnityEngine;
 
 namespace Beamable.Editor.UI.SDF {
     [CustomPropertyDrawer(typeof(BUSSStyleDescription))]
-    public class SingleStyleObjectPropertyDrawer : PropertyDrawer {
+    public class SingleStyleObjectPropertyDrawer : PropertyDrawer
+    {
+        public Action<string> OnChange;
         
         private SerializableValueObjectDrawer _svoDrawer = new SerializableValueObjectDrawer();
-        
+
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
             var rc = position.ToRectController();
             
             EditorGUI.LabelField(rc.ReserveSingleLine(), label);
             rc.MoveIndent(1);
-            EditorGUI.PropertyField(rc.ReserveSingleLine(), property.FindPropertyRelative("_name"));
 
+            EditorGUI.PropertyField(rc.ReserveSingleLine(), property.FindPropertyRelative("_name"));
+            
             var properties = property.FindPropertyRelative("_properties");
             var keys = new string[properties.arraySize];
             rc.MoveIndent(2);

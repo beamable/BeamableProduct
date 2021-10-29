@@ -10,18 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6878a57282fc4d5dae9c2e3538013b26, type: 3}
-  m_Name: OtherStyle
+  m_Name: PlayerTileStyle 1
   m_EditorClassIdentifier: 
   _styles:
-  - _name: '#button'
+  - _name: '#playerTile'
     _properties:
-    - key: borderWidth
-      property:
-        type: Beamable.UI.SDF.Styles.FloatProperty, Unity.Beamable, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
-        json: '{"_floatValue":29.200000762939454}'
     - key: backgroundColor
       property:
         type: Beamable.UI.SDF.Styles.SingleColorProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_color":{"r":1.0,"g":0.0,"b":0.0,"a":1.0}}'
+        json: '{"_color":{"r":0.22316661477088929,"g":0.6778753995895386,"b":0.801886796951294,"a":1.0}}'
+    - key: roundCorners
+      property:
+        type: Beamable.UI.SDF.Styles.FloatProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_floatValue":13.319999694824219}'

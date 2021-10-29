@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using Beamable.UI.SDF;
+using Beamable.UI.BUSS;
 using UnityEngine;
 
-namespace Beamable.UI.Buss
+namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's namespace
 {
    public class BussConfiguration : ModuleConfigurationObject
    {
@@ -53,24 +53,35 @@ namespace Beamable.UI.Buss
          }
       }
 
-      public List<BUSSStyleDescription> GetGlobalStyles()
-      {
-         return _globalStyleConfig ? _globalStyleConfig.Styles : new List<BUSSStyleDescription>();
-      }
-
       private void OnValidate()
       {
          if (_globalStyleConfig != null)
          {
-            _globalStyleConfig.OnChange = OnGlobalStyleChanged;
+            _globalStyleConfig.OnChange += OnGlobalStyleChanged;
          }
       }
 
-      private void OnGlobalStyleChanged()
+      private void OnDestroy()
+      {
+         if (_globalStyleConfig != null)
+         {
+            _globalStyleConfig.OnChange -= OnGlobalStyleChanged;
+         }
+      }
+      
+      private void OnDisable()
+      {
+         if (_globalStyleConfig != null)
+         {
+            _globalStyleConfig.OnChange -= OnGlobalStyleChanged;
+         }
+      }
+
+      private void OnGlobalStyleChanged(List<BUSSStyleDescription> styles)
       {
          foreach (BUSSStyleProvider styleProvider in _styleProviders)
          {
-            styleProvider.NotifyOnStyleChanged();
+            styleProvider.OnGlobalStyleChanged(styles);
          }
       }
    }
