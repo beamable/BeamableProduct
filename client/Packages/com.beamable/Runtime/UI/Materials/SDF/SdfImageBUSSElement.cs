@@ -1,16 +1,18 @@
 ﻿using Beamable.UI.SDF;
-using Beamable.UI.SDF.Styles;
 using UnityEngine;
 
 namespace Beamable.UI.BUSS
 {
     [ExecuteAlways, DisallowMultipleComponent, RequireComponent(typeof(SDFImage))]
-    public class SdfImageBUSSElement : BUSSElement {
+    public class SdfImageBUSSElement : BUSSElement 
+    {
         private SDFImage _image;
         private bool _hasImage;
 
-        public override void ApplyStyle(BUSSStyle newStyle) {
-            if (!_hasImage) {
+        public override void ApplyStyle(BUSSStyle newStyle) 
+        {
+            if (!_hasImage) 
+            {
                 _image = GetComponent<SDFImage>();
                 _hasImage = true;
             }

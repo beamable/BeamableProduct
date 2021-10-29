@@ -87,19 +87,26 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
             }
         }
 
-        // TODO: in future move to some styles repository class which responsibility will be caching styles and reca
+        // TODO: in future move to some styles repository class which responsibility will be caching styles and recalculate them
         #region Styles parsing
-        
-        public BUSSStyle GetStyleById(string id, Dictionary<string, BUSSStyle> styleObjects)
+
+        public BUSSStyle PrepareStyle(List<BUSSStyleProvider> providersTree, string bussElementId)
         {
-            return id != null && styleObjects.TryGetValue(id, out BUSSStyle style) ? style : new BUSSStyle();
+            Dictionary<string, BUSSStyle> styles = new Dictionary<string, BUSSStyle>();
+            ParseStyleObjects(_globalStyleConfig.Styles, ref styles);
+            return GetStyleById(bussElementId, styles);
         }
-        
+
         private Dictionary<string, BUSSStyle> ParseStyles(List<BUSSStyleDescription> stylesList)
         {
             Dictionary<string, BUSSStyle> styles = new Dictionary<string, BUSSStyle>();
             ParseStyleObjects(stylesList, ref styles);
             return styles;
+        }
+
+        private BUSSStyle GetStyleById(string id, Dictionary<string, BUSSStyle> styleObjects)
+        {
+            return id != null && styleObjects.TryGetValue(id, out BUSSStyle style) ? style : new BUSSStyle();
         }
 
         private void ParseStyleObjects(List<BUSSStyleDescription> stylesObjects, ref Dictionary<string, BUSSStyle> stylesDictionary)
@@ -124,13 +131,6 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
                     stylesDictionary.Add(styleObject.Name, newStyle);
                 }
             }
-        }
-
-        public BUSSStyle PrepareStyle(List<BUSSStyleProvider> providersTree, string bussElementId)
-        {
-            Dictionary<string, BUSSStyle> styles = new Dictionary<string, BUSSStyle>();
-            ParseStyleObjects(_globalStyleConfig.Styles, ref styles);
-            return GetStyleById(bussElementId, styles);
         }
 
         #endregion

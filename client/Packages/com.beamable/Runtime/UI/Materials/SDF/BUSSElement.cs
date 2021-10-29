@@ -1,5 +1,4 @@
-﻿using Beamable.UI.SDF;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace Beamable.UI.BUSS
 {
@@ -14,20 +13,12 @@ namespace Beamable.UI.BUSS
 
         public virtual void ApplyStyle(BUSSStyle newStyle)
         {
-            // TODO: try to avoid using SDF classes and namespaces
-            if (TryGetComponent<SDFImage>(out var sdfImage))
-            {
-                sdfImage.Style = newStyle;
-            }
+
         }
 
         private void OnDisable()
         {
-            // TODO: do we need this? When element will be enabled again, it will be validated and updated with new/another style
-            if (TryGetComponent<SDFImage>(out var sdfImage))
-            {
-                sdfImage.Style = null;
-            }
+            ApplyStyle(null);
         }
     }
 }

@@ -215,8 +215,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 189675106}
-  - component: {fileID: 189675108}
-  - component: {fileID: 189675107}
+  - component: {fileID: 189675109}
   m_Layer: 5
   m_Name: Window
   m_TagString: Untagged
@@ -244,35 +243,14 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &189675107
-MonoBehaviour:
+--- !u!222 &189675109
+CanvasRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 189675105}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 16811512df1848df8e79972e62e99493, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _config: {fileID: 0}
-  _childProviders: []
-  _parentProvider: {fileID: 0}
-  _bussElement: {fileID: 189675108}
---- !u!114 &189675108
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 189675105}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6beb15a77e9a4bb1aea2abbfacf923f5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _id: 
+  m_CullTransparentMesh: 1
 --- !u!1 &324197946
 GameObject:
   m_ObjectHideFlags: 0
@@ -350,8 +328,8 @@ GameObject:
   - component: {fileID: 1089353499}
   - component: {fileID: 1089353502}
   - component: {fileID: 1089353501}
-  - component: {fileID: 1089353500}
   - component: {fileID: 1089353503}
+  - component: {fileID: 1089353500}
   m_Layer: 5
   m_Name: Player tile 01
   m_TagString: Untagged
@@ -387,10 +365,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1089353498}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6beb15a77e9a4bb1aea2abbfacf923f5, type: 3}
+  m_Script: {fileID: 11500000, guid: b664d96326cd41a5b3f333aac566f578, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _id: '#playerTile'
+  _id: 
 --- !u!114 &1089353501
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -423,13 +401,13 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   mode: 0
   colorRect:
-    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
-    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomLeftColor: {r: 0.18014216, g: 0.8862745, b: 0.019607825, a: 1}
+    BottomRightColor: {r: 0.18014216, g: 0.8862745, b: 0.019607825, a: 1}
+    TopLeftColor: {r: 0.18014216, g: 0.8862745, b: 0.019607825, a: 1}
+    TopRightColor: {r: 0.18014216, g: 0.8862745, b: 0.019607825, a: 1}
     _drawerMode: 1
   threshold: 0
-  rounding: 0
+  rounding: 26.36
   backgroundSprite: {fileID: 0}
   backgroundMode: 0
   meshFrame: 0
@@ -464,6 +442,10 @@ MonoBehaviour:
   _childProviders: []
   _parentProvider: {fileID: 1113258062}
   _bussElement: {fileID: 1089353500}
+  _providersTree:
+  - {fileID: 1089353503}
+  - {fileID: 1113258062}
+  - {fileID: 0}
 --- !u!1 &1113258056
 GameObject:
   m_ObjectHideFlags: 0
@@ -475,9 +457,9 @@ GameObject:
   - component: {fileID: 1113258057}
   - component: {fileID: 1113258060}
   - component: {fileID: 1113258059}
-  - component: {fileID: 1113258058}
-  - component: {fileID: 1113258061}
   - component: {fileID: 1113258062}
+  - component: {fileID: 1113258061}
+  - component: {fileID: 1113258058}
   m_Layer: 5
   m_Name: Main frame
   m_TagString: Untagged
@@ -516,10 +498,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1113258056}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6beb15a77e9a4bb1aea2abbfacf923f5, type: 3}
+  m_Script: {fileID: 11500000, guid: b664d96326cd41a5b3f333aac566f578, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _id: '#mainFrame'
+  _id: 
 --- !u!114 &1113258059
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -552,13 +534,13 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   mode: 0
   colorRect:
-    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
-    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomLeftColor: {r: 0.8867924, g: 0.020914912, b: 0.020914912, a: 1}
+    BottomRightColor: {r: 0.8867924, g: 0.020914912, b: 0.020914912, a: 1}
+    TopLeftColor: {r: 0.8867924, g: 0.020914912, b: 0.020914912, a: 1}
+    TopRightColor: {r: 0.8867924, g: 0.020914912, b: 0.020914912, a: 1}
     _drawerMode: 1
   threshold: 0
-  rounding: 0
+  rounding: 24.88
   backgroundSprite: {fileID: 0}
   backgroundMode: 0
   meshFrame: 0
@@ -617,11 +599,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _config: {fileID: 11400000, guid: bbb5972fe11a1c849ba6ac3e845438dd, type: 2}
   _childProviders:
+  - {fileID: 1547596618}
   - {fileID: 1286049172}
   - {fileID: 1089353503}
-  - {fileID: 1547596618}
   _parentProvider: {fileID: 0}
   _bussElement: {fileID: 1113258058}
+  _providersTree:
+  - {fileID: 1113258062}
+  - {fileID: 0}
 --- !u!1 &1286049170
 GameObject:
   m_ObjectHideFlags: 0
@@ -633,8 +618,8 @@ GameObject:
   - component: {fileID: 1286049171}
   - component: {fileID: 1286049175}
   - component: {fileID: 1286049174}
-  - component: {fileID: 1286049173}
   - component: {fileID: 1286049172}
+  - component: {fileID: 1286049173}
   m_Layer: 5
   m_Name: Player tile 03
   m_TagString: Untagged
@@ -677,6 +662,9 @@ MonoBehaviour:
   _childProviders: []
   _parentProvider: {fileID: 1113258062}
   _bussElement: {fileID: 1286049173}
+  _providersTree:
+  - {fileID: 1286049172}
+  - {fileID: 1113258062}
 --- !u!114 &1286049173
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -686,10 +674,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1286049170}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6beb15a77e9a4bb1aea2abbfacf923f5, type: 3}
+  m_Script: {fileID: 11500000, guid: b664d96326cd41a5b3f333aac566f578, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _id: '#playerTile'
+  _id: 
 --- !u!114 &1286049174
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -722,13 +710,13 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   mode: 0
   colorRect:
-    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
-    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomLeftColor: {r: 0.18014216, g: 0.8862745, b: 0.019607825, a: 1}
+    BottomRightColor: {r: 0.18014216, g: 0.8862745, b: 0.019607825, a: 1}
+    TopLeftColor: {r: 0.18014216, g: 0.8862745, b: 0.019607825, a: 1}
+    TopRightColor: {r: 0.18014216, g: 0.8862745, b: 0.019607825, a: 1}
     _drawerMode: 1
   threshold: 0
-  rounding: 0
+  rounding: 26.36
   backgroundSprite: {fileID: 0}
   backgroundMode: 0
   meshFrame: 0
@@ -758,8 +746,8 @@ GameObject:
   - component: {fileID: 1547596614}
   - component: {fileID: 1547596617}
   - component: {fileID: 1547596616}
-  - component: {fileID: 1547596615}
   - component: {fileID: 1547596618}
+  - component: {fileID: 1547596615}
   m_Layer: 5
   m_Name: Player tile 02
   m_TagString: Untagged
@@ -795,10 +783,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1547596613}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6beb15a77e9a4bb1aea2abbfacf923f5, type: 3}
+  m_Script: {fileID: 11500000, guid: b664d96326cd41a5b3f333aac566f578, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _id: '#playerTile'
+  _id: 
 --- !u!114 &1547596616
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -831,13 +819,13 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   mode: 0
   colorRect:
-    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
-    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomLeftColor: {r: 0.18014216, g: 0.8862745, b: 0.019607825, a: 1}
+    BottomRightColor: {r: 0.18014216, g: 0.8862745, b: 0.019607825, a: 1}
+    TopLeftColor: {r: 0.18014216, g: 0.8862745, b: 0.019607825, a: 1}
+    TopRightColor: {r: 0.18014216, g: 0.8862745, b: 0.019607825, a: 1}
     _drawerMode: 1
   threshold: 0
-  rounding: 0
+  rounding: 26.36
   backgroundSprite: {fileID: 0}
   backgroundMode: 0
   meshFrame: 0
@@ -872,6 +860,9 @@ MonoBehaviour:
   _childProviders: []
   _parentProvider: {fileID: 1113258062}
   _bussElement: {fileID: 1547596615}
+  _providersTree:
+  - {fileID: 1547596618}
+  - {fileID: 1113258062}
 --- !u!1 &1707984703
 GameObject:
   m_ObjectHideFlags: 0
