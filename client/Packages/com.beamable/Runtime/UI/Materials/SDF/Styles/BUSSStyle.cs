@@ -36,7 +36,7 @@ namespace Beamable.UI.BUSS
             if (_bidings.TryGetValue(key, out var biding)) {
                 return biding.PropertyType;
             }
-            return null;
+            return typeof(IBUSSProperty);
         }
 
         public static IBUSSProperty GetDefaultValue(string key) {

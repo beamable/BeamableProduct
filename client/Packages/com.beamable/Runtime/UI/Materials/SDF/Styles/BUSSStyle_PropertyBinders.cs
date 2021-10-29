@@ -92,7 +92,7 @@ namespace Beamable.UI.BUSS {
             public T Get(BUSSStyle style) {
                 if (style._properties.TryGetValue(Key, out var property)) {
                     if (property is VariableProperty variable) {
-                        GetFromVariable(style, variable.VariableName);
+                        return GetFromVariable(style, variable.VariableName);
                     }
                     else {
                         return (T) property;

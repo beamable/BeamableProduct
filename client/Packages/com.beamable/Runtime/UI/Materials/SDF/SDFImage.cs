@@ -241,7 +241,7 @@ namespace Beamable.UI.SDF {
             shadowSoftness = BUSSStyle.ShadowSoftness.Get(Style).FloatValue;
             shadowMode = BUSSStyle.ShadowMode.Get(Style).Enum;
             
-            meshFrame = Mathf.Max(meshFrame,
+            meshFrame = Mathf.Max(0f,
                 threshold +
                 Mathf.Abs(shadowThreshold) 
                 + outlineWidth

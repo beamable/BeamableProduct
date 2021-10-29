@@ -53,12 +53,12 @@ namespace Beamable.UI.BUSS
     {
         [SerializeField]
         private string key;
-        [SerializeField]
-        private string variableName;
         [SerializeField, SerializableValueImplements(typeof(IBUSSProperty))]
         private SerializableValueObject property;
 
-        public string Key { get; }
+        public string Key {
+            get => key;
+        }
 
         public IBUSSProperty GetProperty() {
             return property.Get<IBUSSProperty>();

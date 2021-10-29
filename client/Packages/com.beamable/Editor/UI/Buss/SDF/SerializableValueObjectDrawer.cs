@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Beamable.UI.BUSS;
 using Beamable.UI.SDF.Styles;
 using UnityEditor;
 using UnityEngine;
@@ -11,24 +12,24 @@ namespace Beamable.Editor.UI.SDF {
         public Type baseTypeOverride;
         private static readonly Dictionary<string, object> _drawerData = new Dictionary<string, object>();
         private readonly Dictionary<string, float> _heightCache = new Dictionary<string, float>();
-        
+
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
-            
             var rc = new EditorGUIRectController(position);
-            
+
             var typeProperty = property.FindPropertyRelative("type");
             var jsonProperty = property.FindPropertyRelative("json");
             var type = typeProperty.stringValue;
             var json = jsonProperty.stringValue;
 
             var hasChange = false;
-            
+
             Type sysType = null;
             object value = null;
-            
+
             var implementsAtt = (SerializableValueImplementsAttribute) attribute;
             if (baseTypeOverride != null || implementsAtt != null) {
-                var data = SerializableValueImplementationHelper.Get(baseTypeOverride != null ? baseTypeOverride : implementsAtt.baseType);
+                var data = SerializableValueImplementationHelper.GetWithSpecialRule("withVariableProperty",
+                    baseTypeOverride != null ? baseTypeOverride : implementsAtt.baseType, typeof(VariableProperty));
                 var dropdownRect = position;
                 dropdownRect.x += EditorGUIUtility.labelWidth;
                 dropdownRect.width -= EditorGUIUtility.labelWidth;
@@ -49,20 +50,21 @@ namespace Beamable.Editor.UI.SDF {
                     }
                 }
             }
-            
+
             sysType = type == null ? null : Type.GetType(type);
             value = JsonUtility.FromJson(json, sysType);
             EditorGUI.BeginChangeCheck();
-            value = GUIDrawerHelper.DrawObject(rc, label, value, _drawerData, property.serializedObject.targetObject.GetInstanceID() + ":" + property.propertyPath);
+            value = GUIDrawerHelper.DrawObject(rc, label, value, _drawerData,
+                property.serializedObject.targetObject.GetInstanceID() + ":" + property.propertyPath);
             hasChange |= EditorGUI.EndChangeCheck();
-            
+
             if (hasChange) {
                 typeProperty.stringValue = sysType?.AssemblyQualifiedName;
                 jsonProperty.stringValue = value != null ? JsonUtility.ToJson(value) : null;
                 property.serializedObject.ApplyModifiedProperties();
                 property.serializedObject.Update();
             }
-            
+
             _heightCache[property.propertyPath] = position.height - rc.rect.height;
         }
 
