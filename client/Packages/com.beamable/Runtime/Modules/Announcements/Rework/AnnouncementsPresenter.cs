@@ -39,12 +39,22 @@ namespace Modules.Content
         private void OnCollectionUpdated()
         {
             noItemsText.gameObject.SetActive(Collection.Count == 0);
+            
+            ClearItems();
 
             foreach (var announcement in Collection)
             {
                 AnnouncementSummary row = Instantiate(announcementRowPrefab, listRoot).GetComponent<AnnouncementSummary>();
                 Assert.IsNotNull(row, $"Instantiation of {nameof(AnnouncementSummary)} failed");
                 row.Setup(announcement.title, announcement.body);
+            }
+        }
+
+        private void ClearItems()
+        {
+            foreach (Transform child in listRoot)
+            {
+                Destroy(child.gameObject);
             }
         }
 
