@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unpublished]
 ### Added
 - Folding/Unfolding services cards in `Microservice Manager`
+- Api Content classes and execution methods to invoke Microservices through data
 
 ## [0.17.2]
 ### Fixed
