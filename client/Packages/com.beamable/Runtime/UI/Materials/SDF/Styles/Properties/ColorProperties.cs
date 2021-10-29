@@ -1,7 +1,8 @@
 ﻿using System;
+using Beamable.UI.SDF.Styles;
 using UnityEngine;
 
-namespace Beamable.UI.SDF.Styles {
+namespace Beamable.UI.BUSS {
     
     // BUSS: color: #232323
     [Serializable]

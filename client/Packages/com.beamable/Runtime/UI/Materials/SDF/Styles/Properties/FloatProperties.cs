@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace Beamable.UI.SDF.Styles {
+namespace Beamable.UI.BUSS {
     [Serializable]
     public class FloatProperty : IFloatProperty, IFloatFromFloatProperty {
         [SerializeField]

@@ -1,7 +1,8 @@
 ﻿using System;
+using Beamable.UI.SDF;
 using UnityEngine.UI;
 
-namespace Beamable.UI.SDF.Styles {
+namespace Beamable.UI.BUSS {
     public abstract class EnumProperty<T> : IEnumProperty where T : Enum {
         public T Enum;
 
@@ -30,6 +31,7 @@ namespace Beamable.UI.SDF.Styles {
         }
     }
 
+    // TODO: can't we move BorderMode class into Beamable.UI.BUSS namespace?
     [Serializable]
     public class BorderModeProperty : EnumProperty<SDFImage.BorderMode> {
         public BorderModeProperty() { }

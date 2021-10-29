@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
-namespace Beamable.UI.SDF.Styles 
+namespace Beamable.UI.BUSS
 {
     public class BUSSStyle {
         

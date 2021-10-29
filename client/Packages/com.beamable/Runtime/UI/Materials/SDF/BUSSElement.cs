@@ -13,7 +13,7 @@ namespace Beamable.UI.BUSS
 
         public string Id => _id;
 
-        public void ApplyStyle(BUSSStyle newStyle)
+        public virtual void ApplyStyle(BUSSStyle newStyle)
         {
             // TODO: try to avoid using SDF classes and namespaces
             if (TryGetComponent<SDFImage>(out var sdfImage))

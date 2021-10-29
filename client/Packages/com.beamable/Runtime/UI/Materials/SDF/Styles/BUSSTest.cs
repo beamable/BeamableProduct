@@ -1,10 +1,12 @@
 ﻿using System;
 using Beamable.Editor.UI.SDF;
+using Beamable.UI.SDF;
+using Beamable.UI.SDF.Styles;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Beamable.UI.SDF.Styles {
+namespace Beamable.UI.BUSS {
     [ExecuteAlways]
     public class BUSSTest : MonoBehaviour {
         public KeyWithProperty[] styleSheet;

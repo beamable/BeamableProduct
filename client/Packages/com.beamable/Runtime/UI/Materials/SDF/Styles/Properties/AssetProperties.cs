@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Beamable.UI.SDF.Styles {
+namespace Beamable.UI.BUSS {
     public abstract class BaseAssetProperty<T> {
         
         [SerializeField]

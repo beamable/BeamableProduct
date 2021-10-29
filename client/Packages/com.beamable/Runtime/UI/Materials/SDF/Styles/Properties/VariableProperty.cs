@@ -1,9 +1,10 @@
 ﻿using System;
+using Beamable.UI.SDF.Styles;
 using TMPro;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Beamable.UI.SDF.Styles {
+namespace Beamable.UI.BUSS {
     [Serializable]
     public class VariableProperty : IUniversalProperty {
         [SerializeField]
