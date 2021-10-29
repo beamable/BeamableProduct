@@ -15,6 +15,9 @@ namespace Beamable.UI.BUSS
                 if (_bidings.TryGetValue(key, out var biding)) {
                     return biding.GetProperty(this);
                 }
+                if (key.StartsWith("--") && _properties.TryGetValue(key, out var property)) {
+                    return property;
+                }
 
                 return null;
             }
@@ -23,9 +26,8 @@ namespace Beamable.UI.BUSS
                 if (_bidings.TryGetValue(key, out var biding)) {
                     biding.SetProperty(this, value);
                 }
-                else if (key.StartsWith("--")) { // variable that wasn't accessed before
-                    _bidings[key] = biding = new PropertyBiding<IBUSSProperty>(key, null);
-                    biding.SetProperty(this, value);
+                else if (key.StartsWith("--")) { // variable
+                    _properties[key] = value;
                 }
             }
         }

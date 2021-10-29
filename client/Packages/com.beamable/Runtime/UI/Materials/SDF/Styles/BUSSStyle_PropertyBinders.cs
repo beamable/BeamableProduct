@@ -103,11 +103,16 @@ namespace Beamable.UI.BUSS {
             }
 
             private T GetFromVariable(BUSSStyle style, string variableName) {
-                if (_keyControler.Contains(Key)) return DefaultValue;
-                _keyControler.Add(Key);
+                if (_keyControler.Contains(variableName)) return DefaultValue;
+                _keyControler.Add(variableName);
                 var result = DefaultValue;
-                if (_bidings.TryGetValue(variableName, out var variableBinder)) {
-                    result = (variableBinder.GetProperty(style) as T) ?? DefaultValue;
+                if (style._properties.TryGetValue(variableName, out var property)) {
+                    if (property is VariableProperty variableProperty) {
+                        result = GetFromVariable(style, variableProperty.VariableName);
+                    }
+                    else {
+                        result = (property as T) ?? DefaultValue;
+                    }
                 }
                 _keyControler.Clear();
                 return result;
