@@ -89,7 +89,6 @@ namespace Beamable.UI.Buss
             }
          }
 
-
          Apply(start, null, baseRules, baseInheritRules);
       }
    }

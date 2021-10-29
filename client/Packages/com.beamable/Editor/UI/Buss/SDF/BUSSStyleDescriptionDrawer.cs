@@ -1,38 +1,44 @@
 ﻿using System.Linq;
-using Beamable.UI.SDF;
+using Beamable.UI.BUSS;
 using Beamable.UI.SDF.Styles;
 using UnityEditor;
 using UnityEngine;
 
-namespace Beamable.Editor.UI.SDF {
+namespace Beamable.Editor.UI.SDF
+{
     [CustomPropertyDrawer(typeof(BUSSStyleDescription))]
-    public class BUSSStyleDescriptionDrawer : PropertyDrawer {
-        
+    public class BUSSStyleDescriptionDrawer : PropertyDrawer
+    {
         private SerializableValueObjectDrawer _svoDrawer = new SerializableValueObjectDrawer();
-        
-        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label) {
+
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
             var rc = position.ToRectController();
-            
+
             EditorGUI.LabelField(rc.ReserveSingleLine(), label);
             rc.MoveIndent(1);
+
             EditorGUI.PropertyField(rc.ReserveSingleLine(), property.FindPropertyRelative("_name"));
 
             var properties = property.FindPropertyRelative("_properties");
             var keys = new string[properties.arraySize];
             rc.MoveIndent(2);
-            for (int i = 0; i < properties.arraySize; i++) {
+            for (int i = 0; i < properties.arraySize; i++)
+            {
                 rc.ReserveHeight(5f);
-                
+
                 var buttonRc = rc.ReserveWidth(0).ToRectController().ReserveSingleLine().ToRectController();
                 buttonRc.ReserveWidthFromRight(15f);
                 buttonRc.MoveIndent(-2);
                 var buttonRect = buttonRc.ReserveHeightByFraction(.5f);
-                if (i > 0 && GUI.Button(buttonRect, GUIContent.none)) {
+                if (i > 0 && GUI.Button(buttonRect, GUIContent.none))
+                {
                     properties.MoveArrayElement(i, i - 1);
                     properties.serializedObject.ApplyModifiedProperties();
                 }
 
-                if (i < properties.arraySize - 1 && GUI.Button(buttonRc.rect, GUIContent.none)) {
+                if (i < properties.arraySize - 1 && GUI.Button(buttonRc.rect, GUIContent.none))
+                {
                     properties.MoveArrayElement(i, i + 1);
                     properties.serializedObject.ApplyModifiedProperties();
                 }
@@ -48,31 +54,40 @@ namespace Beamable.Editor.UI.SDF {
                 _svoDrawer.OnGUI(rect, prop, elementLabel);
                 _svoDrawer.baseTypeOverride = null;
             }
-            
+
             rc.MoveIndent(-3);
 
-            if (GUI.Button(rc.ReserveWidthFromRight(30f), "-")) {
+            if (GUI.Button(rc.ReserveWidthFromRight(30f), "-"))
+            {
                 var context = new GenericMenu();
-                foreach (var key in keys) {
-                    context.AddItem(new GUIContent(key), false, () => {
+                foreach (var key in keys)
+                {
+                    context.AddItem(new GUIContent(key), false, () =>
+                    {
                         var idx = 0;
                         var element = properties.GetArrayElementAtIndex(0);
-                        while (element.FindPropertyRelative("key").stringValue != key) {
+                        while (element.FindPropertyRelative("key").stringValue != key)
+                        {
                             idx++;
                             element = properties.GetArrayElementAtIndex(idx);
                         }
+
                         properties.DeleteArrayElementAtIndex(idx);
                         properties.serializedObject.ApplyModifiedProperties();
                     });
                 }
+
                 context.ShowAsContext();
             }
-            
-            if (GUI.Button(rc.ReserveWidthFromRight(30f), "+")) {
+
+            if (GUI.Button(rc.ReserveWidthFromRight(30f), "+"))
+            {
                 var context = new GenericMenu();
-                foreach (var key in BUSSStyle.Keys) {
-                    if(keys.Contains(key)) continue;
-                    context.AddItem(new GUIContent(key), false, () => {
+                foreach (var key in BUSSStyle.Keys)
+                {
+                    if (keys.Contains(key)) continue;
+                    context.AddItem(new GUIContent(key), false, () =>
+                    {
                         var index = properties.arraySize;
                         properties.InsertArrayElementAtIndex(index);
                         var element = properties.GetArrayElementAtIndex(index);
@@ -84,15 +99,18 @@ namespace Beamable.Editor.UI.SDF {
                         properties.serializedObject.ApplyModifiedProperties();
                     });
                 }
+
                 context.ShowAsContext();
             }
         }
 
-        public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+        {
             var height = EditorGUIUtility.singleLineHeight * 3f;
 
             var properties = property.FindPropertyRelative("_properties");
-            for (int i = 0; i < properties.arraySize; i++) {
+            for (int i = 0; i < properties.arraySize; i++)
+            {
                 var element = properties.GetArrayElementAtIndex(i);
                 var key = element.FindPropertyRelative("key").stringValue;
                 var prop = element.FindPropertyRelative("property");

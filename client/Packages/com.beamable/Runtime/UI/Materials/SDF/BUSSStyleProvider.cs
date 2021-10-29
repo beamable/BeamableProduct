@@ -1,130 +1,201 @@
 ﻿using System.Collections.Generic;
 using Beamable.UI.Buss;
-using Beamable.UI.SDF.Styles;
 using UnityEngine;
 
-namespace Beamable.UI.SDF
+namespace Beamable.UI.BUSS
 {
     [ExecuteInEditMode, DisallowMultipleComponent]
+    [RequireComponent(typeof(BUSSElement))]
     public class BUSSStyleProvider : MonoBehaviour
     {
 #pragma warning disable CS0649
         [SerializeField] private BUSSStyleConfig _config;
 #pragma warning restore CS0649
 
-        // TODO: remove SerializeField attribute
-        [SerializeField] private List<BUSSElement> _bussElements = new List<BUSSElement>();
+        // TODO: serialized for debug purposes only. Remove before final push
+        [SerializeField] private List<BUSSStyleProvider> _childProviders = new List<BUSSStyleProvider>();
+        [SerializeField] private BUSSStyleProvider _parentProvider;
+        [SerializeField] private BUSSElement _bussElement;
+        [SerializeField] private List<BUSSStyleProvider> _providersTree = new List<BUSSStyleProvider>();
 
-        public void Register(BUSSElement bussElement)
+        private BUSSStyleProvider ParentProvider => _parentProvider;
+
+        public void OnGlobalStyleChanged()
         {
-            if (!_bussElements.Contains(bussElement))
+            // Debug.Log($"{name}: Global style changed");
+
+            // TODO: take local style and apply to local buss element
+
+            foreach (BUSSStyleProvider childProvider in _childProviders)
             {
-                _bussElements.Add(bussElement);
+                childProvider.OnParentStyleChanged();
             }
-            
-            Setup();
         }
 
-        public void Unregister(BUSSElement bussElement)
+        private void OnParentStyleChanged()
         {
-            if (_bussElements.Contains(bussElement))
+            // Debug.Log($"{name}: Parent style changed");
+
+            if (_bussElement != null)
             {
-                _bussElements.Remove(bussElement);
+                BUSSStyle style = BussConfiguration.Instance.PrepareStyle(_providersTree, _bussElement.Id);
+                _bussElement.ApplyStyle(style);
             }
-            
-            Setup();
+
+            foreach (BUSSStyleProvider childProvider in _childProviders)
+            {
+                childProvider.OnParentStyleChanged();
+            }
         }
 
-        public void NotifyOnStyleChanged()
+        private void OnLocalStyleChanged()
         {
-            // TODO: Prepare cascade styles from global and context configs
-            List<BUSSStyleDescription> globalStyleObjects = BussConfiguration.Instance.GetGlobalStyles();
-            List<BUSSStyleDescription> localStyleObjects = GetLocalStyles();
+            // Debug.Log($"{name}: Local style changed");
 
-            Dictionary<string, BUSSStyle> parsedStyles = ParseStyles(globalStyleObjects, localStyleObjects);
-
-            foreach (BUSSElement bussElement in _bussElements)
+            if (_bussElement != null)
             {
-                bussElement.NotifyOnStyleChanged(GetStyleById(bussElement.Id, parsedStyles));
+                BUSSStyle style = BussConfiguration.Instance.PrepareStyle(_providersTree, _bussElement.Id);
+                _bussElement.ApplyStyle(style);
             }
+
+            foreach (BUSSStyleProvider childProvider in _childProviders)
+            {
+                childProvider.OnParentStyleChanged();
+            }
+        }
+
+        private void OnBeforeTransformParentChanged()
+        {
+            UnregisterFromParent();
+        }
+
+        private void OnTransformParentChanged()
+        {
+            RegisterToParent();
         }
 
         private void OnValidate()
         {
-            Setup();
+            if (_bussElement == null)
+            {
+                _bussElement = GetComponent<BUSSElement>();
+            }
+
+            if (_config != null)
+            {
+                _config.OnChange += OnLocalStyleChanged;
+            }
+
+            RegisterToParent();
         }
 
         private void OnEnable()
         {
-            Setup();
+            if (_config != null)
+            {
+                _config.OnChange += OnLocalStyleChanged;
+            }
+
+            RegisterToParent();
         }
 
         private void OnDisable()
         {
-            BussConfiguration.Instance.UnregisterObserver(this);
+            if (_config != null)
+            {
+                _config.OnChange -= OnLocalStyleChanged;
+            }
+
+            UnregisterFromParent();
         }
 
-        private void Setup()
+        private void OnDestroy()
         {
-            if (_bussElements.Count > 0)
+            if (_config != null)
+            {
+                _config.OnChange -= OnLocalStyleChanged;
+            }
+
+            UnregisterFromParent();
+        }
+
+        private void LookForParentStyleProvider()
+        {
+            Transform currentTransform = gameObject.transform;
+
+            while (ParentProvider == null)
+            {
+                if (currentTransform.parent == null)
+                {
+                    break;
+                }
+
+                currentTransform = currentTransform.parent;
+
+                BUSSStyleProvider styleProvider = currentTransform.GetComponent<BUSSStyleProvider>();
+                _parentProvider = styleProvider;
+            }
+        }
+
+        private void RegisterToParent()
+        {
+            if (ParentProvider == null)
+            {
+                LookForParentStyleProvider();
+            }
+
+            if (ParentProvider != null)
+            {
+                ParentProvider.RegisterObserver(this);
+            }
+            else
             {
                 BussConfiguration.Instance.RegisterObserver(this);
-                if (_config != null)
-                {
-                    _config.OnChange = NotifyOnStyleChanged;
-                    NotifyOnStyleChanged();
-                }
+            }
+
+            BuildParentProvidersTree();
+        }
+
+        private void UnregisterFromParent()
+        {
+            if (ParentProvider != null)
+            {
+                ParentProvider.UnregisterObserver(this);
+                _parentProvider = null;
             }
             else
             {
                 BussConfiguration.Instance.UnregisterObserver(this);
-                if (_config != null)
-                {
-                    _config.OnChange = null;
-                }
+            }
+
+            _providersTree.Clear();
+        }
+
+        private void BuildParentProvidersTree()
+        {
+            _providersTree.Clear();
+
+            BUSSStyleProvider currentProvider = this;
+            while (currentProvider != null)
+            {
+                _providersTree.Add(currentProvider);
+                currentProvider = currentProvider.ParentProvider != null ? currentProvider.ParentProvider : null;
+            }
+        }
+        
+        private void RegisterObserver(BUSSStyleProvider childProvider)
+        {
+            if (!_childProviders.Contains(childProvider))
+            {
+                _childProviders.Add(childProvider);
             }
         }
 
-        private List<BUSSStyleDescription> GetLocalStyles()
+        private void UnregisterObserver(BUSSStyleProvider childProvider)
         {
-            return _config ? _config.Styles : new List<BUSSStyleDescription>();
-        }
-
-        private BUSSStyle GetStyleById(string id, Dictionary<string, BUSSStyle> styleObjects)
-        {
-            return id != null && styleObjects.TryGetValue(id, out BUSSStyle style) ? style : new BUSSStyle();
-        }
-
-        private Dictionary<string, BUSSStyle> ParseStyles(List<BUSSStyleDescription> globalStyles,
-            List<BUSSStyleDescription> localStyles)
-        {
-            Dictionary<string, BUSSStyle> styles = new Dictionary<string, BUSSStyle>();
-            ParseStyleObjects(globalStyles, ref styles);
-            ParseStyleObjects(localStyles, ref styles);
-            return styles;
-        }
-
-        private void ParseStyleObjects(List<BUSSStyleDescription> stylesObjects, ref Dictionary<string, BUSSStyle> stylesDictionary)
-        {
-            foreach (BUSSStyleDescription styleObject in stylesObjects)
+            if (_childProviders.Contains(childProvider))
             {
-                if (stylesDictionary.TryGetValue(styleObject.Name, out BUSSStyle style))
-                {
-                    foreach (BUSSProperty pair in styleObject.Properties)
-                    {
-                        style[pair.key] = pair.property.Get<IBUSSProperty>();
-                    }
-                }
-                else
-                {
-                    BUSSStyle newStyle = new BUSSStyle();
-                    
-                    foreach (BUSSProperty pair in styleObject.Properties)
-                    {
-                        newStyle[pair.key] = pair.property.Get<IBUSSProperty>();
-                    }
-                    stylesDictionary.Add(styleObject.Name, newStyle);
-                }
+                _childProviders.Remove(childProvider);
             }
         }
     }
