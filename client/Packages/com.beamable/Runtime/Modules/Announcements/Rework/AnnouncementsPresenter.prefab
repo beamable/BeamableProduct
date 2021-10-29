@@ -318,7 +318,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -0.000031696298}
+  m_AnchoredPosition: {x: 0, y: -0.00001539882}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &2734898844972257206
@@ -1431,7 +1431,7 @@ GameObject:
   - component: {fileID: 3984566014702830362}
   - component: {fileID: 5830035293711116618}
   m_Layer: 0
-  m_Name: AnnouncementsFlow
+  m_Name: AnnouncementsPresenter
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1476,11 +1476,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f2a36aaec3236d64190d103ca2789b87, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  announcementRowPrefab: {fileID: 3493158191847110933, guid: c3324a185f87aed448ea4535e6be9aa6,
+  _announcementRowPrefab: {fileID: 3493158191847110933, guid: c3324a185f87aed448ea4535e6be9aa6,
     type: 3}
-  noItemsText: {fileID: 6035995911020751698}
-  listRoot: {fileID: 2734898844972257224}
-  closeButton: {fileID: 9169589893481392600}
+  _noItemsText: {fileID: 6035995911020751698}
+  _listRoot: {fileID: 2734898844972257224}
+  _closeButton: {fileID: 9169589893481392600}
 --- !u!1 &3984566014762143791
 GameObject:
   m_ObjectHideFlags: 0

@@ -14,15 +14,15 @@ namespace Modules.Content
     public class AnnouncementsPresenter : CollectionPresenter<AnnouncementsCollection>
     {
 #pragma warning disable CS0649
-        [SerializeField] private GameObject announcementRowPrefab;
-        [SerializeField] private TextMeshProUGUI noItemsText;
-        [SerializeField] private RectTransform listRoot;
-        [SerializeField] private Button closeButton;
+        [SerializeField] private GameObject _announcementRowPrefab;
+        [SerializeField] private TextMeshProUGUI _noItemsText;
+        [SerializeField] private RectTransform _listRoot;
+        [SerializeField] private Button _closeButton;
 #pragma warning restore CS0649
 
         private void Awake()
         {
-            closeButton.onClick.AddListener(() => gameObject.SetActive(false));
+            _closeButton.onClick.AddListener(() => gameObject.SetActive(false));
         }
 
         private void OnEnable()
@@ -38,13 +38,13 @@ namespace Modules.Content
 
         private void OnCollectionUpdated()
         {
-            noItemsText.gameObject.SetActive(Collection.Count == 0);
+            _noItemsText.gameObject.SetActive(Collection.Count == 0);
             
             ClearItems();
 
             foreach (var announcement in Collection)
             {
-                AnnouncementSummary row = Instantiate(announcementRowPrefab, listRoot).GetComponent<AnnouncementSummary>();
+                AnnouncementSummary row = Instantiate(_announcementRowPrefab, _listRoot).GetComponent<AnnouncementSummary>();
                 Assert.IsNotNull(row, $"Instantiation of {nameof(AnnouncementSummary)} failed");
                 row.Setup(announcement.title, announcement.body);
             }
@@ -52,7 +52,7 @@ namespace Modules.Content
 
         private void ClearItems()
         {
-            foreach (Transform child in listRoot)
+            foreach (Transform child in _listRoot)
             {
                 Destroy(child.gameObject);
             }
