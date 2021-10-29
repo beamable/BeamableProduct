@@ -53,7 +53,7 @@ namespace Beamable.Editor.UI.SDF {
             sysType = type == null ? null : Type.GetType(type);
             value = JsonUtility.FromJson(json, sysType);
             EditorGUI.BeginChangeCheck();
-            value = EditorGUIExtension.DrawObject(rc, label, value, _drawerData, property.serializedObject.targetObject.GetInstanceID() + ":" + property.propertyPath);
+            value = GUIDrawerHelper.DrawObject(rc, label, value, _drawerData, property.serializedObject.targetObject.GetInstanceID() + ":" + property.propertyPath);
             hasChange |= EditorGUI.EndChangeCheck();
             
             if (hasChange) {

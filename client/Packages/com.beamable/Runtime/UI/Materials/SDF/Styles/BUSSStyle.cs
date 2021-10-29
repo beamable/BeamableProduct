@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 namespace Beamable.UI.SDF.Styles 
@@ -10,11 +11,19 @@ namespace Beamable.UI.SDF.Styles
         
         internal static Dictionary<string, IPropertyBiding> _bidings = new Dictionary<string, IPropertyBiding>();
         
+        // Shape
+        public static readonly PropertyBiding<IFloatProperty> Threshold = 
+            new PropertyBiding<IFloatProperty>("threshold", new FloatProperty());
+        public static readonly PropertyBiding<ISpriteProperty> SdfImage =
+            new PropertyBiding<ISpriteProperty>("sdfImage", new SpriteProperty());
+        
         // Background
         public static readonly PropertyBiding<IVertexColorProperty> BackgroundColor = 
             new PropertyBiding<IVertexColorProperty>("backgroundColor", new SingleColorProperty(Color.white));
         public static readonly PropertyBiding<IFloatFromFloatProperty> RoundCorners =
             new PropertyBiding<IFloatFromFloatProperty>("roundCorners", new FloatProperty());
+        public static readonly PropertyBiding<ISpriteProperty> BackgroundImage =
+            new PropertyBiding<ISpriteProperty>("backgroundImage", new SpriteProperty());
         
         // Border
         public static readonly PropertyBiding<BorderModeProperty> BorderMode =
@@ -29,11 +38,16 @@ namespace Beamable.UI.SDF.Styles
             new PropertyBiding<IVector2Property>("shadowOffset", new Vector2Property());
         public static readonly PropertyBiding<IFloatProperty> ShadowThreshold = 
             new PropertyBiding<IFloatProperty>("shadowThreshold", new FloatProperty());
-        public static readonly PropertyBiding<IVertexColorProperty> ShadowColor = 
-            new PropertyBiding<IVertexColorProperty>("shadowColor", new SingleColorProperty());
+        public static readonly PropertyBiding<IColorProperty> ShadowColor = 
+            new PropertyBiding<IColorProperty>("shadowColor", new SingleColorProperty());
+        public static readonly PropertyBiding<IFloatProperty> ShadowSoftness = 
+            new PropertyBiding<IFloatProperty>("shadowSoftness", new FloatProperty());
         
         // Font
-        // TODO
+        public static readonly PropertyBiding<IFontProperty> Font =
+            new PropertyBiding<IFontProperty>("font", new FontAssetProperty(TMP_Settings.defaultFontAsset));
+        public static readonly PropertyBiding<IFloatProperty> FontSize =
+            new PropertyBiding<IFloatProperty>("fontSize", new FloatProperty(18f));
 
         #endregion
         

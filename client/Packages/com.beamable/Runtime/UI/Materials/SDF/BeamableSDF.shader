@@ -48,7 +48,10 @@
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            #pragma shader_feature MULTISAMPLING
+            #pragma multi_compile_fragment MULTISAMPLING
+            #pragma multi_compile_fragment _MODE_DEFAULT _MODE_RECT
+            #pragma multi_compile_fragment _SHADOWMODE_DEFAULT _SHADOWMODE_INNER
+            #pragma multi_compile_fragment _BGMODE_DEFAULT _BGMODE_OUTLINE _BGMODE_FULL
 
             #include "UnityCG.cginc"
             #include "Packages\com.beamable\Runtime\UI\Materials\SDF\SDFFunctions.cginc"
@@ -57,7 +60,7 @@
             {
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
-                float2 size : TEXCOORD1;
+                float2 backgroundUV : TEXCOORD1;
                 float2 params : TEXCOORD2;
                 float2 coords : TEXCOORD3;
                 float4 color : COLOR;
@@ -67,15 +70,15 @@
 
             struct v2f
             {
-                float2 uv : TEXCOORD0;
+                float4 uv : TEXCOORD0;
                 float4 sizeNCoords : TEXCOORD1;
                 float3 roundingNThresholdNOutlineWidth : TEXCOORD3;
                 float3 shadowOffset : TEXCOORD4;
                 float4 shadowColor : TEXCOORD5;
+                float shadowSoftness : TEXCOORD2;
                 float4 vertex : SV_POSITION;
                 float4 color : COLOR;
                 float4 outlineColor : NORMAL;
-                float2 uvToCoordsFactor : TEXCOORD2;
             };
 
             sampler2D _MainTex;
@@ -89,21 +92,24 @@
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(float3(v.vertex.x, v.vertex.y, 0));
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+                o.uv.xy = TRANSFORM_TEX(v.uv, _MainTex);
+                o.uv.zw = TRANSFORM_TEX(v.backgroundUV, _BackgroundTexture);
                 o.color = v.color;
-                o.sizeNCoords.xy = v.size;
+                o.color.a *= step(.0045, o.color.a); // hack to avoid object disappear when alpha is equal to zero (see SDFUtile.ClipColorAlpha)
+                o.sizeNCoords.xy = v.normal.yz;
                 o.sizeNCoords.zw = v.coords;
                 o.outlineColor.rgb = floatToRGB(v.params.y);
-                o.outlineColor.a = 1;
                 o.roundingNThresholdNOutlineWidth.x = v.vertex.z;
                 o.roundingNThresholdNOutlineWidth.y = v.normal.x;
                 o.roundingNThresholdNOutlineWidth.z = v.params.x;
                 o.shadowColor.rgb = floatToRGB(v.tangent.w);
-                float2 temp = floatToRGB(v.tangent.z).xy;
-                o.shadowColor.a = temp.y;
-                o.shadowOffset = v.tangent.rgb;
-                o.shadowOffset.z = temp.x;
-                o.uvToCoordsFactor = v.normal.yz;
+                float3 tangentZ = floatToRGB(v.tangent.z);
+                o.outlineColor.a = tangentZ.z;
+                o.shadowColor.a = tangentZ.y;
+                o.shadowSoftness = v.tangent.x;
+                o.shadowOffset.xy = floatToRG(v.tangent.y) * 4;
+                o.shadowOffset.z = v.tangent.z;
+                o.shadowOffset.z = (tangentZ.x - .5) * o.sizeNCoords.x;
                 return o;
             }
             
@@ -135,8 +141,11 @@
             
             // returns intersection of SDF image distance and rect distance
             float getMergedDistance(float2 uv, float2 coords, float2 size, float rounding){
-            return getRectDistance(coords, size, rounding); // TODO: Remove
+            #if _MODE_RECT
+                return getRectDistance(coords, size, rounding);
+            #else
                 return max(getDistance(uv, coords, size, rounding), getRectDistance(coords, size, rounding));
+            #endif
             }
             
             // returns SDF value with given threshold
@@ -147,7 +156,17 @@
             // returns main color
             float4 mainColor(v2f i){
                 float4 color = i.color;
-                color *= tex2D(_BackgroundTexture, float2(i.uv.x, i.uv.y));
+                #if _BGMODE_DEFAULT || _BGMODE_FULL
+                color *= tex2D(_BackgroundTexture, i.uv.zw);
+                #endif
+                return color;
+            }
+            
+            float4 outlineColor(v2f i){
+                float4 color = i.outlineColor;
+                #if _BGMODE_OUTLINE || _BGMODE_FULL
+                color *= tex2D(_BackgroundTexture, i.uv.zw);
+                #endif
                 return color;
             }
 
@@ -160,25 +179,35 @@
                 float outlineWidth = i.roundingNThresholdNOutlineWidth.z;
                 
                 // Main color
-                float dist = getMergedDistance(i.uv, coords, size, rounding);
+                float dist = getMergedDistance(i.uv.xy, coords, size, rounding);
                 float mainColorValue = calculateValue(dist, threshold);
                 float4 main = mainColor(i);
                 // Outline
-                float outlineValue = calculateValue(dist, threshold + outlineWidth);
-                float4 outline = i.outlineColor;
-                outline.a *= main.a * outlineValue;
+                float outlineValue = calculateValue(dist, threshold + outlineWidth) - calculateValue(dist, threshold);
+                float4 outline = outlineColor(i);
+                outline.a *= outlineValue;
                 main.a *= mainColorValue;
                 // Blending main and outline
-                float4 final;
-                final.rgb = lerp(outline, main, main.a / outline.a);
-                final.a = max(outline.a, main.a);
+                float4 final = blend_cutIn(outline, main, mainColorValue);
                 
                 // Shadow
-                //float shadowDist = getMergedDistance(i.uv - i.shadowOffset.xy, coords - i.shadowOffset.xy / size, size, rounding);
-                //float shadowValue = calculateValue(shadowDist, threshold + i.shadowOffset.z);
-                //i.shadowColor.a *= shadowValue;
-                //final.rgb = lerp(i.shadowColor.rgb, saturate(final.rgb), saturate(final.a / (main.a + 0.001)));
-                //final.a += i.shadowColor.a;
+                #if _SHADOWMODE_DEFAULT
+                
+                float shadowDist = getMergedDistance(i.uv - i.shadowOffset.xy, coords - (i.shadowOffset.xy / size), size, rounding);
+                float shadowEdge = threshold + outlineWidth + i.shadowOffset.z;
+                float shadowValue = 1 - smoothstep(shadowEdge - i.shadowSoftness, shadowEdge, shadowDist);
+                i.shadowColor.a *= shadowValue;
+                final = blend_overlay(i.shadowColor, final);
+               
+                #elif _SHADOWMODE_INNER
+                
+                float shadowDist = getMergedDistance(i.uv - i.shadowOffset.xy, coords - (i.shadowOffset.xy / size), size, rounding);
+                float shadowEdge = threshold + -i.shadowOffset.z;
+                float shadowValue = smoothstep(shadowEdge, shadowEdge + i.shadowSoftness, shadowDist) * saturate(mainColorValue / outlineValue);
+                i.shadowColor.a *= shadowValue;
+                final = blend_overlay(final, i.shadowColor);
+                
+                #endif
                 
                 return final;
             }

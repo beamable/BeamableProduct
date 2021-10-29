@@ -32,7 +32,7 @@ namespace Beamable.Editor.UI.SDF {
 
             EditorGUI.BeginChangeCheck();
             
-            colorRect = DrawColorRect(label, rc, colorRect);
+            colorRect = DrawColorRect(label, rc, colorRect, property);
 
             if (EditorGUI.EndChangeCheck()) {
                 bottomLeft.colorValue = colorRect.BottomLeftColor;
@@ -44,13 +44,16 @@ namespace Beamable.Editor.UI.SDF {
             }
         }
 
-        public ColorRect DrawColorRect(GUIContent label, EditorGUIRectController rc, ColorRect colorRect) {
-            var mode = (Mode) _drawerModeField.GetValue(colorRect);
+        public ColorRect DrawColorRect(GUIContent label, EditorGUIRectController rc, ColorRect colorRect, SerializedProperty property = null) {
+            var mode = property == null ? (Mode) _drawerModeField.GetValue(colorRect) : (Mode) property.FindPropertyRelative("_drawerMode").intValue;
             var newMode = (Mode) EditorGUI.EnumPopup(rc.ReserveSingleLine(), label, mode);
             
-            // Using boxing here, it makes SetValue work for struct.
             if (newMode != mode) {
                 mode = newMode;
+                if (property != null) {
+                    property.FindPropertyRelative("_drawerMode").intValue = (int) mode;
+                }
+                // Using boxing here, it makes SetValue work for struct.
                 object boxed = colorRect;
                 _drawerModeField.SetValue(boxed, (int) mode);
                 colorRect = (ColorRect) boxed;

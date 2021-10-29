@@ -1,5 +1,7 @@
 ﻿using System;
+using TMPro;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Beamable.UI.SDF.Styles {
     [Serializable]
@@ -31,5 +33,7 @@ namespace Beamable.UI.SDF.Styles {
         public Vector2 Vector2Value => ((IVector2Property) Property).Vector2Value;
         public Enum EnumValue => ((IEnumProperty) Property).EnumValue;
         public T CastEnumValue<T>() where T : Enum  => ((IEnumProperty) Property).CastEnumValue<T>();
+        public Sprite SpriteValue => ((ISpriteProperty) Property).SpriteValue;
+        public TMP_FontAsset FontAsset => ((IFontProperty) Property).FontAsset;
     }
 }
