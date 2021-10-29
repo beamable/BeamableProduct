@@ -1,4 +1,5 @@
-﻿using Beamable.UI.SDF.Styles;
+﻿using System;
+using Beamable.UI.SDF.Styles;
 using UnityEngine;
 
 namespace Beamable.UI.SDF
@@ -14,13 +15,7 @@ namespace Beamable.UI.SDF
 
         private BUSSStyleProvider _styleProvider;
 
-        public void NotifyOnStyleChanged(BUSSStyle newStyle)
-        {
-            if (TryGetComponent<SDFImage>(out var sdfImage))
-            {
-                sdfImage.Style = newStyle;
-            }
-        }
+        public virtual void NotifyOnStyleChanged(BUSSStyle newStyle) { }
 
         private void OnBeforeTransformParentChanged()
         {
@@ -63,16 +58,12 @@ namespace Beamable.UI.SDF
         private void OnEnable()
         {
             Register();
+            _styleProvider.NotifyOnStyleChanged();
         }
 
         private void OnDisable()
         {
-            // TODO: do we need this? When element will be enabled again, it will be validated and updated with new/another style
-            if (TryGetComponent<SDFImage>(out var sdfImage))
-            {
-                sdfImage.Style = null;
-            }
-
+            NotifyOnStyleChanged(null);
             Unregister();
         }
 

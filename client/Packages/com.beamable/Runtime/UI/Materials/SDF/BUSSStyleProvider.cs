@@ -92,7 +92,7 @@ namespace Beamable.UI.SDF
 
         private BUSSStyle GetStyleById(string id, Dictionary<string, BUSSStyle> styleObjects)
         {
-            return styleObjects.TryGetValue(id, out BUSSStyle style) ? style : new BUSSStyle();
+            return id != null && styleObjects.TryGetValue(id, out BUSSStyle style) ? style : new BUSSStyle();
         }
 
         private Dictionary<string, BUSSStyle> ParseStyles(List<BUSSStyleDescription> globalStyles,

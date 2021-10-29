@@ -8,10 +8,6 @@
         [Toggle(MULTISAMPLING)] _SDF_MULTISAMPLING("Multisampling", Float) = 1
         _SDF_SamplingDistance("Sampling Distance", Range(0, .1)) = .01
         
-        [KeywordEnum(Default, Rect)] _Mode("Mode", Float) = 0
-        [KeywordEnum(Default, Inner)] _ShadowMode("Shadow Mode", Float) = 0
-        [KeywordEnum(Default, Outline, Full)] _BgMode("Background Mode", Float) = 0
-        
         [HideInInspector]_StencilComp("Stencil Comparison", Float) = 8
         [HideInInspector]_Stencil("Stencil ID", Float) = 0
         [HideInInspector]_StencilOp("Stencil Operation", Float) = 0

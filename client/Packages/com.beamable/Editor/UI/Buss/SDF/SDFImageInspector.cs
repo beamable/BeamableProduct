@@ -21,6 +21,7 @@ namespace Beamable.Editor.UI.SDF {
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("threshold"), new GUIContent("Threshold"));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("backgroundSprite"),
                     new GUIContent("Background"));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("backgroundMode"), new GUIContent("Background Mode"));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("meshFrame"), new GUIContent("Frame"));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("m_Type"), new GUIContent("Type"));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("rounding"),
@@ -43,6 +44,7 @@ namespace Beamable.Editor.UI.SDF {
                     new GUIContent("Shadow Softness"));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("shadowOffset"),
                     new GUIContent("Shadow Offset"));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("shadowMode"), new GUIContent("Shadow Mode"));
 
                 if (EditorGUI.EndChangeCheck()) {
                     serializedObject.ApplyModifiedProperties();

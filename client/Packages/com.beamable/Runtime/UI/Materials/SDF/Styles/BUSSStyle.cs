@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 namespace Beamable.UI.SDF.Styles 
@@ -43,7 +44,10 @@ namespace Beamable.UI.SDF.Styles
             new PropertyBiding<IFloatProperty>("shadowSoftness", new FloatProperty());
         
         // Font
-        // TODO
+        public static readonly PropertyBiding<IFontProperty> Font =
+            new PropertyBiding<IFontProperty>("font", new FontAssetProperty(TMP_Settings.defaultFontAsset));
+        public static readonly PropertyBiding<IFloatProperty> FontSize =
+            new PropertyBiding<IFloatProperty>("fontSize", new FloatProperty(18f));
 
         #endregion
         

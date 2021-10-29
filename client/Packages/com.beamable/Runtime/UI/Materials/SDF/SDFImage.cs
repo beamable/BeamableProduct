@@ -1,4 +1,5 @@
 ﻿using System;
+using Beamable.UI.SDF.MaterialManagement;
 using Beamable.UI.SDF.Styles;
 using UnityEngine;
 using UnityEngine.Sprites;
@@ -23,6 +24,7 @@ namespace Beamable.UI.SDF {
         public float threshold;
         public float rounding;
         public Sprite backgroundSprite;
+        public SdfBackgroundMode backgroundMode;
         public float meshFrame;
         public float outlineWidth;
         public Color outlineColor;
@@ -30,20 +32,13 @@ namespace Beamable.UI.SDF {
         public Vector2 shadowOffset;
         public float shadowThreshold;
         public float shadowSoftness;
-
-        private Material _materialWithBackgroundTexture;
-        private static readonly int BackgroundTexture = Shader.PropertyToID("_BackgroundTexture");
+        public SdfShadowMode shadowMode;
 
         public override Material material {
             get {
-                if (backgroundSprite == null) return base.material;
-            
-                if (_materialWithBackgroundTexture == null) {
-                    _materialWithBackgroundTexture = new Material(base.material);
-                }
-                _materialWithBackgroundTexture.SetTexture(BackgroundTexture, backgroundSprite.texture);
-
-                return _materialWithBackgroundTexture;
+                return SdfMaterialManager.GetMaterial(base.material,
+                    backgroundSprite == null ? null : backgroundSprite.texture,
+                    mode, shadowMode, backgroundMode);
             }
             set => base.material = value;
         }
