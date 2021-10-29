@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Inventory;
+using Beamable.Common.Leaderboards;
 using Beamable.Server;
 
 namespace microserviceTests.microservice
@@ -78,6 +79,13 @@ namespace microserviceTests.microservice
          var x = items.FirstOrDefault();
 
          return x.ItemContent.Id;
+      }
+      
+      [AdminOnlyCallable]
+      public async Task LeaderboardCreateTest(string boardId, LeaderboardContentRef templateBoardRef)
+      {
+         var template = await Services.Content.GetContent(templateBoardRef);
+         await Services.Leaderboards.CreateLeaderboard(boardId, template);
       }
 
       [ClientCallable]

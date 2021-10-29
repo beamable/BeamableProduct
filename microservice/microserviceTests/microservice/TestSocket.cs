@@ -85,6 +85,11 @@ namespace Beamable.Microservice.Tests.Socket
       {
          return And(matcher, MessageMatcher.WithPayload(payload));
       }
+      
+      public static TestSocketMessageMatcher WithPayload(this TestSocketMessageMatcher matcher, JObject payload)
+      {
+         return And(matcher, MessageMatcher.WithPayload(payload));
+      }
 
       public static TestSocketMessageMatcher And(this TestSocketMessageMatcher predicate1, TestSocketMessageMatcher predicate2)
       {
@@ -130,8 +135,34 @@ namespace Beamable.Microservice.Tests.Socket
 
       public static TestSocketMessageMatcher WithPayload(string raw)
       {
-         return req => req.body is string str && string.Equals(raw, str);
+         return req =>
+         {
+            // Have to do this otherwise it becomes sensitive to the test-case's JSON's formatting which can be a pain to manage in cases where
+            // the payload is large.
+            if (req.body is JObject obj)
+            {
+               var rawJObj = JObject.Parse(raw);
+               return JToken.DeepEquals(rawJObj, obj);
+            }
+            return req.body.ToString().Equals(raw);
+         };
       }
+      
+      public static TestSocketMessageMatcher WithPayload(JObject raw)
+      {
+         return req =>
+         {
+            // Have to do this otherwise it becomes sensitive to the test-case's JSON's formatting which can be a pain to manage in cases where
+            // the payload is large.
+            if (req.body is JObject obj)
+            {
+               return JToken.DeepEquals(raw, obj);
+            }
+
+            return false;
+         };
+      }
+      
       public static TestSocketMessageMatcher WithPayload<T>(Func<T, bool> matcher)
       {
          bool Check(object req)

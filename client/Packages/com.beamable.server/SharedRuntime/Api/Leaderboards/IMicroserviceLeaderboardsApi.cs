@@ -1,4 +1,9 @@
+using System.Collections.Generic;
+using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Api.Leaderboards;
+using Beamable.Common.Content;
+using Beamable.Common.Leaderboards;
 
 namespace Beamable.Server.Api.Leaderboards
 {
@@ -17,5 +22,58 @@ namespace Beamable.Server.Api.Leaderboards
    public interface IMicroserviceLeaderboardsApi : ILeaderboardApi
    {
       /* admin only functions? */
+
+      /// <summary>
+      /// Call to create a new leaderboard with the given ID using the parameters found in the <paramref name="templateLeaderboardContent"/>.
+      /// </summary>
+      /// <param name="leaderboardId">Id for the new leaderboard. Caller must guarantee this to be unique.</param>
+      /// <param name="templateLeaderboardContent">Template parameters that'll be used to create the new leaderboard.</param>
+      /// <param name="ttl"></param>
+      /// <param name="derivatives"></param>
+      /// <param name="freezeTime"></param>
+      Promise<EmptyResponse> CreateLeaderboard(string leaderboardId,
+          LeaderboardContent templateLeaderboardContent,
+          OptionalLong ttl = null,
+          OptionalListString derivatives = null,
+          OptionalLong freezeTime = null);
+
+      /// <summary>
+      /// Call to create a leaderboard without a template as a base.
+      /// </summary>
+      /// <param name="leaderboardId">Id for the new leaderboard. Caller must guarantee this to be unique.</param>
+      /// <param name="maxEntries">Maximum number of players who can be in the leaderboard.</param>
+      /// <param name="ttl">When this leaderboard should expire.</param>
+      /// <param name="partitioned">Whether or not the leaderboard should be partitioned into N "maxEntries" boards.</param>
+      /// <param name="cohortSettings">Stats-based filter that's used to group together leaderboard entries.</param>
+      /// <param name="derivatives">Board Ids for boards that must be recalculated when a entry is updated in this board.</param>
+      /// <param name="permissions">Whether or not a client can write to this leaderboard</param>
+      /// <param name="freezeTime">An arbitrary time since jan 1st 1970 when this leaderboard should be frozen</param>
+      Promise<EmptyResponse> CreateLeaderboard(string leaderboardId,
+          OptionalInt maxEntries,
+          OptionalLong ttl,
+          OptionalBoolean partitioned,
+          OptionalCohortSettings cohortSettings,
+          OptionalListString derivatives,
+          OptionalClientPermissions permissions,
+          OptionalLong freezeTime);
+      
+      /// <summary>
+      /// Call to create a leaderboard without a template as a base.
+      /// </summary>
+      Promise<EmptyResponse> CreateLeaderboard(string leaderboardId, CreateLeaderboardRequest req);
    }
+   
+   [System.Serializable]
+   [Agnostic]
+   public class CreateLeaderboardRequest
+   {       
+       public int? maxEntries;       
+       public long? ttl;
+       public bool? partitioned;
+       public LeaderboardCohortSettings cohortSettings;
+       public List<string> derivatives;
+       public ClientPermissions permissions;
+       public long? freezeTime;
+   }
+   
 }

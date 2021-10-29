@@ -6,6 +6,8 @@ using Beamable.Common.Content.Validation;
 
 namespace Beamable.Common.Leaderboards
 {
+    public class LeaderboardContentRef : ContentRef<LeaderboardContent>{}
+    
     /// <summary>
     /// This type defines a %Beamable %ContentObject subclass for the %LeaderboardService.
     ///
