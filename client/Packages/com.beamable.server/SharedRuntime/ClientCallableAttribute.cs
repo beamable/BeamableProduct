@@ -57,35 +57,44 @@ namespace Beamable.Server
       }
    }
 
-   /// <summary>
-   /// This type defines the %Microservice method attribute for any
-   /// %Microservice method which can be called ONLY from a
-   /// %Microservice by a User account of %Admin type.
-   ///
-   /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-   /// 
-   /// #### Related Links
-   /// - See Beamable.Server.Microservice script reference
-   /// - See Beamable.Server.ClientCallableAttribute script reference
-   ///
-   /// ### Example
-   /// This demonstrates example usage from WITHIN a custom %Beamable %Microservice.
-   ///
-   /// ```
-   /// [AdminOnlyCallable]
-   /// private async void MyMicroserviceMethod()
-   /// {
-   ///
-   ///   // Do something...
-   /// 
-   /// }
-   ///
-   /// ```
-   /// 
-   /// ![img beamable-logo]
-   /// 
-   /// </summary>
-   [System.AttributeUsage(System.AttributeTargets.Method)]
+    [System.AttributeUsage(System.AttributeTargets.Class)]
+    public class ClientClassAttribute : System.Attribute
+    {
+        public ClientClassAttribute()
+        {
+
+        }
+    }
+
+    /// <summary>
+    /// This type defines the %Microservice method attribute for any
+    /// %Microservice method which can be called ONLY from a
+    /// %Microservice by a User account of %Admin type.
+    ///
+    /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
+    /// 
+    /// #### Related Links
+    /// - See Beamable.Server.Microservice script reference
+    /// - See Beamable.Server.ClientCallableAttribute script reference
+    ///
+    /// ### Example
+    /// This demonstrates example usage from WITHIN a custom %Beamable %Microservice.
+    ///
+    /// ```
+    /// [AdminOnlyCallable]
+    /// private async void MyMicroserviceMethod()
+    /// {
+    ///
+    ///   // Do something...
+    /// 
+    /// }
+    ///
+    /// ```
+    /// 
+    /// ![img beamable-logo]
+    /// 
+    /// </summary>
+    [System.AttributeUsage(System.AttributeTargets.Method)]
    public class AdminOnlyCallableAttribute : ClientCallableAttribute
    {
       public AdminOnlyCallableAttribute(string pathnameOverride = "") : base(pathnameOverride,
