@@ -82,33 +82,35 @@ namespace Beamable.Server.Editor.CodeGen
 
       void ExtractClientClasses(MicroserviceDescriptor descriptor, CodeNamespace ns)
       {
+            void Generate(IDescriptor desc)
+            {
+                var allTypes = desc.Type.Assembly.GetTypes();
+
+                if (allTypes.Length > 0)
+                {
+                    foreach (var type in allTypes)
+                    {
+                        var storageClass = type.GetCustomAttribute<ClientClassAttribute>();
+                        if (storageClass == null)
+                        {
+                            continue;
+                        }
+
+                        ClientClassCodeGenerator.GenerateClientClass(ns, type);
+                    }
+                }
+            }
+
             var storageRef = descriptor.GetStorageReferences().ToArray();
 
             if (storageRef.Length > 0)
             {
                 foreach (var desc in storageRef)
-                {
-                    var allTypes = desc.Type.Assembly.GetTypes();
-
-                    if (allTypes.Length > 0)
-                    {
-                        foreach (var type in allTypes)
-                        {
-                            if (!typeof(StorageObject).IsAssignableFrom(type))
-                            {
-                                var clientClass = type.GetCustomAttribute<ClientClassAttribute>();
-                                if (clientClass == null)
-                                {
-                                    continue;
-                                }
-
-                                ClientClassCodeGenerator.GenerateClientClass(ns, type);
-                            }
-                        }
-                    }
-                }
+                    Generate(desc);
             }
-      }
+
+            Generate(descriptor);
+        }
 
       void AddCallableMethod(CallableMethodInfo info, CodeNamespace ns)
       {
