@@ -126,18 +126,8 @@ namespace Beamable.Server.Editor.CodeGen
               var paramType = methodParam.ParameterType;
               var paramName = methodParam.Name;
 
-              CodeTypeReference paramTypeReference;
-
-              if (ClientClassCodeGenerator.IsTypeExistInNamespace(ns, paramType))
-              {
-                   genMethod.Parameters.Add(new CodeParameterDeclarationExpression(paramType.Name, paramName));
-                   paramTypeReference = new CodeTypeReference(paramType.Name);
-              }
-              else
-              {
-                   genMethod.Parameters.Add(new CodeParameterDeclarationExpression(paramType, paramName));
-                   paramTypeReference = new CodeTypeReference(paramType);
-              }
+              CodeTypeReference paramTypeReference = ClientClassCodeGenerator.GetClientClassCodeTypeReference(paramType);
+              genMethod.Parameters.Add(new CodeParameterDeclarationExpression(paramTypeReference, paramName));
 
               var serializationFieldName = $"serialized_{paramName}";
               var declare = new CodeParameterDeclarationExpression(typeof(string), serializationFieldName);

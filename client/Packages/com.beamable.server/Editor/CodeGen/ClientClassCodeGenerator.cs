@@ -28,7 +28,7 @@ public class ClientClassCodeGenerator
         {
             for (int i = 0; i < unknownTypes.Count; i++)
             {
-                if (!IsTypeExistInNamespace(ns, unknownTypes[i]))
+                if (string.IsNullOrEmpty(ExtractTypeNameFromNamespace(ns, unknownTypes[i])))
                     GenerateClientClass(ns, unknownTypes[i]);
             }
         }
@@ -36,25 +36,60 @@ public class ClientClassCodeGenerator
         unknownTypes.Clear();
     }
 
-    public static bool IsTypeExistInNamespace(CodeNamespace ns, Type type)
+    static string ExtractTypeNameFromNamespace(CodeNamespace ns, Type type)
     {
-        if (type.IsGenericType)
-        {
-            return IsTypeExistInNamespace(ns, type.GetGenericArguments()[0]);
-        }
-        else return IsTypeExistInNamespace(ns, type.Name);
-    }
+        Type baseType = type;
 
-    public static bool IsTypeExistInNamespace(CodeNamespace ns, string type)
-    {
+        if (type.IsGenericType)
+            baseType = type.GetGenericArguments()[0];
+
         foreach (CodeTypeDeclaration tt in ns.Types)
         {
-            if (string.Equals(tt.Name, type))
-                return true;
+            if (string.Equals(tt.Name, baseType.Name))
+                return tt.Name;
         }
 
-        return false;
+        return null;
     }
+
+    public static CodeTypeReference GetClientClassCodeTypeReference(Type type)
+    {
+        Type unknown;
+        return GetClientClassCodeTypeReference(type, out unknown);
+    }
+
+    static CodeTypeReference GetClientClassCodeTypeReference(Type type, out Type unknownType)
+    {
+        Type baseType = type;
+
+        if (type.IsGenericType)
+        {
+            baseType = type.GetGenericArguments()[0];
+
+            if (Type.GetType(baseType.ToString()) == null)
+            {
+                unknownType = baseType;
+                return new CodeTypeReference(type.GetGenericTypeDefinition().FullName, new CodeTypeReference(baseType.Name));
+            }
+            else
+            {
+                unknownType = null;
+                return new CodeTypeReference(type);
+            }
+        }
+
+        if (Type.GetType(type.ToString()) == null)
+        {
+            unknownType = type;
+            return new CodeTypeReference(type.Name);
+        }
+        else
+        {
+            unknownType = null;
+            return new CodeTypeReference(type);
+        }
+    }
+
 
     static List<Type> GenerateClientClassFields(CodeTypeDeclaration genClass, Type sourceType)
     {
@@ -65,13 +100,11 @@ public class ClientClassCodeGenerator
             CodeMemberField field = new CodeMemberField();
             field.Attributes = MemberAttributes.Public | MemberAttributes.Final;
 
-            if (Type.GetType(fieldData.FieldType.ToString()) != null)
-                field.Type = new CodeTypeReference(fieldData.FieldType);
-            else
-            {
-                field.Type = new CodeTypeReference(fieldData.FieldType.Name);
-                unknownTypes.Add(fieldData.FieldType);
-            }
+            Type unknown = null;
+            field.Type = GetClientClassCodeTypeReference(fieldData.FieldType, out unknown);
+
+            if (unknown != null)
+                unknownTypes.Add(unknown);
 
             field.Name = fieldData.Name;
 
@@ -90,13 +123,11 @@ public class ClientClassCodeGenerator
             CodeMemberField property = new CodeMemberField();
             property.Attributes = MemberAttributes.Public | MemberAttributes.Final;
 
-            if (Type.GetType(propertyData.PropertyType.ToString()) != null)
-                property.Type = new CodeTypeReference(propertyData.PropertyType);
-            else
-            {
-                property.Type = new CodeTypeReference(propertyData.PropertyType.Name);
-                unknownTypes.Add(propertyData.PropertyType);
-            }
+            Type unknown = null;
+            property.Type = GetClientClassCodeTypeReference(propertyData.PropertyType, out unknown);
+
+            if (unknown != null)
+                unknownTypes.Add(unknown);
 
             property.Name = propertyData.Name;
 
@@ -193,19 +224,12 @@ public class ClientClassCodeGenerator
                 if (method.IsStatic)
                     genMethod.Attributes |= MemberAttributes.Static | MemberAttributes.Final;
 
-                CodeMethodReturnStatement returnStatement = null;
+                Type unknown = null;
+                genMethod.ReturnType = GetClientClassCodeTypeReference(method.ReturnType, out unknown);
+                CodeMethodReturnStatement returnStatement = new CodeMethodReturnStatement(new CodeObjectCreateExpression(genMethod.ReturnType));
 
-                if (Type.GetType(method.ReturnType.ToString()) != null)
-                {
-                    genMethod.ReturnType = new CodeTypeReference(method.ReturnType);
-                    returnStatement = new CodeMethodReturnStatement(new CodeObjectCreateExpression(method.ReturnType));
-                }
-                else
-                {
-                    genMethod.ReturnType = new CodeTypeReference(method.ReturnType.Name);
-                    returnStatement = new CodeMethodReturnStatement(new CodeObjectCreateExpression(method.ReturnType.Name));
-                    unknownTypes.Add(method.ReturnType);
-                }
+                if (unknown != null)
+                    unknownTypes.Add(unknown);
 
                 if (method.ReturnType == typeof(void))
                     returnStatement = null;
@@ -238,15 +262,12 @@ public class ClientClassCodeGenerator
                         paramType = param.ParameterType;
                     }
 
-                    if (Type.GetType(paramType.ToString()) != null)
-                    {
-                        genMethod.Parameters.Add( new CodeParameterDeclarationExpression(paramType, param.Name) { Direction = dir });
-                    }
-                    else
-                    {
-                        genMethod.Parameters.Add(new CodeParameterDeclarationExpression(paramType.Name, param.Name) { Direction = dir });
-                        unknownTypes.Add(paramType);
-                    }
+                    Type unknownParamType = null;
+                    CodeTypeReference paramTypeRef = GetClientClassCodeTypeReference(paramType, out unknownParamType);
+                    genMethod.Parameters.Add(new CodeParameterDeclarationExpression(paramTypeRef, param.Name) { Direction = dir });
+
+                    if (unknown != null)
+                        unknownTypes.Add(unknown);
                 }
 
                 if (returnStatement != null)
