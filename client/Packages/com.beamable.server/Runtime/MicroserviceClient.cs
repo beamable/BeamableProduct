@@ -12,6 +12,12 @@ using Beamable.Serialization.SmallerJSON;
 
 namespace Beamable.Server
 {
+   [Serializable]
+   public class MicroserviceClientDataWrapper<T> : ScriptableObject
+   {
+      public T Data;
+   }
+
    public class MicroserviceClient
    {
       protected async Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
@@ -84,7 +90,7 @@ namespace Beamable.Server
          return JsonUtility.ToJson(arg);
       }
 
-      static T DeserializeResult<T>(string json)
+     public static T DeserializeResult<T>(string json)
       {
          var defaultInstance = default(T);
 

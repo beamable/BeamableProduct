@@ -157,7 +157,7 @@ namespace Beamable.Common.Content
             var seq = Promise.ExecuteRolling(batchSize, promiseGenerators, () => !Application.isPlaying);
             seq.OnElementSuccess(seqPromise.ReportEntrySuccess);
             seq.OnElementError(seqPromise.ReportEntryError);
-            
+
             return seq;
          }, () => seqPromise);
 
@@ -238,6 +238,11 @@ namespace Beamable.Common.Content
             return api.FlatMap(service => service.GetContent(this, manifestID));
          }
 
+      }
+
+      public override string ToString()
+      {
+         return $"{GetType().Name} Id=[{Id}]";
       }
    }
 

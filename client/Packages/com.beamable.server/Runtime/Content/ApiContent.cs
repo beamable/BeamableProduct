@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Beamable.Common.Content;
+using Beamable.Content;
 using UnityEngine;
 
 namespace Beamable.Server
@@ -10,18 +11,17 @@ namespace Beamable.Server
    [Serializable]
    public class ApiContent : ContentObject, ISerializationCallbackReceiver
    {
-      public string Description;
+      public OptionalString Description;
 
       public ServiceRoute ServiceRoute;
 
       [ContentField]
       [SerializeField]
-      [HideInInspector]
       private RouteVariables _variables = new RouteVariables();
 
-      public ApiVariable[] Variables => _variables.Variables;
-
       public RouteParameters Parameters;
+
+      public ApiVariable[] Variables => _variables.Variables;
 
       protected virtual ApiVariable[] GetVariables()
       {
@@ -31,6 +31,7 @@ namespace Beamable.Server
       public void OnBeforeSerialize()
       {
          _variables.Variables = GetVariables();
+         Parameters.ApiContent = this;
       }
 
       public void OnAfterDeserialize()
@@ -72,24 +73,12 @@ namespace Beamable.Server
    [Serializable]
    public class RouteParameters
    {
-      // [ContentField]
-
       public RouteParameter[] Parameters;
 
-      // public void OnBeforeSerialize()
-      // {
-      //    Variables = GetVariables();
-      // }
-      //
-      // public void OnAfterDeserialize()
-      // {
-      //
-      // }
-      //
-      // public virtual ApiVariable[] GetVariables()
-      // {
-      //    return new ApiVariable[] { }; // by default, a route takes no variables.
-      // }
+      [SerializeField]
+      [HideInInspector]
+      [IgnoreContentField]
+      public ApiContent ApiContent;
    }
 
    [Serializable]
@@ -98,7 +87,14 @@ namespace Beamable.Server
       // public int Index;
       public string Name;
       public OptionalApiVariableReference variableReference;
-      public OptionalString Data;
+      public string Data;
+
+   }
+
+   [Serializable]
+   public class RouteParameter<T> : RouteParameter
+   {
+      public T TypeData;
    }
 
    [Serializable]

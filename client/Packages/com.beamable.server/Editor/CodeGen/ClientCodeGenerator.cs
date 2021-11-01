@@ -1,3 +1,4 @@
+using System;
 using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
@@ -9,6 +10,7 @@ using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Server;
 using Beamable.Platform.SDK;
+using UnityEngine;
 
 namespace Beamable.Server.Editor.CodeGen
 {
@@ -25,11 +27,29 @@ namespace Beamable.Server.Editor.CodeGen
       /// The only class in the compile unit. This class contains 2 fields,
       /// 3 properties, a constructor, an entry point, and 1 simple method.
       /// </summary>
-      CodeTypeDeclaration targetClass;
+      private CodeTypeDeclaration targetClass;
+
+      private CodeTypeDeclaration parameterClass;
 
       private string TargetClassName => $"{Descriptor.Name}Client";
+      private string TargetParameterClassName => GetTargetParameterClassName(Descriptor);
 
-        private List<CallableMethodInfo> _callableMethods = new List<CallableMethodInfo>();
+      private List<CallableMethodInfo> _callableMethods = new List<CallableMethodInfo>();
+
+      public const string PARAMETER_STRING = "Parameter";
+      public const string CLIENT_NAMESPACE = "Beamable.Server.Clients";
+
+      public static string GetTargetParameterClassName(MicroserviceDescriptor descriptor) =>
+          $"MicroserviceParameters{descriptor.Name}Client";
+
+      public static string GetParameterClassName(Type parameterType) => $"Parameter{parameterType.Name}";
+      public static Type GetDataWrapperTypeForParameter(MicroserviceDescriptor descriptor, Type parameterType)
+      {
+          var name =
+              $"{CLIENT_NAMESPACE}.{GetTargetParameterClassName(descriptor)}+{GetParameterClassName(parameterType)}, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
+          var t = Type.GetType(name, true, true);
+          return t;
+      }
 
       /// <summary>
       /// Define the class.
@@ -39,7 +59,7 @@ namespace Beamable.Server.Editor.CodeGen
       {
           Descriptor = descriptor;
           targetUnit = new CodeCompileUnit();
-          CodeNamespace samples = new CodeNamespace("Beamable.Server.Clients");
+          CodeNamespace samples = new CodeNamespace(CLIENT_NAMESPACE);
 
           samples.Imports.Add(new CodeNamespaceImport("System"));
           samples.Imports.Add(new CodeNamespaceImport("Beamable.Platform.SDK"));
@@ -51,14 +71,20 @@ namespace Beamable.Server.Editor.CodeGen
               TypeAttributes.Public | TypeAttributes.Sealed;
           targetClass.BaseTypes.Add(new CodeTypeReference(typeof(MicroserviceClient)));
 
+          parameterClass = new CodeTypeDeclaration(TargetParameterClassName);
+          parameterClass.IsClass = true;
+          parameterClass.TypeAttributes = TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable;
+          // parameterClass.BaseTypes.Add();
 
           targetClass.Comments.Add(new CodeCommentStatement($"<summary> A generated client for <see cref=\"{Descriptor.Type.FullName}\"/> </summary", true));
 
           samples.Types.Add(targetClass);
+          samples.Types.Add(parameterClass);
           targetUnit.Namespaces.Add(samples);
 
           // need to scan and get methods.
           var allMethods = descriptor.Type.GetMethods(BindingFlags.Instance | BindingFlags.Public);
+          var allParameterTypes = new HashSet<Type>();
           foreach (var method in allMethods)
           {
               var clientCallable = method.GetCustomAttribute<ClientCallableAttribute>();
@@ -74,12 +100,30 @@ namespace Beamable.Server.Editor.CodeGen
               };
               _callableMethods.Add(callable);
 
-              AddCallableMethod(callable);
+              AddCallableMethod(callable, allParameterTypes);
+          }
+
+          foreach (var parameterType in allParameterTypes)
+          {
+              AddParameterClass(parameterType);
           }
 
       }
 
-      void AddCallableMethod(CallableMethodInfo info)
+      void AddParameterClass(Type parameterType)
+      {
+          var wrapper = new CodeTypeDeclaration(GetParameterClassName(parameterType));
+          wrapper.IsClass = true;
+          wrapper.CustomAttributes.Add(
+              new CodeAttributeDeclaration(new CodeTypeReference(typeof(SerializableAttribute))));
+          wrapper.TypeAttributes = TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable;
+          wrapper.BaseTypes.Add(
+              new CodeTypeReference(typeof(MicroserviceClientDataWrapper<>).MakeGenericType(parameterType)));
+
+          parameterClass.Members.Add(wrapper);
+      }
+
+      void AddCallableMethod(CallableMethodInfo info, HashSet<Type> parameterTypes)
       {
           // Declaring a ToString method
           CodeMemberMethod genMethod = new CodeMemberMethod();
@@ -94,6 +138,7 @@ namespace Beamable.Server.Editor.CodeGen
               var methodParam = methodParams[i];
               var paramType = methodParam.ParameterType;
               var paramName = methodParam.Name;
+              parameterTypes.Add(paramType);
               genMethod.Parameters.Add(new CodeParameterDeclarationExpression(paramType, paramName));
 
               var serializationFieldName = $"serialized_{paramName}";

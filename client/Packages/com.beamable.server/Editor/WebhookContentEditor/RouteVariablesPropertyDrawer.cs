@@ -1,0 +1,57 @@
+using UnityEditor;
+using UnityEngine;
+
+namespace Beamable.Server.Editor
+{
+   [CustomPropertyDrawer(typeof(RouteVariables))]
+   public class RouteVariablesPropertyDrawer : PropertyDrawer
+   {
+      public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+      {
+         var variablesProperty = property.FindPropertyRelative(nameof(RouteVariables.Variables));
+         if (variablesProperty.arraySize == 0 || !property.isExpanded)
+         {
+            return EditorGUIUtility.singleLineHeight;
+         }
+         else
+         {
+            return EditorGUIUtility.singleLineHeight * (1 + variablesProperty.arraySize) + (2 * variablesProperty.arraySize);
+         }
+      }
+
+      public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+      {
+
+         var variablesProperty = property.FindPropertyRelative(nameof(RouteVariables.Variables));
+         if (variablesProperty.arraySize == 0)
+         {
+            // position = EditorGUI.PrefixLabel(position, new GUIContent("Variables"));
+            EditorGUI.SelectableLabel(position, "This api content doesn't support any variables", new GUIStyle(EditorStyles.label)
+            {
+               fontStyle = FontStyle.Italic
+            });
+            return;
+         }
+
+         property.isExpanded = EditorGUI.Foldout(new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight), property.isExpanded, "Variables",
+            new GUIStyle(EditorStyles.foldout) {font = EditorStyles.boldFont});
+
+         if (property.isExpanded)
+         {
+            EditorGUI.indentLevel += 1;
+
+            for (var i = 0; i < variablesProperty.arraySize; i++)
+            {
+               position = new Rect(position.x, position.y + EditorGUIUtility.singleLineHeight + 2, position.width,
+                  EditorGUIUtility.singleLineHeight);
+               var elemProperty = variablesProperty.GetArrayElementAtIndex(i);
+               var nameProperty = elemProperty.FindPropertyRelative(nameof(ApiVariable.Name));
+               var labelRect = EditorGUI.PrefixLabel(position, new GUIContent("Variable"));
+               EditorGUI.SelectableLabel(labelRect, nameProperty.stringValue);
+            }
+
+            EditorGUI.indentLevel -= 1;
+         }
+      }
+   }
+}

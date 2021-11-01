@@ -42,7 +42,7 @@ namespace Beamable.Server
          return outputs;
       }
 
-      public static string ResolveParameter(this RouteParameter parameter, ApiVariableBag variables=null)
+      public static string ResolveParameter(this RouteParameter parameter, ApiVariableBag variables = null)
       {
          variables = variables ?? EMPTY_VARIABLES;
          if (parameter.variableReference.HasValue)
@@ -57,14 +57,10 @@ namespace Beamable.Server
                Debug.LogWarning($"There is no variable for {key}. Sending null reference");
                return null;
             }
-         } else if (parameter.Data.HasValue)
-         {
-            return parameter.Data.Value;
          }
-         else
-         {
-            return null;
-         }
+
+         return parameter.Data;
+
       }
    }
 

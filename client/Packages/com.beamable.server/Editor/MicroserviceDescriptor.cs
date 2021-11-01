@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
@@ -20,6 +21,8 @@ namespace Beamable.Server.Editor
       public string AttributePath { get; set; }
       public Type Type { get; set; }
 
+      public List<ClientCallableDescriptor> Methods { get; set; }
+
       public string SourcePath => Path.GetDirectoryName(AttributePath);
       public string HidePath => $"./Assets/~/beamservicehide/{Name}";
 
@@ -33,4 +36,21 @@ namespace Beamable.Server.Editor
          return this.GetStorageReferences()?.Count() > 0 || this.HasMongoLibraries();
       }
     }
+
+   [Serializable]
+   public class ClientCallableDescriptor
+   {
+      public string Path;
+      public HashSet<string> Scopes;
+      public ClientCallableParameterDescriptor[] Parameters;
+      public Type ReturnType;
+   }
+
+   [Serializable]
+   public class ClientCallableParameterDescriptor
+   {
+      public string Name;
+      public int Index;
+      public Type Type;
+   }
 }
