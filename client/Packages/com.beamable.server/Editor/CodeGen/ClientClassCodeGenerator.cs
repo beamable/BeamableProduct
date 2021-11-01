@@ -38,7 +38,11 @@ public class ClientClassCodeGenerator
 
     public static bool IsTypeExistInNamespace(CodeNamespace ns, Type type)
     {
-        return IsTypeExistInNamespace(ns, type.Name);
+        if (type.IsGenericType)
+        {
+            return IsTypeExistInNamespace(ns, type.GetGenericArguments()[0]);
+        }
+        else return IsTypeExistInNamespace(ns, type.Name);
     }
 
     public static bool IsTypeExistInNamespace(CodeNamespace ns, string type)

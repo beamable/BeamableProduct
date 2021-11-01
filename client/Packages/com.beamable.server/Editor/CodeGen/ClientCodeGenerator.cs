@@ -31,7 +31,6 @@ namespace Beamable.Server.Editor.CodeGen
       private string TargetClassName => $"{Descriptor.Name}Client";
 
       private List<CallableMethodInfo> _callableMethods = new List<CallableMethodInfo>();
-      private List<DependencyClassInfo> _dependencyClasses = new List<DependencyClassInfo>();
 
         /// <summary>
         /// Define the class.
@@ -58,7 +57,7 @@ namespace Beamable.Server.Editor.CodeGen
           samples.Types.Add(targetClass);
           targetUnit.Namespaces.Add(samples);
 
-          ExtractDependencyClasses(descriptor, samples);
+          ExtractClientClasses(descriptor, samples);
 
           // need to scan and get methods.
           var allMethods = descriptor.Type.GetMethods(BindingFlags.Instance | BindingFlags.Public);
@@ -81,27 +80,30 @@ namespace Beamable.Server.Editor.CodeGen
           }
       }
 
-      void ExtractDependencyClasses(MicroserviceDescriptor descriptor, CodeNamespace ns)
+      void ExtractClientClasses(MicroserviceDescriptor descriptor, CodeNamespace ns)
       {
             var storageRef = descriptor.GetStorageReferences().ToArray();
 
             if (storageRef.Length > 0)
             {
-                var allTypes = storageRef[0].Type.Assembly.GetTypes();
-
-                if (allTypes.Length > 0)
+                foreach (var desc in storageRef)
                 {
-                    for (int i = 0; i < allTypes.Length; i++)
-                    {
-                        if (!typeof(StorageObject).IsAssignableFrom(allTypes[i]))
-                        {
-                            var clientClass = allTypes[i].GetCustomAttribute<ClientClassAttribute>();
-                            if (clientClass == null)
-                            {
-                                continue;
-                            }
+                    var allTypes = desc.Type.Assembly.GetTypes();
 
-                            ClientClassCodeGenerator.GenerateClientClass(ns, allTypes[i]);
+                    if (allTypes.Length > 0)
+                    {
+                        foreach (var type in allTypes)
+                        {
+                            if (!typeof(StorageObject).IsAssignableFrom(type))
+                            {
+                                var clientClass = type.GetCustomAttribute<ClientClassAttribute>();
+                                if (clientClass == null)
+                                {
+                                    continue;
+                                }
+
+                                ClientClassCodeGenerator.GenerateClientClass(ns, type);
+                            }
                         }
                     }
                 }
@@ -126,7 +128,7 @@ namespace Beamable.Server.Editor.CodeGen
 
               CodeTypeReference paramTypeReference;
 
-              if (ClientClassCodeGenerator.IsTypeExistInNamespace(ns, paramType.Name))
+              if (ClientClassCodeGenerator.IsTypeExistInNamespace(ns, paramType))
               {
                    genMethod.Parameters.Add(new CodeParameterDeclarationExpression(paramType.Name, paramName));
                    paramTypeReference = new CodeTypeReference(paramType.Name);
@@ -136,7 +138,6 @@ namespace Beamable.Server.Editor.CodeGen
                    genMethod.Parameters.Add(new CodeParameterDeclarationExpression(paramType, paramName));
                    paramTypeReference = new CodeTypeReference(paramType);
               }
-
 
               var serializationFieldName = $"serialized_{paramName}";
               var declare = new CodeParameterDeclarationExpression(typeof(string), serializationFieldName);
@@ -256,14 +257,5 @@ namespace Beamable.Server.Editor.CodeGen
             public MethodInfo MethodInfo;
             public ClientCallableAttribute ClientCallable;
       }
-
-      public class DependencyClassInfo
-      {
-            public string Name;
-            public string FullName;
-            public FieldInfo[] Fields;
-            public PropertyInfo[] Properties;
-            public ConstructorInfo[] Constructors;
-        }
    }
 }
