@@ -52,6 +52,32 @@ namespace Beamable.Server
    public class ApiVariable
    {
       public string Name;
+      public string TypeName;
+
+      public static readonly string TYPE_NUMBER = "number";
+      public static readonly string TYPE_BOOLEAN = "bool";
+      public static readonly string TYPE_STRING = "string";
+      public static readonly string TYPE_OBJECT = "object";
+
+      public static string GetTypeName(Type parameterType)
+      {
+         switch (Type.GetTypeCode(parameterType))
+         {
+            case TypeCode.Boolean: return TYPE_BOOLEAN;
+            case TypeCode.String: return TYPE_STRING;
+            case TypeCode.Decimal:
+            case TypeCode.Double:
+            case TypeCode.Single:
+            case TypeCode.Int16:
+            case TypeCode.Int32:
+            case TypeCode.Int64:
+            case TypeCode.UInt16:
+            case TypeCode.UInt32:
+            case TypeCode.UInt64:
+               return TYPE_NUMBER;
+            default: return TYPE_OBJECT;
+         }
+      }
    }
 
    [Serializable]
@@ -84,11 +110,10 @@ namespace Beamable.Server
    [Serializable]
    public class RouteParameter
    {
-      // public int Index;
       public string Name;
       public OptionalApiVariableReference variableReference;
       public string Data;
-
+      public string TypeName;
    }
 
    [Serializable]

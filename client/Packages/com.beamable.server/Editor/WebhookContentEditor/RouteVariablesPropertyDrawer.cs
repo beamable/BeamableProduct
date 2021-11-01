@@ -36,22 +36,22 @@ namespace Beamable.Server.Editor
          property.isExpanded = EditorGUI.Foldout(new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight), property.isExpanded, "Variables",
             new GUIStyle(EditorStyles.foldout) {font = EditorStyles.boldFont});
 
-         if (property.isExpanded)
+         if (!property.isExpanded) return;
+
+         EditorGUI.indentLevel += 1;
+
+         for (var i = 0; i < variablesProperty.arraySize; i++)
          {
-            EditorGUI.indentLevel += 1;
-
-            for (var i = 0; i < variablesProperty.arraySize; i++)
-            {
-               position = new Rect(position.x, position.y + EditorGUIUtility.singleLineHeight + 2, position.width,
-                  EditorGUIUtility.singleLineHeight);
-               var elemProperty = variablesProperty.GetArrayElementAtIndex(i);
-               var nameProperty = elemProperty.FindPropertyRelative(nameof(ApiVariable.Name));
-               var labelRect = EditorGUI.PrefixLabel(position, new GUIContent("Variable"));
-               EditorGUI.SelectableLabel(labelRect, nameProperty.stringValue);
-            }
-
-            EditorGUI.indentLevel -= 1;
+            position = new Rect(position.x, position.y + EditorGUIUtility.singleLineHeight + 2, position.width,
+               EditorGUIUtility.singleLineHeight);
+            var elemProperty = variablesProperty.GetArrayElementAtIndex(i);
+            var nameProperty = elemProperty.FindPropertyRelative(nameof(ApiVariable.Name));
+            var typeProperty = elemProperty.FindPropertyRelative(nameof(ApiVariable.TypeName));
+            var labelRect = EditorGUI.PrefixLabel(position, new GUIContent(typeProperty.stringValue));
+            EditorGUI.SelectableLabel(labelRect, nameProperty.stringValue);
          }
+
+         EditorGUI.indentLevel -= 1;
       }
    }
 }
