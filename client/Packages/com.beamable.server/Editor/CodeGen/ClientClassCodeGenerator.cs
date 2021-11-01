@@ -5,11 +5,11 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
-public class ClientDependencyCodeGenerator
+public class ClientClassCodeGenerator
 {
     private static string GETTER_SETTER_BODY = " { get; set; }//";
 
-    public static void GenerateDependencyClass(CodeNamespace ns, Type sourceType)
+    public static void GenerateClientClass(CodeNamespace ns, Type sourceType)
     {
         CodeTypeDeclaration genClass = new CodeTypeDeclaration(sourceType.Name);
         genClass.Comments.Add(new CodeCommentStatement($"<summary> A generated mocked dependency class for <see cref=\"{sourceType.FullName}\"/> </summary", true));
@@ -18,18 +18,18 @@ public class ClientDependencyCodeGenerator
 
         List<Type> unknownTypes = new List<Type>();
 
-        unknownTypes.AddRange(GenerateDependencyClassFields(genClass, sourceType));
-        unknownTypes.AddRange(GenerateDependencyClassProperties(genClass, sourceType));
-        unknownTypes.AddRange(GenerateDependencyClassMethods(genClass, sourceType));
+        unknownTypes.AddRange(GenerateClientClassFields(genClass, sourceType));
+        unknownTypes.AddRange(GenerateClientClassProperties(genClass, sourceType));
+        unknownTypes.AddRange(GenerateClientClassMethods(genClass, sourceType));
 
-        GenerateDependenctClassConstructors(genClass, sourceType);
+        GenerateClientClassConstructors(genClass, sourceType);
 
         if (unknownTypes.Count > 0)
         {
             for (int i = 0; i < unknownTypes.Count; i++)
             {
                 if (!IsTypeExistInNamespace(ns, unknownTypes[i]))
-                    GenerateDependencyClass(ns, unknownTypes[i]);
+                    GenerateClientClass(ns, unknownTypes[i]);
             }
         }
 
@@ -52,7 +52,7 @@ public class ClientDependencyCodeGenerator
         return false;
     }
 
-    static List<Type> GenerateDependencyClassFields(CodeTypeDeclaration genClass, Type sourceType)
+    static List<Type> GenerateClientClassFields(CodeTypeDeclaration genClass, Type sourceType)
     {
         List<Type> unknownTypes = new List<Type>();
 
@@ -77,7 +77,7 @@ public class ClientDependencyCodeGenerator
         return unknownTypes;
     }
 
-    static List<Type> GenerateDependencyClassProperties(CodeTypeDeclaration genClass, Type sourceType)
+    static List<Type> GenerateClientClassProperties(CodeTypeDeclaration genClass, Type sourceType)
     {
         List<Type> unknownTypes = new List<Type>();
 
@@ -104,7 +104,7 @@ public class ClientDependencyCodeGenerator
     }
 
 
-    static void GenerateDependenctClassConstructors(CodeTypeDeclaration genClass, Type sourceType)
+    static void GenerateClientClassConstructors(CodeTypeDeclaration genClass, Type sourceType)
     {
         bool hasEmptyConstructor = false;
         int constructors = 0;
@@ -160,7 +160,7 @@ public class ClientDependencyCodeGenerator
         }
     }
 
-    static List<Type> GenerateDependencyClassMethods(CodeTypeDeclaration genClass, Type sourceType)
+    static List<Type> GenerateClientClassMethods(CodeTypeDeclaration genClass, Type sourceType)
     {
         List<Type> unknownTypes = new List<Type>();
 

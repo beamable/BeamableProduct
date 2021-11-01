@@ -101,7 +101,7 @@ namespace Beamable.Server.Editor.CodeGen
                                 continue;
                             }
 
-                            ClientDependencyCodeGenerator.GenerateDependencyClass(ns, allTypes[i]);
+                            ClientClassCodeGenerator.GenerateClientClass(ns, allTypes[i]);
                         }
                     }
                 }
@@ -126,7 +126,7 @@ namespace Beamable.Server.Editor.CodeGen
 
               CodeTypeReference paramTypeReference;
 
-              if (ClientDependencyCodeGenerator.IsTypeExistInNamespace(ns, paramType.Name))
+              if (ClientClassCodeGenerator.IsTypeExistInNamespace(ns, paramType.Name))
               {
                    genMethod.Parameters.Add(new CodeParameterDeclarationExpression(paramType.Name, paramName));
                    paramTypeReference = new CodeTypeReference(paramType.Name);
