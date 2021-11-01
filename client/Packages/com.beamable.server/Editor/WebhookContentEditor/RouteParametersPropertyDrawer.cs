@@ -69,10 +69,8 @@ namespace Beamable.Server.Editor
 
          foreach (var info in GetRouteProperties(descriptor, method, property))
          {
-            info.typeProperty.stringValue = string.IsNullOrEmpty(info.typeProperty.stringValue)
-               ? ApiVariable.GetTypeName(info.ParameterType)
-               : info.typeProperty.stringValue ;
-
+            info.typeProperty.stringValue = ApiVariable.GetTypeName(info.ParameterType);
+            info.nameProperty.stringValue = info.Name;
             EditorGUI.BeginChangeCheck();
 
             var height = info.IsUsingVariable
@@ -104,11 +102,13 @@ namespace Beamable.Server.Editor
             if (info.IsUsingVariable)
             {
 
-               var options = new GUIContent[variablesArrayProperty.arraySize];
-               var selectedIndex = 0;
+
+
+               var options = new List<GUIContent>();
+
                var parameterTypeValue = info.typeProperty.stringValue;
 
-               for (var i = 0; i < options.Length; i++)
+               for (var i = 0; i < variablesArrayProperty.arraySize; i++)
                {
                   var variableName = variablesArrayProperty.GetArrayElementAtIndex(i).FindPropertyRelative(nameof(ApiVariable.Name)).stringValue;
                   var variableType = variablesArrayProperty.GetArrayElementAtIndex(i).FindPropertyRelative(nameof(ApiVariable.TypeName)).stringValue;
@@ -117,17 +117,14 @@ namespace Beamable.Server.Editor
                   {
                      continue;
                   }
-                  options[i] = new GUIContent(variableName);
 
-                  if (info.variableValueProperty.stringValue.Equals(variableName))
-                  {
-                     selectedIndex = i;
-                  }
+                  options.Add(new GUIContent(variableName));
                }
 
-               options = options.Where(o => o != null).ToArray();
+               var selectedIndex = options.FindIndex(o => o.text.Equals(info.variableValueProperty.stringValue));
+
                EditorGUI.BeginChangeCheck();
-               var nextSelectedIndex = EditorGUI.Popup(fieldPosition, infoLabel, selectedIndex, options);
+               var nextSelectedIndex = EditorGUI.Popup(fieldPosition, infoLabel, selectedIndex, options.ToArray());
                if (EditorGUI.EndChangeCheck())
                {
                   info.variableValueProperty.stringValue = options[nextSelectedIndex].text;
@@ -165,14 +162,22 @@ namespace Beamable.Server.Editor
          var output = new List<SerializedRouteParameterInfo>();
 
          var parametersProperty = property.FindPropertyRelative(nameof(RouteParameters.Parameters));
+         var oldLength = parametersProperty.arraySize;
          parametersProperty.arraySize = method.Parameters.Length;
 
          for (var i = 0; i < method.Parameters.Length; i++)
          {
+            var isNew = i >= oldLength;
+
             var parameter = method.Parameters[i];
             var parameterProperty = parametersProperty.GetArrayElementAtIndex(i);
 
             var rawProperty = parameterProperty.FindPropertyRelative(nameof(RouteParameter.Data));
+            if (isNew)
+            {
+               rawProperty.stringValue = "";
+            }
+            var nameProperty = parameterProperty.FindPropertyRelative(nameof(RouteParameter.Name));
             var typeProperty = parameterProperty.FindPropertyRelative(nameof(RouteParameter.TypeName));
             var variableOptionProperty = parameterProperty.FindPropertyRelative(nameof(RouteParameter.variableReference));
             var variableHasValueProperty = variableOptionProperty.FindPropertyRelative(nameof(Optional.HasValue));
@@ -183,6 +188,7 @@ namespace Beamable.Server.Editor
                Name = parameter.Name,
                property = property,
                rawProperty = rawProperty,
+               nameProperty = nameProperty,
                isUsingVariableProperty = variableHasValueProperty,
                variableValueProperty = variableValueProperty,
                typeProperty = typeProperty
@@ -236,6 +242,7 @@ namespace Beamable.Server.Editor
          public SerializedProperty variableValueProperty;
          public SerializedProperty isUsingVariableProperty;
          public SerializedProperty typeProperty;
+         public SerializedProperty nameProperty;
 
          public Type Type => instance?.GetType();
          public Type ParameterType => Type.BaseType.GetGenericArguments()[0];
