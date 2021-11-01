@@ -101,7 +101,7 @@ namespace Beamable.Server.Editor.CodeGen
                                 continue;
                             }
 
-                            ClientDependencyCodeGenerator.GenerateProxyClass(ns, allTypes[i]);
+                            ClientDependencyCodeGenerator.GenerateDependencyClass(ns, allTypes[i]);
                         }
                     }
                 }

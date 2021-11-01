@@ -9,28 +9,27 @@ public class ClientDependencyCodeGenerator
 {
     private static string GETTER_SETTER_BODY = " { get; set; }//";
 
-    public static void GenerateProxyClass(CodeNamespace ns, Type sourceType)
+    public static void GenerateDependencyClass(CodeNamespace ns, Type sourceType)
     {
         CodeTypeDeclaration genClass = new CodeTypeDeclaration(sourceType.Name);
-        genClass.Comments.Add(new CodeCommentStatement($"<summary> A generated mock class for <see cref=\"{sourceType.FullName}\"/> </summary", true));
+        genClass.Comments.Add(new CodeCommentStatement($"<summary> A generated mocked dependency class for <see cref=\"{sourceType.FullName}\"/> </summary", true));
 
         ns.Types.Add(genClass);
 
         List<Type> unknownTypes = new List<Type>();
 
-        unknownTypes.AddRange(GenerateProxyClassFields(genClass, sourceType));
-        unknownTypes.AddRange(GenerateProxyClassProperties(genClass, sourceType));
-        unknownTypes.AddRange(GenerateProxyClassMethods(genClass, sourceType));
+        unknownTypes.AddRange(GenerateDependencyClassFields(genClass, sourceType));
+        unknownTypes.AddRange(GenerateDependencyClassProperties(genClass, sourceType));
+        unknownTypes.AddRange(GenerateDependencyClassMethods(genClass, sourceType));
 
-
-        GenerateProxyClassConstructors(genClass, sourceType);
+        GenerateDependenctClassConstructors(genClass, sourceType);
 
         if (unknownTypes.Count > 0)
         {
             for (int i = 0; i < unknownTypes.Count; i++)
             {
                 if (!IsTypeExistInNamespace(ns, unknownTypes[i]))
-                    GenerateProxyClass(ns, unknownTypes[i]);
+                    GenerateDependencyClass(ns, unknownTypes[i]);
             }
         }
 
@@ -53,7 +52,7 @@ public class ClientDependencyCodeGenerator
         return false;
     }
 
-    static List<Type> GenerateProxyClassFields(CodeTypeDeclaration genClass, Type sourceType)
+    static List<Type> GenerateDependencyClassFields(CodeTypeDeclaration genClass, Type sourceType)
     {
         List<Type> unknownTypes = new List<Type>();
 
@@ -78,7 +77,7 @@ public class ClientDependencyCodeGenerator
         return unknownTypes;
     }
 
-    static List<Type> GenerateProxyClassProperties(CodeTypeDeclaration genClass, Type sourceType)
+    static List<Type> GenerateDependencyClassProperties(CodeTypeDeclaration genClass, Type sourceType)
     {
         List<Type> unknownTypes = new List<Type>();
 
@@ -105,7 +104,7 @@ public class ClientDependencyCodeGenerator
     }
 
 
-    static void GenerateProxyClassConstructors(CodeTypeDeclaration genClass, Type sourceType)
+    static void GenerateDependenctClassConstructors(CodeTypeDeclaration genClass, Type sourceType)
     {
         bool hasEmptyConstructor = false;
         int constructors = 0;
@@ -161,7 +160,7 @@ public class ClientDependencyCodeGenerator
         }
     }
 
-    static List<Type> GenerateProxyClassMethods(CodeTypeDeclaration genClass, Type sourceType)
+    static List<Type> GenerateDependencyClassMethods(CodeTypeDeclaration genClass, Type sourceType)
     {
         List<Type> unknownTypes = new List<Type>();
 
@@ -169,7 +168,6 @@ public class ClientDependencyCodeGenerator
 
             foreach (MethodInfo method in sourceType.GetMethods())
             {
-
                 if (method.DeclaringType == typeof(object))
                     continue;
 
@@ -197,7 +195,6 @@ public class ClientDependencyCodeGenerator
                 {
                     genMethod.ReturnType = new CodeTypeReference(method.ReturnType);
                     returnStatement = new CodeMethodReturnStatement(new CodeObjectCreateExpression(method.ReturnType));
-
                 }
                 else
                 {
@@ -205,7 +202,6 @@ public class ClientDependencyCodeGenerator
                     returnStatement = new CodeMethodReturnStatement(new CodeObjectCreateExpression(method.ReturnType.Name));
                     unknownTypes.Add(method.ReturnType);
                 }
-
 
                 if (method.ReturnType == typeof(void))
                     returnStatement = null;
@@ -227,9 +223,6 @@ public class ClientDependencyCodeGenerator
                                 genMethod.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(param.Name), new CodeObjectCreateExpression(paramType)));
                             else
                                 genMethod.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(param.Name), new CodePrimitiveExpression(null)));
-                            
-
-
                         }
                         else
                         {
@@ -251,7 +244,6 @@ public class ClientDependencyCodeGenerator
                         unknownTypes.Add(paramType);
                     }
                 }
-
 
                 if (returnStatement != null)
                     genMethod.Statements.Add(returnStatement);
