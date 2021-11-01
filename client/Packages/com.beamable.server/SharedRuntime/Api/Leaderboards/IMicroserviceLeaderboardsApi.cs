@@ -24,13 +24,14 @@ namespace Beamable.Server.Api.Leaderboards
       /* admin only functions? */
 
       /// <summary>
-      /// Call to create a new leaderboard with the given ID using the parameters found in the <paramref name="templateLeaderboardContent"/>.
+      /// Call to create a new leaderboard with the given <paramref name="leaderboardId"/> using the parameters found in the <paramref name="templateLeaderboardContent"/>.
+      /// Does not return an error when given an existing <paramref name="leaderboardId"/>. Instead, returns a success without any alteration made to the existing leaderboard that matches <paramref name="leaderboardId"/>. 
       /// </summary>
       /// <param name="leaderboardId">Id for the new leaderboard. Caller must guarantee this to be unique.</param>
       /// <param name="templateLeaderboardContent">Template parameters that'll be used to create the new leaderboard.</param>
-      /// <param name="ttl"></param>
-      /// <param name="derivatives"></param>
-      /// <param name="freezeTime"></param>
+      /// <param name="ttl">When this leaderboard should expire.</param>
+      /// <param name="derivatives">Board Ids for boards that must be recalculated when a entry is updated in this board.</param>
+      /// <param name="freezeTime">An arbitrary time since jan 1st 1970 when this leaderboard should be frozen</param>
       Promise<EmptyResponse> CreateLeaderboard(string leaderboardId,
           LeaderboardContent templateLeaderboardContent,
           OptionalLong ttl = null,
