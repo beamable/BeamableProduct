@@ -6,7 +6,6 @@ using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Editor.Content;
 using Beamable.Server.Editor.CodeGen;
-using dninosores.UnityEditorAttributes;
 using UnityEditor;
 using UnityEngine;
 
@@ -22,9 +21,21 @@ namespace Beamable.Server.Editor
          public ScriptableObject instance;
          public SerializedProperty property;
          public SerializedProperty rawProperty;
+         public SerializedProperty variableValueProperty;
+         public SerializedProperty isUsingVariableProperty;
 
          public Type Type => instance?.GetType();
          public Type ParameterType => Type.BaseType.GetGenericArguments()[0];
+
+         public bool ToggleVariable()
+         {
+             isUsingVariableProperty.boolValue = !isUsingVariableProperty.boolValue;
+
+             isUsingVariableProperty.serializedObject.ApplyModifiedProperties();
+             return IsUsingVariable;
+         }
+
+         public bool IsUsingVariable => isUsingVariableProperty.boolValue;
       }
 
       public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
@@ -44,7 +55,9 @@ namespace Beamable.Server.Editor
          var method = descriptor.Methods.FirstOrDefault(m => m.Path.Equals(endpointProperty.stringValue));
 
          var totalPropertyHeight = GetRouteProperties(descriptor, method, property)
-            .Select(p => EditorGUI.GetPropertyHeight(p.property) + 2).Sum();
+            .Select(p => p.IsUsingVariable
+               ? EditorGUIUtility.singleLineHeight
+               : EditorGUI.GetPropertyHeight(p.property) + 2).Sum();
          return totalPropertyHeight + EditorGUIUtility.singleLineHeight;
       }
 
@@ -63,11 +76,17 @@ namespace Beamable.Server.Editor
 
             var rawProperty = parameterProperty.FindPropertyRelative(nameof(RouteParameter.Data));
 
+            var variableOptionProperty = parameterProperty.FindPropertyRelative(nameof(RouteParameter.variableReference));
+            var variableHasValueProperty = variableOptionProperty.FindPropertyRelative(nameof(Optional.HasValue));
+            var variableValueProperty = variableOptionProperty.FindPropertyRelative(nameof(Optional<string>.Value)).FindPropertyRelative(nameof(ApiVariableReference.Name));
+
             SerializedRouteParameterInfo info = new SerializedRouteParameterInfo
             {
                Name = parameter.Name,
                property = property,
-               rawProperty = rawProperty
+               rawProperty = rawProperty,
+               isUsingVariableProperty = variableHasValueProperty,
+               variableValueProperty = variableValueProperty
             };
             try
             {
@@ -121,6 +140,10 @@ namespace Beamable.Server.Editor
          var serviceRouteProperty = apiProperty.serializedObject.FindProperty(nameof(ApiContent.ServiceRoute));
          var serviceNameProperty = serviceRouteProperty.FindPropertyRelative(nameof(ServiceRoute.Service));
          var endpointProperty = serviceRouteProperty.FindPropertyRelative(nameof(ServiceRoute.Endpoint));
+         var variablesProperty = apiProperty.serializedObject.FindProperty("_variables");
+         var variablesArrayProperty =  variablesProperty.FindPropertyRelative(nameof(RouteVariables.Variables));
+
+         var hasAnyVariables = variablesArrayProperty.arraySize > 0;
 
          position.height = EditorGUIUtility.singleLineHeight;
          EditorGUI.LabelField(position, "Route Parameters", new GUIStyle(EditorStyles.label){font = EditorStyles.boldFont});
@@ -132,109 +155,74 @@ namespace Beamable.Server.Editor
 
          foreach (var info in GetRouteProperties(descriptor, method, property))
          {
+
+
             EditorGUI.BeginChangeCheck();
 
-            var height = EditorGUIUtility.singleLineHeight;
-
+            var height = info.IsUsingVariable
+               ? EditorGUIUtility.singleLineHeight
+               : EditorGUI.GetPropertyHeight(info.property);
             var infoLabel = new GUIContent(info.Name);
-            var drawer = PropertyDrawerFinder.FindDrawerForProperty(info.property);
-            if (drawer == null)
-            {
-               height = EditorGUI.GetPropertyHeight(info.property);
-               position.height = height;
-               EditorGUI.PropertyField(position, info.property, infoLabel, true);
-            }
-            else
-            {
-               height = drawer.GetPropertyHeight(info.property, infoLabel);
-               position.height = height;
-               drawer.OnGUI(position, info.property, infoLabel);
-            }
-
+            var fieldPosition = new Rect(position.x, position.y, position.width - 30, height);
+            var buttonButton = new Rect(position.xMax - 30, position.y, 30, EditorGUIUtility.singleLineHeight);
+            position.height = height;
             position.y += height + 2;
 
-            var hasModifiedProperties = info.property.serializedObject.hasModifiedProperties;
-
-            if (EditorGUI.EndChangeCheck() || hasModifiedProperties)
+            if (hasAnyVariables && EditorGUI.DropdownButton(buttonButton, new GUIContent(""), FocusType.Keyboard,
+               EditorStyles.toolbarDropDown))
             {
-               // TODO:debounce this...
-               info.property.serializedObject.ApplyModifiedProperties();
+               GenericMenu menu = new GenericMenu();
 
-               var nextValue = info.Type.GetField("Data", BindingFlags.Instance | BindingFlags.Public).GetValue(info.instance);
-
-               var json = (string) typeof(MicroserviceClientHelper)
-                  .GetMethod("SerializeArgument", BindingFlags.Static | BindingFlags.Public)
-                  .MakeGenericMethod(info.ParameterType).Invoke(null, new object[] {nextValue});
-
-               info.rawProperty.stringValue = json;
+               menu.AddItem(new GUIContent("Use Variable"), info.IsUsingVariable, () =>
+               {
+                  info.ToggleVariable();
+               });
+               // display the menu
+               menu.ShowAsContext();
             }
+
+            if (info.IsUsingVariable)
+            {
+
+               var options = new GUIContent[variablesArrayProperty.arraySize];
+               var selectedIndex = 0;
+               for (var i = 0; i < options.Length; i++)
+               {
+                  var variableName = variablesArrayProperty.GetArrayElementAtIndex(i).FindPropertyRelative(nameof(ApiVariable.Name)).stringValue;
+                  options[i] = new GUIContent(variableName);
+                  if (info.variableValueProperty.stringValue.Equals(variableName))
+                  {
+                     selectedIndex = i;
+                  }
+               }
+
+               EditorGUI.BeginChangeCheck();
+               var nextSelectedIndex = EditorGUI.Popup(fieldPosition, infoLabel, selectedIndex, options);
+               if (EditorGUI.EndChangeCheck())
+               {
+                  info.variableValueProperty.stringValue = options[nextSelectedIndex].text;
+               }
+
+               continue;
+            }
+
+
+            EditorGUI.PropertyField(fieldPosition, info.property, infoLabel, true);
+            var hasModifiedProperties = info.property.serializedObject.hasModifiedProperties;
+            if (!EditorGUI.EndChangeCheck() && !hasModifiedProperties) continue;
+
+            // TODO:debounce this...
+            info.property.serializedObject.ApplyModifiedProperties();
+            var nextValue = info.Type.GetField("Data", BindingFlags.Instance | BindingFlags.Public).GetValue(info.instance);
+            var json = (string) typeof(MicroserviceClientHelper)
+               .GetMethod("SerializeArgument", BindingFlags.Static | BindingFlags.Public)
+               .MakeGenericMethod(info.ParameterType).Invoke(null, new object[] {nextValue});
+
+            info.rawProperty.stringValue = json;
          }
 
          EditorGUI.indentLevel -= 1;
 
-         // var parametersProperty = property.FindPropertyRelative(nameof(RouteParameters.Parameters));
-         //
-         // parametersProperty.arraySize = method.Parameters.Length;
-         //
-         // for (var i = 0; i < method.Parameters.Length; i ++)
-         // {
-         //    var parameter = method.Parameters[i];
-         //    var parameterProperty = parametersProperty.GetArrayElementAtIndex(i);
-         //
-         //
-         //
-         //    var parameterNameProperty = parameterProperty.FindPropertyRelative(nameof(RouteParameter.Name));
-         //    parameterNameProperty.stringValue = parameter.Name;
-         //
-         //    position = new Rect(position.x, position.y + EditorGUIUtility.singleLineHeight + 2, position.width, EditorGUIUtility.singleLineHeight);
-         //
-         //    var rawProperty = parameterProperty.FindPropertyRelative(nameof(RouteParameter.Data))
-         //       .FindPropertyRelative(nameof(OptionalString.Value));
-         //
-         //
-         //    try
-         //    {
-         //       var type = ClientCodeGenerator.GetDataWrapperTypeForParameter(descriptor, parameter.Type);
-         //
-         //       // TODO: somehow cache this???
-         //       var instance = ScriptableObject.CreateInstance(type);
-         //
-         //       try
-         //       {
-         //          var value = typeof(MicroserviceClientHelper)
-         //             .GetMethod("DeserializeResult", BindingFlags.Static | BindingFlags.Public)
-         //             .MakeGenericMethod(parameter.Type).Invoke(null, new[] {rawProperty.stringValue});
-         //          type.GetField("Data", BindingFlags.Instance | BindingFlags.Public).SetValue(instance, value);
-         //
-         //       }
-         //       catch
-         //       {
-         //          // we couldn't the value yet?
-         //       }
-         //       // deserialize the raw data string and set it.
-         //
-         //       var serialized = new SerializedObject(instance);
-         //
-         //       var subProperty = serialized.FindProperty("Data");
-         //
-         //       EditorGUI.BeginChangeCheck();
-         //       EditorGUI.PropertyField(position, subProperty, new GUIContent(parameter.Name), true);
-         //
-         //       if (EditorGUI.EndChangeCheck())
-         //       {
-         //          serialized.ApplyModifiedProperties();
-         //          var nextValue = type.GetField("Data", BindingFlags.Instance | BindingFlags.Public).GetValue(instance);
-         //          rawProperty.stringValue = (string) typeof(MicroserviceClientHelper)
-         //             .GetMethod("SerializeArgument", BindingFlags.Static | BindingFlags.Public)
-         //             .MakeGenericMethod(parameter.Type).Invoke(null, new object[] {nextValue});
-         //       }
-         //    }
-         //    catch (Exception ex)
-         //    {
-         //       EditorGUI.LabelField(position, ex.Message);
-         //    }
-         //
-         // }
       }
 
    }
