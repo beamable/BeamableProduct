@@ -23,15 +23,12 @@ namespace Beamable.Common.Player
       public bool IsRead, IsClaimed, IsIgnored;
 
 
-
       internal Announcement(PlayerAnnouncements group)
       {
          _group = group;
       }
 
       // TODO: _could_ have custom editor tooling to perform this method.
-
-
       public Promise Read() => _group.Read(this);
 
 
@@ -116,6 +113,11 @@ namespace Beamable.Common.Player
          // assume that is all going to work out.
          if (announcement.IsRead) return;
 
+         // update state right away,
+         // then run a network call to verify
+         // then reconcile the result of the network call
+         // if the call fails, then revert the state
+
          announcement.IsRead = true;
          try
          {
@@ -126,6 +128,25 @@ namespace Beamable.Common.Player
          {
             announcement.IsRead = false;
             throw;
+         }
+      }
+
+      [Serializable]
+      private class ReadAction : ISDKAction
+      {
+         public Announcement Announcement;
+
+         public void Predict()
+         {
+
+         }
+
+         public Promise Execute()
+         {
+         }
+
+         public void Reconcile()
+         {
          }
       }
    }
