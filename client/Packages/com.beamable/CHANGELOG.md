@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
-- Svelte portal - Enhancements to Player Account Search in Portal , partial searches by email, userAppId ( third party ) , dbid ( account search is now a "starts with" regex search on the backend. In portal you get as you type lookup )
+- Svelte portal - Enhancements to Player Account Search in Portal (  PLAT-4037, PLAT-4069 ) , partial searches by email, userAppId ( third party ) , gamer tag ( account search is now a "starts with" regex search on the backend. In portal you get as you type lookup with candidate accounts to select one )
 - `BeamableEnvironment` has moved to the Runtime to enable sdk version checking at runtime
 
 ## [0.17.2]
