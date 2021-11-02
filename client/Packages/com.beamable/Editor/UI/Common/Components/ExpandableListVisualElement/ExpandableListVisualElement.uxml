@@ -9,6 +9,7 @@
             <engine:VisualElement name="valueContainer">
                 <engine:Label name="value"/>
             </engine:VisualElement>
+            <engine:Label name="plusLabel"/>
             <engine:VisualElement name="arrowImage"/>
         </engine:VisualElement>
     </engine:VisualElement>

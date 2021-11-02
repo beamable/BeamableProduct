@@ -12,7 +12,7 @@
 #valueContainer {
     flex-grow: 1;
     min-width: 100px;
-    flex-direction: column;
+    flex-direction: row;
 }
 
 #value {
@@ -38,4 +38,11 @@
 
 .hidden {
     opacity: 0;
+}
+
+#plusLabel {
+    color: #FFFFFF;
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    -unity-text-align: middle-right;
+    font-size: 13px;
 }

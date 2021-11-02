@@ -20,6 +20,7 @@ namespace Beamable.Editor.UI.Components
         private string[] displayValues;
         private bool expanded;
         private Label label;
+        private Label plusLabel;
         private VisualElement arrowImage;
 
         public new class UxmlFactory : UxmlFactory<ExpandableListVisualElement, UxmlTraits>
@@ -37,6 +38,7 @@ namespace Beamable.Editor.UI.Components
 
             label = Root.Q<Label>("value");
             arrowImage = Root.Q<VisualElement>("arrowImage");
+            plusLabel = Root.Q<Label>("plusLabel");
 
             SetupLabel();
             
@@ -59,12 +61,7 @@ namespace Beamable.Editor.UI.Components
 
         private int GetMaxNumberOfCharacters(float width)
         {
-            float charactersNumberFactor = width / 10;
-            if (elements.Count > 1)
-            {
-                charactersNumberFactor = expanded ? width / 11 : width / 14;
-            }
-
+            float charactersNumberFactor = elements.Count > 1 ? width / 11 : width / 10;
             return Mathf.CeilToInt(charactersNumberFactor);
         }
 
@@ -73,6 +70,7 @@ namespace Beamable.Editor.UI.Components
             if (displayValues == null || displayValues.Length == 0)
             {
                 label.text = "";
+                plusLabel.text = "";
                 arrowImage.AddToClassList(HIDDEN_CLASS);
                 return;
             }
@@ -83,6 +81,7 @@ namespace Beamable.Editor.UI.Components
             if (displayValues.Length == 1)
             {
                 arrowImage.AddToClassList("--positionHidden");
+                plusLabel.AddToClassList("--positionHidden");
                 return;
             }
 
@@ -97,7 +96,7 @@ namespace Beamable.Editor.UI.Components
             }
             else
             {
-                label.text += $" {displayValues.Length - 1}+";
+                plusLabel.text = $"{displayValues.Length - 1}+";
             }
         }
 
