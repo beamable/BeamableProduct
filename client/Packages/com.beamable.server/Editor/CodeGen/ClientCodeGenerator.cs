@@ -181,8 +181,9 @@ namespace Beamable.Server.Editor.CodeGen
               }
           }
 
-          var genericPromiseType = promiseType.MakeGenericType(resultType);
-          genMethod.ReturnType = new CodeTypeReference(genericPromiseType);
+
+          CodeTypeReference resultTypeReference = ClientClassCodeGenerator.GetClientClassCodeTypeReference(resultType);
+          genMethod.ReturnType = new CodeTypeReference(promiseType.FullName, resultTypeReference);
 
           // Declaring a return statement for method ToString.
           var returnStatement = new CodeMethodReturnStatement();
@@ -195,7 +196,6 @@ namespace Beamable.Server.Editor.CodeGen
           }
 
          // servicePath = $"micro_{Descriptor.Name}/{servicePath}"; // micro is the feature name, so we don't accidently stop out an existing service.
-
 
           var serializedFieldVariableName = "serializedFields";
           var fieldDeclare = new CodeParameterDeclarationExpression(typeof(string[]), serializedFieldVariableName);
@@ -210,7 +210,7 @@ namespace Beamable.Server.Editor.CodeGen
                   "Request",
                   new CodeTypeReference[]
                   {
-                      new CodeTypeReference(resultType),
+                      resultTypeReference,
                   }),
               new CodeExpression[]
               {

@@ -7,7 +7,8 @@ using UnityEngine;
 
 public class ClientClassCodeGenerator
 {
-    private static string GETTER_SETTER_BODY = " { get; set; }//";
+    private const string GETTER_SETTER_BODY = " { get; set; }//";
+    private const string BEAMABLE_TYPE_NAMESPACE = "Beamable.Common";
 
     public static void GenerateClientClass(CodeNamespace ns, Type sourceType)
     {
@@ -66,7 +67,7 @@ public class ClientClassCodeGenerator
         {
             baseType = type.GetGenericArguments()[0];
 
-            if (Type.GetType(baseType.ToString()) == null)
+            if (Type.GetType(baseType.ToString()) == null && !IsBeamableType(type))
             {
                 unknownType = baseType;
                 return new CodeTypeReference(type.GetGenericTypeDefinition().FullName, new CodeTypeReference(baseType.Name));
@@ -78,7 +79,7 @@ public class ClientClassCodeGenerator
             }
         }
 
-        if (Type.GetType(type.ToString()) == null)
+        if (Type.GetType(type.ToString()) == null && !IsBeamableType(type))
         {
             unknownType = type;
             return new CodeTypeReference(type.Name);
@@ -90,6 +91,14 @@ public class ClientClassCodeGenerator
         }
     }
 
+    private static bool IsBeamableType(Type t)
+    {
+        if (t == null)
+            return false;
+
+        var ns = t.Namespace ?? "";
+        return ns.StartsWith(BEAMABLE_TYPE_NAMESPACE);
+    }
 
     static List<Type> GenerateClientClassFields(CodeTypeDeclaration genClass, Type sourceType)
     {
