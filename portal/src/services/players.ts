@@ -133,6 +133,37 @@ export class PlayersService extends BaseService {
         return result;
     }
 
+    @roleGuard(['admin', 'developer'])
+    async findPlayer(emailOrDbid: string, swallowError:boolean = true): Promise<PlayerData> {
+        try {
+            this.playerError.update(_ => undefined);
+
+            return await this.getPlayer(emailOrDbid);
+        } catch (err){
+            console.error(`failed to find player query=[${emailOrDbid}]`, err);
+
+            this.playerError.update(_ => err);
+            if (swallowError){
+                return (undefined as unknown) as PlayerData;
+            } else {
+                throw err;
+            }
+        }
+    }
+
+    public async getPlayer(emailOrDbid: string): Promise<PlayerData> {
+        const { http, router } = this.app;
+        const query = encodeURIComponent(emailOrDbid);
+        const response = await http.request(`/basic/accounts/find?query=${query}`, void 0, 'get');
+        const player = response.data as PlayerDataInterface;
+        const playerData = new PlayerData(player, router.getRealmId());
+
+        if (!playerData.gamerTagForRealm()) throw {
+            error: 'No gamertag',
+            message: 'The player does not have a gamertag in the current realm. The player exists, but has never logged into this realm.'
+        };
+        return playerData;
+    }
 
     async forgetUser(player: PlayerData): Promise<PlayerData> {
         const { http, router } = this.app;
