@@ -287,7 +287,7 @@
         <form on:submit|preventDefault={queryPlayer} class="search-box">
           <div class="field">
             <div class="control has-icon {(isLoading) ? 'is-loading': ''} {queryError ? 'has-error': ''}  ">
-              <input type="text" class="input" placeholder="Search for player with email, or dbid" bind:value={playerIdOrEmail} >
+              <input type="text" class="input" placeholder="Search for player with email, or dbid, or third party association" bind:value={playerIdOrEmail} >
               {#if foundPlayers}
               <div id="searchedPlayers">
                 <ul>
