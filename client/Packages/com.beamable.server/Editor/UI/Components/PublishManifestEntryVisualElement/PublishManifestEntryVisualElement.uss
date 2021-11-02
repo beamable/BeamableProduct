@@ -6,34 +6,70 @@
     padding-left: 10px;
     padding-right: 10px;
 }
-#nameC {
-    width: 200px;
-    flex-direction: row;
-    align-self: stretch;
-    flex-direction: row;
-    align-content: stretch;
-    flex-grow: 3;
-    padding-left: 10px;
+
+.manifestRow.oddRow {
+    background-color: #545454;
 }
+
+#nameColumn, #depsColumn {
+    flex-direction: row;
+    flex: 1;
+}
+
+#depsColumn {
+    flex-direction: column;
+}
+
 #CommentsC {
-    width: 250px;
-    padding-left: 20px;
+    width: 130px;
 }
+
+#depsList {
+    margin-right: 10px;
+}
+
 #SizeC {
     flex-direction: row;
-    width: 100px;
-    padding-left: 10px;
-    padding-right: 10px;
+    width: 140px;
 }
-#commentsText, #SizeC .template{
+
+#sizeDropdown {
+    width: 140px;
+}
+
+#commentsText {
     width: 90px;
+}
+
+#commentsText {
+    height: 25px;
 }
 
 #enabledC {
     width: 100px;
+    height: 20px;
     flex-direction: row;
     justify-content: center;
 }
+
+#CheckC {
+    margin-right: 20px;
+}
+
+#nameMS {
+    -unity-font-style: bold;
+}
+
+#typeImage {
+    align-self: center;
+}
+
+#typeC {
+    width: 80px;
+    margin-left: 10px;
+    align-self: flex-start;
+}
+
 #checkbox{
     align-self: center;
     justify-content: center;
@@ -43,4 +79,25 @@
 }
 .column{
     flex-direction: row;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.microserviceImage, #checkImage {
+    width: 20px;
+    height: 20px;
+}
+
+.microserviceImage {
+    margin-left: 5px;
+    margin-top: 5px;
+}
+
+.storageImage {
+    width: 30px;
+    height: 30px;
+}
+
+.published {
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Checked.png");
 }

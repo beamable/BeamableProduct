@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `PromiseBase.SetPotentialUncaughtErrorHandler(handler, replace)` -- replaces by default, but supports adding handlers by passing `false` to second parameter 
+- New design of Microservices Publish Window with support for Storage Objects
 
 ### Fixed
 - `CloudSavingService` serialization error caused by Invariant Culture
