@@ -59,7 +59,7 @@
   let buttonRight = 20;
   let isNavbarLocked = false;
 
-  $: isLoading = !(player) && playerIdOrEmail && !queryError;
+  $: isLoading = !foundPlayers;
 
   $: {
     playerIdOrEmail = playerIdOrEmail; // causes reaction
@@ -232,21 +232,27 @@
     }
   }
 
-  .searchedPlayers_link {
+  #accountLookup {
+    overflow-y: auto;
+    max-height: 100px;
+    padding: 5px;
+    
+    li {
+        a {
+      
+          display: block;
+          color: white;
+          &:hover {
+            background-color: gainsboro;
+            cursor: pointer;
+          }
 
-    display: block;
-    color: white;
-
-    &:hover {
-      background-color: gainsboro;
-      cursor: pointer;
+          &:active {
+            color:#0095f1;
+          }
+      }
     }
-
-    &:active {
-      color:#0095f1;
-    }
-
-    }
+  }
 
     [data-tooltip]:before {
     /* needed - do not touch */
@@ -289,11 +295,12 @@
             <div class="control has-icon {(isLoading) ? 'is-loading': ''} {queryError ? 'has-error': ''}  ">
               <input type="text" class="input" placeholder="Search for player with email, or dbid, or third party association" bind:value={playerIdOrEmail} >
               {#if foundPlayers}
-              <div id="searchedPlayers">
+              <div id="accountLookup">
                 <ul>
-                {#each foundPlayers as p}
+                {#each foundPlayers as foundPlayer}
                   <li>
-                    <a class="searchedPlayers_link" data-tooltip={p.gamerTagForRealmMessage()} on:click={setPlayer(p)}>dbid: {p.id} email: {p.email}</a>
+                    <a data-tooltip={foundPlayer.getNonExistingGamerTagForRealmMessage()}
+                       on:click={setPlayer(foundPlayer)}>dbid: {foundPlayer.id} email: {foundPlayer.email}</a>
                   </li>
                 {/each}
                </ul>

@@ -78,7 +78,7 @@ export class PlayerData {
         return this.gamerTags.find((gamerTag: any) => gamerTag.projectId === realmId)?.gamerTag;
     }
 
-    gamerTagForRealmMessage() {
+    getNonExistingGamerTagForRealmMessage() {
         if (!this.gamerTagForRealm()) {
             return 'The player exists, but has never logged into this realm and has no gamertag. You can not select this account.'
         }
