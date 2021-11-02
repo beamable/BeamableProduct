@@ -77,20 +77,28 @@ export class PlayerData {
 
         return this.gamerTags.find((gamerTag: any) => gamerTag.projectId === realmId)?.gamerTag;
     }
+
+    gamerTagForRealmMessage() {
+        if (!this.gamerTagForRealm()) {
+            return 'The player exists, but has never logged into this realm and has no gamertag. You can not select this account.'
+        }
+        return null
+    }
 }
 
 
 export class PlayersService extends BaseService {
     public readonly emailOrDbid: Writable<string> = this.writable('players.emailOrDbid');
     public readonly playerError: Writable<string> = this.writable('players.playerError');
-
-    public readonly playerData: Readable<PlayerData> = this.derived(
+    public playerData: Writable<PlayerData> = this.writable('players.playerData')
+    
+    public readonly playerDataSearch: Readable<PlayerData[]> = this.derived(
         [this.app.router.realmId, this.emailOrDbid],
-        (args: [string, string], set:(next: PlayerData | undefined) => void) => {
+        (args: [string, string], set:(next: PlayerData[] | undefined) => void) => {
         const [realmId, emailOrDbid] = args;
 
         if (realmId && emailOrDbid){
-            this.findPlayer(emailOrDbid, true).then(set);
+            this.searchPlayers(emailOrDbid).then(set);
         } else {
             set(undefined);
         }
@@ -113,36 +121,18 @@ export class PlayersService extends BaseService {
     }
 
     @roleGuard(['admin', 'developer'])
-    async findPlayer(emailOrDbid: string, swallowError:boolean = true): Promise<PlayerData> {
-        try {
-            this.playerError.update(_ => undefined);
-
-            return await this.getPlayer(emailOrDbid);
-        } catch (err){
-            console.error(`failed to find player query=[${emailOrDbid}]`, err);
-
-            this.playerError.update(_ => err);
-            if (swallowError){
-                return (undefined as unknown) as PlayerData;
-            } else {
-                throw err;
-            }
-        }
-    }
-
-    public async getPlayer(emailOrDbid: string): Promise<PlayerData> {
+    public async searchPlayers(term: string): Promise<PlayerData[]> {
         const { http, router } = this.app;
-        const query = encodeURIComponent(emailOrDbid);
-        const response = await http.request(`/basic/accounts/find?query=${query}`, void 0, 'get');
-        const player = response.data as PlayerDataInterface;
-        const playerData = new PlayerData(player, router.getRealmId());
-
-        if (!playerData.gamerTagForRealm()) throw {
-            error: 'No gamertag',
-            message: 'The player does not have a gamertag in the current realm. The player exists, but has never logged into this realm.'
-        };
-        return playerData;
+        const query = encodeURIComponent(term);
+        const response = await http.request(`/basic/accounts/search?query=${query}&page=1&pagesize=30`, void 0, 'get');   
+        let result: PlayerData[] = [];
+        for(let n = 0; n < response.data.accounts.length; n++) {
+            let playerData = response.data.accounts[n] as PlayerDataInterface;
+            result.push(new PlayerData(playerData, router.getRealmId()));
+        }
+        return result;
     }
+
 
     async forgetUser(player: PlayerData): Promise<PlayerData> {
         const { http, router } = this.app;
