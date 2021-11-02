@@ -40,6 +40,7 @@ export interface PlayerDataInterface {
     readonly email: string;
     readonly createdTimeMillis: number;
     readonly id: number;
+    readonly deviceId: string;
     readonly updatedTimeMillis: number;
     readonly gamerTags: Array<GamerTag>;
     readonly thirdParties: Array<ThirdPartyAssociation>;
@@ -49,18 +50,20 @@ export class PlayerData {
     readonly email: string;
     readonly createdTimeMillis: number;
     readonly id: number;
+    readonly deviceId: string;
     readonly updatedTimeMillis: number;
     readonly gamerTags: Array<GamerTag>;
     readonly thirdParties: Array<ThirdPartyAssociation>;
     private defaultRealmId: string;
 
     constructor(
-        {email, createdTimeMillis, id, updatedTimeMillis, gamerTags, thirdParties}: PlayerDataInterface,
+        {email, createdTimeMillis, id, deviceId, updatedTimeMillis, gamerTags, thirdParties}: PlayerDataInterface,
         realmId: string
     ) {
         this.email = email;
         this.createdTimeMillis = createdTimeMillis;
         this.id = id;
+        this.deviceId = deviceId ?? '';
         this.updatedTimeMillis = updatedTimeMillis;
         this.gamerTags = gamerTags;
         this.thirdParties = thirdParties;
@@ -157,6 +160,19 @@ export class PlayersService extends BaseService {
             newEmail,
         };
         const url = `/object/accounts/${player.id}/admin/email`;
+        const response = await http.request(url, request, 'put');
+
+        return new PlayerData(response.data as PlayerDataInterface, router.getRealmId());
+    }
+
+    async updateDeviceId(player: PlayerData, newDeviceId: string): Promise<PlayerData> {
+        const { http, router } = this.app;
+
+        const request = newDeviceId && newDeviceId.length > 0 
+            ? { deviceId: newDeviceId }
+            : null;
+        
+        const url = `/object/accounts/${player.id}`;
         const response = await http.request(url, request, 'put');
 
         return new PlayerData(response.data as PlayerDataInterface, router.getRealmId());
