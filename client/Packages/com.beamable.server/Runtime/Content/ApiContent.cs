@@ -11,17 +11,23 @@ namespace Beamable.Server
    [Serializable]
    public class ApiContent : ContentObject, ISerializationCallbackReceiver
    {
+      [ContentField("description")]
+      [Tooltip("Write a summary of this api call")]
       public OptionalString Description;
 
+      [ContentField("route")]
+      [Tooltip("The route information for the api call")]
       public ServiceRoute ServiceRoute;
 
-      [ContentField]
+      [ContentField("variables")]
       [SerializeField]
       private RouteVariables _variables = new RouteVariables();
+      public ApiVariable[] Variables => _variables.Variables;
 
+      [ContentField("parameters")]
+      [Tooltip("The required parameters of the api call")]
       public RouteParameters Parameters;
 
-      public ApiVariable[] Variables => _variables.Variables;
 
       protected virtual ApiVariable[] GetVariables()
       {
@@ -110,9 +116,20 @@ namespace Beamable.Server
    [Serializable]
    public class RouteParameter
    {
+      [ContentField("name")]
+      [Tooltip("The name of this parameter")]
       public string Name;
+
+      [ContentField("variableRef")]
+      [Tooltip("If you are using a variable, which variable is this parameter bound to?")]
       public OptionalApiVariableReference variableReference;
+
+      [ContentField("json")]
+      [Tooltip("The raw json payload of this parameter")]
       public string Data;
+
+      [ContentField("parameterType")]
+      [Tooltip("The type of this parameter")]
       public string TypeName;
    }
 
