@@ -235,7 +235,6 @@
   #accountLookup {
     overflow-y: auto;
     max-height: 100px;
-    padding: 5px;
     
     li {
         a {
