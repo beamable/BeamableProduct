@@ -12,30 +12,15 @@ namespace Beamable.UI.BUSS
         [SerializeField] private BUSSStyleConfig _config;
 #pragma warning restore CS0649
 
-        // TODO: serialized for debug purposes only. Remove before final push
-        [SerializeField] private List<BUSSStyleProvider> _childProviders = new List<BUSSStyleProvider>();
-        [SerializeField] private BUSSStyleProvider _parentProvider;
-        [SerializeField] private BUSSElement _bussElement;
-        [SerializeField] private List<BUSSStyleProvider> _providersTree = new List<BUSSStyleProvider>();
+        private readonly List<BUSSStyleProvider> _childProviders = new List<BUSSStyleProvider>();
+        private readonly List<BUSSStyleProvider> _providersTree = new List<BUSSStyleProvider>();
+        private BUSSStyleProvider _parentProvider;
+        private BUSSElement _bussElement;
 
         private BUSSStyleProvider ParentProvider => _parentProvider;
 
-        public void OnGlobalStyleChanged()
+        public void OnStyleChanged()
         {
-            // Debug.Log($"{name}: Global style changed");
-
-            // TODO: take local style and apply to local buss element
-
-            foreach (BUSSStyleProvider childProvider in _childProviders)
-            {
-                childProvider.OnParentStyleChanged();
-            }
-        }
-
-        private void OnParentStyleChanged()
-        {
-            // Debug.Log($"{name}: Parent style changed");
-
             if (_bussElement != null)
             {
                 BUSSStyle style = BussConfiguration.Instance.PrepareStyle(_providersTree, _bussElement.Id);
@@ -44,23 +29,7 @@ namespace Beamable.UI.BUSS
 
             foreach (BUSSStyleProvider childProvider in _childProviders)
             {
-                childProvider.OnParentStyleChanged();
-            }
-        }
-
-        private void OnLocalStyleChanged()
-        {
-            // Debug.Log($"{name}: Local style changed");
-
-            if (_bussElement != null)
-            {
-                BUSSStyle style = BussConfiguration.Instance.PrepareStyle(_providersTree, _bussElement.Id);
-                _bussElement.ApplyStyle(style);
-            }
-
-            foreach (BUSSStyleProvider childProvider in _childProviders)
-            {
-                childProvider.OnParentStyleChanged();
+                childProvider.OnStyleChanged();
             }
         }
 
@@ -83,7 +52,7 @@ namespace Beamable.UI.BUSS
 
             if (_config != null)
             {
-                _config.OnChange += OnLocalStyleChanged;
+                _config.OnChange += OnStyleChanged;
             }
 
             RegisterToParent();
@@ -93,7 +62,7 @@ namespace Beamable.UI.BUSS
         {
             if (_config != null)
             {
-                _config.OnChange += OnLocalStyleChanged;
+                _config.OnChange += OnStyleChanged;
             }
 
             RegisterToParent();
@@ -103,7 +72,7 @@ namespace Beamable.UI.BUSS
         {
             if (_config != null)
             {
-                _config.OnChange -= OnLocalStyleChanged;
+                _config.OnChange -= OnStyleChanged;
             }
 
             UnregisterFromParent();
@@ -113,7 +82,7 @@ namespace Beamable.UI.BUSS
         {
             if (_config != null)
             {
-                _config.OnChange -= OnLocalStyleChanged;
+                _config.OnChange -= OnStyleChanged;
             }
 
             UnregisterFromParent();

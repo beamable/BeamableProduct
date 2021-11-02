@@ -83,7 +83,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
         {
             foreach (BUSSStyleProvider styleProvider in _styleProviders)
             {
-                styleProvider.OnGlobalStyleChanged();
+                styleProvider.OnStyleChanged();
             }
         }
 
