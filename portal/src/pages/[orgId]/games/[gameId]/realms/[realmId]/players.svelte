@@ -33,6 +33,7 @@
   let playerStats;
   let timer;
   let player;
+  let foundPlayers;
   let playerInventory;
   let playerAnnouncements;
   let floatingButton;
@@ -58,7 +59,7 @@
   let buttonRight = 20;
   let isNavbarLocked = false;
 
-  $: isLoading = !(player) && playerIdOrEmail && !queryError;
+  $: isLoading = !foundPlayers;
 
   $: {
     playerIdOrEmail = playerIdOrEmail; // causes reaction
@@ -81,9 +82,14 @@
     playerIdOrEmail = value;
   })
 
-  players.playerData.subscribe(value => {
-    player = value;
-  });
+  players.playerDataSearch.subscribe(value => {
+    foundPlayers = value;
+    if (foundPlayers && foundPlayers.length === 1) {
+      let thePlayer = foundPlayers[0];
+      setPlayer(thePlayer);
+    }
+  })
+
 
   players.playerStats.subscribe(value => {
     playerStats = value;
@@ -107,6 +113,7 @@
   function reset() {
     playerStats = undefined;
     player = undefined;
+    foundPlayers = undefined;
   }
 
   const debounce = action => {
@@ -114,6 +121,15 @@
     timer = setTimeout(() => {
       action()
     }, 1000);
+  }
+
+  
+  function setPlayer(p) {
+    if (!p.gamerTagForRealm()) {
+      return
+    }
+    players.playerData.set(p)
+    player = p
   }
 
   async function queryPlayer() {
@@ -215,6 +231,56 @@
 
     }
   }
+
+  #accountLookup {
+    overflow-y: auto;
+    max-height: 100px;
+    
+    li {
+        a {
+      
+          display: block;
+          color: white;
+          &:hover {
+            background-color: gainsboro;
+            cursor: pointer;
+          }
+
+          &:active {
+            color:#0095f1;
+          }
+      }
+    }
+  }
+
+    [data-tooltip]:before {
+    /* needed - do not touch */
+    content: attr(data-tooltip);
+    position: absolute;
+    opacity: 0;
+
+    /* customizable */
+    transition: all 0.15s ease;
+    padding: 10px;
+    color: white;
+    border-radius: 10px;
+    // box-shadow: 2px 2px 1px silver;    
+    }
+
+    [data-tooltip]:hover:before {
+    /* needed - do not touch */
+    opacity: 1;
+
+    /* customizable */
+    background: #454545;
+    margin-top: -50px;
+    margin-left: 20px;    
+    }
+
+    [data-tooltip]:not([data-tooltip-persistent]):before {
+    pointer-events: none;
+    }
+
 </style>
 
 <svelte:window on:wheel={refreshFloatingButton} on:resize={getFloatingRightPosition} />
@@ -226,7 +292,19 @@
         <form on:submit|preventDefault={queryPlayer} class="search-box">
           <div class="field">
             <div class="control has-icon {(isLoading) ? 'is-loading': ''} {queryError ? 'has-error': ''}  ">
-              <input type="text" class="input" placeholder="Search for player with email, or dbid" bind:value={playerIdOrEmail} >
+              <input type="text" class="input" placeholder="Search for player with email, or dbid, or third party association" bind:value={playerIdOrEmail} >
+              {#if foundPlayers}
+              <div id="accountLookup">
+                <ul>
+                {#each foundPlayers as foundPlayer}
+                  <li>
+                    <a data-tooltip={foundPlayer.getNonExistingGamerTagForRealmMessage()}
+                       on:click={setPlayer(foundPlayer)}>dbid: {foundPlayer.id} email: {foundPlayer.email}</a>
+                  </li>
+                {/each}
+               </ul>
+              </div>
+             {/if}
               <div class="form-icon">
                 <FeatherIcon icon="search"/>
               </div>
