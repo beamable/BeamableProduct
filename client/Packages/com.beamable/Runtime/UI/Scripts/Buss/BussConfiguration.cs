@@ -111,7 +111,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 
         private void ApplyConfig(BUSSElement element, BUSSStyleConfig config) {
             foreach (var descriptor in config.Styles) {
-                if (descriptor.Name == element.Id) {
+                if (descriptor.Name == "*" || descriptor.Name == element.Id) {
                     ApplyDescriptor(element, descriptor);
                 }
             }
