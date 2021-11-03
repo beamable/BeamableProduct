@@ -41,6 +41,9 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 
         public void RegisterObserver(BUSSStyleProvider styleProvider)
         {
+            // TODO: serve case when user adds (by Add Component opiton, not by changing hierarchy) BUSSStyleProvider
+            // component somewhere "above" currently topmost BUSSStyleProvider(s) causing to change whole hierarchy 
+
             if (!_styleProviders.Contains(styleProvider))
             {
                 _styleProviders.Add(styleProvider);
@@ -94,14 +97,16 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
         {
             Dictionary<string, BUSSStyle> styles = new Dictionary<string, BUSSStyle>();
             ParseStyleObjects(_globalStyleConfig.Styles, ref styles);
-            return GetStyleById(bussElementId, styles);
-        }
 
-        private Dictionary<string, BUSSStyle> ParseStyles(List<BUSSStyleDescription> stylesList)
-        {
-            Dictionary<string, BUSSStyle> styles = new Dictionary<string, BUSSStyle>();
-            ParseStyleObjects(stylesList, ref styles);
-            return styles;
+            foreach (BUSSStyleProvider provider in providersTree)
+            {
+                if(provider.Config == null)
+                    continue;
+                
+                ParseStyleObjects(provider.Config.Styles, ref styles);
+            }
+
+            return GetStyleById(bussElementId, styles);
         }
 
         private BUSSStyle GetStyleById(string id, Dictionary<string, BUSSStyle> styleObjects)

@@ -5,7 +5,6 @@ using UnityEngine;
 namespace Beamable.UI.BUSS
 {
     [ExecuteInEditMode, DisallowMultipleComponent]
-    [RequireComponent(typeof(BUSSElement))]
     public class BUSSStyleProvider : MonoBehaviour
     {
 #pragma warning disable CS0649
@@ -17,6 +16,7 @@ namespace Beamable.UI.BUSS
         private BUSSStyleProvider _parentProvider;
         private BUSSElement _bussElement;
 
+        public BUSSStyleConfig Config => _config;
         private BUSSStyleProvider ParentProvider => _parentProvider;
 
         public void OnStyleChanged()
@@ -50,9 +50,9 @@ namespace Beamable.UI.BUSS
                 _bussElement = GetComponent<BUSSElement>();
             }
 
-            if (_config != null)
+            if (Config != null)
             {
-                _config.OnChange += OnStyleChanged;
+                Config.OnChange += OnStyleChanged;
             }
 
             RegisterToParent();
@@ -60,9 +60,9 @@ namespace Beamable.UI.BUSS
 
         private void OnEnable()
         {
-            if (_config != null)
+            if (Config != null)
             {
-                _config.OnChange += OnStyleChanged;
+                Config.OnChange += OnStyleChanged;
             }
 
             RegisterToParent();
@@ -70,9 +70,9 @@ namespace Beamable.UI.BUSS
 
         private void OnDisable()
         {
-            if (_config != null)
+            if (Config != null)
             {
-                _config.OnChange -= OnStyleChanged;
+                Config.OnChange -= OnStyleChanged;
             }
 
             UnregisterFromParent();
@@ -80,9 +80,9 @@ namespace Beamable.UI.BUSS
 
         private void OnDestroy()
         {
-            if (_config != null)
+            if (Config != null)
             {
-                _config.OnChange -= OnStyleChanged;
+                Config.OnChange -= OnStyleChanged;
             }
 
             UnregisterFromParent();
