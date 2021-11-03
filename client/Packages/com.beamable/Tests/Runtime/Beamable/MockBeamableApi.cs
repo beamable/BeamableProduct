@@ -29,6 +29,7 @@ using Beamable.Experimental;
 using Beamable.Experimental.Api.Chat;
 using Beamable.Experimental.Api.Matchmaking;
 using Beamable.Experimental.Api.Sim;
+using Beamable.Player;
 
 namespace Packages.Beamable.Runtime.Tests.Beamable
 {
@@ -36,6 +37,7 @@ namespace Packages.Beamable.Runtime.Tests.Beamable
     {
         public User User { get; set; }
         public AccessToken Token { get; set; }
+        public PlayerData Player { get; }
         public IExperimentalAPI Experimental { get; }
         public AnnouncementsService AnnouncementService { get; set; }
         public MockAuthService MockAuthService { get; set; } = new MockAuthService();
@@ -68,6 +70,8 @@ namespace Packages.Beamable.Runtime.Tests.Beamable
 
         [Obsolete("Use " + nameof(TournamentsService) + " Instead")]
         public ITournamentApi Tournaments => TournamentsService;
+
+        public ISdkEventService SdkEventService { get; }
         public ICloudDataApi TrialDataService { get; }
 
 #pragma warning disable 67

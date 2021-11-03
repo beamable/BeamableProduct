@@ -496,6 +496,8 @@ namespace Beamable.Common
    [AsyncMethodBuilder(typeof(PromiseAsyncMethodBuilder))]
    public class Promise : Promise<Unit>
    {
+      public static Promise Success { get; } = new Promise {done = true};
+
       /// <summary>
       /// Create a <see cref="SequencePromise{T}"/> from List of <see cref="Promise{T}"/>
       /// </summary>
