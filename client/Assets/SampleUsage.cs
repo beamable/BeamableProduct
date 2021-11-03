@@ -10,7 +10,7 @@ namespace DefaultNamespace
       async void Start()
       {
          var b = await Beamable.API.Instance; // TODO: how does changing use accounts work?
-         Announcements = new PlayerAnnouncements(b.AnnouncementService, b.NotificationService);
+         Announcements = new PlayerAnnouncements(b.AnnouncementService, b.NotificationService, b.SdkEventService);
 
          Announcements.OnLoadingFinished += () => Debug.Log("Loading finished");
          Announcements.OnLoadingStarted += () => Debug.Log("Loading started");
