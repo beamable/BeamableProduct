@@ -40,15 +40,15 @@ namespace Beamable.Server.Api.Leaderboards
             var permissions = templateLeaderboardContent.permissions;
 
             var ttlValue = (long?)null;
-            if (ttl is { HasValue: true })
+            if (ttl != null && ttl.HasValue)
                 ttlValue = ttl.Value;
 
             var derivativesValue = default(List<string>);
-            if (derivatives is { HasValue: true })
+            if (derivatives != null && derivatives.HasValue)
                 derivativesValue = derivatives.Value;
 
             var freezeValue = (long?) null;
-            if (freezeTime is { HasValue: true })
+            if (freezeTime != null && freezeTime.HasValue)
                 freezeValue = freezeTime.Value;
 
             var request = new CreateLeaderboardRequest()
@@ -98,7 +98,7 @@ namespace Beamable.Server.Api.Leaderboards
             if (req.ttl.HasValue) dict.Add("ttl", req.ttl.Value);
             if (req.partitioned.HasValue) dict.Add("partitioned", req.partitioned.Value);
 
-            if (req.cohortSettings is { cohorts: { } } && req.cohortSettings.cohorts.Count > 0)
+            if (req.cohortSettings != null && req.cohortSettings.cohorts != null && req.cohortSettings.cohorts.Count > 0)
             {
                 var propDict = new ArrayDict();
                 var cohorts = req.cohortSettings.cohorts;
@@ -106,15 +106,17 @@ namespace Beamable.Server.Api.Leaderboards
                 {
                     var arrayDict = new ArrayDict();
                     arrayDict.Add("id", cohort.id);
-                    if (cohort.description is { HasValue: true }) arrayDict.Add("description", cohort.description.Value);
+                    
+                    if (cohort.description != null && cohort.description.HasValue)
+                        arrayDict.Add("description", cohort.description.Value);
 
                     arrayDict.Add("statRequirements", cohort.statRequirements.Select(delegate(StatRequirement requirement)
                     {
                         var statDict = new ArrayDict();
-                        if (requirement.domain is { HasValue: true })
+                        if (requirement.domain != null && requirement.domain.HasValue)
                             statDict.Add("domain", requirement.domain.Value);
 
-                        if (requirement.access is { HasValue: true })
+                        if (requirement.access != null && requirement.access.HasValue)
                             statDict.Add("access", requirement.access.Value);
 
                         statDict.Add("constraint", requirement.constraint);
@@ -134,11 +136,11 @@ namespace Beamable.Server.Api.Leaderboards
                 dict.Add("derivatives", req.derivatives.Cast<object>().ToArray());
             }
 
-            if (req.permissions is { } permissions)
+            if (req.permissions != null)
             {
                 dict.Add("permissions", new ArrayDict()
                 {
-                    {"write_self", permissions.writeSelf }
+                    {"write_self", req.permissions.writeSelf }
                 });
             }
                 

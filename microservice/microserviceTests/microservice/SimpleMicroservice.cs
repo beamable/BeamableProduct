@@ -89,7 +89,7 @@ namespace microserviceTests.microservice
       }
       
       [AdminOnlyCallable]
-      public async Task LeaderboardCreateTest(string boardId, LeaderboardContentRef templateBoardRef)
+      public async Task LeaderboardCreateTest(string boardId, LeaderboardRef templateBoardRef)
       {
          var template = await Services.Content.GetContent(templateBoardRef);
          await Services.Leaderboards.CreateLeaderboard(boardId, template);
