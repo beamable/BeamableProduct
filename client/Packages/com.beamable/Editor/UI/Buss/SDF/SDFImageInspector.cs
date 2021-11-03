@@ -24,7 +24,7 @@ namespace Beamable.Editor.UI.SDF {
                     new GUIContent("Background"));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("backgroundMode"), new GUIContent("Background Mode"));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("meshFrame"), new GUIContent("Frame"));
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("m_Type"), new GUIContent("Type"));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("imageType"), new GUIContent("Type"));
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("rounding"),
                     new GUIContent("Round Corners"));
 

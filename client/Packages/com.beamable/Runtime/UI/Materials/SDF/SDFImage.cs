@@ -19,6 +19,7 @@ namespace Beamable.UI.SDF {
             }
         }
 
+        public ImageType imageType;
         public SdfMode mode;
         public ColorRect colorRect = new ColorRect(Color.white);
         public float threshold;
@@ -27,8 +28,8 @@ namespace Beamable.UI.SDF {
         public SdfBackgroundMode backgroundMode;
         public float meshFrame;
         public float outlineWidth;
-        public Color outlineColor;
-        public Color shadowColor;
+        public ColorRect outlineColor;
+        public ColorRect shadowColor;
         public Vector2 shadowOffset;
         public float shadowThreshold;
         public float shadowSoftness;
@@ -51,7 +52,7 @@ namespace Beamable.UI.SDF {
                     break;
             }
             ApplyStyle();
-            if (type == Type.Sliced && hasBorder) {
+            if (imageType == ImageType.Sliced && hasBorder) {
                 GenerateSlicedMesh(vh);
             }
             else {
@@ -158,39 +159,40 @@ namespace Beamable.UI.SDF {
                 uv.width * grownPosition.width / position.width,
                 uv.height * grownPosition.height / position.height);
             var ratio = new Vector2(meshFrame, meshFrame) / size;
+            var coords = new Rect(0f, 0f, 1f, 1f);
             var grownCoords = new Rect(- ratio, 2f * ratio + Vector2.one);
         
             // A, B, C and D are left, right, bottom and top parts of the frame.
-            // Left and right are contains top and bottom corners, while bottom and top are shorter.
         
-            var posA = Rect.MinMaxRect(grownPosition.xMin, grownPosition.yMin, position.xMin, grownPosition.yMax);
-            var posB = Rect.MinMaxRect(position.xMax, grownPosition.yMin, grownPosition.xMax, grownPosition.yMax);
-            var posC = Rect.MinMaxRect(position.xMin, grownPosition.yMin, position.xMax, position.yMin);
-            var posD = Rect.MinMaxRect(position.xMin, position.yMax, position.xMax, grownPosition.yMax);
+            var posA = new Quad2D(grownPosition.GetBottomLeft(), position.GetBottomLeft(), grownPosition.GetTopLeft(), position.GetTopLeft());
+            var posB = new Quad2D(position.GetBottomRight(), grownPosition.GetBottomRight(), position.GetTopRight(), grownPosition.GetTopRight());
+            var posC = new Quad2D(grownPosition.GetBottomLeft(), grownPosition.GetBottomRight(), position.GetBottomLeft(), position.GetBottomRight());
+            var posD = new Quad2D(position.GetTopLeft(), position.GetTopRight(), grownPosition.GetTopLeft(), grownPosition.GetTopRight());
         
-            var uvA = Rect.MinMaxRect(grownUV.xMin, grownUV.yMin, uv.xMin, grownUV.yMax);
-            var uvB = Rect.MinMaxRect(uv.xMax, grownUV.yMin, grownUV.xMax, grownUV.yMax);
-            var uvC = Rect.MinMaxRect(uv.xMin, grownUV.yMin, uv.xMax, uv.yMin);
-            var uvD = Rect.MinMaxRect(uv.xMin, uv.yMax, uv.xMax, grownUV.yMax);
+            var uvA = new Quad2D(grownUV.GetBottomLeft(), uv.GetBottomLeft(), grownUV.GetTopLeft(), uv.GetTopLeft());
+            var uvB = new Quad2D(uv.GetBottomRight(), grownUV.GetBottomRight(), uv.GetTopRight(), grownUV.GetTopRight());
+            var uvC = new Quad2D(grownUV.GetBottomLeft(), grownUV.GetBottomRight(), uv.GetBottomLeft(), uv.GetBottomRight());
+            var uvD = new Quad2D(uv.GetTopLeft(), uv.GetTopRight(), grownUV.GetTopLeft(), grownUV.GetTopRight());
         
-            var coordsA = Rect.MinMaxRect(grownCoords.xMin, grownCoords.yMin, 0f, grownCoords.yMax);
-            var coordsB = Rect.MinMaxRect(1f, grownCoords.yMin, grownCoords.xMax, grownCoords.yMax);
-            var coordsC = Rect.MinMaxRect(0f, grownCoords.yMin, 1f, 0f);
-            var coordsD = Rect.MinMaxRect(0f, 1f, 1f, grownCoords.yMax);
+            var coordsA = new Quad2D(grownCoords.GetBottomLeft(), coords.GetBottomLeft(), grownCoords.GetTopLeft(), coords.GetTopLeft());
+            var coordsB = new Quad2D(coords.GetBottomRight(), grownCoords.GetBottomRight(), coords.GetTopRight(), grownCoords.GetTopRight());
+            var coordsC = new Quad2D(grownCoords.GetBottomLeft(), grownCoords.GetBottomRight(), coords.GetBottomLeft(), coords.GetBottomRight());
+            var coordsD = new Quad2D(coords.GetTopLeft(), coords.GetTopRight(), grownCoords.GetTopLeft(), grownCoords.GetTopRight());
             
             var bgRect = new Rect(0f, 0f, 0f, 0f);
         
-            AddRect(vh, posA, uvA, bgRect, coordsA, size, colorRect.LeftEdgeRect);
-            AddRect(vh, posB, uvB, bgRect, coordsB, size, colorRect.RightEdgeRect);
-            AddRect(vh, posC, uvC, bgRect, coordsC, size, colorRect.BottomEdgeRect);
-            AddRect(vh, posD, uvD, bgRect, coordsD, size, colorRect.TopEdgeRect);
+            AddRect(vh, posA, uvA, bgRect, coordsA, size, colorRect.LeftEdgeRect, outlineColor.LeftEdgeRect, shadowColor.LeftEdgeRect);
+            AddRect(vh, posB, uvB, bgRect, coordsB, size, colorRect.RightEdgeRect, outlineColor.RightEdgeRect, shadowColor.RightEdgeRect);
+            AddRect(vh, posC, uvC, bgRect, coordsC, size, colorRect.BottomEdgeRect, outlineColor.BottomEdgeRect, shadowColor.BottomEdgeRect);
+            AddRect(vh, posD, uvD, bgRect, coordsD, size, colorRect.TopEdgeRect, outlineColor.TopEdgeRect, shadowColor.TopEdgeRect);
         }
 
-        private void AddRect(VertexHelper vh, Rect position, Rect spriteRect, Rect bgRect, Rect coordsRect, Vector2 size) {
-            AddRect(vh, position, spriteRect, bgRect, coordsRect, size, colorRect);
+        private void AddRect(VertexHelper vh, Quad2D position, Quad2D spriteRect, Quad2D bgRect, Quad2D coordsRect, Vector2 size) {
+            AddRect(vh, position, spriteRect, bgRect, coordsRect, size, colorRect, outlineColor, shadowColor);
         }
         
-        private void AddRect(VertexHelper vh, Rect position, Rect spriteRect, Rect bgRect, Rect coordsRect, Vector2 size, ColorRect colorRect) {
+        private void AddRect(VertexHelper vh, Quad2D position, Quad2D spriteRect, Quad2D bgRect, Quad2D coordsRect,
+            Vector2 size, ColorRect colorRect, ColorRect outlineColor, ColorRect shadowColor) {
             vh.AddRect(
                 position,
                 spriteRect,
@@ -218,7 +220,7 @@ namespace Beamable.UI.SDF {
             
             // outline
             outlineWidth = BUSSStyle.BorderWidth.Get(Style).FloatValue;
-            outlineColor = BUSSStyle.BorderColor.Get(Style).Color;
+            outlineColor = BUSSStyle.BorderColor.Get(Style).ColorRect;
             
             // shape
             mode = BUSSStyle.SdfMode.Get(Style).Enum;
@@ -235,7 +237,7 @@ namespace Beamable.UI.SDF {
             }
             
             // shadow
-            shadowColor = BUSSStyle.ShadowColor.Get(Style).Color;
+            shadowColor = BUSSStyle.ShadowColor.Get(Style).ColorRect;
             shadowOffset = BUSSStyle.ShadowOffset.Get(Style).Vector2Value;
             shadowThreshold = BUSSStyle.ShadowThreshold.Get(Style).FloatValue;
             shadowSoftness = BUSSStyle.ShadowSoftness.Get(Style).FloatValue;
@@ -248,6 +250,11 @@ namespace Beamable.UI.SDF {
                 + Mathf.Max(
                     Mathf.Abs(shadowOffset.x), 
                     Mathf.Abs(shadowOffset.y)));
+        }
+        
+        public enum ImageType {
+            Simple,
+            Sliced
         }
 
         public enum SdfMode {

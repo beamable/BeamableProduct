@@ -23,9 +23,9 @@ namespace Beamable.UI.BUSS {
     }
     
     [Serializable]
-    public class ImageTypeProperty : EnumProperty<Image.Type> {
+    public class ImageTypeProperty : EnumProperty<SDFImage.ImageType> {
         public ImageTypeProperty() { }
-        public ImageTypeProperty(Image.Type @enum) : base(@enum) { }
+        public ImageTypeProperty(SDFImage.ImageType @enum) : base(@enum) { }
 
         public override IBUSSProperty Clone() {
             return new ImageTypeProperty(Enum);

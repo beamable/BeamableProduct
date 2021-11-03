@@ -14,6 +14,8 @@ namespace Beamable.UI.BUSS {
             new PropertyBiding<ISpriteProperty>("sdfImage", new SpriteProperty());
         public static readonly PropertyBiding<SdfModeProperty> SdfMode =
             new PropertyBiding<SdfModeProperty>("sdfMode", new SdfModeProperty());
+        public static readonly PropertyBiding<ImageTypeProperty> ImageType =
+            new PropertyBiding<ImageTypeProperty>("imageType", new ImageTypeProperty());
         
         // Background
         public static readonly PropertyBiding<IVertexColorProperty> BackgroundColor = 
@@ -30,16 +32,16 @@ namespace Beamable.UI.BUSS {
             new PropertyBiding<BorderModeProperty>("borderMode", new BorderModeProperty());
         public static readonly PropertyBiding<IFloatProperty> BorderWidth = 
             new PropertyBiding<IFloatProperty>("borderWidth", new FloatProperty());
-        public static readonly PropertyBiding<IColorProperty> BorderColor = 
-            new PropertyBiding<IColorProperty>("borderColor", new SingleColorProperty());
+        public static readonly PropertyBiding<IVertexColorProperty> BorderColor = 
+            new PropertyBiding<IVertexColorProperty>("borderColor", new SingleColorProperty());
         
         // Shadow
         public static readonly PropertyBiding<IVector2Property> ShadowOffset = 
             new PropertyBiding<IVector2Property>("shadowOffset", new Vector2Property());
         public static readonly PropertyBiding<IFloatProperty> ShadowThreshold = 
             new PropertyBiding<IFloatProperty>("shadowThreshold", new FloatProperty());
-        public static readonly PropertyBiding<IColorProperty> ShadowColor = 
-            new PropertyBiding<IColorProperty>("shadowColor", new SingleColorProperty());
+        public static readonly PropertyBiding<IVertexColorProperty> ShadowColor = 
+            new PropertyBiding<IVertexColorProperty>("shadowColor", new SingleColorProperty());
         public static readonly PropertyBiding<IFloatProperty> ShadowSoftness = 
             new PropertyBiding<IFloatProperty>("shadowSoftness", new FloatProperty());
         public static readonly PropertyBiding<ShadowModeProperty> ShadowMode =

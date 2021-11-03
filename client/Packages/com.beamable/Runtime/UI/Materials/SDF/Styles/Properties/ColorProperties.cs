@@ -8,7 +8,7 @@ namespace Beamable.UI.BUSS {
     [Serializable]
     public class SingleColorProperty : IColorProperty, IVertexColorProperty {
         [SerializeField]
-        private Color _color;
+        private Color _color = Color.white;
 
         public Color Color {
             get => _color;

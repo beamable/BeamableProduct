@@ -33,7 +33,7 @@ namespace Beamable.UI.BUSS {
                 sdfImage.rounding = BUSSStyle.RoundCorners.Get(style).GetFloatValue(minSize);
 
                 sdfImage.outlineWidth = BUSSStyle.BorderWidth.Get(style).FloatValue;
-                sdfImage.outlineColor = BUSSStyle.BorderColor.Get(style).Color;
+                sdfImage.outlineColor = BUSSStyle.BorderColor.Get(style).ColorRect;
             
                 sdfImage.SetVerticesDirty();
             }
