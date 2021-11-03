@@ -34,6 +34,7 @@ using Beamable.Common.Api.Notifications;
 using Beamable.Common.Api.Tournaments;
 using Beamable.Common.Player;
 using Beamable.Experimental;
+using Beamable.Player;
 using Beamable.Sessions;
 using Modules.Content;
 
@@ -58,6 +59,8 @@ namespace Beamable
     {
         User User { get; }
         AccessToken Token { get; }
+
+        PlayerData Player { get; }
 
         event Action<User> OnUserChanged;
         event Action<User> OnUserLoggingOut;
@@ -92,6 +95,8 @@ namespace Beamable
 
         [Obsolete("Use " + nameof(TournamentsService) + " instead.")]
         ITournamentApi Tournaments { get; }
+
+        ISdkEventService SdkEventService { get; }
 
         void UpdateUserData(User user);
         Promise<ISet<UserBundle>> GetDeviceUsers();
@@ -262,6 +267,8 @@ namespace Beamable
         /// </summary>
         public ContentService ContentService => _platform.ContentService;
 
+        public ISdkEventService SdkEventService { get; } = new SdkEventService();
+
         /// <summary>
         /// Entry point for the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature">Inventory</a> feature.
         /// </summary>
@@ -368,6 +375,9 @@ namespace Beamable
         /// Entry point for the User.
         /// </summary>
         public User User => _platform.User;
+
+        private PlayerData _player;
+        public PlayerData Player => _player ?? (_player = new PlayerData(this));
 
         /// <summary>
         /// Entry point for the AccessToken.

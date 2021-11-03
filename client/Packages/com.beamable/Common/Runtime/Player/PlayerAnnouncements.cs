@@ -68,23 +68,46 @@ namespace Beamable.Common.Player
    {
       private readonly IAnnouncementsApi _announcementsApi;
       private readonly INotificationService _notifications;
+      private readonly ISdkEventService _sdkEventService;
 
-      public PlayerAnnouncements(IAnnouncementsApi announcementsApi, INotificationService notifications)
+      public PlayerAnnouncements(IAnnouncementsApi announcementsApi, INotificationService notifications, ISdkEventService sdkEventService)
       {
          _announcementsApi = announcementsApi;
          _notifications = notifications;
+         _sdkEventService = sdkEventService;
 
          // TODO: How do we handle multiple users? The dependencies here have the user id baked into them?
          // TODO: How do we handle user sign out?
 
+         _sdkEventService.Register(nameof(Announcements), HandleEvent);
          _notifications.Subscribe(_notifications.GetRefreshTokenForService("announcements"), HandleSubscriptionUpdate);
 
          var _ = Refresh(); // automatically start.
+         IsInitialized = true;
       }
 
       private void HandleSubscriptionUpdate(object raw)
       {
          var _ = Refresh(); // fire-and-forget.
+      }
+
+      private async Promise HandleEvent(SdkEvent evt)
+      {
+         switch (evt.Event)
+         {
+            case "read":
+
+               // TODO: pull out into separate method
+               var announcement = GetAnnouncement(evt.Args[0]);
+               announcement.IsRead = true;
+               TriggerUpdate();
+               await _announcementsApi.MarkRead(evt.Args[0]);
+               TriggerUpdate();
+
+               break;
+            default:
+               throw new Exception($"Unhandled event: {evt.Event}");
+         }
       }
 
       protected override async Promise PerformRefresh()
@@ -106,48 +129,12 @@ namespace Beamable.Common.Player
          SetData(nextAnnouncements);
       }
 
-      public async Promise Read(Announcement announcement)
+      public Announcement GetAnnouncement(string id) => this.FirstOrDefault(a => string.Equals(a.Id, id));
+
+      public Promise Read(Announcement announcement)
       {
-         // TODO: represent this as a serializable action to support offline mode.
-
-         // assume that is all going to work out.
-         if (announcement.IsRead) return;
-
-         // update state right away,
-         // then run a network call to verify
-         // then reconcile the result of the network call
-         // if the call fails, then revert the state
-
-         announcement.IsRead = true;
-         try
-         {
-            await _announcementsApi.MarkRead(announcement.Id);
-            TriggerUpdate();
-         }
-         catch
-         {
-            announcement.IsRead = false;
-            throw;
-         }
+         return _sdkEventService.Add(new SdkEvent(nameof(Announcements), "read", announcement.Id));
       }
 
-      [Serializable]
-      private class ReadAction : ISDKAction
-      {
-         public Announcement Announcement;
-
-         public void Predict()
-         {
-
-         }
-
-         public Promise Execute()
-         {
-         }
-
-         public void Reconcile()
-         {
-         }
-      }
    }
 }

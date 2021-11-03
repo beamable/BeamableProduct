@@ -87,6 +87,8 @@ namespace Beamable.Common.Player
       public int Count => _data.Count;
       public T this[int index] => _data[index];
 
+      public bool IsInitialized { get; protected set; }
+
       protected override int GetBroadcastHashCode()
       {
          /*

@@ -12,11 +12,13 @@ namespace Beamable.Tests.Runtime.Player.Announcements
    {
       private IAnnouncementsApi Api;
       private INotificationService Notifications;
+      private ISdkEventService SdkEventService;
 
       [UnityTest]
       public IEnumerator Test()
       {
-         var announcements = new PlayerAnnouncements(Api, Notifications);
+
+         var announcements = new PlayerAnnouncements(Api, Notifications, SdkEventService);
 
          yield return announcements.Refresh().ToYielder();
       }
@@ -27,6 +29,7 @@ namespace Beamable.Tests.Runtime.Player.Announcements
 
          Api = new MockAnnouncementsApi();
          Notifications = new MockNotificationService();
+         SdkEventService = new SdkEventService();
       }
    }
 }
