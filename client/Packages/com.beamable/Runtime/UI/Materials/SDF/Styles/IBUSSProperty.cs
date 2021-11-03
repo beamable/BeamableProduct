@@ -1,0 +1,51 @@
+﻿using System;
+using Beamable.UI.SDF.Styles;
+using TMPro;
+using UnityEngine;
+
+namespace Beamable.UI.BUSS
+{
+    public interface IBUSSProperty
+    {
+        IBUSSProperty Clone();
+    }
+
+    public interface IColorProperty : IBUSSProperty
+    {
+        Color Color { get; }
+    }
+
+    public interface IVertexColorProperty : IBUSSProperty
+    {
+        ColorRect ColorRect { get; }
+    }
+
+    public interface IFloatProperty : IBUSSProperty
+    {
+        float FloatValue { get; }
+    }
+
+    public interface IFloatFromFloatProperty : IBUSSProperty
+    {
+        float GetFloatValue(float input);
+    }
+
+    public interface IVector2Property : IBUSSProperty
+    {
+        Vector2 Vector2Value { get; }
+    }
+
+    public interface IEnumProperty : IBUSSProperty
+    {
+        Enum EnumValue { get; }
+        T CastEnumValue<T>() where T : Enum;
+    }
+
+    public interface ISpriteProperty : IBUSSProperty {
+        Sprite SpriteValue { get; }
+    }
+
+    public interface IFontProperty : IBUSSProperty {
+        TMP_FontAsset FontAsset { get; }
+    }
+}

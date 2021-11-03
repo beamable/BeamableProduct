@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6878a57282fc4d5dae9c2e3538013b26, type: 3}
+  m_Name: PlayerTileStyle
+  m_EditorClassIdentifier: 
+  _styles:
+  - _name: '#playerTile'
+    _properties:
+    - key: backgroundColor
+      property:
+        type: Beamable.UI.BUSS.SingleColorProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":0.18458524346351624,"g":0.618685781955719,"b":0.6415094137191773,"a":1.0}}'
+    - key: roundCorners
+      property:
+        type: Beamable.UI.BUSS.FloatProperty, Unity.Beamable, Version=0.0.0.0, Culture=neutral,
+          PublicKeyToken=null
+        json: '{"_floatValue":15.220000267028809}'
