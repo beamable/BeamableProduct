@@ -9,7 +9,7 @@ namespace Beamable.UI.BUSS
         private SDFImage _image;
         private bool _hasImage;
 
-        public override void ApplyStyle(BUSSStyle newStyle) 
+        public override void ApplyStyle() 
         {
             if (!_hasImage) 
             {
@@ -17,7 +17,7 @@ namespace Beamable.UI.BUSS
                 _hasImage = true;
             }
         
-            _image.Style = newStyle;
+            _image.Style = Style;
         }
     }
 }

@@ -9,7 +9,7 @@ namespace Beamable.UI.BUSS
         private TextMeshProUGUI _text;
         private bool _hasText;
 
-        public override void ApplyStyle(BUSSStyle newStyle)
+        public override void ApplyStyle()
         {
             if (!_hasText)
             {
@@ -17,11 +17,11 @@ namespace Beamable.UI.BUSS
                 _hasText = true;
             }
 
-            if (newStyle == null) return;
+            if (Style == null) return;
 
-            _text.font = BUSSStyle.Font.Get(newStyle).FontAsset;
-            _text.fontSize = BUSSStyle.FontSize.Get(newStyle).FloatValue;
-            _text.color = BUSSStyle.BackgroundColor.Get(newStyle).ColorRect.TopLeftColor;
+            _text.font = BUSSStyle.Font.Get(Style).FontAsset;
+            _text.fontSize = BUSSStyle.FontSize.Get(Style).FloatValue;
+            _text.color = BUSSStyle.BackgroundColor.Get(Style).ColorRect.TopLeftColor;
         }
     }
 }

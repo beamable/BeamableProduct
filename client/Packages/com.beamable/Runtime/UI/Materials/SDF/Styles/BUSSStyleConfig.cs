@@ -13,10 +13,10 @@ namespace Beamable.UI.BUSS
         public event Action OnChange;
 
 #pragma warning disable CS0649
-        [SerializeField] private List<BUSSStyleDescription> _styles = new List<BUSSStyleDescription>();
+        [SerializeField] private List<BUSSStyleDescriptionWithSelector> _styles = new List<BUSSStyleDescriptionWithSelector>();
 #pragma warning restore CS0649
 
-        public List<BUSSStyleDescription> Styles => _styles;
+        public List<BUSSStyleDescriptionWithSelector> Styles => _styles;
         
         private void OnValidate()
         {
@@ -25,27 +25,19 @@ namespace Beamable.UI.BUSS
     }
 
     [Serializable]
-    public class BUSSStyleDescription
+    public class BUSSStyleDescriptionWithSelector : BUSSStyleDescription
     {
         [SerializeField] private string _name;
-        [SerializeField] private List<BussPropertyProvider> _properties = new List<BussPropertyProvider>();
 
         // TODO: maybe we could create selector by invoking some parent method in OnValidate callback?
         public Selector Selector => SelectorParser.Parse(_name);
         public string Name => _name;
+    }
+
+    [Serializable]
+    public class BUSSStyleDescription {
+        [SerializeField] private List<BussPropertyProvider> _properties = new List<BussPropertyProvider>();
         public List<BussPropertyProvider> Properties => _properties;
-
-        public BUSSStyle GetStyle()
-        {
-            BUSSStyle style = new BUSSStyle();
-
-            foreach (BussPropertyProvider property in Properties)
-            {
-                style[property.Key] = property.GetProperty();
-            }
-
-            return style;
-        }
     }
 
     [Serializable]

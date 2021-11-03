@@ -49,7 +49,7 @@ namespace Beamable.UI.BUSS {
         
         // Font
         public static readonly PropertyBiding<IFontProperty> Font =
-            new PropertyBiding<IFontProperty>("font", new FontAssetProperty(TMP_Settings.defaultFontAsset));
+            new PropertyBiding<IFontProperty>("font", new FontAssetProperty());
         public static readonly PropertyBiding<IFloatProperty> FontSize =
             new PropertyBiding<IFloatProperty>("fontSize", new FloatProperty(18f));
 

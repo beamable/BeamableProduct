@@ -32,9 +32,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 
         // New system
         public static BussConfiguration Instance => Get<BussConfiguration>();
-#pragma warning disable CS0649
         [SerializeField] private BUSSStyleConfig _globalStyleConfig;
-#pragma warning restore CS0649
 
         // TODO: serialized only for debug purposes. Remove before final push
         [SerializeField] private List<BUSSStyleProvider> _styleProviders = new List<BUSSStyleProvider>();
@@ -93,20 +91,36 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
         // TODO: in future move to some styles repository class which responsibility will be caching styles and recalculate them
         #region Styles parsing
 
-        public BUSSStyle PrepareStyle(List<BUSSStyleProvider> providersTree, string bussElementId)
-        {
-            Dictionary<string, BUSSStyle> styles = new Dictionary<string, BUSSStyle>();
-            ParseStyleObjects(_globalStyleConfig.Styles, ref styles);
+        public void RecalculateStyle(List<BUSSStyleProvider> providersTree, BUSSElement element) {
+            element.Style.Clear();
 
-            foreach (BUSSStyleProvider provider in providersTree)
-            {
-                if(provider.Config == null)
-                    continue;
-                
-                ParseStyleObjects(provider.Config.Styles, ref styles);
+            if (_globalStyleConfig != null) {
+                ApplyConfig(element, _globalStyleConfig);
             }
 
-            return GetStyleById(bussElementId, styles);
+            foreach (var provider in providersTree) {
+                if (provider.Config != null) {
+                    ApplyConfig(element, provider.Config);
+                }
+            }
+            
+            ApplyDescriptor(element, element.InlineStyle);
+            
+            element.ApplyStyle();
+        }
+
+        private void ApplyConfig(BUSSElement element, BUSSStyleConfig config) {
+            foreach (var descriptor in config.Styles) {
+                if (descriptor.Name == element.Id) {
+                    ApplyDescriptor(element, descriptor);
+                }
+            }
+        }
+
+        private static void ApplyDescriptor(BUSSElement element, BUSSStyleDescription descriptor) {
+            foreach (var property in descriptor.Properties) {
+                element.Style[property.Key] = property.GetProperty();
+            }
         }
 
         private BUSSStyle GetStyleById(string id, Dictionary<string, BUSSStyle> styleObjects)
@@ -114,9 +128,9 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
             return id != null && styleObjects.TryGetValue(id, out BUSSStyle style) ? style : new BUSSStyle();
         }
 
-        private void ParseStyleObjects(List<BUSSStyleDescription> stylesObjects, ref Dictionary<string, BUSSStyle> stylesDictionary)
+        private void ParseStyleObjects(List<BUSSStyleDescriptionWithSelector> stylesObjects, Dictionary<string, BUSSStyle> stylesDictionary)
         {
-            foreach (BUSSStyleDescription styleObject in stylesObjects)
+            foreach (BUSSStyleDescriptionWithSelector styleObject in stylesObjects)
             {
                 if (stylesDictionary.TryGetValue(styleObject.Name, out BUSSStyle style))
                 {

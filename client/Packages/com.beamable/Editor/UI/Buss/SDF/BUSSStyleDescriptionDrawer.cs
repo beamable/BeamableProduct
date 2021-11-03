@@ -6,6 +6,7 @@ using UnityEngine;
 
 namespace Beamable.Editor.UI.SDF
 {
+    [CustomPropertyDrawer(typeof(BUSSStyleDescriptionWithSelector))]
     [CustomPropertyDrawer(typeof(BUSSStyleDescription))]
     public class BUSSStyleDescriptionDrawer : PropertyDrawer
     {
@@ -18,7 +19,10 @@ namespace Beamable.Editor.UI.SDF
             EditorGUI.LabelField(rc.ReserveSingleLine(), label);
             rc.MoveIndent(1);
 
-            EditorGUI.PropertyField(rc.ReserveSingleLine(), property.FindPropertyRelative("_name"));
+            var nameProperty = property.FindPropertyRelative("_name");
+            if (nameProperty != null) {
+                EditorGUI.PropertyField(rc.ReserveSingleLine(), nameProperty);
+            }
 
             var properties = property.FindPropertyRelative("_properties");
             var keys = new string[properties.arraySize];
@@ -121,9 +125,9 @@ namespace Beamable.Editor.UI.SDF
             return key;
         }
 
-        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
-        {
-            var height = EditorGUIUtility.singleLineHeight * 3f;
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
+            var hasSelector = property.FindPropertyRelative("_name") != null;
+            var height = EditorGUIUtility.singleLineHeight * (hasSelector ? 3f : 2f);
 
             var properties = property.FindPropertyRelative("_properties");
             for (int i = 0; i < properties.arraySize; i++)

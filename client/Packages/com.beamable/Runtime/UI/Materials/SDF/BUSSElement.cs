@@ -6,22 +6,24 @@ namespace Beamable.UI.BUSS
     [ExecuteAlways, DisallowMultipleComponent]
     public class BUSSElement : MonoBehaviour
     {
-#pragma warning disable CS0649
         [SerializeField] private string _id;
-#pragma warning restore CS0649
+        [SerializeField] private BUSSStyleDescription _inlineStyle;
+
+        public BUSSStyle Style { get; } = new BUSSStyle();
 
         private BUSSStyleProvider _styleProvider;
 
         public string Id => _id;
+        public BUSSStyleDescription InlineStyle => _inlineStyle;
 
-        public virtual void ApplyStyle(BUSSStyle newStyle)
+        public virtual void ApplyStyle()
         {
-
+            // TODO: common style implementation for BUSS Elements, so: applying all properties that affect RectTransform
         }
 
         private void OnDisable()
         {
-            ApplyStyle(null);
+            ApplyStyle();
         }
 
         private void OnValidate()

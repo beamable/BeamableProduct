@@ -23,9 +23,6 @@ namespace Beamable.Editor {
 
         public static object DrawObject(EditorGUIRectController rc, GUIContent label, object value, Dictionary<string, object> drawerData, string path = "", bool delayed = false, Type enforcedType = null) {
             switch (value) {
-                case null:
-                    EditorGUI.LabelField(rc.ReserveSingleLine(), label);
-                    return null;
                 // --- Simple types
                 case int i when delayed:
                     return EditorGUI.DelayedIntField(rc.ReserveSingleLine(), label, i);
@@ -88,7 +85,12 @@ namespace Beamable.Editor {
                 // --- Unity Objects
                 case Object obj:
                     return EditorGUI.ObjectField(rc.ReserveSingleLine(), label, obj, enforcedType ?? typeof(Object), false);
+                case null when enforcedType != null && enforcedType.IsSubclassOf(typeof(Object)):
+                    return EditorGUI.ObjectField(rc.ReserveSingleLine(), label, null, enforcedType ?? typeof(Object), false);
                 // --- Other objects
+                case null:
+                    EditorGUI.LabelField(rc.ReserveSingleLine(), label);
+                    return null;
                 default:
                     if (DrawFoldout(rc, label, drawerData, path)) {
                         rc.MoveIndent(1);

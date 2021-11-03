@@ -12,7 +12,7 @@ namespace Beamable.UI.BUSS
 #pragma warning restore CS0649
 
         private readonly List<BUSSStyleProvider> _childProviders = new List<BUSSStyleProvider>();
-        private readonly List<BUSSStyleProvider> _providersTree = new List<BUSSStyleProvider>();
+        public List<BUSSStyleProvider> _providersTree = new List<BUSSStyleProvider>();
         private BUSSStyleProvider _parentProvider;
         private BUSSElement _bussElement;
 
@@ -23,8 +23,8 @@ namespace Beamable.UI.BUSS
         {
             if (_bussElement != null)
             {
-                BUSSStyle style = BussConfiguration.Instance.PrepareStyle(_providersTree, _bussElement.Id);
-                _bussElement.ApplyStyle(style);
+                BussConfiguration.Instance.RecalculateStyle(_providersTree, _bussElement);
+                _bussElement.ApplyStyle();
             }
 
             foreach (BUSSStyleProvider childProvider in _childProviders)
@@ -150,6 +150,7 @@ namespace Beamable.UI.BUSS
                 _providersTree.Add(currentProvider);
                 currentProvider = currentProvider.ParentProvider != null ? currentProvider.ParentProvider : null;
             }
+            _providersTree.Reverse();
         }
         
         private void RegisterObserver(BUSSStyleProvider childProvider)
