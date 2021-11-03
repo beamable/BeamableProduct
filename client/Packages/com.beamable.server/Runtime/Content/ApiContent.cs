@@ -1,11 +1,38 @@
 using System;
 using System.Collections.Generic;
+using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Beamable.Content;
 using UnityEngine;
 
 namespace Beamable.Server
 {
+
+   [ContentType("api")]
+   public class PlatformApiContent : ContentObject
+   {
+
+      [ContentField("serviceType")]
+      public PlatformServiceType ServiceType;
+
+      [ContentField("service")]
+      public string Service;
+
+      [ContentField("route")]
+      public string Route;
+
+      [ContentField("headers")]
+      public SerializableDictionaryStringToString Headers;
+
+      [ContentField("body")]
+      public string Body;
+   }
+
+   public enum PlatformServiceType
+   {
+      UserMicroservice, ObjectService, BasicService
+   }
+
    [ContentType("api")]
    [Agnostic]
    [Serializable]
@@ -15,9 +42,13 @@ namespace Beamable.Server
       [Tooltip("Write a summary of this api call")]
       public OptionalString Description;
 
+      [ContentField("method")]
+      [HideInInspector]
+      public Method Method = Method.POST;
+
       [ContentField("route")]
       [Tooltip("The route information for the api call")]
-      public ServiceRoute ServiceRoute;
+      public ServiceRoute ServiceRoute = new ServiceRoute();
 
       [ContentField("variables")]
       [SerializeField]
@@ -26,7 +57,7 @@ namespace Beamable.Server
 
       [ContentField("parameters")]
       [Tooltip("The required parameters of the api call")]
-      public RouteParameters Parameters;
+      public RouteParameters Parameters = new RouteParameters();
 
 
       protected virtual ApiVariable[] GetVariables()
@@ -94,6 +125,7 @@ namespace Beamable.Server
    {
       public string Service;
       public string Endpoint;
+      public PlatformServiceType Type;
    }
 
    [Serializable]

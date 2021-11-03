@@ -30,12 +30,21 @@ namespace Beamable.Server.Editor
          var endpointProperty = serviceRouteProperty.FindPropertyRelative(nameof(ServiceRoute.Endpoint));
 
          var descriptor = Microservices.Descriptors.FirstOrDefault(d => d.Name.Equals(serviceNameProperty.stringValue));
+         if (descriptor == null)
+         {
+            return EditorGUIUtility.singleLineHeight;
+         }
          var method = descriptor.Methods.FirstOrDefault(m => m.Path.Equals(endpointProperty.stringValue));
 
-         var totalPropertyHeight = GetRouteProperties(descriptor, method, property)
+         var routeProperties = GetRouteProperties(descriptor, method, property);
+         var totalPropertyHeight = routeProperties
             .Select(p => p.IsUsingVariable
                ? EditorGUIUtility.singleLineHeight
                : EditorGUI.GetPropertyHeight(p.property) + 2).Sum();
+         if (routeProperties.Count == 0)
+         {
+            totalPropertyHeight = EditorGUIUtility.singleLineHeight + 2;
+         }
          return totalPropertyHeight + EditorGUIUtility.singleLineHeight;
       }
 
@@ -58,16 +67,21 @@ namespace Beamable.Server.Editor
          var variablesArrayProperty =  variablesProperty.FindPropertyRelative(nameof(RouteVariables.Variables));
 
          var hasAnyVariables = variablesArrayProperty.arraySize > 0;
+         var descriptor = Microservices.Descriptors.FirstOrDefault(d => d.Name.Equals(serviceNameProperty.stringValue));
+         if (descriptor == null) return;
 
          position.height = EditorGUIUtility.singleLineHeight;
          EditorGUI.LabelField(position, "Route Parameters", new GUIStyle(EditorStyles.label){font = EditorStyles.boldFont});
          position.y += EditorGUIUtility.singleLineHeight + 2;
          EditorGUI.indentLevel += 1;
 
-         var descriptor = Microservices.Descriptors.FirstOrDefault(d => d.Name.Equals(serviceNameProperty.stringValue));
          var method = descriptor.Methods.FirstOrDefault(m => m.Path.Equals(endpointProperty.stringValue));
-
-         foreach (var info in GetRouteProperties(descriptor, method, property))
+         var routeProperties = GetRouteProperties(descriptor, method, property);
+         if (routeProperties.Count == 0)
+         {
+            EditorGUI.LabelField(position, "This route has no parameters", new GUIStyle(EditorStyles.label));
+         }
+         foreach (var info in routeProperties)
          {
             info.typeProperty.stringValue = ApiVariable.GetTypeName(info.ParameterType);
             info.nameProperty.stringValue = info.Name;
