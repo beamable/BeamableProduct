@@ -13,3 +13,4 @@ Project Structure
 * `plugins/` - source code for native Android and iOS plugins
 * `portal/` - JS and TS source of the Beamable administrative portal
 
+UPDATE
