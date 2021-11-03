@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace Beamable.UI.BUSS
 {
@@ -8,6 +9,8 @@ namespace Beamable.UI.BUSS
 #pragma warning disable CS0649
         [SerializeField] private string _id;
 #pragma warning restore CS0649
+
+        private BUSSStyleProvider _styleProvider;
 
         public string Id => _id;
 
@@ -19,6 +22,12 @@ namespace Beamable.UI.BUSS
         private void OnDisable()
         {
             ApplyStyle(null);
+        }
+
+        private void OnValidate()
+        {
+            _styleProvider = GetComponent<BUSSStyleProvider>();
+            _styleProvider?.OnStyleChanged();
         }
     }
 }
