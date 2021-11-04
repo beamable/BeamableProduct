@@ -93,12 +93,14 @@ namespace Beamable.Editor.Content
    }
 
    [System.Serializable]
-   public class AvailableManifestModel : JsonSerializable.ISerializable
-   {
+   public class AvailableManifestModel : JsonSerializable.ISerializable, ISearchableElement
+    {
       public string id;
       public string checksum;
       public long createdAt;
       public bool archived;
+
+      public string DisplayName { get => id;}
 
       public static AvailableManifestModel CreateId(string id)
       {
@@ -116,6 +118,28 @@ namespace Beamable.Editor.Content
          s.Serialize(nameof(checksum), ref checksum);
          s.Serialize(nameof(createdAt), ref createdAt);
       }
+
+
+      public int GetOrder()
+      {
+         return 0;
+      }
+
+      public bool IsAvailable()
+      {
+         return true;
+      }
+
+      public bool IsToSkip(string filter)
+      {
+         return false;
+      }
+
+      public string GetClassNameToAdd()
+      {
+         return string.Empty;
+      }
+
    }
 
    public static class ManifestModelExtensions

@@ -12,8 +12,8 @@ namespace Beamable.Editor.UI.Common.Models
         public ISearchableElement Current { get; set; }
         public List<ISearchableElement> Elements { get; set; }
 
-        public event Action<List<ISearchableElement>> OnAvailableChanged;
-        public event Action<ISearchableElement> OnChanged;
+        public event Action<List<ISearchableElement>> OnAvailableElementsChanged;
+        public event Action<ISearchableElement> OnElementChanged;
 
         public void Initialize()
         {
@@ -23,7 +23,7 @@ namespace Beamable.Editor.UI.Common.Models
             {
                 api.OnRealmChange += HandleRealmChanged;
                 Current = api.Realm;
-                OnChanged?.Invoke(Current);
+                OnElementChanged?.Invoke(Current);
             });
         }
 
@@ -40,7 +40,7 @@ namespace Beamable.Editor.UI.Common.Models
             {
 
                 Elements = realms.ToList<ISearchableElement>();
-                OnAvailableChanged?.Invoke(Elements);
+                OnAvailableElementsChanged?.Invoke(Elements);
             });
         }
 
@@ -49,7 +49,7 @@ namespace Beamable.Editor.UI.Common.Models
             Current = realm;
             try
             {
-                OnChanged?.Invoke(realm);
+                OnElementChanged?.Invoke(realm);
             }
             catch (Exception e)
             {

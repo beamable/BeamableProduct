@@ -71,8 +71,8 @@ namespace Beamable.Editor.UI.Components
                     _realmButton.AddToClassList("staging");
                 }
             }
-            Model.OnChanged -= HandleRealmChanged;
-            Model.OnChanged += HandleRealmChanged;
+            Model.OnElementChanged -= HandleRealmChanged;
+            Model.OnElementChanged += HandleRealmChanged;
         }
 
         
@@ -103,7 +103,7 @@ namespace Beamable.Editor.UI.Components
             content.Model = Model;
             var wnd = BeamablePopupWindow.ShowDropdown("Select Realm", popupWindowRect, new Vector2(200, 300), content);
 
-            content.OnRealmSelected += (realm) =>
+            content.OnSelected += (realm) =>
             {
                 EditorAPI.Instance.Then(beamable => { beamable.SwitchRealm((RealmView)realm).Then(_ => { wnd.Close(); }); });
             };

@@ -32,7 +32,7 @@ namespace Beamable.Editor.UI.Components
         public ISearchableModel Model { get; set; }
 
 #pragma warning disable 67
-        public event Action<ISearchableElement> OnRealmSelected;
+        public event Action<ISearchableElement> OnSelected;
 #pragma warning restore 67
 
         public SearchabledDropdownVisualElement(string switchText = null) : base(ComponentPath)
@@ -42,8 +42,8 @@ namespace Beamable.Editor.UI.Components
 
         public override void OnDetach()
         {
-            Model.OnAvailableChanged -= OnUpdated;
-            Model.OnChanged -= OnActiveChanged;
+            Model.OnAvailableElementsChanged -= OnUpdated;
+            Model.OnElementChanged -= OnActiveChanged;
             base.OnDetach();
         }
 
@@ -70,10 +70,10 @@ namespace Beamable.Editor.UI.Components
                 };
 
             _selectedElement = Model.Current;
-            Model.OnAvailableChanged -= OnUpdated;
-            Model.OnAvailableChanged += OnUpdated;
-            Model.OnChanged -= OnActiveChanged;
-            Model.OnChanged += OnActiveChanged;
+            Model.OnAvailableElementsChanged -= OnUpdated;
+            Model.OnAvailableElementsChanged += OnUpdated;
+            Model.OnElementChanged -= OnActiveChanged;
+            Model.OnElementChanged += OnActiveChanged;
 
             _searchBar.OnSearchChanged += filter =>
             {
@@ -107,7 +107,7 @@ namespace Beamable.Editor.UI.Components
                     _loadingIndicator.SetText(_switchText);
                     _loadingIndicator.SetPromise(new Promise<int>(), _mainContent, _refreshButton);
                     _searchBar.SetEnabled(false);
-                    EditorApplication.delayCall += () => OnRealmSelected?.Invoke(singleElement);
+                    EditorApplication.delayCall += () => OnSelected?.Invoke(singleElement);
                 };
 
                 if (singleElement.Equals(_selectedElement))

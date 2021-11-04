@@ -8,8 +8,8 @@ namespace Beamable.Editor.UI.Common.Models
 {
     public interface ISearchableModel
     {
-        event Action<List<ISearchableElement>> OnAvailableChanged;
-        event Action<ISearchableElement> OnChanged;
+        event Action<List<ISearchableElement>> OnAvailableElementsChanged;
+        event Action<ISearchableElement> OnElementChanged;
 
         ISearchableElement Current { get; set; }
         List<ISearchableElement> Elements { get; set; }

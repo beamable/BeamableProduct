@@ -48,53 +48,57 @@ namespace Beamable.Editor.UI.Components
         {
             base.Refresh();
             Model = new ManifestModel();
-            Model.OnAvailableManifestsChanged -= HandleAvailableManifestsChanged;
-            Model.OnAvailableManifestsChanged += HandleAvailableManifestsChanged;
+            Model.OnAvailableElementsChanged -= HandleAvailableManifestsChanged;
+            Model.OnAvailableElementsChanged += HandleAvailableManifestsChanged;
             visible = false;
             Model.Initialize();
             _manifestButton = Root.Q<Button>("manifestButton");
             _manifestButton.clickable.clicked += () => { OnButtonClicked(_manifestButton.worldBound); };
 
             _manifestLabel = _manifestButton.Q<Label>();
-            if (Model.CurrentManifestId == null)
+            if (Model.Current == null || Model.Current.DisplayName == null)
             {
                 _manifestLabel.text = "Select manifest ID";
             }
             else
             {
-                _manifestLabel.text = Model.CurrentManifestId;
+                _manifestLabel.text = Model.Current?.DisplayName;
             }
-            Model.OnManifestChanged -= HandleManifestChanged;
-            Model.OnManifestChanged += HandleManifestChanged;
+            Model.OnElementChanged -= HandleManifestChanged;
+            Model.OnElementChanged += HandleManifestChanged;
         }
 
-        private void HandleAvailableManifestsChanged(List<AvailableManifestModel> ids)
+        private void HandleAvailableManifestsChanged(List<ISearchableElement> ids)
         {
             bool manyManifests = ids?.Count > 1;
-            bool nonDefaultManifest = ids?.Count == 1 && ids[0].id != BeamableConstants.DEFAULT_MANIFEST_ID;
+            bool nonDefaultManifest = ids?.Count == 1 && ids[0].DisplayName != BeamableConstants.DEFAULT_MANIFEST_ID;
 
             visible = manyManifests || nonDefaultManifest;
         }
 
 
-        private void HandleManifestChanged(string manifestId)
+        private void HandleManifestChanged(ISearchableElement manifest)
         {
-            _manifestLabel.text = manifestId;
+            _manifestLabel.text = Model.Current != null ? Model.Current.DisplayName : null;
         }
 
         private void OnButtonClicked(Rect visualElementBounds)
         {
             var popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
 
-            var content = new ManifestDropdownVisualElement();
+            var content = new SearchabledDropdownVisualElement();
             content.Model = Model;
             var wnd = BeamablePopupWindow.ShowDropdown("Select Manifest", popupWindowRect, new Vector2(200, 300), content);
 
-            content.OnManifestSelected += (manifestId) =>
+            content.OnSelected += (manifest) =>
             {
                 EditorAPI.Instance.Then(api =>
                 {
-                    api.ContentIO.SwitchManifest(manifestId);
+                    if (manifest != null)
+                    {
+                        api.ContentIO.SwitchManifest(manifest.DisplayName);
+                    }
+
                     wnd.Close();
                 });
             };
