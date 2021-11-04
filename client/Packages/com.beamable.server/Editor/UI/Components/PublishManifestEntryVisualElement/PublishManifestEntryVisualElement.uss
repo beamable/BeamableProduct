@@ -13,6 +13,7 @@
 
 #nameColumn, #depsColumn {
     flex-direction: row;
+    align-self: flex-start;
     flex: 1;
 }
 
@@ -58,6 +59,7 @@
 
 #nameMS {
     -unity-font-style: bold;
+    margin-top: 6px;
 }
 
 #typeImage {
