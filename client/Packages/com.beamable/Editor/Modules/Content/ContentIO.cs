@@ -132,7 +132,7 @@ namespace Beamable.Editor.Content
 
       public bool IsToSkip(string filter)
       {
-         return false;
+        return !string.IsNullOrEmpty(filter) && !id.ToLower().Contains(filter);
       }
 
       public string GetClassNameToAdd()

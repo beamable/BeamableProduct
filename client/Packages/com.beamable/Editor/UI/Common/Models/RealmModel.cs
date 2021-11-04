@@ -9,6 +9,7 @@ namespace Beamable.Editor.UI.Common.Models
 {
     public class RealmModel : ISearchableModel
     {
+        public ISearchableElement Default { get; set; }
         public ISearchableElement Current { get; set; }
         public List<ISearchableElement> Elements { get; set; }
 

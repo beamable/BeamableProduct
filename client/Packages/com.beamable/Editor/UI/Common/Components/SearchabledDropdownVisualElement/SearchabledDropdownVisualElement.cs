@@ -29,9 +29,11 @@ namespace Beamable.Editor.UI.Components
         private VisualElement _mainContent;
         private SearchBarVisualElement _searchBar;
         private Button _refreshButton;
+
         public ISearchableModel Model { get; set; }
 
 #pragma warning disable 67
+        public event Action<ISearchableElement> OnDelete;
         public event Action<ISearchableElement> OnSelected;
 #pragma warning restore 67
 
@@ -110,10 +112,25 @@ namespace Beamable.Editor.UI.Components
                     EditorApplication.delayCall += () => OnSelected?.Invoke(singleElement);
                 };
 
-                if (singleElement.Equals(_selectedElement))
+                if (string.Equals(singleElement?.DisplayName, _selectedElement?.DisplayName))
                 {
                     selectButton.AddToClassList("selected");
                     selectButton.SetEnabled(false);
+                }
+                else 
+                {
+                    if (this.OnDelete != null)
+                    {
+                        /* TO DO
+                        var deleteButton = new Button();
+                        selectButton.Add(deleteButton);
+                        deleteButton.AddToClassList("deleteButton");
+                        deleteButton.clickable.clicked += () =>
+                        {
+                            OnDelete?.Invoke(singleElement);
+                        };
+                        */
+                    }
                 }
 
                 var classNameToAdd = singleElement.GetClassNameToAdd();

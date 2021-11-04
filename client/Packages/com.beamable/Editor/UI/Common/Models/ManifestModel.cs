@@ -15,6 +15,7 @@ namespace Beamable.Editor.UI.Common.Models
         public event Action<IEnumerable<AvailableManifestModel>> OnArchivedManifestsFetched;
         public event Action<ISearchableElement> OnElementChanged;
 
+        public ISearchableElement Default { get; set; }
         public ISearchableElement Current { get; set; }
 
         public List<ISearchableElement> Elements { get; set; }
@@ -24,6 +25,7 @@ namespace Beamable.Editor.UI.Common.Models
 
         public void Initialize()
         {
+            Default = new AvailableManifestModel() { id = BeamableConstants.DEFAULT_MANIFEST_ID };
             RefreshAvailable();
 
             EditorAPI.Instance.Then(api =>

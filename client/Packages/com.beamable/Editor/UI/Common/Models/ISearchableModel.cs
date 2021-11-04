@@ -11,6 +11,7 @@ namespace Beamable.Editor.UI.Common.Models
         event Action<List<ISearchableElement>> OnAvailableElementsChanged;
         event Action<ISearchableElement> OnElementChanged;
 
+        ISearchableElement Default { get; set; }
         ISearchableElement Current { get; set; }
         List<ISearchableElement> Elements { get; set; }
 

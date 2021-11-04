@@ -5,6 +5,7 @@ using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Common.Models;
 using UnityEngine;
+using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -86,9 +87,32 @@ namespace Beamable.Editor.UI.Components
         {
             var popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
 
-            var content = new SearchabledDropdownVisualElement();
-            content.Model = Model;
+            var content = new SearchabledDropdownVisualElement(string.Empty)
+            {
+                Model = Model
+            };
+
             var wnd = BeamablePopupWindow.ShowDropdown("Select Manifest", popupWindowRect, new Vector2(200, 300), content);
+
+            content.OnDelete += (manifest) =>
+            {
+                if (manifest != null)
+                {
+                    var ifDelete = EditorUtility.DisplayDialog(
+                            "Deleting manifest version",
+                            $"Are you sure you want to archive manifest named '{manifest.DisplayName}'\n" +
+                            $"This operation will archive it permanently for all users!",
+                            "Yes", "No");
+
+                    if (ifDelete)
+                    {
+                        EditorAPI.Instance.Then(api =>
+                        {
+                            api.ContentIO.ArchiveManifests(manifest.DisplayName);
+                        });
+                    }
+                }
+            };
 
             content.OnSelected += (manifest) =>
             {
