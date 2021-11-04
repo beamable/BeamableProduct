@@ -13,6 +13,7 @@
 
 #nameColumn, #depsColumn {
     flex-direction: row;
+    align-self: flex-start;
     flex: 1;
 }
 
@@ -51,25 +52,6 @@
     flex-direction: row;
     justify-content: center;
 }
-
-#CheckC {
-    margin-right: 20px;
-}
-
-#nameMS {
-    -unity-font-style: bold;
-}
-
-#typeImage {
-    align-self: center;
-}
-
-#typeC {
-    width: 80px;
-    margin-left: 10px;
-    align-self: flex-start;
-}
-
 #checkbox{
     align-self: center;
     justify-content: center;
