@@ -4,6 +4,7 @@
 //#define DB_MICROSERVICE  // I sometimes enable this to see code better in rider
 
 
+using System.Diagnostics;
 using System.Linq;
 using Beamable.Common;
 using Beamable.Common.Api;
@@ -80,6 +81,7 @@ namespace Beamable.Server
 
       private ConcurrentDictionary<long, Task> _runningTaskTable = new ConcurrentDictionary<long, Task>();
       private const int EXIT_CODE_PENDING_TASKS_STILL_RUNNING = 11;
+      private const int EXIT_CODE_FAILED_CUSTOM_INITIALIZATION_HOOK = 110;
       private const int HTTP_STATUS_GONE = 410;
       private const int ShutdownLimitSeconds = 5;
       private Promise<Unit> _serviceInitialized = new Promise<Unit>();
@@ -295,6 +297,10 @@ namespace Beamable.Server
          try
          {
             await _requester.Authenticate();
+            
+            // Custom Initialization hook for C#MS --- will terminate MS user-code throws
+            await ResolveCustomInitializationHook();
+            
             await ProvideService(QualifiedName);
 
             HasInitialized = true;
@@ -308,6 +314,63 @@ namespace Beamable.Server
          }
 
       }
+
+      /// <summary>
+      /// Handles custom initialization hooks. Makes the following assumptions:
+      ///   - User defined at least one <see cref="InitializeServicesAttribute"/> over a static async method that returns a <see cref="Promise{Unit}"/> and receives a <see cref="IServiceInitializer"/>.
+      ///   - Any exception will fail loudly and prevent the C#MS from receiving traffic.
+      /// <para/>
+      /// </summary>
+      private async Task ResolveCustomInitializationHook()
+      {
+         // Gets Service Initialization Methods
+         var serviceInitialization = _microserviceType
+            .GetMethods(BindingFlags.Static | BindingFlags.Public)
+            .Where(method => method.GetCustomAttribute<InitializeServicesAttribute>() != null)
+            .Select(method =>
+            {
+               var attr = method.GetCustomAttribute<InitializeServicesAttribute>();
+               return (method, attr);
+            })
+            .ToList();
+            
+         // Sorts them by an user-defined order. By default (and tie-breaking), is sorted in file declaration order.
+         serviceInitialization.Sort(delegate((MethodInfo method, InitializeServicesAttribute attr) t1, (MethodInfo method, InitializeServicesAttribute attr) t2)
+         {
+            var (_, attr1) = t1;
+            var (_, attr2) = t2;
+            return attr1.ExecutionOrder.CompareTo(attr2.ExecutionOrder);
+         });
+            
+         // Invokes each Service Initialization Method --- skips any that do not match the void(IServiceInitializer) signature.
+         var serviceInitializers = new DefaultServiceInitializer(ServiceCollection, _args);
+         foreach (var (initializationMethod, _) in serviceInitialization)
+         {
+            var resultType = initializationMethod.ReturnType;
+            // TODO: Add compile-time check for this signature so we can educate our users on this without them having to deep dive into docs
+            if(resultType != typeof(Promise<Unit>))
+               continue;
+
+            var parameters = initializationMethod.GetParameters();
+            if (parameters.Length != 1 || parameters[0].ParameterType != typeof(IServiceInitializer)) 
+               continue;
+
+            var promise = (Promise<Unit>) initializationMethod.Invoke(null, new object?[] {serviceInitializers});
+            await promise.Error(async ex =>
+            {
+               BeamableLogger.LogError($"Custom service initializer [{initializationMethod.DeclaringType?.FullName}.{initializationMethod.Name}] failed.\n" +
+                                       $"{ex.Message}\n" +
+                                       $"{{stacktrace}}", ex.StackTrace);
+                  
+               BeamableLogger.LogException(ex);
+               Environment.Exit(EXIT_CODE_FAILED_CUSTOM_INITIALIZATION_HOOK);
+            });
+            
+         }
+         
+      }
+
+      
 
       public Promise<IConnection> GetWebsocketPromise()
       {
@@ -453,11 +516,29 @@ namespace Beamable.Server
             var builder = new DefaultServiceBuilder(ServiceCollection);
 
 
-            var configurationMethods = _microserviceType.GetMethods(BindingFlags.Static | BindingFlags.Public).Where(
-               method =>
-                  method.GetCustomAttribute<ConfigureServicesAttribute>() != null);
-            foreach (var configurationMethod in configurationMethods)
+            // Gets Service Configuration Methods
+            var configurationMethods = _microserviceType
+               .GetMethods(BindingFlags.Static | BindingFlags.Public)
+               .Where(method => method.GetCustomAttribute<ConfigureServicesAttribute>() != null)
+               .Select(method =>
+               {
+                  var attr = method.GetCustomAttribute<ConfigureServicesAttribute>();
+                  return (method, attr);
+               })
+               .ToList();
+            
+            // Sorts them by an user-defined order. By default (and tie-breaking), is sorted in file declaration order.
+            configurationMethods.Sort(delegate((MethodInfo method, ConfigureServicesAttribute attr) t1, (MethodInfo method, ConfigureServicesAttribute attr) t2)
             {
+               var (_, attr1) = t1;
+               var (_, attr2) = t2;
+               return attr1.ExecutionOrder.CompareTo(attr2.ExecutionOrder);
+            });
+            
+            // Invokes each Service Configuration Method --- skips any that do not match the void(IServiceBuilder) signature.
+            foreach (var (configurationMethod, _) in configurationMethods)
+            {
+               // TODO: Add compile-time check for this signature
                var parameters = configurationMethod.GetParameters();
                if (parameters.Length != 1 || parameters[0].ParameterType != typeof(IServiceBuilder)) continue;
 
@@ -527,6 +608,7 @@ namespace Beamable.Server
             BeamableSerilogProvider.LogContext.Value.Debug("Responding with {json}", responseJson);
             var webSocket = await _webSocketPromise;
             webSocket.SendMessage(responseJson);
+            // TODO: Kill Scope
          }
          catch (MicroserviceException ex)
          {
