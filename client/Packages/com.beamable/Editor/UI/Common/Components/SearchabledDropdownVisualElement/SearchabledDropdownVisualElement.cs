@@ -118,7 +118,7 @@ namespace Beamable.Editor.UI.Components
 
                 var classNameToAdd = singleElement.GetClassNameToAdd();
 
-                if (string.IsNullOrEmpty(classNameToAdd))
+                if (!string.IsNullOrEmpty(classNameToAdd))
                 {
                     selectButton.AddToClassList(classNameToAdd);
                 }
