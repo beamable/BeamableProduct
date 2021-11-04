@@ -6,19 +6,33 @@
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
-    <engine:VisualElement class="manifestRow">
+    <engine:VisualElement name="row" class="manifestRow">
         <engine:VisualElement name="enabledC" class="column">
             <beamable:BeamableCheckboxVisualElement name="checkbox"/>
         </engine:VisualElement>
-        <engine:VisualElement name="nameC" class="column">
+
+        <engine:VisualElement name="typeC" class="column">
+            <engine:Image name="typeImage"/>
+        </engine:VisualElement>
+        
+        <engine:VisualElement name="nameColumn" class="column" display="none">
                 <engine:Label name="nameMS" text="Angie's Test"/>
         </engine:VisualElement>
 
+        <engine:VisualElement name="depsColumn" class="column">
+            <beamable:ExpandableListVisualElement name="depsList" />
+        </engine:VisualElement>
+
         <engine:VisualElement name="SizeC" class="column">
+            <beamable:DropdownVisualElement name="sizeDropdown" />
         </engine:VisualElement>
 
         <engine:VisualElement name="CommentsC" class="column">
             <engine:TextField name="commentsText"/>
+        </engine:VisualElement>
+
+        <engine:VisualElement name="CheckC" class="column">
+            <engine:Image name="checkImage"/>
         </engine:VisualElement>
     </engine:VisualElement>
 
