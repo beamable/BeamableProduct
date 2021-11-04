@@ -33,7 +33,7 @@
     {#if !emptyNoAuth}
         <slot name="unauthorized">
             <div>
-                Sorry, your account doesn't have the required privledges to see this content.
+                Sorry, your account doesn't have the required privileges to see this content.
             </div>
         </slot>
     {/if}
