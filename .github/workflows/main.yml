@@ -18,7 +18,7 @@ on:
 jobs:
   testMicroserviceBaseImage:
     timeout-minutes: 10
-    runs-on: github-runner-aws
+    runs-on: [self-hosted, github-runner-aws] 
     concurrency: 
       group: base-image-tests-${{ github.head_ref }}
       cancel-in-progress: true
@@ -54,7 +54,7 @@ jobs:
   testAllModes:
     timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
-    runs-on: github-runner-aws
+    runs-on: [self-hosted, github-runner-aws] 
     concurrency: 
       group: unity-tests-${{ matrix.unityVersion }}-${{ matrix.testMode }}-${{ github.head_ref }}
       cancel-in-progress: true
@@ -134,7 +134,7 @@ jobs:
 
   build:
     name: Build for ${{ matrix.targetPlatform }}
-    runs-on: github-runner-aws
+    runs-on: [self-hosted, github-runner-aws] 
     timeout-minutes: 60
     concurrency: 
       group: device-builds-${{ matrix.targetPlatform }}-${{ github.head_ref }}
