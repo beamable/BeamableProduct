@@ -59,6 +59,7 @@
 
 #nameMS {
     -unity-font-style: bold;
+    margin-top: 6px;
 }
 
 #typeImage {
