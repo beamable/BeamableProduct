@@ -94,7 +94,7 @@ namespace Beamable.Editor.UI.Components
             listRoot.Clear();
             if (elements == null) return;
 
-            elements = elements.Where(r => r.IsAvailable()).OrderBy(r => -r.Depth);
+            elements = elements.Where(r => r.IsAvailable()).OrderBy(r => r.GetOrder());
             foreach (var singleElement in elements)
             {
                 if (singleElement.IsToSkip(filter))

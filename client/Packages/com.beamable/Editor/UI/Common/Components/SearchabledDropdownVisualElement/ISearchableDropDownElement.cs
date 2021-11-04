@@ -7,8 +7,8 @@ namespace Beamable.Editor
     public interface ISearchableDropDownElement
     {
         string DisplayName { get; }
-        int Depth { get; set; }
 
+        bool GetOrder();
         bool IsAvailable();
         bool IsToSkip(string filter);
         string GetClassNameToAdd();

@@ -207,6 +207,11 @@ namespace Beamable.Editor.Realms
                 : Parent.FindRoot();
       }
 
+      public int GetOrder()
+      {
+         return -Depth;
+      }
+
       public bool IsAvailable()
       {
          return !Archived;
