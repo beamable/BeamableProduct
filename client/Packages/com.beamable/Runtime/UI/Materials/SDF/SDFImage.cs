@@ -44,6 +44,13 @@ namespace Beamable.UI.SDF {
             set => base.material = value;
         }
 
+#if UNITY_EDITOR
+        protected override void OnValidate() {
+            base.OnValidate();
+            canvas.additionalShaderChannels = (AdditionalCanvasShaderChannels) int.MaxValue;
+        }
+#endif
+
         protected override void OnPopulateMesh(VertexHelper vh) {
             switch (mode) {
                 case SdfMode.Default:

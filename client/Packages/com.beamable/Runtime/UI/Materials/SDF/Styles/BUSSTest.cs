@@ -26,7 +26,8 @@ namespace Beamable.UI.BUSS {
 
         void Update() {
             var style = GetStyle();
-            if (TryGetComponent<SDFImage>(out var sdfImage)) {
+            var sdfImage = GetComponent<SDFImage>();
+            if (sdfImage != null) {
                 var size = sdfImage.rectTransform.rect.size;
                 var minSize = Mathf.Min(size.x, size.y);
                 sdfImage.colorRect = BUSSStyle.BackgroundColor.Get(style).ColorRect;

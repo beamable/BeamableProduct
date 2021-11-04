@@ -9,7 +9,8 @@ namespace Beamable.Editor.UI.SDF {
     [CustomEditor(typeof(SDFImage))]
     public class SDFImageInspector : UnityEditor.Editor {
         public override void OnInspectorGUI() {
-            var useStyles = ((SDFImage) serializedObject.targetObject).TryGetComponent<BUSSElement>(out var bussElement) && bussElement.enabled;
+            var bussElement = ((SDFImage) serializedObject.targetObject).GetComponent<BUSSElement>();
+            var useStyles = (bussElement != null) && bussElement.enabled;
             
             if (useStyles) {
                 EditorGUILayout.HelpBox("Image properties are currently controller by BUSSElement.", MessageType.Info);

@@ -9,7 +9,7 @@ namespace Beamable.Editor.UI.SDF {
         public static void ShowWizard(Action<string> onVariableCreated) {
             var wizard = CreateInstance<VariableNameWizard>();
             wizard.onVariableCreated += onVariableCreated;
-            wizard.ShowModalUtility();
+            wizard.ShowPopup();
         }
 
         private void OnWizardCreate() {
