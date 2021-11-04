@@ -8,7 +8,7 @@ namespace Beamable.Editor
     {
         string DisplayName { get; }
 
-        bool GetOrder();
+        int GetOrder();
         bool IsAvailable();
         bool IsToSkip(string filter);
         string GetClassNameToAdd();
