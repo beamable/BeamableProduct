@@ -7,13 +7,13 @@ using UnityEngine;
 
 namespace Beamable.Editor.UI.Common.Models
 {
-    public class RealmModel : ISearchableDropDownModel
+    public class RealmModel : ISearchableModel
     {
-        public ISearchableDropDownElement Current { get; set; }
-        public List<ISearchableDropDownElement> Elements { get; set; }
+        public ISearchableElement Current { get; set; }
+        public List<ISearchableElement> Elements { get; set; }
 
-        public event Action<List<ISearchableDropDownElement>> OnAvailableChanged;
-        public event Action<ISearchableDropDownElement> OnChanged;
+        public event Action<List<ISearchableElement>> OnAvailableChanged;
+        public event Action<ISearchableElement> OnChanged;
 
         public void Initialize()
         {
@@ -27,19 +27,19 @@ namespace Beamable.Editor.UI.Common.Models
             });
         }
 
-        public Promise<List<ISearchableDropDownElement>> RefreshAvailable()
+        public Promise<List<ISearchableElement>> RefreshAvailable()
         {
             return EditorAPI.Instance.FlatMap(api =>
             {
                 Current = api.Realm;
                 return api.RealmService.GetRealms().Map(realms =>
                 {
-                    return realms.ToList<ISearchableDropDownElement>();
+                    return realms.ToList<ISearchableElement>();
                 });
             }).Then(realms =>
             {
 
-                Elements = realms.ToList<ISearchableDropDownElement>();
+                Elements = realms.ToList<ISearchableElement>();
                 OnAvailableChanged?.Invoke(Elements);
             });
         }

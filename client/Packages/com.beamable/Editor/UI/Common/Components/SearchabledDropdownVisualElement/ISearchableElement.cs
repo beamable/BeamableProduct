@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Beamable.Editor
 {
-    public interface ISearchableDropDownElement
+    public interface ISearchableElement
     {
         string DisplayName { get; }
 

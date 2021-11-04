@@ -76,7 +76,7 @@ namespace Beamable.Editor.UI.Components
         }
 
         
-        private void HandleRealmChanged(ISearchableDropDownElement view)
+        private void HandleRealmChanged(ISearchableElement view)
         {
             RealmView realm = (RealmView)view;
 

@@ -166,7 +166,7 @@ namespace Beamable.Editor.Realms
       public List<RealmView> Projects;
    }
 
-   public class RealmView : ISearchableDropDownElement
+   public class RealmView : ISearchableElement
    {
       private const string PRODUCTION_DROPDOWN_CLASS_NAME = "production";
       private const string STAGING_DROPDOWN_CLASS_NAME = "staging";

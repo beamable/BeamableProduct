@@ -23,19 +23,19 @@ namespace Beamable.Editor.UI.Components
         private string _switchText;
 
         private VisualElement _root;
-        private ISearchableDropDownElement _selectedElement;
-        private List<ISearchableDropDownElement> _elementViews;
+        private ISearchableElement _selectedElement;
+        private List<ISearchableElement> _elementViews;
         private LoadingIndicatorVisualElement _loadingIndicator;
         private VisualElement _mainContent;
         private SearchBarVisualElement _searchBar;
         private Button _refreshButton;
-        public ISearchableDropDownModel Model { get; set; }
+        public ISearchableModel Model { get; set; }
 
 #pragma warning disable 67
-        public event Action<ISearchableDropDownElement> OnRealmSelected;
+        public event Action<ISearchableElement> OnRealmSelected;
 #pragma warning restore 67
 
-        public SearchabledDropdownVisualElement(string switchText) : base(ComponentPath)
+        public SearchabledDropdownVisualElement(string switchText = null) : base(ComponentPath)
         {
             this._switchText = switchText;
         }
@@ -47,7 +47,7 @@ namespace Beamable.Editor.UI.Components
             base.OnDetach();
         }
 
-        private void OnActiveChanged(ISearchableDropDownElement element)
+        private void OnActiveChanged(ISearchableElement element)
         {
             _selectedElement = element;
             SetList(_elementViews, _root);
@@ -83,13 +83,13 @@ namespace Beamable.Editor.UI.Components
             OnUpdated(Model.Elements);
         }
 
-        private void OnUpdated(List<ISearchableDropDownElement> elements)
+        private void OnUpdated(List<ISearchableElement> elements)
         {
             _elementViews = elements;
             SetList(_elementViews, _root);
         }
 
-        private void SetList(IEnumerable<ISearchableDropDownElement> elements, VisualElement listRoot, string filter = null)
+        private void SetList(IEnumerable<ISearchableElement> elements, VisualElement listRoot, string filter = null)
         {
             listRoot.Clear();
             if (elements == null) return;
