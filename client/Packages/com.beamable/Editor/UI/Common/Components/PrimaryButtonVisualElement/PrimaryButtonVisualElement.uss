@@ -25,6 +25,7 @@ TemplateContainer {
 LoadingSpinnerVisualElement {
     position: absolute;
     opacity: 0;
+    visibility: hidden;
 }
 
 .disabled.loading LoadingSpinnerVisualElement {
@@ -32,6 +33,7 @@ LoadingSpinnerVisualElement {
 }
 .disabled LoadingSpinnerVisualElement {
     opacity: 0;
+    visibility: hidden;
 }
 
 .disabled Button.unity-button,
