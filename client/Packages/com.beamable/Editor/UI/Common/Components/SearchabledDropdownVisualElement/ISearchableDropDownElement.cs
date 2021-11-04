@@ -8,9 +8,9 @@ namespace Beamable.Editor
     {
         string DisplayName { get; }
         int Depth { get; set; }
-        bool Archived { get; set; }
 
-        bool IsElementToSkipInDropdown(string filter);
-        string GetClassNameToAddInDropdown();
+        bool IsAvailable();
+        bool IsToSkip(string filter);
+        string GetClassNameToAdd();
     }
 }

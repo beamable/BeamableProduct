@@ -99,7 +99,7 @@ namespace Beamable.Editor.UI.Components
         {
             var popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
 
-            var content = new SearchabledDropdownVisualElement();
+            var content = new SearchabledDropdownVisualElement("Switching Realm");
             content.Model = Model;
             var wnd = BeamablePopupWindow.ShowDropdown("Select Realm", popupWindowRect, new Vector2(200, 300), content);
 

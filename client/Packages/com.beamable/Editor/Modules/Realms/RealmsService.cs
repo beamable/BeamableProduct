@@ -174,7 +174,7 @@ namespace Beamable.Editor.Realms
       public string Pid;
       public string Cid;
       public string ProjectName;
-      public bool Archived { get; set; }
+      public bool Archived;
       public List<RealmView> Children = new List<RealmView>();
       public RealmView Parent;
       public int Depth { get; set; }
@@ -207,12 +207,17 @@ namespace Beamable.Editor.Realms
                 : Parent.FindRoot();
       }
 
-      public bool IsElementToSkipInDropdown(string filter)
+      public bool IsAvailable()
+      {
+         return !Archived;
+      }
+
+      public bool IsToSkip(string filter)
       {
          return !string.IsNullOrEmpty(filter) && !ProjectName.ToLower().Contains(filter);
       }
 
-      public string GetClassNameToAddInDropdown()
+      public string GetClassNameToAdd()
       {
          if (IsProduction)
          {

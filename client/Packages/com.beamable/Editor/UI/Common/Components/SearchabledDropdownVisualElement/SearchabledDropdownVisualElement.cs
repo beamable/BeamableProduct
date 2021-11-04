@@ -20,36 +20,7 @@ namespace Beamable.Editor.UI.Components
     {
         public static readonly string ComponentPath = $"{BeamableComponentsConstants.COMP_PATH}/{nameof(SearchabledDropdownVisualElement)}/{nameof(SearchabledDropdownVisualElement)}";
 
-        public new class UxmlFactory : UxmlFactory<SearchabledDropdownVisualElement, UxmlTraits>
-        {
-        }
-
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            readonly UxmlStringAttributeDescription _changeDesc = new UxmlStringAttributeDescription
-            { name = "changeDesc", defaultValue = "" };
-
-            readonly UxmlStringAttributeDescription _selectedClassName = new UxmlStringAttributeDescription
-            { name = "selectedClassName", defaultValue = "" };
-
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                if (ve is SearchabledDropdownVisualElement component)
-                {
-                    component._switchText = _changeDesc.GetValueFromBag(bag, cc);
-                    component._selectedClassName = _selectedClassName.GetValueFromBag(bag, cc);
-                }
-            }
-        }
-
         private string _switchText;
-        private string _selectedClassName;
 
         private VisualElement _root;
         private ISearchableDropDownElement _selectedElement;
@@ -64,9 +35,9 @@ namespace Beamable.Editor.UI.Components
         public event Action<ISearchableDropDownElement> OnRealmSelected;
 #pragma warning restore 67
 
-        public SearchabledDropdownVisualElement() : base(ComponentPath)
+        public SearchabledDropdownVisualElement(string switchText) : base(ComponentPath)
         {
-
+            this._switchText = switchText;
         }
 
         public override void OnDetach()
@@ -123,10 +94,10 @@ namespace Beamable.Editor.UI.Components
             listRoot.Clear();
             if (elements == null) return;
 
-            elements = elements.Where(r => !r.Archived).OrderBy(r => -r.Depth);
+            elements = elements.Where(r => r.IsAvailable()).OrderBy(r => -r.Depth);
             foreach (var singleElement in elements)
             {
-                if (singleElement.IsElementToSkipInDropdown(filter))
+                if (singleElement.IsToSkip(filter))
                     continue;
 
                 var selectButton = new Button();
@@ -141,13 +112,11 @@ namespace Beamable.Editor.UI.Components
 
                 if (singleElement.Equals(_selectedElement))
                 {
-                    if (!string.IsNullOrEmpty(_selectedClassName))
-                        selectButton.AddToClassList(_selectedClassName);
-
+                    selectButton.AddToClassList("selected");
                     selectButton.SetEnabled(false);
                 }
 
-                var classNameToAdd = singleElement.GetClassNameToAddInDropdown();
+                var classNameToAdd = singleElement.GetClassNameToAdd();
 
                 if (string.IsNullOrEmpty(classNameToAdd))
                 {
