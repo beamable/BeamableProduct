@@ -7,27 +7,6 @@ using UnityEngine;
 
 namespace Beamable.Server
 {
-
-   [ContentType("api")]
-   public class PlatformApiContent : ContentObject
-   {
-
-      [ContentField("serviceType")]
-      public PlatformServiceType ServiceType;
-
-      [ContentField("service")]
-      public string Service;
-
-      [ContentField("route")]
-      public string Route;
-
-      [ContentField("headers")]
-      public SerializableDictionaryStringToString Headers;
-
-      [ContentField("body")]
-      public string Body;
-   }
-
    public enum PlatformServiceType
    {
       UserMicroservice, ObjectService, BasicService
@@ -82,13 +61,17 @@ namespace Beamable.Server
    [Serializable]
    public class ApiVariableReference
    {
+      [ContentField("name")]
       public string Name;
    }
 
    [Serializable]
    public class ApiVariable
    {
+      [ContentField("name")]
       public string Name;
+
+      [ContentField("typeName")]
       public string TypeName;
 
       public static readonly string TYPE_NUMBER = "number";
@@ -123,20 +106,27 @@ namespace Beamable.Server
    [Serializable]
    public class ServiceRoute
    {
+      [ContentField("service")]
       public string Service;
+
+      [ContentField("endpoint")]
       public string Endpoint;
+
+      [ContentField("serviceType")]
       public PlatformServiceType Type;
    }
 
    [Serializable]
    public class RouteVariables
    {
+      [ContentField("variables")]
       public ApiVariable[] Variables;
    }
 
    [Serializable]
    public class RouteParameters
    {
+      [ContentField("parameters")]
       public RouteParameter[] Parameters;
 
       [SerializeField]
@@ -156,7 +146,7 @@ namespace Beamable.Server
       [Tooltip("If you are using a variable, which variable is this parameter bound to?")]
       public OptionalApiVariableReference variableReference;
 
-      [ContentField("json")]
+      [ContentField("body")]
       [Tooltip("The raw json payload of this parameter")]
       public string Data;
 
@@ -172,7 +162,7 @@ namespace Beamable.Server
    }
 
    [Serializable]
-   public class ApiRef : ContentRef<ApiContent>
+   public class ApiRef<T> : ContentRef<T> where T : ApiContent, new()
    {
       public ApiRef()
       {
@@ -183,6 +173,11 @@ namespace Beamable.Server
       {
          Id = id;
       }
+   }
+
+   [Serializable]
+   public class ApiRef : ApiRef<ApiContent>
+   {
    }
 
 }
