@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
+using Beamable.Serialization.SmallerJSON;
 using UnityEngine;
 
 namespace Beamable.Common.Api.Stats
@@ -49,30 +51,33 @@ namespace Beamable.Common.Api.Stats
          string prefix = $"{domain}.{access}.{type}.";
          return GetCache(prefix).Get(id);
       }
-      public Promise<List<int>> SearchStats(string domain, string access, string type, List<Criteria> criteria)
+      public Promise<StatsSearchResponse> SearchStats(string domain, string access, string type, List<Criteria> criteriaList)
       {
           void IsValid(out string error)
           {
               error = string.Empty;
               var tmpError = string.Empty;
-              
+
               if (string.IsNullOrWhiteSpace(domain))
               {
                   tmpError += "> domain cannot be an empty string\n";
               }
+
               if (string.IsNullOrWhiteSpace(access))
               {
                   tmpError += "> access cannot be an empty string\n";
               }
+
               if (string.IsNullOrWhiteSpace(type))
               {
                   tmpError += "> type cannot be an empty string\n";
               }
-              if (criteria == null)
+
+              if (criteriaList == null)
               {
                   tmpError += "> criteria cannot be null\n";
               }
-              else if (criteria.Count == 0)
+              else if (criteriaList.Count == 0)
               {
                   tmpError += "> should be at least one criteria\n";
               }
@@ -81,36 +86,43 @@ namespace Beamable.Common.Api.Stats
               {
                   error += "Error occured in \"SearchStats\". Check for more details:\n\n";
               }
-              error += tmpError;
 
+              error += tmpError;
+          }
+
+          ArrayDict ConvertCriteriaToArrayDict(Criteria criteria)
+          {
+              return new ArrayDict
+              {
+                  {"stat", criteria.Stat},
+                  {"rel", criteria.Rel},
+                  {"value", criteria.Value}
+              };
           }
           
-          var searchStatsPromise = new Promise<List<int>>();
-
           IsValid(out var errorMessage);
           if (!string.IsNullOrWhiteSpace(errorMessage))
           {
               Debug.LogError(errorMessage);
-              searchStatsPromise.CompleteError(null);
-              return searchStatsPromise;
+              return new Promise<StatsSearchResponse>();
           }
 
-          var payload = new SearchStats(domain, access, type, criteria);
-          var webRequest = Requester.Request<List<int>>(
-                  Method.POST, 
-                  "/basic/stats/search", 
-                  JsonUtility.ToJson(payload));
-          
-          webRequest.Error(error =>
+          var convertedCriteriaList = new List<ArrayDict>(criteriaList.Count);
+          foreach (var criteria in criteriaList)
+              convertedCriteriaList.Add(ConvertCriteriaToArrayDict(criteria));
+
+          var payload = new ArrayDict
           {
-              Debug.LogError(error);
-              searchStatsPromise.CompleteError(error);
-          }).Then(result =>
-          {
-              searchStatsPromise.CompleteSuccess(result);
-          });
+              { "domain", domain },
+              { "access", access },
+              { "objectType", type },
+              { "criteria", convertedCriteriaList }
+          };
           
-          return searchStatsPromise;
+          return Requester.Request<StatsSearchResponse>(
+              Method.POST,
+              "/basic/stats/search",
+              Json.Serialize(payload, new StringBuilder()));
       }
       
       protected abstract Promise<Dictionary<long, Dictionary<string, string>>> Resolve(string prefix,
@@ -118,34 +130,22 @@ namespace Beamable.Common.Api.Stats
    }
 
    [Serializable]
-   public class SearchStats
+   public class StatsSearchResponse
    {
-       public string domain;
-       public string access;
-       public string objectType;
-       public List<Criteria> criteria;
-
-       public SearchStats(string domain, string access, string objectType, List<Criteria> criteria)
-       {
-           this.domain = domain;
-           this.access = access;
-           this.objectType = objectType;
-           this.criteria = criteria;
-       }
+       public int[] ids;
    }
    
-   [Serializable]
    public class Criteria
    {
-       public string stat;
-       public string rel;
-       public string value;
-
+       public string Stat { get; }
+       public string Rel { get; }
+       public string Value { get; }
+   
        public Criteria(string stat, string rel, string value)
        {
-           this.stat = stat;
-           this.rel = rel;
-           this.value = value;
+           Stat = stat;
+           Rel = rel;
+           Value = value;
        }
    }
 }
