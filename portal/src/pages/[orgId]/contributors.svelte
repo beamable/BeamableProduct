@@ -223,7 +223,7 @@
           left={25} 
           headerClass="light-header" 
           header="Remove Team Member"
-          message="The team member will lose all game privledges."
+          message="The team member will lose all game privileges."
           onConfirmFunction={() => setRole(id, null) }>
           <div slot="trigger" let:toggle>
             <button disabled={!(availableRoles && availableRoles.length)} class="button is-small" on:click|preventDefault|stopPropagation={toggle} >
