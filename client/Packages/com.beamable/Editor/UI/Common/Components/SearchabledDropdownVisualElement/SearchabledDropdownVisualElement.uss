@@ -59,8 +59,8 @@ Button {
     background-image: none;
     /*height: 15px;*/
     -unity-text-align: middle-left;
-    margin-top: 0px;
-    margin-bottom: 0px;
+    margin-top: 1px;
+    margin-bottom: 1px;
     padding-top: 5px;
     padding-bottom: 5px;
 
