@@ -6,22 +6,22 @@
     /*background-color: #000000;*/
 }
 
-RealmDropdownVisualElement LoadingIndicatorVisualElement {
+SearchabledDropdownVisualElement LoadingIndicatorVisualElement {
     top: 20px;
     align-items: center;
 }
-RealmDropdownVisualElement {
+SearchabledDropdownVisualElement {
     flex-grow: 1;
 }
-RealmDropdownVisualElement > TemplateContainer {
+SearchabledDropdownVisualElement > TemplateContainer {
     flex-grow: 1;
 }
-RealmDropdownVisualElement .cover,
-RealmDropdownVisualElement #mainBlockedContent.cover {
+SearchabledDropdownVisualElement .cover,
+SearchabledDropdownVisualElement #mainBlockedContent.cover {
     position: absolute;
     left: 100000px;
 }
-RealmDropdownVisualElement #mainBlockedContent {
+SearchabledDropdownVisualElement #mainBlockedContent {
     flex-grow: 1;
     position: absolute;
     left: 0px;
