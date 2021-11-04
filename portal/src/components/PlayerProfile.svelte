@@ -19,7 +19,6 @@
     let playerLocale = '?';
     let playerPlatform = '?';
     let playerInstallDate = '?';
-    let gamerTag = 0;
 
     let isNetworking;
 
@@ -28,13 +27,6 @@
     $: playerLocale = hasStats ? stats.find(s => s.name === 'locale').value : '?';
     $: playerPlatform = hasStats ? stats.find(s => s.name === 'THORIUM_GAME_PLATFORM').value : '?';
     $: playerInstallDate = hasStats ? stats.find(s => s.name === 'INSTALL_DATE').value : '?';
-
-    realm.subscribe(function (realm) {
-        if (realm) {
-            gamerTag = player.gamerTagForRealm();
-        }
-    });
-
 
     function findThirdParty(thirdPartyName){
         if (!thirdPartyName) return false;
@@ -60,6 +52,11 @@
 
     async function handleEmailWrite(next, old){
         await players.updateEmail(player, next);
+        return next;
+    }
+
+    async function handleDeviceIdWrite(next, old){
+        await players.updateDeviceId(player, next);
         return next;
     }
 
@@ -204,13 +201,27 @@
             <label class="label">DBID</label>
             <div class="control-with-buttons">
                 <div class="control dbid-control">
-                    <input class="input is-static" type="text" placeholder="dbid" readonly bind:value={gamerTag}>
+                    <input class="input is-static" type="text" placeholder="dbid" readonly value={player.gamerTagForRealm()}>
 
                 </div>
                 <div class="buttons">
                     <!-- only exists to provide consisten spacing with email input. -->
                 </div>
             </div>
+        </div>
+
+        <div class="field">
+            <label class="label">Device Id</label>
+            <AsyncInput
+                value={player.deviceId}
+                inputType="text"
+                placeholder="No Device Id Provided"
+                onWrite={handleDeviceIdWrite}
+                editable={true}
+                floatError={true}
+                buttonTopPadding={4}
+            />
+       
         </div>
 
         <div class="field">

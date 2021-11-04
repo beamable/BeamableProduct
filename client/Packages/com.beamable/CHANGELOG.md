@@ -10,12 +10,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `SearchStats()` admin method is usable from client and microservice code now.
 - `CoreConfiguration` to project settings to tweak how our Promise library handles uncaught promises by default
+- Exposed `CreateLeaderboard` methods in `IMicroserviceLeaderboardsApi` to enable the dynamic creation of leaderboards in C#MS (can take a `LeaderboardRef` as a template or explicit parameters). 
+
 ### Changed
 - `BeamableEnvironment` has moved to the Runtime to enable sdk version checking at runtime
-- `PromiseBase.SetPotentialUncaughtErrorHandler(handler, replace)` -- replaces by default, but supports adding handlers by passing `false` to second parameter 
 
 ### Fixed
-- `CloudSavingService` error during using Hijri calendar
+- Removes _Menu Window/Panels/1_ warning after opening schedule type dropdown on Unity 2019 and 2020
+
+## [0.17.2]
+### Added
+- `CoreConfiguration` to project settings to tweak how our Promise library handles uncaught promises by default
+- `matchingIntervalSecs` for `SimGameType` allows game makers to specify the rate by which matchmaking occurs
+
+### Changed
+- `PromiseBase.SetPotentialUncaughtErrorHandler(handler, replace)` -- replaces by default, but supports adding handlers by passing `false` to second parameter 
+- New design of Microservices Publish Window with support for Storage Objects
+
+### Fixed
+- `CloudSavingService` serialization error caused by Invariant Culture
+- Content Manager Publish window loading bar width
+- Current Hud no longer emits null reference error if no image is assigned
 
 ## [0.17.1]
 ### Fixed
