@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Beamable.Common.Api.Stats
 {
@@ -32,7 +34,7 @@ namespace Beamable.Common.Api.Stats
          return cache;
       }
 
-      public Promise<EmptyResponse> SetStats (string access, Dictionary<string, string> stats) {
+      public Promise<EmptyResponse> SetStats(string access, Dictionary<string, string> stats) {
          long gamerTag = UserContext.UserId;
          string prefix = $"client.{access}.player.";
          return Requester.Request<EmptyResponse>(
@@ -42,68 +44,108 @@ namespace Beamable.Common.Api.Stats
          ).Then(_ => GetCache(prefix).Remove(gamerTag));
       }
 
-      public Promise<Dictionary<string, string>> GetStats (string domain, string access, string type, long id)
+      public Promise<Dictionary<string, string>> GetStats(string domain, string access, string type, long id)
       {
          string prefix = $"{domain}.{access}.{type}.";
          return GetCache(prefix).Get(id);
       }
+      public Promise<List<int>> SearchStats(string domain, string access, string type, List<Criteria> criteria)
+      {
+          void IsValid(out string error)
+          {
+              error = string.Empty;
+              var tmpError = string.Empty;
+              
+              if (string.IsNullOrWhiteSpace(domain))
+              {
+                  tmpError += "> domain cannot be an empty string\n";
+              }
+              if (string.IsNullOrWhiteSpace(access))
+              {
+                  tmpError += "> access cannot be an empty string\n";
+              }
+              if (string.IsNullOrWhiteSpace(type))
+              {
+                  tmpError += "> type cannot be an empty string\n";
+              }
+              if (criteria == null)
+              {
+                  tmpError += "> criteria cannot be null\n";
+              }
+              else if (criteria.Count == 0)
+              {
+                  tmpError += "> should be at least one criteria\n";
+              }
 
+              if (!string.IsNullOrWhiteSpace(tmpError))
+              {
+                  error += "Error occured in \"SearchStats\". Check for more details:\n\n";
+              }
+              error += tmpError;
+
+          }
+          
+          var searchStatsPromise = new Promise<List<int>>();
+
+          IsValid(out var errorMessage);
+          if (!string.IsNullOrWhiteSpace(errorMessage))
+          {
+              Debug.LogError(errorMessage);
+              searchStatsPromise.CompleteError(null);
+              return searchStatsPromise;
+          }
+
+          var payload = new SearchStats(domain, access, type, criteria);
+          var webRequest = Requester.Request<List<int>>(
+                  Method.POST, 
+                  "/basic/stats/search", 
+                  JsonUtility.ToJson(payload));
+          
+          webRequest.Error(error =>
+          {
+              Debug.LogError(error);
+              searchStatsPromise.CompleteError(error);
+          }).Then(result =>
+          {
+              searchStatsPromise.CompleteSuccess(result);
+          });
+          
+          return searchStatsPromise;
+      }
+      
       protected abstract Promise<Dictionary<long, Dictionary<string, string>>> Resolve(string prefix,
          List<long> gamerTags);
-//      {
-//         string queryString = "";
-//         for (int i = 0; i < gamerTags.Count; i++)
-//         {
-//            if (i > 0)
-//            {
-//               queryString += ",";
-//            }
-//            queryString += $"{prefix}{gamerTags[i]}";
-//         }
-//         return Requester.Request<BatchReadStatsResponse>(
-//            Method.GET,
-//            $"/basic/stats/client/batch?format=stringlist&objectIds={queryString}",
-//            useCache: true
-//         ).RecoverWith(ex =>
-//            {
-//               return OfflineCache.RecoverDictionary<Dictionary<string, string>>(ex, "stats", Requester.AccessToken, gamerTags).Map(
-//                  stats =>
-//                  {
-//                     var results = stats.Select(kvp =>
-//                     {
-//                        return new BatchReadEntry
-//                        {
-//                           id = kvp.Key,
-//                           stats = kvp.Value.Select(statKvp => new StatEntry
-//                           {
-//                              k = statKvp.Key,
-//                              v = statKvp.Value
-//                           }).ToList()
-//                        };
-//                     }).ToList();
-//
-//                     var rsp = new BatchReadStatsResponse
-//                     {
-//                        results = results
-//                     };
-//                     return rsp;
-//                  });
-//               /*
-//                * Handle the NoNetworkConnectivity error, by using a custom cache layer.
-//                *
-//                * the "stats" key cache maintains stats for all users, not per request.
-//                */
-//
-//            })
-//            .Map(rsp => rsp.ToDictionary())
-//            .Then(playerStats =>
-//            {
-//               /*
-//                * Successfully looked up stats. Commit them to the offline cache.
-//                *
-//                */
-//               OfflineCache.Merge("stats", _requester.AccessToken, playerStats);
-//            });
-//      }
+   }
+
+   [Serializable]
+   public class SearchStats
+   {
+       public string domain;
+       public string access;
+       public string objectType;
+       public List<Criteria> criteria;
+
+       public SearchStats(string domain, string access, string objectType, List<Criteria> criteria)
+       {
+           this.domain = domain;
+           this.access = access;
+           this.objectType = objectType;
+           this.criteria = criteria;
+       }
+   }
+   
+   [Serializable]
+   public class Criteria
+   {
+       public string stat;
+       public string rel;
+       public string value;
+
+       public Criteria(string stat, string rel, string value)
+       {
+           this.stat = stat;
+           this.rel = rel;
+           this.value = value;
+       }
    }
 }
