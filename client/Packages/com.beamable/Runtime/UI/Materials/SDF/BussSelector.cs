@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
-using UnityEditor.Graphs;
 
 namespace Beamable.UI.BUSS {
     public abstract class BussSelector {
@@ -10,7 +8,6 @@ namespace Beamable.UI.BUSS {
     }
 
     public class UniversalSelector : BussSelector {
-        
         public static UniversalSelector Get { get; } = new UniversalSelector();
 
         private UniversalSelector() { }
@@ -18,13 +15,21 @@ namespace Beamable.UI.BUSS {
         public override bool CheckMatch(BUSSElement bussElement) {
             return bussElement != null;
         }
+
+        public override int GetHashCode() {
+            return 0;
+        }
+
+        public override bool Equals(object obj) {
+            return obj is UniversalSelector;
+        }
     }
 
     public class IdSelector : BussSelector {
-        public readonly string id;
+        public readonly string Id;
         
         private IdSelector(string id) {
-            this.id = id;
+            Id = id;
         }
         
         private static Dictionary<string, IdSelector> _idSelectors = new Dictionary<string, IdSelector>();
@@ -39,15 +44,48 @@ namespace Beamable.UI.BUSS {
         
         public override bool CheckMatch(BUSSElement bussElement) {
             if (bussElement == null) return false;
-            return bussElement.Id == id;
+            return bussElement.Id == Id;
+        }
+
+        public override int GetHashCode() {
+            return Id.GetHashCode();
+        }
+    }
+    
+    public class TypeSelector : BussSelector {
+        public readonly string TypeName;
+        
+        private TypeSelector(string typeName) {
+            TypeName = typeName;
+        }
+        
+        private static Dictionary<string, TypeSelector> _typeSelectors = new Dictionary<string, TypeSelector>();
+
+        public static TypeSelector Get(string typeName) {
+            if (!_typeSelectors.TryGetValue(typeName, out var selector)) {
+                _typeSelectors[typeName] = selector = new TypeSelector(typeName);
+            }
+
+            return selector;
+        }
+        
+        public override bool CheckMatch(BUSSElement bussElement) {
+            if (bussElement == null) return false;
+            return bussElement.TypeName == TypeName;
+        }
+
+        public override int GetHashCode() {
+            unchecked {
+                return TypeName.GetHashCode() + 2;
+            }
         }
     }
     
     public class ClassSelector : BussSelector {
-        public readonly string className;
+        public readonly string ClassName;
         
         private ClassSelector(string className) {
-            this.className = className;
+            ClassName = className;
         }
 
         private static Dictionary<string, ClassSelector> _classSelectors = new Dictionary<string, ClassSelector>();
@@ -62,23 +100,57 @@ namespace Beamable.UI.BUSS {
 
         public override bool CheckMatch(BUSSElement bussElement) {
             if (bussElement == null) return false;
-            return bussElement.Classes.Contains(className);
+            return bussElement.Classes.Contains(ClassName);
+        }
+
+        public override int GetHashCode() {
+            unchecked {
+                return ClassName.GetHashCode() + 1;
+            }
         }
     }
 
-    public class CombinedSelector : BussSelector {
-        public readonly BussSelector[] selectors;
-        public readonly bool requireAll;
+    public class PseudoSelector : BussSelector {
+        public readonly string PseudoName;
         
-        public CombinedSelector(BussSelector[] selectors, bool requireAll) {
-            this.selectors = selectors;
-            this.requireAll = requireAll;
+        private PseudoSelector(string pseudoName) {
+            PseudoName = pseudoName;
+        }
+
+        private static Dictionary<string, PseudoSelector> _pseudoSelectors = new Dictionary<string, PseudoSelector>();
+        
+        public static PseudoSelector Get(string pseudoName) {
+            if (!_pseudoSelectors.TryGetValue(pseudoName, out var selector)) {
+                _pseudoSelectors[pseudoName] = selector = new PseudoSelector(pseudoName);
+            }
+
+            return selector;
         }
 
         public override bool CheckMatch(BUSSElement bussElement) {
             if (bussElement == null) return false;
-            if (requireAll) {
-                foreach (var selector in selectors) {
+            return bussElement.PseudoTags.Contains(PseudoName);
+        }
+
+        public override int GetHashCode() {
+            unchecked {
+                return PseudoName.GetHashCode() + 3;
+            }
+        }
+    }
+    public class CombinedSelector : BussSelector {
+        public readonly BussSelector[] Selectors;
+        public readonly bool RequireAll;
+        
+        public CombinedSelector(BussSelector[] selectors, bool requireAll) {
+            Selectors = selectors;
+            RequireAll = requireAll;
+        }
+
+        public override bool CheckMatch(BUSSElement bussElement) {
+            if (bussElement == null) return false;
+            if (RequireAll) {
+                foreach (var selector in Selectors) {
                     if (!selector.CheckMatch(bussElement)) {
                         return false;
                     }
@@ -87,7 +159,7 @@ namespace Beamable.UI.BUSS {
                 return true;
             }
             else {
-                foreach (var selector in selectors) {
+                foreach (var selector in Selectors) {
                     if (selector.CheckMatch(bussElement)) {
                         return true;
                     }
@@ -99,26 +171,26 @@ namespace Beamable.UI.BUSS {
     }
 
     public class ParentedSelector : BussSelector {
-        public readonly BussSelector baseSelector;
-        public readonly BussSelector parentSelector;
-        public readonly bool onlyDirectParent;
+        public readonly BussSelector BaseSelector;
+        public readonly BussSelector ParentSelector;
+        public readonly bool OnlyDirectParent;
         
         public ParentedSelector(BussSelector baseSelector, BussSelector parentSelector, bool onlyDirectParent) {
-            this.parentSelector = parentSelector;
-            this.onlyDirectParent = onlyDirectParent;
-            this.baseSelector = baseSelector;
+            ParentSelector = parentSelector;
+            OnlyDirectParent = onlyDirectParent;
+            BaseSelector = baseSelector;
         }
 
         public override bool CheckMatch(BUSSElement bussElement) {
             if (bussElement == null) return false;
-            if (baseSelector.CheckMatch(bussElement)) {
-                if (onlyDirectParent) {
-                    return parentSelector.CheckMatch(bussElement.Parent);
+            if (BaseSelector.CheckMatch(bussElement)) {
+                if (OnlyDirectParent) {
+                    return ParentSelector.CheckMatch(bussElement.Parent);
                 }
                 else {
                     while (bussElement.Parent != null) {
                         bussElement = bussElement.Parent;
-                        if (parentSelector.CheckMatch(bussElement)) {
+                        if (ParentSelector.CheckMatch(bussElement)) {
                             return true;
                         }
 
@@ -133,7 +205,8 @@ namespace Beamable.UI.BUSS {
     public static class BussSelectorParser {
         public static readonly Regex IdRegex = new Regex("#[a-zA-Z0-9-_]+");
         public static readonly Regex ClassRegex = new Regex("\\.[a-zA-Z0-9-_]+");
-        public static readonly Regex TypeRegex = new Regex("^[a-zA-Z0-9_]+");
+        public static readonly Regex TypeRegex = new Regex("^[a-zA-Z]+[a-zA-Z0-9_]*");
+        public static readonly Regex PseudoRegex = new Regex("\\:[a-zA-Z0-9-_]+");
         
         public static BussSelector Parse(string input) {
             var separation = input.Split(new []{','}, StringSplitOptions.RemoveEmptyEntries);
@@ -182,11 +255,18 @@ namespace Beamable.UI.BUSS {
 
         private static BussSelector TryParseSimple(string input) {
 
-            if (input.Trim() == "*") {
+            input = input.Trim();
+            
+            if (input == "*") {
                 return UniversalSelector.Get;
             }
-            
             var selectors = new List<BussSelector>();
+
+            var typeMatch = TypeRegex.Match(input);
+            if (typeMatch.Success) {
+                selectors.Add(TypeSelector.Get(typeMatch.Value));
+            }
+            
             var idMatch = IdRegex.Match(input);
             if (idMatch.Success) {
                 selectors.Add(IdSelector.Get(idMatch.Value.Substring(1)));
@@ -196,6 +276,12 @@ namespace Beamable.UI.BUSS {
             for (int i = 0; i < classMatches.Count; i++) {
                 var match = classMatches[i];
                 selectors.Add(ClassSelector.Get(match.Value.Substring(1)));
+            }
+
+            var pseudoMatches = PseudoRegex.Matches(input);
+            for (int i = 0; i < pseudoMatches.Count; i++) {
+                var match = pseudoMatches[i];
+                selectors.Add(PseudoSelector.Get(match.Value.Substring(1)));
             }
 
             if (selectors.Count > 1) {

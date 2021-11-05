@@ -21,6 +21,8 @@ namespace Beamable.UI.BUSS {
 
         public string Id => _id;
         public List<string> Classes => _classes;
+        public string TypeName => GetType().Name;
+        public HashSet<string> PseudoTags { get; } = new HashSet<string>();
 
         public BUSSStyleDescription InlineStyle => _inlineStyle;
         public BUSSStyleSheet StyleSheet => _styleSheet;
