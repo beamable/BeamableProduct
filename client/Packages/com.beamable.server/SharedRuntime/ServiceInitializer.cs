@@ -1,10 +1,12 @@
+using System;
+
 namespace Beamable.Server
 {
     /// <summary>
     /// When creating a IServiceInitializer remember to inject a <see cref="RequestContext"/> using it's parameterless constructor.
     /// This is used to notify users they must call <see cref="Microservice.AssumeUser"/> before attempting to use certain user-specific routes. 
     /// </summary>
-    public interface IServiceInitializer
+    public interface IServiceInitializer : IServiceProvider
     {
         /// <summary>
         /// Gets a service registered during <see cref="BeamableMicroService.InitServices"/>.

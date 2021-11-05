@@ -45,7 +45,11 @@ namespace microservice
 
             return (TService) _provider.GetService(typeof(TService));
         }
-        
+
+        public object? GetService(Type serviceType)
+        {
+            return _provider.GetService(serviceType);
+        }
     }
 
 

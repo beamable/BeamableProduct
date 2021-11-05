@@ -355,8 +355,8 @@ namespace Beamable.Server
             if (parameters.Length != 1 || parameters[0].ParameterType != typeof(IServiceInitializer)) 
                continue;
 
-            var promise = (Promise<Unit>) initializationMethod.Invoke(null, new object?[] {serviceInitializers});
-            await promise.Error(async ex =>
+            var promise = (Promise<Unit>) initializationMethod.Invoke(null, new object[] {serviceInitializers});
+            await promise.Error(ex =>
             {
                BeamableLogger.LogError($"Custom service initializer [{initializationMethod.DeclaringType?.FullName}.{initializationMethod.Name}] failed.\n" +
                                        $"{ex.Message}\n" +

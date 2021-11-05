@@ -71,7 +71,7 @@ namespace Beamable.Server
       /// Informs us whether or not this request context is pointing to any valid user (userId >= 0). If it isn't, customer must call <see cref="Microservice.AssumeUser"/> in 
       /// custom Microservice's code before making requests that access player-specific data.
       /// </summary>
-      public bool IsInvalidUser => !(_userId >= 0);
+      public bool IsInvalidUser => _userId < 0;
       
       public RequestContext(string cid, string pid, long id, int status, long userId, string path, string method, string body, HashSet<string> scopes=null)
       {
