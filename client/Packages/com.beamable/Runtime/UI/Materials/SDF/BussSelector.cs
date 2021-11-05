@@ -12,21 +12,18 @@ namespace Beamable.UI.BUSS
 
     /// <summary>
     /// Class that describes BUSS selectors weight
-    /// <param name="inlineCount">Set to 1 if BUSSElement has inline style</param>
     /// <param name="idCount">Amount of ids</param>
     /// <param name="classCount">Amount of classes, attributes and pseudo-classes</param>
     /// <param name="elementCount">Amount of elements and pseudo-elements</param>
     /// </summary>
-    public class SelectorWeight
+    public struct SelectorWeight : IComparable<SelectorWeight>
     {
-        public int InlineCount { get; }
         public int IdCount { get; }
         public int ClassCount { get; }
         public int ElementCount { get; }
 
-        public SelectorWeight(int inlineCount, int idCount, int classCount, int elementCount)
+        public SelectorWeight(int idCount, int classCount, int elementCount)
         {
-            InlineCount = inlineCount;
             IdCount = idCount;
             ClassCount = classCount;
             ElementCount = elementCount;
@@ -34,12 +31,20 @@ namespace Beamable.UI.BUSS
         
         public static SelectorWeight operator +(SelectorWeight x, SelectorWeight y)
         {
-            int inlineCount = x.InlineCount + y.InlineCount;
             int idCount = x.IdCount + y.IdCount;
             int classCount = x.ClassCount + y.ClassCount;
             int elementsCount = x.ElementCount + y.ElementCount;
 
-            return new SelectorWeight(inlineCount, idCount, classCount, elementsCount);
+            return new SelectorWeight(idCount, classCount, elementsCount);
+        }
+
+        public int CompareTo(SelectorWeight other)
+        {
+            int idCountComparison = IdCount.CompareTo(other.IdCount);
+            if (idCountComparison != 0) return idCountComparison;
+            int classCountComparison = ClassCount.CompareTo(other.ClassCount);
+            if (classCountComparison != 0) return classCountComparison;
+            return ElementCount.CompareTo(other.ElementCount);
         }
     }
 
@@ -58,7 +63,7 @@ namespace Beamable.UI.BUSS
 
         public override SelectorWeight GetWeight()
         {
-            return new SelectorWeight(0, 0, 0, 0);
+            return new SelectorWeight(0, 0, 0);
         }
 
         public override int GetHashCode()
@@ -81,7 +86,7 @@ namespace Beamable.UI.BUSS
             Id = id;
         }
 
-        private static Dictionary<string, IdSelector> _idSelectors = new Dictionary<string, IdSelector>();
+        private static readonly Dictionary<string, IdSelector> _idSelectors = new Dictionary<string, IdSelector>();
 
         public static IdSelector Get(string id)
         {
@@ -101,7 +106,7 @@ namespace Beamable.UI.BUSS
 
         public override SelectorWeight GetWeight()
         {
-            return new SelectorWeight(0, 1, 0, 0);
+            return new SelectorWeight(1, 0, 0);
         }
 
         public override int GetHashCode()
@@ -119,7 +124,7 @@ namespace Beamable.UI.BUSS
             TypeName = typeName;
         }
 
-        private static Dictionary<string, TypeSelector> _typeSelectors = new Dictionary<string, TypeSelector>();
+        private static readonly Dictionary<string, TypeSelector> _typeSelectors = new Dictionary<string, TypeSelector>();
 
         public static TypeSelector Get(string typeName)
         {
@@ -139,7 +144,7 @@ namespace Beamable.UI.BUSS
 
         public override SelectorWeight GetWeight()
         {
-            return new SelectorWeight(0,0,0,1);
+            return new SelectorWeight(0,0,1);
         }
 
         public override int GetHashCode()
@@ -160,7 +165,7 @@ namespace Beamable.UI.BUSS
             ClassName = className;
         }
 
-        private static Dictionary<string, ClassSelector> _classSelectors = new Dictionary<string, ClassSelector>();
+        private static readonly Dictionary<string, ClassSelector> _classSelectors = new Dictionary<string, ClassSelector>();
 
         public static ClassSelector Get(string className)
         {
@@ -180,7 +185,7 @@ namespace Beamable.UI.BUSS
 
         public override SelectorWeight GetWeight()
         {
-            return new SelectorWeight(0, 0, 1, 0);
+            return new SelectorWeight(0, 1, 0);
         }
 
         public override int GetHashCode()
@@ -221,7 +226,7 @@ namespace Beamable.UI.BUSS
 
         public override SelectorWeight GetWeight()
         {
-            return new SelectorWeight(0, 0, 1, 0);
+            return new SelectorWeight(0, 1, 0);
         }
 
         public override int GetHashCode()
@@ -273,7 +278,7 @@ namespace Beamable.UI.BUSS
 
         public override SelectorWeight GetWeight()
         {
-            SelectorWeight selectorWeight = new SelectorWeight(0,0,0,0);
+            SelectorWeight selectorWeight = new SelectorWeight(0,0,0);
             
             foreach (BussSelector bussSelector in Selectors)
             {
@@ -352,7 +357,8 @@ namespace Beamable.UI.BUSS
             {
                 return new CombinedSelector(selectors.ToArray(), false);
             }
-            else if (selectors.Count > 0)
+
+            if (selectors.Count > 0)
             {
                 return selectors[0];
             }
