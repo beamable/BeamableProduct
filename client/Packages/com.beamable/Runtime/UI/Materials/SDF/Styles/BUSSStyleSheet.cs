@@ -4,49 +4,57 @@ using Beamable.Editor.UI.SDF;
 using Beamable.UI.Buss;
 using Beamable.UI.SDF.Styles;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Beamable.UI.BUSS
 {
     [CreateAssetMenu(fileName = "BUSSStyleConfig", menuName = "Beamable/Buss/Create BUSS Style", order = 0)]
-    public class BUSSStyleConfig : ScriptableObject
+    public class BUSSStyleSheet : ScriptableObject
     {
         public event Action OnChange;
 
 #pragma warning disable CS0649
-        [SerializeField] private List<BUSSStyleDescriptionWithSelector> _styles = new List<BUSSStyleDescriptionWithSelector>();
+        [SerializeField] private List<BussStyleRule> _styles = new List<BussStyleRule>();
 #pragma warning restore CS0649
 
-        public List<BUSSStyleDescriptionWithSelector> Styles => _styles;
+        public List<BussStyleRule> Styles => _styles;
         
         private void OnValidate()
         {
+            BussConfiguration.Instance.UpdateStyleSheet(this);
             OnChange?.Invoke();
         }
     }
 
     [Serializable]
-    public class BUSSStyleDescriptionWithSelector : BUSSStyleDescription
+    public class BussStyleRule : BUSSStyleDescription
     {
-        [SerializeField] private string _name;
+#pragma warning disable CS0649
+        [FormerlySerializedAs("_name")] [SerializeField] private string _selector;
+#pragma warning restore CS0649
 
         // TODO: maybe we could create selector by invoking some parent method in OnValidate callback?
-        public Selector Selector => SelectorParser.Parse(_name);
-        public string Name => _name;
+        public BussSelector Selector => BussSelectorParser.Parse(_selector);
+        public string SelectorString => _selector;
     }
 
     [Serializable]
     public class BUSSStyleDescription {
+#pragma warning disable CS0649
         [SerializeField] private List<BussPropertyProvider> _properties = new List<BussPropertyProvider>();
+#pragma warning restore CS0649
         public List<BussPropertyProvider> Properties => _properties;
     }
 
     [Serializable]
     public class BussPropertyProvider
     {
+#pragma warning disable CS0649
         [SerializeField]
         private string key;
         [SerializeField, SerializableValueImplements(typeof(IBUSSProperty))]
         private SerializableValueObject property;
+#pragma warning restore CS0649
 
         public string Key {
             get => key;

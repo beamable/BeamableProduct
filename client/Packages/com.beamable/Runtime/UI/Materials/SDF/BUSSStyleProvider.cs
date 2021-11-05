@@ -1,14 +1,15 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Beamable.UI.Buss;
 using UnityEngine;
 
 namespace Beamable.UI.BUSS
 {
-    [ExecuteInEditMode, DisallowMultipleComponent]
+    [ExecuteInEditMode, DisallowMultipleComponent, Obsolete]
     public class BUSSStyleProvider : MonoBehaviour
     {
 #pragma warning disable CS0649
-        [SerializeField] private BUSSStyleConfig _config;
+        [SerializeField] private BUSSStyleSheet sheet;
 #pragma warning restore CS0649
 
         private readonly List<BUSSStyleProvider> _childProviders = new List<BUSSStyleProvider>();
@@ -16,21 +17,21 @@ namespace Beamable.UI.BUSS
         private BUSSStyleProvider _parentProvider;
         private BUSSElement _bussElement;
 
-        public BUSSStyleConfig Config => _config;
+        public BUSSStyleSheet Sheet => sheet;
         private BUSSStyleProvider ParentProvider => _parentProvider;
 
         public void OnStyleChanged()
         {
-            if (_bussElement != null)
-            {
-                BussConfiguration.Instance.RecalculateStyle(_providersTree, _bussElement);
-                _bussElement.ApplyStyle();
-            }
-
-            foreach (BUSSStyleProvider childProvider in _childProviders)
-            {
-                childProvider.OnStyleChanged();
-            }
+            // if (_bussElement != null)
+            // {
+            //     BussConfiguration.Instance.RecalculateStyle(_providersTree, _bussElement);
+            //     _bussElement.ApplyStyle();
+            // }
+            //
+            // foreach (BUSSStyleProvider childProvider in _childProviders)
+            // {
+            //     childProvider.OnStyleChanged();
+            // }
         }
 
         private void OnBeforeTransformParentChanged()
@@ -50,9 +51,9 @@ namespace Beamable.UI.BUSS
                 _bussElement = GetComponent<BUSSElement>();
             }
 
-            if (Config != null)
+            if (Sheet != null)
             {
-                Config.OnChange += OnStyleChanged;
+                Sheet.OnChange += OnStyleChanged;
             }
 
             RegisterToParent();
@@ -60,9 +61,9 @@ namespace Beamable.UI.BUSS
 
         private void OnEnable()
         {
-            if (Config != null)
+            if (Sheet != null)
             {
-                Config.OnChange += OnStyleChanged;
+                Sheet.OnChange += OnStyleChanged;
             }
 
             RegisterToParent();
@@ -70,9 +71,9 @@ namespace Beamable.UI.BUSS
 
         private void OnDisable()
         {
-            if (Config != null)
+            if (Sheet != null)
             {
-                Config.OnChange -= OnStyleChanged;
+                Sheet.OnChange -= OnStyleChanged;
             }
 
             UnregisterFromParent();
@@ -80,9 +81,9 @@ namespace Beamable.UI.BUSS
 
         private void OnDestroy()
         {
-            if (Config != null)
+            if (Sheet != null)
             {
-                Config.OnChange -= OnStyleChanged;
+                Sheet.OnChange -= OnStyleChanged;
             }
 
             UnregisterFromParent();
@@ -119,7 +120,7 @@ namespace Beamable.UI.BUSS
             }
             else
             {
-                BussConfiguration.Instance.RegisterObserver(this);
+                // BussConfiguration.Instance.RegisterObserver(this);
             }
 
             BuildParentProvidersTree();
@@ -134,7 +135,7 @@ namespace Beamable.UI.BUSS
             }
             else
             {
-                BussConfiguration.Instance.UnregisterObserver(this);
+                // BussConfiguration.Instance.UnregisterObserver(this);
             }
 
             _providersTree.Clear();

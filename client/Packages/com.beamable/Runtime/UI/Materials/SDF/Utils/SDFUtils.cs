@@ -22,7 +22,6 @@ namespace Beamable.UI.SDF {
                 threshold,
                 size.x,
                 size.y);
-            shadowOffset *= .25f; // hack to have higher range, but lower precision
             
             var startVertexIndex = vh.currentVertCount;
             vh.AddVert(

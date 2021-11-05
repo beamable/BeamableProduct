@@ -52,13 +52,10 @@ namespace Beamable.UI.SDF {
 #endif
 
         protected override void OnPopulateMesh(VertexHelper vh) {
-            switch (mode) {
-                case SdfMode.Default:
-                    break;
-                case SdfMode.RectOnly:
-                    break;
-            }
             ApplyStyle();
+            if (sprite == null) {
+                mode = SdfMode.RectOnly;
+            }
             if (imageType == ImageType.Sliced && hasBorder) {
                 GenerateSlicedMesh(vh);
             }

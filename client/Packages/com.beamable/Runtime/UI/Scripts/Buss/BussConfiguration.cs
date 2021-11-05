@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Beamable.UI.BUSS;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's namespace
 {
@@ -32,75 +33,90 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 
         // New system
         public static BussConfiguration Instance => Get<BussConfiguration>();
-        [SerializeField] private BUSSStyleConfig _globalStyleConfig;
+        [SerializeField] private BUSSStyleSheet globalStyleSheet;
 
         // TODO: serialized only for debug purposes. Remove before final push
-        [SerializeField] private List<BUSSStyleProvider> _styleProviders = new List<BUSSStyleProvider>();
+        [SerializeField] private List<BUSSElement> _rootBussElements = new List<BUSSElement>();
 
-        public void RegisterObserver(BUSSStyleProvider styleProvider)
+        public void RegisterObserver(BUSSElement bussElement)
         {
             // TODO: serve case when user adds (by Add Component opiton, not by changing hierarchy) BUSSStyleProvider
             // component somewhere "above" currently topmost BUSSStyleProvider(s) causing to change whole hierarchy 
-
-            if (!_styleProviders.Contains(styleProvider))
+ 
+            if (!_rootBussElements.Contains(bussElement))
             {
-                _styleProviders.Add(styleProvider);
+                _rootBussElements.Add(bussElement);
             }
         }
 
-        public void UnregisterObserver(BUSSStyleProvider styleProvider)
+        public void UnregisterObserver(BUSSElement bussElement)
         {
-            if (_styleProviders.Contains(styleProvider))
-            {
-                _styleProviders.Remove(styleProvider);
+            _rootBussElements.Remove(bussElement);
+        }
+
+        public void UpdateStyleSheet(BUSSStyleSheet styleSheet) {
+            // this should happen only in editor
+            if (styleSheet == null) return;
+            if (styleSheet == globalStyleSheet) {
+                foreach (var bussElement in _rootBussElements) {
+                    bussElement.OnStyleChanged();
+                }
+            }
+            else {
+                foreach (var bussElement in _rootBussElements) {
+                    OnStyleSheetChanged(bussElement, styleSheet);
+                }
             }
         }
 
-        private void OnValidate()
-        {
-            if (_globalStyleConfig != null)
-            {
-                _globalStyleConfig.OnChange += OnGlobalStyleChanged;
+        private void OnStyleSheetChanged(BUSSElement element, BUSSStyleSheet styleSheet) {
+            if (element.StyleSheet == styleSheet) {
+                element.OnStyleChanged();
+            }
+            else {
+                foreach (var child in element.Children) {
+                    OnStyleSheetChanged(child, styleSheet);
+                }
             }
         }
 
         private void OnDestroy()
         {
-            if (_globalStyleConfig != null)
+            if (globalStyleSheet != null)
             {
-                _globalStyleConfig.OnChange -= OnGlobalStyleChanged;
+                globalStyleSheet.OnChange -= OnGlobalStyleChanged;
             }
         }
         
         private void OnDisable()
         {
-            if (_globalStyleConfig != null)
+            if (globalStyleSheet != null)
             {
-                _globalStyleConfig.OnChange -= OnGlobalStyleChanged;
+                globalStyleSheet.OnChange -= OnGlobalStyleChanged;
             }
         }
 
         private void OnGlobalStyleChanged()
         {
-            foreach (BUSSStyleProvider styleProvider in _styleProviders)
+            foreach (var bussElement in _rootBussElements)
             {
-                styleProvider.OnStyleChanged();
+                bussElement.OnStyleChanged();
             }
         }
 
         // TODO: in future move to some styles repository class which responsibility will be caching styles and recalculate them
         #region Styles parsing
 
-        public void RecalculateStyle(List<BUSSStyleProvider> providersTree, BUSSElement element) {
+        public void RecalculateStyle(BUSSElement element) {
             element.Style.Clear();
 
-            if (_globalStyleConfig != null) {
-                ApplyConfig(element, _globalStyleConfig);
+            if (globalStyleSheet != null) {
+                ApplyStyleSheet(element, globalStyleSheet);
             }
 
-            foreach (var provider in providersTree) {
-                if (provider.Config != null) {
-                    ApplyConfig(element, provider.Config);
+            foreach (var styleSheet in element.AllStyleSheets) {
+                if (styleSheet != null) {
+                    ApplyStyleSheet(element, styleSheet);
                 }
             }
             
@@ -109,9 +125,9 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
             element.ApplyStyle();
         }
 
-        private void ApplyConfig(BUSSElement element, BUSSStyleConfig config) {
-            foreach (var descriptor in config.Styles) {
-                if (descriptor.Name == "*" || descriptor.Name == element.Id) {
+        private static void ApplyStyleSheet(BUSSElement element, BUSSStyleSheet sheet) {
+            foreach (var descriptor in sheet.Styles) {
+                if (descriptor.Selector.CheckMatch(element)) {
                     ApplyDescriptor(element, descriptor);
                 }
             }
@@ -120,35 +136,6 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
         private static void ApplyDescriptor(BUSSElement element, BUSSStyleDescription descriptor) {
             foreach (var property in descriptor.Properties) {
                 element.Style[property.Key] = property.GetProperty();
-            }
-        }
-
-        private BUSSStyle GetStyleById(string id, Dictionary<string, BUSSStyle> styleObjects)
-        {
-            return id != null && styleObjects.TryGetValue(id, out BUSSStyle style) ? style : new BUSSStyle();
-        }
-
-        private void ParseStyleObjects(List<BUSSStyleDescriptionWithSelector> stylesObjects, Dictionary<string, BUSSStyle> stylesDictionary)
-        {
-            foreach (BUSSStyleDescriptionWithSelector styleObject in stylesObjects)
-            {
-                if (stylesDictionary.TryGetValue(styleObject.Name, out BUSSStyle style))
-                {
-                    foreach (BussPropertyProvider pair in styleObject.Properties)
-                    {
-                        style[pair.Key] = pair.GetProperty();
-                    }
-                }
-                else
-                {
-                    BUSSStyle newStyle = new BUSSStyle();
-                    
-                    foreach (BussPropertyProvider pair in styleObject.Properties)
-                    {
-                        newStyle[pair.Key] = pair.GetProperty();
-                    }
-                    stylesDictionary.Add(styleObject.Name, newStyle);
-                }
             }
         }
 
