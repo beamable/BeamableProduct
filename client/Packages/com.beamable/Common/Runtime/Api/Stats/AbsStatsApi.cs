@@ -1,4 +1,8 @@
+using System;
 using System.Collections.Generic;
+using System.Text;
+using Beamable.Serialization.SmallerJSON;
+using UnityEngine;
 
 namespace Beamable.Common.Api.Stats
 {
@@ -32,7 +36,7 @@ namespace Beamable.Common.Api.Stats
          return cache;
       }
 
-      public Promise<EmptyResponse> SetStats (string access, Dictionary<string, string> stats) {
+      public Promise<EmptyResponse> SetStats(string access, Dictionary<string, string> stats) {
          long gamerTag = UserContext.UserId;
          string prefix = $"client.{access}.player.";
          return Requester.Request<EmptyResponse>(
@@ -42,68 +46,106 @@ namespace Beamable.Common.Api.Stats
          ).Then(_ => GetCache(prefix).Remove(gamerTag));
       }
 
-      public Promise<Dictionary<string, string>> GetStats (string domain, string access, string type, long id)
+      public Promise<Dictionary<string, string>> GetStats(string domain, string access, string type, long id)
       {
          string prefix = $"{domain}.{access}.{type}.";
          return GetCache(prefix).Get(id);
       }
+      public Promise<StatsSearchResponse> SearchStats(string domain, string access, string type, List<Criteria> criteriaList)
+      {
+          void IsValid(out string error)
+          {
+              error = string.Empty;
+              var tmpError = string.Empty;
 
+              if (string.IsNullOrWhiteSpace(domain))
+              {
+                  tmpError += "> domain cannot be an empty string\n";
+              }
+
+              if (string.IsNullOrWhiteSpace(access))
+              {
+                  tmpError += "> access cannot be an empty string\n";
+              }
+
+              if (string.IsNullOrWhiteSpace(type))
+              {
+                  tmpError += "> type cannot be an empty string\n";
+              }
+
+              if (criteriaList == null)
+              {
+                  tmpError += "> criteria cannot be null\n";
+              }
+              else if (criteriaList.Count == 0)
+              {
+                  tmpError += "> should be at least one criteria\n";
+              }
+
+              if (!string.IsNullOrWhiteSpace(tmpError))
+              {
+                  error += "Error occured in \"SearchStats\". Check for more details:\n\n";
+              }
+
+              error += tmpError;
+          }
+
+          ArrayDict ConvertCriteriaToArrayDict(Criteria criteria)
+          {
+              return new ArrayDict
+              {
+                  {"stat", criteria.Stat},
+                  {"rel", criteria.Rel},
+                  {"value", criteria.Value}
+              };
+          }
+          
+          IsValid(out var errorMessage);
+          if (!string.IsNullOrWhiteSpace(errorMessage))
+          {
+              Debug.LogError(errorMessage);
+              return new Promise<StatsSearchResponse>();
+          }
+
+          var convertedCriteriaList = new List<ArrayDict>(criteriaList.Count);
+          foreach (var criteria in criteriaList)
+              convertedCriteriaList.Add(ConvertCriteriaToArrayDict(criteria));
+
+          var payload = new ArrayDict
+          {
+              { "domain", domain },
+              { "access", access },
+              { "objectType", type },
+              { "criteria", convertedCriteriaList }
+          };
+          
+          return Requester.Request<StatsSearchResponse>(
+              Method.POST,
+              "/basic/stats/search",
+              Json.Serialize(payload, new StringBuilder()));
+      }
+      
       protected abstract Promise<Dictionary<long, Dictionary<string, string>>> Resolve(string prefix,
          List<long> gamerTags);
-//      {
-//         string queryString = "";
-//         for (int i = 0; i < gamerTags.Count; i++)
-//         {
-//            if (i > 0)
-//            {
-//               queryString += ",";
-//            }
-//            queryString += $"{prefix}{gamerTags[i]}";
-//         }
-//         return Requester.Request<BatchReadStatsResponse>(
-//            Method.GET,
-//            $"/basic/stats/client/batch?format=stringlist&objectIds={queryString}",
-//            useCache: true
-//         ).RecoverWith(ex =>
-//            {
-//               return OfflineCache.RecoverDictionary<Dictionary<string, string>>(ex, "stats", Requester.AccessToken, gamerTags).Map(
-//                  stats =>
-//                  {
-//                     var results = stats.Select(kvp =>
-//                     {
-//                        return new BatchReadEntry
-//                        {
-//                           id = kvp.Key,
-//                           stats = kvp.Value.Select(statKvp => new StatEntry
-//                           {
-//                              k = statKvp.Key,
-//                              v = statKvp.Value
-//                           }).ToList()
-//                        };
-//                     }).ToList();
-//
-//                     var rsp = new BatchReadStatsResponse
-//                     {
-//                        results = results
-//                     };
-//                     return rsp;
-//                  });
-//               /*
-//                * Handle the NoNetworkConnectivity error, by using a custom cache layer.
-//                *
-//                * the "stats" key cache maintains stats for all users, not per request.
-//                */
-//
-//            })
-//            .Map(rsp => rsp.ToDictionary())
-//            .Then(playerStats =>
-//            {
-//               /*
-//                * Successfully looked up stats. Commit them to the offline cache.
-//                *
-//                */
-//               OfflineCache.Merge("stats", _requester.AccessToken, playerStats);
-//            });
-//      }
+   }
+
+   [Serializable]
+   public class StatsSearchResponse
+   {
+       public int[] ids;
+   }
+   
+   public class Criteria
+   {
+       public string Stat { get; }
+       public string Rel { get; }
+       public string Value { get; }
+   
+       public Criteria(string stat, string rel, string value)
+       {
+           Stat = stat;
+           Rel = rel;
+           Value = value;
+       }
    }
 }
