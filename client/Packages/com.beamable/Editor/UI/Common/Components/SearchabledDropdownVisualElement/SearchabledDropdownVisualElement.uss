@@ -57,7 +57,7 @@ ScrollView #ContentView.content-view {
 Button.unity-button,
 Button {
     background-image: none;
-    /*height: 15px;*/
+    height: 25px;
     -unity-text-align: middle-left;
     margin-top: 1px;
     margin-bottom: 1px;
