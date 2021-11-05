@@ -51,6 +51,11 @@ namespace Beamable.Common.Api.Stats
          string prefix = $"{domain}.{access}.{type}.";
          return GetCache(prefix).Get(id);
       }
+      
+      /// <summary>
+      /// <para>Supports searching for DBIDs by stat query. This method is useful e.g for friend search</para>
+      /// <para>IMPORTANT: This method only works for admin role</para>
+      /// </summary>
       public Promise<StatsSearchResponse> SearchStats(string domain, string access, string type, List<Criteria> criteriaList)
       {
           void IsValid(out string error)

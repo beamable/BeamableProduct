@@ -329,11 +329,6 @@ namespace Beamable.Api
             request.SetRequestHeader("X-KS-TIMEOUT", RequestTimeoutMs);
          }
 
-         if (!string.IsNullOrEmpty(Cid) && !string.IsNullOrEmpty(Pid))
-         {
-             request.SetRequestHeader("X-DE-SCOPE", $"{Cid}.{Pid}");
-         }
-
          return request;
       }
 
