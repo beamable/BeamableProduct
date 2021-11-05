@@ -32,7 +32,7 @@ namespace Beamable.Console
         private IBeamableAPI _beamable;
         private TextAutoCompleter _textAutoCompleter;
         private ConsoleHistory _consoleHistory;
-        private static string consoleText;
+        private string consoleText;
 
 #if UNITY_ANDROID // webGL doesn't support the touchscreen keyboard.
         private bool _isMobileKeyboardOpened = false;
