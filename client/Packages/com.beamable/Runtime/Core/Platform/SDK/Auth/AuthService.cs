@@ -22,6 +22,7 @@ namespace Beamable.Api.Auth
     {
         Promise<bool> IsThisDeviceIdAvailable();
         Promise<User> RegisterDeviceId();
+        Promise<User> RemoveDeviceId();
         Promise<TokenResponse> LoginDeviceId();
     }
 
