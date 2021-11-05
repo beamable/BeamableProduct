@@ -304,7 +304,7 @@ namespace Beamable.Console
                     if (charsRemoved > minCharsToRemove)
                         break;
 
-                    charsRemoved += buffSplit[i].Length + Environment.NewLine.Length;
+                    charsRemoved += buffSplit[i].Length;
                 }
 
                 consoleText = string.Join(Environment.NewLine, buffSplit.Skip(linesToRemove));
