@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using System.Linq;
 using Beamable.Common.Api.Auth;
@@ -555,6 +556,61 @@ namespace Beamable.Editor.Content
          });
 
          Instance._currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
+      }
+
+      [MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Bake Content")]
+      private static async Task BakeContent()
+      {
+          void BakeLog(string message)
+          {
+              Debug.Log($"[Bake Content] {message}");
+          }
+          
+          var api = await EditorAPI.Instance;
+          var allContent = api.ContentIO.FindAll();
+          
+          if (allContent == null || !allContent.Any())
+          {
+              BakeLog("Content list is empty");
+              return;
+          }
+          
+          BakeLog($"Baking {allContent.Count()} items");
+
+          string json = "{\"content\":[";
+          bool first = true;
+          foreach (var content in allContent)
+          {
+              if (!first)
+              {
+                  json += ",";
+              }
+              else
+              {
+                  first = false;
+              }
+              
+              json += content.ToJson();
+          }
+          json += "]}";
+
+          string resourcesPath = Application.dataPath + "/Beamable/Resources/Baked";
+          if (!Directory.Exists(resourcesPath))
+          {
+              Directory.CreateDirectory(resourcesPath);
+          }
+
+          string path = resourcesPath + "/content.json";
+          
+          try
+          {
+              File.WriteAllText(path, json);
+              BakeLog($"Content baked to {path}");
+          }
+          catch (Exception e)
+          {
+              Debug.LogError($"Failed to write baked content: {e.Message}");
+          }
       }
    }
 }
