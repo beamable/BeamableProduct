@@ -32,7 +32,7 @@ namespace Beamable.Console
         private IBeamableAPI _beamable;
         private TextAutoCompleter _textAutoCompleter;
         private ConsoleHistory _consoleHistory;
-        private static string buffor;
+        private static string consoleText;
 
 #if UNITY_ANDROID // webGL doesn't support the touchscreen keyboard.
         private bool _isMobileKeyboardOpened = false;
@@ -278,18 +278,22 @@ namespace Beamable.Console
 
         public void Log(string line)
         {
-            const int vertexesForCharacter = 6;
+            Debug.Log(line);
+            consoleText += Environment.NewLine + line;
+            UpdateText();
+        }
+
+        private void UpdateText()
+        {
+            const int verticesPerRectangle = 6;
             const int textVertexLimit = 65 * 1024;
 
-            Debug.Log(line);
-            buffor += Environment.NewLine + line;
-            int resultVertexAmount = buffor.Length * vertexesForCharacter;
+            int resultVertexAmount = consoleText.Length * verticesPerRectangle;
+            int minCharsToRemove = (resultVertexAmount - textVertexLimit) / verticesPerRectangle;
 
-            if (resultVertexAmount > textVertexLimit)
+            if (minCharsToRemove > 0)
             {
-                int minCharsToRemove =
-                    resultVertexAmount / vertexesForCharacter - textVertexLimit / vertexesForCharacter;
-                var buffSplit = buffor.Split(Environment.NewLine.ToCharArray());
+                var buffSplit = consoleText.Split(Environment.NewLine.ToCharArray());
                 int lines = buffSplit.Length;
 
                 int charsRemoved = 0;
@@ -303,11 +307,9 @@ namespace Beamable.Console
                     charsRemoved += buffSplit[i].Length + Environment.NewLine.Length;
                 }
 
-                buffor = string.Join(Environment.NewLine, buffSplit.Skip(linesToRemove));
+                consoleText = string.Join(Environment.NewLine, buffSplit.Skip(linesToRemove));
             }
-
-            Debug.Log(buffor.Length);
-            txtOutput.text = buffor;
+            txtOutput.text = consoleText;
         }
 
         public void ToggleConsole()
