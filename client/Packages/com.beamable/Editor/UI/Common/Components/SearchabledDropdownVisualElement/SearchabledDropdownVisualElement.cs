@@ -33,8 +33,8 @@ namespace Beamable.Editor.UI.Components
         public ISearchableModel Model { get; set; }
 
 #pragma warning disable 67
-        public event Action<ISearchableElement> OnDelete;
-        public event Action<ISearchableElement> OnSelected;
+        public event Action<ISearchableElement> OnElementDelete;
+        public event Action<ISearchableElement> OnElementSelected;
 #pragma warning restore 67
 
         public SearchabledDropdownVisualElement(string switchText = null) : base(ComponentPath)
@@ -109,7 +109,7 @@ namespace Beamable.Editor.UI.Components
                     _loadingIndicator.SetText(_switchText);
                     _loadingIndicator.SetPromise(new Promise<int>(), _mainContent, _refreshButton);
                     _searchBar.SetEnabled(false);
-                    EditorApplication.delayCall += () => OnSelected?.Invoke(singleElement);
+                    EditorApplication.delayCall += () => OnElementSelected?.Invoke(singleElement);
                 };
 
                 if (string.Equals(singleElement?.DisplayName, _selectedElement?.DisplayName))
@@ -119,7 +119,7 @@ namespace Beamable.Editor.UI.Components
                 }
                 else 
                 {
-                    if (this.OnDelete != null)
+                    if (this.OnElementDelete != null)
                     {
                         /* TO DO
                         var deleteButton = new Button();

@@ -61,12 +61,12 @@ namespace Beamable.Editor.UI.Components
             {
                 _realmLabel.text = Model.Current.DisplayName;
 
-                RealmView view = (RealmView)Model.Current;
-                if (view.IsProduction)
+                RealmView currentRealmView = (RealmView)Model.Current;
+                if (currentRealmView.IsProduction)
                 {
                     _realmButton.AddToClassList("production");
                 }
-                if (view.IsStaging)
+                if (currentRealmView.IsStaging)
                 {
                     _realmButton.AddToClassList("staging");
                 }
@@ -103,7 +103,7 @@ namespace Beamable.Editor.UI.Components
             content.Model = Model;
             var wnd = BeamablePopupWindow.ShowDropdown("Select Realm", popupWindowRect, new Vector2(200, 300), content);
 
-            content.OnSelected += (realm) =>
+            content.OnElementSelected += (realm) =>
             {
                 EditorAPI.Instance.Then(beamable => { beamable.SwitchRealm((RealmView)realm).Then(_ => { wnd.Close(); }); });
             };

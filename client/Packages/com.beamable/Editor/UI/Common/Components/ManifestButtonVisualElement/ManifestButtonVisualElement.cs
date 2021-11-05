@@ -94,7 +94,7 @@ namespace Beamable.Editor.UI.Components
 
             var wnd = BeamablePopupWindow.ShowDropdown("Select Manifest", popupWindowRect, new Vector2(200, 300), content);
 
-            content.OnDelete += (manifest) =>
+            content.OnElementDelete += (manifest) =>
             {
                 if (manifest != null)
                 {
@@ -114,7 +114,7 @@ namespace Beamable.Editor.UI.Components
                 }
             };
 
-            content.OnSelected += (manifest) =>
+            content.OnElementSelected += (manifest) =>
             {
                 EditorAPI.Instance.Then(api =>
                 {
