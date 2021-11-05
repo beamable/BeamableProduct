@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Exposed `CreateLeaderboard` methods in `IMicroserviceLeaderboardsApi` to enable the dynamic creation of leaderboards in C#MS (can take a `LeaderboardRef` as a template or explicit parameters). 
+- Added `RemoveDeviceId` method in `AuthService`
 
 ### Changed
 - `BeamableEnvironment` has moved to the Runtime to enable sdk version checking at runtime
