@@ -121,15 +121,13 @@ namespace Beamable.Editor.UI.Components
                 {
                     if (this.OnElementDelete != null)
                     {
-                        /* TO DO
                         var deleteButton = new Button();
                         selectButton.Add(deleteButton);
                         deleteButton.AddToClassList("deleteButton");
                         deleteButton.clickable.clicked += () =>
                         {
-                            OnDelete?.Invoke(singleElement);
+                            OnElementDelete?.Invoke(singleElement);
                         };
-                        */
                     }
                 }
 

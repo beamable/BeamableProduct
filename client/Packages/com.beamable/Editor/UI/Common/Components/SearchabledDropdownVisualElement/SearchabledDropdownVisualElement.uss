@@ -154,19 +154,8 @@ Button#editButton {
 }
 
 Button.deleteButton{
-    width: 28px;
-    height: 28px;
-    margin: 0px;
-    border-left-width: 0px;
-    padding: 0px;
-    top: 0px;
-    position: absolute;
-    -unity-slice-bottom: 0;
-    -unity-slice-left: 0;
-    -unity-slice-top: 0;
-    -unity-slice-right: 0;
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Remove.png");
-    align-self: flex-end;
+
+
     opacity: .4;
     visibility: hidden;
 }
