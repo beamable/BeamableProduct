@@ -42,23 +42,7 @@ namespace Beamable.Editor
       /// <returns></returns>
       public static EditorTimeout SetTimeout(Action action, double delay)
       {
-         var timeout = new EditorTimeout
-         {
-            Callback = action,
-            ExecuteAfter = EditorApplication.timeSinceStartup + delay
-         };
-
-         void Update()
-         {
-            if (timeout.IsCancelled || EditorApplication.timeSinceStartup > timeout.ExecuteAfter)
-            {
-               EditorApplication.update -= Update;
-               timeout.Invoke();
-            }
-         }
-
-         EditorApplication.update += Update;
-
+         var timeout = new EditorTimeout(action, delay);
          return timeout;
       }
 
@@ -69,16 +53,25 @@ namespace Beamable.Editor
 
          public bool IsCancelled;
 
+         public EditorTimeout(Action action, double delay)
+         {
+            Callback = action;
+            ExecuteAfter = EditorApplication.timeSinceStartup + delay;
+            EditorApplication.update += Update;
+         }
+
+         private void Update()
+         {
+            if (!(EditorApplication.timeSinceStartup > ExecuteAfter) || IsCancelled) return;
+
+            Callback?.Invoke();
+            EditorApplication.update -= Update;
+         }
+
          public void Cancel()
          {
             IsCancelled = true;
-         }
-
-         public void Invoke()
-         {
-            if (IsCancelled) return;
-            Cancel();
-            Callback?.Invoke();
+            EditorApplication.update -= Update;
          }
       }
    }

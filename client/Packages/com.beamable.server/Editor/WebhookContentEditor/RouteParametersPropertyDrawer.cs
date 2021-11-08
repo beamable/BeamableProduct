@@ -104,22 +104,16 @@ namespace Beamable.Server.Editor
                iconButtonStyle))
             {
                GenericMenu menu = new GenericMenu();
-
                menu.AddItem(new GUIContent("Use Variable"), info.IsUsingVariable, () =>
                {
                   info.ToggleVariable();
                });
-               // display the menu
                menu.ShowAsContext();
             }
 
             if (info.IsUsingVariable)
             {
-
-
-
                var options = new List<GUIContent>();
-
                var parameterTypeValue = info.typeProperty.stringValue;
 
                for (var i = 0; i < variablesArrayProperty.arraySize; i++)
@@ -150,15 +144,15 @@ namespace Beamable.Server.Editor
 
             EditorGUI.PropertyField(fieldPosition, info.property, infoLabel, true);
             var hasModifiedProperties = info.property.serializedObject.hasModifiedProperties;
-            if (!EditorGUI.EndChangeCheck() && !hasModifiedProperties) continue;
-
+            if (!EditorGUI.EndChangeCheck() && !hasModifiedProperties && !info.forceUpdate) continue;
+            info.forceUpdate = false;
             info.property.serializedObject.ApplyModifiedPropertiesWithoutUndo();
             var nextValue = info.Type.GetField("Data", BindingFlags.Instance | BindingFlags.Public).GetValue(info.instance);
 
             EditorDebouncer.Debounce("api-content-route-parameter", () =>
             {
                var json = (string) typeof(MicroserviceClientHelper)
-                  .GetMethod("SerializeArgument", BindingFlags.Static | BindingFlags.Public)
+                  .GetMethod(nameof(MicroserviceClientHelper.SerializeArgument), BindingFlags.Static | BindingFlags.Public)
                   .MakeGenericMethod(info.ParameterType).Invoke(null, new object[] {nextValue});
                info.rawProperty.stringValue = json;
                info.rawProperty.serializedObject.ApplyModifiedProperties();
@@ -218,13 +212,19 @@ namespace Beamable.Server.Editor
                try
                {
                   var value = typeof(MicroserviceClientHelper)
-                     .GetMethod("DeserializeResult", BindingFlags.Static | BindingFlags.Public)
+                     .GetMethod(nameof(MicroserviceClientHelper.DeserializeResult), BindingFlags.Static | BindingFlags.Public)
                      .MakeGenericMethod(parameter.Type).Invoke(null, new[] {rawProperty.stringValue});
+                  if (value is string strValue && strValue.StartsWith("\"") && strValue.EndsWith("\""))
+                  {
+                     value = strValue.Substring(1, strValue.Length - 2);
+                  }
                   type.GetField("Data", BindingFlags.Instance | BindingFlags.Public).SetValue(instance, value);
                }
                catch
                {
                   // its okay to ignore this exception and present the default view.
+                  rawProperty.stringValue = String.Empty;
+                  info.forceUpdate = true;
                }
                // deserialize the raw data string and set it.
 
@@ -257,6 +257,7 @@ namespace Beamable.Server.Editor
          public SerializedProperty isUsingVariableProperty;
          public SerializedProperty typeProperty;
          public SerializedProperty nameProperty;
+         public bool forceUpdate;
 
          public Type Type => instance?.GetType();
          public Type ParameterType => Type.BaseType.GetGenericArguments()[0];

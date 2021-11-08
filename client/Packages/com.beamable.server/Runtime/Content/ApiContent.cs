@@ -17,6 +17,8 @@ namespace Beamable.Server
    [Serializable]
    public class ApiContent : ContentObject, ISerializationCallbackReceiver
    {
+      private readonly ApiVariable[] EMPTY_VARIABLE_SET = new ApiVariable[0];
+
       [ContentField("description")]
       [Tooltip("Write a summary of this api call")]
       public OptionalString Description;
@@ -28,6 +30,10 @@ namespace Beamable.Server
       [ContentField("route")]
       [Tooltip("The route information for the api call")]
       public ServiceRoute ServiceRoute = new ServiceRoute();
+
+      [ContentField("isIdempotent")]
+      [Tooltip("If this method can be multiple times with the same inputs, without causing multiple side effects, you should mark it as idempotent. If you intend to use a retry-strategy on this method, then you *MUST* implement the method to be idempotent, and mark it as such.")]
+      public bool Idempotent;
 
       [ContentField("variables")]
       [SerializeField]
@@ -41,7 +47,7 @@ namespace Beamable.Server
 
       protected virtual ApiVariable[] GetVariables()
       {
-         return new ApiVariable[] { };
+         return EMPTY_VARIABLE_SET;
       }
 
       public void OnBeforeSerialize()
