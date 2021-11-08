@@ -68,11 +68,11 @@ namespace Beamable.CronExpression
             _expressionParts = new string[7];
             _parsed = false;
             
-            _localizationDatabase = AssetDatabase.LoadAssetAtPath<CronLocalizationDatabase>($"Packages/com.beamable/Editor/UI/CronExpression/Resources/CronLocalizationDatabase.asset");
+            _localizationDatabase = AssetDatabase.LoadAssetAtPath<CronLocalizationDatabase>(Constants.CRON_LOCALIZATION_DATABASE_PATH);
             if (_localizationDatabase == null)
             {
                 _localizationDatabase = ScriptableObject.CreateInstance<CronLocalizationDatabase>();
-                AssetDatabase.CreateAsset(_localizationDatabase, "Packages/com.beamable/Editor/UI/CronExpression/Resources/CronLocalizationDatabase.asset");
+                AssetDatabase.CreateAsset(_localizationDatabase, Constants.CRON_LOCALIZATION_DATABASE_PATH);
             }
 
             _options.Locale ??= _localizationDatabase.DefaultLocalization;
