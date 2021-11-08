@@ -98,13 +98,13 @@ namespace Beamable.Editor.UI.Components
             {
                 if (manifest != null)
                 {
-                    var ifDelete = EditorUtility.DisplayDialog(
+                    var deleteManifestDecision = EditorUtility.DisplayDialog(
                             "Deleting manifest version",
                             $"Are you sure you want to archive manifest named '{manifest.DisplayName}'\n" +
                             $"This operation will archive it permanently for all users!",
                             "Yes", "No");
 
-                    if (ifDelete)
+                    if (deleteManifestDecision)
                     {
                         EditorAPI.Instance.Then(api =>
                         {
