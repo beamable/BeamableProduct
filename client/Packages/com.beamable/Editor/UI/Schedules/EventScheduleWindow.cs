@@ -53,6 +53,19 @@ namespace Beamable.Editor.Schedules
         private LabeledCalendarVisualElement _calendarComponent;
         private readonly ScheduleParser _scheduleParser;
 
+        #region Tests related properties and methods
+
+        public LabeledHourPickerVisualElement StartTimeComponent => _startTimeComponent;
+        public LabeledDatePickerVisualElement ActiveToDateComponent => _activeToDateComponent;
+        public LabeledHourPickerVisualElement ActiveToHourComponent => _activeToHourComponent;
+        public LabeledCheckboxVisualElement NeverExpiresComponent => _neverExpiresComponent;
+        public LabeledDropdownVisualElement ModeComponent => _dropdownComponent;
+        public LabeledDaysPickerVisualElement DaysComponent => _daysPickerComponent;
+        public LabeledCalendarVisualElement CalendarComponent => _calendarComponent;
+        public void InvokeTestConfirm() => ConfirmClicked();
+
+        #endregion
+
         public EventScheduleWindow() : base(
             $"{BeamableComponentsConstants.SCHEDULES_PATH}/{nameof(EventScheduleWindow)}")
         {

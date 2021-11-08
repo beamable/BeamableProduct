@@ -32,7 +32,7 @@ namespace Beamable.Editor.UI.Components
         private VisualElement _mainVisualElement;
         private readonly List<VisualElement> _dayRows = new List<VisualElement>();
         private readonly List<DayToggleVisualElement> _currentDayToggles = new List<DayToggleVisualElement>();
-        private readonly List<string> _selectedDays = new List<string>();
+        private List<string> _selectedDays = new List<string>();
 
         public List<string> SelectedDays => _selectedDays;
 
@@ -221,6 +221,19 @@ namespace Beamable.Editor.UI.Components
             OnDateChanged();
             
             // Forcing to ensure validation check
+            OnValueChanged?.Invoke(_selectedDays);
+        }
+
+        public void SetInitialValues(List<string> dates)
+        {
+            if (dates.Count == 0)
+            {
+                OnDateChanged();
+                return;
+            }
+
+            _selectedDays = new List<string>(dates);
+            OnDateChanged();
             OnValueChanged?.Invoke(_selectedDays);
         }
     }

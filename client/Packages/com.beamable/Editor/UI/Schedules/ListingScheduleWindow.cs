@@ -231,7 +231,10 @@ namespace Beamable.Editor.Schedules
 
             _neverExpiresComponent.Value = neverExpires;
 
-            bool isPeriod = schedule.definitions.Count > 1 && schedule.definitions.Any(def => def.hour[0] != "*");
+            bool isPeriod = schedule.definitions.Any(def => def.hour[0].Contains("-")) ||
+                            schedule.definitions.Any(def => def.minute[0].Contains("-")) ||
+                            schedule.definitions.Any(def => def.second[0].Contains("-"));
+            
             _allDayComponent.Value = !isPeriod;
 
             if (isPeriod)

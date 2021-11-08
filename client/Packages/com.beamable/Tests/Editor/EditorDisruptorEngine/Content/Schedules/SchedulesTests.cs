@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Beamable.Common.Content;
+using Beamable.Editor.Schedules;
 using NUnit.Framework;
 
 namespace Beamable.Editor.Tests.Content
@@ -14,51 +15,63 @@ namespace Beamable.Editor.Tests.Content
         {
             String warningHeader = "Daily event schedule:";
 
-            Schedule schedule = new Schedule();
-            schedule.activeFrom = "2021-10-07T12:15:15Z";
-
-            ScheduleDefinition definition = new ScheduleDefinition("0", "0", "0", new List<string> {"*"}, "*", "*",
-                new List<string> {"*"});
-
-            schedule.AddDefinition(definition);
-
-            bool parsedDateTime = DateTime.TryParse(schedule.activeFrom, out DateTime _);
-            Assert.IsTrue(parsedDateTime, $"{warningHeader} problem with parsing activeFrom field");
-            Assert.IsTrue(schedule.definitions.Count == 1, $"{warningHeader} should have only one definition");
+            void ScheduleReceived(Schedule schedule)
+            {
+                bool parsedDateTime = DateTime.TryParse(schedule.activeFrom, out DateTime _);
+                Assert.IsTrue(parsedDateTime, $"{warningHeader} problem with parsing activeFrom field");
+                Assert.IsTrue(schedule.definitions.Count == 1, $"{warningHeader} should have only one definition");
+            }
+            
+            EventScheduleWindow window = new EventScheduleWindow();
+            window.Refresh();
+            window.ModeComponent.Set("Daily");
+            window.StartTimeComponent.Set(DateTime.Now);
+            window.NeverExpiresComponent.Value = true;
+            window.ActiveToDateComponent.Set(DateTime.Now + TimeSpan.FromDays(2));
+            window.ActiveToHourComponent.Set(DateTime.Now + TimeSpan.FromDays(2));
+            window.OnScheduleUpdated += ScheduleReceived;
+            window.InvokeTestConfirm();
+            window.OnScheduleUpdated -= ScheduleReceived;
         }
 
         [Test]
         public void Event_Schedule_Days_Mode_Test()
         {
             String warningHeader = "Days event schedule:";
-
-            Schedule schedule = new Schedule();
-            schedule.activeFrom = "2021-10-07T12:15:15Z";
-            bool parsedDateTime = DateTime.TryParse(schedule.activeFrom, out DateTime parsedActiveFrom);
-
-            ScheduleDefinition definition = new ScheduleDefinition(parsedActiveFrom.Second.ToString(),
-                parsedActiveFrom.Minute.ToString(), parsedActiveFrom.Hour.ToString(), new List<string> {"*"}, "*", "*",
-                new List<string> {"1", "3", "5"});
-
-            schedule.AddDefinition(definition);
-
-            List<string> days = schedule.definitions[0].dayOfWeek;
-
-            Assert.IsTrue(parsedDateTime, $"{warningHeader} problem with parsing activeFrom field");
-            Assert.IsTrue(schedule.definitions.Count == 1, $"{warningHeader} should have only one definition");
-            Assert.IsTrue(days.Count > 0, $"{warningHeader} minimum one day should be selected");
-
-            foreach (string day in days)
+            
+            void ScheduleReceived(Schedule schedule)
             {
-                bool isDayParsed = int.TryParse(day, out int parsedDayValue);
-                Assert.IsTrue(isDayParsed, $"{warningHeader} problem with parsing {day} in days list");
-                Assert.IsTrue(parsedDayValue <= 7, $"{warningHeader} parsed day value should be less or equal 7");
-            }
+                bool parsedDateTime = DateTime.TryParse(schedule.activeFrom, out DateTime _);
+                List<string> days = schedule.definitions[0].dayOfWeek;
 
-            if (schedule.definitions.Count > 0)
-            {
-                TestHour(warningHeader, schedule.definitions[0]);
+                Assert.IsTrue(parsedDateTime, $"{warningHeader} problem with parsing activeFrom field");
+                Assert.IsTrue(schedule.definitions.Count == 1, $"{warningHeader} should have only one definition");
+                Assert.IsTrue(days.Count > 0, $"{warningHeader} minimum one day should be selected");
+
+                foreach (string day in days)
+                {
+                    bool isDayParsed = int.TryParse(day, out int parsedDayValue);
+                    Assert.IsTrue(isDayParsed, $"{warningHeader} problem with parsing {day} in days list");
+                    Assert.IsTrue(parsedDayValue <= 7, $"{warningHeader} parsed day value should be less or equal 7");
+                }
+
+                if (schedule.definitions.Count > 0)
+                {
+                    TestHour(warningHeader, schedule.definitions[0]);
+                }
             }
+            
+            EventScheduleWindow window = new EventScheduleWindow();
+            window.Refresh();
+            window.ModeComponent.Set("Days of week");
+            window.StartTimeComponent.Set(DateTime.Now);
+            window.DaysComponent.SetSelectedDays(new List<string> {"1", "3", "5"});
+            window.NeverExpiresComponent.Value = true;
+            window.ActiveToDateComponent.Set(DateTime.Now + TimeSpan.FromDays(2));
+            window.ActiveToHourComponent.Set(DateTime.Now + TimeSpan.FromDays(2));
+            window.OnScheduleUpdated += ScheduleReceived;
+            window.InvokeTestConfirm();
+            window.OnScheduleUpdated -= ScheduleReceived;
         }
 
         [Test]
@@ -66,33 +79,45 @@ namespace Beamable.Editor.Tests.Content
         {
             String warningHeader = "Dates event schedule:";
 
-            Schedule schedule = new Schedule();
-            schedule.activeFrom = "2021-10-07T12:15:15Z";
-            bool parsedDateTime = DateTime.TryParse(schedule.activeFrom, out DateTime parsedActiveFrom);
-
-            ScheduleDefinition definition = new ScheduleDefinition(parsedActiveFrom.Second.ToString(),
-                parsedActiveFrom.Minute.ToString(), parsedActiveFrom.Hour.ToString(), new List<string> {"01", "03"},
-                "10", "2021", new List<string> {"*"});
-
-            schedule.AddDefinition(definition);
-
-            Assert.IsTrue(parsedDateTime, $"{warningHeader} problem with parsing activeFrom field");
-            Assert.IsTrue(schedule.definitions.Count > 0, $"{warningHeader} should have at least on definition");
-
-            List<string> days = schedule.definitions[0].dayOfMonth;
-            Assert.IsTrue(days.Count > 0, $"{warningHeader} minimum one day should be selected");
-
-            foreach (string day in days)
+            void ScheduleReceived(Schedule schedule)
             {
-                bool isDayParsed = int.TryParse(day, out int parsedDayValue);
-                Assert.IsTrue(isDayParsed, $"{warningHeader} problem with parsing {day} in days list");
-                Assert.IsTrue(parsedDayValue <= 7, $"{warningHeader} parsed day value should be less or equal 7");
-            }
+                bool parsedDateTime = DateTime.TryParse(schedule.activeFrom, out DateTime _);
+                
+                Assert.IsTrue(parsedDateTime, $"{warningHeader} problem with parsing activeFrom field");
+                Assert.IsTrue(schedule.definitions.Count > 0, $"{warningHeader} should have at least on definition");
 
-            if (schedule.definitions.Count > 0)
-            {
-                TestHour(warningHeader, schedule.definitions[0]);
+                List<string> days = schedule.definitions[0].dayOfMonth;
+                Assert.IsTrue(days.Count > 0, $"{warningHeader} minimum one day should be selected");
+
+                foreach (string day in days)
+                {
+                    bool isDayParsed = int.TryParse(day, out int parsedDayValue);
+                    Assert.IsTrue(isDayParsed, $"{warningHeader} problem with parsing {day} in days list");
+                    Assert.IsTrue(parsedDayValue <= 7, $"{warningHeader} parsed day value should be less or equal 7");
+                }
+
+                if (schedule.definitions.Count > 0)
+                {
+                    TestHour(warningHeader, schedule.definitions[0]);
+                }
             }
+            
+            EventScheduleWindow window = new EventScheduleWindow();
+            window.Refresh();
+            window.ModeComponent.Set("Actual dates");
+            window.StartTimeComponent.Set(DateTime.Now);
+            window.CalendarComponent.Calendar.SetInitialValues(new List<string>
+            {
+                "05-10-2021",
+                "10-11-2021",
+                "12-12-2022"
+            });
+            window.NeverExpiresComponent.Value = true;
+            window.ActiveToDateComponent.Set(DateTime.Now + TimeSpan.FromDays(2));
+            window.ActiveToHourComponent.Set(DateTime.Now + TimeSpan.FromDays(2));
+            window.OnScheduleUpdated += ScheduleReceived;
+            window.InvokeTestConfirm();
+            window.OnScheduleUpdated -= ScheduleReceived;
         }
 
         [Test]
