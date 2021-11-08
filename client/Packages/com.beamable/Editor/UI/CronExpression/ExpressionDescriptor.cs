@@ -1,12 +1,32 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using UnityEditor;
+using UnityEngine;
 
-namespace CronExpressionDescriptor
+namespace Beamable.CronExpression
 {
+    public static class Extensions
+    {
+        private static readonly Dictionary<CronLocale, string> _cronLocaleToLocale = new Dictionary<CronLocale, string>
+        {
+            { CronLocale.en_US, "en-US" },
+            { CronLocale.pl_PL, "pl-PL" }
+        };
+
+        public static string ConvertCronLocaleToLocale(this CronLocale? cronLocale)
+        {
+            return !cronLocale.HasValue ? string.Empty : ConvertCronLocaleToLocale(cronLocale.Value);
+        }
+        public static string ConvertCronLocaleToLocale(this CronLocale cronLocale)
+        {
+            return _cronLocaleToLocale.ContainsKey(cronLocale) ? _cronLocaleToLocale[cronLocale] : string.Empty;
+        }
+    }
+    
     /// <summary>
     ///     Converts a Cron Expression into a human readable string
     /// </summary>
@@ -18,13 +38,15 @@ namespace CronExpressionDescriptor
         {
             "ru", "uk", "de", "it", "tr", "pl", "ro", "da", "sl", "fi", "sv"
         };
-
+        
         private readonly string _expression;
         private readonly Options _options;
         private string[] _expressionParts;
         private bool _parsed;
         private readonly bool _use24HourTimeFormat;
         private readonly CultureInfo _culture;
+        private CronLocalizationData _localizationData;
+        private CronLocalizationDatabase _localizationDatabase;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="ExpressionDescriptor" /> class
@@ -45,16 +67,22 @@ namespace CronExpressionDescriptor
             _options = options;
             _expressionParts = new string[7];
             _parsed = false;
+            
+            _localizationDatabase = AssetDatabase.LoadAssetAtPath<CronLocalizationDatabase>($"Packages/com.beamable/Editor/UI/CronExpression/Resources/CronLocalizationDatabase.asset");
+            if (_localizationDatabase == null)
+            {
+                _localizationDatabase = ScriptableObject.CreateInstance<CronLocalizationDatabase>();
+                AssetDatabase.CreateAsset(_localizationDatabase, "Packages/com.beamable/Editor/UI/CronExpression/Resources/CronLocalizationDatabase.asset");
+            }
 
-            _culture = !string.IsNullOrEmpty(options.Locale) ? new CultureInfo(options.Locale) : new CultureInfo("en-US");
+            _options.Locale ??= _localizationDatabase.DefaultLocalization;
 
-            if (_options.Use24HourTimeFormat != null)
-                // 24HourTimeFormat specified in options so use it
-                _use24HourTimeFormat = _options.Use24HourTimeFormat.Value;
-            else
-                // 24HourTimeFormat not specified, default based on m_24hourTimeFormatLocales
-                _use24HourTimeFormat =
-                    _24hourTimeFormatTwoLetterISOLanguageName.Contains(_culture.TwoLetterISOLanguageName);
+            _localizationData = _localizationDatabase.SupportedLocalizations.FirstOrDefault(x => x.Localization == _options.Locale.ConvertCronLocaleToLocale());
+            if (_localizationData == null)
+                _localizationData = ScriptableObject.CreateInstance<CronLocalizationData>();
+
+            _culture = new CultureInfo(_localizationData.Localization);
+            _use24HourTimeFormat = _options.Use24HourTimeFormat ?? _24hourTimeFormatTwoLetterISOLanguageName.Contains(_culture.TwoLetterISOLanguageName);
         }
 
         /// <summary>
@@ -75,39 +103,19 @@ namespace CronExpressionDescriptor
                     _parsed = true;
                 }
 
-                switch (type)
+                description = type switch
                 {
-                    case DescriptionTypeEnum.FULL:
-                        description = GetFullDescription();
-                        break;
-                    case DescriptionTypeEnum.TIMEOFDAY:
-                        description = GetTimeOfDayDescription();
-                        break;
-                    case DescriptionTypeEnum.HOURS:
-                        description = GetHoursDescription();
-                        break;
-                    case DescriptionTypeEnum.MINUTES:
-                        description = GetMinutesDescription();
-                        break;
-                    case DescriptionTypeEnum.SECONDS:
-                        description = GetSecondsDescription();
-                        break;
-                    case DescriptionTypeEnum.DAYOFMONTH:
-                        description = GetDayOfMonthDescription();
-                        break;
-                    case DescriptionTypeEnum.MONTH:
-                        description = GetMonthDescription();
-                        break;
-                    case DescriptionTypeEnum.DAYOFWEEK:
-                        description = GetDayOfWeekDescription();
-                        break;
-                    case DescriptionTypeEnum.YEAR:
-                        description = GetYearDescription();
-                        break;
-                    default:
-                        description = GetSecondsDescription();
-                        break;
-                }
+                    DescriptionTypeEnum.FULL => GetFullDescription(),
+                    DescriptionTypeEnum.TIMEOFDAY => GetTimeOfDayDescription(),
+                    DescriptionTypeEnum.HOURS => GetHoursDescription(),
+                    DescriptionTypeEnum.MINUTES => GetMinutesDescription(),
+                    DescriptionTypeEnum.SECONDS => GetSecondsDescription(),
+                    DescriptionTypeEnum.DAYOFMONTH => GetDayOfMonthDescription(),
+                    DescriptionTypeEnum.MONTH => GetMonthDescription(),
+                    DescriptionTypeEnum.DAYOFWEEK => GetDayOfWeekDescription(),
+                    DescriptionTypeEnum.YEAR => GetYearDescription(),
+                    _ => GetSecondsDescription()
+                };
             }
             catch (Exception ex)
             {
@@ -616,31 +624,16 @@ namespace CronExpressionDescriptor
 
             return description;
         }
-
-        // /// <summary>
-        // ///     Gets a localized string resource
-        // ///     refactored because Resources.ResourceManager.GetString was way too long
-        // /// </summary>
-        // /// <param name="resourceName">name of the resource</param>
-        // /// <returns>translated resource</returns>
-        // protected string GetString(string resourceName)
-        // {
-        //     return Resources.ResourceManager.GetString(resourceName, _culture);
-        // }
-
+        
         /// <summary>
         ///     Gets a localized string resource
-        ///     refactored because Resources.ResourceManager.GetString was way too long
         /// </summary>
         /// <param name="resourceName">name of the resource</param>
         /// <returns>translated resource</returns>
 
-        private CronExpressionLocalization _localization;
         protected string GetString(string resourceName)
         {
-            if (_localization == null)
-                _localization = AssetDatabase.LoadAssetAtPath<CronExpressionLocalization>("Packages/com.beamable/Editor/UI/CronExpression/Resources/CronExpressionLocalization.asset");
-            return _localization.GetString(resourceName);
+            return _localizationData.GetString(resourceName);
         }
 
         #region Static

@@ -1,4 +1,4 @@
-namespace CronExpressionDescriptor
+namespace Beamable.CronExpression
 {
     /// <summary>
     ///     Options for parsing and describing a Cron Expression
@@ -12,10 +12,10 @@ namespace CronExpressionDescriptor
             DayOfWeekStartIndexZero = true;
         }
 
-        public bool ThrowExceptionOnParseError { get; }
-        public bool Verbose { get; }
-        public bool DayOfWeekStartIndexZero { get; }
+        public bool ThrowExceptionOnParseError { get; set; }
+        public bool Verbose { get; set;  }
+        public bool DayOfWeekStartIndexZero { get; set; }
         public bool? Use24HourTimeFormat { get; set; }
-        public string Locale { get; set; }
+        public CronLocale? Locale { get; set; }
     }
 }

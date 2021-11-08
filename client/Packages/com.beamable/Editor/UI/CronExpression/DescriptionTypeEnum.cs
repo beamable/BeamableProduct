@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace CronExpressionDescriptor
+﻿namespace Beamable.CronExpression
 {
     /// <summary>
     /// Enum to define the description "parts" of a Cron Expression  

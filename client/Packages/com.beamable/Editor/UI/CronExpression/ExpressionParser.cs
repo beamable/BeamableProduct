@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace CronExpressionDescriptor
+namespace Beamable.CronExpression
 {
     /// <summary>
     ///     Cron Expression Parser
