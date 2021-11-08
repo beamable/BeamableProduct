@@ -57,6 +57,21 @@ namespace Beamable.Editor.Schedules
         // TODO: create some generic composite rules for cases like this one and then remove below fields
         private bool _isPeriodValid;
         private string _invalidPeriodMessage;
+        
+        #region Tests related properties and methods
+
+        public LabeledDatePickerVisualElement ActiveToDateComponent => _activeToDateComponent;
+        public LabeledHourPickerVisualElement ActiveToHourComponent => _activeToHourComponent;
+        public LabeledHourPickerVisualElement PeriodFromHourComponent => _periodFromHourComponent;
+        public LabeledHourPickerVisualElement PeriodToHourComponent => _periodToHourComponent;
+        public LabeledCheckboxVisualElement NeverExpiresComponent => _neverExpiresComponent;
+        public LabeledCheckboxVisualElement AllDayComponent => _allDayComponent;
+        public LabeledDropdownVisualElement ModeComponent => _dropdownComponent;
+        public LabeledDaysPickerVisualElement DaysComponent => _daysPickerComponent;
+        public LabeledCalendarVisualElement CalendarComponent => _calendarComponent;
+        public void InvokeTestConfirm() => ConfirmClicked();
+
+        #endregion
 
         public ListingScheduleWindow() : base(
             $"{BeamableComponentsConstants.SCHEDULES_PATH}/{nameof(ListingScheduleWindow)}")
