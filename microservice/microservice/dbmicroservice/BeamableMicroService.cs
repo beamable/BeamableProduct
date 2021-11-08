@@ -6,6 +6,7 @@
 
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Leaderboards;
@@ -335,6 +336,7 @@ namespace Beamable.Server
             .ToList();
             
          // Sorts them by an user-defined order. By default (and tie-breaking), is sorted in file declaration order.
+         // TODO: Add reflection utility that sorts (MemberInfo, ISortableByType<>) tuples to ReflectionCache and replace this usage.
          serviceInitialization.Sort(delegate((MethodInfo method, InitializeServicesAttribute attr) t1, (MethodInfo method, InitializeServicesAttribute attr) t2)
          {
             var (_, attr1) = t1;
@@ -346,26 +348,59 @@ namespace Beamable.Server
          var serviceInitializers = new DefaultServiceInitializer(ServiceCollection, _args);
          foreach (var (initializationMethod, _) in serviceInitialization)
          {
-            var resultType = initializationMethod.ReturnType;
             // TODO: Add compile-time check for this signature so we can educate our users on this without them having to deep dive into docs
-            if(resultType != typeof(Promise<Unit>))
-               continue;
-
             var parameters = initializationMethod.GetParameters();
-            if (parameters.Length != 1 || parameters[0].ParameterType != typeof(IServiceInitializer)) 
-               continue;
+            if (parameters.Length != 1 || parameters[0].ParameterType != typeof(IServiceInitializer))
+            {
+               BeamableLogger.LogWarning($"Skipping method with [{nameof(InitializeServicesAttribute)}] since it does not take a single [{nameof(IServiceInitializer)}] parameter.");
+               continue; 
+               
+            } 
+            
+            var resultType = initializationMethod.ReturnType;
+            Promise<Unit> promise;
+            if (resultType == typeof(void))
+            {
+               var isAsync = null != initializationMethod.GetCustomAttribute<AsyncStateMachineAttribute>();
+               if (isAsync)
+               {
+                  BeamableLogger.LogWarning($"Skipping method [{initializationMethod.DeclaringType?.FullName}.{initializationMethod.Name}] " +
+                                            $"with [{nameof(InitializeServicesAttribute)}] since it is an async void method. Since these do not return a Task or Promise, " +
+                                            $"we can't await it's return and using this may cause non-deterministic behaviour depending on your implementation. " +
+                                            $"We recommend not using this unless you know exactly what you are doing.");
+                  continue;
+               }
 
-            var promise = (Promise<Unit>) initializationMethod.Invoke(null, new object[] {serviceInitializers});
-            await promise.Error(ex =>
+               promise = Task.FromResult(initializationMethod.Invoke(null, new object[] { serviceInitializers })).ToPromise().ToUnit();
+            }
+            else if (resultType == typeof(Task))
+            {
+               promise = ((Task)initializationMethod.Invoke(null, new object[] { serviceInitializers })).ToPromise();
+            }
+            else if (resultType == typeof(Promise<Unit>))
+            {
+               promise = (Promise<Unit>)initializationMethod.Invoke(null, new object[] { serviceInitializers });
+            }
+            else
+            {
+               BeamableLogger.LogWarning($"Skipping method with [{nameof(InitializeServicesAttribute)}] since it isn't a synchronous [void] method, a [{nameof(Task)}] or a [{nameof(Promise<Unit>)}]");
+               continue;
+            }
+
+            try
+            {
+               await promise;
+               BeamableLogger.Log($"Custom service initializer [{initializationMethod.DeclaringType?.FullName}.{initializationMethod.Name}] succeeded.\n");
+            }
+            catch (Exception ex)
             {
                BeamableLogger.LogError($"Custom service initializer [{initializationMethod.DeclaringType?.FullName}.{initializationMethod.Name}] failed.\n" +
                                        $"{ex.Message}\n" +
                                        $"{{stacktrace}}", ex.StackTrace);
-                  
+                     
                BeamableLogger.LogException(ex);
                Environment.Exit(EXIT_CODE_FAILED_CUSTOM_INITIALIZATION_HOOK);
-            });
-            
+            }
          }
          
       }

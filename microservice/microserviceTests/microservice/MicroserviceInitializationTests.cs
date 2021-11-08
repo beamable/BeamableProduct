@@ -6,6 +6,7 @@ using Beamable.Common;
 using Beamable.Common.Api.Content;
 using Beamable.Microservice.Tests.Socket;
 using Beamable.Server;
+using Beamable.Server.Api.Calendars;
 using Beamable.Server.Api.Content;
 using Beamable.Server.Content;
 using microservice;
@@ -113,17 +114,12 @@ namespace microserviceTests.microservice
                 public static readonly List<int> ConfigureCounter = new List<int>();
                 public readonly List<int> InitializeCounter = new List<int>();
 
-                public async Promise<Unit> IncrementCounter(int i)
+                public async Task IncrementCounter(int i)
                 {
-                    var initializePromise = new Promise<Unit>();
-                    await Task.Delay(10)
-                        .ToPromise()
-                        .Then(_ =>
-                        {
-                            InitializeCounter.Add(i);
-                            initializePromise.CompleteSuccess(new Unit());
-                        });
-                    return await initializePromise;
+                    BeamableLogger.Log($"Called with {i}");
+                    await Task.Delay(10);
+                    BeamableLogger.Log($"Delayed with {i}");
+                    InitializeCounter.Add(i);
                 }
             }
 
@@ -141,15 +137,31 @@ namespace microserviceTests.microservice
             }
 
             [InitializeServices(ExecutionOrder = 2)]
-            public static async Promise<Unit> InitializeSecond(IServiceInitializer initializer)
+            public static Promise<Unit> InitializeSecond(IServiceInitializer initializer)
+            {   
+                return initializer.GetServiceAsCache<ExecutionCounter>().IncrementCounter(1).ToPromise().ToUnit();
+            }
+            
+            [InitializeServices(ExecutionOrder = 4)]
+            public static async Promise<Unit> InitializeFourth(IServiceInitializer initializer)
             {
-                return await initializer.GetServiceAsCache<ExecutionCounter>().IncrementCounter(1);
+                var promise = new Promise<Unit>();
+                await initializer.GetServiceAsCache<ExecutionCounter>().IncrementCounter(3);
+                promise.CompleteSuccess(new Unit());
+                return await promise;
+            }
+            
+            [InitializeServices(ExecutionOrder = 3)]
+            public static async Task InitializeThird(IServiceInitializer initializer)
+            {
+                await initializer.GetServiceAsCache<ExecutionCounter>().IncrementCounter(2);
             }
 
             [InitializeServices(ExecutionOrder = 1)]
-            public static async Promise<Unit> InitializeFirst(IServiceInitializer initializer)
+            public static void InitializeFirst(IServiceInitializer initializer)
             {
-                return await initializer.GetServiceAsCache<ExecutionCounter>().IncrementCounter(0);
+                initializer.GetServiceAsCache<ExecutionCounter>().InitializeCounter.Add(0);
+                //await initializer.GetServiceAsCache<ExecutionCounter>().IncrementCounter(0);  <<----- Causes non-deterministic behaviour as async void methods are not awaitable when called via reflection.  
             }
         }
 
@@ -158,7 +170,7 @@ namespace microserviceTests.microservice
         public async Task Test_SingletonCache_Success()
         {
             LoggingUtil.Init();
-            var contentResolver = new TestContentResolver(async uri => { return "{\"id\": \"items.test\", \"version\": \"1\", \"properties\": {}}"; });
+            var contentResolver = new TestContentResolver(async uri => "{}");
             var ms = new BeamableMicroService(new TestSocketProvider(socket =>
             {
                 socket.WithName("Test Socket");
@@ -182,7 +194,7 @@ namespace microserviceTests.microservice
         public async Task Test_SingletonCache_CacheGuard()
         {
             LoggingUtil.Init();
-            var contentResolver = new TestContentResolver(async uri => { return "{\"id\": \"items.test\", \"version\": \"1\", \"properties\": {}}"; });
+            var contentResolver = new TestContentResolver(async uri => { return "{}"; });
             var ms = new BeamableMicroService(new TestSocketProvider(socket =>
             {
                 socket.WithName("Test Socket");
@@ -207,10 +219,10 @@ namespace microserviceTests.microservice
         
         [Test]
         [NonParallelizable]
-        public async Task Test_ConfigAndInitExecutionOrder()
+        public async Task Test_SupportedSignaturesAndInitExecutionOrder()
         {
             LoggingUtil.Init();
-            var contentResolver = new TestContentResolver(async uri => { return "{\"id\": \"items.test\", \"version\": \"1\", \"properties\": {}}"; });
+            var contentResolver = new TestContentResolver(async uri => { return "{}"; });
             var ms = new BeamableMicroService(new TestSocketProvider(socket =>
             {
                 socket.WithName("Test Socket");
@@ -225,9 +237,14 @@ namespace microserviceTests.microservice
             var provider = ms.ServiceCollection.BuildServiceProvider();
             var service = (ExecutionOrder.ExecutionCounter)provider.GetService(typeof(ExecutionOrder.ExecutionCounter));
 
+
             for (int i = 0; i < 2; i++)
             {
                 Assert.IsTrue(ExecutionOrder.ExecutionCounter.ConfigureCounter[i] == i);
+            }
+
+            for (int i = 0; i < 4; i++)
+            {
                 Assert.IsTrue(service.InitializeCounter[i] == i);
             }
             

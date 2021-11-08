@@ -7,6 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- `InitializeServicesAttribute` can now be used over static methods to declare initialization hooks in microservices. Supported signatures are async/regular `
+  Task(IServiceInitializer)`, async/regular `Promise<Unit>(IServiceInitializer)` and synchronous `void(IServiceInitializer)`. 
+  `void` methods must be fully synchronous --- it is not possible to guarantee that any promises started within a `void` initialization 
+  method will have completed by the time the C#MS is receiving traffic.  
+- Can have multiple `ConfigureServicesAttribute` and `InitializeServicesAttribute` explicitly ordered via `ExecutionOrder` property of the attributes.
+
+
 ### Changed
 - `BeamableEnvironment` has moved to the Runtime to enable sdk version checking at runtime
 
