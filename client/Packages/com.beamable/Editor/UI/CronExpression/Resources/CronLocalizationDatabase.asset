@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a157d3cf63e448bf9c89a9fd47604202, type: 3}
   m_Name: CronLocalizationDatabase
   m_EditorClassIdentifier: 
-  defaultLocalization: 1
+  defaultLocalization: 0
   supportedLocalizations:
   - {fileID: 11400000, guid: 87bb72895406074429179f8d2110beef, type: 2}
   - {fileID: 11400000, guid: 525e296c0edbfea4ea2b76d6a2cadf65, type: 2}
