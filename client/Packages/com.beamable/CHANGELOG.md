@@ -15,8 +15,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Can have multiple `ConfigureServicesAttribute` and `InitializeServicesAttribute` explicitly ordered via `ExecutionOrder` property of the attributes.
 
 
+### Added
+- `SearchStats()` admin method is usable from client and microservice code now.
+- `CoreConfiguration` to project settings to tweak how our Promise library handles uncaught promises by default
+- Exposed `CreateLeaderboard` methods in `IMicroserviceLeaderboardsApi` to enable the dynamic creation of leaderboards in C#MS (can take a `LeaderboardRef` as a template or explicit parameters). 
+- Limit amount of elements displayed by `list_content` command in Admin console, allow to specify start index for `list_content` command
+- Added `RemoveDeviceId` method in `AuthService`
+
 ### Changed
 - `BeamableEnvironment` has moved to the Runtime to enable sdk version checking at runtime
+
+### Fixed
+- Removes _Menu Window/Panels/1_ warning after opening schedule type dropdown on Unity 2019 and 2020
+- Limit displayed admin console output
 
 ## [0.17.2]
 ### Added
@@ -25,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `PromiseBase.SetPotentialUncaughtErrorHandler(handler, replace)` -- replaces by default, but supports adding handlers by passing `false` to second parameter 
+- New design of Microservices Publish Window with support for Storage Objects
 
 ### Fixed
 - `CloudSavingService` serialization error caused by Invariant Culture

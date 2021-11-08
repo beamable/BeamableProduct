@@ -40,7 +40,7 @@ namespace Beamable.Announcements
             foreach (var announcement in Announcements)
             {
                var summary = Instantiate(SummaryPrefab, AnnouncementList);
-               summary.Apply(Manager, announcement);
+               summary.Setup(announcement.title, announcement.body);
             }
          });
       }

@@ -23,7 +23,6 @@ namespace Beamable.Editor.Microservice.UI.Components
     public class MicroserviceContentVisualElement : MicroserviceComponent
     {
         public event Action<bool> OnAllServiceSelectedStatusChanged;
-        public event Action<bool> OnPreviewFeatureWarningMessageShowed;
 
         private VisualElement _mainVisualElement;
         private ListView _listView;
@@ -167,8 +166,6 @@ namespace Beamable.Editor.Microservice.UI.Components
                 Root.Q<VisualElement>("announcementList").Add(previewElement);
                 previewElement.Refresh();
             }
-
-            OnPreviewFeatureWarningMessageShowed?.Invoke(!hasStorageDependency);
 
             _actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
             _actionPrompt.Refresh();
