@@ -47,18 +47,4 @@ namespace Beamable.Editor.UI.Validation
             Satisfied = Regex.IsMatch(value, _pattern);
         }
     }
-
-    public class AtLeastOneOptionSelectedRule : ValidationRule<int>
-    {
-        public AtLeastOneOptionSelectedRule(string componentName) : base(componentName)
-        {
-        }
-
-        public override string ErrorMessage => $"{ComponentName} must have minimum one option selected";
-        
-        public override void Validate(int value)
-        {
-            Satisfied = value > 0;
-        }
-    }
 }

@@ -8,6 +8,8 @@
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd Beamable.Editor.Content.Components">
 
+    <beamable:LoadingBarElement/>
+    
     <engine:VisualElement name="loadingViewContainer">
         <beamable:LoadingIndicatorVisualElement>
             <beamable:LoadingSpinnerVisualElement/>
@@ -15,7 +17,6 @@
     </engine:VisualElement>
 
     <engine:VisualElement name="mainVisualElement" >
-        <beamable:LoadingBarElement/>
 
         <engine:Label name="message" text="placeholder"/>
 

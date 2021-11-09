@@ -5,6 +5,7 @@ using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common.Api;
+using Beamable.Serialization.SmallerJSON;
 using Beamable.Server;
 using Beamable.Server.Content;
 using Microsoft.VisualBasic;
@@ -139,8 +140,18 @@ namespace Beamable.Microservice.Tests.Socket
                {
                   case string json:// when json.StartsWith("{"):
                   {
-                     var payload = JsonConvert.DeserializeObject<T>(json);
-                     return matcher(payload);
+                     string tmpJson = json.Replace(@"\", "");
+
+                        if (Json.IsValidJson(tmpJson))
+                        {
+                           var token = JToken.Parse(tmpJson);
+                           return !string.IsNullOrEmpty(token.ToString());
+                        }
+                        else
+                        {
+                           var payload = JsonConvert.DeserializeObject<T>(tmpJson);
+                           return matcher(payload);
+                        }
                   }
                   case JObject payloadJObject when payloadJObject.TryGetValue("payload", out var payloadToken):
                   {
