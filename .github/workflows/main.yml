@@ -157,9 +157,8 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: dist/Build-iOS
-      - run: tar -xvf Build-iOS.zip && cd iOS/
-      - name: Display structure of downloaded files
-        run: ls -R
+      - name: Unzip the archive
+        run: tar -xvf Build-iOS.zip && cd iOS/
       - name: Build the .ipa
       - uses: yukiarrr/ios-build-action@v1.4.0
         with:
