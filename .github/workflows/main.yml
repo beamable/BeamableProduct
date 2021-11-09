@@ -51,87 +51,6 @@ jobs:
           report_title: Microservice Base Image Tests
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-  testAllModes:
-    timeout-minutes: 30
-    name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
-    runs-on: ubuntu-latest
-    concurrency: 
-      group: unity-tests-${{ matrix.unityVersion }}-${{ matrix.testMode }}-${{ github.head_ref }}
-      cancel-in-progress: true
-    strategy:
-      fail-fast: false
-      matrix:
-        projectPath:
-          - client
-        testMode:
-          - playmode
-          - editmode
-        unityVersion:
-          - 2018.4.18f1
-          - 2019.4.30f1
-          - 2020.3.19f1
-    steps:
-      - uses: actions/checkout@v2
-      - name: Login to Docker Hub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Cache Docker Layers
-        uses: actions/cache@v2
-        id: cache_docker
-        with:
-          path: ./docker-cache
-          key: Docker-gzipped-${{ matrix.unityVersion }} 
-          restore-keys: |
-            Docker-gzipped-${{ matrix.unityVersion }}
-      - name: Load Docker Image If Exits
-        continue-on-error: true
-        if: ${{ steps.cache_docker.outputs.cache-hit }}
-        run: |
-          chmod +x ./build/prepare_base_image.sh
-          UNITY_VERSION=${{ matrix.unityVersion }} ./build/prepare_base_image.sh
-        shell: bash
-      - name: Cache Unity Folders
-        uses: actions/cache@v2
-        with:
-          path: ${{ matrix.projectPath }}/Library
-          key: Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
-          restore-keys: |
-            Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}
-      - name: Run script file
-        run: |
-          chmod +x ./build/clean_iap.sh
-          UNITY_VERSION=${{ matrix.unityVersion }} ./build/clean_iap.sh
-        shell: bash
-      - uses: game-ci/unity-test-runner@v2
-        id: tests
-        timeout-minutes: 20
-        env:
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
-        with:
-          customParameters: -warnaserror+ 
-          projectPath: ${{ matrix.projectPath }}
-          testMode: ${{ matrix.testMode }}
-          unityVersion: ${{ matrix.unityVersion }}
-          artifactsPath: ${{ matrix.testMode }}-${{ matrix.unityVersion }}-artifacts
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
-          checkName: ${{ matrix.unityVersion }} ${{ matrix.testMode }} Test Results
-      - uses: actions/upload-artifact@v2
-        if: always()
-        with:
-          name: Test results for ${{ matrix.unityVersion }} ${{ matrix.testMode }}
-          path: ${{ steps.tests.outputs.artifactsPath }}
-          retention-days: 3
-      - name: Save Docker Image If Exits
-        if: ${{ !steps.cache_docker.outputs.cache-hit }}
-        run: |
-          chmod +x ./build/save_base_image.sh
-          UNITY_VERSION=${{ matrix.unityVersion }} ./build/save_base_image.sh
-        shell: bash
-
   build:
     name: Build for ${{ matrix.targetPlatform }}
     runs-on: ubuntu-latest
@@ -143,11 +62,7 @@ jobs:
       fail-fast: false
       matrix:
         targetPlatform:
-          - WebGL
-          - Android
-          - StandaloneWindows
           - iOS
-          - StandaloneOSX
         unityVersion:
           - 2020.3.19f1
         projectPath:
@@ -237,3 +152,19 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           message: Have a ${{ matrix.targetPlatform }} build, friend. [${{github.sha}}](https://beamable-product-github-builds.s3.us-west-2.amazonaws.com/uploads/${{github.sha}}/WebGL/index.html)
+      - name: Download iOS build
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+          with:
+            name: dist/Build-iOS
+      - run: tar -xvf Build-iOS.zip && cd iOS/
+      - name: Display structure of downloaded files
+          run: ls -R
+      - name: Build the .ipa
+      - uses: yukiarrr/ios-build-action@v1.4.0
+          with:
+            project-path: Unity-iPhone.xcodeproj
+            p12-base64: ${{ secrets.P12_BASE64 }}
+            mobileprovision-base64: ${{ secrets.PROD_MOBILEPROVISION_BASE64 }}
+            code-signing-identity: ${{ secrets.CODE_SIGNING_IDENTITY }}
+            team-id: ${{ secrets.TEAM_ID }}
