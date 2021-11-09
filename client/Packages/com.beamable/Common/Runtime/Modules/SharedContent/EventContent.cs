@@ -86,6 +86,9 @@ namespace Beamable.Common.Content
         [IgnoreContentField]
         private List<EventPhase> legacyPhases;
 
+        public PlayerReward RewardTest;
+        // public WebhookInvocation OnStart, OnEnd, OnRewardClaim;
+
         [CannotBeEmpty]
         [Tooltip(ContentObject.TooltipPhase1)]
         public PhaseList phases;

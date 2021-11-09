@@ -17,7 +17,7 @@ namespace Beamable.Server
    [Serializable]
    public class ApiContent : ContentObject, ISerializationCallbackReceiver
    {
-      private readonly ApiVariable[] EMPTY_VARIABLE_SET = new ApiVariable[0];
+      private static readonly ApiVariable[] EMPTY_VARIABLE_SET = new ApiVariable[0];
 
       [ContentField("description")]
       [Tooltip("Write a summary of this api call")]
@@ -159,6 +159,12 @@ namespace Beamable.Server
       [ContentField("parameterType")]
       [Tooltip("The type of this parameter")]
       public string TypeName;
+   }
+
+   [Serializable]
+   public class ApiInvocation
+   {
+      
    }
 
    [Serializable]
