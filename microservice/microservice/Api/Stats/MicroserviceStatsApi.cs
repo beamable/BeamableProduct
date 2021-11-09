@@ -38,6 +38,7 @@ namespace Beamable.Server.Api.Stats
       {
          return GetStats("game", "private", "player", userId, stats);
       }
+
       public Promise<Dictionary<string, string>> GetAllProtectedPlayerStats(long userId)
       {
          return GetStats("game", "private", "player", userId, null);
