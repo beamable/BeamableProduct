@@ -702,6 +702,13 @@ namespace Beamable.CronExpression
             List<string> Convert(string part) => part.Split(',').ToList();
 
             var split = expression.Split(' ');
+
+            if (split.Length != 7)
+            {
+                Debug.LogError("Cron expression should consist of exactly 7 parts!");
+                return null;
+            }
+            
             var scheduleDefinition = new ScheduleDefinition
             {
                 second     = Convert(split[0]),
