@@ -19,9 +19,9 @@ namespace Beamable.Editor.UI.SDF
             EditorGUI.LabelField(rc.ReserveSingleLine(), label);
             rc.MoveIndent(1);
 
-            var nameProperty = property.FindPropertyRelative("_name");
-            if (nameProperty != null) {
-                EditorGUI.PropertyField(rc.ReserveSingleLine(), nameProperty);
+            var selectorProperty = property.FindPropertyRelative("_selector");
+            if (selectorProperty != null) {
+                EditorGUI.PropertyField(rc.ReserveSingleLine(), selectorProperty);
             }
 
             var properties = property.FindPropertyRelative("_properties");
@@ -126,7 +126,7 @@ namespace Beamable.Editor.UI.SDF
         }
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label) {
-            var hasSelector = property.FindPropertyRelative("_name") != null;
+            var hasSelector = property.FindPropertyRelative("_selector") != null;
             var height = EditorGUIUtility.singleLineHeight * (hasSelector ? 3f : 2f);
 
             var properties = property.FindPropertyRelative("_properties");

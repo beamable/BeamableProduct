@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Beamable.UI.Tweening;
 using TMPro;
 using UnityEngine;
 
@@ -52,6 +53,12 @@ namespace Beamable.UI.BUSS {
             new PropertyBiding<IFontProperty>("font", new FontAssetProperty());
         public static readonly PropertyBiding<IFloatProperty> FontSize =
             new PropertyBiding<IFloatProperty>("fontSize", new FloatProperty(18f));
+        
+        // Transitions
+        public static readonly PropertyBiding<IFloatProperty> TransitionDuration =
+            new PropertyBiding<IFloatProperty>("transitionDuration", new FloatProperty(2f));
+        public static readonly PropertyBiding<EasingProperty> TransitionEasing =
+            new PropertyBiding<EasingProperty>("transitionEasing", new EasingProperty(Easing.InOutQuad));
 
         #endregion
         internal interface IPropertyBiding {
@@ -92,6 +99,14 @@ namespace Beamable.UI.BUSS {
             }
 
             public T Get(BUSSStyle style) {
+                if (style is BussPseudoStyle pseudoStyle) {
+                    return GetFromPseudoStyle(pseudoStyle);
+                }
+
+                return GetFromStyle(style);
+            }
+
+            private T GetFromStyle(BUSSStyle style) {
                 if (style._properties.TryGetValue(Key, out var property)) {
                     if (property is VariableProperty variable) {
                         return GetFromVariable(style, variable.VariableName);
@@ -102,6 +117,19 @@ namespace Beamable.UI.BUSS {
                 }
 
                 return DefaultValue;
+            }
+
+            private T GetFromPseudoStyle(BussPseudoStyle style) {
+                if (style._properties.ContainsKey(Key)) {
+                    var pseudoProperty = GetFromStyle(style);
+                    if (Get(style.BaseStyle) is IInterpolatedProperty interpolatedProperty) {
+                        return (T) interpolatedProperty.Interpolate(pseudoProperty, style.BlendValue);
+                    }
+
+                    return pseudoProperty;
+                }
+
+                return Get(style.BaseStyle);
             }
 
             private T GetFromVariable(BUSSStyle style, string variableName) {

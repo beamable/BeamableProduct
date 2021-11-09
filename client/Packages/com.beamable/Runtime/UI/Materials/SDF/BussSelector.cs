@@ -221,7 +221,7 @@ namespace Beamable.UI.BUSS
         public override bool CheckMatch(BUSSElement bussElement)
         {
             if (bussElement == null) return false;
-            return bussElement.PseudoTags.Contains(PseudoName);
+            return bussElement.PseudoStyles.ContainsKey(PseudoName);
         }
 
         public override SelectorWeight GetWeight()

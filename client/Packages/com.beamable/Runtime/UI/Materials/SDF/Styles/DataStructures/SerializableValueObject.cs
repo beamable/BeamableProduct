@@ -37,7 +37,12 @@ namespace Beamable.UI.SDF.Styles {
                 value = null;
             }
             var sysType = Type.GetType(type);
-            value = JsonUtility.FromJson(json, sysType);
+            try {
+                value = JsonUtility.FromJson(json, sysType);
+            }
+            catch (Exception e) {
+                Debug.LogException(e);
+            }
         }
     }
 }

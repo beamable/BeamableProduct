@@ -1,6 +1,7 @@
 ﻿using System;
 using Beamable.UI.SDF;
 using Beamable.UI.SDF.MaterialManagement;
+using Beamable.UI.Tweening;
 using UnityEngine.UI;
 
 namespace Beamable.UI.BUSS {
@@ -70,6 +71,17 @@ namespace Beamable.UI.BUSS {
 
         public override IBUSSProperty Clone() {
             return new ShadowModeProperty(Enum);
+        }
+    }
+
+    [Serializable]
+    public class EasingProperty : EnumProperty<Easing> {
+        public EasingProperty(){}
+
+        public EasingProperty(Easing easing) : base(easing) { }
+
+        public override IBUSSProperty Clone() {
+            return new EasingProperty(Enum);
         }
     }
 }

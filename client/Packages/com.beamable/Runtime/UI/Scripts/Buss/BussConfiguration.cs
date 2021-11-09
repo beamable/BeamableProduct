@@ -109,6 +109,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 
         public void RecalculateStyle(BUSSElement element) {
             element.Style.Clear();
+            element.PseudoStyles.Clear();
 
             if (globalStyleSheet != null) {
                 ApplyStyleSheet(element, globalStyleSheet);
@@ -125,15 +126,15 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
             element.ApplyStyle();
         }
 
-        private static void ApplyStyleSheet(BUSSElement element, BUSSStyleSheet sheet) {
+        public static void ApplyStyleSheet(BUSSElement element, BUSSStyleSheet sheet) {
             foreach (var descriptor in sheet.Styles) {
-                if (descriptor.Selector.CheckMatch(element)) {
+                if (descriptor.Selector?.CheckMatch(element) ?? false) {
                     ApplyDescriptor(element, descriptor);
                 }
             }
         }
 
-        private static void ApplyDescriptor(BUSSElement element, BUSSStyleDescription descriptor) {
+        public static void ApplyDescriptor(BUSSElement element, BUSSStyleDescription descriptor) {
             foreach (var property in descriptor.Properties) {
                 element.Style[property.Key] = property.GetProperty();
             }

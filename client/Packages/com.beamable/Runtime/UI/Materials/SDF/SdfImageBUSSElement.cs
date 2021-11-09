@@ -1,4 +1,5 @@
-﻿using Beamable.UI.SDF;
+﻿using Beamable.UI.Buss;
+using Beamable.UI.SDF;
 using UnityEngine;
 
 namespace Beamable.UI.BUSS
@@ -17,7 +18,7 @@ namespace Beamable.UI.BUSS
                 _hasImage = true;
             }
         
-            _image.Style = Style;
+            _image.Style = GetCombinedStyle();
         }
     }
 }

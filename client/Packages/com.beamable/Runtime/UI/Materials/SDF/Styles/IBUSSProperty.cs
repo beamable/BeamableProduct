@@ -10,22 +10,26 @@ namespace Beamable.UI.BUSS
         IBUSSProperty Clone();
     }
 
-    public interface IColorProperty : IBUSSProperty
+    public interface IInterpolatedProperty : IBUSSProperty {
+        IBUSSProperty Interpolate(IBUSSProperty other, float value);
+    }
+
+    public interface IColorProperty : IInterpolatedProperty
     {
         Color Color { get; }
     }
 
-    public interface IVertexColorProperty : IBUSSProperty
+    public interface IVertexColorProperty : IInterpolatedProperty
     {
         ColorRect ColorRect { get; }
     }
 
-    public interface IFloatProperty : IBUSSProperty
+    public interface IFloatProperty : IInterpolatedProperty
     {
         float FloatValue { get; }
     }
 
-    public interface IFloatFromFloatProperty : IBUSSProperty
+    public interface IFloatFromFloatProperty : IInterpolatedProperty
     {
         float GetFloatValue(float input);
     }

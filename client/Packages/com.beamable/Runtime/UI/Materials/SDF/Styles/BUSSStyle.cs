@@ -8,27 +8,18 @@ namespace Beamable.UI.BUSS
         internal static Dictionary<string, IPropertyBiding> _bidings = new Dictionary<string, IPropertyBiding>();
         
         
-        private readonly Dictionary<string, IBUSSProperty> _properties = new Dictionary<string, IBUSSProperty>();
+        protected readonly Dictionary<string, IBUSSProperty> _properties = new Dictionary<string, IBUSSProperty>();
         
         public IBUSSProperty this[string key] {
             get {
-                if (_bidings.TryGetValue(key, out var biding)) {
-                    return biding.GetProperty(this);
-                }
-                if (key.StartsWith("--") && _properties.TryGetValue(key, out var property)) {
+                if (_properties.TryGetValue(key, out var property)) {
                     return property;
                 }
-
                 return null;
             }
             
             set {
-                if (_bidings.TryGetValue(key, out var biding)) {
-                    biding.SetProperty(this, value);
-                }
-                else if (key.StartsWith("--")) { // variable
-                    _properties[key] = value;
-                }
+                _properties[key] = value;
             }
         }
 

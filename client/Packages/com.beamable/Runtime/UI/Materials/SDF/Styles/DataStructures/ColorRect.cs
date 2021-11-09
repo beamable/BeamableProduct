@@ -35,5 +35,14 @@ namespace Beamable.UI.SDF.Styles {
         public ColorRect BottomEdgeRect => new ColorRect(BottomLeftColor, BottomRightColor, BottomLeftColor, BottomRightColor);
         public ColorRect LeftEdgeRect => new ColorRect(BottomLeftColor, BottomLeftColor, TopLeftColor, TopLeftColor);
         public ColorRect RightEdgeRect => new ColorRect(BottomRightColor, BottomRightColor, TopRightColor, TopRightColor);
+
+        public static ColorRect Lerp(ColorRect a, ColorRect b, float value) {
+            return new ColorRect(
+                Color.Lerp(a.BottomLeftColor, b.BottomLeftColor, value),
+                Color.Lerp(a.BottomRightColor, b.BottomRightColor, value),
+                Color.Lerp(a.TopLeftColor, b.TopLeftColor, value),
+                Color.Lerp(a.TopRightColor, b.TopRightColor, value)
+            );
+        }
     }
 }
