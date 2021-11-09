@@ -1,14 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using Beamable.Common.Content.Validation;
-using UnityEngine;
 
 namespace Beamable.Common.Content
 {
-
-
-   [Serializable]
+    [Serializable]
    public class OptionalSchedule : Optional<Schedule> {}
 
    [Serializable]
@@ -33,6 +29,7 @@ namespace Beamable.Common.Content
 
       [MustBeDateString]
       public OptionalString activeTo = new OptionalString();
+      
       public List<ScheduleDefinition> definitions = new List<ScheduleDefinition>();
 
       public void AddDefinition(ScheduleDefinition definition)
@@ -44,6 +41,9 @@ namespace Beamable.Common.Content
    [Serializable]
    public class ScheduleDefinition
    {
+       public string cronHumanFormat;
+       public string cronRawFormat;
+       
       public List<string> second;
       public List<string> minute;
       public List<string> hour;
@@ -51,6 +51,8 @@ namespace Beamable.Common.Content
       public List<string> month;
       public List<string> year;
       public List<string> dayOfWeek;
+
+      public ScheduleDefinition() { }
 
       public ScheduleDefinition(string second, string minute, string hour, List<string> dayOfMonth, string month,
          string year, List<string> dayOfWeek)

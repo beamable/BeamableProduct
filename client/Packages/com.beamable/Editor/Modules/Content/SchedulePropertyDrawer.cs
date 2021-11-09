@@ -1,6 +1,7 @@
 using System;
 using Beamable.Common.Content;
 using Beamable.Common.Shop;
+using Beamable.CronExpression;
 using Beamable.Editor.Schedules;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
@@ -123,9 +124,20 @@ namespace Beamable.Editor.Content
       protected virtual void UpdateSchedule(SerializedProperty property, TData data, Schedule schedule, Schedule nextSchedule)
       {
          schedule.description = nextSchedule.description;
-         schedule.definitions = nextSchedule.definitions;
          schedule.activeFrom = nextSchedule.activeFrom;
          schedule.activeTo = nextSchedule.activeTo;
+         SetDefinitions(schedule, nextSchedule);
+      }
+
+      private void SetDefinitions(Schedule schedule, Schedule nextSchedule)
+      {
+          schedule.definitions = nextSchedule.definitions;
+          foreach (var definition in schedule.definitions)
+          {
+              //definition.cronRawFormat = "* * 1-15 * * 1,3,4,5,7 *";
+              definition.cronRawFormat = ExpressionDescriptor.ScheduleDefinitionToCron(definition);
+              definition.cronHumanFormat = ExpressionDescriptor.GetDescription(definition.cronRawFormat);
+          }
       }
    }
 }

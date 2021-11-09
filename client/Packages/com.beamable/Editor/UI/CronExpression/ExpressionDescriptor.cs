@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Beamable.Common.Content;
 using UnityEditor;
 using UnityEngine;
 
@@ -116,7 +118,7 @@ namespace Beamable.CronExpression
         ///     Generates the FULL description
         /// </summary>
         /// <returns>The FULL description</returns>
-        protected string GetFullDescription()
+        private string GetFullDescription()
         {
             string description;
 
@@ -145,7 +147,7 @@ namespace Beamable.CronExpression
         ///     Generates a description for only the TIMEOFDAY portion of the expression
         /// </summary>
         /// <returns>The TIMEOFDAY description</returns>
-        protected string GetTimeOfDayDescription()
+        private string GetTimeOfDayDescription()
         {
             var secondsExpression = _expressionParts[0];
             var minuteExpression = _expressionParts[1];
@@ -210,7 +212,7 @@ namespace Beamable.CronExpression
         ///     Generates a description for only the SECONDS portion of the expression
         /// </summary>
         /// <returns>The SECONDS description</returns>
-        protected string GetSecondsDescription()
+        private string GetSecondsDescription()
         {
             var description = GetSegmentDescription(_expressionParts[0], GetString("EverySecond"), s => s,
                 s => string.Format(GetString("EveryX0Seconds"), s), s => GetString("SecondsX0ThroughX1PastTheMinute"),
@@ -231,7 +233,7 @@ namespace Beamable.CronExpression
         ///     Generates a description for only the MINUTE portion of the expression
         /// </summary>
         /// <returns>The MINUTE description</returns>
-        protected string GetMinutesDescription()
+        private string GetMinutesDescription()
         {
             var secondsExpression = _expressionParts[0];
             var description = GetSegmentDescription(_expressionParts[1], GetString("EveryMinute"), s => s,
@@ -253,7 +255,7 @@ namespace Beamable.CronExpression
         ///     Generates a description for only the HOUR portion of the expression
         /// </summary>
         /// <returns>The HOUR description</returns>
-        protected string GetHoursDescription()
+        private string GetHoursDescription()
         {
             var expression = _expressionParts[2];
             var description = GetSegmentDescription(expression, GetString("EveryHour"), s => FormatTime(s, "0"),
@@ -267,7 +269,7 @@ namespace Beamable.CronExpression
         ///     Generates a description for only the DAYOFWEEK portion of the expression
         /// </summary>
         /// <returns>The DAYOFWEEK description</returns>
-        protected string GetDayOfWeekDescription()
+        private string GetDayOfWeekDescription()
         {
             string description = null;
 
@@ -331,7 +333,7 @@ namespace Beamable.CronExpression
         ///     Generates a description for only the MONTH portion of the expression
         /// </summary>
         /// <returns>The MONTH description</returns>
-        protected string GetMonthDescription()
+        private string GetMonthDescription()
         {
             var description = GetSegmentDescription(_expressionParts[4], string.Empty,
                 s => new DateTime(DateTime.Now.Year, Convert.ToInt32(s), 1).ToString("MMMM", _culture),
@@ -347,7 +349,7 @@ namespace Beamable.CronExpression
         ///     Generates a description for only the DAYOFMONTH portion of the expression
         /// </summary>
         /// <returns>The DAYOFMONTH description</returns>
-        protected string GetDayOfMonthDescription()
+        private string GetDayOfMonthDescription()
         {
             string description = null;
             var expression = _expressionParts[3];
@@ -433,7 +435,7 @@ namespace Beamable.CronExpression
         /// <param name="getDescriptionFormat"></param>
         /// <param name="getRangeFormat">function that formats range expressions depending on cron parts</param>
         /// <returns></returns>
-        protected string GetSegmentDescription(string expression, string allDescription,
+        private string GetSegmentDescription(string expression, string allDescription,
             Func<string, string> getSingleItemDescription, Func<string, string> getIntervalDescriptionFormat,
             Func<string, string> getBetweenDescriptionFormat, Func<string, string> getDescriptionFormat,
             Func<string, string> getRangeFormat)
@@ -529,7 +531,7 @@ namespace Beamable.CronExpression
         /// <param name="getBetweenDescriptionFormat"></param>
         /// <param name="getSingleItemDescription"></param>
         /// <returns>The between segment description</returns>
-        protected string GenerateBetweenSegmentDescription(string betweenExpression,
+        private string GenerateBetweenSegmentDescription(string betweenExpression,
             Func<string, string> getBetweenDescriptionFormat, Func<string, string> getSingleItemDescription)
         {
             var description = string.Empty;
@@ -550,7 +552,7 @@ namespace Beamable.CronExpression
         /// <param name="hourExpression">Hours part</param>
         /// <param name="minuteExpression">Minutes part</param>
         /// <returns>Formatted time description</returns>
-        protected string FormatTime(string hourExpression, string minuteExpression)
+        private string FormatTime(string hourExpression, string minuteExpression)
         {
             return FormatTime(hourExpression, minuteExpression, string.Empty);
         }
@@ -562,7 +564,7 @@ namespace Beamable.CronExpression
         /// <param name="minuteExpression">Minutes part</param>
         /// <param name="secondExpression">Seconds part</param>
         /// <returns>Formatted time description</returns>
-        protected string FormatTime(string hourExpression, string minuteExpression, string secondExpression)
+        private string FormatTime(string hourExpression, string minuteExpression, string secondExpression)
         {
             var hour = Convert.ToInt32(hourExpression);
 
@@ -593,7 +595,7 @@ namespace Beamable.CronExpression
         /// <param name="description">The description to transform</param>
         /// <param name="isVerbose">If true, will leave description as it, if false, will strip verbose parts</param>
         /// <returns>The transformed description with proper verbosity</returns>
-        protected string TransformVerbosity(string description, bool useVerboseFormat)
+        private string TransformVerbosity(string description, bool useVerboseFormat)
         {
             if (!useVerboseFormat)
             {
@@ -611,8 +613,7 @@ namespace Beamable.CronExpression
         /// </summary>
         /// <param name="resourceName">name of the resource</param>
         /// <returns>translated resource</returns>
-
-        protected string GetString(string resourceName)
+        private string GetString(string resourceName)
         {
             return _localizationData.GetString(resourceName);
         }
@@ -637,10 +638,84 @@ namespace Beamable.CronExpression
         /// <returns>The cron expression description</returns>
         public static string GetDescription(string expression, Options options)
         {
-            var descripter = new ExpressionDescriptor(expression, options);
-            return descripter.GetDescription(DescriptionTypeEnum.FULL);
+            var descriptor = new ExpressionDescriptor(expression, options);
+            return descriptor.GetDescription(DescriptionTypeEnum.FULL);
+        }
+        
+        /// <summary>
+        ///     Generates a human readable string for the schedule definition
+        /// </summary>
+        /// <param name="scheduleDefinition">Schedule definition</param>
+        /// <returns>The cron expression description</returns>
+        public static string GetDescription(ScheduleDefinition scheduleDefinition)
+        {
+            return GetDescription(scheduleDefinition, new Options());
+        }
+        
+        /// <summary>
+        ///     Generates a human readable string for the schedule definition
+        /// </summary>
+        /// <param name="scheduleDefinition">Schedule definition</param>
+        /// <param name="options">Options to control the output description</param>
+        /// <returns>The cron expression description</returns>
+        public static string GetDescription(ScheduleDefinition scheduleDefinition, Options options)
+        {
+            var expression = ScheduleDefinitionToCron(scheduleDefinition);
+            return GetDescription(expression, options);
         }
 
+        /// <summary>
+        ///     Converts schedule definition into cron expression
+        /// </summary>
+        /// <param name="scheduleDefinition">Schedule definition</param>
+        /// <returns>The cron expression</returns>
+        public static string ScheduleDefinitionToCron(ScheduleDefinition scheduleDefinition)
+        {
+            string Convert(IReadOnlyList<string> part)
+            {
+                var converted = string.Empty;
+                for (var i = 0; i < part.Count; i++)
+                    converted += i + 1 == part.Count ? part[i] : $"{part[i]},";
+
+                return converted;
+            }
+
+            var second     = Convert(scheduleDefinition.second);
+            var minute     = Convert(scheduleDefinition.minute);
+            var hour       = Convert(scheduleDefinition.hour);
+            var dayOfMonth = Convert(scheduleDefinition.dayOfMonth);
+            var month      = Convert(scheduleDefinition.month);
+            var dayOfWeek  = Convert(scheduleDefinition.dayOfWeek);
+            var year       = Convert(scheduleDefinition.year);
+
+            var expression = $"{second} {minute} {hour} {dayOfMonth} {month} {dayOfWeek} {year}";
+            return expression;
+        }
+
+        /// <summary>
+        ///     Converts cron expression into schedule definition
+        /// </summary>
+        /// <param name="expression">Cron expression</param>
+        /// <returns>Schedule definition</returns>
+        public static ScheduleDefinition CronToScheduleDefinition(string expression)
+        {
+            List<string> Convert(string part) => part.Split(',').ToList();
+
+            var split = expression.Split(' ');
+            var scheduleDefinition = new ScheduleDefinition
+            {
+                second     = Convert(split[0]),
+                minute     = Convert(split[1]),
+                hour       = Convert(split[2]),
+                dayOfMonth = Convert(split[3]),
+                month      = Convert(split[4]),
+                dayOfWeek  = Convert(split[5]),
+                year       = Convert(split[6])
+            };
+
+            return scheduleDefinition;
+        }
+        
         #endregion
     }
 }
