@@ -9,45 +9,62 @@ using UnityEngine;
 
 namespace Beamable.Editor.UI.Common.Models
 {
-    public class ManifestModel
+    public class ManifestModel : ISearchableModel
     {
-        public event Action<List<AvailableManifestModel>> OnAvailableManifestsChanged;
+        public event Action<List<ISearchableElement>> OnAvailableElementsChanged;
         public event Action<IEnumerable<AvailableManifestModel>> OnArchivedManifestsFetched;
-        public event Action<string> OnManifestChanged;
-        public string CurrentManifestId { get; private set; }
-        public List<AvailableManifestModel> ManifestModels { get; private set; }
+        public event Action<ISearchableElement> OnElementChanged;
+
+        public ISearchableElement Default { get; set; }
+        public ISearchableElement Current { get; set; }
+
+        public List<ISearchableElement> Elements { get; set; }
 
         public IEnumerable<AvailableManifestModel> ArchivedManifestModels { get; private set; } =
             Enumerable.Empty<AvailableManifestModel>();
 
         public void Initialize()
         {
-            RefreshAvailableManifests();
+            Default = new AvailableManifestModel() { id = BeamableConstants.DEFAULT_MANIFEST_ID };
+            RefreshAvailable();
 
             EditorAPI.Instance.Then(api =>
             {
                 ContentIO.OnManifestChanged += HandleManifestChanged;
                 ContentIO.OnManifestsListFetched += HandleManifestListFetched;
                 ContentIO.OnArchivedManifestsFetched += HandleArchivedManifestListFetched;
-                CurrentManifestId = ContentConfiguration.Instance.EditorManifestID;
-                OnManifestChanged?.Invoke(CurrentManifestId);
-                api.OnRealmChange += _ => RefreshAvailableManifests();
-                ContentPublisher.OnContentPublished += () => RefreshAvailableManifests();
+
+                Current = new AvailableManifestModel(){ id = ContentConfiguration.Instance.EditorManifestID };
+                OnElementChanged?.Invoke(Current);
+
+                api.OnRealmChange += _ => RefreshAvailable();
+                ContentPublisher.OnContentPublished += () => RefreshAvailable();
             });
         }
-        
-        public Promise<AvailableManifests> RefreshAvailableManifests() {
+
+        public Promise<List<ISearchableElement>> RefreshAvailable() {
             return EditorAPI.Instance.FlatMap(api => {
-                CurrentManifestId = ContentConfiguration.Instance.EditorManifestID;
+                Current = new AvailableManifestModel() { id = ContentConfiguration.Instance.EditorManifestID };
+                return api.ContentIO.GetAllManifestIDs().Map(manifest =>
+                {
+                    return manifest.manifests.ToList<ISearchableElement>();
+                });
+            });
+        }
+
+        public Promise<AvailableManifests> RefreshAvailableManifests()
+        {
+            return EditorAPI.Instance.FlatMap(api => {
+                Current = new AvailableManifestModel() { id = ContentConfiguration.Instance.EditorManifestID };
                 return api.ContentIO.GetAllManifestIDs();
             });
         }
 
         private void HandleManifestChanged(string manifestId)
         {
-            CurrentManifestId = manifestId;
+            Current = new AvailableManifestModel() { id = ContentConfiguration.Instance.EditorManifestID };
             try {
-                OnManifestChanged?.Invoke(manifestId);
+                OnElementChanged?.Invoke(Current);
             }
             catch (Exception e) {
                 Debug.LogException(e);
@@ -57,11 +74,13 @@ namespace Beamable.Editor.UI.Common.Models
         private void HandleManifestListFetched(AvailableManifests manifests)
         {
             var nextManifestModels = manifests.manifests;
-            if (nextManifestModels.AreManifestIdsEquals(ManifestModels)) return; // short circuit if the manifests are identical.
+
+
+            if (nextManifestModels.AreManifestIdsEquals(Elements?.OfType<AvailableManifestModel>().ToList())) return; // short circuit if the manifests are identical.
             
             try {
-                ManifestModels = manifests.manifests;
-                OnAvailableManifestsChanged?.Invoke(manifests.manifests);
+                Elements = manifests.manifests.ToList<ISearchableElement>();
+                OnAvailableElementsChanged?.Invoke(Elements);
             }
             catch (Exception e) {
                 Debug.LogException(e);
