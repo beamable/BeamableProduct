@@ -21,7 +21,7 @@
 
         <engine:VisualElement name="mainBlockedContent">
             <engine:ScrollView>
-                <engine:VisualElement name="realmList">
+                <engine:VisualElement name="elementsList">
                     <!-- list of realm -->
                 </engine:VisualElement>
             </engine:ScrollView>

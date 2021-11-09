@@ -97,7 +97,7 @@ namespace Beamable.Editor.Content.Components
                 if (_manifestModel == null)
                 {
                     _manifestModel = new ManifestModel();
-                    _manifestModel.OnAvailableManifestsChanged += _ => _isManifestNameValid.Check();
+                    _manifestModel.OnAvailableElementsChanged += _ => _isManifestNameValid.Check();
                     _manifestModel.Initialize();
                 }
                 
@@ -393,13 +393,13 @@ namespace Beamable.Editor.Content.Components
                 return false;
             }
 
-            if (_manifestModel?.ManifestModels == null)
+            if (_manifestModel?.Elements == null)
             {
                 message = "Checking existing namespaces...";
                 return false;
             }
 
-            if (_manifestModel.ManifestModels.Any(m => m.id == name))
+            if (_manifestModel.Elements.Any(m => m.DisplayName == name))
             {
                 message = "This namespace already exists.";
                 return false;
