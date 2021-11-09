@@ -155,16 +155,16 @@ jobs:
       - name: Download iOS build
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
-          with:
-            name: dist/Build-iOS
+        with:
+          name: dist/Build-iOS
       - run: tar -xvf Build-iOS.zip && cd iOS/
       - name: Display structure of downloaded files
           run: ls -R
       - name: Build the .ipa
       - uses: yukiarrr/ios-build-action@v1.4.0
-          with:
-            project-path: Unity-iPhone.xcodeproj
-            p12-base64: ${{ secrets.P12_BASE64 }}
-            mobileprovision-base64: ${{ secrets.PROD_MOBILEPROVISION_BASE64 }}
-            code-signing-identity: ${{ secrets.CODE_SIGNING_IDENTITY }}
-            team-id: ${{ secrets.TEAM_ID }}
+        with:
+          project-path: Unity-iPhone.xcodeproj
+          p12-base64: ${{ secrets.P12_BASE64 }}
+          mobileprovision-base64: ${{ secrets.PROD_MOBILEPROVISION_BASE64 }}
+          code-signing-identity: ${{ secrets.CODE_SIGNING_IDENTITY }}
+          team-id: ${{ secrets.TEAM_ID }}
