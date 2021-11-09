@@ -1,7 +1,12 @@
 using System.Collections.Generic;
 using Beamable.UI.BUSS;
 using UnityEngine;
+
+#if UNITY_2018
+using UnityEngine.Experimental.UIElements;
+#elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
+#endif
 
 namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's namespace
 {
@@ -33,7 +38,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 
         // New system
         public static BussConfiguration Instance => Get<BussConfiguration>();
-        [SerializeField] private BUSSStyleSheet globalStyleSheet;
+        [SerializeField] private BUSSStyleSheet globalStyleSheet = null;
 
         // TODO: serialized only for debug purposes. Remove before final push
         [SerializeField] private List<BUSSElement> _rootBussElements = new List<BUSSElement>();
