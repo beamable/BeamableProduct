@@ -153,7 +153,6 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           message: Have a ${{ matrix.targetPlatform }} build, friend. [${{github.sha}}](https://beamable-product-github-builds.s3.us-west-2.amazonaws.com/uploads/${{github.sha}}/WebGL/index.html)
       - name: Download iOS build
-      - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
         with:
           name: dist/Build-iOS
