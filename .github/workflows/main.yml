@@ -159,7 +159,7 @@ jobs:
           name: dist/Build-iOS
       - run: tar -xvf Build-iOS.zip && cd iOS/
       - name: Display structure of downloaded files
-          run: ls -R
+        run: ls -R
       - name: Build the .ipa
       - uses: yukiarrr/ios-build-action@v1.4.0
         with:
