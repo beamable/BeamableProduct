@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Beamable.Common;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using UnityEditor;
@@ -57,7 +58,7 @@ namespace Beamable.Editor.UI.Components
             _label.text = Value;
 
             _button = Root.Q<VisualElement>("button");
-            _button.RegisterCallback<MouseDownEvent>((e) => { OnButtonClicked(worldBound); });
+            _button.RegisterCallback<MouseDownEvent>(async (e) => await OnButtonClicked(worldBound) );
         }
 
         public void Setup(List<string> options, Action<string> onOptionSelected)
@@ -86,7 +87,7 @@ namespace Beamable.Editor.UI.Components
             _onSelection?.Invoke(option);
         }
 
-        private void OnButtonClicked(Rect bounds)
+        private async Promise OnButtonClicked(Rect bounds)
         {
             if (_optionsPopup != null)
             {
@@ -114,7 +115,7 @@ namespace Beamable.Editor.UI.Components
             DropdownOptionsVisualElement optionsWindow =
                 new DropdownOptionsVisualElement().Setup(allOptions, OnOptionsClosed);
 
-            _optionsPopup = BeamablePopupWindow.ShowDropdown("", popupWindowRect,
+            _optionsPopup = await BeamablePopupWindow.ShowDropdownAsync("", popupWindowRect,
                 new Vector2(_root.localBound.width, optionsWindow.GetHeight()), optionsWindow);
         }
 

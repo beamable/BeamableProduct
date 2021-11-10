@@ -9,6 +9,7 @@ using Beamable.Editor.Content.Components;
 using Beamable.Editor.Content;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
+using Beamable.Common;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -80,6 +81,34 @@ namespace Beamable.Editor.UI.Buss.Components
 
             var halfSize = size * .5f;
             return new Rect(pt.x - halfSize.x, pt.y - halfSize.y, size.x, size.y);
+        }
+
+        /// <summary>
+        /// Create new popup with contents of any <see cref="BeamableVisualElement"/>
+        /// This method introduces a delayFrame to let later versions of Unity avoid throwing a warning about an unchecked window.
+        /// </summary>
+        /// <param name="title"></param>
+        /// <param name="sourceRect"></param>
+        /// <param name="size"></param>
+        /// <param name="content"></param>
+        /// <returns></returns>
+        public static async Promise<BeamablePopupWindow> ShowDropdownAsync(string title, Rect sourceRect, Vector2 size,
+            BeamableVisualElement content)
+        {
+            var wnd = CreateInstance<BeamablePopupWindow>();
+            var promise = new Promise();
+            EditorApplication.delayCall += () =>
+            {
+                wnd.titleContent = new GUIContent(title);
+                wnd._contentElement = content;
+                wnd.ShowAsDropDown(sourceRect, size);
+                wnd.GetRootVisualContainer().AddToClassList("fill-popup-window");
+
+                wnd.Refresh();
+                promise.CompleteSuccess();
+            };
+            await promise;
+            return wnd;
         }
 
         /// <summary>
