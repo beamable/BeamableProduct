@@ -58,7 +58,8 @@ namespace Beamable.CronExpression
                 AssetDatabase.CreateAsset(_localizationDatabase, Constants.CRON_LOCALIZATION_DATABASE_PATH);
             }
 
-            _options.Locale ??= _localizationDatabase.DefaultLocalization;
+            if (_options.Locale == null)
+                _options.Locale = _localizationDatabase.DefaultLocalization;
 
             _localizationData = _localizationDatabase.SupportedLocalizations.FirstOrDefault(x => x.Localization == _options.Locale.ConvertCronLocaleToLocale());
             if (_localizationData == null)
@@ -86,19 +87,39 @@ namespace Beamable.CronExpression
                     _parsed = true;
                 }
 
-                description = type switch
+                switch (type)
                 {
-                    DescriptionTypeEnum.FULL => GetFullDescription(),
-                    DescriptionTypeEnum.TIMEOFDAY => GetTimeOfDayDescription(),
-                    DescriptionTypeEnum.HOURS => GetHoursDescription(),
-                    DescriptionTypeEnum.MINUTES => GetMinutesDescription(),
-                    DescriptionTypeEnum.SECONDS => GetSecondsDescription(),
-                    DescriptionTypeEnum.DAYOFMONTH => GetDayOfMonthDescription(),
-                    DescriptionTypeEnum.MONTH => GetMonthDescription(),
-                    DescriptionTypeEnum.DAYOFWEEK => GetDayOfWeekDescription(),
-                    DescriptionTypeEnum.YEAR => GetYearDescription(),
-                    _ => GetSecondsDescription()
-                };
+                    case DescriptionTypeEnum.FULL:
+                        description = GetFullDescription();
+                        break;
+                    case DescriptionTypeEnum.TIMEOFDAY:
+                        description = GetTimeOfDayDescription();
+                        break;
+                    case DescriptionTypeEnum.HOURS:
+                        description = GetHoursDescription();
+                        break;
+                    case DescriptionTypeEnum.MINUTES:
+                        description = GetMinutesDescription();
+                        break;
+                    case DescriptionTypeEnum.SECONDS:
+                        description = GetSecondsDescription();
+                        break;
+                    case DescriptionTypeEnum.DAYOFMONTH:
+                        description = GetDayOfMonthDescription();
+                        break;
+                    case DescriptionTypeEnum.MONTH:
+                        description = GetMonthDescription();
+                        break;
+                    case DescriptionTypeEnum.DAYOFWEEK:
+                        description = GetDayOfWeekDescription();
+                        break;
+                    case DescriptionTypeEnum.YEAR:
+                        description = GetYearDescription();
+                        break;
+                    default:
+                        description = GetSecondsDescription();
+                        break;
+                }
             }
             catch (Exception ex)
             {
