@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.3]
+### Added
+- Added `RemoveDeviceId` method in `AuthService`
+- Limit amount of elements displayed by `list_content` command in Admin console, allow to specify start index for `list_content` command
+
+### Fixed
+- Removes _Menu Window/Panels/1_ warning after opening schedule type dropdown on Unity 2019 and 2020
+- Limit displayed admin console output
+
+
 ## [0.17.2]
 ### Added
 - `CoreConfiguration` to project settings to tweak how our Promise library handles uncaught promises by default
