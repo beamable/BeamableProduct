@@ -379,7 +379,47 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          await ms.OnShutdown(this, null);
          Assert.IsTrue(testSocket.AllMocksCalled());
       }
-      
+
+      [Test]
+      [NonParallelizable]
+      public async Task HandleSimple_FailGetUserViaAccessToken()
+      {
+         LoggingUtil.Init();
+         TestSocket testSocket = null;
+         const int testCount = 3000;
+         var contentResolver = new TestContentResolver(async uri => "{}");
+         var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+         {
+            testSocket = socket;
+            socket.WithName("Test Socket");
+            socket.AddStandardMessageHandlers();
+         }), contentResolver);
+
+         await ms.Start<SimpleMicroservice>(new TestArgs());
+         Assert.IsTrue(ms.HasInitialized);
+
+         var tasks = new List<Task>();
+         for (var i = 0; i < testCount; i++)
+         {
+            var index = i + 1;
+            tasks.Add(Task.Run(() =>
+            {
+               if (!testSocket.Name.Equals("Test Socket"))
+               {
+                  Assert.Fail("Not the right socket..");
+               }
+
+               testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserViaAccessToken", index, 0, new TokenResponse()));
+            }));
+         }
+
+         await Task.WhenAll(tasks);
+         await Task.Delay(10);
+         // simulate shutdown event...
+         await ms.OnShutdown(this, null);
+         //Assert.IsTrue(testSocket.AllMocksCalled());
+         
+      }
 
       [Test]
       [NonParallelizable]
