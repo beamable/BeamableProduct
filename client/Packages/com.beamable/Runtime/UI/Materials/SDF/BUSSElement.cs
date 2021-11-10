@@ -32,7 +32,7 @@ namespace Beamable.UI.BUSS {
 
         public BUSSElement Parent => _parent;
 
-        private IReadOnlyList<BUSSElement> _childrenReadOnly;
+        private IReadOnlyList<BUSSElement> _childrenReadOnly = new BUSSElement[0];
         public IReadOnlyList<BUSSElement> Children => _childrenReadOnly ?? (_childrenReadOnly = _children.AsReadOnly());
 
         public void RecalculateStyleSheets() {

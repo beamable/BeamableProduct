@@ -47,7 +47,9 @@ namespace Beamable.UI.SDF {
 #if UNITY_EDITOR
         protected override void OnValidate() {
             base.OnValidate();
-            canvas.additionalShaderChannels = (AdditionalCanvasShaderChannels) int.MaxValue;
+            if (canvas != null) {
+                canvas.additionalShaderChannels = (AdditionalCanvasShaderChannels) int.MaxValue;
+            }
         }
 #endif
 
