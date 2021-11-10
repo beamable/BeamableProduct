@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Beamable.Common.Content;
 using Beamable.Editor.Schedules;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace Beamable.Editor.Tests.Content
 {
@@ -14,9 +15,11 @@ namespace Beamable.Editor.Tests.Content
         public void Event_Schedule_Daily_Mode_Test()
         {
             String warningHeader = "Daily event schedule:";
+            bool received = false;
 
             void ScheduleReceived(Schedule schedule)
             {
+                received = true;
                 bool parsedDateTime = DateTime.TryParse(schedule.activeFrom, out DateTime _);
                 Assert.IsTrue(parsedDateTime, $"{warningHeader} problem with parsing activeFrom field");
                 Assert.IsTrue(schedule.definitions.Count == 1, $"{warningHeader} should have only one definition");
@@ -32,15 +35,18 @@ namespace Beamable.Editor.Tests.Content
             window.OnScheduleUpdated += ScheduleReceived;
             window.InvokeTestConfirm();
             window.OnScheduleUpdated -= ScheduleReceived;
+            Assert.IsTrue(received, "Schedule not received. Test failed");
         }
 
         [Test]
         public void Event_Schedule_Days_Mode_Test()
         {
             String warningHeader = "Days event schedule:";
+            bool received = false;
 
             void ScheduleReceived(Schedule schedule)
             {
+                received = true;
                 bool parsedDateTime = DateTime.TryParse(schedule.activeFrom, out DateTime _);
                 List<string> days = schedule.definitions[0].dayOfWeek;
 
@@ -72,15 +78,18 @@ namespace Beamable.Editor.Tests.Content
             window.OnScheduleUpdated += ScheduleReceived;
             window.InvokeTestConfirm();
             window.OnScheduleUpdated -= ScheduleReceived;
+            Assert.IsTrue(received, "Schedule not received. Test failed");
         }
 
         [Test]
         public void Event_Schedule_Dates_Mode_Test()
         {
             String warningHeader = "Dates event schedule:";
+            bool received = false;
 
             void ScheduleReceived(Schedule schedule)
             {
+                received = true;
                 bool parsedDateTime = DateTime.TryParse(schedule.activeFrom, out DateTime _);
 
                 Assert.IsTrue(parsedDateTime, $"{warningHeader} problem with parsing activeFrom field");
@@ -118,15 +127,18 @@ namespace Beamable.Editor.Tests.Content
             window.OnScheduleUpdated += ScheduleReceived;
             window.InvokeTestConfirm();
             window.OnScheduleUpdated -= ScheduleReceived;
+            Assert.IsTrue(received, "Schedule not received. Test failed");
         }
 
         [Test]
         public void Listing_Schedule_Daily_Mode_Test()
         {
             String warningHeader = "Daily listing schedule:";
+            bool received = false;
 
             void ScheduleReceived(Schedule schedule)
             {
+                received = true;
                 Assert.IsTrue(DateTime.TryParse(schedule.activeFrom, out DateTime _),
                     $"{warningHeader} problem with parsing activeFrom field");
                 Assert.IsTrue(schedule.definitions.Count > 0 && schedule.definitions.Count <= 3,
@@ -136,11 +148,11 @@ namespace Beamable.Editor.Tests.Content
                 {
                     string minuteString = scheduleDefinition.minute[0];
                     string hoursString = scheduleDefinition.hour[0];
-
-                    bool minutesMatchPattern = Regex.IsMatch(minuteString, "[0-59]-[0-59]") ||
+                    bool minutesMatchPattern = Regex.IsMatch(minuteString, "\b([0-9]|[1-5][0-9])\b") ||
                                                Regex.IsMatch(minuteString, "/*");
-                    bool hoursMatchPattern = Regex.IsMatch(hoursString, "[0-23]-[0-23]") ||
-                                             Regex.IsMatch(hoursString, "[0-23]");
+                    bool hoursMatchPattern =
+                        Regex.IsMatch(hoursString, "\b([0-9]|1[0-9]|2[0-3])-([0-9]|1[0-9]|2[0-3])\b") || 
+                        Regex.IsMatch(hoursString, "\b([0-9]|1[0-9]|2[0-3])\b");
                     Assert.IsTrue(minutesMatchPattern, $"{warningHeader} minutes doesn't match pattern");
                     Assert.IsTrue(hoursMatchPattern, $"{warningHeader} hours doesn't match pattern");
                 }
@@ -158,15 +170,18 @@ namespace Beamable.Editor.Tests.Content
             window.OnScheduleUpdated += ScheduleReceived;
             window.InvokeTestConfirm();
             window.OnScheduleUpdated -= ScheduleReceived;
+            Assert.IsTrue(received, "Schedule not received. Test failed");
         }
 
         [Test]
         public void Listing_Schedule_Days_Mode_Test()
         {
             String warningHeader = "Days listing schedule:";
+            bool received = false;
 
             void ScheduleReceived(Schedule schedule)
             {
+                received = true;
                 bool parsedDateTime = DateTime.TryParse(schedule.activeFrom, out DateTime _);
 
                 Assert.IsTrue(parsedDateTime, $"{warningHeader} problem with parsing activeFrom field");
@@ -200,15 +215,18 @@ namespace Beamable.Editor.Tests.Content
             window.OnScheduleUpdated += ScheduleReceived;
             window.InvokeTestConfirm();
             window.OnScheduleUpdated -= ScheduleReceived;
+            Assert.IsTrue(received, "Schedule not received. Test failed");
         }
 
         [Test]
         public void Listing_Schedule_Dates_Mode_Test()
         {
             String warningHeader = "Dates event schedule:";
+            bool received = false;
 
             void ScheduleReceived(Schedule schedule)
             {
+                received = true;
                 bool parsedDateTime = DateTime.TryParse(schedule.activeFrom, out DateTime _);
 
                 Assert.IsTrue(parsedDateTime, $"{warningHeader} problem with parsing activeFrom field");
@@ -246,6 +264,7 @@ namespace Beamable.Editor.Tests.Content
             window.OnScheduleUpdated += ScheduleReceived;
             window.InvokeTestConfirm();
             window.OnScheduleUpdated -= ScheduleReceived;
+            Assert.IsTrue(received, "Schedule not received. Test failed");
         }
 
         private void TestHour(string warningHeader, ScheduleDefinition definition)
