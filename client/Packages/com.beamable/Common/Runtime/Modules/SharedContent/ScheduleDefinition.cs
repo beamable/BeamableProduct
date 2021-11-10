@@ -41,7 +41,7 @@ namespace Beamable.Common.Content
    [Serializable]
    public class ScheduleDefinition
    {
-       public string cronHumanFormat;
+       [ShowOnly] public string cronHumanFormat;
        public string cronRawFormat;
        
       public List<string> second;
@@ -66,4 +66,6 @@ namespace Beamable.Common.Content
          this.dayOfWeek = new List<string>(dayOfWeek);
       }
    }
+
+   
 }

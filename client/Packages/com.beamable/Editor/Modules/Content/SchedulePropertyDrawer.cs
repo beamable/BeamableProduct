@@ -134,7 +134,6 @@ namespace Beamable.Editor.Content
           schedule.definitions = nextSchedule.definitions;
           foreach (var definition in schedule.definitions)
           {
-              //definition.cronRawFormat = "* * 1-15 * * 1,3,4,5,7 *";
               definition.cronRawFormat = ExpressionDescriptor.ScheduleDefinitionToCron(definition);
               definition.cronHumanFormat = ExpressionDescriptor.GetDescription(definition.cronRawFormat);
           }
