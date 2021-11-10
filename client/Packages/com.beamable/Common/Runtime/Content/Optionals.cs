@@ -16,7 +16,7 @@ namespace Beamable.Common.Content
 
         static Optional()
         {
-           TypeDescriptor.AddAttributes(typeof(Optional), new TypeConverterAttribute(typeof(OptionalTypeConverter)));
+            TypeDescriptor.AddAttributes(typeof(Optional), new TypeConverterAttribute(typeof(OptionalTypeConverter)));
         }
 
         public abstract void SetValue(object value);
@@ -56,6 +56,7 @@ namespace Beamable.Common.Content
         {
            return typeof(T);
         }
+
     }
 
     [Agnostic]
@@ -68,7 +69,7 @@ namespace Beamable.Common.Content
           }
           return base.CanConvertTo(context, destinationType);
        }
-
+    
        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
        {
           if (value is long number)
@@ -86,6 +87,10 @@ namespace Beamable.Common.Content
     [System.Serializable]
     [Agnostic]
     public class OptionalInt : Optional<int> { }
+    
+    [System.Serializable]
+    [Agnostic]
+    public class OptionalLong : Optional<long> { }
 
     [System.Serializable]
     [Agnostic]
@@ -93,7 +98,11 @@ namespace Beamable.Common.Content
 
     [System.Serializable]
     [Agnostic]
-    public class OptionalList : Optional<List<int>> { }
+    public class OptionalListInt : Optional<List<int>> { }
+    
+    [System.Serializable]
+    [Agnostic]
+    public class OptionalListString : Optional<List<string>> { }
 
     [System.Serializable]
     [Agnostic]
