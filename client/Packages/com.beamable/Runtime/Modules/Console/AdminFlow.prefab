@@ -50,11 +50,9 @@ MonoBehaviour:
   txtOutput: {fileID: 1879866760483718079}
   txtInput: {fileID: 1879866760889838236}
   txtAutoCompleteSuggestion: {fileID: 826148142042879378}
-  consolePortrait: {fileID: 1879866759992644257}
-  consoleLandscape: {fileID: 1879866759589108769}
-  previousSuggestionKey: 273
-  nextSuggestionKey: 274
   acceptSuggestionKey: 9
+  historyPreviousKey: 273
+  historyNextKey: 274
 --- !u!114 &1879866759196870547
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -653,7 +651,7 @@ MonoBehaviour:
     m_MaxSize: 44
     m_Alignment: 6
     m_AlignByGeometry: 0
-    m_RichText: 1
+    m_RichText: 0
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 1
     m_LineSpacing: 1
