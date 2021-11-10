@@ -157,7 +157,7 @@ namespace Beamable.CronExpression
             }
             catch (Exception ex)
             {
-                description = GetString("AnErrorOccuredWhenGeneratingTheExpressionD");
+                description = _localizationData.AnErrorOccuredWhenGeneratingTheExpressionD;
                 if (_options.ThrowExceptionOnParseError) throw new FormatException(description, ex);
             }
 
@@ -182,7 +182,7 @@ namespace Beamable.CronExpression
                 secondsExpression.IndexOfAny(_specialCharacters) == -1)
             {
                 //specific time of day (i.e. 10 14)
-                description.Append(GetString("AtSpace"))
+                description.Append(_localizationData.AtSpace)
                     .Append(FormatTime(hourExpression, minuteExpression, secondsExpression));
             }
             else if (secondsExpression == "" && minuteExpression.Contains("-") && !minuteExpression.Contains(",") &&
@@ -190,7 +190,7 @@ namespace Beamable.CronExpression
             {
                 //minute range in single hour (i.e. 0-10 11)
                 var minuteParts = minuteExpression.Split('-');
-                description.Append(string.Format(GetString("EveryMinuteBetweenX0AndX1"),
+                description.Append(string.Format(_localizationData.EveryMinuteBetweenX0AndX1,
                     FormatTime(hourExpression, minuteParts[0]), FormatTime(hourExpression, minuteParts[1])));
             }
             else if (secondsExpression == "" && hourExpression.Contains(",") && hourExpression.IndexOf('-') == -1 &&
@@ -198,14 +198,14 @@ namespace Beamable.CronExpression
             {
                 //hours list with single minute (o.e. 30 6,14,16)
                 var hourParts = hourExpression.Split(',');
-                description.Append(GetString("At"));
+                description.Append(_localizationData.At);
                 for (var i = 0; i < hourParts.Length; i++)
                 {
                     description.Append(" ").Append(FormatTime(hourParts[i], minuteExpression));
 
                     if (i < hourParts.Length - 2) description.Append(",");
 
-                    if (i == hourParts.Length - 2) description.Append(GetString("SpaceAnd"));
+                    if (i == hourParts.Length - 2) description.Append(_localizationData.SpaceAnd);
                 }
             }
             else
@@ -235,17 +235,16 @@ namespace Beamable.CronExpression
         /// <returns>The SECONDS description</returns>
         private string GetSecondsDescription()
         {
-            var description = GetSegmentDescription(_expressionParts[0], GetString("EverySecond"), s => s,
-                s => string.Format(GetString("EveryX0Seconds"), s), s => GetString("SecondsX0ThroughX1PastTheMinute"),
+            var description = GetSegmentDescription(_expressionParts[0], _localizationData.EverySecond, s => s,
+                s => string.Format(_localizationData.EveryX0Seconds, s), s => _localizationData.SecondsX0ThroughX1PastTheMinute,
                 s =>
                 {
                     var i = 0;
                     if (int.TryParse(s, out i))
                         return s == "0" ? string.Empty :
-                            i < 20 ? GetString("AtX0SecondsPastTheMinute") :
-                            GetString("AtX0SecondsPastTheMinuteGt20") ?? GetString("AtX0SecondsPastTheMinute");
-                    return GetString("AtX0SecondsPastTheMinute");
-                }, s => GetString("ComaMinX0ThroughMinX1") ?? GetString("ComaX0ThroughX1"));
+                            _localizationData.AtX0SecondsPastTheMinute;
+                    return _localizationData.AtX0SecondsPastTheMinute;
+                }, s => _localizationData.ComaX0ThroughX1);
 
             return description;
         }
@@ -257,17 +256,15 @@ namespace Beamable.CronExpression
         private string GetMinutesDescription()
         {
             var secondsExpression = _expressionParts[0];
-            var description = GetSegmentDescription(_expressionParts[1], GetString("EveryMinute"), s => s,
-                s => string.Format(GetString("EveryX0Minutes"), s), s => GetString("MinutesX0ThroughX1PastTheHour"),
+            var description = GetSegmentDescription(_expressionParts[1], _localizationData.EveryMinute, s => s,
+                s => string.Format(_localizationData.EveryX0Minutes, s), s => _localizationData.MinutesX0ThroughX1PastTheHour,
                 s =>
                 {
                     var i = 0;
                     if (int.TryParse(s, out i))
-                        return s == "0" && secondsExpression == "" ? string.Empty :
-                            int.Parse(s) < 20 ? GetString("AtX0MinutesPastTheHour") :
-                            GetString("AtX0MinutesPastTheHourGt20") ?? GetString("AtX0MinutesPastTheHour");
-                    return GetString("AtX0MinutesPastTheHour");
-                }, s => GetString("ComaMinX0ThroughMinX1") ?? GetString("ComaX0ThroughX1"));
+                        return s == "0" && secondsExpression == "" ? string.Empty : _localizationData.AtX0MinutesPastTheHour;
+                    return _localizationData.AtX0MinutesPastTheHour;
+                }, s => _localizationData.ComaX0ThroughX1);
 
             return description;
         }
@@ -279,9 +276,9 @@ namespace Beamable.CronExpression
         private string GetHoursDescription()
         {
             var expression = _expressionParts[2];
-            var description = GetSegmentDescription(expression, GetString("EveryHour"), s => FormatTime(s, "0"),
-                s => string.Format(GetString("EveryX0Hours"), s), s => GetString("BetweenX0AndX1"),
-                s => GetString("AtX0"), s => GetString("ComaMinX0ThroughMinX1") ?? GetString("ComaX0ThroughX1"));
+            var description = GetSegmentDescription(expression, _localizationData.EveryHour, s => FormatTime(s, "0"),
+                s => string.Format(_localizationData.EveryX0Hours, s), s => _localizationData.BetweenX0AndX1,
+                s => _localizationData.AtX0, s => _localizationData.ComaX0ThroughX1);
 
             return description;
         }
@@ -300,13 +297,13 @@ namespace Beamable.CronExpression
                 // or a dupe description like "every day, every day".
                 description = string.Empty;
             else
-                description = GetSegmentDescription(_expressionParts[5], GetString("ComaEveryDay"), s =>
+                description = GetSegmentDescription(_expressionParts[5], _localizationData.ComaEveryDay, s =>
                 {
                     var exp = s.Contains("#") ? s.Remove(s.IndexOf("#")) :
                         s.Contains("L") ? s.Replace("L", string.Empty) : s;
 
                     return _culture.DateTimeFormat.GetDayName((DayOfWeek)Convert.ToInt32(exp));
-                }, s => string.Format(GetString("ComaEveryX0DaysOfTheWeek"), s), s => GetString("ComaX0ThroughX1"), s =>
+                }, s => string.Format(_localizationData.ComaEveryX0DaysOfTheWeek, s), s => _localizationData.ComaX0ThroughX1, s =>
                 {
                     string format = null;
                     if (s.Contains("#"))
@@ -316,36 +313,36 @@ namespace Beamable.CronExpression
                         switch (dayOfWeekOfMonthNumber)
                         {
                             case "1":
-                                dayOfWeekOfMonthDescription = GetString("First");
+                                dayOfWeekOfMonthDescription = _localizationData.First;
                                 break;
                             case "2":
-                                dayOfWeekOfMonthDescription = GetString("Second");
+                                dayOfWeekOfMonthDescription = _localizationData.Second;
                                 break;
                             case "3":
-                                dayOfWeekOfMonthDescription = GetString("Third");
+                                dayOfWeekOfMonthDescription = _localizationData.Third;
                                 break;
                             case "4":
-                                dayOfWeekOfMonthDescription = GetString("Fourth");
+                                dayOfWeekOfMonthDescription = _localizationData.Fourth;
                                 break;
                             case "5":
-                                dayOfWeekOfMonthDescription = GetString("Fifth");
+                                dayOfWeekOfMonthDescription = _localizationData.Fifth;
                                 break;
                         }
 
-                        format = string.Concat(GetString("ComaOnThe"), dayOfWeekOfMonthDescription,
-                            GetString("SpaceX0OfTheMonth"));
+                        format = string.Concat(_localizationData.ComaOnThe, dayOfWeekOfMonthDescription,
+                            _localizationData.SpaceX0OfTheMonth);
                     }
                     else if (s.Contains("L"))
                     {
-                        format = GetString("ComaOnTheLastX0OfTheMonth");
+                        format = _localizationData.ComaOnTheLastX0OfTheMonth;
                     }
                     else
                     {
-                        format = GetString("ComaOnlyOnX0");
+                        format = _localizationData.ComaOnlyOnX0;
                     }
 
                     return format;
-                }, s => GetString("ComaX0ThroughX1"));
+                }, s => _localizationData.ComaX0ThroughX1);
 
             return description;
         }
@@ -358,10 +355,10 @@ namespace Beamable.CronExpression
         {
             var description = GetSegmentDescription(_expressionParts[4], string.Empty,
                 s => new DateTime(DateTime.Now.Year, Convert.ToInt32(s), 1).ToString("MMMM", _culture),
-                s => string.Format(GetString("ComaEveryX0Months"), s),
-                s => GetString("ComaMonthX0ThroughMonthX1") ?? GetString("ComaX0ThroughX1"),
-                s => GetString("ComaOnlyInX0"),
-                s => GetString("ComaMonthX0ThroughMonthX1") ?? GetString("ComaX0ThroughX1"));
+                s => string.Format(_localizationData.ComaEveryX0Months, s),
+                s => _localizationData.ComaX0ThroughX1,
+                s => _localizationData.ComaOnlyInX0,
+                s => _localizationData.ComaX0ThroughX1);
 
             return description;
         }
@@ -378,11 +375,11 @@ namespace Beamable.CronExpression
             switch (expression)
             {
                 case "L":
-                    description = GetString("ComaOnTheLastDayOfTheMonth");
+                    description = _localizationData.ComaOnTheLastDayOfTheMonth;
                     break;
                 case "WL":
                 case "LW":
-                    description = GetString("ComaOnTheLastWeekdayOfTheMonth");
+                    description = _localizationData.ComaOnTheLastWeekdayOfTheMonth;
                     break;
                 default:
                     var weekDayNumberMatches = new Regex("(\\d{1,2}W)|(W\\d{1,2})");
@@ -392,9 +389,9 @@ namespace Beamable.CronExpression
                         var dayNumber = int.Parse(m.Value.Replace("W", ""));
 
                         var dayString = dayNumber == 1
-                            ? GetString("FirstWeekday")
-                            : string.Format(GetString("WeekdayNearestDayX0"), dayNumber);
-                        description = string.Format(GetString("ComaOnTheX0OfTheMonth"), dayString);
+                            ? _localizationData.FirstWeekday
+                            : string.Format(_localizationData.WeekdayNearestDayX0, dayNumber);
+                        description = string.Format(_localizationData.ComaOnTheX0OfTheMonth, dayString);
 
                         break;
                     }
@@ -406,14 +403,14 @@ namespace Beamable.CronExpression
                         {
                             var m = lastDayOffSetMatches.Match(expression);
                             var offSetDays = m.Groups[1].Value;
-                            description = string.Format(GetString("CommaDaysBeforeTheLastDayOfTheMonth"), offSetDays);
+                            description = string.Format(_localizationData.CommaDaysBeforeTheLastDayOfTheMonth, offSetDays);
                             break;
                         }
 
-                        description = GetSegmentDescription(expression, GetString("ComaEveryDay"), s => s,
-                            s => s == "1" ? GetString("ComaEveryDay") : GetString("ComaEveryX0Days"),
-                            s => GetString("ComaBetweenDayX0AndX1OfTheMonth"), s => GetString("ComaOnDayX0OfTheMonth"),
-                            s => GetString("ComaX0ThroughX1"));
+                        description = GetSegmentDescription(expression, _localizationData.ComaEveryDay, s => s,
+                            s => s == "1" ? _localizationData.ComaEveryDay : _localizationData.ComaEveryX0Days,
+                            s => _localizationData.ComaBetweenDayX0AndX1OfTheMonth, s => _localizationData.ComaOnDayX0OfTheMonth,
+                            s => _localizationData.ComaX0ThroughX1);
                         break;
                     }
             }
@@ -429,10 +426,10 @@ namespace Beamable.CronExpression
         {
             var description = GetSegmentDescription(_expressionParts[6], string.Empty,
                 s => Regex.IsMatch(s, @"^\d+$") ? new DateTime(Convert.ToInt32(s), 1, 1).ToString("yyyy") : s,
-                s => string.Format(GetString("ComaEveryX0Years"), s),
-                s => GetString("ComaYearX0ThroughYearX1") ?? GetString("ComaX0ThroughX1"),
-                s => GetString("ComaOnlyInYearX0"),
-                s => GetString("ComaYearX0ThroughYearX1") ?? GetString("ComaX0ThroughX1"));
+                s => string.Format(_localizationData.ComaEveryX0Years, s),
+                s => _localizationData.ComaX0ThroughX1,
+                s => _localizationData.ComaOnlyInYearX0,
+                s => _localizationData.ComaX0ThroughX1);
 
             return description;
         }
@@ -498,7 +495,7 @@ namespace Beamable.CronExpression
                     //remove any leading comma
                     rangeItemDescription = rangeItemDescription.Replace(", ", "");
 
-                    description += string.Format(GetString("CommaStartingX0"), rangeItemDescription);
+                    description += string.Format(_localizationData.CommaStartingX0, rangeItemDescription);
                 }
             }
             else if (expression.Contains(","))
@@ -516,7 +513,7 @@ namespace Beamable.CronExpression
                     }
 
                     if (i > 0 && segments.Length > 1 && (i == segments.Length - 1 || segments.Length == 2))
-                        descriptionContent += GetString("SpaceAndSpace");
+                        descriptionContent += _localizationData.SpaceAndSpace;
 
                     if (segments[i].Contains("-"))
                     {
@@ -592,7 +589,7 @@ namespace Beamable.CronExpression
             var period = string.Empty;
             if (!_use24HourTimeFormat)
             {
-                period = GetString(hour >= 12 ? "PMPeriod" : "AMPeriod");
+                period = hour >= 12 ? _localizationData.PMPeriod : _localizationData.AMPeriod;
                 if (period.Length > 0)
                     // add preceeding space
                     period = string.Concat(" ", period);
@@ -620,23 +617,13 @@ namespace Beamable.CronExpression
         {
             if (!useVerboseFormat)
             {
-                description = description.Replace(GetString("ComaEveryMinute"), string.Empty);
-                description = description.Replace(GetString("ComaEveryHour"), string.Empty);
-                description = description.Replace(GetString("ComaEveryDay"), string.Empty);
+                description = description.Replace(_localizationData.ComaEveryMinute, string.Empty);
+                description = description.Replace(_localizationData.ComaEveryHour, string.Empty);
+                description = description.Replace(_localizationData.ComaEveryDay, string.Empty);
                 description = Regex.Replace(description, @"\, ?$", "");
             }
 
             return description;
-        }
-        
-        /// <summary>
-        ///     Gets a localized string resource
-        /// </summary>
-        /// <param name="resourceName">name of the resource</param>
-        /// <returns>translated resource</returns>
-        private string GetString(string resourceName)
-        {
-            return _localizationData.GetString(resourceName);
         }
 
         #region Static
