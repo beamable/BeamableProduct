@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- `InitializeServicesAttribute` can now be used over static methods to declare initialization hooks in microservices. Supported signatures are async/regular `
+  Task(IServiceInitializer)`, async/regular `Promise<Unit>(IServiceInitializer)` and synchronous `void(IServiceInitializer)`. 
+  `void` methods must be fully synchronous --- it is not possible to guarantee that any promises started within a `void` initialization 
+  method will have completed by the time the C#MS is receiving traffic.  
+- Can have multiple `ConfigureServicesAttribute` and `InitializeServicesAttribute` explicitly ordered via `ExecutionOrder` property of the attributes.
 - `SearchStats()` admin method is usable from client and microservice code now.
 - `CoreConfiguration` to project settings to tweak how our Promise library handles uncaught promises by default
 - Exposed `CreateLeaderboard` methods in `IMicroserviceLeaderboardsApi` to enable the dynamic creation of leaderboards in C#MS (can take a `LeaderboardRef` as a template or explicit parameters). 
