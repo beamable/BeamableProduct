@@ -66,18 +66,15 @@ Image#dropDownIcon{
     height: 5px;
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown Close.png")
 }
-#checkbox{
-    margin-left: 10px;
-    align-self: center;
-    justify-content: center;
-}
+
 .buttonText{
     align-self: center;
     align-content: center;
 }
 
-#selectAll{
-    margin-left: 5px;
+#selectAllLabeledCheckbox{
+    margin-left: 20px;
+	align-self: center;
     position: relative;
     flex-grow: 1;
     justify-content: flex-start;

@@ -40,6 +40,7 @@ export interface PlayerDataInterface {
     readonly email: string;
     readonly createdTimeMillis: number;
     readonly id: number;
+    readonly deviceId: string;
     readonly updatedTimeMillis: number;
     readonly gamerTags: Array<GamerTag>;
     readonly thirdParties: Array<ThirdPartyAssociation>;
@@ -49,18 +50,20 @@ export class PlayerData {
     readonly email: string;
     readonly createdTimeMillis: number;
     readonly id: number;
+    readonly deviceId: string;
     readonly updatedTimeMillis: number;
     readonly gamerTags: Array<GamerTag>;
     readonly thirdParties: Array<ThirdPartyAssociation>;
     private defaultRealmId: string;
 
     constructor(
-        {email, createdTimeMillis, id, updatedTimeMillis, gamerTags, thirdParties}: PlayerDataInterface,
+        {email, createdTimeMillis, id, deviceId, updatedTimeMillis, gamerTags, thirdParties}: PlayerDataInterface,
         realmId: string
     ) {
         this.email = email;
         this.createdTimeMillis = createdTimeMillis;
         this.id = id;
+        this.deviceId = deviceId ?? '';
         this.updatedTimeMillis = updatedTimeMillis;
         this.gamerTags = gamerTags;
         this.thirdParties = thirdParties;
@@ -74,20 +77,28 @@ export class PlayerData {
 
         return this.gamerTags.find((gamerTag: any) => gamerTag.projectId === realmId)?.gamerTag;
     }
+
+    getNonExistingGamerTagForRealmMessage() {
+        if (!this.gamerTagForRealm()) {
+            return 'The player exists, but has never logged into this realm and has no gamertag. You can not select this account.'
+        }
+        return null
+    }
 }
 
 
 export class PlayersService extends BaseService {
     public readonly emailOrDbid: Writable<string> = this.writable('players.emailOrDbid');
     public readonly playerError: Writable<string> = this.writable('players.playerError');
-
-    public readonly playerData: Readable<PlayerData> = this.derived(
+    public playerData: Writable<PlayerData> = this.writable('players.playerData')
+    
+    public readonly playerDataSearch: Readable<PlayerData[]> = this.derived(
         [this.app.router.realmId, this.emailOrDbid],
-        (args: [string, string], set:(next: PlayerData | undefined) => void) => {
+        (args: [string, string], set:(next: PlayerData[] | undefined) => void) => {
         const [realmId, emailOrDbid] = args;
 
         if (realmId && emailOrDbid){
-            this.findPlayer(emailOrDbid, true).then(set);
+            this.searchPlayers(emailOrDbid).then(set);
         } else {
             set(undefined);
         }
@@ -107,6 +118,19 @@ export class PlayersService extends BaseService {
                 playerQuery: value
             }));
         });
+    }
+
+    @roleGuard(['admin', 'developer'])
+    public async searchPlayers(term: string): Promise<PlayerData[]> {
+        const { http, router } = this.app;
+        const query = encodeURIComponent(term);
+        const response = await http.request(`/basic/accounts/search?query=${query}&page=1&pagesize=30`, void 0, 'get');   
+        let result: PlayerData[] = [];
+        for(let n = 0; n < response.data.accounts.length; n++) {
+            let playerData = response.data.accounts[n] as PlayerDataInterface;
+            result.push(new PlayerData(playerData, router.getRealmId()));
+        }
+        return result;
     }
 
     @roleGuard(['admin', 'developer'])
@@ -157,6 +181,19 @@ export class PlayersService extends BaseService {
             newEmail,
         };
         const url = `/object/accounts/${player.id}/admin/email`;
+        const response = await http.request(url, request, 'put');
+
+        return new PlayerData(response.data as PlayerDataInterface, router.getRealmId());
+    }
+
+    async updateDeviceId(player: PlayerData, newDeviceId: string): Promise<PlayerData> {
+        const { http, router } = this.app;
+
+        const request = newDeviceId && newDeviceId.length > 0 
+            ? { deviceId: newDeviceId }
+            : null;
+        
+        const url = `/object/accounts/${player.id}`;
         const response = await http.request(url, request, 'put');
 
         return new PlayerData(response.data as PlayerDataInterface, router.getRealmId());

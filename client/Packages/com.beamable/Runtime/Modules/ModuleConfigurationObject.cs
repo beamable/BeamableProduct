@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using Beamable.Common;
 using UnityEditor;
 using UnityEngine;
 
@@ -37,20 +38,20 @@ namespace Beamable
 
       }
 
-      public static void PrepareInstances(params Type[] configTypes)
+#if UNITY_EDITOR
+      public static Promise PrepareInstances(params Type[] configTypes)
       {
          var writtenAssetPathToType = new Dictionary<string, Type>();
+         var promise = new Promise();
 
          try
          {
-            AssetDatabase.StartAssetEditing();
+            UnityEditor.AssetDatabase.StartAssetEditing();
             foreach (var type in configTypes)
             {
                var name = type.Name;
                var data = Resources.Load(name, type);
-#if !UNITY_EDITOR
-            continue;
-#endif
+
                if (data != null) continue;
 
                var assetPath = $"{CONFIG_RESOURCES_DIR}/{name}.asset";
@@ -72,34 +73,51 @@ namespace Beamable
                var sourceData = File.ReadAllText(sourcePath);
                File.WriteAllText(assetPath, sourceData);
                writtenAssetPathToType.Add(assetPath, type);
-               AssetDatabase.ImportAsset(assetPath);
+               UnityEditor.AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceSynchronousImport);
             }
          }
          finally
          {
-            AssetDatabase.StopAssetEditing();
+            UnityEditor.AssetDatabase.StopAssetEditing();
+            UnityEditor.AssetDatabase.SaveAssets();
          }
 
+         var failedTypes = new HashSet<Type>();
          foreach (var kvp in writtenAssetPathToType)
          {
             var assetPath = kvp.Key;
             var assetType = kvp.Value;
 
-            var data = Resources.Load(assetType.Name, assetType) ?? AssetDatabase.LoadAssetAtPath(assetPath, assetType);
+            var data = Resources.Load(assetType.Name, assetType) ?? UnityEditor.AssetDatabase.LoadAssetAtPath(assetPath, assetType);
             var configData = data as BaseModuleConfigurationObject;
             if (configData == null)
             {
-               throw new ModuleConfigurationNotReadyException(assetType);
+               failedTypes.Add(assetType);
+               continue;
             }
             configData.OnFreshCopy();
-            EditorUtility.SetDirty(data);
+            UnityEditor.EditorUtility.SetDirty(data);
          }
 
+         if (failedTypes.Count > 0)
+         {
+            EditorApplication.delayCall += () =>
+            {
+               PrepareInstances(configTypes)
+                  .Then(promise.CompleteSuccess)
+                  .Error(promise.CompleteError);
+            };
+            return promise;
+         }
          if (writtenAssetPathToType.Count > 0)
          {
-            SettingsService.NotifySettingsProviderChanged();
+            UnityEditor.SettingsService.NotifySettingsProviderChanged();
          }
+
+         promise.CompleteSuccess(PromiseBase.Unit);
+         return promise;
       }
+      #endif
    }
 
    public abstract class AbsModuleConfigurationObject<TConstants> : BaseModuleConfigurationObject
@@ -149,16 +167,16 @@ namespace Beamable
             var assetPath = $"{CONFIG_RESOURCES_DIR}/{name}.asset";
             var sourceData = File.ReadAllText(sourcePath);
             File.WriteAllText(assetPath, sourceData);
-            AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.DontDownloadFromCacheServer);
-            data =  Resources.Load<TConfig>(name) ?? AssetDatabase.LoadAssetAtPath<TConfig>(assetPath);
+            UnityEditor.AssetDatabase.ImportAsset(assetPath, UnityEditor.ImportAssetOptions.DontDownloadFromCacheServer);
+            data =  Resources.Load<TConfig>(name) ?? UnityEditor.AssetDatabase.LoadAssetAtPath<TConfig>(assetPath);
             if (data == null)
             {
                throw new ModuleConfigurationNotReadyException(typeof(TConfig));
             }
             data.OnFreshCopy();
 
-            EditorUtility.SetDirty(data);
-            SettingsService.NotifySettingsProviderChanged();
+            UnityEditor.EditorUtility.SetDirty(data);
+            UnityEditor.SettingsService.NotifySettingsProviderChanged();
          }
 #endif
          _typeToConfig[type] = data;

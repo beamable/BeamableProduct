@@ -19,8 +19,12 @@
             </engine:Button>
 
             <engine:Button class="boundedButton" name="createNew">
-                <engine:Image name="createNewIcon"/>
-                <engine:Label text="Create New" class="buttonText"/>
+                <engine:VisualElement class="mainPart">
+                    <engine:Image name="createNewIcon"/>
+                    <engine:Label text="Create New" class="buttonText"/>
+                </engine:VisualElement>
+                <engine:Image name="dropDownImg" class="--image-scale-to-fit">
+                </engine:Image>
             </engine:Button>
 
             <engine:Button  class="boundedButton" name="publish">

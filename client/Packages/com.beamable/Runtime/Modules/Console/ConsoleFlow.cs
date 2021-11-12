@@ -1,1 +1,571 @@
-﻿using System;using System.Collections;using System.Collections.Generic;using System.Linq;using System.Text;using Beamable.ConsoleCommands;using Beamable.InputManagerIntegration;using Beamable.Service;using UnityEngine;using UnityEngine.UI;namespace Beamable.Console{    [HelpURL(BeamableConstants.URL_FEATURE_ADMIN_FLOW)]    public class ConsoleFlow : MonoBehaviour    {        public static ConsoleFlow Instance;        private static readonly Dictionary<string, ConsoleCommand> ConsoleCommandsByName =            new Dictionary<string, ConsoleCommand>();        public Canvas canvas;        public Text txtOutput;        public InputField txtInput;        public Text txtAutoCompleteSuggestion;        private bool _isInitialized;        private bool _showNextTick;        private bool _isActive;        private int _fingerCount;        private bool _waitForRelease;        private Vector2 _averagePositionStart;        private IBeamableAPI _beamable;        private TextAutoCompleter _textAutoCompleter;        private ConsoleHistory _consoleHistory;#if UNITY_ANDROID // webGL doesn't support the touchscreen keyboard.        private bool _isMobileKeyboardOpened = false;#endif        [SerializeField] private RectTransform consolePortrait;        [SerializeField] private RectTransform consoleLandscape;                        [Space]         [Header("Text auto complete settings")]        [SerializeField] private KeyCode acceptSuggestionKey = KeyCode.Tab;                [Header("History settings")]        [SerializeField] private KeyCode historyPreviousKey = KeyCode.UpArrow;        [SerializeField] private KeyCode historyNextKey = KeyCode.DownArrow;        private void Start()        {            if (Instance)            {                Destroy(gameObject);                Instance.InitializeConsole();                return;            }            Instance = this;            DontDestroyOnLoad(gameObject);            InitializeConsole();        }        private void Awake()        {            HideConsole();#if UNITY_ANDROID || UNITY_IOS            StartCoroutine(CheckMobileKeyboardState());#endif        }        private void Update()        {            if (!_isInitialized) return;            if (_showNextTick)            {                DoShow();                _showNextTick = false;            }            if (ConsoleShouldToggle() && ConsoleIsEnabled()) ToggleConsole();            if (Input.GetKeyDown(historyPreviousKey))            {                txtInput.text = _consoleHistory.Previous();                txtInput.caretPosition = txtInput.text.Length;            }            else if (Input.GetKeyDown(historyNextKey))            {                txtInput.text = _consoleHistory.Next();                txtInput.caretPosition = txtInput.text.Length;            }            else if (Input.GetKeyDown(acceptSuggestionKey))            {                _textAutoCompleter.AcceptSuggestedCommand();            }                        }        private async void InitializeConsole()        {            _isInitialized = false;            txtInput.interactable = false;            // We want to ensure that we create the instance of the Beamable API if the console is the only thing            // in the scene.            _beamable = await API.Instance;            _textAutoCompleter = new TextAutoCompleter(ref txtInput, ref txtAutoCompleteSuggestion);            _consoleHistory = new ConsoleHistory();            ServiceManager.ProvideWithDefaultContainer(new BeamableConsole());            var console = ServiceManager.Resolve<BeamableConsole>();            console.OnLog += Log;            console.OnExecute += ExecuteCommand;            console.OnCommandRegistered += RegisterCommand;            try            {                console.LoadCommands();            }            catch (Exception)            {                Debug.LogError("Unable to load console commands.");            }            _textAutoCompleter.FindMatchingCommands(txtInput.text);            txtInput.onValueChanged.AddListener(_textAutoCompleter.FindMatchingCommands);            txtInput.onEndEdit.AddListener(evt =>            {                if (txtInput.text.Length > 0) Execute(txtInput.text);            });            txtInput.interactable = true;            if (canvas.isActiveAndEnabled) txtInput.Select();            _isInitialized = true;            Log("Console ready");        }        /// <summary>        ///     Console should toggle if the toggle key was pressed OR a 3 finger swipe occurred on device.        /// </summary>        private bool ConsoleShouldToggle()        {            var shouldToggle = BeamableInput.IsActionTriggered(ConsoleConfiguration.Instance.ToggleAction);#if !ENABLE_INPUT_SYSTEM || ENABLE_LEGACY_INPUT_MANAGER            if (shouldToggle)                // Early out if we already know we must toggle.                return true;            var fingerCount = 0;            var averagePosition = Vector2.zero;            var touchCount = Input.touchCount;            for (var i = 0; i < touchCount; ++i)            {                var touch = Input.GetTouch(i);                if (touch.phase != TouchPhase.Ended && touch.phase != TouchPhase.Canceled)                {                    fingerCount++;                    averagePosition += touch.position;                }            }            switch (fingerCount)            {                case 3 when !_waitForRelease:                {                    averagePosition /= 3;                    if (_fingerCount != 3)                    {                        _averagePositionStart = averagePosition;                    }                    else                    {                        if ((_averagePositionStart - averagePosition).magnitude > 20.0f)                        {                            _waitForRelease = true;                            shouldToggle = true;                        }                    }                    break;                }                case 0 when _waitForRelease:                    _waitForRelease = false;                    break;            }            _fingerCount = fingerCount;#endif            return shouldToggle;        }        private bool ConsoleIsEnabled()        {#if UNITY_EDITOR            return true;#else            return ConsoleConfiguration.Instance.ForceEnabled || _beamable.User.HasScope("cli:console");#endif        }        private void Execute(string txt)        {            if (!_isActive) return;                        _consoleHistory.Push(txt);            var parts = txt.Split(' ');            txtInput.text = "";            txtInput.Select();            txtInput.ActivateInputField();            if (parts.Length == 0) return;            var args = new string[parts.Length - 1];            for (var i = 1; i < parts.Length; i++) args[i - 1] = parts[i];            Log(ServiceManager.Resolve<BeamableConsole>().Execute(parts[0], args));        }        private static void RegisterCommand(BeamableConsoleCommandAttribute command, ConsoleCommandCallback callback)        {            foreach (var name in command.Names)            {                var cmd = new ConsoleCommand { Command = command, Callback = callback };                ConsoleCommandsByName[name.ToLower()] = cmd;            }        }        private string ExecuteCommand(string command, string[] args)        {            if (command == "help") return OnHelp(args);            if (ConsoleCommandsByName.TryGetValue(command.ToLower(), out var cmd))            {                var echoLine = "> " + command;                foreach (var arg in args) echoLine += " " + arg;                Log(echoLine);                return cmd.Callback(args);            }            return "Unknown command";        }        private string OnHelp(params string[] args)        {            if (args.Length == 0)            {                var builder = new StringBuilder();                builder.AppendLine("Listing commands:");                var uniqueCommands = new HashSet<ConsoleCommand>();                var commands = ConsoleCommandsByName.Values;                foreach (var command in commands)                {                    if (uniqueCommands.Contains(command)) continue;                    uniqueCommands.Add(command);                    var line = $"{command.Command.Usage} - {command.Command.Description}\n";                    Debug.Log(line);                    builder.Append(line);                }                return builder.ToString();            }            var commandToGetHelpAbout = args[0].ToLower();            if (ConsoleCommandsByName.TryGetValue(commandToGetHelpAbout, out var found))                return                    $"Help information about {commandToGetHelpAbout}\n\tDescription: {found.Command.Description}\n\tUsage: {found.Command.Usage}";            return $"Cannot find help information about {commandToGetHelpAbout}. Are you sure it is a valid command?";        }        public void Log(string line)        {            Debug.Log(line);            txtOutput.text += Environment.NewLine + line;        }        public void ToggleConsole()        {            if (_isActive)                HideConsole();            else                ShowConsole();        }        public void HideConsole()        {            _isActive = false;            txtInput.DeactivateInputField();            txtInput.text = "";            canvas.enabled = false;        }        public void ShowConsole()        {            if (!enabled)            {                Debug.LogWarning("Cannot open the console, because it isn't enabled");                return;            }            _showNextTick = true;        }        private void DoShow()        {            _isActive = true;            canvas.enabled = true;            txtInput.text = "";            txtInput.Select();            txtInput.ActivateInputField();        }        private struct ConsoleCommand        {            public BeamableConsoleCommandAttribute Command;            public ConsoleCommandCallback Callback;        }        private WaitForSeconds _mobileCheckWaiter = new WaitForSeconds(0.1f);        private WaitForSeconds _keyboardOpenWaiter = new WaitForSeconds(0.5f);        private IEnumerator CheckMobileKeyboardState()        {#if UNITY_ANDROID // webGL doesn't support the touchscreen keyboard.            while (true)            {                if (TouchScreenKeyboard.visible && !_isMobileKeyboardOpened)                {                    yield return _keyboardOpenWaiter;                    var keyboardHeight = GetKeyboardHeight() * Screen.height + 225;                    consolePortrait.sizeDelta = new Vector2(0, -keyboardHeight);                    consoleLandscape.sizeDelta = new Vector2(0, -keyboardHeight);                    _isMobileKeyboardOpened = true;                }                else if (!TouchScreenKeyboard.visible && _isMobileKeyboardOpened)                {                    consolePortrait.sizeDelta = Vector2.zero;                    consoleLandscape.sizeDelta = Vector2.zero;                    _isMobileKeyboardOpened = false;                }                yield return _mobileCheckWaiter;            }#else            yield return null;#endif        }        private float GetKeyboardHeight()        {            if (Application.isEditor) return txtInput.isFocused ? 0.25f : 0;#if UNITY_ANDROID            using (AndroidJavaClass UnityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))            {                if (!txtInput.isFocused)                {                    return 0f;                }                var unityPlayer = UnityClass.GetStatic<AndroidJavaObject>("currentActivity")                    .Get<AndroidJavaObject>("mUnityPlayer");                var view = unityPlayer.Call<AndroidJavaObject>("getView");                var dialog = unityPlayer.Get<AndroidJavaObject>("mSoftInputDialog");                var decorHeight = 0;                if (view != null && dialog != null)                {                    if (!txtInput.shouldHideMobileInput)                    {                        var decorView = dialog.Call<AndroidJavaObject>("getWindow")                            .Call<AndroidJavaObject>("getDecorView");                        if (decorView != null)                            decorHeight = decorView.Call<int>("getHeight");                    }                    using (AndroidJavaObject rect = new AndroidJavaObject("android.graphics.Rect"))                    {                        view.Call("getWindowVisibleDisplayFrame", rect);                        return (float) (Screen.height - rect.Call<int>("height") + decorHeight) / Screen.height;                    }                }                return 0.25f;            }#elif UNITY_IOS                return TouchScreenKeyboard.area.height / Screen.height;#else            return 0.0f;#endif        }        private class TextAutoCompleter        {            private readonly InputField _inputField;            private readonly Text _textSuggestion;            private int _commandIndex;            private string _currentSuggestedCommand = string.Empty;            private List<string> _foundCommands = new List<string>();            private string _previousInput = string.Empty;            private bool isFinderLocked = false;            public TextAutoCompleter(ref InputField inputField, ref Text textSuggestion)            {                _inputField = inputField;                _textSuggestion = textSuggestion;            }            public void FindMatchingCommands(string input)            {                if (isFinderLocked)                {                    isFinderLocked = false;                    return;                }                                _commandIndex = 0;                if (string.IsNullOrWhiteSpace(input))                {                    _foundCommands = ConsoleCommandsByName.OrderBy(x => x.Key)                        .Select(x => x.Key)                        .ToList();                                        _currentSuggestedCommand = string.Empty;                    _textSuggestion.text = string.Empty;                }                else                {                    _foundCommands = input.Length < _previousInput.Length || _previousInput.Length == 0                        ? ConsoleCommandsByName.Where(x => x.Key.StartsWith(input))                            .OrderBy(x => x.Key)                            .Select(x => x.Key)                            .ToList()                        : _foundCommands.Where(x => x.StartsWith(input))                            .ToList();                    _currentSuggestedCommand = _foundCommands.Count > 0 ? _foundCommands[0] : string.Empty;                    SuggestCommand();                }                _previousInput = input;            }            private void SuggestCommand()            {                if (string.IsNullOrWhiteSpace(_currentSuggestedCommand))                {                    _textSuggestion.text = string.Empty;                    return;                }                _textSuggestion.text = _currentSuggestedCommand;                _inputField.caretPosition = _currentSuggestedCommand.Length;            }            public void AcceptSuggestedCommand()            {                if (_foundCommands.Count == 0)                {                    return;                }                                isFinderLocked = true;                if (_inputField.text == _currentSuggestedCommand)                {                    NextCommand();                }                _inputField.text = _currentSuggestedCommand;                _inputField.caretPosition = _currentSuggestedCommand.Length;                _textSuggestion.text = string.Empty;            }            private void NextCommand()            {                _commandIndex++;                if (_commandIndex > _foundCommands.Count - 1)                {                    _commandIndex = 0;                }                _currentSuggestedCommand = _foundCommands[_commandIndex];                SuggestCommand();            }        }        private class ConsoleHistory        {            private readonly List<string> _history = new List<string>();            private int _position = 0;                        public void Push(string text)            {                if (string.IsNullOrEmpty(text))                {                    return;                }                _history.Add(text);                _position = _history.Count;            }            public string Next()            {                _position++;                if (_position < _history.Count)                {                    return _history[_position];                }                _position = _history.Count;                return string.Empty;            }            public string Previous()            {                if (_history.Count == 0)                {                    return string.Empty;                }                _position--;                if (_position < 0)                {                    _position = 0;                }                return _history[_position];            }        }    }}
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Beamable.ConsoleCommands;
+using Beamable.InputManagerIntegration;
+using Beamable.Service;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace Beamable.Console
+{
+    [HelpURL(BeamableConstants.URL_FEATURE_ADMIN_FLOW)]
+    public class ConsoleFlow : MonoBehaviour
+    {
+        public static ConsoleFlow Instance;
+
+        private static readonly Dictionary<string, ConsoleCommand> ConsoleCommandsByName =
+            new Dictionary<string, ConsoleCommand>();
+
+        public Canvas canvas;
+        public Text txtOutput;
+        public InputField txtInput;
+        public Text txtAutoCompleteSuggestion;
+        private bool _isInitialized;
+        private bool _showNextTick;
+        private bool _isActive;
+        private int _fingerCount;
+        private bool _waitForRelease;
+        private Vector2 _averagePositionStart;
+        private IBeamableAPI _beamable;
+        private TextAutoCompleter _textAutoCompleter;
+        private ConsoleHistory _consoleHistory;
+        private string consoleText;
+
+#if UNITY_ANDROID // webGL doesn't support the touchscreen keyboard.
+        private bool _isMobileKeyboardOpened = false;
+        #pragma warning disable CS0649
+        [SerializeField] private RectTransform consolePortrait;
+        [SerializeField] private RectTransform consoleLandscape;
+        #pragma warning restore CS0649
+#endif
+
+        [Space] [Header("Text auto complete settings")] [SerializeField]
+        private KeyCode acceptSuggestionKey = KeyCode.Tab;
+
+        [Header("History settings")] [SerializeField]
+        private KeyCode historyPreviousKey = KeyCode.UpArrow;
+
+        [SerializeField] private KeyCode historyNextKey = KeyCode.DownArrow;
+
+        private void Start()
+        {
+            if (Instance)
+            {
+                Destroy(gameObject);
+                Instance.InitializeConsole();
+                return;
+            }
+
+
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+            InitializeConsole();
+        }
+
+        private void Awake()
+        {
+            HideConsole();
+
+#if UNITY_ANDROID || UNITY_IOS
+            StartCoroutine(CheckMobileKeyboardState());
+#endif
+        }
+
+        private void Update()
+        {
+            if (!_isInitialized) return;
+
+            if (_showNextTick)
+            {
+                DoShow();
+                _showNextTick = false;
+            }
+
+            if (ConsoleShouldToggle() && ConsoleIsEnabled()) ToggleConsole();
+
+            if (Input.GetKeyDown(historyPreviousKey))
+            {
+                txtInput.text = _consoleHistory.Previous();
+                txtInput.caretPosition = txtInput.text.Length;
+            }
+            else if (Input.GetKeyDown(historyNextKey))
+            {
+                txtInput.text = _consoleHistory.Next();
+                txtInput.caretPosition = txtInput.text.Length;
+            }
+            else if (Input.GetKeyDown(acceptSuggestionKey))
+            {
+                _textAutoCompleter.AcceptSuggestedCommand();
+            }
+        }
+
+        private async void InitializeConsole()
+        {
+            _isInitialized = false;
+            txtInput.interactable = false;
+
+            // We want to ensure that we create the instance of the Beamable API if the console is the only thing
+            // in the scene.
+            _beamable = await API.Instance;
+            _textAutoCompleter = new TextAutoCompleter(ref txtInput, ref txtAutoCompleteSuggestion);
+            _consoleHistory = new ConsoleHistory();
+
+            ServiceManager.ProvideWithDefaultContainer(new BeamableConsole());
+
+            var console = ServiceManager.Resolve<BeamableConsole>();
+            console.OnLog += Log;
+            console.OnExecute += ExecuteCommand;
+            console.OnCommandRegistered += RegisterCommand;
+            try
+            {
+                console.LoadCommands();
+            }
+            catch (Exception)
+            {
+                Debug.LogError("Unable to load console commands.");
+            }
+
+            _textAutoCompleter.FindMatchingCommands(txtInput.text);
+            txtInput.onValueChanged.AddListener(_textAutoCompleter.FindMatchingCommands);
+            txtInput.onEndEdit.AddListener(evt =>
+            {
+                if (txtInput.text.Length > 0) Execute(txtInput.text);
+            });
+
+            txtInput.interactable = true;
+            if (canvas.isActiveAndEnabled) txtInput.Select();
+
+            _isInitialized = true;
+
+            Log("Console ready");
+        }
+
+        /// <summary>
+        ///     Console should toggle if the toggle key was pressed OR a 3 finger swipe occurred on device.
+        /// </summary>
+        private bool ConsoleShouldToggle()
+        {
+            var shouldToggle = BeamableInput.IsActionTriggered(ConsoleConfiguration.Instance.ToggleAction);
+#if !ENABLE_INPUT_SYSTEM || ENABLE_LEGACY_INPUT_MANAGER
+            if (shouldToggle)
+                // Early out if we already know we must toggle.
+                return true;
+
+            var fingerCount = 0;
+            var averagePosition = Vector2.zero;
+            var touchCount = Input.touchCount;
+            for (var i = 0; i < touchCount; ++i)
+            {
+                var touch = Input.GetTouch(i);
+                if (touch.phase != TouchPhase.Ended && touch.phase != TouchPhase.Canceled)
+                {
+                    fingerCount++;
+                    averagePosition += touch.position;
+                }
+            }
+
+            switch (fingerCount)
+            {
+                case 3 when !_waitForRelease:
+                {
+                    averagePosition /= 3;
+                    if (_fingerCount != 3)
+                    {
+                        _averagePositionStart = averagePosition;
+                    }
+                    else
+                    {
+                        if ((_averagePositionStart - averagePosition).magnitude > 20.0f)
+                        {
+                            _waitForRelease = true;
+                            shouldToggle = true;
+                        }
+                    }
+
+                    break;
+                }
+                case 0 when _waitForRelease:
+                    _waitForRelease = false;
+                    break;
+            }
+
+            _fingerCount = fingerCount;
+#endif
+            return shouldToggle;
+        }
+
+        private bool ConsoleIsEnabled()
+        {
+#if UNITY_EDITOR
+            return true;
+#else
+            return ConsoleConfiguration.Instance.ForceEnabled || _beamable.User.HasScope("cli:console");
+#endif
+        }
+
+        private void Execute(string txt)
+        {
+            if (!_isActive) return;
+
+            _consoleHistory.Push(txt);
+            var parts = txt.Split(' ');
+            txtInput.text = "";
+            txtInput.Select();
+            txtInput.ActivateInputField();
+            if (parts.Length == 0) return;
+            var args = new string[parts.Length - 1];
+            for (var i = 1; i < parts.Length; i++) args[i - 1] = parts[i];
+
+            Log(ServiceManager.Resolve<BeamableConsole>().Execute(parts[0], args));
+        }
+
+        private static void RegisterCommand(BeamableConsoleCommandAttribute command, ConsoleCommandCallback callback)
+        {
+            foreach (var name in command.Names)
+            {
+                var cmd = new ConsoleCommand {Command = command, Callback = callback};
+                ConsoleCommandsByName[name.ToLower()] = cmd;
+            }
+        }
+
+        private string ExecuteCommand(string command, string[] args)
+        {
+            if (command == "help") return OnHelp(args);
+
+            if (ConsoleCommandsByName.TryGetValue(command.ToLower(), out var cmd))
+            {
+                var echoLine = "> " + command;
+                foreach (var arg in args) echoLine += " " + arg;
+
+                Log(echoLine);
+                return cmd.Callback(args);
+            }
+
+            return "Unknown command";
+        }
+
+        private string OnHelp(params string[] args)
+        {
+            if (args.Length == 0)
+            {
+                var builder = new StringBuilder();
+                builder.AppendLine("Listing commands:");
+                var uniqueCommands = new HashSet<ConsoleCommand>();
+                var commands = ConsoleCommandsByName.Values;
+                foreach (var command in commands)
+                {
+                    if (uniqueCommands.Contains(command)) continue;
+
+                    uniqueCommands.Add(command);
+                    var line = $"{command.Command.Usage} - {command.Command.Description}\n";
+                    Debug.Log(line);
+                    builder.Append(line);
+                }
+
+                return builder.ToString();
+            }
+
+            var commandToGetHelpAbout = args[0].ToLower();
+            if (ConsoleCommandsByName.TryGetValue(commandToGetHelpAbout, out var found))
+                return
+                    $"Help information about {commandToGetHelpAbout}\n\tDescription: {found.Command.Description}\n\tUsage: {found.Command.Usage}";
+
+            return $"Cannot find help information about {commandToGetHelpAbout}. Are you sure it is a valid command?";
+        }
+
+        public void Log(string line)
+        {
+            Debug.Log(line);
+            consoleText += Environment.NewLine + line;
+            UpdateText();
+        }
+
+        private void UpdateText()
+        {
+            const int verticesPerRectangle = 6;
+            const int textVertexLimit = 65 * 1024;
+
+            int resultVertexAmount = consoleText.Length * verticesPerRectangle;
+            int minCharsToRemove = (resultVertexAmount - textVertexLimit) / verticesPerRectangle;
+
+            if (minCharsToRemove > 0)
+            {
+                var buffSplit = consoleText.Split(Environment.NewLine.ToCharArray());
+                int lines = buffSplit.Length;
+
+                int charsRemoved = 0;
+                int linesToRemove = 1;
+
+                for (int i = 0; i < lines; i++, linesToRemove++)
+                {
+                    if (charsRemoved > minCharsToRemove)
+                        break;
+
+                    charsRemoved += buffSplit[i].Length;
+                }
+
+                consoleText = string.Join(Environment.NewLine, buffSplit.Skip(linesToRemove));
+            }
+            txtOutput.text = consoleText;
+        }
+
+        public void ToggleConsole()
+        {
+            if (_isActive)
+                HideConsole();
+            else
+                ShowConsole();
+        }
+
+        public void HideConsole()
+        {
+            _isActive = false;
+            txtInput.DeactivateInputField();
+            txtInput.text = "";
+            canvas.enabled = false;
+        }
+
+        public void ShowConsole()
+        {
+            if (!enabled)
+            {
+                Debug.LogWarning("Cannot open the console, because it isn't enabled");
+                return;
+            }
+
+            _showNextTick = true;
+        }
+
+        private void DoShow()
+        {
+            _isActive = true;
+            canvas.enabled = true;
+            txtInput.text = "";
+            txtInput.Select();
+            txtInput.ActivateInputField();
+        }
+
+        private struct ConsoleCommand
+        {
+            public BeamableConsoleCommandAttribute Command;
+            public ConsoleCommandCallback Callback;
+        }
+
+        private WaitForSeconds _mobileCheckWaiter = new WaitForSeconds(0.1f);
+        private WaitForSeconds _keyboardOpenWaiter = new WaitForSeconds(0.5f);
+
+        private IEnumerator CheckMobileKeyboardState()
+        {
+#if UNITY_ANDROID // webGL doesn't support the touchscreen keyboard.
+            while (true)
+            {
+                if (TouchScreenKeyboard.visible && !_isMobileKeyboardOpened)
+                {
+                    yield return _keyboardOpenWaiter;
+                    var keyboardHeight = GetKeyboardHeight() * Screen.height + 225;
+                    consolePortrait.sizeDelta = new Vector2(0, -keyboardHeight);
+                    consoleLandscape.sizeDelta = new Vector2(0, -keyboardHeight);
+                    _isMobileKeyboardOpened = true;
+                }
+                else if (!TouchScreenKeyboard.visible && _isMobileKeyboardOpened)
+                {
+                    consolePortrait.sizeDelta = Vector2.zero;
+                    consoleLandscape.sizeDelta = Vector2.zero;
+                    _isMobileKeyboardOpened = false;
+                }
+                yield return _mobileCheckWaiter;
+            }
+#else
+            yield return null;
+#endif
+        }
+
+        private float GetKeyboardHeight()
+        {
+            if (Application.isEditor) return txtInput.isFocused ? 0.25f : 0;
+
+#if UNITY_ANDROID
+            using (AndroidJavaClass UnityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+            {
+                if (!txtInput.isFocused)
+                {
+                    return 0f;
+                }
+
+                var unityPlayer = UnityClass.GetStatic<AndroidJavaObject>("currentActivity")
+                    .Get<AndroidJavaObject>("mUnityPlayer");
+                var view = unityPlayer.Call<AndroidJavaObject>("getView");
+                var dialog = unityPlayer.Get<AndroidJavaObject>("mSoftInputDialog");
+
+                var decorHeight = 0;
+                if (view != null && dialog != null)
+                {
+                    if (!txtInput.shouldHideMobileInput)
+                    {
+                        var decorView = dialog.Call<AndroidJavaObject>("getWindow")
+                            .Call<AndroidJavaObject>("getDecorView");
+
+                        if (decorView != null)
+                            decorHeight = decorView.Call<int>("getHeight");
+                    }
+
+                    using (AndroidJavaObject rect = new AndroidJavaObject("android.graphics.Rect"))
+                    {
+                        view.Call("getWindowVisibleDisplayFrame", rect);
+                        return (float) (Screen.height - rect.Call<int>("height") + decorHeight) / Screen.height;
+                    }
+                }
+
+                return 0.25f;
+
+            }
+#elif UNITY_IOS
+                return TouchScreenKeyboard.area.height / Screen.height;
+#else
+            return 0.0f;
+#endif
+        }
+
+        private class TextAutoCompleter
+        {
+            private readonly InputField _inputField;
+            private readonly Text _textSuggestion;
+            private int _commandIndex;
+            private string _currentSuggestedCommand = string.Empty;
+            private List<string> _foundCommands = new List<string>();
+            private string _previousInput = string.Empty;
+            private bool isFinderLocked = false;
+
+            public TextAutoCompleter(ref InputField inputField, ref Text textSuggestion)
+            {
+                _inputField = inputField;
+                _textSuggestion = textSuggestion;
+            }
+
+            public void FindMatchingCommands(string input)
+            {
+                if (isFinderLocked)
+                {
+                    isFinderLocked = false;
+                    return;
+                }
+
+                _commandIndex = 0;
+                if (string.IsNullOrWhiteSpace(input))
+                {
+                    _foundCommands = ConsoleCommandsByName.OrderBy(x => x.Key)
+                        .Select(x => x.Key)
+                        .ToList();
+
+                    _currentSuggestedCommand = string.Empty;
+                    _textSuggestion.text = string.Empty;
+                }
+                else
+                {
+                    _foundCommands = input.Length < _previousInput.Length || _previousInput.Length == 0
+                        ? ConsoleCommandsByName.Where(x => x.Key.StartsWith(input))
+                            .OrderBy(x => x.Key)
+                            .Select(x => x.Key)
+                            .ToList()
+                        : _foundCommands.Where(x => x.StartsWith(input))
+                            .ToList();
+
+                    _currentSuggestedCommand = _foundCommands.Count > 0 ? _foundCommands[0] : string.Empty;
+                    SuggestCommand();
+                }
+
+                _previousInput = input;
+            }
+
+            private void SuggestCommand()
+            {
+                if (string.IsNullOrWhiteSpace(_currentSuggestedCommand))
+                {
+                    _textSuggestion.text = string.Empty;
+                    return;
+                }
+
+                _textSuggestion.text = _currentSuggestedCommand;
+                _inputField.caretPosition = _currentSuggestedCommand.Length;
+            }
+
+            public void AcceptSuggestedCommand()
+            {
+                if (_foundCommands.Count == 0)
+                {
+                    return;
+                }
+
+                isFinderLocked = true;
+                if (_inputField.text == _currentSuggestedCommand)
+                {
+                    NextCommand();
+                }
+
+                _inputField.text = _currentSuggestedCommand;
+                _inputField.caretPosition = _currentSuggestedCommand.Length;
+                _textSuggestion.text = string.Empty;
+            }
+
+            private void NextCommand()
+            {
+                _commandIndex++;
+                if (_commandIndex > _foundCommands.Count - 1)
+                {
+                    _commandIndex = 0;
+                }
+
+                _currentSuggestedCommand = _foundCommands[_commandIndex];
+                SuggestCommand();
+            }
+        }
+
+        private class ConsoleHistory
+        {
+            private readonly List<string> _history = new List<string>();
+            private int _position = 0;
+
+            public void Push(string text)
+            {
+                if (string.IsNullOrEmpty(text))
+                {
+                    return;
+                }
+
+                _history.Add(text);
+                _position = _history.Count;
+            }
+
+            public string Next()
+            {
+                _position++;
+                if (_position < _history.Count)
+                {
+                    return _history[_position];
+                }
+
+                _position = _history.Count;
+                return string.Empty;
+            }
+
+            public string Previous()
+            {
+                if (_history.Count == 0)
+                {
+                    return string.Empty;
+                }
+
+                _position--;
+                if (_position < 0)
+                {
+                    _position = 0;
+                }
+
+                return _history[_position];
+            }
+        }
+    }
+}

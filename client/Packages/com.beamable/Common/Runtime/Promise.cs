@@ -63,12 +63,26 @@ namespace Beamable.Common
 
       public bool IsCompleted => done;
 
-      private static PromiseEvent OnPotentialUncaughtError;
+      private static event PromiseEvent OnPotentialUncaughtError;
 
-      public static void SetPotentialUncaughtErrorHandler(PromiseEvent handler)
+      public static bool HasUncaughtErrorHandler => OnPotentialUncaughtError != null;
+
+      /// <summary>
+      /// Set error handlers for uncaught promise errors. Beamable has a default handler set in its API initialization.
+      /// </summary>
+      /// <param name="handler">The new error handler.</param>
+      /// <param name="replaceExistingHandlers">When TRUE, will replace all previously set handlers. When FALSE, will add the given handler.</param>
+      public static void SetPotentialUncaughtErrorHandler(PromiseEvent handler, bool replaceExistingHandlers = true)
       {
-         OnPotentialUncaughtError =
-            handler; // this overwrites it everytime, blowing away any other listeners. This allows someone to override the functionality.
+         // This overwrites it everytime, blowing away any other listeners.
+         if (replaceExistingHandlers)
+         {
+            OnPotentialUncaughtError = handler;
+         }
+         else // This allows someone to override the functionality.
+         {
+            OnPotentialUncaughtError += handler;
+         }
       }
 
       protected void InvokeUncaughtPromise()
@@ -489,6 +503,9 @@ namespace Beamable.Common
    [AsyncMethodBuilder(typeof(PromiseAsyncMethodBuilder))]
    public class Promise : Promise<Unit>
    {
+
+      public void CompleteSuccess() => CompleteSuccess(PromiseBase.Unit);
+
       /// <summary>
       /// Create a <see cref="SequencePromise{T}"/> from List of <see cref="Promise{T}"/>
       /// </summary>

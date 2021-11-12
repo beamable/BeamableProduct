@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
-using UnityEngine.Experimental.UI;
 using UnityEngine.UI;
+#if !UNITY_2019_1_OR_NEWER
+using UnityEngine.Experimental.UI;
+#endif
 
 namespace Beamable.UI.SDF {
     public static class SDFUtils {

@@ -1,6 +1,3 @@
-using Beamable;
-using Beamable.Common.Api.Announcements;
-using Beamable.UI.Scripts;
 using TMPro;
 using UnityEngine;
 
@@ -8,17 +5,15 @@ namespace Beamable.Announcements
 {
    public class AnnouncementSummary : MonoBehaviour
    {
-      private MenuManagementBehaviour MenuManager;
-      private AnnouncementView Announcement;
-      public TextMeshProUGUI TxtTitle;
-      public TextMeshProUGUI TxtBody;
+#pragma warning disable CS0649
+      [SerializeField] private TextMeshProUGUI _txtTitle;
+      [SerializeField] private TextMeshProUGUI _txtBody;
+#pragma warning restore CS0649
 
-      public void Apply(MenuManagementBehaviour menu, AnnouncementView view)
+      public void Setup(string title, string body)
       {
-         MenuManager = menu;
-         Announcement = view;
-         TxtTitle.text = view.title;
-         TxtBody.text = view.body;
+         _txtTitle.text = title;
+         _txtBody.text = body;
       }
    }
 }

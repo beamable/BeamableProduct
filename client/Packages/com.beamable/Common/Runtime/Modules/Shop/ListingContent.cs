@@ -189,7 +189,7 @@ namespace Beamable.Common.Shop
       [Tooltip(ContentObject.TooltipType1)]
       [MustBeOneOf("sku", "currency")]
       public string type;
-
+      
       [Tooltip(ContentObject.TooltipSymbol1)]
       [MustReferenceContent(false, typeof(CurrencyContent), typeof(SKUContent))]
       public string symbol;
@@ -226,11 +226,11 @@ namespace Beamable.Common.Shop
    public class StatRequirement
    {
       // TODO: StatRequirement, by way of OptionalStats, is used by AnnouncementContent too. Should this be in a shared location? ~ACM 2021-04-22
-
+      
       [Tooltip("Domain of the stat (e.g. 'platform', 'game', 'client'). Default is 'game'.")]
       [MustBeOneOf("platform", "game", "client")]
       public OptionalString domain;
-
+      
       [Tooltip("Visibility of the stat (e.g. 'private', 'public'). Default is 'private'.")]
       [MustBeOneOf("private", "public")]
       public OptionalString access;
@@ -238,13 +238,12 @@ namespace Beamable.Common.Shop
       [Tooltip(ContentObject.TooltipStat1)]
       [CannotBeBlank]
       public string stat;
-
+      
       [Tooltip(ContentObject.TooltipConstraint1)]
       [MustBeComparatorString]
       public string constraint;
 
-      [Tooltip(ContentObject.TooltipValue1)]
-      public int value;
+      [Tooltip(ContentObject.TooltipValue1)] public int value;
    }
 
    [System.Serializable]
@@ -275,10 +274,11 @@ namespace Beamable.Common.Shop
       [Tooltip(ContentObject.TooltipConstraint1)]
       [MustBeComparatorString]
       public string constraint;
-
+      
       [Tooltip(ContentObject.TooltipValue1)]
       public int value;
    }
+   
    [System.Serializable]
    public class OptionalColor : Optional<Color>
    {

@@ -14,6 +14,7 @@ using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.Toolbox.UI.Components;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
+using Beamable.Server.Editor;
 using UnityEditor;
 using Debug = UnityEngine.Debug;
 #if UNITY_2018
@@ -56,30 +57,59 @@ namespace Beamable.Editor.Microservice.UI.Components
         private RealmButtonVisualElement _realmButton;
         private Button _servicesFilter;
         private Label _servicesFilterLabel; 
-        private BeamableCheckboxVisualElement _checkbox;
-        private VisualElement _selectAll;
+        private LabeledCheckboxVisualElement _selectAllLabeledCheckbox;
 
         public MicroserviceBreadcrumbsVisualElement() : base(nameof(MicroserviceBreadcrumbsVisualElement))
         {
         }
 
+        protected override void OnDestroy()
+        {
+            if (_selectAllLabeledCheckbox != null)
+            {
+                _selectAllLabeledCheckbox.OnValueChanged -= TriggerSelectAll;
+            }
+
+            base.OnDestroy();
+        }
+
         public override void Refresh()
         {
             base.Refresh();
+
             _realmButton = Root.Q<RealmButtonVisualElement>("realmButton");
             _realmButton.Refresh();
 
+            var useStoragePreview = MicroserviceConfiguration.Instance.EnableStoragePreview;
             _servicesFilter = Root.Q<Button>("servicesFilter");
             _servicesFilterLabel = _servicesFilter.Q<Label>();
-            _servicesFilter.clickable.clicked += () => HandleServicesFilterButter(_servicesFilter.worldBound);
-            OnNewServicesDisplayFilterSelected += UpdateServicesFilterText;
-            UpdateServicesFilterText(MicroservicesDataModel.Instance.Filter);
+            if (useStoragePreview) {
+                _servicesFilter.clickable.clicked -= HandleServicesFilterButter;
+                _servicesFilter.clickable.clicked += HandleServicesFilterButter;
+                OnNewServicesDisplayFilterSelected -= UpdateServicesFilterText;
+                OnNewServicesDisplayFilterSelected += UpdateServicesFilterText;
+                UpdateServicesFilterText(MicroservicesDataModel.Instance.Filter);
+                _servicesFilter.visible = true;
+            }
+            else {
+                _servicesFilter.visible = false;
+                UpdateServicesFilterText(ServicesDisplayFilter.AllTypes);
+            }
 
-            _checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
-            _checkbox.Refresh();
-            _checkbox.OnValueChanged += b => OnSelectAllCheckboxChanged?.Invoke(b);
+            _selectAllLabeledCheckbox = Root.Q<LabeledCheckboxVisualElement>("selectAllLabeledCheckbox");
+            _selectAllLabeledCheckbox.Refresh();
+            _selectAllLabeledCheckbox.DisableIcon();
+            _selectAllLabeledCheckbox.OnValueChanged -= TriggerSelectAll;
+            _selectAllLabeledCheckbox.OnValueChanged += TriggerSelectAll;
+        }
 
-            _selectAll = Root.Q<VisualElement>("selectAll");
+        void TriggerSelectAll(bool value)
+        {
+            OnSelectAllCheckboxChanged?.Invoke(value);
+        }
+
+        private void OnCheckboxValueChanged(bool b) {
+            OnSelectAllCheckboxChanged?.Invoke(b);
         }
 
         void UpdateServicesFilterText(ServicesDisplayFilter filter)
@@ -95,14 +125,9 @@ namespace Beamable.Editor.Microservice.UI.Components
             }
         }
 
-        private void PopulateServicesFilterMenu(ContextualMenuPopulateEvent evt)
-        {
-            var currentFilter = MicroservicesDataModel.Instance.Filter;
-            evt.menu.BeamableAppendAction("All types", pos => OnNewServicesDisplayFilterSelected?.Invoke(ServicesDisplayFilter.AllTypes), currentFilter != ServicesDisplayFilter.AllTypes);
-            evt.menu.BeamableAppendAction("Microservice", pos => OnNewServicesDisplayFilterSelected?.Invoke(ServicesDisplayFilter.Microservices), currentFilter != ServicesDisplayFilter.Microservices);
-            evt.menu.BeamableAppendAction("Storage", pos => OnNewServicesDisplayFilterSelected?.Invoke(ServicesDisplayFilter.Storages), currentFilter != ServicesDisplayFilter.Storages);
+        private void HandleServicesFilterButter() {
+            HandleServicesFilterButter(_servicesFilter.worldBound);
         }
-        
         
         private void HandleServicesFilterButter(Rect visualElementBounds)
         {
@@ -120,19 +145,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         public void SetSelectAllCheckboxValue(bool value)
         {
-            _checkbox.SetWithoutNotify(value);
+            _selectAllLabeledCheckbox.SetWithoutNotify(value);
         }
 
         public void SetSelectAllVisibility(bool value)
         {
-            if (value)
-            {
-                _selectAll.RemoveFromClassList("hidden");
-            }
-            else
-            {
-                _selectAll.AddToClassList("hidden");
-            }
+            _selectAllLabeledCheckbox.EnableInClassList("hidden", !value);
         }
     }
     

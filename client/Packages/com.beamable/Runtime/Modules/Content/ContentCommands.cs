@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using Beamable;
 using Beamable.Console;
 using Beamable.ConsoleCommands;
@@ -34,13 +35,15 @@ namespace Modules.Content
             return string.Empty;
         }
         
-        [BeamableConsoleCommand("LIST_CONTENT", "List manifest content", "LIST_CONTENT <filter(?)> <namespaceId(?)>")]
+        [BeamableConsoleCommand("LIST_CONTENT", "List manifest content", "LIST_CONTENT <startIndex(?)> <filter(?)> <namespaceId(?)>")]
         public string ListContent(string[] args)
         {
+            const int elementsLimit = 50;
             var filter = String.Empty;
             var namespaceId = String.Empty;
-            var result = string.Empty;
-            
+            var startIndex = 0;
+            var result = new StringBuilder();
+
             API.Instance.Then(api =>
             {
                 namespaceId = api.ContentService.CurrentDefaultManifestID;
@@ -48,21 +51,35 @@ namespace Modules.Content
 
                 api.ContentService.GetManifest(filter, namespaceId).Then(manifest =>
                 {
-                    result += $"\nContent list of \"{namespaceId}\" namespace:\n\n";
+                    result.Append("\nContent list of \"{namespaceId}\" namespace:\n\n");
                     if (manifest.entries.Count == 0)
                     {
-                        result += $"Content list is empty.";
+                        result.Append("Content list is empty.");
                     }
 
-                    foreach (var content in manifest.entries)
+                    var amount = Math.Min(startIndex + elementsLimit, manifest.entries.Count);
+                    for (var index = startIndex; index < amount; index++)
                     {
-                        result += $"{content.contentId} [{content.version}]\n";
+                        var content = manifest.entries[index];
+                        result.AppendFormat("{0} [{1}]\n", content.contentId, content.version);
                     }
 
-                    ConsoleFlow.Instance.Log(result);
+                    ConsoleFlow.Instance.Log(result.ToString());
                 });
             });
             return string.Empty;
+
+            void TrySetIndexFromString(string arg)
+            {
+                if (int.TryParse(arg, out var newStartIndex))
+                {
+                    startIndex = newStartIndex;
+                }
+                else
+                {
+                    result.AppendFormat("Cannot parse {0} as start index", arg);
+                }
+            }
 
             void SetParameters()
             {
@@ -76,9 +93,12 @@ namespace Modules.Content
                         switch (index)
                         {
                             case 0:
-                                filter = arg;
+                                TrySetIndexFromString(arg);
                                 break;
                             case 1:
+                                filter = arg;
+                                break;
+                            case 2:
                                 namespaceId = arg;
                                 break;
                         }
@@ -87,6 +107,9 @@ namespace Modules.Content
                     
                     switch (splitted[0])
                     {
+                        case "startIndex":
+                            TrySetIndexFromString(splitted[1]);
+                            break;
                         case "filter":
                             filter = splitted[1];
                             break;

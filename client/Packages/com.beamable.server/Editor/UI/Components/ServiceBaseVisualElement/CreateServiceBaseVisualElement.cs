@@ -31,26 +31,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         private const int MAX_NAME_LENGTH = 32;
         private bool _canCreateService;
-        private string _statusClassName;
         
-        private VisualElement _logListRoot;
-        private ListView _listView;
         private TextField _nameTextField;
-        private Button _popupBtn;
-        private Button _moreBtn;
         private Button _cancelBtn;
         private Button _buildDropDownBtn;
-        private BeamableCheckboxVisualElement _checkbox;
+        private LabeledCheckboxVisualElement _checkbox;
         private Button _createBtn;
         private VisualElement _logContainerElement;
-        private Label _buildDefaultLabel;
-        private LogVisualElement _logElement;
         private List<string> _servicesNames;
-        private object _logVisualElement;
         private VisualElement _rootVisualElement;
 
-        private Action _defaultBuildAction;
-        
         public override void Refresh()
         {
             base.Refresh();
@@ -61,12 +51,12 @@ namespace Beamable.Editor.Microservice.UI.Components
         protected virtual void QueryVisualElements()
         {
             _rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
-            Root.Q("microserviceTitle")?.RemoveFromHierarchy();
             Root.Q("dependentServicesContainer")?.RemoveFromHierarchy();
+            Root.Q("collapseContainer")?.RemoveFromHierarchy();
             _cancelBtn = Root.Q<Button>("cancelBtn");
-            _createBtn = Root.Q<Button>("start");
+            _createBtn = Root.Q<Button>("stopBtn");
             _buildDropDownBtn = Root.Q<Button>("buildDropDown");
-            _checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
+            _checkbox = Root.Q<LabeledCheckboxVisualElement>("checkbox");
             _logContainerElement = Root.Q<VisualElement>("logContainer");
             _nameTextField = Root.Q<TextField>("microserviceNewTitle");
         }
@@ -77,7 +67,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         }
         protected virtual void UpdateVisualElements()
         {
-            _servicesNames = MicroservicesDataModel.Instance.AllServices.Select(x => x.Descriptor.Name).ToList();
+            _servicesNames = MicroservicesDataModel.Instance.AllLocalServices.Select(x => x.Descriptor.Name).ToList();
             RegisterCallback<MouseDownEvent>(HandeMouseDownEvent, TrickleDown.TrickleDown);
             
             _nameTextField.SetValueWithoutNotify(NewServiceName);
@@ -95,6 +85,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             _checkbox.Refresh();
             _checkbox.SetWithoutNotify(false);
             _checkbox.SetEnabled(false);
+            _checkbox.DisableLabel();
 
             _logContainerElement.RemoveFromHierarchy();
             RenameGestureBegin();

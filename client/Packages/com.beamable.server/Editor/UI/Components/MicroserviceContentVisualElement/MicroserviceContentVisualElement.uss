@@ -22,3 +22,7 @@ MicroserviceContentVisualElement > TemplateContainer > #mainVisualElement > Scro
     padding-top: 10px;
     padding-bottom: 10px;
 }
+
+#endSeparator {
+    background-color: rgba(34,34,34,.7);
+}

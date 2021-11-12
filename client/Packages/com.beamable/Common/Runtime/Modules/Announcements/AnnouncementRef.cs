@@ -1,6 +1,8 @@
+using System;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Beamable.Common.Announcements
 {

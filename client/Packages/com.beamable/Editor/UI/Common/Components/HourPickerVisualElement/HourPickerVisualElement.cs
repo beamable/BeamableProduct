@@ -26,12 +26,13 @@ namespace Beamable.Editor.UI.Components
         private bool _activeHour = true;
         private bool _activeMinute = true;
         private bool _activeSecond = true;
+        private Action _onHourChanged;
+        private VisualElement _root;
 
-        public string Hour => _hourPicker.Value;
-        public string Minute => _minutePicker.Value;
-        public string Second => _secondPicker.Value;
-
-
+        public string Hour => _hourPicker?.Value;
+        public string Minute => _minutePicker?.Value;
+        public string Second => _secondPicker?.Value;
+        
         public HourPickerVisualElement() : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(HourPickerVisualElement)}/{nameof(HourPickerVisualElement)}")
         {
@@ -41,21 +42,45 @@ namespace Beamable.Editor.UI.Components
         {
             base.Refresh();
 
+            _root = Root.Q<VisualElement>("mainVisualElement");
+
             _hourPicker = Root.Q<LabeledNumberPicker>("hourPicker");
-            _hourPicker.Setup(GenerateHours(), _activeHour);
-            _hourPicker.Refresh();
+
+            if (!_activeHour)
+            {
+                _root.Remove(_hourPicker);
+                _hourPicker = null;
+            }
+            
+            _hourPicker?.Setup(_onHourChanged, GenerateHours(), _activeHour);
+            _hourPicker?.Refresh();
 
             _minutePicker = Root.Q<LabeledNumberPicker>("minutePicker");
-            _minutePicker.Setup(GenerateMinutesAndSeconds(), _activeMinute);
-            _minutePicker.Refresh();
+
+            if (!_activeMinute)
+            {
+                _root.Remove(_minutePicker);
+                _minutePicker = null;
+            }
+            
+            _minutePicker?.Setup(_onHourChanged, GenerateMinutesAndSeconds(), _activeMinute);
+            _minutePicker?.Refresh();
 
             _secondPicker = Root.Q<LabeledNumberPicker>("secondPicker");
-            _secondPicker.Setup(GenerateMinutesAndSeconds(), _activeSecond);
-            _secondPicker.Refresh();
+
+            if (!_activeSecond)
+            {
+                _root.Remove(_secondPicker);
+                _secondPicker = null;
+            }
+            
+            _secondPicker?.Setup(_onHourChanged, GenerateMinutesAndSeconds(), _activeSecond);
+            _secondPicker?.Refresh();
         }
 
-        public void Setup(bool activeHour = true, bool activeMinute = true, bool activeSecond = true)
+        public void Setup(Action onHourChanged, bool activeHour = true, bool activeMinute = true, bool activeSecond = true)
         {
+            _onHourChanged = onHourChanged;
             _activeHour = activeHour;
             _activeMinute = activeMinute;
             _activeSecond = activeSecond;
@@ -64,7 +89,12 @@ namespace Beamable.Editor.UI.Components
         public string GetFullHour()
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append($"{int.Parse(_hourPicker.Value):00}:{int.Parse(_minutePicker.Value):00}:{int.Parse(_secondPicker.Value):00}Z");
+
+            string hour = _hourPicker != null ? _hourPicker.Value : "00";
+            string minute = _minutePicker != null ? _minutePicker.Value : "00";
+            string second = _secondPicker != null ? _secondPicker.Value : "00";
+
+            builder.Append($"{int.Parse(hour):00}:{int.Parse(minute):00}:{int.Parse(second):00}Z");
             return builder.ToString();
         }
 
@@ -96,23 +126,23 @@ namespace Beamable.Editor.UI.Components
 
         public void Set(DateTime date)
         {
-            _hourPicker.Set(date.Hour.ToString());
-            _minutePicker.Set(date.Minute.ToString());
-            _secondPicker.Set(date.Second.ToString());
+            _hourPicker?.Set(date.Hour.ToString());
+            _minutePicker?.Set(date.Minute.ToString());
+            _secondPicker?.Set(date.Second.ToString());
         }
 
         public void SetPeriod(ScheduleDefinition definition, int index)
         {
-            _hourPicker.Set(definition.hour[0].Split('-')[index]);
-            _minutePicker.Set(definition.minute[0].Split('-')[index]);
-            _secondPicker.Set(definition.second[0].Split('-')[index]);
+            _hourPicker?.Set(definition.hour[0].Split('-')[index]);
+            _minutePicker?.Set(definition.minute[0].Split('-')[index]);
+            _secondPicker?.Set(definition.second[0].Split('-')[index]);
         }
 
         public void SetGroupEnabled(bool b)
         {
-            _hourPicker.SetEnabled(b);
-            _minutePicker.SetEnabled(b);
-            _secondPicker.SetEnabled(b);
+            _hourPicker?.SetEnabled(b);
+            _minutePicker?.SetEnabled(b);
+            _secondPicker?.SetEnabled(b);
         }
     }
 }

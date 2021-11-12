@@ -11,6 +11,7 @@ PlayerSettings:
   defaultScreenOrientation: 4
   targetDevice: 2
   useOnDemandResources: 0
+  useCustomGradlePropertiesTemplate: 1
   accelerometerFrequency: 60
   companyName: Beamable
   productName: Beamable
@@ -761,11 +762,11 @@ PlayerSettings:
   webGLTemplate: APPLICATION:Default
   webGLAnalyzeBuildSize: 0
   webGLUseEmbeddedResources: 0
-  webGLCompressionFormat: 1
+  webGLCompressionFormat: 2
   webGLLinkerTarget: 1
   webGLThreadsSupport: 0
   scriptingDefineSymbols:
-    1: SPEW_PLATFORM;USE_STEAMWORKS;BEAMABLE_PURCHASING
+    1: SPEW_PLATFORM;USE_STEAMWORKS;BEAMABLE_PURCHASING;BEAMABLE_DEVELOPER
     4: SPEW_PLATFORM
     7: BEAMABLE_PURCHASING;BEAMABLE_NEWMS;BEAMABLE_DEVELOPER
     13: BEAMABLE_PURCHASING

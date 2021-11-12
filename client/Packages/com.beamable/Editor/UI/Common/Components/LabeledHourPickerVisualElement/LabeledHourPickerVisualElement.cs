@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Beamable.Common.Content;
 using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Validation;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -12,7 +15,7 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-    public class LabeledHourPickerVisualElement : BeamableVisualElement
+    public class LabeledHourPickerVisualElement : ValidableVisualElement<string>
     {
         public new class UxmlFactory : UxmlFactory<LabeledHourPickerVisualElement, UxmlTraits>
         {
@@ -50,13 +53,15 @@ namespace Beamable.Editor.UI.Components
             }
         }
 
+        public Action OnValueChanged;
+
         private Label _label;
         private HourPickerVisualElement _hourPicker;
 
-        public bool ActiveHour { get; set; }
-        public bool ActiveMinute { get; set; }
-        public bool ActiveSecond { get; set; }
-        public string Label { get; set; }
+        private bool ActiveHour { get; set; }
+        private bool ActiveMinute { get; set; }
+        private bool ActiveSecond { get; set; }
+        public string Label { get; private set; }
         public string SelectedHour => _hourPicker.GetFullHour();
         public string Hour => _hourPicker.Hour;
         public string Minute => _hourPicker.Minute;
@@ -75,7 +80,7 @@ namespace Beamable.Editor.UI.Components
             _label.text = Label;
 
             _hourPicker = Root.Q<HourPickerVisualElement>("hourPicker");
-            _hourPicker.Setup(ActiveHour, ActiveMinute, ActiveSecond);
+            _hourPicker.Setup(OnHourChanged, ActiveHour, ActiveMinute, ActiveSecond);
             _hourPicker.Refresh();
         }
 
@@ -86,6 +91,11 @@ namespace Beamable.Editor.UI.Components
         {
             SetEnabled(b);
             _hourPicker.SetGroupEnabled(b);
+        }
+
+        private void OnHourChanged()
+        {
+            OnValueChanged?.Invoke();
         }
     }
 }

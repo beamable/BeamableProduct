@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
-using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -23,9 +22,11 @@ namespace Beamable.Editor.UI.Components
             readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
                 {name = "label", defaultValue = "Label"};
 
-            readonly UxmlStringAttributeDescription _value = new UxmlStringAttributeDescription
-                {name = "value"};
+            private readonly UxmlIntAttributeDescription _minValue = new UxmlIntAttributeDescription
+                {name = "min", defaultValue = Int32.MinValue};
 
+            private readonly UxmlIntAttributeDescription _maxValue = new UxmlIntAttributeDescription
+                {name = "max", defaultValue = Int32.MaxValue};
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
                 get { yield break; }
@@ -37,7 +38,8 @@ namespace Beamable.Editor.UI.Components
                 if (ve is LabeledNumberPicker component)
                 {
                     component.Label = _label.GetValueFromBag(bag, cc);
-                    component.Value = _value.GetValueFromBag(bag, cc);
+                    component.MinValue = _minValue.GetValueFromBag(bag, cc);
+                    component.MaxValue = _maxValue.GetValueFromBag(bag, cc);
                 }
             }
         }
@@ -45,9 +47,17 @@ namespace Beamable.Editor.UI.Components
         private LabeledTextField _labeledTextFieldComponent;
         private Button _button;
         private List<string> _options;
+        private Action _onValueChanged;
 
-        public string Value { get; private set; }
-        private string Label { get; set; }
+        public string Value
+        {
+            get => _labeledTextFieldComponent.Value;
+            set => _labeledTextFieldComponent.Value = value;
+        }
+
+        private int MinValue { get; set; }
+        private int MaxValue { get; set; }
+        public string Label { get; set; }
 
         public LabeledNumberPicker() : base($"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledNumberPicker)}/{nameof(LabeledNumberPicker)}")
         {
@@ -59,8 +69,7 @@ namespace Beamable.Editor.UI.Components
             base.Refresh();
 
             _labeledTextFieldComponent = Root.Q<LabeledTextField>("labelAndValue");
-            _labeledTextFieldComponent.Label = Label;
-            _labeledTextFieldComponent.Value = Value;
+            _labeledTextFieldComponent.Setup(Label, Value, _onValueChanged, MinValue, MaxValue);
             _labeledTextFieldComponent.Refresh();
 
             _button = Root.Q<Button>("button");
@@ -68,10 +77,17 @@ namespace Beamable.Editor.UI.Components
             ConfigureOptions();
         }
 
-        public void Setup(List<string> options, bool active = true)
+        public void Setup(Action onValueChanged, List<string> options, bool active = true)
         {
+            _onValueChanged = onValueChanged;
             SetEnabled(active);
             _options = options;
+        }
+
+        public void SetupMinMax(int min, int max)
+        {
+            MinValue = min;
+            MaxValue = max;
         }
 
         private void ConfigureOptions()
@@ -100,8 +116,7 @@ namespace Beamable.Editor.UI.Components
 
         private void SetOption(string value)
         {
-            Value = value;
-            _labeledTextFieldComponent.Value = Value;
+            _labeledTextFieldComponent.Value = value;
             _labeledTextFieldComponent.Refresh();
         }
 

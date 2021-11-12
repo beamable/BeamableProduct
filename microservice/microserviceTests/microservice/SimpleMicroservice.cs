@@ -1,9 +1,15 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Beamable.Common;
+using Beamable.Common.Api;
+using Beamable.Common.Api.Auth;
 using Beamable.Common.Inventory;
+using Beamable.Common.Leaderboards;
 using Beamable.Server;
+using NUnit.Framework;
+using UnityEngine;
 
 namespace microserviceTests.microservice
 {
@@ -56,6 +62,24 @@ namespace microserviceTests.microservice
       {
          return await Promise<int>.Successful(1);
       }
+      
+      [ClientCallable]
+      public string MethodWithJSON_AsParameter(string jsonString)
+      {
+         return jsonString;
+      }
+      
+      [ClientCallable]
+      public string MethodWithRegularString_AsParameter(string str)
+      {
+         return str;
+      }
+
+      [ClientCallable]
+      public Vector2Int MethodWithVector2Int_AsParameter(Vector2Int vec)
+      {
+         return vec;
+      }
 
       // TODO: Add a test for an empty arg array, or a null
 
@@ -66,6 +90,13 @@ namespace microserviceTests.microservice
          var x = items.FirstOrDefault();
 
          return x.ItemContent.Id;
+      }
+      
+      [AdminOnlyCallable]
+      public async Task LeaderboardCreateTest(string boardId, LeaderboardRef templateBoardRef)
+      {
+         var template = await Services.Content.GetContent(templateBoardRef);
+         await Services.Leaderboards.CreateLeaderboard(boardId, template);
       }
 
       [ClientCallable]
@@ -79,6 +110,20 @@ namespace microserviceTests.microservice
       {
          var content = await Services.Content.GetContent(id);
          return "Echo: " + content.Id;
+      }
+
+      [ClientCallable]
+      public async Task<User> GetUserViaAccessToken(TokenResponse tokenResponse)
+      {
+         try
+         {
+            return await Services.Auth.GetUser(tokenResponse);
+         }
+         catch (Exception ex)
+         {
+            Assert.IsTrue(ex is NotImplementedException);
+            throw;
+         }
       }
    }
 }

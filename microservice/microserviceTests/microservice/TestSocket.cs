@@ -5,6 +5,7 @@ using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common.Api;
+using Beamable.Serialization.SmallerJSON;
 using Beamable.Server;
 using Beamable.Server.Content;
 using Microsoft.VisualBasic;
@@ -84,6 +85,11 @@ namespace Beamable.Microservice.Tests.Socket
       {
          return And(matcher, MessageMatcher.WithPayload(payload));
       }
+      
+      public static TestSocketMessageMatcher WithPayload(this TestSocketMessageMatcher matcher, JObject payload)
+      {
+         return And(matcher, MessageMatcher.WithPayload(payload));
+      }
 
       public static TestSocketMessageMatcher And(this TestSocketMessageMatcher predicate1, TestSocketMessageMatcher predicate2)
       {
@@ -129,8 +135,34 @@ namespace Beamable.Microservice.Tests.Socket
 
       public static TestSocketMessageMatcher WithPayload(string raw)
       {
-         return req => req.body is string str && string.Equals(raw, str);
+         return req =>
+         {
+            // Have to do this otherwise it becomes sensitive to the test-case's JSON's formatting which can be a pain to manage in cases where
+            // the payload is large.
+            if (req.body is JObject obj)
+            {
+               var rawJObj = JObject.Parse(raw);
+               return JToken.DeepEquals(rawJObj, obj);
+            }
+            return req.body.ToString().Equals(raw);
+         };
       }
+      
+      public static TestSocketMessageMatcher WithPayload(JObject raw)
+      {
+         return req =>
+         {
+            // Have to do this otherwise it becomes sensitive to the test-case's JSON's formatting which can be a pain to manage in cases where
+            // the payload is large.
+            if (req.body is JObject obj)
+            {
+               return JToken.DeepEquals(raw, obj);
+            }
+
+            return false;
+         };
+      }
+      
       public static TestSocketMessageMatcher WithPayload<T>(Func<T, bool> matcher)
       {
          bool Check(object req)
@@ -139,13 +171,35 @@ namespace Beamable.Microservice.Tests.Socket
                {
                   case string json:// when json.StartsWith("{"):
                   {
-                     var payload = JsonConvert.DeserializeObject<T>(json);
-                     return matcher(payload);
+                     string tmpJson = json.Replace(@"\", "");
+
+                        if (Json.IsValidJson(tmpJson))
+                        {
+                           var token = JToken.Parse(tmpJson);
+                           return !string.IsNullOrEmpty(token.ToString());
+                        }
+                        else
+                        {
+                           var payload = JsonConvert.DeserializeObject<T>(tmpJson);
+                           return matcher(payload);
+                        }
                   }
                   case JObject payloadJObject when payloadJObject.TryGetValue("payload", out var payloadToken):
                   {
-                     var payload = payloadToken.ToObject<T>();
-                     return Check(payload);
+                     bool success = true;
+                     var settings = new JsonSerializerSettings
+                     {
+                        Error = (sender, args) =>
+                        {
+                           success = false;
+                           args.ErrorContext.Handled = true;
+                        },
+                        MissingMemberHandling = MissingMemberHandling.Error
+                     };
+                     
+                     // validate that object could be deserializabled if not check again (json string etc.)
+                     var payload = JsonConvert.DeserializeObject<T>(payloadToken.ToString(), settings);
+                     return success ? matcher(payload) : Check(payloadToken.ToObject<T>());
                   }
                   case JObject payloadJObject:
                   {
