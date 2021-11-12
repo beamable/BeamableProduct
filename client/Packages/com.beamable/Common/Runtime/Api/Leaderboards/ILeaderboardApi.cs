@@ -239,6 +239,18 @@ namespace Beamable.Common.Api.Leaderboards
 
          return result;
       }
+
+      public List<RankEntry> ToList()
+      {
+         List<RankEntry> result = new List<RankEntry>();
+         
+         foreach (RankEntry rankEntry in rankings)
+         {
+            result.Add(rankEntry);
+         }
+
+         return result;
+      }
    }
 
    [Serializable]

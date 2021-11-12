@@ -9,17 +9,16 @@ namespace Beamable.Modules.Generics
         protected virtual void Awake()
         {
             Model = new T();
-            Model.OnInitialized = Initialized;
-            Model.OnChange = Refresh;
+            Model.OnRefreshRequested = RefreshRequested;
+            Model.OnRefresh = Refresh;
         }
 
         protected void OnDestroy()
         {
-            Model.OnInitialized = null;
-            Model.OnChange = null;
+            Model.OnRefresh = null;
         }
 
-        protected abstract void Initialized();
+        protected abstract void RefreshRequested();
         protected abstract void Refresh();
     }
 }
