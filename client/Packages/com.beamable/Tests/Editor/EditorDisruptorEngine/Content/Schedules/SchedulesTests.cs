@@ -27,7 +27,7 @@ namespace Beamable.Editor.Tests.Content
 
             EventScheduleWindow window = new EventScheduleWindow();
             window.Refresh();
-            window.ModeComponent.Set("Daily");
+            window.ModeComponent.Set(0);
             window.StartTimeComponent.Set(DateTime.Now);
             window.NeverExpiresComponent.Value = true;
             window.ActiveToDateComponent.Set(DateTime.Now + TimeSpan.FromDays(2));
@@ -69,7 +69,7 @@ namespace Beamable.Editor.Tests.Content
 
             EventScheduleWindow window = new EventScheduleWindow();
             window.Refresh();
-            window.ModeComponent.Set("Days of week");
+            window.ModeComponent.Set(1);
             window.StartTimeComponent.Set(DateTime.Now);
             window.DaysComponent.SetSelectedDays(new List<string> {"1", "3", "5"});
             window.NeverExpiresComponent.Value = true;
@@ -113,7 +113,7 @@ namespace Beamable.Editor.Tests.Content
 
             EventScheduleWindow window = new EventScheduleWindow();
             window.Refresh();
-            window.ModeComponent.Set("Actual dates");
+            window.ModeComponent.Set(2);
             window.StartTimeComponent.Set(DateTime.Now);
             window.CalendarComponent.Calendar.SetInitialValues(new List<string>
             {
@@ -160,7 +160,7 @@ namespace Beamable.Editor.Tests.Content
 
             ListingScheduleWindow window = new ListingScheduleWindow();
             window.Refresh();
-            window.ModeComponent.Set("Daily");
+            window.ModeComponent.Set(0);
             window.AllDayComponent.Value = false;
             window.PeriodFromHourComponent.Set(DateTime.Now);
             window.PeriodToHourComponent.Set(DateTime.Now + TimeSpan.FromHours(2));
@@ -204,7 +204,7 @@ namespace Beamable.Editor.Tests.Content
 
             ListingScheduleWindow window = new ListingScheduleWindow();
             window.Refresh();
-            window.ModeComponent.Set("Days of week");
+            window.ModeComponent.Set(1);
             window.DaysComponent.SetSelectedDays(new List<string> {"1", "3", "5"});
             window.AllDayComponent.Value = false;
             window.PeriodFromHourComponent.Set(DateTime.Now);
@@ -248,7 +248,7 @@ namespace Beamable.Editor.Tests.Content
 
             ListingScheduleWindow window = new ListingScheduleWindow();
             window.Refresh();
-            window.ModeComponent.Set("Actual dates");
+            window.ModeComponent.Set(2);
             window.CalendarComponent.Calendar.SetInitialValues(new List<string>
             {
                 "05-10-2021",

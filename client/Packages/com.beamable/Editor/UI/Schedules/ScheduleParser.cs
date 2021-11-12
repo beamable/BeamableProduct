@@ -14,7 +14,7 @@ namespace Beamable.Editor.Schedules
             newSchedule.activeTo.Value = activeTo;
         }
 
-        public void PrepareDailyModeData(Schedule newSchedule, string second, string minute, string hour)
+        public void PrepareDailyModeData(Schedule newSchedule, string hour, string minute, string second)
         {
             ScheduleDefinition definition =
                 new ScheduleDefinition(second, minute, hour, new List<string> {"*"}, "*", "*", new List<string> {"*"});
@@ -30,8 +30,8 @@ namespace Beamable.Editor.Schedules
             newSchedule.AddDefinition(definition);
         }
 
-        public void PrepareDateModeData(Schedule newSchedule, List<string> selectedDays, string hour, string minute,
-            string second)
+        public void PrepareDateModeData(Schedule newSchedule, string hour, string minute, string second,
+            List<string> selectedDays)
         {
             Dictionary<string, List<string>> sortedDates = ParseDates(selectedDays);
 
@@ -61,7 +61,8 @@ namespace Beamable.Editor.Schedules
         public void PrepareListingDailyModeData(Schedule newSchedule, int fromHour, int toHour, int fromMinute,
             int toMinute)
         {
-            List<ScheduleDefinition> definitions = GetPeriodsSchedulesDefinitions(fromHour, toHour, fromMinute, toMinute,
+            List<ScheduleDefinition> definitions = GetPeriodsSchedulesDefinitions(fromHour, toHour, fromMinute,
+                toMinute,
                 new List<string> {"*"});
             newSchedule.AddDefinitions(definitions);
         }
@@ -69,7 +70,8 @@ namespace Beamable.Editor.Schedules
         public void PrepareListingDaysModeData(Schedule newSchedule, int fromHour, int toHour, int fromMinute,
             int toMinute, List<string> selectedDays)
         {
-            List<ScheduleDefinition> definitions = GetPeriodsSchedulesDefinitions(fromHour, toHour, fromMinute, toMinute,
+            List<ScheduleDefinition> definitions = GetPeriodsSchedulesDefinitions(fromHour, toHour, fromMinute,
+                toMinute,
                 selectedDays);
             newSchedule.AddDefinitions(definitions);
         }
