@@ -1,13 +1,9 @@
-
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using Beamable.Platform.SDK;
-using Beamable;
+using System.Text;
 using Beamable.Common;
 using Beamable.Common.Api;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
 using Beamable.Serialization.SmallerJSON;
 
 namespace Beamable.Server
@@ -26,6 +22,8 @@ namespace Beamable.Server
          public string payload;
       }
 
+      private static readonly StringBuilder Builder = new StringBuilder();
+
       protected string _prefix;
 
       protected string SerializeArgument<T>(T arg)
@@ -38,7 +36,12 @@ namespace Beamable.Server
 
          switch (arg)
          {
-            case IEnumerable enumerable when !(enumerable is string):
+            case string prim:
+               return Json.IsValidJson(prim) ? "[" + prim + "]" : "\"" + prim + "\"";
+            case IDictionary dictionary:
+               return Json.Serialize(dictionary, Builder);
+            case IEnumerable enumerable:
+            {
                var output = new List<string>();
                foreach (var elem in enumerable)
                {
@@ -47,13 +50,11 @@ namespace Beamable.Server
 
                var outputJson = "[" + string.Join(",", output) + "]";
                return outputJson;
-
+            }
             case bool prim:
                return prim ? "true": "false";
             case long prim:
                return prim.ToString();
-            case string prim:
-               return Json.IsValidJson(prim) ? "[" + prim + "]" : "\"" + prim + "\"";
             case double prim:
                return prim.ToString();
             case float prim:
@@ -64,20 +65,21 @@ namespace Beamable.Server
                return JsonUtility.ToJson(new Vector2IntEx(prim));
             case Vector3Int prim:
                return JsonUtility.ToJson(new Vector3IntEx(prim));
-            }
+         }
          return JsonUtility.ToJson(arg);
       }
 
       protected T DeserializeResult<T>(string json)
       {
+         var type = typeof(T);
          var defaultInstance = default(T);
 
-         if (typeof(Unit).IsAssignableFrom(typeof(T)))
+         if (typeof(Unit).IsAssignableFrom(type))
          {
             return (T)(object) PromiseBase.Unit;
          }
 
-         if (typeof(T).Equals(typeof(string)))
+         if (type == typeof(string))
          {
             return (T)(object) json;
          }
@@ -97,7 +99,39 @@ namespace Beamable.Server
                return (T)(object)Vector2IntEx.DeserializeToVector2(json);
             case Vector3Int _:
                return (T)(object)Vector3IntEx.DeserializeToVector3(json);
+         }
+
+         if (typeof(IDictionary).IsAssignableFrom(type))
+         {
+            var arrayDict = (ArrayDict)Json.Deserialize(json);
+            object result = default(T);
+            if (typeof(Dictionary<string, string>) == type)
+            {
+               result = ConvertArrayDictToDictionary<string>(arrayDict);
+            } else if (typeof(Dictionary<string, double>) == type)
+            {
+               result = ConvertArrayDictToDictionary<double>(arrayDict);
+            } else if (typeof(Dictionary<string, float>) == type)
+            {
+               result = ConvertArrayDictToDictionary<float>(arrayDict);
+            } else if (typeof(Dictionary<string, int>) == type)
+            {
+               result = ConvertArrayDictToDictionary<int>(arrayDict);
+            }else if (typeof(Dictionary<string, bool>) == type)
+            {
+               result = ConvertArrayDictToDictionary<bool>(arrayDict);
+            }else if (typeof(Dictionary<string, long>) == type)
+            {
+               result = ConvertArrayDictToDictionary<long>(arrayDict);
             }
+            else
+            {
+               Debug.LogWarning($"Cannot convert json to Dictionary:\n{json}");
+            }
+
+
+            return (T) result;
+         }
 
          if (json.StartsWith("[") && json.EndsWith("]"))
          {
@@ -107,6 +141,16 @@ namespace Beamable.Server
          }
 
          return JsonUtility.FromJson<T>(json);
+      }
+
+      private Dictionary<string, T> ConvertArrayDictToDictionary<T>(ArrayDict arrayDict)
+      {
+         var dictionary = new Dictionary<string, T>(arrayDict.Count);
+         foreach (var pair in arrayDict)
+         {
+            dictionary.Add(pair.Key,(T)pair.Value);
+         }
+         return dictionary;
       }
 
       private class JsonUtilityWrappedList<TList>
