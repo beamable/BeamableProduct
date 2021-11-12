@@ -1,15 +1,27 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
+using Beamable.Common.Content.Validation;
 using Beamable.Content;
 using UnityEngine;
 
-namespace Beamable.Server
+namespace Beamable.Common.Content
 {
    public enum PlatformServiceType
    {
       UserMicroservice, ObjectService, BasicService
+   }
+
+   public enum PlatformWebhookRetryStrategy
+   {
+      Never
+   }
+
+   public enum PlatformWebhookInvocationType
+   {
+      FireAndForget
    }
 
    [ContentType("api")]
@@ -162,9 +174,55 @@ namespace Beamable.Server
    }
 
    [Serializable]
-   public class ApiInvocation
+   public class OptionalApiRewardList : Optional<ListOfApiReward> {}
+
+   [Serializable]
+   public class ListOfApiReward : DisplayableList<ApiReward>
    {
-      
+      public List<ApiReward> listData = new List<ApiReward>();
+
+      protected override IList InternalList => listData;
+      public override string GetListPropertyPath() => nameof(listData);
+   }
+
+   public interface IApiReward
+   {
+
+   }
+
+   [Serializable]
+   public class ApiReward<TApi, TRef> : IApiReward
+      where TApi : ApiContent, new()
+      where TRef : ApiRef<TApi>
+   {
+      [ContentField("webhookSymbol")]
+      public TRef Api;
+
+      [ContentField("strategy")]
+      public ApiInvocationStrategy Strategy;
+   }
+
+   [Serializable]
+   public class ApiReward  : IApiReward
+   {
+      [ContentField("webhookSymbol")]
+      [MustReferenceContent]
+      public ApiRef Api;
+
+      [ContentField("strategy")]
+      public ApiInvocationStrategy Strategy;
+   }
+
+   [Serializable]
+   public class ApiInvocationStrategy
+   {
+      [ContentField("retryType")]
+      public PlatformWebhookRetryStrategy RetryStrategy;
+
+      [ContentField("invocationType")]
+      public PlatformWebhookInvocationType InvocationType;
+
+      // TODO: We could add variable overrides here if we wanted to. // variableOverrides: WebhookVariables = Map.empty
    }
 
    [Serializable]
@@ -191,5 +249,6 @@ namespace Beamable.Server
    public class ApiRef : ApiRef<ApiContent>
    {
    }
+
 
 }

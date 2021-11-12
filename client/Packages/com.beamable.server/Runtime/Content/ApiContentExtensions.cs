@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Content;
 using UnityEngine;
 
 namespace Beamable.Server

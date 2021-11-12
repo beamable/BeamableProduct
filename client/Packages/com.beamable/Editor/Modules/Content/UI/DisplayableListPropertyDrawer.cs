@@ -15,13 +15,24 @@ namespace Beamable.Editor.Content.UI
       {
          var list = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property) as DisplayableList;
          var subProp = property.FindPropertyRelative(list.GetListPropertyPath());
+         if (subProp == null)
+         {
+            Debug.Log("Its a null ref in the displayable list!");
+            Debug.Log("- " + property.propertyPath);
+            while (property.Next(true))
+            {
+               Debug.Log("--- " + property.propertyPath);
+            }
+
+            return 0;
+         }
          return EditorGUI.GetPropertyHeight(subProp);
       }
 
       public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
       {
          var list = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property) as DisplayableList;
-         
+
          label.tooltip = PropertyDrawerHelper.SetTooltipWithFallback(fieldInfo, property);
 
          var subProp = property.FindPropertyRelative(list.GetListPropertyPath());
