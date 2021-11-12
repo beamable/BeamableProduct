@@ -16,6 +16,7 @@ namespace Beamable.Editor.UI.Components
     {
         public enum ButtonType
         {
+            Default,
             Confirm,
             Cancel
         }
@@ -55,7 +56,6 @@ namespace Beamable.Editor.UI.Components
             }
         }
 
-        private Label _label;
         private Button _button;
         private VisualElement _mainVisualElement;
         
@@ -69,12 +69,8 @@ namespace Beamable.Editor.UI.Components
 
         public override void Refresh()
         {
-            base.Refresh();
-
-             _label = Root.Q<Label>("label");
-             _label.text = Label;
-
             _button = Root.Q<Button>("button");
+            _button.text = Label;
             _button.clickable.clicked += () => { OnClick?.Invoke(); };
 
             _mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
