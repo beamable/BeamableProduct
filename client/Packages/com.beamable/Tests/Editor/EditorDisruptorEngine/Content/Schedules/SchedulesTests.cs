@@ -148,11 +148,11 @@ namespace Beamable.Editor.Tests.Content
                 {
                     string minuteString = scheduleDefinition.minute[0];
                     string hoursString = scheduleDefinition.hour[0];
-                    bool minutesMatchPattern = Regex.IsMatch(minuteString, "\b([0-9]|[1-5][0-9])\b") ||
+                    bool minutesMatchPattern = Regex.IsMatch(minuteString, "\\b([0-9]|[1-5][0-9])\\b") ||
                                                Regex.IsMatch(minuteString, "/*");
                     bool hoursMatchPattern =
-                        Regex.IsMatch(hoursString, "\b([0-9]|1[0-9]|2[0-3])-([0-9]|1[0-9]|2[0-3])\b") || 
-                        Regex.IsMatch(hoursString, "\b([0-9]|1[0-9]|2[0-3])\b");
+                        Regex.IsMatch(hoursString, "\\b([0-9]|1[0-9]|2[0-3])-([0-9]|1[0-9]|2[0-3])\\b") || 
+                        Regex.IsMatch(hoursString, "\\b([0-9]|1[0-9]|2[0-3])\\b");
                     Assert.IsTrue(minutesMatchPattern, $"{warningHeader} minutes doesn't match pattern");
                     Assert.IsTrue(hoursMatchPattern, $"{warningHeader} hours doesn't match pattern");
                 }
