@@ -33,9 +33,12 @@ namespace Beamable.Editor.UI.Components
             
             readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
                 {name = "label", defaultValue = "Label"};
-            
+
+            readonly UxmlStringAttributeDescription _tooltip = new UxmlStringAttributeDescription
+            { name = "tooltip", defaultValue = "" };
+
             readonly UxmlStringAttributeDescription _type = new UxmlStringAttributeDescription
-                {name = "type", defaultValue = "confirm"};
+                {name = "type", defaultValue = "default"};
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -48,6 +51,7 @@ namespace Beamable.Editor.UI.Components
                 if (ve is GenericButtonVisualElement component)
                 {
                     component.Label = _label.GetValueFromBag(bag, cc);
+                    component.Tooltip = _tooltip.GetValueFromBag(bag, cc);
 
                     string passedType = _type.GetValueFromBag(bag, cc);
                     bool parsed = Enum.TryParse(passedType, true, out ButtonType parsedType);
@@ -61,6 +65,7 @@ namespace Beamable.Editor.UI.Components
         
         public ButtonType Type { get; set; }
         public string Label { get; set; }
+        public string Tooltip { get; set; }
 
         public GenericButtonVisualElement() : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(GenericButtonVisualElement)}/{nameof(GenericButtonVisualElement)}")
@@ -71,6 +76,7 @@ namespace Beamable.Editor.UI.Components
         {
             _button = Root.Q<Button>("button");
             _button.text = Label;
+            _button.tooltip = Tooltip;
             _button.clickable.clicked += () => { OnClick?.Invoke(); };
 
             _mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
