@@ -15,8 +15,8 @@ namespace Beamable.Editor.UI.Components
 {
     public class GenericButtonVisualElement : BeamableVisualElement
     {
-        const int DEFAULT_WIDTH = 100;
-        const int DEFAULT_HEIGHT = 50;
+        const int DEFAULT_WIDTH = 80;
+        const int DEFAULT_HEIGHT = 30;
 
         public enum ButtonType
         {
@@ -90,12 +90,13 @@ namespace Beamable.Editor.UI.Components
 
         public override void Refresh()
         {
+            base.Refresh();
+
             _button = Root.Q<Button>("button");
             _button.text = Label;
             _button.tooltip = Tooltip;
             _button.clickable.clicked += () => { OnClick?.Invoke(); };
             _button.SetSize(Size);
-
             _mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
             _mainVisualElement.AddToClassList(Type.ToString().ToLower());
         }

@@ -30,7 +30,7 @@ namespace Beamable.Editor.Content.Components
       public event Action OnClosed;
       public event Action<DownloadSummary, HandleContentProgress, HandleDownloadFinished> OnDownloadStarted;
 
-      private Button _cancelBtn;
+      private GenericButtonVisualElement _cancelBtn;
       private LoadingBarElement _loadingBar;
       private PrimaryButtonVisualElement _downloadBtn;
 
@@ -55,8 +55,9 @@ namespace Beamable.Editor.Content.Components
          {
             SetMessageLabel();
 
-            _cancelBtn = Root.Q<Button>("cancelBtn");
-            _cancelBtn.clickable.clicked += CancelButton_OnClicked;
+            _cancelBtn = Root.Q<GenericButtonVisualElement>("cancelBtn");
+            _cancelBtn.OnClick += CancelButton_OnClicked;
+            _cancelBtn.Refresh();
 
             _downloadBtn = Root.Q<PrimaryButtonVisualElement>("downloadBtn");
             _downloadBtn.Button.clickable.clicked += DownloadButton_OnClicked;

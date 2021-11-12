@@ -7,11 +7,11 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
     
     <engine:VisualElement name="mainVisualElement">
-        
+      <engine:Button name="button">
+        <!--        <beamable:LoadingSpinnerVisualElement size="15"/>-->
+
+      </engine:Button>-->
     </engine:VisualElement>
     
-    <engine:Button class="button">
-<!--        <beamable:LoadingSpinnerVisualElement size="15"/>-->
 
-    </engine:Button>-->
 </engine:UXML>

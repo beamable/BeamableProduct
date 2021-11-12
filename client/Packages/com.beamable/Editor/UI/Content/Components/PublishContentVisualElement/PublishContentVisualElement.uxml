@@ -65,7 +65,7 @@
         </engine:VisualElement>
 
         <engine:VisualElement name="buttonStrip">
-            <engine:Button name="cancelBtn" text="Cancel"/>
+            <beamable:GenericButtonVisualElement name="cancelBtn" label="Cancel"/>
             <beamable:PrimaryButtonVisualElement name="publishBtn" text="Publish"/>
         </engine:VisualElement>
     </engine:VisualElement>
