@@ -24,6 +24,8 @@ namespace Beamable.Editor.UI.Components
         {
         }
 
+        public event Action OnClick;
+
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
             private ButtonType _defaultType = ButtonType.Confirm;
@@ -53,7 +55,8 @@ namespace Beamable.Editor.UI.Components
             }
         }
 
-        // private Label _label;
+        private Label _label;
+        private Button _button;
         private VisualElement _mainVisualElement;
         
         public ButtonType Type { get; set; }
@@ -68,8 +71,11 @@ namespace Beamable.Editor.UI.Components
         {
             base.Refresh();
 
-            // _label = Root.Q<Label>("label");
-            // _label.text = Label;
+             _label = Root.Q<Label>("label");
+             _label.text = Label;
+
+            _button = Root.Q<Button>("button");
+            _button.clickable.clicked += () => { OnClick?.Invoke(); };
 
             _mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
             _mainVisualElement.AddToClassList(Type.ToString().ToLower());

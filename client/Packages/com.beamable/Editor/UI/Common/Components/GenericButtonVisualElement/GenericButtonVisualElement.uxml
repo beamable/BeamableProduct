@@ -10,9 +10,8 @@
         
     </engine:VisualElement>
     
-<!--    <engine:Button class="button proxy">-->
-
+    <engine:Button class="button">
 <!--        <beamable:LoadingSpinnerVisualElement size="15"/>-->
 
-<!--    </engine:Button>-->
+    </engine:Button>-->
 </engine:UXML>
