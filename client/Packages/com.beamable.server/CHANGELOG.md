@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Folding/Unfolding services cards in `Microservice Manager`
 
+## [0.17.3]
+### Added
+- Add `IMicroserviceStatsApi.GetAllProtectedPlayerStats` method without filtering stats
+
+### Fixed
+- Filters now work for `IMicroserviceStatsApi.GetProtectedPlayerStats`
+
 ## [0.17.2]
 ### Fixed
 - Store Microservice window height between reloads

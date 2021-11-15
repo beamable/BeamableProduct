@@ -56,7 +56,7 @@ namespace Beamable.Editor.Content.Components
                 }
                 foreach (var manifest in manifests.manifests.OrderBy(x => x.id)) {
                     if(manifest.id == BeamableConstants.DEFAULT_MANIFEST_ID) continue;
-                    var enabled = manifest.id != _model.CurrentManifestId;
+                    var enabled = manifest.id != _model.Current?.DisplayName;
                     _entries.Add(new Entry(manifest, _listRoot, enabled, UpdateArchiveButtonInteractivity));
                 }
             });
