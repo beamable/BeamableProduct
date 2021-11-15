@@ -6,6 +6,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Spew;
+using UnityEngine;
 
 namespace Beamable.Content
 {
@@ -36,6 +37,8 @@ namespace Beamable.Content
         private readonly IHttpRequester _requester;
         private readonly IBeamableFilesystemAccessor _filesystemAccessor;
 
+        private static readonly string PathToBakedContent = Application.dataPath + "/Beamable/Resources/Baked/content.json";
+
         public ContentCache(IHttpRequester requester, IBeamableFilesystemAccessor filesystemAccessor)
         {
             _requester = requester;
@@ -62,20 +65,29 @@ namespace Beamable.Content
             var cacheId = GetCacheKey(requestedInfo);
 
             // First, try the in memory cache
-            PlatformLogger.Log(
-                $"ContentCache: Fetching content from cache for {requestedInfo.contentId}: version: {requestedInfo.version}");
-            if (_cache.TryGetValue(cacheId, out var cacheEntry)) return cacheEntry.Content;
+            // PlatformLogger.Log(
+            //     $"ContentCache: Fetching content from cache for {requestedInfo.contentId}: version: {requestedInfo.version}");
+            // if (_cache.TryGetValue(cacheId, out var cacheEntry)) return cacheEntry.Content;
 
             // Then, try the on disk cache
-            PlatformLogger.Log(
-                $"ContentCache: Loading content from disk for {requestedInfo.contentId}: version: {requestedInfo.version}");
-            if (TryGetValueFromDisk(requestedInfo, out var diskContent, _filesystemAccessor))
+            // PlatformLogger.Log(
+            //     $"ContentCache: Loading content from disk for {requestedInfo.contentId}: version: {requestedInfo.version}");
+            // if (TryGetValueFromDisk(requestedInfo, out var diskContent, _filesystemAccessor))
+            // {
+            //     Debug.LogError("GET CACHE FROM DISK");
+            //     var promise = Promise<TContent>.Successful(diskContent);
+            //     SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
+            //     return promise;
+            // }
+            
+            if (TryGetValueFromBaked(requestedInfo, out TContent content))
             {
-                var promise = Promise<TContent>.Successful(diskContent);
+                var promise = Promise<TContent>.Successful(content);
                 SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
                 return promise;
             }
 
+            
             // Finally, if not found, fetch the content from the CDN
             PlatformLogger.Log(
                 $"ContentCache: Fetching content from CDN for {requestedInfo.contentId}: version: {requestedInfo.version}");
@@ -123,6 +135,23 @@ namespace Beamable.Content
                 content = null;
                 return false;
             }
+        }
+
+        private static bool TryGetValueFromBaked(ClientContentInfo info, out TContent content)
+        {
+            var json = Resources.Load<TextAsset>("Baked/content");
+            
+            if (json != null)
+            {
+                // var allContent = _serializer.DeserializeList<TContent>(json.text);
+                // var obj = allContent.First(c => c.Id == info.contentId);
+                content = _serializer.DeserializeListItem<TContent>(json.text, info.contentId);
+                
+                return content != null;
+            }
+
+            content = null;
+            return false;
         }
 
         private static void SaveToDisk(ClientContentInfo info, string raw, IBeamableFilesystemAccessor fsa)

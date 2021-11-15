@@ -578,13 +578,67 @@ namespace Beamable.Common.Content
       public TContent Deserialize<TContent>(string json)
          where TContent : TContentBase, IContentObject, new()
       {
-         var instance = CreateInstance<TContent>();
-
-         var fields = GetFieldInfos(typeof(TContent));
          var deserializedResult = Json.Deserialize(json);
          var root = deserializedResult as ArrayDict;
-
          if (root == null) throw new ContentDeserializationException(json);
+
+         return ConvertItem<TContent>(root);
+      }
+
+      public List<TContent> DeserializeList<TContent>(string json)
+         where TContent : TContentBase, IContentObject, new()
+      {
+         var root = Json.Deserialize(json) as ArrayDict;
+         if (root == null) throw new ContentDeserializationException(json);
+         
+         var array = root.Values.ToArray()[0] as List<object>;
+         List<TContent> list = new List<TContent>(array.Count);
+         foreach (var test in array)
+         {
+            var dict = test as ArrayDict;
+            var item = ConvertItem<TContent>(dict);
+            list.Add(item);
+         }
+         
+         return list;
+      }
+      
+      public TContent DeserializeListItem<TContent>(string listJson, string contentId)
+         where TContent : TContentBase, IContentObject, new()
+      {
+         var root = Json.Deserialize(listJson) as ArrayDict;
+         if (root == null) throw new ContentDeserializationException(listJson);
+         
+         var array = root.Values.ToArray()[0] as List<object>;
+         if (array != null)
+         {
+            foreach (var test in array)
+            {
+               var dict = test as ArrayDict;
+               try
+               {
+                  var item = ConvertItem<TContent>(dict);
+                  if (item != null && item.Id == contentId)
+                  {
+                     return item;
+                  }
+               }
+               catch
+               {
+                  // ignored
+               }
+            }
+         }
+         
+         return default;
+      }
+      
+      public TContent ConvertItem<TContent>(ArrayDict root)
+         where TContent : TContentBase, IContentObject, new()
+      {
+         var instance = CreateInstance<TContent>();
+         var fields = GetFieldInfos(typeof(TContent));
+         
          var id = root["id"].ToString();
 
          // the id may be a former name. We should always prefer to use the latest name based on the actual type of data being deserialized.
