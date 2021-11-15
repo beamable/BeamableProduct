@@ -23,7 +23,6 @@ namespace Beamable.Editor.Login.UI.Components
       private Toggle _legalCheckbox;
       private Label _errorText;
       private GenericButtonVisualElement _existingAccountButton;
-      private Button _cancelButton;
       private GenericButtonVisualElement _switchOrgButton;
 
       public NewUserVisualElement() : base(nameof(NewUserVisualElement))

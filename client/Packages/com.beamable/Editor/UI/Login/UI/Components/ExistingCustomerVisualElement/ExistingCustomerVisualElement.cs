@@ -18,7 +18,6 @@ namespace Beamable.Editor.Login.UI.Components
    public class ExistingCustomerVisualElement : LoginBaseComponent
    {
       private GenericButtonVisualElement _switchCustomerButton;
-      private Button _cancelButton;
       private TextField _cidTextField;
       private PrimaryButtonVisualElement _continueButton;
       private TextField _emailTextField;
