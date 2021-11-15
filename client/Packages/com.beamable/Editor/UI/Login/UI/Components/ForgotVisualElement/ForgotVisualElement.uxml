@@ -21,7 +21,7 @@
             <engine:TextField name="password" class="input phase2"/>
             <engine:TextField name="confirmPassword" class="input phase2"/>
             <beamable:GenericButtonVisualElement name="login" text="Back to login" type="Link"/>
-            <engine:Button name="resend" text="Resend code" class="linkText phase2"/>
+          <beamable:GenericButtonVisualElement name="resend" text="Resend code" type="Link" class="linkText phase2"/>
         </engine:VisualElement>
         <engine:VisualElement name="actionBtn">
             <beamable:PrimaryButtonVisualElement name="getCode" class="phase1" text="Send Code"/>

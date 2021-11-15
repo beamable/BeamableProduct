@@ -23,7 +23,6 @@ namespace Beamable.Editor.Login.UI.Components
       private TextField _passwordField;
       private TextField _passwordConfField;
       private GenericButtonVisualElement _legalButton;
-      private Button _cancelButton;
       private GenericButtonVisualElement _switchCustomerButton;
       private Label _errorText;
       private PrimaryButtonVisualElement _continueButton;
