@@ -22,7 +22,7 @@ namespace Beamable.Editor.Login.UI.Components
       private TextField _cidTextField;
       private Label _errorText;
       private PrimaryButtonVisualElement _getCodeButton;
-      private Button _backButton;
+      private GenericButtonVisualElement _backButton;
       private PrimaryButtonVisualElement _continueButton;
       private Button _resendButton;
 
@@ -69,9 +69,9 @@ namespace Beamable.Editor.Login.UI.Components
          _getCodeButton.Button.clickable.clicked += GetCode_OnClicked;
          _getCodeButton.AddGateKeeper(isAlias, isEmail);
 
-         _backButton = Root.Q<Button>("login");
-         _backButton.text = Manager.IsPreviousPage<AccountSummaryVisualElement>() ? "Back to account" : "Back to login";
-         _backButton.clickable.clicked += Manager.GoToPreviousPage;
+         _backButton = Root.Q<GenericButtonVisualElement>("login");
+         _backButton.Text = Manager.IsPreviousPage<AccountSummaryVisualElement>() ? "Back to account" : "Back to login";
+         _backButton.OnClick += Manager.GoToPreviousPage;
 
          _resendButton = Root.Q<Button>("resend");
          _resendButton.clickable.clicked += ShowPhase1;

@@ -17,15 +17,15 @@ namespace Beamable.Editor.Login.UI.Components
 {
    public class ExistingCustomerVisualElement : LoginBaseComponent
    {
-      private Button _switchCustomerButton;
+      private GenericButtonVisualElement _switchCustomerButton;
       private Button _cancelButton;
       private TextField _cidTextField;
       private PrimaryButtonVisualElement _continueButton;
       private TextField _emailTextField;
       private TextField _passwordTextField;
       private Label _errorText;
-      private Button _newUserButton;
-      private Button _forgotPasswordButton;
+      private GenericButtonVisualElement _newUserButton;
+      private GenericButtonVisualElement _forgotPasswordButton;
       private FormConstraint[] _constraints;
 
       public ExistingCustomerVisualElement() : base(nameof(ExistingCustomerVisualElement))
@@ -41,19 +41,19 @@ namespace Beamable.Editor.Login.UI.Components
       {
          base.Refresh();
 
-         _switchCustomerButton = Root.Q<Button>("newOrganization");
-         _switchCustomerButton.clickable.clicked += Manager.GotoNewCustomer;
+         _switchCustomerButton = Root.Q<GenericButtonVisualElement>("newOrganization");
+         _switchCustomerButton.OnClick += Manager.GotoNewCustomer;
 
-         _forgotPasswordButton = Root.Q<Button>("forgotPassword");
-         _forgotPasswordButton.clickable.clicked += () =>
+         _forgotPasswordButton = Root.Q<GenericButtonVisualElement>("forgotPassword");
+         _forgotPasswordButton.OnClick += () =>
          {
             Model.Customer.SetExistingCustomerData(_cidTextField.value, _emailTextField.value, null);
             Manager.GotoForgotPassword();
          };
 
 
-         _newUserButton = Root.Q<Button>("createNewLink");
-         _newUserButton.clickable.clicked += Manager.GotoNewUser;
+         _newUserButton = Root.Q<GenericButtonVisualElement>("createNewLink");
+         _newUserButton.OnClick += Manager.GotoNewUser;
 
          _continueButton = Root.Q<PrimaryButtonVisualElement>("signIn");
          _continueButton.Button.clickable.clicked += HandleContinueClicked;

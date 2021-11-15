@@ -19,7 +19,8 @@ namespace Beamable.Editor.UI.Components
         {
             Default,
             Confirm,
-            Cancel
+            Cancel,
+            Link
         }
         
         public new class UxmlFactory : UxmlFactory<GenericButtonVisualElement, UxmlTraits>
@@ -84,7 +85,7 @@ namespace Beamable.Editor.UI.Components
             _button.tooltip = Tooltip;
             _button.clickable.clicked += () => { OnClick?.Invoke(); };
             _mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
-            _mainVisualElement.AddToClassList(Type.ToString().ToLower());
+            _button.AddToClassList(Type.ToString().ToLower());
         }
     }
 }

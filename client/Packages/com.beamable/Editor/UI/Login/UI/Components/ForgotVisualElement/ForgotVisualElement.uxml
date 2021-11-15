@@ -20,7 +20,7 @@
             <engine:Label name="newPasswordLabel" text="Please enter new password" class="labelText phase2"/>
             <engine:TextField name="password" class="input phase2"/>
             <engine:TextField name="confirmPassword" class="input phase2"/>
-            <engine:Button name="login" text="Back to login" class="linkText"/>
+            <beamable:GenericButtonVisualElement name="login" text="Back to login" type="Link"/>
             <engine:Button name="resend" text="Resend code" class="linkText phase2"/>
         </engine:VisualElement>
         <engine:VisualElement name="actionBtn">

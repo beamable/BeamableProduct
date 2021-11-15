@@ -22,9 +22,9 @@ namespace Beamable.Editor.Login.UI.Components
       private TextField _emailField;
       private TextField _passwordField;
       private TextField _passwordConfField;
-      private Button _legalButton;
+      private GenericButtonVisualElement _legalButton;
       private Button _cancelButton;
-      private Button _switchCustomerButton;
+      private GenericButtonVisualElement _switchCustomerButton;
       private Label _errorText;
       private PrimaryButtonVisualElement _continueButton;
 
@@ -71,8 +71,8 @@ namespace Beamable.Editor.Login.UI.Components
          _legalCheckbox.RegisterValueChangedCallback(evt => Model.ReadLegalCopy = evt.newValue);
          var isLegal = _legalCheckbox.AddErrorLabel("Legal", PrimaryButtonVisualElement.LegalErrorHandler);
 
-         _legalButton = Root.Q<Button>("legalButton");
-         _legalButton.clickable.clicked +=() => { Application.OpenURL(BeamableConstants.BEAMABLE_LEGAL_WEBSITE); };
+         _legalButton = Root.Q<GenericButtonVisualElement>("legalButton");
+         _legalButton.OnClick +=() => { Application.OpenURL(BeamableConstants.BEAMABLE_LEGAL_WEBSITE); };
          
          _continueButton = Root.Q<PrimaryButtonVisualElement>();
          _continueButton.Button.clickable.clicked += CreateCustomer_OnClicked;
@@ -81,8 +81,8 @@ namespace Beamable.Editor.Login.UI.Components
          _continueButton.AddGateKeeper(constraints);
          _continueButton.RegisterCallback<MouseEnterEvent>(evt => ContinueButton_OnMouseEnter(evt, constraints));
 
-            _switchCustomerButton = Root.Q<Button>("existingOrganization");
-         _switchCustomerButton.clickable.clicked += Manager.GotoExistingCustomer;
+         _switchCustomerButton = Root.Q<GenericButtonVisualElement>("existingOrganization");
+         _switchCustomerButton.OnClick += Manager.GotoExistingCustomer;
 
          _errorText = Root.Q<Label>("errorLabel");
          _errorText.AddTextWrapStyle();
