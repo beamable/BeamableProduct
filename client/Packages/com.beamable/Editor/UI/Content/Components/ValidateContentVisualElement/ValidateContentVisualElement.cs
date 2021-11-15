@@ -73,7 +73,6 @@ namespace Beamable.Editor.Content.Components
 
          _cancelButton = Root.Q<GenericButtonVisualElement>("cancelBtn");
          _cancelButton.OnClick += CancelButton_OnClicked;
-         _cancelButton.Refresh();
 
          _errorContainer = Root.Q<VisualElement>("errorContainer");
          _listView = new ListView(_listSource, 24, CreateListItem, BindListItem);

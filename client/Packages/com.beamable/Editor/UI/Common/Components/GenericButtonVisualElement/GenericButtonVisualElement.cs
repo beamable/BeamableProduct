@@ -15,9 +15,6 @@ namespace Beamable.Editor.UI.Components
 {
     public class GenericButtonVisualElement : BeamableVisualElement
     {
-        const int DEFAULT_WIDTH = 80;
-        const int DEFAULT_HEIGHT = 30;
-
         public enum ButtonType
         {
             Default,
@@ -33,22 +30,16 @@ namespace Beamable.Editor.UI.Components
 
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
-            private ButtonType _defaultType = ButtonType.Confirm;
+            private ButtonType _defaultType = ButtonType.Default;
             
             readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
-                {name = "label", defaultValue = "Label"};
+                {name = "label", defaultValue = ""};
 
             readonly UxmlStringAttributeDescription _tooltip = new UxmlStringAttributeDescription
             { name = "tooltip", defaultValue = "" };
 
             readonly UxmlStringAttributeDescription _type = new UxmlStringAttributeDescription
-                {name = "type", defaultValue = "default"};
-
-            readonly UxmlStringAttributeDescription _width = new UxmlStringAttributeDescription
-                { name = "width", defaultValue = "" };
-
-            readonly UxmlStringAttributeDescription _height = new UxmlStringAttributeDescription
-                { name = "height", defaultValue = "" };
+                {name = "type", defaultValue = ""};
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -66,11 +57,7 @@ namespace Beamable.Editor.UI.Components
                     string passedType = _type.GetValueFromBag(bag, cc);
                     bool parsed = Enum.TryParse(passedType, true, out ButtonType parsedType);
                     component.Type = parsed ? parsedType : _defaultType;
-
-                    if (int.TryParse(_width.GetValueFromBag(bag, cc), out int width) && int.TryParse(_height.GetValueFromBag(bag, cc), out int height))
-                        component.Size = new Vector2(width, height);
-                    else
-                        component.Size = new Vector2(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+                    component.Refresh();
                 }
             }
         }
@@ -96,7 +83,6 @@ namespace Beamable.Editor.UI.Components
             _button.text = Label;
             _button.tooltip = Tooltip;
             _button.clickable.clicked += () => { OnClick?.Invoke(); };
-            _button.SetSize(Size);
             _mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
             _mainVisualElement.AddToClassList(Type.ToString().ToLower());
         }

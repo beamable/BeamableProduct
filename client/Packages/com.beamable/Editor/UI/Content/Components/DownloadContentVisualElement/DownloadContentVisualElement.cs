@@ -57,7 +57,6 @@ namespace Beamable.Editor.Content.Components
 
             _cancelBtn = Root.Q<GenericButtonVisualElement>("cancelBtn");
             _cancelBtn.OnClick += CancelButton_OnClicked;
-            _cancelBtn.Refresh();
 
             _downloadBtn = Root.Q<PrimaryButtonVisualElement>("downloadBtn");
             _downloadBtn.Button.clickable.clicked += DownloadButton_OnClicked;

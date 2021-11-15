@@ -168,7 +168,6 @@ namespace Beamable.Editor.Content.Components
 
              var cancelBtn = Root.Q<GenericButtonVisualElement>("cancelBtn");
              cancelBtn.OnClick += CancelButton_OnClicked;
-             cancelBtn.Refresh();
 
             var promise = PublishSet.Then(publishSet =>
             {

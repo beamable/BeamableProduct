@@ -1,8 +1,3 @@
-#mainVisualElement {
-    width: 200px;
-    height: 40px;
-}
-
 .confirm {
     background-color: aquamarine;
 }
@@ -10,4 +5,8 @@
 .cancel {
     background-color: red;
     /*background-color: rgba(0,0,0,0);*/
+}
+
+.default {
+    height: 35px;
 }

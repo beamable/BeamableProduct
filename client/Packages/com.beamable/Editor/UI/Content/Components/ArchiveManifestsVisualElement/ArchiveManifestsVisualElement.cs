@@ -69,8 +69,8 @@ namespace Beamable.Editor.Content.Components
             _archiveBtn.AddGateKeeper(_buttonGatekeeper);
             UpdateArchiveButtonInteractivity();
             
-            var cancelBtn = Root.Q<Button>("cancelBtn");
-            cancelBtn.clickable.clicked += CancelButton_OnClicked;
+            var cancelBtn = Root.Q<GenericButtonVisualElement>("cancelBtn");
+            cancelBtn.OnClick += CancelButton_OnClicked;
         }
 
         private void UpdateArchiveButtonInteractivity() {
