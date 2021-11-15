@@ -32,8 +32,8 @@ namespace Beamable.Editor.UI.Components
         {
             private ButtonType _defaultType = ButtonType.Default;
             
-            readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
-                {name = "label", defaultValue = ""};
+            readonly UxmlStringAttributeDescription _text = new UxmlStringAttributeDescription
+                {name = "text", defaultValue = ""};
 
             readonly UxmlStringAttributeDescription _tooltip = new UxmlStringAttributeDescription
             { name = "tooltip", defaultValue = "" };
@@ -51,7 +51,7 @@ namespace Beamable.Editor.UI.Components
                 base.Init(ve, bag, cc);
                 if (ve is GenericButtonVisualElement component)
                 {
-                    component.Label = _label.GetValueFromBag(bag, cc);
+                    component.Text = _text.GetValueFromBag(bag, cc);
                     component.Tooltip = _tooltip.GetValueFromBag(bag, cc);
 
                     string passedType = _type.GetValueFromBag(bag, cc);
@@ -66,7 +66,7 @@ namespace Beamable.Editor.UI.Components
         private VisualElement _mainVisualElement;
         
         public ButtonType Type { get; set; }
-        public string Label { get; set; }
+        public string Text { get; set; }
         public string Tooltip { get; set; }
         public Vector2 Size { get; set; }
 
@@ -80,7 +80,7 @@ namespace Beamable.Editor.UI.Components
             base.Refresh();
 
             _button = Root.Q<Button>("button");
-            _button.text = Label;
+            _button.text = Text;
             _button.tooltip = Tooltip;
             _button.clickable.clicked += () => { OnClick?.Invoke(); };
             _mainVisualElement = Root.Q<VisualElement>("mainVisualElement");

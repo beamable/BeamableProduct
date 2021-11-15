@@ -3,10 +3,11 @@
 }
 
 .cancel {
-    background-color: red;
-    /*background-color: rgba(0,0,0,0);*/
+    width: 80px;
+    height: 35px;
 }
 
 .default {
+    width: 80px;
     height: 35px;
 }
