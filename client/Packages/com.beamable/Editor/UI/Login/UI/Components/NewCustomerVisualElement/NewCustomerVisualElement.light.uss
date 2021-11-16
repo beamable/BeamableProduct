@@ -1,7 +1,3 @@
-.linkText{
-    color: #000000;
-    border-color: #383838;
-}
 .btnText{
     color: #383838;
 }

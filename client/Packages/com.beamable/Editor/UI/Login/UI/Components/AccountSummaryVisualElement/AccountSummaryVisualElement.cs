@@ -1,5 +1,6 @@
 
 using Beamable.Editor.Modules.Account;
+using Beamable.Editor.UI.Components;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -22,7 +23,7 @@ namespace Beamable.Editor.Login.UI.Components
       private TextField _realmField;
       private TextField _idField;
       private TextField _psswordField;
-      private Button _switchGameButton;
+      private GenericButtonVisualElement _switchGameButton;
 
 //      public override bool ShowHeader => false;
 
@@ -50,14 +51,14 @@ namespace Beamable.Editor.Login.UI.Components
          _realmField = Root.Q<TextField>("realm");
          _realmField.RegisterValueChangedCallback(evt => _realmField.SetValueWithoutNotify(Model?.CurrentRealm?.ProjectName));
 
-         _switchGameButton = Root.Q<Button>("switchGame");
-         _switchGameButton.clickable.clicked += Manager.GotoProjectSelectVisualElement;
+         _switchGameButton = Root.Q<GenericButtonVisualElement>("switchGame");
+         _switchGameButton.OnClick += Manager.GotoProjectSelectVisualElement;
 
-         var resetPasswordButton = Root.Q<Button>("resetPassword");
-         resetPasswordButton.clickable.clicked += Manager.GotoForgotPassword;
+         var resetPasswordButton = Root.Q<GenericButtonVisualElement>("resetPassword");
+         resetPasswordButton.OnClick += Manager.GotoForgotPassword;
 
-         var logoutButton = Root.Q<Button>("logout");
-         logoutButton.clickable.clicked += () => Manager.Logout(Model);
+         var logoutButton = Root.Q<GenericButtonVisualElement>("logout");
+         logoutButton.OnClick += () => Manager.Logout(Model);
 
          SetView();
          Model.OnStateChanged += _ => SetView();

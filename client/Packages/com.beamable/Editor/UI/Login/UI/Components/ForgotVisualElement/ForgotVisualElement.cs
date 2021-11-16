@@ -22,9 +22,9 @@ namespace Beamable.Editor.Login.UI.Components
       private TextField _cidTextField;
       private Label _errorText;
       private PrimaryButtonVisualElement _getCodeButton;
-      private Button _backButton;
+      private GenericButtonVisualElement _backButton;
       private PrimaryButtonVisualElement _continueButton;
-      private Button _resendButton;
+      private GenericButtonVisualElement _resendButton;
 
       public ForgotVisualElement() : base(nameof(ForgotVisualElement))
       {
@@ -43,6 +43,7 @@ namespace Beamable.Editor.Login.UI.Components
          _cidTextField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_CID_FIELD);
          _cidTextField.SetValueWithoutNotify(Model.Customer.CidOrAlias);
          var isAlias = _cidTextField.AddErrorLabel("Alias", PrimaryButtonVisualElement.AliasOrCidErrorHandler);
+
 
          _emailField = Root.Q<TextField>("account");
          _emailField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_EMAIL_FIELD);
@@ -69,12 +70,12 @@ namespace Beamable.Editor.Login.UI.Components
          _getCodeButton.Button.clickable.clicked += GetCode_OnClicked;
          _getCodeButton.AddGateKeeper(isAlias, isEmail);
 
-         _backButton = Root.Q<Button>("login");
-         _backButton.text = Manager.IsPreviousPage<AccountSummaryVisualElement>() ? "Back to account" : "Back to login";
-         _backButton.clickable.clicked += Manager.GoToPreviousPage;
+         _backButton = Root.Q<GenericButtonVisualElement>("login");
+         _backButton.SetText(Manager.IsPreviousPage<AccountSummaryVisualElement>() ? "Back to account" : "Back to login");
+         _backButton.OnClick += Manager.GoToPreviousPage;
 
-         _resendButton = Root.Q<Button>("resend");
-         _resendButton.clickable.clicked += ShowPhase1;
+         _resendButton = Root.Q<GenericButtonVisualElement>("resend");
+         _resendButton.OnClick += ShowPhase1;
 
          _continueButton = Root.Q<PrimaryButtonVisualElement>("signIn");
          _continueButton.AddGateKeeper(isAlias, isEmail, isCode, isPasswordValid, doPasswordsMatch);

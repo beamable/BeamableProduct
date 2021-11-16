@@ -14,7 +14,7 @@ namespace Beamable.Editor.UI.Buss.Components
     {
         private Label _bodyLabel;
         private PrimaryButtonVisualElement _okButton;
-        private Button _cancelButton;
+        private GenericButtonVisualElement _cancelButton;
 
         private readonly string _contentText;
         private readonly Action _onConfirm;
@@ -40,11 +40,11 @@ namespace Beamable.Editor.UI.Buss.Components
             _okButton = Root.Q<PrimaryButtonVisualElement>("okButton");
             _okButton.Button.clickable.clicked += HandleOkButtonClicked;
 
-            _cancelButton = Root.Q<Button>("cancelButton");
+            _cancelButton = Root.Q<GenericButtonVisualElement>("cancelButton");
 
             if (_showCancelButton)
             {
-                _cancelButton.clickable.clicked += HandleCancelButtonClicked;
+                _cancelButton.OnClick += HandleCancelButtonClicked;
             }
             else
             {
@@ -54,7 +54,7 @@ namespace Beamable.Editor.UI.Buss.Components
 
         public void SetCancelButtonText(string text)
         {
-            _cancelButton.text = text;
+            _cancelButton.SetText(text);
         }
 
         public void SetConfirmButtonText(string text)

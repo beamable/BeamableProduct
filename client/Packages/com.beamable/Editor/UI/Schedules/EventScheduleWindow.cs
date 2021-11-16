@@ -41,7 +41,7 @@ namespace Beamable.Editor.Schedules
         private VisualElement _daysGroup;
         private VisualElement _datesGroup;
         private PrimaryButtonVisualElement _confirmButton;
-        private Button _cancelButton;
+        private GenericButtonVisualElement _cancelButton;
 
         private readonly Dictionary<string, Mode> _modes;
         private Mode _currentMode;
@@ -108,8 +108,8 @@ namespace Beamable.Editor.Schedules
             _confirmButton.Button.clickable.clicked += ConfirmClicked;
             _confirmButton.Disable();
 
-            _cancelButton = Root.Q<Button>("cancelBtn");
-            _cancelButton.clickable.clicked += CancelClicked;
+            _cancelButton = Root.Q<GenericButtonVisualElement>("cancelBtn");
+            _cancelButton.OnClick += CancelClicked;
 
             // Groups
             _daysGroup = Root.Q<VisualElement>("daysGroup");

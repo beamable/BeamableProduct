@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <engine:UXML
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns:beamable="Beamable.Editor.Toolbox.Components"
+        xmlns:beamable="Beamable.Editor.UI.Components"
         xmlns:engine="UnityEngine.Experimental.UIElements"
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
@@ -63,11 +63,11 @@
             <engine:Label name="role" text="Permissions" class="labelText"/>
             <engine:TextField name="role" class="input"/>
 
-            <engine:Button name="switchGame" text="Switch Game" class="linkText"/>
-            <engine:Button name="resetPassword" text="Reset Password" class="linkText"/>
+            <beamable:GenericButtonVisualElement name="switchGame" text="Switch Game" type="Link"/>
+            <beamable:GenericButtonVisualElement name="resetPassword" text="Reset Password" type="Link"/>
 
             <engine:VisualElement name="actionBtn">
-                <engine:Button name="logout" text="Log out"/>
+              <beamable:GenericButtonVisualElement name="logout" text="Log out" type ="Cancel"/>
 <!--                <beamable:PrimaryButtonVisualElement name="signIn" text="Sign In"/>-->
             </engine:VisualElement>
 
