@@ -5,6 +5,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using UnityEngine;
 using Beamable.Serialization.SmallerJSON;
+using System;
 
 namespace Beamable.Server
 {
@@ -26,7 +27,7 @@ namespace Beamable.Server
 
 		protected string _prefix;
 
-		protected string SerializeArgument<T>(T arg)
+		public static string SerializeArgument<T>(T arg)
 		{
 			// JSONUtility will serialize objects correctly, but doesn't handle primitives well.
 			if (arg == null)
@@ -70,7 +71,7 @@ namespace Beamable.Server
 			return JsonUtility.ToJson(arg);
 		}
 
-		protected T DeserializeResult<T>(string json)
+		public static T DeserializeResult<T>(string json)
 		{
 			var type = typeof(T);
 			var defaultInstance = default(T);
@@ -149,12 +150,31 @@ namespace Beamable.Server
 			return JsonUtility.FromJson<T>(json);
 		}
 
-		private Dictionary<string, T> ConvertArrayDictToDictionary<T>(ArrayDict arrayDict)
+		public static Dictionary<string, T> ConvertArrayDictToDictionary<T>(ArrayDict arrayDict)
 		{
 			var dictionary = new Dictionary<string, T>(arrayDict.Count);
-			foreach (var pair in arrayDict)
+			if (typeof(T) == typeof(int))
 			{
-				dictionary.Add(pair.Key, (T)pair.Value);
+				foreach (var pair in arrayDict)
+				{
+					var intValue =  (int)((long)pair.Value % Int32.MaxValue);
+					dictionary.Add(pair.Key, (T)(object)intValue);
+				}
+			}
+			else if (typeof(T) == typeof(float))
+			{
+				foreach (var pair in arrayDict)
+				{
+					var floatValue = (float)((double)pair.Value);
+					dictionary.Add(pair.Key, (T)(object)floatValue);
+				}
+			}
+			else
+			{
+				foreach (var pair in arrayDict)
+				{
+					dictionary.Add(pair.Key, (T)pair.Value);
+				}
 			}
 
 			return dictionary;
