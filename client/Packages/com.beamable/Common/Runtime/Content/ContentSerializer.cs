@@ -585,52 +585,23 @@ namespace Beamable.Common.Content
          return ConvertItem<TContent>(root);
       }
 
-      public List<TContent> DeserializeList<TContent>(string json)
-         where TContent : TContentBase, IContentObject, new()
+      public ArrayDict[] DeserializeList(string json)
       {
          var root = Json.Deserialize(json) as ArrayDict;
          if (root == null) throw new ContentDeserializationException(json);
-         
-         var array = root.Values.ToArray()[0] as List<object>;
-         List<TContent> list = new List<TContent>(array.Count);
-         foreach (var test in array)
+
+         if (root.Values.ToArray()[0] is List<object> list)
          {
-            var dict = test as ArrayDict;
-            var item = ConvertItem<TContent>(dict);
-            list.Add(item);
-         }
-         
-         return list;
-      }
-      
-      public TContent DeserializeListItem<TContent>(string listJson, string contentId)
-         where TContent : TContentBase, IContentObject, new()
-      {
-         var root = Json.Deserialize(listJson) as ArrayDict;
-         if (root == null) throw new ContentDeserializationException(listJson);
-         
-         var array = root.Values.ToArray()[0] as List<object>;
-         if (array != null)
-         {
-            foreach (var test in array)
+            var array = new ArrayDict[list.Count];
+            for (int i = 0; i < list.Count; i++)
             {
-               var dict = test as ArrayDict;
-               try
-               {
-                  var item = ConvertItem<TContent>(dict);
-                  if (item != null && item.Id == contentId)
-                  {
-                     return item;
-                  }
-               }
-               catch
-               {
-                  // ignored
-               }
+               array[i] = list[i] as ArrayDict;
             }
+
+            return array;
          }
          
-         return default;
+         return null;
       }
       
       public TContent ConvertItem<TContent>(ArrayDict root)
