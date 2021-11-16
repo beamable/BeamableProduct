@@ -527,6 +527,7 @@ MonoBehaviour:
   _rank: {fileID: 9045432837133318405}
   _name: {fileID: 9045432837350611411}
   _score: {fileID: 9045432838100322773}
+  _nameStatObject: {fileID: 11400000, guid: 5383580fea04fa64ab0ba66c79a04568, type: 2}
 --- !u!114 &2681466034333901170
 MonoBehaviour:
   m_ObjectHideFlags: 0

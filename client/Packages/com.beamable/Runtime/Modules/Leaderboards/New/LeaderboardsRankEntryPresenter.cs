@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using Beamable.Common.Api.Leaderboards;
 using Beamable.Modules.Generics;
+using Beamable.Stats;
 using TMPro;
 using UnityEngine;
 
@@ -12,12 +13,13 @@ namespace Beamable.UI.Leaderboards
         [SerializeField] private TextMeshProUGUI _rank;
         [SerializeField] private TextMeshProUGUI _name;
         [SerializeField] private TextMeshProUGUI _score;
+        [SerializeField] private StatObject _nameStatObject;
 #pragma warning restore CS0649
 
         protected override void Refresh()
         {
             _rank.text = Data.rank.ToString();
-            _name.text = Data.GetStat("name");    // Temp solution
+            _name.text = Data.GetStat(_nameStatObject.StatKey) ?? _nameStatObject.DefaultValue;
             _score.text = Data.score.ToString(CultureInfo.InvariantCulture);
         }
     }
