@@ -65,11 +65,10 @@ namespace Beamable.Editor.UI.Components
 
         private Button _button;
         private VisualElement _mainVisualElement;
-        
-        public ButtonType Type { get; set; }
-        public string Text { get; set; }
-        public string Tooltip { get; set; }
-        public Vector2 Size { get; set; }
+
+        private ButtonType Type { get; set; }
+        private string Text { get; set; }
+        private string Tooltip { get; set; }
 
         public GenericButtonVisualElement() : base(
             $"{BeamableComponentsConstants.COMP_PATH}/{nameof(GenericButtonVisualElement)}/{nameof(GenericButtonVisualElement)}")
@@ -87,5 +86,9 @@ namespace Beamable.Editor.UI.Components
             _mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
             _button.AddToClassList(Type.ToString().ToLower());
         }
+
+        public void SetText(string val) => _button.text = val;
+
+        public void SetTooltip(string val) => _button.tooltip = val;
     }
 }

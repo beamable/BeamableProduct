@@ -54,7 +54,7 @@ namespace Beamable.Editor.UI.Buss.Components
 
         public void SetCancelButtonText(string text)
         {
-            _cancelButton.Text = text;
+            _cancelButton.SetText(text);
         }
 
         public void SetConfirmButtonText(string text)
