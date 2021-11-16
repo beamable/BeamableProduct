@@ -30,7 +30,6 @@ namespace Beamable.Editor.Content.Components
     {
         private LoadingBarElement _loadingBar;
         private Label _messageLabel;
-        private Button _detailButton;
         public event Action OnCancelled;
         public event Action OnCompleted;
         public event Action<ContentPublishSet, HandleContentProgress, HandleDownloadFinished> OnPublishRequested;
@@ -167,8 +166,8 @@ namespace Beamable.Editor.Content.Components
              };
              deleteFoldoutElem.contentContainer.Add(deleteList);
 
-             var cancelBtn = Root.Q<Button>("cancelBtn");
-             cancelBtn.clickable.clicked += CancelButton_OnClicked;
+             var cancelBtn = Root.Q<GenericButtonVisualElement>("cancelBtn");
+             cancelBtn.OnClick += CancelButton_OnClicked;
 
             var promise = PublishSet.Then(publishSet =>
             {

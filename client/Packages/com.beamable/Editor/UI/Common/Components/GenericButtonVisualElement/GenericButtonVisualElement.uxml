@@ -5,14 +5,13 @@
         xmlns:beamable="Beamable.Editor.UI.Components"
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
-
+    
     <engine:VisualElement name="mainVisualElement">
-        <engine:VisualElement name="content">
-            <engine:Label name="contentLabel"/>
-        </engine:VisualElement>
-        <engine:VisualElement name="buttonsVisualElement">
-            <beamable:PrimaryButtonVisualElement name="okButton" text="OK"/>
-            <beamable:GenericButtonVisualElement name="cancelButton" text="Cancel" type ="Cancel"/>
-        </engine:VisualElement>
+      <engine:Button name="button">
+        <!--        <beamable:LoadingSpinnerVisualElement size="15"/>-->
+
+      </engine:Button>-->
     </engine:VisualElement>
+    
+
 </engine:UXML>
