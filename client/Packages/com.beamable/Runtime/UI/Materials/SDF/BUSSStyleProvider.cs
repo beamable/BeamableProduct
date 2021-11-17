@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Beamable.UI.Buss;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Beamable.UI.BUSS
 {
@@ -9,6 +10,7 @@ namespace Beamable.UI.BUSS
     public class BUSSStyleProvider : MonoBehaviour
     {
 #pragma warning disable CS0649
+[FormerlySerializedAs("_config")]
         [SerializeField] private BUSSStyleSheet sheet;
 #pragma warning restore CS0649
 
