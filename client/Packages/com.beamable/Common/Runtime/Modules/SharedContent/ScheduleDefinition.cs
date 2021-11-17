@@ -39,6 +39,11 @@ namespace Beamable.Common.Content
       {
          definitions.Add(definition);
       }
+
+      public void AddDefinitions(List<ScheduleDefinition> definitions)
+      {
+         this.definitions.AddRange(definitions);
+      }
    }
 
    [Serializable]

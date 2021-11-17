@@ -85,7 +85,6 @@ namespace Beamable.Editor.UI.Components
         }
 
         public void Set(DateTime date) => _hourPicker.Set(date);
-        public void SetPeriod(ScheduleDefinition definition, int index) => _hourPicker.SetPeriod(definition, index);
 
         public void SetGroupEnabled(bool b)
         {
