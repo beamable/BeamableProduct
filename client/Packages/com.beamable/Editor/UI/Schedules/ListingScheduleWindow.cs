@@ -33,21 +33,11 @@ namespace Beamable.Editor.Schedules
         private LabeledHourPickerVisualElement _periodFromHourComponent;
         private LabeledHourPickerVisualElement _periodToHourComponent;
         private LabeledCalendarVisualElement _calendarComponent;
+        private GenericButtonVisualElement _cancelButton;
 
         private VisualElement _daysGroup;
         private VisualElement _datesGroup;
         private PrimaryButtonVisualElement _confirmButton;
-        private Button _cancelButton;
-
-        private readonly Dictionary<string, Mode> _modes;
-        private Mode _currentMode;
-        private GenericButtonVisualElement _cancelButton;
-        private ComponentsValidator _dailyModeValidator;
-        private ComponentsValidator _daysModeValidator;
-        private ComponentsValidator _datesModeValidator;
-        private ComponentsValidator _currentValidator;
-        private LabeledCalendarVisualElement _calendarComponent;
-        private readonly ScheduleParser _scheduleParser;
 
         // TODO: create some generic composite rules for cases like this one and then remove below fields
         private bool _isPeriodValid;
