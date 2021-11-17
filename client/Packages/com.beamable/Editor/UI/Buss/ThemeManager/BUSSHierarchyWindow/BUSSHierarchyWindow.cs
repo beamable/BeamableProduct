@@ -1,5 +1,6 @@
 ﻿using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
+using Editor.UI.BUSS;
 using UnityEditor;
 using UnityEngine;
 
@@ -18,7 +19,7 @@ namespace Beamable.UI.BUSS
 		{
 			BUSSHierarchyWindow window = new BUSSHierarchyWindow();
 			BeamablePopupWindow.ShowUtility(BeamableConstants.BUSS_HIERARCHY_WINDOW, window, null,
-			                                new Vector2(200, 200));
+			                                BUSSConstants.HierarchyWindowSize);
 		}
 
 		public BUSSHierarchyWindow() : base(
