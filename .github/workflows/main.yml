@@ -4,17 +4,12 @@ on:
  push:
   branches:
     - 'main'
-  paths:
-    - 'client/**'
-    - 'microservice/**'
+    - 'iOS'
  pull_request:
   branches:
     - 'main'
     - 'staging'
-  paths:
-    - 'client/**'
-    - 'microservice/**'
-
+    - 'iOS'
 jobs:
   testMicroserviceBaseImage:
     timeout-minutes: 10
