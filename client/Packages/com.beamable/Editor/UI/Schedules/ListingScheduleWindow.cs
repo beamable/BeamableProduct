@@ -39,6 +39,16 @@ namespace Beamable.Editor.Schedules
         private PrimaryButtonVisualElement _confirmButton;
         private Button _cancelButton;
 
+        private readonly Dictionary<string, Mode> _modes;
+        private Mode _currentMode;
+        private GenericButtonVisualElement _cancelButton;
+        private ComponentsValidator _dailyModeValidator;
+        private ComponentsValidator _daysModeValidator;
+        private ComponentsValidator _datesModeValidator;
+        private ComponentsValidator _currentValidator;
+        private LabeledCalendarVisualElement _calendarComponent;
+        private readonly ScheduleParser _scheduleParser;
+
         // TODO: create some generic composite rules for cases like this one and then remove below fields
         private bool _isPeriodValid;
         private string _invalidPeriodMessage;
@@ -113,8 +123,8 @@ namespace Beamable.Editor.Schedules
             _confirmButton.Button.clickable.clicked += ConfirmClicked;
             _confirmButton.Disable();
 
-            _cancelButton = Root.Q<Button>("cancelBtn");
-            _cancelButton.clickable.clicked += CancelClicked;
+            _cancelButton = Root.Q<GenericButtonVisualElement>("cancelBtn");
+            _cancelButton.OnClick += CancelClicked;
 
             // Groups
             _daysGroup = Root.Q<VisualElement>("daysGroup");
@@ -213,7 +223,7 @@ namespace Beamable.Editor.Schedules
             if (_neverExpiresComponent != null) _neverExpiresComponent.OnValueChanged -= OnExpirationChanged;
             if (_allDayComponent != null) _allDayComponent.OnValueChanged -= OnAllDayChanged;
             if (_confirmButton != null) _confirmButton.Button.clickable.clicked -= ConfirmClicked;
-            if (_cancelButton != null) _cancelButton.clickable.clicked -= CancelClicked;
+            if (_cancelButton != null) _cancelButton.OnClick -= CancelClicked;
         }
 
         public void Set(Schedule schedule, ListingContent content)

@@ -10,7 +10,7 @@
     <engine:VisualElement name="textField">
         <engine:Label name="organization" text="Please enter your Organization's Alias" class="labelText"/>
         <engine:TextField name="organizationID" class="input" />
-        <engine:Button name="existingOrganization" text="Sign into an existing organization" class="linkText"/>
+        <beamable:GenericButtonVisualElement name="existingOrganization" text="Sign into an existing organization" type="Link"/>
         <engine:Label name="project" text="Please enter your Game's name" class="labelText"/>
         <engine:TextField name="projectID" class="input"/>
         <engine:Label name="createAccount" text="Please create your account" class="labelText"/>
@@ -21,7 +21,7 @@
             <engine:VisualElement name="term">
                 <engine:Toggle name="checkBox"/>
                 <engine:Label text="I have read and agree to the" class="labelText"/>
-                <engine:Button name="legalButton" class="linkText" text="terms and conditions"/>
+                <beamable:GenericButtonVisualElement name="legalButton" text="terms and conditions" type="Link" />
             </engine:VisualElement>
             <engine:VisualElement name="actionBtn">
                 <beamable:PrimaryButtonVisualElement name="signIn" text="Create Organization"/>
