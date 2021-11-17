@@ -152,7 +152,7 @@ jobs:
         with:
           name: Build-iOS
       - name: Unzip the archive
-        run: tar -xvf Build-iOS.zip && cd iOS/
+        run: tar -xvf Build-iOS && cd iOS/
       - uses: yukiarrr/ios-build-action@v1.4.0
         with:
           project-path: Unity-iPhone.xcodeproj
