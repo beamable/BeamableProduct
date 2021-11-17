@@ -151,8 +151,8 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: Build-iOS
-      - name: Unzip the archive
-        run: pwd && ls -lrt && tar -xvf Build-iOS && cd iOS/
+      - name: Change directory to the location of the xcode project
+        run: cd iOS/
       - uses: yukiarrr/ios-build-action@v1.4.0
         with:
           project-path: Unity-iPhone.xcodeproj
