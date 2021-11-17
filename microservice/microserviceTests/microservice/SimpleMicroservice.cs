@@ -1,10 +1,14 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Beamable.Common;
+using Beamable.Common.Api;
+using Beamable.Common.Api.Auth;
 using Beamable.Common.Inventory;
 using Beamable.Common.Leaderboards;
 using Beamable.Server;
+using NUnit.Framework;
 using UnityEngine;
 
 namespace microserviceTests.microservice
@@ -106,6 +110,20 @@ namespace microserviceTests.microservice
       {
          var content = await Services.Content.GetContent(id);
          return "Echo: " + content.Id;
+      }
+
+      [ClientCallable]
+      public async Task<User> GetUserViaAccessToken(TokenResponse tokenResponse)
+      {
+         try
+         {
+            return await Services.Auth.GetUser(tokenResponse);
+         }
+         catch (Exception ex)
+         {
+            Assert.IsTrue(ex is NotImplementedException);
+            throw;
+         }
       }
    }
 }
