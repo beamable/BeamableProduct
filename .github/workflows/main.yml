@@ -150,7 +150,7 @@ jobs:
       #Build iOS
       - uses: actions/download-artifact@v2
         with:
-          name: dist/Build-iOS
+          name: Build-iOS
       - name: Unzip the archive
         run: tar -xvf Build-iOS.zip && cd iOS/
       - uses: yukiarrr/ios-build-action@v1.4.0
