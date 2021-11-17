@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Limit amount of elements displayed by `list_content` command in Admin console, allow to specify start index for `list_content` command
 - Added `RemoveDeviceId` method in `AuthService`
 - `ScheduleDefinition` now supports CRON expression
+- Added minutes support in scheduled listings
 - Added clearer unsupported message for C# Microservice's implementation of `IAuthService.GetUser(TokenResponse)`
 
 ### Changed

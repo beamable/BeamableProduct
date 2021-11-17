@@ -223,5 +223,18 @@ namespace Beamable.Editor.UI.Components
             // Forcing to ensure validation check
             OnValueChanged?.Invoke(_selectedDays);
         }
+
+        public void SetInitialValues(List<string> dates)
+        {
+            if (dates.Count == 0)
+            {
+                OnDateChanged();
+                return;
+            }
+
+            _selectedDays = new List<string>(dates);
+            OnDateChanged();
+            OnValueChanged?.Invoke(_selectedDays);
+        }
     }
 }
