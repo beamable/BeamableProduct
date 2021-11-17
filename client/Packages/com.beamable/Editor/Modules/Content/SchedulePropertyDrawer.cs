@@ -44,15 +44,15 @@ namespace Beamable.Editor.Content
       where TWindow : BeamableVisualElement, IScheduleWindow<TData>, new()
    {
       public bool allowRawEdit;
+      private Schedule _schedule;
 
       public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
       {
-         return EditorGUIUtility.singleLineHeight * 4
-                + EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.description))) + 2
-                + EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.definitions))) + 2
-                + EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.activeTo))) + 2
-                + EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.activeFrom)));
-
+          return EditorGUIUtility.singleLineHeight * 4 +
+                 EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.description))) + 2 +
+                 EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.definitions))) + 2 +
+                 EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.activeTo))) + 2 +
+                 EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.activeFrom)));
       }
       public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
       {
@@ -63,7 +63,7 @@ namespace Beamable.Editor.Content
 
          var buttonRect = new Rect(position.x + indent, position.y + 20, position.width - indent*2, 20);
 
-         var schedule = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property) as Schedule;
+         _schedule = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property) as Schedule;
 
          var requestEdit = GUI.Button(buttonRect, "Edit Schedule");
 
@@ -73,15 +73,22 @@ namespace Beamable.Editor.Content
          if (toggleRaw) allowRawEdit = !allowRawEdit;
          nextY = buttonRect.y + 20;
 
+         for (var index = 0; index < _schedule.definitions.Count; index++)
+         {
+             var scheduleDefinition = _schedule.definitions[index];
+             scheduleDefinition.index = index;
+             scheduleDefinition.OnCronRawSaveButtonPressed -= HandleCronRawUpdate;
+             scheduleDefinition.OnCronRawSaveButtonPressed += HandleCronRawUpdate;
+         }
 
          void RenderProperty(SerializedProperty prop)
          {
-            var height = EditorGUI.GetPropertyHeight(prop);
-            var rect = new Rect(buttonRect.x, nextY, buttonRect.width, height);
-            nextY += height + 2;
-            EditorGUI.PropertyField(rect, prop, true);
+             var height = EditorGUI.GetPropertyHeight(prop);
+             var rect = new Rect(buttonRect.x, nextY, buttonRect.width, height);
+             nextY += height + 2;
+             EditorGUI.PropertyField(rect, prop, true);
          }
-
+         
          GUI.enabled = allowRawEdit;
          RenderProperty(property.FindPropertyRelative(nameof(Schedule.description)));
          RenderProperty(property.FindPropertyRelative(nameof(Schedule.activeFrom)));
@@ -91,7 +98,7 @@ namespace Beamable.Editor.Content
 
          if (requestEdit)
          {
-           OpenWindow(property, schedule);
+           OpenWindow(property, _schedule);
          }
       }
 
@@ -119,19 +126,27 @@ namespace Beamable.Editor.Content
 
       }
 
-      protected abstract TData GetDataObject(SerializedProperty property);
+      private void HandleCronRawUpdate(ScheduleDefinition scheduleDefinition)
+      {
+          var newDefinition = ExpressionDescriptor.CronToScheduleDefinition(scheduleDefinition.cronRawFormat);
+          newDefinition.cronRawFormat = scheduleDefinition.cronRawFormat;
+          newDefinition.cronHumanFormat = ExpressionDescriptor.GetDescription(newDefinition.cronRawFormat);
+          _schedule.definitions[scheduleDefinition.index] = newDefinition;
+      }
 
+      protected abstract TData GetDataObject(SerializedProperty property);
+      
       protected virtual void UpdateSchedule(SerializedProperty property, TData data, Schedule schedule, Schedule nextSchedule)
       {
          schedule.description = nextSchedule.description;
          schedule.activeFrom = nextSchedule.activeFrom;
          schedule.activeTo = nextSchedule.activeTo;
-         SetDefinitions(schedule, nextSchedule);
+         schedule.definitions = nextSchedule.definitions;
+         SetDefinitions(schedule);
       }
 
-      private void SetDefinitions(Schedule schedule, Schedule nextSchedule)
+      private void SetDefinitions(Schedule schedule)
       {
-          schedule.definitions = nextSchedule.definitions;
           foreach (var definition in schedule.definitions)
           {
               definition.cronRawFormat = ExpressionDescriptor.ScheduleDefinitionToCron(definition);

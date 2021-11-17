@@ -123,15 +123,11 @@ namespace Beamable.CronExpression
             }
             catch (Exception ex)
             {
-                if (!_options.ThrowExceptionOnParseError)
-                    description = ex.Message;
-                else
-                    throw;
+                description = ex.Message;
+                return description;
             }
 
-            // Uppercase the first letter
             description = string.Concat(_culture.TextInfo.ToUpper(description[0]), description.Substring(1));
-
             return description;
         }
 

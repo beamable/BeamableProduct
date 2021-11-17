@@ -1,0 +1,63 @@
+﻿using System;
+using UnityEditor;
+using UnityEngine;
+
+namespace Beamable.Editor.Content
+{
+    public class CronEditorWindow : EditorWindow
+    {
+        public static CronEditorWindow ShowWindow(string cronRawFormat, Action<string> result) 
+        {
+            _window = GetWindow<CronEditorWindow>();
+            if (_window != null)
+                _window.Close();
+            
+            _window = CreateInstance<CronEditorWindow>();
+            _window.titleContent = new GUIContent("Cron Editor");
+            _window.minSize = _window.maxSize = new Vector2(300f, 210f);
+            _window.ShowUtility();
+            _window.Init(cronRawFormat, result);
+            
+            return _window;
+        }
+
+        private static CronEditorWindow _window;
+        private static Action<string> _result;
+        private static string _currentString = "-1";
+        private static string _inputString = string.Empty;
+        private static string _humanFormat = string.Empty;
+
+        private void Init(string cronRawFormat, Action<string> result)
+        {
+            _inputString = cronRawFormat;
+            _result = result;
+        }
+        private void OnGUI() 
+        {
+            GUI.Label(new Rect(10, 120, 280, 20), "Enter cron string");
+            _inputString = GUI.TextField(new Rect(10, 140, 280, 20), _inputString);
+
+            if (!_inputString.Equals(_currentString))
+            {
+                _humanFormat = CronExpression.ExpressionDescriptor.GetDescription(_inputString);
+                _currentString = _inputString;
+            }
+
+            GUI.Label(new Rect(10, 10, 280, 100), _humanFormat, new GUIStyle(GUI.skin.GetStyle("label"))
+            {
+                alignment = TextAnchor.UpperLeft,
+                wordWrap = true
+            });
+
+            if (GUI.Button(new Rect(160, 180, 60, 20), "Cancel"))
+            {
+                _window.Close();
+            }
+            if (GUI.Button(new Rect(230, 180, 60, 20), "Save"))
+            {
+                _result?.Invoke(_currentString);
+                _window.Close();
+            }
+        }
+    }
+}
