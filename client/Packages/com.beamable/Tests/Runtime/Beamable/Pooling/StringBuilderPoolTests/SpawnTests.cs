@@ -8,48 +8,46 @@ using UnityEngine.TestTools;
 
 namespace Beamable.Tests.Runtime.Pooling.StringBuilderPoolTests
 {
+	public class SpawnTests
+	{
+		[UnityTest]
+		public IEnumerator MultithreadedAccess()
+		{
+			// spawn a few threads, and have them battle over the StringBuilderPool.Instance.Spawn function, and make sure nothing blows up.
 
-   public class SpawnTests
-   {
-      [UnityTest]
-      public IEnumerator MultithreadedAccess()
-      {
+			var threadCount = 3;
+			const int cyclesPerThread = 2500;
 
-         // spawn a few threads, and have them battle over the StringBuilderPool.Instance.Spawn function, and make sure nothing blows up.
+			void Launch()
+			{
+				var c = cyclesPerThread;
+				var t = new Thread(() =>
+				{
+					try
+					{
+						while (c-- > 0)
+						{
+							using (var _ = StringBuilderPool.StaticPool.Spawn())
+							{
+								// do nothing...
+								Thread.Sleep(1);
+							}
+						}
+					}
+					catch (Exception ex)
+					{
+						Assert.Fail("Exception thrown. " + ex.Message + " " + ex.StackTrace);
+					}
+				});
+				t.Start();
+			}
 
-         var threadCount = 3;
-         const int cyclesPerThread = 2500;
-         void Launch()
-         {
-            var c = cyclesPerThread;
-            var t = new Thread(() =>
-            {
-               try
-               {
-                  while (c-- > 0)
-                  {
-                     using (var _ = StringBuilderPool.StaticPool.Spawn())
-                     {
-                        // do nothing...
-                        Thread.Sleep(1);
-                     }
-                  }
-               }
-               catch (Exception ex)
-               {
-                  Assert.Fail("Exception thrown. " + ex.Message + " " + ex.StackTrace);
+			for (var i = 0; i < threadCount; i++)
+			{
+				Launch();
+			}
 
-               }
-            });
-            t.Start();
-         }
-
-         for (var i = 0; i < threadCount; i++)
-         {
-            Launch();
-         }
-
-         yield return new WaitForSecondsRealtime(3);
-      }
-   }
+			yield return new WaitForSecondsRealtime(3);
+		}
+	}
 }

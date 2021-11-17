@@ -25,8 +25,10 @@ namespace Beamable.Editor.Modules.Input
          if (!property.isExpanded) return;
 
          EditorGUI.indentLevel++;
-         var line2Rect = new Rect(position.x, position.y + EditorGUIUtility.singleLineHeight, position.width, EditorGUIUtility.singleLineHeight);
-         var line3Rect = new Rect(position.x, position.y + 2*EditorGUIUtility.singleLineHeight, position.width, EditorGUIUtility.singleLineHeight);
+         var line2Rect =
+ new Rect(position.x, position.y + EditorGUIUtility.singleLineHeight, position.width, EditorGUIUtility.singleLineHeight);
+         var line3Rect =
+ new Rect(position.x, position.y + 2*EditorGUIUtility.singleLineHeight, position.width, EditorGUIUtility.singleLineHeight);
 
          var assetProperty = property.FindPropertyRelative(nameof(InputActionArg.actionAsset));
          var namedInputAction = (InputActionArg) GetTargetObjectOfProperty(property);
@@ -50,7 +52,8 @@ namespace Beamable.Editor.Modules.Input
          }
 
          var currentIndex = actions.FindIndex(action => action.id == namedInputAction.action.id);
-         var actionDisplays = actions.Select(action => new GUIContent($"{action.actionMap.name}.{action.name}")).ToArray();
+         var actionDisplays =
+ actions.Select(action => new GUIContent($"{action.actionMap.name}.{action.name}")).ToArray();
          EditorGUI.BeginChangeCheck();
          var nextIndex = EditorGUI.Popup(line3Rect, new GUIContent("Action"), currentIndex, actionDisplays);
 

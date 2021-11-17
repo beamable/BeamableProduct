@@ -1,5 +1,4 @@
-HeaderVisualElement
-{
+HeaderVisualElement {
     background-color: #DEDEDE;
 }
 

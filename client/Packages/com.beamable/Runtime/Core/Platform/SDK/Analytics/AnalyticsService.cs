@@ -27,12 +27,12 @@ namespace Beamable.Api.Analytics
 		/// Sends a single analytics event.
 		/// </summary>
 		/// <param name="eventRequest">Event request.</param>
-		internal void SendAnalyticsEvent (AnalyticsEventRequest eventRequest)
+		internal void SendAnalyticsEvent(AnalyticsEventRequest eventRequest)
 		{
-			var eventBatch = new List<string> ();
-			eventBatch.Add (eventRequest.Payload);
+			var eventBatch = new List<string>();
+			eventBatch.Add(eventRequest.Payload);
 
-			AnalyticsEventBatchRequest (eventBatch);
+			AnalyticsEventBatchRequest(eventBatch);
 		}
 
 		/// <summary>
@@ -40,15 +40,17 @@ namespace Beamable.Api.Analytics
 		/// This method also groups batches by gamer tag, and issues a request for each
 		/// </summary>
 		/// <param name="eventBatch">Event batch.</param>
-		internal void SendAnalyticsEventBatch (List<AnalyticsEventRequest> eventBatch)
+		internal void SendAnalyticsEventBatch(List<AnalyticsEventRequest> eventBatch)
 		{
-			if(eventBatch.Count == 0) return;
+			if (eventBatch.Count == 0) return;
 			var batch = new List<string>();
 
-			for (int i = 0; i < eventBatch.Count; i++) {
-				batch.Add (eventBatch[i].Payload);
+			for (int i = 0; i < eventBatch.Count; i++)
+			{
+				batch.Add(eventBatch[i].Payload);
 			}
-			AnalyticsEventBatchRequest (batch);
+
+			AnalyticsEventBatchRequest(batch);
 		}
 
 		/// <summary>
@@ -57,33 +59,36 @@ namespace Beamable.Api.Analytics
 		/// </summary>
 		/// <returns>The event batch request.</returns>
 		/// <param name="eventBatch">Event batch.</param>
-		void AnalyticsEventBatchRequest (List<string> eventBatch)
+		void AnalyticsEventBatchRequest(List<string> eventBatch)
 		{
 			long gamerTag = _platform.User.id;
 			if (gamerTag == 0)
 			{
 				gamerTag = 1;
 			}
-			string uri = String.Format ("/report/custom_batch/{0}/{1}/{2}", _platform.Cid, _platform.Pid, gamerTag);
+
+			string uri = String.Format("/report/custom_batch/{0}/{1}/{2}", _platform.Cid, _platform.Pid, gamerTag);
 
 			string batchJson;
 			using (var pooledBuilder = StringBuilderPool.StaticPool.Spawn())
 			{
 				var builder = pooledBuilder.Builder;
 
-				builder.Append ('[');
+				builder.Append('[');
 				for (int i = 0; i < eventBatch.Count; i++)
 				{
 					builder.AppendFormat("{0},", eventBatch[i]);
 				}
+
 				// Replace last ',' with ']'
 				builder[builder.Length - 1] = ']';
 
 				batchJson = builder.ToString();
 			}
 
-			byte[] batchPayload = Encoding.UTF8.GetBytes (batchJson);
-			AnalyticsLogger.LogFormat ("AnalyticsService.AnalyticsEventBatchRequest: Sending batch of {0} to uri: {1}", eventBatch.Count, uri);
+			byte[] batchPayload = Encoding.UTF8.GetBytes(batchJson);
+			AnalyticsLogger.LogFormat("AnalyticsService.AnalyticsEventBatchRequest: Sending batch of {0} to uri: {1}",
+			                          eventBatch.Count, uri);
 
 			var request = _requester.BuildWebRequest(Method.POST, uri, "application/json", batchPayload);
 			request.SendWebRequest();
@@ -94,14 +99,19 @@ namespace Beamable.Api.Analytics
 	/// Analytics event request.
 	/// This is the request object which is used to send data to the Platform
 	/// </summary>
-	internal class AnalyticsEventRequest : JsonSerializable.ISerializable {
+	internal class AnalyticsEventRequest : JsonSerializable.ISerializable
+	{
 		/// <summary>
 		/// Gets the payload.
 		/// The payload is a json string
 		/// </summary>
 		/// <value>The payload.</value>
-		public string Payload {
-			get { return _payload; }
+		public string Payload
+		{
+			get
+			{
+				return _payload;
+			}
 		}
 
 		private string _payload;
@@ -110,14 +120,15 @@ namespace Beamable.Api.Analytics
 		/// Initializes a new instance of the <see cref="AnalyticsEventRequest"/> class.
 		/// Used mostly for serialization
 		/// </summary>
-		public AnalyticsEventRequest(){}
+		public AnalyticsEventRequest() { }
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AnalyticsEventRequest"/> class.
 		/// </summary>
 		/// <param name="gamerTag">Gamer tag.</param>
 		/// <param name="payload">Payload (json string)</param>
-		public AnalyticsEventRequest(string payload) {
+		public AnalyticsEventRequest(string payload)
+		{
 			_payload = payload;
 		}
 
@@ -129,6 +140,5 @@ namespace Beamable.Api.Analytics
 		{
 			s.Serialize("payload", ref _payload);
 		}
-
 	}
 }

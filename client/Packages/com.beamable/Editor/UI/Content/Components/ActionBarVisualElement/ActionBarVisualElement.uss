@@ -3,12 +3,14 @@
     flex-grow: 1;
     flex-direction: row;
 }
+
 #refreshButtonImg {
     width: 30px;
     height: 30px;
     align-self: center;
 }
-#refreshButton{
+
+#refreshButton {
     justify-content: center;
 }
 
@@ -16,7 +18,7 @@
 
     flex-direction: row;
     justify-content: flex-start;
-    align-items:center;
+    align-items: center;
     margin-right: 10px;
 }
 
@@ -60,6 +62,7 @@
     cursor: pan;
     border-radius: 0px;
 }
+
 .unboundedButtonLabel {
     margin-top: -5px;
     margin-left: 0px;
@@ -94,7 +97,7 @@
     background-image: none;
 }
 
-#publishDropdownButton{
+#publishDropdownButton {
     background-image: none;
     position: absolute;
     top: -2px;
@@ -116,26 +119,30 @@
 /* Different button name selectors. Used one time each */
 
 
-#dropDownImg{
+#dropDownImg {
     right: 0px;
     width: 18px;
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown_Line_dark.png")
 }
+
 #dropDownImg.hidden {
     position: absolute;
     right: 10000px;
 }
+
 #createNewButton #dropDownImg {
     height: 16px;
 }
+
 #publishButton #dropDownImg {
     align-self: stretch;
 }
+
 #publishButton {
     justify-content: center;
 }
 
-.createButtonLabel{
+.createButtonLabel {
     font-size: 10px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
 }
@@ -146,7 +153,8 @@
     height: 15px;
     align-self: center;
 }
+
 Button.unity-button,
 Button {
-    background-color: rgba(0,0,0,0);
+    background-color: rgba(0, 0, 0, 0);
 }

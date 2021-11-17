@@ -1,28 +1,28 @@
 {
-    "name": "Unity.Beamable.Editor",
-    "references": [
-        "Beamable.Config",
-        "Beamable.Service",
-        "Beamable.Platform",
-        "Beamable.Pooling",
-        "Beamable.JsonSerializable",
-        "Beamable.SmallerJSON",
-        "Unity.Addressables.Editor",
-        "Unity.TextMeshPro",
-        "Unity.Beamable",
-        "Unity.Beamable.Runtime.Common",
-        "Beamable.UnityUIExtensions",
-        "Beamable.ConsoleCommands",
-        "Beamable.Spew"
-    ],
-    "optionalUnityReferences": [],
-    "includePlatforms": [
-        "Editor"
-    ],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": []
+  "name": "Unity.Beamable.Editor",
+  "references": [
+    "Beamable.Config",
+    "Beamable.Service",
+    "Beamable.Platform",
+    "Beamable.Pooling",
+    "Beamable.JsonSerializable",
+    "Beamable.SmallerJSON",
+    "Unity.Addressables.Editor",
+    "Unity.TextMeshPro",
+    "Unity.Beamable",
+    "Unity.Beamable.Runtime.Common",
+    "Beamable.UnityUIExtensions",
+    "Beamable.ConsoleCommands",
+    "Beamable.Spew"
+  ],
+  "optionalUnityReferences": [],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": []
 }

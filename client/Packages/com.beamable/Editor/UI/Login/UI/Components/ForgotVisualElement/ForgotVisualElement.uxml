@@ -8,8 +8,9 @@
 
     <engine:VisualElement name="mainContainer">
         <engine:VisualElement name="textField">
-            <engine:Label name="organization" text="Please enter your Organization's Alias or CID" class="labelText phase1"/>
-            <engine:TextField name="organizationID" class="input phase1" />
+            <engine:Label name="organization" text="Please enter your Organization's Alias or CID"
+                          class="labelText phase1"/>
+            <engine:TextField name="organizationID" class="input phase1"/>
             <engine:Label name="accountLabel" text="Please enter your email" class="labelText phase1"/>
             <engine:TextField name="account" class="input phase1"/>
 
@@ -21,7 +22,7 @@
             <engine:TextField name="password" class="input phase2"/>
             <engine:TextField name="confirmPassword" class="input phase2"/>
             <beamable:GenericButtonVisualElement name="login" text="Back to login" type="Link"/>
-          <beamable:GenericButtonVisualElement name="resend" text="Resend code" type="Link" class="linkText phase2"/>
+            <beamable:GenericButtonVisualElement name="resend" text="Resend code" type="Link" class="linkText phase2"/>
         </engine:VisualElement>
         <engine:VisualElement name="actionBtn">
             <beamable:PrimaryButtonVisualElement name="getCode" class="phase1" text="Send Code"/>

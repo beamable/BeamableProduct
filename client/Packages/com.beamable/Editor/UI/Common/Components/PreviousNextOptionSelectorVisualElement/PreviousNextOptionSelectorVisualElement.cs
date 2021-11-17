@@ -13,72 +13,72 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-    public class PreviousNextOptionSelectorVisualElement : BeamableVisualElement
-    {
-        public new class UxmlFactory : UxmlFactory<PreviousNextOptionSelectorVisualElement, UxmlTraits>
-        {
-        }
+	public class PreviousNextOptionSelectorVisualElement : BeamableVisualElement
+	{
+		public new class UxmlFactory : UxmlFactory<PreviousNextOptionSelectorVisualElement, UxmlTraits> { }
 
-        public PreviousNextOptionSelectorVisualElement() : base(
-            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(PreviousNextOptionSelectorVisualElement)}/{nameof(PreviousNextOptionSelectorVisualElement)}")
-        {
-        }
+		public PreviousNextOptionSelectorVisualElement() : base(
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(PreviousNextOptionSelectorVisualElement)}/{nameof(PreviousNextOptionSelectorVisualElement)}") { }
 
-        private VisualElement _previousBtn;
-        private VisualElement _nextBtn;
+		private VisualElement _previousBtn;
+		private VisualElement _nextBtn;
 
-        private Dictionary<int, string> _options = new Dictionary<int, string>();
-        private int _currentOption;
-        private Label _label;
-        private Action _onOptionChanged;
+		private Dictionary<int, string> _options = new Dictionary<int, string>();
+		private int _currentOption;
+		private Label _label;
+		private Action _onOptionChanged;
 
-        public KeyValuePair<int, string> CurrentOption { get; private set; }
+		public KeyValuePair<int, string> CurrentOption
+		{
+			get;
+			private set;
+		}
 
-        public override void Refresh()
-        {
-            base.Refresh();
+		public override void Refresh()
+		{
+			base.Refresh();
 
-            _previousBtn = Root.Q<VisualElement>("previousBtn");
-            _previousBtn.RegisterCallback<MouseDownEvent>(OnPreviousClicked);
-            
-            _nextBtn = Root.Q<VisualElement>("nextBtn");
-            _nextBtn.RegisterCallback<MouseDownEvent>(OnNextClicked);
+			_previousBtn = Root.Q<VisualElement>("previousBtn");
+			_previousBtn.RegisterCallback<MouseDownEvent>(OnPreviousClicked);
 
-            _label = Root.Q<Label>("currentOptionLabel");
-            SetCurrentOption(_currentOption);
-        }
+			_nextBtn = Root.Q<VisualElement>("nextBtn");
+			_nextBtn.RegisterCallback<MouseDownEvent>(OnNextClicked);
 
-        public void Setup(Dictionary<int, string> options, int currentOption, Action onOptionChanged)
-        {
-            _options = options;
-            _onOptionChanged = onOptionChanged;
-            SetCurrentOption(currentOption);
-        }
+			_label = Root.Q<Label>("currentOptionLabel");
+			SetCurrentOption(_currentOption);
+		}
 
-        private void SetCurrentOption(int currentOption)
-        {
-            if (_options.Count == 0)
-            {
-                Debug.Log("Option selector has no options to render");
-                return;
-            }
-            
-            _currentOption = currentOption;
-            CurrentOption = _options.ElementAt(_currentOption);
-            if (_label != null) _label.text = CurrentOption.Value;
-            _onOptionChanged?.Invoke();
-        }
+		public void Setup(Dictionary<int, string> options, int currentOption, Action onOptionChanged)
+		{
+			_options = options;
+			_onOptionChanged = onOptionChanged;
+			SetCurrentOption(currentOption);
+		}
 
-        private void OnPreviousClicked(MouseDownEvent evt)
-        {
-            int possibleOption = Mathf.Clamp(_currentOption - 1, 0, _options.Count - 1);
-            SetCurrentOption(possibleOption);
-        }
+		private void SetCurrentOption(int currentOption)
+		{
+			if (_options.Count == 0)
+			{
+				Debug.Log("Option selector has no options to render");
+				return;
+			}
 
-        private void OnNextClicked(MouseDownEvent evt)
-        {
-            int possibleOption = Mathf.Clamp(_currentOption + 1, 0, _options.Count - 1);
-            SetCurrentOption(possibleOption);
-        }
-    }
+			_currentOption = currentOption;
+			CurrentOption = _options.ElementAt(_currentOption);
+			if (_label != null) _label.text = CurrentOption.Value;
+			_onOptionChanged?.Invoke();
+		}
+
+		private void OnPreviousClicked(MouseDownEvent evt)
+		{
+			int possibleOption = Mathf.Clamp(_currentOption - 1, 0, _options.Count - 1);
+			SetCurrentOption(possibleOption);
+		}
+
+		private void OnNextClicked(MouseDownEvent evt)
+		{
+			int possibleOption = Mathf.Clamp(_currentOption + 1, 0, _options.Count - 1);
+			SetCurrentOption(possibleOption);
+		}
+	}
 }

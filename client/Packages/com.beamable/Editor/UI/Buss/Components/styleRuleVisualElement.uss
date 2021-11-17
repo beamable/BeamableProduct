@@ -1,5 +1,5 @@
 StyleRuleVisualElement {
-    background-color: rgba(0,0,0,.1);
+    background-color: rgba(0, 0, 0, .1);
     margin-bottom: 6px;
 }
 
@@ -15,15 +15,17 @@ StyleRuleVisualElement #style-container {
 .top-row #selector-container {
     flex-grow: 1;
 }
+
 .top-row #selector-container TextField,
 .top-row #selector-container Label {
     font-size: 16px;
 }
 
 .top-row Button {
-    background-color: rgba(0,0,0,0);
+    background-color: rgba(0, 0, 0, 0);
     background-image: none;
 }
+
 Button {
     font-size: 10px;
     padding-left: 0px;

@@ -12,7 +12,7 @@
         </engine:VisualElement>
         <engine:VisualElement name="buttonsVisualElement">
             <beamable:PrimaryButtonVisualElement name="okButton" text="OK"/>
-            <beamable:GenericButtonVisualElement name="cancelButton" text="Cancel" type ="Cancel"/>
+            <beamable:GenericButtonVisualElement name="cancelButton" text="Cancel" type="Cancel"/>
         </engine:VisualElement>
     </engine:VisualElement>
 </engine:UXML>

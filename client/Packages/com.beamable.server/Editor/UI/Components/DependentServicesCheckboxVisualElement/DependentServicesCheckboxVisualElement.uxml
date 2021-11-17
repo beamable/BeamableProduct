@@ -5,7 +5,7 @@
         xmlns:beamable="Beamable.Editor.UI.Components"
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
-    
+
     <beamable:BeamableCheckboxVisualElement name="checkbox"/>
 
 </engine:UXML>

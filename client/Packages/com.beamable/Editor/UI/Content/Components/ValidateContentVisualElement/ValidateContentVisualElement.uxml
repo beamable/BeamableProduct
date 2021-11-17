@@ -26,7 +26,7 @@
         <engine:VisualElement name="errorContainer"/>
 
         <engine:VisualElement name="buttonStrip">
-            <beamable:GenericButtonVisualElement name="cancelBtn" text="Cancel" type ="Cancel"/>
+            <beamable:GenericButtonVisualElement name="cancelBtn" text="Cancel" type="Cancel"/>
             <beamable:PrimaryButtonVisualElement name="okayBtn" text="Validating"/>
         </engine:VisualElement>
     </engine:VisualElement>

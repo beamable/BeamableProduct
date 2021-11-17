@@ -13,71 +13,83 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Content.Components
 {
-   public class StatusIconVisualElement : ContentManagerComponent
-   {
+	public class StatusIconVisualElement : ContentManagerComponent
+	{
+		public new class UxmlFactory : UxmlFactory<StatusIconVisualElement, UxmlTraits> { }
 
-      public new class UxmlFactory : UxmlFactory<StatusIconVisualElement, UxmlTraits> { }
-      public new class UxmlTraits : VisualElement.UxmlTraits
-      {
-         UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription { name = "custom-text", defaultValue = "nada" };
+		public new class UxmlTraits : VisualElement.UxmlTraits
+		{
+			UxmlStringAttributeDescription customText =
+				new UxmlStringAttributeDescription {name = "custom-text", defaultValue = "nada"};
 
-         public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-         {
-            get { yield break; }
-         }
-         public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-         {
-            base.Init(ve, bag, cc);
-            var self = ve as StatusIconVisualElement;
-         }
-      }
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
+				get
+				{
+					yield break;
+				}
+			}
 
-      private VisualElement _imageServer, _imageLocal;
-      public HostStatus LocalStatus { get; internal set; }
-      public HostStatus ServerStatus { get; internal set; }
+			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+			{
+				base.Init(ve, bag, cc);
+				var self = ve as StatusIconVisualElement;
+			}
+		}
 
-      public StatusIconVisualElement() : base(nameof(StatusIconVisualElement))
-      {
+		private VisualElement _imageServer, _imageLocal;
 
-      }
+		public HostStatus LocalStatus
+		{
+			get;
+			internal set;
+		}
 
-      public override void Refresh()
-      {
-         base.Refresh();
+		public HostStatus ServerStatus
+		{
+			get;
+			internal set;
+		}
 
-         _imageServer = Root.Q<VisualElement>("imageServer");
-         _imageLocal = Root.Q<VisualElement>("imageLocal");
+		public StatusIconVisualElement() : base(nameof(StatusIconVisualElement)) { }
 
-         switch (ServerStatus)
-         {
-            case HostStatus.AVAILABLE:
-               _imageServer.AddToClassList("server-available");
-               break;
-            case HostStatus.NOT_AVAILABLE:
-               _imageServer.AddToClassList("server-not-available");
-               break;
-            case HostStatus.UNKNOWN:
-               _imageServer.AddToClassList("server-unknown");
-               break;
-         }
+		public override void Refresh()
+		{
+			base.Refresh();
 
-         switch (LocalStatus)
-         {
-            case HostStatus.AVAILABLE:
-               _imageLocal.AddToClassList("local-available");
-               break;
-            case HostStatus.NOT_AVAILABLE:
-               _imageLocal.AddToClassList("local-not-available");
-               break;
-            case HostStatus.UNKNOWN:
-               _imageLocal.AddToClassList("local-unknown");
-               break;
-         }
+			_imageServer = Root.Q<VisualElement>("imageServer");
+			_imageLocal = Root.Q<VisualElement>("imageLocal");
 
-         //TODO: Set image based on Status
-         //var iconPath = "Assets/DemoGame/Textures/icons/setting.png
-         //var iconAsset = Resources.Load<Texture2D>(iconPath);
-         //_image.image = iconAsset;
-      }
-   }
+			switch (ServerStatus)
+			{
+				case HostStatus.AVAILABLE:
+					_imageServer.AddToClassList("server-available");
+					break;
+				case HostStatus.NOT_AVAILABLE:
+					_imageServer.AddToClassList("server-not-available");
+					break;
+				case HostStatus.UNKNOWN:
+					_imageServer.AddToClassList("server-unknown");
+					break;
+			}
+
+			switch (LocalStatus)
+			{
+				case HostStatus.AVAILABLE:
+					_imageLocal.AddToClassList("local-available");
+					break;
+				case HostStatus.NOT_AVAILABLE:
+					_imageLocal.AddToClassList("local-not-available");
+					break;
+				case HostStatus.UNKNOWN:
+					_imageLocal.AddToClassList("local-unknown");
+					break;
+			}
+
+			//TODO: Set image based on Status
+			//var iconPath = "Assets/DemoGame/Textures/icons/setting.png
+			//var iconAsset = Resources.Load<Texture2D>(iconPath);
+			//_image.image = iconAsset;
+		}
+	}
 }

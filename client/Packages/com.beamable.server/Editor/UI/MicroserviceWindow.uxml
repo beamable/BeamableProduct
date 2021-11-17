@@ -8,7 +8,7 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <VisualElement name="window-main">
-        <beamable:ActionBarVisualElement name = "actionBarVisualElement"/>
+        <beamable:ActionBarVisualElement name="actionBarVisualElement"/>
         <beamable:MicroserviceBreadcrumbsVisualElement name="microserviceBreadcrumbsVisualElement"/>
         <beamableBase:LoadingBarElement name="loadingBar"/>
         <beamable:MicroserviceContentVisualElement name="microserviceContentVisualElement"/>

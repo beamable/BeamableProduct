@@ -2,8 +2,9 @@
 
 #_windowRoot {
     flex-grow: 1;
-    min-width:500px;
+    min-width: 500px;
 }
+
 #window-main {
     position: absolute;
     top: 0px;
@@ -25,7 +26,8 @@ ExplorerVisualElement > TemplateContainer,
 ExplorerVisualElement {
     flex-grow: 1;
 }
-#actionBarVisualElement{
+
+#actionBarVisualElement {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
 }
 
@@ -45,7 +47,7 @@ ExplorerVisualElement {
 
 #status-bar-container {
     /*background-color: #ccffcc;*/
-    height:30px;
+    height: 30px;
 }
 
 #breadcrumb-container {

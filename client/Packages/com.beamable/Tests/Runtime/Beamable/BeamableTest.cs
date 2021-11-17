@@ -9,35 +9,34 @@ using Packages.Beamable.Runtime.Tests.Beamable;
 
 namespace Beamable.Tests.Runtime
 {
-   /// <summary>
-   /// A base class for Beamable Tests that go through the boilerplate of setting up the mock beamable instance, requester, and user.
-   /// </summary>
-   public class BeamableTest
-   {
-      protected MockPlatformAPI MockRequester;
-      protected User MockPlatformUser;
-      protected MockBeamableApi MockApi;
-      protected MockPlatformService MockPlatform;
+	/// <summary>
+	/// A base class for Beamable Tests that go through the boilerplate of setting up the mock beamable instance, requester, and user.
+	/// </summary>
+	public class BeamableTest
+	{
+		protected MockPlatformAPI MockRequester;
+		protected User MockPlatformUser;
+		protected MockBeamableApi MockApi;
+		protected MockPlatformService MockPlatform;
 
+		[SetUp]
+		public void SetupBeamable()
+		{
+			MockApi = new MockBeamableApi();
+			MockPlatform = new MockPlatformService();
+			MockPlatformUser = new User {id = 12};
+			MockPlatform.User = MockPlatformUser;
+			MockApi.User = MockPlatform.User;
+			MockApi.Token = new AccessToken(null, "testcid", "testpid", "testtoken", "refresh", 0);
+			MockRequester = new MockPlatformAPI();
+			MockApi.Requester = MockRequester;
+			API.Instance = Promise<IBeamableAPI>.Successful(MockApi);
+			OnSetupBeamable();
+		}
 
-      [SetUp]
-      public void SetupBeamable()
-      {
-         MockApi = new MockBeamableApi();
-         MockPlatform = new MockPlatformService();
-         MockPlatformUser = new User {id = 12};
-         MockPlatform.User = MockPlatformUser;
-         MockApi.User = MockPlatform.User;
-         MockApi.Token = new AccessToken(null, "testcid", "testpid", "testtoken", "refresh", 0);
-         MockRequester = new MockPlatformAPI();
-         MockApi.Requester = MockRequester;
-         API.Instance = Promise<IBeamableAPI>.Successful(MockApi);
-         OnSetupBeamable();
-      }
-
-      protected virtual void OnSetupBeamable()
-      {
-         // maybe do something to the beamable instance?
-      }
-   }
+		protected virtual void OnSetupBeamable()
+		{
+			// maybe do something to the beamable instance?
+		}
+	}
 }

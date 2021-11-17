@@ -5,6 +5,6 @@
 /*    border-color: #383838;*/
 /*}*/
 
-#avatarImg{
+#avatarImg {
     background-image: resource('Packages/com.beamable/Editor/UI/Toolbox/Icons/Account_dark.png');
 }

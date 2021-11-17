@@ -20,5 +20,5 @@
             <engine:Button name="announcement-import" class="announcement-buttons"/>
         </engine:VisualElement>
     </engine:VisualElement>
-    
+
 </engine:UXML>

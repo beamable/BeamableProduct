@@ -14,107 +14,126 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-    public class LabeledCheckboxVisualElement : BeamableVisualElement
-    {
-        public static readonly string ComponentPath = $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledCheckboxVisualElement)}/{nameof(LabeledCheckboxVisualElement)}";
+	public class LabeledCheckboxVisualElement : BeamableVisualElement
+	{
+		public static readonly string ComponentPath =
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledCheckboxVisualElement)}/{nameof(LabeledCheckboxVisualElement)}";
 
-        public new class UxmlFactory : UxmlFactory<LabeledCheckboxVisualElement, UxmlTraits>
-        {
-        }
+		public new class UxmlFactory : UxmlFactory<LabeledCheckboxVisualElement, UxmlTraits> { }
 
-        public Action<bool> OnValueChanged;
-        public bool Value
-        {
-            get => _checkbox.Value;
-            set
-            {
-                SetWithoutNotify(value);
-                OnValueChanged?.Invoke(value);
-            }
-        }
+		public Action<bool> OnValueChanged;
 
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
-            { name = "label", defaultValue = "Label" };
+		public bool Value
+		{
+			get => _checkbox.Value;
+			set
+			{
+				SetWithoutNotify(value);
+				OnValueChanged?.Invoke(value);
+			}
+		}
 
-            readonly UxmlStringAttributeDescription _icon = new UxmlStringAttributeDescription
-            { name = "icon", defaultValue = "" };
+		public new class UxmlTraits : VisualElement.UxmlTraits
+		{
+			readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
+			{
+				name = "label", defaultValue = "Label"
+			};
 
-            // used for flip order of child elements from Label-Icon-Checkbox to Checkbox-Icon-Label
-            readonly UxmlBoolAttributeDescription _flip = new UxmlBoolAttributeDescription
-            { name = "flip", defaultValue = false };
+			readonly UxmlStringAttributeDescription _icon = new UxmlStringAttributeDescription
+			{
+				name = "icon", defaultValue = ""
+			};
 
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
+			// used for flip order of child elements from Label-Icon-Checkbox to Checkbox-Icon-Label
+			readonly UxmlBoolAttributeDescription _flip = new UxmlBoolAttributeDescription
+			{
+				name = "flip", defaultValue = false
+			};
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                if (ve is LabeledCheckboxVisualElement component)
-                {
-                    component.Label = _label.GetValueFromBag(bag, cc);
-                    component.Flip = _flip.GetValueFromBag(bag, cc);
-                    component.Icon = _icon.GetValueFromBag(bag, cc);
-                }
-            }
-        }
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
+				get
+				{
+					yield break;
+				}
+			}
 
-        private Label _label;
-        private Image _icon;
-        private BeamableCheckboxVisualElement _checkbox;
+			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+			{
+				base.Init(ve, bag, cc);
+				if (ve is LabeledCheckboxVisualElement component)
+				{
+					component.Label = _label.GetValueFromBag(bag, cc);
+					component.Flip = _flip.GetValueFromBag(bag, cc);
+					component.Icon = _icon.GetValueFromBag(bag, cc);
+				}
+			}
+		}
 
-        private bool Flip { get; set; }
-        private string Label { get; set; }
-        private string Icon { get; set; }
+		private Label _label;
+		private Image _icon;
+		private BeamableCheckboxVisualElement _checkbox;
 
-        public BeamableCheckboxVisualElement Checkbox => _checkbox;
+		private bool Flip
+		{
+			get;
+			set;
+		}
 
-        public LabeledCheckboxVisualElement() : base(ComponentPath)
-        {
-        }
+		private string Label
+		{
+			get;
+			set;
+		}
 
-        public LabeledCheckboxVisualElement(string uxmlPath, string ussPath) : base(uxmlPath, ussPath)
-        {
-        }
+		private string Icon
+		{
+			get;
+			set;
+		}
 
-        public override void Refresh()
-        {
-            base.Refresh();
+		public BeamableCheckboxVisualElement Checkbox => _checkbox;
 
-            _label = Root.Q<Label>("label");
-            _label.text = Label;
+		public LabeledCheckboxVisualElement() : base(ComponentPath) { }
 
-            _icon = Root.Q<Image>("icon");
-            _icon.image = !string.IsNullOrEmpty(Icon) ? (Texture)EditorGUIUtility.Load(Icon): null;
+		public LabeledCheckboxVisualElement(string uxmlPath, string ussPath) : base(uxmlPath, ussPath) { }
 
-            _checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
-            _checkbox.OnValueChanged -= OnChanged;
-            _checkbox.OnValueChanged += OnChanged;
-            _checkbox.Refresh();
+		public override void Refresh()
+		{
+			base.Refresh();
 
-            if (Flip)
-            {
-                _icon.SendToBack();
-                _checkbox.SendToBack();
-            }
-        }
+			_label = Root.Q<Label>("label");
+			_label.text = Label;
 
-        private void OnChanged(bool value)
-        {
-            OnValueChanged?.Invoke(value);
-        }
+			_icon = Root.Q<Image>("icon");
+			_icon.image = !string.IsNullOrEmpty(Icon) ? (Texture)EditorGUIUtility.Load(Icon) : null;
 
-        public void SetWithoutNotify(bool val) => _checkbox.SetWithoutNotify(val);
+			_checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
+			_checkbox.OnValueChanged -= OnChanged;
+			_checkbox.OnValueChanged += OnChanged;
+			_checkbox.Refresh();
 
-        public void SetText(string val) => _label.text = val;
+			if (Flip)
+			{
+				_icon.SendToBack();
+				_checkbox.SendToBack();
+			}
+		}
 
-        public void SetFlipState(bool val) => Flip = val;
+		private void OnChanged(bool value)
+		{
+			OnValueChanged?.Invoke(value);
+		}
 
-        public void DisableIcon() => _icon.RemoveFromHierarchy();
+		public void SetWithoutNotify(bool val) => _checkbox.SetWithoutNotify(val);
 
-        public void DisableLabel() => _label.RemoveFromHierarchy();
-    }
+		public void SetText(string val) => _label.text = val;
+
+		public void SetFlipState(bool val) => Flip = val;
+
+		public void DisableIcon() => _icon.RemoveFromHierarchy();
+
+		public void DisableLabel() => _label.RemoveFromHierarchy();
+	}
 }

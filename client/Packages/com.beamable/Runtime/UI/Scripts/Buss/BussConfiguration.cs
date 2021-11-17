@@ -8,31 +8,28 @@ using UnityEngine;
 
 namespace Beamable.UI.Buss
 {
-   public class BussConfiguration : ModuleConfigurationObject
-   {
-      public static BussConfiguration Instance => Get<BussConfiguration>();
+	public class BussConfiguration : ModuleConfigurationObject
+	{
+		public static BussConfiguration Instance => Get<BussConfiguration>();
 
-      public StyleSheetObject FallbackSheet;
+		public StyleSheetObject FallbackSheet;
 
-      public List<StyleSheetObject> DefaultSheets = new List<StyleSheetObject>();
+		public List<StyleSheetObject> DefaultSheets = new List<StyleSheetObject>();
 
-      public IEnumerable<StyleSheetObject> EnumerateSheets()
-      {
+		public IEnumerable<StyleSheetObject> EnumerateSheets()
+		{
+			foreach (var sheet in DefaultSheets)
+			{
+				if (sheet != null)
+				{
+					yield return sheet;
+				}
+			}
 
-         foreach (var sheet in DefaultSheets)
-         {
-            if (sheet != null)
-            {
-               yield return sheet;
-            }
-         }
-
-         if (FallbackSheet != null)
-         {
-            yield return FallbackSheet;
-         }
-
-
-      }
-   }
+			if (FallbackSheet != null)
+			{
+				yield return FallbackSheet;
+			}
+		}
+	}
 }

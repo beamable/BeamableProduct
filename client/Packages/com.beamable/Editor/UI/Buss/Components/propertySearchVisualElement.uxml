@@ -5,7 +5,7 @@
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
-    <engine:VisualElement >
+    <engine:VisualElement>
         <engine:Label text="Add Property"></engine:Label>
 
         <engine:TextField/>

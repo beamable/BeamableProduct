@@ -3,5 +3,5 @@
 }
 
 #mainVisualElement:hover {
-   background-color: #828292;
+    background-color: #828292;
 }

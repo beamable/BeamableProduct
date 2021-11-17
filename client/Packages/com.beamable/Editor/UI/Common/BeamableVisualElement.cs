@@ -15,72 +15,88 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Buss
 {
-   public class BeamableVisualElement : VisualElement
-   {
-      protected VisualTreeAsset TreeAsset { get; private set; }
-      protected VisualElement Root { get; private set; }
+	public class BeamableVisualElement : VisualElement
+	{
+		protected VisualTreeAsset TreeAsset
+		{
+			get;
+			private set;
+		}
 
-      protected string UXMLPath { get; private set; }
+		protected VisualElement Root
+		{
+			get;
+			private set;
+		}
 
-      protected string USSPath { get; private set; }
+		protected string UXMLPath
+		{
+			get;
+			private set;
+		}
 
-      public BeamableVisualElement(string commonPath) : this(commonPath + ".uxml", commonPath + ".uss") {}
+		protected string USSPath
+		{
+			get;
+			private set;
+		}
 
-      public BeamableVisualElement(string uxmlPath, string ussPath)
-      {
-         Assert.IsTrue(File.Exists(uxmlPath), $"Cannot find {uxmlPath}");
-         Assert.IsTrue(File.Exists(ussPath), $"Cannot find {ussPath}");
-         UXMLPath = uxmlPath;
-         USSPath = ussPath;
-         TreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UXMLPath);
-         
-         RegisterCallback<DetachFromPanelEvent>(evt =>
-         {
-            OnDetach();
-         });
+		public BeamableVisualElement(string commonPath) : this(commonPath + ".uxml", commonPath + ".uss") { }
 
-      }
+		public BeamableVisualElement(string uxmlPath, string ussPath)
+		{
+			Assert.IsTrue(File.Exists(uxmlPath), $"Cannot find {uxmlPath}");
+			Assert.IsTrue(File.Exists(ussPath), $"Cannot find {ussPath}");
+			UXMLPath = uxmlPath;
+			USSPath = ussPath;
+			TreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UXMLPath);
 
-      public virtual void OnDetach()
-      {
-         // Do any sort of cleanup
-      }
+			RegisterCallback<DetachFromPanelEvent>(evt =>
+			{
+				OnDetach();
+			});
+		}
 
-      public void Destroy()
-      {
-         // call OnDestroy on all child elements.
-         foreach (var child in Children())
-         {
-            if (child is BeamableVisualElement beamableChild)
-            {
-               beamableChild.Destroy();
-            }
-         }
-         OnDestroy();
-      }
+		public virtual void OnDetach()
+		{
+			// Do any sort of cleanup
+		}
 
-      protected virtual void OnDestroy()
-      {
-         // Unregister any events...
-      }
+		public void Destroy()
+		{
+			// call OnDestroy on all child elements.
+			foreach (var child in Children())
+			{
+				if (child is BeamableVisualElement beamableChild)
+				{
+					beamableChild.Destroy();
+				}
+			}
 
-      public virtual void Refresh()
-      {
-         Destroy();
-         Clear();
+			OnDestroy();
+		}
 
-         Root = TreeAsset.CloneTree();
+		protected virtual void OnDestroy()
+		{
+			// Unregister any events...
+		}
 
-         this.AddStyleSheet(BeamableComponentsConstants.COMMON_USS_PATH);
-         this.AddStyleSheet(USSPath);
+		public virtual void Refresh()
+		{
+			Destroy();
+			Clear();
 
+			Root = TreeAsset.CloneTree();
 
-         Add(Root);
+			this.AddStyleSheet(BeamableComponentsConstants.COMMON_USS_PATH);
+			this.AddStyleSheet(USSPath);
 
-         Root?.Query<VisualElement>(className: "--image-scale-to-fit").ForEach(elem =>
-         {
-            elem?.SetBackgroundScaleModeToFit();
-         });
-      }
-   }
+			Add(Root);
+
+			Root?.Query<VisualElement>(className: "--image-scale-to-fit").ForEach(elem =>
+			{
+				elem?.SetBackgroundScaleModeToFit();
+			});
+		}
+	}
 }

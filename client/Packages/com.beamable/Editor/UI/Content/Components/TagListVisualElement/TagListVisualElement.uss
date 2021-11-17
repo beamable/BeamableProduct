@@ -1,7 +1,7 @@
-TagListVisualElement #mainVisualElement
-{
-	padding-left: 0; /* Needed. Unfortuantely some other file's #mainVisualElement is affecting here */
+TagListVisualElement #mainVisualElement {
+    padding-left: 0; /* Needed. Unfortuantely some other file's #mainVisualElement is affecting here */
 }
+
 TagListVisualElement {
     align-self: center;
     overflow: hidden;

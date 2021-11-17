@@ -11,59 +11,69 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-    public class LabeledDaysPickerVisualElement : ValidableVisualElement<int>
-    {
-        public new class UxmlFactory : UxmlFactory<LabeledDaysPickerVisualElement, UxmlTraits>
-        {
-        }
+	public class LabeledDaysPickerVisualElement : ValidableVisualElement<int>
+	{
+		public new class UxmlFactory : UxmlFactory<LabeledDaysPickerVisualElement, UxmlTraits> { }
 
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
-                {name = "label", defaultValue = "Label"};
+		public new class UxmlTraits : VisualElement.UxmlTraits
+		{
+			readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
+			{
+				name = "label", defaultValue = "Label"
+			};
 
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
+				get
+				{
+					yield break;
+				}
+			}
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                if (ve is LabeledDaysPickerVisualElement component)
-                {
-                    component.Label = _label.GetValueFromBag(bag, cc);
-                }
-            }
-        }
+			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+			{
+				base.Init(ve, bag, cc);
+				if (ve is LabeledDaysPickerVisualElement component)
+				{
+					component.Label = _label.GetValueFromBag(bag, cc);
+				}
+			}
+		}
 
-        private Label _label;
+		private Label _label;
 
-        public DaysPickerVisualElement DaysPicker { get; private set; }
-        public string Label { get; set; }
+		public DaysPickerVisualElement DaysPicker
+		{
+			get;
+			private set;
+		}
 
-        public LabeledDaysPickerVisualElement() : base(
-            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledDaysPickerVisualElement)}/{nameof(LabeledDaysPickerVisualElement)}")
-        {
-        }
+		public string Label
+		{
+			get;
+			set;
+		}
 
-        public override void Refresh()
-        {
-            base.Refresh();
+		public LabeledDaysPickerVisualElement() : base(
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledDaysPickerVisualElement)}/{nameof(LabeledDaysPickerVisualElement)}") { }
 
-            _label = Root.Q<Label>("label");
-            _label.text = Label;
+		public override void Refresh()
+		{
+			base.Refresh();
 
-            DaysPicker = Root.Q<DaysPickerVisualElement>("daysPicker");
-            DaysPicker.OnValueChanged = OnChanged;
-            DaysPicker.Refresh();
-        }
+			_label = Root.Q<Label>("label");
+			_label.text = Label;
 
-        private void OnChanged(List<string> options)
-        {
-            InvokeValidationCheck(options.Count);
-        }
+			DaysPicker = Root.Q<DaysPickerVisualElement>("daysPicker");
+			DaysPicker.OnValueChanged = OnChanged;
+			DaysPicker.Refresh();
+		}
 
-        public void SetSelectedDays(IEnumerable<string> dayCodes) => DaysPicker.SetSelectedDays(dayCodes);
-    }
+		private void OnChanged(List<string> options)
+		{
+			InvokeValidationCheck(options.Count);
+		}
+
+		public void SetSelectedDays(IEnumerable<string> dayCodes) => DaysPicker.SetSelectedDays(dayCodes);
+	}
 }

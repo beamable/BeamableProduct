@@ -10,82 +10,87 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-    public class DayToggleVisualElement : BeamableVisualElement
-    {
-        public new class UxmlFactory : UxmlFactory<DayToggleVisualElement, UxmlTraits>
-        {
-        }
+	public class DayToggleVisualElement : BeamableVisualElement
+	{
+		public new class UxmlFactory : UxmlFactory<DayToggleVisualElement, UxmlTraits> { }
 
-        public Action OnValueChanged;
+		public Action OnValueChanged;
 
-        private VisualElement _button;
-        private Label _label;
-        private string _labelValue;
-        private bool _active;
+		private VisualElement _button;
+		private Label _label;
+		private string _labelValue;
+		private bool _active;
 
-        public bool Selected { get; private set; }
-        public string Value { get; private set; }
+		public bool Selected
+		{
+			get;
+			private set;
+		}
 
-        public DayToggleVisualElement() : base(
-            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(DayToggleVisualElement)}/{nameof(DayToggleVisualElement)}")
-        {
-        }
+		public string Value
+		{
+			get;
+			private set;
+		}
 
-        public override void Refresh()
-        {
-            base.Refresh();
-            _button = Root.Q<VisualElement>("button");
-            _label = Root.Q<Label>("buttonLabel");
-            _label.text = _labelValue;
+		public DayToggleVisualElement() : base(
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(DayToggleVisualElement)}/{nameof(DayToggleVisualElement)}") { }
 
-            _button.RegisterCallback<MouseDownEvent>(OnClick);
+		public override void Refresh()
+		{
+			base.Refresh();
+			_button = Root.Q<VisualElement>("button");
+			_label = Root.Q<Label>("buttonLabel");
+			_label.text = _labelValue;
 
-            Render();
-        }
+			_button.RegisterCallback<MouseDownEvent>(OnClick);
 
-        private void Render()
-        {
-            if (!_active)
-            {
-                _button?.AddToClassList("inactive");
-                return;
-            }
+			Render();
+		}
 
-            _button?.RemoveFromClassList("inactive");
+		private void Render()
+		{
+			if (!_active)
+			{
+				_button?.AddToClassList("inactive");
+				return;
+			}
 
-            _button?.EnableInClassList("checked", Selected);
-            _button?.EnableInClassList("unchecked", !Selected);
-        }
+			_button?.RemoveFromClassList("inactive");
 
-        private void OnClick(MouseDownEvent evt)
-        {
-            if (!_active)
-            {
-                return;
-            }
-            
-            Selected = !Selected;
-            OnValueChanged?.Invoke();
-            Render();
-        }
+			_button?.EnableInClassList("checked", Selected);
+			_button?.EnableInClassList("unchecked", !Selected);
+		}
 
-        public void Setup(string label, string option)
-        {
-            _labelValue = label;
-            Value = option;
-            _active = true;
-        }
+		private void OnClick(MouseDownEvent evt)
+		{
+			if (!_active)
+			{
+				return;
+			}
 
-        public void Set(bool value)
-        {
-            Selected = value;
-            Render();
-        }
+			Selected = !Selected;
+			OnValueChanged?.Invoke();
+			Render();
+		}
 
-        public void SetInactive()
-        {
-            _active = false;
-            Render();
-        }
-    }
+		public void Setup(string label, string option)
+		{
+			_labelValue = label;
+			Value = option;
+			_active = true;
+		}
+
+		public void Set(bool value)
+		{
+			Selected = value;
+			Render();
+		}
+
+		public void SetInactive()
+		{
+			_active = false;
+			Render();
+		}
+	}
 }

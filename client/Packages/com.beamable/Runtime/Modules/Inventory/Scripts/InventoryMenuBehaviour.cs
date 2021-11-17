@@ -11,41 +11,39 @@ using UnityEngine;
 
 namespace Beamable.Inventory.Scripts
 {
-   [HelpURL(BeamableConstants.URL_FEATURE_INVENTORY_FLOW)]
-   public class InventoryMenuBehaviour : MonoBehaviour
-    {
-        public MenuManagementBehaviour MenuManager;
+	[HelpURL(BeamableConstants.URL_FEATURE_INVENTORY_FLOW)]
+	public class InventoryMenuBehaviour : MonoBehaviour
+	{
+		public MenuManagementBehaviour MenuManager;
 
-        private Promise<PlatformSubscription<InventoryView>> _inventorySubscription;
+		private Promise<PlatformSubscription<InventoryView>> _inventorySubscription;
 
-        private Promise<Unit> _inventoryViewPromise = new Promise<Unit>();
-        private InventoryView _inventoryView;
+		private Promise<Unit> _inventoryViewPromise = new Promise<Unit>();
+		private InventoryView _inventoryView;
 
-        public void HandleToggle(bool shouldShow)
-        {
-            if (!shouldShow && MenuManager.IsOpen)
-            {
-                MenuManager.CloseAll();
-            }
-            else if (shouldShow && !MenuManager.IsOpen)
-            {
-                MenuManager.Show<InventoryMainMenu>();
-            }
-        }
+		public void HandleToggle(bool shouldShow)
+		{
+			if (!shouldShow && MenuManager.IsOpen)
+			{
+				MenuManager.CloseAll();
+			}
+			else if (shouldShow && !MenuManager.IsOpen)
+			{
+				MenuManager.Show<InventoryMainMenu>();
+			}
+		}
 
-        void Start()
-        {
-        }
+		void Start() { }
 
-        private void OnDestroy()
-        {
-            //_inventorySubscription.Then(s => s.Unsubscribe());
-        }
+		private void OnDestroy()
+		{
+			//_inventorySubscription.Then(s => s.Unsubscribe());
+		}
 
-        void HandleInventoryEvent(InventoryView inventory)
-        {
-            _inventoryView = inventory;
-            _inventoryViewPromise.CompleteSuccess(PromiseBase.Unit);
-        }
-    }
+		void HandleInventoryEvent(InventoryView inventory)
+		{
+			_inventoryView = inventory;
+			_inventoryViewPromise.CompleteSuccess(PromiseBase.Unit);
+		}
+	}
 }

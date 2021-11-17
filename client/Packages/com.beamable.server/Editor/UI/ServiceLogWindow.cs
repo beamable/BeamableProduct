@@ -16,111 +16,111 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Microservice.UI
 {
-   [System.Serializable]
-   public class ServiceLogWindow : EditorWindow
-   {
-      public static void ShowService(ServiceModelBase service)
-      {
-         var existing = Resources.FindObjectsOfTypeAll<ServiceLogWindow>().ToList().FirstOrDefault(w => w._serviceName.Equals(service.Name));
-         if (existing != null)
-         {
-            existing.Show(true);
-            return;
-         }
-         var window = CreateInstance<ServiceLogWindow>();
-         window.titleContent = new GUIContent($"{service.Name} Logs");
-         window.minSize = new Vector2(450, 200);
-         window.SetModel(service);
-         window.Init();
-         window.Show(true);
-      }
+	[System.Serializable]
+	public class ServiceLogWindow : EditorWindow
+	{
+		public static void ShowService(ServiceModelBase service)
+		{
+			var existing = Resources.FindObjectsOfTypeAll<ServiceLogWindow>().ToList()
+			                        .FirstOrDefault(w => w._serviceName.Equals(service.Name));
+			if (existing != null)
+			{
+				existing.Show(true);
+				return;
+			}
 
-      private VisualElement _windowRoot;
+			var window = CreateInstance<ServiceLogWindow>();
+			window.titleContent = new GUIContent($"{service.Name} Logs");
+			window.minSize = new Vector2(450, 200);
+			window.SetModel(service);
+			window.Init();
+			window.Show(true);
+		}
 
-      [NonSerialized] // we need this to get repulled every time, so that the event registration lines up.
-      private ServiceModelBase _model;
+		private VisualElement _windowRoot;
 
-      [SerializeField]
-      private string _serviceName;
+		[NonSerialized] // we need this to get repulled every time, so that the event registration lines up.
+		private ServiceModelBase _model;
 
-      [NonSerialized]
-      private bool _registeredEvents;
+		[SerializeField]
+		private string _serviceName;
 
-      [NonSerialized]
-      private bool _isClosing;
+		[NonSerialized]
+		private bool _registeredEvents;
 
-      private LogVisualElement _logElement;
+		[NonSerialized]
+		private bool _isClosing;
 
-      private void Init()
-      {
-         EditorApplication.delayCall += () => // put in delayCall because the model needs to be initialized by other windows.
-         {
-            if (_model == null)
-            {
-               _model = MicroservicesDataModel.Instance.GetModel<ServiceModelBase>(_serviceName);
-            }
-            _model.DetachLogs(); // take note of the fact that logs are detached...
-            RegisterEvents();
-            Refresh();
-         };
-      }
+		private LogVisualElement _logElement;
 
+		private void Init()
+		{
+			EditorApplication.delayCall +=
+				() => // put in delayCall because the model needs to be initialized by other windows.
+				{
+					if (_model == null)
+					{
+						_model = MicroservicesDataModel.Instance.GetModel<ServiceModelBase>(_serviceName);
+					}
 
-      private void RegisterEvents()
-      {
-         if (_registeredEvents) return;
-         _registeredEvents = true;
-         _model.OnLogsAttached -= OnLogsAttached;
-         _model.OnLogsAttached += OnLogsAttached;
-      }
+					_model.DetachLogs(); // take note of the fact that logs are detached...
+					RegisterEvents();
+					Refresh();
+				};
+		}
 
-      void OnLogsAttached()
-      {
-         if (!_isClosing)
-         {
-            Close();
-         }
-      }
+		private void RegisterEvents()
+		{
+			if (_registeredEvents) return;
+			_registeredEvents = true;
+			_model.OnLogsAttached -= OnLogsAttached;
+			_model.OnLogsAttached += OnLogsAttached;
+		}
 
-      private void SetModel(ServiceModelBase model)
-      {
-         _model = model;
-         _serviceName = model.Name;
-      }
+		void OnLogsAttached()
+		{
+			if (!_isClosing)
+			{
+				Close();
+			}
+		}
 
-      private void OnBecameVisible()
-      {
-         Init();
-      }
+		private void SetModel(ServiceModelBase model)
+		{
+			_model = model;
+			_serviceName = model.Name;
+		}
 
+		private void OnBecameVisible()
+		{
+			Init();
+		}
 
-      private void OnDestroy()
-      {
-         _isClosing = true;
-         _logElement?.Destroy();
-         _model?.AttachLogs();
-      }
+		private void OnDestroy()
+		{
+			_isClosing = true;
+			_logElement?.Destroy();
+			_model?.AttachLogs();
+		}
 
+		void Refresh()
+		{
+			var root = this.GetRootVisualContainer();
+			root.Clear();
+			var uiAsset =
+				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{Constants.SERVER_UI}/ServiceLogWindow.uxml");
+			_windowRoot = uiAsset.CloneTree();
+			_windowRoot.AddStyleSheet($"{Constants.SERVER_UI}/ServiceLogWindow.uss");
+			_windowRoot.name = nameof(_windowRoot);
 
-      void Refresh()
-      {
-         var root = this.GetRootVisualContainer();
-         root.Clear();
-         var uiAsset =
-            AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{Constants.SERVER_UI}/ServiceLogWindow.uxml");
-         _windowRoot = uiAsset.CloneTree();
-         _windowRoot.AddStyleSheet($"{Constants.SERVER_UI}/ServiceLogWindow.uss");
-         _windowRoot.name = nameof(_windowRoot);
+			root.Add(_windowRoot);
 
-         root.Add(_windowRoot);
+			var logContainerElement = _windowRoot.Q<VisualElement>("logContainer");
+			_logElement = new LogVisualElement();
+			_logElement.Model = _model;
+			_logElement.Refresh();
 
-         var logContainerElement = _windowRoot.Q<VisualElement>("logContainer");
-         _logElement = new LogVisualElement();
-         _logElement.Model = _model;
-         _logElement.Refresh();
-
-         logContainerElement.Add(_logElement);
-      }
-
-   }
+			logContainerElement.Add(_logElement);
+		}
+	}
 }

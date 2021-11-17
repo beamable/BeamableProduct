@@ -1,15 +1,18 @@
-#mainVisualElement{
+#mainVisualElement {
     position: relative;
     flex-grow: 1;
     /*background-color: ;*/
 }
-TemplateContainer{
-    flex-grow:1;
+
+TemplateContainer {
+    flex-grow: 1;
 }
-ScrollView{
-    flex-grow:1;
+
+ScrollView {
+    flex-grow: 1;
 }
-MicroserviceContentVisualElement > TemplateContainer > #mainVisualElement > ScrollView > #ContentViewport > #ContentView.content-view{
+
+MicroserviceContentVisualElement > TemplateContainer > #mainVisualElement > ScrollView > #ContentViewport > #ContentView.content-view {
     flex-grow: 1;
     position: absolute;
     left: 0px;
@@ -18,11 +21,11 @@ MicroserviceContentVisualElement > TemplateContainer > #mainVisualElement > Scro
     /*padding-left: 10px;*/
 }
 
-#listRoot{
+#listRoot {
     padding-top: 10px;
     padding-bottom: 10px;
 }
 
 #endSeparator {
-    background-color: rgba(34,34,34,.7);
+    background-color: rgba(34, 34, 34, .7);
 }

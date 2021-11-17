@@ -8,86 +8,88 @@ using Beamable.Serialization.SmallerJSON;
 
 namespace Beamable.Editor.Content.SaveRequest
 {
-   public class ContentSaveRequest //: JsonSerializable.ISerializable
-   {
-      public List<ContentDefinition> Content;
+	public class ContentSaveRequest //: JsonSerializable.ISerializable
+	{
+		public List<ContentDefinition> Content;
 
-      public void Serialize(JsonSerializable.IStreamSerializer s)
-      {
-         s.SerializeList("content", ref Content);
-      }
-   }
+		public void Serialize(JsonSerializable.IStreamSerializer s)
+		{
+			s.SerializeList("content", ref Content);
+		}
+	}
 
-   public class RawValue : IRawJsonProvider
-   {
-      private readonly string _json;
+	public class RawValue : IRawJsonProvider
+	{
+		private readonly string _json;
 
-      public RawValue(string json)
-      {
-         _json = json;
-      }
-      public string ToJson()
-      {
-         return _json;
-      }
-   }
+		public RawValue(string json)
+		{
+			_json = json;
+		}
 
-   public class ContentDefinition : IRawJsonProvider //: JsonSerializable.ISerializable
-   {
-      public string Id;
-      public string Checksum;
-      public ContentObject Content;
-      public string[] Tags;
+		public string ToJson()
+		{
+			return _json;
+		}
+	}
 
-//      public void Serialize(JsonSerializable.IStreamSerializer s)
-//      {
-//         s.Serialize("id", ref Id);
-//         s.Serialize("checksum", ref Checksum);
-//
-//         var json = ClientContentSerializer.SerializeProperties(Content);
-//         s.SetValue("properties", json);
-//         //s.SerializeInline("properties", ref json);
-//         //s.Serialize("properties", ref Content);
-//      }
+	public class ContentDefinition : IRawJsonProvider //: JsonSerializable.ISerializable
+	{
+		public string Id;
+		public string Checksum;
+		public ContentObject Content;
+		public string[] Tags;
 
-      public string ToJson()
-      {
-         var dict = new ArrayDict
-         {
-            {"id", Id},
-            {"checksum", Checksum},
-            {"tags", Tags},
-            {"properties", new RawValue(ClientContentSerializer.SerializeProperties(Content))},
-         };
+		//      public void Serialize(JsonSerializable.IStreamSerializer s)
+		//      {
+		//         s.Serialize("id", ref Id);
+		//         s.Serialize("checksum", ref Checksum);
+		//
+		//         var json = ClientContentSerializer.SerializeProperties(Content);
+		//         s.SetValue("properties", json);
+		//         //s.SerializeInline("properties", ref json);
+		//         //s.Serialize("properties", ref Content);
+		//      }
 
-         var json = Json.Serialize(dict, new StringBuilder());
-         return json;
-      }
-   }
+		public string ToJson()
+		{
+			var dict = new ArrayDict
+			{
+				{"id", Id},
+				{"checksum", Checksum},
+				{"tags", Tags},
+				{"properties", new RawValue(ClientContentSerializer.SerializeProperties(Content))},
+			};
 
-   public class ContentMeta : JsonSerializable.ISerializable
-   {
-      public object Data;
-      public string Link;
-      public List<string> Links;
-      public object Text;
-      public void Serialize(JsonSerializable.IStreamSerializer s)
-      {
-         // TODO IMPLEMENT THIS SOMEHOW?
-         //s.Serialize("data", ref Data);
-      }
-   }
+			var json = Json.Serialize(dict, new StringBuilder());
+			return json;
+		}
+	}
 
-   [System.Serializable]
-   public class ContentSaveResponse
-   {
-      public List<ContentReference> content;
-   }
+	public class ContentMeta : JsonSerializable.ISerializable
+	{
+		public object Data;
+		public string Link;
+		public List<string> Links;
+		public object Text;
 
-   [System.Serializable]
-   public class ContentReference
-   {
-      public string id, version, uri, checksum, visibility;
-      public string[] tags;
-   }
+		public void Serialize(JsonSerializable.IStreamSerializer s)
+		{
+			// TODO IMPLEMENT THIS SOMEHOW?
+			//s.Serialize("data", ref Data);
+		}
+	}
+
+	[System.Serializable]
+	public class ContentSaveResponse
+	{
+		public List<ContentReference> content;
+	}
+
+	[System.Serializable]
+	public class ContentReference
+	{
+		public string id, version, uri, checksum, visibility;
+		public string[] tags;
+	}
 }

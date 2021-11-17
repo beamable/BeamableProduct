@@ -27,7 +27,10 @@ namespace Beamable.Service
 				EnsureDetector();
 				return _isQuitting;
 			}
-			set { _isQuitting = value; }
+			set
+			{
+				_isQuitting = value;
+			}
 		}
 
 #if UNITY_EDITOR
@@ -35,7 +38,8 @@ namespace Beamable.Service
 		{
 			AppLifetimeLogger.Log("Application Lifetime Detection Online.");
 
-         UnityEditor.EditorApplication.playModeStateChanged += (obj) => {
+			UnityEditor.EditorApplication.playModeStateChanged += (obj) =>
+			{
 				if (!UnityEditor.EditorApplication.isPlaying)
 				{
 					AppLifetimeLogger.Log("Resetting lifetime quit flag to false.");
@@ -55,7 +59,6 @@ namespace Beamable.Service
 			}
 		}
 	}
-
 
 	public class ApplicationLifetimeDetector : MonoBehaviour
 	{

@@ -3,20 +3,20 @@
     margin-left: 4px;
 }
 
-#logHeader{
+#logHeader {
     flex-direction: row;
     height: 30px;
     flex-shrink: 0;
 }
 
-#logHeader > .leftArea{
+#logHeader > .leftArea {
     justify-content: center;
     padding-left: 5px;
     flex-direction: row;
     flex-grow: 1;
 }
 
-#logHeader > .rightArea{
+#logHeader > .rightArea {
     padding-right: 5px;
     flex-direction: row;
     align-content: flex-end;
@@ -31,7 +31,7 @@
     flex-grow: 1;
 }
 
-.subTitle{
+.subTitle {
     font-size: 10px;
     -unity-font-style: normal;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
@@ -45,28 +45,29 @@
     padding-left: 0px;
     padding-top: 0px;
     padding-bottom: 0px;
-    
+
 }
 
-#statusIcon{
+#statusIcon {
     /*background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Running L.png");*/
     width: 25px;
     height: 25px;
     align-self: center;
 
 }
-#remoteStatusIcon{
+
+#remoteStatusIcon {
     width: 25px;
     height: 25px;
     align-self: center;
 }
 
 
-#logText{
+#logText {
     min-height: 100px;
 }
 
-#buttonRow{
+#buttonRow {
     align-content: flex-end;
     padding-top: 10px;
     padding-bottom: 10px;
@@ -75,7 +76,7 @@
     flex-shrink: 0;
 }
 
-#buildDropDown{
+#buildDropDown {
     flex-direction: row;
     justify-content: space-around;
     padding-right: 0px;
@@ -89,7 +90,7 @@
     align-self: center;
 }
 
-#dropDown{
+#dropDown {
     align-content: center;
     justify-content: center;
     align-self: center;
@@ -99,7 +100,7 @@
     -unity-text-align: middle-center;
 }
 
-.confirmBtn{
+.confirmBtn {
     font-size: 12px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     border-bottom-width: 1px;
@@ -117,7 +118,7 @@
     -unity-font-style: bold;
 }
 
-.unity-label{
+.unity-label {
     font-size: 12px;
     -unity-text-align: middle-left;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
@@ -128,10 +129,10 @@
     margin-top: 3px;
     margin-bottom: 3px;
     flex-grow: 1;
-	margin-right: 0px;
+    margin-right: 0px;
 }
 
-#moreBtn{
+#moreBtn {
     -unity-slice-bottom: 0;
     -unity-slice-top: 0;
     -unity-slice-right: 0;
@@ -158,14 +159,14 @@
 #dependentServicesBtn {
     font-size: 10px;
     background-image: none;
-    background-color: rgba(0,0,0,0);
+    background-color: rgba(0, 0, 0, 0);
     padding-top: 4px;
     border-bottom-width: 1px;
 }
 
-LabeledCheckboxVisualElement{
+LabeledCheckboxVisualElement {
     margin-left: 10px;
-	align-self: center;
+    align-self: center;
     justify-content: flex-start;
 }
 
@@ -188,7 +189,7 @@ LabeledCheckboxVisualElement{
     height: 20px;
     flex-direction: row;
     justify-content: space-between;
-    background-color: rgba(0,0,0,0);
+    background-color: rgba(0, 0, 0, 0);
     background-image: none;
 }
 

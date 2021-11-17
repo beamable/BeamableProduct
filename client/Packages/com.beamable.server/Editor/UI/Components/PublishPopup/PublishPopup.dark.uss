@@ -1,4 +1,4 @@
-#cancelBtn{
+#cancelBtn {
     background-color: #282828;
     border-color: #DCDCDC;
 }

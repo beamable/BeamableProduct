@@ -1,257 +1,281 @@
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-
 #if UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
+
 namespace Beamable.Editor.UI.Components
 {
-// Unity C# reference source
-// Copyright (c) Unity Technologies. For terms of use, see
-// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+	// Unity C# reference source
+	// Copyright (c) Unity Technologies. For terms of use, see
+	// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-    internal class SplitterVisualElement : ImmediateModeElement
-    {
-        const int kDefaultSplitSize = 10;
-        public int splitSize = kDefaultSplitSize;
-        public Action<List<float>> OnFlexChanged;
+	internal class SplitterVisualElement : ImmediateModeElement
+	{
+		const int kDefaultSplitSize = 10;
+		public int splitSize = kDefaultSplitSize;
+		public Action<List<float>> OnFlexChanged;
 
-        public void EmitFlexValues()
-        {
-           var flexValues = Children().Select(child => child.style.flexGrow.value).ToList();
+		public void EmitFlexValues()
+		{
+			var flexValues = Children().Select(child => child.style.flexGrow.value).ToList();
 
-           OnFlexChanged?.Invoke(flexValues);
-        }
+			OnFlexChanged?.Invoke(flexValues);
+		}
 
-        public new class UxmlFactory : UxmlFactory<SplitterVisualElement, UxmlTraits> {}
+		public new class UxmlFactory : UxmlFactory<SplitterVisualElement, UxmlTraits> { }
 
-        public new class UxmlTraits : VisualElement.UxmlTraits {}
+		public new class UxmlTraits : VisualElement.UxmlTraits { }
 
-        private class SplitManipulator : MouseManipulator
-        {
-            private int m_ActiveVisualElementIndex = -1;
-            private int m_NextVisualElementIndex = -1;
-            public Action<List<float>> OnFlexChanged;
+		private class SplitManipulator : MouseManipulator
+		{
+			private int m_ActiveVisualElementIndex = -1;
+			private int m_NextVisualElementIndex = -1;
+			public Action<List<float>> OnFlexChanged;
 
-            private List<VisualElement> m_AffectedElements;
+			private List<VisualElement> m_AffectedElements;
 
-            bool m_Active;
+			bool m_Active;
 
-            public SplitManipulator()
-            {
-                activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
-            }
+			public SplitManipulator()
+			{
+				activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
+			}
 
-            protected override void RegisterCallbacksOnTarget()
-            {
-                target.RegisterCallback<MouseDownEvent>(OnMouseDown, TrickleDown.TrickleDown);
-                target.RegisterCallback<MouseMoveEvent>(OnMouseMove, TrickleDown.TrickleDown);
-                target.RegisterCallback<MouseUpEvent>(OnMouseUp, TrickleDown.TrickleDown);
-            }
+			protected override void RegisterCallbacksOnTarget()
+			{
+				target.RegisterCallback<MouseDownEvent>(OnMouseDown, TrickleDown.TrickleDown);
+				target.RegisterCallback<MouseMoveEvent>(OnMouseMove, TrickleDown.TrickleDown);
+				target.RegisterCallback<MouseUpEvent>(OnMouseUp, TrickleDown.TrickleDown);
+			}
 
-            protected override void UnregisterCallbacksFromTarget()
-            {
-                target.UnregisterCallback<MouseDownEvent>(OnMouseDown, TrickleDown.TrickleDown);
-                target.UnregisterCallback<MouseMoveEvent>(OnMouseMove, TrickleDown.TrickleDown);
-                target.UnregisterCallback<MouseUpEvent>(OnMouseUp, TrickleDown.TrickleDown);
-            }
+			protected override void UnregisterCallbacksFromTarget()
+			{
+				target.UnregisterCallback<MouseDownEvent>(OnMouseDown, TrickleDown.TrickleDown);
+				target.UnregisterCallback<MouseMoveEvent>(OnMouseMove, TrickleDown.TrickleDown);
+				target.UnregisterCallback<MouseUpEvent>(OnMouseUp, TrickleDown.TrickleDown);
+			}
 
-            protected void OnMouseDown(MouseDownEvent e)
-            {
-                if (CanStartManipulation(e))
-                {
-                   SplitterVisualElement visualSplitter = target as SplitterVisualElement;
-                    FlexDirection flexDirection = visualSplitter.resolvedStyle.flexDirection;
+			protected void OnMouseDown(MouseDownEvent e)
+			{
+				if (CanStartManipulation(e))
+				{
+					SplitterVisualElement visualSplitter = target as SplitterVisualElement;
+					FlexDirection flexDirection = visualSplitter.resolvedStyle.flexDirection;
 
-                    if (m_AffectedElements != null)
-                    {
-                       m_AffectedElements.Clear();
-                    }
-                    m_AffectedElements = visualSplitter.GetAffectedVisualElements();
+					if (m_AffectedElements != null)
+					{
+						m_AffectedElements.Clear();
+					}
 
-                    for (int i = 0; i < m_AffectedElements.Count - 1; ++i)
-                    {
-                        VisualElement visualElement = m_AffectedElements[i];
+					m_AffectedElements = visualSplitter.GetAffectedVisualElements();
 
-                        Rect splitterRect = visualSplitter.GetSplitterRect(visualElement);
+					for (int i = 0; i < m_AffectedElements.Count - 1; ++i)
+					{
+						VisualElement visualElement = m_AffectedElements[i];
 
-                        if (splitterRect.Contains(e.localMousePosition))
-                        {
-                            bool isReverse = flexDirection == FlexDirection.RowReverse || flexDirection == FlexDirection.ColumnReverse;
+						Rect splitterRect = visualSplitter.GetSplitterRect(visualElement);
 
-                            if (isReverse)
-                            {
-                                m_ActiveVisualElementIndex = i + 1;
-                                m_NextVisualElementIndex = i;
-                            }
-                            else
-                            {
-                                m_ActiveVisualElementIndex = i;
-                                m_NextVisualElementIndex = i + 1;
-                            }
+						if (splitterRect.Contains(e.localMousePosition))
+						{
+							bool isReverse = flexDirection == FlexDirection.RowReverse ||
+							                 flexDirection == FlexDirection.ColumnReverse;
 
-                            m_Active = true;
-                            target.CaptureMouse();
-                            e.StopPropagation();
-                        }
-                    }
-                }
-            }
+							if (isReverse)
+							{
+								m_ActiveVisualElementIndex = i + 1;
+								m_NextVisualElementIndex = i;
+							}
+							else
+							{
+								m_ActiveVisualElementIndex = i;
+								m_NextVisualElementIndex = i + 1;
+							}
 
-            protected void OnMouseMove(MouseMoveEvent e)
-            {
-                if (m_Active)
-                {
-                    // These calculations should only work if flex-basis is auto.
-                    // However, Yoga implementation of flex-basis 0 is broken and behaves much like
-                    // flex-basis auto, so it currently works with flex-basis 0 too.
+							m_Active = true;
+							target.CaptureMouse();
+							e.StopPropagation();
+						}
+					}
+				}
+			}
 
-                    SplitterVisualElement visualSplitter = target as SplitterVisualElement;
-                    VisualElement visualElement = m_AffectedElements[m_ActiveVisualElementIndex];
-                    VisualElement nextVisualElement = m_AffectedElements[m_NextVisualElementIndex];
+			protected void OnMouseMove(MouseMoveEvent e)
+			{
+				if (m_Active)
+				{
+					// These calculations should only work if flex-basis is auto.
+					// However, Yoga implementation of flex-basis 0 is broken and behaves much like
+					// flex-basis auto, so it currently works with flex-basis 0 too.
 
-                    FlexDirection flexDirection = visualSplitter.resolvedStyle.flexDirection;
-                    bool isVertical = flexDirection == FlexDirection.Column || flexDirection == FlexDirection.ColumnReverse;
+					SplitterVisualElement visualSplitter = target as SplitterVisualElement;
+					VisualElement visualElement = m_AffectedElements[m_ActiveVisualElementIndex];
+					VisualElement nextVisualElement = m_AffectedElements[m_NextVisualElementIndex];
 
-                    float relativeMousePosition;
-                    if (isVertical)
-                    {
-                        float availableHeight = visualElement.layout.height + nextVisualElement.layout.height;
-                        float minHeight = Mathf.Max(
-                            visualElement.resolvedStyle.minHeight.value, // make sure it's at least min
-                            availableHeight - (nextVisualElement.resolvedStyle.maxHeight.value <= 0f ? availableHeight : nextVisualElement.resolvedStyle.maxHeight.value) // also make sure that it's more then all size - next element max size
-                            );
-                        float maxHeight = Mathf.Min(
-                            visualElement.resolvedStyle.maxHeight.value <= 0 ? availableHeight : visualElement.resolvedStyle.maxHeight.value, // make sure it's not more then max
-                            availableHeight - nextVisualElement.resolvedStyle.minHeight.value // also make sure it's leaving place for next element with min size
-                            );
-                        
+					FlexDirection flexDirection = visualSplitter.resolvedStyle.flexDirection;
+					bool isVertical = flexDirection == FlexDirection.Column ||
+					                  flexDirection == FlexDirection.ColumnReverse;
 
-                        relativeMousePosition =
-                            (Mathf.Clamp(e.mousePosition.y - visualElement.worldBound.yMin - 2f, minHeight, maxHeight) - minHeight) // -2f is here to make splitter a bit above the cursor point
-                            / (maxHeight - minHeight);
-                    }
-                    else
-                    {
-                        float availableWidth = visualElement.layout.width + nextVisualElement.layout.width;
-                        float minWidth = Mathf.Max(
-                            visualElement.resolvedStyle.minWidth.value, // make sure it's at least min
-                            availableWidth - (nextVisualElement.resolvedStyle.maxWidth.value <= 0f ? availableWidth : nextVisualElement.resolvedStyle.maxWidth.value) // also make sure that it's more then all size - next element max size
-                        );
-                        float maxWidth = Mathf.Min(
-                            visualElement.resolvedStyle.maxWidth.value <= 0 ? availableWidth : visualElement.resolvedStyle.maxWidth.value, // make sure it's not more then max
-                            availableWidth - nextVisualElement.resolvedStyle.minWidth.value // also make sure it's leaving place for next element with min size
-                        );
-                        
-                        relativeMousePosition =
-                            (Mathf.Clamp(e.mousePosition.x - visualElement.worldBound.xMin, minWidth, maxWidth) - minWidth)
-                            / (maxWidth - minWidth);
-                    }
+					float relativeMousePosition;
+					if (isVertical)
+					{
+						float availableHeight = visualElement.layout.height + nextVisualElement.layout.height;
+						float minHeight = Mathf.Max(
+							visualElement.resolvedStyle.minHeight.value, // make sure it's at least min
+							availableHeight - (nextVisualElement.resolvedStyle.maxHeight.value <= 0f
+								? availableHeight
+								: nextVisualElement.resolvedStyle.maxHeight
+								                   .value) // also make sure that it's more then all size - next element max size
+						);
+						float maxHeight = Mathf.Min(
+							visualElement.resolvedStyle.maxHeight.value <= 0
+								? availableHeight
+								: visualElement.resolvedStyle.maxHeight.value, // make sure it's not more then max
+							availableHeight -
+							nextVisualElement.resolvedStyle.minHeight
+							                 .value // also make sure it's leaving place for next element with min size
+						);
 
-                    relativeMousePosition = Math.Max(0.0f, Math.Min(0.999f, relativeMousePosition));
+						relativeMousePosition =
+							(Mathf.Clamp(e.mousePosition.y - visualElement.worldBound.yMin - 2f, minHeight, maxHeight) -
+							 minHeight) // -2f is here to make splitter a bit above the cursor point
+							/ (maxHeight - minHeight);
+					}
+					else
+					{
+						float availableWidth = visualElement.layout.width + nextVisualElement.layout.width;
+						float minWidth = Mathf.Max(
+							visualElement.resolvedStyle.minWidth.value, // make sure it's at least min
+							availableWidth - (nextVisualElement.resolvedStyle.maxWidth.value <= 0f
+								? availableWidth
+								: nextVisualElement.resolvedStyle.maxWidth
+								                   .value) // also make sure that it's more then all size - next element max size
+						);
+						float maxWidth = Mathf.Min(
+							visualElement.resolvedStyle.maxWidth.value <= 0
+								? availableWidth
+								: visualElement.resolvedStyle.maxWidth.value, // make sure it's not more then max
+							availableWidth -
+							nextVisualElement.resolvedStyle.minWidth
+							                 .value // also make sure it's leaving place for next element with min size
+						);
 
-                    float totalFlex = visualElement.resolvedStyle.flexGrow + nextVisualElement.resolvedStyle.flexGrow;
-                    visualElement.style.flexGrow = relativeMousePosition * totalFlex;
-                    nextVisualElement.style.flexGrow = (1.0f - relativeMousePosition) * totalFlex;
+						relativeMousePosition =
+							(Mathf.Clamp(e.mousePosition.x - visualElement.worldBound.xMin, minWidth, maxWidth) -
+							 minWidth)
+							/ (maxWidth - minWidth);
+					}
 
-                    e.StopPropagation();
-                    EmitFlexValues();
-                }
-            }
+					relativeMousePosition = Math.Max(0.0f, Math.Min(0.999f, relativeMousePosition));
 
-            protected void OnMouseUp(MouseUpEvent e)
-            {
-                if (m_Active && CanStopManipulation(e))
-                {
-                    m_Active = false;
-                    target.ReleaseMouse();
-                    e.StopPropagation();
+					float totalFlex = visualElement.resolvedStyle.flexGrow + nextVisualElement.resolvedStyle.flexGrow;
+					visualElement.style.flexGrow = relativeMousePosition * totalFlex;
+					nextVisualElement.style.flexGrow = (1.0f - relativeMousePosition) * totalFlex;
 
-                    m_ActiveVisualElementIndex = -1;
-                    m_NextVisualElementIndex = -1;
-                }
-            }
-            protected void EmitFlexValues()
-            {
-               var flexValues = target.Children().Select(child => child.style.flexGrow.value).ToList();
+					e.StopPropagation();
+					EmitFlexValues();
+				}
+			}
 
-               OnFlexChanged?.Invoke(flexValues);
-            }
+			protected void OnMouseUp(MouseUpEvent e)
+			{
+				if (m_Active && CanStopManipulation(e))
+				{
+					m_Active = false;
+					target.ReleaseMouse();
+					e.StopPropagation();
 
-        }
+					m_ActiveVisualElementIndex = -1;
+					m_NextVisualElementIndex = -1;
+				}
+			}
 
-        public static readonly string ussClassName = "unity-visual-splitter";
+			protected void EmitFlexValues()
+			{
+				var flexValues = target.Children().Select(child => child.style.flexGrow.value).ToList();
 
-        public SplitterVisualElement()
-        {
-            AddToClassList(ussClassName);
-            var manip = new SplitManipulator();
-            manip.OnFlexChanged += vals => { OnFlexChanged?.Invoke(vals); };
-            this.AddManipulator(manip);
-        }
+				OnFlexChanged?.Invoke(flexValues);
+			}
+		}
 
-        public List<VisualElement> GetAffectedVisualElements()
-        {
-            List<VisualElement> elements = new List<VisualElement>();
-            var count = hierarchy.childCount;
-            for (int i = 0; i < count; ++i)
-            {
-                VisualElement element = hierarchy[i];
-                if (element.resolvedStyle.position == Position.Relative)
-                    elements.Add(element);
-            }
+		public static readonly string ussClassName = "unity-visual-splitter";
 
-            return elements;
-        }
+		public SplitterVisualElement()
+		{
+			AddToClassList(ussClassName);
+			var manip = new SplitManipulator();
+			manip.OnFlexChanged += vals =>
+			{
+				OnFlexChanged?.Invoke(vals);
+			};
+			this.AddManipulator(manip);
+		}
 
-        protected override void ImmediateRepaint()
-        {
-            UpdateCursorRects();
-        }
+		public List<VisualElement> GetAffectedVisualElements()
+		{
+			List<VisualElement> elements = new List<VisualElement>();
+			var count = hierarchy.childCount;
+			for (int i = 0; i < count; ++i)
+			{
+				VisualElement element = hierarchy[i];
+				if (element.resolvedStyle.position == Position.Relative)
+					elements.Add(element);
+			}
 
-        void UpdateCursorRects()
-        {
-            var count = hierarchy.childCount;
-            for (int i = 0; i < count - 1; ++i)
-            {
-                VisualElement visualElement = hierarchy[i];
-                bool isVertical = resolvedStyle.flexDirection == FlexDirection.Column || resolvedStyle.flexDirection == FlexDirection.ColumnReverse;
+			return elements;
+		}
 
-                EditorGUIUtility.AddCursorRect(GetSplitterRect(visualElement), isVertical ? MouseCursor.ResizeVertical : MouseCursor.SplitResizeLeftRight);
-            }
-        }
+		protected override void ImmediateRepaint()
+		{
+			UpdateCursorRects();
+		}
 
-        public Rect GetSplitterRect(VisualElement visualElement)
-        {
-            Rect rect = visualElement.layout;
-            if (resolvedStyle.flexDirection == FlexDirection.Row)
-            {
-                rect.xMin = visualElement.layout.xMax - splitSize * 0.5f;
-                rect.xMax = visualElement.layout.xMax + splitSize * 0.5f;
-            }
-            else if (resolvedStyle.flexDirection == FlexDirection.RowReverse)
-            {
-                rect.xMin = visualElement.layout.xMin - splitSize * 0.5f;
-                rect.xMax = visualElement.layout.xMin + splitSize * 0.5f;
-            }
-            else if (resolvedStyle.flexDirection == FlexDirection.Column)
-            {
-                rect.yMin = visualElement.layout.yMax - splitSize * 0.5f;
-                rect.yMax = visualElement.layout.yMax + splitSize * 0.5f;
-            }
-            else if (resolvedStyle.flexDirection == FlexDirection.ColumnReverse)
-            {
-                rect.yMin = visualElement.layout.yMin - splitSize * 0.5f;
-                rect.yMax = visualElement.layout.yMin + splitSize * 0.5f;
-            }
+		void UpdateCursorRects()
+		{
+			var count = hierarchy.childCount;
+			for (int i = 0; i < count - 1; ++i)
+			{
+				VisualElement visualElement = hierarchy[i];
+				bool isVertical = resolvedStyle.flexDirection == FlexDirection.Column ||
+				                  resolvedStyle.flexDirection == FlexDirection.ColumnReverse;
 
-            return rect;
-        }
-    }
+				EditorGUIUtility.AddCursorRect(GetSplitterRect(visualElement),
+				                               isVertical
+					                               ? MouseCursor.ResizeVertical
+					                               : MouseCursor.SplitResizeLeftRight);
+			}
+		}
+
+		public Rect GetSplitterRect(VisualElement visualElement)
+		{
+			Rect rect = visualElement.layout;
+			if (resolvedStyle.flexDirection == FlexDirection.Row)
+			{
+				rect.xMin = visualElement.layout.xMax - splitSize * 0.5f;
+				rect.xMax = visualElement.layout.xMax + splitSize * 0.5f;
+			}
+			else if (resolvedStyle.flexDirection == FlexDirection.RowReverse)
+			{
+				rect.xMin = visualElement.layout.xMin - splitSize * 0.5f;
+				rect.xMax = visualElement.layout.xMin + splitSize * 0.5f;
+			}
+			else if (resolvedStyle.flexDirection == FlexDirection.Column)
+			{
+				rect.yMin = visualElement.layout.yMax - splitSize * 0.5f;
+				rect.yMax = visualElement.layout.yMax + splitSize * 0.5f;
+			}
+			else if (resolvedStyle.flexDirection == FlexDirection.ColumnReverse)
+			{
+				rect.yMin = visualElement.layout.yMin - splitSize * 0.5f;
+				rect.yMax = visualElement.layout.yMin + splitSize * 0.5f;
+			}
+
+			return rect;
+		}
+	}
 }
 
 #endif

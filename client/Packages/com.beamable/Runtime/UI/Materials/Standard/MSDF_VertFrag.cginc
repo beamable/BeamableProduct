@@ -126,15 +126,15 @@ float _GradientImpactPrimary;
 float _GradientImpactSecondary;
 float _ShineImpactSecondary;
 float _SecondaryTextureImpact;
-   #if _MSDF_SECONDARYSHAPE_FILL_HORIZONTAL
+#if _MSDF_SECONDARYSHAPE_FILL_HORIZONTAL
    float _SecondaryShapeFill;
    float _SecondaryShapeFillContrast;
-   #endif
-   #if _MSDF_SECONDARYSHAPE_FILL_RADIAL
+#endif
+#if _MSDF_SECONDARYSHAPE_FILL_RADIAL
    float _SecondaryShapeFill;
    float _SecondaryShapeFillContrast;
    float _SecondaryShapeRotation;
-   #endif
+#endif
 #endif
 #if _MSDF_SECONDARYSHAPE_OUTTERGLOW
 float _SecondaryOutterGlowBoost;
@@ -224,11 +224,11 @@ v2f VertexFunction(Input i, appdata_full v)
     #if _MSDF_SHINE
         float2 shineUV = float2(0.0,0.0);
 
-        #if _MSDF_SHINE_UV_SCREEN
+    #if _MSDF_SHINE_UV_SCREEN
             shineUV = ComputeScreenUV(o.pos, i.overlay_ST);
-        #elif _MSDF_SHINE_UV_POSITION
+    #elif _MSDF_SHINE_UV_POSITION
             shineUV = saturate(v.texcoord1.xy);
-        #endif
+    #endif
 
         o.uvOne.zw = ComputeRotatedUV(shineUV, i.shineAngle);
     #endif
@@ -253,30 +253,30 @@ v2f VertexFunction(Input i, appdata_full v)
         o.uvTwo.xy = ScrollUV(o.uvTwo,i.xScroll,i.yScroll);
     #endif
 
-   o.uvThree.xyzw = float4(0.0, 0.0, 0.0, 0.0);
+    o.uvThree.xyzw = float4(0.0, 0.0, 0.0, 0.0);
 
-   #if _MSDF_DROPSHADOW
+    #if _MSDF_DROPSHADOW
       o.uvThree.xy = o.uvOne.xy + (float2(i.shadowX,i.shadowY) * 0.01.xx);
-   #endif
+    #endif
 
-   #if _MSDF_ICON
+    #if _MSDF_ICON
       o.uvThree.zw = TransformUV(unmodPos, i.icon_ST);
 
-   #endif
-   #if _MSDF_ICON_ROTATE_UV
+    #endif
+    #if _MSDF_ICON_ROTATE_UV
       o.uvThree.zw = ComputePivotRotation(o.uvThree.zw, _IconUVRotation, float2(_IconPivotX, _IconPivotY));
-   #endif
+    #endif
     return o;
 }
 
 // Samples the main texture with an optional bias
 fixed4 SampleMainTex(float2 coord)
 {
-   #ifdef _MSDF_BIAS_MAINTEX
+    #ifdef _MSDF_BIAS_MAINTEX
       return tex2Dbias(_MainTex, float4(coord.xy,0.0,(_MSDF_BIAS_MAINTEX)));
-   #else
-      return tex2D(_MainTex, coord.xy);
-   #endif
+    #else
+    return tex2D(_MainTex, coord.xy);
+    #endif
 }
 
 fixed4 FragmentProgram(v2f v, float4 shape, float4 icon, float4 bgSample, float4 shadowSample, float4 secondarySample)
@@ -285,14 +285,14 @@ fixed4 FragmentProgram(v2f v, float4 shape, float4 icon, float4 bgSample, float4
 
     //sample textures
     float3 dist = shape.rgb;
-    float4 tex = tex2D(_TextureTex,v.uvTwo.xy);
+    float4 tex = tex2D(_TextureTex, v.uvTwo.xy);
 
     //blend our overlay texture
     float mixTex = saturate(MixOverlay(tex.rgba, _TextureMix));
     float dissolve = Dissolve(mixTex, _Dissolve);
 
     //get thresholds
-    float bodyAlpha = BasicMSDF(dist, mixTex , _Threshold, _PrimaryErosion, _Softness);
+    float bodyAlpha = BasicMSDF(dist, mixTex, _Threshold, _PrimaryErosion, _Softness);
     float bodyDissolve = Dissolve(mixTex, _PrimaryDissolve);
     bodyAlpha = saturate(bodyAlpha * bodyDissolve);
 
@@ -301,7 +301,7 @@ fixed4 FragmentProgram(v2f v, float4 shape, float4 icon, float4 bgSample, float4
     outlineAlpha = saturate(outlineAlpha * outlineDissolve);
     outlineAlpha = saturate(((1.0 - bodyAlpha) * outlineAlpha));
 
-    float mask = saturate (bodyAlpha + outlineAlpha);
+    float mask = saturate(bodyAlpha + outlineAlpha);
     result.a = mask;
 
     result.a -= (bodyAlpha * (1.0 - _Color.a));
@@ -322,18 +322,18 @@ fixed4 FragmentProgram(v2f v, float4 shape, float4 icon, float4 bgSample, float4
         float4 background = bgSample;
         float backgroundMix = MixOverlay(background, _BackgroundMix)* _BackgroundContrast.x;
 
-        #if _MSDF_BACKGROUND_BLEND_ADD
+    #if _MSDF_BACKGROUND_BLEND_ADD
             result.rgb = lerp(result.rgb, result.rgb + backgroundMix.xxx, bodyAlpha);
-        #elif _MSDF_BACKGROUND_BLEND_MUL
+    #elif _MSDF_BACKGROUND_BLEND_MUL
             result.rgb = lerp(result.rgb, result.rgb * backgroundMix.xxx, bodyAlpha);
-        #elif _MSDF_BACKGROUND_BLEND_OVERLAY
+    #elif _MSDF_BACKGROUND_BLEND_OVERLAY
             result.rgb = lerp(result.rgb, OverlayColor(result.rgb,backgroundMix.xxx), bodyAlpha);
-        #elif _MSDF_BACKGROUND_BLEND_LERP
+    #elif _MSDF_BACKGROUND_BLEND_LERP
             float4 backgroundColor = lerp(_BackgroundColorZero.rgba, _BackgroundColorOne.rgba, saturate(backgroundMix));
             result.rgb = lerp(result.rgb, backgroundColor.rgb, backgroundColor.a);
-        #elif _MSDF_BACKGROUND_BLEND_NORMAL
+    #elif _MSDF_BACKGROUND_BLEND_NORMAL
             result.rgb = lerp(result.rgb, background.rgb, _BackgroundContrast.x);
-        #endif
+    #endif
 
     #endif
 
@@ -349,16 +349,16 @@ fixed4 FragmentProgram(v2f v, float4 shape, float4 icon, float4 bgSample, float4
     #if _MSDF_CENTERGLOW
         float glowAlpha = saturate(BasicMSDF(dist, mixTex, _GlowThreshold, _Erosion, _GlowSoftness));
 
-        #if _MSDF_CENTERGLOW_BLEND_ADD
+    #if _MSDF_CENTERGLOW_BLEND_ADD
             float4 glowColor = saturate(_GlowColor * saturate(_GlowBoost * ((glowAlpha)-dissolve).xxxx));
             result = saturate(result + glowColor);
-        #elif _MSDF_CENTERGLOW_BLEND_MUL
+    #elif _MSDF_CENTERGLOW_BLEND_MUL
             float4 glowColor = saturate(_GlowColor * (1.0 - saturate(_GlowBoost * ((glowAlpha)-dissolve).xxxx)));
             result.rgb = lerp(result.rgb, saturate(result.rgb * glowColor.rgb), glowAlpha);
-        #elif _MSDF_CENTERGLOW_BLEND_OVERLAY
+    #elif _MSDF_CENTERGLOW_BLEND_OVERLAY
             float4 glowColor = saturate(_GlowColor * saturate(_GlowBoost * (glowAlpha)-dissolve).xxxx);
             result.rgb = lerp(result.rgb, OverlayColor(result.rgb,glowColor.rgb), glowAlpha);
-        #endif
+    #endif
     #endif
 
     //Apply Inner Glow
@@ -368,16 +368,16 @@ fixed4 FragmentProgram(v2f v, float4 shape, float4 icon, float4 bgSample, float4
         innerGlowAlpha -= outlineAlpha;
         float4 innerGlowFinal;
 
-        #if _MSDF_INNERGLOW_BLEND_ADD
+    #if _MSDF_INNERGLOW_BLEND_ADD
             innerGlowFinal = saturate(_InnerGlowColor * (saturate(_InnerGlowBoost * (innerGlowAlpha)-dissolve).xxxx));
             result = saturate(result + innerGlowFinal);
-        #elif _MSDF_INNERGLOW_BLEND_MUL
+    #elif _MSDF_INNERGLOW_BLEND_MUL
             innerGlowFinal = saturate(_InnerGlowColor * (saturate(_InnerGlowBoost * (innerGlowAlpha)-dissolve).xxxx));
             result.rgb = saturate(result.rgb * innerGlowFinal.rgb);
-        #elif _MSDF_INNERGLOW_BLEND_OVERLAY
+    #elif _MSDF_INNERGLOW_BLEND_OVERLAY
             innerGlowFinal = saturate(_InnerGlowColor * (saturate(_InnerGlowBoost * (innerGlowAlpha)-dissolve).xxxx));
             result.rgb = lerp(result.rgb, OverlayColor(result.rgb, innerGlowFinal.rgb), innerGlowAlpha);
-        #endif
+    #endif
 
     #endif
     //Apply Outter Glow
@@ -386,13 +386,13 @@ fixed4 FragmentProgram(v2f v, float4 shape, float4 icon, float4 bgSample, float4
         outterGlowAlpha -= saturate(mask);
         float4 outterGlowFinal = float4(1.0,1.0,1.0,1.0);
 
-        #if _MSDF_OUTTERGLOW_BLEND_ADD
+    #if _MSDF_OUTTERGLOW_BLEND_ADD
             outterGlowFinal = _OutterGlowColor * (outterGlowAlpha * _OutterGlowBoost - dissolve).xxxx;
             result = saturate(result + outterGlowFinal);
-        #elif _MSDF_OUTTERGLOW_BLEND_MUL
+    #elif _MSDF_OUTTERGLOW_BLEND_MUL
             outterGlowFinal = saturate(_OutterGlowColor * (1.0 - saturate(_OutterGlowBoost * saturate(outterGlowAlpha) - dissolve) * (1.0 - mask)).xxxx);
             result = saturate(result * outterGlowFinal);
-        #endif
+    #endif
 
     #endif
 
@@ -402,34 +402,34 @@ fixed4 FragmentProgram(v2f v, float4 shape, float4 icon, float4 bgSample, float4
 
         float3 secondaryDist = secondarySample.rgb;
 
-         #if _MSDF_SECONDARYSHAPE_FILL_HORIZONTAL
+    #if _MSDF_SECONDARYSHAPE_FILL_HORIZONTAL
             float fillAxis = saturate(v.unModUV.x);
-            #if _MSDF_GRADIENT_BACKGROUND_UV
+    #if _MSDF_GRADIENT_BACKGROUND_UV
                fillAxis = saturate(v.uvTwo.z);
-            #endif
+    #endif
             float fillMask = saturate(((fillAxis - _SecondaryShapeFill)) * _SecondaryShapeFillContrast);
             //secondaryDist = saturate(max(secondaryDist,fillMask.xxx));
             //secondaryDist = saturate(secondaryDist - fillMask.xxx);
-         #endif
-         #if _MSDF_SECONDARYSHAPE_FILL_RADIAL
+    #endif
+    #if _MSDF_SECONDARYSHAPE_FILL_RADIAL
             float2 fillAxis = v.uvTwo.xy;
-            #if _MSDF_GRADIENT_BACKGROUND_UV
+    #if _MSDF_GRADIENT_BACKGROUND_UV
                fillAxis = v.uvTwo.zw;
-            #endif
+    #endif
 
             float fillMask = RadialWipe(fillAxis, _SecondaryShapeFill, _SecondaryShapeFillContrast, _SecondaryShapeRotation);
             secondaryDist = saturate(max(secondaryDist, fillMask.xxx));
-         #endif
+    #endif
 
         float alphaOne = BasicMSDF(secondaryDist, secondaryTex, _SecondaryThreshold, _SecondaryErosion, _Softness);
         float alphaTwo = BasicMSDF(secondaryDist, secondaryTex, _SecondaryOutterThreshold, _SecondaryErosion, _Softness);
 
         float secondaryMask = saturate(alphaOne - alphaTwo);
-        #if _MSDF_SECONDARYSHAPE_FILL_HORIZONTAL
+    #if _MSDF_SECONDARYSHAPE_FILL_HORIZONTAL
             secondaryMask *= (1.0 - fillMask).xxx;
-        #endif
+    #endif
 
-        #if _MSDF_SECONDARYSHAPE_OUTTERGLOW
+    #if _MSDF_SECONDARYSHAPE_OUTTERGLOW
 
             float secondaryInner = BasicMSDF(secondaryDist, secondaryTex, _SecondaryThreshold - _SecondaryOutterGlowThreshold, _SecondaryErosion, -_SecondaryOutterGlowSoftness);
             float secondaryOutter = BasicMSDF(secondaryDist, secondaryTex, _SecondaryOutterThreshold + _SecondaryOutterGlowThreshold, _SecondaryErosion, _SecondaryOutterGlowSoftness);
@@ -439,24 +439,24 @@ fixed4 FragmentProgram(v2f v, float4 shape, float4 icon, float4 bgSample, float4
 
             float combinedMask = saturate(secondaryOutter + secondaryInner);
 
-            #if _MSDF_SECONDARYSHAPE_FILL_HORIZONTAL
+    #if _MSDF_SECONDARYSHAPE_FILL_HORIZONTAL
                combinedMask *= (1.0 - fillMask).xxx;
-            #endif
+    #endif
 
-            #if _MSDF_SECONDARYSHAPE_OUTTERGLOW_BLEND_ADD
+    #if _MSDF_SECONDARYSHAPE_OUTTERGLOW_BLEND_ADD
 
                 float secondaryGlowMask = combinedMask * (1.0 - secondaryMask) * _SecondaryOutterGlowBoost;
                 result += saturate(_SecondaryOutterGlowColor * secondaryGlowMask.xxxx);
 
-            #elif _MSDF_SECONDARYSHAPE_OUTTERGLOW_BLEND_MUL
+    #elif _MSDF_SECONDARYSHAPE_OUTTERGLOW_BLEND_MUL
 
                 float secondaryGlowMask = saturate(combinedMask * (1.0 - secondaryMask)) ;
                 result.a += secondaryGlowMask;
                 result.rgb *= saturate(lerp(_SecondaryOutterGlowColor.rgb , float3(1.0, 1.0, 1.0), saturate(_SecondaryOutterGlowBoost * (1.0 - secondaryGlowMask) + secondaryMask)));
                 result.rgb = saturate(result.rgb);
-            #endif
+    #endif
 
-        #endif
+    #endif
 
         result.a = saturate(result.a + secondaryMask);
 
@@ -475,28 +475,28 @@ fixed4 FragmentProgram(v2f v, float4 shape, float4 icon, float4 bgSample, float4
          float iconStrokeAlpha = 0.0;
          float3 iconColor = float3(1.0, 1.0, 1.0);
 
-         #if _MSDF_ICON_ALPHAMODE_MSDF
+    #if _MSDF_ICON_ALPHAMODE_MSDF
             iconAlpha = BasicMSDF(iconTex.rgb, 1.0, _IconThreshold, 0.0, _Softness);
             iconStrokeAlpha = BasicMSDF(iconTex.rgb, 1.0, _IconStrokeThreshold, 0.0, _Softness);
             iconColor = lerp(_IconStrokeColor.rgb, _IconColor.rgb, iconAlpha);
-         #elif _MSDF_ICON_ALPHAMODE_CUTOFF
+    #elif _MSDF_ICON_ALPHAMODE_CUTOFF
             float range = 2.0 * _Softness;
             iconAlpha = SDFSampleInt(iconTex.a, _Softness, _IconThreshold, range);
             iconStrokeAlpha = SDFSampleInt(iconTex.a, _Softness, _IconStrokeThreshold, range);
             iconColor = lerp(_IconStrokeColor.rgb, iconTex.rgb * _IconColor.rgb, iconAlpha);
-         #endif
+    #endif
 
-            //mask the icon so the secondary shape is above it
-         #if _MSDF_ICON_MASK_SECONDARY
+    //mask the icon so the secondary shape is above it
+    #if _MSDF_ICON_MASK_SECONDARY
             float iconMask = lerp(_IconStrokeColor.a, _IconColor.a, iconAlpha) * iconStrokeAlpha * (1.0 - secondaryMask);
-         #else
+    #else
             float iconMask = lerp(_IconStrokeColor.a, _IconColor.a, iconAlpha) * iconStrokeAlpha;
-         #endif
+    #endif
 
-            //mask the icon so it only appears inside the primary shape
-         #if _MSDF_ICON_MASK_PRIMARY
+    //mask the icon so it only appears inside the primary shape
+    #if _MSDF_ICON_MASK_PRIMARY
             iconMask *= bodyAlpha;
-         #endif
+    #endif
 
          result.a = saturate(result.a + iconMask);
          result.rgb = lerp(result.rgb, iconColor.rgb, iconMask);
@@ -504,58 +504,57 @@ fixed4 FragmentProgram(v2f v, float4 shape, float4 icon, float4 bgSample, float4
     #endif
 
 
-
     #if _MSDF_GRADIENT_HORIZONTAL
 
         float4 gH = float4(0.0, 0.0, 0.0, 0.0);
 
         float gradHAxis = v.uvTwo.x;
-         #if _MSDF_GRADIENT_BACKGROUND_UV
+    #if _MSDF_GRADIENT_BACKGROUND_UV
                  gradHAxis = v.uvTwo.z;
-         #endif
+    #endif
 
-        #if _MSDF_GRADIENT_HORIZONTAL_MODE_ZEROTOONE
+    #if _MSDF_GRADIENT_HORIZONTAL_MODE_ZEROTOONE
             gH = ZeroOneGradient(gradHAxis, _GradientHorizontalOffset, _GradientHorizontalContrast, _GradientHorizontalZeroColor, _GradientHorizontalOneColor);
-        #elif _MSDF_GRADIENT_HORIZONTAL_MODE_ZEROONEZERO
+    #elif _MSDF_GRADIENT_HORIZONTAL_MODE_ZEROONEZERO
             gH = ZeroOneZeroGradient(gradHAxis, _GradientHorizontalOffset, _GradientHorizontalContrast, _GradientHorizontalZeroColor, _GradientHorizontalOneColor);
-        #endif
+    #endif
 
-        #if _MSDF_SECONDARYSHAPE
+    #if _MSDF_SECONDARYSHAPE
                 float knockoutMaskH = Knockout(mask, _GradientImpactPrimary, secondaryMask, _GradientImpactSecondary);
 
-               #if _MSDF_ICON
+    #if _MSDF_ICON
                   float iconGradientMaskH = iconMask * _GradientImpactIcon;
                   knockoutMaskH += iconGradientMaskH;
                   knockoutMaskH = saturate(knockoutMaskH);
-               #endif
+    #endif
 
-            #if _MSDF_GRADIENT_HORIZONTAL_BLEND_MUL
+    #if _MSDF_GRADIENT_HORIZONTAL_BLEND_MUL
                 result.rgb = lerp(result.rgb, result.rgb * gH.rgb, knockoutMaskH);
-            #elif _MSDF_GRADIENT_HORIZONTAL_BLEND_ADD
+    #elif _MSDF_GRADIENT_HORIZONTAL_BLEND_ADD
                 result.rgb = lerp(result.rgb, saturate(result.rgb + gH.rgb), knockoutMaskH);
-            #elif _MSDF_GRADIENT_HORIZONTAL_BLEND_OVERLAY
+    #elif _MSDF_GRADIENT_HORIZONTAL_BLEND_OVERLAY
                 result.rgb = lerp(result.rgb, OverlayColor(result.rgb, gH.rgb), knockoutMaskH);
-            #elif _MSDF_GRADIENT_HORIZONTAL_BLEND_NORMAL
+    #elif _MSDF_GRADIENT_HORIZONTAL_BLEND_NORMAL
                   result.rgb = lerp(result.rgb, lerp(result.rgb, gH.rgb, gH.a), knockoutMaskH);
-            #endif
-        #else
+    #endif
+    #else
             float ghMask = 1.0;
 
-            #if _MSDF_ICON
+    #if _MSDF_ICON
                ghMask = Knockout(result.a,1.0,iconAlpha,_GradientImpactIcon);
                ghMask = saturate(ghMask);
-            #endif
+    #endif
 
-            #if _MSDF_GRADIENT_HORIZONTAL_BLEND_MUL
+    #if _MSDF_GRADIENT_HORIZONTAL_BLEND_MUL
                 result.rgb = lerp(result.rgb,result.rgb * gH.rgb, ghMask);
-            #elif _MSDF_GRADIENT_HORIZONTAL_BLEND_ADD
+    #elif _MSDF_GRADIENT_HORIZONTAL_BLEND_ADD
                result.rgb = lerp(result.rgb, saturate(result.rgb + gH.rgb), ghMask);
-            #elif _MSDF_GRADIENT_HORIZONTAL_BLEND_OVERLAY
+    #elif _MSDF_GRADIENT_HORIZONTAL_BLEND_OVERLAY
                 result.rgb = lerp(result.rgb, OverlayColor(result.rgb, gH.rgb), ghMask);
-            #elif _MSDF_GRADIENT_HORIZONTAL_BLEND_NORMAL
+    #elif _MSDF_GRADIENT_HORIZONTAL_BLEND_NORMAL
                result.rgb = lerp(result.rgb, lerp(result.rgb, gH.rgb, gH.a), ghMask);
-            #endif
-        #endif
+    #endif
+    #endif
 
     #endif
 
@@ -564,50 +563,50 @@ fixed4 FragmentProgram(v2f v, float4 shape, float4 icon, float4 bgSample, float4
         float4 gV = float4(0.0,0.0,0.0,0.0);
 
         float gradVAxis = v.uvTwo.y;
-      #if _MSDF_GRADIENT_BACKGROUND_UV
+    #if _MSDF_GRADIENT_BACKGROUND_UV
               gradVAxis = v.uvTwo.w;
-      #endif
+    #endif
 
-        #if _MSDF_GRADIENT_VERTICAL_MODE_ZEROTOONE
+    #if _MSDF_GRADIENT_VERTICAL_MODE_ZEROTOONE
             gV = ZeroOneGradient(gradVAxis, _GradientVerticalOffset, _GradientVerticalContrast, _GradientVerticalZeroColor, _GradientVerticalOneColor);
-        #elif _MSDF_GRADIENT_VERTICAL_MODE_ZEROONEZERO
+    #elif _MSDF_GRADIENT_VERTICAL_MODE_ZEROONEZERO
             gV = ZeroOneZeroGradient(gradVAxis, _GradientVerticalOffset, _GradientVerticalContrast, _GradientVerticalZeroColor, _GradientVerticalOneColor);
-        #endif
+    #endif
 
-        #if _MSDF_SECONDARYSHAPE
+    #if _MSDF_SECONDARYSHAPE
             float knockoutMaskV = Knockout(mask, _GradientImpactPrimary, secondaryMask, _GradientImpactSecondary);
 
-            #if _MSDF_ICON
+    #if _MSDF_ICON
                float iconGradientMaskV = Knockout(knockoutMaskV, 1.0, iconMask,_GradientImpactIcon);
                knockoutMaskV = iconGradientMaskV;
-            #endif
+    #endif
 
-            #if _MSDF_GRADIENT_VERTICAL_BLEND_MUL
+    #if _MSDF_GRADIENT_VERTICAL_BLEND_MUL
                 result.rgb = lerp(result.rgb, result.rgb * gV.rgb, knockoutMaskV);
-            #elif _MSDF_GRADIENT_VERTICAL_BLEND_ADD
+    #elif _MSDF_GRADIENT_VERTICAL_BLEND_ADD
                 result.rgb = lerp(result.rgb, saturate(result.rgb + gV.rgb), knockoutMaskV);
-            #elif _MSDF_GRADIENT_VERTICAL_BLEND_OVERLAY
+    #elif _MSDF_GRADIENT_VERTICAL_BLEND_OVERLAY
                 result.rgb = lerp(result.rgb, OverlayColor(result.rgb, gV.rgb), knockoutMaskV);
-            #elif _MSDF_GRADIENT_VERTICAL_BLEND_NORMAL
+    #elif _MSDF_GRADIENT_VERTICAL_BLEND_NORMAL
                result.rgb = lerp(result.rgb, lerp(result.rgb, gV.rgb, gV.a), knockoutMaskV * gV.a);
-            #endif
-        #else
+    #endif
+    #else
             float gvMask = 1.0;
 
-            #if _MSDF_ICON
+    #if _MSDF_ICON
                gvMask = Knockout(result.a, 1.0, iconAlpha, _GradientImpactIcon);
-            #endif
+    #endif
 
-            #if _MSDF_GRADIENT_VERTICAL_BLEND_MUL
+    #if _MSDF_GRADIENT_VERTICAL_BLEND_MUL
                result.rgb = lerp(result.rgb, result.rgb * gV.rgb, gvMask);
-            #elif _MSDF_GRADIENT_VERTICAL_BLEND_ADD
+    #elif _MSDF_GRADIENT_VERTICAL_BLEND_ADD
                result.rgb = lerp(result.rgb, result.rgb + gV.rgb, gvMask);
-            #elif _MSDF_GRADIENT_VERTICAL_BLEND_OVERLAY
+    #elif _MSDF_GRADIENT_VERTICAL_BLEND_OVERLAY
                result.rgb = lerp(result.rgb, OverlayColor(result.rgb, gV.rgb), gvMask);
-            #elif _MSDF_GRADIENT_VERTICAL_BLEND_NORMAL
+    #elif _MSDF_GRADIENT_VERTICAL_BLEND_NORMAL
                result.rgb = lerp(result.rgb, lerp(result.rgb, gV.rgb, gV.a), gvMask);
-            #endif
-        #endif
+    #endif
+    #endif
 
     #endif
 
@@ -618,42 +617,42 @@ fixed4 FragmentProgram(v2f v, float4 shape, float4 icon, float4 bgSample, float4
         float2 center = float2(0.5,0.5);
 
         float2 gradRAxis = v.uvTwo.xy;
-      #if _MSDF_GRADIENT_BACKGROUND_UV
+    #if _MSDF_GRADIENT_BACKGROUND_UV
               gradRAxis = v.uvTwo.zw;
-      #endif
+    #endif
 
         gR = RadialGradient(gradRAxis, center, _GradientRadialSize, _GradientRadialContrast, _GradientRadialZeroColor, _GradientRadialOneColor);
 
-        #if _MSDF_SECONDARYSHAPE
+    #if _MSDF_SECONDARYSHAPE
             float knockoutMaskR = Knockout(mask, _GradientImpactPrimary, secondaryMask, _GradientImpactSecondary);
 
-            #if _MSDF_ICON
+    #if _MSDF_ICON
                float iconGradientMaskR = iconMask * _GradientImpactIcon;
                knockoutMaskR += iconGradientMaskR;
-            #endif
+    #endif
 
-            #if _MSDF_GRADIENT_RADIAL_BLEND_MUL
+    #if _MSDF_GRADIENT_RADIAL_BLEND_MUL
                 result.rgb = lerp(result.rgb, result.rgb * gR.rgb, knockoutMaskR);
-            #elif _MSDF_GRADIENT_RADIAL_BLEND_ADD
+    #elif _MSDF_GRADIENT_RADIAL_BLEND_ADD
                 result.rgb = lerp(result.rgb, result.rgb + gR.rgb, knockoutMaskR);
-            #elif _MSDF_GRADIENT_RADIAL_BLEND_OVERLAY
+    #elif _MSDF_GRADIENT_RADIAL_BLEND_OVERLAY
                 result.rgb = lerp(result.rgb, OverlayColor(result.rgb, gR.rgb), knockoutMaskR);
-            #endif
-        #else
+    #endif
+    #else
             float grMask = 1.0;
 
-            #if _MSDF_ICON
+    #if _MSDF_ICON
                grMask = Knockout(result.a, 1.0, iconAlpha, _GradientImpactIcon);
-            #endif
+    #endif
 
-            #if _MSDF_GRADIENT_RADIAL_BLEND_MUL
+    #if _MSDF_GRADIENT_RADIAL_BLEND_MUL
                result.rgb = lerp(result.rgb, result.rgb * gR.rgb, grMask);
-            #elif _MSDF_GRADIENT_RADIAL_BLEND_ADD
+    #elif _MSDF_GRADIENT_RADIAL_BLEND_ADD
                result.rgb = lerp(result.rgb, saturate(result.rgb + gR.rgb), grMask);
-            #elif _MSDF_GRADIENT_RADIAL_BLEND_OVERLAY
+    #elif _MSDF_GRADIENT_RADIAL_BLEND_OVERLAY
                result.rgb = lerp(result.rgb, OverlayColor(result.rgb, gR.rgb), grMask);
-            #endif
-        #endif
+    #endif
+    #endif
     #endif
 
     #if _MSDF_SHINE
@@ -668,21 +667,21 @@ fixed4 FragmentProgram(v2f v, float4 shape, float4 icon, float4 bgSample, float4
 
         float3 shineColor = saturate(_ShineColor.rgb * shine * _ShineBoost);
 //return float4(shineColor, 1);
-        #if _MSDF_SECONDARYSHAPE
+    #if _MSDF_SECONDARYSHAPE
             float knockoutMaskS = Knockout(combinedShine, 1.0, secondaryMask, _ShineImpactSecondary);
-           #if _MSDF_ICON
+    #if _MSDF_ICON
                float iconShineMask = iconMask * _ShineImpactIcon;
                knockoutMaskS += iconShineMask;
-            #endif
+    #endif
                result.rgb = lerp(result.rgb, result.rgb + shineColor, knockoutMaskS);
-        #else
-            #if _MSDF_ICON
+    #else
+    #if _MSDF_ICON
                float knockoutMaskS = Knockout(combinedShine, 1.0, iconMask, _ShineImpactIcon);
                result.rgb += lerp(result.rgb, saturate(result.rgb + shineColor), knockoutMaskS);
-            #else
+    #else
                result.rgb += saturate(shineColor * combinedShine);
-            #endif
-        #endif
+    #endif
+    #endif
     #endif
 
     result.rgb = Greyscale(result.rgb, _Greyscale);

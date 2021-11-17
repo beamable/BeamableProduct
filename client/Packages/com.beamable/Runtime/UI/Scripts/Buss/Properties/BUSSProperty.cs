@@ -1,23 +1,27 @@
 namespace Beamable.UI.Buss.Properties
 {
-   public abstract class BUSSProperty
-   {
-      public bool Enabled;
-      public bool HasAnyStyles => Enabled && AnyDefinition;
-      protected abstract bool AnyDefinition { get; }
-   }
+	public abstract class BUSSProperty
+	{
+		public bool Enabled;
+		public bool HasAnyStyles => Enabled && AnyDefinition;
 
-   public static class BUSSPropertyExtensions
-   {
-      public static bool IsDefined(this BUSSProperty self)
-      {
-         return self != null && self.Enabled;
-      }
-   }
+		protected abstract bool AnyDefinition
+		{
+			get;
+		}
+	}
 
-   public interface IBUSSProperty<T> where T : BUSSProperty
-   {
-      T OverrideWith(T other);
-      T Clone();
-   }
+	public static class BUSSPropertyExtensions
+	{
+		public static bool IsDefined(this BUSSProperty self)
+		{
+			return self != null && self.Enabled;
+		}
+	}
+
+	public interface IBUSSProperty<T> where T : BUSSProperty
+	{
+		T OverrideWith(T other);
+		T Clone();
+	}
 }

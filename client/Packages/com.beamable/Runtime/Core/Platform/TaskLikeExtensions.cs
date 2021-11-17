@@ -8,43 +8,46 @@ using UnityEngine;
 
 namespace Core.Platform
 {
+	public abstract class BeamableTaskLike<TResult> : ITaskLike<TResult, BeamableTaskLike<TResult>>
+	{
+		public abstract TResult GetResult();
 
+		public abstract bool IsCompleted
+		{
+			get;
+		}
 
-   public abstract class BeamableTaskLike<TResult> : ITaskLike<TResult, BeamableTaskLike<TResult>>
-   {
+		public Guid Id
+		{
+			get;
+		} = Guid.NewGuid();
 
+		public BeamableTaskLike<TResult> GetAwaiter()
+		{
+			return this;
+		}
 
-      public abstract TResult GetResult();
-      public abstract bool IsCompleted { get; }
+		void ICriticalNotifyCompletion.UnsafeOnCompleted(Action continuation)
+		{
+			var coroutineService = ServiceManager.Resolve<CoroutineService>();
+			var waitForFrame = new WaitForEndOfFrame();
 
-      public Guid Id { get; } = Guid.NewGuid();
+			IEnumerator Routine()
+			{
+				while (!IsCompleted)
+				{
+					yield return waitForFrame;
+				}
 
-      public BeamableTaskLike<TResult> GetAwaiter()
-      {
-         return this;
-      }
+				continuation();
+			}
 
-      void ICriticalNotifyCompletion.UnsafeOnCompleted(Action continuation)
-      {
-         var coroutineService = ServiceManager.Resolve<CoroutineService>();
-         var waitForFrame = new WaitForEndOfFrame();
+			coroutineService.StartNew($"task-like-{Id}", Routine());
+		}
 
-         IEnumerator Routine()
-         {
-            while (!IsCompleted)
-            {
-               yield return waitForFrame;
-            }
-
-            continuation();
-         }
-
-         coroutineService.StartNew($"task-like-{Id}", Routine());
-      }
-
-      void INotifyCompletion.OnCompleted(Action continuation)
-      {
-         ((ICriticalNotifyCompletion) this).UnsafeOnCompleted(continuation);
-      }
-   }
+		void INotifyCompletion.OnCompleted(Action continuation)
+		{
+			((ICriticalNotifyCompletion)this).UnsafeOnCompleted(continuation);
+		}
+	}
 }

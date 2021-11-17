@@ -13,37 +13,34 @@ using UnityEngine.UI;
 
 namespace Beamable.Inventory.Scripts
 {
+	[System.Serializable]
+	public class InventoryUpdateArg
+	{
+		public List<ItemView> Inventory;
+		public InventoryGroup Group;
+	}
 
-    [System.Serializable]
-    public class InventoryUpdateArg
-    {
-        public List<ItemView> Inventory;
-        public InventoryGroup Group;
-    }
+	public class InventorySignals : DeSignalTower
+	{
+		public ToggleEvent OnToggleInventory;
 
-    public class InventorySignals : DeSignalTower
-    {
-        public ToggleEvent OnToggleInventory;
+		private static bool _toggleState;
 
-        private static bool _toggleState;
+		public void ToggleInventory()
+		{
+			ToggleInventory(!_toggleState);
+		}
 
+		public void ToggleInventory(bool desiredState)
+		{
+			if (_toggleState == desiredState) return;
+			_toggleState = desiredState;
+			Broadcast(_toggleState, s => s.OnToggleInventory);
+		}
 
-        public void ToggleInventory()
-        {
-            ToggleInventory(!_toggleState);
-        }
-
-        public void ToggleInventory(bool desiredState)
-        {
-            if (_toggleState == desiredState) return;
-            _toggleState = desiredState;
-            Broadcast(_toggleState, s => s.OnToggleInventory);
-        }
-
-        private void Broadcast<TArg>(TArg arg, Func<InventorySignals, DeSignal<TArg>> getter)
-        {
-            this.BroadcastSignal(arg, getter);
-        }
-
-    }
+		private void Broadcast<TArg>(TArg arg, Func<InventorySignals, DeSignal<TArg>> getter)
+		{
+			this.BroadcastSignal(arg, getter);
+		}
+	}
 }

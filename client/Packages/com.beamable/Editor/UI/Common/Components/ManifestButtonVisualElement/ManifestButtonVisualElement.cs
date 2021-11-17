@@ -16,118 +16,122 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-    public class ManifestButtonVisualElement : BeamableVisualElement
-    {
-        public new class UxmlFactory : UxmlFactory<ManifestButtonVisualElement, UxmlTraits>
-        {
-        }
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
+	public class ManifestButtonVisualElement : BeamableVisualElement
+	{
+		public new class UxmlFactory : UxmlFactory<ManifestButtonVisualElement, UxmlTraits> { }
 
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
+		public new class UxmlTraits : VisualElement.UxmlTraits
+		{
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
+				get
+				{
+					yield break;
+				}
+			}
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                var self = ve as ManifestButtonVisualElement;
-            }
-        }
-        private ManifestModel Model { get; set; }
-        private Button _manifestButton;
-        private Label _manifestLabel;
+			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+			{
+				base.Init(ve, bag, cc);
+				var self = ve as ManifestButtonVisualElement;
+			}
+		}
 
-        public ManifestButtonVisualElement() : base(
-            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(ManifestButtonVisualElement)}/{nameof(ManifestButtonVisualElement)}")
-        {
+		private ManifestModel Model
+		{
+			get;
+			set;
+		}
 
-        }
+		private Button _manifestButton;
+		private Label _manifestLabel;
 
-        public override void Refresh()
-        {
-            base.Refresh();
-            Model = new ManifestModel();
-            Model.OnAvailableElementsChanged -= HandleAvailableManifestsChanged;
-            Model.OnAvailableElementsChanged += HandleAvailableManifestsChanged;
-            visible = false;
-            Model.Initialize();
-            _manifestButton = Root.Q<Button>("manifestButton");
-            _manifestButton.clickable.clicked += () => { OnButtonClicked(_manifestButton.worldBound); };
+		public ManifestButtonVisualElement() : base(
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(ManifestButtonVisualElement)}/{nameof(ManifestButtonVisualElement)}") { }
 
-            _manifestLabel = _manifestButton.Q<Label>();
-            if (Model.Current == null || Model.Current.DisplayName == null)
-            {
-                _manifestLabel.text = "Select manifest ID";
-            }
-            else
-            {
-                _manifestLabel.text = Model.Current?.DisplayName;
-            }
-            Model.OnElementChanged -= HandleManifestChanged;
-            Model.OnElementChanged += HandleManifestChanged;
-        }
+		public override void Refresh()
+		{
+			base.Refresh();
+			Model = new ManifestModel();
+			Model.OnAvailableElementsChanged -= HandleAvailableManifestsChanged;
+			Model.OnAvailableElementsChanged += HandleAvailableManifestsChanged;
+			visible = false;
+			Model.Initialize();
+			_manifestButton = Root.Q<Button>("manifestButton");
+			_manifestButton.clickable.clicked += () =>
+			{
+				OnButtonClicked(_manifestButton.worldBound);
+			};
 
-        private void HandleAvailableManifestsChanged(List<ISearchableElement> ids)
-        {
-            bool manyManifests = ids?.Count > 1;
-            bool nonDefaultManifest = ids?.Count == 1 && ids[0].DisplayName != BeamableConstants.DEFAULT_MANIFEST_ID;
+			_manifestLabel = _manifestButton.Q<Label>();
+			if (Model.Current == null || Model.Current.DisplayName == null)
+			{
+				_manifestLabel.text = "Select manifest ID";
+			}
+			else
+			{
+				_manifestLabel.text = Model.Current?.DisplayName;
+			}
 
-            visible = manyManifests || nonDefaultManifest;
-        }
+			Model.OnElementChanged -= HandleManifestChanged;
+			Model.OnElementChanged += HandleManifestChanged;
+		}
 
+		private void HandleAvailableManifestsChanged(List<ISearchableElement> ids)
+		{
+			bool manyManifests = ids?.Count > 1;
+			bool nonDefaultManifest = ids?.Count == 1 && ids[0].DisplayName != BeamableConstants.DEFAULT_MANIFEST_ID;
 
-        private void HandleManifestChanged(ISearchableElement manifest)
-        {
-            _manifestLabel.text = Model.Current != null ? Model.Current.DisplayName : null;
-        }
+			visible = manyManifests || nonDefaultManifest;
+		}
 
-        private void OnButtonClicked(Rect visualElementBounds)
-        {
-            var popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
+		private void HandleManifestChanged(ISearchableElement manifest)
+		{
+			_manifestLabel.text = Model.Current != null ? Model.Current.DisplayName : null;
+		}
 
-            var content = new SearchabledDropdownVisualElement(string.Empty)
-            {
-                Model = Model
-            };
+		private void OnButtonClicked(Rect visualElementBounds)
+		{
+			var popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
 
-            var wnd = BeamablePopupWindow.ShowDropdown("Select Manifest", popupWindowRect, new Vector2(200, 300), content);
+			var content = new SearchabledDropdownVisualElement(string.Empty) {Model = Model};
 
-            content.OnElementDelete += (manifest) =>
-            {
-                if (manifest != null)
-                {
-                    var deleteManifestDecision = EditorUtility.DisplayDialog(
-                            "Deleting manifest version",
-                            $"Are you sure you want to archive manifest named '{manifest.DisplayName}'\n" +
-                            $"This operation will archive it permanently for all users!",
-                            "Yes", "No");
+			var wnd = BeamablePopupWindow.ShowDropdown("Select Manifest", popupWindowRect, new Vector2(200, 300),
+			                                           content);
 
-                    if (deleteManifestDecision)
-                    {
-                        EditorAPI.Instance.Then(api =>
-                        {
-                            api.ContentIO.ArchiveManifests(manifest.DisplayName);
-                        });
-                    }
-                }
-            };
+			content.OnElementDelete += (manifest) =>
+			{
+				if (manifest != null)
+				{
+					var deleteManifestDecision = EditorUtility.DisplayDialog(
+						"Deleting manifest version",
+						$"Are you sure you want to archive manifest named '{manifest.DisplayName}'\n" +
+						$"This operation will archive it permanently for all users!",
+						"Yes", "No");
 
-            content.OnElementSelected += (manifest) =>
-            {
-                EditorAPI.Instance.Then(api =>
-                {
-                    if (manifest != null)
-                    {
-                        api.ContentIO.SwitchManifest(manifest.DisplayName);
-                    }
+					if (deleteManifestDecision)
+					{
+						EditorAPI.Instance.Then(api =>
+						{
+							api.ContentIO.ArchiveManifests(manifest.DisplayName);
+						});
+					}
+				}
+			};
 
-                    wnd.Close();
-                });
-            };
-            content.Refresh();
-        }
+			content.OnElementSelected += (manifest) =>
+			{
+				EditorAPI.Instance.Then(api =>
+				{
+					if (manifest != null)
+					{
+						api.ContentIO.SwitchManifest(manifest.DisplayName);
+					}
 
-    }
+					wnd.Close();
+				});
+			};
+			content.Refresh();
+		}
+	}
 }

@@ -10,43 +10,35 @@ using NUnit.Framework;
 
 namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
 {
-   public class InventoryServiceTestBase
-   {
-      public const string ROUTE = "/basic/accounts";
-      public const string SERVICE_URL = "/object/inventory";
+	public class InventoryServiceTestBase
+	{
+		public const string ROUTE = "/basic/accounts";
+		public const string SERVICE_URL = "/object/inventory";
 
-      protected MockPlatformAPI _requester;
-      protected MockPlatformService _platform;
-      protected InventoryService _service;
-      protected MockContentService _content;
+		protected MockPlatformAPI _requester;
+		protected MockPlatformService _platform;
+		protected InventoryService _service;
+		protected MockContentService _content;
 
-      protected string objectUrl;
+		protected string objectUrl;
 
-      [SetUp]
-      public void Init()
-      {
-         _requester = new MockPlatformAPI();
-         _platform = new MockPlatformService();
-         _content = new MockContentService();
-         ServiceManager.ProvideWithDefaultContainer(new ContentParameterProvider{manifestID = "global"});
-         ContentApi.Instance = Promise<IContentApi>.Successful(_content);
+		[SetUp]
+		public void Init()
+		{
+			_requester = new MockPlatformAPI();
+			_platform = new MockPlatformService();
+			_content = new MockContentService();
+			ServiceManager.ProvideWithDefaultContainer(new ContentParameterProvider {manifestID = "global"});
+			ContentApi.Instance = Promise<IContentApi>.Successful(_content);
 
-         _platform.User = new User
-         {
-            id = 1234
-         };
+			_platform.User = new User {id = 1234};
 
-         _service = new InventoryService(_platform, _requester);
+			_service = new InventoryService(_platform, _requester);
 
-         objectUrl = $"{SERVICE_URL}/{_platform.UserId}";
-      }
+			objectUrl = $"{SERVICE_URL}/{_platform.UserId}";
+		}
 
-      [TearDown]
-      public void Cleanup()
-      {
-
-      }
-   }
-
-
+		[TearDown]
+		public void Cleanup() { }
+	}
 }

@@ -2,27 +2,30 @@
 
 namespace PubNubMessaging.Core
 {
-    #region "Unit test interface"
-    public interface IPubnubUnitTest
-    {
-        bool EnableStubTest {
-            get;
-            set;
-        }
+	#region "Unit test interface"
 
-        string TestClassName {
-            get;
-            set;
-        }
+	public interface IPubnubUnitTest
+	{
+		bool EnableStubTest
+		{
+			get;
+			set;
+		}
 
-        string TestCaseName {
-            get;
-            set;
-        }
+		string TestClassName
+		{
+			get;
+			set;
+		}
 
-        //string GetStubResponse (HttpWebRequest request);
-    }
-    #endregion
+		string TestCaseName
+		{
+			get;
+			set;
+		}
 
+		//string GetStubResponse (HttpWebRequest request);
+	}
+
+	#endregion
 }
-

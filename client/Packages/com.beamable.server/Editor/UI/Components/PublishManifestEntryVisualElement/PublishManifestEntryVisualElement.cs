@@ -17,87 +17,92 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
-   public class PublishManifestEntryVisualElement : MicroserviceComponent
-   {
-      private static readonly string[] TemplateSizes = {"small", "medium", "large"};
+	public class PublishManifestEntryVisualElement : MicroserviceComponent
+	{
+		private static readonly string[] TemplateSizes = {"small", "medium", "large"};
 
-      private const string MICROSERVICE_IMAGE_CLASS = "microserviceImage";
-      private const string STORAGE_IMAGE_CLASS = "storageImage";
-      private const string UNPUBLISHED_IMAGE_CLASS = "unpublished";
-      private const string PUBLISHED_IMAGE_CLASS = "published";
-      
-      public IEntryModel Model { get; }
+		private const string MICROSERVICE_IMAGE_CLASS = "microserviceImage";
+		private const string STORAGE_IMAGE_CLASS = "storageImage";
+		private const string UNPUBLISHED_IMAGE_CLASS = "unpublished";
+		private const string PUBLISHED_IMAGE_CLASS = "published";
 
-      private bool wasPublished;
-      private bool oddRow;
+		public IEntryModel Model
+		{
+			get;
+		}
 
-      public PublishManifestEntryVisualElement(IEntryModel model, bool argWasPublished, bool isOddRow) : base(nameof(PublishManifestEntryVisualElement))
-      {
-         Model = model;
-         wasPublished = argWasPublished;
-         oddRow = isOddRow;
-      }
+		private bool wasPublished;
+		private bool oddRow;
 
-      public override void Refresh()
-      {
-         base.Refresh();
+		public PublishManifestEntryVisualElement(IEntryModel model, bool argWasPublished, bool isOddRow) : base(
+			nameof(PublishManifestEntryVisualElement))
+		{
+			Model = model;
+			wasPublished = argWasPublished;
+			oddRow = isOddRow;
+		}
 
-         var checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
-         checkbox.Refresh();
-         checkbox.SetWithoutNotify(Model.Enabled);
-         checkbox.OnValueChanged += b => Model.Enabled = b;
+		public override void Refresh()
+		{
+			base.Refresh();
 
-         var sizeDropdown = Root.Q<DropdownVisualElement>("sizeDropdown");
-         sizeDropdown.Setup(TemplateSizes.ToList(), null);
-         sizeDropdown.Refresh();
+			var checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
+			checkbox.Refresh();
+			checkbox.SetWithoutNotify(Model.Enabled);
+			checkbox.OnValueChanged += b => Model.Enabled = b;
 
-         var nameLabel = Root.Q<Label>("nameMS");
-         nameLabel.text = Model.Name;
+			var sizeDropdown = Root.Q<DropdownVisualElement>("sizeDropdown");
+			sizeDropdown.Setup(TemplateSizes.ToList(), null);
+			sizeDropdown.Refresh();
 
-         var commentField = Root.Q<TextField>("commentsText");
-         commentField.value = Model.Comment;
-         commentField.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
-         
-         var icon = Root.Q<Image>("typeImage");
+			var nameLabel = Root.Q<Label>("nameMS");
+			nameLabel.text = Model.Name;
 
-         if (Model is ManifestEntryModel serviceModel)
-         {
-            icon.AddToClassList(MICROSERVICE_IMAGE_CLASS);
+			var commentField = Root.Q<TextField>("commentsText");
+			commentField.value = Model.Comment;
+			commentField.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
 
-            if (MicroserviceConfiguration.Instance.EnableStoragePreview)
-            {
-               var microserviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(serviceModel.Name);
+			var icon = Root.Q<Image>("typeImage");
 
-               if (microserviceModel != null && microserviceModel.Dependencies != null)
-               {
-                  List<string> dependencies = new List<string>();
-                  foreach (var dep in microserviceModel.Dependencies)
-                  {
-                     dependencies.Add(dep.Name);
-                  }
-               
-                  var depsList = Root.Q<ExpandableListVisualElement>("depsList");
-                  depsList.Setup(dependencies);
-               }  
-            }
-         }
-         else
-         {
-            icon.AddToClassList(STORAGE_IMAGE_CLASS);
-         }
+			if (Model is ManifestEntryModel serviceModel)
+			{
+				icon.AddToClassList(MICROSERVICE_IMAGE_CLASS);
 
-         SetPublishedIcon();
+				if (MicroserviceConfiguration.Instance.EnableStoragePreview)
+				{
+					var microserviceModel =
+						MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(serviceModel.Name);
 
-         if (oddRow)
-         {
-            Root.Q<VisualElement>("row").AddToClassList("oddRow");
-         }
-      }
+					if (microserviceModel != null && microserviceModel.Dependencies != null)
+					{
+						List<string> dependencies = new List<string>();
+						foreach (var dep in microserviceModel.Dependencies)
+						{
+							dependencies.Add(dep.Name);
+						}
 
-      private void SetPublishedIcon()
-      {
-         string ussClass = wasPublished ? PUBLISHED_IMAGE_CLASS : UNPUBLISHED_IMAGE_CLASS;
-         Root.Q<Image>("checkImage").AddToClassList(ussClass);
-      }
-   }
+						var depsList = Root.Q<ExpandableListVisualElement>("depsList");
+						depsList.Setup(dependencies);
+					}
+				}
+			}
+			else
+			{
+				icon.AddToClassList(STORAGE_IMAGE_CLASS);
+			}
+
+			SetPublishedIcon();
+
+			if (oddRow)
+			{
+				Root.Q<VisualElement>("row").AddToClassList("oddRow");
+			}
+		}
+
+		private void SetPublishedIcon()
+		{
+			string ussClass = wasPublished ? PUBLISHED_IMAGE_CLASS : UNPUBLISHED_IMAGE_CLASS;
+			Root.Q<Image>("checkImage").AddToClassList(ussClass);
+		}
+	}
 }

@@ -4,14 +4,14 @@
     align-items: center;
 }
 
-#icon{
+#icon {
     width: 15px;
     height: 15px;
     align-self: center;
-	margin-right: 4px;
-	margin-left: 4px;
+    margin-right: 4px;
+    margin-left: 4px;
 }
 
-#label{
+#label {
     flex-grow: 1;
 }

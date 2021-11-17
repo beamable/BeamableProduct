@@ -8,46 +8,38 @@ using UnityEngine.Events;
 
 public class DePromptBehaviour : MonoBehaviour
 {
+	public DeButtonBehaviour Button;
+	public TextMeshProUGUI Title;
+	public TextMeshProUGUI Message;
 
-    public DeButtonBehaviour Button;
-    public TextMeshProUGUI Title;
-    public TextMeshProUGUI Message;
+	public UnityEvent OnClicked;
 
-    public UnityEvent OnClicked;
+	// Start is called before the first frame update
+	void Start() { }
 
-    // Start is called before the first frame update
-    void Start()
-    {
+	// Update is called once per frame
+	void Update() { }
 
-    }
+	public void Set(DePromptData data)
+	{
+		if (!string.IsNullOrEmpty(data.Title))
+		{
+			Title.text = data.Title;
+		}
 
-    // Update is called once per frame
-    void Update()
-    {
+		if (!string.IsNullOrEmpty(data.Message))
+		{
+			Message.text = data.Message;
+		}
 
-    }
+		if (!string.IsNullOrEmpty(data.ButtonText))
+		{
+			Button.Text = data.ButtonText;
+		}
+	}
 
-    public void Set(DePromptData data)
-    {
-        if (!string.IsNullOrEmpty(data.Title))
-        {
-            Title.text = data.Title;
-        }
-
-        if (!string.IsNullOrEmpty(data.Message))
-        {
-            Message.text = data.Message;
-
-        }
-
-        if (!string.IsNullOrEmpty(data.ButtonText))
-        {
-            Button.Text = data.ButtonText;
-        }
-    }
-
-    public void Trigger()
-    {
-        OnClicked?.Invoke();
-    }
+	public void Trigger()
+	{
+		OnClicked?.Invoke();
+	}
 }

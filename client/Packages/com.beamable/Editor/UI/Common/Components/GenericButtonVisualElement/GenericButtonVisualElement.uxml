@@ -5,13 +5,13 @@
         xmlns:beamable="Beamable.Editor.UI.Components"
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
-    
-    <engine:VisualElement name="mainVisualElement">
-      <engine:Button name="button">
-        <!--        <beamable:LoadingSpinnerVisualElement size="15"/>-->
 
-      </engine:Button>-->
+    <engine:VisualElement name="mainVisualElement">
+        <engine:Button name="button">
+            <!--        <beamable:LoadingSpinnerVisualElement size="15"/>-->
+
+        </engine:Button>-->
     </engine:VisualElement>
-    
+
 
 </engine:UXML>

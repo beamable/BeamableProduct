@@ -7,11 +7,11 @@
         xmlns:beamable="Beamable.Editor.UI.Components">
 
     <engine:VisualElement name="mainVisualElement">
-        <engine:Button  name="openPortalButton" text="Open Portal"/>
+        <engine:Button name="openPortalButton" text="Open Portal"/>
         <beamable:RealmButtonVisualElement name="realmButton"/>
-<!--        <engine:Button class="unboundedButton" name="accountButton">-->
-<!--            <engine:Image name="accountIcon"/>-->
-<!--        </engine:Button>-->
+        <!--        <engine:Button class="unboundedButton" name="accountButton">-->
+        <!--            <engine:Image name="accountIcon"/>-->
+        <!--        </engine:Button>-->
     </engine:VisualElement>
 
 </engine:UXML>

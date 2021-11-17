@@ -3,195 +3,205 @@ using System.Collections.Generic;
 
 namespace PubNubMessaging.Core
 {
-    public class SafeDictionary<TKey, TValue>: IDictionary<TKey, TValue>
-    {
-        private readonly object syncRoot = new object();
-        private Dictionary<TKey, TValue> d = new Dictionary<TKey, TValue>();
+	public class SafeDictionary<TKey, TValue> : IDictionary<TKey, TValue>
+	{
+		private readonly object syncRoot = new object();
+		private Dictionary<TKey, TValue> d = new Dictionary<TKey, TValue>();
 
-        #region IDictionary<TKey,TValueMembers>
+		#region IDictionary<TKey,TValueMembers>
 
-        public void Add(TKey key, TValue value)
-        {
-            lock (syncRoot)
-            {
-                d.Add(key, value);
-            }
-        }
-       
-        public TValue AddOrUpdate(TKey key, TValue value, Func<TKey, TValue, TValue> f)
-        {
-            lock (syncRoot)
-            {
-                if (d.ContainsKey (key)) {
-                    d [key] = value;
-                } else {
-                    d.Add (key, value);
-                }
+		public void Add(TKey key, TValue value)
+		{
+			lock (syncRoot)
+			{
+				d.Add(key, value);
+			}
+		}
 
-                return d [key];
-            }
-        }
+		public TValue AddOrUpdate(TKey key, TValue value, Func<TKey, TValue, TValue> f)
+		{
+			lock (syncRoot)
+			{
+				if (d.ContainsKey(key))
+				{
+					d[key] = value;
+				}
+				else
+				{
+					d.Add(key, value);
+				}
 
-        public TValue GetOrAdd(TKey key, TValue value)
-        {
-            lock (syncRoot)
-            {
-                TValue val;
-                if (d.TryGetValue (key, out val)) {
-                    return val;
-                } else {
-                    d.Add(key, value);
-                    return d [key];
-                }
-            }
-        }
+				return d[key];
+			}
+		}
 
-        public bool ContainsKey(TKey key)
-        {
-            return d.ContainsKey(key);
-        }
+		public TValue GetOrAdd(TKey key, TValue value)
+		{
+			lock (syncRoot)
+			{
+				TValue val;
+				if (d.TryGetValue(key, out val))
+				{
+					return val;
+				}
+				else
+				{
+					d.Add(key, value);
+					return d[key];
+				}
+			}
+		}
 
-        public ICollection<TKey> Keys
-        {
-            get
-            {
-                lock (syncRoot)
-                {
-                    return d.Keys;
-                }
-            }
-        }
+		public bool ContainsKey(TKey key)
+		{
+			return d.ContainsKey(key);
+		}
 
-        public bool Remove(TKey key){
-            throw new NotImplementedException ();
-        }
+		public ICollection<TKey> Keys
+		{
+			get
+			{
+				lock (syncRoot)
+				{
+					return d.Keys;
+				}
+			}
+		}
 
-        public bool Remove(TKey key, out TValue value)
-        {
-            lock (syncRoot)
-            {
-                d.TryGetValue(key, out value);
-                return d.Remove(key);
-            }
-        }
+		public bool Remove(TKey key)
+		{
+			throw new NotImplementedException();
+		}
 
-        public bool TryRemove(TKey key, out TValue value)
-        {
-            return Remove (key, out value);
-        }
+		public bool Remove(TKey key, out TValue value)
+		{
+			lock (syncRoot)
+			{
+				d.TryGetValue(key, out value);
+				return d.Remove(key);
+			}
+		}
 
-        public bool TryGetValue(TKey key, out TValue value)
-        {
-            lock (syncRoot)
-            {
-                return d.TryGetValue(key, out value);
-            }
-        }
+		public bool TryRemove(TKey key, out TValue value)
+		{
+			return Remove(key, out value);
+		}
 
-        public ICollection<TValue> Values
-        {
-            get
-            {
-                lock (syncRoot)
-                {
-                    return d.Values;
-                }
-            }
-        }
+		public bool TryGetValue(TKey key, out TValue value)
+		{
+			lock (syncRoot)
+			{
+				return d.TryGetValue(key, out value);
+			}
+		}
 
-        public TValue this[TKey key]
-        {
-            get
-            {
-                return d[key];
-            }
-            set
-            {
-                lock (syncRoot)
-                {
-                    d[key] = value;
-                }
-            }
-        }
+		public ICollection<TValue> Values
+		{
+			get
+			{
+				lock (syncRoot)
+				{
+					return d.Values;
+				}
+			}
+		}
 
-        #endregion
+		public TValue this[TKey key]
+		{
+			get
+			{
+				return d[key];
+			}
+			set
+			{
+				lock (syncRoot)
+				{
+					d[key] = value;
+				}
+			}
+		}
 
-        #region ICollection<KeyValuePair<TKey,TValue>Members
+		#endregion
 
-        public void Add (KeyValuePair<TKey,TValue> item)
-        {
-            lock (syncRoot)
-            {
-                ((ICollection<KeyValuePair<TKey, TValue>>)d).Add(item);
-            }
-        }
+		#region ICollection<KeyValuePair<TKey,TValue>Members
 
-        public void Clear()
-        {
-            lock (syncRoot)
-            {
-                d.Clear();
-            }
-        }
+		public void Add(KeyValuePair<TKey, TValue> item)
+		{
+			lock (syncRoot)
+			{
+				((ICollection<KeyValuePair<TKey, TValue>>)d).Add(item);
+			}
+		}
 
-        public bool Contains(KeyValuePair<TKey, TValue>item)
-        {
-            return ((ICollection<KeyValuePair<TKey,
-                TValue>>)d).Contains(item);
-        }
+		public void Clear()
+		{
+			lock (syncRoot)
+			{
+				d.Clear();
+			}
+		}
 
-        public void CopyTo(KeyValuePair<TKey, TValue>[] array, int
-            arrayIndex)
-        {
-            lock (syncRoot)
-            {
-                ((ICollection<KeyValuePair<TKey, TValue>>)d).CopyTo(array,
-                    arrayIndex);
-            }
-        }
+		public bool Contains(KeyValuePair<TKey, TValue> item)
+		{
+			return ((ICollection<KeyValuePair<TKey,
+				TValue>>)d).Contains(item);
+		}
 
-        public int Count
-        {
-            get
-            {
-                return d.Count;
-            }
-        }
+		public void CopyTo(KeyValuePair<TKey, TValue>[] array,
+		                   int
+			                   arrayIndex)
+		{
+			lock (syncRoot)
+			{
+				((ICollection<KeyValuePair<TKey, TValue>>)d).CopyTo(array,
+				                                                    arrayIndex);
+			}
+		}
 
-        public bool IsReadOnly
-        {
-            get { return false; }
-        }
+		public int Count
+		{
+			get
+			{
+				return d.Count;
+			}
+		}
 
-        public bool Remove(KeyValuePair<TKey, TValue>item)
-        {
-            lock (syncRoot)
-            {
-                return ((ICollection<KeyValuePair<TKey, TValue>>)d).Remove(item);
-            }
-        }
+		public bool IsReadOnly
+		{
+			get
+			{
+				return false;
+			}
+		}
 
-        #endregion
+		public bool Remove(KeyValuePair<TKey, TValue> item)
+		{
+			lock (syncRoot)
+			{
+				return ((ICollection<KeyValuePair<TKey, TValue>>)d).Remove(item);
+			}
+		}
 
-        #region IEnumerable<KeyValuePair<TKey,TValue>Members
+		#endregion
 
-        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
-        {
-            return ((ICollection<KeyValuePair<TKey,
-                TValue>>)d).GetEnumerator();
-        }
+		#region IEnumerable<KeyValuePair<TKey,TValue>Members
 
-        #endregion
+		public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+		{
+			return ((ICollection<KeyValuePair<TKey,
+				TValue>>)d).GetEnumerator();
+		}
 
-        #region IEnumerable Members
+		#endregion
 
-        System.Collections.IEnumerator
-        System.Collections.IEnumerable.GetEnumerator()
-        {
-            return ((System.Collections.IEnumerable)d).GetEnumerator( );
-        }
+		#region IEnumerable Members
 
-        #endregion
-    }
+		System.Collections.IEnumerator
+			System.Collections.IEnumerable.GetEnumerator()
+		{
+			return ((System.Collections.IEnumerable)d).GetEnumerator();
+		}
+
+		#endregion
+	}
 }
-

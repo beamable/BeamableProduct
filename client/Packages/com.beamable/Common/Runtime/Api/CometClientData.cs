@@ -3,42 +3,44 @@ using System.Collections.Generic;
 
 namespace Beamable.Common.Api
 {
-   [Serializable]
-   public class CometClientData
-   {
-      public CometClientDataEntry[] clientDataList;
-      private Dictionary<string, string> _clientData;
-      public Dictionary<string, string> ClientData
-      {
-         get
-         {
-            if (_clientData != null)
-               return _clientData;
+	[Serializable]
+	public class CometClientData
+	{
+		public CometClientDataEntry[] clientDataList;
+		private Dictionary<string, string> _clientData;
 
-            _clientData = new Dictionary<string, string>();
-            foreach (var entry in clientDataList)
-            {
-               _clientData[entry.name] = entry.value;
-            }
-            return _clientData;
-         }
-      }
+		public Dictionary<string, string> ClientData
+		{
+			get
+			{
+				if (_clientData != null)
+					return _clientData;
 
-      public string this[string key]
-      {
-         get
-         {
-            string result;
-            ClientData.TryGetValue(key, out result);
-            return result;
-         }
-      }
-   }
+				_clientData = new Dictionary<string, string>();
+				foreach (var entry in clientDataList)
+				{
+					_clientData[entry.name] = entry.value;
+				}
 
-   [Serializable]
-   public struct CometClientDataEntry
-   {
-      public string name;
-      public string value;
-   }
+				return _clientData;
+			}
+		}
+
+		public string this[string key]
+		{
+			get
+			{
+				string result;
+				ClientData.TryGetValue(key, out result);
+				return result;
+			}
+		}
+	}
+
+	[Serializable]
+	public struct CometClientDataEntry
+	{
+		public string name;
+		public string value;
+	}
 }

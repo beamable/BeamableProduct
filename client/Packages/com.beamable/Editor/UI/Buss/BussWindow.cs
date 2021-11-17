@@ -14,10 +14,9 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Buss
 {
-   public class BussWindow : EditorWindow
-   {
-
-// Not fit for end users - chrisa
+	public class BussWindow : EditorWindow
+	{
+		// Not fit for end users - chrisa
 #if BEAMABLE_DEVELOPER
       [MenuItem(
          BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_THEME_MANAGER + "/" +
@@ -25,52 +24,51 @@ namespace Beamable.Editor.UI.Buss
          BeamableConstants.BUSS,
          priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
 #endif
-      public static BussWindow Init()
-      {
-         var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
+		public static BussWindow Init()
+		{
+			var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
 
-         BussWindow wnd = GetWindow<BussWindow>(BeamableConstants.BUSS, true, inspector);
-         return wnd;
-      }
-      public const string BUSS_PACKAGE_PATH = "Packages/com.beamable/Editor/UI/Buss";
+			BussWindow wnd = GetWindow<BussWindow>(BeamableConstants.BUSS, true, inspector);
+			return wnd;
+		}
 
-      private VisualElement _windowRoot;
-      private VisualElement _contentRoot;
+		public const string BUSS_PACKAGE_PATH = "Packages/com.beamable/Editor/UI/Buss";
 
-      private StyleBehaviour _currentSelection;
+		private VisualElement _windowRoot;
+		private VisualElement _contentRoot;
 
-      private VisualElement _inspectorContainer, _explorerContainer;
-      private BussInspectorVisualElement _inspectorElement;
-      private BehaviourExplorerVisualElement _explorerElement;
+		private StyleBehaviour _currentSelection;
 
-      private static Selector _highlightSelector;
+		private VisualElement _inspectorContainer, _explorerContainer;
+		private BussInspectorVisualElement _inspectorElement;
+		private BehaviourExplorerVisualElement _explorerElement;
 
-      public void OnEnable()
-      {
-         VisualElement root = this.GetRootVisualContainer();
-         var uiAsset =
-            AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{BUSS_PACKAGE_PATH}/bussWindow.uxml");
-         _windowRoot = uiAsset.CloneTree();
-         _windowRoot.AddStyleSheet($"{BUSS_PACKAGE_PATH}/bussWindow.uss");
-         _windowRoot.name = nameof(_windowRoot);
+		private static Selector _highlightSelector;
 
-         var manualRefreshBtn = new Button(() =>
-         {
-            _inspectorElement.SetModel(_currentSelection);
-            _explorerElement.Refresh();
-            _explorerElement.SetSelected(_currentSelection);
+		public void OnEnable()
+		{
+			VisualElement root = this.GetRootVisualContainer();
+			var uiAsset =
+				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{BUSS_PACKAGE_PATH}/bussWindow.uxml");
+			_windowRoot = uiAsset.CloneTree();
+			_windowRoot.AddStyleSheet($"{BUSS_PACKAGE_PATH}/bussWindow.uss");
+			_windowRoot.name = nameof(_windowRoot);
 
+			var manualRefreshBtn = new Button(() =>
+			{
+				_inspectorElement.SetModel(_currentSelection);
+				_explorerElement.Refresh();
+				_explorerElement.SetSelected(_currentSelection);
+			});
+			manualRefreshBtn.text = "Refresh";
+			root.Add(manualRefreshBtn);
+			root.Add(_windowRoot);
 
-         });
-         manualRefreshBtn.text = "Refresh";
-         root.Add(manualRefreshBtn);
-         root.Add(_windowRoot);
+			Selection.selectionChanged -= HandleSelectionChange;
+			Selection.selectionChanged += HandleSelectionChange;
 
-         Selection.selectionChanged -= HandleSelectionChange;
-         Selection.selectionChanged += HandleSelectionChange;
-
-         // Remove delegate listener if it has previously
-         // been assigned.
+			// Remove delegate listener if it has previously
+			// been assigned.
 
 #if UNITY_2018
          SceneView.onSceneGUIDelegate -= OnSceneGUI;
@@ -81,89 +79,86 @@ namespace Beamable.Editor.UI.Buss
          SceneView.duringSceneGui += OnSceneGUI;
 #endif
 
+			_inspectorContainer = _windowRoot.Q<VisualElement>("buss-inspector-container");
+			_inspectorElement = new BussInspectorVisualElement();
+			_inspectorContainer.Add(_inspectorElement);
 
-         _inspectorContainer = _windowRoot.Q<VisualElement>("buss-inspector-container");
-         _inspectorElement = new BussInspectorVisualElement();
-         _inspectorContainer.Add(_inspectorElement);
+			_explorerContainer = _windowRoot.Q<VisualElement>("explorer-container");
+			_explorerElement = new BehaviourExplorerVisualElement();
+			_explorerContainer.Add(_explorerElement);
+			_explorerElement.Refresh();
 
-         _explorerContainer = _windowRoot.Q<VisualElement>("explorer-container");
-         _explorerElement = new BehaviourExplorerVisualElement();
-         _explorerContainer.Add(_explorerElement);
-         _explorerElement.Refresh();
+			HandleSelectionChange();
+		}
 
-         HandleSelectionChange();
-      }
+		private void OnFocus()
+		{
+			HandleSelectionChange();
+		}
 
+		StyleSheetObject ResolveStyleSheet()
+		{
+			var sheet = _currentSelection.GetFirstStyleSheet();
+			// TODO If no sheet exists in the heirarchy, prompt to make a new one in User Space.
+			return sheet;
+		}
 
-      private void OnFocus()
-      {
-         HandleSelectionChange();
-      }
+		private void OnDisable()
+		{
+			Selection.selectionChanged -= HandleSelectionChange;
+		}
 
-      StyleSheetObject ResolveStyleSheet()
-      {
-         var sheet = _currentSelection.GetFirstStyleSheet();
-         // TODO If no sheet exists in the heirarchy, prompt to make a new one in User Space.
-         return sheet;
-      }
+		private void HandleSelectionChange()
+		{
+			var selected = Selection.activeGameObject;
+			_currentSelection = selected?.GetComponent<StyleBehaviour>() ?? null;
+			_inspectorElement.SetModel(_currentSelection);
+			_explorerElement.SetSelected(_currentSelection);
+		}
 
-      private void OnDisable()
-      {
-         Selection.selectionChanged -= HandleSelectionChange;
-      }
+		// Window has been selected
 
-      private void HandleSelectionChange()
-      {
-         var selected = Selection.activeGameObject;
-         _currentSelection = selected?.GetComponent<StyleBehaviour>() ?? null;
-         _inspectorElement.SetModel(_currentSelection);
-         _explorerElement.SetSelected(_currentSelection);
-      }
-
-      // Window has been selected
-
-      void OnDestroy() {
-         // When the window is destroyed, remove the delegate
-         // so that it will no longer do any drawing.
+		void OnDestroy()
+		{
+			// When the window is destroyed, remove the delegate
+			// so that it will no longer do any drawing.
 #if UNITY_2018
          SceneView.onSceneGUIDelegate -= OnSceneGUI;
 #elif UNITY_2019
          SceneView.duringSceneGui -= OnSceneGUI;
 #endif
+		}
 
-      }
+		static void OnSceneGUI(SceneView sceneView)
+		{
+			DrawHighlightSelector();
 
-      static void OnSceneGUI(SceneView sceneView) {
-         DrawHighlightSelector();
+			HandleUtility.Repaint();
+		}
 
-         HandleUtility.Repaint();
-      }
+		private static void DrawHighlightSelector()
+		{
+			if (_highlightSelector == null) return;
 
+			// TODO: this will be really slow, because its calling on the draw thread every tick. We really don't need to do that.
+			var all = GameObject.FindObjectsOfType<StyleBehaviour>();
+			var matches = all.Where(x => x.MatchesSelector(_highlightSelector));
 
+			var faceColor = new Color(0, 0, 255, .2f);
+			var outlineColor = Color.white;
 
-      private static void DrawHighlightSelector()
-      {
-        if (_highlightSelector == null) return;
+			foreach (var match in matches)
+			{
+				var verts = new Vector3[4];
+				match.GetComponent<RectTransform>().GetWorldCorners(verts);
+				Handles.color = Color.white;
+				Handles.DrawSolidRectangleWithOutline(verts, faceColor, outlineColor);
+			}
+		}
 
-         // TODO: this will be really slow, because its calling on the draw thread every tick. We really don't need to do that.
-         var all = GameObject.FindObjectsOfType<StyleBehaviour>();
-         var matches = all.Where(x => x.MatchesSelector(_highlightSelector));
-
-         var faceColor = new Color(0, 0, 255, .2f);
-         var outlineColor = Color.white;
-
-         foreach (var match in matches)
-         {
-            var verts = new Vector3[4];
-            match.GetComponent<RectTransform>().GetWorldCorners(verts);
-            Handles.color = Color.white;
-            Handles.DrawSolidRectangleWithOutline(verts, faceColor, outlineColor);
-         }
-      }
-
-      public static void HighlightSelector(Selector selector)
-      {
-         _highlightSelector = selector;
-      }
-   }
+		public static void HighlightSelector(Selector selector)
+		{
+			_highlightSelector = selector;
+		}
+	}
 }

@@ -7,55 +7,68 @@ using UnityEngine;
 
 namespace Beamable.Editor.UI.Common.Models
 {
-    public class RealmModel : ISearchableModel
-    {
-        public ISearchableElement Default { get; set; }
-        public ISearchableElement Current { get; set; }
-        public List<ISearchableElement> Elements { get; set; }
+	public class RealmModel : ISearchableModel
+	{
+		public ISearchableElement Default
+		{
+			get;
+			set;
+		}
 
-        public event Action<List<ISearchableElement>> OnAvailableElementsChanged;
-        public event Action<ISearchableElement> OnElementChanged;
+		public ISearchableElement Current
+		{
+			get;
+			set;
+		}
 
-        public void Initialize()
-        {
-            RefreshAvailable();
+		public List<ISearchableElement> Elements
+		{
+			get;
+			set;
+		}
 
-            EditorAPI.Instance.Then(api =>
-            {
-                api.OnRealmChange += HandleRealmChanged;
-                Current = api.Realm;
-                OnElementChanged?.Invoke(Current);
-            });
-        }
+		public event Action<List<ISearchableElement>> OnAvailableElementsChanged;
+		public event Action<ISearchableElement> OnElementChanged;
 
-        public Promise<List<ISearchableElement>> RefreshAvailable()
-        {
-            return EditorAPI.Instance.FlatMap(api =>
-            {
-                Current = api.Realm;
-                return api.RealmService.GetRealms().Map(realms =>
-                {
-                    return realms.ToList<ISearchableElement>();
-                });
-            }).Then(realms =>
-            {
+		public void Initialize()
+		{
+			RefreshAvailable();
 
-                Elements = realms.ToList<ISearchableElement>();
-                OnAvailableElementsChanged?.Invoke(Elements);
-            });
-        }
+			EditorAPI.Instance.Then(api =>
+			{
+				api.OnRealmChange += HandleRealmChanged;
+				Current = api.Realm;
+				OnElementChanged?.Invoke(Current);
+			});
+		}
 
-        private void HandleRealmChanged(RealmView realm)
-        {
-            Current = realm;
-            try
-            {
-                OnElementChanged?.Invoke(realm);
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
-            }
-        }
-    }
+		public Promise<List<ISearchableElement>> RefreshAvailable()
+		{
+			return EditorAPI.Instance.FlatMap(api =>
+			{
+				Current = api.Realm;
+				return api.RealmService.GetRealms().Map(realms =>
+				{
+					return realms.ToList<ISearchableElement>();
+				});
+			}).Then(realms =>
+			{
+				Elements = realms.ToList<ISearchableElement>();
+				OnAvailableElementsChanged?.Invoke(Elements);
+			});
+		}
+
+		private void HandleRealmChanged(RealmView realm)
+		{
+			Current = realm;
+			try
+			{
+				OnElementChanged?.Invoke(realm);
+			}
+			catch (Exception e)
+			{
+				Debug.LogException(e);
+			}
+		}
+	}
 }

@@ -13,61 +13,72 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-    public class LabeledDatePickerVisualElement : BeamableVisualElement
-    {
-        public new class UxmlFactory : UxmlFactory<LabeledDatePickerVisualElement, UxmlTraits>
-        {
-        }
+	public class LabeledDatePickerVisualElement : BeamableVisualElement
+	{
+		public new class UxmlFactory : UxmlFactory<LabeledDatePickerVisualElement, UxmlTraits> { }
 
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
-                {name = "label", defaultValue = "Label"};
+		public new class UxmlTraits : VisualElement.UxmlTraits
+		{
+			readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
+			{
+				name = "label", defaultValue = "Label"
+			};
 
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
+				get
+				{
+					yield break;
+				}
+			}
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                if (ve is LabeledDatePickerVisualElement component)
-                {
-                    component.Label = _label.GetValueFromBag(bag, cc);
-                }
-            }
-        }
+			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+			{
+				base.Init(ve, bag, cc);
+				if (ve is LabeledDatePickerVisualElement component)
+				{
+					component.Label = _label.GetValueFromBag(bag, cc);
+				}
+			}
+		}
 
-        public event Action OnValueChanged;
-        private Label _label;
+		public event Action OnValueChanged;
+		private Label _label;
 
-        public DatePickerVisualElement DatePicker { get; private set; }
-        public string Label { get; private set; }
-        public string SelectedDate => DatePicker.GetIsoDate();
+		public DatePickerVisualElement DatePicker
+		{
+			get;
+			private set;
+		}
 
-        public LabeledDatePickerVisualElement() : base(
-            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledDatePickerVisualElement)}/{nameof(LabeledDatePickerVisualElement)}")
-        {
-        }
+		public string Label
+		{
+			get;
+			private set;
+		}
 
-        public override void Refresh()
-        {
-            base.Refresh();
+		public string SelectedDate => DatePicker.GetIsoDate();
 
-            _label = Root.Q<Label>("label");
-            _label.text = Label;
+		public LabeledDatePickerVisualElement() : base(
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledDatePickerVisualElement)}/{nameof(LabeledDatePickerVisualElement)}") { }
 
-            DatePicker = Root.Q<DatePickerVisualElement>("datePicker");
-            DatePicker.Setup(OnDateChanged);
-            DatePicker.Refresh();
-        }
-        
-        public void Set(DateTime date) => DatePicker.Set(date);
+		public override void Refresh()
+		{
+			base.Refresh();
 
-        private void OnDateChanged()
-        {
-            OnValueChanged?.Invoke(); 
-        }
-    }
+			_label = Root.Q<Label>("label");
+			_label.text = Label;
+
+			DatePicker = Root.Q<DatePickerVisualElement>("datePicker");
+			DatePicker.Setup(OnDateChanged);
+			DatePicker.Refresh();
+		}
+
+		public void Set(DateTime date) => DatePicker.Set(date);
+
+		private void OnDateChanged()
+		{
+			OnValueChanged?.Invoke();
+		}
+	}
 }

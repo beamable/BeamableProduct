@@ -4,35 +4,36 @@ using UnityEngine;
 
 namespace Beamable.Pooling.Editor
 {
-   [CustomEditor(typeof(HidePool))]
-   public class HidePoolEditor : UnityEditor.Editor
-   {
-      public string savePath;
-      public override void OnInspectorGUI()
-      {
-         DrawDefaultInspector();
+	[CustomEditor(typeof(HidePool))]
+	public class HidePoolEditor : UnityEditor.Editor
+	{
+		public string savePath;
 
-         HidePool hp = this.target as HidePool;
+		public override void OnInspectorGUI()
+		{
+			DrawDefaultInspector();
 
-         var d = hp.GetPools();
-         EditorGUILayout.BeginHorizontal();
-         EditorGUILayout.LabelField("prefab", GUILayout.Width(240f));
-         EditorGUILayout.LabelField("free", GUILayout.Width(80f));
-         EditorGUILayout.LabelField("max", GUILayout.Width(80f));
-         EditorGUILayout.LabelField("reused", GUILayout.Width(80f));
+			HidePool hp = this.target as HidePool;
 
-         EditorGUILayout.EndHorizontal();
-         foreach (GameObject prefab in d.Keys)
-         {
-            HidePool.Pool p = d[prefab];
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField(prefab.name, GUILayout.Width(240f));
-            EditorGUILayout.LabelField(p.currentlyFree.ToString(), GUILayout.Width(80f));
-            EditorGUILayout.LabelField(p.highWaterMark.ToString(), GUILayout.Width(80f));
-            EditorGUILayout.LabelField(p.reused.ToString(), GUILayout.Width(80f));
+			var d = hp.GetPools();
+			EditorGUILayout.BeginHorizontal();
+			EditorGUILayout.LabelField("prefab", GUILayout.Width(240f));
+			EditorGUILayout.LabelField("free", GUILayout.Width(80f));
+			EditorGUILayout.LabelField("max", GUILayout.Width(80f));
+			EditorGUILayout.LabelField("reused", GUILayout.Width(80f));
 
-            EditorGUILayout.EndHorizontal();
-         }
-      }
-   }
+			EditorGUILayout.EndHorizontal();
+			foreach (GameObject prefab in d.Keys)
+			{
+				HidePool.Pool p = d[prefab];
+				EditorGUILayout.BeginHorizontal();
+				EditorGUILayout.LabelField(prefab.name, GUILayout.Width(240f));
+				EditorGUILayout.LabelField(p.currentlyFree.ToString(), GUILayout.Width(80f));
+				EditorGUILayout.LabelField(p.highWaterMark.ToString(), GUILayout.Width(80f));
+				EditorGUILayout.LabelField(p.reused.ToString(), GUILayout.Width(80f));
+
+				EditorGUILayout.EndHorizontal();
+			}
+		}
+	}
 }

@@ -6,84 +6,84 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+
 namespace Beamable.Editor.Content.Components
 {
-    public class CountVisualElement:ContentManagerComponent
-    {
-        private Label _countLabel;
-        private int _value;
+	public class CountVisualElement : ContentManagerComponent
+	{
+		private Label _countLabel;
+		private int _value;
 
-        public int Value
-        {
-            get => _value;
-            set
-            {
-                SetValue(value);
-            }
-        }
+		public int Value
+		{
+			get => _value;
+			set
+			{
+				SetValue(value);
+			}
+		}
 
-        private bool _isDangerous;
+		private bool _isDangerous;
 
-        public bool IsDangerous
-        {
-            get => _isDangerous;
-            set
-            {
-                _isDangerous = value;
-                SetValue(Value);
-            }
-        }
+		public bool IsDangerous
+		{
+			get => _isDangerous;
+			set
+			{
+				_isDangerous = value;
+				SetValue(Value);
+			}
+		}
 
-        public new class UxmlFactory : UxmlFactory<CountVisualElement, UxmlTraits>
-        {
-        }
-        public CountVisualElement():base(nameof(CountVisualElement))
-        {
-        }
+		public new class UxmlFactory : UxmlFactory<CountVisualElement, UxmlTraits> { }
 
-        public override void Refresh()
-        {
-            base.Refresh();
-            _countLabel = Root.Q<Label>();
+		public CountVisualElement() : base(nameof(CountVisualElement)) { }
 
-            SetValue(_value);
-        }
+		public override void Refresh()
+		{
+			base.Refresh();
+			_countLabel = Root.Q<Label>();
 
-        public void SetValue(int count)
-        {
-            _value = count;
-            _countLabel.text = count.ToString();
+			SetValue(_value);
+		}
 
-            if (_isDangerous && count > 0)
-            {
-                AddToClassList("danger");
-            }
-            else
-            {
-                RemoveFromClassList("danger");
-            }
-        }
+		public void SetValue(int count)
+		{
+			_value = count;
+			_countLabel.text = count.ToString();
 
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
+			if (_isDangerous && count > 0)
+			{
+				AddToClassList("danger");
+			}
+			else
+			{
+				RemoveFromClassList("danger");
+			}
+		}
 
-            private UxmlBoolAttributeDescription isDangerous = new UxmlBoolAttributeDescription
-            {
-                name = "is-dangerous", defaultValue = false
-            };
+		public new class UxmlTraits : VisualElement.UxmlTraits
+		{
+			private UxmlBoolAttributeDescription isDangerous = new UxmlBoolAttributeDescription
+			{
+				name = "is-dangerous", defaultValue = false
+			};
 
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
+				get
+				{
+					yield break;
+				}
+			}
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                var self = ve as CountVisualElement;
-                self._isDangerous = isDangerous.GetValueFromBag(bag, cc);
-                self.Refresh();
-            }
-        }
-    }
+			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+			{
+				base.Init(ve, bag, cc);
+				var self = ve as CountVisualElement;
+				self._isDangerous = isDangerous.GetValueFromBag(bag, cc);
+				self.Refresh();
+			}
+		}
+	}
 }

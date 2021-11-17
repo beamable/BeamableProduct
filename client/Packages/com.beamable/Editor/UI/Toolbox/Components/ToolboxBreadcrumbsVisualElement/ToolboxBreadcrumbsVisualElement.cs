@@ -17,51 +17,61 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Toolbox.Components
 {
-    public class ToolboxBreadcrumbsVisualElement : ToolboxComponent
-    {
-        public new class UxmlFactory : UxmlFactory<ToolboxBreadcrumbsVisualElement, UxmlTraits>
-        {
-        }
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
-                {name = "custom-text", defaultValue = "nada"};
+	public class ToolboxBreadcrumbsVisualElement : ToolboxComponent
+	{
+		public new class UxmlFactory : UxmlFactory<ToolboxBreadcrumbsVisualElement, UxmlTraits> { }
 
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
+		public new class UxmlTraits : VisualElement.UxmlTraits
+		{
+			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
+			{
+				name = "custom-text", defaultValue = "nada"
+			};
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                var self = ve as ToolboxBreadcrumbsVisualElement;
-            }
-        }
-        private Button _accountButton;
-        private RealmButtonVisualElement _realmButton;
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
+				get
+				{
+					yield break;
+				}
+			}
 
-        public ToolboxBreadcrumbsVisualElement() : base(nameof(ToolboxBreadcrumbsVisualElement))
-        {
-        }
+			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+			{
+				base.Init(ve, bag, cc);
+				var self = ve as ToolboxBreadcrumbsVisualElement;
+			}
+		}
 
-        public override void Refresh()
-        {
-            base.Refresh();
-            _realmButton = Root.Q<RealmButtonVisualElement>("realmButton");
-            _realmButton.Refresh();
+		private Button _accountButton;
+		private RealmButtonVisualElement _realmButton;
 
-            var portalButton = Root.Q<Button>("openPortalButton");
-            portalButton.text = (BeamableConstants.OPEN + " " + BeamableConstants.PORTAL).ToUpper();
-            portalButton.clickable.clicked += () => GetPortalUrl.Then(Application.OpenURL);
-            var m = new ContextualMenuManipulator(rightClickEvt =>
-            {
-                rightClickEvt.menu.BeamableAppendAction("Copy Url",
-                    mp => { GetPortalUrl.Then(url => { EditorGUIUtility.systemCopyBuffer = url; }); });
-            }) {target = portalButton};
-        }
+		public ToolboxBreadcrumbsVisualElement() : base(nameof(ToolboxBreadcrumbsVisualElement)) { }
 
-        private Promise<string> GetPortalUrl => EditorAPI.Instance.Map(de =>
-            $"{BeamableEnvironment.PortalUrl}/{de.CidOrAlias}/games/{de.ProductionRealm.Pid}/realms/{de.Pid}?refresh_token={de.Token.RefreshToken}");
-    }
+		public override void Refresh()
+		{
+			base.Refresh();
+			_realmButton = Root.Q<RealmButtonVisualElement>("realmButton");
+			_realmButton.Refresh();
+
+			var portalButton = Root.Q<Button>("openPortalButton");
+			portalButton.text = (BeamableConstants.OPEN + " " + BeamableConstants.PORTAL).ToUpper();
+			portalButton.clickable.clicked += () => GetPortalUrl.Then(Application.OpenURL);
+			var m = new ContextualMenuManipulator(rightClickEvt =>
+			{
+				rightClickEvt.menu.BeamableAppendAction("Copy Url",
+				                                        mp =>
+				                                        {
+					                                        GetPortalUrl.Then(url =>
+					                                        {
+						                                        EditorGUIUtility.systemCopyBuffer = url;
+					                                        });
+				                                        });
+			}) {target = portalButton};
+		}
+
+		private Promise<string> GetPortalUrl =>
+			EditorAPI.Instance.Map(de =>
+				                       $"{BeamableEnvironment.PortalUrl}/{de.CidOrAlias}/games/{de.ProductionRealm.Pid}/realms/{de.Pid}?refresh_token={de.Token.RefreshToken}");
+	}
 }

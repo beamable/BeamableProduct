@@ -13,76 +13,75 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
-    public class PublishWindow : CommandRunnerWindow
-    {
-        private static readonly Vector2 MIN_SIZE = new Vector2(860, 550);
-        
-    	private bool isSet = false;
+	public class PublishWindow : CommandRunnerWindow
+	{
+		private static readonly Vector2 MIN_SIZE = new Vector2(860, 550);
 
-        public static PublishWindow ShowPublishWindow()
-        {
-            var wnd = CreateInstance<PublishWindow>();
-            wnd.titleContent = new GUIContent(Constants.Publish);
+		private bool isSet = false;
 
-            ((PublishWindow) wnd).ShowUtility();
-            wnd.minSize = MIN_SIZE;
-            wnd.position = new Rect(wnd.position.x, wnd.position.y + 40, wnd.minSize.x, wnd.minSize.y);
+		public static PublishWindow ShowPublishWindow()
+		{
+			var wnd = CreateInstance<PublishWindow>();
+			wnd.titleContent = new GUIContent(Constants.Publish);
 
-            Microservices.GenerateUploadModel().Then(model =>
-            {
-                wnd._model = model;
-                wnd.Refresh();
-            });
+			((PublishWindow)wnd).ShowUtility();
+			wnd.minSize = MIN_SIZE;
+			wnd.position = new Rect(wnd.position.x, wnd.position.y + 40, wnd.minSize.x, wnd.minSize.y);
 
-            return wnd;
-        }
+			Microservices.GenerateUploadModel().Then(model =>
+			{
+				wnd._model = model;
+				wnd.Refresh();
+			});
 
-        private ManifestModel _model;
+			return wnd;
+		}
 
-        private void OnEnable()
-        {
-            VisualElement root = this.GetRootVisualContainer();
+		private ManifestModel _model;
 
-            if (isSet)
-            {
-                this.Refresh();
+		private void OnEnable()
+		{
+			VisualElement root = this.GetRootVisualContainer();
 
-                Microservices.GenerateUploadModel().Then(model =>
-                {
-                    this._model = model;
-                    this.Refresh();
-                });
-            }
-        }
+			if (isSet)
+			{
+				this.Refresh();
 
-        void Refresh()
-        {
-            var container = this.GetRootVisualContainer();
-            container.Clear();
+				Microservices.GenerateUploadModel().Then(model =>
+				{
+					this._model = model;
+					this.Refresh();
+				});
+			}
+		}
 
+		void Refresh()
+		{
+			var container = this.GetRootVisualContainer();
+			container.Clear();
 
-            var e = new PublishPopup { Model = _model };
-            
-            e.OnCloseRequested += Close;
-            e.OnSubmit += async (model) =>
-            {
-                /*
-                 * We need to build each image...
-                 * upload each image that is different than whats in the manifest...
-                 * upload the manifest file...
-                 */
-                e.PrepareForPublish();
+			var e = new PublishPopup {Model = _model};
 
-                await Microservices.Deploy(model, this, e.ServiceDeployed);
-                Close();
-            };
+			e.OnCloseRequested += Close;
+			e.OnSubmit += async (model) =>
+			{
+				/*
+				 * We need to build each image...
+				 * upload each image that is different than whats in the manifest...
+				 * upload the manifest file...
+				 */
+				e.PrepareForPublish();
 
-            container.Add(e);
-            e.PrepareParent();
-            e.Refresh();
-            Repaint();
+				await Microservices.Deploy(model, this, e.ServiceDeployed);
+				Close();
+			};
 
-            isSet = true;
-        }
-    }
+			container.Add(e);
+			e.PrepareParent();
+			e.Refresh();
+			Repaint();
+
+			isSet = true;
+		}
+	}
 }

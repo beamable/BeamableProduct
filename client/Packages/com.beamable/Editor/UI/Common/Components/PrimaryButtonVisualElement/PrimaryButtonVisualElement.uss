@@ -18,6 +18,7 @@ Button:hover:active {
     background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/primaryButton_pressed.png");
     color: #f4f4f4;
 }
+
 TemplateContainer {
     flex-grow: 1;
 }
@@ -31,6 +32,7 @@ LoadingSpinnerVisualElement {
 .disabled.loading LoadingSpinnerVisualElement {
     opacity: 1;
 }
+
 .disabled LoadingSpinnerVisualElement {
     opacity: 0;
     visibility: hidden;
@@ -40,6 +42,7 @@ LoadingSpinnerVisualElement {
 .disabled Button {
     background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/primaryButton_disabled.png");
 }
+
 .disabled Button.unity-button:hover:active,
 .disabled Button:hover:active {
     background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/primaryButton_disabled_pressed.png");

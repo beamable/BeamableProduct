@@ -14,144 +14,154 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-    public class DatePickerVisualElement : ValidableVisualElement<string>
-    {
-        public new class UxmlFactory : UxmlFactory<DatePickerVisualElement, UxmlTraits>
-        {
-        }
+	public class DatePickerVisualElement : ValidableVisualElement<string>
+	{
+		public new class UxmlFactory : UxmlFactory<DatePickerVisualElement, UxmlTraits> { }
 
-        private Action _onDateChanged;
+		private Action _onDateChanged;
 
-        public LabeledNumberPicker YearPicker { get; private set; }
-        public LabeledNumberPicker MonthPicker { get; private set; }
-        public LabeledNumberPicker DayPicker { get; private set; }
+		public LabeledNumberPicker YearPicker
+		{
+			get;
+			private set;
+		}
 
-        public DatePickerVisualElement() : base(
-            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(DatePickerVisualElement)}/{nameof(DatePickerVisualElement)}")
-        {
-        }
+		public LabeledNumberPicker MonthPicker
+		{
+			get;
+			private set;
+		}
 
-        public override void Refresh()
-        {
-            base.Refresh();
+		public LabeledNumberPicker DayPicker
+		{
+			get;
+			private set;
+		}
 
-            YearPicker = Root.Q<LabeledNumberPicker>("yearPicker");
-            YearPicker.Setup(OnDateChanged, GenerateYears(out int startYear, out int endYear));
-            YearPicker.SetupMinMax(startYear, endYear);
-            YearPicker.Refresh();
+		public DatePickerVisualElement() : base(
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(DatePickerVisualElement)}/{nameof(DatePickerVisualElement)}") { }
 
-            MonthPicker = Root.Q<LabeledNumberPicker>("monthPicker");
-            MonthPicker.Setup(OnDateChanged, GenerateMonths());
-            MonthPicker.Refresh();
+		public override void Refresh()
+		{
+			base.Refresh();
 
-            DayPicker = Root.Q<LabeledNumberPicker>("dayPicker");
-            DayPicker.Setup(OnDateChanged, GenerateDays());
-            DayPicker.Refresh();
-        }
+			YearPicker = Root.Q<LabeledNumberPicker>("yearPicker");
+			YearPicker.Setup(OnDateChanged, GenerateYears(out int startYear, out int endYear));
+			YearPicker.SetupMinMax(startYear, endYear);
+			YearPicker.Refresh();
 
-        public void Setup(Action onDateChanged)
-        {
-            _onDateChanged = onDateChanged;
-        }
+			MonthPicker = Root.Q<LabeledNumberPicker>("monthPicker");
+			MonthPicker.Setup(OnDateChanged, GenerateMonths());
+			MonthPicker.Refresh();
 
-        public void Set(DateTime date)
-        {
-            YearPicker.Set(date.Year.ToString());
-            MonthPicker.Set(date.Month.ToString());
-            DayPicker.Set((date.Day).ToString());
-        }
+			DayPicker = Root.Q<LabeledNumberPicker>("dayPicker");
+			DayPicker.Setup(OnDateChanged, GenerateDays());
+			DayPicker.Refresh();
+		}
 
-        public string GetIsoDate()
-        {
-            return $"{GetSimpleDate()}T";
-        }
+		public void Setup(Action onDateChanged)
+		{
+			_onDateChanged = onDateChanged;
+		}
 
-        private void OnDateChanged()
-        {
-            InvokeValidationCheck(GetSimpleDate());
-            if (YearPicker != null && MonthPicker != null)
-            {
-                int daysInMonth = DateTime.DaysInMonth(int.Parse(YearPicker.Value), int.Parse(MonthPicker.Value));
-                DayPicker?.Setup(OnDateChanged, GenerateDays(daysInMonth));
-            }
-            else
-            {
-                DayPicker?.Setup(OnDateChanged, GenerateDays());
-            }
+		public void Set(DateTime date)
+		{
+			YearPicker.Set(date.Year.ToString());
+			MonthPicker.Set(date.Month.ToString());
+			DayPicker.Set((date.Day).ToString());
+		}
 
-            _onDateChanged?.Invoke();
-        }
+		public string GetIsoDate()
+		{
+			return $"{GetSimpleDate()}T";
+		}
 
-        private string GetSimpleDate()
-        {
-            if (YearPicker == null || MonthPicker == null || DayPicker == null)
-            {
-                return string.Empty;
-            }
+		private void OnDateChanged()
+		{
+			InvokeValidationCheck(GetSimpleDate());
+			if (YearPicker != null && MonthPicker != null)
+			{
+				int daysInMonth = DateTime.DaysInMonth(int.Parse(YearPicker.Value), int.Parse(MonthPicker.Value));
+				DayPicker?.Setup(OnDateChanged, GenerateDays(daysInMonth));
+			}
+			else
+			{
+				DayPicker?.Setup(OnDateChanged, GenerateDays());
+			}
 
-            int daysInMonth = DateTime.DaysInMonth(int.Parse(YearPicker.Value), int.Parse(MonthPicker.Value));
-            int day = int.Parse(DayPicker.Value);
-            day = Mathf.Clamp(day, 1, daysInMonth);
+			_onDateChanged?.Invoke();
+		}
 
-            StringBuilder builder = new StringBuilder();
-            builder.Append(
-                $"{int.Parse(YearPicker.Value):0000}-{int.Parse(MonthPicker.Value):00}-{day:00}");
-            return builder.ToString();
-        }
+		private string GetSimpleDate()
+		{
+			if (YearPicker == null || MonthPicker == null || DayPicker == null)
+			{
+				return string.Empty;
+			}
 
-        private List<string> GenerateYears(out int startYear, out int endYear)
-        {
-            int yearsAdvance = 3;
-            startYear = 0;
-            endYear = 0;
+			int daysInMonth = DateTime.DaysInMonth(int.Parse(YearPicker.Value), int.Parse(MonthPicker.Value));
+			int day = int.Parse(DayPicker.Value);
+			day = Mathf.Clamp(day, 1, daysInMonth);
 
-            List<string> options = new List<string>();
+			StringBuilder builder = new StringBuilder();
+			builder.Append(
+				$"{int.Parse(YearPicker.Value):0000}-{int.Parse(MonthPicker.Value):00}-{day:00}");
+			return builder.ToString();
+		}
 
-            DateTime now = DateTime.Now;
+		private List<string> GenerateYears(out int startYear, out int endYear)
+		{
+			int yearsAdvance = 3;
+			startYear = 0;
+			endYear = 0;
 
-            for (int i = 0; i < yearsAdvance; i++)
-            {
-                int currentYear = now.Year + i;
-                if (i == 0)
-                {
-                    startYear = currentYear;
-                }
-                else if (i == yearsAdvance - 1)
-                {
-                    endYear = currentYear;
-                }
-                
-                string option = currentYear.ToString("0000");
-                options.Add(option);
-            }
+			List<string> options = new List<string>();
 
-            return options;
-        }
+			DateTime now = DateTime.Now;
 
-        private List<string> GenerateMonths()
-        {
-            List<string> options = new List<string>();
+			for (int i = 0; i < yearsAdvance; i++)
+			{
+				int currentYear = now.Year + i;
+				if (i == 0)
+				{
+					startYear = currentYear;
+				}
+				else if (i == yearsAdvance - 1)
+				{
+					endYear = currentYear;
+				}
 
-            for (int i = 0; i < 12; i++)
-            {
-                string option = (i + 1).ToString("00");
-                options.Add(option);
-            }
+				string option = currentYear.ToString("0000");
+				options.Add(option);
+			}
 
-            return options;
-        }
+			return options;
+		}
 
-        private List<string> GenerateDays(int daysInMonth = 31)
-        {
-            List<string> options = new List<string>();
+		private List<string> GenerateMonths()
+		{
+			List<string> options = new List<string>();
 
-            for (int i = 0; i < daysInMonth; i++)
-            {
-                string option = (i + 1).ToString("00");
-                options.Add(option);
-            }
+			for (int i = 0; i < 12; i++)
+			{
+				string option = (i + 1).ToString("00");
+				options.Add(option);
+			}
 
-            return options;
-        }
-    }
+			return options;
+		}
+
+		private List<string> GenerateDays(int daysInMonth = 31)
+		{
+			List<string> options = new List<string>();
+
+			for (int i = 0; i < daysInMonth; i++)
+			{
+				string option = (i + 1).ToString("00");
+				options.Add(option);
+			}
+
+			return options;
+		}
+	}
 }

@@ -22,7 +22,7 @@ namespace Beamable.Api.Analytics
 		/// <param name="category">Low cardinality descriptor of the event</param>
 		/// <param name="eventName">High cardinality descriptor of the event</param>
 		/// <param name="eventParams">Other parameters: must be flat with no nesting</param>
-		public CoreEvent (string category, string eventName, IDictionary<string, object> eventParams)
+		public CoreEvent(string category, string eventName, IDictionary<string, object> eventParams)
 		{
 			this.category = category;
 			this.eventName = eventName;

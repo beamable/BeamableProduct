@@ -6,11 +6,11 @@
   "author": {
     "name": "Zach Kamsler (Disruptor Beam)"
   },
- "samples": [
-   {
-     "displayName": "Basic Sample",
-     "description": "A bare-bones sample of a couple of basic sources",
-     "path": "Samples~/Sample1"
-   }
- ]
+  "samples": [
+    {
+      "displayName": "Basic Sample",
+      "description": "A bare-bones sample of a couple of basic sources",
+      "path": "Samples~/Sample1"
+    }
+  ]
 }

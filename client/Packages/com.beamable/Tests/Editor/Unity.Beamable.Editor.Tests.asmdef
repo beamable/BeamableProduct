@@ -1,26 +1,26 @@
 {
-    "name": "Unity.Beamable.Tests.Editor",
-    "references": [
-        "Unity.Beamable",
-        "Unity.Beamable.Tests",
-        "Unity.Beamable.Editor",
-        "Unity.Beamable.Runtime.Common",
-        "Beamable.Platform",
-        "Beamable.SmallerJSON",
-        "Beamable.JsonSerializable",
-        "Beamable.Service",
-        "Beamable.Coroutines"
-    ],
-    "optionalUnityReferences": [
-        "TestAssemblies"
-    ],
-    "includePlatforms": [
-        "Editor"
-    ],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": []
+  "name": "Unity.Beamable.Tests.Editor",
+  "references": [
+    "Unity.Beamable",
+    "Unity.Beamable.Tests",
+    "Unity.Beamable.Editor",
+    "Unity.Beamable.Runtime.Common",
+    "Beamable.Platform",
+    "Beamable.SmallerJSON",
+    "Beamable.JsonSerializable",
+    "Beamable.Service",
+    "Beamable.Coroutines"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": []
 }

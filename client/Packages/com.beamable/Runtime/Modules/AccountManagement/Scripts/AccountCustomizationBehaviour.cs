@@ -18,173 +18,165 @@ using Debug = UnityEngine.Debug;
 
 namespace Beamable.AccountManagement
 {
+	public class AccountCustomizationBehaviour : MonoBehaviour
+	{
+		public AccountDisplayItem DisplayItem;
 
-    public class AccountCustomizationBehaviour : MonoBehaviour
-    {
+		public List<GameObject> EditComponents;
+		public List<GameObject> RemoveWhileEditComponents;
 
-        public AccountDisplayItem DisplayItem;
+		public UnityEvent OnOpened, OnClosed;
+		public LoadingEvent OnSaving;
 
-        public List<GameObject> EditComponents;
-        public List<GameObject> RemoveWhileEditComponents;
+		public StatBehaviour AvatarStatBehaviour;
+		public StatBehaviour AliasStatBehaviour;
+		public InputReference AliasReference;
+		public TextMeshProUGUI AliasPlaceholder;
 
-        public UnityEvent OnOpened, OnClosed;
-        public LoadingEvent OnSaving;
+		public GameObject EmailContainer, FacebookContainer, AppleContainer, GoogleContainer;
+		public TextMeshProUGUI EmailText;
 
-        public StatBehaviour AvatarStatBehaviour;
-        public StatBehaviour AliasStatBehaviour;
-        public InputReference AliasReference;
-        public TextMeshProUGUI AliasPlaceholder;
+		public AvatarPickerBehaviour AvatarPickerBehaviour;
 
-        public GameObject EmailContainer, FacebookContainer, AppleContainer, GoogleContainer;
-        public TextMeshProUGUI EmailText;
+		public ColorBinding PlaceholderDefaultColor, PlaceholderErrorColor;
+		public string PlaceholderMessage = "Enter Alias...", PlaceholderErrorMessage = "Enter a valid Alias...";
 
-        public AvatarPickerBehaviour AvatarPickerBehaviour;
+		private User _lastOpenedUser;
 
-        public ColorBinding PlaceholderDefaultColor, PlaceholderErrorColor;
-        public string PlaceholderMessage="Enter Alias...", PlaceholderErrorMessage = "Enter a valid Alias...";
+		// Start is called before the first frame update
+		void Start()
+		{
+			Refresh();
+			Hide();
+		}
 
-        private User _lastOpenedUser;
+		// Update is called once per frame
+		void Update() { }
 
-        // Start is called before the first frame update
-        void Start()
-        {
-            Refresh();
-            Hide();
-        }
+		public void Refresh()
+		{
+			AvatarStatBehaviour.Read().Then(statAvatar =>
+			{
+				AvatarPickerBehaviour.Select(statAvatar);
+			});
+		}
 
-        // Update is called once per frame
-        void Update()
-        {
+		public void ResetPlaceholder()
+		{
+			if (string.Equals(AliasPlaceholder.text, PlaceholderMessage)) return;
+			AliasPlaceholder.text = PlaceholderMessage;
+			AliasPlaceholder.color =
+				ThemeConfiguration.Instance.Style.ColorPalette.Find(PlaceholderDefaultColor).Color;
+		}
 
-        }
+		public void Save()
+		{
+			var saveOperations = new List<Promise<Unit>>();
 
-        public void Refresh()
-        {
+			// save the avatar...
+			if (AvatarPickerBehaviour.Selected != null)
+			{
+				saveOperations.Add(AvatarStatBehaviour.Write(AvatarPickerBehaviour.Selected.Name));
+			}
 
-            AvatarStatBehaviour.Read().Then(statAvatar =>
-            {
-                AvatarPickerBehaviour.Select(statAvatar);
-            });
-        }
+			saveOperations.Add(AliasStatBehaviour.Write(AliasReference.Value).Error(err =>
+			{
+				// set an error message on the input box...
+				AliasReference.Value = "";
+				AliasPlaceholder.text = PlaceholderErrorMessage;
+				var errorColor = ThemeConfiguration.Instance.Style.GetPaletteStyle(PlaceholderErrorColor);
+				AliasPlaceholder.color = errorColor.Color;
+			}));
 
-        public void ResetPlaceholder()
-        {
-            if (string.Equals(AliasPlaceholder.text, PlaceholderMessage)) return;
-            AliasPlaceholder.text = PlaceholderMessage;
-            AliasPlaceholder.color =
-                ThemeConfiguration.Instance.Style.ColorPalette.Find(PlaceholderDefaultColor).Color;
-        }
+			var loadingArg = Promise.Sequence(saveOperations).Then(_ =>
+			{
+				Close();
+			}).Error(err =>
+			{
+				if (err is PlatformRequesterException ex)
+				{
+					Debug.LogError($"Could not save account stats. {ex.Error.status} {ex.Error.error}");
+				}
+			}).ToLoadingArg("Saving...", false);
+			OnSaving?.Invoke(loadingArg);
+		}
 
-        public void Save()
-        {
-            var saveOperations = new List<Promise<Unit>>();
+		public void Cancel()
+		{
+			AvatarStatBehaviour.Refresh(); // reset the avatar to whatever is was.
+			AliasStatBehaviour.Refresh();
+			Close();
+		}
 
-            // save the avatar...
-            if (AvatarPickerBehaviour.Selected != null)
-            {
-                saveOperations.Add(AvatarStatBehaviour.Write(AvatarPickerBehaviour.Selected.Name));
-            }
+		public void Open()
+		{
+			AliasStatBehaviour.SetForUser(DisplayItem.User);
+			AvatarStatBehaviour.SetForUser(DisplayItem.User);
+			AliasReference.Field.characterLimit = AccountManagementConfiguration.Instance.AliasCharacterLimit;
 
-            saveOperations.Add(AliasStatBehaviour.Write(AliasReference.Value).Error(err =>
-            {
-                // set an error message on the input box...
-                AliasReference.Value = "";
-                AliasPlaceholder.text = PlaceholderErrorMessage;
-                var errorColor = ThemeConfiguration.Instance.Style.GetPaletteStyle(PlaceholderErrorColor);
-                AliasPlaceholder.color = errorColor.Color;
-            }));
+			AvatarPickerBehaviour.Selected = null;
+			AccountManagementConfiguration.Instance.GetAllEnabledThirdPartiesForUser(DisplayItem.User).Then(assocs =>
+			{
+				var iconEnablement = assocs.Select(assoc => new IconEnableData
+				{
+					HasThirdParty = assoc.ShouldShowIcon,
+					IconGameObject = GetIconForThirdParty(assoc.ThirdParty)
+				}).ToList();
 
-            var loadingArg = Promise.Sequence(saveOperations).Then(_ =>
-            {
-                Close();
-            }).Error(err =>
-            {
-                if (err is PlatformRequesterException ex)
-                {
-                    Debug.LogError($"Could not save account stats. {ex.Error.status} {ex.Error.error}");
-                }
-            }).ToLoadingArg("Saving...", false);
-            OnSaving?.Invoke(loadingArg);
-        }
+				EditComponents.ForEach(g => g?.SetActive(true));
+				RemoveWhileEditComponents.ForEach(g => g?.SetActive(false));
+				AvatarStatBehaviour.Read().Then(statAvatar =>
+				{
+					AvatarPickerBehaviour.Select(statAvatar);
+				});
 
-        public void Cancel()
-        {
-            AvatarStatBehaviour.Refresh(); // reset the avatar to whatever is was.
-            AliasStatBehaviour.Refresh();
-            Close();
-        }
+				SetUserInfo(iconEnablement);
 
+				OnOpened?.Invoke();
+			});
+		}
 
-        public void Open()
-        {
-            AliasStatBehaviour.SetForUser(DisplayItem.User);
-            AvatarStatBehaviour.SetForUser(DisplayItem.User);
-            AliasReference.Field.characterLimit = AccountManagementConfiguration.Instance.AliasCharacterLimit;
+		private void Hide()
+		{
+			EditComponents.ForEach(g => g?.SetActive(false));
+			RemoveWhileEditComponents.ForEach(g => g?.SetActive(true));
+		}
 
+		public void Close()
+		{
+			Hide();
+			OnClosed?.Invoke();
+		}
 
-            AvatarPickerBehaviour.Selected = null;
-            AccountManagementConfiguration.Instance.GetAllEnabledThirdPartiesForUser(DisplayItem.User).Then(assocs =>
-                {
-                    var iconEnablement = assocs.Select(assoc => new IconEnableData
-                    {
-                        HasThirdParty = assoc.ShouldShowIcon,
-                        IconGameObject = GetIconForThirdParty(assoc.ThirdParty)
-                    }).ToList();
+		GameObject GetIconForThirdParty(AuthThirdParty thirdParty)
+		{
+			switch (thirdParty)
+			{
+				case AuthThirdParty.Apple:
+					return AppleContainer;
+				case AuthThirdParty.Facebook:
+					return FacebookContainer;
+				case AuthThirdParty.Google:
+					return GoogleContainer;
+				default:
+					return null;
+			}
 
-                    EditComponents.ForEach(g => g?.SetActive(true));
-                    RemoveWhileEditComponents.ForEach(g => g?.SetActive(false));
-                    AvatarStatBehaviour.Read().Then(statAvatar =>
-                    {
-                        AvatarPickerBehaviour.Select(statAvatar);
-                    });
+			;
+		}
 
-                    SetUserInfo(iconEnablement);
-
-                    OnOpened?.Invoke();
-                });
-
-
-        }
-
-        private void Hide()
-        {
-            EditComponents.ForEach(g => g?.SetActive(false));
-            RemoveWhileEditComponents.ForEach(g => g?.SetActive(true));
-        }
-
-        public void Close()
-        {
-            Hide();
-            OnClosed?.Invoke();
-        }
-
-        GameObject GetIconForThirdParty(AuthThirdParty thirdParty)
-        {
-            switch (thirdParty)
-            {
-                case AuthThirdParty.Apple:
-                    return AppleContainer;
-                case AuthThirdParty.Facebook:
-                    return FacebookContainer;
-                case AuthThirdParty.Google:
-                    return GoogleContainer;
-                default:
-                    return null;
-            };
-        }
-
-        void SetUserInfo(List<IconEnableData> data)
-        {
-            var userHasEmail = DisplayItem.User.HasDBCredentials();
-            EmailContainer.SetActive(userHasEmail);
-            EmailText.text = DisplayItem.User.email;
-            foreach (var iconEnable in data)
-            {
-                if (iconEnable.IconGameObject != null)
-                {
-                    iconEnable.IconGameObject.SetActive(iconEnable.HasThirdParty);
-                }
-            }
-        }
-    }
+		void SetUserInfo(List<IconEnableData> data)
+		{
+			var userHasEmail = DisplayItem.User.HasDBCredentials();
+			EmailContainer.SetActive(userHasEmail);
+			EmailText.text = DisplayItem.User.email;
+			foreach (var iconEnable in data)
+			{
+				if (iconEnable.IconGameObject != null)
+				{
+					iconEnable.IconGameObject.SetActive(iconEnable.HasThirdParty);
+				}
+			}
+		}
+	}
 }

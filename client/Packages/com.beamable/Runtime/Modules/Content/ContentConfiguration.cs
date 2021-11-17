@@ -7,94 +7,108 @@ using UnityEngine;
 
 namespace Modules.Content
 {
-    [CreateAssetMenu(
-        fileName="Content Configuration",
-        menuName= BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
-                  "Content Configuration")]
-    public class ContentConfiguration : ModuleConfigurationObject
-    {
-        public static ContentConfiguration Instance => Get<ContentConfiguration>();
+	[CreateAssetMenu(
+		fileName = "Content Configuration",
+		menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
+		           "Content Configuration")]
+	public class ContentConfiguration : ModuleConfigurationObject
+	{
+		public static ContentConfiguration Instance => Get<ContentConfiguration>();
 
-        [Tooltip("Multiple content namespaces are an advanced feature. You can deploy content to a parallel content namespace. You will need to write code in your game to decide which namespace to use. Beamable features like Commerce, Inventory, or Events will only work with content deployed to the \"global\" namespace. ")]
-        public bool EnableMultipleContentNamespaces = false;
+		[Tooltip(
+			"Multiple content namespaces are an advanced feature. You can deploy content to a parallel content namespace. You will need to write code in your game to decide which namespace to use. Beamable features like Commerce, Inventory, or Events will only work with content deployed to the \"global\" namespace. ")]
+		public bool EnableMultipleContentNamespaces = false;
 
 #if UNITY_EDITOR
-        [HideInInspector]
-        public string EditorManifestID = BeamableConstants.DEFAULT_MANIFEST_ID;
+		[HideInInspector]
+		public string EditorManifestID = BeamableConstants.DEFAULT_MANIFEST_ID;
 #endif
 
-        [Tooltip("This is the starting manifest ID that will be used when the game starts up. If you change it here, the Beamable API will initialize with content from this namespace. You can also update the setting at runtime.")]
-        [SerializeField, ReadonlyIf(nameof(EnableMultipleContentNamespaces), negate = true, specialDrawer = ReadonlyIfAttribute.SpecialDrawer.DelayedString)]
-        private string _runtimeManifestID = BeamableConstants.DEFAULT_MANIFEST_ID;
-        public string RuntimeManifestID {
-            get => ValidateManifestID(_runtimeManifestID);
-            set => _runtimeManifestID = ValidateManifestID(value);
-        }
+		[Tooltip(
+			"This is the starting manifest ID that will be used when the game starts up. If you change it here, the Beamable API will initialize with content from this namespace. You can also update the setting at runtime.")]
+		[SerializeField,
+		 ReadonlyIf(nameof(EnableMultipleContentNamespaces), negate = true,
+		            specialDrawer = ReadonlyIfAttribute.SpecialDrawer.DelayedString)]
+		private string _runtimeManifestID = BeamableConstants.DEFAULT_MANIFEST_ID;
 
-        public ContentParameterProvider ParameterProvider {
-            get {
-                var manifestID = RuntimeManifestID;
-                if (!EnableMultipleContentNamespaces && manifestID != BeamableConstants.DEFAULT_MANIFEST_ID) {
-                    Debug.LogWarning($"Beamable API is using manifest with id '{manifestID}' while manifest namespaces feature is disabled!");
-                }
-                return new ContentParameterProvider() {
-                    manifestID = manifestID
-                };
-            }
-        }
+		public string RuntimeManifestID
+		{
+			get => ValidateManifestID(_runtimeManifestID);
+			set => _runtimeManifestID = ValidateManifestID(value);
+		}
 
-        private void OnValidate()
-        {
-            #if UNITY_EDITOR
-            if (!IsValidManifestID(EditorManifestID, out var message))
-            {
-                Debug.LogWarning($"Invalid manifest ID: {message}");
-                EditorManifestID = BeamableConstants.DEFAULT_MANIFEST_ID;
-            }
-            #endif
+		public ContentParameterProvider ParameterProvider
+		{
+			get
+			{
+				var manifestID = RuntimeManifestID;
+				if (!EnableMultipleContentNamespaces && manifestID != BeamableConstants.DEFAULT_MANIFEST_ID)
+				{
+					Debug.LogWarning(
+						$"Beamable API is using manifest with id '{manifestID}' while manifest namespaces feature is disabled!");
+				}
 
-            if (!EnableMultipleContentNamespaces) {
-                _runtimeManifestID = BeamableConstants.DEFAULT_MANIFEST_ID;
-            } else if (!IsValidManifestID(_runtimeManifestID, out var runtimeMessage))
-            {
-                Debug.LogWarning($"Invalid runtime manifest ID: {runtimeMessage}");
-                _runtimeManifestID = BeamableConstants.DEFAULT_MANIFEST_ID;
-            }
-        }
-        public static bool IsValidManifestID(string name, out string message)
-        {
-            const int MAX_NAME_LENGTH = 36;
+				return new ContentParameterProvider() {manifestID = manifestID};
+			}
+		}
 
-            message = null;
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                message = "Name can not be empty string.";
-                return false;
-            }
+		private void OnValidate()
+		{
+#if UNITY_EDITOR
+			if (!IsValidManifestID(EditorManifestID, out var message))
+			{
+				Debug.LogWarning($"Invalid manifest ID: {message}");
+				EditorManifestID = BeamableConstants.DEFAULT_MANIFEST_ID;
+			}
+#endif
 
-            if (name.Length > MAX_NAME_LENGTH)
-            {
-                message = $"Name can not be longer then {MAX_NAME_LENGTH.ToString()} characters.";
-                return false;
-            }
+			if (!EnableMultipleContentNamespaces)
+			{
+				_runtimeManifestID = BeamableConstants.DEFAULT_MANIFEST_ID;
+			}
+			else if (!IsValidManifestID(_runtimeManifestID, out var runtimeMessage))
+			{
+				Debug.LogWarning($"Invalid runtime manifest ID: {runtimeMessage}");
+				_runtimeManifestID = BeamableConstants.DEFAULT_MANIFEST_ID;
+			}
+		}
 
-            bool TestChar(Char c)
-            {
-                return char.IsLetterOrDigit(c) || c == '-' || c == '_' || c == '.';
-            }
+		public static bool IsValidManifestID(string name, out string message)
+		{
+			const int MAX_NAME_LENGTH = 36;
 
-            if (!name.All(TestChar))
-            {
-                message = "Name can contain only letters, digits, '-', '_' and '.'.";
-                return false;
-            }
-            return true;
-        }
+			message = null;
+			if (string.IsNullOrWhiteSpace(name))
+			{
+				message = "Name can not be empty string.";
+				return false;
+			}
 
-        public string ValidateManifestID(string id) {
-            return IsValidManifestID(id, out var _)
-                ? id
-                : BeamableConstants.DEFAULT_MANIFEST_ID;
-        }
-    }
+			if (name.Length > MAX_NAME_LENGTH)
+			{
+				message = $"Name can not be longer then {MAX_NAME_LENGTH.ToString()} characters.";
+				return false;
+			}
+
+			bool TestChar(Char c)
+			{
+				return char.IsLetterOrDigit(c) || c == '-' || c == '_' || c == '.';
+			}
+
+			if (!name.All(TestChar))
+			{
+				message = "Name can contain only letters, digits, '-', '_' and '.'.";
+				return false;
+			}
+
+			return true;
+		}
+
+		public string ValidateManifestID(string id)
+		{
+			return IsValidManifestID(id, out var _)
+				? id
+				: BeamableConstants.DEFAULT_MANIFEST_ID;
+		}
+	}
 }

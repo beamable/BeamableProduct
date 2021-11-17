@@ -1,4 +1,4 @@
-#textBox{
+#textBox {
     width: 300px;
     flex-grow: 1;
     align-self: center;
@@ -11,7 +11,7 @@ ScrollView {
     margin-top: 5px;
 }
 
-#ContentView.content-view{
+#ContentView.content-view {
     flex-grow: 1;
     position: absolute;
     left: 0px;
@@ -22,29 +22,31 @@ ScrollView {
     margin-bottom: 5px;
 }
 
-.btnText{
-    left:5px;
-    min-width:100px;
+.btnText {
+    left: 5px;
+    min-width: 100px;
 }
-#checkBox{
-    left:5px;
+
+#checkBox {
+    left: 5px;
 }
-#actionBtn{
+
+#actionBtn {
     flex-direction: row;
     align-self: flex-end;
     margin-top: 20px;
 }
 
-#cancel{
+#cancel {
     height: 29px;
 }
 
-#term{
+#term {
     flex-direction: row;
     align-self: flex-end;
 }
 
-#functionArea{
+#functionArea {
     top: 10px;
     align-self: center;
     width: 300px;

@@ -1,14 +1,14 @@
-﻿LoadingBarElement{
+﻿LoadingBarElement {
     height: 16px;
     background-color: #2E2E2E;
 }
 
-#mainVisualElement{
+#mainVisualElement {
     margin-left: 0px;
     margin-right: 0px;
 }
 
-#label{
+#label {
     -unity-text-align: middle-center;
     color: #ffffff;
     align-self: center;
@@ -17,7 +17,7 @@
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
 }
 
-#fill{
+#fill {
     background-color: #0091ff;
     border-width: 0px;
     width: 0px;
@@ -25,7 +25,7 @@
     position: absolute;
 }
 
-#animation{
+#animation {
     position: absolute;
     left: 0px;
     top: 0px;
@@ -33,7 +33,7 @@
     bottom: 0px;
 }
 
-.failed{
+.failed {
     background-color: #d93737;
 }
 
@@ -41,15 +41,15 @@
     height: 6px;
 }
 
-.hidden{
+.hidden {
     height: 0px;
 }
 
-.hidden #label{
+.hidden #label {
     display: none;
 }
 
-#button{
+#button {
     position: absolute;
     padding-bottom: 0px;
     padding-top: 0px;

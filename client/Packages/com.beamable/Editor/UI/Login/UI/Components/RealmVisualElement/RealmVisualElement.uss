@@ -1,4 +1,4 @@
-#clickableBackground{
+#clickableBackground {
     flex-grow: 1;
     align-self: center;
     background-image: none;
@@ -16,25 +16,26 @@
     border-bottom-width: 0px;
 }
 
-#card{
+#card {
     flex-direction: row;
     justify-content: space-between;
     height: 35px;
 }
 
-#realmName{
-   -unity-text-align: middle-left;
+#realmName {
+    -unity-text-align: middle-left;
 }
 
-#pID{
+#pID {
     -unity-text-align: middle-right;
     font-size: 9px;
 }
 
-TemplateContainer{
+TemplateContainer {
     flex-direction: row;
 }
-RealmVisualElement{
+
+RealmVisualElement {
     margin-bottom: 10px;
     margin-right: 5px;
     margin-left: 15px;

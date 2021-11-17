@@ -6,14 +6,14 @@
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
-  <engine:VisualElement name="mainVisualElement">
-      <engine:VisualElement name="statusIcon"/>
-      <engine:VisualElement name="resizable">
-          <engine:TextField name="nameTextField"/>
-          <engine:Label name="pathLabel"/>
-          <beamable:TagListVisualElement name="tagListVisualElement"/>
-      </engine:VisualElement>
+    <engine:VisualElement name="mainVisualElement">
+        <engine:VisualElement name="statusIcon"/>
+        <engine:VisualElement name="resizable">
+            <engine:TextField name="nameTextField"/>
+            <engine:Label name="pathLabel"/>
+            <beamable:TagListVisualElement name="tagListVisualElement"/>
+        </engine:VisualElement>
 
-  </engine:VisualElement>
+    </engine:VisualElement>
 
 </engine:UXML>

@@ -10,10 +10,10 @@
     <engine:VisualElement name="mainContainer">
         <engine:VisualElement name="dependencyGridContainer">
             <engine:VisualElement name="storageObjectContainer">
-                <engine:VisualElement name="emptyCornerBox" />
-                <engine:VisualElement name="storageObjectsContainer" />
+                <engine:VisualElement name="emptyCornerBox"/>
+                <engine:VisualElement name="storageObjectsContainer"/>
             </engine:VisualElement>
-            <engine:VisualElement name="microservicesContainer" />
+            <engine:VisualElement name="microservicesContainer"/>
         </engine:VisualElement>
         <engine:VisualElement name="buttonsContainer">
             <beamable:PrimaryButtonVisualElement name="confirmBtn" text="CONFIRM"/>

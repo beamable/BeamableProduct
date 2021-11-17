@@ -3,6 +3,7 @@
     margin-left: 120px;
     min-height: 20px;
 }
+
 #header > Label {
     font-size: 12px;
 }
@@ -15,13 +16,14 @@
 #main #toc {
     width: 115px;
 }
+
 #main #toc Label.active {
     background-color: rgba(64, 128, 255, .8);
     color: #FFFFFF;
     margin-right: 0px;
 }
 
-#main #content{
+#main #content {
 
     border-color: rgba(64, 128, 255, .8);
     border-left-width: 2px;
@@ -40,6 +42,7 @@
     flex-direction: row;
     margin-top: 35px;
 }
+
 #main #content #button-strip Button {
     flex-grow: 1;
 }

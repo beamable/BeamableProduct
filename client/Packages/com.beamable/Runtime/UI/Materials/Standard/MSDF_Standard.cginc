@@ -53,24 +53,24 @@ v2f vert(appdata_full v)
     input.shape_ST = _MainTex_ST;
     input.overlay_ST = _TextureTex_ST;
 
-#if _MSDF_SHINE
+    #if _MSDF_SHINE
     input.shineAngle = _ShineAngle;
-#endif
-#if _MSDF_BACKGROUND
+    #endif
+    #if _MSDF_BACKGROUND
     input.bg_ST = _BackgroundTex_ST;
     input.texel = _BackgroundTex_TexelSize;
-#endif
-#if _MSDF_UV2_SCROLLING
+    #endif
+    #if _MSDF_UV2_SCROLLING
     input.xScroll = _XScroll;
     input.yScroll = _YScroll;
-#endif
-#if _MSDF_DROPSHADOW
+    #endif
+    #if _MSDF_DROPSHADOW
     input.shadowX = _ShadowOffsetX;
     input.shadowY = _ShadowOffsetY;
-#endif
-#if _MSDF_ICON
+    #endif
+    #if _MSDF_ICON
     input.icon_ST = _Icon_ST;
-#endif
+    #endif
 
     v2f o = VertexFunction(input, v);
     return o;
@@ -79,18 +79,18 @@ v2f vert(appdata_full v)
 fixed4 frag(v2f v) : SV_Target
 {
     //declare these
-    float4 shapeSample = float4(1.0,1.0,1.0,1.0);
-    float4 iconSample = float4(1.0,1.0,1.0,1.0);
-    float4 shadowSample = float4(1.0,1.0,1.0,1.0);
+    float4 shapeSample = float4(1.0, 1.0, 1.0, 1.0);
+    float4 iconSample = float4(1.0, 1.0, 1.0, 1.0);
+    float4 shadowSample = float4(1.0, 1.0, 1.0, 1.0);
     float4 bgSample = float4(1.0, 1.0, 1.0, 1.0);
     float4 secondarySample = float4(1.0, 1.0, 1.0, 1.0);
 
     float2 primaryUV = v.uvOne.xy;
 
-   #if _MSDF_FLIP_PRIMARY_UV
+    #if _MSDF_FLIP_PRIMARY_UV
        float2 t = frac(primaryUV * 0.5) * 2.0;
        primaryUV = saturate(float2(1.0, 1.0) - abs(t - float2(_PrimaryUVFlipX, _PrimaryUVFlipY)));
-   #endif
+    #endif
 
     //sample what we need
     shapeSample = SampleMainTex(primaryUV);
@@ -99,21 +99,21 @@ fixed4 frag(v2f v) : SV_Target
         iconSample = tex2D(_Icon, v.uvThree.zw);
     #endif
 
-   #if _MSDF_BACKGROUND
+    #if _MSDF_BACKGROUND
         bgSample = tex2D(_BackgroundTex, v.uvTwo.zw);
-   #endif
+    #endif
 
     #if _MSDF_DROPSHADOW
         shadowSample = SampleMainTex(v.uvThree.xy);
     #endif
 
-        secondarySample = shapeSample;
+    secondarySample = shapeSample;
     #if _MSDF_SECONDARYSHAPE_CUSTOMTEX
         secondarySample = tex2D(_Secondary, TransformUV(v.uvOne.zw, _Secondary_ST));
     #endif
 
     //run fragment
-    fixed4 result = FragmentProgram(v,shapeSample,iconSample, bgSample, shadowSample, secondarySample);
+    fixed4 result = FragmentProgram(v, shapeSample, iconSample, bgSample, shadowSample, secondarySample);
 
     return result;
 }

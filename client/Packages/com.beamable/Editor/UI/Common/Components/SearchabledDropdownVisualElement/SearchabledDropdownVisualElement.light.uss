@@ -2,6 +2,6 @@ Button#refreshButton {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Refresh-dark.png");
 }
 
-Button#editButton{
+Button#editButton {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/editing_light.png");
 }

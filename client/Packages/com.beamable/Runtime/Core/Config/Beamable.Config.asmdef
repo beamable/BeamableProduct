@@ -1,12 +1,12 @@
 {
-    "name": "Beamable.Config",
-    "references": [
-        "Beamable.SmallerJSON",
-        "Beamable.Service",
-        "Beamable.ConsoleCommands"
-    ],
-    "optionalUnityReferences": [],
-    "includePlatforms": [],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false
+  "name": "Beamable.Config",
+  "references": [
+    "Beamable.SmallerJSON",
+    "Beamable.Service",
+    "Beamable.ConsoleCommands"
+  ],
+  "optionalUnityReferences": [],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false
 }

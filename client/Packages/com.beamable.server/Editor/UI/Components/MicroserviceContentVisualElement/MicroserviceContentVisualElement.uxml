@@ -7,8 +7,8 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:VisualElement name="mainVisualElement">
-    <engine:VisualElement name="announcementList">
-    </engine:VisualElement>
+        <engine:VisualElement name="announcementList">
+        </engine:VisualElement>
         <beamable:MicroserviceActionPrompt name="actionPrompt"/>
         <engine:ScrollView>
             <engine:VisualElement name="listRoot">

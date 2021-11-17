@@ -1,4 +1,3 @@
-
 using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Editor.Content.Models;
@@ -14,73 +13,82 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-   public class LoadingIndicatorVisualElement : BeamableVisualElement
-   {
-      private Label _loadingLabel;
+	public class LoadingIndicatorVisualElement : BeamableVisualElement
+	{
+		private Label _loadingLabel;
 
-      public string LoadingText { get; private set; }
+		public string LoadingText
+		{
+			get;
+			private set;
+		}
 
-      private PromiseBase _promise;
+		private PromiseBase _promise;
 
-      public LoadingIndicatorVisualElement() : base($"{BeamableComponentsConstants.UI_PACKAGE_PATH}/Common/Components/{nameof(LoadingIndicatorVisualElement)}/{nameof(LoadingIndicatorVisualElement)}")
-      {
-      }
+		public LoadingIndicatorVisualElement() : base(
+			$"{BeamableComponentsConstants.UI_PACKAGE_PATH}/Common/Components/{nameof(LoadingIndicatorVisualElement)}/{nameof(LoadingIndicatorVisualElement)}") { }
 
-      public new class UxmlFactory : UxmlFactory<LoadingIndicatorVisualElement, UxmlTraits> { }
-      public new class UxmlTraits : VisualElement.UxmlTraits
-      {
-         UxmlStringAttributeDescription loadingText = new UxmlStringAttributeDescription { name = "text", defaultValue = "Loading" };
+		public new class UxmlFactory : UxmlFactory<LoadingIndicatorVisualElement, UxmlTraits> { }
 
-         public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-         {
-            get { yield break; }
-         }
-         public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-         {
-            base.Init(ve, bag, cc);
-            var self = ve as LoadingIndicatorVisualElement;
+		public new class UxmlTraits : VisualElement.UxmlTraits
+		{
+			UxmlStringAttributeDescription loadingText =
+				new UxmlStringAttributeDescription {name = "text", defaultValue = "Loading"};
 
-            self.LoadingText = loadingText.GetValueFromBag(bag, cc);
-            self.LoadingText = string.IsNullOrEmpty(self.LoadingText)
-               ? loadingText.defaultValue
-               : self.LoadingText;
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
+				get
+				{
+					yield break;
+				}
+			}
 
-            self.Refresh();
-         }
-      }
+			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+			{
+				base.Init(ve, bag, cc);
+				var self = ve as LoadingIndicatorVisualElement;
 
-      public override void Refresh()
-      {
-         base.Refresh();
-         _loadingLabel = Root.Q<Label>();
-         _loadingLabel.text = LoadingText;
-      }
+				self.LoadingText = loadingText.GetValueFromBag(bag, cc);
+				self.LoadingText = string.IsNullOrEmpty(self.LoadingText)
+					? loadingText.defaultValue
+					: self.LoadingText;
 
-      public void SetText(string text)
-      {
-         LoadingText = text;
-         _loadingLabel.text = text;
-      }
+				self.Refresh();
+			}
+		}
 
-      public LoadingIndicatorVisualElement SetPromise<T>(Promise<T> promise, params VisualElement[] coverElements)
-      {
-         _promise = promise;
-         RemoveFromClassList("hide");
+		public override void Refresh()
+		{
+			base.Refresh();
+			_loadingLabel = Root.Q<Label>();
+			_loadingLabel.text = LoadingText;
+		}
 
-         foreach (var coverElement in coverElements)
-         {
-            coverElement?.AddToClassList("cover");
-         }
-         promise.Then(_ =>
-         {
-            AddToClassList("hide");
-            foreach (var coverElement in coverElements)
-            {
-               coverElement?.RemoveFromClassList("cover");
-            }
-         });
-         return this;
-      }
+		public void SetText(string text)
+		{
+			LoadingText = text;
+			_loadingLabel.text = text;
+		}
 
-   }
+		public LoadingIndicatorVisualElement SetPromise<T>(Promise<T> promise, params VisualElement[] coverElements)
+		{
+			_promise = promise;
+			RemoveFromClassList("hide");
+
+			foreach (var coverElement in coverElements)
+			{
+				coverElement?.AddToClassList("cover");
+			}
+
+			promise.Then(_ =>
+			{
+				AddToClassList("hide");
+				foreach (var coverElement in coverElements)
+				{
+					coverElement?.RemoveFromClassList("cover");
+				}
+			});
+			return this;
+		}
+	}
 }

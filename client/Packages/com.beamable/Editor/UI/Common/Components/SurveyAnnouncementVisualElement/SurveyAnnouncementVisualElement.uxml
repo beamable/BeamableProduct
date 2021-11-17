@@ -31,5 +31,5 @@
         <engine:VisualElement name="announcement-buttonsSection" class="announcement-buttonsSection">
         </engine:VisualElement>
     </engine:VisualElement>
-    
+
 </engine:UXML>

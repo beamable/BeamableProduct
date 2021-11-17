@@ -6,34 +6,34 @@
     border-color: #383838;
 }
 
-#contentManagerIcon{
+#contentManagerIcon {
     background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Content_Manager_light.png");
 
 }
 
-#skinningIcon{
+#skinningIcon {
     background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Skinning_light.png");
 
 }
 
-#globalConfigIcon{
+#globalConfigIcon {
     background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Config_Light.png");
 }
 
-#microserviceIcon{
+#microserviceIcon {
     background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Microservice_Light.png");
 
 }
 
-#categoryIcon{
+#categoryIcon {
     background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Tag_light.png");
 }
 
-#typeIcon{
+#typeIcon {
     background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Game_mode_light.png");
 }
 
-#infoIcon{
+#infoIcon {
     background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Info_Light.png");
 
 }
@@ -42,6 +42,6 @@
     border-color: #383838;
 }
 
-#accountIcon{
+#accountIcon {
     background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Account_Light.png");
 }

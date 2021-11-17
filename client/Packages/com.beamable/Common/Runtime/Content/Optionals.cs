@@ -7,165 +7,176 @@ using UnityEngine;
 
 namespace Beamable.Common.Content
 {
-   [Serializable]
-    [Agnostic]
-    public abstract class Optional
-    {
-        public bool HasValue;
-        public abstract object GetValue();
+	[Serializable]
+	[Agnostic]
+	public abstract class Optional
+	{
+		public bool HasValue;
+		public abstract object GetValue();
 
-        static Optional()
-        {
-            TypeDescriptor.AddAttributes(typeof(Optional), new TypeConverterAttribute(typeof(OptionalTypeConverter)));
-        }
+		static Optional()
+		{
+			TypeDescriptor.AddAttributes(typeof(Optional), new TypeConverterAttribute(typeof(OptionalTypeConverter)));
+		}
 
-        public abstract void SetValue(object value);
-        public abstract Type GetOptionalType();
-    }
+		public abstract void SetValue(object value);
+		public abstract Type GetOptionalType();
+	}
 
-    public static class OptionalTypes
-    {
+	public static class OptionalTypes
+	{
+		public static Optional<int> ToOptional(this int number)
+		{
+			return new Optional<int> {HasValue = true, Value = number};
+		}
 
-       public static Optional<int> ToOptional(this int number)
-       {
-          return new Optional<int>{HasValue = true, Value = number};
-       }
-       public static Optional<double> ToOptional(this double number)
-       {
-          return new Optional<double>{HasValue = true, Value = number};
-       }
-    }
+		public static Optional<double> ToOptional(this double number)
+		{
+			return new Optional<double> {HasValue = true, Value = number};
+		}
+	}
 
-    [System.Serializable]
-    [Agnostic]
-    public class Optional<T> : Optional
-    {
-        public T Value;
-        public override object GetValue()
-        {
-            return Value;
-        }
+	[System.Serializable]
+	[Agnostic]
+	public class Optional<T> : Optional
+	{
+		public T Value;
 
-        public override void SetValue(object value)
-        {
-           Value = (T) value;
-           HasValue = true;
-        }
+		public override object GetValue()
+		{
+			return Value;
+		}
 
-        public override Type GetOptionalType()
-        {
-           return typeof(T);
-        }
+		public override void SetValue(object value)
+		{
+			Value = (T)value;
+			HasValue = true;
+		}
 
-    }
+		public override Type GetOptionalType()
+		{
+			return typeof(T);
+		}
+	}
 
-    [Agnostic]
-    public class OptionalTypeConverter : TypeConverter {
-       public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
-       {
-          if (typeof(Optional).IsAssignableFrom(destinationType))
-          {
-             return true;
-          }
-          return base.CanConvertTo(context, destinationType);
-       }
-    
-       public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
-       {
-          if (value is long number)
-          {
-             return new OptionalInt { Value = (int)number, HasValue = true };
-          }
-          return base.ConvertTo(context, culture, value, destinationType);
-       }
-    }
+	[Agnostic]
+	public class OptionalTypeConverter : TypeConverter
+	{
+		public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+		{
+			if (typeof(Optional).IsAssignableFrom(destinationType))
+			{
+				return true;
+			}
 
-    [System.Serializable]
-    [Agnostic]
-    public class OptionalBoolean : Optional<bool> { }
+			return base.CanConvertTo(context, destinationType);
+		}
 
-    [System.Serializable]
-    [Agnostic]
-    public class OptionalInt : Optional<int> { }
-    
-    [System.Serializable]
-    [Agnostic]
-    public class OptionalLong : Optional<long> { }
+		public override object ConvertTo(ITypeDescriptorContext context,
+		                                 CultureInfo culture,
+		                                 object value,
+		                                 Type destinationType)
+		{
+			if (value is long number)
+			{
+				return new OptionalInt {Value = (int)number, HasValue = true};
+			}
 
-    [System.Serializable]
-    [Agnostic]
-    public class OptionalDouble : Optional<double> { }
+			return base.ConvertTo(context, culture, value, destinationType);
+		}
+	}
 
-    [System.Serializable]
-    [Agnostic]
-    public class OptionalListInt : Optional<List<int>> { }
-    
-    [System.Serializable]
-    [Agnostic]
-    public class OptionalListString : Optional<List<string>> { }
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalBoolean : Optional<bool> { }
 
-    [System.Serializable]
-    [Agnostic]
-    public class OptionalString : Optional<string> { }
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalInt : Optional<int> { }
 
-    [System.Serializable]
-    public abstract class DisplayableList<T> : DisplayableList
-    {
-       public Type ElementType => typeof(T);
-    }
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalLong : Optional<long> { }
 
-    [System.Serializable]
-    public abstract class DisplayableList : IList
-    {
-       protected abstract IList InternalList { get; }
-       public abstract string GetListPropertyPath();
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalDouble : Optional<double> { }
 
-       public void CopyTo(Array array, int index) => InternalList.CopyTo(array, index);
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalListInt : Optional<List<int>> { }
 
-       public int Count => InternalList.Count;
-       public bool IsSynchronized => InternalList.IsSynchronized;
-       public object SyncRoot => InternalList.SyncRoot;
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalListString : Optional<List<string>> { }
 
-       public IEnumerator GetEnumerator() => InternalList.GetEnumerator();
+	[System.Serializable]
+	[Agnostic]
+	public class OptionalString : Optional<string> { }
 
-       public int Add(object value)=> InternalList.Add(value);
+	[System.Serializable]
+	public abstract class DisplayableList<T> : DisplayableList
+	{
+		public Type ElementType => typeof(T);
+	}
 
-       public void Clear() => InternalList.Clear();
+	[System.Serializable]
+	public abstract class DisplayableList : IList
+	{
+		protected abstract IList InternalList
+		{
+			get;
+		}
 
-       public bool Contains(object value)=> InternalList.Contains(value);
+		public abstract string GetListPropertyPath();
 
-       public int IndexOf(object value) => InternalList.IndexOf(value);
+		public void CopyTo(Array array, int index) => InternalList.CopyTo(array, index);
 
-       public void Insert(int index, object value)=> InternalList.Insert(index, value);
+		public int Count => InternalList.Count;
+		public bool IsSynchronized => InternalList.IsSynchronized;
+		public object SyncRoot => InternalList.SyncRoot;
 
-       public void Remove(object value) => InternalList.Remove(value);
+		public IEnumerator GetEnumerator() => InternalList.GetEnumerator();
 
-       public void RemoveAt(int index) => InternalList.RemoveAt(index);
+		public int Add(object value) => InternalList.Add(value);
 
-       public bool IsFixedSize => InternalList.IsFixedSize;
-       public bool IsReadOnly => InternalList.IsReadOnly;
+		public void Clear() => InternalList.Clear();
 
-       public object this[int index]
-       {
-          get => InternalList[index];
-          set => InternalList[index] = value;
-       }
-    }
+		public bool Contains(object value) => InternalList.Contains(value);
 
-    [System.Serializable]
-    [Agnostic]
-    public class KVPair
-    {
-        public string Key;
-        public string Value;
-        public string GetKey()
-        {
-            return Key;
-        }
+		public int IndexOf(object value) => InternalList.IndexOf(value);
 
-        public string GetValue()
-        {
-            return Value;
-        }
-    }
+		public void Insert(int index, object value) => InternalList.Insert(index, value);
+
+		public void Remove(object value) => InternalList.Remove(value);
+
+		public void RemoveAt(int index) => InternalList.RemoveAt(index);
+
+		public bool IsFixedSize => InternalList.IsFixedSize;
+		public bool IsReadOnly => InternalList.IsReadOnly;
+
+		public object this[int index]
+		{
+			get => InternalList[index];
+			set => InternalList[index] = value;
+		}
+	}
+
+	[System.Serializable]
+	[Agnostic]
+	public class KVPair
+	{
+		public string Key;
+		public string Value;
+
+		public string GetKey()
+		{
+			return Key;
+		}
+
+		public string GetValue()
+		{
+			return Value;
+		}
+	}
 }

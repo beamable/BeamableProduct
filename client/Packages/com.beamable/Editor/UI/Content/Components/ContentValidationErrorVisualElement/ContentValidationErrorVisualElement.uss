@@ -5,8 +5,7 @@
 }
 
 ContentValidationErrorVisualElement,
-ContentValidationErrorVisualElement > TemplateContainer
-{
+ContentValidationErrorVisualElement > TemplateContainer {
     flex-grow: 1;
 }
 
@@ -20,10 +19,12 @@ ContentValidationErrorVisualElement > TemplateContainer
     align-items: center;
     padding-left: 18px;
 }
+
 .summaryAlignLeft {
     flex: 1;
     flex-direction: row;
 }
+
 .summaryAlignRight {
     flex: 1;
     flex-direction: row-reverse;

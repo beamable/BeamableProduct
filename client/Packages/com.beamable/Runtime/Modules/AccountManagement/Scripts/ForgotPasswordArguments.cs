@@ -4,9 +4,8 @@ using UnityEngine;
 
 namespace Beamable.AccountManagement
 {
-   public class ForgotPasswordArguments : MonoBehaviour
-   {
-      public TextReferenceBase Email, Password, Code;
-
-   }
+	public class ForgotPasswordArguments : MonoBehaviour
+	{
+		public TextReferenceBase Email, Password, Code;
+	}
 }

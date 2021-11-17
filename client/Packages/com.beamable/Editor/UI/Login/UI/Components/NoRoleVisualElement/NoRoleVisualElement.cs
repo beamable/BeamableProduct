@@ -5,28 +5,27 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+
 namespace Beamable.Editor.Login.UI.Components
 {
-   public class NoRoleVisualElement : LoginBaseComponent
-   {
-      public NoRoleVisualElement() : base(nameof(NoRoleVisualElement))
-      {
-      }
+	public class NoRoleVisualElement : LoginBaseComponent
+	{
+		public NoRoleVisualElement() : base(nameof(NoRoleVisualElement)) { }
 
-      public override string GetMessage()
-      {
-         return "One moment!";
-      }
-      
-      public override void Refresh()
-      {
-         base.Refresh();
+		public override string GetMessage()
+		{
+			return "One moment!";
+		}
 
-         var message = Root.Q<Label>();
-         message.AddTextWrapStyle();
+		public override void Refresh()
+		{
+			base.Refresh();
 
-         var button = Root.Q<Button>();
-         button.clickable.clicked += Manager.GotoSummary;
-      }
-   }
+			var message = Root.Q<Label>();
+			message.AddTextWrapStyle();
+
+			var button = Root.Q<Button>();
+			button.clickable.clicked += Manager.GotoSummary;
+		}
+	}
 }

@@ -6,8 +6,8 @@
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
-  <beamable:HeaderVisualElement name = "headerVisualElement"/>
-  <engine:VisualElement name="mainVisualElement">
-  </engine:VisualElement>
+    <beamable:HeaderVisualElement name="headerVisualElement"/>
+    <engine:VisualElement name="mainVisualElement">
+    </engine:VisualElement>
 
 </engine:UXML>

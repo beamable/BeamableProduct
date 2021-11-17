@@ -27,7 +27,7 @@
                 </engine:Image>
             </engine:Button>
 
-            <engine:Button  class="boundedButton" name="publish">
+            <engine:Button class="boundedButton" name="publish">
                 <engine:Image name="publishIcon"/>
                 <engine:Label text="Publish" class="buttonText"/>
             </engine:Button>
@@ -41,7 +41,7 @@
                 <engine:Image name="infoIcon"/>
             </engine:Button>
         </engine:VisualElement>
-        
+
     </engine:VisualElement>
 
 </engine:UXML>

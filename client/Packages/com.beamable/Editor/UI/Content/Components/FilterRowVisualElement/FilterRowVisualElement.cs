@@ -11,33 +11,33 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Content.Components
 {
-    public class FilterRowVisualElement : ContentManagerComponent
-    {
-        private Toggle _checkbox;
-        public string FilterName { set; get; }
-        public event Action<bool> OnValueChanged;
+	public class FilterRowVisualElement : ContentManagerComponent
+	{
+		private Toggle _checkbox;
 
-        public FilterRowVisualElement() : base(nameof(FilterRowVisualElement))
-        {
+		public string FilterName
+		{
+			set;
+			get;
+		}
 
-        }
+		public event Action<bool> OnValueChanged;
 
-        public override void Refresh()
-        {
-            base.Refresh();
-            var title = Root.Q<Label>("tagName");
-            _checkbox = Root.Q<Toggle>(name: "filterCheckbox");
-            _checkbox.RegisterValueChangedCallback(evt => OnValueChanged?.Invoke(evt.newValue));
+		public FilterRowVisualElement() : base(nameof(FilterRowVisualElement)) { }
 
-            title.text = FilterName;
-        }
+		public override void Refresh()
+		{
+			base.Refresh();
+			var title = Root.Q<Label>("tagName");
+			_checkbox = Root.Q<Toggle>(name: "filterCheckbox");
+			_checkbox.RegisterValueChangedCallback(evt => OnValueChanged?.Invoke(evt.newValue));
 
-        public void SetValue(bool value)
-        {
-            _checkbox.SetValueWithoutNotify(value);
-        }
-    }
+			title.text = FilterName;
+		}
 
-
+		public void SetValue(bool value)
+		{
+			_checkbox.SetValueWithoutNotify(value);
+		}
+	}
 }
-

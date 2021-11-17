@@ -3,45 +3,45 @@ using UnityEngine;
 
 namespace Modules.Inventory.Prototype.LanguageLocalization
 {
-    [RequireComponent(typeof(TextMeshProUGUI))]
-    public class LanguageLocalizationElement : MonoBehaviour
-    {
+	[RequireComponent(typeof(TextMeshProUGUI))]
+	public class LanguageLocalizationElement : MonoBehaviour
+	{
 #pragma warning disable CS0649
-        [SerializeField] private string _localizationKey;
+		[SerializeField] private string _localizationKey;
 #pragma warning restore CS0649
 
-        private TextMeshProUGUI _textComponent;
+		private TextMeshProUGUI _textComponent;
 
-        public string LocalizationKey
-        {
-            get => _localizationKey;
-            set
-            {
-                _localizationKey = value;
-                Translate();
-            }
-        }
+		public string LocalizationKey
+		{
+			get => _localizationKey;
+			set
+			{
+				_localizationKey = value;
+				Translate();
+			}
+		}
 
-        private void Translate()
-        {
-            if (_textComponent == null)
-            {
-                _textComponent = GetComponent<TextMeshProUGUI>();
-            }
+		private void Translate()
+		{
+			if (_textComponent == null)
+			{
+				_textComponent = GetComponent<TextMeshProUGUI>();
+			}
 
-            if (_textComponent != null)
-            {
-                _textComponent.text = LanguageLocalizationManager.GetTranslation(_localizationKey);
-            }
-        }
+			if (_textComponent != null)
+			{
+				_textComponent.text = LanguageLocalizationManager.GetTranslation(_localizationKey);
+			}
+		}
 
-        private void Awake()
-        {
-            if (!string.IsNullOrEmpty(LocalizationKey))
-            {
-                _textComponent = GetComponent<TextMeshProUGUI>();
-                Translate();
-            }
-        }
-    }
+		private void Awake()
+		{
+			if (!string.IsNullOrEmpty(LocalizationKey))
+			{
+				_textComponent = GetComponent<TextMeshProUGUI>();
+				Translate();
+			}
+		}
+	}
 }

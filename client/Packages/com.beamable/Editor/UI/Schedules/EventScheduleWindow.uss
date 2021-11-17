@@ -21,6 +21,7 @@ EventScheduleWindow > TemplateContainer > #mainVisualElement,
 EventScheduleWindow > TemplateContainer {
     flex-grow: 1;
 }
+
 EventScheduleWindow ScrollView #ContentView.content-view {
     position: absolute;
     left: 0px;

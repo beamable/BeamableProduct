@@ -13,6 +13,7 @@
 .boundedButton {
     border-color: #b4b4b4;
 }
+
 .unboundedButton {
     border-color: #b4b4b4;
 }

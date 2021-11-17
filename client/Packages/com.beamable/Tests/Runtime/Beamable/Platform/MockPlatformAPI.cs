@@ -23,13 +23,22 @@ namespace Beamable.Platform.Tests
 		public string Token;
 		protected object _response;
 
-		public int CallCount { get; protected set; }
+		public int CallCount
+		{
+			get;
+			protected set;
+		}
+
 		public bool Called => CallCount > 0;
 
 		public abstract Promise<T> Invoke<T>(object body, bool includeAuth, IAccessToken token);
 		public abstract string Invoke(object body, bool includeAuth, IAccessToken token);
 
-		public abstract bool MatchesRequest<T>(Method method, string uri, string token, object body, bool includeAuthHeader);
+		public abstract bool MatchesRequest<T>(Method method,
+		                                       string uri,
+		                                       string token,
+		                                       object body,
+		                                       bool includeAuthHeader);
 	}
 
 	public class MockPlatformRoute<T> : MockPlatformRouteBase
@@ -152,7 +161,11 @@ namespace Beamable.Platform.Tests
 			return _response.ToString();
 		}
 
-		public override bool MatchesRequest<T1>(Method method, string uri, string token, object body, bool includeAuthHeader)
+		public override bool MatchesRequest<T1>(Method method,
+		                                        string uri,
+		                                        string token,
+		                                        object body,
+		                                        bool includeAuthHeader)
 		{
 			var tokenMatch = string.Equals(Token, token);
 			var authMatch = includeAuthHeader == IncludeAuthHeader;
@@ -206,8 +219,17 @@ namespace Beamable.Platform.Tests
 
 		private List<MockPlatformRouteBase> _routes = new List<MockPlatformRouteBase>();
 
-		public AuthService AuthService { get; set; }
-		public IAccessToken AccessToken { get; set; }
+		public AuthService AuthService
+		{
+			get;
+			set;
+		}
+
+		public IAccessToken AccessToken
+		{
+			get;
+			set;
+		}
 
 		public bool AllMocksCalled => _routes.All(mock => mock.Called);
 
@@ -221,28 +243,33 @@ namespace Beamable.Platform.Tests
 			_routes = copy._routes; // shallow copy.
 		}
 
-		public Promise<T> RequestJson<T>(Method method, string uri, JsonSerializable.ISerializable body, bool includeAuthHeader = true)
+		public Promise<T> RequestJson<T>(Method method,
+		                                 string uri,
+		                                 JsonSerializable.ISerializable body,
+		                                 bool includeAuthHeader = true)
 		{
 			throw new NotImplementedException();
 		}
 
 		public MockPlatformRoute<T> MockRequest<T>(Method method, string uri)
 		{
-			var route = new MockPlatformRoute<T>()
-			{
-				Method = method,
-				Uri = uri,
-			};
+			var route = new MockPlatformRoute<T>() {Method = method, Uri = uri,};
 
 			_routes.Add(route);
 
 			return route;
 		}
 
-		public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null, bool useCache = false)
+		public Promise<T> Request<T>(Method method,
+		                             string uri,
+		                             object body = null,
+		                             bool includeAuthHeader = true,
+		                             Func<string, T> parser = null,
+		                             bool useCache = false)
 		{
 			// XXX this won't support multiple calls to the same route with different bodies.
-			var route = _routes.FirstOrDefault(r => r.MatchesRequest<T>(method, uri, AccessToken?.Token, body, includeAuthHeader));
+			var route = _routes.FirstOrDefault(
+				r => r.MatchesRequest<T>(method, uri, AccessToken?.Token, body, includeAuthHeader));
 
 			if (route != null)
 			{
@@ -253,7 +280,8 @@ namespace Beamable.Platform.Tests
 			}
 			else
 			{
-				throw new Exception($"No route mock available for call. method=[{method}] uri=[{uri}] includeAuth=[{includeAuthHeader}] body=[{JsonUtility.ToJson(body)}] type=[{typeof(T)}]");
+				throw new Exception(
+					$"No route mock available for call. method=[{method}] uri=[{uri}] includeAuth=[{includeAuthHeader}] body=[{JsonUtility.ToJson(body)}] type=[{typeof(T)}]");
 			}
 		}
 
@@ -270,7 +298,8 @@ namespace Beamable.Platform.Tests
 		public IBeamableRequester WithAccessToken(TokenResponse token)
 		{
 			var clone = new MockPlatformAPI(this);
-			clone.AccessToken = new AccessToken(null, null, null, token.access_token, token.refresh_token, token.expires_in);
+			clone.AccessToken =
+				new AccessToken(null, null, null, token.access_token, token.refresh_token, token.expires_in);
 			return clone;
 		}
 

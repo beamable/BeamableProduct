@@ -4,24 +4,24 @@ using Packages.Beamable.Runtime.Tests.Beamable;
 
 namespace Beamable.Server.Tests.Runtime
 {
-   public class TestClient : MicroserviceClient
-   {
-      private readonly string _serviceName;
+	public class TestClient : MicroserviceClient
+	{
+		private readonly string _serviceName;
 
-      public TestClient(string serviceName)
-      {
-         _serviceName = serviceName;
-         _prefix = "test";
-      }
+		public TestClient(string serviceName)
+		{
+			_serviceName = serviceName;
+			_prefix = "test";
+		}
 
-      public Promise<T> Request<T>(string endpoint, string[] serializedFields)
-      {
-         return base.Request<T>(_serviceName, endpoint, serializedFields);
-      }
+		public Promise<T> Request<T>(string endpoint, string[] serializedFields)
+		{
+			return base.Request<T>(_serviceName, endpoint, serializedFields);
+		}
 
-      public string GetMockPath(string cid, string pid, string endpoint)
-      {
-         return CreateUrl(cid, pid, _serviceName, endpoint);
-      }
-   }
+		public string GetMockPath(string cid, string pid, string endpoint)
+		{
+			return CreateUrl(cid, pid, _serviceName, endpoint);
+		}
+	}
 }

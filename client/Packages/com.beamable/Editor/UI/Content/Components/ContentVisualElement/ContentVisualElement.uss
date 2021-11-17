@@ -4,7 +4,7 @@ ContentVisualElement #mainVisualElement {
     align-items: center;
 }
 
-ContentVisualElement #resizable{
+ContentVisualElement #resizable {
     flex-grow: 1;
     flex-direction: row;
     align-content: center;
@@ -13,6 +13,7 @@ ContentVisualElement #resizable{
 ContentVisualElement > TemplateContainer {
     border-left-width: 4px;
 }
+
 ContentVisualElement > TemplateContainer.validationError {
     border-color: #FF0000;
 }
@@ -25,13 +26,14 @@ ContentVisualElement #nameTextField {
     flex-basis: 0px;
 
 }
+
 ContentVisualElement #nameTextField TextInput:disabled {
-    background-color: rgba(0,0,0,0);
+    background-color: rgba(0, 0, 0, 0);
     border-width: 0px;
 }
 
-TextField:focus{
-    background-color: rgba(0,0,0,.1);
+TextField:focus {
+    background-color: rgba(0, 0, 0, .1);
 }
 
 ContentVisualElement #nameTextField:disabled {
@@ -60,6 +62,7 @@ ContentVisualElement #tagListVisualElement {
     flex-shrink: 0;
 
 }
+
 #statusIcon.localNew {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/lcoal-new.png");
 }
@@ -67,6 +70,7 @@ ContentVisualElement #tagListVisualElement {
 #statusIcon.localDeleted {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/local-delete.png");
 }
+
 #statusIcon.modified {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/modified.png");
 }

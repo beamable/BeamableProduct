@@ -9,54 +9,58 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+
 namespace Beamable.Editor.Toolbox.Components
 {
-   public class AnnouncementVisualElement : BeamableVisualElement
-   {
-      public AnnouncementModel AnnouncementModel { get; set; }
-      public AnnouncementVisualElement() : base(
-         $"{BeamableComponentsConstants.COMP_PATH}/{nameof(AnnouncementVisualElement)}/{nameof(AnnouncementVisualElement)}")
-      {
-      }
+	public class AnnouncementVisualElement : BeamableVisualElement
+	{
+		public AnnouncementModel AnnouncementModel
+		{
+			get;
+			set;
+		}
 
-      public override void Refresh()
-      {
-         base.Refresh();
+		public AnnouncementVisualElement() : base(
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(AnnouncementVisualElement)}/{nameof(AnnouncementVisualElement)}") { }
 
-         var titleLabel = Root.Q<VisualElement>("title");
-         var descLabel = Root.Q<VisualElement>("desc");
-         var actionButton = Root.Q<Button>();
+		public override void Refresh()
+		{
+			base.Refresh();
 
-         titleLabel.Add(AnnouncementModel.TitleElement);
-         descLabel.Add(AnnouncementModel.DescriptionElement);
+			var titleLabel = Root.Q<VisualElement>("title");
+			var descLabel = Root.Q<VisualElement>("desc");
+			var actionButton = Root.Q<Button>();
 
-         actionButton.text = AnnouncementModel.ActionText;
-         actionButton.clickable.clicked += OnActionClicked;
+			titleLabel.Add(AnnouncementModel.TitleElement);
+			descLabel.Add(AnnouncementModel.DescriptionElement);
 
-         if (AnnouncementModel.CustomIcon != null)
-         {
-            var icon = Root.Q<VisualElement>("icon");
-            icon.style.backgroundImage = AnnouncementModel.CustomIcon;
-         }
+			actionButton.text = AnnouncementModel.ActionText;
+			actionButton.clickable.clicked += OnActionClicked;
 
-         switch (AnnouncementModel.Status)
-         {
-            case ToolboxAnnouncementStatus.INFO:
-               AddToClassList("info");
-               break;
-            case ToolboxAnnouncementStatus.WARNING:
-               AddToClassList("warning");
-               break;
-            case ToolboxAnnouncementStatus.DANGER:
-               AddToClassList("danger");
-               break;
-         }
-      }
+			if (AnnouncementModel.CustomIcon != null)
+			{
+				var icon = Root.Q<VisualElement>("icon");
+				icon.style.backgroundImage = AnnouncementModel.CustomIcon;
+			}
 
-      private void OnActionClicked()
-      {
-         // TODO: maybe do something flashy?
-         AnnouncementModel?.Action?.Invoke();
-      }
-   }
+			switch (AnnouncementModel.Status)
+			{
+				case ToolboxAnnouncementStatus.INFO:
+					AddToClassList("info");
+					break;
+				case ToolboxAnnouncementStatus.WARNING:
+					AddToClassList("warning");
+					break;
+				case ToolboxAnnouncementStatus.DANGER:
+					AddToClassList("danger");
+					break;
+			}
+		}
+
+		private void OnActionClicked()
+		{
+			// TODO: maybe do something flashy?
+			AnnouncementModel?.Action?.Invoke();
+		}
+	}
 }

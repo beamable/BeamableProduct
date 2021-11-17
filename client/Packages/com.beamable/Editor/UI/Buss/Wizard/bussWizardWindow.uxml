@@ -7,7 +7,7 @@
 
 
     <engine:VisualElement name="header">
-<!--        <engine:Label text="Beamable Theme Wizard"/>-->
+        <!--        <engine:Label text="Beamable Theme Wizard"/>-->
     </engine:VisualElement>
 
     <engine:VisualElement name="main">
@@ -20,12 +20,11 @@
             <engine:VisualElement name="step">
             </engine:VisualElement>
             <engine:VisualElement name="button-strip">
-<!--                <engine:Button name="btn-back" text="Back"/>-->
+                <!--                <engine:Button name="btn-back" text="Back"/>-->
                 <engine:Button name="btn-next" text="Next"/>
             </engine:VisualElement>
         </engine:VisualElement>
     </engine:VisualElement>
-
 
 
 </engine:UXML>

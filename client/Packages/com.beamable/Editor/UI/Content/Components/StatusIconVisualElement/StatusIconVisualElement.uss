@@ -2,9 +2,11 @@
 #imageLocal {
     left: 0px;
 }
+
 #imageServer {
     left: 4px;
 }
+
 .status {
     /* TEMPORARY, UNTIL WE HAVE IMAGES FOR ALL THIS. */
     position: absolute;

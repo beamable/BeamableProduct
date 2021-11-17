@@ -7,7 +7,8 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd Beamable.Editor.Content.Components ">
     <engine:VisualElement>
 
-        <engine:Label text="The Beamable Microservices feature is a separate Unity package. To use it, you must have Docker installed on your machine. Would you like to install the Beamable Microservice package into this project?"/>
+        <engine:Label
+                text="The Beamable Microservices feature is a separate Unity package. To use it, you must have Docker installed on your machine. Would you like to install the Beamable Microservice package into this project?"/>
 
 
         <engine:VisualElement name="buttonWrapper">

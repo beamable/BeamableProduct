@@ -4,7 +4,7 @@
 
 
 .boundedButton {
-    border-color:#8f8f8f;
+    border-color: #8f8f8f;
 }
 
 .unboundedButton {
@@ -13,6 +13,6 @@
 
 }
 
-#openPortalButton{
+#openPortalButton {
     border-color: #8f8f8f;
 }

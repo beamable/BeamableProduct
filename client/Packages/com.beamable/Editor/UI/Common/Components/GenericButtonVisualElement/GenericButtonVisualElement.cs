@@ -13,82 +13,104 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-    public class GenericButtonVisualElement : BeamableVisualElement
-    {
-        public enum ButtonType
-        {
-            Default,
-            Confirm,
-            Cancel,
-            Link
-        }
-        
-        public new class UxmlFactory : UxmlFactory<GenericButtonVisualElement, UxmlTraits>
-        {
-        }
+	public class GenericButtonVisualElement : BeamableVisualElement
+	{
+		public enum ButtonType
+		{
+			Default,
+			Confirm,
+			Cancel,
+			Link
+		}
 
-        public event Action OnClick;
+		public new class UxmlFactory : UxmlFactory<GenericButtonVisualElement, UxmlTraits> { }
 
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            private ButtonType _defaultType = ButtonType.Default;
-            
-            readonly UxmlStringAttributeDescription _text = new UxmlStringAttributeDescription
-                {name = "text", defaultValue = ""};
+		public event Action OnClick;
 
-            readonly UxmlStringAttributeDescription _tooltip = new UxmlStringAttributeDescription
-            { name = "tooltip", defaultValue = "" };
+		public new class UxmlTraits : VisualElement.UxmlTraits
+		{
+			private ButtonType _defaultType = ButtonType.Default;
 
-            readonly UxmlStringAttributeDescription _type = new UxmlStringAttributeDescription
-                {name = "type", defaultValue = ""};
+			readonly UxmlStringAttributeDescription _text = new UxmlStringAttributeDescription
+			{
+				name = "text", defaultValue = ""
+			};
 
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
+			readonly UxmlStringAttributeDescription _tooltip = new UxmlStringAttributeDescription
+			{
+				name = "tooltip", defaultValue = ""
+			};
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                if (ve is GenericButtonVisualElement component)
-                {
-                    component.Text = _text.GetValueFromBag(bag, cc);
-                    component.Tooltip = _tooltip.GetValueFromBag(bag, cc);
+			readonly UxmlStringAttributeDescription _type = new UxmlStringAttributeDescription
+			{
+				name = "type", defaultValue = ""
+			};
 
-                    string passedType = _type.GetValueFromBag(bag, cc);
-                    bool parsed = Enum.TryParse(passedType, true, out ButtonType parsedType);
-                    component.Type = parsed ? parsedType : _defaultType;
-                    component.Refresh();
-                }
-            }
-        }
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
+				get
+				{
+					yield break;
+				}
+			}
 
-        private Button _button;
-        private VisualElement _mainVisualElement;
+			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+			{
+				base.Init(ve, bag, cc);
+				if (ve is GenericButtonVisualElement component)
+				{
+					component.Text = _text.GetValueFromBag(bag, cc);
+					component.Tooltip = _tooltip.GetValueFromBag(bag, cc);
 
-        private ButtonType Type { get; set; }
-        private string Text { get; set; }
-        private string Tooltip { get; set; }
+					string passedType = _type.GetValueFromBag(bag, cc);
+					bool parsed = Enum.TryParse(passedType, true, out ButtonType parsedType);
+					component.Type = parsed ? parsedType : _defaultType;
+					component.Refresh();
+				}
+			}
+		}
 
-        public GenericButtonVisualElement() : base(
-            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(GenericButtonVisualElement)}/{nameof(GenericButtonVisualElement)}")
-        {
-        }
+		private Button _button;
+		private VisualElement _mainVisualElement;
 
-        public override void Refresh()
-        {
-            base.Refresh();
+		private ButtonType Type
+		{
+			get;
+			set;
+		}
 
-            _button = Root.Q<Button>("button");
-            _button.text = Text;
-            _button.tooltip = Tooltip;
-            _button.clickable.clicked += () => { OnClick?.Invoke(); };
-            _mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
-            _button.AddToClassList(Type.ToString().ToLower());
-        }
+		private string Text
+		{
+			get;
+			set;
+		}
 
-        public void SetText(string val) => _button.text = val;
+		private string Tooltip
+		{
+			get;
+			set;
+		}
 
-        public void SetTooltip(string val) => _button.tooltip = val;
-    }
+		public GenericButtonVisualElement() : base(
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(GenericButtonVisualElement)}/{nameof(GenericButtonVisualElement)}") { }
+
+		public override void Refresh()
+		{
+			base.Refresh();
+
+			_button = Root.Q<Button>("button");
+			_button.text = Text;
+			_button.tooltip = Tooltip;
+			_button.clickable.clicked += () =>
+			{
+				OnClick?.Invoke();
+			};
+			_mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
+			_button.AddToClassList(Type.ToString().ToLower());
+		}
+
+		public void SetText(string val) => _button.text = val;
+
+		public void SetTooltip(string val) => _button.tooltip = val;
+	}
 }

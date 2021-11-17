@@ -1,5 +1,5 @@
-Button#checkboxButton{
-    background-color:#FFFFFF;
+Button#checkboxButton {
+    background-color: #FFFFFF;
     justify-content: center;
     height: 16px;
     width: 16px;
@@ -16,7 +16,7 @@ Button#checkboxButton{
 }
 
 #onNotifier {
-    background-color:#0091FF;
+    background-color: #0091FF;
     align-self: center;
     height: 10px;
     width: 10px;

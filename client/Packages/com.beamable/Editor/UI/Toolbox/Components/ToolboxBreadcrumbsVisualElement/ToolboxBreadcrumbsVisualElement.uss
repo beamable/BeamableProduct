@@ -24,6 +24,7 @@
     background-image: none;
     justify-content: center;
 }
+
 .unboundedButton {
     height: 30px;
     width: 38px;
@@ -55,7 +56,7 @@
     right: 10px;
 }
 
-#openPortalButton{
+#openPortalButton {
     height: 22px;
     top: 0px;
     margin-bottom: 3px;

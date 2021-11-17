@@ -5,7 +5,6 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 
 #if UNITY_EDITOR
-
 using System.Reflection;
 using UnityEditor;
 
@@ -16,7 +15,6 @@ namespace Beamable.Service
 	public static class ServiceManager
 	{
 		private static readonly Dictionary<Type, IServiceResolver> Resolvers = new Dictionary<Type, IServiceResolver>();
-
 
 #if UNITY_EDITOR
 		private static bool _testingServices;
@@ -35,9 +33,7 @@ namespace Beamable.Service
 		{
 			internal static readonly TestScope Instance = new TestScope();
 
-			private TestScope()
-			{
-			}
+			private TestScope() { }
 
 			public void Dispose()
 			{
@@ -58,8 +54,6 @@ namespace Beamable.Service
 		{
 			public static IServiceResolver<T> Resolver;
 		}
-
-
 
 		public static void RuntimeOnlyDontDestroyOnLoad(GameObject go)
 		{
@@ -84,6 +78,7 @@ namespace Beamable.Service
 			{
 				return;
 			}
+
 			Resolvers[tType] = resolver;
 			ResolverHolder<T>.Resolver = resolver; // Optimization for FindResolver<T>, see notes below.
 			ServicesLogger.LogFormat("Registered {0} to provide service {1}.", resolver.GetType().Name, typeof(T).Name);
@@ -112,7 +107,8 @@ namespace Beamable.Service
 
 			Resolvers.Remove(typeof(T));
 			ResolverHolder<T>.Resolver = null;
-			ServicesLogger.LogFormat("Removed {0} from providing service {1}.", (resolver == null ? "null" : resolver.GetType().Name), typeof(T).Name);
+			ServicesLogger.LogFormat("Removed {0} from providing service {1}.",
+			                         (resolver == null ? "null" : resolver.GetType().Name), typeof(T).Name);
 		}
 
 		// Returns true if the next call to Resolve<T>() will return a valid instance of the required service.  Note, this
@@ -149,6 +145,7 @@ namespace Beamable.Service
 			{
 				return resolver.Resolve();
 			}
+
 			throw new InvalidOperationException("No service found of type " + typeof(T).Name);
 		}
 
@@ -205,12 +202,13 @@ namespace Beamable.Service
 			{
 				root = new GameObject("Services");
 			}
+
 			RuntimeOnlyDontDestroyOnLoad(root);
 			serviceObject.transform.SetParent(root.transform);
 		}
 
 		private static IServiceResolver<T> FindResolver<T>()
-									where T : class
+			where T : class
 		{
 			var resolver = ResolverHolder<T>.Resolver;
 			if (resolver != null)
@@ -248,6 +246,7 @@ namespace Beamable.Service
 
 				return resolver;
 			}
+
 			return null;
 		}
 
@@ -270,6 +269,7 @@ namespace Beamable.Service
 				var field = holderType.GetField("resolver", BindingFlags.Static | BindingFlags.Public);
 				field?.SetValue(null, null);
 			}
+
 			Resolvers.Clear();
 		}
 

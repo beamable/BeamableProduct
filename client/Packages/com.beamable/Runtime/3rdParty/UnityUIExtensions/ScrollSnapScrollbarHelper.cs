@@ -8,49 +8,49 @@ using UnityEngine.EventSystems;
 
 namespace Beamable.UnityEngineClone.UI.Extensions
 {
-   public class ScrollSnapScrollbarHelper : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IBeginDragHandler, IEndDragHandler, IDragHandler
-   {
+	public class ScrollSnapScrollbarHelper : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IBeginDragHandler,
+	                                         IEndDragHandler, IDragHandler
+	{
+		internal IScrollSnap ss;
 
-      internal IScrollSnap ss;
+		public void OnBeginDrag(PointerEventData eventData)
+		{
+			OnScrollBarDown();
+		}
 
-      public void OnBeginDrag(PointerEventData eventData)
-      {
-         OnScrollBarDown();
-      }
+		public void OnDrag(PointerEventData eventData)
+		{
+			ss.CurrentPage();
+		}
 
-      public void OnDrag(PointerEventData eventData)
-      {
-         ss.CurrentPage();
-      }
+		public void OnEndDrag(PointerEventData eventData)
+		{
+			OnScrollBarUp();
+		}
 
-      public void OnEndDrag(PointerEventData eventData)
-      {
-         OnScrollBarUp();
-      }
+		public void OnPointerDown(PointerEventData eventData)
+		{
+			OnScrollBarDown();
+		}
 
-      public void OnPointerDown(PointerEventData eventData)
-      {
-         OnScrollBarDown();
-      }
+		public void OnPointerUp(PointerEventData eventData)
+		{
+			OnScrollBarUp();
+		}
 
-      public void OnPointerUp(PointerEventData eventData)
-      {
-         OnScrollBarUp();
-      }
+		void OnScrollBarDown()
+		{
+			if (ss != null)
+			{
+				ss.SetLerp(false);
+				ss.StartScreenChange();
+			}
+		}
 
-      void OnScrollBarDown()
-      {
-         if (ss != null)
-         {
-            ss.SetLerp(false);
-            ss.StartScreenChange();
-         }
-      }
-
-      void OnScrollBarUp()
-      {
-         ss.SetLerp(true);
-         ss.ChangePage(ss.CurrentPage());
-      }
-   }
+		void OnScrollBarUp()
+		{
+			ss.SetLerp(true);
+			ss.ChangePage(ss.CurrentPage());
+		}
+	}
 }

@@ -7,6 +7,6 @@ Button#refreshButton {
     background-color: #b4b4b4;
 }
 
-#realmButton Image#dropDownIcon{
+#realmButton Image#dropDownIcon {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown Close Dark.png")
 }

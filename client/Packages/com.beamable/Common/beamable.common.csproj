@@ -17,15 +17,15 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Compile Remove="'\**" />
+        <Compile Remove="'\**"/>
     </ItemGroup>
 
     <ItemGroup>
-      <EmbeddedResource Remove="'\**" />
+        <EmbeddedResource Remove="'\**"/>
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="'\**" />
+        <None Remove="'\**"/>
     </ItemGroup>
 
 </Project>

@@ -25,7 +25,8 @@ namespace Beamable.Server.Editor.DockerCommands
       protected override void ModifyStartInfo(ProcessStartInfo processStartInfo)
       {
          base.ModifyStartInfo(processStartInfo);
-         processStartInfo.EnvironmentVariables["DOCKER_BUILDKIT"] = MicroserviceConfiguration.Instance.EnableDockerBuildkit ? "1" : "0";
+         processStartInfo.EnvironmentVariables["DOCKER_BUILDKIT"] =
+ MicroserviceConfiguration.Instance.EnableDockerBuildkit ? "1" : "0";
       }
 
       public override string GetCommandString()
@@ -40,6 +41,5 @@ namespace Beamable.Server.Editor.DockerCommands
       }
    }
 }
-
 
 #endif

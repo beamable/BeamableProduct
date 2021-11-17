@@ -23,7 +23,9 @@ namespace Beamable.Service
 			{
 				if (ApplicationLifetime.isQuitting)
 				{
-					Debug.LogError(string.Format("Application is quiting, but something is still calling ServiceManager.Resolve<{0}>, which is going to return null. Use ServiceManager.Exists before ServiceManager.Resolve on cleanup code", typeof(TResolvedAs).ToString()));
+					Debug.LogError(string.Format(
+						               "Application is quiting, but something is still calling ServiceManager.Resolve<{0}>, which is going to return null. Use ServiceManager.Exists before ServiceManager.Resolve on cleanup code",
+						               typeof(TResolvedAs).ToString()));
 					return null;
 				}
 
@@ -40,6 +42,7 @@ namespace Beamable.Service
 					instance = gameObject.GetComponent<TResolvedAs>();
 				}
 			}
+
 			return instance;
 		}
 
@@ -49,6 +52,7 @@ namespace Beamable.Service
 			{
 				return;
 			}
+
 			Object.Destroy(instance.gameObject);
 			instance = null;
 		}

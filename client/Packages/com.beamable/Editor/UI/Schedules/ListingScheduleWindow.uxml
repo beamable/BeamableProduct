@@ -29,8 +29,8 @@
 
             <engine:VisualElement name="buttonStrip">
                 <beamable:PrimaryButtonVisualElement name="confirmBtn" text="Confirm"/>
-                <beamable:GenericButtonVisualElement name="cancelBtn" text="Cancel" type ="Cancel"/>
-            </engine:VisualElement>    
+                <beamable:GenericButtonVisualElement name="cancelBtn" text="Cancel" type="Cancel"/>
+            </engine:VisualElement>
         </engine:ScrollView>
     </engine:VisualElement>
 

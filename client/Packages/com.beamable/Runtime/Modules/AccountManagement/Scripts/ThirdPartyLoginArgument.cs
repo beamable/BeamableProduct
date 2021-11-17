@@ -4,8 +4,8 @@ using UnityEngine;
 
 namespace Beamable.AccountManagement
 {
-   public class ThirdPartyLoginArgument : MonoBehaviour
-   {
-      public AuthThirdParty ThirdParty;
-   }
+	public class ThirdPartyLoginArgument : MonoBehaviour
+	{
+		public AuthThirdParty ThirdParty;
+	}
 }

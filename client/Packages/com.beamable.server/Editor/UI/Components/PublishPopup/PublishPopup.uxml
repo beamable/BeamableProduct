@@ -7,8 +7,8 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:VisualElement name="mainVisualElement">
-        <engine:Label name = "warningMessage" text="Are you sure you want to deploy your microservices?"/>
-        
+        <engine:Label name="warningMessage" text="Are you sure you want to deploy your microservices?"/>
+
         <engine:VisualElement name="header">
             <engine:VisualElement name="enabledC" class="column">
                 <engine:Label text="Enabled" class="SubTitleText"/>
@@ -17,7 +17,7 @@
             <engine:VisualElement name="typeC" class="column">
                 <engine:Label text="Type" class="SubTitleText"/>
             </engine:VisualElement>
-            
+
             <engine:VisualElement name="nameC" class="column">
                 <engine:Label text="Name" class="SubTitleText"/>
             </engine:VisualElement>
@@ -25,13 +25,13 @@
             <engine:VisualElement name="depsC" class="column">
                 <engine:Label text="Dependencies" class="SubTitleText"/>
             </engine:VisualElement>
-            
+
             <engine:VisualElement name="SizeC" class="column">
-            <engine:Label text="Profile" class="SubTitleText"/>
+                <engine:Label text="Profile" class="SubTitleText"/>
             </engine:VisualElement>
-                
+
             <engine:VisualElement name="CommentsC" class="column">
-            <engine:Label text="Comments" class="SubTitleText" name="commentsLabel"/>
+                <engine:Label text="Comments" class="SubTitleText" name="commentsLabel"/>
             </engine:VisualElement>
 
             <engine:VisualElement name="CheckC" class="column"/>

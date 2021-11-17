@@ -14,7 +14,7 @@
         </beamable:LoadingIndicatorVisualElement>
     </engine:VisualElement>
 
-    <engine:VisualElement name="mainVisualElement" >
+    <engine:VisualElement name="mainVisualElement">
         <beamable:LoadingBarElement/>
 
         <engine:Label name="message" text="placeholder"/>
@@ -30,7 +30,7 @@
                 <engine:Label name="deleteLabel" text=" Deleted"/>
             </engine:VisualElement>
             <engine:VisualElement class="summaryAlignRight">
-<!--                <engine:Button name="detailBtn" text="Detail"/>-->
+                <!--                <engine:Button name="detailBtn" text="Detail"/>-->
             </engine:VisualElement>
         </engine:VisualElement>
 
@@ -41,14 +41,14 @@
                 <engine:Foldout name="addFoldout">
                 </engine:Foldout>
                 <engine:Foldout name="deleteFoldout">
-                </engine:Foldout>              
+                </engine:Foldout>
             </engine:ScrollView>
 
             <engine:Label name="noDownloadLbl"/>
         </engine:VisualElement>
 
         <engine:VisualElement name="buttonStrip">
-            <beamable:GenericButtonVisualElement name="cancelBtn" text="Cancel" type ="Cancel"/>
+            <beamable:GenericButtonVisualElement name="cancelBtn" text="Cancel" type="Cancel"/>
             <beamable:PrimaryButtonVisualElement name="downloadBtn" text="Reset"/>
         </engine:VisualElement>
     </engine:VisualElement>

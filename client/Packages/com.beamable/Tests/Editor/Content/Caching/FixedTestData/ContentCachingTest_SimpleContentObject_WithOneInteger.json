@@ -1,1 +1,9 @@
-{"id":"ContentCachingTestContent.test_content","version":"f3148cf498ca6370e2ab048de83c7c4625df4f99","properties":{"testInteger":{"data":23}}}
+{
+  "id": "ContentCachingTestContent.test_content",
+  "version": "f3148cf498ca6370e2ab048de83c7c4625df4f99",
+  "properties": {
+    "testInteger": {
+      "data": 23
+    }
+  }
+}

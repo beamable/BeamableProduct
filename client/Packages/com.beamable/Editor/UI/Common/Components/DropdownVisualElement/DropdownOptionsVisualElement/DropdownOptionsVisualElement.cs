@@ -11,70 +11,69 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-    public class DropdownOptionsVisualElement : BeamableVisualElement
-    {
-        private VisualElement _mainContainer;
-        private readonly List<DropdownSingleOptionVisualElement> _allOptions = new List<DropdownSingleOptionVisualElement>();
-        private Action _onDestroy;
+	public class DropdownOptionsVisualElement : BeamableVisualElement
+	{
+		private VisualElement _mainContainer;
 
-        public new class UxmlFactory : UxmlFactory<DropdownOptionsVisualElement, UxmlTraits>
-        {
-        }
+		private readonly List<DropdownSingleOptionVisualElement> _allOptions =
+			new List<DropdownSingleOptionVisualElement>();
 
-        public DropdownOptionsVisualElement() : base(
-            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(DropdownVisualElement)}/{nameof(DropdownOptionsVisualElement)}/{nameof(DropdownOptionsVisualElement)}")
-        {
-        }
+		private Action _onDestroy;
 
-        public override void Refresh()
-        {
-            base.Refresh();
+		public new class UxmlFactory : UxmlFactory<DropdownOptionsVisualElement, UxmlTraits> { }
 
-            _mainContainer = Root.Q<VisualElement>("mainVisualElement");
+		public DropdownOptionsVisualElement() : base(
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(DropdownVisualElement)}/{nameof(DropdownOptionsVisualElement)}/{nameof(DropdownOptionsVisualElement)}") { }
 
-            RenderOptions();
-        }
+		public override void Refresh()
+		{
+			base.Refresh();
 
-        protected override void OnDestroy()
-        {
-            _onDestroy?.Invoke();
-        }
+			_mainContainer = Root.Q<VisualElement>("mainVisualElement");
 
-        public DropdownOptionsVisualElement Setup(List<DropdownSingleOptionVisualElement> options, Action onDestroy)
-        {
-            _allOptions.Clear();
-            _allOptions.AddRange(options);
+			RenderOptions();
+		}
 
-            _onDestroy = onDestroy;
-            return this;
-        }
+		protected override void OnDestroy()
+		{
+			_onDestroy?.Invoke();
+		}
 
-        public float GetHeight()
-        {
-            float overallHeight = 0.0f;
+		public DropdownOptionsVisualElement Setup(List<DropdownSingleOptionVisualElement> options, Action onDestroy)
+		{
+			_allOptions.Clear();
+			_allOptions.AddRange(options);
 
-            foreach (DropdownSingleOptionVisualElement option in _allOptions)
-            {
-                overallHeight += option.Height;
-            }
+			_onDestroy = onDestroy;
+			return this;
+		}
 
-            return overallHeight;
-        }
+		public float GetHeight()
+		{
+			float overallHeight = 0.0f;
 
-        private void RenderOptions()
-        {
-            foreach (VisualElement child in _mainContainer.Children())
-            {
-                _mainContainer.Remove(child);
-            }
+			foreach (DropdownSingleOptionVisualElement option in _allOptions)
+			{
+				overallHeight += option.Height;
+			}
 
-            foreach (DropdownSingleOptionVisualElement option in _allOptions)
-            {
-                _mainContainer.Add(option);
-                option.Refresh();
-            }
+			return overallHeight;
+		}
 
-            _mainContainer.style.SetHeight(GetHeight());
-        }
-    }
+		private void RenderOptions()
+		{
+			foreach (VisualElement child in _mainContainer.Children())
+			{
+				_mainContainer.Remove(child);
+			}
+
+			foreach (DropdownSingleOptionVisualElement option in _allOptions)
+			{
+				_mainContainer.Add(option);
+				option.Refresh();
+			}
+
+			_mainContainer.style.SetHeight(GetHeight());
+		}
+	}
 }

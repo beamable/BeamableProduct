@@ -6,95 +6,114 @@ using UnityEditor.IMGUI.Controls;
 
 namespace Beamable.Editor.Content.Models
 {
-   public class ContentTypeTreeViewItem : TreeViewItem
-   {
-      public ContentTypeDescriptor TypeDescriptor { get; }
+	public class ContentTypeTreeViewItem : TreeViewItem
+	{
+		public ContentTypeDescriptor TypeDescriptor
+		{
+			get;
+		}
 
-      public ContentTypeTreeViewItem(int id, int depth, ContentTypeDescriptor typeDescriptor)
-      {
-         TypeDescriptor = typeDescriptor;
+		public ContentTypeTreeViewItem(int id, int depth, ContentTypeDescriptor typeDescriptor)
+		{
+			TypeDescriptor = typeDescriptor;
 
-         base.id = id;
-         base.displayName = typeDescriptor.ShortName;
-         base.depth = depth;
-      }
-   }
+			base.id = id;
+			base.displayName = typeDescriptor.ShortName;
+			base.depth = depth;
+		}
+	}
 
+	public class ContentTypeDescriptor
+	{
+		public Type ContentType
+		{
+			get;
+			private set;
+		}
 
-   public class ContentTypeDescriptor
-   {
-      public Type ContentType { get; private set; }
-      public string TypeName { get; private set; }
+		public string TypeName
+		{
+			get;
+			private set;
+		}
 
-      public string ShortName
-      {
-         get
-         {
-            var lastIndex = TypeName.LastIndexOf('.');
-            return lastIndex < 0
-                   ? TypeName
-                   : TypeName.Substring(lastIndex + 1);
-         }
-      }
+		public string ShortName
+		{
+			get
+			{
+				var lastIndex = TypeName.LastIndexOf('.');
+				return lastIndex < 0
+					? TypeName
+					: TypeName.Substring(lastIndex + 1);
+			}
+		}
 
-      public HostStatus LocalStatus { get; private set; }
-      public HostStatus ServerStatus { get; private set; }
+		public HostStatus LocalStatus
+		{
+			get;
+			private set;
+		}
 
-      public Action OnModified;
+		public HostStatus ServerStatus
+		{
+			get;
+			private set;
+		}
 
-      // TODO refactor to constructor
-      public void SetFromLocal(string typeName, Type type)
-      {
-         ContentType = type;
-         TypeName = typeName;
-         LocalStatus = HostStatus.AVAILABLE;
-         ServerStatus = HostStatus.UNKNOWN;
-      }
+		public Action OnModified;
 
-      public void SetFromLocal(LocalContentManifestEntry entry)
-      {
-         ContentType = entry.ContentType;
-         TypeName = entry.TypeName;
-         LocalStatus = HostStatus.AVAILABLE;
-         ServerStatus = HostStatus.UNKNOWN;
-      }
+		// TODO refactor to constructor
+		public void SetFromLocal(string typeName, Type type)
+		{
+			ContentType = type;
+			TypeName = typeName;
+			LocalStatus = HostStatus.AVAILABLE;
+			ServerStatus = HostStatus.UNKNOWN;
+		}
 
-      public void SetFromContent(IContentObject content)
-      {
-         ContentType = content.GetType();
-         TypeName = ContentRegistry.TypeToName(ContentType);
-         LocalStatus = HostStatus.AVAILABLE;
-         ServerStatus = HostStatus.UNKNOWN;
-      }
+		public void SetFromLocal(LocalContentManifestEntry entry)
+		{
+			ContentType = entry.ContentType;
+			TypeName = entry.TypeName;
+			LocalStatus = HostStatus.AVAILABLE;
+			ServerStatus = HostStatus.UNKNOWN;
+		}
 
-      public void SetFromServer(ManifestReferenceSuperset reference)
-      {
-         TypeName = reference.TypeName;
-         ServerStatus = HostStatus.AVAILABLE;
+		public void SetFromContent(IContentObject content)
+		{
+			ContentType = content.GetType();
+			TypeName = ContentRegistry.TypeToName(ContentType);
+			LocalStatus = HostStatus.AVAILABLE;
+			ServerStatus = HostStatus.UNKNOWN;
+		}
 
-         if (ContentRegistry.TryGetType(TypeName, out var type))
-         {
-            ContentType = type;
-            LocalStatus = HostStatus.AVAILABLE;
-         }
-         else
-         {
-            LocalStatus = HostStatus.NOT_AVAILABLE;
-         }
+		public void SetFromServer(ManifestReferenceSuperset reference)
+		{
+			TypeName = reference.TypeName;
+			ServerStatus = HostStatus.AVAILABLE;
 
-      }
+			if (ContentRegistry.TryGetType(TypeName, out var type))
+			{
+				ContentType = type;
+				LocalStatus = HostStatus.AVAILABLE;
+			}
+			else
+			{
+				LocalStatus = HostStatus.NOT_AVAILABLE;
+			}
+		}
 
-      public void EnrichWithLocal(Type contentType)
-      {
-         LocalStatus = HostStatus.AVAILABLE;
-         ContentType = contentType;
-         OnModified?.Invoke();
-      }
+		public void EnrichWithLocal(Type contentType)
+		{
+			LocalStatus = HostStatus.AVAILABLE;
+			ContentType = contentType;
+			OnModified?.Invoke();
+		}
 
-      public void EnrichWithServer()
-      {
-         ServerStatus = HostStatus.AVAILABLE;
-         OnModified?.Invoke();
-      }
-   }
+		public void EnrichWithServer()
+		{
+			ServerStatus = HostStatus.AVAILABLE;
+			OnModified?.Invoke();
+		}
+	}
 }

@@ -21,7 +21,7 @@ ConfirmationPopupVisualElement #buttonsVisualElement {
     flex-shrink: 0;
 }
 
-PrimaryButtonVisualElement{
+PrimaryButtonVisualElement {
     width: 100px;
     height: 28px;
     margin-bottom: 5px;

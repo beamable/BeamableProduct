@@ -108,7 +108,9 @@ LogVisualElement > TemplateContainer > #mainVisualElement {
 .unfoldIcon {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/unfold.png");
 }
+
 #leftDashLine, #rightDashLine {
     background-color: #4A4A4A;
 }
+
 /* END TODO*/

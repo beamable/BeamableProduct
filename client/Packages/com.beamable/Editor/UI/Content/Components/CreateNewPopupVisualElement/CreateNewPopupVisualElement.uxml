@@ -4,10 +4,10 @@
         xmlns:engine="UnityEngine.Experimental.UIElements"
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
-<engine:ScrollView>
-    <engine:VisualElement name="mainVisualElement">
-<!--        <engine:Button class="addItemButton"/>-->
-    </engine:VisualElement>
-</engine:ScrollView>
+    <engine:ScrollView>
+        <engine:VisualElement name="mainVisualElement">
+            <!--        <engine:Button class="addItemButton"/>-->
+        </engine:VisualElement>
+    </engine:ScrollView>
 
 </engine:UXML>

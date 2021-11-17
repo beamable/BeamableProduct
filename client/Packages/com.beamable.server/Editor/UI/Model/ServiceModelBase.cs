@@ -20,89 +20,135 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Model
 {
-    public abstract class ServiceModelBase : IBeamableService
-    {
-        private const float DEFAULT_HEIGHT = 300.0f;
+	public abstract class ServiceModelBase : IBeamableService
+	{
+		private const float DEFAULT_HEIGHT = 300.0f;
 
-        public abstract bool IsRunning { get; }
-        public bool AreLogsAttached
-        {
-            get => _areLogsAttached;
-            protected set => _areLogsAttached = value;
-        }
+		public abstract bool IsRunning
+		{
+			get;
+		}
 
-        [SerializeField] private bool _areLogsAttached = true;
-        [SerializeField] private LogMessageStore _logs = new LogMessageStore();
-        [SerializeField] private float _visualHeight = DEFAULT_HEIGHT;
+		public bool AreLogsAttached
+		{
+			get => _areLogsAttached;
+			protected set => _areLogsAttached = value;
+		}
 
-        public LogMessageStore Logs => _logs;
+		[SerializeField] private bool _areLogsAttached = true;
+		[SerializeField] private LogMessageStore _logs = new LogMessageStore();
+		[SerializeField] private float _visualHeight = DEFAULT_HEIGHT;
 
-        public float VisualElementHeight
-        {
-            get => _visualHeight;
-            set => _visualHeight = value;
-        }
+		public LogMessageStore Logs => _logs;
 
-        public abstract IDescriptor Descriptor { get; }
-        public abstract IBeamableBuilder Builder { get; }
-        public ServiceType ServiceType => Descriptor.ServiceType;
-        public string Name => Descriptor.Name;
-        public bool IsSelected
-        {
-            get => _isSelected;
-            set
-            {
-                _isSelected = value;
-                OnSelectionChanged?.Invoke(value);
-            }
-        }
-        private bool _isSelected;
-        
-        public bool IsCollapsed
-        {
-            get => _isCollapsed;
-            set => _isCollapsed = value;
-        }
-        [SerializeField] private bool _isCollapsed = false;
+		public float VisualElementHeight
+		{
+			get => _visualHeight;
+			set => _visualHeight = value;
+		}
 
-        public Action OnLogsDetached { get; set; }
-        public Action OnLogsAttached { get; set; }
-        public Action<bool> OnLogsAttachmentChanged { get; set; }
-        public Action<bool> OnSelectionChanged { get; set; }
-        public Action OnSortChanged { get; set; }
-        public Action<float, long, long> OnDeployProgress { get; set; }
+		public abstract IDescriptor Descriptor
+		{
+			get;
+		}
 
-        public abstract event Action<Task> OnStart;
-        public abstract event Action<Task> OnStop;
+		public abstract IBeamableBuilder Builder
+		{
+			get;
+		}
 
-        public void DetachLogs()
-        {
-            if (!AreLogsAttached) return;
+		public ServiceType ServiceType => Descriptor.ServiceType;
+		public string Name => Descriptor.Name;
 
-            AreLogsAttached = false;
-            OnLogsDetached?.Invoke();
-            OnLogsAttachmentChanged?.Invoke(false);
-        }
-        public void AttachLogs()
-        {
-            if (AreLogsAttached) return;
-            AreLogsAttached = true;
-            OnLogsAttached?.Invoke();
-            OnLogsAttachmentChanged?.Invoke(true);
-        }
-        
-        // TODO - When MongoStorageModel will be ready feel free to implement these methods
-        // TODO === BEGIN
-        public abstract void PopulateMoreDropdown(ContextualMenuPopulateEvent evt);
-        // TODO === END
-        public abstract void Refresh(IDescriptor descriptor);
-        public abstract Task Start();
-        public abstract Task Stop();
-        
-        protected void OpenCode()
-        {
-            var path = Path.GetDirectoryName(AssemblyDefinitionHelper.ConvertToInfo(Descriptor).Location);
-            EditorUtility.OpenWithDefaultApp($@"{path}/{Descriptor.Name}.cs");
-        }
-    }
+		public bool IsSelected
+		{
+			get => _isSelected;
+			set
+			{
+				_isSelected = value;
+				OnSelectionChanged?.Invoke(value);
+			}
+		}
+
+		private bool _isSelected;
+
+		public bool IsCollapsed
+		{
+			get => _isCollapsed;
+			set => _isCollapsed = value;
+		}
+
+		[SerializeField] private bool _isCollapsed = false;
+
+		public Action OnLogsDetached
+		{
+			get;
+			set;
+		}
+
+		public Action OnLogsAttached
+		{
+			get;
+			set;
+		}
+
+		public Action<bool> OnLogsAttachmentChanged
+		{
+			get;
+			set;
+		}
+
+		public Action<bool> OnSelectionChanged
+		{
+			get;
+			set;
+		}
+
+		public Action OnSortChanged
+		{
+			get;
+			set;
+		}
+
+		public Action<float, long, long> OnDeployProgress
+		{
+			get;
+			set;
+		}
+
+		public abstract event Action<Task> OnStart;
+		public abstract event Action<Task> OnStop;
+
+		public void DetachLogs()
+		{
+			if (!AreLogsAttached) return;
+
+			AreLogsAttached = false;
+			OnLogsDetached?.Invoke();
+			OnLogsAttachmentChanged?.Invoke(false);
+		}
+
+		public void AttachLogs()
+		{
+			if (AreLogsAttached) return;
+			AreLogsAttached = true;
+			OnLogsAttached?.Invoke();
+			OnLogsAttachmentChanged?.Invoke(true);
+		}
+
+		// TODO - When MongoStorageModel will be ready feel free to implement these methods
+		// TODO === BEGIN
+		public abstract void PopulateMoreDropdown(ContextualMenuPopulateEvent evt);
+
+		// TODO === END
+		public abstract void Refresh(IDescriptor descriptor);
+		public abstract Task Start();
+		public abstract Task Stop();
+
+		protected void OpenCode()
+		{
+			var path = Path.GetDirectoryName(AssemblyDefinitionHelper.ConvertToInfo(Descriptor).Location);
+			EditorUtility.OpenWithDefaultApp($@"{path}/{Descriptor.Name}.cs");
+		}
+	}
 }

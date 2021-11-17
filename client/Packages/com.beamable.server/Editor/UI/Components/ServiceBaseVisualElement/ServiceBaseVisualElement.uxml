@@ -9,7 +9,7 @@
 
     <engine:VisualElement name="mainVisualElement">
         <engine:VisualElement name="logHeader">
-          <beamable:LabeledCheckboxVisualElement name="checkbox" flip ="True"/>
+            <beamable:LabeledCheckboxVisualElement name="checkbox" flip="True"/>
             <engine:VisualElement class="leftArea" name="leftArea">
                 <engine:TextField name="microserviceNewTitle" class="title" text="ANGIE'S TEST"/>
             </engine:VisualElement>

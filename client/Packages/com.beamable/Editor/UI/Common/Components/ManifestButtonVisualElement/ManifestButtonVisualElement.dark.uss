@@ -3,12 +3,13 @@ Button#refreshButton {
 }
 
 .boundedButton {
-    border-color:#8f8f8f;
+    border-color: #8f8f8f;
 }
 
-.manifestNotPublished{
+.manifestNotPublished {
     background-color: #FF786E;
 }
-#manifestButton Image#dropDownIcon{
+
+#manifestButton Image#dropDownIcon {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown Close.png")
 }

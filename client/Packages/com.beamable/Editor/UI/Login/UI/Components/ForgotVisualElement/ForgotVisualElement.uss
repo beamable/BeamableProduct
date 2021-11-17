@@ -1,9 +1,9 @@
-#mainContainer{
+#mainContainer {
     width: 300px;
     align-self: center;
 }
 
-.input{
+.input {
     height: 30px;
     -unity-text-align: middle-left;
     background-color: #f4f4f4;
@@ -11,8 +11,8 @@
     margin-bottom: 5px;
 }
 
-.btnText{
-    min-width:100px;
+.btnText {
+    min-width: 100px;
 }
 
 #getCode {
@@ -20,7 +20,7 @@
     height: 35px;
 }
 
-#newPasswordLabel{
+#newPasswordLabel {
     margin-top: 15px;
 }
 

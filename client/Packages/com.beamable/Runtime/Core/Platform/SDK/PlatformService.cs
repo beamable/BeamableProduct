@@ -49,11 +49,25 @@ namespace Beamable.Api
 
 		event Action TimeOverrideChanged;
 
-		User User { get; }
-		Promise<Unit> OnReady { get; }
-		NotificationService Notification { get; }
+		User User
+		{
+			get;
+		}
 
-		IConnectivityService ConnectivityService { get; }
+		Promise<Unit> OnReady
+		{
+			get;
+		}
+
+		NotificationService Notification
+		{
+			get;
+		}
+
+		IConnectivityService ConnectivityService
+		{
+			get;
+		}
 	}
 
 	[EditorServiceResolver(typeof(PlatformEditorServiceResolver))]
@@ -126,10 +140,24 @@ namespace Beamable.Api
 		public event Action TimeOverrideChanged;
 
 		// Initialization Control
-		public Promise<Unit> OnReady { get; set; }
+		public Promise<Unit> OnReady
+		{
+			get;
+			set;
+		}
 
-		public IConnectivityService ConnectivityService { get; set; }
-		public NotificationService Notification { get; set; }
+		public IConnectivityService ConnectivityService
+		{
+			get;
+			set;
+		}
+
+		public NotificationService Notification
+		{
+			get;
+			set;
+		}
+
 		public IBeamablePurchaser BeamablePurchaser => ServiceManager.ResolveIfAvailable<IBeamablePurchaser>();
 
 		public string Cid
@@ -183,9 +211,7 @@ namespace Beamable.Api
 			set => _requester.Host = value;
 		}
 
-		public PlatformService()
-		{
-		}
+		public PlatformService() { }
 
 		public PlatformService(bool debugMode, bool withLocalNote = true)
 		{
@@ -199,10 +225,7 @@ namespace Beamable.Api
 			OnReady = new Promise<Unit>();
 			_initSteps = new InitStep[]
 			{
-				InitStepLoadToken,
-				InitStepRefreshAccount,
-				InitStepGetAccount,
-				InitStepStartSession,
+				InitStepLoadToken, InitStepRefreshAccount, InitStepGetAccount, InitStepStartSession,
 				InitStepStartAuxiliary
 			};
 
@@ -229,7 +252,9 @@ namespace Beamable.Api
 			Mail = new MailService(this, _requester);
 
 			// This will be talking to the new C# services.
-			_beamableApiRequester = new BeamableApiRequester(ConfigDatabase.GetString("platform"), _accessTokenStorage, ConnectivityService);
+			_beamableApiRequester =
+				new BeamableApiRequester(ConfigDatabase.GetString("platform"), _accessTokenStorage,
+				                         ConnectivityService);
 			Matchmaking = new MatchmakingService(this, _beamableApiRequester);
 
 			Payments = new PaymentService(this, _requester);
@@ -248,7 +273,8 @@ namespace Beamable.Api
 			_filesystemAccessor = new PlatformFilesystemAccessor();
 			ContentService = new ContentService(this, _requester, _filesystemAccessor);
 			ContentApi.Instance
-				.CompleteSuccess(ContentService); // TODO: This is hacky until we can get the serviceManager into common.
+			          .CompleteSuccess(
+				          ContentService); // TODO: This is hacky until we can get the serviceManager into common.
 			CloudDataService = new CloudDataService(this, _requester);
 		}
 
@@ -285,20 +311,18 @@ namespace Beamable.Api
 		public Promise<Unit> StartNewSession()
 		{
 			return AdvertisingIdentifier.AdvertisingIdentifier.GetIdentifier()
-				.FlatMap(id => Session.StartSession(_user, id, _requester.Language)).Map(_ => PromiseBase.Unit);
+			                            .FlatMap(id => Session.StartSession(_user, id, _requester.Language))
+			                            .Map(_ => PromiseBase.Unit);
 		}
 
 		public Promise<ISet<UserBundle>> GetDeviceUsers()
 		{
 			var promises = Array.ConvertAll(_accessTokenStorage.RetrieveDeviceRefreshTokens(Cid, Pid),
-				token => Auth.GetUser(token).Map(user => new UserBundle
-				{
-					User = user,
-					Token = token
-				}));
+			                                token => Auth.GetUser(token)
+			                                             .Map(user => new UserBundle {User = user, Token = token}));
 
 			return Promise.Sequence(promises)
-				.Map(userBundles => (new HashSet<UserBundle>(userBundles) as ISet<UserBundle>));
+			              .Map(userBundles => (new HashSet<UserBundle>(userBundles) as ISet<UserBundle>));
 		}
 
 		public void RemoveDeviceUsers(TokenResponse token)
@@ -330,7 +354,7 @@ namespace Beamable.Api
 		{
 			ClearToken();
 			_requester.Token = new AccessToken(_accessTokenStorage, Cid, Pid, rsp.access_token, rsp.refresh_token,
-				rsp.expires_in);
+			                                   rsp.expires_in);
 			_beamableApiRequester.Token = _requester.Token;
 			return _requester.Token.Save();
 		}
@@ -477,7 +501,10 @@ namespace Beamable.Api
 		private Promise<Unit> InitStepStartAuxiliary()
 		{
 			//If you lose internet in the middle of these warming up, we may not recover properly.
-			BeamablePurchaser?.Initialize().Then(_ => { InitializedBeamableIAP.CompleteSuccess(BeamablePurchaser); });
+			BeamablePurchaser?.Initialize().Then(_ =>
+			{
+				InitializedBeamableIAP.CompleteSuccess(BeamablePurchaser);
+			});
 			if (_withLocalNote)
 				Notification.RegisterForNotifications(this);
 			Heartbeat = new Heartbeat(this, ServiceManager.Resolve<CoroutineService>());

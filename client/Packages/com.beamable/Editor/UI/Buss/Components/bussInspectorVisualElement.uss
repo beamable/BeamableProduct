@@ -20,6 +20,7 @@ VisualElement.hide {
     position: absolute;
     left: 999999px;
 }
+
 VisualElement.show {
     position: relative;
     left: 0px;
@@ -43,6 +44,7 @@ BussInspectorVisualElement #property-container Label:disabled {
 #tab-btns {
     flex-direction: row;
 }
+
 #tab-btns Button {
     flex-grow: 1;
     margin-left: 0px;
@@ -55,7 +57,7 @@ BussInspectorVisualElement #property-container Label:disabled {
     border-bottom-width: 0px;
     border-radius: 0px;
     background-image: none;
-    background-color: rgba(0,0,0,0);
+    background-color: rgba(0, 0, 0, 0);
 }
 
 #tab-btns Button:hover {
@@ -68,23 +70,27 @@ BussInspectorVisualElement #property-container Label:disabled {
 }
 
 #computed #property-container {
-    background-color: rgba(0,0,0,.1);
+    background-color: rgba(0, 0, 0, .1);
 }
+
 #computed-lbl {
     margin-bottom: 4px;
 }
 
-#sheet-selector-container{
+#sheet-selector-container {
     flex-direction: row;
 }
+
 #btn-add-rule {
     margin-top: 0px;
 }
+
 #sheet-selector-container PopupField {
     flex-grow: 1;
     margin-bottom: 0px;
     padding-bottom: 0px;
 }
+
 #sheet-selector-container Label {
 
     margin-bottom: 0px;

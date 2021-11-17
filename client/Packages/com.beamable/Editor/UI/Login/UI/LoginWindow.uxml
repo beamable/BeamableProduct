@@ -15,7 +15,8 @@
             <beamable:LoadingIndicatorVisualElement/>
             <engine:VisualElement name="header">
                 <engine:VisualElement name="logo"/>
-                <engine:Label name="welcomeText" class="text" text="Thank you for using Beamable, please select the following options"/>
+                <engine:Label name="welcomeText" class="text"
+                              text="Thank you for using Beamable, please select the following options"/>
             </engine:VisualElement>
         </engine:VisualElement>
 

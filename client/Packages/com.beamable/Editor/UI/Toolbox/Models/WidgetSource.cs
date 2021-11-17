@@ -6,156 +6,170 @@ using UnityEngine;
 
 namespace Beamable.Editor.Toolbox.Models
 {
-   public interface IWidgetSource
-   {
-      int Count { get; }
-      Widget Get(int index);
+	public interface IWidgetSource
+	{
+		int Count
+		{
+			get;
+		}
 
-      // TODO: Add some sort of update event to allow for network backed systems
-   }
+		Widget Get(int index);
 
-   public class EmptyWidgetSource : IWidgetSource
-   {
-      public int Count => 0;
-      public Widget Get(int index)
-      {
-         throw new NotImplementedException();
-      }
+		// TODO: Add some sort of update event to allow for network backed systems
+	}
 
-   }
+	public class EmptyWidgetSource : IWidgetSource
+	{
+		public int Count => 0;
 
-   public class WidgetSource : ScriptableObject, IWidgetSource
-   {
-      [SerializeField]
-      private List<Widget> _widgets = new List<Widget>();
+		public Widget Get(int index)
+		{
+			throw new NotImplementedException();
+		}
+	}
 
-      public int Count => _widgets.Count;
-      public Widget Get(int index)
-      {
-         return _widgets[index];
-      }
-   }
+	public class WidgetSource : ScriptableObject, IWidgetSource
+	{
+		[SerializeField]
+		private List<Widget> _widgets = new List<Widget>();
 
-   [System.Serializable]
-   public class Widget
-   {
-      public string Name;
-      public string Description;
-      [EnumFlags]
-      public WidgetOrientationSupport OrientationSupport;
-      [EnumFlags]
-      public WidgetTags Tags;
-      public Texture Icon;
-      public GameObject Prefab;
-   }
+		public int Count => _widgets.Count;
 
-   [Flags]
-   [System.Serializable]
-   public enum WidgetOrientationSupport
-   {
-      PORTRAIT=1,
-      LANDSCAPE=2
-   }
+		public Widget Get(int index)
+		{
+			return _widgets[index];
+		}
+	}
 
-   [Flags]
-   [System.Serializable]
-   public enum WidgetTags
-   {
-      FLOW = 1,
-      COMPONENT = 1 << 1,
-      ACCOUNTS = 1 << 2,
-      SHOP = 1 << 3,
-      INVENTORY = 1 << 4,
-      CURRENCY = 1 << 5,
-      LEADERBOARDS = 1 << 6,
-      ADMIN = 1 << 7,
-      ANNOUNCEMENTS = 1 << 8,
-   }
+	[System.Serializable]
+	public class Widget
+	{
+		public string Name;
+		public string Description;
 
-   public static class WidgetOrientationSupportExtensions
-   {
-      static Dictionary<WidgetOrientationSupport, string> enumToString = new Dictionary<WidgetOrientationSupport, string>
-      {
-         {WidgetOrientationSupport.PORTRAIT, "portrait"},
-         {WidgetOrientationSupport.LANDSCAPE, "landscape"},
-      };
-      static Dictionary<string, WidgetOrientationSupport> stringToEnum = new Dictionary<string, WidgetOrientationSupport>();
+		[EnumFlags]
+		public WidgetOrientationSupport OrientationSupport;
 
-      static WidgetOrientationSupportExtensions()
-      {
-         foreach (var kvp in enumToString)
-         {
-            stringToEnum.Add(kvp.Value, kvp.Key);
-         }
-      }
-      public static string Serialize(this WidgetOrientationSupport self)
-      {
-         var str = self.ToString();
-         foreach (var kvp in stringToEnum)
-         {
-            str = str.Replace(kvp.Value.ToString(), kvp.Key);
-         }
-         str = str.Replace(",", "");
-         return str;
-      }
+		[EnumFlags]
+		public WidgetTags Tags;
 
-      public static bool TryParse(string str, out WidgetOrientationSupport status)
-      {
-         var parts = str.Split(new []{' '}, StringSplitOptions.None);
-         status = WidgetOrientationSupport.PORTRAIT;
+		public Texture Icon;
+		public GameObject Prefab;
+	}
 
-         var any = false;
-         foreach (var part in parts)
-         {
-            if (stringToEnum.TryGetValue(part, out var subStatus))
-            {
-               if (!any)
-               {
-                  status = subStatus;
-               }
-               else
-               {
-                  status |= subStatus;
-               }
-               any = true;
-            }
-         }
-         return any;
-      }
-   }
+	[Flags]
+	[System.Serializable]
+	public enum WidgetOrientationSupport
+	{
+		PORTRAIT = 1,
+		LANDSCAPE = 2
+	}
 
-   public static class WidgetTagExtensions
-   {
-      static Dictionary<WidgetTags, string> enumToString = new Dictionary<WidgetTags, string>
-      {
-      };
-      static Dictionary<string, WidgetTags> stringToEnum = new Dictionary<string, WidgetTags>();
+	[Flags]
+	[System.Serializable]
+	public enum WidgetTags
+	{
+		FLOW = 1,
+		COMPONENT = 1 << 1,
+		ACCOUNTS = 1 << 2,
+		SHOP = 1 << 3,
+		INVENTORY = 1 << 4,
+		CURRENCY = 1 << 5,
+		LEADERBOARDS = 1 << 6,
+		ADMIN = 1 << 7,
+		ANNOUNCEMENTS = 1 << 8,
+	}
 
-      static WidgetTagExtensions()
-      {
-         Enum.GetValues(typeof(WidgetTags)).Cast<WidgetTags>().ToList().ForEach(tag =>
-         {
-            enumToString.Add(tag, tag.ToString().ToLower());
-         });
-         foreach (var kvp in enumToString)
-         {
-            stringToEnum.Add(kvp.Value, kvp.Key);
-         }
-      }
-      public static bool TryParse(string raw, out WidgetTags tags)
-      {
-         return Enum.TryParse(raw, true, out tags);
-      }
+	public static class WidgetOrientationSupportExtensions
+	{
+		static Dictionary<WidgetOrientationSupport, string> enumToString =
+			new Dictionary<WidgetOrientationSupport, string>
+			{
+				{WidgetOrientationSupport.PORTRAIT, "portrait"}, {WidgetOrientationSupport.LANDSCAPE, "landscape"},
+			};
 
-      public static string Serialize(this WidgetTags widget)
-      {
-         var str = widget.ToString();
-         foreach (var kvp in stringToEnum)
-         {
-            str = str.Replace(kvp.Value.ToString(), kvp.Key);
-         }
-         str = str.Replace(",", "");
-         return str;
-      }
-   }
+		static Dictionary<string, WidgetOrientationSupport> stringToEnum =
+			new Dictionary<string, WidgetOrientationSupport>();
+
+		static WidgetOrientationSupportExtensions()
+		{
+			foreach (var kvp in enumToString)
+			{
+				stringToEnum.Add(kvp.Value, kvp.Key);
+			}
+		}
+
+		public static string Serialize(this WidgetOrientationSupport self)
+		{
+			var str = self.ToString();
+			foreach (var kvp in stringToEnum)
+			{
+				str = str.Replace(kvp.Value.ToString(), kvp.Key);
+			}
+
+			str = str.Replace(",", "");
+			return str;
+		}
+
+		public static bool TryParse(string str, out WidgetOrientationSupport status)
+		{
+			var parts = str.Split(new[] {' '}, StringSplitOptions.None);
+			status = WidgetOrientationSupport.PORTRAIT;
+
+			var any = false;
+			foreach (var part in parts)
+			{
+				if (stringToEnum.TryGetValue(part, out var subStatus))
+				{
+					if (!any)
+					{
+						status = subStatus;
+					}
+					else
+					{
+						status |= subStatus;
+					}
+
+					any = true;
+				}
+			}
+
+			return any;
+		}
+	}
+
+	public static class WidgetTagExtensions
+	{
+		static Dictionary<WidgetTags, string> enumToString = new Dictionary<WidgetTags, string> { };
+		static Dictionary<string, WidgetTags> stringToEnum = new Dictionary<string, WidgetTags>();
+
+		static WidgetTagExtensions()
+		{
+			Enum.GetValues(typeof(WidgetTags)).Cast<WidgetTags>().ToList().ForEach(tag =>
+			{
+				enumToString.Add(tag, tag.ToString().ToLower());
+			});
+			foreach (var kvp in enumToString)
+			{
+				stringToEnum.Add(kvp.Value, kvp.Key);
+			}
+		}
+
+		public static bool TryParse(string raw, out WidgetTags tags)
+		{
+			return Enum.TryParse(raw, true, out tags);
+		}
+
+		public static string Serialize(this WidgetTags widget)
+		{
+			var str = widget.ToString();
+			foreach (var kvp in stringToEnum)
+			{
+				str = str.Replace(kvp.Value.ToString(), kvp.Key);
+			}
+
+			str = str.Replace(",", "");
+			return str;
+		}
+	}
 }

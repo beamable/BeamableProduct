@@ -5,9 +5,9 @@
         xmlns:beamable="Beamable.Editor.UI.Components"
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
-     <engine:Button class="button proxy">
+    <engine:Button class="button proxy">
 
-          <beamable:LoadingSpinnerVisualElement size="15"/>
+        <beamable:LoadingSpinnerVisualElement size="15"/>
 
-     </engine:Button>
+    </engine:Button>
 </engine:UXML>

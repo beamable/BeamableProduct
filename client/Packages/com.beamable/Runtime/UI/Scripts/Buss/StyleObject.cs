@@ -7,92 +7,94 @@ using UnityEngine;
 
 namespace Beamable.UI.Buss
 {
-    public static class StyleObjectExtensions
-    {
-        public static StyleObject MergeStyles(this List<StyleObject> self)
-        {
-            var final = self.Count == 0
-                ? null
-                : self.Aggregate((agg, curr) => agg.Merge(curr));
-            return final;
-        }
-    }
+	public static class StyleObjectExtensions
+	{
+		public static StyleObject MergeStyles(this List<StyleObject> self)
+		{
+			var final = self.Count == 0
+				? null
+				: self.Aggregate((agg, curr) => agg.Merge(curr));
+			return final;
+		}
+	}
 
-    /// <summary>
-    /// StyleObject is a class. When it is new'd, we'll create a blank style object with null properties.
-    /// </summary>
-    [Serializable]
-    public class StyleObject : IVariableScope
-    {
-        public ColorBussProperty Color = new ColorBussProperty();
-        public BackgroundBussProperty Background = new BackgroundBussProperty();
-        public FontBussProperty Font = new FontBussProperty();
-//        public TextBussProperty Text = new TextBussProperty();
-//        public VerticalBussProperty Vertical = new VerticalBussProperty();
+	/// <summary>
+	/// StyleObject is a class. When it is new'd, we'll create a blank style object with null properties.
+	/// </summary>
+	[Serializable]
+	public class StyleObject : IVariableScope
+	{
+		public ColorBussProperty Color = new ColorBussProperty();
+		public BackgroundBussProperty Background = new BackgroundBussProperty();
 
-        public BorderBussProperty Border = new BorderBussProperty();
+		public FontBussProperty Font = new FontBussProperty();
+		//        public TextBussProperty Text = new TextBussProperty();
+		//        public VerticalBussProperty Vertical = new VerticalBussProperty();
 
-        public VariableScope Scope = new VariableScope();
+		public BorderBussProperty Border = new BorderBussProperty();
 
-        private List<BUSSProperty> AllProperties => new List<BUSSProperty>
-        {
-            Color, Background, Font, //Text, Vertical
-        };
+		public VariableScope Scope = new VariableScope();
 
-        public bool AnyDefinition => AllProperties.Any(p => p.HasAnyStyles) || Scope.AnyDefinition;
+		private List<BUSSProperty> AllProperties =>
+			new List<BUSSProperty>
+			{
+				Color, Background, Font, //Text, Vertical
+			};
 
-        public virtual StyleObject Clone()
-        {
-            var next = new StyleObject();
-            next.Scope = Scope.Clone();
+		public bool AnyDefinition => AllProperties.Any(p => p.HasAnyStyles) || Scope.AnyDefinition;
 
-            next.Color = Color.Clone();
-            next.Background = Background.Clone();
-            next.Font = Font.Clone();
-//            next.Text = Text.Clone();
-//            next.Vertical = Vertical.Clone();
-            next.Border = Border.Clone();
-            return next;
-        }
+		public virtual StyleObject Clone()
+		{
+			var next = new StyleObject();
+			next.Scope = Scope.Clone();
 
-        /// <summary>
-        /// Prefer the values in the other StyleObject over the existing ones
-        /// </summary>
-        /// <param name="other"></param>
-        /// <returns>a brand new StyleObject. No modification should have happened to the invocation target's data</returns>
-        public virtual StyleObject Merge(StyleObject other)
-        {
-            var next = new StyleObject();
+			next.Color = Color.Clone();
+			next.Background = Background.Clone();
+			next.Font = Font.Clone();
+			//            next.Text = Text.Clone();
+			//            next.Vertical = Vertical.Clone();
+			next.Border = Border.Clone();
+			return next;
+		}
 
-            T PreferOther<T>(Func<StyleObject, T> getter) where T : BUSSProperty, IBUSSProperty<T>
-            {
-                var selfProp = getter(this);
-                if (other == null) return selfProp.Clone();
-                var otherProp = getter(other);
-                return
-                    // is the other property enabled, and does is it not null?
-                    (otherProp?.Enabled ?? false)
+		/// <summary>
+		/// Prefer the values in the other StyleObject over the existing ones
+		/// </summary>
+		/// <param name="other"></param>
+		/// <returns>a brand new StyleObject. No modification should have happened to the invocation target's data</returns>
+		public virtual StyleObject Merge(StyleObject other)
+		{
+			var next = new StyleObject();
 
-                    // if so, return our prop, but with overrides from the other prop
-                    ? selfProp.OverrideWith(otherProp)
+			T PreferOther<T>(Func<StyleObject, T> getter) where T : BUSSProperty, IBUSSProperty<T>
+			{
+				var selfProp = getter(this);
+				if (other == null) return selfProp.Clone();
+				var otherProp = getter(other);
+				return
+					// is the other property enabled, and does is it not null?
+					(otherProp?.Enabled ?? false)
 
-                    // else, return our prop, but cloned so that we don't leak
-                    : selfProp.Clone();
-            }
+						// if so, return our prop, but with overrides from the other prop
+						? selfProp.OverrideWith(otherProp)
 
-            next.Color = PreferOther(x => x.Color);
-            next.Background = PreferOther(x => x.Background);
-            next.Font = PreferOther(x => x.Font);
-//            next.Text = PreferOther(x => x.Text);
-//            next.Vertical = PreferOther(x => x.Vertical);
-            next.Border = PreferOther(x => x.Border);
-            next.Scope = Scope.Merge(other?.Scope);
-            return next;
-        }
+						// else, return our prop, but cloned so that we don't leak
+						: selfProp.Clone();
+			}
 
-        public T Resolve<T>(string variable)
-        {
-            return Scope.Resolve<T>(variable);
-        }
-    }
+			next.Color = PreferOther(x => x.Color);
+			next.Background = PreferOther(x => x.Background);
+			next.Font = PreferOther(x => x.Font);
+			//            next.Text = PreferOther(x => x.Text);
+			//            next.Vertical = PreferOther(x => x.Vertical);
+			next.Border = PreferOther(x => x.Border);
+			next.Scope = Scope.Merge(other?.Scope);
+			return next;
+		}
+
+		public T Resolve<T>(string variable)
+		{
+			return Scope.Resolve<T>(variable);
+		}
+	}
 }

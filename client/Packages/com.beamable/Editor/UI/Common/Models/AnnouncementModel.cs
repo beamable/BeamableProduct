@@ -12,28 +12,26 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Toolbox.Models
 {
-   public class AnnouncementModel : AnnouncementModelBase
-   {
-      public void SetTitle(string title)
-      {
-         TitleElement = new Label(title);
-      }
+	public class AnnouncementModel : AnnouncementModelBase
+	{
+		public void SetTitle(string title)
+		{
+			TitleElement = new Label(title);
+		}
 
-      public void SetDescription(string desc)
-      {
-         DescriptionElement = new Label(desc);
-         DescriptionElement.AddTextWrapStyle();
-      }
+		public void SetDescription(string desc)
+		{
+			DescriptionElement = new Label(desc);
+			DescriptionElement.AddTextWrapStyle();
+		}
 
-      public string ActionText;
-      public Texture2D CustomIcon;
-      public Action Action;
-      public override BeamableVisualElement CreateVisualElement()
-      {
-         return new AnnouncementVisualElement()
-         {
-            AnnouncementModel = this
-         };
-      }
-   }
+		public string ActionText;
+		public Texture2D CustomIcon;
+		public Action Action;
+
+		public override BeamableVisualElement CreateVisualElement()
+		{
+			return new AnnouncementVisualElement() {AnnouncementModel = this};
+		}
+	}
 }

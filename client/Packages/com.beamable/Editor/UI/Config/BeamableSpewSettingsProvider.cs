@@ -8,145 +8,145 @@ using UnityEngine;
 
 namespace Beamable.Spew
 {
-    public class BeamableSpewSettingsProvider : SettingsProvider
-    {
-        private List<string> _allFlags;
+	public class BeamableSpewSettingsProvider : SettingsProvider
+	{
+		private List<string> _allFlags;
 
-        public BeamableSpewSettingsProvider(string path, SettingsScope scopes = SettingsScope.Project,
-            IEnumerable<string> keywords = null) : base(path, scopes, keywords)
-        {
-        }
-        
-        [SettingsProvider]
-        public static SettingsProvider CreateSpewSettingsProvider()
-        {
-            BeamableSpewSettingsProvider provider =
-                new BeamableSpewSettingsProvider("Project/Beamable/Verbose Logging", SettingsScope.Project);
-            provider.keywords = new HashSet<string>(new[] {"Spew"});
-            return provider;
-        }
+		public BeamableSpewSettingsProvider(string path,
+		                                    SettingsScope scopes = SettingsScope.Project,
+		                                    IEnumerable<string> keywords = null) : base(path, scopes, keywords) { }
 
-        public override void OnGUI(string searchContext)
-        {
-            ScrapeAllFlags();
+		[SettingsProvider]
+		public static SettingsProvider CreateSpewSettingsProvider()
+		{
+			BeamableSpewSettingsProvider provider =
+				new BeamableSpewSettingsProvider("Project/Beamable/Verbose Logging", SettingsScope.Project);
+			provider.keywords = new HashSet<string>(new[] {"Spew"});
+			return provider;
+		}
 
-            List<string> flagState = GetFlagStates();
-            for (int i = 0; i < _allFlags.Count; ++i)
-            {
-                string flag = _allFlags[i];
-                bool state = flagState.Contains(flag);
+		public override void OnGUI(string searchContext)
+		{
+			ScrapeAllFlags();
 
-                using (new EditorGUILayout.HorizontalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
-                {
-                    bool newState = GUILayout.Toggle(state, flag);
-                    if (state != newState)
-                    {
-                        if (newState)
-                        {
-                            flagState.Add(flag);
-                        }
-                        else
-                        {
-                            flagState.Remove(flag);
-                        }
+			List<string> flagState = GetFlagStates();
+			for (int i = 0; i < _allFlags.Count; ++i)
+			{
+				string flag = _allFlags[i];
+				bool state = flagState.Contains(flag);
 
-                        SetFlagStates(flagState);
-                    }
-                }
-            }
-        }
+				using (new EditorGUILayout.HorizontalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
+				{
+					bool newState = GUILayout.Toggle(state, flag);
+					if (state != newState)
+					{
+						if (newState)
+						{
+							flagState.Add(flag);
+						}
+						else
+						{
+							flagState.Remove(flag);
+						}
 
-        private void SetFlagStates(List<string> flags)
-        {
-            var sb = new StringBuilder();
-            for (int i = 0; i < flags.Count; ++i)
-            {
-                sb.Append(flags[i]);
-                sb.Append(";");
-            }
+						SetFlagStates(flagState);
+					}
+				}
+			}
+		}
 
-            PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup, sb.ToString());
-        }
+		private void SetFlagStates(List<string> flags)
+		{
+			var sb = new StringBuilder();
+			for (int i = 0; i < flags.Count; ++i)
+			{
+				sb.Append(flags[i]);
+				sb.Append(";");
+			}
 
-        private void ScrapeAllFlags()
-        {
-            if (_allFlags != null) return;
+			PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup,
+			                                                 sb.ToString());
+		}
 
-            var allFlagsSet = new HashSet<string>();
+		private void ScrapeAllFlags()
+		{
+			if (_allFlags != null) return;
 
-            // TEMP: Scrape the Logger methods for Conditional attributes
-            Type type = typeof(Logger);
-            ScrapeConditionals(type, allFlagsSet);
+			var allFlagsSet = new HashSet<string>();
 
-            var taggedClasses = AttributeUtil.GetClassesInAllAssemblies<SpewLoggerAttribute>();
-            for (int i = 0; i < taggedClasses.Count; ++i)
-            {
-                ScrapeConditionals(taggedClasses[i], allFlagsSet);
-            }
+			// TEMP: Scrape the Logger methods for Conditional attributes
+			Type type = typeof(Logger);
+			ScrapeConditionals(type, allFlagsSet);
 
-            _allFlags = new List<string>(allFlagsSet);
-            _allFlags.Sort();
-        }
+			var taggedClasses = AttributeUtil.GetClassesInAllAssemblies<SpewLoggerAttribute>();
+			for (int i = 0; i < taggedClasses.Count; ++i)
+			{
+				ScrapeConditionals(taggedClasses[i], allFlagsSet);
+			}
 
-        private void ScrapeConditionals(Type type, HashSet<string> flags)
-        {
-            MethodInfo[] infos = type.GetMethods(BindingFlags.Static | BindingFlags.Public);
-            for (int i = 0; i < infos.Length; ++i)
-            {
-                object[] atr = infos[i].GetCustomAttributes(typeof(ConditionalAttribute), false);
-                for (int j = 0; j < atr.Length; ++j)
-                {
-                    var ca = atr[j] as ConditionalAttribute;
-                    if (ca != null)
-                    {
-                        flags.Add(ca.ConditionString);
-                    }
-                }
-            }
-        }
+			_allFlags = new List<string>(allFlagsSet);
+			_allFlags.Sort();
+		}
 
-        private List<string> GetFlagStates()
-        {
-            string s = PlayerSettings.GetScriptingDefineSymbolsForGroup(
-                EditorUserBuildSettings.selectedBuildTargetGroup);
-            string[] split = s.Split(';');
-            return new List<string>(split);
-        }
-    }
+		private void ScrapeConditionals(Type type, HashSet<string> flags)
+		{
+			MethodInfo[] infos = type.GetMethods(BindingFlags.Static | BindingFlags.Public);
+			for (int i = 0; i < infos.Length; ++i)
+			{
+				object[] atr = infos[i].GetCustomAttributes(typeof(ConditionalAttribute), false);
+				for (int j = 0; j < atr.Length; ++j)
+				{
+					var ca = atr[j] as ConditionalAttribute;
+					if (ca != null)
+					{
+						flags.Add(ca.ConditionString);
+					}
+				}
+			}
+		}
 
-    // This belongs in Core.Utility.AttributeUtil, however, unfinished asmdef work made this difficult.
-    public static class AttributeUtil
-    {
-        public static List<Type> GetClassesInAllAssemblies<TAttr>(bool inherit = true) where TAttr : Attribute
-        {
-            return GetClassesInAssemblies<TAttr>(AppDomain.CurrentDomain.GetAssemblies(), inherit);
-        }
+		private List<string> GetFlagStates()
+		{
+			string s = PlayerSettings.GetScriptingDefineSymbolsForGroup(
+				EditorUserBuildSettings.selectedBuildTargetGroup);
+			string[] split = s.Split(';');
+			return new List<string>(split);
+		}
+	}
 
-        public static List<Type> GetClassesInAssemblies<Tattr>(IList<Assembly> assemblies, bool inherit = true)
-            where Tattr : Attribute
-        {
-            var result = new List<Type>();
+	// This belongs in Core.Utility.AttributeUtil, however, unfinished asmdef work made this difficult.
+	public static class AttributeUtil
+	{
+		public static List<Type> GetClassesInAllAssemblies<TAttr>(bool inherit = true) where TAttr : Attribute
+		{
+			return GetClassesInAssemblies<TAttr>(AppDomain.CurrentDomain.GetAssemblies(), inherit);
+		}
 
-            for (int a = 0; a < assemblies.Count; ++a)
-            {
-                var assembly = assemblies[a];
-                var types = assembly.GetTypes();
-                for (int i = 0; i < types.Length; ++i)
-                {
-                    var t = types[i];
-                    if (t.IsPublic) // CONSIDER: Accept BindingFlags?
-                    {
-                        var att = t.GetCustomAttributes(typeof(Tattr), inherit);
-                        if (att.Length > 0)
-                        {
-                            // CONSIDER: Callback form to avoid List?
-                            result.Add(t);
-                        }
-                    }
-                }
-            }
+		public static List<Type> GetClassesInAssemblies<Tattr>(IList<Assembly> assemblies, bool inherit = true)
+			where Tattr : Attribute
+		{
+			var result = new List<Type>();
 
-            return result;
-        }
-    }
+			for (int a = 0; a < assemblies.Count; ++a)
+			{
+				var assembly = assemblies[a];
+				var types = assembly.GetTypes();
+				for (int i = 0; i < types.Length; ++i)
+				{
+					var t = types[i];
+					if (t.IsPublic) // CONSIDER: Accept BindingFlags?
+					{
+						var att = t.GetCustomAttributes(typeof(Tattr), inherit);
+						if (att.Length > 0)
+						{
+							// CONSIDER: Callback form to avoid List?
+							result.Add(t);
+						}
+					}
+				}
+			}
+
+			return result;
+		}
+	}
 }

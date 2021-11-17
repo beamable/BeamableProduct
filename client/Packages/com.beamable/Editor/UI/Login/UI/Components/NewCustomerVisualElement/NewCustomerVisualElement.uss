@@ -1,7 +1,8 @@
-#textField{
+#textField {
     align-self: center;
 }
-.input{
+
+.input {
     height: 30px;
     -unity-text-align: middle-left;
     background-color: #f4f4f4;
@@ -9,31 +10,37 @@
     margin-bottom: 5px;
 }
 
-#legalButton{
+#legalButton {
     align-self: flex-start;
 }
-#term{
+
+#term {
     flex-direction: row;
     align-self: flex-end;
 }
+
 #existingOrganization {
     margin-bottom: 20px;
 }
-#existAccount{
+
+#existAccount {
     flex-direction: row;
     align-self: flex-end;
 }
-#rightContainer{
+
+#rightContainer {
     margin-top: 10px;
 }
-.btnText{
-    left:5px;
-    min-width:100px;
-}
-#checkBox{
-    left:5px;
+
+.btnText {
+    left: 5px;
+    min-width: 100px;
 }
 
-#cancel{
+#checkBox {
+    left: 5px;
+}
+
+#cancel {
     height: 29px;
 }

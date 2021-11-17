@@ -15,12 +15,15 @@
     cursor: pan;
     background-image: none;
 }
-#realmButton.production #banner{
+
+#realmButton.production #banner {
     background-color: #FF0000;
 }
-#realmButton.staging #banner{
+
+#realmButton.staging #banner {
     background-color: #ff9c00;
 }
+
 #realmButton #banner {
     flex-direction: row;
     position: absolute;
@@ -31,9 +34,11 @@
     border-bottom-left-radius: 3px;
     border-top-left-radius: 3px;
 }
+
 #realmButton {
     justify-content: center;
 }
+
 #realmButton Label {
     margin-right: 18px;
     margin-top: 0px;
@@ -41,7 +46,8 @@
     font-size: 10px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
 }
-#realmButton Image#dropDownIcon{
+
+#realmButton Image#dropDownIcon {
     align-self: flex-end;
     position: absolute;
     top: 8px;

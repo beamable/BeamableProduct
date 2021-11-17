@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Beamable.Api.Analytics.Batch {
-
+namespace Beamable.Api.Analytics.Batch
+{
 	/// <summary>
 	/// Batch container.
 	/// This is a basic batch container.
 	/// </summary>
-	public class BatchContainer<T> : IBatchContainer<T> {
-
+	public class BatchContainer<T> : IBatchContainer<T>
+	{
 		/// <summary>
 		/// Occurs when the batch expires.
 		/// </summary>
@@ -19,7 +19,8 @@ namespace Beamable.Api.Analytics.Batch {
 		/// </summary>
 		/// <value>true</value>
 		/// <c>false</c>
-		public bool IsExpired {
+		public bool IsExpired
+		{
 			get;
 			protected set;
 		}
@@ -30,9 +31,16 @@ namespace Beamable.Api.Analytics.Batch {
 		/// Gets the expires (unix) timestamp.
 		/// </summary>
 		/// <value>The expires timestamp.</value>
-		public long ExpiresTimestamp {
-			get { return _expiresTimestamp; }
-			protected set { _expiresTimestamp = value; }
+		public long ExpiresTimestamp
+		{
+			get
+			{
+				return _expiresTimestamp;
+			}
+			protected set
+			{
+				_expiresTimestamp = value;
+			}
 		}
 
 		protected int _capacity;
@@ -41,8 +49,12 @@ namespace Beamable.Api.Analytics.Batch {
 		/// Gets the batch's max capacity before expiration.
 		/// </summary>
 		/// <value>The capacity.</value>
-		public int Capacity {
-			get { return _capacity; }
+		public int Capacity
+		{
+			get
+			{
+				return _capacity;
+			}
 		}
 
 		protected List<T> _items;
@@ -51,9 +63,16 @@ namespace Beamable.Api.Analytics.Batch {
 		/// Gets or sets the items in this batch.
 		/// </summary>
 		/// <value>The items.</value>
-		public List<T> Items {
-			get { return _items; }
-			protected set { _items = value; }
+		public List<T> Items
+		{
+			get
+			{
+				return _items;
+			}
+			protected set
+			{
+				_items = value;
+			}
 		}
 
 		/// <summary>
@@ -62,7 +81,10 @@ namespace Beamable.Api.Analytics.Batch {
 		/// <value>The count.</value>
 		public int Count
 		{
-			get { return _items.Count; }
+			get
+			{
+				return _items.Count;
+			}
 		}
 
 		/// <summary>
@@ -74,7 +96,7 @@ namespace Beamable.Api.Analytics.Batch {
 		{
 			_expiresTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds() + (long)batchTimeoutSeconds;
 			_capacity = batchMaxSize;
-			_items = new List<T> ();
+			_items = new List<T>();
 			IsExpired = false;
 		}
 
@@ -84,7 +106,7 @@ namespace Beamable.Api.Analytics.Batch {
 		/// <param name="item">Item.</param>
 		virtual public void Add(T item)
 		{
-			_items.Add (item);
+			_items.Add(item);
 		}
 
 		/// <summary>
@@ -95,7 +117,7 @@ namespace Beamable.Api.Analytics.Batch {
 			IsExpired = true;
 
 			if (OnExpired != null)
-				OnExpired (Items);
+				OnExpired(Items);
 		}
 	}
 }

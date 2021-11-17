@@ -7,7 +7,7 @@
 
 
 #searchBar {
-    position:absolute;
+    position: absolute;
     left: 0px;
     right: 0px;
     padding-left: 8px;
@@ -21,6 +21,7 @@ ScrollView {
     flex-grow: 1;
     top: 20px;
 }
+
 ScrollView #ContentView.content-view {
     left: 0px;
     right: 0px;

@@ -6,15 +6,15 @@
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
-  <engine:VisualElement name="window-main">
+    <engine:VisualElement name="window-main">
 
-    <!-- TODO: Remove this comment. This is embedded the new way (Recommended) - srivello -->
-    <beamable:ActionBarVisualElement name = "actionBarVisualElement"/>
+        <!-- TODO: Remove this comment. This is embedded the new way (Recommended) - srivello -->
+        <beamable:ActionBarVisualElement name="actionBarVisualElement"/>
 
-    <!-- TODO: Fix. This is embedded the old way - srivello -->
-    <engine:VisualElement name="explorer-container"/>
-    <engine:VisualElement name="status-bar-container"/>
+        <!-- TODO: Fix. This is embedded the old way - srivello -->
+        <engine:VisualElement name="explorer-container"/>
+        <engine:VisualElement name="status-bar-container"/>
 
-  </engine:VisualElement>
+    </engine:VisualElement>
 
 </engine:UXML>

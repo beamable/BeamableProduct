@@ -11,118 +11,113 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-    public class ExpandableListVisualElement : BeamableVisualElement
-    {
-        private const string HIDDEN_CLASS = "hidden";
-        private const string EXPANDED_CLASS = "expanded";
-        
-        private List<string> elements;
-        private string[] displayValues;
-        private bool expanded;
-        private Label label;
-        private Label plusLabel;
-        private VisualElement arrowImage;
+	public class ExpandableListVisualElement : BeamableVisualElement
+	{
+		private const string HIDDEN_CLASS = "hidden";
+		private const string EXPANDED_CLASS = "expanded";
 
-        public new class UxmlFactory : UxmlFactory<ExpandableListVisualElement, UxmlTraits>
-        {
-        }
-        
-        public ExpandableListVisualElement() : base(
-            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(ExpandableListVisualElement)}/{nameof(ExpandableListVisualElement)}")
-        {
-        }
+		private List<string> elements;
+		private string[] displayValues;
+		private bool expanded;
+		private Label label;
+		private Label plusLabel;
+		private VisualElement arrowImage;
 
-        public override void Refresh()
-        {
-            base.Refresh();
+		public new class UxmlFactory : UxmlFactory<ExpandableListVisualElement, UxmlTraits> { }
 
-            label = Root.Q<Label>("value");
-            arrowImage = Root.Q<VisualElement>("arrowImage");
-            plusLabel = Root.Q<Label>("plusLabel");
+		public ExpandableListVisualElement() : base(
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(ExpandableListVisualElement)}/{nameof(ExpandableListVisualElement)}") { }
 
-            SetupLabel();
-            
-            var button = Root.Q<VisualElement>("mainContainer");
-            button.RegisterCallback<MouseDownEvent>(_ => ToggleExpand());
-        }
+		public override void Refresh()
+		{
+			base.Refresh();
 
-        private void OnLabelSizeChanged(GeometryChangedEvent evt)
-        {
-            float width = evt.newRect.width;
-            int maxCharacters = GetMaxNumberOfCharacters(width);
-            displayValues = new string[elements.Count];
-            for (int i = 0; i < elements.Count; i++)
-            {
-                displayValues[i] = TrimString(elements[i], maxCharacters);
-            }
+			label = Root.Q<Label>("value");
+			arrowImage = Root.Q<VisualElement>("arrowImage");
+			plusLabel = Root.Q<Label>("plusLabel");
 
-            SetupLabel();
-        }
+			SetupLabel();
 
-        private int GetMaxNumberOfCharacters(float width)
-        {
-            float charactersNumberFactor = elements.Count > 1 ? width / 11 : width / 10;
-            return Mathf.CeilToInt(charactersNumberFactor);
-        }
+			var button = Root.Q<VisualElement>("mainContainer");
+			button.RegisterCallback<MouseDownEvent>(_ => ToggleExpand());
+		}
 
-        private void SetupLabel()
-        {
-            if (displayValues == null || displayValues.Length == 0)
-            {
-                label.text = "";
-                plusLabel.text = "";
-                arrowImage.AddToClassList(HIDDEN_CLASS);
-                return;
-            }
-            
-            label.text = displayValues[0];
-            label.RegisterCallback<GeometryChangedEvent>(OnLabelSizeChanged);
+		private void OnLabelSizeChanged(GeometryChangedEvent evt)
+		{
+			float width = evt.newRect.width;
+			int maxCharacters = GetMaxNumberOfCharacters(width);
+			displayValues = new string[elements.Count];
+			for (int i = 0; i < elements.Count; i++)
+			{
+				displayValues[i] = TrimString(elements[i], maxCharacters);
+			}
 
-            if (displayValues.Length == 1)
-            {
-                arrowImage.AddToClassList("--positionHidden");
-                plusLabel.AddToClassList("--positionHidden");
-                return;
-            }
+			SetupLabel();
+		}
 
-            if (expanded)
-            {
-                for (int i = 1; i < displayValues.Length; i++)
-                {
-                    label.text += "\n" + displayValues[i];
-                }
-                
-                arrowImage.AddToClassList(EXPANDED_CLASS);
-            }
-            else
-            {
-                plusLabel.text = $"{displayValues.Length - 1}+";
-            }
-        }
+		private int GetMaxNumberOfCharacters(float width)
+		{
+			float charactersNumberFactor = elements.Count > 1 ? width / 11 : width / 10;
+			return Mathf.CeilToInt(charactersNumberFactor);
+		}
 
-        public void Setup(List<string> listElements, bool isExpanded = false)
-        {
-            elements = listElements;
-            displayValues = listElements.ToArray();
-            expanded = isExpanded;
-            Refresh();
-        }
+		private void SetupLabel()
+		{
+			if (displayValues == null || displayValues.Length == 0)
+			{
+				label.text = "";
+				plusLabel.text = "";
+				arrowImage.AddToClassList(HIDDEN_CLASS);
+				return;
+			}
 
-        private void ToggleExpand()
-        {
-            expanded = !expanded;
-            Refresh();
-        }
+			label.text = displayValues[0];
+			label.RegisterCallback<GeometryChangedEvent>(OnLabelSizeChanged);
 
-        private string TrimString(string text, int maxCharacters)
-        {
-            if (string.IsNullOrEmpty(text))
-            {
-                return string.Empty;
-            }
+			if (displayValues.Length == 1)
+			{
+				arrowImage.AddToClassList("--positionHidden");
+				plusLabel.AddToClassList("--positionHidden");
+				return;
+			}
 
-            return text.Length > maxCharacters ? 
-                text.Substring(0, maxCharacters) + "..." : text;
-        }
-    }
+			if (expanded)
+			{
+				for (int i = 1; i < displayValues.Length; i++)
+				{
+					label.text += "\n" + displayValues[i];
+				}
+
+				arrowImage.AddToClassList(EXPANDED_CLASS);
+			}
+			else
+			{
+				plusLabel.text = $"{displayValues.Length - 1}+";
+			}
+		}
+
+		public void Setup(List<string> listElements, bool isExpanded = false)
+		{
+			elements = listElements;
+			displayValues = listElements.ToArray();
+			expanded = isExpanded;
+			Refresh();
+		}
+
+		private void ToggleExpand()
+		{
+			expanded = !expanded;
+			Refresh();
+		}
+
+		private string TrimString(string text, int maxCharacters)
+		{
+			if (string.IsNullOrEmpty(text))
+			{
+				return string.Empty;
+			}
+
+			return text.Length > maxCharacters ? text.Substring(0, maxCharacters) + "..." : text;
+		}
+	}
 }

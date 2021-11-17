@@ -1,14 +1,15 @@
 #mainVisualElement {
     height: 35px;
-    flex-direction:row;
+    flex-direction: row;
 }
 
 #leftContentVisualElement {
     flex-direction: row;
     justify-content: flex-start;
-    align-items:center;
+    align-items: center;
     margin-right: 10px;
 }
+
 #rightContentVisualElement {
     flex-grow: 1;
     justify-content: flex-end;
@@ -34,7 +35,8 @@
     cursor: pan;
     border-radius: 0px;
 }
-.buttonText{
+
+.buttonText {
     font-size: 9px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-text-align: middle-center;
@@ -43,19 +45,20 @@
     margin-left: 2px;
 }
 
-#startIcon{
+#startIcon {
     top: 2px;
     width: 18px;
     height: 18px;
     align-self: center;
 }
 
-#buildIcon{
+#buildIcon {
     top: 2px;
     width: 18px;
     height: 18px;
     align-self: center;
 }
+
 .mainPart {
     width: 70px;
     padding-left: 6px;
@@ -69,6 +72,7 @@
     padding-right: 0px;
     padding-top: 0px;
 }
+
 #dropDownImg {
     position: absolute;
     height: 35px;
@@ -80,6 +84,7 @@
 #createNew.disabledStorage {
     width: 70px;
 }
+
 #createNew.disabledStorage #dropDownImg {
     height: 0px;
     width: 0px;
@@ -90,14 +95,14 @@
     right: 10000px;
 }
 
-#createNewIcon{
+#createNewIcon {
     top: 2px;
     width: 18px;
     height: 18px;
     align-self: center;
 }
 
-#publishIcon{
+#publishIcon {
     top: 2px;
     width: 18px;
     height: 18px;
@@ -125,15 +130,16 @@
     cursor: pan;
     border-radius: 0px;
 }
+
 #refreshIcon {
     top: 4px;
     align-self: center;
     height: 28px;
     width: 28px;
-    
+
 }
 
-#infoIcon{
+#infoIcon {
     top: 8px;
     align-self: center;
     height: 15px;

@@ -5,61 +5,63 @@
 
 half SDFSampleInt(half dist, half afwidth, float threshold, half range)
 {
-   half bottom = threshold-afwidth;
+    half bottom = threshold - afwidth;
 
-   return saturate((dist - bottom)/range);
+    return saturate((dist - bottom) / range);
 }
 
 float SDFSample(sampler2D tex, float2 uv, float threshold, float afwidth)
 {
-   float dist = tex2D(tex, uv.xy).a;
+    float dist = tex2D(tex, uv.xy).a;
 
-   float range = 2.0 * afwidth;
+    float range = 2.0 * afwidth;
 
-   return SDFSampleInt(dist,afwidth,threshold,range);
+    return SDFSampleInt(dist, afwidth, threshold, range);
 }
 
 
 float Median(float r, float g, float b)
 {
-   return(max(min(r, g), min(max(r, g), b)));
+    return (max(min(r, g), min(max(r, g), b)));
 }
 
 float MsdfThreshold(float distance, float erosion, float threshold, float softness, float range)
 {
-   return saturate(((distance + erosion) - ((1 - threshold) - softness)) / range);
+    return saturate(((distance + erosion) - ((1 - threshold) - softness)) / range);
 }
 
-float CircleDistance(float2 p, float2 center, float radius) {
+float CircleDistance(float2 p, float2 center, float radius)
+{
     return saturate(length(p - center) - radius);
 }
 
-float MsdfSignedDistance(float3 distanceTex){
+float MsdfSignedDistance(float3 distanceTex)
+{
     return 1.0 - (Median(distanceTex.r, distanceTex.g, distanceTex.b));
 }
 
 float BasicMSDF2(float sigDist, float mixTex, float threshold, float erosion, float softness)
 {
-   float range = 2.0 * softness;
+    float range = 2.0 * softness;
 
-   //apply erosion
-   float ero = 1.0 - ((mixTex) * (erosion));
+    //apply erosion
+    float ero = 1.0 - ((mixTex) * (erosion));
 
-   return MsdfThreshold(sigDist, ero, threshold, softness, range);
+    return MsdfThreshold(sigDist, ero, threshold, softness, range);
 }
 
 
 //returns threshold and mixed tex
 float BasicMSDF(float3 distanceTex, float mixTex, float threshold, float erosion, float softness)
 {
-   float sigDist = 1.0 - (Median(distanceTex.r, distanceTex.g, distanceTex.b));
+    float sigDist = 1.0 - (Median(distanceTex.r, distanceTex.g, distanceTex.b));
 
-   float range = 2.0 * softness;
+    float range = 2.0 * softness;
 
-   //apply erosion
-   float ero = 1.0 - ((mixTex) * (erosion));
+    //apply erosion
+    float ero = 1.0 - ((mixTex) * (erosion));
 
-   return MsdfThreshold(sigDist, ero, threshold, softness, range);
+    return MsdfThreshold(sigDist, ero, threshold, softness, range);
 }
 
 float MixOverlay(float4 overlayTex, float4 overlayMix)
@@ -84,11 +86,11 @@ float2 ScrollUV(float2 uv, float xRate, float yRate)
 
 float2 ComputeRotatedScreenUV(float2 screenPos, float angleRate)
 {
-   float angle = angleRate * (_ScreenParams.y / _ScreenParams.x);
-   float rot_cos = cos(angle);
-   float rot_sin = sin(angle);
-   float2 rot_pivot = float2(0.5, 0.5);
-   return (mul(screenPos.xy - rot_pivot.xy, half2x2(rot_cos, -rot_sin, rot_sin, rot_cos)) + rot_pivot.xy);
+    float angle = angleRate * (_ScreenParams.y / _ScreenParams.x);
+    float rot_cos = cos(angle);
+    float rot_sin = sin(angle);
+    float2 rot_pivot = float2(0.5, 0.5);
+    return (mul(screenPos.xy - rot_pivot.xy, half2x2(rot_cos, -rot_sin, rot_sin, rot_cos)) + rot_pivot.xy);
 }
 
 float2 ComputePivotRotation(float2 baseUV, float angle, float2 pivot)
@@ -103,17 +105,18 @@ float2 ComputePivotRotation(float2 baseUV, float angle, float2 pivot)
 
 float2 ComputeRotatedUV(float2 baseUV, float angle)
 {
-   return ComputePivotRotation(baseUV, angle, float2(0.5,0.5));
+    return ComputePivotRotation(baseUV, angle, float2(0.5, 0.5));
 }
 
 
-half4 AddPattern(half2 uvRotated, half patternSpeed, half position, half width, float3 patternColor, half2 screenUV, float4 sample, float loopSize)
+half4 AddPattern(half2 uvRotated, half patternSpeed, half position, half width, float3 patternColor, half2 screenUV,
+                 float4 sample, float loopSize)
 {
-   // apply pattern
-   half offset = fmod(_Time.y * patternSpeed + position, loopSize) - (loopSize*0.5);
+    // apply pattern
+    half offset = fmod(_Time.y * patternSpeed + position, loopSize) - (loopSize * 0.5);
 
-   half alphaGrad = 1.0 - saturate(abs((uvRotated.x - offset) * width));
-   return half4(sample.rgb + saturate(patternColor.rgb * alphaGrad.xxx),sample.a);
+    half alphaGrad = 1.0 - saturate(abs((uvRotated.x - offset) * width));
+    return half4(sample.rgb + saturate(patternColor.rgb * alphaGrad.xxx), sample.a);
 }
 
 float ZeroOneZero(float gradient)
@@ -137,7 +140,8 @@ float4 ZeroOneZeroGradient(float gradient, float offset, float contrast, float4 
 float3 OverlayColor(float3 ColorOne, float3 ColorTwo)
 {
     float3 mask = step(0.5, ColorOne);
-    return lerp( saturate(ColorOne * ColorTwo * 2.0.xxx), saturate(1.0.xxx - (2.0.xxx * (1.0.xxx - ColorOne) * (1.0.xxx - ColorTwo))), mask);
+    return lerp(saturate(ColorOne * ColorTwo * 2.0.xxx),
+                saturate(1.0.xxx - (2.0.xxx * (1.0.xxx - ColorOne) * (1.0.xxx - ColorTwo))), mask);
 }
 
 float4 RadialGradient(float2 uv, float2 pos, float size, float contrast, float4 ColorOne, float4 ColorTwo)
@@ -148,11 +152,11 @@ float4 RadialGradient(float2 uv, float2 pos, float size, float contrast, float4 
 
 float RadialWipe(float2 uv, float amount, float power, float rotation)
 {
-   float2 rotUV = ComputeRotatedUV(uv, rotation);
-   float2 newUV = (rotUV - float2(0.5, 0.5)) * 2.0.xx;
-   float radial = ((atan2(newUV.x, newUV.y) * 0.31830988618379067153776752674503) * 0.5) + 0.5;
-   float wipe = pow(radial / amount, power);
-   return wipe;
+    float2 rotUV = ComputeRotatedUV(uv, rotation);
+    float2 newUV = (rotUV - float2(0.5, 0.5)) * 2.0.xx;
+    float radial = ((atan2(newUV.x, newUV.y) * 0.31830988618379067153776752674503) * 0.5) + 0.5;
+    float wipe = pow(radial / amount, power);
+    return wipe;
 }
 
 float CalculateShine(float2 uv, float overlay, float width, float frequency, float speed)
@@ -166,7 +170,7 @@ float Knockout(float maskOne, float impactOne, float maskTwo, float impactTwo)
     float primaryMask = saturate(maskOne * (impactOne));
     float secondaryMask = saturate(maskTwo * (impactTwo));
 
-    return  lerp(primaryMask,secondaryMask,maskTwo);
+    return lerp(primaryMask, secondaryMask, maskTwo);
 }
 
 float3 Greyscale(float3 color, float amount)
@@ -178,7 +182,7 @@ float3 Greyscale(float3 color, float amount)
 
 float Dissolve(float grad, float amount)
 {
-   return 1.0 - saturate((grad) * (amount));
+    return 1.0 - saturate((grad) * (amount));
 }
 
 float2 TransformUV(float2 coord, float4 st)

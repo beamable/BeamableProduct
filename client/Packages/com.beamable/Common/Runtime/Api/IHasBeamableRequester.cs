@@ -1,7 +1,10 @@
 namespace Beamable.Common.Api
 {
-   public interface IHasBeamableRequester
-   {
-      IBeamableRequester Requester { get; }
-   }
+	public interface IHasBeamableRequester
+	{
+		IBeamableRequester Requester
+		{
+			get;
+		}
+	}
 }

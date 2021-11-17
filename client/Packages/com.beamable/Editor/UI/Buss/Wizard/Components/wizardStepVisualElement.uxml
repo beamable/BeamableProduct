@@ -9,11 +9,11 @@
 
     <engine:VisualElement class="container">
         <engine:VisualElement class="question">
-            <engine:Label />
+            <engine:Label/>
         </engine:VisualElement>
 
-        <engine:VisualElement class="about" >
-            <engine:Label />
+        <engine:VisualElement class="about">
+            <engine:Label/>
         </engine:VisualElement>
 
         <engine:VisualElement class="answer">

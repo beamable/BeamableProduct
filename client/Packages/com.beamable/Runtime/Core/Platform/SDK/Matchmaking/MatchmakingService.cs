@@ -11,426 +11,462 @@ using UnityEngine;
 
 namespace Beamable.Experimental.Api.Matchmaking
 {
-  /// <summary>
-  /// This type defines the %Client main entry point for the %Multiplayer feature.
-  ///
-  /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-  ///
-  /// #### Related Links
-  /// - See the <a target="_blank" href="https://docs.beamable.com/docs/multiplayer-feature">Multiplayer</a> feature documentation
-  /// - See Beamable.API script reference
-  ///
-  /// ![img beamable-logo]
-  ///
-  /// </summary>
-  public class MatchmakingService
-  {
-    private readonly IBeamableRequester _requester;
-    private readonly PlatformService _platform;
+	/// <summary>
+	/// This type defines the %Client main entry point for the %Multiplayer feature.
+	///
+	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
+	///
+	/// #### Related Links
+	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/multiplayer-feature">Multiplayer</a> feature documentation
+	/// - See Beamable.API script reference
+	///
+	/// ![img beamable-logo]
+	///
+	/// </summary>
+	public class MatchmakingService
+	{
+		private readonly IBeamableRequester _requester;
+		private readonly PlatformService _platform;
 
-    public MatchmakingService(PlatformService platform, IBeamableRequester requester)
-    {
-      _requester = requester;
-      _platform = platform;
-    }
+		public MatchmakingService(PlatformService platform, IBeamableRequester requester)
+		{
+			_requester = requester;
+			_platform = platform;
+		}
 
-    /// <summary>
-    /// Initialize the matchmaking process.
-    /// </summary>
-    /// <param name="gameTypeRef"></param>
-    /// <param name="updateHandler"></param>
-    /// <param name="readyHandler"></param>
-    /// <param name="timeoutHandler"></param>
-    /// <returns>A `MatchmakingHandle` which will be updated via push notifications.</returns>
-    public Promise<MatchmakingHandle> StartMatchmaking(
-      ContentRef<SimGameType> gameTypeRef,
-      Action<MatchmakingHandle> updateHandler = null,
-      Action<MatchmakingHandle> readyHandler = null,
-      Action<MatchmakingHandle> timeoutHandler = null
-    )
-    {
-      return gameTypeRef.Resolve().FlatMap(gameType =>
-      {
-        TimeSpan? maxWait = null;
-        if (gameType.maxWaitDurationSecs.HasValue)
-        {
-          maxWait = TimeSpan.FromSeconds(gameType.maxWaitDurationSecs.Value);
-        }
+		/// <summary>
+		/// Initialize the matchmaking process.
+		/// </summary>
+		/// <param name="gameTypeRef"></param>
+		/// <param name="updateHandler"></param>
+		/// <param name="readyHandler"></param>
+		/// <param name="timeoutHandler"></param>
+		/// <returns>A `MatchmakingHandle` which will be updated via push notifications.</returns>
+		public Promise<MatchmakingHandle> StartMatchmaking(ContentRef<SimGameType> gameTypeRef,
+		                                                   Action<MatchmakingHandle> updateHandler = null,
+		                                                   Action<MatchmakingHandle> readyHandler = null,
+		                                                   Action<MatchmakingHandle> timeoutHandler = null)
+		{
+			return gameTypeRef.Resolve().FlatMap(gameType =>
+			{
+				TimeSpan? maxWait = null;
+				if (gameType.maxWaitDurationSecs.HasValue)
+				{
+					maxWait = TimeSpan.FromSeconds(gameType.maxWaitDurationSecs.Value);
+				}
 
-        return StartMatchmaking(
-          gameType.Id,
-          updateHandler,
-          readyHandler,
-          timeoutHandler,
-          maxWait
-        );
-      });
-    }
+				return StartMatchmaking(
+					gameType.Id,
+					updateHandler,
+					readyHandler,
+					timeoutHandler,
+					maxWait
+				);
+			});
+		}
 
-    /// <summary>
-    /// Initialize the matchmaking process.
-    /// </summary>
-    /// <param name="gameType"></param>
-    /// <param name="updateHandler"></param>
-    /// <param name="readyHandler"></param>
-    /// <param name="timeoutHandler"></param>
-    /// <param name="maxWait"></param>
-    /// <returns>A `MatchmakingHandle` which will be updated via push notifications.</returns>
-    public Promise<MatchmakingHandle> StartMatchmaking(
-      string gameType,
-      Action<MatchmakingHandle> updateHandler = null,
-      Action<MatchmakingHandle> readyHandler = null,
-      Action<MatchmakingHandle> timeoutHandler = null,
-      TimeSpan? maxWait = null
-    )
-    {
-      return MakeMatchmakingRequest(gameType).Map(tickets => new MatchmakingHandle(
-        this,
-        _platform,
-        tickets.tickets,
-        maxWait,
-        updateHandler,
-        readyHandler,
-        timeoutHandler
-      ));
-    }
+		/// <summary>
+		/// Initialize the matchmaking process.
+		/// </summary>
+		/// <param name="gameType"></param>
+		/// <param name="updateHandler"></param>
+		/// <param name="readyHandler"></param>
+		/// <param name="timeoutHandler"></param>
+		/// <param name="maxWait"></param>
+		/// <returns>A `MatchmakingHandle` which will be updated via push notifications.</returns>
+		public Promise<MatchmakingHandle> StartMatchmaking(string gameType,
+		                                                   Action<MatchmakingHandle> updateHandler = null,
+		                                                   Action<MatchmakingHandle> readyHandler = null,
+		                                                   Action<MatchmakingHandle> timeoutHandler = null,
+		                                                   TimeSpan? maxWait = null)
+		{
+			return MakeMatchmakingRequest(gameType).Map(tickets => new MatchmakingHandle(
+				                                            this,
+				                                            _platform,
+				                                            tickets.tickets,
+				                                            maxWait,
+				                                            updateHandler,
+				                                            readyHandler,
+				                                            timeoutHandler
+			                                            ));
+		}
 
-    /// <summary>
-    /// Find this player a match for the given game type
-    /// </summary>
-    /// <param name="gameTypes">The string gameTypes </param>
-    /// <returns></returns>
-    private Promise<TicketReservationResponse> MakeMatchmakingRequest(params string[] gameTypes)
-    {
-      return _requester.Request<TicketReservationResponse>(
-        Method.POST,
-        $"/matchmaking/tickets",
-        new TicketReservationRequest(new []{_platform.User.id.ToString()}, gameTypes)
-      );
-    }
+		/// <summary>
+		/// Find this player a match for the given game type
+		/// </summary>
+		/// <param name="gameTypes">The string gameTypes </param>
+		/// <returns></returns>
+		private Promise<TicketReservationResponse> MakeMatchmakingRequest(params string[] gameTypes)
+		{
+			return _requester.Request<TicketReservationResponse>(
+				Method.POST,
+				$"/matchmaking/tickets",
+				new TicketReservationRequest(new[] {_platform.User.id.ToString()}, gameTypes)
+			);
+		}
 
-    /// <summary>
-    /// Fetch a match given its Id.
-    /// </summary>
-    /// <param name="matchId">The id of the match to fetch.</param>
-    public Promise<Match> GetMatch(string matchId)
-    {
-      return _requester.Request<Match>(
-        Method.GET,
-        $"/matchmaking/matches/{matchId}"
-      );
-    }
+		/// <summary>
+		/// Fetch a match given its Id.
+		/// </summary>
+		/// <param name="matchId">The id of the match to fetch.</param>
+		public Promise<Match> GetMatch(string matchId)
+		{
+			return _requester.Request<Match>(
+				Method.GET,
+				$"/matchmaking/matches/{matchId}"
+			);
+		}
 
-    /// <summary>
-    /// Cancels matchmaking for the player
-    /// </summary>
-    /// <param name="ticketId">The id of the ticket to cancel.</param>
-    public Promise<Unit> CancelMatchmaking(string ticketId)
-    {
-      return _requester.Request<EmptyResponse>(
-        Method.DELETE,
-        $"/matchmaking/tickets/{ticketId}"
-      ).Map(_ => PromiseBase.Unit);
-    }
-  }
+		/// <summary>
+		/// Cancels matchmaking for the player
+		/// </summary>
+		/// <param name="ticketId">The id of the ticket to cancel.</param>
+		public Promise<Unit> CancelMatchmaking(string ticketId)
+		{
+			return _requester.Request<EmptyResponse>(
+				Method.DELETE,
+				$"/matchmaking/tickets/{ticketId}"
+			).Map(_ => PromiseBase.Unit);
+		}
+	}
 
-  /// <summary>
-  /// This type defines the %MatchmakingHandle for the %MatchmakingService.
-  ///
-  /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-  ///
-  /// #### Related Links
-  /// - See Beamable.Experimental.Api.Matchmaking.MatchmakingService script reference
-  ///
-  /// ![img beamable-logo]
-  ///
-  /// </summary>
-  public class MatchmakingHandle : IDisposable
-  {
-    public Ticket[] Tickets { get; }
-    public MatchmakingStatus Status { get; }
-    public MatchmakingState State { get; private set; }
+	/// <summary>
+	/// This type defines the %MatchmakingHandle for the %MatchmakingService.
+	///
+	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
+	///
+	/// #### Related Links
+	/// - See Beamable.Experimental.Api.Matchmaking.MatchmakingService script reference
+	///
+	/// ![img beamable-logo]
+	///
+	/// </summary>
+	public class MatchmakingHandle : IDisposable
+	{
+		public Ticket[] Tickets
+		{
+			get;
+		}
 
-    public Match Match { get; private set; }
-    public bool MatchmakingIsComplete => State.IsTerminal();
+		public MatchmakingStatus Status
+		{
+			get;
+		}
 
-    public event Action<MatchmakingHandle> OnUpdate;
-    public event Action<MatchmakingHandle> OnMatchReady;
-    public event Action<MatchmakingHandle> OnMatchTimeout;
+		public MatchmakingState State
+		{
+			get;
+			private set;
+		}
 
-    private readonly float _createdTime;
-    private readonly TimeSpan? _maxWait;
+		public Match Match
+		{
+			get;
+			private set;
+		}
 
-    private readonly PlatformService _platform;
-    private static string MessageType(string gameType) => $"matchmaking.update.{gameType}";
-    private static string TimeoutMessageType(string gameType) => $"matchmaking.timeout.{gameType}";
+		public bool MatchmakingIsComplete => State.IsTerminal();
 
-    private readonly MatchmakingService _service;
+		public event Action<MatchmakingHandle> OnUpdate;
+		public event Action<MatchmakingHandle> OnMatchReady;
+		public event Action<MatchmakingHandle> OnMatchTimeout;
 
-    public MatchmakingHandle(
-      MatchmakingService service,
-      PlatformService platform,
-      Ticket[] tickets,
-      TimeSpan? maxWait = null,
-      Action<MatchmakingHandle> onUpdate = null,
-      Action<MatchmakingHandle> onMatchReady = null,
-      Action<MatchmakingHandle> onMatchTimeout = null
-    )
-    {
-      OnUpdate = onUpdate;
-      OnMatchReady = onMatchReady;
-      OnMatchTimeout = onMatchTimeout;
+		private readonly float _createdTime;
+		private readonly TimeSpan? _maxWait;
 
-      Tickets = tickets;
-      State = MatchmakingState.Searching;
+		private readonly PlatformService _platform;
+		private static string MessageType(string gameType) => $"matchmaking.update.{gameType}";
+		private static string TimeoutMessageType(string gameType) => $"matchmaking.timeout.{gameType}";
 
-      Status = new MatchmakingStatus();
-      foreach (var ticket in Tickets)
-      {
-        ProcessUpdate(ticket);
-      }
+		private readonly MatchmakingService _service;
 
-      _platform = platform;
-      _maxWait = maxWait;
+		public MatchmakingHandle(MatchmakingService service,
+		                         PlatformService platform,
+		                         Ticket[] tickets,
+		                         TimeSpan? maxWait = null,
+		                         Action<MatchmakingHandle> onUpdate = null,
+		                         Action<MatchmakingHandle> onMatchReady = null,
+		                         Action<MatchmakingHandle> onMatchTimeout = null)
+		{
+			OnUpdate = onUpdate;
+			OnMatchReady = onMatchReady;
+			OnMatchTimeout = onMatchTimeout;
 
-      _createdTime = Time.realtimeSinceStartup;
+			Tickets = tickets;
+			State = MatchmakingState.Searching;
 
-      _service = service;
+			Status = new MatchmakingStatus();
+			foreach (var ticket in Tickets)
+			{
+				ProcessUpdate(ticket);
+			}
 
-      _platform.Heartbeat.UpdateInterval(2);
-      StartTimeoutTask();
-      SubscribeToUpdates();
-    }
+			_platform = platform;
+			_maxWait = maxWait;
 
-    public async void Dispose()
-    {
-      await Cancel();
-    }
+			_createdTime = Time.realtimeSinceStartup;
 
-    /// <summary>
-    /// Promise which will complete when the matchmaking client reaches a "resolution".
-    /// </summary>
-    /// <returns>A promise containing the matchmaking handle itself.</returns>
-    public Promise<MatchmakingHandle> WhenCompleted()
-    {
-      var promise = new Promise<MatchmakingHandle>();
-      WaitForComplete(promise);
-      return promise;
-    }
+			_service = service;
 
-    private async void WaitForComplete(Promise<MatchmakingHandle> promise)
-    {
-      var endTime = _createdTime + _maxWait?.TotalSeconds ?? double.MaxValue;
-      while (Time.realtimeSinceStartup < endTime)
-      {
-        if (MatchmakingIsComplete)
-        {
-          promise.CompleteSuccess(this);
-        }
+			_platform.Heartbeat.UpdateInterval(2);
+			StartTimeoutTask();
+			SubscribeToUpdates();
+		}
 
-        await Task.Delay(TimeSpan.FromSeconds(1));
-      }
-    }
+		public async void Dispose()
+		{
+			await Cancel();
+		}
 
-    /// <summary>
-    /// Cancels matchmaking for this player.
-    /// </summary>
-    /// <returns>The MatchmakingHandle</returns>
-    public Promise<MatchmakingHandle> Cancel()
-    {
-      State = MatchmakingState.Cancelled;
-      foreach (var ticket in Tickets)
-      {
-        _service.CancelMatchmaking(ticket.ticketId);
-      }
-      EndMatchmaking();
-      return Promise<MatchmakingHandle>.Successful(this);
-    }
+		/// <summary>
+		/// Promise which will complete when the matchmaking client reaches a "resolution".
+		/// </summary>
+		/// <returns>A promise containing the matchmaking handle itself.</returns>
+		public Promise<MatchmakingHandle> WhenCompleted()
+		{
+			var promise = new Promise<MatchmakingHandle>();
+			WaitForComplete(promise);
+			return promise;
+		}
 
-    private async void StartTimeoutTask()
-    {
-      if (!_maxWait.HasValue)
-      {
-        return;
-      }
+		private async void WaitForComplete(Promise<MatchmakingHandle> promise)
+		{
+			var endTime = _createdTime + _maxWait?.TotalSeconds ?? double.MaxValue;
+			while (Time.realtimeSinceStartup < endTime)
+			{
+				if (MatchmakingIsComplete)
+				{
+					promise.CompleteSuccess(this);
+				}
 
-      var endTime = _createdTime + _maxWait.Value.TotalSeconds;
-      await Task.Delay(TimeSpan.FromSeconds(endTime - Time.realtimeSinceStartup));
-      if (MatchmakingIsComplete)
-      {
-        return;
-      }
+				await Task.Delay(TimeSpan.FromSeconds(1));
+			}
+		}
 
-      // Ensure that we cancel matchmaking if the client is giving up before the server.
-      foreach (var ticket in Tickets)
-      {
-        await _service.CancelMatchmaking(ticket.ticketId);
-      }
+		/// <summary>
+		/// Cancels matchmaking for this player.
+		/// </summary>
+		/// <returns>The MatchmakingHandle</returns>
+		public Promise<MatchmakingHandle> Cancel()
+		{
+			State = MatchmakingState.Cancelled;
+			foreach (var ticket in Tickets)
+			{
+				_service.CancelMatchmaking(ticket.ticketId);
+			}
 
-      ProcessTimeout();
-    }
+			EndMatchmaking();
+			return Promise<MatchmakingHandle>.Successful(this);
+		}
 
-    private void SubscribeToUpdates()
-    {
-      foreach (var ticket in Tickets)
-      {
-        _platform.Notification.Subscribe(MessageType(ticket.matchType), OnRawUpdate);
-        _platform.Notification.Subscribe(TimeoutMessageType(ticket.matchType), OnRawTimeout);
-      }
-    }
+		private async void StartTimeoutTask()
+		{
+			if (!_maxWait.HasValue)
+			{
+				return;
+			}
 
-    private void EndMatchmaking()
-    {
-      foreach (var ticket in Tickets)
-      {
-        _platform.Notification.Unsubscribe(MessageType(ticket.matchType), OnRawUpdate);
-        _platform.Notification.Unsubscribe(TimeoutMessageType(ticket.matchType), OnRawTimeout);
-      }
-      _platform.Heartbeat.ResetInterval();
-    }
+			var endTime = _createdTime + _maxWait.Value.TotalSeconds;
+			await Task.Delay(TimeSpan.FromSeconds(endTime - Time.realtimeSinceStartup));
+			if (MatchmakingIsComplete)
+			{
+				return;
+			}
 
-    private void OnRawUpdate(object msg)
-    {
-      // XXX: Ugh. This is an annoying shape to get messages in.
-      var serialized = Json.Serialize(msg, new StringBuilder());
-      var deserialized = JsonUtility.FromJson<Ticket>(serialized);
-      ProcessUpdate(deserialized);
-    }
+			// Ensure that we cancel matchmaking if the client is giving up before the server.
+			foreach (var ticket in Tickets)
+			{
+				await _service.CancelMatchmaking(ticket.ticketId);
+			}
 
-    private async void ProcessUpdate(Ticket ticket)
-    {
-      Status.Apply(ticket);
+			ProcessTimeout();
+		}
 
+		private void SubscribeToUpdates()
+		{
+			foreach (var ticket in Tickets)
+			{
+				_platform.Notification.Subscribe(MessageType(ticket.matchType), OnRawUpdate);
+				_platform.Notification.Subscribe(TimeoutMessageType(ticket.matchType), OnRawTimeout);
+			}
+		}
 
-      try
-      {
-        OnUpdate?.Invoke(this);
-      }
-      catch (Exception e)
-      {
-        BeamableLogger.LogException(e);
-      }
+		private void EndMatchmaking()
+		{
+			foreach (var ticket in Tickets)
+			{
+				_platform.Notification.Unsubscribe(MessageType(ticket.matchType), OnRawUpdate);
+				_platform.Notification.Unsubscribe(TimeoutMessageType(ticket.matchType), OnRawTimeout);
+			}
 
-      // Once the game has been marked as "Ready" we will no longer receive messages from the server.
-      // However, let's ensure that we invoke OnUpdate regardless in case someone doesn't want to use the
-      // OnMatchReady event.
-      if (ticket.Status != MatchmakingState.Ready)
-      {
-        return;
-      }
+			_platform.Heartbeat.ResetInterval();
+		}
 
-      State = MatchmakingState.Ready;
-      // Once we're ready, we should be able to ask the matchmaking service for match information.
-      Match = await _service.GetMatch(ticket.matchId);
-      Status.Apply(Match);
+		private void OnRawUpdate(object msg)
+		{
+			// XXX: Ugh. This is an annoying shape to get messages in.
+			var serialized = Json.Serialize(msg, new StringBuilder());
+			var deserialized = JsonUtility.FromJson<Ticket>(serialized);
+			ProcessUpdate(deserialized);
+		}
 
-      try
-      {
-        OnMatchReady?.Invoke(this);
-      }
-      catch (Exception e)
-      {
-        BeamableLogger.LogException(e);
-      }
-      finally
-      {
-        EndMatchmaking();
-      }
-    }
+		private async void ProcessUpdate(Ticket ticket)
+		{
+			Status.Apply(ticket);
 
-    private void OnRawTimeout(object msg)
-    {
-      ProcessTimeout();
-    }
+			try
+			{
+				OnUpdate?.Invoke(this);
+			}
+			catch (Exception e)
+			{
+				BeamableLogger.LogException(e);
+			}
 
-    private void ProcessTimeout()
-    {
-      State = MatchmakingState.Timeout;
-      try
-      {
-        OnMatchTimeout?.Invoke(this);
-      }
-      catch (Exception e)
-      {
-        BeamableLogger.LogException(e);
-      }
-      finally
-      {
-        // Once we get a timeout, we know that we no longer will receive any updates.
-        EndMatchmaking();
-      }
-    }
-  }
+			// Once the game has been marked as "Ready" we will no longer receive messages from the server.
+			// However, let's ensure that we invoke OnUpdate regardless in case someone doesn't want to use the
+			// OnMatchReady event.
+			if (ticket.Status != MatchmakingState.Ready)
+			{
+				return;
+			}
 
-  /// <summary>
-  /// This type defines the %MatchmakingStatus for the %MatchmakingService.
-  ///
-  /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-  ///
-  /// #### Related Links
-  /// - See Beamable.Experimental.Api.Matchmaking.MatchmakingService script reference
-  ///
-  /// ![img beamable-logo]
-  ///
-  /// </summary>
-  public class MatchmakingStatus
-  {
-    public string GameId { get; private set; }
-    public int SecondsRemaining { get; private set; }
-    public string[] Players { get; private set; }
-    public bool MinPlayersReached { get; private set; }
-    public bool GameStarted { get; private set; }
+			State = MatchmakingState.Ready;
+			// Once we're ready, we should be able to ask the matchmaking service for match information.
+			Match = await _service.GetMatch(ticket.matchId);
+			Status.Apply(Match);
 
-    public void Apply(Ticket ticket)
-    {
-      GameId = ticket.matchId;
-      SecondsRemaining = ticket.SecondsRemaining;
-    }
+			try
+			{
+				OnMatchReady?.Invoke(this);
+			}
+			catch (Exception e)
+			{
+				BeamableLogger.LogException(e);
+			}
+			finally
+			{
+				EndMatchmaking();
+			}
+		}
 
-    public void Apply(Match match)
-    {
-      GameStarted = match.IsRunning;
-      // If we have a match created, we've already reached min players.
-      MinPlayersReached = true;
-      Players = match.teams.SelectMany(team => team.players).ToArray();
-    }
-  }
+		private void OnRawTimeout(object msg)
+		{
+			ProcessTimeout();
+		}
 
-  /// <summary>
-  /// This type defines the %MatchmakingState for the %MatchmakingService.
-  ///
-  /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-  ///
-  /// #### Related Links
-  /// - See Beamable.Experimental.Api.Matchmaking.MatchmakingService script reference
-  ///
-  /// ![img beamable-logo]
-  ///
-  /// </summary>
-  public enum MatchmakingState
-  {
-    Searching,
-    Ready,
-    Timeout,
-    Cancelled
-  }
+		private void ProcessTimeout()
+		{
+			State = MatchmakingState.Timeout;
+			try
+			{
+				OnMatchTimeout?.Invoke(this);
+			}
+			catch (Exception e)
+			{
+				BeamableLogger.LogException(e);
+			}
+			finally
+			{
+				// Once we get a timeout, we know that we no longer will receive any updates.
+				EndMatchmaking();
+			}
+		}
+	}
 
-  /// <summary>
-  /// This type defines the %MatchmakingStateExtensions for the %MatchmakingService.
-  ///
-  /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-  ///
-  /// #### Related Links
-  /// - See Beamable.Experimental.Api.Matchmaking.MatchmakingService script reference
-  ///
-  /// ![img beamable-logo]
-  ///
-  /// </summary>
-  public static class MatchmakingStateExtensions
-  {
-    public static bool IsTerminal(this MatchmakingState state)
-    {
-      return state != MatchmakingState.Searching;
-    }
-  }
+	/// <summary>
+	/// This type defines the %MatchmakingStatus for the %MatchmakingService.
+	///
+	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
+	///
+	/// #### Related Links
+	/// - See Beamable.Experimental.Api.Matchmaking.MatchmakingService script reference
+	///
+	/// ![img beamable-logo]
+	///
+	/// </summary>
+	public class MatchmakingStatus
+	{
+		public string GameId
+		{
+			get;
+			private set;
+		}
+
+		public int SecondsRemaining
+		{
+			get;
+			private set;
+		}
+
+		public string[] Players
+		{
+			get;
+			private set;
+		}
+
+		public bool MinPlayersReached
+		{
+			get;
+			private set;
+		}
+
+		public bool GameStarted
+		{
+			get;
+			private set;
+		}
+
+		public void Apply(Ticket ticket)
+		{
+			GameId = ticket.matchId;
+			SecondsRemaining = ticket.SecondsRemaining;
+		}
+
+		public void Apply(Match match)
+		{
+			GameStarted = match.IsRunning;
+			// If we have a match created, we've already reached min players.
+			MinPlayersReached = true;
+			Players = match.teams.SelectMany(team => team.players).ToArray();
+		}
+	}
+
+	/// <summary>
+	/// This type defines the %MatchmakingState for the %MatchmakingService.
+	///
+	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
+	///
+	/// #### Related Links
+	/// - See Beamable.Experimental.Api.Matchmaking.MatchmakingService script reference
+	///
+	/// ![img beamable-logo]
+	///
+	/// </summary>
+	public enum MatchmakingState
+	{
+		Searching,
+		Ready,
+		Timeout,
+		Cancelled
+	}
+
+	/// <summary>
+	/// This type defines the %MatchmakingStateExtensions for the %MatchmakingService.
+	///
+	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
+	///
+	/// #### Related Links
+	/// - See Beamable.Experimental.Api.Matchmaking.MatchmakingService script reference
+	///
+	/// ![img beamable-logo]
+	///
+	/// </summary>
+	public static class MatchmakingStateExtensions
+	{
+		public static bool IsTerminal(this MatchmakingState state)
+		{
+			return state != MatchmakingState.Searching;
+		}
+	}
 }

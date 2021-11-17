@@ -7,10 +7,10 @@ Button#refreshButton {
     background-color: #b4b4b4;
 }
 
-.manifestNotPublished{
+.manifestNotPublished {
     background-color: #FF786E;
 }
 
-#manifestButton Image#dropDownIcon{
+#manifestButton Image#dropDownIcon {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown Close Dark.png")
 }

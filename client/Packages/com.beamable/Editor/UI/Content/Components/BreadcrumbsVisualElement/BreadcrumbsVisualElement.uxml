@@ -10,9 +10,9 @@
         <engine:VisualElement name="counterVisualElement">
             <engine:Label name="counterLabel"/>
         </engine:VisualElement>
-      <engine:VisualElement name="tokenListVisualElement">
-      </engine:VisualElement>
-     
+        <engine:VisualElement name="tokenListVisualElement">
+        </engine:VisualElement>
+
         <beamable:ManifestButtonVisualElement name="manifestButton"/>
         <beamable:RealmButtonVisualElement name="realmButton"/>
     </engine:VisualElement>

@@ -36,6 +36,7 @@ namespace Beamable.Editor.Content.Components
 		public event Action OnContextClicked;
 
 		private SelectionType _selectionType = SelectionType.Multiple;
+
 		public SelectionType SelectionType
 		{
 			set
@@ -46,7 +47,6 @@ namespace Beamable.Editor.Content.Components
 			get
 			{
 				return _selectionType;
-
 			}
 		}
 
@@ -77,7 +77,6 @@ namespace Beamable.Editor.Content.Components
 			get
 			{
 				return _treeViewItems;
-
 			}
 		}
 
@@ -96,13 +95,23 @@ namespace Beamable.Editor.Content.Components
 			get
 			{
 				return _treeViewItemRoot;
-
 			}
 		}
 
 		private TreeViewItem _treeViewItemRoot;
-      private List<TreeViewItem> _selectionBranch;
-		public List<TreeViewItem> MainSelectionBranch { private set { _selectionBranch = value; } get { return _selectionBranch; } }
+		private List<TreeViewItem> _selectionBranch;
+
+		public List<TreeViewItem> MainSelectionBranch
+		{
+			private set
+			{
+				_selectionBranch = value;
+			}
+			get
+			{
+				return _selectionBranch;
+			}
+		}
 
 		public TreeViewIMGUI(TreeViewState treeViewState)
 			: base(treeViewState)
@@ -153,35 +162,34 @@ namespace Beamable.Editor.Content.Components
 			return _treeViewItemRoot;
 		}
 
-      protected override void ContextClicked()
-      {
-         base.ContextClicked();
+		protected override void ContextClicked()
+		{
+			base.ContextClicked();
 
 			OnContextClicked?.Invoke();
 		}
 
-      protected override bool CanMultiSelect(TreeViewItem item)
-      {
+		protected override bool CanMultiSelect(TreeViewItem item)
+		{
 			if (_selectionType == SelectionType.Single)
-         {
+			{
 				return false;
-         }
-         return base.CanMultiSelect(item);
-      }
+			}
 
+			return base.CanMultiSelect(item);
+		}
 
-
-      /// <summary>
-      /// The branch contains the selected <see cref="TreeViewItem"/>
-      /// and all its ancestor <see cref="TreeViewItem"/>(s) if they exist.
-      /// </summary>
-      /// <param name="treeViewItem"></param>
-      private void SetMainSelectionBranch(TreeViewItem treeViewItem)
+		/// <summary>
+		/// The branch contains the selected <see cref="TreeViewItem"/>
+		/// and all its ancestor <see cref="TreeViewItem"/>(s) if they exist.
+		/// </summary>
+		/// <param name="treeViewItem"></param>
+		private void SetMainSelectionBranch(TreeViewItem treeViewItem)
 		{
 			_selectionBranch = new List<TreeViewItem>();
 
 			if (treeViewItem != null)
-         {
+			{
 				//Convert to objects for ease-of-use via API
 				IList<TreeViewItem> ancestorTreeViewItems = GetTreeViewItemsFromInts(GetAncestors(treeViewItem.id));
 				foreach (TreeViewItem ancestor in ancestorTreeViewItems)
@@ -206,6 +214,7 @@ namespace Beamable.Editor.Content.Components
 
 			OnSelectionChanged?.Invoke(treeViewItems);
 		}
+
 		private IList<TreeViewItem> GetTreeViewItemsFromInts(IList<int> selectedIds)
 		{
 			return _treeViewItems.FindAll((treeViewItem) =>
@@ -215,4 +224,3 @@ namespace Beamable.Editor.Content.Components
 		}
 	}
 }
-

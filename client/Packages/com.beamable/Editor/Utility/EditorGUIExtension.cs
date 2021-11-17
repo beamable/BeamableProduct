@@ -4,74 +4,101 @@ using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
-namespace Beamable.Editor {
-    public static class EditorGUIExtension {
-        public static int IntFieldWithDropdown(Rect rect, int value, int[] dropdownValues, Action<int> onValueChange, string fieldFormat = null, GUIContent[] customDropdownLabels = null) {
-            const float dropdownButtonWidth = 15f;
-            const string darkModeDropdownIcon = "d_icon dropdown";
-            const string lightModeDropdownIcon = "icon dropdown";
-            var rc = new EditorGUIRectController(rect);
-            value = GUIIntField(rc.ReserveWidth(rect.width - dropdownButtonWidth), value, fieldFormat);
-            if (GUI.Button(rc.rect,
-                EditorGUIUtility.IconContent(EditorGUIUtility.isProSkin ? darkModeDropdownIcon : lightModeDropdownIcon))) {
-                var hasCustomLabels =
-                    customDropdownLabels != null && customDropdownLabels.Length >= dropdownValues.Length;
-                var generic = new GenericMenu();
-                for (var i = 0; i < dropdownValues.Length; i++) {
-                    var dropdownValue = dropdownValues[i];
-                    var label = hasCustomLabels ? customDropdownLabels[i] : new GUIContent(dropdownValue.ToString(fieldFormat));
-                    generic.AddItem(label, false,
-                        () => onValueChange(dropdownValue));
-                }
+namespace Beamable.Editor
+{
+	public static class EditorGUIExtension
+	{
+		public static int IntFieldWithDropdown(Rect rect,
+		                                       int value,
+		                                       int[] dropdownValues,
+		                                       Action<int> onValueChange,
+		                                       string fieldFormat = null,
+		                                       GUIContent[] customDropdownLabels = null)
+		{
+			const float dropdownButtonWidth = 15f;
+			const string darkModeDropdownIcon = "d_icon dropdown";
+			const string lightModeDropdownIcon = "icon dropdown";
+			var rc = new EditorGUIRectController(rect);
+			value = GUIIntField(rc.ReserveWidth(rect.width - dropdownButtonWidth), value, fieldFormat);
+			if (GUI.Button(rc.rect,
+			               EditorGUIUtility.IconContent(EditorGUIUtility.isProSkin
+				                                            ? darkModeDropdownIcon
+				                                            : lightModeDropdownIcon)))
+			{
+				var hasCustomLabels =
+					customDropdownLabels != null && customDropdownLabels.Length >= dropdownValues.Length;
+				var generic = new GenericMenu();
+				for (var i = 0; i < dropdownValues.Length; i++)
+				{
+					var dropdownValue = dropdownValues[i];
+					var label = hasCustomLabels
+						? customDropdownLabels[i]
+						: new GUIContent(dropdownValue.ToString(fieldFormat));
+					generic.AddItem(label, false,
+					                () => onValueChange(dropdownValue));
+				}
 
-                generic.DropDown(rect);
-            }
+				generic.DropDown(rect);
+			}
 
-            return value;
-        }
+			return value;
+		}
 
-        public static int GUIIntField(Rect rect, int value, string format = null) {
-            var text = value.ToString(format);
-            text = EditorGUI.DelayedTextField(rect, text);
-            if (int.TryParse(text, out int newValue)) {
-                return newValue;
-            }
+		public static int GUIIntField(Rect rect, int value, string format = null)
+		{
+			var text = value.ToString(format);
+			text = EditorGUI.DelayedTextField(rect, text);
+			if (int.TryParse(text, out int newValue))
+			{
+				return newValue;
+			}
 
-            return value;
-        }
+			return value;
+		}
 
-        public static FieldInfo GetFieldInfo(this SerializedProperty property) {
-            var parentType = property.serializedObject.targetObject.GetType();
-            FieldInfo fieldInfo = null;
-            var pathParts = property.propertyPath.Split('.');
-            for (int i = 0; i < pathParts.Length; i++) {
-                fieldInfo = parentType.GetField(pathParts[i], BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                parentType = fieldInfo.FieldType;
-            }
+		public static FieldInfo GetFieldInfo(this SerializedProperty property)
+		{
+			var parentType = property.serializedObject.targetObject.GetType();
+			FieldInfo fieldInfo = null;
+			var pathParts = property.propertyPath.Split('.');
+			for (int i = 0; i < pathParts.Length; i++)
+			{
+				fieldInfo = parentType.GetField(pathParts[i],
+				                                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+				parentType = fieldInfo.FieldType;
+			}
 
-            return fieldInfo;
-        }
+			return fieldInfo;
+		}
 
-        public static Type GetParentType(this SerializedProperty property) {
-            var parentType = property.serializedObject.targetObject.GetType();
-            var pathParts = property.propertyPath.Split('.');
-            for (int i = 0; i < pathParts.Length - 1; i++) {
-                var fieldInfo = parentType.GetField(pathParts[i], BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                parentType = fieldInfo.FieldType;
-            }
+		public static Type GetParentType(this SerializedProperty property)
+		{
+			var parentType = property.serializedObject.targetObject.GetType();
+			var pathParts = property.propertyPath.Split('.');
+			for (int i = 0; i < pathParts.Length - 1; i++)
+			{
+				var fieldInfo = parentType.GetField(pathParts[i],
+				                                    BindingFlags.Instance | BindingFlags.Public |
+				                                    BindingFlags.NonPublic);
+				parentType = fieldInfo.FieldType;
+			}
 
-            return parentType;
-        }
+			return parentType;
+		}
 
-        public static object GetParentObject(this SerializedProperty property) {
-            object parent = property.serializedObject.targetObject;
-            var pathParts = property.propertyPath.Split('.');
-            for (int i = 0; i < pathParts.Length - 1; i++) {
-                var fieldInfo = parent.GetType().GetField(pathParts[i], BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                parent = fieldInfo.GetValue(parent);
-            }
+		public static object GetParentObject(this SerializedProperty property)
+		{
+			object parent = property.serializedObject.targetObject;
+			var pathParts = property.propertyPath.Split('.');
+			for (int i = 0; i < pathParts.Length - 1; i++)
+			{
+				var fieldInfo = parent.GetType().GetField(pathParts[i],
+				                                          BindingFlags.Instance | BindingFlags.Public |
+				                                          BindingFlags.NonPublic);
+				parent = fieldInfo.GetValue(parent);
+			}
 
-            return parent;
-        }
-    }
+			return parent;
+		}
+	}
 }

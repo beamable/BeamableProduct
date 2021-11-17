@@ -17,56 +17,55 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Toolbox.Components
 {
-    public class CategoryDropdownVisualElement : ToolboxComponent
-    {
-        public ToolboxModel Model { get; set; }
+	public class CategoryDropdownVisualElement : ToolboxComponent
+	{
+		public ToolboxModel Model
+		{
+			get;
+			set;
+		}
 
-        public CategoryDropdownVisualElement() : base(nameof(CategoryDropdownVisualElement))
-        {
+		public CategoryDropdownVisualElement() : base(nameof(CategoryDropdownVisualElement)) { }
 
-        }
+		public override void Refresh()
+		{
+			base.Refresh();
+			// add two rows as testing
+			var listRoot = Root.Q<VisualElement>("tagList");
+			var searchBar = Root.Q<SearchBarVisualElement>();
+			var allTypes = Enum.GetValues(typeof(WidgetTags)).Cast<WidgetTags>().ToList();
 
-        public override void Refresh()
-        {
-            base.Refresh();
-            // add two rows as testing
-            var listRoot = Root.Q<VisualElement>("tagList");
-            var searchBar = Root.Q<SearchBarVisualElement>();
-            var allTypes = Enum.GetValues(typeof(WidgetTags)).Cast<WidgetTags>().ToList();
+			searchBar.OnSearchChanged += filter =>
+			{
+				SetTypesList(allTypes, listRoot, filter);
+			};
 
-            searchBar.OnSearchChanged += filter =>
-            {
-                SetTypesList(allTypes, listRoot, filter);
-            };
+			SetTypesList(allTypes, listRoot);
+		}
 
+		private void SetTypesList(IEnumerable<WidgetTags> allTypes, VisualElement listRoot, string filter = null)
+		{
+			listRoot.Clear();
+			foreach (var type in allTypes)
+			{
+				var typeName = type.Serialize();
 
-            SetTypesList(allTypes, listRoot);
-        }
+				if (!string.IsNullOrEmpty(filter) && !typeName.ToLower().Contains(filter)) continue;
 
-        private void SetTypesList(IEnumerable<WidgetTags> allTypes, VisualElement listRoot, string filter = null)
-        {
-            listRoot.Clear();
-            foreach (var type in allTypes)
-            {
-                var typeName = type.Serialize();
+				var row = new FilterRowVisualElement();
+				row.OnValueChanged += nextValue =>
+				{
+					Model.SetQueryTag(type, nextValue);
+				};
 
-                if (!string.IsNullOrEmpty(filter) && !typeName.ToLower().Contains(filter)) continue;
+				row.FilterName = typeName;
+				row.Refresh();
+				var hasTag = (Model.Query?.HasTagConstraint ?? false)
+				             && Model.Query.FilterIncludes(type);
+				row.SetValue(hasTag);
 
-                var row = new FilterRowVisualElement();
-                row.OnValueChanged += nextValue =>
-                {
-                    Model.SetQueryTag(type, nextValue);
-                };
-
-                row.FilterName = typeName;
-                row.Refresh();
-                var hasTag = (Model.Query?.HasTagConstraint ?? false)
-                                             && Model.Query.FilterIncludes(type);
-                row.SetValue(hasTag);
-
-                listRoot.Add(row);
-            }
-        }
-    }
+				listRoot.Add(row);
+			}
+		}
+	}
 }
-

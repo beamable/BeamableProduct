@@ -7,10 +7,10 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd  Beamable.Editor.UI.Components">
 
     <engine:VisualElement name="window-main">
-        <beamable:ToolboxActionBarVisualElement name = "actionBarVisualElement"/>
+        <beamable:ToolboxActionBarVisualElement name="actionBarVisualElement"/>
         <beamable:ToolboxBreadcrumbsVisualElement name="breadcrumbsVisualElement"/>
-        <beamable:ToolboxAnnouncementListVisualElement name ="announcementList"/>
-        <beamable:ToolboxContentListVisualElement name ="contentListVisualElement">
+        <beamable:ToolboxAnnouncementListVisualElement name="announcementList"/>
+        <beamable:ToolboxContentListVisualElement name="contentListVisualElement">
         </beamable:ToolboxContentListVisualElement>
 
     </engine:VisualElement>

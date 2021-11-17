@@ -4,49 +4,50 @@ using JetBrains.Annotations;
 
 namespace Beamable.Editor.Content.SaveRequest
 {
-   public class ManifestSaveRequest : JsonSerializable.ISerializable
-   {
-      public string Id;
-      public List<ManifestReferenceSuperset> References;
-      public void Serialize(JsonSerializable.IStreamSerializer s)
-      {
-         s.Serialize("id", ref Id);
-         s.SerializeList("references", ref References);
-      }
-   }
+	public class ManifestSaveRequest : JsonSerializable.ISerializable
+	{
+		public string Id;
+		public List<ManifestReferenceSuperset> References;
 
-   public class ManifestReferenceSuperset : JsonSerializable.ISerializable
-   {
-      public string Type;
-      public string Id;
-      public string Version;
-      public string Uri;
-      public string TypeName => Id.Substring(0, Id.LastIndexOf('.'));
-      [CanBeNull] public string[] Tags;
-      [CanBeNull] public string Checksum;
-      [CanBeNull] public string Visibility;
-      public void Serialize(JsonSerializable.IStreamSerializer s)
-      {
-         s.Serialize("type", ref Type);
-         s.Serialize("id", ref Id);
-         s.Serialize("version", ref Version);
-         s.Serialize("uri", ref Uri);
+		public void Serialize(JsonSerializable.IStreamSerializer s)
+		{
+			s.Serialize("id", ref Id);
+			s.SerializeList("references", ref References);
+		}
+	}
 
+	public class ManifestReferenceSuperset : JsonSerializable.ISerializable
+	{
+		public string Type;
+		public string Id;
+		public string Version;
+		public string Uri;
+		public string TypeName => Id.Substring(0, Id.LastIndexOf('.'));
+		[CanBeNull] public string[] Tags;
+		[CanBeNull] public string Checksum;
+		[CanBeNull] public string Visibility;
 
-         if (Tags != null)
-         {
-            s.SerializeArray("tags", ref Tags);
-         }
+		public void Serialize(JsonSerializable.IStreamSerializer s)
+		{
+			s.Serialize("type", ref Type);
+			s.Serialize("id", ref Id);
+			s.Serialize("version", ref Version);
+			s.Serialize("uri", ref Uri);
 
-         s.Serialize("checksum", ref Checksum);
-         s.Serialize("visibility", ref Visibility);
-      }
+			if (Tags != null)
+			{
+				s.SerializeArray("tags", ref Tags);
+			}
 
-      public string Key => MakeKey(Id, Visibility);
+			s.Serialize("checksum", ref Checksum);
+			s.Serialize("visibility", ref Visibility);
+		}
 
-      public static string MakeKey(string id, string visibility)
-      {
-         return $"{id}/{visibility}";
-      }
-   }
+		public string Key => MakeKey(Id, Visibility);
+
+		public static string MakeKey(string id, string visibility)
+		{
+			return $"{id}/{visibility}";
+		}
+	}
 }

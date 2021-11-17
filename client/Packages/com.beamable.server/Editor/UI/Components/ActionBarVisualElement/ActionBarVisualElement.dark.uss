@@ -6,34 +6,36 @@
     border-color: #383838;
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
 }
+
 .unboundedButton {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
 }
 
 
-#buildIcon{
+#buildIcon {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/build all L.png");
 }
-#startIcon{
+
+#startIcon {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all L.png");
 }
 
-#createNewIcon{
+#createNewIcon {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new L.png");
 }
 
-#publishIcon{
+#publishIcon {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/publish L.png");
 }
 
-#infoIcon{
+#infoIcon {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Info_Light.png");
 }
 
-#refreshIcon{
+#refreshIcon {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Refresh.png");
 }
 
-#dropDownImg{
+#dropDownImg {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown_Line_light.png")
 }

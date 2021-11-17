@@ -1,4 +1,3 @@
-
 using System;
 using System.Threading.Tasks;
 using Beamable.Editor.Config;
@@ -17,22 +16,20 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Login.UI
 {
-    public class LoginWindow: EditorWindow
-    {
+	public class LoginWindow : EditorWindow
+	{
+		public static async Task CheckLogin(params Type[] dockLocations)
+		{
+			var b = await EditorAPI.Instance;
+			if (b.HasToken)
+			{
+				return; // short circuit.
+			}
 
-        public static async Task CheckLogin(params Type[] dockLocations)
-        {
-            var b = await EditorAPI.Instance;
-            if (b.HasToken)
-            {
-                return; // short circuit.
-            }
-
-            var wnd = Show(dockLocations);
-            await wnd.LoginManager.OnComplete;
-            wnd.Close();
-        }
-
+			var wnd = Show(dockLocations);
+			await wnd.LoginManager.OnComplete;
+			wnd.Close();
+		}
 
 #if BEAMABLE_DEVELOPER
         [MenuItem(
@@ -42,136 +39,152 @@ namespace Beamable.Editor.Login.UI
             priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_2
         )]
 #endif
-        public static LoginWindow Init()
-        {
-            // Ensure at most one Beamable ContentManagerWindow exists
-            // If exists, rebuild it from scratch (easy refresh mechanism)
-            return Show(null);
-        }
+		public static LoginWindow Init()
+		{
+			// Ensure at most one Beamable ContentManagerWindow exists
+			// If exists, rebuild it from scratch (easy refresh mechanism)
+			return Show(null);
+		}
 
-        public static LoginWindow FocusOrShow()
-        {
-            if (!IsInstantiated)
-            {
-                Init();
-            }
-            return Instance;
-        }
+		public static LoginWindow FocusOrShow()
+		{
+			if (!IsInstantiated)
+			{
+				Init();
+			}
 
-        private NewCustomerVisualElement _newCustomerVisualElement;
-        private NewUserVisualElement _newUserVisualElement;
+			return Instance;
+		}
 
-        public static LoginWindow Show(params Type[] dockLocations)
-        {
-            if (dockLocations == null) dockLocations = new Type[] { };
-            if (LoginWindow.IsInstantiated)
-            {
-                LoginWindow.Instance.Close();
-                DestroyImmediate(LoginWindow.Instance);
-            }
+		private NewCustomerVisualElement _newCustomerVisualElement;
+		private NewUserVisualElement _newUserVisualElement;
 
-            // Create Beamable ContentManagerWindow and dock it next to Unity Hierarchy Window
-            var loginWindow = dockLocations.Length == 0
-                ? ScriptableObject.CreateInstance<LoginWindow>()
-                : GetWindow<LoginWindow>(BeamableConstants.LOGIN, true, dockLocations);
+		public static LoginWindow Show(params Type[] dockLocations)
+		{
+			if (dockLocations == null) dockLocations = new Type[] { };
+			if (LoginWindow.IsInstantiated)
+			{
+				LoginWindow.Instance.Close();
+				DestroyImmediate(LoginWindow.Instance);
+			}
 
-            loginWindow.minSize = new Vector2(400, 590);
+			// Create Beamable ContentManagerWindow and dock it next to Unity Hierarchy Window
+			var loginWindow = dockLocations.Length == 0
+				? ScriptableObject.CreateInstance<LoginWindow>()
+				: GetWindow<LoginWindow>(BeamableConstants.LOGIN, true, dockLocations);
 
-            if (dockLocations.Length == 0)
-            {
-                loginWindow.titleContent = new GUIContent(BeamableConstants.LOGIN);
-                loginWindow.ShowUtility();
-                loginWindow.GetRootVisualContainer().AddToClassList("loginRoot");
-            }
-            else
-            {
-                loginWindow.Show(true);
-            }
-            return loginWindow;
-        }
+			loginWindow.minSize = new Vector2(400, 590);
 
-        public static LoginWindow Instance { get; private set; }
-        public static bool IsInstantiated { get { return Instance != null; } }
-        private VisualElement _windowRoot;
+			if (dockLocations.Length == 0)
+			{
+				loginWindow.titleContent = new GUIContent(BeamableConstants.LOGIN);
+				loginWindow.ShowUtility();
+				loginWindow.GetRootVisualContainer().AddToClassList("loginRoot");
+			}
+			else
+			{
+				loginWindow.Show(true);
+			}
 
-        public LoginManager LoginManager;
-        public LoginModel Model;
-        private VisualElement _pageContainer;
-        private Label _welcomeMessage;
-        private VisualElement _headerElement;
+			return loginWindow;
+		}
 
-        private void OnEnable()
-        {
-            // Force refresh to build the initial window
-            Refresh();
-        }
+		public static LoginWindow Instance
+		{
+			get;
+			private set;
+		}
 
-        private void Refresh()
-        {
-            if (Instance != null && Instance.LoginManager != null)
-            {
-                Instance.LoginManager.Destroy();
-            }
+		public static bool IsInstantiated
+		{
+			get
+			{
+				return Instance != null;
+			}
+		}
 
-            Model = new LoginModel();
-            Instance = this;
-            LoginManager?.Destroy();
-            LoginManager = new LoginManager();
-            LoginManager.Initialize(Model);
+		private VisualElement _windowRoot;
 
-            var root = this.GetRootVisualContainer();
-            root.Clear();
-            var uiAsset =
-                AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{LoginBaseConstants.BASE_PATH}/LoginWindow.uxml");
-            _windowRoot = uiAsset.CloneTree();
-            root.AddStyleSheet($"{LoginBaseConstants.BASE_PATH}/LoginWindow.uss");
-            _windowRoot.name = nameof(_windowRoot);
+		public LoginManager LoginManager;
+		public LoginModel Model;
+		private VisualElement _pageContainer;
+		private Label _welcomeMessage;
+		private VisualElement _headerElement;
 
-            _welcomeMessage = _windowRoot.Q<Label>("welcomeText");
-            _welcomeMessage.AddTextWrapStyle();
+		private void OnEnable()
+		{
+			// Force refresh to build the initial window
+			Refresh();
+		}
 
-            _headerElement = _windowRoot.Q<VisualElement>("header");
+		private void Refresh()
+		{
+			if (Instance != null && Instance.LoginManager != null)
+			{
+				Instance.LoginManager.Destroy();
+			}
 
-            var debugPanel = _windowRoot.Q<VisualElement>("debugButtons");
-            SetDebugButtons(debugPanel);
+			Model = new LoginModel();
+			Instance = this;
+			LoginManager?.Destroy();
+			LoginManager = new LoginManager();
+			LoginManager.Initialize(Model);
 
-            _pageContainer = _windowRoot.Q<VisualElement>("main");
-            var _loader = _windowRoot.Q<LoadingIndicatorVisualElement>();
-            _loader.SetPromise(LoginManager.InitializedModel, _pageContainer);
+			var root = this.GetRootVisualContainer();
+			root.Clear();
+			var uiAsset =
+				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{LoginBaseConstants.BASE_PATH}/LoginWindow.uxml");
+			_windowRoot = uiAsset.CloneTree();
+			root.AddStyleSheet($"{LoginBaseConstants.BASE_PATH}/LoginWindow.uss");
+			_windowRoot.name = nameof(_windowRoot);
 
-            LoginManager.InitializedModel.Then(model => { LoginManager_OnPageChanged(LoginManager.StartElement); });
+			_welcomeMessage = _windowRoot.Q<Label>("welcomeText");
+			_welcomeMessage.AddTextWrapStyle();
 
-            LoginManager.OnPageChanged += LoginManager_OnPageChanged;
+			_headerElement = _windowRoot.Q<VisualElement>("header");
 
-            root.Add(_windowRoot);
-            root.style.flexGrow = 1;
-        }
+			var debugPanel = _windowRoot.Q<VisualElement>("debugButtons");
+			SetDebugButtons(debugPanel);
 
-        private void LoginManager_OnPageChanged(LoginBaseComponent nextPage)
-        {
-            if (nextPage == null)
-            {
-                return;
-            }
+			_pageContainer = _windowRoot.Q<VisualElement>("main");
+			var _loader = _windowRoot.Q<LoadingIndicatorVisualElement>();
+			_loader.SetPromise(LoginManager.InitializedModel, _pageContainer);
 
-            if (nextPage.ShowHeader)
-            {
-                _headerElement.RemoveFromClassList("hidden");
-            }
-            else
-            {
-                _headerElement.AddToClassList("hidden");
-            }
+			LoginManager.InitializedModel.Then(model =>
+			{
+				LoginManager_OnPageChanged(LoginManager.StartElement);
+			});
 
+			LoginManager.OnPageChanged += LoginManager_OnPageChanged;
 
-            _pageContainer.Clear(); // remove old page if it exists.
-            _pageContainer.Add(nextPage);
-            nextPage.Refresh();
-            _welcomeMessage.text = nextPage.GetMessage();
-        }
+			root.Add(_windowRoot);
+			root.style.flexGrow = 1;
+		}
 
-        void SetDebugButtons(VisualElement debugPanel)
-        {
+		private void LoginManager_OnPageChanged(LoginBaseComponent nextPage)
+		{
+			if (nextPage == null)
+			{
+				return;
+			}
+
+			if (nextPage.ShowHeader)
+			{
+				_headerElement.RemoveFromClassList("hidden");
+			}
+			else
+			{
+				_headerElement.AddToClassList("hidden");
+			}
+
+			_pageContainer.Clear(); // remove old page if it exists.
+			_pageContainer.Add(nextPage);
+			nextPage.Refresh();
+			_welcomeMessage.text = nextPage.GetMessage();
+		}
+
+		void SetDebugButtons(VisualElement debugPanel)
+		{
 #if BEAMABLE_DEVELOPER
             debugPanel.Add(new Button(() => LoginManager.GotoExistingCustomer()) {text = "existing customer"});
             debugPanel.Add(new Button(() => LoginManager.GotoProjectSelectVisualElement()) {text = "switch"});
@@ -182,8 +195,8 @@ namespace Beamable.Editor.Login.UI
             debugPanel.Add(new Button(() => LoginManager.GotoNoRole()) {text = "no role"});
             debugPanel.Add(new Button(() => LoginManager.GotoSummary()) {text = "summary"});
 #else
-            debugPanel.parent.Remove(debugPanel);
+			debugPanel.parent.Remove(debugPanel);
 #endif
-        }
-    }
+		}
+	}
 }

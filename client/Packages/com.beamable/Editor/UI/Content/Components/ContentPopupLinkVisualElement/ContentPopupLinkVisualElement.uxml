@@ -13,7 +13,7 @@
         </engine:VisualElement>
         <engine:VisualElement class="alignRight">
             <engine:VisualElement name="checkIcon" class="unchecked"/>
-<!--            <engine:Button name="detailBtnList" text="Detail"/>-->
+            <!--            <engine:Button name="detailBtnList" text="Detail"/>-->
         </engine:VisualElement>
     </engine:VisualElement>
 

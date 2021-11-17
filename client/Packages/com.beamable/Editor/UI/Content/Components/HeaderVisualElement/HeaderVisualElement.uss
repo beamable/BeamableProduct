@@ -1,14 +1,16 @@
 HeaderVisualElement {
     justify-content: center;
-    height:30px;
+    height: 30px;
 }
+
 HeaderVisualElement > TemplateContainer {
     justify-content: center;
 }
 
 HeaderVisualElement #mainVisualElement {
-    justify-content:flex-end;
+    justify-content: flex-end;
 }
+
 HeaderVisualElement SplitterVisualElement {
     flex-direction: row;
     align-content: center;
@@ -16,7 +18,7 @@ HeaderVisualElement SplitterVisualElement {
 
 HeaderVisualElement SplitterVisualElement > VisualElement {
     border-left-width: 1px;
-    border-color: rgba(0,0,0,.1);
+    border-color: rgba(0, 0, 0, .1);
     padding-left: 4px;
 }
 

@@ -10,13 +10,13 @@
 
         <engine:VisualElement name="logWindow">
             <engine:VisualElement name="logWindowHeader">
-                <engine:VisualElement class="leftArea" name="clearContainer" >
+                <engine:VisualElement class="leftArea" name="clearContainer">
                     <engine:Button name="clear" text="clear"/>
                     <engine:Button name="popupBtn" class="squareBtn"/>
                     <engine:Button name="advanceBtn" class="squareBtn"/>
                 </engine:VisualElement>
                 <engine:VisualElement class="rightArea" name="white">
-                  <beamable:SearchBarVisualElement name="searchBar"/>
+                    <beamable:SearchBarVisualElement name="searchBar"/>
                     <engine:Button name="info" class="squareBtn">
                         <engine:VisualElement class="img"/>
                         <engine:Label name="infoCount" text="123" class="countNo"/>
@@ -37,7 +37,7 @@
             </engine:VisualElement>
             <engine:VisualElement name="logWindowBody">
                 <engine:VisualElement name="logListRoot"/>
-                <engine:VisualElement name ="detailWindow">
+                <engine:VisualElement name="detailWindow">
                     <engine:ScrollView>
                         <engine:TextField/>
                     </engine:ScrollView>

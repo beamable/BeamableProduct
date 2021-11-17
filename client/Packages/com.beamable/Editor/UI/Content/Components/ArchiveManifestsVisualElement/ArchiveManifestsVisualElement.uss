@@ -1,7 +1,6 @@
 ﻿
 ArchiveManifestsVisualElement,
-ArchiveManifestsVisualElement > TemplateContainer
-{
+ArchiveManifestsVisualElement > TemplateContainer {
     flex-grow: 1;
 }
 
@@ -34,12 +33,13 @@ ArchiveManifestsVisualElement > TemplateContainer > #mainVisualElement {
     margin-top: 5px;
     margin-bottom: 5px;
 }
-#archiveBtn{
+
+#archiveBtn {
     width: 100px;
     height: 28px;
 }
 
-.disabled *{
+.disabled * {
     opacity: .5;
 }
 

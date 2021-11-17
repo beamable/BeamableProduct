@@ -6,7 +6,7 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:VisualElement name="mainVisualElement">
-<!--        <engine:Image name="image"/>-->
+        <!--        <engine:Image name="image"/>-->
         <engine:VisualElement name="imageLocal" class="status"/>
         <engine:VisualElement name="imageServer" class="status"/>
     </engine:VisualElement>

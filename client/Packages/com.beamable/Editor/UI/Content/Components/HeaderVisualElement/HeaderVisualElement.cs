@@ -17,108 +17,109 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Content.Components
 {
-   public struct HeaderSizeChange
-   {
-      public float Flex, MinWidth;
-   }
+	public struct HeaderSizeChange
+	{
+		public float Flex, MinWidth;
+	}
 
-   public class HeaderVisualElement : ContentManagerComponent
-   {
-      private SplitterVisualElement _splitter;
+	public class HeaderVisualElement : ContentManagerComponent
+	{
+		private SplitterVisualElement _splitter;
 
-      public new class UxmlFactory : UxmlFactory<HeaderVisualElement, UxmlTraits> { }
-      public new class UxmlTraits : VisualElement.UxmlTraits
-      {
-         UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription { name = "custom-text", defaultValue = "nada" };
+		public new class UxmlFactory : UxmlFactory<HeaderVisualElement, UxmlTraits> { }
 
-         public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-         {
-            get { yield break; }
-         }
-         public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-         {
-            base.Init(ve, bag, cc);
-            var self = ve as HeaderVisualElement;
-         }
-      }
+		public new class UxmlTraits : VisualElement.UxmlTraits
+		{
+			UxmlStringAttributeDescription customText =
+				new UxmlStringAttributeDescription {name = "custom-text", defaultValue = "nada"};
 
-//      private Label _nameLabel;
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
+				get
+				{
+					yield break;
+				}
+			}
 
-//      public string Text { set; get; }
+			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+			{
+				base.Init(ve, bag, cc);
+				var self = ve as HeaderVisualElement;
+			}
+		}
 
-      public string[] Headers { get; set; }
-      public event Action<List<HeaderSizeChange>> OnValuesChanged;
+		//      private Label _nameLabel;
 
-      public HeaderVisualElement() : base(nameof(HeaderVisualElement))
-      {
+		//      public string Text { set; get; }
 
-      }
+		public string[] Headers
+		{
+			get;
+			set;
+		}
 
-      public override void Refresh()
-      {
-         base.Refresh();
+		public event Action<List<HeaderSizeChange>> OnValuesChanged;
 
-         if (Headers == null || Headers.Length == 0) return;
+		public HeaderVisualElement() : base(nameof(HeaderVisualElement)) { }
 
-         _splitter = new SplitterVisualElement();
-         Root.Add(_splitter);
+		public override void Refresh()
+		{
+			base.Refresh();
 
-         _splitter.OnFlexChanged += Header_OnFlexChanged;
-         foreach (var header in Headers)
-         {
-            var lbl = new Label(header);
-            var vs = new VisualElement();
-            vs.AddToClassList("splitWrapper");
-            vs.Add(lbl);
-            _splitter.Add(vs);
-         }
+			if (Headers == null || Headers.Length == 0) return;
 
-//
-//         _nameLabel = Root.Q<Label>("nameLabel");
-//         _nameLabel.text = Text;
-      }
+			_splitter = new SplitterVisualElement();
+			Root.Add(_splitter);
 
-      private void Header_OnFlexChanged(List<float> obj)
-      {
-         var children = _splitter.Children().ToArray();
-         var output = new List<HeaderSizeChange>();
-         for (var i = 0; i < obj.Count; i++)
-         {
-            var width = children[i].localBound.width;
+			_splitter.OnFlexChanged += Header_OnFlexChanged;
+			foreach (var header in Headers)
+			{
+				var lbl = new Label(header);
+				var vs = new VisualElement();
+				vs.AddToClassList("splitWrapper");
+				vs.Add(lbl);
+				_splitter.Add(vs);
+			}
 
-            output.Add(new HeaderSizeChange
-            {
-               MinWidth = width,
-               Flex = obj[i]
-            });
-         }
-         OnValuesChanged?.Invoke(output);
-      }
+			//
+			//         _nameLabel = Root.Q<Label>("nameLabel");
+			//         _nameLabel.text = Text;
+		}
 
-      public List<HeaderSizeChange> ComputeSizes(List<float> startFlexSizes)
-      {
-         var children = _splitter.Children().ToArray();
-         var output = new List<HeaderSizeChange>();
-         for (var i = 0; i < startFlexSizes.Count; i++)
-         {
-            children[i].style.flexGrow = startFlexSizes[i];
+		private void Header_OnFlexChanged(List<float> obj)
+		{
+			var children = _splitter.Children().ToArray();
+			var output = new List<HeaderSizeChange>();
+			for (var i = 0; i < obj.Count; i++)
+			{
+				var width = children[i].localBound.width;
 
-            var width = children[i].localBound.width;
+				output.Add(new HeaderSizeChange {MinWidth = width, Flex = obj[i]});
+			}
 
-            output.Add(new HeaderSizeChange
-            {
-               MinWidth = width,
-               Flex = startFlexSizes[i]
-            });
-         }
+			OnValuesChanged?.Invoke(output);
+		}
 
-         this.MarkDirtyRepaint();
-         return output;
-      }
+		public List<HeaderSizeChange> ComputeSizes(List<float> startFlexSizes)
+		{
+			var children = _splitter.Children().ToArray();
+			var output = new List<HeaderSizeChange>();
+			for (var i = 0; i < startFlexSizes.Count; i++)
+			{
+				children[i].style.flexGrow = startFlexSizes[i];
 
-      public void EmitFlexValues()
-      {
-         _splitter.EmitFlexValues();
-      }
-   }
+				var width = children[i].localBound.width;
+
+				output.Add(new HeaderSizeChange {MinWidth = width, Flex = startFlexSizes[i]});
+			}
+
+			this.MarkDirtyRepaint();
+			return output;
+		}
+
+		public void EmitFlexValues()
+		{
+			_splitter.EmitFlexValues();
+		}
+	}
 }

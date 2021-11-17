@@ -1,5 +1,5 @@
 
-TemplateContainer{
+TemplateContainer {
     flex-grow: 1;
 }
 
@@ -12,9 +12,9 @@ TemplateContainer{
     right: 0px;
 }
 
-#ContentView.content-view{
+#ContentView.content-view {
     left: 0px;
-    right:0px;
+    right: 0px;
 }
 
 ScrollView {
@@ -23,28 +23,30 @@ ScrollView {
 
 
 #gridContainer {
-    top:10px;
+    top: 10px;
     flex-wrap: wrap;
     flex-direction: row;
     justify-content: space-around;
     margin-bottom: 20px;
 }
 
-#functionIcon{
+#functionIcon {
     height: 50px;
     margin-left: 10px;
     margin-right: 10px;
     margin-top: 10px;
     border-radius: 10px;
 }
-#title{
+
+#title {
     -unity-font-style: bold;
     font-size: 12px;
     margin-left: 10px;
 }
-#description{
+
+#description {
     font-size: 10px;
-    top:-5px;
+    top: -5px;
     margin-left: 10px;
 }
 

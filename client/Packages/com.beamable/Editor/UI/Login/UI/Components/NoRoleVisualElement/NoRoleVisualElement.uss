@@ -1,9 +1,10 @@
-#mainContainer{
-    top:20px;
+#mainContainer {
+    top: 20px;
     align-self: center;
     width: 300px;
 }
-#continueButton{
+
+#continueButton {
     top: 10px;
     width: 300px;
     height: 35px;

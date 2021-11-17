@@ -1,4 +1,4 @@
-﻿#button{
+﻿#button {
     justify-content: center;
     align-items: center;
     height: 30px;
@@ -12,11 +12,11 @@
 }
 
 .unchecked {
-    background-color:#616161;
+    background-color: #616161;
 }
 
 .checked {
-    background-color:#0091FF;
+    background-color: #0091FF;
 }
 
 .inactive {

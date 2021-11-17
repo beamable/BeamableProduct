@@ -9,7 +9,7 @@
     <engine:VisualElement name="mainContainer">
         <engine:VisualElement name="textField">
             <engine:Label name="organization" text="Please enter your Organization's Alias or CID" class="labelText"/>
-            <engine:TextField name="organizationID" class="input" />
+            <engine:TextField name="organizationID" class="input"/>
             <beamable:GenericButtonVisualElement name="newOrganization" text="Create a new organization" type="Link"/>
 
             <engine:Label name="createAccount" text="Please enter your account info" class="labelText"/>

@@ -4,6 +4,7 @@
     margin-left: 0px;
     padding-left: 0px;
 }
+
 .beamablePlaceholder.hidden {
     opacity: 0;
 }
@@ -24,6 +25,7 @@
     border-top-width: 1px;
     border-bottom-width: 1px;
 }
+
 .beamableErrorLabel.beamableErrorHidden {
     position: absolute;
     right: 100000px;
@@ -34,6 +36,7 @@
     overflow: visible;
     flex-direction: column;
 }
+
 .beamableErrorToggleField Label {
     overflow: visible;
     -unity-text-align: middle-left;
@@ -109,8 +112,8 @@
 }
 
 #announcement-description {
-     font-size: 11px;
-     padding-right: 5px;
+    font-size: 11px;
+    padding-right: 5px;
 }
 
 .announcement-buttonsSection {
@@ -148,6 +151,7 @@
     padding-right: 2px;
     padding-left: 2px;
 }
+
 /* === END - ANNOUNCEMENTS === */
 
 .noMarginNoPaddingNoBorder {

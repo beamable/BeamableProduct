@@ -17,28 +17,39 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
-    public class DependentServicesStorageObjectEntryVisualElement : MicroserviceComponent
-    {
-        public MongoStorageModel Model { get; set; }
-        public Label StorageObjectName { get; private set; }
+	public class DependentServicesStorageObjectEntryVisualElement : MicroserviceComponent
+	{
+		public MongoStorageModel Model
+		{
+			get;
+			set;
+		}
 
-        public DependentServicesStorageObjectEntryVisualElement() : base(nameof(DependentServicesStorageObjectEntryVisualElement))
-        {
-        }
-        public override void Refresh()
-        {
-            base.Refresh();
-            QueryVisualElements();
-            UpdateVisualElements();
-        }
-        private void QueryVisualElements()
-        {
-            StorageObjectName = Root.Q<Label>("storageObjectName");
-        }
-        private void UpdateVisualElements()
-        {
-            StorageObjectName.text = Model.Name;
-            StorageObjectName.AddTextWrapStyle();
-        }
-    }
+		public Label StorageObjectName
+		{
+			get;
+			private set;
+		}
+
+		public DependentServicesStorageObjectEntryVisualElement() : base(
+			nameof(DependentServicesStorageObjectEntryVisualElement)) { }
+
+		public override void Refresh()
+		{
+			base.Refresh();
+			QueryVisualElements();
+			UpdateVisualElements();
+		}
+
+		private void QueryVisualElements()
+		{
+			StorageObjectName = Root.Q<Label>("storageObjectName");
+		}
+
+		private void UpdateVisualElements()
+		{
+			StorageObjectName.text = Model.Name;
+			StorageObjectName.AddTextWrapStyle();
+		}
+	}
 }

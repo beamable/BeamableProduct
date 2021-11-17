@@ -5,7 +5,7 @@
         xmlns:engine="UnityEngine.Experimental.UIElements"
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd Beamable.Editor.Content.Components ">
-    
+
     <engine:VisualElement name="announcement-main" class="announcement-main">
         <engine:VisualElement name="announcement-ignoreSection" class="announcement-ignoreSection">
             <engine:Button name="announcement-ignore" class="announcement-ignore"/>

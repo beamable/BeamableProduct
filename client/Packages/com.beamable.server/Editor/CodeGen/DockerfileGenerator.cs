@@ -5,34 +5,40 @@ using Beamable.Editor.Environment;
 
 namespace Beamable.Server.Editor.CodeGen
 {
-   public class DockerfileGenerator
-   {
-      public MicroserviceDescriptor Descriptor { get; }
-      public MicroserviceConfigurationEntry Config { get; }
+	public class DockerfileGenerator
+	{
+		public MicroserviceDescriptor Descriptor
+		{
+			get;
+		}
 
-      private bool DebuggingEnabled = true;
-      public const string DOTNET_RUNTIME_DEBUGGING_TOOLS_IMAGE = "mcr.microsoft.com/dotnet/runtime:5.0";
-      public const string DOTNET_RUNTIME_IMAGE = "mcr.microsoft.com/dotnet/runtime:5.0-alpine";
+		public MicroserviceConfigurationEntry Config
+		{
+			get;
+		}
 
+		private bool DebuggingEnabled = true;
+		public const string DOTNET_RUNTIME_DEBUGGING_TOOLS_IMAGE = "mcr.microsoft.com/dotnet/runtime:5.0";
+		public const string DOTNET_RUNTIME_IMAGE = "mcr.microsoft.com/dotnet/runtime:5.0-alpine";
 
-      #if BEAMABLE_DEVELOPER
+#if BEAMABLE_DEVELOPER
       public const string BASE_IMAGE = "beamservice"; // Use a locally built image.
       public string BASE_TAG = "latest"; // Use a locally built image.
 #else
-      public const string BASE_IMAGE = "beamableinc/beamservice"; // use the public online image.
-      public string BASE_TAG = BeamableEnvironment.BeamServiceTag;
+		public const string BASE_IMAGE = "beamableinc/beamservice"; // use the public online image.
+		public string BASE_TAG = BeamableEnvironment.BeamServiceTag;
 #endif
 
-      public DockerfileGenerator(MicroserviceDescriptor descriptor, bool includeDebugTools)
-      {
-         DebuggingEnabled = includeDebugTools;
-         Descriptor = descriptor;
-         Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name);
-      }
+		public DockerfileGenerator(MicroserviceDescriptor descriptor, bool includeDebugTools)
+		{
+			DebuggingEnabled = includeDebugTools;
+			Descriptor = descriptor;
+			Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name);
+		}
 
-      string GetOpenSshConfigString()
-      {
-         return $@"
+		string GetOpenSshConfigString()
+		{
+			return $@"
 Port 			             2222
 ListenAddress 		       0.0.0.0
 LoginGraceTime 		    180
@@ -46,11 +52,11 @@ PermitRootLogin 	       yes
 Subsystem sftp internal-sftp
 
 ";
-      }
+		}
 
-      string GetSupervisorDConfigString()
-      {
-         return $@"
+		string GetSupervisorDConfigString()
+		{
+			return $@"
 [supervisord]
 nodaemon=true
 user=root
@@ -64,19 +70,19 @@ stdout_logfile_maxbytes=0
 [program:ssh]
 command=/usr/sbin/sshd -D
 ";
-      }
+		}
 
-      string WriteToFile(string multiline, string fileName)
-      {
-         return
-            $@"RUN {string.Join(" && \\\n", multiline.Split(new[] {Environment.NewLine}, StringSplitOptions.RemoveEmptyEntries).Select(x => $"echo \"{x}\" >> {fileName}"))}";
-      }
+		string WriteToFile(string multiline, string fileName)
+		{
+			return
+				$@"RUN {string.Join(" && \\\n", multiline.Split(new[] {Environment.NewLine}, StringSplitOptions.RemoveEmptyEntries).Select(x => $"echo \"{x}\" >> {fileName}"))}";
+		}
 
-      string GetDebugLayer()
-      {
-         if (!DebuggingEnabled) return "";
+		string GetDebugLayer()
+		{
+			if (!DebuggingEnabled) return "";
 
-         return $@"
+			return $@"
 #inject the debugging tools
 RUN apt update && \
     apt install -y unzip curl supervisor openssh-server && \
@@ -92,33 +98,33 @@ RUN echo ""{Config.DebugData.Username}:{Config.DebugData.Password}"" | chpasswd
 
 EXPOSE 80 2222
 ";
-      }
+		}
 
-      string GetProgramDll()
-      {
-         return $"/subapp/{Descriptor.ImageName}.dll";
-      }
+		string GetProgramDll()
+		{
+			return $"/subapp/{Descriptor.ImageName}.dll";
+		}
 
-      string GetEntryPoint()
-      {
-         if (DebuggingEnabled)
-         {
-            return @"ENTRYPOINT [""/usr/bin/supervisord"", ""-c"", ""/etc/supervisor/conf.d/supervisord.conf""]";
-         }
-         else
-         {
-            return $@"ENTRYPOINT [""dotnet"", ""{GetProgramDll()}""]";
-         }
-      }
+		string GetEntryPoint()
+		{
+			if (DebuggingEnabled)
+			{
+				return @"ENTRYPOINT [""/usr/bin/supervisord"", ""-c"", ""/etc/supervisor/conf.d/supervisord.conf""]";
+			}
+			else
+			{
+				return $@"ENTRYPOINT [""dotnet"", ""{GetProgramDll()}""]";
+			}
+		}
 
-      string ReleaseMode()
-      {
-         return DebuggingEnabled ? "debug" : "release";
-      }
+		string ReleaseMode()
+		{
+			return DebuggingEnabled ? "debug" : "release";
+		}
 
-      public string GetString()
-      {
-         var text = $@"
+		public string GetString()
+		{
+			var text = $@"
 # step 1. Build...
 FROM {BASE_IMAGE}:{BASE_TAG} AS build-env
 WORKDIR /subsrc
@@ -132,8 +138,8 @@ RUN echo $BEAMABLE_SDK_VERSION > /subapp/.beamablesdkversion
 
 # step 2. Package using the runtime
 FROM {(DebuggingEnabled
-            ? DOTNET_RUNTIME_DEBUGGING_TOOLS_IMAGE
-            : DOTNET_RUNTIME_IMAGE)}
+	? DOTNET_RUNTIME_DEBUGGING_TOOLS_IMAGE
+	: DOTNET_RUNTIME_IMAGE)}
 {GetDebugLayer()}
 
 WORKDIR /subapp
@@ -145,19 +151,17 @@ ENV BEAMABLE_SDK_VERSION_EXECUTION={BeamableEnvironment.SdkVersion}
 {GetEntryPoint()}
 ";
 
-         return text;
-      }
+			return text;
+		}
 
+		public void Generate(string filePath)
+		{
+			var content = GetString();
 
-      public void Generate(string filePath)
-      {
-         var content = GetString();
+			Beamable.Common.BeamableLogger.Log("DOCKER FILE");
+			Beamable.Common.BeamableLogger.Log(content);
 
-         Beamable.Common.BeamableLogger.Log("DOCKER FILE");
-         Beamable.Common.BeamableLogger.Log(content);
-
-         File.WriteAllText(filePath, content);
-      }
-
-   }
+			File.WriteAllText(filePath, content);
+		}
+	}
 }

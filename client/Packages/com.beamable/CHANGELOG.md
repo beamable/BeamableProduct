@@ -1,60 +1,79 @@
-
-
 # Changelog
+
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
+to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
 ### Added
-- `InitializeServicesAttribute` can now be used over static methods to declare initialization hooks in microservices. Supported signatures are async/regular `
-  Task(IServiceInitializer)`, async/regular `Promise<Unit>(IServiceInitializer)` and synchronous `void(IServiceInitializer)`. 
-  `void` methods must be fully synchronous --- it is not possible to guarantee that any promises started within a `void` initialization 
-  method will have completed by the time the C#MS is receiving traffic.  
-- Can have multiple `ConfigureServicesAttribute` and `InitializeServicesAttribute` explicitly ordered via `ExecutionOrder` property of the attributes.
+
+- `InitializeServicesAttribute` can now be used over static methods to declare initialization hooks in microservices.
+  Supported signatures are async/regular `
+  Task(IServiceInitializer)`, async/regular `Promise<Unit>(IServiceInitializer)` and
+  synchronous `void(IServiceInitializer)`.
+  `void` methods must be fully synchronous --- it is not possible to guarantee that any promises started within a `void`
+  initialization method will have completed by the time the C#MS is receiving traffic.
+- Can have multiple `ConfigureServicesAttribute` and `InitializeServicesAttribute` explicitly ordered
+  via `ExecutionOrder` property of the attributes.
 - `SearchStats()` admin method is usable from client and microservice code now.
 - `CoreConfiguration` to project settings to tweak how our Promise library handles uncaught promises by default
-- Exposed `CreateLeaderboard` methods in `IMicroserviceLeaderboardsApi` to enable the dynamic creation of leaderboards in C#MS (can take a `LeaderboardRef` as a template or explicit parameters). 
-- Limit amount of elements displayed by `list_content` command in Admin console, allow to specify start index for `list_content` command
+- Exposed `CreateLeaderboard` methods in `IMicroserviceLeaderboardsApi` to enable the dynamic creation of leaderboards
+  in C#MS (can take a `LeaderboardRef` as a template or explicit parameters).
+- Limit amount of elements displayed by `list_content` command in Admin console, allow to specify start index
+  for `list_content` command
 - Added `RemoveDeviceId` method in `AuthService`
 - Added minutes support in scheduled listings
 - Added clearer unsupported message for C# Microservice's implementation of `IAuthService.GetUser(TokenResponse)`
 
 ### Changed
+
 - `BeamableEnvironment` has moved to the Runtime to enable sdk version checking at runtime
 
 ## [0.17.3]
+
 ### Added
+
 - Added `RemoveDeviceId` method in `AuthService`
-- Limit amount of elements displayed by `list_content` command in Admin console, allow to specify start index for `list_content` command
+- Limit amount of elements displayed by `list_content` command in Admin console, allow to specify start index
+  for `list_content` command
 
 ### Fixed
+
 - Removes _Menu Window/Panels/1_ warning after opening schedule type dropdown on Unity 2019 and 2020
 - Limit displayed admin console output
 
-
 ## [0.17.2]
+
 ### Added
+
 - `CoreConfiguration` to project settings to tweak how our Promise library handles uncaught promises by default
 - `matchingIntervalSecs` for `SimGameType` allows game makers to specify the rate by which matchmaking occurs
 
 ### Changed
-- `PromiseBase.SetPotentialUncaughtErrorHandler(handler, replace)` -- replaces by default, but supports adding handlers by passing `false` to second parameter 
+
+- `PromiseBase.SetPotentialUncaughtErrorHandler(handler, replace)` -- replaces by default, but supports adding handlers
+  by passing `false` to second parameter
 - New design of Microservices Publish Window with support for Storage Objects
 
 ### Fixed
+
 - `CloudSavingService` serialization error caused by Invariant Culture
 - Content Manager Publish window loading bar width
 - Current Hud no longer emits null reference error if no image is assigned
 
 ## [0.17.1]
+
 ### Fixed
+
 - calls to Leaderboard scoring API support large numbers
 - schedule UI validation for daily and day-of-week schedules
 
 ## [0.17.0]
+
 ### Added
+
 - Device id authentication support
 - Steam third party authentication support
 - Auto-complete text feature for `AdminFlow` prefab
@@ -67,6 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A `Fetch()` method to all subscribable SDKs that requests and returns the raw subscription data
 
 ### Changed
+
 - An optional `forceRefresh` parameter to all subscribable SDK's `GetCurrent()` method that forces a network request
 - `API.Instance.Requester` is now an `IBeamableRequester`
 - The `Promise` class is no longer static, and extends from `Promise<Unit>`
@@ -76,21 +96,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Microservice separator (draggable) moved directly under log group
 
 ### Fixed
-- If no internet connection exists on startup, `API.Instance()` will retry every 2 seconds until a connection is established
+
+- If no internet connection exists on startup, `API.Instance()` will retry every 2 seconds until a connection is
+  established
 - Able to build games to device
 
-
 ## [0.16.1]
+
 ### Fixed
+
 - `ExecuteRolling` method of `Promise` now supports a condition on which stop execution
 - No longer re-imports config-defaults without cause
 - Batch imports Module Configuration files to improve speed
 - No longer refreshes asset database on ContentIO FindAll()
 - Allow Content Deserializer to consume incorrectly typed fields as empty values
 
-
 ## [0.16.0]
+
 ### Added
+
 - Support for disabling Unity Domain Reload
 - Content console commands (GET_CONTENT, LIST_CONTENT, CONTENT_NAMESPACE, SET_CONTENT_NAMESPACE)
 - Easy custom content class creation in `Create/Beamable/Content Types`
@@ -103,6 +127,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Beamable package version Toolbox announcement
 
 ### Changed
+
 - Request and Responses to and from Beamable are GZipped if larger than 1K
 - Leaderboard Content supports partitioning, max size, and cohorting
 - Leaderboard Update api will transparently fetch cached assignment
@@ -114,6 +139,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ExecuteRolling` method of `Promise` now supports a condition on which stop execution
 
 ### Fixed
+
 - Added missing attributes for content classes
 - SocialService `SocialList` serialization
 - Account Management Flow third party login buttons use correct third parties
@@ -122,7 +148,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Content Manager Popups refresh after Unity domain reload
 
 ## [0.15.0]
+
 ### Added
+
 - Verbose logging capability available in Project Settings
 - Exposed cohort requirements for listing content
 - Admin commands: ADD_CURRENCY, SET_CURRENCY, GET_CURRENCY
@@ -132,31 +160,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Inventory now supports setting properties on currencies at runtime
 
 ### Fixed
+
 - Logging back into the Toolbox will remember your Realm selection per game
 - Positioning of Validate, Publish and Download windows available from Content Manager
 
 ## [0.14.3]
+
 ### Fixed
-- Re-namespaced internal UnityEngine.UI.Extensions to Beamable.UnityEngineCopy.UI.Extensions so as to not collide with other versions.
+
+- Re-namespaced internal UnityEngine.UI.Extensions to Beamable.UnityEngineCopy.UI.Extensions so as to not collide with
+  other versions.
 
 ## [0.14.2]
+
 - no changes
 
 ## [0.14.1]
+
 ### Fixed
+
 - Facebook SDK won't be referenced unless the Facebook setting is checked in the Account Management Configuration
 
-## [0.14.0] 
+## [0.14.0]
+
 ### Fixed
+
 - Integration for Unity In-App-Purchasing 3.x.x packages
 - Content references will update after a manifest subscription update
 
 ### Changed
+
 - Rearranged the Portal button and Account button in Toolbox
 - Rearranged the Content Count label in Content Manager
 - Password reset codes can use PINs instead of UUIDs
 
 ### Added
+
 - WebGL build support
 - Multiple content namespaces, both in Editor and Runtime. Must enable in Project Settings
 - Facebook Limited Login (iOS) Authentication
@@ -169,55 +208,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Async support for `Promise<T>` types
 - Added Donate api call method to GroupApi
 
-
 ## [0.13.3]
+
 ### Fixed:
-- Matchmaking state transition bug 
+
+- Matchmaking state transition bug
 - Increases heartbeat rate for MatchMaking
-  
 
 ## [0.13.2]
+
 ### Fixed:
+
 - Fixed isHttpError obsolete errors
 - Removed use of Social.localUser.id from GameCenter Authentication
 
 ### Added:
+
 - Support for GameCenter Authentication on iOS 13.5+
 
-
 ## [0.13.1]
+
 ### Fixed:
+
 - GameCenter SDK errors with non-iOS il2cpp builds
 
-
 ## [0.13.0]
+
 ### Fixed:
+
 * Fixed possible null reference exception in MustReferenceContent validation attribute
 
 ### Added
+
 * GameCenter sdk Authentication Support
 * Adds an optional field, activeListingLimit to Store Content
 
 ### Changed
+
 * Switched MatchmakingService API to point to our new backend matchmaking service.
 
-
 ## [0.12.0]
+
 (this release was skipped)
 
-
 ## [0.11.0]
+
 ### Changed
+
 - Console Configurations ToggleKey will be reset to BackQuote.
 
 ### Fixed
+
 - Fixed Promise multithread safety.
 - Fixed ContentRef property drawer showing invalid references when deleted.
-- Fixed MustReferenceContent validation  for lists of Content References.
+- Fixed MustReferenceContent validation for lists of Content References.
 
 ### Added
+
 - Support for the new Unity Input Manager System.
 - Added OnUserLoggingOut event available from API. The event fires before a user switches account.
 - Doc Url to package.json.
-- Event phase validation. Events can no longer have zero phases. This may lead to disappearing Event Phases if your Beamable version is mismatched.
+- Event phase validation. Events can no longer have zero phases. This may lead to disappearing Event Phases if your
+  Beamable version is mismatched.
 - Switched MatchmakingService API to point to our new backend matchmaking service.

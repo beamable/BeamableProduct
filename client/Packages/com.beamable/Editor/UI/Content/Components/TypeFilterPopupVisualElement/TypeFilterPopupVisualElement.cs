@@ -13,48 +13,50 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Content.Components
 {
-    public class TypeFilterPopupVisualElement : ContentManagerComponent
-    {
-        public ContentDataModel Model { get; set; }
+	public class TypeFilterPopupVisualElement : ContentManagerComponent
+	{
+		public ContentDataModel Model
+		{
+			get;
+			set;
+		}
 
-        public TypeFilterPopupVisualElement() : base(nameof(TypeFilterPopupVisualElement))
-        {
+		public TypeFilterPopupVisualElement() : base(nameof(TypeFilterPopupVisualElement)) { }
 
-        }
+		public override void Refresh()
+		{
+			base.Refresh();
+			// add two rows as testing
+			var listRoot = Root.Q<VisualElement>("typeFilterList");
+			var allTypes = Model.GetContentTypes().ToList();
+			var searchbar = Root.Q<SearchBarVisualElement>();
+			searchbar.DoFocus();
+			searchbar.OnSearchChanged += filter =>
+			{
+				SetTypeList(allTypes, listRoot, filter.ToLower());
+			};
+			SetTypeList(allTypes, listRoot);
+		}
 
-        public override void Refresh()
-        {
-            base.Refresh();
-            // add two rows as testing
-            var listRoot = Root.Q<VisualElement>("typeFilterList");
-            var allTypes = Model.GetContentTypes().ToList();
-            var searchbar = Root.Q<SearchBarVisualElement>();
-            searchbar.DoFocus();
-            searchbar.OnSearchChanged += filter =>
-            {
-                SetTypeList(allTypes, listRoot, filter.ToLower());
-            };
-            SetTypeList(allTypes, listRoot);
+		private void SetTypeList(List<ContentTypeDescriptor> allTypes, VisualElement listRoot, string filter = null)
+		{
+			listRoot.Clear();
+			foreach (var typeDescriptor in allTypes)
+			{
+				if (!string.IsNullOrEmpty(filter) && !typeDescriptor.TypeName.ToLower().Contains(filter)) continue;
 
-        }
+				var shouldBeChecked = Model.Filter?.TypeConstraints?.Contains(typeDescriptor.ContentType) ?? false;
+				var row1 = new FilterRowVisualElement();
+				row1.OnValueChanged += nextValue =>
+				{
+					Model.ToggleTypeFilter(typeDescriptor, nextValue);
+				};
 
-        private void SetTypeList(List<ContentTypeDescriptor> allTypes, VisualElement listRoot, string filter=null)
-        {
-            listRoot.Clear();
-            foreach (var typeDescriptor in allTypes)
-            {
-                if (!string.IsNullOrEmpty(filter) && !typeDescriptor.TypeName.ToLower().Contains(filter)) continue;
-
-                var shouldBeChecked = Model.Filter?.TypeConstraints?.Contains(typeDescriptor.ContentType) ?? false;
-                var row1 = new FilterRowVisualElement();
-                row1.OnValueChanged += nextValue => { Model.ToggleTypeFilter(typeDescriptor, nextValue); };
-
-                row1.FilterName = typeDescriptor.TypeName;
-                row1.Refresh();
-                row1.SetValue(shouldBeChecked);
-                listRoot.Add(row1);
-            }
-        }
-    }
+				row1.FilterName = typeDescriptor.TypeName;
+				row1.Refresh();
+				row1.SetValue(shouldBeChecked);
+				listRoot.Add(row1);
+			}
+		}
+	}
 }
-

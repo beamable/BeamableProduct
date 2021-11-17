@@ -1,6 +1,7 @@
 #_windowRoot {
     flex-grow: 1;
 }
+
 #window-main {
     flex-direction: column;
     position: absolute;
@@ -9,16 +10,15 @@
     right: 0px;
     left: 0px;
 }
-#microserviceContentVisualElement{
+
+#microserviceContentVisualElement {
     flex-grow: 1;
 }
 
 
 #logContainer,
 LogVisualElement,
-LogVisualElement > TemplateContainer
-
-{
+LogVisualElement > TemplateContainer {
     flex-grow: 1;
 }
 

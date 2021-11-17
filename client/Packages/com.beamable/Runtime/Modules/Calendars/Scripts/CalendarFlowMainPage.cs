@@ -5,7 +5,5 @@ using UnityEngine;
 
 namespace Beamable.Experimental.Calendars
 {
-   public class CalendarFlowMainPage : MenuBase
-   {
-   }
+	public class CalendarFlowMainPage : MenuBase { }
 }

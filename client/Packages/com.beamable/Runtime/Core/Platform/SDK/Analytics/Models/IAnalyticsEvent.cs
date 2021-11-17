@@ -1,7 +1,7 @@
 using Beamable.Serialization;
 
-namespace Beamable.Api.Analytics {
-
+namespace Beamable.Api.Analytics
+{
 	/// <summary>
 	/// Analytics Event interface
 	/// </summary>
@@ -11,7 +11,8 @@ namespace Beamable.Api.Analytics {
 		/// Gets the op code of the analytics event.
 		/// </summary>
 		/// <value>The op code.</value>
-		string OpCode {
+		string OpCode
+		{
 			get;
 		}
 	}

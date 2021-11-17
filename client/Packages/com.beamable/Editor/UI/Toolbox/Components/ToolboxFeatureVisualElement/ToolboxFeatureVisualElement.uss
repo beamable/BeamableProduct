@@ -1,5 +1,5 @@
 
-#functionIcon{
+#functionIcon {
     height: 100px;
     width: 200px;
     margin-left: 10px;
@@ -7,25 +7,28 @@
     margin-top: 10px;
     border-radius: 10px;
 }
-#title{
+
+#title {
     font-size: 12px;
     margin-left: 10px;
 }
-#description{
+
+#description {
     font-size: 10px;
-    top:0px;
+    top: 0px;
     margin-left: 10px;
 }
 
-ToolboxFeatureVisualElement.invisible{
+ToolboxFeatureVisualElement.invisible {
     opacity: 0;
 }
 
-#titleAndIcon{
+#titleAndIcon {
     margin-top: 2px;
     flex-direction: row;
 }
-#infoIconBtn{
+
+#infoIconBtn {
     width: 15px;
     height: 15px;
     position: relative;
@@ -46,19 +49,19 @@ ToolboxFeatureVisualElement.invisible{
     cursor: pan;
 }
 
-#infoIcon{
+#infoIcon {
     width: 12px;
     height: 12px;
     align-self: center;
     background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/INFO.png");
 }
 
-#mainContent{
+#mainContent {
     margin-bottom: 10px;
 }
 
 #imageMask {
-    top:10px;
+    top: 10px;
     align-self: center;
     height: 100px;
     width: 200px;

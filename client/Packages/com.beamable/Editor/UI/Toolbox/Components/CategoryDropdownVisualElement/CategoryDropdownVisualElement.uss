@@ -6,13 +6,16 @@
     position: relative;
     /*background-color: #000000;*/
 }
+
 CategoryDropdownVisualElement {
     flex-grow: 1;
 
 }
+
 CategoryDropdownVisualElement > TemplateContainer {
     flex-grow: 1;
 }
+
 CategoryDropdownVisualElement #mainVisualElement {
     flex-grow: 1;
     position: absolute;
@@ -24,7 +27,7 @@ CategoryDropdownVisualElement #mainVisualElement {
 }
 
 #searchBar {
-    position:absolute;
+    position: absolute;
     left: 0px;
     right: 10px;
     padding-left: 8px;
@@ -37,10 +40,12 @@ CategoryDropdownVisualElement #mainVisualElement {
 ScrollView {
     flex-grow: 1;
 }
+
 ScrollView #ContentView.content-view {
     left: 0px;
     right: 0px;
 }
+
 #tagList {
     flex-grow: 1;
     /*min-height: 150px;*/

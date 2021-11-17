@@ -12,8 +12,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-<!--        ../client/Packages/com.disruptorbeam.engine/Common/beamable.common.csproj-->
-      <ProjectReference Include="..\..\com.beamable\Common\beamable.common.csproj" />
+        <!--        ../client/Packages/com.disruptorbeam.engine/Common/beamable.common.csproj-->
+        <ProjectReference Include="..\..\com.beamable\Common\beamable.common.csproj"/>
     </ItemGroup>
 
     <ItemGroup>

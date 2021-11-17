@@ -3,59 +3,63 @@ using System.Collections.Generic;
 
 namespace PubNubMessaging.Core
 {
-    #region "Json Pluggable Library"
-    public interface IJsonPluggableLibrary
-    {
-        bool IsArrayCompatible (string jsonString);
+	#region "Json Pluggable Library"
 
-        bool IsDictionaryCompatible (string jsonString);
+	public interface IJsonPluggableLibrary
+	{
+		bool IsArrayCompatible(string jsonString);
 
-        string SerializeToJsonString (object objectToSerialize);
+		bool IsDictionaryCompatible(string jsonString);
 
-        List<object> DeserializeToListOfObject (string jsonString);
+		string SerializeToJsonString(object objectToSerialize);
 
-        object DeserializeToObject (string jsonString);
+		List<object> DeserializeToListOfObject(string jsonString);
 
-        IDictionary<string, object> DeserializeToDictionaryOfObject (string jsonString);
-    }
+		object DeserializeToObject(string jsonString);
 
-    public static class JSONSerializer{
-        public static IJsonPluggableLibrary JsonPluggableLibrary = new SmallerJSONObjectSerializer();
+		IDictionary<string, object> DeserializeToDictionaryOfObject(string jsonString);
+	}
 
-    }
-    public class SmallerJSONObjectSerializer : IJsonPluggableLibrary
-    {
-        public bool IsArrayCompatible (string jsonString)
-        {
-            return jsonString.Trim().StartsWith("[");
-        }
+	public static class JSONSerializer
+	{
+		public static IJsonPluggableLibrary JsonPluggableLibrary = new SmallerJSONObjectSerializer();
+	}
 
-        public bool IsDictionaryCompatible (string jsonString)
-        {
-            return jsonString.Trim().StartsWith("{");
-        }
+	public class SmallerJSONObjectSerializer : IJsonPluggableLibrary
+	{
+		public bool IsArrayCompatible(string jsonString)
+		{
+			return jsonString.Trim().StartsWith("[");
+		}
 
-        public string SerializeToJsonString (object objectToSerialize)
-        {
-            string json = global::Beamable.Serialization.SmallerJSON.Json.Serialize (objectToSerialize, SharedStringBuilder.Builder);
-            return PubnubCryptoBase.ConvertHexToUnicodeChars (json);
-        }
+		public bool IsDictionaryCompatible(string jsonString)
+		{
+			return jsonString.Trim().StartsWith("{");
+		}
 
-        public List<object> DeserializeToListOfObject (string jsonString)
-        {
-            return Json.Deserialize (jsonString) as List<object>;
-        }
+		public string SerializeToJsonString(object objectToSerialize)
+		{
+			string json =
+				global::Beamable.Serialization.SmallerJSON.Json.Serialize(
+					objectToSerialize, SharedStringBuilder.Builder);
+			return PubnubCryptoBase.ConvertHexToUnicodeChars(json);
+		}
 
-        public object DeserializeToObject (string jsonString)
-        {
-            return Json.Deserialize (jsonString) as object;
-        }
+		public List<object> DeserializeToListOfObject(string jsonString)
+		{
+			return Json.Deserialize(jsonString) as List<object>;
+		}
 
-        public IDictionary<string, object> DeserializeToDictionaryOfObject (string jsonString)
-        {
-            return Json.Deserialize (jsonString) as IDictionary<string, object>;
-        }
-    }
-    #endregion
+		public object DeserializeToObject(string jsonString)
+		{
+			return Json.Deserialize(jsonString) as object;
+		}
+
+		public IDictionary<string, object> DeserializeToDictionaryOfObject(string jsonString)
+		{
+			return Json.Deserialize(jsonString) as IDictionary<string, object>;
+		}
+	}
+
+	#endregion
 }
-

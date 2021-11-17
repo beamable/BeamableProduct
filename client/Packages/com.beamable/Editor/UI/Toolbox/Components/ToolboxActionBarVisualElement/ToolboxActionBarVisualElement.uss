@@ -1,14 +1,15 @@
 #mainVisualElement {
     height: 35px;
-    flex-direction:row;
+    flex-direction: row;
 }
 
 #leftContentVisualElement {
     flex-direction: row;
     justify-content: flex-start;
-    align-items:center;
+    align-items: center;
     margin-right: 10px;
 }
+
 #rightContentVisualElement {
     flex-grow: 1;
     justify-content: flex-end;
@@ -35,7 +36,8 @@
     background-image: none;
     border-radius: 0px;
 }
-.buttonText{
+
+.buttonText {
     font-size: 9px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-text-align: middle-center;
@@ -43,28 +45,29 @@
     margin-right: 2px;
     margin-left: 2px;
 }
-#contentManagerIcon{
+
+#contentManagerIcon {
     top: 4px;
     width: 10px;
     height: 12px;
     align-self: center;
 }
 
-#skinningIcon{
+#skinningIcon {
     top: 4px;
     width: 12px;
     height: 12px;
     align-self: center;
 }
 
-#globalConfigIcon{
+#globalConfigIcon {
     top: 4px;
     width: 12px;
     height: 12px;
     align-self: center;
 }
 
-#microserviceIcon{
+#microserviceIcon {
     top: 4px;
     width: 12px;
     height: 12px;
@@ -93,21 +96,21 @@
     cursor: pan;
 }
 
-#categoryIcon{
+#categoryIcon {
     top: 5px;
     width: 12px;
     height: 12px;
     align-self: center;
 }
 
-#typeIcon{
+#typeIcon {
     top: 5px;
     width: 12px;
-    height:12px;
+    height: 12px;
     align-self: center;
 }
 
-#infoIcon{
+#infoIcon {
     top: 8px;
     width: 8px;
     height: 15px;
@@ -122,10 +125,10 @@
 
 Button.unity-button,
 Button {
-    background-color: rgba(0,0,0,0);
+    background-color: rgba(0, 0, 0, 0);
 }
 
-#accountIcon{
+#accountIcon {
     top: 8px;
     width: 15px;
     height: 15px;

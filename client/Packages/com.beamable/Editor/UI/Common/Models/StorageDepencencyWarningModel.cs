@@ -9,20 +9,21 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+
 namespace Beamable.Editor.Toolbox.Models
 {
-    public class StorageDepencencyWarningModel : AnnouncementModelBase
-    {
-        public string TitleLabelText => "PREVIEW FEATURE";
-        public string DescriptionLabelText => "Deployment of Microservices with Storage Object Dependencies will not be possible until a future version of Beamable.";
-        public Action OnIgnore;
+	public class StorageDepencencyWarningModel : AnnouncementModelBase
+	{
+		public string TitleLabelText => "PREVIEW FEATURE";
 
-        public override BeamableVisualElement CreateVisualElement()
-        {
-            return new StorageDepencencyWarningVisualElement()
-            {
-                StorageDepencencyWarningModel = this
-            };
-        }
-    }
+		public string DescriptionLabelText =>
+			"Deployment of Microservices with Storage Object Dependencies will not be possible until a future version of Beamable.";
+
+		public Action OnIgnore;
+
+		public override BeamableVisualElement CreateVisualElement()
+		{
+			return new StorageDepencencyWarningVisualElement() {StorageDepencencyWarningModel = this};
+		}
+	}
 }

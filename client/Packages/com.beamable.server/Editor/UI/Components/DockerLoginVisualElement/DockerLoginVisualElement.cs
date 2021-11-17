@@ -1,4 +1,3 @@
-
 using System;
 using Beamable.Common;
 using Beamable.Editor;
@@ -20,82 +19,82 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Server.Editor.UI.Components.DockerLoginWindow
 {
-   public class DockerLoginVisualElement : MicroserviceComponent
-   {
-      private static BeamablePopupWindow _window;
-      public static Promise<Unit> ShowUtility(EditorWindow parent=null)
-      {
-         if (_window)
-         {
-            _window.Close();
-         }
-         var elem = new DockerLoginVisualElement();
-         _window = BeamablePopupWindow.ShowUtility("DockerHub Login", elem, parent, new Vector2(100, 250));
-         _window.OnClosing += () => elem?._promise?.CompleteError(new Exception("Window Closed"));
-         elem._promise.Then(_ => _window.Close());
+	public class DockerLoginVisualElement : MicroserviceComponent
+	{
+		private static BeamablePopupWindow _window;
 
-         return elem._promise;
-      }
+		public static Promise<Unit> ShowUtility(EditorWindow parent = null)
+		{
+			if (_window)
+			{
+				_window.Close();
+			}
 
-      private Promise<Unit> _promise = new Promise<Unit>();
-      private PrimaryButtonVisualElement _loginBtn;
-      private TextField _usernameInput;
-      private TextField _passwordInput;
-      private Label _errorLbl;
+			var elem = new DockerLoginVisualElement();
+			_window = BeamablePopupWindow.ShowUtility("DockerHub Login", elem, parent, new Vector2(100, 250));
+			_window.OnClosing += () => elem?._promise?.CompleteError(new Exception("Window Closed"));
+			elem._promise.Then(_ => _window.Close());
 
-      public DockerLoginVisualElement() : base(nameof(DockerLoginVisualElement))
-      {
-      }
+			return elem._promise;
+		}
 
-      public override void Refresh()
-      {
-         base.Refresh();
+		private Promise<Unit> _promise = new Promise<Unit>();
+		private PrimaryButtonVisualElement _loginBtn;
+		private TextField _usernameInput;
+		private TextField _passwordInput;
+		private Label _errorLbl;
 
+		public DockerLoginVisualElement() : base(nameof(DockerLoginVisualElement)) { }
 
-         var aboutLbl = Root.Q<Label>("title");
-         aboutLbl.AddTextWrapStyle();
+		public override void Refresh()
+		{
+			base.Refresh();
 
-         var helpLbl = Root.Q<Label>("help");
-         helpLbl.AddTextWrapStyle();
-         helpLbl.AddManipulator(new Clickable(() => Application.OpenURL("https://id.docker.com/reset-password/")));
+			var aboutLbl = Root.Q<Label>("title");
+			aboutLbl.AddTextWrapStyle();
 
-         _usernameInput = Root.Q<TextField>("username");
-         _usernameInput.AddPlaceholder("DockerHub username");
+			var helpLbl = Root.Q<Label>("help");
+			helpLbl.AddTextWrapStyle();
+			helpLbl.AddManipulator(new Clickable(() => Application.OpenURL("https://id.docker.com/reset-password/")));
 
-         _passwordInput = Root.Q<TextField>("password");
-         _passwordInput.AddPlaceholder("DockerHub password");
-         _passwordInput.isPasswordField = true;
+			_usernameInput = Root.Q<TextField>("username");
+			_usernameInput.AddPlaceholder("DockerHub username");
 
-         _errorLbl = Root.Q<Label>("error");
+			_passwordInput = Root.Q<TextField>("password");
+			_passwordInput.AddPlaceholder("DockerHub password");
+			_passwordInput.isPasswordField = true;
 
-         _loginBtn = Root.Q<PrimaryButtonVisualElement>();
-         _loginBtn.AddGateKeeper( _usernameInput.AddErrorLabel("Username", PrimaryButtonVisualElement.ExistErrorHandler));
-         _loginBtn.AddGateKeeper( _passwordInput.AddErrorLabel("Password", PrimaryButtonVisualElement.ExistErrorHandler));
+			_errorLbl = Root.Q<Label>("error");
 
-         _loginBtn.Button.clickable.clicked += OnLoginClicked;
-      }
+			_loginBtn = Root.Q<PrimaryButtonVisualElement>();
+			_loginBtn.AddGateKeeper(
+				_usernameInput.AddErrorLabel("Username", PrimaryButtonVisualElement.ExistErrorHandler));
+			_loginBtn.AddGateKeeper(
+				_passwordInput.AddErrorLabel("Password", PrimaryButtonVisualElement.ExistErrorHandler));
 
-      private void OnLoginClicked()
-      {
-         var command = new DockerLoginCommand(_usernameInput.value, _passwordInput.value);
-         var loginPromise = command.Start(null);
+			_loginBtn.Button.clickable.clicked += OnLoginClicked;
+		}
 
-         _loginBtn.SetText("Logging In");
-         _loginBtn.Load(loginPromise);
+		private void OnLoginClicked()
+		{
+			var command = new DockerLoginCommand(_usernameInput.value, _passwordInput.value);
+			var loginPromise = command.Start(null);
 
-         loginPromise.Then(isLoggedIn =>
-         {
-            _errorLbl.text = "";
-            if (!isLoggedIn)
-            {
-               _errorLbl.text = "Username or Password was incorrect.";
-            }
-            else
-            {
-               _promise.CompleteSuccess(PromiseBase.Unit);
+			_loginBtn.SetText("Logging In");
+			_loginBtn.Load(loginPromise);
 
-            }
-         });
-      }
-   }
+			loginPromise.Then(isLoggedIn =>
+			{
+				_errorLbl.text = "";
+				if (!isLoggedIn)
+				{
+					_errorLbl.text = "Username or Password was incorrect.";
+				}
+				else
+				{
+					_promise.CompleteSuccess(PromiseBase.Unit);
+				}
+			});
+		}
+	}
 }

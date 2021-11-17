@@ -3,8 +3,8 @@ using UnityEngine;
 
 namespace Beamable.AccountManagement
 {
-   public class TokenReference : MonoBehaviour
-   {
-      public UserBundle Bundle;
-   }
+	public class TokenReference : MonoBehaviour
+	{
+		public UserBundle Bundle;
+	}
 }

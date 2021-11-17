@@ -1,44 +1,45 @@
 BreadcrumbsVisualElement #mainVisualElement {
-	height:30px;
-	justify-content:flex-end;
+    height: 30px;
+    justify-content: flex-end;
 }
 
 BreadcrumbsVisualElement #mainVisualElement {
-	flex-direction:row;
-	align-items:center;
-	justify-content:space-between;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
 }
 
 BreadcrumbsVisualElement #tokenListVisualElement {
-	flex-direction:row;
-	flex-grow:1;
-	justify-content:flex-start;
+    flex-direction: row;
+    flex-grow: 1;
+    justify-content: flex-start;
 }
 
 BreadcrumbsVisualElement .tokenTextWord {
-	-unity-font-style: bold;
-	font-size:12px;
-	padding-left:0px;
-	padding-right:0px;
-	margin-left: 8px;
+    -unity-font-style: bold;
+    font-size: 12px;
+    padding-left: 0px;
+    padding-right: 0px;
+    margin-left: 8px;
 }
 
 BreadcrumbsVisualElement .tokenTextArrow {
-	-unity-font-style: bold;
-	font-size:12px;
-	padding-left:0px;
-	padding-right:0px;
+    -unity-font-style: bold;
+    font-size: 12px;
+    padding-left: 0px;
+    padding-right: 0px;
 }
 
 BreadcrumbsVisualElement #counterVisualElement {
-	border-radius:10px;
+    border-radius: 10px;
 }
+
 BreadcrumbsVisualElement #counterVisualElement > Label {
-	-unity-font-style: bold;
-	font-size:12px;
+    -unity-font-style: bold;
+    font-size: 12px;
     padding-left: 8px;
 }
 
-BreadcrumbsVisualElement #realmButton{
-	margin-right: 10px;
+BreadcrumbsVisualElement #realmButton {
+    margin-right: 10px;
 }

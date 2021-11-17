@@ -22,10 +22,10 @@ Button {
     border-right-width: 0px;
     border-top-width: 0px;
     border-bottom-width: 0px;
-    border-color: rgb(128,128,128);
+    border-color: rgb(128, 128, 128);
 }
 
 Button.unity-button:hover,
 Button:hover {
-    background-color: rgba(128,128,128,.4);
+    background-color: rgba(128, 128, 128, .4);
 }

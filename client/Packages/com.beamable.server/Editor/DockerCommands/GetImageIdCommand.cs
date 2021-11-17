@@ -4,23 +4,27 @@ using Beamable.Platform.SDK;
 
 namespace Beamable.Server.Editor.DockerCommands
 {
-   public class GetImageIdCommand : DockerCommandReturnable<string>
-   {
-      public string ImageName { get; }
+	public class GetImageIdCommand : DockerCommandReturnable<string>
+	{
+		public string ImageName
+		{
+			get;
+		}
 
-      public GetImageIdCommand(IDescriptor descriptor)
-      {
-         ImageName = descriptor.ImageName;
-      }
-      public override string GetCommandString()
-      {
-         return $"{DockerCmd} images -q {ImageName}";
-      }
+		public GetImageIdCommand(IDescriptor descriptor)
+		{
+			ImageName = descriptor.ImageName;
+		}
 
-      protected override void Resolve()
-      {
-         var imageId = StandardOutBuffer?.Length > 0 ? StandardOutBuffer.Trim() : string.Empty;
-         Promise.CompleteSuccess(imageId);
-      }
-   }
+		public override string GetCommandString()
+		{
+			return $"{DockerCmd} images -q {ImageName}";
+		}
+
+		protected override void Resolve()
+		{
+			var imageId = StandardOutBuffer?.Length > 0 ? StandardOutBuffer.Trim() : string.Empty;
+			Promise.CompleteSuccess(imageId);
+		}
+	}
 }

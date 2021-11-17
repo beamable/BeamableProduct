@@ -9,7 +9,7 @@
 
     <engine:VisualElement name="manifestButtonHolder">
         <engine:Button class="boundedButton" name="manifestButton">
-<!--            <engine:VisualElement name="banner"/>-->
+            <!--            <engine:VisualElement name="banner"/>-->
             <engine:Image name="dropDownIcon"/>
             <engine:Label text="Manifest ID" class="buttonText"/>
         </engine:Button>

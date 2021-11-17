@@ -5,8 +5,7 @@
 }
 
 PublishContentVisualElement,
-PublishContentVisualElement > TemplateContainer
-{
+PublishContentVisualElement > TemplateContainer {
     flex-grow: 1;
 }
 
@@ -15,6 +14,7 @@ PublishContentVisualElement > TemplateContainer
     margin-left: 26px;
     margin-right: 26px;
 }
+
 #manifestDocsLink {
     margin-bottom: 40px;
     border-color: #008CFF;
@@ -23,21 +23,24 @@ PublishContentVisualElement > TemplateContainer
     border-right-width: 0px;
     border-top-width: 0px;
     border-bottom-width: 2px;
-    margin-left:3px;
-    margin-right:3px;
+    margin-left: 3px;
+    margin-right: 3px;
     padding-left: 0px;
     padding-right: 0px;
 
     background-image: none;
-    background-color: rgba(0,0,0,0);
+    background-color: rgba(0, 0, 0, 0);
     /*-unity-text-align: lower-right;*/
 }
+
 #manifestWarningMessage {
     margin-top: 4px;
 }
+
 #manifestDocs {
     flex-direction: row;
 }
+
 #nameTextField {
     flex-direction: column;
     flex-grow: 1;
@@ -47,11 +50,13 @@ PublishContentVisualElement > TemplateContainer
     flex-direction: row;
     margin-bottom: 12px;
 }
+
 .summaryAlignLeft {
     flex-grow: 1;
     flex-direction: row;
     align-items: center;
 }
+
 .summaryAlignRight {
     flex-direction: row-reverse;
 }
@@ -71,11 +76,13 @@ PublishContentVisualElement > TemplateContainer
 #publishPreviewContainer .unity-foldout-content {
     left: 12px;
 }
-#publishBtn{
+
+#publishBtn {
     width: 100px;
     height: 28px;
 }
-#detailBtn{
+
+#detailBtn {
     height: 20px;
     width: 35px;
     font-size: 8px;
@@ -85,17 +92,20 @@ PublishContentVisualElement > TemplateContainer
 }
 
 #publishPreviewContainer .unity-foldout__content, /* 2019 has the .unity-foldout__content class. */
-#publishPreviewContainer .unity-foldout-content /* 2018 has the .unity-foldout-content class. */ {
+#publishPreviewContainer .unity-foldout-content /* 2018 has the .unity-foldout-content class. */
+{
     padding-left: 12px;
 }
 
-PublishContentVisualElement ScrollView  #ContentView {
+PublishContentVisualElement ScrollView #ContentView {
     left: 1px;
     right: 1px;
 }
+
 PublishContentVisualElement ScrollView {
     flex-grow: 1;
 }
+
 PublishContentVisualElement Foldout #unity-content > ListView,
 PublishContentVisualElement Foldout #unity-content,
 PublishContentVisualElement Foldout {
@@ -107,49 +117,52 @@ PublishContentVisualElement Foldout {
     left: 50000px;
 }
 
-#loadingViewContainer{
+#loadingViewContainer {
     align-self: center;
     align-items: center;
 }
+
 LoadingIndicatorVisualElement {
     margin-top: 40px;
 }
+
 LoadingIndicatorVisualElement.hide {
     margin-top: 0px;
 }
+
 LoadingSpinnerVisualElement {
     align-self: center;
 }
 
-#noPublishLabel{
+#noPublishLabel {
     position: absolute;
 }
 
-#manifestNameRow{
+#manifestNameRow {
     flex-direction: row;
 }
 
-#manifestNameLabel{
+#manifestNameLabel {
     -unity-font-style: bold;
     -unity-text-align: middle-left;
     max-height: 20px;
 }
 
-#manifestName{
+#manifestName {
     min-height: 20px;
     -unity-text-align: middle-left;
 }
 
-.invalidManifestName{
+.invalidManifestName {
     background-color: #FF0000;
 }
 
-#manifestNameMessage{
+#manifestNameMessage {
     color: #FF0000;
     font-size: 8px;
 }
 
-#manifestArchivedMessage{
+#manifestArchivedMessage {
     color: #C59800;
     height: 0px;
     -unity-text-align: middle-left;
@@ -159,9 +172,9 @@ LoadingSpinnerVisualElement {
     overflow: hidden;
 }
 
-#manifestArchivedMessage.visible{
+#manifestArchivedMessage.visible {
     height: 30px;
- }
+}
 
 .beamableErrorLabel {
     margin-left: 4px;

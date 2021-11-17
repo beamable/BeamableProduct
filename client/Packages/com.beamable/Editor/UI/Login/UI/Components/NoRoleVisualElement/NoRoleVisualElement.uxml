@@ -7,7 +7,8 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:VisualElement name="mainContainer">
-        <engine:Label name="message" text="You've created a new account, congratulations! Your organization administrator needs to add you to the team. For now, you can explore the project, but you won't be able to publish any content or microservices. "/>
+        <engine:Label name="message"
+                      text="You've created a new account, congratulations! Your organization administrator needs to add you to the team. For now, you can explore the project, but you won't be able to publish any content or microservices. "/>
         <engine:Button name="continueButton" text="Okay"/>
     </engine:VisualElement>
 

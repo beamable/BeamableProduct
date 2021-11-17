@@ -6,262 +6,337 @@ using Beamable.Editor.Realms;
 
 namespace Beamable.Editor.Login.UI.Model
 {
-   public class LoginModel
-   {
-      public CustomerModel Customer { get; }= new CustomerModel();
-      //public CustomerModel LoadedCustomer { get; } = new CustomerModel();
+	public class LoginModel
+	{
+		public CustomerModel Customer
+		{
+			get;
+		} = new CustomerModel();
+		//public CustomerModel LoadedCustomer { get; } = new CustomerModel();
 
-      public List<RealmView> Games { get; set; } = new List<RealmView>();
+		public List<RealmView> Games
+		{
+			get;
+			set;
+		} = new List<RealmView>();
 
-      public bool StartedWithConfiguration { get; private set; } = false;
-      public bool StartedWithUser { get; private set; } = false;
-      public string LastError { get; private set; }
+		public bool StartedWithConfiguration
+		{
+			get;
+			private set;
+		} = false;
 
-      public bool ReadLegalCopy { get; set; }
+		public bool StartedWithUser
+		{
+			get;
+			private set;
+		} = false;
 
-      public event Action<string> OnError;
-      public event Action OnErrorCleared;
-      public event Action<List<RealmView>> OnGamesUpdated;
+		public string LastError
+		{
+			get;
+			private set;
+		}
 
-      public CustomerView CurrentCustomer { get; private set; }
+		public bool ReadLegalCopy
+		{
+			get;
+			set;
+		}
 
-      public EditorUser CurrentUser { get; private set; }
-      public RealmView CurrentGame { get; private set; }
-      public RealmView CurrentRealm { get; private set; }
-      public event Action<EditorUser> OnCurrentUserChanged;
-      public event Action<RealmView> OnGameChanged;
-      public event Action<LoginModel> OnStateChanged;
+		public event Action<string> OnError;
+		public event Action OnErrorCleared;
+		public event Action<List<RealmView>> OnGamesUpdated;
 
-      public LoginModel()
-      {
+		public CustomerView CurrentCustomer
+		{
+			get;
+			private set;
+		}
 
-      }
+		public EditorUser CurrentUser
+		{
+			get;
+			private set;
+		}
 
-      public void SetError(string error)
-      {
-         LastError = error;
-         if (string.IsNullOrEmpty(LastError))
-         {
-            OnErrorCleared?.Invoke();
-         }
-         else
-         {
-            OnError?.Invoke(LastError);
-         }
-      }
+		public RealmView CurrentGame
+		{
+			get;
+			private set;
+		}
 
-      public Promise<List<RealmView>> ResetGames()
-      {
-         return EditorAPI.Instance.FlatMap(b => b.RealmService.GetGames().Map(games =>
-         {
-            Games = games;
-            OnGamesUpdated?.Invoke(games);
-            return games;
-         }));
-      }
+		public RealmView CurrentRealm
+		{
+			get;
+			private set;
+		}
 
-      public void Destroy()
-      {
-         EditorAPI.Instance.Then(b =>
-         {
-            b.OnUserChange -= OnUserChanged;
-            b.OnRealmChange -= SetRealm;
-         });
-      }
+		public event Action<EditorUser> OnCurrentUserChanged;
+		public event Action<RealmView> OnGameChanged;
+		public event Action<LoginModel> OnStateChanged;
 
-      private void SetUser(EditorUser user)
-      {
-         CurrentUser = user;
-         OnCurrentUserChanged?.Invoke(CurrentUser);
-         OnStateChanged?.Invoke(this);
-      }
+		public LoginModel() { }
 
-      private void SetRealm(RealmView realm)
-      {
-         CurrentRealm = realm;
-         OnGameChanged?.Invoke(realm);
-         OnStateChanged?.Invoke(this);
-      }
+		public void SetError(string error)
+		{
+			LastError = error;
+			if (string.IsNullOrEmpty(LastError))
+			{
+				OnErrorCleared?.Invoke();
+			}
+			else
+			{
+				OnError?.Invoke(LastError);
+			}
+		}
 
-      public void SetGame(RealmView game)
-      {
-         CurrentGame = game;
-         OnStateChanged?.Invoke(this);
-      }
+		public Promise<List<RealmView>> ResetGames()
+		{
+			return EditorAPI.Instance.FlatMap(b => b.RealmService.GetGames().Map(games =>
+			{
+				Games = games;
+				OnGamesUpdated?.Invoke(games);
+				return games;
+			}));
+		}
 
-      private void SetCustomer(CustomerView customer)
-      {
-         CurrentCustomer = customer;
-         OnStateChanged?.Invoke(this);
-      }
+		public void Destroy()
+		{
+			EditorAPI.Instance.Then(b =>
+			{
+				b.OnUserChange -= OnUserChanged;
+				b.OnRealmChange -= SetRealm;
+			});
+		}
 
-      public Promise<LoginModel> Initialize()
-      {
-         return EditorAPI.Instance.Map(b =>
-         {
-            SetUser(b.User);
-            SetRealm(b.Realm);
-            SetGame(b.ProductionRealm);
+		private void SetUser(EditorUser user)
+		{
+			CurrentUser = user;
+			OnCurrentUserChanged?.Invoke(CurrentUser);
+			OnStateChanged?.Invoke(this);
+		}
 
-            StartedWithConfiguration = b.HasConfiguration;
-            StartedWithUser = b.HasToken;
+		private void SetRealm(RealmView realm)
+		{
+			CurrentRealm = realm;
+			OnGameChanged?.Invoke(realm);
+			OnStateChanged?.Invoke(this);
+		}
 
-            Customer.Clear();
-            if (b.HasConfiguration)
-            {
-               if (b.HasCustomer)
-               {
-                  Customer.SetCidPid(b.CidOrAlias, b.Pid);
-               } else {
-                  Customer.Clear();
-               }
-            }
+		public void SetGame(RealmView game)
+		{
+			CurrentGame = game;
+			OnStateChanged?.Invoke(this);
+		}
 
-            CurrentCustomer = b.CustomerView;
+		private void SetCustomer(CustomerView customer)
+		{
+			CurrentCustomer = customer;
+			OnStateChanged?.Invoke(this);
+		}
 
-            b.OnUserChange += OnUserChanged;
-            b.OnRealmChange += SetRealm;
-            b.OnCustomerChange += SetCustomer;
+		public Promise<LoginModel> Initialize()
+		{
+			return EditorAPI.Instance.Map(b =>
+			{
+				SetUser(b.User);
+				SetRealm(b.Realm);
+				SetGame(b.ProductionRealm);
 
-            b.RealmService.GetGames().Then(games =>
-            {
-               Games = games;
-               OnGamesUpdated?.Invoke(games);
-            });
+				StartedWithConfiguration = b.HasConfiguration;
+				StartedWithUser = b.HasToken;
 
-            if (b.HasToken)
-            {
-               Customer.Role = b.User.roleString;
-               Customer.SetUserInfo(b.User.id, b.User.email);
-            }
+				Customer.Clear();
+				if (b.HasConfiguration)
+				{
+					if (b.HasCustomer)
+					{
+						Customer.SetCidPid(b.CidOrAlias, b.Pid);
+					}
+					else
+					{
+						Customer.Clear();
+					}
+				}
 
-            return this;
-         });
-      }
+				CurrentCustomer = b.CustomerView;
 
-      private void OnUserChanged(EditorUser user)
-      {
-         Customer.Role = user?.roleString;
-         SetUser(user);
-         if (user == null)
-         {
-            Customer.SetUserInfo(0, null);
-         }
-         else
-         {
-            Customer.SetUserInfo(user.id, user.email);
-         }
-      }
+				b.OnUserChange += OnUserChanged;
+				b.OnRealmChange += SetRealm;
+				b.OnCustomerChange += SetCustomer;
 
-   }
+				b.RealmService.GetGames().Then(games =>
+				{
+					Games = games;
+					OnGamesUpdated?.Invoke(games);
+				});
 
-   public class CustomerModel
-   {
-      public string CidOrAlias { get; private set; }
-      public string Pid { get; private set; }
+				if (b.HasToken)
+				{
+					Customer.Role = b.User.roleString;
+					Customer.SetUserInfo(b.User.id, b.User.email);
+				}
 
-      public long Id { get; private set; }
-      public string Email { get; set; }
-      public string Role { get; set; }
-      public string Password { get; set; }
-      public string Code { get; set; }
-      public string PasswordConfirmation { get; set; }
+				return this;
+			});
+		}
 
+		private void OnUserChanged(EditorUser user)
+		{
+			Customer.Role = user?.roleString;
+			SetUser(user);
+			if (user == null)
+			{
+				Customer.SetUserInfo(0, null);
+			}
+			else
+			{
+				Customer.SetUserInfo(user.id, user.email);
+			}
+		}
+	}
 
-      public bool HasCid => !string.IsNullOrEmpty(CidOrAlias);
-      public bool HasGame => !string.IsNullOrEmpty(Pid);
-      public bool HasUser => !string.IsNullOrEmpty(Email);
-      public bool HasRole => !string.IsNullOrEmpty(Role);
+	public class CustomerModel
+	{
+		public string CidOrAlias
+		{
+			get;
+			private set;
+		}
 
-      public event Action OnUpdated;
+		public string Pid
+		{
+			get;
+			private set;
+		}
 
-      public bool HasData => !string.IsNullOrEmpty(CidOrAlias) && string.IsNullOrEmpty(Pid);
+		public long Id
+		{
+			get;
+			private set;
+		}
 
-      public void SetExistingCustomerData(string cidOrAlias, string email, string password)
-      {
-         Pid = null;
-         PasswordConfirmation = null;
-         Id = 0;
-         CidOrAlias = cidOrAlias;
-         Email = email?.Trim();
-         Password = password;
-         OnUpdated?.Invoke();
-      }
-      public void SetNewCustomer(string alias, string gameName, string email, string password)
-      {
-         Id = 0;
-         CidOrAlias = alias;
-         Pid = gameName;
-         Email = email?.Trim();
-         Password = password;
-         PasswordConfirmation = null;
-         OnUpdated?.Invoke();
-      }
+		public string Email
+		{
+			get;
+			set;
+		}
 
-      public void SetCustomerData(string email, string password)
-      {
-         PasswordConfirmation = null;
-         Id = 0;
-         Email = email?.Trim();
-         Password = password;
-         OnUpdated?.Invoke();
-      }
+		public string Role
+		{
+			get;
+			set;
+		}
 
-      public void SetCidPid(string cid, string pid)
-      {
-         CidOrAlias = cid;
-         Pid = pid;
-         OnUpdated?.Invoke();
-      }
+		public string Password
+		{
+			get;
+			set;
+		}
 
-      public void SetPid(string pid)
-      {
+		public string Code
+		{
+			get;
+			set;
+		}
 
-         Pid = pid;
-         OnUpdated?.Invoke();
-      }
+		public string PasswordConfirmation
+		{
+			get;
+			set;
+		}
 
-      public void SetUserInfo(long id, string email)
-      {
-         Id = id;
-         Email = email?.Trim();
-         OnUpdated?.Invoke();
-      }
+		public bool HasCid => !string.IsNullOrEmpty(CidOrAlias);
+		public bool HasGame => !string.IsNullOrEmpty(Pid);
+		public bool HasUser => !string.IsNullOrEmpty(Email);
+		public bool HasRole => !string.IsNullOrEmpty(Role);
 
-      public void SetPasswordForgetData(string cid, string email)
-      {
-         Email = email?.Trim();
-         CidOrAlias = cid;
-         Pid = null;
-         Id = 0;
-         Password = null;
-         Code = null;
-         OnUpdated?.Invoke();
+		public event Action OnUpdated;
 
-      }
+		public bool HasData => !string.IsNullOrEmpty(CidOrAlias) && string.IsNullOrEmpty(Pid);
 
+		public void SetExistingCustomerData(string cidOrAlias, string email, string password)
+		{
+			Pid = null;
+			PasswordConfirmation = null;
+			Id = 0;
+			CidOrAlias = cidOrAlias;
+			Email = email?.Trim();
+			Password = password;
+			OnUpdated?.Invoke();
+		}
 
-      public void Clear()
-      {
-         Code = null;
-         Id = 0;
-         Email = null;
-         Password = null;
-         PasswordConfirmation = null;
-         CidOrAlias = null;
-         Role = null;
-         Pid = null;
-         OnUpdated?.Invoke();
-      }
+		public void SetNewCustomer(string alias, string gameName, string email, string password)
+		{
+			Id = 0;
+			CidOrAlias = alias;
+			Pid = gameName;
+			Email = email?.Trim();
+			Password = password;
+			PasswordConfirmation = null;
+			OnUpdated?.Invoke();
+		}
 
-      public void SetPasswordCode(string code, string password)
-      {
-         Password = password;
-         Code = code;
+		public void SetCustomerData(string email, string password)
+		{
+			PasswordConfirmation = null;
+			Id = 0;
+			Email = email?.Trim();
+			Password = password;
+			OnUpdated?.Invoke();
+		}
 
-         OnUpdated?.Invoke();
+		public void SetCidPid(string cid, string pid)
+		{
+			CidOrAlias = cid;
+			Pid = pid;
+			OnUpdated?.Invoke();
+		}
 
-      }
-   }
+		public void SetPid(string pid)
+		{
+			Pid = pid;
+			OnUpdated?.Invoke();
+		}
 
+		public void SetUserInfo(long id, string email)
+		{
+			Id = id;
+			Email = email?.Trim();
+			OnUpdated?.Invoke();
+		}
+
+		public void SetPasswordForgetData(string cid, string email)
+		{
+			Email = email?.Trim();
+			CidOrAlias = cid;
+			Pid = null;
+			Id = 0;
+			Password = null;
+			Code = null;
+			OnUpdated?.Invoke();
+		}
+
+		public void Clear()
+		{
+			Code = null;
+			Id = 0;
+			Email = null;
+			Password = null;
+			PasswordConfirmation = null;
+			CidOrAlias = null;
+			Role = null;
+			Pid = null;
+			OnUpdated?.Invoke();
+		}
+
+		public void SetPasswordCode(string code, string password)
+		{
+			Password = password;
+			Code = code;
+
+			OnUpdated?.Invoke();
+		}
+	}
 }

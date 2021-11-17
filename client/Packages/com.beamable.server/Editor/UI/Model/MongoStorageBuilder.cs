@@ -4,18 +4,18 @@ using Beamable.Server.Editor.DockerCommands;
 
 namespace Beamable.Editor.UI.Model
 {
-    public class MongoStorageBuilder : ServiceBuilderBase
-    {
-        public void ForwardEventsTo(MongoStorageBuilder oldBuilder)
-        {
-            if (oldBuilder == null) return;
-            OnIsRunningChanged += oldBuilder.OnIsRunningChanged;
-        }
+	public class MongoStorageBuilder : ServiceBuilderBase
+	{
+		public void ForwardEventsTo(MongoStorageBuilder oldBuilder)
+		{
+			if (oldBuilder == null) return;
+			OnIsRunningChanged += oldBuilder.OnIsRunningChanged;
+		}
 
-        protected override async Task<RunImageCommand> PrepareRunCommand()
-        {
-            await Task.Delay(0);
-            return new RunStorageCommand((StorageObjectDescriptor) Descriptor);
-        }
-    }
+		protected override async Task<RunImageCommand> PrepareRunCommand()
+		{
+			await Task.Delay(0);
+			return new RunStorageCommand((StorageObjectDescriptor)Descriptor);
+		}
+	}
 }

@@ -5,145 +5,161 @@ using UnityEditor;
 
 namespace Beamable.Server.Editor.DockerCommands
 {
-   public abstract class DockerCommandReturnable<T> : DockerCommand
-   {
-      public Action<string> OnStandardOut;
-      public Action<string> OnStandardErr;
+	public abstract class DockerCommandReturnable<T> : DockerCommand
+	{
+		public Action<string> OnStandardOut;
+		public Action<string> OnStandardErr;
 
-      private CommandRunnerWindow _context;
-      protected Promise<T> Promise { get; private set; }
+		private CommandRunnerWindow _context;
 
-      protected string StandardOutBuffer { get; private set; }
-      protected string StandardErrorBuffer { get; private set; }
+		protected Promise<T> Promise
+		{
+			get;
+			private set;
+		}
 
-      protected bool _finished;
+		protected string StandardOutBuffer
+		{
+			get;
+			private set;
+		}
 
-      public override void Start()
-      {
-         Start(null);
-      }
+		protected string StandardErrorBuffer
+		{
+			get;
+			private set;
+		}
 
-      public Promise<T> Start(CommandRunnerWindow context)
-      {
-         if (DockerRequired && DockerNotInstalled)
-         {
-            return Promise<T>.Failed(new DockerNotInstalledException());
-         }
-         _context = context;
-         Promise = new Promise<T>();
-         base.Start();
+		protected bool _finished;
 
-         ForceContextUpdateOnFinish();
-         return Promise;
-      }
+		public override void Start()
+		{
+			Start(null);
+		}
 
-      private void ForceContextUpdateOnFinish()
-      {
-         if (_context == null) return;
+		public Promise<T> Start(CommandRunnerWindow context)
+		{
+			if (DockerRequired && DockerNotInstalled)
+			{
+				return Promise<T>.Failed(new DockerNotInstalledException());
+			}
 
-         void Check()
-         {
-            if (!_finished) return;
-            try
-            {
-               if (_context != null)
-               {
-                  _context.ForceProcess();
-                  EditorUtility.SetDirty(_context);
-                  _context.Repaint();
-               }
-            }
-            finally
-            {
-               EditorApplication.update -= Check;
-            }
-         }
+			_context = context;
+			Promise = new Promise<T>();
+			base.Start();
 
-         EditorApplication.update += Check;
-      }
+			ForceContextUpdateOnFinish();
+			return Promise;
+		}
 
-      protected abstract void Resolve();
+		private void ForceContextUpdateOnFinish()
+		{
+			if (_context == null) return;
 
-      protected override void HandleStandardOut(string data)
-      {
-         base.HandleStandardOut(data);
-         if (data != null)
-         {
-            StandardOutBuffer += data;
-            OnStandardOut?.Invoke(data);
-         }
-      }
+			void Check()
+			{
+				if (!_finished) return;
+				try
+				{
+					if (_context != null)
+					{
+						_context.ForceProcess();
+						EditorUtility.SetDirty(_context);
+						_context.Repaint();
+					}
+				}
+				finally
+				{
+					EditorApplication.update -= Check;
+				}
+			}
 
-      protected override void HandleStandardErr(string data)
-      {
-         base.HandleStandardErr(data);
-         if (data != null)
-         {
-            StandardErrorBuffer += data;
-            OnStandardErr?.Invoke(data);
-         }
-      }
+			EditorApplication.update += Check;
+		}
 
-      protected override void HandleOnExit()
-      {
-         void Callback()
-         {
-            base.HandleOnExit();
-            Resolve();
-         }
+		protected abstract void Resolve();
 
-         if (_context == null)
-         {
-            EditorApplication.delayCall += Callback;
-         }
-         else
-         {
-            _context.RunOnMainThread(Callback);
-         }
+		protected override void HandleStandardOut(string data)
+		{
+			base.HandleStandardOut(data);
+			if (data != null)
+			{
+				StandardOutBuffer += data;
+				OnStandardOut?.Invoke(data);
+			}
+		}
 
-         _finished = true;
-      }
-   }
+		protected override void HandleStandardErr(string data)
+		{
+			base.HandleStandardErr(data);
+			if (data != null)
+			{
+				StandardErrorBuffer += data;
+				OnStandardErr?.Invoke(data);
+			}
+		}
 
-   public class CommandRunnerWindow : EditorWindow
-   {
-      static CommandRunnerWindow _instance;
+		protected override void HandleOnExit()
+		{
+			void Callback()
+			{
+				base.HandleOnExit();
+				Resolve();
+			}
 
-      static volatile bool _queued = false;
-      static List<Action> _backlog = new List<Action>(8);
-      static List<Action> _actions = new List<Action>(8);
+			if (_context == null)
+			{
+				EditorApplication.delayCall += Callback;
+			}
+			else
+			{
+				_context.RunOnMainThread(Callback);
+			}
 
-      private void Update()
-      {
-         // this is running on the main thread...
-         if (_queued)
-         {
-            ForceProcess();
-         }
-      }
+			_finished = true;
+		}
+	}
 
-      public void ForceProcess()
-      {
-         lock(_backlog) {
-            var tmp = _actions;
-            _actions = _backlog;
-            _backlog = tmp;
-            _queued = false;
-         }
+	public class CommandRunnerWindow : EditorWindow
+	{
+		static CommandRunnerWindow _instance;
 
-         foreach(var action in _actions)
-            action();
+		static volatile bool _queued = false;
+		static List<Action> _backlog = new List<Action>(8);
+		static List<Action> _actions = new List<Action>(8);
 
-         _actions.Clear();
-      }
+		private void Update()
+		{
+			// this is running on the main thread...
+			if (_queued)
+			{
+				ForceProcess();
+			}
+		}
 
-      public void RunOnMainThread(Action action)
-      {
-         lock(_backlog) {
-            _backlog.Add(action);
-            _queued = true;
-         }
-      }
-   }
+		public void ForceProcess()
+		{
+			lock (_backlog)
+			{
+				var tmp = _actions;
+				_actions = _backlog;
+				_backlog = tmp;
+				_queued = false;
+			}
 
+			foreach (var action in _actions)
+				action();
+
+			_actions.Clear();
+		}
+
+		public void RunOnMainThread(Action action)
+		{
+			lock (_backlog)
+			{
+				_backlog.Add(action);
+				_queued = true;
+			}
+		}
+	}
 }

@@ -9,14 +9,14 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd Beamable.Editor.Content.Components">
 
     <beamable:LoadingBarElement/>
-    
+
     <engine:VisualElement name="loadingViewContainer">
         <beamable:LoadingIndicatorVisualElement>
             <beamable:LoadingSpinnerVisualElement/>
         </beamable:LoadingIndicatorVisualElement>
     </engine:VisualElement>
 
-    <engine:VisualElement name="mainVisualElement" >
+    <engine:VisualElement name="mainVisualElement">
 
         <engine:Label name="message" text="placeholder"/>
 
@@ -31,7 +31,7 @@
                 <engine:Label name="deleteLabel" text="  Deleted"/>
             </engine:VisualElement>
             <engine:VisualElement class="summaryAlignRight">
-<!--                <engine:Button name="detailBtn" text="Detail"/>-->
+                <!--                <engine:Button name="detailBtn" text="Detail"/>-->
             </engine:VisualElement>
         </engine:VisualElement>
 
@@ -49,7 +49,7 @@
         </engine:VisualElement>
 
         <engine:VisualElement name="buttonStrip">
-            <beamable:GenericButtonVisualElement name="cancelBtn" text="Cancel" type ="Cancel"/>
+            <beamable:GenericButtonVisualElement name="cancelBtn" text="Cancel" type="Cancel"/>
             <beamable:PrimaryButtonVisualElement name="downloadBtn" text="Download"/>
         </engine:VisualElement>
     </engine:VisualElement>

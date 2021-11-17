@@ -6,25 +6,25 @@ using UnityEngine.UI;
 
 namespace Beamable.UI.Buss
 {
-    public class HeaderStyleBehaviour : StyleBehaviour
-    {
-        static HeaderStyleBehaviour()
-        {
-            RegisterType<HeaderStyleBehaviour>("header");
-        }
+	public class HeaderStyleBehaviour : StyleBehaviour
+	{
+		static HeaderStyleBehaviour()
+		{
+			RegisterType<HeaderStyleBehaviour>("header");
+		}
 
-        public override string TypeString => "header";
-        
-        public BeamableMSDFBehaviour MsdfBehaviour;
+		public override string TypeString => "header";
 
-        public void Update()
-        {
-            // Do the update things
-        }
+		public BeamableMSDFBehaviour MsdfBehaviour;
 
-        public override void Apply(StyleObject styles)
-        {
-            MsdfBehaviour.ApplyStyleObject(styles);
-        }
-    }
+		public void Update()
+		{
+			// Do the update things
+		}
+
+		public override void Apply(StyleObject styles)
+		{
+			MsdfBehaviour.ApplyStyleObject(styles);
+		}
+	}
 }

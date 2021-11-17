@@ -30,7 +30,8 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentPublisherTests
 			_requester = new MockPlatformRequester();
 			_serverContent = new List<ContentManifestReference>();
 			_mockContentIo = new MockContentIO();
-			_mockContentIo.FetchManifestResult = () => Promise<Editor.Content.Manifest>.Successful(new Editor.Content.Manifest(_serverContent));
+			_mockContentIo.FetchManifestResult = () =>
+				Promise<Editor.Content.Manifest>.Successful(new Editor.Content.Manifest(_serverContent));
 			_mockContentIo.FindAllResult = () => _content;
 
 			_publisher = new ContentPublisher(_requester, _mockContentIo);
@@ -48,7 +49,7 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentPublisherTests
 		[UnityTest]
 		public IEnumerator ReturnsAdditions()
 		{
-			_content = new List<ContentObject> { ContentObject.Make<ExampleContent>("test") };
+			_content = new List<ContentObject> {ContentObject.Make<ExampleContent>("test")};
 
 			yield return _publisher.CreatePublishSet().Then(set =>
 			{
@@ -65,12 +66,10 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentPublisherTests
 
 			_serverContent.Add(new ContentManifestReference()
 			{
-				id = modifiedContent.Id,
-				checksum = "olddata",
-				tags = new string[] { }
+				id = modifiedContent.Id, checksum = "olddata", tags = new string[] { }
 			});
 
-			_content = new List<ContentObject> { modifiedContent };
+			_content = new List<ContentObject> {modifiedContent};
 
 			yield return _publisher.CreatePublishSet().Then(set =>
 			{
@@ -83,11 +82,7 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentPublisherTests
 		public IEnumerator ReturnsDeletions()
 		{
 			var id = "example.old";
-			_serverContent.Add(new ContentManifestReference
-			{
-				id = id,
-				checksum = "olddata"
-			});
+			_serverContent.Add(new ContentManifestReference {id = id, checksum = "olddata"});
 			yield return _publisher.CreatePublishSet().Then(set =>
 			{
 				Assert.AreEqual(1, set.ToDelete.Count);

@@ -72,14 +72,15 @@
     align-self: flex-start;
 }
 
-#checkbox{
+#checkbox {
     align-self: center;
     justify-content: center;
     width: 18px;
     min-width: 18px;
     margin-right: 5px;
 }
-.column{
+
+.column {
     flex-direction: row;
     margin-top: 10px;
     margin-bottom: 10px;

@@ -1,5 +1,5 @@
 .confirm {
-	width: 85px;
+    width: 85px;
     height: 26px;
 }
 

@@ -27,117 +27,130 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
-    public class ActionBarVisualElement : MicroserviceComponent
-    {
-        public new class UxmlFactory : UxmlFactory<ActionBarVisualElement, UxmlTraits>
-        {
-        }
+	public class ActionBarVisualElement : MicroserviceComponent
+	{
+		public new class UxmlFactory : UxmlFactory<ActionBarVisualElement, UxmlTraits> { }
 
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
-                {name = "custom-text", defaultValue = "nada"};
+		public new class UxmlTraits : VisualElement.UxmlTraits
+		{
+			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
+			{
+				name = "custom-text", defaultValue = "nada"
+			};
 
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
+				get
+				{
+					yield break;
+				}
+			}
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                var self = ve as ActionBarVisualElement;
+			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+			{
+				base.Init(ve, bag, cc);
+				var self = ve as ActionBarVisualElement;
+			}
+		}
 
-            }
-        }
-        
-        public ActionBarVisualElement() : base(nameof(ActionBarVisualElement))
-        {
-        }
+		public ActionBarVisualElement() : base(nameof(ActionBarVisualElement)) { }
 
-        public event Action OnStartAllClicked;
-        public event Action OnBuildAllClicked;
-        public event Action OnPublishClicked;
-        public event Action OnRefreshButtonClicked;
-        public event Action<ServiceType> OnCreateNewClicked;
-        private Button _refreshButton;
-        private Button _createNew;
-        private Button _startAll;
-        private Button _infoButton;
-        private Button _publish;
-        private Button _buildAll;
-        
-        public event Action OnInfoButtonClicked;
+		public event Action OnStartAllClicked;
+		public event Action OnBuildAllClicked;
+		public event Action OnPublishClicked;
+		public event Action OnRefreshButtonClicked;
+		public event Action<ServiceType> OnCreateNewClicked;
+		private Button _refreshButton;
+		private Button _createNew;
+		private Button _startAll;
+		private Button _infoButton;
+		private Button _publish;
+		private Button _buildAll;
 
-        public override void Refresh()
-        {
-            base.Refresh();
-            
-            
-            _refreshButton = Root.Q<Button>("refreshButton");
-            _refreshButton.clickable.clicked += () => { OnRefreshButtonClicked?.Invoke(); };
-            _refreshButton.tooltip = "Refresh Window";
-            _createNew = Root.Q<Button>("createNew");
-            if (MicroserviceConfiguration.Instance.EnableStoragePreview)
-            {
-                var manipulator = new ContextualMenuManipulator(PopulateCreateMenu);
-                manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
-                _createNew.clickable.activators.Clear();
-                _createNew.AddManipulator(manipulator);
-            }
-            else
-            {
-                _createNew.AddToClassList("disabledStorage");
-                _createNew.clickable.clicked += () => OnCreateNewClicked?.Invoke(ServiceType.MicroService);
-            }
-            _createNew.SetEnabled(!DockerCommand.DockerNotInstalled);
-            
-            _startAll = Root.Q<Button>("startAll");
-            _startAll.clickable.clicked += () => { OnStartAllClicked?.Invoke(); };
-            _startAll.SetEnabled(!DockerCommand.DockerNotInstalled);
-            
-            _buildAll = Root.Q<Button>("buildAll");
-            _buildAll.tooltip =
-                "Build services, if service is already running, it will rebuild it and run again";
-            _buildAll.clickable.clicked += () => { OnBuildAllClicked?.Invoke(); };
-            _buildAll.SetEnabled(!DockerCommand.DockerNotInstalled);
-            
-            _publish = Root.Q<Button>("publish");
-            _publish.clickable.clicked += () => { OnPublishClicked?.Invoke(); };
-            _publish.SetEnabled(!DockerCommand.DockerNotInstalled);
-            
-            _infoButton = Root.Q<Button>("infoButton");
-            _infoButton.clickable.clicked += () => { OnInfoButtonClicked?.Invoke(); };
-            _infoButton.tooltip = "Open Documentation";
-            UpdateTextButtonTexts(false);
-        }
+		public event Action OnInfoButtonClicked;
 
-        private void PopulateCreateMenu(ContextualMenuPopulateEvent evt)
-        {
-            evt.menu.BeamableAppendAction("Microservice", pos => OnCreateNewClicked?.Invoke(ServiceType.MicroService));
-            evt.menu.BeamableAppendAction("Storage", pos => OnCreateNewClicked?.Invoke(ServiceType.StorageObject));
-        }
+		public override void Refresh()
+		{
+			base.Refresh();
 
-        public void UpdateTextButtonTexts(bool allServicesSelected)
-        {
-            var startLabel = _startAll.Q<Label>();
-            startLabel.text = allServicesSelected ? "Start all" : "Start selected";
-            var buildLabel = _buildAll.Q<Label>();
-            buildLabel.text = allServicesSelected ? "Build all" : "Build selected";
-        }
+			_refreshButton = Root.Q<Button>("refreshButton");
+			_refreshButton.clickable.clicked += () =>
+			{
+				OnRefreshButtonClicked?.Invoke();
+			};
+			_refreshButton.tooltip = "Refresh Window";
+			_createNew = Root.Q<Button>("createNew");
+			if (MicroserviceConfiguration.Instance.EnableStoragePreview)
+			{
+				var manipulator = new ContextualMenuManipulator(PopulateCreateMenu);
+				manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
+				_createNew.clickable.activators.Clear();
+				_createNew.AddManipulator(manipulator);
+			}
+			else
+			{
+				_createNew.AddToClassList("disabledStorage");
+				_createNew.clickable.clicked += () => OnCreateNewClicked?.Invoke(ServiceType.MicroService);
+			}
 
-        public void HandleNoMicroservicesScenario()
-        {
-            _startAll.SetEnabled(false);
-            _buildAll.SetEnabled(false);
-            _publish.SetEnabled(false);
-        }
+			_createNew.SetEnabled(!DockerCommand.DockerNotInstalled);
 
-        public void SetPublishButtonState(bool isEnabled)
-        {
-            _publish.SetEnabled(isEnabled);
-        }
-    }
+			_startAll = Root.Q<Button>("startAll");
+			_startAll.clickable.clicked += () =>
+			{
+				OnStartAllClicked?.Invoke();
+			};
+			_startAll.SetEnabled(!DockerCommand.DockerNotInstalled);
 
-    
+			_buildAll = Root.Q<Button>("buildAll");
+			_buildAll.tooltip =
+				"Build services, if service is already running, it will rebuild it and run again";
+			_buildAll.clickable.clicked += () =>
+			{
+				OnBuildAllClicked?.Invoke();
+			};
+			_buildAll.SetEnabled(!DockerCommand.DockerNotInstalled);
+
+			_publish = Root.Q<Button>("publish");
+			_publish.clickable.clicked += () =>
+			{
+				OnPublishClicked?.Invoke();
+			};
+			_publish.SetEnabled(!DockerCommand.DockerNotInstalled);
+
+			_infoButton = Root.Q<Button>("infoButton");
+			_infoButton.clickable.clicked += () =>
+			{
+				OnInfoButtonClicked?.Invoke();
+			};
+			_infoButton.tooltip = "Open Documentation";
+			UpdateTextButtonTexts(false);
+		}
+
+		private void PopulateCreateMenu(ContextualMenuPopulateEvent evt)
+		{
+			evt.menu.BeamableAppendAction("Microservice", pos => OnCreateNewClicked?.Invoke(ServiceType.MicroService));
+			evt.menu.BeamableAppendAction("Storage", pos => OnCreateNewClicked?.Invoke(ServiceType.StorageObject));
+		}
+
+		public void UpdateTextButtonTexts(bool allServicesSelected)
+		{
+			var startLabel = _startAll.Q<Label>();
+			startLabel.text = allServicesSelected ? "Start all" : "Start selected";
+			var buildLabel = _buildAll.Q<Label>();
+			buildLabel.text = allServicesSelected ? "Build all" : "Build selected";
+		}
+
+		public void HandleNoMicroservicesScenario()
+		{
+			_startAll.SetEnabled(false);
+			_buildAll.SetEnabled(false);
+			_publish.SetEnabled(false);
+		}
+
+		public void SetPublishButtonState(bool isEnabled)
+		{
+			_publish.SetEnabled(isEnabled);
+		}
+	}
 }

@@ -7,46 +7,52 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+
 namespace Beamable.Editor.Content.Components
 {
-   public class ContentValidationErrorVisualElement : ContentManagerComponent
-   {
-      public new class UxmlFactory : UxmlFactory<ContentValidationErrorVisualElement, UxmlTraits>
-      {
-      }
+	public class ContentValidationErrorVisualElement : ContentManagerComponent
+	{
+		public new class UxmlFactory : UxmlFactory<ContentValidationErrorVisualElement, UxmlTraits> { }
 
-      public override void Refresh()
-      {
-         base.Refresh();
+		public override void Refresh()
+		{
+			base.Refresh();
 
-         var contentId = Root.Q<Label>("contentId");
-         var count = Root.Q<CountVisualElement>();
-         var numberOfErrors = ExceptionCollection?.Exceptions?.Count ?? 0;
-         count.SetValue(numberOfErrors);
-         contentId.text = ExceptionCollection.Content.Id;
-      }
+			var contentId = Root.Q<Label>("contentId");
+			var count = Root.Q<CountVisualElement>();
+			var numberOfErrors = ExceptionCollection?.Exceptions?.Count ?? 0;
+			count.SetValue(numberOfErrors);
+			contentId.text = ExceptionCollection.Content.Id;
+		}
 
-      public new class UxmlTraits : VisualElement.UxmlTraits
-      {
-         UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
-            {name = "custom-text", defaultValue = "nada"};
+		public new class UxmlTraits : VisualElement.UxmlTraits
+		{
+			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
+			{
+				name = "custom-text", defaultValue = "nada"
+			};
 
-         public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-         {
-            get { yield break; }
-         }
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
+				get
+				{
+					yield break;
+				}
+			}
 
-         public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-         {
-            base.Init(ve, bag, cc);
-            var self = ve as ContentValidationErrorVisualElement;
-         }
-      }
+			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+			{
+				base.Init(ve, bag, cc);
+				var self = ve as ContentValidationErrorVisualElement;
+			}
+		}
 
-      public ContentExceptionCollection ExceptionCollection { get; set; }
+		public ContentExceptionCollection ExceptionCollection
+		{
+			get;
+			set;
+		}
 
-      public ContentValidationErrorVisualElement() : base(nameof(ContentValidationErrorVisualElement))
-      {
-      }
-   }
+		public ContentValidationErrorVisualElement() : base(nameof(ContentValidationErrorVisualElement)) { }
+	}
 }

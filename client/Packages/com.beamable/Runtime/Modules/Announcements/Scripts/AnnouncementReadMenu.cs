@@ -5,43 +5,44 @@ using UnityEngine.UI;
 
 namespace Beamable.Announcements
 {
-   public class AnnouncementReadMenu : MenuBase
-   {
-      private AnnouncementView Announcement;
-      public TextMeshProUGUI Text;
-      public Button ButtonClaim;
+	public class AnnouncementReadMenu : MenuBase
+	{
+		private AnnouncementView Announcement;
+		public TextMeshProUGUI Text;
+		public Button ButtonClaim;
 
-      public void Apply(AnnouncementView view)
-      {
-         Announcement = view;
-         string status = "";
+		public void Apply(AnnouncementView view)
+		{
+			Announcement = view;
+			string status = "";
 
-         if (Announcement.isRead)
-         {
-            status += "IsRead  ";
-         }
-         if (Announcement.isClaimed)
-         {
-            status += "IsClaimed  ";
-         }
+			if (Announcement.isRead)
+			{
+				status += "IsRead  ";
+			}
 
-         Text.text = status + "\n\n" + Announcement.body;
+			if (Announcement.isClaimed)
+			{
+				status += "IsClaimed  ";
+			}
 
-         ButtonClaim.gameObject.SetActive(Announcement.HasClaimsAvailable());
-      }
+			Text.text = status + "\n\n" + Announcement.body;
 
-      public async void OnClaim()
-      {
-         var de = await API.Instance;
-         await de.AnnouncementService.Claim(Announcement.id);
-         Manager.GoBack();
-      }
+			ButtonClaim.gameObject.SetActive(Announcement.HasClaimsAvailable());
+		}
 
-      public async void OnDelete()
-      {
-         var de = await API.Instance;
-         await de.AnnouncementService.MarkDeleted(Announcement.id);
-         Manager.GoBack();
-      }
-   }
+		public async void OnClaim()
+		{
+			var de = await API.Instance;
+			await de.AnnouncementService.Claim(Announcement.id);
+			Manager.GoBack();
+		}
+
+		public async void OnDelete()
+		{
+			var de = await API.Instance;
+			await de.AnnouncementService.MarkDeleted(Announcement.id);
+			Manager.GoBack();
+		}
+	}
 }

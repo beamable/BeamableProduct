@@ -9,16 +9,16 @@
 
     <engine:VisualElement name="main">
         <engine:VisualElement name="buttonIcon">
-        <engine:VisualElement name="icon"/>
-        <engine:VisualElement name="buttons">
-            <engine:Button name="action"/>
-        </engine:VisualElement>
+            <engine:VisualElement name="icon"/>
+            <engine:VisualElement name="buttons">
+                <engine:Button name="action"/>
+            </engine:VisualElement>
         </engine:VisualElement>
         <engine:VisualElement name="texts">
             <engine:VisualElement name="title"/>
             <engine:VisualElement name="desc"/>
         </engine:VisualElement>
-       
+
     </engine:VisualElement>
 
 </engine:UXML>

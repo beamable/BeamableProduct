@@ -14,101 +14,123 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-    public class RealmButtonVisualElement : BeamableVisualElement
-    {
-        public new class UxmlFactory : UxmlFactory<RealmButtonVisualElement, UxmlTraits>
-        {
-        }
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
-                {name = "custom-text", defaultValue = "nada"};
+	public class RealmButtonVisualElement : BeamableVisualElement
+	{
+		public new class UxmlFactory : UxmlFactory<RealmButtonVisualElement, UxmlTraits> { }
 
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
+		public new class UxmlTraits : VisualElement.UxmlTraits
+		{
+			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
+			{
+				name = "custom-text", defaultValue = "nada"
+			};
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                var self = ve as RealmButtonVisualElement;
-            }
-        }
-        private RealmModel Model { get; set; }
-        private Button _realmButton;
-        private Label _realmLabel;
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
+				get
+				{
+					yield break;
+				}
+			}
 
-        public RealmButtonVisualElement() : base(
-            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(RealmButtonVisualElement)}/{nameof(RealmButtonVisualElement)}")
-        {
-        }
+			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+			{
+				base.Init(ve, bag, cc);
+				var self = ve as RealmButtonVisualElement;
+			}
+		}
 
-        public override void Refresh()
-        {
-            base.Refresh();
-            Model = new RealmModel();
-            Model.Initialize();
-            _realmButton = Root.Q<Button>("realmButton");
-            _realmButton.clickable.clicked += () => { OnButtonClicked(_realmButton.worldBound); };
+		private RealmModel Model
+		{
+			get;
+			set;
+		}
 
-            _realmLabel = _realmButton.Q<Label>();
-            if (Model.Current == null)
-            {
-                _realmLabel.text = "Select realm";
-            }
-            else
-            {
-                _realmLabel.text = Model.Current.DisplayName;
+		private Button _realmButton;
+		private Label _realmLabel;
 
-                RealmView currentRealmView = (RealmView)Model.Current;
-                if (currentRealmView.IsProduction)
-                {
-                    _realmButton.AddToClassList("production");
-                }
-                if (currentRealmView.IsStaging)
-                {
-                    _realmButton.AddToClassList("staging");
-                }
-            }
-            Model.OnElementChanged -= HandleRealmChanged;
-            Model.OnElementChanged += HandleRealmChanged;
-        }
+		public RealmButtonVisualElement() : base(
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(RealmButtonVisualElement)}/{nameof(RealmButtonVisualElement)}") { }
 
-        
-        private void HandleRealmChanged(ISearchableElement view)
-        {
-            RealmView realm = (RealmView)view;
+		public override void Refresh()
+		{
+			base.Refresh();
+			Model = new RealmModel();
+			Model.Initialize();
+			_realmButton = Root.Q<Button>("realmButton");
+			_realmButton.clickable.clicked += () =>
+			{
+				OnButtonClicked(_realmButton.worldBound);
+			};
 
-            _realmLabel.text = realm.DisplayName;
-            if (realm.IsProduction)
-            {
-                _realmButton.AddToClassList("production");
-            } else {
-                _realmButton.RemoveFromClassList("production");
-            }
-            if (realm.IsStaging)
-            {
-                _realmButton.AddToClassList("staging");
-            } else {
-                _realmButton.RemoveFromClassList("staging");
-            }
-        }
+			_realmLabel = _realmButton.Q<Label>();
+			if (Model.Current == null)
+			{
+				_realmLabel.text = "Select realm";
+			}
+			else
+			{
+				_realmLabel.text = Model.Current.DisplayName;
 
-        private void OnButtonClicked(Rect visualElementBounds)
-        {
-            var popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
+				RealmView currentRealmView = (RealmView)Model.Current;
+				if (currentRealmView.IsProduction)
+				{
+					_realmButton.AddToClassList("production");
+				}
 
-            var content = new SearchabledDropdownVisualElement("Switching Realm");
-            content.Model = Model;
-            var wnd = BeamablePopupWindow.ShowDropdown("Select Realm", popupWindowRect, new Vector2(200, 300), content);
+				if (currentRealmView.IsStaging)
+				{
+					_realmButton.AddToClassList("staging");
+				}
+			}
 
-            content.OnElementSelected += (realm) =>
-            {
-                EditorAPI.Instance.Then(beamable => { beamable.SwitchRealm((RealmView)realm).Then(_ => { wnd.Close(); }); });
-            };
-            content.Refresh();
-        }
+			Model.OnElementChanged -= HandleRealmChanged;
+			Model.OnElementChanged += HandleRealmChanged;
+		}
 
-    }
+		private void HandleRealmChanged(ISearchableElement view)
+		{
+			RealmView realm = (RealmView)view;
+
+			_realmLabel.text = realm.DisplayName;
+			if (realm.IsProduction)
+			{
+				_realmButton.AddToClassList("production");
+			}
+			else
+			{
+				_realmButton.RemoveFromClassList("production");
+			}
+
+			if (realm.IsStaging)
+			{
+				_realmButton.AddToClassList("staging");
+			}
+			else
+			{
+				_realmButton.RemoveFromClassList("staging");
+			}
+		}
+
+		private void OnButtonClicked(Rect visualElementBounds)
+		{
+			var popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
+
+			var content = new SearchabledDropdownVisualElement("Switching Realm");
+			content.Model = Model;
+			var wnd = BeamablePopupWindow.ShowDropdown("Select Realm", popupWindowRect, new Vector2(200, 300), content);
+
+			content.OnElementSelected += (realm) =>
+			{
+				EditorAPI.Instance.Then(beamable =>
+				{
+					beamable.SwitchRealm((RealmView)realm).Then(_ =>
+					{
+						wnd.Close();
+					});
+				});
+			};
+			content.Refresh();
+		}
+	}
 }

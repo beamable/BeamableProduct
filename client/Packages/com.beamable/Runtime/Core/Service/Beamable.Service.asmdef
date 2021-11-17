@@ -1,15 +1,15 @@
 {
-    "name": "Beamable.Service",
-    "references": [
-        "Beamable.Extensions",
-        "Beamable.Spew"
-    ],
-    "optionalUnityReferences": [],
-    "includePlatforms": [],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": []
+  "name": "Beamable.Service",
+  "references": [
+    "Beamable.Extensions",
+    "Beamable.Spew"
+  ],
+  "optionalUnityReferences": [],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": []
 }

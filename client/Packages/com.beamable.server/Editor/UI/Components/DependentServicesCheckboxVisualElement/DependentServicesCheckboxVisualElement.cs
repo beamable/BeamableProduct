@@ -16,44 +16,54 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
-    public class DependentServicesCheckboxVisualElement : MicroserviceComponent
-    {
-        public Action<MongoStorageModel, bool> OnServiceRelationChanged; 
-        public MongoStorageModel MongoStorageModel { get; set; }
-        public bool IsServiceRelation
-        {
-            get => _isServiceRelation;
-            private set
-            {
-                _isServiceRelation = value;
-                OnServiceRelationChanged?.Invoke(MongoStorageModel, _isServiceRelation);
-            }
-        }
-        private bool _isServiceRelation;
-        
-        private BeamableCheckboxVisualElement _checkbox;
+	public class DependentServicesCheckboxVisualElement : MicroserviceComponent
+	{
+		public Action<MongoStorageModel, bool> OnServiceRelationChanged;
 
-        public DependentServicesCheckboxVisualElement(bool isServiceRelation) : base(nameof(DependentServicesCheckboxVisualElement))
-        {
-            // Silent set
-            _isServiceRelation = isServiceRelation;
-        }
-        public override void Refresh()
-        {
-            base.Refresh();
-            QueryVisualElements();
-            UpdateVisualElements();
+		public MongoStorageModel MongoStorageModel
+		{
+			get;
+			set;
+		}
 
-        }
-        private void QueryVisualElements()
-        {
-            _checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
-        }
-        private void UpdateVisualElements()
-        {
-            _checkbox.Refresh();
-            _checkbox.SetWithoutNotify(_isServiceRelation);
-            _checkbox.OnValueChanged += state => IsServiceRelation = state;
-        }
-    }
+		public bool IsServiceRelation
+		{
+			get => _isServiceRelation;
+			private set
+			{
+				_isServiceRelation = value;
+				OnServiceRelationChanged?.Invoke(MongoStorageModel, _isServiceRelation);
+			}
+		}
+
+		private bool _isServiceRelation;
+
+		private BeamableCheckboxVisualElement _checkbox;
+
+		public DependentServicesCheckboxVisualElement(bool isServiceRelation) : base(
+			nameof(DependentServicesCheckboxVisualElement))
+		{
+			// Silent set
+			_isServiceRelation = isServiceRelation;
+		}
+
+		public override void Refresh()
+		{
+			base.Refresh();
+			QueryVisualElements();
+			UpdateVisualElements();
+		}
+
+		private void QueryVisualElements()
+		{
+			_checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
+		}
+
+		private void UpdateVisualElements()
+		{
+			_checkbox.Refresh();
+			_checkbox.SetWithoutNotify(_isServiceRelation);
+			_checkbox.OnValueChanged += state => IsServiceRelation = state;
+		}
+	}
 }

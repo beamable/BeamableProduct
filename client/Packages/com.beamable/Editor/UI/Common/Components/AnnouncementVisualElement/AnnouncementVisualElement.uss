@@ -1,7 +1,8 @@
-#main{
+#main {
     flex-direction: row;
 }
-#buttonIcon{
+
+#buttonIcon {
     flex-direction: column;
     padding-bottom: 10px;
     padding-left: 10px;
@@ -27,6 +28,7 @@
 #desc {
     margin-bottom: 4px;
 }
+
 #desc Button,
 #desc Label {
     padding-left: 0px;
@@ -41,11 +43,13 @@
     border-top-width: 0px;
     font-size: 12px;
 }
+
 #desc > VisualElement {
     flex-direction: row;
     align-items: center;
     flex-wrap: wrap;
 }
+
 #desc Button {
     background-image: none;
     color: #FFFFFF;
@@ -62,6 +66,7 @@
     align-items: center;
     padding-left: 5px;
 }
+
 #action {
     width: 80px;
     height: 25px;
@@ -73,6 +78,7 @@
 AnnouncementVisualElement.danger {
     background-color: #3C1919;
 }
+
 AnnouncementVisualElement.danger #icon {
     background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/Warning.png");
 }
@@ -82,8 +88,9 @@ AnnouncementVisualElement.info #icon {
 }
 
 AnnouncementVisualElement.warning {
-    background-color:#83754F;
+    background-color: #83754F;
 }
+
 AnnouncementVisualElement.warning #icon {
     background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/Warning.png");
 }

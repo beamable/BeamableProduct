@@ -28,7 +28,7 @@ LabeledTextField #textField > TextInput {
 }
 
 #button {
-    background-color: rgba(0,0,0,0);
+    background-color: rgba(0, 0, 0, 0);
     border-top-width: 0px;
     border-bottom-width: 0px;
     border-left-width: 0px;

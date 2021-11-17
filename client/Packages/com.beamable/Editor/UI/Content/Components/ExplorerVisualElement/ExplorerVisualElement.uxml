@@ -11,8 +11,8 @@
         <engine:VisualElement name="breadcrumb-container"/>
 
         <engine:VisualElement name="content">
-<!--            <engine:VisualElement name="tree-container"/>-->
-<!--            <engine:VisualElement name="list-container"/>-->
+            <!--            <engine:VisualElement name="tree-container"/>-->
+            <!--            <engine:VisualElement name="list-container"/>-->
         </engine:VisualElement>
 
     </engine:VisualElement>

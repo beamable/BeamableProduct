@@ -1,4 +1,3 @@
-
 using System;
 using System.Collections.Generic;
 using Beamable.Editor.Toolbox.Models;
@@ -16,75 +15,78 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Toolbox.Components
 {
-   public class ToolboxAnnouncementListVisualElement : ToolboxComponent
-   {
-      private VisualElement _mainContainer;
-      public event Action<float> OnHeightChanged;
+	public class ToolboxAnnouncementListVisualElement : ToolboxComponent
+	{
+		private VisualElement _mainContainer;
+		public event Action<float> OnHeightChanged;
 
-      public new class UxmlFactory : UxmlFactory<ToolboxAnnouncementListVisualElement, UxmlTraits>
-      {
-      }
-      public new class UxmlTraits : VisualElement.UxmlTraits
-      {
-         public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-         {
-            get { yield break; }
-         }
+		public new class UxmlFactory : UxmlFactory<ToolboxAnnouncementListVisualElement, UxmlTraits> { }
 
-         public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-         {
-            base.Init(ve, bag, cc);
-            var self = ve as ToolboxAnnouncementListVisualElement;
+		public new class UxmlTraits : VisualElement.UxmlTraits
+		{
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
+				get
+				{
+					yield break;
+				}
+			}
 
-         }
-      }
+			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+			{
+				base.Init(ve, bag, cc);
+				var self = ve as ToolboxAnnouncementListVisualElement;
+			}
+		}
 
-      public ToolboxModel Model { get; set; }
+		public ToolboxModel Model
+		{
+			get;
+			set;
+		}
 
-      public ToolboxAnnouncementListVisualElement() : base(nameof(ToolboxAnnouncementListVisualElement))
-      {
+		public ToolboxAnnouncementListVisualElement() : base(nameof(ToolboxAnnouncementListVisualElement)) { }
 
-      }
+		public override void Refresh()
+		{
+			base.Refresh();
 
-      public override void Refresh()
-      {
-         base.Refresh();
+			_mainContainer = Root.Q<VisualElement>("main");
 
-         _mainContainer = Root.Q<VisualElement>("main");
+			SetAnnouncements(Model.Announcements);
+			Model.OnAnnouncementsChanged += SetAnnouncements;
+		}
 
-         SetAnnouncements(Model.Announcements);
-         Model.OnAnnouncementsChanged += SetAnnouncements;
-      }
+		private void SetAnnouncements(IEnumerable<AnnouncementModelBase> announcements)
+		{
+			var startHeight = _mainContainer.worldBound.height;
 
-      private void SetAnnouncements(IEnumerable<AnnouncementModelBase> announcements)
-      {
-         var startHeight = _mainContainer.worldBound.height;
+			_mainContainer.Clear();
 
-         _mainContainer.Clear();
+			foreach (var announcement in announcements)
+			{
+				BeamableVisualElement elem = announcement.CreateVisualElement();
+				_mainContainer.Add(elem);
+				elem.Refresh();
+			}
 
-         foreach (var announcement in announcements)
-         {
-            BeamableVisualElement elem = announcement.CreateVisualElement();
-            _mainContainer.Add(elem);
-            elem.Refresh();
-         }
+			var attemptsLeft = 25;
 
-         var attemptsLeft = 25;
-         void WaitForRedraw()
-         {
-            var height = _mainContainer.worldBound.height;
-            if (attemptsLeft-- > 0 && (Mathf.Abs(height - startHeight) < 1)  || float.IsNaN(height))
-            {
-               EditorApplication.delayCall += WaitForRedraw;
-            }
-            else
-            {
-               // its time.
-               OnHeightChanged?.Invoke(height);
-            }
-         }
+			void WaitForRedraw()
+			{
+				var height = _mainContainer.worldBound.height;
+				if (attemptsLeft-- > 0 && (Mathf.Abs(height - startHeight) < 1) || float.IsNaN(height))
+				{
+					EditorApplication.delayCall += WaitForRedraw;
+				}
+				else
+				{
+					// its time.
+					OnHeightChanged?.Invoke(height);
+				}
+			}
 
-         EditorApplication.delayCall += WaitForRedraw;
-      }
-   }
+			EditorApplication.delayCall += WaitForRedraw;
+		}
+	}
 }

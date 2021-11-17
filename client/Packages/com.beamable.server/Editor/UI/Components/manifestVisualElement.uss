@@ -6,15 +6,18 @@
 .service .comment {
     flex-grow: 1;
 }
+
 .headers .serviceName,
 .service .serviceName {
     max-width: 100px;
     min-width: 100px;
 }
+
 .headers .template,
 .service .template {
     min-width: 80px;
 }
+
 .service .enabled {
     min-width: 20px;
 }

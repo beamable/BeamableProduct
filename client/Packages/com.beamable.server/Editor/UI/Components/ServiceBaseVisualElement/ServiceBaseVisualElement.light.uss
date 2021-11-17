@@ -1,4 +1,4 @@
-#logHeader{
+#logHeader {
     background-color: #8d8d8d;
 }
 
@@ -6,28 +6,29 @@
     background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/ms_header_green_light.png");
 }
 
-.squareBtn{
+.squareBtn {
     background-color: #A7A7A7;
 }
 
-#clear{
+#clear {
     background-color: #A7A7A7;
     border-color: #6C6C6C;
 }
 
-#advanceBtn{
+#advanceBtn {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/advance_dark.png");
     background-color: #A7A7A7;
 }
 
-#detailWindow{
-    border-color: #6C6C6C;
-}
-#white{
+#detailWindow {
     border-color: #6C6C6C;
 }
 
-#clearContainer{
+#white {
+    border-color: #6C6C6C;
+}
+
+#clearContainer {
     border-color: #6C6C6C;
 }
 
@@ -36,15 +37,15 @@
     border-color: #6C6C6C;
 }
 
-#logListRoot{
+#logListRoot {
     border-color: #6C6C6C;
 }
 
-#dropDown{
+#dropDown {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/dropdown_border_dark.png");
 }
 
-#moreBtn{
+#moreBtn {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/advance_dark.png");
     background-color: rgba(141, 141, 141, 0);
     border-color: rgba(141, 141, 141, 0);
@@ -58,25 +59,27 @@
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Running D.png");
 }
 
-.localStopped{
+.localStopped {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Stopped D.png");
 }
 
-.remoteRunning{
+.remoteRunning {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Running D.png");
 }
-.remoteStopped{
+
+.remoteStopped {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Stopped D.png");
 }
 
-.different{
+.different {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/different D.png");
 }
 
-.remoteDeploying{
+.remoteDeploying {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Deploying D.png");
 }
-.remoteDisabled{
+
+.remoteDisabled {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Disable D.png");
 }
 
@@ -96,4 +99,5 @@
 #leftDashLine, #rightDashLine {
     background-color: #4A4A4A;
 }
+
 /* END TODO*/

@@ -20,298 +20,318 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
-    public class MicroserviceContentVisualElement : MicroserviceComponent
-    {
-        public event Action<bool> OnAllServiceSelectedStatusChanged;
+	public class MicroserviceContentVisualElement : MicroserviceComponent
+	{
+		public event Action<bool> OnAllServiceSelectedStatusChanged;
 
-        private VisualElement _mainVisualElement;
-        private ListView _listView;
-        private ScrollView _scrollView;
-        private VisualElement _servicesListElement;
+		private VisualElement _mainVisualElement;
+		private ListView _listView;
+		private ScrollView _scrollView;
+		private VisualElement _servicesListElement;
 
-        private Dictionary<ServiceModelBase, ServiceBaseVisualElement> _modelToVisual = new Dictionary<ServiceModelBase, ServiceBaseVisualElement>();
-        private Dictionary<ServiceType, CreateServiceBaseVisualElement> _servicesCreateElements;
-        private MicroserviceActionPrompt _actionPrompt;
+		private Dictionary<ServiceModelBase, ServiceBaseVisualElement> _modelToVisual =
+			new Dictionary<ServiceModelBase, ServiceBaseVisualElement>();
 
-        public IEnumerable<ServiceBaseVisualElement> ServiceVisualElements =>
-            _servicesListElement.Children().Where(ve => ve is ServiceBaseVisualElement)
-                .Cast<ServiceBaseVisualElement>();
+		private Dictionary<ServiceType, CreateServiceBaseVisualElement> _servicesCreateElements;
+		private MicroserviceActionPrompt _actionPrompt;
 
-        public new class UxmlFactory : UxmlFactory<MicroserviceContentVisualElement, UxmlTraits>
-        {
-        }
+		public IEnumerable<ServiceBaseVisualElement> ServiceVisualElements =>
+			_servicesListElement.Children().Where(ve => ve is ServiceBaseVisualElement)
+			                    .Cast<ServiceBaseVisualElement>();
 
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
-                {name = "custom-text", defaultValue = "nada"};
+		public new class UxmlFactory : UxmlFactory<MicroserviceContentVisualElement, UxmlTraits> { }
 
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
+		public new class UxmlTraits : VisualElement.UxmlTraits
+		{
+			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
+			{
+				name = "custom-text", defaultValue = "nada"
+			};
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                var self = ve as MicroserviceContentVisualElement;
-            }
-        }
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
+				get
+				{
+					yield break;
+				}
+			}
 
-        public MicroserviceContentVisualElement() : base(nameof(MicroserviceContentVisualElement))
-        {
-        }
+			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+			{
+				base.Init(ve, bag, cc);
+				var self = ve as MicroserviceContentVisualElement;
+			}
+		}
 
-        public MicroservicesDataModel Model { get; set; }
+		public MicroserviceContentVisualElement() : base(nameof(MicroserviceContentVisualElement)) { }
 
-        public override void Refresh()
-        {
-            bool ShouldDisplayService(ServiceType type)
-            {
-                switch (Model.Filter)
-                {
-                    case ServicesDisplayFilter.AllTypes:
-                        return true;
-                    case ServicesDisplayFilter.Microservices:
-                        return type == ServiceType.MicroService;
-                    case ServicesDisplayFilter.Storages:
-                        return type == ServiceType.StorageObject;
-                    default:
-                        return false;
-                }
-            }
-            base.Refresh();
+		public MicroservicesDataModel Model
+		{
+			get;
+			set;
+		}
 
-            _mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
-            _scrollView = Root.Q<ScrollView>();
-            _servicesListElement = Root.Q<VisualElement>("listRoot");
-            _servicesCreateElements = new Dictionary<ServiceType, CreateServiceBaseVisualElement>();
+		public override void Refresh()
+		{
+			bool ShouldDisplayService(ServiceType type)
+			{
+				switch (Model.Filter)
+				{
+					case ServicesDisplayFilter.AllTypes:
+						return true;
+					case ServicesDisplayFilter.Microservices:
+						return type == ServiceType.MicroService;
+					case ServicesDisplayFilter.Storages:
+						return type == ServiceType.StorageObject;
+					default:
+						return false;
+				}
+			}
 
-            if (DockerCommand.DockerNotInstalled)
-            {
-                var dockerAnnouncement = new DockerAnnouncementModel();
-                dockerAnnouncement.OnInstall = () => Application.OpenURL("https://docs.docker.com/get-docker/");
-                var element = new DockerAnnouncementVisualElement() { DockerAnnouncementModel = dockerAnnouncement };
-                Root.Q<VisualElement>("announcementList").Add(element);
-                element.Refresh();
-                return;
-            }
+			base.Refresh();
 
-            var newStorageElement = new CreateStorageObjectVisualElement();
-            newStorageElement.OnCreateServiceClicked += () => Root.SetEnabled(false);
-            _servicesCreateElements.Add(ServiceType.StorageObject, newStorageElement);
-            _servicesListElement.Add(newStorageElement);
+			_mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
+			_scrollView = Root.Q<ScrollView>();
+			_servicesListElement = Root.Q<VisualElement>("listRoot");
+			_servicesCreateElements = new Dictionary<ServiceType, CreateServiceBaseVisualElement>();
 
-            var newMSElement = new CreateMicroserviceVisualElement();
-            newMSElement.OnCreateServiceClicked += () => Root.SetEnabled(false);
-            _servicesCreateElements.Add(ServiceType.MicroService, newMSElement);
-            _servicesListElement.Add(newMSElement);
+			if (DockerCommand.DockerNotInstalled)
+			{
+				var dockerAnnouncement = new DockerAnnouncementModel();
+				dockerAnnouncement.OnInstall = () => Application.OpenURL("https://docs.docker.com/get-docker/");
+				var element = new DockerAnnouncementVisualElement() {DockerAnnouncementModel = dockerAnnouncement};
+				Root.Q<VisualElement>("announcementList").Add(element);
+				element.Refresh();
+				return;
+			}
 
-            _modelToVisual.Clear();
+			var newStorageElement = new CreateStorageObjectVisualElement();
+			newStorageElement.OnCreateServiceClicked += () => Root.SetEnabled(false);
+			_servicesCreateElements.Add(ServiceType.StorageObject, newStorageElement);
+			_servicesListElement.Add(newStorageElement);
 
-            bool hasStorageDependency = false;
+			var newMSElement = new CreateMicroserviceVisualElement();
+			newMSElement.OnCreateServiceClicked += () => Root.SetEnabled(false);
+			_servicesCreateElements.Add(ServiceType.MicroService, newMSElement);
+			_servicesListElement.Add(newMSElement);
 
-            foreach (var serviceStatus in Model.GetAllServicesStatus())
-            {
-                if (serviceStatus.Value == ServiceAvailability.Unknown)
-                {
-                    // todo
-                    continue;
-                }
+			_modelToVisual.Clear();
 
-                var serviceType = Model.GetModelServiceType(serviceStatus.Key);
-                
-                if (!ShouldDisplayService(serviceType))
-                {
-                    continue;
-                }
+			bool hasStorageDependency = false;
 
-                ServiceBaseVisualElement serviceElement = null;
+			foreach (var serviceStatus in Model.GetAllServicesStatus())
+			{
+				if (serviceStatus.Value == ServiceAvailability.Unknown)
+				{
+					// todo
+					continue;
+				}
 
-                switch (serviceType)
-                {
-                    case ServiceType.MicroService:
+				var serviceType = Model.GetModelServiceType(serviceStatus.Key);
 
-                        bool val = false;
-                        if (serviceStatus.Value != ServiceAvailability.RemoteOnly)
-                            serviceElement = GetMicroserviceVisualElement(serviceStatus.Key, out val);
-                        else
-                            serviceElement = GetRemoteMicroserviceVisualElement(serviceStatus.Key);
+				if (!ShouldDisplayService(serviceType))
+				{
+					continue;
+				}
 
-                        hasStorageDependency |= val;
+				ServiceBaseVisualElement serviceElement = null;
 
-                        break;
+				switch (serviceType)
+				{
+					case ServiceType.MicroService:
 
-                    case ServiceType.StorageObject:
+						bool val = false;
+						if (serviceStatus.Value != ServiceAvailability.RemoteOnly)
+							serviceElement = GetMicroserviceVisualElement(serviceStatus.Key, out val);
+						else
+							serviceElement = GetRemoteMicroserviceVisualElement(serviceStatus.Key);
 
-                        if (!MicroserviceConfiguration.Instance.EnableStoragePreview)
-                            continue;
+						hasStorageDependency |= val;
 
-                        serviceElement = GetStorageObjectVisualElement(serviceStatus.Key);
+						break;
 
-                        break;
+					case ServiceType.StorageObject:
 
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
+						if (!MicroserviceConfiguration.Instance.EnableStoragePreview)
+							continue;
 
-                if (serviceElement != null)
-                    _servicesListElement.Add(serviceElement);
-            }
+						serviceElement = GetStorageObjectVisualElement(serviceStatus.Key);
 
-            if (hasStorageDependency)
-            {
-                var storagePreviewWarning = new StorageDepencencyWarningModel();
-                var previewElement = new StorageDepencencyWarningVisualElement() { StorageDepencencyWarningModel = storagePreviewWarning };
-                Root.Q<VisualElement>("announcementList").Add(previewElement);
-                previewElement.Refresh();
-            }
+						break;
 
-            _actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
-            _actionPrompt.Refresh();
-        }
+					default:
+						throw new ArgumentOutOfRangeException();
+				}
 
-        private MicroserviceVisualElement GetMicroserviceVisualElement(string serviceName, out bool isPublishFeatureDisabled)
-        {
-            var service = Model.GetModel<MicroserviceModel>(serviceName);
+				if (serviceElement != null)
+					_servicesListElement.Add(serviceElement);
+			}
 
-            if (service != null)
-            {
-                var serviceElement = new MicroserviceVisualElement { Model = service };
-                _modelToVisual[service] = serviceElement;
-                service.OnLogsDetached += () => { ServiceLogWindow.ShowService(service); };
+			if (hasStorageDependency)
+			{
+				var storagePreviewWarning = new StorageDepencencyWarningModel();
+				var previewElement =
+					new StorageDepencencyWarningVisualElement() {StorageDepencencyWarningModel = storagePreviewWarning};
+				Root.Q<VisualElement>("announcementList").Add(previewElement);
+				previewElement.Refresh();
+			}
 
-                serviceElement.Refresh();
-                service.OnSelectionChanged += b =>
-                    OnAllServiceSelectedStatusChanged?.Invoke(Model.Services.All(m => m.IsSelected));
+			_actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
+			_actionPrompt.Refresh();
+		}
 
-                service.OnSortChanged -= SortMicroservices;
-                service.OnSortChanged += SortMicroservices;
-                serviceElement.OnServiceStartFailed = MicroserviceStartFailed;
-                serviceElement.OnServiceStopFailed = MicroserviceStopFailed;
+		private MicroserviceVisualElement GetMicroserviceVisualElement(string serviceName,
+		                                                               out bool isPublishFeatureDisabled)
+		{
+			var service = Model.GetModel<MicroserviceModel>(serviceName);
 
-                isPublishFeatureDisabled = service.Descriptor.IsPublishFeatureDisabled();
-                return serviceElement;
-            }
+			if (service != null)
+			{
+				var serviceElement = new MicroserviceVisualElement {Model = service};
+				_modelToVisual[service] = serviceElement;
+				service.OnLogsDetached += () =>
+				{
+					ServiceLogWindow.ShowService(service);
+				};
 
-            isPublishFeatureDisabled = false;
-            return null;
-        }
+				serviceElement.Refresh();
+				service.OnSelectionChanged += b =>
+					OnAllServiceSelectedStatusChanged?.Invoke(Model.Services.All(m => m.IsSelected));
 
-        private RemoteMicroserviceVisualElement GetRemoteMicroserviceVisualElement(string serviceName)
-        {
-            var service = Model.GetModel<RemoteMicroserviceModel>(serviceName);
+				service.OnSortChanged -= SortMicroservices;
+				service.OnSortChanged += SortMicroservices;
+				serviceElement.OnServiceStartFailed = MicroserviceStartFailed;
+				serviceElement.OnServiceStopFailed = MicroserviceStopFailed;
 
-            if (service != null)
-            {
-                var serviceElement = new RemoteMicroserviceVisualElement { Model = service };
+				isPublishFeatureDisabled = service.Descriptor.IsPublishFeatureDisabled();
+				return serviceElement;
+			}
 
-                _modelToVisual[service] = serviceElement;
-                serviceElement.Refresh();
+			isPublishFeatureDisabled = false;
+			return null;
+		}
 
-                service.OnSortChanged -= SortMicroservices;
-                service.OnSortChanged += SortMicroservices;
+		private RemoteMicroserviceVisualElement GetRemoteMicroserviceVisualElement(string serviceName)
+		{
+			var service = Model.GetModel<RemoteMicroserviceModel>(serviceName);
 
-                return serviceElement;
-            }
+			if (service != null)
+			{
+				var serviceElement = new RemoteMicroserviceVisualElement {Model = service};
 
-            return null;
-        }
+				_modelToVisual[service] = serviceElement;
+				serviceElement.Refresh();
 
-        private StorageObjectVisualElement GetStorageObjectVisualElement(string serviceName)
-        {
-            var mongoService = Model.GetModel<MongoStorageModel>(serviceName);
+				service.OnSortChanged -= SortMicroservices;
+				service.OnSortChanged += SortMicroservices;
 
-            if (mongoService != null)
-            {
-                var mongoServiceElement = new StorageObjectVisualElement { Model = mongoService };
-                _modelToVisual[mongoService] = mongoServiceElement;
-                mongoService.OnLogsDetached += () => { ServiceLogWindow.ShowService(mongoService); };
+				return serviceElement;
+			}
 
-                mongoServiceElement.Refresh();
-                mongoService.OnSelectionChanged += b =>
-                    OnAllServiceSelectedStatusChanged?.Invoke(Model.Storages.All(m => m.IsSelected));
+			return null;
+		}
 
-                return mongoServiceElement;
+		private StorageObjectVisualElement GetStorageObjectVisualElement(string serviceName)
+		{
+			var mongoService = Model.GetModel<MongoStorageModel>(serviceName);
 
-            }
+			if (mongoService != null)
+			{
+				var mongoServiceElement = new StorageObjectVisualElement {Model = mongoService};
+				_modelToVisual[mongoService] = mongoServiceElement;
+				mongoService.OnLogsDetached += () =>
+				{
+					ServiceLogWindow.ShowService(mongoService);
+				};
 
-            return null;
-        }
+				mongoServiceElement.Refresh();
+				mongoService.OnSelectionChanged += b =>
+					OnAllServiceSelectedStatusChanged?.Invoke(Model.Storages.All(m => m.IsSelected));
 
-        private void MicroserviceStartFailed()
-        {
-            _actionPrompt.SetVisible(Constants.PROMPT_STARTED_FAILURE, true, false);
-        }
+				return mongoServiceElement;
+			}
 
-        private void MicroserviceStopFailed()
-        {
-            _actionPrompt.SetVisible(Constants.PROMPT_STOPPED_FAILURE, true, false);
-        }
+			return null;
+		}
 
-        public void DisplayCreatingNewService(ServiceType serviceType)
-        {
-            _servicesCreateElements[serviceType].Refresh();
-            EditorApplication.delayCall += () => _scrollView.verticalScroller.value = 0f;
-        }
+		private void MicroserviceStartFailed()
+		{
+			_actionPrompt.SetVisible(Constants.PROMPT_STARTED_FAILURE, true, false);
+		}
 
-        public void SetAllMicroserviceSelectedStatus(bool selected)
-        {
-            foreach (var microservice in Model.Services)
-            {
-                microservice.IsSelected = selected;
-            }
-        }
+		private void MicroserviceStopFailed()
+		{
+			_actionPrompt.SetVisible(Constants.PROMPT_STOPPED_FAILURE, true, false);
+		}
 
-        public void BuildAllMicroservices(ILoadingBar loadingBar)
-        {
-            var children = new List<LoadingBarUpdater>();
+		public void DisplayCreatingNewService(ServiceType serviceType)
+		{
+			_servicesCreateElements[serviceType].Refresh();
+			EditorApplication.delayCall += () => _scrollView.verticalScroller.value = 0f;
+		}
 
-            foreach (var microservice in Model.Services)
-            {
-                if (!microservice.IsSelected)
-                    continue;
-                if (microservice.IsRunning)
-                    microservice.BuildAndRestart();
-                else
-                    microservice.Build();
+		public void SetAllMicroserviceSelectedStatus(bool selected)
+		{
+			foreach (var microservice in Model.Services)
+			{
+				microservice.IsSelected = selected;
+			}
+		}
 
-                var element = _modelToVisual[microservice];
-                var subLoader = element.Q<LoadingBarElement>();
-                children.Add(subLoader.Updater);
-            }
+		public void BuildAllMicroservices(ILoadingBar loadingBar)
+		{
+			var children = new List<LoadingBarUpdater>();
 
-            var _ = new GroupLoadingBarUpdater("Building Microservices", loadingBar, false, children.ToArray());
-        }
+			foreach (var microservice in Model.Services)
+			{
+				if (!microservice.IsSelected)
+					continue;
+				if (microservice.IsRunning)
+					microservice.BuildAndRestart();
+				else
+					microservice.Build();
 
-        public void BuildAndStartAllMicroservices(ILoadingBar loadingBar)
-        {
-            var children = new List<LoadingBarUpdater>();
-            foreach (var microservice in Model.Services)
-            {
-                if (!microservice.IsSelected)
-                    continue;
+				var element = _modelToVisual[microservice];
+				var subLoader = element.Q<LoadingBarElement>();
+				children.Add(subLoader.Updater);
+			}
 
-                if (microservice.IsRunning)
-                    microservice.BuildAndRestart();
-                else
-                    microservice.BuildAndStart();
+			var _ = new GroupLoadingBarUpdater("Building Microservices", loadingBar, false, children.ToArray());
+		}
 
-                var element = _modelToVisual[microservice];
-                var subLoader = element.Q<LoadingBarElement>();
-                children.Add(subLoader.Updater);
-            }
+		public void BuildAndStartAllMicroservices(ILoadingBar loadingBar)
+		{
+			var children = new List<LoadingBarUpdater>();
+			foreach (var microservice in Model.Services)
+			{
+				if (!microservice.IsSelected)
+					continue;
 
-            var _ = new GroupLoadingBarUpdater("Starting Microservices", loadingBar, false, children.ToArray());
-        }
-        public void SortMicroservices() {
-            var config = MicroserviceConfiguration.Instance;
-            int Comparer(VisualElement a, VisualElement b) {
-                if (a is CreateServiceBaseVisualElement) return -1;
-                if (b is CreateServiceBaseVisualElement) return 1;
-                return config.MicroserviceOrderComparer(a.name, b.name);
-            }
-            _servicesListElement.Sort(Comparer);
-        }
-    }
+				if (microservice.IsRunning)
+					microservice.BuildAndRestart();
+				else
+					microservice.BuildAndStart();
+
+				var element = _modelToVisual[microservice];
+				var subLoader = element.Q<LoadingBarElement>();
+				children.Add(subLoader.Updater);
+			}
+
+			var _ = new GroupLoadingBarUpdater("Starting Microservices", loadingBar, false, children.ToArray());
+		}
+
+		public void SortMicroservices()
+		{
+			var config = MicroserviceConfiguration.Instance;
+
+			int Comparer(VisualElement a, VisualElement b)
+			{
+				if (a is CreateServiceBaseVisualElement) return -1;
+				if (b is CreateServiceBaseVisualElement) return 1;
+				return config.MicroserviceOrderComparer(a.name, b.name);
+			}
+
+			_servicesListElement.Sort(Comparer);
+		}
+	}
 }

@@ -6,13 +6,16 @@
 .register-content .register-field {
     flex-direction: row;
 }
+
 .register-content .register-field TextField {
-    flex-grow:1;
+    flex-grow: 1;
 }
+
 .register-content .register-field Label {
     min-width: 100px;
     -unity-text-align: middle-right;
 }
+
 .register-content .register-header {
     align-self: center;
 }
@@ -22,6 +25,7 @@
     justify-content: flex-end;
     flex-direction: row;
 }
+
 .register-content .register-error {
     color: #ff0000;
 }

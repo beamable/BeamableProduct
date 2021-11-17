@@ -4,32 +4,30 @@ using UnityEngine.UI;
 using Beamable.UnityEngineClone.UI.Extensions;
 using Beamable;
 
-
 namespace Beamable.UI.Scripts
 {
-   public class BeamableButton : UIBehaviour
-   {
-      public Button Button;
-      public TextMeshProUGUI Text;
-      public Gradient Gradient;
-      public EventSoundBehaviour SoundBehaviour;
-      public bool RequiresConnectivity;
-      private IBeamableAPI _engineInstance;
+	public class BeamableButton : UIBehaviour
+	{
+		public Button Button;
+		public TextMeshProUGUI Text;
+		public Gradient Gradient;
+		public EventSoundBehaviour SoundBehaviour;
+		public bool RequiresConnectivity;
+		private IBeamableAPI _engineInstance;
 
+		protected override async void Start()
+		{
+			base.Start();
+			_engineInstance = await API.Instance;
+			_engineInstance.ConnectivityService.OnConnectivityChanged += toggleButton;
+		}
 
-      protected override async void Start()
-      {
-            base.Start();
-            _engineInstance = await API.Instance;
-            _engineInstance.ConnectivityService.OnConnectivityChanged += toggleButton;
-      }
-
-      public void toggleButton(bool offlineStatus)
-      {
-            if(RequiresConnectivity && Button != null)
-            {
-                Button.interactable = offlineStatus;
-            }
-      }
-   }
+		public void toggleButton(bool offlineStatus)
+		{
+			if (RequiresConnectivity && Button != null)
+			{
+				Button.interactable = offlineStatus;
+			}
+		}
+	}
 }

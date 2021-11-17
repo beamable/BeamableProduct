@@ -4,7 +4,6 @@ using Beamable.UI.Buss;
 using Beamable.Editor.UI.Buss.Extensions;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
-
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -12,60 +11,61 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Buss.Components
 {
-  public class PropertySearchVisualElement : BeamableVisualElement
-  {
-    public StyleObject StyleObject { get; }
-    public const string COMMON = BeamableComponentsConstants.UI_PACKAGE_PATH + "/Buss/Components/propertySearchVisualElement";
+	public class PropertySearchVisualElement : BeamableVisualElement
+	{
+		public StyleObject StyleObject
+		{
+			get;
+		}
 
-    public Action<OptionalPropertyFieldWrapper> OnSelectedProperty = x => { };
+		public const string COMMON = BeamableComponentsConstants.UI_PACKAGE_PATH +
+		                             "/Buss/Components/propertySearchVisualElement";
 
-    private ScrollView _propertyContainer;
-    private TextField _searchField;
-    private string filter = "";
+		public Action<OptionalPropertyFieldWrapper> OnSelectedProperty = x => { };
 
-    public PropertySearchVisualElement(StyleObject styleObject) : base(COMMON)
-    {
-      StyleObject = styleObject;
-    }
+		private ScrollView _propertyContainer;
+		private TextField _searchField;
+		private string filter = "";
 
-    public override void Refresh()
-    {
-      base.Refresh();
+		public PropertySearchVisualElement(StyleObject styleObject) : base(COMMON)
+		{
+			StyleObject = styleObject;
+		}
 
-      _searchField = Root.Q<TextField>();
-      _propertyContainer = Root.Q<ScrollView>("property-container");
+		public override void Refresh()
+		{
+			base.Refresh();
 
-      _searchField.RegisterValueChangedCallback(evt =>
-      {
-        filter = evt.newValue;
-        RefreshList();
-      });
-      _searchField.BeamableFocus();
+			_searchField = Root.Q<TextField>();
+			_propertyContainer = Root.Q<ScrollView>("property-container");
 
-      RefreshList();
-      // need to iteratoe over all possible buss properties
+			_searchField.RegisterValueChangedCallback(evt =>
+			{
+				filter = evt.newValue;
+				RefreshList();
+			});
+			_searchField.BeamableFocus();
 
-    }
+			RefreshList();
+			// need to iteratoe over all possible buss properties
+		}
 
+		void RefreshList()
+		{
+			_propertyContainer.Clear();
+			foreach (var prop in StyleObject.GetUnusedProperties())
+			{
+				var propName = prop.GetName();
+				var passesFilter = propName.ToLower().Contains(filter.Trim().ToLower());
+				if (!passesFilter) continue;
 
-    void RefreshList()
-    {
-      _propertyContainer.Clear();
-      foreach (var prop in StyleObject.GetUnusedProperties())
-      {
-        var propName = prop.GetName();
-        var passesFilter = propName.ToLower().Contains(filter.Trim().ToLower());
-        if (!passesFilter) continue;
-
-        var button = new Button(() =>
-        {
-          OnSelectedProperty?.Invoke(prop);
-        });
-        button.text = prop.GetName();
-        _propertyContainer.Add(button);
-      }
-    }
-
-
-  }
+				var button = new Button(() =>
+				{
+					OnSelectedProperty?.Invoke(prop);
+				});
+				button.text = prop.GetName();
+				_propertyContainer.Add(button);
+			}
+		}
+	}
 }

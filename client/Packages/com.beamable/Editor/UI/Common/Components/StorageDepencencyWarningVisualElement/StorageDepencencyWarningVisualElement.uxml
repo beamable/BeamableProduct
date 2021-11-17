@@ -18,5 +18,5 @@
             <engine:Label name="announcement-description"/>
         </engine:VisualElement>
     </engine:VisualElement>
-    
+
 </engine:UXML>

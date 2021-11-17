@@ -13,18 +13,19 @@ ContentListVisualElement HeaderVisualElement {
     padding-left: 20px;
 }
 
-ContentListVisualElement HeaderVisualElement .splitWrapper{
+ContentListVisualElement HeaderVisualElement .splitWrapper {
     min-width: 40px;
     margin-left: 4px;
 }
 
 ExtendedListView {
-    flex-grow : 1;
+    flex-grow: 1;
 }
 
 ContentVisualElement > TemplateContainer {
     flex-grow: 1;
 }
+
 ContentVisualElement .oddRow {
-    background-color: rgba(0,0,0,.07);
+    background-color: rgba(0, 0, 0, .07);
 }

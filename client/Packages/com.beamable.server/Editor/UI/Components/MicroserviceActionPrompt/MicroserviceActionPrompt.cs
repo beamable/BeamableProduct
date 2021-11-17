@@ -8,75 +8,76 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
-namespace  Beamable.Editor.Microservice.UI.Components
+namespace Beamable.Editor.Microservice.UI.Components
 {
-    public class MicroserviceActionPrompt : MicroserviceComponent
-    {
-        private VisualElement _container;
-        private Button _closeButton;
-        private Label _label;
+	public class MicroserviceActionPrompt : MicroserviceComponent
+	{
+		private VisualElement _container;
+		private Button _closeButton;
+		private Label _label;
 
-        public new class UxmlFactory : UxmlFactory<MicroserviceActionPrompt, UxmlTraits>
-        {
-        }
+		public new class UxmlFactory : UxmlFactory<MicroserviceActionPrompt, UxmlTraits> { }
 
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            // Do we need this?
-            UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
-                {name = "custom-text", defaultValue = "nada"};
+		public new class UxmlTraits : VisualElement.UxmlTraits
+		{
+			// Do we need this?
+			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
+			{
+				name = "custom-text", defaultValue = "nada"
+			};
 
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
+				get
+				{
+					yield break;
+				}
+			}
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                // Do we need this?
-                var self = ve as MicroserviceActionPrompt;
-            }
-        }
+			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+			{
+				base.Init(ve, bag, cc);
+				// Do we need this?
+				var self = ve as MicroserviceActionPrompt;
+			}
+		}
 
-        public MicroserviceActionPrompt() : base(nameof(MicroserviceActionPrompt))
-        {
-        }
+		public MicroserviceActionPrompt() : base(nameof(MicroserviceActionPrompt)) { }
 
-        public override void Refresh()
-        {
-            base.Refresh();
-            
-            _container = Root.Q<VisualElement>("mainContainer");
-            _label = Root.Q<Label>("label");
-            _closeButton = Root.Q<Button>("closeButton");
+		public override void Refresh()
+		{
+			base.Refresh();
 
-            _closeButton.clickable.clicked += OnCloseButtonClicked;
-        }
+			_container = Root.Q<VisualElement>("mainContainer");
+			_label = Root.Q<Label>("label");
+			_closeButton = Root.Q<Button>("closeButton");
 
-        private void OnCloseButtonClicked()
-        {
-            SetVisible(string.Empty, false);
-        }
+			_closeButton.clickable.clicked += OnCloseButtonClicked;
+		}
 
-        public void SetVisible(string label, bool isVisible, bool success = true)
-        {
-            _label.text = label;
-            
-            if (isVisible)
-            {
-                _container.AddToClassList("visible");
+		private void OnCloseButtonClicked()
+		{
+			SetVisible(string.Empty, false);
+		}
 
-                if (!success)
-                {
-                    _container.AddToClassList("failed");
-                }
-            }
-            else
-            {
-                _container.RemoveFromClassList("visible");
-                _container.RemoveFromClassList("failed");
-            }
-        }
-    }
+		public void SetVisible(string label, bool isVisible, bool success = true)
+		{
+			_label.text = label;
+
+			if (isVisible)
+			{
+				_container.AddToClassList("visible");
+
+				if (!success)
+				{
+					_container.AddToClassList("failed");
+				}
+			}
+			else
+			{
+				_container.RemoveFromClassList("visible");
+				_container.RemoveFromClassList("failed");
+			}
+		}
+	}
 }

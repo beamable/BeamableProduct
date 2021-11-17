@@ -7,7 +7,7 @@
 
 #mainVisualElement .addItemButton {
     height: 30px;
-    flex-grow:1;
+    flex-grow: 1;
     -unity-text-align: middle-left;
     position: relative;
     margin-left: 0px;

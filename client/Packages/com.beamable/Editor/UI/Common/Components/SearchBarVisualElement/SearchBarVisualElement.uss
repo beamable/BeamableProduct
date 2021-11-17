@@ -1,7 +1,7 @@
 
 SearchBarVisualElement {
     /*width:150px;*/
-    justify-content:center;
+    justify-content: center;
 }
 
 #searchTextField {
@@ -12,9 +12,8 @@ SearchBarVisualElement {
 }
 
 
-SearchBarVisualElement TextField
-{
-	height:15px;
+SearchBarVisualElement TextField {
+    height: 15px;
 }
 
 #searchImg {

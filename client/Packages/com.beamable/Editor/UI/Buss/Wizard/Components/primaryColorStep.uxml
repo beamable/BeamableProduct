@@ -12,7 +12,7 @@
         <engine:VisualElement class="question">
             <engine:Label text="What is the main color of your game?"/>
         </engine:VisualElement>
-        <engine:VisualElement class="about" >
+        <engine:VisualElement class="about">
             <engine:Label text="What is the main color of your game?"/>
         </engine:VisualElement>
         <engine:VisualElement class="answer">

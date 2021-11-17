@@ -14,17 +14,14 @@ namespace Beamable.Editor.Tests.Beamable.Content
 		{
 			_content1 = new ContentManifestReference()
 			{
-				id = "content1",
-				visibility = "public",
-				checksum = "checksum",
-				tags = new string[] { }
+				id = "content1", visibility = "public", checksum = "checksum", tags = new string[] { }
 			};
 		}
 
 		[Test]
 		public void DiffingSupportsAddition()
 		{
-			var a = new Manifest(new List<ContentManifestReference>() { _content1 });
+			var a = new Manifest(new List<ContentManifestReference>() {_content1});
 			var b = new Manifest(new List<ContentManifestReference>());
 
 			var diffSet = Manifest.FindDifferences(a, b);
@@ -39,7 +36,7 @@ namespace Beamable.Editor.Tests.Beamable.Content
 		public void DiffingSupportsDeletion()
 		{
 			var a = new Manifest(new List<ContentManifestReference>());
-			var b = new Manifest(new List<ContentManifestReference>() { _content1 });
+			var b = new Manifest(new List<ContentManifestReference>() {_content1});
 
 			var diffSet = Manifest.FindDifferences(a, b);
 
@@ -60,8 +57,8 @@ namespace Beamable.Editor.Tests.Beamable.Content
 				tags = new string[] { }
 			};
 
-			var a = new Manifest(new List<ContentManifestReference>() { modifiedContent1 });
-			var b = new Manifest(new List<ContentManifestReference>() { _content1 });
+			var a = new Manifest(new List<ContentManifestReference>() {modifiedContent1});
+			var b = new Manifest(new List<ContentManifestReference>() {_content1});
 
 			var diffSet = Manifest.FindDifferences(a, b);
 
@@ -83,8 +80,8 @@ namespace Beamable.Editor.Tests.Beamable.Content
 				tags = new string[] { }
 			};
 
-			var a = new Manifest(new List<ContentManifestReference>() { unModifiedContent });
-			var b = new Manifest(new List<ContentManifestReference>() { _content1 });
+			var a = new Manifest(new List<ContentManifestReference>() {unModifiedContent});
+			var b = new Manifest(new List<ContentManifestReference>() {_content1});
 
 			var diffSet = Manifest.FindDifferences(a, b);
 

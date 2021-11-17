@@ -24,7 +24,10 @@ namespace Beamable.Content
 	/// </summary>
 	public class ManifestSubscription : PlatformSubscribable<ClientManifest, ClientManifest>
 	{
-		public string ManifestID { get; } = "global";
+		public string ManifestID
+		{
+			get;
+		} = "global";
 
 		private ClientManifest _latestManifiest;
 
@@ -35,8 +38,9 @@ namespace Beamable.Content
 
 		public Dictionary<Type, ContentCache> _contentCaches = new Dictionary<Type, ContentCache>();
 
-		public ManifestSubscription(IPlatformService platform, IBeamableRequester requester,
-			string manifestID) : base(platform, requester, "content")
+		public ManifestSubscription(IPlatformService platform,
+		                            IBeamableRequester requester,
+		                            string manifestID) : base(platform, requester, "content")
 		{
 			ManifestID = manifestID;
 		}
@@ -71,12 +75,9 @@ namespace Beamable.Content
 			return requester.Request(Method.GET, url, null, true, ClientManifest.ParseCSV, true).Recover(ex =>
 			{
 				// TODO: Put "global" as a constant value somewhere. Currently it lives in a different asm, and its too much trouble.
-				if (ex is PlatformRequesterException err && err.Status == 404 && ManifestID.Equals("global") )
+				if (ex is PlatformRequesterException err && err.Status == 404 && ManifestID.Equals("global"))
 				{
-					return new ClientManifest
-					{
-						entries = new List<ClientContentInfo>()
-					};
+					return new ClientManifest {entries = new List<ClientContentInfo>()};
 				}
 
 				throw ex;
@@ -106,14 +107,35 @@ namespace Beamable.Content
 	/// ![img beamable-logo]
 	/// </summary>
 	public class ContentService : IContentApi,
-		IHasPlatformSubscriber<ManifestSubscription, ClientManifest, ClientManifest>,
-		IHasPlatformSubscribers<ManifestSubscription, ClientManifest, ClientManifest>
+	                              IHasPlatformSubscriber<ManifestSubscription, ClientManifest, ClientManifest>,
+	                              IHasPlatformSubscribers<ManifestSubscription, ClientManifest, ClientManifest>
 	{
-		public string CurrentDefaultManifestID { get; private set; } = "global";
-		public IBeamableFilesystemAccessor FilesystemAccessor { get; }
-		public ManifestSubscription Subscribable { get; private set; }
-		public Dictionary<string, ManifestSubscription> Subscribables { get; }
-		public IBeamableRequester Requester { get; }
+		public string CurrentDefaultManifestID
+		{
+			get;
+			private set;
+		} = "global";
+
+		public IBeamableFilesystemAccessor FilesystemAccessor
+		{
+			get;
+		}
+
+		public ManifestSubscription Subscribable
+		{
+			get;
+			private set;
+		}
+
+		public Dictionary<string, ManifestSubscription> Subscribables
+		{
+			get;
+		}
+
+		public IBeamableRequester Requester
+		{
+			get;
+		}
 
 		public Action<string> OnManifestChanged;
 
@@ -127,9 +149,7 @@ namespace Beamable.Content
 		{
 			internal static readonly ContentServiceTestScope Instance = new ContentServiceTestScope();
 
-			private ContentServiceTestScope()
-			{
-			}
+			private ContentServiceTestScope() { }
 
 			public void Dispose()
 			{
@@ -138,8 +158,10 @@ namespace Beamable.Content
 		}
 #endif
 
-		public ContentService(IPlatformService platform, IBeamableRequester requester,
-			IBeamableFilesystemAccessor filesystemAccessor) {
+		public ContentService(IPlatformService platform,
+		                      IBeamableRequester requester,
+		                      IBeamableFilesystemAccessor filesystemAccessor)
+		{
 			CurrentDefaultManifestID = ServiceManager.Resolve<ContentParameterProvider>().manifestID;
 			Requester = requester;
 			FilesystemAccessor = filesystemAccessor;
@@ -181,7 +203,6 @@ namespace Beamable.Content
 			Subscribables.Remove(manifestID);
 		}
 
-
 		public Promise<IContentObject> GetContent(string contentId, string manifestID = "")
 		{
 			var referencedType = ContentRegistry.GetTypeFromId(contentId);
@@ -205,8 +226,11 @@ namespace Beamable.Content
 			{
 				var cacheType = typeof(ContentCache<>).MakeGenericType(contentType);
 				var constructor = cacheType.GetConstructor(new[]
-					{typeof(IHttpRequester), typeof(IBeamableFilesystemAccessor)});
-				rawCache = (ContentCache) constructor.Invoke(new[] {Requester, (object) FilesystemAccessor});
+				{
+					typeof(IHttpRequester),
+					typeof(IBeamableFilesystemAccessor)
+				});
+				rawCache = (ContentCache)constructor.Invoke(new[] {Requester, (object)FilesystemAccessor});
 
 				_contentCaches.Add(contentType, rawCache);
 			}
@@ -227,7 +251,6 @@ namespace Beamable.Content
 			});
 		}
 
-
 		public Promise<IContentObject> GetContent(IContentRef reference, string manifestID = "")
 		{
 			var referencedType = ContentRegistry.GetTypeFromId(reference.GetId());
@@ -240,7 +263,7 @@ namespace Beamable.Content
 			if (reference == null || string.IsNullOrEmpty(reference.GetId()))
 				return Promise<TContent>.Failed(new ContentNotFoundException());
 			var referencedType = reference.GetReferencedType();
-			return GetContent(reference.GetId(), referencedType, DetermineManifestID(manifestID)).Map(c => (TContent) c);
+			return GetContent(reference.GetId(), referencedType, DetermineManifestID(manifestID)).Map(c => (TContent)c);
 		}
 
 		public Promise<TContent> GetContent<TContent>(IContentRef<TContent> reference, string manifestID = "")
@@ -249,7 +272,8 @@ namespace Beamable.Content
 			return GetContent<TContent>(reference as IContentRef, DetermineManifestID(manifestID));
 		}
 
-		public Promise<ClientManifest> GetManifest(ContentQuery query) => GetSubscription(CurrentDefaultManifestID)?.GetManifest(query);
+		public Promise<ClientManifest> GetManifest(ContentQuery query) =>
+			GetSubscription(CurrentDefaultManifestID)?.GetManifest(query);
 
 		public Promise<ClientManifest> GetManifestWithID(string manifestID = "")
 		{
@@ -265,7 +289,6 @@ namespace Beamable.Content
 		{
 			return GetSubscription(DetermineManifestID(manifestID))?.GetManifest(query);
 		}
-
 
 		public Promise<ClientManifest> GetCurrent(string scope = "")
 		{
@@ -300,7 +323,6 @@ namespace Beamable.Content
 
 			OnManifestChanged?.Invoke(CurrentDefaultManifestID);
 		}
-
 
 		private ManifestSubscription GetSubscription(string manifestID)
 		{

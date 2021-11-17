@@ -13,8 +13,9 @@
                 <!-- Filled in with USS-->
             </VisualElement>
         </VisualElement>
-        <VisualElement >
-            <Label name="title" text="In order to use this feature, you need to login to Docker Hub. Please enter your Docker Hub credentials below."/>
+        <VisualElement>
+            <Label name="title"
+                   text="In order to use this feature, you need to login to Docker Hub. Please enter your Docker Hub credentials below."/>
         </VisualElement>
 
         <VisualElement name="form">

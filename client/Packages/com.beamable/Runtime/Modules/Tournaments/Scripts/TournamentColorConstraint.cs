@@ -5,65 +5,65 @@ using UnityEngine.UI;
 
 namespace Beamable.Tournaments
 {
-    public enum TournamentColorClass
-    {
-        BACKGROUND,
-        ENTRY,
-        STAGE
-    }
-    public class TournamentColorConstraint : MonoBehaviour
-    {
-        // pick a semantic meaning for this color component
-        public TournamentColorClass Color;
-        public List<Image> BoundImages;
+	public enum TournamentColorClass
+	{
+		BACKGROUND,
+		ENTRY,
+		STAGE
+	}
 
-        private bool _useOverride = false;
+	public class TournamentColorConstraint : MonoBehaviour
+	{
+		// pick a semantic meaning for this color component
+		public TournamentColorClass Color;
+		public List<Image> BoundImages;
 
-        public float RedCoef = 1, GreenCoef = 1, BlueCoef = 1, AlphaCoef = 1;
+		private bool _useOverride = false;
 
-        // Start is called before the first frame update
-        void Start()
-        {
-            Refresh();
-        }
+		public float RedCoef = 1, GreenCoef = 1, BlueCoef = 1, AlphaCoef = 1;
 
-        // Update is called once per frame
-        void Update()
-        {
+		// Start is called before the first frame update
+		void Start()
+		{
+			Refresh();
+		}
 
-        }
+		// Update is called once per frame
+		void Update() { }
 
-        public void ReleaseOverride()
-        {
-            if (!_useOverride) return;
-            _useOverride = false;
-            Refresh();
-        }
-        public void OverrideColor(Color color)
-        {
-            _useOverride = true;
-            foreach (var image in BoundImages)
-            {
-                image.color = color;
-            }
-        }
+		public void ReleaseOverride()
+		{
+			if (!_useOverride) return;
+			_useOverride = false;
+			Refresh();
+		}
 
-        public void Refresh(TournamentsBehaviour master=null)
-        {
-            if (_useOverride) return;
+		public void OverrideColor(Color color)
+		{
+			_useOverride = true;
+			foreach (var image in BoundImages)
+			{
+				image.color = color;
+			}
+		}
 
-            if (master == null)
-            {
-                master = GetComponentInParent<TournamentsBehaviour>();
-            }
-            var colorData = master.GetColorForClass(Color);
+		public void Refresh(TournamentsBehaviour master = null)
+		{
+			if (_useOverride) return;
 
-            var modColor = new Color(colorData.r * RedCoef, colorData.g * GreenCoef, colorData.b * BlueCoef,
-                colorData.a * AlphaCoef);
-            foreach (var image in BoundImages)
-            {
-                image.color = modColor;
-            }
-        }
-    }
+			if (master == null)
+			{
+				master = GetComponentInParent<TournamentsBehaviour>();
+			}
+
+			var colorData = master.GetColorForClass(Color);
+
+			var modColor = new Color(colorData.r * RedCoef, colorData.g * GreenCoef, colorData.b * BlueCoef,
+			                         colorData.a * AlphaCoef);
+			foreach (var image in BoundImages)
+			{
+				image.color = modColor;
+			}
+		}
+	}
 }

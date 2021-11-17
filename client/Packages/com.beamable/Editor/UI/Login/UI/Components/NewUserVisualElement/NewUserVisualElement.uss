@@ -1,26 +1,32 @@
-#term{
+#term {
     flex-direction: row;
     align-self: flex-end;
 }
-#existAccount{
+
+#existAccount {
     flex-direction: row;
     align-self: flex-end;
 }
-#rightContainer{
+
+#rightContainer {
     margin-top: 10px;
     align-items: flex-end;
 }
-.btnText{
-    left:5px;
-    min-width:100px;
+
+.btnText {
+    left: 5px;
+    min-width: 100px;
 }
-#checkBox{
-    left:5px;
+
+#checkBox {
+    left: 5px;
 }
-#textField{
+
+#textField {
     align-self: center;
 }
-.input{
+
+.input {
     height: 30px;
     -unity-text-align: middle-left;
     background-color: #f4f4f4;
@@ -28,6 +34,6 @@
     margin-bottom: 5px;
 }
 
-#cancel{
+#cancel {
     height: 29px;
 }

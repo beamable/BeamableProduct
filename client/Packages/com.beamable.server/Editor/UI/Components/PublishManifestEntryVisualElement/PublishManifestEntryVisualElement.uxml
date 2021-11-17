@@ -14,17 +14,17 @@
         <engine:VisualElement name="typeC" class="column">
             <engine:Image name="typeImage"/>
         </engine:VisualElement>
-        
+
         <engine:VisualElement name="nameColumn" class="column" display="none">
-                <engine:Label name="nameMS" text="Angie's Test"/>
+            <engine:Label name="nameMS" text="Angie's Test"/>
         </engine:VisualElement>
 
         <engine:VisualElement name="depsColumn" class="column">
-            <beamable:ExpandableListVisualElement name="depsList" />
+            <beamable:ExpandableListVisualElement name="depsList"/>
         </engine:VisualElement>
 
         <engine:VisualElement name="SizeC" class="column">
-            <beamable:DropdownVisualElement name="sizeDropdown" />
+            <beamable:DropdownVisualElement name="sizeDropdown"/>
         </engine:VisualElement>
 
         <engine:VisualElement name="CommentsC" class="column">

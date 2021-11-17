@@ -12,7 +12,7 @@ namespace Beamable.Samples.SampleProjectBase
 	[CreateAssetMenu(
 		fileName = "ReadMe",
 		menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_SAMPLES + "/" +
-		"ReadMe",
+		           "ReadMe",
 		order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 	public class Readme : ScriptableObject
 	{

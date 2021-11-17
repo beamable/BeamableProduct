@@ -1,30 +1,30 @@
 {
-    "name": "Unity.Beamable.Editor.Server",
-    "rootNamespace": "",
-    "references": [
-        "Beamable.Config",
-        "Beamable.JsonSerializable",
-        "Beamable.SmallerJSON",
-        "Beamable.Platform",
-        "Unity.Beamable.Runtime.Common",
-        "Unity.Beamable.Server.Runtime",
-        "Unity.Beamable.Server.Runtime.Shared",
-        "Unity.Beamable",
-        "Unity.Beamable.Editor",
-        "Unity.Addressables"
-    ],
-    "includePlatforms": [
-        "Editor"
-    ],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [
-        "MongoDB.Driver.dll",
-        "ICSharpCode.SharpZipLib.dll"
-    ],
-    "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
+  "name": "Unity.Beamable.Editor.Server",
+  "rootNamespace": "",
+  "references": [
+    "Beamable.Config",
+    "Beamable.JsonSerializable",
+    "Beamable.SmallerJSON",
+    "Beamable.Platform",
+    "Unity.Beamable.Runtime.Common",
+    "Unity.Beamable.Server.Runtime",
+    "Unity.Beamable.Server.Runtime.Shared",
+    "Unity.Beamable",
+    "Unity.Beamable.Editor",
+    "Unity.Addressables"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [
+    "MongoDB.Driver.dll",
+    "ICSharpCode.SharpZipLib.dll"
+  ],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
 }

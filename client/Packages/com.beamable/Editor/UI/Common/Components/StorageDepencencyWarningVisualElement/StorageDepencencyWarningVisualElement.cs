@@ -9,27 +9,31 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+
 namespace Beamable.Editor.Toolbox.Components
 {
-   public class StorageDepencencyWarningVisualElement : BeamableVisualElement
-   {
-      public StorageDepencencyWarningModel StorageDepencencyWarningModel { get; set; }
-      public StorageDepencencyWarningVisualElement() : base(
-         $"{BeamableComponentsConstants.COMP_PATH}/{nameof(StorageDepencencyWarningVisualElement)}/{nameof(StorageDepencencyWarningVisualElement)}")
-      {
-      }
+	public class StorageDepencencyWarningVisualElement : BeamableVisualElement
+	{
+		public StorageDepencencyWarningModel StorageDepencencyWarningModel
+		{
+			get;
+			set;
+		}
 
-      public override void Refresh()
-      {
-         base.Refresh();
-         
-         var titleLabel = Root.Q<Label>("announcement-title");
-         titleLabel.text = StorageDepencencyWarningModel.TitleLabelText;
-         titleLabel.AddTextWrapStyle();
-         
-         var descriptionLabel = Root.Q<Label>("announcement-description");
-         descriptionLabel.text = StorageDepencencyWarningModel.DescriptionLabelText;
-         descriptionLabel.AddTextWrapStyle();
-      }
-   }
+		public StorageDepencencyWarningVisualElement() : base(
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(StorageDepencencyWarningVisualElement)}/{nameof(StorageDepencencyWarningVisualElement)}") { }
+
+		public override void Refresh()
+		{
+			base.Refresh();
+
+			var titleLabel = Root.Q<Label>("announcement-title");
+			titleLabel.text = StorageDepencencyWarningModel.TitleLabelText;
+			titleLabel.AddTextWrapStyle();
+
+			var descriptionLabel = Root.Q<Label>("announcement-description");
+			descriptionLabel.text = StorageDepencencyWarningModel.DescriptionLabelText;
+			descriptionLabel.AddTextWrapStyle();
+		}
+	}
 }

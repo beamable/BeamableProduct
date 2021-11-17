@@ -9,13 +9,13 @@
     height: 0;
 }
 
-#mainContainer.visible{
+#mainContainer.visible {
     visibility: visible;
     height: 30px;
 }
 
 #mainContainer.failed {
-    background-color: rgba(0,0,0,0);
+    background-color: rgba(0, 0, 0, 0);
 }
 
 Label {
@@ -29,7 +29,7 @@ Button {
     width: 15px;
     height: 15px;
     border-width: 0;
-    background-color: rgba(0,0,0,0);
+    background-color: rgba(0, 0, 0, 0);
     -unity-font-style: bold;
     -unity-slice-bottom: 0;
     -unity-slice-top: 0;

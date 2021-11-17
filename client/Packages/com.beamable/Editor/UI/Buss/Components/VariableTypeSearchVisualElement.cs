@@ -8,90 +8,95 @@ using Beamable.Editor.UI.Buss.Model;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
-
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
-
 namespace Beamable.Editor.UI.Buss.Components
 {
-   public class VariableTypeSearchVisualElement : BeamableVisualElement
-   {
-      public StyleObject Model { get; }
-      public const string COMMON = BeamableComponentsConstants.UI_PACKAGE_PATH + "/Buss/Components/variableTypeSearchVisualElement";
+	public class VariableTypeSearchVisualElement : BeamableVisualElement
+	{
+		public StyleObject Model
+		{
+			get;
+		}
 
-      public Action<VariableSetWrapper, string> OnSelected;
+		public const string COMMON = BeamableComponentsConstants.UI_PACKAGE_PATH +
+		                             "/Buss/Components/variableTypeSearchVisualElement";
 
-      private VisualElement _tyepContainer;
-      private TextField _textField;
+		public Action<VariableSetWrapper, string> OnSelected;
 
-      private string _filterText = "";
+		private VisualElement _tyepContainer;
+		private TextField _textField;
 
-      public VariableTypeSearchVisualElement(StyleObject model) : base(COMMON)
-      {
-         Model = model;
-      }
+		private string _filterText = "";
 
-      public override void Refresh()
-      {
-         base.Refresh();
-         _tyepContainer = Root.Q<VisualElement>("type-container");
+		public VariableTypeSearchVisualElement(StyleObject model) : base(COMMON)
+		{
+			Model = model;
+		}
 
-         _textField = Root.Q<TextField>();
-         _textField.BeamableFocus();
+		public override void Refresh()
+		{
+			base.Refresh();
+			_tyepContainer = Root.Q<VisualElement>("type-container");
 
-         _textField.RegisterValueChangedCallback(HandleFilterEvt);
+			_textField = Root.Q<TextField>();
+			_textField.BeamableFocus();
 
-         RefreshList();
-      }
+			_textField.RegisterValueChangedCallback(HandleFilterEvt);
 
-      void HandleFilterEvt(ChangeEvent<string> evt)
-      {
-         _filterText = evt.newValue;
-         RefreshList();
-      }
+			RefreshList();
+		}
 
-      void RefreshList()
-      {
-         _tyepContainer.Clear();
-         // need to get the available types...
-         foreach (var wrapper in Model.Scope.GetAvailableTypes())
-         {
-            var button = new Button();
-            var attr = wrapper.VariableSet.GetType().GetCustomAttribute<VariableTypeNameAttribute>();
-            var name  = attr?.Name ?? wrapper.VariableSet.VariableType.Name;
+		void HandleFilterEvt(ChangeEvent<string> evt)
+		{
+			_filterText = evt.newValue;
+			RefreshList();
+		}
 
-            if (!name.ToLower().Contains(_filterText)) continue;
+		void RefreshList()
+		{
+			_tyepContainer.Clear();
+			// need to get the available types...
+			foreach (var wrapper in Model.Scope.GetAvailableTypes())
+			{
+				var button = new Button();
+				var attr = wrapper.VariableSet.GetType().GetCustomAttribute<VariableTypeNameAttribute>();
+				var name = attr?.Name ?? wrapper.VariableSet.VariableType.Name;
 
-            button.text = name;
-            button.clickable.clicked += () => { NameStep(wrapper); };
-            _tyepContainer.Add(button);
-         }
-      }
+				if (!name.ToLower().Contains(_filterText)) continue;
 
-      void NameStep(VariableSetWrapper wrapper)
-      {
-         _tyepContainer.Clear();
-         var submitButton = new Button(() => OnSelected?.Invoke(wrapper, _textField.value));
-         _textField.SetValueWithoutNotify("");
-         submitButton.SetEnabled(false);
-         _textField.parent.Insert(0, new Label("Variable name:"));
-         _textField.UnregisterValueChangedCallback(HandleFilterEvt);
-         _textField.RegisterCallback<KeyUpEvent>(evt =>
-         {
-            var enabled = !string.IsNullOrEmpty(_textField.value);
-            submitButton.SetEnabled(enabled);
-            if (enabled && evt.keyCode == KeyCode.Return)
-            {
-               OnSelected?.Invoke(wrapper, _textField.value);
-            }
-         });
-         submitButton.text = "Create";
-         _tyepContainer.Add(submitButton);
-         _textField.BeamableFocus();
+				button.text = name;
+				button.clickable.clicked += () =>
+				{
+					NameStep(wrapper);
+				};
+				_tyepContainer.Add(button);
+			}
+		}
 
-      }
-   }
+		void NameStep(VariableSetWrapper wrapper)
+		{
+			_tyepContainer.Clear();
+			var submitButton = new Button(() => OnSelected?.Invoke(wrapper, _textField.value));
+			_textField.SetValueWithoutNotify("");
+			submitButton.SetEnabled(false);
+			_textField.parent.Insert(0, new Label("Variable name:"));
+			_textField.UnregisterValueChangedCallback(HandleFilterEvt);
+			_textField.RegisterCallback<KeyUpEvent>(evt =>
+			{
+				var enabled = !string.IsNullOrEmpty(_textField.value);
+				submitButton.SetEnabled(enabled);
+				if (enabled && evt.keyCode == KeyCode.Return)
+				{
+					OnSelected?.Invoke(wrapper, _textField.value);
+				}
+			});
+			submitButton.text = "Create";
+			_tyepContainer.Add(submitButton);
+			_textField.BeamableFocus();
+		}
+	}
 }

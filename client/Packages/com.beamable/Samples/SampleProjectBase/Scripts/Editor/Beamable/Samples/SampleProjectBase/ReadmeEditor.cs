@@ -38,26 +38,26 @@ namespace Beamable.Samples.SampleProjectBase
 			return null;
 		}
 
-
 		private static Readme SelectReadme(string pathToReadme)
 		{
-			if (string.IsNullOrEmpty (pathToReadme))
-         {
+			if (string.IsNullOrEmpty(pathToReadme))
+			{
 				return null;
-         }
+			}
+
 			var readmeObject = AssetDatabase.LoadMainAssetAtPath(pathToReadme);
 
 			if (readmeObject == null)
-         {
+			{
 				return null;
-         }
+			}
 
 			var editorAsm = typeof(UnityEditor.Editor).Assembly;
 			var inspWndType = editorAsm.GetType("UnityEditor.InspectorWindow");
 			var window = EditorWindow.GetWindow(inspWndType);
 			window.Focus();
 
-			Selection.objects = new UnityEngine.Object[] { readmeObject };
+			Selection.objects = new UnityEngine.Object[] {readmeObject};
 			return (Readme)readmeObject;
 		}
 
@@ -76,9 +76,8 @@ namespace Beamable.Samples.SampleProjectBase
 			GUILayout.EndHorizontal();
 		}
 
-      public override void OnInspectorGUI()
+		public override void OnInspectorGUI()
 		{
-
 			var readme = (Readme)target;
 			Init();
 
@@ -88,10 +87,12 @@ namespace Beamable.Samples.SampleProjectBase
 				{
 					GUILayout.Label(section.heading, HeadingStyle);
 				}
+
 				if (!string.IsNullOrEmpty(section.text))
 				{
 					GUILayout.Label(section.text, BodyStyle);
 				}
+
 				if (!string.IsNullOrEmpty(section.linkText))
 				{
 					if (LinkLabel(new GUIContent(section.linkText)))
@@ -99,23 +100,51 @@ namespace Beamable.Samples.SampleProjectBase
 						Application.OpenURL(section.url);
 					}
 				}
+
 				GUILayout.Space(kSpace);
 			}
 		}
 
-
 		bool m_Initialized;
 
-		GUIStyle LinkStyle { get { return m_LinkStyle; } }
+		GUIStyle LinkStyle
+		{
+			get
+			{
+				return m_LinkStyle;
+			}
+		}
+
 		[SerializeField] GUIStyle m_LinkStyle;
 
-		GUIStyle TitleStyle { get { return m_TitleStyle; } }
+		GUIStyle TitleStyle
+		{
+			get
+			{
+				return m_TitleStyle;
+			}
+		}
+
 		[SerializeField] GUIStyle m_TitleStyle;
 
-		GUIStyle HeadingStyle { get { return m_HeadingStyle; } }
+		GUIStyle HeadingStyle
+		{
+			get
+			{
+				return m_HeadingStyle;
+			}
+		}
+
 		[SerializeField] GUIStyle m_HeadingStyle;
 
-		GUIStyle BodyStyle { get { return m_BodyStyle; } }
+		GUIStyle BodyStyle
+		{
+			get
+			{
+				return m_BodyStyle;
+			}
+		}
+
 		[SerializeField] GUIStyle m_BodyStyle;
 
 		void Init()

@@ -16,167 +16,185 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Content.Components
 {
-   public enum BreadcrumbType
-   {
-      AllContents,
-      ContenType,
-      ContentItem
-   }
+	public enum BreadcrumbType
+	{
+		AllContents,
+		ContenType,
+		ContentItem
+	}
 
-   /// <summary>
-   /// Represents a text string in the UI.
-   /// Additional data helps handle the clickability
-   /// </summary>
-   public class Breadcrumb
-   {
-      public string Text { set; get; }
-      public BreadcrumbType BreadcrumbType { set; get; }
-      public ContentTypeTreeViewItem ContentTypeTreeViewItem { set; get; }
-      public ContentItemDescriptor ContentItemDescriptor { set; get; }
+	/// <summary>
+	/// Represents a text string in the UI.
+	/// Additional data helps handle the clickability
+	/// </summary>
+	public class Breadcrumb
+	{
+		public string Text
+		{
+			set;
+			get;
+		}
 
-      public Breadcrumb(string text,
-         BreadcrumbType breadcrumbType,
-         ContentTypeTreeViewItem contentTypeTreeViewItem = null,
-         ContentItemDescriptor contentItemDescriptor = null )
-      {
-         Text = text;
-         BreadcrumbType = breadcrumbType;
-         ContentTypeTreeViewItem = contentTypeTreeViewItem;
-         ContentItemDescriptor = contentItemDescriptor;
-      }
-   }
+		public BreadcrumbType BreadcrumbType
+		{
+			set;
+			get;
+		}
 
-   public class BreadcrumbsVisualElement : ContentManagerComponent
-   {
-      public event Action<Breadcrumb> OnBreadcrumbClicked;
+		public ContentTypeTreeViewItem ContentTypeTreeViewItem
+		{
+			set;
+			get;
+		}
 
-      public ContentDataModel Model { get; set; }
+		public ContentItemDescriptor ContentItemDescriptor
+		{
+			set;
+			get;
+		}
 
-      private VisualElement _tokenListVisualElement;
-      private Label _counterLabel;
-      private IList<ContentTypeTreeViewItem> _selectedContentTypeBranch;
-      private ContentItemDescriptor _selectedContentItemDescriptor;
-      private RealmButtonVisualElement _realmButton;
-      private ManifestButtonVisualElement _manifestButton;
+		public Breadcrumb(string text,
+		                  BreadcrumbType breadcrumbType,
+		                  ContentTypeTreeViewItem contentTypeTreeViewItem = null,
+		                  ContentItemDescriptor contentItemDescriptor = null)
+		{
+			Text = text;
+			BreadcrumbType = breadcrumbType;
+			ContentTypeTreeViewItem = contentTypeTreeViewItem;
+			ContentItemDescriptor = contentItemDescriptor;
+		}
+	}
 
-      public BreadcrumbsVisualElement() : base(nameof(BreadcrumbsVisualElement))
-      {
-      }
+	public class BreadcrumbsVisualElement : ContentManagerComponent
+	{
+		public event Action<Breadcrumb> OnBreadcrumbClicked;
 
-      public override void Refresh()
-      {
-         base.Refresh();
+		public ContentDataModel Model
+		{
+			get;
+			set;
+		}
 
-         _realmButton = Root.Q<RealmButtonVisualElement>("realmButton");
-         _realmButton.Refresh();
-         _manifestButton = Root.Q<ManifestButtonVisualElement>("manifestButton");
-         _manifestButton.Refresh();
-         _tokenListVisualElement  = Root.Q<VisualElement>("tokenListVisualElement");
-         _counterLabel = Root.Q<Label>("counterLabel");
+		private VisualElement _tokenListVisualElement;
+		private Label _counterLabel;
+		private IList<ContentTypeTreeViewItem> _selectedContentTypeBranch;
+		private ContentItemDescriptor _selectedContentItemDescriptor;
+		private RealmButtonVisualElement _realmButton;
+		private ManifestButtonVisualElement _manifestButton;
 
-         Model_OnSelectedContentTypeBranchChanged(new List<TreeViewItem>());
-         Model.OnSelectedContentTypeBranchChanged += Model_OnSelectedContentTypeBranchChanged;
-         //
-         Model_OnSelectedContentChanged(new List<ContentItemDescriptor>());
-         Model.OnSelectedContentChanged += Model_OnSelectedContentChanged; ;
+		public BreadcrumbsVisualElement() : base(nameof(BreadcrumbsVisualElement)) { }
 
-         //
-         Model.OnFilterChanged += Model_OnFilterChanged;
+		public override void Refresh()
+		{
+			base.Refresh();
 
-      }
+			_realmButton = Root.Q<RealmButtonVisualElement>("realmButton");
+			_realmButton.Refresh();
+			_manifestButton = Root.Q<ManifestButtonVisualElement>("manifestButton");
+			_manifestButton.Refresh();
+			_tokenListVisualElement = Root.Q<VisualElement>("tokenListVisualElement");
+			_counterLabel = Root.Q<Label>("counterLabel");
 
-      /// <summary>
-      /// Build a list of <see cref="Breadcrumb"/>s, then create a <see cref="VisualElement"/>
-      /// for each with some arrows in between each. All non-arrows are clickable.
-      /// </summary>
-      private void RenderTokens()
-      {
-         List<Breadcrumb> breadCrumbs = new List<Breadcrumb>();
+			Model_OnSelectedContentTypeBranchChanged(new List<TreeViewItem>());
+			Model.OnSelectedContentTypeBranchChanged += Model_OnSelectedContentTypeBranchChanged;
+			//
+			Model_OnSelectedContentChanged(new List<ContentItemDescriptor>());
+			Model.OnSelectedContentChanged += Model_OnSelectedContentChanged;
+			;
 
-         // Add the master token
-         breadCrumbs.Add(new Breadcrumb(ContentManagerConstants.BreadcrumbsAllContentText, BreadcrumbType.AllContents));
+			//
+			Model.OnFilterChanged += Model_OnFilterChanged;
+		}
 
-         // Add on the types
-         foreach (ContentTypeTreeViewItem contentTypeTreeViewItem in _selectedContentTypeBranch)
-         {
-            breadCrumbs.Add(new Breadcrumb(contentTypeTreeViewItem.displayName, BreadcrumbType.ContenType,
-               contentTypeTreeViewItem, null));
-         }
+		/// <summary>
+		/// Build a list of <see cref="Breadcrumb"/>s, then create a <see cref="VisualElement"/>
+		/// for each with some arrows in between each. All non-arrows are clickable.
+		/// </summary>
+		private void RenderTokens()
+		{
+			List<Breadcrumb> breadCrumbs = new List<Breadcrumb>();
 
-         // Add on the item, if it exists
-         if (_selectedContentItemDescriptor != null)
-         {
-            breadCrumbs.Add(new Breadcrumb(_selectedContentItemDescriptor.Name, BreadcrumbType.ContentItem,
-               null, _selectedContentItemDescriptor));
-         }
+			// Add the master token
+			breadCrumbs.Add(new Breadcrumb(ContentManagerConstants.BreadcrumbsAllContentText,
+			                               BreadcrumbType.AllContents));
 
-         //Loop and render all tokens
-         _tokenListVisualElement.Clear();
-         for (int i = 0; i < breadCrumbs.Count; i++)
-         {
-            Breadcrumb breadcrumb = breadCrumbs[i];
+			// Add on the types
+			foreach (ContentTypeTreeViewItem contentTypeTreeViewItem in _selectedContentTypeBranch)
+			{
+				breadCrumbs.Add(new Breadcrumb(contentTypeTreeViewItem.displayName, BreadcrumbType.ContenType,
+				                               contentTypeTreeViewItem, null));
+			}
 
-            // Add a clickable token
-            _tokenListVisualElement.Add(CreateNewToken(breadcrumb.Text, false, () =>
-            {
-               OnBreadcrumbClicked?.Invoke(breadcrumb);
-            }));
+			// Add on the item, if it exists
+			if (_selectedContentItemDescriptor != null)
+			{
+				breadCrumbs.Add(new Breadcrumb(_selectedContentItemDescriptor.Name, BreadcrumbType.ContentItem,
+				                               null, _selectedContentItemDescriptor));
+			}
 
-            if (i < breadCrumbs.Count - 1)
-            {
-               // Add an arrow  token
-               _tokenListVisualElement.Add(CreateNewToken(ContentManagerConstants.BreadcrumbTokenArrow, true));
-            }
-         }
+			//Loop and render all tokens
+			_tokenListVisualElement.Clear();
+			for (int i = 0; i < breadCrumbs.Count; i++)
+			{
+				Breadcrumb breadcrumb = breadCrumbs[i];
 
-       
-         int min = Model.GetFilteredContents().Count();
-         int max = Model.GetAllContents().Count();
-         var counterText = string.Format(ContentManagerConstants.BreadcrumbsCountText, min, max);
-         _counterLabel.text = counterText;
+				// Add a clickable token
+				_tokenListVisualElement.Add(CreateNewToken(breadcrumb.Text, false, () =>
+				{
+					OnBreadcrumbClicked?.Invoke(breadcrumb);
+				}));
 
-      }
+				if (i < breadCrumbs.Count - 1)
+				{
+					// Add an arrow  token
+					_tokenListVisualElement.Add(CreateNewToken(ContentManagerConstants.BreadcrumbTokenArrow, true));
+				}
+			}
 
-      private VisualElement CreateNewToken(string text, bool isArrow, Action onMouseClick = null)
-      {
-         Label label = new Label();
-         label.text = text;
+			int min = Model.GetFilteredContents().Count();
+			int max = Model.GetAllContents().Count();
+			var counterText = string.Format(ContentManagerConstants.BreadcrumbsCountText, min, max);
+			_counterLabel.text = counterText;
+		}
 
-         if (isArrow)
-         {
-            label.AddToClassList("tokenTextArrow");
-         }
-         else
-         {
-            label.AddToClassList("tokenTextWord");
+		private VisualElement CreateNewToken(string text, bool isArrow, Action onMouseClick = null)
+		{
+			Label label = new Label();
+			label.text = text;
 
-            label.RegisterCallback<MouseDownEvent>((MouseDownEvent evt) =>
-            {
-               onMouseClick();
-            }, TrickleDown.NoTrickleDown);
-         }
+			if (isArrow)
+			{
+				label.AddToClassList("tokenTextArrow");
+			}
+			else
+			{
+				label.AddToClassList("tokenTextWord");
 
-         return label;
-      }
+				label.RegisterCallback<MouseDownEvent>((MouseDownEvent evt) =>
+				{
+					onMouseClick();
+				}, TrickleDown.NoTrickleDown);
+			}
 
-      private void Model_OnSelectedContentTypeBranchChanged(IList<TreeViewItem> selectedContentTypeBranch)
-      {
-         _selectedContentTypeBranch = selectedContentTypeBranch.Cast<ContentTypeTreeViewItem>().ToList();
-         RenderTokens();
-      }
+			return label;
+		}
 
-      private void Model_OnFilterChanged()
-      {
-         RenderTokens();
-      }
+		private void Model_OnSelectedContentTypeBranchChanged(IList<TreeViewItem> selectedContentTypeBranch)
+		{
+			_selectedContentTypeBranch = selectedContentTypeBranch.Cast<ContentTypeTreeViewItem>().ToList();
+			RenderTokens();
+		}
 
+		private void Model_OnFilterChanged()
+		{
+			RenderTokens();
+		}
 
-      private void Model_OnSelectedContentChanged(IList<ContentItemDescriptor> contentItemDescriptors)
-      {
-         // Set the Selected Content
-         _selectedContentItemDescriptor = contentItemDescriptors.FirstOrDefault();
-         RenderTokens();
-      }
-
-   }
+		private void Model_OnSelectedContentChanged(IList<ContentItemDescriptor> contentItemDescriptors)
+		{
+			// Set the Selected Content
+			_selectedContentItemDescriptor = contentItemDescriptors.FirstOrDefault();
+			RenderTokens();
+		}
+	}
 }

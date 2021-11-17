@@ -1,220 +1,170 @@
 ﻿using System;
-
 using System.Collections.Generic;
 using Beamable.UI.Scripts;
 using UnityEngine;
-
 using UnityEngine.Events;
-
-
 
 namespace Beamable.UI.Layouts
 
 {
+	public enum MediaQueryOperation
 
-    public enum MediaQueryOperation
+	{
+		GREATER_THAN,
 
-    {
+		LESS_THAN
+	}
 
-        GREATER_THAN,
+	public enum MediaQueryDimension
 
-        LESS_THAN
+	{
+		WIDTH,
 
-    }
+		HEIGHT,
 
+		ASPECT,
 
+		KEYBOARD_HEIGHT
+	}
 
-    public enum MediaQueryDimension
+	public delegate void MediaQueryCallback(MediaSourceBehaviour query, bool output);
 
-    {
+	[CreateAssetMenu(
+		fileName = "Media Query",
+		menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE + "/" +
+		           "Media Query",
+		order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
+	public class MediaQueryObject : ScriptableObject
 
-        WIDTH,
+	{
+		public MediaQueryDimension Dimension;
 
-        HEIGHT,
+		public MediaQueryOperation Operation;
 
-        ASPECT,
+		public float Threshold;
 
-        KEYBOARD_HEIGHT
+		float GetDimensionValue()
 
-    }
+		{
+			var screen = GetScreen();
 
-    public delegate void MediaQueryCallback(MediaSourceBehaviour query, bool output);
+			switch (Dimension)
 
-   [CreateAssetMenu(
-      fileName = "Media Query",
-      menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE + "/" +
-      "Media Query",
-      order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
-    public class MediaQueryObject : ScriptableObject
+			{
+				case MediaQueryDimension.WIDTH:
 
-    {
+					return screen.x;
 
-        public MediaQueryDimension Dimension;
+				case MediaQueryDimension.HEIGHT:
 
-        public MediaQueryOperation Operation;
+					return screen.y;
 
-        public float Threshold;
+				case MediaQueryDimension.ASPECT:
 
+					return screen.x / (float)screen.y;
 
+				case MediaQueryDimension.KEYBOARD_HEIGHT:
 
-        float GetDimensionValue()
+					return MobileUtilities.GetKeyboardHeight(false);
 
-        {
+				default:
 
-            var screen = GetScreen();
+					throw new Exception("Unknown dimension");
+			}
+		}
 
-            switch (Dimension)
+		float GetDimensionValue(RectTransform transform)
 
-            {
+		{
+			switch (Dimension)
 
-                case MediaQueryDimension.WIDTH:
+			{
+				case MediaQueryDimension.WIDTH:
 
-                    return screen.x;
+					return transform.rect.width;
 
-                case MediaQueryDimension.HEIGHT:
+				case MediaQueryDimension.HEIGHT:
 
-                    return screen.y;
+					return transform.rect.height;
 
-                case MediaQueryDimension.ASPECT:
+				case MediaQueryDimension.ASPECT:
 
-                    return screen.x / (float)screen.y;
+					var rect = transform.rect;
 
-                case MediaQueryDimension.KEYBOARD_HEIGHT:
+					return rect.width / rect.height;
 
-                    return MobileUtilities.GetKeyboardHeight(false);
+				default:
 
-                default:
+					throw new Exception("Dimension value not supported on transform");
+			}
+		}
 
-                    throw new Exception("Unknown dimension");
+		Vector2 GetScreen()
 
-            }
+		{
+			// IF WE ARE IN EDITOR, THEN WE WANT TO GET THE GAME-SCREEN SIZE, NOT THE EDITOR SCREEN SIZE...
 
-        }
+#if UNITY_EDITOR
 
+			if (!Application.isPlaying)
 
+			{
+				return GetMainGameViewSize();
+			}
 
-        float GetDimensionValue(RectTransform transform)
+#endif
 
-        {
+			return new Vector2(Screen.width, Screen.height);
+		}
 
-            switch (Dimension)
+		bool CompareDimensionAndThreshold(float dimensionValue, float thresholdValue)
 
-            {
+		{
+			switch (Operation)
 
-                case MediaQueryDimension.WIDTH:
+			{
+				case MediaQueryOperation.LESS_THAN:
 
-                    return transform.rect.width;
+					return dimensionValue < thresholdValue;
 
-                case MediaQueryDimension.HEIGHT:
+				case MediaQueryOperation.GREATER_THAN:
 
-                    return transform.rect.height;
+					return dimensionValue > thresholdValue;
 
-                case MediaQueryDimension.ASPECT:
+				default:
 
-                    var rect = transform.rect;
+					throw new Exception("unknown operation");
+			}
+		}
 
-                    return rect.width / rect.height;
+		public bool CalculateScreen()
 
-                default:
+		{
+			var dimensionValue = GetDimensionValue();
 
-                    throw new Exception("Dimension value not supported on transform");
+			return CompareDimensionAndThreshold(dimensionValue, Threshold);
+		}
 
-            }
+		public bool Calculate(RectTransform target)
 
-        }
+		{
+			var dimensionValue = GetDimensionValue(target);
 
+			return CompareDimensionAndThreshold(dimensionValue, Threshold);
+		}
 
+		static Vector2 GetMainGameViewSize()
 
-        Vector2 GetScreen()
+		{
+			System.Type T = System.Type.GetType("UnityEditor.GameView,UnityEditor");
 
-        {
+			System.Reflection.MethodInfo GetSizeOfMainGameView =
+				T.GetMethod("GetSizeOfMainGameView",
+				            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
 
-            // IF WE ARE IN EDITOR, THEN WE WANT TO GET THE GAME-SCREEN SIZE, NOT THE EDITOR SCREEN SIZE...
+			System.Object Res = GetSizeOfMainGameView.Invoke(null, null);
 
-            #if UNITY_EDITOR
-
-            if (!Application.isPlaying)
-
-            {
-
-                return GetMainGameViewSize();
-
-            }
-
-            #endif
-
-            return new Vector2(Screen.width, Screen.height);
-
-        }
-
-
-
-        bool CompareDimensionAndThreshold(float dimensionValue, float thresholdValue)
-
-        {
-
-            switch (Operation)
-
-            {
-
-                case MediaQueryOperation.LESS_THAN:
-
-                    return dimensionValue < thresholdValue;
-
-                case MediaQueryOperation.GREATER_THAN:
-
-                    return dimensionValue > thresholdValue;
-
-                default:
-
-                    throw new Exception("unknown operation");
-
-            }
-
-        }
-
-
-
-        public bool CalculateScreen()
-
-        {
-
-            var dimensionValue = GetDimensionValue();
-
-            return CompareDimensionAndThreshold(dimensionValue, Threshold);
-
-        }
-
-
-
-        public bool Calculate(RectTransform target)
-
-        {
-
-            var dimensionValue = GetDimensionValue(target);
-
-            return CompareDimensionAndThreshold(dimensionValue, Threshold);
-
-        }
-
-
-
-        static Vector2 GetMainGameViewSize()
-
-        {
-
-            System.Type T = System.Type.GetType("UnityEditor.GameView,UnityEditor");
-
-            System.Reflection.MethodInfo GetSizeOfMainGameView = T.GetMethod("GetSizeOfMainGameView",System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-
-            System.Object Res = GetSizeOfMainGameView.Invoke(null,null);
-
-            return (Vector2)Res;
-
-        }
-
-
-
-    }
-
+			return (Vector2)Res;
+		}
+	}
 }

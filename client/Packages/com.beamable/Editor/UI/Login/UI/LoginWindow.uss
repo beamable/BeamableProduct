@@ -2,6 +2,7 @@
     position: absolute;
     left: 500000px;
 }
+
 .loginRoot {
     flex-grow: 1;
 }
@@ -9,24 +10,27 @@
 #main > TemplateContainer {
     flex-grow: 1;
 }
+
 #main {
     flex-grow: 1;
     margin-bottom: 50px;
 
     /*min-width: 350px;*/
 }
+
 .linkText {
-    background-color: rgba(0,0,0,0);
+    background-color: rgba(0, 0, 0, 0);
 }
 
-#ContentView.content-view{
+#ContentView.content-view {
     left: 0px;
-    right:0px;
+    right: 0px;
 }
 
 ScrollView {
     flex-grow: 1;
 }
+
 ScrollView #unity-content-container {
     flex-grow: 1;
 }
@@ -45,14 +49,15 @@ ScrollView #unity-content-container {
 }
 
 #main > * {
-    top:30px;
+    top: 30px;
     flex-grow: 1;
 }
 
 #debugButtons {
     flex-direction: row;
-    background-color: rgba(0,0,0,.3);
+    background-color: rgba(0, 0, 0, .3);
 }
+
 #debugButtons Button {
     font-size: 8px;
 }
@@ -62,16 +67,16 @@ ScrollView #unity-content-container {
     left: 50000px;
 }
 
-#logo{
+#logo {
     background-image: resource("Packages/com.beamable/Editor/UI/Login/UI/icon/logo2 L white.png");
     width: 285px;
     height: 70px;
     align-self: center;
-    top:10px;
+    top: 10px;
 
 }
 
-#welcomeText{
+#welcomeText {
     top: 20px;
     -unity-text-align: upper-center;
     -unity-font-style: bold;
@@ -84,7 +89,6 @@ ScrollView #unity-content-container {
 }
 
 
-
 #errorLabel {
     color: #FF0000;
     -unity-text-align: upper-center;
@@ -93,11 +97,12 @@ ScrollView #unity-content-container {
     padding-right: 0px;
 }
 
-#actionBtn{
+#actionBtn {
     flex-direction: row;
     margin-top: 20px;
     align-self: stretch;
 }
+
 #actionBtn PrimaryButtonVisualElement {
     flex-grow: 1;
     height: 35px;

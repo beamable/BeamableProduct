@@ -4,26 +4,23 @@ using Beamable.Editor.UI.Buss;
 
 namespace Beamable.Editor.Toolbox.Models
 {
-    public class SurveyAnnouncementModel : AnnouncementModelBase
-    {
-        public string TitleLabelText => "HOW ARE YOU ENJOYING WITH BEAMABLE?";
-        
-        public Action<SurveyResult> OnOpinionSelected;
-        public Action OnIgnore;
+	public class SurveyAnnouncementModel : AnnouncementModelBase
+	{
+		public string TitleLabelText => "HOW ARE YOU ENJOYING WITH BEAMABLE?";
 
-        public override BeamableVisualElement CreateVisualElement()
-        {
-            return new SurveyAnnouncementVisualElement()
-            {
-                SurveyAnnouncementModel = this
-            };
-        }
-    }
+		public Action<SurveyResult> OnOpinionSelected;
+		public Action OnIgnore;
 
-    public enum SurveyResult
-    {
-        Positive = 0,
-        Neutral = 1,
-        Negative = 2
-    }
+		public override BeamableVisualElement CreateVisualElement()
+		{
+			return new SurveyAnnouncementVisualElement() {SurveyAnnouncementModel = this};
+		}
+	}
+
+	public enum SurveyResult
+	{
+		Positive = 0,
+		Neutral = 1,
+		Negative = 2
+	}
 }

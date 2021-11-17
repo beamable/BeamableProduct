@@ -8,7 +8,7 @@
     <engine:VisualElement>
         <engine:VisualElement name="mainContainer">
             <engine:Label name="label" text="Microservice has started..."/>
-            <engine:Button name="closeButton"/>    
+            <engine:Button name="closeButton"/>
         </engine:VisualElement>
     </engine:VisualElement>
 </engine:UXML> 

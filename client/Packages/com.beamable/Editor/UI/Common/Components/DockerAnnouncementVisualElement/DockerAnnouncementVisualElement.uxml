@@ -21,5 +21,5 @@
             <engine:Button name="announcement-install" class="announcement-buttons"/>
         </engine:VisualElement>
     </engine:VisualElement>
-    
+
 </engine:UXML>

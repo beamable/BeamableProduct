@@ -3,12 +3,13 @@
     flex-direction: column;
     align-content: stretch;
 }
+
 #ContentView {
     left: 0;
     right: 0;
 }
 
-#warningMessage{
+#warningMessage {
     margin-top: 15px;
     flex-direction: row;
     align-self: center;
@@ -17,7 +18,7 @@
     padding-bottom: 15px;
 }
 
-#header{
+#header {
     margin-top: 10px;
     padding-left: 10px;
     padding-right: 40px;
@@ -51,16 +52,20 @@
     width: 100px;
     justify-content: center;
 }
+
 #CommentsC {
     width: 155px;
     padding-left: 20px;
 }
+
 #SizeC {
     width: 140px;
 }
-#commentsText, #SizeC .template{
+
+#commentsText, #SizeC .template {
     width: 80px;
 }
+
 #sizeButton Label {
     margin-right: 18px;
     margin-top: 2px;
@@ -68,10 +73,11 @@
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
 }
 
-.column{
+.column {
     flex-direction: row;
 }
-#sizeButton Image#dropDownIcon{
+
+#sizeButton Image#dropDownIcon {
     align-self: flex-end;
     position: absolute;
     top: 6px;
@@ -80,6 +86,7 @@
     height: 7px;
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown Close.png")
 }
+
 .boundedButton {
     height: 20px;
     position: relative;
@@ -98,17 +105,20 @@
     cursor: pan;
     background-image: none;
 }
-#selectionArea{
+
+#selectionArea {
     align-self: auto;
     flex-direction: row;
     flex-grow: 1;
     max-width: 120px;
 }
-#commentsText{
+
+#commentsText {
     padding-right: 10px;
     width: 100px;
 }
-#largeCommentsArea{
+
+#largeCommentsArea {
     padding-top: 10px;
     padding-right: 10px;
     padding-bottom: 10px;
@@ -117,8 +127,9 @@
     margin-left: 20px;
     margin-right: 40px;
     margin-top: 15px;
-    min-height: 140px; 
+    min-height: 140px;
 }
+
 #buttonStrip {
     flex-direction: row;
     justify-content: flex-end;
@@ -129,7 +140,7 @@
     margin-bottom: 5px;
 }
 
-#cancelBtn{
+#cancelBtn {
     margin-top: 2px;
     border-radius: 5px;
     border-left-width: 1px;
@@ -144,18 +155,18 @@
     background-color: #383838;
 }
 
-.SubTitleText{
+.SubTitleText {
     font-size: 14px;
     -unity-font-style: bold;
 }
 
-#continueBtn{
+#continueBtn {
     margin-right: 25px;
     width: 152px;
     height: 38px;
 }
 
-#manifestsContainer{
+#manifestsContainer {
     border-color: #000000;
     border-width: 1px;
     padding: 10px;

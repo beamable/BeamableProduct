@@ -4,13 +4,16 @@ using UnityEngine;
 
 namespace Beamable.Editor
 {
-    public interface ISearchableElement
-    {
-        string DisplayName { get; }
+	public interface ISearchableElement
+	{
+		string DisplayName
+		{
+			get;
+		}
 
-        int GetOrder();
-        bool IsAvailable();
-        bool IsToSkip(string filter);
-        string GetClassNameToAdd();
-    }
+		int GetOrder();
+		bool IsAvailable();
+		bool IsToSkip(string filter);
+		string GetClassNameToAdd();
+	}
 }

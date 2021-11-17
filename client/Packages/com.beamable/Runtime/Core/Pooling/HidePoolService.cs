@@ -10,57 +10,57 @@ using UnityEngine.SceneManagement;
 // the gap.
 namespace Beamable.Pooling
 {
-   [EditorServiceResolver(typeof(EditorSingletonServiceResolver<HidePoolService>))]
-   public class HidePoolService
-   {
-      private Dictionary<string, HidePool> _hidePools = new Dictionary<string, HidePool>();
+	[EditorServiceResolver(typeof(EditorSingletonServiceResolver<HidePoolService>))]
+	public class HidePoolService
+	{
+		private Dictionary<string, HidePool> _hidePools = new Dictionary<string, HidePool>();
 
-      public HidePool GetHidePool(string context, string sceneName = null, bool forceRecreate = false)
-      {
-         HidePool hidePool = null;
-         if (_hidePools.TryGetValue(context, out hidePool) && (hidePool != null))
-         {
-            if (forceRecreate)
-            {
-               GameObject.Destroy(hidePool.gameObject);
-            }
-            else
-            {
-               return hidePool;
-            }
-         }
+		public HidePool GetHidePool(string context, string sceneName = null, bool forceRecreate = false)
+		{
+			HidePool hidePool = null;
+			if (_hidePools.TryGetValue(context, out hidePool) && (hidePool != null))
+			{
+				if (forceRecreate)
+				{
+					GameObject.Destroy(hidePool.gameObject);
+				}
+				else
+				{
+					return hidePool;
+				}
+			}
 
-         if (sceneName != null)
-         {
-            var originalScene = SceneManager.GetActiveScene();
-            SceneManager.SetActiveScene(SceneManager.GetSceneByName(sceneName));
-            hidePool = CreateHidePool(context);
-            SceneManager.SetActiveScene(originalScene);
-         }
-         else
-         {
-            hidePool = CreateHidePool(context);
-         }
+			if (sceneName != null)
+			{
+				var originalScene = SceneManager.GetActiveScene();
+				SceneManager.SetActiveScene(SceneManager.GetSceneByName(sceneName));
+				hidePool = CreateHidePool(context);
+				SceneManager.SetActiveScene(originalScene);
+			}
+			else
+			{
+				hidePool = CreateHidePool(context);
+			}
 
-         return hidePool;
-      }
+			return hidePool;
+		}
 
-      private HidePool CreateHidePool(string context)
-      {
-         GameObject go = new GameObject(context);
-         var hidePool = go.AddComponent<HidePool>();
-         _hidePools[context] = hidePool;
-         return hidePool;
-      }
+		private HidePool CreateHidePool(string context)
+		{
+			GameObject go = new GameObject(context);
+			var hidePool = go.AddComponent<HidePool>();
+			_hidePools[context] = hidePool;
+			return hidePool;
+		}
 
-      public void DestroyHidePool(string context)
-      {
-         HidePool hidePool = null;
-         if (_hidePools.TryGetValue(context, out hidePool))
-         {
-            GameObject.Destroy(hidePool.gameObject);
-            _hidePools.Remove(context);
-         }
-      }
-   }
+		public void DestroyHidePool(string context)
+		{
+			HidePool hidePool = null;
+			if (_hidePools.TryGetValue(context, out hidePool))
+			{
+				GameObject.Destroy(hidePool.gameObject);
+				_hidePools.Remove(context);
+			}
+		}
+	}
 }
