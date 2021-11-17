@@ -26,9 +26,13 @@ namespace Beamable.Editor.UI.Components
 			OnFlexChanged?.Invoke(flexValues);
 		}
 
-		public new class UxmlFactory : UxmlFactory<SplitterVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<SplitterVisualElement, UxmlTraits>
+		{
+		}
 
-		public new class UxmlTraits : VisualElement.UxmlTraits { }
+		public new class UxmlTraits : VisualElement.UxmlTraits
+		{
+		}
 
 		private class SplitManipulator : MouseManipulator
 		{
@@ -42,7 +46,7 @@ namespace Beamable.Editor.UI.Components
 
 			public SplitManipulator()
 			{
-				activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
+				activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 			}
 
 			protected override void RegisterCallbacksOnTarget()
@@ -82,7 +86,7 @@ namespace Beamable.Editor.UI.Components
 						if (splitterRect.Contains(e.localMousePosition))
 						{
 							bool isReverse = flexDirection == FlexDirection.RowReverse ||
-							                 flexDirection == FlexDirection.ColumnReverse;
+											 flexDirection == FlexDirection.ColumnReverse;
 
 							if (isReverse)
 							{
@@ -117,7 +121,7 @@ namespace Beamable.Editor.UI.Components
 
 					FlexDirection flexDirection = visualSplitter.resolvedStyle.flexDirection;
 					bool isVertical = flexDirection == FlexDirection.Column ||
-					                  flexDirection == FlexDirection.ColumnReverse;
+									  flexDirection == FlexDirection.ColumnReverse;
 
 					float relativeMousePosition;
 					if (isVertical)
@@ -128,7 +132,7 @@ namespace Beamable.Editor.UI.Components
 							availableHeight - (nextVisualElement.resolvedStyle.maxHeight.value <= 0f
 								? availableHeight
 								: nextVisualElement.resolvedStyle.maxHeight
-								                   .value) // also make sure that it's more then all size - next element max size
+												   .value) // also make sure that it's more then all size - next element max size
 						);
 						float maxHeight = Mathf.Min(
 							visualElement.resolvedStyle.maxHeight.value <= 0
@@ -136,7 +140,7 @@ namespace Beamable.Editor.UI.Components
 								: visualElement.resolvedStyle.maxHeight.value, // make sure it's not more then max
 							availableHeight -
 							nextVisualElement.resolvedStyle.minHeight
-							                 .value // also make sure it's leaving place for next element with min size
+											 .value // also make sure it's leaving place for next element with min size
 						);
 
 						relativeMousePosition =
@@ -152,7 +156,7 @@ namespace Beamable.Editor.UI.Components
 							availableWidth - (nextVisualElement.resolvedStyle.maxWidth.value <= 0f
 								? availableWidth
 								: nextVisualElement.resolvedStyle.maxWidth
-								                   .value) // also make sure that it's more then all size - next element max size
+												   .value) // also make sure that it's more then all size - next element max size
 						);
 						float maxWidth = Mathf.Min(
 							visualElement.resolvedStyle.maxWidth.value <= 0
@@ -160,7 +164,7 @@ namespace Beamable.Editor.UI.Components
 								: visualElement.resolvedStyle.maxWidth.value, // make sure it's not more then max
 							availableWidth -
 							nextVisualElement.resolvedStyle.minWidth
-							                 .value // also make sure it's leaving place for next element with min size
+											 .value // also make sure it's leaving place for next element with min size
 						);
 
 						relativeMousePosition =
@@ -240,12 +244,12 @@ namespace Beamable.Editor.UI.Components
 			{
 				VisualElement visualElement = hierarchy[i];
 				bool isVertical = resolvedStyle.flexDirection == FlexDirection.Column ||
-				                  resolvedStyle.flexDirection == FlexDirection.ColumnReverse;
+								  resolvedStyle.flexDirection == FlexDirection.ColumnReverse;
 
 				EditorGUIUtility.AddCursorRect(GetSplitterRect(visualElement),
-				                               isVertical
-					                               ? MouseCursor.ResizeVertical
-					                               : MouseCursor.SplitResizeLeftRight);
+											   isVertical
+												   ? MouseCursor.ResizeVertical
+												   : MouseCursor.SplitResizeLeftRight);
 			}
 		}
 

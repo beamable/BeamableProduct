@@ -193,7 +193,7 @@ namespace UnityEngine.UIElements
 	{
 		public static void AddSplitPane(this VisualElement self, VisualElement left, VisualElement right)
 		{
-			var splitterElem = new SplitterVisualElement() {name = "splitter"};
+			var splitterElem = new SplitterVisualElement() { name = "splitter" };
 
 			var leftWrapper = new VisualElement();
 			leftWrapper.AddToClassList("splitWrapper");
@@ -325,12 +325,12 @@ namespace UnityEngine.UIElements
 		}
 
 		public static void BeamableAppendAction(this DropdownMenu self,
-		                                        string title,
-		                                        Action<Vector2> callback,
-		                                        bool enabled = true)
+												string title,
+												Action<Vector2> callback,
+												bool enabled = true)
 		{
 			self.AppendAction(title, evt => callback(evt.eventInfo.mousePosition),
-			                  enabled ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+							  enabled ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
 		}
 	}
 }

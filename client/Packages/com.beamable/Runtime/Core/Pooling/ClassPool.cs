@@ -109,8 +109,8 @@ namespace Beamable.Pooling
 		public static Dictionary<System.Type, int> totalAllocated = new Dictionary<System.Type, int>();
 
 		[UnityEditor.MenuItem(PoolingConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES +
-		                      "/Show ClassPool Stats in Console",
-		                      priority = PoolingConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
+							  "/Show ClassPool Stats in Console",
+							  priority = PoolingConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
 		public static void PrintStats()
 		{
 			string s = "";

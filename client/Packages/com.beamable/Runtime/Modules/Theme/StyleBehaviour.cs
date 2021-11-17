@@ -51,7 +51,8 @@ namespace Beamable.Theme
 #if UNITY_EDITOR
 		void Update()
 		{
-			if (!gameObject.activeInHierarchy) return;
+			if (!gameObject.activeInHierarchy)
+				return;
 
 			var theme = ThemeConfiguration.Instance.Style;
 
@@ -63,7 +64,8 @@ namespace Beamable.Theme
 
 		private void OnValidate()
 		{
-			if (!gameObject.activeInHierarchy) return;
+			if (!gameObject.activeInHierarchy)
+				return;
 
 			Refresh();
 		}

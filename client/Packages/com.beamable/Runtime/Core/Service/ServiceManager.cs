@@ -33,7 +33,9 @@ namespace Beamable.Service
 		{
 			internal static readonly TestScope Instance = new TestScope();
 
-			private TestScope() { }
+			private TestScope()
+			{
+			}
 
 			public void Dispose()
 			{
@@ -254,7 +256,8 @@ namespace Beamable.Service
 		{
 			// Allow editor resolvers again when entering edit mode
 			// Entering play mode already resets this state
-			if (state != PlayModeStateChange.EnteredEditMode) return;
+			if (state != PlayModeStateChange.EnteredEditMode)
+				return;
 
 			ClearResolvers();
 		}

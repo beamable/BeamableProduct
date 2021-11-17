@@ -2,8 +2,8 @@
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER
-using UnityEngine.UIElements;
 using UnityEditor.UIElements;
+using UnityEngine.UIElements;
 #endif
 
 namespace Beamable.Editor.Login.UI.Components

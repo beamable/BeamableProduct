@@ -50,14 +50,17 @@ namespace Beamable
 					var name = type.Name;
 					var data = Resources.Load(name, type);
 
-					if (data != null) continue;
+					if (data != null)
+						continue;
 
 					var assetPath = $"{CONFIG_RESOURCES_DIR}/{name}.asset";
-					if (File.Exists(assetPath)) continue;
+					if (File.Exists(assetPath))
+						continue;
 
 					MethodInfo FindStaticParentMethod(Type searchType)
 					{
-						if (searchType == null || searchType == typeof(object)) return null;
+						if (searchType == null || searchType == typeof(object))
+							return null;
 						var constantsGeneratorMethod =
 							searchType.GetMethod("GetStaticConfigConstants", BindingFlags.Static | BindingFlags.Public);
 						return constantsGeneratorMethod ?? FindStaticParentMethod(searchType.BaseType);
@@ -88,7 +91,7 @@ namespace Beamable
 				var assetType = kvp.Value;
 
 				var data = Resources.Load(assetType.Name, assetType) ??
-				           UnityEditor.AssetDatabase.LoadAssetAtPath(assetPath, assetType);
+						   UnityEditor.AssetDatabase.LoadAssetAtPath(assetPath, assetType);
 				var configData = data as BaseModuleConfigurationObject;
 				if (configData == null)
 				{

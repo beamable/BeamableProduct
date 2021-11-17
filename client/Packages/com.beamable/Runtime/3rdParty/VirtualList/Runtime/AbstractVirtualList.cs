@@ -382,7 +382,8 @@ namespace VirtualList
 #if UNITY_EDITOR
 		public void PreviewLayout()
 		{
-			if (Application.isPlaying || tilePrefab == null) return;
+			if (Application.isPlaying || tilePrefab == null)
+				return;
 
 			var trans = this.transform;
 			while (trans.childCount > 0)

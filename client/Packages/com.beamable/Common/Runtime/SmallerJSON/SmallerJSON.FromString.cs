@@ -1,27 +1,27 @@
 /*
- * Simplified fork of MiniJSON optimized to minimize heap allocations
- *
- * Zach Kamsler
- *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
+* Simplified fork of MiniJSON optimized to minimize heap allocations
+*
+* Zach Kamsler
+*
+* Permission is hereby granted, free of charge, to any person obtaining
+* a copy of this software and associated documentation files (the
+* "Software"), to deal in the Software without restriction, including
+* without limitation the rights to use, copy, modify, merge, publish,
+* distribute, sublicense, and/or sell copies of the Software, and to
+* permit persons to whom the Software is furnished to do so, subject to
+* the following conditions:
+*
+* The above copyright notice and this permission notice shall be
+* included in all copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
 
 // Controls whether to use alternate dictionary which trades off
 // lower memory usage for a linear search for keys. May be not
@@ -172,7 +172,7 @@ namespace Beamable.Serialization.SmallerJSON
 #if USE_ARRAY_DICT
 			var table = new ArrayDict();
 #else
-         var table = new Dictionary<string, object>();
+var table = new Dictionary<string, object>();
 #endif
 
 			// ditch opening brace
@@ -213,7 +213,7 @@ namespace Beamable.Serialization.SmallerJSON
 #if USE_ARRAY_DICT
 						table.AddUnchecked(name, value);
 #else
-               table.Add(name, value);
+table.Add(name, value);
 #endif
 						break;
 				}
@@ -461,10 +461,10 @@ namespace Beamable.Serialization.SmallerJSON
 				}
 
 				if (current == '.' ||
-					current == 'e' ||
-					current == 'E' ||
-					current == '+' ||
-					current == '-')
+				current == 'e' ||
+				current == 'E' ||
+				current == '+' ||
+				current == '-')
 				{
 					floatingPoint = true;
 					++_pos;
@@ -484,7 +484,7 @@ namespace Beamable.Serialization.SmallerJSON
 			{
 				long result;
 				if (long.TryParse(numberString, System.Globalization.NumberStyles.Any,
-								  System.Globalization.CultureInfo.InvariantCulture, out result))
+						  System.Globalization.CultureInfo.InvariantCulture, out result))
 				{
 					if (negative)
 						result = -result;
@@ -500,7 +500,7 @@ namespace Beamable.Serialization.SmallerJSON
 		{
 			double parsedDouble;
 			double.TryParse(numberString, System.Globalization.NumberStyles.Any,
-							System.Globalization.CultureInfo.InvariantCulture, out parsedDouble);
+				System.Globalization.CultureInfo.InvariantCulture, out parsedDouble);
 			if (negative)
 			{
 				parsedDouble = -parsedDouble;
@@ -535,10 +535,10 @@ namespace Beamable.Serialization.SmallerJSON
 			}
 
 			if ((_chars[_pos + 0] == 'f') &&
-				(_chars[_pos + 1] == 'a') &&
-				(_chars[_pos + 2] == 'l') &&
-				(_chars[_pos + 3] == 's') &&
-				(_chars[_pos + 4] == 'e'))
+			(_chars[_pos + 1] == 'a') &&
+			(_chars[_pos + 2] == 'l') &&
+			(_chars[_pos + 3] == 's') &&
+			(_chars[_pos + 4] == 'e'))
 			{
 				_pos += 5;
 				return true;
@@ -555,9 +555,9 @@ namespace Beamable.Serialization.SmallerJSON
 			}
 
 			if ((_chars[_pos + 0] == 't') &&
-				(_chars[_pos + 1] == 'r') &&
-				(_chars[_pos + 2] == 'u') &&
-				(_chars[_pos + 3] == 'e'))
+			(_chars[_pos + 1] == 'r') &&
+			(_chars[_pos + 2] == 'u') &&
+			(_chars[_pos + 3] == 'e'))
 			{
 				_pos += 4;
 				return true;
@@ -574,9 +574,9 @@ namespace Beamable.Serialization.SmallerJSON
 			}
 
 			if ((_chars[_pos + 0] == 'n') &&
-				(_chars[_pos + 1] == 'u') &&
-				(_chars[_pos + 2] == 'l') &&
-				(_chars[_pos + 3] == 'l'))
+			(_chars[_pos + 1] == 'u') &&
+			(_chars[_pos + 2] == 'l') &&
+			(_chars[_pos + 3] == 'l'))
 			{
 				_pos += 4;
 				return true;

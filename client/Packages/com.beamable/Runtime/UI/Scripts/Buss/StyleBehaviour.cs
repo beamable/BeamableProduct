@@ -112,7 +112,8 @@ namespace Beamable.UI.Buss
 #if UNITY_EDITOR
 		protected override void OnValidate()
 		{
-			if (!gameObject.activeInHierarchy || !isActiveAndEnabled) return;
+			if (!gameObject.activeInHierarchy || !isActiveAndEnabled)
+				return;
 
 			ApplyStyleTree();
 			base.OnValidate();

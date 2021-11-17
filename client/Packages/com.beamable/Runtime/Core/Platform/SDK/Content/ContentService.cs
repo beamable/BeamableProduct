@@ -150,7 +150,9 @@ namespace Beamable.Content
 		{
 			internal static readonly ContentServiceTestScope Instance = new ContentServiceTestScope();
 
-			private ContentServiceTestScope() { }
+			private ContentServiceTestScope()
+			{
+			}
 
 			public void Dispose()
 			{

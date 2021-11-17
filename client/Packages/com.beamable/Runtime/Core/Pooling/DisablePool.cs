@@ -112,8 +112,8 @@ namespace Beamable.Pooling
 	public class DisablePoolProfiler
 	{
 		[UnityEditor.MenuItem(PoolingConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES +
-		                      "/Show DisablePool Stats in Console",
-		                      priority = PoolingConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
+							  "/Show DisablePool Stats in Console",
+							  priority = PoolingConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
 		public static void PrintStats()
 		{
 			if (!ServiceManager.CanResolve<DisablePool>())
