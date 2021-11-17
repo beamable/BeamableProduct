@@ -172,7 +172,7 @@ namespace Beamable.Serialization.SmallerJSON
 #if USE_ARRAY_DICT
 			var table = new ArrayDict();
 #else
-var table = new Dictionary<string, object>();
+			var table = new Dictionary<string, object>();
 #endif
 
 			// ditch opening brace
@@ -213,7 +213,7 @@ var table = new Dictionary<string, object>();
 #if USE_ARRAY_DICT
 						table.AddUnchecked(name, value);
 #else
-table.Add(name, value);
+						table.Add(name, value);
 #endif
 						break;
 				}
@@ -461,10 +461,10 @@ table.Add(name, value);
 				}
 
 				if (current == '.' ||
-				current == 'e' ||
-				current == 'E' ||
-				current == '+' ||
-				current == '-')
+					current == 'e' ||
+					current == 'E' ||
+					current == '+' ||
+					current == '-')
 				{
 					floatingPoint = true;
 					++_pos;
@@ -484,7 +484,7 @@ table.Add(name, value);
 			{
 				long result;
 				if (long.TryParse(numberString, System.Globalization.NumberStyles.Any,
-						  System.Globalization.CultureInfo.InvariantCulture, out result))
+								  System.Globalization.CultureInfo.InvariantCulture, out result))
 				{
 					if (negative)
 						result = -result;
@@ -500,7 +500,7 @@ table.Add(name, value);
 		{
 			double parsedDouble;
 			double.TryParse(numberString, System.Globalization.NumberStyles.Any,
-				System.Globalization.CultureInfo.InvariantCulture, out parsedDouble);
+							System.Globalization.CultureInfo.InvariantCulture, out parsedDouble);
 			if (negative)
 			{
 				parsedDouble = -parsedDouble;
@@ -535,10 +535,10 @@ table.Add(name, value);
 			}
 
 			if ((_chars[_pos + 0] == 'f') &&
-			(_chars[_pos + 1] == 'a') &&
-			(_chars[_pos + 2] == 'l') &&
-			(_chars[_pos + 3] == 's') &&
-			(_chars[_pos + 4] == 'e'))
+				(_chars[_pos + 1] == 'a') &&
+				(_chars[_pos + 2] == 'l') &&
+				(_chars[_pos + 3] == 's') &&
+				(_chars[_pos + 4] == 'e'))
 			{
 				_pos += 5;
 				return true;
@@ -555,9 +555,9 @@ table.Add(name, value);
 			}
 
 			if ((_chars[_pos + 0] == 't') &&
-			(_chars[_pos + 1] == 'r') &&
-			(_chars[_pos + 2] == 'u') &&
-			(_chars[_pos + 3] == 'e'))
+				(_chars[_pos + 1] == 'r') &&
+				(_chars[_pos + 2] == 'u') &&
+				(_chars[_pos + 3] == 'e'))
 			{
 				_pos += 4;
 				return true;
@@ -574,9 +574,9 @@ table.Add(name, value);
 			}
 
 			if ((_chars[_pos + 0] == 'n') &&
-			(_chars[_pos + 1] == 'u') &&
-			(_chars[_pos + 2] == 'l') &&
-			(_chars[_pos + 3] == 'l'))
+				(_chars[_pos + 1] == 'u') &&
+				(_chars[_pos + 2] == 'l') &&
+				(_chars[_pos + 3] == 'l'))
 			{
 				_pos += 4;
 				return true;
