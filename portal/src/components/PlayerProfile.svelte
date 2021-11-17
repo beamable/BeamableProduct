@@ -45,6 +45,20 @@
         player.email = player.email || '';
     }
 
+    async function handlePersonallyIdentifiableInformation() {
+        let pii = await players.getPersonallyIdentifiableInformation(player.id)
+        var element = document.createElement('a');
+        element.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(pii)));
+        element.setAttribute('download', 'Profile');
+
+        element.style.display = 'none';
+        document.body.appendChild(element);
+
+        element.click();
+
+        document.body.removeChild(element);
+    }
+
     function isEmailValid(email) {
         const isValid = email.indexOf('@') > 2 && email.indexOf('.') > 3;
         if (!isValid) {
@@ -174,6 +188,11 @@
         left: calc(66% + 2px);
     }
 
+    #download-pii {
+        width: auto;
+        padding:15px;
+    }
+
 </style>
 
 
@@ -197,7 +216,6 @@
                             Forget User
                         </span>
                     </button>
-
                 </span>
                 <span slot="primary-button">
                     Forget
