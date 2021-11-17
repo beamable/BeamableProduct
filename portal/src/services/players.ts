@@ -174,6 +174,14 @@ export class PlayersService extends BaseService {
         return new PlayerData(response.data as PlayerDataInterface, router.getRealmId());
     }
 
+    async getPersonallyIdentifiableInformation(emailOrDbid: string): Promise<any> {
+        const { http, router } = this.app;
+
+        const query = encodeURIComponent(emailOrDbid);
+        const response = await http.request(`/basic/accounts/get-personally-identifiable-information?query=${query}`, void 0, 'get');
+        return response.data
+    }
+
     async updateEmail(player: PlayerData, newEmail: string): Promise<PlayerData> {
         const { http, router } = this.app;
 
