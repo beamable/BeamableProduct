@@ -1,10 +1,10 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Editor.Login.UI.Components;
 using Beamable.Editor.Realms;
 using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
+using System;
+using System.Collections.Generic;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -86,7 +86,7 @@ namespace Beamable.Editor.Login.UI.Components
 			_projectListView.Clear();
 			foreach (var game in games)
 			{
-				RealmVisualElement realmVisualElement = new RealmVisualElement {Realm = game};
+				RealmVisualElement realmVisualElement = new RealmVisualElement { Realm = game };
 				realmVisualElement.OnSelected += selectedGame =>
 				{
 					_projectListView.Query<RealmVisualElement>().Build().ToList().ForEach(element =>

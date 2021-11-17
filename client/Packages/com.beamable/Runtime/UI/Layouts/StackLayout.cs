@@ -15,7 +15,9 @@ namespace Beamable.UI.Layouts
 	{
 		public StackLayoutDirection Direction;
 
-		public override void CalculateLayoutInputVertical() { }
+		public override void CalculateLayoutInputVertical()
+		{
+		}
 
 		public override void SetLayoutHorizontal()
 		{

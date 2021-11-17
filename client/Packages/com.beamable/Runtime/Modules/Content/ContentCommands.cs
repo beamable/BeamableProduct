@@ -1,8 +1,8 @@
-﻿using System;
-using System.Text;
-using Beamable;
+﻿using Beamable;
 using Beamable.Console;
 using Beamable.ConsoleCommands;
+using System;
+using System.Text;
 
 namespace Modules.Content
 {
@@ -36,7 +36,7 @@ namespace Modules.Content
 		}
 
 		[BeamableConsoleCommand("LIST_CONTENT", "List manifest content",
-		                        "LIST_CONTENT <startIndex(?)> <filter(?)> <namespaceId(?)>")]
+								"LIST_CONTENT <startIndex(?)> <filter(?)> <namespaceId(?)>")]
 		public string ListContent(string[] args)
 		{
 			const int elementsLimit = 50;
@@ -135,7 +135,7 @@ namespace Modules.Content
 		}
 
 		[BeamableConsoleCommand("SET_CONTENT_NAMESPACE", "Set content namespace",
-		                        "SET_CONTENT_NAMESPACE <namespaceId>")]
+								"SET_CONTENT_NAMESPACE <namespaceId>")]
 		public string SetContentNamespace(string[] args)
 		{
 			if (args.Length < 1 || args.Length > 1)

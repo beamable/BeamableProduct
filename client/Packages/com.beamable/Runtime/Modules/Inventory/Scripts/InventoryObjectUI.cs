@@ -1,12 +1,14 @@
-using Beamable.UI.Scripts;
 using Beamable.Api.Inventory;
 using Beamable.Common.Api.Inventory;
+using Beamable.UI.Scripts;
 using UnityEngine;
 
 namespace Beamable.Inventory.Scripts
 {
 	[System.Serializable]
-	public class InventoryItemEvent : UnityEngine.Events.UnityEvent<InventoryEventArgs> { }
+	public class InventoryItemEvent : UnityEngine.Events.UnityEvent<InventoryEventArgs>
+	{
+	}
 
 	[System.Serializable]
 	public class InventoryEventArgs

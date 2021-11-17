@@ -24,7 +24,7 @@ namespace Beamable.Server
 		} = false;
 
 		public MicroserviceAttribute(string microserviceName,
-		                             [System.Runtime.CompilerServices.CallerFilePath] string sourcePath = "")
+									 [System.Runtime.CompilerServices.CallerFilePath] string sourcePath = "")
 		{
 			MicroserviceName = microserviceName;
 			SourcePath = sourcePath;

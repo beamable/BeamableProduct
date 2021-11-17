@@ -25,7 +25,8 @@ namespace Beamable.Editor
 		{
 			var allDefines = GetDefines();
 
-			if (allDefines.Contains(flag)) return;
+			if (allDefines.Contains(flag))
+				return;
 
 			allDefines.Add(flag);
 			SetDefines(allDefines);
@@ -34,7 +35,8 @@ namespace Beamable.Editor
 		public static void DisableFlag(string flag)
 		{
 			var allDefines = GetDefines();
-			if (!allDefines.Contains(flag)) return;
+			if (!allDefines.Contains(flag))
+				return;
 
 			allDefines.Remove(flag);
 			SetDefines(allDefines);

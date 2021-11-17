@@ -1,10 +1,10 @@
-using System;
 using Beamable.Api;
 using Beamable.Api.Connectivity;
 using Beamable.Api.Notification;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using Beamable.Platform.Tests.Connectivity;
+using System;
 
 namespace Beamable.Platform.Tests
 {

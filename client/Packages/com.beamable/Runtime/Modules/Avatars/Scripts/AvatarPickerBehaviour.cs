@@ -1,7 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using Beamable.AccountManagement;
+﻿using Beamable.AccountManagement;
 using Beamable.Coroutines;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -9,7 +9,9 @@ using UnityEngine.UI;
 namespace Beamable.Avatars
 {
 	[System.Serializable]
-	public class AccountAvatarEvent : UnityEvent<AccountAvatar> { }
+	public class AccountAvatarEvent : UnityEvent<AccountAvatar>
+	{
+	}
 
 	public class AvatarPickerBehaviour : MonoBehaviour
 	{
@@ -100,7 +102,7 @@ namespace Beamable.Avatars
 
 			Canvas.ForceUpdateCanvases();
 			var currentScrollPosition = AvatarScroller.horizontalScrollbar.value *
-			                            (AvatarScroller.content.rect.width - AvatarScroller.viewport.rect.width);
+										(AvatarScroller.content.rect.width - AvatarScroller.viewport.rect.width);
 			var desiredScrollPosition = selected.transform.localPosition.x - .5f * AvatarScroller.viewport.rect.width;
 			AvatarScroller.velocity = new Vector2(2 * (currentScrollPosition - desiredScrollPosition), 0);
 		}
@@ -115,7 +117,7 @@ namespace Beamable.Avatars
 				 * The work-around is to bake the relevant data into the per-instance color channel
 				 */
 				var totalWidth = AvatarScroller.viewport.rect.width +
-				                 _avatarPreviews[i].Renderer.rectTransform.rect.width;
+								 _avatarPreviews[i].Renderer.rectTransform.rect.width;
 				var position = AvatarScroller.viewport.InverseTransformPoint(_avatarPreviews[i].transform.position).x;
 				var xPercentage = ((position) / totalWidth) + .5f;
 

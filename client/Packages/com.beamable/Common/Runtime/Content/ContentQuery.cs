@@ -11,11 +11,14 @@ namespace Beamable.Common.Content
 		public HashSet<Type> TypeConstraints;
 		public HashSet<string> TagConstraints;
 
-		public ContentQuery() { }
+		public ContentQuery()
+		{
+		}
 
 		public ContentQuery(ContentQuery other)
 		{
-			if (other == null) return;
+			if (other == null)
+				return;
 
 			TypeConstraints = other.TypeConstraints != null
 				? new HashSet<Type>(other.TypeConstraints.ToArray())
@@ -30,7 +33,7 @@ namespace Beamable.Common.Content
 		{
 			try
 			{
-				var typeNames = raw.Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
+				var typeNames = raw.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
 				var types = new HashSet<Type>();
 				foreach (var typeName in typeNames)
@@ -57,7 +60,7 @@ namespace Beamable.Common.Content
 
 		protected static void ApplyTagParse(string raw, ContentQuery query)
 		{
-			var tags = raw.Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
+			var tags = raw.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 			query.TagConstraints = new HashSet<string>(tags);
 		}
 
@@ -80,14 +83,16 @@ namespace Beamable.Common.Content
 
 		public virtual bool Accept(IContentObject content)
 		{
-			if (content == null) return false;
+			if (content == null)
+				return false;
 
 			return AcceptTag(content) && AcceptIdContains(content) && AcceptType(content.GetType());
 		}
 
 		public bool AcceptTag(IContentObject content)
 		{
-			if (TagConstraints == null) return true;
+			if (TagConstraints == null)
+				return true;
 			if (content == null)
 			{
 				return TagConstraints.Count == 0;
@@ -98,8 +103,10 @@ namespace Beamable.Common.Content
 
 		public bool AcceptTags(HashSet<string> tags)
 		{
-			if (TagConstraints == null) return true;
-			if (tags == null) return TagConstraints.Count == 0;
+			if (TagConstraints == null)
+				return true;
+			if (tags == null)
+				return TagConstraints.Count == 0;
 
 			foreach (var tag in TagConstraints)
 			{
@@ -119,9 +126,11 @@ namespace Beamable.Common.Content
 
 		public bool AcceptType(Type type, bool allowInherit = true)
 		{
-			if (TypeConstraints == null || TypeConstraints.Count == 0) return true;
+			if (TypeConstraints == null || TypeConstraints.Count == 0)
+				return true;
 
-			if (type == null) return false;
+			if (type == null)
+				return false;
 
 			if (allowInherit)
 			{
@@ -164,7 +173,8 @@ namespace Beamable.Common.Content
 
 		public bool EqualsContentQuery(ContentQuery other)
 		{
-			if (other == null) return false;
+			if (other == null)
+				return false;
 
 			var tagsEqual = other.TagConstraints == null || TagConstraints == null
 				? (other.TagConstraints == null && TagConstraints == null)
@@ -176,8 +186,8 @@ namespace Beamable.Common.Content
 
 			var idEqual = (other.IdContainsConstraint?.Equals(IdContainsConstraint) ?? IdContainsConstraint == null);
 			return tagsEqual &&
-			       idEqual &&
-			       typesEqual;
+				   idEqual &&
+				   typesEqual;
 		}
 
 		public override bool Equals(object obj)

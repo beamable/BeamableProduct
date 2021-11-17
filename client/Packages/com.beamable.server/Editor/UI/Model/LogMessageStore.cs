@@ -1,7 +1,7 @@
+using Beamable.Server.Editor;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Server.Editor;
 using UnityEngine;
 
 namespace Beamable.Editor.UI.Model
@@ -49,7 +49,8 @@ namespace Beamable.Editor.UI.Model
 
 		public void SetViewDebugEnabled(bool enabled)
 		{
-			if (ViewDebugEnabled == enabled) return;
+			if (ViewDebugEnabled == enabled)
+				return;
 			ViewDebugEnabled = enabled;
 			UpdateFiltered();
 			OnViewFilterChanged?.Invoke();
@@ -59,7 +60,8 @@ namespace Beamable.Editor.UI.Model
 
 		public void SetViewInfoEnabled(bool enabled)
 		{
-			if (ViewInfoEnabled == enabled) return;
+			if (ViewInfoEnabled == enabled)
+				return;
 			ViewInfoEnabled = enabled;
 			UpdateFiltered();
 			OnViewFilterChanged?.Invoke();
@@ -69,7 +71,8 @@ namespace Beamable.Editor.UI.Model
 
 		public void SetViewWarningEnabled(bool enabled)
 		{
-			if (ViewWarningEnabled == enabled) return;
+			if (ViewWarningEnabled == enabled)
+				return;
 			ViewWarningEnabled = enabled;
 			UpdateFiltered();
 			OnViewFilterChanged?.Invoke();
@@ -79,7 +82,8 @@ namespace Beamable.Editor.UI.Model
 
 		public void SetViewErrorEnabled(bool enabled)
 		{
-			if (ViewErrorEnabled == enabled) return;
+			if (ViewErrorEnabled == enabled)
+				return;
 			ViewErrorEnabled = enabled;
 			UpdateFiltered();
 			OnViewFilterChanged?.Invoke();

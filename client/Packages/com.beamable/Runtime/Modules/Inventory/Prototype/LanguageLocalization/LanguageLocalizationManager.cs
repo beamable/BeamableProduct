@@ -27,7 +27,7 @@ namespace Modules.Inventory.Prototype.LanguageLocalization
 		};
 
 		private static readonly Dictionary<string, Dictionary<string, string>> _languages =
-			new Dictionary<string, Dictionary<string, string>> {{"PL", _plTranslations}, {"EN", _enTranslations}};
+			new Dictionary<string, Dictionary<string, string>> { { "PL", _plTranslations }, { "EN", _enTranslations } };
 
 		private static string _selectedLanguage = "EN";
 

@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Beamable.Editor.UI.Buss;
+using System;
 using System.Collections.Generic;
-using Beamable.Editor.UI.Buss;
-using UnityEngine;
 using UnityEditor;
+using UnityEngine;
 
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -19,7 +19,9 @@ namespace Beamable.Editor.UI.Components
 		public static readonly string ComponentPath =
 			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledCheckboxVisualElement)}/{nameof(LabeledCheckboxVisualElement)}";
 
-		public new class UxmlFactory : UxmlFactory<LabeledCheckboxVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<LabeledCheckboxVisualElement, UxmlTraits>
+		{
+		}
 
 		public Action<bool> OnValueChanged;
 
@@ -37,18 +39,21 @@ namespace Beamable.Editor.UI.Components
 		{
 			readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
 			{
-				name = "label", defaultValue = "Label"
+				name = "label",
+				defaultValue = "Label"
 			};
 
 			readonly UxmlStringAttributeDescription _icon = new UxmlStringAttributeDescription
 			{
-				name = "icon", defaultValue = ""
+				name = "icon",
+				defaultValue = ""
 			};
 
 			// used for flip order of child elements from Label-Icon-Checkbox to Checkbox-Icon-Label
 			readonly UxmlBoolAttributeDescription _flip = new UxmlBoolAttributeDescription
 			{
-				name = "flip", defaultValue = false
+				name = "flip",
+				defaultValue = false
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription

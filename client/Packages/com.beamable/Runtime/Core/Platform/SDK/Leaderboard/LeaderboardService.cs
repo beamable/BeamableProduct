@@ -18,8 +18,8 @@ namespace Beamable.Api.Leaderboard
 	public class LeaderboardService : LeaderboardApi
 	{
 		public LeaderboardService(IPlatformService platform,
-		                          IBeamableRequester requester,
-		                          UserDataCache<RankEntry>.FactoryFunction cacheFactory)
+								  IBeamableRequester requester,
+								  UserDataCache<RankEntry>.FactoryFunction cacheFactory)
 			: base(requester, platform, cacheFactory) { }
 
 		/*

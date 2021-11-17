@@ -1,6 +1,6 @@
-﻿using System.Threading.Tasks;
-using Beamable.Server.Editor;
+﻿using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
+using System.Threading.Tasks;
 
 namespace Beamable.Editor.UI.Model
 {
@@ -8,7 +8,8 @@ namespace Beamable.Editor.UI.Model
 	{
 		public void ForwardEventsTo(MongoStorageBuilder oldBuilder)
 		{
-			if (oldBuilder == null) return;
+			if (oldBuilder == null)
+				return;
 			OnIsRunningChanged += oldBuilder.OnIsRunningChanged;
 		}
 

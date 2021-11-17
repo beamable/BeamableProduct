@@ -1,7 +1,7 @@
+using Beamable.Common.Api.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Common.Api.Content;
 using UnityEngine;
 
 namespace Beamable.Common.Content
@@ -263,7 +263,7 @@ namespace Beamable.Common.Content
 		public override Promise<TContent> Resolve(string manifestID = "")
 		{
 			return _promise ??
-			       (_promise = ContentApi.Instance.FlatMap(service => service.GetContent(this, manifestID)));
+				   (_promise = ContentApi.Instance.FlatMap(service => service.GetContent(this, manifestID)));
 		}
 
 		public override void OnCreated()

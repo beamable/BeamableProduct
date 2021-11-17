@@ -8,10 +8,10 @@ namespace Beamable.Api
 	public static class BeamableRequesterExtensions
 	{
 		public static Promise<T> RequestJson<T>(this IBeamableRequester requester,
-		                                        Method method,
-		                                        string uri,
-		                                        JsonSerializable.ISerializable body,
-		                                        bool includeAuthHeader = true)
+												Method method,
+												string uri,
+												JsonSerializable.ISerializable body,
+												bool includeAuthHeader = true)
 		{
 			var jsonFields = JsonSerializable.Serialize(body);
 

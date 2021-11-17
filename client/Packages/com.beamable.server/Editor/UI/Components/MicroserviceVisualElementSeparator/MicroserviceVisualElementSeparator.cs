@@ -21,7 +21,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			public SeparatorHandle()
 			{
-				activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
+				activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 			}
 
 			protected override void RegisterCallbacksOnTarget()
@@ -99,7 +99,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			this.AddManipulator((IManipulator)handle);
 		}
 
-		public new class UxmlFactory : UxmlFactory<MicroserviceVisualElementSeparator, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<MicroserviceVisualElementSeparator, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{

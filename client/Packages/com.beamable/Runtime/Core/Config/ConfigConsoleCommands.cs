@@ -1,7 +1,7 @@
-using System;
-using System.Collections.Generic;
 using Beamable.ConsoleCommands;
 using Beamable.Service;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -13,10 +13,12 @@ namespace Beamable.Config
 		public BeamableConsole Console => ServiceManager.Resolve<BeamableConsole>();
 
 		[Preserve]
-		public ConfigConsoleCommands() { }
+		public ConfigConsoleCommands()
+		{
+		}
 
 		[BeamableConsoleCommand(nameof(Config), "Manipulate config values.",
-		                        "CONFIG [list | get <name> | set <name> <value> | reset [name] | usefile [filename]]")]
+								"CONFIG [list | get <name> | set <name> <value> | reset [name] | usefile [filename]]")]
 		private string Config(params string[] args)
 		{
 			if (args.Length < 1)
@@ -145,7 +147,7 @@ namespace Beamable.Config
 						//reset the player account, so that data will load from the new location.
 
 						return "Config Set to: " + fileName +
-						       " and Auth Token has been reset.  Restart Game to reconnect.";
+							   " and Auth Token has been reset.  Restart Game to reconnect.";
 					}
 					catch (Exception e)
 					{

@@ -2,5 +2,7 @@
 
 namespace Beamable.Content
 {
-	public interface IIgnoreSerializationCallbacks { }
+	public interface IIgnoreSerializationCallbacks
+	{
+	}
 }

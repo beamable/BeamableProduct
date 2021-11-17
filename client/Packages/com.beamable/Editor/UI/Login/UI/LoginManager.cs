@@ -1,10 +1,10 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Editor.Login.UI.Components;
 using Beamable.Editor.Login.UI.Model;
 using Beamable.Editor.Realms;
+using System;
+using System.Collections.Generic;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -53,17 +53,17 @@ namespace Beamable.Editor.Login.UI
 			InitializedModel = model.Initialize().Then(initializedModel =>
 			{
 				//            _loginVisualElement = new Components.LoginVisualElement(){Model = initializedModel, Manager = this};
-				_newCustomerVisualElement = new NewCustomerVisualElement() {Model = initializedModel, Manager = this};
+				_newCustomerVisualElement = new NewCustomerVisualElement() { Model = initializedModel, Manager = this };
 				_existingCustomerVisualElement =
-					new ExistingCustomerVisualElement() {Model = initializedModel, Manager = this};
-				_legalCopyVisualElement = new LegalCopyVisualElement() {Model = initializedModel, Manager = this};
+					new ExistingCustomerVisualElement() { Model = initializedModel, Manager = this };
+				_legalCopyVisualElement = new LegalCopyVisualElement() { Model = initializedModel, Manager = this };
 				_projectSelectVisualElement =
-					new ProjectSelectVisualElement() {Model = initializedModel, Manager = this};
-				_newUserVisualElement = new NewUserVisualElement() {Model = initializedModel, Manager = this};
+					new ProjectSelectVisualElement() { Model = initializedModel, Manager = this };
+				_newUserVisualElement = new NewUserVisualElement() { Model = initializedModel, Manager = this };
 				_accountSummaryVisualElement =
-					new AccountSummaryVisualElement {Model = initializedModel, Manager = this};
-				_noRoleVisualElement = new NoRoleVisualElement {Model = initializedModel, Manager = this};
-				_forgotPasswordVisualElement = new ForgotVisualElement {Model = initializedModel, Manager = this};
+					new AccountSummaryVisualElement { Model = initializedModel, Manager = this };
+				_noRoleVisualElement = new NoRoleVisualElement { Model = initializedModel, Manager = this };
+				_forgotPasswordVisualElement = new ForgotVisualElement { Model = initializedModel, Manager = this };
 
 				AssumePage(initializedModel);
 			});
@@ -138,15 +138,16 @@ namespace Beamable.Editor.Login.UI
 			{
 				var issue = b.SendPasswordResetCode(model.Customer.Code, model.Customer.Password);
 				return UseCommonErrorHandling(model, issue, new LoginErrorHandlers()
-				                                            .OnNotFound(LoginBaseConstants.NO_ACCOUNT_FOUND_ERROR)
-				                                            .OnBadRequest(
-					                                            LoginBaseConstants.EXCEPTION_TYPE_BADCODE,
-					                                            LoginBaseConstants.BAD_CODE_ERROR)
-				                                            .OnBadRequest(LoginBaseConstants.NO_ALIAS_FOUND_ERROR),
-				                              false
+															.OnNotFound(LoginBaseConstants.NO_ACCOUNT_FOUND_ERROR)
+															.OnBadRequest(
+																LoginBaseConstants.EXCEPTION_TYPE_BADCODE,
+																LoginBaseConstants.BAD_CODE_ERROR)
+															.OnBadRequest(LoginBaseConstants.NO_ALIAS_FOUND_ERROR),
+											  false
 				).Then(res =>
 				{
-					if (!res.Success) return;
+					if (!res.Success)
+						return;
 					GotoExistingCustomer();
 				});
 			});
@@ -158,9 +159,9 @@ namespace Beamable.Editor.Login.UI
 			{
 				var issue = b.SendPasswordReset(model.Customer.CidOrAlias, model.Customer.Email);
 				return UseCommonErrorHandling(model, issue, new LoginErrorHandlers()
-				                                            .OnNotFound(LoginBaseConstants.NO_ACCOUNT_FOUND_ERROR)
-				                                            .OnBadRequest(LoginBaseConstants.NO_ALIAS_FOUND_ERROR),
-				                              false);
+															.OnNotFound(LoginBaseConstants.NO_ACCOUNT_FOUND_ERROR)
+															.OnBadRequest(LoginBaseConstants.NO_ALIAS_FOUND_ERROR),
+											  false);
 			});
 		}
 
@@ -178,21 +179,21 @@ namespace Beamable.Editor.Login.UI
 			return EditorAPI.Instance.FlatMap(b =>
 			{
 				var newCustomer = b.CreateCustomer(model.Customer.CidOrAlias, model.Customer.Pid, model.Customer.Email,
-				                                   model.Customer.Password);
+												   model.Customer.Password);
 				return UseCommonErrorHandling(model, newCustomer, new LoginErrorHandlers()
-				                                                  .OnUnknown(LoginBaseConstants
-					                                                             .CUSTOMER_CREATION_UNKNOWN_ERROR)
-				                                                  .OnBadRequest(
-					                                                  LoginBaseConstants.EXCEPTION_TYPE_BAD_ALIAS,
-					                                                  LoginBaseConstants.BAD_ALIAS_ERROR)
-				                                                  .OnBadRequest(
-					                                                  LoginBaseConstants.EXCEPTION_TYPE_BAD_GAME_NAME,
-					                                                  LoginBaseConstants.BAD_GAME_NAME_ERROR)
-				                                                  .On(
-					                                                  err => err.Status == 500 &&
-					                                                         err.Error.message ==
-					                                                         model.Customer.CidOrAlias,
-					                                                  LoginBaseConstants.CID_TAKEN_ERROR)
+																  .OnUnknown(LoginBaseConstants
+																				 .CUSTOMER_CREATION_UNKNOWN_ERROR)
+																  .OnBadRequest(
+																	  LoginBaseConstants.EXCEPTION_TYPE_BAD_ALIAS,
+																	  LoginBaseConstants.BAD_ALIAS_ERROR)
+																  .OnBadRequest(
+																	  LoginBaseConstants.EXCEPTION_TYPE_BAD_GAME_NAME,
+																	  LoginBaseConstants.BAD_GAME_NAME_ERROR)
+																  .On(
+																	  err => err.Status == 500 &&
+																			 err.Error.message ==
+																			 model.Customer.CidOrAlias,
+																	  LoginBaseConstants.CID_TAKEN_ERROR)
 				);
 			});
 		}
@@ -203,12 +204,12 @@ namespace Beamable.Editor.Login.UI
 			{
 				var createUser = b.CreateUser(model.Customer.CidOrAlias, model.Customer.Email, model.Customer.Password);
 				return UseCommonErrorHandling(model, createUser, new LoginErrorHandlers()
-				                                                 .OnBadRequest(
-					                                                 LoginBaseConstants.EXCEPTION_TYPE_NOCID,
-					                                                 LoginBaseConstants.NO_ALIAS_FOUND_ERROR)
-				                                                 .OnBadRequest(
-					                                                 LoginBaseConstants.EXCEPTION_TYPE_EMAIL_TAKEN,
-					                                                 LoginBaseConstants.EMAIL_TAKEN_ERROR)
+																 .OnBadRequest(
+																	 LoginBaseConstants.EXCEPTION_TYPE_NOCID,
+																	 LoginBaseConstants.NO_ALIAS_FOUND_ERROR)
+																 .OnBadRequest(
+																	 LoginBaseConstants.EXCEPTION_TYPE_EMAIL_TAKEN,
+																	 LoginBaseConstants.EMAIL_TAKEN_ERROR)
 				);
 			});
 		}
@@ -219,45 +220,46 @@ namespace Beamable.Editor.Login.UI
 			{
 				var login = b.LoginCustomer(model.Customer.CidOrAlias, model.Customer.Email, model.Customer.Password);
 				return UseCommonErrorHandling(model, login, new LoginErrorHandlers()
-				                                            .OnUnauthorized(
-					                                            LoginBaseConstants.INVALID_CREDENTIALS_ERROR)
-				                                            .OnBadRequest(LoginBaseConstants.NO_ALIAS_FOUND_ERROR)
-				                                            .OnBadRequest(
-					                                            LoginBaseConstants.EXCEPTION_TYPE_INVALID_SCOPE,
-					                                            LoginBaseConstants.NO_ALIAS_FOUND_ERROR)
-				                                            .OnNotFound(LoginBaseConstants.INVALID_CREDENTIALS_ERROR)
+															.OnUnauthorized(
+																LoginBaseConstants.INVALID_CREDENTIALS_ERROR)
+															.OnBadRequest(LoginBaseConstants.NO_ALIAS_FOUND_ERROR)
+															.OnBadRequest(
+																LoginBaseConstants.EXCEPTION_TYPE_INVALID_SCOPE,
+																LoginBaseConstants.NO_ALIAS_FOUND_ERROR)
+															.OnNotFound(LoginBaseConstants.INVALID_CREDENTIALS_ERROR)
 				);
 			});
 		}
 
 		private Promise<LoginManagerResult> UseCommonErrorHandling<T>(LoginModel model,
-		                                                              Promise<T> promise,
-		                                                              LoginErrorHandlers handler,
-		                                                              bool assumePage = true)
+																	  Promise<T> promise,
+																	  LoginErrorHandlers handler,
+																	  bool assumePage = true)
 		{
 			return promise.Map(_ =>
-			              {
-				              if (assumePage)
-				              {
-					              model.Initialize().Then(AssumePage);
-				              }
+						  {
+							  if (assumePage)
+							  {
+								  model.Initialize().Then(AssumePage);
+							  }
 
-				              return LoginManagerResult.Pass;
-			              })
-			              .Recover(ex =>
-			              {
-				              BeamableLogger.LogError(ex);
-				              var message = handler.ProduceError(ex);
-				              return LoginManagerResult.Failed(message);
-			              })
-			              .Error(BeamableLogger.LogError);
+							  return LoginManagerResult.Pass;
+						  })
+						  .Recover(ex =>
+						  {
+							  BeamableLogger.LogError(ex);
+							  var message = handler.ProduceError(ex);
+							  return LoginManagerResult.Failed(message);
+						  })
+						  .Error(BeamableLogger.LogError);
 		}
 
 		public bool HasPreviousPage() => _history.Count > 1;
 
 		public bool IsPreviousPage<T>() where T : LoginBaseComponent
 		{
-			if (!HasPreviousPage()) return false;
+			if (!HasPreviousPage())
+				return false;
 
 			var curr = _history.Pop();
 			var match = _history.Peek() is T;
@@ -317,7 +319,9 @@ namespace Beamable.Editor.Login.UI
 			OnPageChanged?.Invoke(component);
 		}
 
-		public void Destroy() { }
+		public void Destroy()
+		{
+		}
 	}
 
 	public class LoginManagerResult
@@ -325,11 +329,11 @@ namespace Beamable.Editor.Login.UI
 		public bool Success;
 		public string Error;
 
-		public static readonly LoginManagerResult Pass = new LoginManagerResult {Success = true};
+		public static readonly LoginManagerResult Pass = new LoginManagerResult { Success = true };
 
 		public static LoginManagerResult Failed(string reason)
 		{
-			return new LoginManagerResult {Success = false, Error = reason};
+			return new LoginManagerResult { Success = false, Error = reason };
 		}
 	}
 }

@@ -31,10 +31,12 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		private void HandleMessage(string msg)
 		{
-			if (msg == null) return;
+			if (msg == null)
+				return;
 			msg = msg.Trim();
 
-			if (Results.ContainsKey(msg)) Results[msg] = true;
+			if (Results.ContainsKey(msg))
+				Results[msg] = true;
 		}
 
 		protected override void Resolve()

@@ -20,7 +20,8 @@ namespace Beamable.UI.Buss
 
 		public override void Apply(StyleObject styles)
 		{
-			if (TextElement == null) return;
+			if (TextElement == null)
+				return;
 
 			if (styles.Color.IsDefined())
 			{

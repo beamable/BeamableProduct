@@ -16,6 +16,8 @@ namespace Beamable.Api.Analytics
 		/// <param name="valueInteger">Value integer.</param>
 		public SampleCustomEvent(string foo, string bar)
 			: base("sample", "sample_custom_event",
-			       new Dictionary<string, object> {["foo"] = foo, ["bar"] = bar, ["hello_world"] = "Hello World."}) { }
+				   new Dictionary<string, object> { ["foo"] = foo, ["bar"] = bar, ["hello_world"] = "Hello World." })
+		{
+		}
 	}
 }

@@ -1,10 +1,10 @@
+using Beamable.Serialization.SmallerJSON;
+using Beamable.Server.Editor.DockerCommands;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Beamable.Serialization.SmallerJSON;
-using Beamable.Server.Editor.DockerCommands;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -39,7 +39,8 @@ namespace Beamable.Server.Editor
 		public static void RestoreMongo(StorageObjectDescriptor descriptor)
 		{
 			var dest = EditorUtility.OpenFolderPanel("Select where to load mongo", "", "default");
-			if (string.IsNullOrEmpty(dest)) return;
+			if (string.IsNullOrEmpty(dest))
+				return;
 			Debug.Log("Starting restore...");
 			Microservices.RestoreMongoSnapshot(descriptor, dest).Then(res =>
 			{
@@ -57,7 +58,8 @@ namespace Beamable.Server.Editor
 		public static void SnapshotMongo(StorageObjectDescriptor descriptor)
 		{
 			var dest = EditorUtility.OpenFolderPanel("Select where to save mongo", "", "default");
-			if (string.IsNullOrEmpty(dest)) return;
+			if (string.IsNullOrEmpty(dest))
+				return;
 			Debug.Log("Starting snapshot...");
 			Microservices.SnapshotMongo(descriptor, dest).Then(res =>
 			{
@@ -159,8 +161,8 @@ namespace Beamable.Server.Editor
 			var serviceInfo = service.ConvertToInfo();
 			var storages = Microservices.StorageDescriptors.ToDictionary(kvp => kvp.AttributePath);
 			var infos = Microservices.StorageDescriptors
-			                         .Select(s => new Tuple<AssemblyDefinitionInfo, StorageObjectDescriptor>(
-				                                 s.ConvertToInfo(), s)).ToDictionary(kvp => kvp.Item1.Name);
+									 .Select(s => new Tuple<AssemblyDefinitionInfo, StorageObjectDescriptor>(
+												 s.ConvertToInfo(), s)).ToDictionary(kvp => kvp.Item1.Name);
 			foreach (var reference in serviceInfo.References)
 			{
 				if (infos.TryGetValue(reference, out var storageInfo))
@@ -178,7 +180,8 @@ namespace Beamable.Server.Editor
 			var existingRefs = new HashSet<string>(asm.ConvertToInfo().DllReferences);
 			foreach (var required in MongoLibraries)
 			{
-				if (!existingRefs.Contains(required)) return false;
+				if (!existingRefs.Contains(required))
+					return false;
 			}
 
 			return true;
@@ -209,7 +212,7 @@ namespace Beamable.Server.Editor
 			var jsonData = Json.Deserialize(asm.text) as ArrayDict;
 			var path = AssetDatabase.GetAssetPath(asm);
 
-			var assemblyDefInfo = new AssemblyDefinitionInfo {Location = path};
+			var assemblyDefInfo = new AssemblyDefinitionInfo { Location = path };
 
 			if (jsonData.TryGetValue(NAME, out var nameObject) && nameObject is string name)
 			{
@@ -217,21 +220,21 @@ namespace Beamable.Server.Editor
 			}
 
 			if (jsonData.TryGetValue(REFERENCES, out var referencesObject) &&
-			    referencesObject is IEnumerable<object> references)
+				referencesObject is IEnumerable<object> references)
 			{
 				assemblyDefInfo.References = references
-				                             .Cast<string>()
-				                             .Where(s => !string.IsNullOrEmpty(s))
-				                             .ToArray();
+											 .Cast<string>()
+											 .Where(s => !string.IsNullOrEmpty(s))
+											 .ToArray();
 			}
 
 			if (jsonData.TryGetValue(PRECOMPILED, out var referencesDllObject) &&
-			    referencesDllObject is IEnumerable<object> dllReferences)
+				referencesDllObject is IEnumerable<object> dllReferences)
 			{
 				assemblyDefInfo.DllReferences = dllReferences
-				                                .Cast<string>()
-				                                .Where(s => !string.IsNullOrEmpty(s))
-				                                .ToArray();
+												.Cast<string>()
+												.Where(s => !string.IsNullOrEmpty(s))
+												.ToArray();
 			}
 
 			return assemblyDefInfo;
@@ -273,8 +276,8 @@ namespace Beamable.Server.Editor
 			service.ConvertToAsset().AddPrecompiledReferences(libraryNames);
 
 		public static void AddAndRemoveReferences(this MicroserviceDescriptor service,
-		                                          List<string> toAddReferences,
-		                                          List<string> toRemoveReferences) =>
+												  List<string> toAddReferences,
+												  List<string> toRemoveReferences) =>
 			service.ConvertToAsset().AddAndRemoveReferences(toAddReferences, toRemoveReferences);
 
 		public static void AddPrecompiledReferences(this AssemblyDefinitionAsset asm, params string[] libraryNames)
@@ -292,8 +295,8 @@ namespace Beamable.Server.Editor
 		}
 
 		public static void AddAndRemoveReferences(this AssemblyDefinitionAsset asm,
-		                                          List<string> toAddReferences,
-		                                          List<string> toRemoveReferences)
+												  List<string> toAddReferences,
+												  List<string> toRemoveReferences)
 		{
 			var jsonData = Json.Deserialize(asm.text) as ArrayDict;
 			var dllReferences = GetReferences(REFERENCES, jsonData);
@@ -313,7 +316,7 @@ namespace Beamable.Server.Editor
 		}
 
 		public static void RemovePrecompiledReferences(this MicroserviceDescriptor service,
-		                                               params string[] libraryNames) =>
+													   params string[] libraryNames) =>
 			service.ConvertToAsset().RemovePrecompiledReferences(libraryNames);
 
 		public static void RemovePrecompiledReferences(this AssemblyDefinitionAsset asm, params string[] libraryNames)
@@ -334,12 +337,12 @@ namespace Beamable.Server.Editor
 		{
 			var dllReferences = new HashSet<string>();
 			if (jsonData.TryGetValue(referenceType, out var referencesDllObject) &&
-			    referencesDllObject is IEnumerable<object> existingReferences)
+				referencesDllObject is IEnumerable<object> existingReferences)
 			{
 				dllReferences = new HashSet<string>(existingReferences
-				                                    .Cast<string>()
-				                                    .Where(s => !string.IsNullOrEmpty(s))
-				                                    .ToArray());
+													.Cast<string>()
+													.Where(s => !string.IsNullOrEmpty(s))
+													.ToArray());
 			}
 
 			return dllReferences;

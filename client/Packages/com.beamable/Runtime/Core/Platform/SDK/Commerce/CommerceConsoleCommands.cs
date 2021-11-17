@@ -1,6 +1,6 @@
-﻿using UnityEngine;
+﻿using Beamable.ConsoleCommands;
 using Beamable.Service;
-using Beamable.ConsoleCommands;
+using UnityEngine;
 using UnityEngine.Scripting;
 
 namespace Beamable.Api.Commerce
@@ -11,10 +11,12 @@ namespace Beamable.Api.Commerce
 		private BeamableConsole Console => ServiceManager.Resolve<BeamableConsole>();
 
 		[Preserve]
-		public CommerceConsoleCommands() { }
+		public CommerceConsoleCommands()
+		{
+		}
 
 		[BeamableConsoleCommand("STORE-VIEW", "Outputs the player view of a specific store to the console (in json)",
-		                        "STORE-VIEW stores.default")]
+								"STORE-VIEW stores.default")]
 		protected string PreviewCurrency(params string[] args)
 		{
 			string store;

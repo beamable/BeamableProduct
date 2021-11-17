@@ -1,7 +1,7 @@
-using System.Linq;
-using Beamable.Signals;
 using Beamable.ConsoleCommands;
 using Beamable.Platform.SDK.Auth;
+using Beamable.Signals;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -11,7 +11,9 @@ namespace Beamable.AccountManagement
 	public class AccountManagementCommands
 	{
 		[Preserve]
-		public AccountManagementCommands() { }
+		public AccountManagementCommands()
+		{
+		}
 
 		[BeamableConsoleCommand("account_toggle", "emit an account management toggle event", "account_toggle")]
 		public string ToggleAccount(string[] args)

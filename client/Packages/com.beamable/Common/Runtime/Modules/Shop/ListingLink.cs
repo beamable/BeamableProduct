@@ -16,5 +16,7 @@ namespace Beamable.Common.Shop
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class ListingLink : ContentLink<ListingContent> { }
+	public class ListingLink : ContentLink<ListingContent>
+	{
+	}
 }

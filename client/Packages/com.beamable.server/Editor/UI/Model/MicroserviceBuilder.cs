@@ -1,8 +1,8 @@
+using Beamable.Server.Editor;
+using Beamable.Server.Editor.DockerCommands;
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using Beamable.Server.Editor;
-using Beamable.Server.Editor.DockerCommands;
 using UnityEditor;
 
 namespace Beamable.Editor.UI.Model
@@ -15,7 +15,8 @@ namespace Beamable.Editor.UI.Model
 			get => _isBuilding;
 			private set
 			{
-				if (value == _isBuilding) return;
+				if (value == _isBuilding)
+					return;
 				_isBuilding = value;
 				// XXX: If OnIsBuildingChanged is mutated at before delayCall triggers, non-deterministic behaviour could occur
 				EditorApplication.delayCall += () => OnIsBuildingChanged?.Invoke(value);
@@ -29,7 +30,8 @@ namespace Beamable.Editor.UI.Model
 			get => _lastImageId;
 			private set
 			{
-				if (value == _lastImageId) return;
+				if (value == _lastImageId)
+					return;
 				_lastImageId = value;
 				EditorApplication.delayCall += () => OnLastImageIdChanged?.Invoke(value);
 			}
@@ -47,7 +49,8 @@ namespace Beamable.Editor.UI.Model
 
 		public void ForwardEventsTo(MicroserviceBuilder oldBuilder)
 		{
-			if (oldBuilder == null) return;
+			if (oldBuilder == null)
+				return;
 			OnIsRunningChanged += oldBuilder.OnIsRunningChanged;
 			OnIsBuildingChanged += oldBuilder.OnIsBuildingChanged;
 			OnLastImageIdChanged += oldBuilder.OnLastImageIdChanged;
@@ -72,7 +75,8 @@ namespace Beamable.Editor.UI.Model
 
 		public async Task TryToBuild(bool includeDebuggingTools)
 		{
-			if (IsBuilding) return;
+			if (IsBuilding)
+				return;
 
 			IsBuilding = true;
 			var command = new BuildImageCommand((MicroserviceDescriptor)Descriptor, includeDebuggingTools);

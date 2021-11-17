@@ -1,15 +1,15 @@
-﻿using System.Linq;
-using Beamable.Editor.UI.Components;
+﻿using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class StopImageLogParser : UniversalLogsParser
 	{
-		private static readonly string[] expectedLogs = new[] {"Shutdown started...", "Handling WS Message."};
+		private static readonly string[] expectedLogs = new[] { "Shutdown started...", "Handling WS Message." };
 
-		private static readonly string[] errorElements = new[] {"Error", "Exception", "exception"};
+		private static readonly string[] errorElements = new[] { "Error", "Exception", "exception" };
 
 		public override string StepText => $"(Stopping {base.StepText} MS {_model.Name})";
 		public override string ProcessName => $"Stopping MS {_model?.Descriptor?.Name}";

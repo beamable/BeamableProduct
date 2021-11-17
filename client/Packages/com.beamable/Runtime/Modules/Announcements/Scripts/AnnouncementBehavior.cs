@@ -1,5 +1,5 @@
-﻿using System.Collections;
-using Beamable.UI.Scripts;
+﻿using Beamable.UI.Scripts;
+using System.Collections;
 using UnityEngine;
 
 namespace Beamable.Announcements

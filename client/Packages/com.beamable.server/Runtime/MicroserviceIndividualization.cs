@@ -1,7 +1,7 @@
+using Beamable.Config;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Beamable.Config;
 using UnityEngine;
 
 namespace Beamable.Server
@@ -15,7 +15,7 @@ namespace Beamable.Server
 			get
 			{
 				if (ConfigDatabase.TryGetString("containerPrefix", out var customPrefix) &&
-				    !string.IsNullOrWhiteSpace(customPrefix))
+					!string.IsNullOrWhiteSpace(customPrefix))
 					return customPrefix;
 				return SystemInfo.deviceUniqueIdentifier;
 			}
@@ -41,7 +41,7 @@ namespace Beamable.Server
 		public static string GetServicePrefix(string serviceName)
 		{
 #if !UNITY_EDITOR
-         return ""; // if we aren't in the editor, never ever use a service prefix.
+			return ""; // if we aren't in the editor, never ever use a service prefix.
 #else
 			var prefix = "";
 			GetValues().TryGetValue(serviceName, out prefix);
@@ -71,11 +71,11 @@ namespace Beamable.Server
 			var pid = ConfigDatabase.GetString("pid");
 			var key = $"{PlayerPrefPrefix}.{cid}.{pid}";
 			var raw = PlayerPrefs.GetString(key);
-			var services = raw.Split(new[] {';'}, StringSplitOptions.RemoveEmptyEntries);
+			var services = raw.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
 			var output = new Dictionary<string, string>();
 			foreach (var service in services)
 			{
-				var parts = service.Split(new[] {'='}, StringSplitOptions.RemoveEmptyEntries);
+				var parts = service.Split(new[] { '=' }, StringSplitOptions.RemoveEmptyEntries);
 				output.Add(parts[0], parts[1]);
 			}
 

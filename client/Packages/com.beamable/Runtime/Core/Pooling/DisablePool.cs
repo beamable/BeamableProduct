@@ -1,7 +1,7 @@
-﻿using UnityEngine;
-using System.Collections.Generic;
+﻿using Beamable.Extensions;
 using Beamable.Service;
-using Beamable.Extensions;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace Beamable.Pooling
 {

@@ -1,8 +1,8 @@
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using Beamable.Content;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Beamable.Editor.Content
 {

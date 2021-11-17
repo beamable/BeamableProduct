@@ -1,11 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Content;
 using Beamable.Common.Inventory;
 using Beamable.Common.Pooling;
 using Beamable.Serialization.SmallerJSON;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Beamable.Common.Api.Inventory
 {
@@ -66,13 +66,13 @@ namespace Beamable.Common.Api.Inventory
 		}
 
 		public Promise<Unit> AddItem(ItemRef itemRef,
-		                             Dictionary<string, string> properties = null,
-		                             string transaction = null) =>
+									 Dictionary<string, string> properties = null,
+									 string transaction = null) =>
 			AddItem(itemRef.Id, properties, transaction);
 
 		public Promise<Unit> AddItem(string contentId,
-		                             Dictionary<string, string> properties = null,
-		                             string transaction = null)
+									 Dictionary<string, string> properties = null,
+									 string transaction = null)
 		{
 			return Update(builder =>
 			{
@@ -89,15 +89,15 @@ namespace Beamable.Common.Api.Inventory
 		}
 
 		public Promise<Unit> UpdateItem(ItemRef itemRef,
-		                                long itemId,
-		                                Dictionary<string, string> properties,
-		                                string transaction = null) =>
+										long itemId,
+										Dictionary<string, string> properties,
+										string transaction = null) =>
 			UpdateItem(itemRef.Id, itemId, properties, transaction);
 
 		public Promise<Unit> UpdateItem(string contentId,
-		                                long itemId,
-		                                Dictionary<string, string> properties,
-		                                string transaction = null)
+										long itemId,
+										Dictionary<string, string> properties,
+										string transaction = null)
 		{
 			return Update(builder =>
 			{
@@ -111,8 +111,8 @@ namespace Beamable.Common.Api.Inventory
 		}
 
 		public Promise<Unit> SetCurrencyProperties(string currencyId,
-		                                           List<CurrencyProperty> properties,
-		                                           string transaction = null)
+												   List<CurrencyProperty> properties,
+												   string transaction = null)
 		{
 			return Update(builder =>
 			{
@@ -121,8 +121,8 @@ namespace Beamable.Common.Api.Inventory
 		}
 
 		public Promise<Unit> SetCurrencyProperties(CurrencyRef currency,
-		                                           List<CurrencyProperty> properties,
-		                                           string transaction = null)
+												   List<CurrencyProperty> properties,
+												   string transaction = null)
 		{
 			return Update(builder =>
 			{
@@ -169,7 +169,7 @@ namespace Beamable.Common.Api.Inventory
 
 		public Promise<Unit> SetCurrency(string currencyId, long amount, string transaction = null)
 		{
-			return SetCurrencies(new Dictionary<string, long> {{currencyId, amount}}, transaction);
+			return SetCurrencies(new Dictionary<string, long> { { currencyId, amount } }, transaction);
 		}
 
 		public Promise<Unit> SetCurrencies(Dictionary<string, long> currencyIdsToAmount, string transaction = null)
@@ -238,15 +238,15 @@ namespace Beamable.Common.Api.Inventory
 
 		public Promise<long> GetCurrency(string currencyId)
 		{
-			return GetCurrencies(new[] {currencyId}).Map(all =>
-			{
-				if (!all.TryGetValue(currencyId, out var result))
-				{
-					result = 0;
-				}
+			return GetCurrencies(new[] { currencyId }).Map(all =>
+			  {
+				  if (!all.TryGetValue(currencyId, out var result))
+				  {
+					  result = 0;
+				  }
 
-				return result;
-			});
+				  return result;
+			  });
 		}
 
 		public Promise<Unit> Update(Action<InventoryUpdateBuilder> action, string transaction = null)
@@ -306,12 +306,12 @@ namespace Beamable.Common.Api.Inventory
 						{
 							"properties",
 							newItem.properties
-							       ?.Select(
-								       kvp => new ArrayDict
-								       {
-									       {"name", kvp.Key},
-									       {"value", kvp.Value}
-								       }).ToArray() ?? new object[] { }
+								   ?.Select(
+									   kvp => new ArrayDict
+									   {
+										   {"name", kvp.Key},
+										   {"value", kvp.Value}
+									   }).ToArray() ?? new object[] { }
 						}
 					}).ToArray();
 
@@ -338,11 +338,11 @@ namespace Beamable.Common.Api.Inventory
 						{
 							"properties",
 							updateItem.properties
-							          .Select(kvp => new ArrayDict
-							          {
-								          {"name", kvp.Key},
-								          {"value", kvp.Value}
-							          }).ToArray()
+									  .Select(kvp => new ArrayDict
+									  {
+										  {"name", kvp.Key},
+										  {"value", kvp.Value}
+									  }).ToArray()
 						}
 					}).ToArray();
 
@@ -362,27 +362,27 @@ namespace Beamable.Common.Api.Inventory
 			var typeName = ContentRegistry.GetContentTypeName(typeof(TContent));
 
 			return Promise.Sequence(view.items
-			                            .Where(kvp => kvp.Key.StartsWith(typeName))
-			                            .Where(kvp => filterSet?.Any(filterId => kvp.Key.StartsWith(filterId)) ?? true)
-			                            .Select(kvp =>
-			                            {
-				                            return ContentApi.Instance
-				                                             .FlatMap(
-					                                             service => service.GetContent<TContent>(
-						                                             new ItemRef(kvp.Key)))
-				                                             .Map(content =>
-				                                             {
-					                                             return kvp.Value
-					                                                       .Select(item => new InventoryObject<TContent>
-					                                                       {
-						                                                       Id = item.id,
-						                                                       Properties = item.properties,
-						                                                       ItemContent = content,
-						                                                       CreatedAt = item.createdAt,
-						                                                       UpdatedAt = item.updatedAt
-					                                                       }).ToList();
-				                                             });
-			                            }).ToList()).Map(itemGroups =>
+										.Where(kvp => kvp.Key.StartsWith(typeName))
+										.Where(kvp => filterSet?.Any(filterId => kvp.Key.StartsWith(filterId)) ?? true)
+										.Select(kvp =>
+										{
+											return ContentApi.Instance
+															 .FlatMap(
+																 service => service.GetContent<TContent>(
+																	 new ItemRef(kvp.Key)))
+															 .Map(content =>
+															 {
+																 return kvp.Value
+																		   .Select(item => new InventoryObject<TContent>
+																		   {
+																			   Id = item.id,
+																			   Properties = item.properties,
+																			   ItemContent = content,
+																			   CreatedAt = item.createdAt,
+																			   UpdatedAt = item.updatedAt
+																		   }).ToList();
+															 });
+										}).ToList()).Map(itemGroups =>
 			{
 				return itemGroups.SelectMany(x => x).Where(x => x != null).ToList();
 			});

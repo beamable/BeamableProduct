@@ -1,6 +1,6 @@
-﻿using System.Linq;
-using Beamable.Editor.UI.Components;
+﻿using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Editor.Microservice.UI.Components
@@ -20,7 +20,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			BeamableLogConstants.UploadedContainerMessage, BeamableLogConstants.ContainerAlreadyUploadedMessage
 		};
 
-		private static readonly string[] globalFailureLogs = new[] {BeamableLogConstants.CantUploadContainerMessage};
+		private static readonly string[] globalFailureLogs = new[] { BeamableLogConstants.CantUploadContainerMessage };
 
 		private readonly string[] successLogs, failureLogs;
 
@@ -32,10 +32,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Step = 0;
 			TotalSteps = 1;
 			successLogs = globalSuccessLogs
-			              .Select(l => string.Format(l, model.Name)).ToArray();
+						  .Select(l => string.Format(l, model.Name)).ToArray();
 
 			failureLogs = globalFailureLogs
-			              .Select(l => string.Format(l, model.Name)).ToArray();
+						  .Select(l => string.Format(l, model.Name)).ToArray();
 
 			OnProgress(0, 0, 1);
 			_model.OnDeployProgress += OnProgress;

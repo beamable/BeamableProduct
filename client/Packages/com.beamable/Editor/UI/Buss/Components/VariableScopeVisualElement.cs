@@ -1,8 +1,8 @@
-using System;
-using Beamable.UI.Buss.Properties;
 using Beamable.Editor.UI.Buss.Extensions;
 using Beamable.Editor.UI.Buss.Model;
 using Beamable.UI.Buss;
+using Beamable.UI.Buss.Properties;
+using System;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER

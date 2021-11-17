@@ -1,8 +1,8 @@
-using System;
-using System.Globalization;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using JetBrains.Annotations;
+using System;
+using System.Globalization;
 using UnityEngine;
 
 namespace Beamable.Api
@@ -30,7 +30,7 @@ namespace Beamable.Api
 			string expires = PlayerPrefs.GetString($"{_prefix}{cid}.expires");
 
 			if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken) ||
-			    string.IsNullOrEmpty(expires))
+				string.IsNullOrEmpty(expires))
 				return Promise<AccessToken>.Successful(null);
 
 			return Promise<AccessToken>.Successful(
@@ -44,7 +44,7 @@ namespace Beamable.Api
 			string expires = PlayerPrefs.GetString($"{_prefix}{cid}.{pid}.expires");
 
 			if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken) ||
-			    string.IsNullOrEmpty(expires))
+				string.IsNullOrEmpty(expires))
 				return Promise<AccessToken>.Successful(null);
 
 			return Promise<AccessToken>.Successful(new AccessToken(this, cid, pid, accessToken, refreshToken, expires));
@@ -160,20 +160,20 @@ namespace Beamable.Api
 		private static bool MatchesRefreshToken(string encoded, string refreshToken)
 		{
 			return encoded.EndsWith(refreshToken, StringComparison.Ordinal) &&
-			       encoded.Length > refreshToken.Length &&
-			       encoded[encoded.Length - refreshToken.Length - 1] == DeviceTokenSeparator;
+				   encoded.Length > refreshToken.Length &&
+				   encoded[encoded.Length - refreshToken.Length - 1] == DeviceTokenSeparator;
 		}
 
 		private TokenResponse Convert(string token)
 		{
 			var parts = token.Split(Constants.SeparatorSplit, StringSplitOptions.None);
-			return new TokenResponse {access_token = parts[0], refresh_token = parts.Length == 2 ? parts[1] : ""};
+			return new TokenResponse { access_token = parts[0], refresh_token = parts.Length == 2 ? parts[1] : "" };
 		}
 
 		private static class Constants
 		{
-			public static readonly char[] SeparatorSplit = new[] {DeviceTokenSeparator};
-			public static readonly char[] DelimiterSplit = new[] {DeviceTokenDelimiter};
+			public static readonly char[] SeparatorSplit = new[] { DeviceTokenSeparator };
+			public static readonly char[] DelimiterSplit = new[] { DeviceTokenDelimiter };
 		}
 	}
 }

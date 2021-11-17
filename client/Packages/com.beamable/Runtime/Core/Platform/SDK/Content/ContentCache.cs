@@ -1,11 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Spew;
+using System;
+using System.Collections.Generic;
+using System.IO;
 
 namespace Beamable.Content
 {
@@ -64,7 +64,8 @@ namespace Beamable.Content
 			// First, try the in memory cache
 			PlatformLogger.Log(
 				$"ContentCache: Fetching content from cache for {requestedInfo.contentId}: version: {requestedInfo.version}");
-			if (_cache.TryGetValue(cacheId, out var cacheEntry)) return cacheEntry.Content;
+			if (_cache.TryGetValue(cacheId, out var cacheEntry))
+				return cacheEntry.Content;
 
 			// Then, try the on disk cache
 			PlatformLogger.Log(
@@ -80,25 +81,25 @@ namespace Beamable.Content
 			PlatformLogger.Log(
 				$"ContentCache: Fetching content from CDN for {requestedInfo.contentId}: version: {requestedInfo.version}");
 			var fetchedContent = FetchContentFromCDN(requestedInfo)
-			                     .Map(raw =>
-			                     {
-				                     // Write the content to disk
-				                     SaveToDisk(requestedInfo, raw, _filesystemAccessor);
-				                     return DeserializeContent(requestedInfo, raw);
-			                     })
-			                     .Error(err =>
-			                     {
-				                     _cache.Remove(cacheId);
-				                     PlatformLogger.Log(
-					                     $"ContentCache: Failed to resolve {requestedInfo.contentId} {requestedInfo.version} {requestedInfo.uri} ; ERR={err}");
-			                     });
+								 .Map(raw =>
+								 {
+									 // Write the content to disk
+									 SaveToDisk(requestedInfo, raw, _filesystemAccessor);
+									 return DeserializeContent(requestedInfo, raw);
+								 })
+								 .Error(err =>
+								 {
+									 _cache.Remove(cacheId);
+									 PlatformLogger.Log(
+										 $"ContentCache: Failed to resolve {requestedInfo.contentId} {requestedInfo.version} {requestedInfo.uri} ; ERR={err}");
+								 });
 			SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, fetchedContent));
 			return fetchedContent;
 		}
 
 		private static bool TryGetValueFromDisk(ClientContentInfo info,
-		                                        out TContent content,
-		                                        IBeamableFilesystemAccessor fsa)
+												out TContent content,
+												IBeamableFilesystemAccessor fsa)
 		{
 			var filePath = ContentPath(info, fsa);
 

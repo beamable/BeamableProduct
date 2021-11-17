@@ -1,6 +1,6 @@
-using System.Text;
 using Beamable.Serialization.SmallerJSON;
 using NUnit.Framework;
+using System.Text;
 
 namespace Beamable.Editor.Tests.SmallerJson
 {
@@ -9,7 +9,7 @@ namespace Beamable.Editor.Tests.SmallerJson
 		[Test]
 		public void Simple()
 		{
-			var dict = new ArrayDict {{"a", 123}};
+			var dict = new ArrayDict { { "a", 123 } };
 			var val = dict.JsonPath("a");
 			Assert.AreEqual(123, val);
 		}
@@ -17,7 +17,7 @@ namespace Beamable.Editor.Tests.SmallerJson
 		[Test]
 		public void Nested()
 		{
-			var dict = new ArrayDict {{"a", new ArrayDict {{"b", "1.2.3"}}}};
+			var dict = new ArrayDict { { "a", new ArrayDict { { "b", "1.2.3" } } } };
 			/*
 			 * {
 			 *    "a": {

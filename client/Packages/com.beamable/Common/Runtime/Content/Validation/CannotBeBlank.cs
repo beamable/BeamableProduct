@@ -24,7 +24,8 @@ namespace Beamable.Common.Content.Validation
 			if (typeof(Optional).IsAssignableFrom(validationField.FieldType))
 			{
 				var optional = validationField.GetValue() as Optional;
-				if (!optional.HasValue) return;
+				if (!optional.HasValue)
+					return;
 				// get the underlying field...
 				var value = optional.GetValue();
 				Validate(value.GetType(), value, args);
@@ -64,7 +65,8 @@ namespace Beamable.Common.Content.Validation
 				var set = value as IEnumerable<string>;
 
 				var array = set.ToArray();
-				if (array.Length <= args.ArrayIndex) return;
+				if (array.Length <= args.ArrayIndex)
+					return;
 				var elem = array[args.ArrayIndex];
 				if (string.IsNullOrEmpty(elem))
 				{

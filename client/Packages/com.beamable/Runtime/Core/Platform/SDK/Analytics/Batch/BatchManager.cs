@@ -1,8 +1,8 @@
-﻿using UnityEngine;
+﻿using Beamable.Coroutines;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Beamable.Coroutines;
+using UnityEngine;
 
 namespace Beamable.Api.Analytics.Batch
 {
@@ -39,9 +39,9 @@ namespace Beamable.Api.Analytics.Batch
 		/// <param name="batchTimeoutSeconds">Batch timeout seconds before expiration.</param>
 		/// <param name="heartbeatInterval">Heartbeat interval indicates how often the batch lifecycle is evaluated.</param>
 		public BatchManager(CoroutineService coroutineService,
-		                    int batchCapacity,
-		                    double batchTimeoutSeconds,
-		                    float heartbeatInterval = 1f)
+							int batchCapacity,
+							double batchTimeoutSeconds,
+							float heartbeatInterval = 1f)
 		{
 			_coroutineService = coroutineService;
 			_isActive = false;
@@ -199,6 +199,8 @@ namespace Beamable.Api.Analytics.Batch
 			}
 		}
 
-		virtual protected void OnStart() { }
+		virtual protected void OnStart()
+		{
+		}
 	}
 }

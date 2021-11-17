@@ -1,7 +1,7 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Editor.Login.UI.Components;
 using Beamable.Editor.UI.Components;
+using System;
+using System.Collections.Generic;
 using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -61,8 +61,8 @@ namespace Beamable.Editor.Login.UI.Components
 			_passwordConfField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_PASSWORD_CONFIRM_FIELD);
 			_passwordConfField.isPasswordField = true;
 			var doPasswordsMatch = _passwordConfField.AddErrorLabel("Password Match", m => m != _passwordField.value
-				                                                        ? "Passwords don't match"
-				                                                        : null);
+																		? "Passwords don't match"
+																		: null);
 
 			_getCodeButton = Root.Q<PrimaryButtonVisualElement>("getCode");
 			_getCodeButton.Button.clickable.clicked += GetCode_OnClicked;
@@ -70,8 +70,8 @@ namespace Beamable.Editor.Login.UI.Components
 
 			_backButton = Root.Q<GenericButtonVisualElement>("login");
 			_backButton.SetText(Manager.IsPreviousPage<AccountSummaryVisualElement>()
-				                    ? "Back to account"
-				                    : "Back to login");
+									? "Back to account"
+									: "Back to login");
 			_backButton.OnClick += Manager.GoToPreviousPage;
 
 			_resendButton = Root.Q<GenericButtonVisualElement>("resend");
@@ -146,7 +146,8 @@ namespace Beamable.Editor.Login.UI.Components
 
 			promise.Then(result =>
 			{
-				if (!result.Success) return;
+				if (!result.Success)
+					return;
 				StartClock();
 				ShowPhase2();
 			});

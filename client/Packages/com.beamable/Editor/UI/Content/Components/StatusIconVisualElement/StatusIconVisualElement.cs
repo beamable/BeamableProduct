@@ -1,7 +1,7 @@
-using System.Collections.Generic;
 using Beamable.Common.Content;
 using Beamable.Editor.Content.Models;
 using Beamable.Editor.UI.Buss;
+using System.Collections.Generic;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -15,12 +15,14 @@ namespace Beamable.Editor.Content.Components
 {
 	public class StatusIconVisualElement : ContentManagerComponent
 	{
-		public new class UxmlFactory : UxmlFactory<StatusIconVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<StatusIconVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription customText =
-				new UxmlStringAttributeDescription {name = "custom-text", defaultValue = "nada"};
+				new UxmlStringAttributeDescription { name = "custom-text", defaultValue = "nada" };
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
 			{

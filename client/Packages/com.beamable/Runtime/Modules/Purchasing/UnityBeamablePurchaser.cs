@@ -1,11 +1,11 @@
-using System;
-using System.Collections;
 using Beamable.Api;
 using Beamable.Api.Payments;
 using Beamable.Common;
 using Beamable.Coroutines;
 using Beamable.Service;
 using Beamable.Spew;
+using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Purchasing;
 
@@ -28,7 +28,7 @@ namespace Beamable.Purchasing
 		private Action<ErrorCode> _fail;
 		private Action _cancelled;
 
-		static readonly int[] RETRY_DELAYS = {1, 2, 5, 10, 20}; // TODO: Just double a few times. ~ACM 2021-03-10
+		static readonly int[] RETRY_DELAYS = { 1, 2, 5, 10, 20 }; // TODO: Just double a few times. ~ACM 2021-03-10
 
 		/// <summary>
 		/// Begin initialization of Beamable purchasing.
@@ -60,11 +60,11 @@ namespace Beamable.Purchasing
 				foreach (var sku in rsp.skus.definitions)
 				{
 					builder.AddProduct(sku.name, ProductType.Consumable,
-					                   new IDs
-					                   {
-						                   {sku.productIds.itunes, AppleAppStore.Name},
-						                   {sku.productIds.googleplay, GooglePlay.Name},
-					                   });
+									   new IDs
+									   {
+										   {sku.productIds.itunes, AppleAppStore.Name},
+										   {sku.productIds.googleplay, GooglePlay.Name},
+									   });
 				}
 #endif
 
@@ -139,7 +139,7 @@ namespace Beamable.Purchasing
 		public void RestorePurchases()
 		{
 			if (Application.platform == RuntimePlatform.IPhonePlayer ||
-			    Application.platform == RuntimePlatform.OSXPlayer)
+				Application.platform == RuntimePlatform.OSXPlayer)
 			{
 				InAppPurchaseLogger.Log("RestorePurchases started ...");
 
@@ -150,14 +150,14 @@ namespace Beamable.Purchasing
 					// The first phase of restoration. If no more responses are received on ProcessPurchase then
 					// no purchases are available to be restored.
 					InAppPurchaseLogger.Log("RestorePurchases continuing: " + result +
-					                        ". If no further messages, no purchases available to restore.");
+											". If no further messages, no purchases available to restore.");
 				});
 			}
 			else
 			{
 				// If we are not running on an Apple device, no work is necessary to restore purchases.
 				InAppPurchaseLogger.Log("RestorePurchases FAIL. Not supported on this platform. Current = " +
-				                        Application.platform);
+										Application.platform);
 			}
 		}
 
@@ -244,7 +244,7 @@ namespace Beamable.Purchasing
 			// A product purchase attempt did not succeed. Check failureReason for more detail. Consider sharing
 			// this reason with the user to guide their troubleshooting actions.
 			InAppPurchaseLogger.Log(string.Format("OnPurchaseFailed: FAIL. Product: '{0}', PurchaseFailureReason: {1}",
-			                                      product.definition.storeSpecificId, failureReason));
+												  product.definition.storeSpecificId, failureReason));
 			var platform = ServiceManager.Resolve<PlatformService>();
 			var reasonInt = (int)failureReason;
 			if (failureReason == PurchaseFailureReason.UserCancelled)
@@ -256,7 +256,7 @@ namespace Beamable.Purchasing
 			{
 				platform.Payments.FailPurchase(_txid, product.definition.storeSpecificId + ":" + failureReason);
 				var errorCode = new ErrorCode(reasonInt, GameSystem.GAME_CLIENT,
-				                              failureReason.ToString() + $" ({product.definition.storeSpecificId})");
+											  failureReason.ToString() + $" ({product.definition.storeSpecificId})");
 				_fail?.Invoke(errorCode);
 			}
 
@@ -294,7 +294,7 @@ namespace Beamable.Purchasing
 				if (retryable)
 				{
 					ServiceManager.Resolve<CoroutineService>()
-					              .StartCoroutine(RetryTransaction(transaction, purchasedProduct));
+								  .StartCoroutine(RetryTransaction(transaction, purchasedProduct));
 				}
 				else
 				{

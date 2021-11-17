@@ -1,6 +1,6 @@
-using Beamable.Content;
 using Beamable.Api.Payments;
 using Beamable.Common.Inventory;
+using Beamable.Content;
 using Beamable.Inventory;
 using Beamable.UI.Scripts;
 using TMPro;
@@ -18,7 +18,7 @@ namespace Beamable.Shop.Defaults
 		{
 			Name.text = data.contentId.Split('.')[1];
 
-			var item = await new ItemRef {Id = data.contentId}.Resolve();
+			var item = await new ItemRef { Id = data.contentId }.Resolve();
 			Icon.texture = await item.icon.LoadTexture();
 		}
 	}

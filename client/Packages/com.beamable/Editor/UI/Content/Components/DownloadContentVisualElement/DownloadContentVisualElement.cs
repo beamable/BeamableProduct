@@ -1,14 +1,14 @@
-using Beamable.Editor.Content.Models;
+using Beamable.Common;
 using Beamable.Editor.Content;
-using UnityEngine;
+using Beamable.Editor.Content.Models;
 using Beamable.Editor.UI.Buss.Components;
+using Beamable.Editor.UI.Components;
+using Beamable.Platform.SDK;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Common;
-using Beamable.Platform.SDK;
-using Beamable.Editor.UI.Components;
 using UnityEditor;
+using UnityEngine;
 using Debug = UnityEngine.Debug;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -149,9 +149,9 @@ namespace Beamable.Editor.Content.Components
 		}
 
 		private void SetFold(Foldout foldout,
-		                     List<ContentDownloadEntryDescriptor> entries,
-		                     List<ContentDownloadEntryDescriptor> source,
-		                     ListView listView)
+							 List<ContentDownloadEntryDescriptor> entries,
+							 List<ContentDownloadEntryDescriptor> source,
+							 ListView listView)
 		{
 			if (entries.Count > 0)
 			{

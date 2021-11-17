@@ -1,17 +1,17 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Beamable.Api.Caches;
+using Beamable.Api.Connectivity;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
-using Beamable.Api.Connectivity;
 using Beamable.Common.Pooling;
 using Beamable.Serialization;
 using Beamable.Spew;
+using Core.Platform.SDK;
+using System;
+using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
-using Core.Platform.SDK;
 
 namespace Beamable.Api
 {
@@ -91,8 +91,8 @@ namespace Beamable.Api
 		}
 
 		public PlatformRequester(string host,
-		                         AccessTokenStorage accessTokenStorage,
-		                         IConnectivityService connectivityService)
+								 AccessTokenStorage accessTokenStorage,
+								 IConnectivityService connectivityService)
 		{
 			Host = host;
 			_accessTokenStorage = accessTokenStorage;
@@ -110,17 +110,17 @@ namespace Beamable.Api
 				TimeOverride = TimeOverride,
 				AuthService = AuthService,
 				Token = new AccessToken(_accessTokenStorage, Cid, Pid, token.access_token, token.refresh_token,
-				                        token.expires_in)
+										token.expires_in)
 			};
 			return requester;
 		}
 
 		public Promise<T> ManualRequest<T>(Method method,
-		                                   string url,
-		                                   object body = null,
-		                                   Dictionary<string, string> headers = null,
-		                                   string contentType = "application/json",
-		                                   Func<string, T> parser = null)
+										   string url,
+										   object body = null,
+										   Dictionary<string, string> headers = null,
+										   string contentType = "application/json",
+										   Func<string, T> parser = null)
 		{
 			byte[] bodyBytes = null;
 
@@ -196,7 +196,8 @@ namespace Beamable.Api
 			// Prepare the request
 			var request = new UnityWebRequest(address)
 			{
-				downloadHandler = new DownloadHandlerBuffer(), method = method.ToString()
+				downloadHandler = new DownloadHandlerBuffer(),
+				method = method.ToString()
 			};
 
 			if (enableCompression)
@@ -208,7 +209,7 @@ namespace Beamable.Api
 			if (body != null)
 			{
 				var upload =
-					new UploadHandlerRaw(enableCompression ? Gzip.Compress(body) : body) {contentType = contentType};
+					new UploadHandlerRaw(enableCompression ? Gzip.Compress(body) : body) { contentType = contentType };
 				request.uploadHandler = upload;
 			}
 
@@ -223,15 +224,15 @@ namespace Beamable.Api
 		public Promise<T> RequestForm<T>(string uri, WWWForm form, Method method, bool includeAuthHeader = true)
 		{
 			return MakeRequestWithTokenRefresh<T>(method, uri, "application/x-www-form-urlencoded", form.data,
-			                                      includeAuthHeader);
+												  includeAuthHeader);
 		}
 
 		public Promise<T> Request<T>(Method method,
-		                             string uri,
-		                             object body = null,
-		                             bool includeAuthHeader = true,
-		                             Func<string, T> parser = null,
-		                             bool useCache = false)
+									 string uri,
+									 object body = null,
+									 bool includeAuthHeader = true,
+									 Func<string, T> parser = null,
+									 bool useCache = false)
 		{
 			string contentType = null;
 			byte[] bodyBytes = null;
@@ -245,13 +246,13 @@ namespace Beamable.Api
 			}
 
 			return MakeRequestWithTokenRefresh<T>(method, uri, contentType, bodyBytes, includeAuthHeader, parser,
-			                                      useCache);
+												  useCache);
 		}
 
 		public Promise<T> RequestJson<T>(Method method,
-		                                 string uri,
-		                                 JsonSerializable.ISerializable body,
-		                                 bool includeAuthHeader = true)
+										 string uri,
+										 JsonSerializable.ISerializable body,
+										 bool includeAuthHeader = true)
 		{
 			const string contentType = "application/json";
 			var jsonFields = JsonSerializable.Serialize(body);
@@ -265,67 +266,67 @@ namespace Beamable.Api
 		}
 
 		private Promise<T> MakeRequestWithTokenRefresh<T>(Method method,
-		                                                  string uri,
-		                                                  string contentType,
-		                                                  byte[] body,
-		                                                  bool includeAuthHeader,
-		                                                  Func<string, T> parser = null,
-		                                                  bool useCache = false)
+														  string uri,
+														  string contentType,
+														  byte[] body,
+														  bool includeAuthHeader,
+														  Func<string, T> parser = null,
+														  bool useCache = false)
 		{
 			internetConnectivity = _connectivityService?.HasConnectivity ?? true;
 
 			if (internetConnectivity)
 			{
 				return MakeRequest<T>(method, uri, contentType, body, includeAuthHeader, parser)
-				       .RecoverWith(error =>
-				       {
-					       var httpNoInternet = error is NoConnectivityException ||
-					                            error is PlatformRequesterException noInternet &&
-					                            noInternet.Status == 0;
+					   .RecoverWith(error =>
+					   {
+						   var httpNoInternet = error is NoConnectivityException ||
+												error is PlatformRequesterException noInternet &&
+												noInternet.Status == 0;
 
-					       if (httpNoInternet)
-					       {
-						       _connectivityService?.ReportInternetLoss();
-					       }
+						   if (httpNoInternet)
+						   {
+							   _connectivityService?.ReportInternetLoss();
+						   }
 
-					       if (useCache && httpNoInternet && Application.isPlaying)
-					       {
-						       return OfflineCache.Get<T>(uri, Token);
-					       }
+						   if (useCache && httpNoInternet && Application.isPlaying)
+						   {
+							   return OfflineCache.Get<T>(uri, Token);
+						   }
 
-					       switch (error)
-					       {
-						       case Exception _ when httpNoInternet:
-							       return Promise<T>.Failed(
-								       new NoConnectivityException(
-									       uri +
-									       " should not be cached and requires internet connectivity. Internet connection lost."));
+						   switch (error)
+						   {
+							   case Exception _ when httpNoInternet:
+								   return Promise<T>.Failed(
+									   new NoConnectivityException(
+										   uri +
+										   " should not be cached and requires internet connectivity. Internet connection lost."));
 
-						       // if we get a 401 InvalidTokenError, let's refresh the token and retry the request.
-						       case PlatformRequesterException code when code?.Error?.error == "InvalidTokenError":
-							       return AuthService.LoginRefreshToken(Token.RefreshToken)
-							                         .Map(rsp =>
-							                         {
-								                         Token = new AccessToken(
-									                         _accessTokenStorage, Cid, Pid, rsp.access_token,
-									                         rsp.refresh_token,
-									                         rsp.expires_in);
-								                         Token.Save();
-								                         return PromiseBase.Unit;
-							                         })
-							                         .FlatMap(_ => MakeRequest(method, uri, contentType, body,
-							                                                   includeAuthHeader, parser));
-					       }
+							   // if we get a 401 InvalidTokenError, let's refresh the token and retry the request.
+							   case PlatformRequesterException code when code?.Error?.error == "InvalidTokenError":
+								   return AuthService.LoginRefreshToken(Token.RefreshToken)
+													 .Map(rsp =>
+													 {
+														 Token = new AccessToken(
+															 _accessTokenStorage, Cid, Pid, rsp.access_token,
+															 rsp.refresh_token,
+															 rsp.expires_in);
+														 Token.Save();
+														 return PromiseBase.Unit;
+													 })
+													 .FlatMap(_ => MakeRequest(method, uri, contentType, body,
+																			   includeAuthHeader, parser));
+						   }
 
-					       return Promise<T>.Failed(error);
-					       //The uri + Token.RefreshToken.ToString() wont work properly for anything with a body in the request
-				       }).Then(_response =>
-				       {
-					       if (useCache && Token != null && Application.isPlaying)
-					       {
-						       OfflineCache.Set<T>(uri, _response, Token);
-					       }
-				       });
+						   return Promise<T>.Failed(error);
+						   //The uri + Token.RefreshToken.ToString() wont work properly for anything with a body in the request
+					   }).Then(_response =>
+					   {
+						   if (useCache && Token != null && Application.isPlaying)
+						   {
+							   OfflineCache.Set<T>(uri, _response, Token);
+						   }
+					   });
 			}
 			else if (!internetConnectivity && useCache && Application.isPlaying)
 			{
@@ -339,11 +340,11 @@ namespace Beamable.Api
 		}
 
 		private Promise<T> MakeRequest<T>(Method method,
-		                                  string uri,
-		                                  string contentType,
-		                                  byte[] body,
-		                                  bool includeAuthHeader,
-		                                  Func<string, T> parser = null)
+										  string uri,
+										  string contentType,
+										  byte[] body,
+										  bool includeAuthHeader,
+										  Func<string, T> parser = null)
 		{
 			var result = new Promise<T>();
 			var request = BuildWebRequest(method, uri, contentType, body, includeAuthHeader);
@@ -353,10 +354,10 @@ namespace Beamable.Api
 		}
 
 		private UnityWebRequest BuildWebRequest(Method method,
-		                                        string uri,
-		                                        string contentType,
-		                                        byte[] body,
-		                                        bool includeAuthHeader)
+												string uri,
+												string contentType,
+												byte[] body,
+												bool includeAuthHeader)
 		{
 			PlatformLogger.Log($"PLATFORM REQUEST: {Host}{uri}");
 

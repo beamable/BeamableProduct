@@ -32,23 +32,23 @@ namespace Beamable.Common.Api.Auth
 		{
 			var encodedEmail = _requester.EscapeURL(email);
 			return _requester
-			       .Request<AvailabilityResponse>(Method.GET, $"{ACCOUNT_URL}/available?email={encodedEmail}", null,
-			                                      false)
-			       .Map(resp => resp.available);
+				   .Request<AvailabilityResponse>(Method.GET, $"{ACCOUNT_URL}/available?email={encodedEmail}", null,
+												  false)
+				   .Map(resp => resp.available);
 		}
 
 		public Promise<bool> IsThirdPartyAvailable(AuthThirdParty thirdParty, string token)
 		{
 			return _requester.Request<AvailabilityResponse>(
-				                 Method.GET,
-				                 $"{ACCOUNT_URL}/available/third-party?thirdParty={thirdParty.GetString()}&token={token}",
-				                 null, false)
-			                 .Map(resp => resp.available);
+								 Method.GET,
+								 $"{ACCOUNT_URL}/available/third-party?thirdParty={thirdParty.GetString()}&token={token}",
+								 null, false)
+							 .Map(resp => resp.available);
 		}
 
 		public Promise<TokenResponse> CreateUser()
 		{
-			var req = new CreateUserRequest {grant_type = "guest"};
+			var req = new CreateUserRequest { grant_type = "guest" };
 			return _requester.Request<TokenResponse>(Method.POST, TOKEN_URL, req, false);
 			//return _requester.RequestForm<TokenResponse>(TOKEN_URL, form, false);
 		}
@@ -61,7 +61,7 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<TokenResponse> LoginRefreshToken(string refreshToken)
 		{
-			var req = new LoginRefreshTokenRequest {grant_type = "refresh_token", refresh_token = refreshToken};
+			var req = new LoginRefreshTokenRequest { grant_type = "refresh_token", refresh_token = refreshToken };
 			return _requester.Request<TokenResponse>(Method.POST, TOKEN_URL, req, includeAuthHeader: false);
 		}
 
@@ -73,17 +73,20 @@ namespace Beamable.Common.Api.Auth
 		}
 
 		public Promise<TokenResponse> Login(string username,
-		                                    string password,
-		                                    bool mergeGamerTagToAccount = true,
-		                                    bool customerScoped = false)
+											string password,
+											bool mergeGamerTagToAccount = true,
+											bool customerScoped = false)
 		{
 			var body = new LoginRequest
 			{
-				username = username, grant_type = "password", password = password, customerScoped = customerScoped
+				username = username,
+				grant_type = "password",
+				password = password,
+				customerScoped = customerScoped
 			};
 
 			return _requester.Request<TokenResponse>(Method.POST, TOKEN_URL, body,
-			                                         includeAuthHeader: mergeGamerTagToAccount);
+													 includeAuthHeader: mergeGamerTagToAccount);
 		}
 
 		[Serializable]
@@ -96,12 +99,14 @@ namespace Beamable.Common.Api.Auth
 		}
 
 		public Promise<TokenResponse> LoginThirdParty(AuthThirdParty thirdParty,
-		                                              string thirdPartyToken,
-		                                              bool includeAuthHeader = true)
+													  string thirdPartyToken,
+													  bool includeAuthHeader = true)
 		{
 			var req = new LoginThirdPartyRequest
 			{
-				grant_type = "third_party", third_party = thirdParty.GetString(), token = thirdPartyToken
+				grant_type = "third_party",
+				third_party = thirdParty.GetString(),
+				token = thirdPartyToken
 			};
 			return _requester.Request<TokenResponse>(Method.POST, TOKEN_URL, req, includeAuthHeader);
 		}
@@ -116,7 +121,7 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<User> RegisterDBCredentials(string email, string password)
 		{
-			var req = new RegisterDBCredentialsRequest {email = email, password = password};
+			var req = new RegisterDBCredentialsRequest { email = email, password = password };
 			return _requester.Request<User>(Method.POST, $"{ACCOUNT_URL}/register", req);
 		}
 
@@ -129,15 +134,16 @@ namespace Beamable.Common.Api.Auth
 		public Promise<User> RemoveThirdPartyAssociation(AuthThirdParty thirdParty, string token)
 		{
 			return _requester.Request<User>(Method.DELETE,
-			                                $"{ACCOUNT_URL}/me/third-party?thirdParty={thirdParty.GetString()}&token={token}",
-			                                null, true);
+											$"{ACCOUNT_URL}/me/third-party?thirdParty={thirdParty.GetString()}&token={token}",
+											null, true);
 		}
 
 		public Promise<User> RegisterThirdPartyCredentials(AuthThirdParty thirdParty, string accessToken)
 		{
 			var req = new RegisterThirdPartyCredentialsRequest
 			{
-				thirdParty = thirdParty.GetString(), token = accessToken
+				thirdParty = thirdParty.GetString(),
+				token = accessToken
 			};
 			return _requester.Request<User>(Method.PUT, $"{ACCOUNT_URL}/me", req);
 		}
@@ -151,7 +157,7 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<EmptyResponse> IssueEmailUpdate(string newEmail)
 		{
-			var req = new IssueEmailUpdateRequest {newEmail = newEmail};
+			var req = new IssueEmailUpdateRequest { newEmail = newEmail };
 			return _requester.Request<EmptyResponse>(Method.POST, $"{ACCOUNT_URL}/email-update/init", req);
 		}
 
@@ -163,7 +169,7 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<EmptyResponse> ConfirmEmailUpdate(string code, string password)
 		{
-			var req = new ConfirmEmailUpdateRequest {code = code, password = password};
+			var req = new ConfirmEmailUpdateRequest { code = code, password = password };
 			return _requester.Request<EmptyResponse>(Method.POST, $"{ACCOUNT_URL}/email-update/confirm", req);
 		}
 
@@ -177,7 +183,8 @@ namespace Beamable.Common.Api.Auth
 		{
 			var req = new IssuePasswordUpdateRequest
 			{
-				email = email, codeType = _settings.PasswordResetCodeType.Serialize()
+				email = email,
+				codeType = _settings.PasswordResetCodeType.Serialize()
 			};
 			return _requester.Request<EmptyResponse>(Method.POST, $"{ACCOUNT_URL}/password-update/init", req);
 		}
@@ -191,7 +198,7 @@ namespace Beamable.Common.Api.Auth
 
 		public Promise<EmptyResponse> ConfirmPasswordUpdate(string code, string newPassword)
 		{
-			var req = new ConfirmPasswordUpdateRequest {code = code, newPassword = newPassword};
+			var req = new ConfirmPasswordUpdateRequest { code = code, newPassword = newPassword };
 			return _requester.Request<EmptyResponse>(Method.POST, $"{ACCOUNT_URL}/password-update/confirm", req);
 		}
 
@@ -202,20 +209,20 @@ namespace Beamable.Common.Api.Auth
 		}
 
 		public Promise<CustomerRegistrationResponse> RegisterCustomer(string email,
-		                                                              string password,
-		                                                              string projectName,
-		                                                              string customerName,
-		                                                              string alias)
+																	  string password,
+																	  string projectName,
+																	  string customerName,
+																	  string alias)
 		{
 			var request = new CustomerRegistrationRequest(email, password, projectName, customerName, alias);
 			return _requester.Request<CustomerRegistrationResponse>(Method.POST, "/basic/realms/customer", request,
-			                                                        false);
+																	false);
 		}
 
 		public Promise<CurrentProjectResponse> GetCurrentProject()
 		{
 			return _requester.Request<CurrentProjectResponse>(Method.GET, "/basic/realms/project", null,
-			                                                  useCache: true);
+															  useCache: true);
 		}
 
 		public IBeamableRequester Requester => _requester;
@@ -251,7 +258,8 @@ namespace Beamable.Common.Api.Auth
 
 		public bool Equals(UserBundle other)
 		{
-			if (other == null) return false;
+			if (other == null)
+				return false;
 
 			return other.User.id == User.id;
 		}
@@ -381,10 +389,10 @@ namespace Beamable.Common.Api.Auth
 		public string alias;
 
 		public CustomerRegistrationRequest(string email,
-		                                   string password,
-		                                   string projectName,
-		                                   string customerName,
-		                                   string alias)
+										   string password,
+										   string projectName,
+										   string customerName,
+										   string alias)
 		{
 			this.email = email;
 			this.password = password;
@@ -435,8 +443,10 @@ namespace Beamable.Common.Api.Auth
 		{
 			switch (type)
 			{
-				case CodeType.PIN: return "PIN";
-				default: return "UUID";
+				case CodeType.PIN:
+					return "PIN";
+				default:
+					return "UUID";
 			}
 		}
 	}

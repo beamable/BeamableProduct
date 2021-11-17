@@ -14,5 +14,7 @@ namespace Beamable.Server.Api.Tournament
 	/// ![img beamable-logo]
 	/// 
 	/// </summary>
-	public interface IMicroserviceTournamentApi : ITournamentApi { }
+	public interface IMicroserviceTournamentApi : ITournamentApi
+	{
+	}
 }

@@ -1,12 +1,12 @@
+using Beamable.Api.Tournaments;
+using Beamable.Common;
+using Beamable.Common.Api.Tournaments;
+using Beamable.Common.Tournaments;
+using Beamable.Content;
+using Beamable.Platform.SDK;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Common;
-using Beamable.Content;
-using Beamable.Platform.SDK;
-using Beamable.Api.Tournaments;
-using Beamable.Common.Api.Tournaments;
-using Beamable.Common.Tournaments;
 using UnityEngine;
 
 namespace Beamable.Tournaments
@@ -20,12 +20,17 @@ namespace Beamable.Tournaments
 
 		readonly TournamentInfo Info = new TournamentInfo
 		{
-			tournamentId = "mockTournament", contentId = "mockContent", secondsRemaining = (5 * 60) + (1 * 60 * 60)
+			tournamentId = "mockTournament",
+			contentId = "mockContent",
+			secondsRemaining = (5 * 60) + (1 * 60 * 60)
 		};
 
 		private readonly TournamentPlayerStatus Status = new TournamentPlayerStatus
 		{
-			playerId = 0, stage = 6, tier = 0, contentId = "mockContent"
+			playerId = 0,
+			stage = 6,
+			tier = 0,
+			contentId = "mockContent"
 		};
 
 		private readonly List<TournamentRewardCurrency> Rewards = new List<TournamentRewardCurrency>
@@ -50,45 +55,47 @@ namespace Beamable.Tournaments
 		}
 
 		public Promise<TournamentInfoResponse> GetAllTournaments(string contentId = null,
-		                                                         int? cycle = null,
-		                                                         bool? isRunning = null)
+																 int? cycle = null,
+																 bool? isRunning = null)
 		{
 			return Promise<TournamentInfoResponse>
-			       .Successful(new TournamentInfoResponse {tournaments = new List<TournamentInfo> {Info}})
-			       .WaitForSeconds(RandomLatencyTime);
+				   .Successful(new TournamentInfoResponse { tournaments = new List<TournamentInfo> { Info } })
+				   .WaitForSeconds(RandomLatencyTime);
 		}
 
 		public Promise<TournamentChampionsResponse> GetChampions(string tournamentId, int cycleLimit = 30)
 		{
-			if (!string.Equals(tournamentId, Info.tournamentId)) throw new Exception("Invalid tournament id for mock");
+			if (!string.Equals(tournamentId, Info.tournamentId))
+				throw new Exception("Invalid tournament id for mock");
 
 			var entries = new List<TournamentChampionEntry>();
 			for (var i = 0; i < cycleLimit; i++)
 			{
 				entries.Add(
-					new TournamentChampionEntry {playerId = i, cyclesPrior = i, score = (100 - i) * (1234 + i),});
+					new TournamentChampionEntry { playerId = i, cyclesPrior = i, score = (100 - i) * (1234 + i), });
 			}
 
-			return Promise<TournamentChampionsResponse>.Successful(new TournamentChampionsResponse {entries = entries,})
-			                                           .WaitForSeconds(RandomLatencyTime);
+			return Promise<TournamentChampionsResponse>.Successful(new TournamentChampionsResponse { entries = entries, })
+													   .WaitForSeconds(RandomLatencyTime);
 		}
 
 		public Promise<TournamentStandingsResponse> GetGlobalStandings(string tournamentId,
-		                                                               int cycle = -1,
-		                                                               int @from = -1,
-		                                                               int max = -1,
-		                                                               int focus = -1)
+																	   int cycle = -1,
+																	   int @from = -1,
+																	   int max = -1,
+																	   int focus = -1)
 		{
 			return GetStandings(tournamentId, cycle);
 		}
 
 		public Promise<TournamentStandingsResponse> GetStandings(string tournamentId,
-		                                                         int cycle = -1,
-		                                                         int @from = -1,
-		                                                         int max = -1,
-		                                                         int focus = -1)
+																 int cycle = -1,
+																 int @from = -1,
+																 int max = -1,
+																 int focus = -1)
 		{
-			if (!string.Equals(tournamentId, Info.tournamentId)) throw new Exception("Invalid tournament id for mock");
+			if (!string.Equals(tournamentId, Info.tournamentId))
+				throw new Exception("Invalid tournament id for mock");
 
 			return ContentRef.Resolve().FlatMap(content =>
 			{
@@ -100,7 +107,8 @@ namespace Beamable.Tournaments
 					{
 						rewards.Add(new TournamentRewardCurrency
 						{
-							amount = (100 - i) * 10050, symbol = "currency.gems"
+							amount = (100 - i) * 10050,
+							symbol = "currency.gems"
 						});
 					}
 
@@ -126,18 +134,20 @@ namespace Beamable.Tournaments
 
 				return Promise<TournamentStandingsResponse>.Successful(new TournamentStandingsResponse
 				{
-					entries = entries, me = self
+					entries = entries,
+					me = self
 				});
 			}).WaitForSeconds(RandomLatencyTime);
 		}
 
 		public Promise<TournamentRewardsResponse> GetUnclaimedRewards(string tournamentId)
 		{
-			if (!string.Equals(tournamentId, Info.tournamentId)) throw new Exception("Invalid tournament id for mock");
+			if (!string.Equals(tournamentId, Info.tournamentId))
+				throw new Exception("Invalid tournament id for mock");
 
 			return Promise<TournamentRewardsResponse>
-			       .Successful(new TournamentRewardsResponse {rewardCurrencies = Rewards})
-			       .WaitForSeconds(RandomLatencyTime);
+				   .Successful(new TournamentRewardsResponse { rewardCurrencies = Rewards })
+				   .WaitForSeconds(RandomLatencyTime);
 		}
 
 		public Promise<TournamentRewardsResponse> ClaimAllRewards(string tournamentId)
@@ -161,13 +171,13 @@ namespace Beamable.Tournaments
 		}
 
 		public Promise<TournamentPlayerStatusResponse> GetPlayerStatus(string tournamentId = null,
-		                                                               string contentId = null,
-		                                                               bool? hasUnclaimedRewards = null)
+																	   string contentId = null,
+																	   bool? hasUnclaimedRewards = null)
 		{
 			return Promise<TournamentPlayerStatusResponse>
-			       .Successful(
-				       new TournamentPlayerStatusResponse {statuses = new List<TournamentPlayerStatus> {Status}})
-			       .WaitForSeconds(RandomLatencyTime);
+				   .Successful(
+					   new TournamentPlayerStatusResponse { statuses = new List<TournamentPlayerStatus> { Status } })
+				   .WaitForSeconds(RandomLatencyTime);
 		}
 
 		public Promise<string> GetPlayerAlias(long playerId, string statName = "alias")
@@ -182,19 +192,19 @@ namespace Beamable.Tournaments
 		}
 
 		public Promise<TournamentStandingsResponse> GetGroupPlayers(string tournamentId,
-		                                                            int cycle = -1,
-		                                                            int from = -1,
-		                                                            int max = -1,
-		                                                            int focus = -1)
+																	int cycle = -1,
+																	int from = -1,
+																	int max = -1,
+																	int focus = -1)
 		{
 			throw new NotImplementedException();
 		}
 
 		public Promise<TournamentGroupsResponse> GetGroups(string tournamentId,
-		                                                   int cycle = -1,
-		                                                   int from = -1,
-		                                                   int max = -1,
-		                                                   int focus = -1)
+														   int cycle = -1,
+														   int from = -1,
+														   int max = -1,
+														   int focus = -1)
 		{
 			throw new NotImplementedException();
 		}

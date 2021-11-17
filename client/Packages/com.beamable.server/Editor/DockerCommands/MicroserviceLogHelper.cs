@@ -1,11 +1,11 @@
-﻿using System;
+﻿using Beamable.Common;
+using Beamable.Editor.UI.Model;
+using Beamable.Serialization.SmallerJSON;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using Beamable.Common;
-using Beamable.Editor.UI.Model;
-using Beamable.Serialization.SmallerJSON;
 using UnityEditor;
 using UnityEngine;
 
@@ -16,7 +16,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		public static int RunLogsSteps => ExpectedRunLogs.Length;
 		private static readonly Regex StepRegex = new Regex("Step [0-9]+/[0-9]+");
 		private static readonly Regex NumberRegex = new Regex("[0-9]+");
-		private static readonly string[] ErrorElements = {"error", "Error", "Exception", "exception"};
+		private static readonly string[] ErrorElements = { "error", "Error", "Exception", "exception" };
 
 		private static readonly string[] ExpectedRunLogs =
 		{
@@ -26,19 +26,24 @@ namespace Beamable.Server.Editor.DockerCommands
 		};
 
 		public static bool HandleMongoLog(StorageObjectDescriptor storage,
-		                                  string data,
-		                                  LogLevel defaultLogLevel = LogLevel.INFO,
-		                                  bool forceDisplay = false)
+										  string data,
+										  LogLevel defaultLogLevel = LogLevel.INFO,
+										  bool forceDisplay = false)
 		{
 			LogLevel ParseMongoLevel(string level)
 			{
 				switch (level)
 				{
-					case "I": return LogLevel.INFO;
-					case "F": return LogLevel.FATAL;
-					case "E": return LogLevel.ERROR;
-					case "W": return LogLevel.WARNING;
-					default: return LogLevel.DEBUG;
+					case "I":
+						return LogLevel.INFO;
+					case "F":
+						return LogLevel.FATAL;
+					case "E":
+						return LogLevel.ERROR;
+					case "W":
+						return LogLevel.WARNING;
+					default:
+						return LogLevel.DEBUG;
 				}
 			}
 
@@ -128,7 +133,8 @@ namespace Beamable.Server.Editor.DockerCommands
 
 				string WithColor(Color logColor, string log)
 				{
-					if (!MicroserviceConfiguration.Instance.ColorLogs) return log;
+					if (!MicroserviceConfiguration.Instance.ColorLogs)
+						return log;
 
 					var msg = $"<color=\"#{ColorUtility.ToHtmlStringRGB(logColor)}\">{log}</color>";
 					return msg;
@@ -225,11 +231,11 @@ namespace Beamable.Server.Editor.DockerCommands
 		}
 
 		public static bool HandleLog(MicroserviceDescriptor descriptor,
-		                             LogLevel logLevel,
-		                             string message,
-		                             Color color,
-		                             bool isBoldMessage,
-		                             string postfixIcon)
+									 LogLevel logLevel,
+									 string message,
+									 Color color,
+									 bool isBoldMessage,
+									 string postfixIcon)
 		{
 			var logMessage = new LogMessage
 			{

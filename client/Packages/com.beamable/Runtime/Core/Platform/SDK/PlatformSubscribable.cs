@@ -1,15 +1,15 @@
 //#define PLATFORM_SUBSCRIBABLE_RETRIES_TEST
 
-using System.Collections.Generic;
-using System;
-using System.Collections;
-using System.Linq;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Coroutines;
 using Beamable.Service;
 using Beamable.Spew;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Api
@@ -29,7 +29,7 @@ namespace Beamable.Api
 	/// </summary>
 	internal static class SubscribableConsts
 	{
-		internal static readonly int[] RETRY_DELAYS = new int[] {1, 2, 5, 10, 20};
+		internal static readonly int[] RETRY_DELAYS = new int[] { 1, 2, 5, 10, 20 };
 	}
 
 	/// <summary>
@@ -105,9 +105,9 @@ namespace Beamable.Api
 		}
 
 		protected PlatformSubscribable(IPlatformService platform,
-		                               IBeamableRequester requester,
-		                               string service,
-		                               BeamableGetApiResource<ScopedRsp> getter = null)
+									   IBeamableRequester requester,
+									   string service,
+									   BeamableGetApiResource<ScopedRsp> getter = null)
 		{
 			if (getter == null)
 			{
@@ -505,8 +505,8 @@ namespace Beamable.Api
 		public string Scope => scope;
 
 		internal PlatformSubscription(string scope,
-		                              Action<T> callback,
-		                              Action<string, PlatformSubscription<T>> onUnsubscribe)
+									  Action<T> callback,
+									  Action<string, PlatformSubscription<T>> onUnsubscribe)
 		{
 			this.scope = scope;
 			this.callback = callback;

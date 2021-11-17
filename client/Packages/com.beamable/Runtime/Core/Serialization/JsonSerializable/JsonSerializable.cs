@@ -30,11 +30,11 @@
 // List<T> supports merge operations, give the T has a field called id used to identify which
 // objects are new or changed in the list.
 
+using Beamable.Pooling;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using Beamable.Pooling;
 using UnityEngine;
 using UnityEngine.Profiling;
 
@@ -188,8 +188,8 @@ namespace Beamable.Serialization
 		}
 
 		public static void Deserialize(ISerializable obj,
-		                               IDictionary<string, object> data,
-		                               ListMode mode = ListMode.kReplace)
+									   IDictionary<string, object> data,
+									   ListMode mode = ListMode.kReplace)
 		{
 			LoadStream ls = LoadStream.Spawn();
 			ls.Init(data, mode);

@@ -44,13 +44,15 @@ namespace Beamable.Theme.Palettes
 				FontSize = 18,
 				CharacterSpacing = 0,
 				LineSpacing = 0,
-				FontStyles = new[] {FontStyles.Normal},
-				Font = new FontBinding {Name = null},
+				FontStyles = new[] { FontStyles.Normal },
+				Font = new FontBinding { Name = null },
 				TextMaterial = null
 			};
 		}
 	}
 
 	[System.Serializable]
-	public class TextBinding : TextPalette.PaletteBinding { }
+	public class TextBinding : TextPalette.PaletteBinding
+	{
+	}
 }

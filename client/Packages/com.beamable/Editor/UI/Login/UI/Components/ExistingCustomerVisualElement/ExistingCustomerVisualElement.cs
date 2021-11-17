@@ -1,9 +1,9 @@
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Common;
 using Beamable.Editor.Login.UI.Components;
 using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -74,9 +74,9 @@ namespace Beamable.Editor.Login.UI.Components
 			_cidTextField.SetValueWithoutNotify(Model.Customer.CidOrAlias);
 			_emailTextField.SetValueWithoutNotify(Model.Customer.Email);
 			_passwordTextField.RegisterCallback<KeyDownEvent>(HandlePasswordFieldKeyDown,
-			                                                  TrickleDown.TrickleDown);
+															  TrickleDown.TrickleDown);
 
-			_constraints = new[] {isAlias, isEmail, isPassword};
+			_constraints = new[] { isAlias, isEmail, isPassword };
 			_continueButton.AddGateKeeper(_constraints);
 
 			_errorText = Root.Q<Label>("errorLabel");
@@ -96,7 +96,7 @@ namespace Beamable.Editor.Login.UI.Components
 		{
 			_errorText.text = "";
 			Model.Customer.SetExistingCustomerData(_cidTextField.value, _emailTextField.value,
-			                                       _passwordTextField.value);
+												   _passwordTextField.value);
 			var promise = Manager.AttemptLoginExistingCustomer(Model);
 			_continueButton.Load(AddErrorLabel(promise, _errorText));
 		}

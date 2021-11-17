@@ -1,8 +1,8 @@
+using Beamable.Server;
 using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.IO;
 using System.Reflection;
-using Beamable.Server;
 
 namespace Beamable.Server.Editor.CodeGen
 {
@@ -37,7 +37,7 @@ namespace Beamable.Server.Editor.CodeGen
 					new CodeTypeReferenceExpression(
 						"global::Beamable.Server.MicroserviceBootstrapper"), // XXX: This is super brittle...
 					"Start",
-					new CodeTypeReference[] {new CodeTypeReference(descriptor.Type),}),
+					new CodeTypeReference[] { new CodeTypeReference(descriptor.Type), }),
 				new CodeExpression[] { });
 			mainmethod.Statements.Add(invokeExpr);
 

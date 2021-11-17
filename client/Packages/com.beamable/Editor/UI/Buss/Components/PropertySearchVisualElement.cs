@@ -1,7 +1,7 @@
-using System;
+using Beamable.Editor.UI.Buss.Extensions;
 using Beamable.Editor.UI.Buss.Model;
 using Beamable.UI.Buss;
-using Beamable.Editor.UI.Buss.Extensions;
+using System;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER
@@ -19,7 +19,7 @@ namespace Beamable.Editor.UI.Buss.Components
 		}
 
 		public const string COMMON = BeamableComponentsConstants.UI_PACKAGE_PATH +
-		                             "/Buss/Components/propertySearchVisualElement";
+									 "/Buss/Components/propertySearchVisualElement";
 
 		public Action<OptionalPropertyFieldWrapper> OnSelectedProperty = x => { };
 
@@ -57,7 +57,8 @@ namespace Beamable.Editor.UI.Buss.Components
 			{
 				var propName = prop.GetName();
 				var passesFilter = propName.ToLower().Contains(filter.Trim().ToLower());
-				if (!passesFilter) continue;
+				if (!passesFilter)
+					continue;
 
 				var button = new Button(() =>
 				{

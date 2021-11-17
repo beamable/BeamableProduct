@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Beamable.Common.Content;
+using Beamable.Editor.Schedules;
+using NUnit.Framework;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Beamable.Common.Content;
-using Beamable.Editor.Schedules;
-using NUnit.Framework;
 using UnityEngine;
 
 namespace Beamable.Editor.Tests.Content
@@ -71,7 +71,7 @@ namespace Beamable.Editor.Tests.Content
 			window.Refresh();
 			window.ModeComponent.Set(1);
 			window.StartTimeComponent.Set(DateTime.Now);
-			window.DaysComponent.SetSelectedDays(new List<string> {"1", "3", "5"});
+			window.DaysComponent.SetSelectedDays(new List<string> { "1", "3", "5" });
 			window.NeverExpiresComponent.Value = true;
 			window.ActiveToDateComponent.Set(DateTime.Now + TimeSpan.FromDays(2));
 			window.ActiveToHourComponent.Set(DateTime.Now + TimeSpan.FromDays(2));
@@ -138,16 +138,16 @@ namespace Beamable.Editor.Tests.Content
 			{
 				received = true;
 				Assert.IsTrue(DateTime.TryParse(schedule.activeFrom, out DateTime _),
-				              $"{warningHeader} problem with parsing activeFrom field");
+							  $"{warningHeader} problem with parsing activeFrom field");
 				Assert.IsTrue(schedule.definitions.Count > 0 && schedule.definitions.Count <= 3,
-				              $"{warningHeader} definitions amount should be greater than 0 and less or equal to 3");
+							  $"{warningHeader} definitions amount should be greater than 0 and less or equal to 3");
 
 				foreach (ScheduleDefinition scheduleDefinition in schedule.definitions)
 				{
 					string minuteString = scheduleDefinition.minute[0];
 					string hoursString = scheduleDefinition.hour[0];
 					bool minutesMatchPattern = Regex.IsMatch(minuteString, "\\b([0-9]|[1-5][0-9])\\b") ||
-					                           Regex.IsMatch(minuteString, "/*");
+											   Regex.IsMatch(minuteString, "/*");
 					bool hoursMatchPattern =
 						Regex.IsMatch(hoursString, "\\b([0-9]|1[0-9]|2[0-3])-([0-9]|1[0-9]|2[0-3])\\b") ||
 						Regex.IsMatch(hoursString, "\\b([0-9]|1[0-9]|2[0-3])\\b");
@@ -184,11 +184,11 @@ namespace Beamable.Editor.Tests.Content
 
 				Assert.IsTrue(parsedDateTime, $"{warningHeader} problem with parsing activeFrom field");
 				Assert.IsTrue(schedule.definitions.Count > 0 && schedule.definitions.Count <= 3,
-				              $"{warningHeader} definitions amount should be greater than 0 and less or equal to 3");
+							  $"{warningHeader} definitions amount should be greater than 0 and less or equal to 3");
 
 				List<string> days = schedule.definitions[0].dayOfWeek;
 				Assert.IsTrue(days.Count > 0 && days.Count < 7,
-				              $"{warningHeader} minimum one and maximum 6 days should be selected");
+							  $"{warningHeader} minimum one and maximum 6 days should be selected");
 
 				foreach (string day in days)
 				{
@@ -203,7 +203,7 @@ namespace Beamable.Editor.Tests.Content
 			ListingScheduleWindow window = new ListingScheduleWindow();
 			window.Refresh();
 			window.ModeComponent.Set(1);
-			window.DaysComponent.SetSelectedDays(new List<string> {"1", "3", "5"});
+			window.DaysComponent.SetSelectedDays(new List<string> { "1", "3", "5" });
 			window.AllDayComponent.Value = false;
 			window.PeriodFromHourComponent.Set(DateTime.Now);
 			window.PeriodToHourComponent.Set(DateTime.Now + TimeSpan.FromHours(2));
@@ -229,7 +229,7 @@ namespace Beamable.Editor.Tests.Content
 
 				Assert.IsTrue(parsedDateTime, $"{warningHeader} problem with parsing activeFrom field");
 				Assert.IsTrue(schedule.definitions.Count > 0,
-				              $"{warningHeader} definitions amount should be greater than 0");
+							  $"{warningHeader} definitions amount should be greater than 0");
 
 				List<string> days = schedule.definitions[0].dayOfMonth;
 				Assert.IsTrue(days.Count > 0, $"{warningHeader} minimum one day should be selected");
@@ -274,11 +274,11 @@ namespace Beamable.Editor.Tests.Content
 			Assert.IsTrue(isSecondParsed, $"{warningHeader} problem with parsing second");
 
 			Assert.IsTrue(parsedHour >= 0 && parsedHour < 24,
-			              $"{warningHeader} hour should be greater or equal 0 and less than 24");
+						  $"{warningHeader} hour should be greater or equal 0 and less than 24");
 			Assert.IsTrue(parsedMinute >= 0 && parsedMinute < 60,
-			              $"{warningHeader} minute should be greater or equal 0 and less than 60");
+						  $"{warningHeader} minute should be greater or equal 0 and less than 60");
 			Assert.IsTrue(parsedSecond >= 0 && parsedSecond < 60,
-			              $"{warningHeader} second should be greater or equal 0 and less than 60");
+						  $"{warningHeader} second should be greater or equal 0 and less than 60");
 		}
 
 		private static void TestPeriod(Schedule schedule, string warningHeader)

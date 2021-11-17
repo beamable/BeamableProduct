@@ -39,9 +39,13 @@ namespace Beamable.Signals
 			OnAfterDisable();
 		}
 
-		protected virtual void OnAfterEnable() { }
+		protected virtual void OnAfterEnable()
+		{
+		}
 
-		protected virtual void OnAfterDisable() { }
+		protected virtual void OnAfterDisable()
+		{
+		}
 
 		public static void ForAll<TSignalTower>(Action<TSignalTower> action)
 			where TSignalTower : DeSignalTower

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Beamable.Common;
+﻿using Beamable.Common;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
@@ -9,6 +6,9 @@ using Beamable.Server.Editor;
 using Beamable.Server.Editor.ManagerClient;
 using Beamable.Server.Editor.UI.Components;
 using Beamable.Server.Editor.UI.Components.DockerLoginWindow;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -78,7 +78,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			base.OnDestroy();
 			Microservices.onBeforeDeploy -= SetupProgressBarForDeployment;
 
-			if (Model == null) return;
+			if (Model == null)
+				return;
 
 			Model.OnStart -= SetupProgressBarForStart;
 			Model.OnStop -= SetupProgressBarForStop;
@@ -122,7 +123,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void InjectStyleSheets()
 		{
-			if (string.IsNullOrWhiteSpace(ScriptName)) return;
+			if (string.IsNullOrWhiteSpace(ScriptName))
+				return;
 			_rootVisualElement.AddStyleSheet($"{Constants.COMP_PATH}/{ScriptName}/{ScriptName}.uss");
 		}
 
@@ -142,13 +144,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_stopButton.clickable.clicked += HandleStopButtonClicked;
 			var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
-			manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
+			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 			_moreBtn.clickable.activators.Clear();
 			_moreBtn.AddManipulator(manipulator);
 			_moreBtn.tooltip = "More...";
 
 			var dependentServicesBtnState = MicroserviceConfiguration.Instance.Microservices.Count > 0 &&
-			                                MicroserviceConfiguration.Instance.StorageObjects.Count > 0;
+											MicroserviceConfiguration.Instance.StorageObjects.Count > 0;
 
 			_dependentServicesBtn.clickable.clicked += () => DependentServicesWindow.ShowWindow();
 			_dependentServicesBtn.SetEnabled(dependentServicesBtnState);
@@ -261,7 +263,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void CreateLogElement()
 		{
-			_logElement = new LogVisualElement {Model = Model};
+			_logElement = new LogVisualElement { Model = Model };
 			_logElement.AddToClassList("logElement");
 			_logElement.OnDetachLogs += OnLogsDetached;
 			_logContainerElement.Add(_logElement);
@@ -294,7 +296,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		protected virtual void SetupProgressBarForStop(Task task)
 		{
-			new StopImageLogParser(_loadingBar, Model) {OnFailure = OnStopFailed};
+			new StopImageLogParser(_loadingBar, Model) { OnFailure = OnStopFailed };
 		}
 
 		private void OnStopFailed()
@@ -305,8 +307,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void SetupProgressBarForDeployment(ManifestModel _, int __)
 		{
 			new GroupLoadingBarUpdater("Build and Deploy", _loadingBar, false,
-			                           new StepLogParser(new VirtualLoadingBar(), Model, null),
-			                           new DeployMSLogParser(new VirtualLoadingBar(), Model)
+									   new StepLogParser(new VirtualLoadingBar(), Model, null),
+									   new DeployMSLogParser(new VirtualLoadingBar(), Model)
 			);
 		}
 

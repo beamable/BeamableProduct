@@ -29,5 +29,7 @@ namespace Beamable.Theme.Palettes
 	}
 
 	[System.Serializable]
-	public class SelectableBinding : SelectablePalette.PaletteBinding { }
+	public class SelectableBinding : SelectablePalette.PaletteBinding
+	{
+	}
 }

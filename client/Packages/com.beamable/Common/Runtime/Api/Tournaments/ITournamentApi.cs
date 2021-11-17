@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using Beamable.Common.Content;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.Common.Api.Tournaments
@@ -21,34 +21,34 @@ namespace Beamable.Common.Api.Tournaments
 		Promise<TournamentInfo> GetTournamentInfo(string tournamentContentId);
 
 		Promise<TournamentInfoResponse> GetAllTournaments(string contentId = null,
-		                                                  int? cycle = null,
-		                                                  bool? isRunning = null);
+														  int? cycle = null,
+														  bool? isRunning = null);
 
 		Promise<TournamentChampionsResponse> GetChampions(string tournamentId, int cycleLimit = 30);
 
 		Promise<TournamentStandingsResponse> GetGlobalStandings(string tournamentId,
-		                                                        int cycle = -1,
-		                                                        int from = -1,
-		                                                        int max = -1,
-		                                                        int focus = -1);
+																int cycle = -1,
+																int from = -1,
+																int max = -1,
+																int focus = -1);
 
 		Promise<TournamentStandingsResponse> GetStandings(string tournamentId,
-		                                                  int cycle = -1,
-		                                                  int from = -1,
-		                                                  int max = -1,
-		                                                  int focus = -1);
+														  int cycle = -1,
+														  int from = -1,
+														  int max = -1,
+														  int focus = -1);
 
 		Promise<TournamentStandingsResponse> GetGroupPlayers(string tournamentId,
-		                                                     int cycle = -1,
-		                                                     int from = -1,
-		                                                     int max = -1,
-		                                                     int focus = -1);
+															 int cycle = -1,
+															 int from = -1,
+															 int max = -1,
+															 int focus = -1);
 
 		Promise<TournamentGroupsResponse> GetGroups(string tournamentId,
-		                                            int cycle = -1,
-		                                            int from = -1,
-		                                            int max = -1,
-		                                            int focus = -1);
+													int cycle = -1,
+													int from = -1,
+													int max = -1,
+													int focus = -1);
 
 		Promise<TournamentRewardsResponse> GetUnclaimedRewards(string tournamentId);
 		Promise<TournamentRewardsResponse> ClaimAllRewards(string tournamentId);
@@ -56,8 +56,8 @@ namespace Beamable.Common.Api.Tournaments
 		Promise<Unit> SetScore(string tournamentId, long dbid, double score, bool incrementScore = false);
 
 		Promise<TournamentPlayerStatusResponse> GetPlayerStatus(string tournamentId = null,
-		                                                        string contentId = null,
-		                                                        bool? hasUnclaimedRewards = null);
+																string contentId = null,
+																bool? hasUnclaimedRewards = null);
 
 		Promise<TournamentGroupStatusResponse> GetGroupStatus(string tournamentId = null, string contentId = null);
 		Promise<TournamentGroupStatusResponse> GetGroupStatuses(List<long> groupIds, string contentId);

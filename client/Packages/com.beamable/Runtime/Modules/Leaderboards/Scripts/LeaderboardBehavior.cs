@@ -1,7 +1,7 @@
-﻿using System.Collections;
-using Beamable.Common.Leaderboards;
+﻿using Beamable.Common.Leaderboards;
 using Beamable.Content;
 using Beamable.UI.Scripts;
+using System.Collections;
 using UnityEngine;
 
 namespace Beamable.Leaderboards

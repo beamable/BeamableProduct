@@ -16,7 +16,9 @@ namespace Beamable.Common.Inventory
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class ItemLink : ContentLink<ItemContent> { }
+	public class ItemLink : ContentLink<ItemContent>
+	{
+	}
 
 	/// <summary>
 	/// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
@@ -34,7 +36,9 @@ namespace Beamable.Common.Inventory
 	[Agnostic]
 	public class ItemRef : ItemRef<ItemContent>
 	{
-		public ItemRef() { }
+		public ItemRef()
+		{
+		}
 
 		public ItemRef(string id)
 		{
@@ -56,5 +60,7 @@ namespace Beamable.Common.Inventory
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class ItemRef<TContent> : ContentRef<TContent> where TContent : ContentObject, new() { }
+	public class ItemRef<TContent> : ContentRef<TContent> where TContent : ContentObject, new()
+	{
+	}
 }

@@ -1,7 +1,7 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Editor.UI.Buss.Extensions;
 using Beamable.Editor.UI.Buss.Model;
+using System;
+using System.Collections.Generic;
 using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -86,7 +86,8 @@ namespace Beamable.Editor.UI.Buss.Components
 
 			foreach (var prop in properties)
 			{
-				if (!prop.Enabled) continue; // don't bother showing properties that are blank.
+				if (!prop.Enabled)
+					continue; // don't bother showing properties that are blank.
 
 				// one property may have several lines
 				foreach (var element in prop.GenerateElements(Model))

@@ -21,7 +21,9 @@ namespace Beamable.Editor.Toolbox.Components
 		}
 
 		public SurveyAnnouncementVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(SurveyAnnouncementVisualElement)}/{nameof(SurveyAnnouncementVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(SurveyAnnouncementVisualElement)}/{nameof(SurveyAnnouncementVisualElement)}")
+		{
+		}
 
 		public override void Refresh()
 		{

@@ -1,10 +1,10 @@
-﻿using Beamable.Service;
-using Beamable.Common.Steam;
+﻿using Beamable.Common.Steam;
+using Beamable.Service;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using UnityEngine;
 using UnityEngine.Purchasing;
 using UnityEngine.Purchasing.Extension;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 
 namespace Beamable.Purchasing.Steam
 {
@@ -36,13 +36,13 @@ namespace Beamable.Purchasing.Steam
 		public void RetrieveProducts(ReadOnlyCollection<ProductDefinition> productDefinitions)
 		{
 			steam.RegisterAuthTicket()
-			     .FlatMap(_ => steam.GetProducts())
-			     .Then(rsp => OnRetrieved(productDefinitions, rsp.products))
-			     .Error(ex => OnInitializeFailed("Failed to retrieve steam products.", ex));
+				 .FlatMap(_ => steam.GetProducts())
+				 .Then(rsp => OnRetrieved(productDefinitions, rsp.products))
+				 .Error(ex => OnInitializeFailed("Failed to retrieve steam products.", ex));
 		}
 
 		private void OnRetrieved(ReadOnlyCollection<ProductDefinition> productDefinitions,
-		                         List<SteamProduct> steamProducts)
+								 List<SteamProduct> steamProducts)
 		{
 			this.steamProducts = steamProducts;
 
@@ -96,9 +96,9 @@ namespace Beamable.Purchasing.Steam
 			else
 			{
 				callback.OnPurchaseFailed(new PurchaseFailureDescription(
-					                          currentPurchase.product.id,
-					                          PurchaseFailureReason.UserCancelled,
-					                          "Steam purchase cancelled."));
+											  currentPurchase.product.id,
+											  PurchaseFailureReason.UserCancelled,
+											  "Steam purchase cancelled."));
 			}
 		}
 
@@ -107,9 +107,9 @@ namespace Beamable.Purchasing.Steam
 			if (this.steam == null)
 			{
 				callback.OnPurchaseFailed(new PurchaseFailureDescription(
-					                          product.id,
-					                          PurchaseFailureReason.PurchasingUnavailable,
-					                          "Steam service unavailable. Provide ServiceManager an ISteamService instance."));
+											  product.id,
+											  PurchaseFailureReason.PurchasingUnavailable,
+											  "Steam service unavailable. Provide ServiceManager an ISteamService instance."));
 
 				return;
 			}
@@ -117,7 +117,9 @@ namespace Beamable.Purchasing.Steam
 			this._inProgress[developerPayload] = new InProgressPurchase(product, developerPayload);
 		}
 
-		public void FinishTransaction(ProductDefinition product, string transactionId) { }
+		public void FinishTransaction(ProductDefinition product, string transactionId)
+		{
+		}
 	}
 
 	public class InProgressPurchase

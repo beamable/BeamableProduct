@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Beamable.Editor.UI.Buss;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Editor.UI.Buss;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -15,7 +15,9 @@ namespace Beamable.Editor.UI.Components
 {
 	public class DaysPickerVisualElement : BeamableVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<DaysPickerVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<DaysPickerVisualElement, UxmlTraits>
+		{
+		}
 
 		public Action<List<string>> OnValueChanged;
 
@@ -30,7 +32,9 @@ namespace Beamable.Editor.UI.Components
 		private DayToggleVisualElement _sundayToggle;
 
 		public DaysPickerVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(DaysPickerVisualElement)}/{nameof(DaysPickerVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(DaysPickerVisualElement)}/{nameof(DaysPickerVisualElement)}")
+		{
+		}
 
 		public override void Refresh()
 		{

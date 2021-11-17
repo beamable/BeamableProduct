@@ -1,6 +1,6 @@
-﻿using System.Collections;
+﻿using Beamable.Tournaments;
+using System.Collections;
 using System.Collections.Generic;
-using Beamable.Tournaments;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -19,7 +19,9 @@ namespace Beamable.Tournaments
 		public Material GreyMaterial;
 
 		// Start is called before the first frame update
-		void Start() { }
+		void Start()
+		{
+		}
 
 		public void SetEffect(bool useGrey)
 		{

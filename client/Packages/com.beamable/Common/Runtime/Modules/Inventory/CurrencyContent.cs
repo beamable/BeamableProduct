@@ -25,7 +25,7 @@ namespace Beamable.Common.Inventory
 	{
 		[Tooltip(ContentObject.TooltipIcon1)]
 		[FormerlySerializedAs("Icon")]
-		[ContentField("icon", FormerlySerializedAs = new[] {"Icon"})]
+		[ContentField("icon", FormerlySerializedAs = new[] { "Icon" })]
 		public AssetReferenceSprite icon;
 
 		[Tooltip(ContentObject.TooltipClientPermission1)]

@@ -1,6 +1,6 @@
-using System.Linq;
 using Beamable.UI.Buss;
 using NUnit.Framework;
+using System.Linq;
 
 namespace Beamable.Tests.UI.Buss.StyleBehaviourTests
 {

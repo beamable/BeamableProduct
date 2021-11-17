@@ -1,8 +1,8 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Common.Content;
 using Beamable.Editor.Content.Models;
 using Beamable.Editor.UI.Buss;
+using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -23,13 +23,16 @@ namespace Beamable.Editor.UI.Components
 		public string Value => _textField.value;
 		public event Action<string> OnSearchChanged;
 
-		public new class UxmlFactory : UxmlFactory<SearchBarVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<SearchBarVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
 			{
-				name = "custom-text", defaultValue = "nada"
+				name = "custom-text",
+				defaultValue = "nada"
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription

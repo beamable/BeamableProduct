@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using Beamable.Common;
+﻿using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Config;
 using Beamable.Coroutines;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -97,7 +97,8 @@ namespace Beamable.Api.Connectivity
 			// Prepare the request
 			var request = new UnityWebRequest(ConnectivityRoute)
 			{
-				downloadHandler = new DownloadHandlerBuffer(), method = Method.GET.ToString()
+				downloadHandler = new DownloadHandlerBuffer(),
+				method = Method.GET.ToString()
 			};
 			return request;
 		}

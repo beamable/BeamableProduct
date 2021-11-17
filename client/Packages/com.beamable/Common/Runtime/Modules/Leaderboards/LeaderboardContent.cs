@@ -1,8 +1,8 @@
 using Beamable.Common.Content;
-using Beamable.Common.Shop;
-using UnityEngine;
-using System.Collections.Generic;
 using Beamable.Common.Content.Validation;
+using Beamable.Common.Shop;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace Beamable.Common.Leaderboards
 {
@@ -38,7 +38,9 @@ namespace Beamable.Common.Leaderboards
 	}
 
 	[System.Serializable]
-	public class OptionalCohortSettings : Optional<LeaderboardCohortSettings> { }
+	public class OptionalCohortSettings : Optional<LeaderboardCohortSettings>
+	{
+	}
 
 	[System.Serializable]
 	public class LeaderboardCohortSettings

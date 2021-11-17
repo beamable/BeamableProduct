@@ -1,10 +1,10 @@
+using Beamable.Common;
+using Beamable.Platform.SDK;
+using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Linq;
 using System.Threading.Tasks;
-using Beamable.Common;
-using Beamable.Platform.SDK;
-using NUnit.Framework;
 using UnityEngine.TestTools;
 
 namespace Beamable.Editor.Tests.PromiseTests
@@ -41,12 +41,12 @@ namespace Beamable.Editor.Tests.PromiseTests
 				var indexIntoEventRan = i;
 				eventRuns[i] = false;
 				PromiseBase.SetPotentialUncaughtErrorHandler((promise, err) =>
-				                                             {
-					                                             Assert.AreEqual(err, knownEx);
-					                                             eventRuns[indexIntoEventRan] = true;
-				                                             },
-				                                             i ==
-				                                             0); // Clears all previously set handlers when setting the first handler so we don't need a cleanup function for this test.   
+															 {
+																 Assert.AreEqual(err, knownEx);
+																 eventRuns[indexIntoEventRan] = true;
+															 },
+															 i ==
+															 0); // Clears all previously set handlers when setting the first handler so we don't need a cleanup function for this test.   
 			}
 
 			p.CompleteError(knownEx);
@@ -108,12 +108,12 @@ namespace Beamable.Editor.Tests.PromiseTests
 				var indexIntoEventRan = i;
 				eventRuns[i] = false;
 				PromiseBase.SetPotentialUncaughtErrorHandler((promise, err) =>
-				                                             {
-					                                             Assert.AreEqual(err, knownEx);
-					                                             eventRuns[indexIntoEventRan] = true;
-				                                             },
-				                                             i ==
-				                                             0); // Clears all previously set handlers when setting the first handler so we don't need a cleanup function for this test.   
+															 {
+																 Assert.AreEqual(err, knownEx);
+																 eventRuns[indexIntoEventRan] = true;
+															 },
+															 i ==
+															 0); // Clears all previously set handlers when setting the first handler so we don't need a cleanup function for this test.   
 			}
 
 			// Adds our default handler to the list of existing callbacks
@@ -339,12 +339,12 @@ namespace Beamable.Editor.Tests.PromiseTests
 			var errorCallbackRan = false;
 			Exception errorEx = null;
 			var p = Promise<int>.Successful(0)
-			                    .FlatMap(_ => Promise<int>.Failed(knownEx))
-			                    .Error(ex =>
-			                    {
-				                    errorCallbackRan = true;
-				                    errorEx = ex;
-			                    });
+								.FlatMap(_ => Promise<int>.Failed(knownEx))
+								.Error(ex =>
+								{
+									errorCallbackRan = true;
+									errorEx = ex;
+								});
 			var task = PromiseExtensions.WaitForAllUncaughtHandlers();
 			while (!task.IsCompleted)
 			{
@@ -377,7 +377,7 @@ namespace Beamable.Editor.Tests.PromiseTests
 			PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
 
 			Promise<int>.Successful(0)
-			            .FlatMap(_ => Promise<int>.Failed(knownEx));
+						.FlatMap(_ => Promise<int>.Failed(knownEx));
 
 			var task = PromiseExtensions.WaitForAllUncaughtHandlers();
 			while (!task.IsCompleted)

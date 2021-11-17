@@ -17,7 +17,7 @@ namespace Beamable.Signals
 			var fieldName = field == null ? "unknown " : field.Name;
 			var listenerCount = GetPersistentEventCount();
 			Debug.Log($"Signal=[{fieldName}]. Source=[{sourceTower.name}] ListenerCount=[{listenerCount}] arg=[{arg}] ",
-			          sourceTower);
+					  sourceTower);
 			for (var i = 0; i < listenerCount; i++)
 			{
 				Debug.Log(
@@ -34,7 +34,8 @@ namespace Beamable.Signals
 		public static void BroadcastSignal<T, TArg>(this T self, TArg arg, DeSignal<TArg> signal)
 			where T : DeSignalTower
 		{
-			if (self == null || self.gameObject == null || !self.gameObject.activeInHierarchy) return;
+			if (self == null || self.gameObject == null || !self.gameObject.activeInHierarchy)
+				return;
 			if (self.Diagnostic)
 			{
 				signal?.InvokeWithTrace(self, self, arg);
@@ -50,7 +51,8 @@ namespace Beamable.Signals
 		{
 			DeSignalTower.ForAll<T>(tower =>
 			{
-				if (tower == null || tower.gameObject == null || !tower.gameObject.activeInHierarchy) return;
+				if (tower == null || tower.gameObject == null || !tower.gameObject.activeInHierarchy)
+					return;
 
 				var signal = getter(tower);
 

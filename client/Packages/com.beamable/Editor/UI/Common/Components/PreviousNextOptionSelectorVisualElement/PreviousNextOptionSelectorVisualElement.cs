@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Beamable.Editor.UI.Buss;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Editor.UI.Buss;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -15,10 +15,14 @@ namespace Beamable.Editor.UI.Components
 {
 	public class PreviousNextOptionSelectorVisualElement : BeamableVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<PreviousNextOptionSelectorVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<PreviousNextOptionSelectorVisualElement, UxmlTraits>
+		{
+		}
 
 		public PreviousNextOptionSelectorVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(PreviousNextOptionSelectorVisualElement)}/{nameof(PreviousNextOptionSelectorVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(PreviousNextOptionSelectorVisualElement)}/{nameof(PreviousNextOptionSelectorVisualElement)}")
+		{
+		}
 
 		private VisualElement _previousBtn;
 		private VisualElement _nextBtn;
@@ -65,7 +69,8 @@ namespace Beamable.Editor.UI.Components
 
 			_currentOption = currentOption;
 			CurrentOption = _options.ElementAt(_currentOption);
-			if (_label != null) _label.text = CurrentOption.Value;
+			if (_label != null)
+				_label.text = CurrentOption.Value;
 			_onOptionChanged?.Invoke();
 		}
 

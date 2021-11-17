@@ -16,14 +16,17 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Button _closeButton;
 		private Label _label;
 
-		public new class UxmlFactory : UxmlFactory<MicroserviceActionPrompt, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<MicroserviceActionPrompt, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			// Do we need this?
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
 			{
-				name = "custom-text", defaultValue = "nada"
+				name = "custom-text",
+				defaultValue = "nada"
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription

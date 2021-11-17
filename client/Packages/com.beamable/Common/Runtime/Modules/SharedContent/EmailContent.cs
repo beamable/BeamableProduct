@@ -17,7 +17,9 @@ namespace Beamable.Common.Content
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class EmailLink : ContentLink<EmailContent> { }
+	public class EmailLink : ContentLink<EmailContent>
+	{
+	}
 
 	/// <summary>
 	/// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
@@ -33,7 +35,9 @@ namespace Beamable.Common.Content
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class EmailRef : EmailRef<EmailContent> { }
+	public class EmailRef : EmailRef<EmailContent>
+	{
+	}
 
 	/// <summary>
 	/// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
@@ -48,7 +52,9 @@ namespace Beamable.Common.Content
 	///
 	/// </summary>
 	[System.Serializable]
-	public class EmailRef<TContent> : ContentRef<TContent> where TContent : EmailContent, new() { }
+	public class EmailRef<TContent> : ContentRef<TContent> where TContent : EmailContent, new()
+	{
+	}
 
 	/// <summary>
 	/// This type defines a %Beamable %ContentObject subclass for the %MailService.

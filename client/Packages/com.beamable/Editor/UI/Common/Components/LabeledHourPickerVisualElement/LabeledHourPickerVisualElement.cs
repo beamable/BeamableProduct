@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Beamable.Common.Content;
+﻿using Beamable.Common.Content;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Validation;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -17,28 +17,34 @@ namespace Beamable.Editor.UI.Components
 {
 	public class LabeledHourPickerVisualElement : ValidableVisualElement<string>
 	{
-		public new class UxmlFactory : UxmlFactory<LabeledHourPickerVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<LabeledHourPickerVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
 			{
-				name = "label", defaultValue = "Label"
+				name = "label",
+				defaultValue = "Label"
 			};
 
 			readonly UxmlBoolAttributeDescription _hour = new UxmlBoolAttributeDescription
 			{
-				name = "hour", defaultValue = true
+				name = "hour",
+				defaultValue = true
 			};
 
 			readonly UxmlBoolAttributeDescription _minute = new UxmlBoolAttributeDescription
 			{
-				name = "minute", defaultValue = true
+				name = "minute",
+				defaultValue = true
 			};
 
 			readonly UxmlBoolAttributeDescription _second = new UxmlBoolAttributeDescription
 			{
-				name = "second", defaultValue = true
+				name = "second",
+				defaultValue = true
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -97,7 +103,9 @@ namespace Beamable.Editor.UI.Components
 		public string Second => _hourPicker.Second;
 
 		public LabeledHourPickerVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledHourPickerVisualElement)}/{nameof(LabeledHourPickerVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledHourPickerVisualElement)}/{nameof(LabeledHourPickerVisualElement)}")
+		{
+		}
 
 		public override void Refresh()
 		{

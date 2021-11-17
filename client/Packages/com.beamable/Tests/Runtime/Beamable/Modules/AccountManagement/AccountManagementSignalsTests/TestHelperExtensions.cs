@@ -1,8 +1,8 @@
-using System;
-using Beamable.Common.Api.Auth;
 using Beamable.AccountManagement;
+using Beamable.Common.Api.Auth;
 using Beamable.Platform.SDK.Auth;
 using NUnit.Framework;
+using System;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -11,8 +11,8 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
 	public static class TestHelperExtensions
 	{
 		public static AccountManagementSignals PrepareForTesting(this AccountManagementSignals signaler,
-		                                                         GameObject gob,
-		                                                         Action<LoadingArg> loadingSetter)
+																 GameObject gob,
+																 Action<LoadingArg> loadingSetter)
 		{
 			AccountManagementSignals.SetPending(null, null);
 			signaler.Loading = new LoadingEvent();

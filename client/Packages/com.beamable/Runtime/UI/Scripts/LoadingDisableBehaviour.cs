@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using Beamable.AccountManagement;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 

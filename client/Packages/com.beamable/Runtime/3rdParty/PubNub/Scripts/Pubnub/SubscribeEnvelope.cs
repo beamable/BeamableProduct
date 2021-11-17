@@ -75,10 +75,10 @@ namespace PubNubMessaging.Core
 		}
 
 		public PNMessageResult(string subscribedChannel,
-		                       string actualchannel,
-		                       object payload,
-		                       long timetoken,
-		                       object userMetadata)
+							   string actualchannel,
+							   object payload,
+							   long timetoken,
+							   object userMetadata)
 		{
 			this.SubscribedChannel = subscribedChannel;
 			this.ActualChannel = actualchannel;
@@ -157,19 +157,19 @@ namespace PubNubMessaging.Core
 			get;
 			set;
 		} //userMetadata
-		//private string w { get; set;} //waypointList
+		  //private string w { get; set;} //waypointList
 
 		internal SubscribeMessage(string shard,
-		                          string subscriptionMatch,
-		                          string channel,
-		                          object payload,
-		                          string flags,
-		                          string issuingClientId,
-		                          string subscribeKey,
-		                          long sequenceNumber,
-		                          TimetokenMetadata originatingTimetoken,
-		                          TimetokenMetadata publishMetadata,
-		                          object userMetadata)
+								  string subscriptionMatch,
+								  string channel,
+								  object payload,
+								  string flags,
+								  string issuingClientId,
+								  string subscribeKey,
+								  long sequenceNumber,
+								  TimetokenMetadata originatingTimetoken,
+								  TimetokenMetadata publishMetadata,
+								  object userMetadata)
 		{
 			this.a = shard;
 			this.b = subscriptionMatch;

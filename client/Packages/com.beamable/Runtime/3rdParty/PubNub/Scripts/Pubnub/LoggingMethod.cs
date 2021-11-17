@@ -2,10 +2,10 @@
 #define TRACE
 #endif
 using System;
-using System.Diagnostics;
-using System.Text;
-using System.Net;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Net;
+using System.Text;
 using UnityEngine;
 
 namespace PubNubMessaging.Core
@@ -15,7 +15,7 @@ namespace PubNubMessaging.Core
 #if (UNITY_STANDALONE || UNITY_WEBPLAYER || UNITY_IOS || UNITY_ANDROID || UNITY_5)
 	public class LoggingMethod : MonoBehaviour
 #else
-    public class LoggingMethod
+	public class LoggingMethod
 #endif
 	{
 		private static int logLevel = 0;
@@ -94,11 +94,14 @@ namespace PubNubMessaging.Core
 #elif (UNITY_STANDALONE || UNITY_WEBPLAYER || UNITY_IOS || UNITY_ANDROID || UNITY_5 || UNITY_WEBGL)
 				UnityEngine.Debug.Log(string.Format("\n** {0} \n", logText));
 #else
-                try {
-                    Trace.WriteLine (logText);
-                    Trace.Flush ();
-                } catch {
-                }
+				try
+				{
+					Trace.WriteLine(logText);
+					Trace.Flush();
+				}
+				catch
+				{
+				}
 #endif
 			}
 		}
@@ -132,34 +135,38 @@ namespace PubNubMessaging.Core
 		string _description = "";
 		DateTime _dateTimeGMT;
 
-		public PubnubClientError() { }
+		public PubnubClientError()
+		{
+		}
 
 		public PubnubClientError(int statusCode,
-		                         PubnubErrorSeverity errorSeverity,
-		                         bool isDotNetException,
-		                         string message,
-		                         Exception detailedDotNetException,
-		                         PubnubMessageSource source,
-		                         PubnubWebRequest pubnubWebRequest,
-		                         PubnubWebResponse pubnubWebResponse,
-		                         string description,
-		                         List<ChannelEntity> channelEntitles)
+								 PubnubErrorSeverity errorSeverity,
+								 bool isDotNetException,
+								 string message,
+								 Exception detailedDotNetException,
+								 PubnubMessageSource source,
+								 PubnubWebRequest pubnubWebRequest,
+								 PubnubWebResponse pubnubWebResponse,
+								 string description,
+								 List<ChannelEntity> channelEntitles)
 			: this(statusCode, errorSeverity, isDotNetException, message, detailedDotNetException, source,
-			       pubnubWebRequest,
-			       pubnubWebResponse, description, Helpers.GetNamesFromChannelEntities(channelEntitles, false),
-			       Helpers.GetNamesFromChannelEntities(channelEntitles, true)) { }
+				   pubnubWebRequest,
+				   pubnubWebResponse, description, Helpers.GetNamesFromChannelEntities(channelEntitles, false),
+				   Helpers.GetNamesFromChannelEntities(channelEntitles, true))
+		{
+		}
 
 		public PubnubClientError(int statusCode,
-		                         PubnubErrorSeverity errorSeverity,
-		                         bool isDotNetException,
-		                         string message,
-		                         Exception detailedDotNetException,
-		                         PubnubMessageSource source,
-		                         PubnubWebRequest pubnubWebRequest,
-		                         PubnubWebResponse pubnubWebResponse,
-		                         string description,
-		                         string channels,
-		                         string channelGroups)
+								 PubnubErrorSeverity errorSeverity,
+								 bool isDotNetException,
+								 string message,
+								 Exception detailedDotNetException,
+								 PubnubMessageSource source,
+								 PubnubWebRequest pubnubWebRequest,
+								 PubnubWebResponse pubnubWebResponse,
+								 string description,
+								 string channels,
+								 string channelGroups)
 		{
 			_dateTimeGMT = DateTime.Now.ToUniversalTime();
 			_statusCode = statusCode;
@@ -176,28 +183,32 @@ namespace PubNubMessaging.Core
 		}
 
 		public PubnubClientError(int statusCode,
-		                         PubnubErrorSeverity errorSeverity,
-		                         string message,
-		                         PubnubMessageSource source,
-		                         PubnubWebRequest pubnubWebRequest,
-		                         PubnubWebResponse pubnubWebResponse,
-		                         string description,
-		                         List<ChannelEntity> channelEntitles)
+								 PubnubErrorSeverity errorSeverity,
+								 string message,
+								 PubnubMessageSource source,
+								 PubnubWebRequest pubnubWebRequest,
+								 PubnubWebResponse pubnubWebResponse,
+								 string description,
+								 List<ChannelEntity> channelEntitles)
 			: this(statusCode, errorSeverity, false, message, null, source, pubnubWebRequest, pubnubWebResponse,
-			       description, channelEntitles) { }
+				   description, channelEntitles)
+		{
+		}
 
 		public PubnubClientError(int statusCode,
-		                         PubnubErrorSeverity errorSeverity,
-		                         string message,
-		                         PubnubMessageSource source,
-		                         PubnubWebRequest pubnubWebRequest,
-		                         PubnubWebResponse pubnubWebResponse,
-		                         string description,
-		                         string channels,
-		                         string channelGroups)
+								 PubnubErrorSeverity errorSeverity,
+								 string message,
+								 PubnubMessageSource source,
+								 PubnubWebRequest pubnubWebRequest,
+								 PubnubWebResponse pubnubWebResponse,
+								 string description,
+								 string channels,
+								 string channelGroups)
 			: this(statusCode, errorSeverity, false, message, null, source, pubnubWebRequest, pubnubWebResponse,
-			       description
-			     , channels, channelGroups) { }
+				   description
+				 , channels, channelGroups)
+		{
+		}
 
 		public int StatusCode
 		{
@@ -309,13 +320,13 @@ namespace PubNubMessaging.Core
 			errorBuilder.AppendFormat("Message={0} ", _message);
 			errorBuilder.AppendLine();
 			errorBuilder.AppendFormat("DetailedDotNetException={0} ",
-			                          (_detailedDotNetException != null) ? _detailedDotNetException.ToString() : "");
+									  (_detailedDotNetException != null) ? _detailedDotNetException.ToString() : "");
 			errorBuilder.AppendLine();
 			errorBuilder.AppendFormat("PubnubWebRequest={0} ",
-			                          (_pubnubWebRequest != null) ? _pubnubWebRequest.ToString() : "");
+									  (_pubnubWebRequest != null) ? _pubnubWebRequest.ToString() : "");
 			errorBuilder.AppendLine();
 			errorBuilder.AppendFormat("PubnubWebResponse={0} ",
-			                          (_pubnubWebResponse != null) ? _pubnubWebResponse.ToString() : "");
+									  (_pubnubWebResponse != null) ? _pubnubWebResponse.ToString() : "");
 			errorBuilder.AppendLine();
 			errorBuilder.AppendFormat("Channel={0} ", _channel);
 			errorBuilder.AppendLine();
@@ -394,15 +405,15 @@ namespace PubNubMessaging.Core
 			switch (webExceptionStatus)
 			{
 #if ((!__MonoCS__) && (!SILVERLIGHT) && !WINDOWS_PHONE && !UNITY_STANDALONE)
-                case WebExceptionStatus.NameResolutionFailure:
-                ret = PubnubErrorCode.NameResolutionFailure;
-                break;
-                case WebExceptionStatus.ProtocolError:
-                ret = PubnubErrorCode.ProtocolError;
-                break;
-                case WebExceptionStatus.ServerProtocolViolation:
-                ret = PubnubErrorCode.ServerProtocolViolation;
-                break;
+				case WebExceptionStatus.NameResolutionFailure:
+					ret = PubnubErrorCode.NameResolutionFailure;
+					break;
+				case WebExceptionStatus.ProtocolError:
+					ret = PubnubErrorCode.ProtocolError;
+					break;
+				case WebExceptionStatus.ServerProtocolViolation:
+					ret = PubnubErrorCode.ServerProtocolViolation;
+					break;
 #endif
 				case WebExceptionStatus.RequestCanceled:
 					ret = PubnubErrorCode.WebRequestCanceled;
@@ -434,7 +445,7 @@ namespace PubNubMessaging.Core
 			string errorMessage = ex.Message;
 
 			if (errorType.Equals("System.FormatException") &&
-			    errorMessage.Equals("Invalid length for a Base-64 char array or string."))
+				errorMessage.Equals("Invalid length for a Base-64 char array or string."))
 			{
 				ret = PubnubErrorCode.PubnubMessageDecryptException;
 			}
@@ -444,27 +455,27 @@ namespace PubNubMessaging.Core
 				ret = PubnubErrorCode.PubnubMessageDecryptException;
 			}
 			else if (errorType.Equals("System.ObjectDisposedException") &&
-			         errorMessage.Equals("Cannot access a disposed object."))
+					 errorMessage.Equals("Cannot access a disposed object."))
 			{
 				ret = PubnubErrorCode.PubnubObjectDisposedException;
 			}
 			else if (errorType.Equals("System.Net.Sockets.SocketException") &&
-			         errorMessage.Equals("The requested name is valid, but no data of the requested type was found"))
+					 errorMessage.Equals("The requested name is valid, but no data of the requested type was found"))
 			{
 				ret = PubnubErrorCode.PubnubSocketConnectException;
 			}
 			else if (errorType.Equals("System.Net.Sockets.SocketException") &&
-			         errorMessage.Equals("No such host is known"))
+					 errorMessage.Equals("No such host is known"))
 			{
 				ret = PubnubErrorCode.PubnubSocketConnectException;
 			}
 			else if (errorType.Equals("System.Security.Cryptography.CryptographicException") &&
-			         errorMessage.Equals("Padding is invalid and cannot be removed."))
+					 errorMessage.Equals("Padding is invalid and cannot be removed."))
 			{
 				ret = PubnubErrorCode.PubnubCryptographicException;
 			}
 			else if (errorType.Equals("System.Runtime.InteropServices.SEHException") &&
-			         errorMessage.Equals("External component has thrown an exception."))
+					 errorMessage.Equals("External component has thrown an exception."))
 			{
 				ret = PubnubErrorCode.PubnubInterOpSEHException;
 			}

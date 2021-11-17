@@ -1,8 +1,8 @@
-using System.Collections.Generic;
-using Beamable.UI.Layouts;
-using Beamable.UI.Scripts;
 using Beamable.Api.Payments;
 using Beamable.Theme.Palettes;
+using Beamable.UI.Layouts;
+using Beamable.UI.Scripts;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;

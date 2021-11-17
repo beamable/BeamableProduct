@@ -8,7 +8,7 @@ namespace Beamable.UI.Buss
 	[CreateAssetMenu(
 		fileName = "Style Sheet Object",
 		menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE + "/" +
-		           "Buss/StyleSheetObject",
+				   "Buss/StyleSheetObject",
 		order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 	public class StyleSheetObject : ScriptableObject
 	{
@@ -41,7 +41,7 @@ namespace Beamable.UI.Buss
 
 		public static SelectorWithStyle Create(string selector, StyleObject style)
 		{
-			return new SelectorWithStyle {Selector = SelectorParser.Parse(selector), Style = style};
+			return new SelectorWithStyle { Selector = SelectorParser.Parse(selector), Style = style };
 		}
 	}
 

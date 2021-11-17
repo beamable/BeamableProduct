@@ -1,7 +1,7 @@
+using Beamable.Common.Api.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Common.Api.Content;
 
 namespace Beamable.Common.Content
 {
@@ -23,7 +23,7 @@ namespace Beamable.Common.Content
 
 		public ClientManifest Filter(ContentQuery query)
 		{
-			return new ClientManifest {entries = entries.Where(e => query.Accept(e)).ToList()};
+			return new ClientManifest { entries = entries.Where(e => query.Accept(e)).ToList() };
 		}
 
 		public ClientManifest Filter(string queryString)
@@ -45,7 +45,7 @@ namespace Beamable.Common.Content
 
 			var contentEntries = lines.Select(line =>
 			{
-				var parts = line.Split(new char[] {','}, StringSplitOptions.None);
+				var parts = line.Split(new char[] { ',' }, StringSplitOptions.None);
 				if (parts.Length <= 1)
 				{
 					return null; // skip line.
@@ -59,12 +59,12 @@ namespace Beamable.Common.Content
 					visibility = ContentVisibility.Public, // the csv content is always public.
 					uri = parts[3].Trim(),
 					tags = parts.Length >= 5
-						? parts[4].Trim().Split(new[] {';'}, StringSplitOptions.RemoveEmptyEntries)
+						? parts[4].Trim().Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
 						: new string[] { }
 				};
 			}).Where(entry => entry != null);
 
-			return new ClientManifest() {entries = contentEntries.ToList()};
+			return new ClientManifest() { entries = contentEntries.ToList() };
 		}
 	}
 
@@ -117,7 +117,7 @@ namespace Beamable.Common.Content
 		}
 
 		public static SequencePromise<IContentObject> ResolveAll(this IEnumerable<ClientContentInfo> set,
-		                                                         int batchSize = 50)
+																 int batchSize = 50)
 		{
 			return set.ToContentRefs().ResolveAll(batchSize);
 		}

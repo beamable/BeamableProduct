@@ -75,7 +75,8 @@ namespace Beamable.Editor.Login.UI.Components
 
 		private void SetUserView()
 		{
-			if (Model.CurrentUser == null) return;
+			if (Model.CurrentUser == null)
+				return;
 
 			_emailField.SetValueWithoutNotify(Model.CurrentUser.email);
 			_roleField.SetValueWithoutNotify(Model.CurrentUser.roleString);
@@ -83,7 +84,8 @@ namespace Beamable.Editor.Login.UI.Components
 
 		private void SetGameView()
 		{
-			if (Model.CurrentGame == null || Model.CurrentCustomer == null) return;
+			if (Model.CurrentGame == null || Model.CurrentCustomer == null)
+				return;
 
 			var shouldHideSwitchGame = Model.Games.Count == 1;
 			if (shouldHideSwitchGame)

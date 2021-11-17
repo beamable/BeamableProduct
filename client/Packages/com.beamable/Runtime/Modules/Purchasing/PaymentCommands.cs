@@ -1,10 +1,10 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Api;
+using Beamable.Api.Payments;
 using Beamable.ConsoleCommands;
 using Beamable.Coroutines;
-using Beamable.Api.Payments;
 using Beamable.Service;
+using System;
+using System.Collections.Generic;
 using UnityEngine.Scripting;
 
 namespace Beamable.Purchasing
@@ -16,7 +16,9 @@ namespace Beamable.Purchasing
 		private CoroutineService CoroutineService => ServiceManager.Resolve<CoroutineService>();
 
 		[Preserve]
-		public PaymentCommands() { }
+		public PaymentCommands()
+		{
+		}
 
 		[BeamableConsoleCommand("TRACK_PAYMENT", "Track a test payment audit", "TRACK_PAYMENT")]
 		private string TrackPurchase(string[] args)

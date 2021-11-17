@@ -1,5 +1,5 @@
-using Beamable.UI.MSDF;
 using Beamable.UI.Buss.Properties;
+using Beamable.UI.MSDF;
 using UnityEditor;
 
 namespace Beamable.UI.Buss.Extensions
@@ -8,7 +8,8 @@ namespace Beamable.UI.Buss.Extensions
 	{
 		public static void ApplyStyleObject(this BeamableMSDFBehaviour msdfBehaviour, StyleObject styles)
 		{
-			if (!msdfBehaviour) return;
+			if (!msdfBehaviour)
+				return;
 
 			if (styles.Border.IsDefined())
 			{

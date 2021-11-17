@@ -1,8 +1,8 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
+using System;
+using System.Collections.Generic;
 
 namespace Beamable.Experimental.Api.Chat
 {
@@ -15,7 +15,9 @@ namespace Beamable.Experimental.Api.Chat
 		private bool _group_subscribed = false;
 
 		public ChatSubscription(IPlatformService platform, IBeamableRequester requester) : base(
-			platform, requester, SERVICE) { }
+			platform, requester, SERVICE)
+		{
+		}
 
 		protected override void OnRefresh(GetMyRoomsResponse data)
 		{

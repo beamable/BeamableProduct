@@ -16,7 +16,9 @@ namespace Beamable.Common.Leaderboards
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class LeaderboardLink : ContentLink<LeaderboardContent> { }
+	public class LeaderboardLink : ContentLink<LeaderboardContent>
+	{
+	}
 
 	/// <summary>
 	/// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
@@ -32,7 +34,9 @@ namespace Beamable.Common.Leaderboards
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class LeaderboardRef : LeaderboardRef<LeaderboardContent> { }
+	public class LeaderboardRef : LeaderboardRef<LeaderboardContent>
+	{
+	}
 
 	/// <summary>
 	/// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
@@ -48,5 +52,7 @@ namespace Beamable.Common.Leaderboards
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class LeaderboardRef<TContent> : ContentRef<TContent> where TContent : LeaderboardContent, new() { }
+	public class LeaderboardRef<TContent> : ContentRef<TContent> where TContent : LeaderboardContent, new()
+	{
+	}
 }

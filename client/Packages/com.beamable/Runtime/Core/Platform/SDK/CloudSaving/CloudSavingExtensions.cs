@@ -1,7 +1,7 @@
+using Beamable.Common;
 using System;
 using System.IO;
 using System.Text;
-using Beamable.Common;
 using UnityEngine;
 
 namespace Beamable.Api.CloudSaving
@@ -48,13 +48,13 @@ namespace Beamable.Api.CloudSaving
 				var bytes = exists
 					? File.ReadAllBytes(path)
 					: new byte[] { };
-				return new CloudFile<byte[]> {Exists = exists, Data = bytes};
+				return new CloudFile<byte[]> { Exists = exists, Data = bytes };
 			});
 		}
 
 		public static Promise<Unit> WriteFileString(this CloudSavingService service,
-		                                            string filePath,
-		                                            string fileContent)
+													string filePath,
+													string fileContent)
 		{
 			return WriteFileBytes(service, filePath, Encoding.ASCII.GetBytes(fileContent));
 		}
@@ -69,21 +69,23 @@ namespace Beamable.Api.CloudSaving
 		}
 
 		public static Promise<Unit> Write<T>(this CloudSavingService service,
-		                                     string filePath,
-		                                     T content,
-		                                     Func<T, string> serializer = null)
+											 string filePath,
+											 T content,
+											 Func<T, string> serializer = null)
 		{
-			if (serializer == null) serializer = (raw) => JsonUtility.ToJson(raw);
+			if (serializer == null)
+				serializer = (raw) => JsonUtility.ToJson(raw);
 
 			var serialized = serializer(content);
 			return WriteFileString(service, filePath, serialized);
 		}
 
 		public static Promise<CloudFile<T>> Read<T>(this CloudSavingService service,
-		                                            string filePath,
-		                                            Func<string, T> deserializer = null)
+													string filePath,
+													Func<string, T> deserializer = null)
 		{
-			if (deserializer == null) deserializer = JsonUtility.FromJson<T>;
+			if (deserializer == null)
+				deserializer = JsonUtility.FromJson<T>;
 			return ReadFileString(service, filePath).Map(data => new CloudFile<T>
 			{
 				Exists = data.Exists,

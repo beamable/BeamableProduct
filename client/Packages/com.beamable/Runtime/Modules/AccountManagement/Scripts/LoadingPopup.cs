@@ -1,8 +1,8 @@
-﻿using System.Collections;
+﻿using Beamable.UI.Scripts;
+using System.Collections;
 using System.Collections.Generic;
-using Beamable.UI.Scripts;
-using UnityEngine;
 using TMPro;
+using UnityEngine;
 
 namespace Beamable.AccountManagement
 {

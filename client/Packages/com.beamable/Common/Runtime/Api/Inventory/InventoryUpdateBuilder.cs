@@ -1,7 +1,7 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Common.Content;
 using Beamable.Common.Inventory;
+using System;
+using System.Collections.Generic;
 
 namespace Beamable.Common.Api.Inventory
 {
@@ -88,10 +88,10 @@ namespace Beamable.Common.Api.Inventory
 			get
 			{
 				return currencies.Count == 0 &&
-				       currencyProperties.Count == 0 &&
-				       newItems.Count == 0 &&
-				       deleteItems.Count == 0 &&
-				       updateItems.Count == 0;
+					   currencyProperties.Count == 0 &&
+					   newItems.Count == 0 &&
+					   deleteItems.Count == 0 &&
+					   updateItems.Count == 0;
 			}
 		}
 
@@ -136,7 +136,8 @@ namespace Beamable.Common.Api.Inventory
 		{
 			newItems.Add(new ItemCreateRequest
 			{
-				contentId = contentId, properties = properties ?? new Dictionary<string, string>()
+				contentId = contentId,
+				properties = properties ?? new Dictionary<string, string>()
 			});
 
 			return this;
@@ -147,7 +148,7 @@ namespace Beamable.Common.Api.Inventory
 
 		public InventoryUpdateBuilder DeleteItem(string contentId, long itemId)
 		{
-			deleteItems.Add(new ItemDeleteRequest {contentId = contentId, itemId = itemId});
+			deleteItems.Add(new ItemDeleteRequest { contentId = contentId, itemId = itemId });
 
 			return this;
 		}
@@ -166,7 +167,7 @@ namespace Beamable.Common.Api.Inventory
 
 		public InventoryUpdateBuilder UpdateItem(string contentId, long itemId, Dictionary<string, string> properties)
 		{
-			updateItems.Add(new ItemUpdateRequest {contentId = contentId, itemId = itemId, properties = properties});
+			updateItems.Add(new ItemUpdateRequest { contentId = contentId, itemId = itemId, properties = properties });
 
 			return this;
 		}

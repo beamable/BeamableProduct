@@ -1,13 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using Beamable.Content;
 using Beamable.Editor.Content;
 using Beamable.Editor.Content.SaveRequest;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using UnityEditor;
 
 namespace Beamable.Editor.Content.Models
@@ -85,7 +85,7 @@ namespace Beamable.Editor.Content.Models
 			var str = self.ToString();
 
 			str = str.Replace(ContentModificationStatus.NOT_MODIFIED.ToString(),
-			                  statusToString[ContentModificationStatus.NOT_MODIFIED]);
+							  statusToString[ContentModificationStatus.NOT_MODIFIED]);
 
 			foreach (var kvp in stringToStatus)
 			{
@@ -98,7 +98,7 @@ namespace Beamable.Editor.Content.Models
 
 		public static bool TryParse(string str, out ContentModificationStatus status)
 		{
-			var parts = str.Split(new[] {' '}, StringSplitOptions.None);
+			var parts = str.Split(new[] { ' ' }, StringSplitOptions.None);
 			status = ContentModificationStatus.NOT_AVAILABLE_ANYWHERE;
 
 			var any = false;
@@ -153,8 +153,10 @@ namespace Beamable.Editor.Content.Models
 		{
 			set
 			{
-				if (string.Equals(_name, value)) return;
-				if (string.IsNullOrWhiteSpace(value)) throw new Exception("Name cannot be empty.");
+				if (string.Equals(_name, value))
+					return;
+				if (string.IsNullOrWhiteSpace(value))
+					throw new Exception("Name cannot be empty.");
 				var oldName = _name;
 				try
 				{
@@ -382,7 +384,8 @@ namespace Beamable.Editor.Content.Models
 		private void RemoveLocalEventListeners()
 		{
 			var contentObject = _localContent as ContentObject;
-			if (contentObject == null) return;
+			if (contentObject == null)
+				return;
 
 			contentObject.OnEditorValidation -= ContentObject_OnEditorValidate;
 			contentObject.OnValidationChanged -= ContentObject_OnValidationChanged;
@@ -391,7 +394,8 @@ namespace Beamable.Editor.Content.Models
 		private void SetupLocalEventListeners()
 		{
 			var contentObject = _localContent as ContentObject;
-			if (contentObject == null) return;
+			if (contentObject == null)
+				return;
 
 			contentObject.OnEditorValidation += ContentObject_OnEditorValidate;
 			contentObject.OnValidationChanged += ContentObject_OnValidationChanged;
@@ -459,7 +463,8 @@ namespace Beamable.Editor.Content.Models
 
 		public IEnumerable<string> GetValidationErrors()
 		{
-			if (_validationExceptions == null) yield break;
+			if (_validationExceptions == null)
+				yield break;
 			foreach (var exception in _validationExceptions)
 			{
 				yield return exception.Message;

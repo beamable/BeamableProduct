@@ -1,8 +1,3 @@
-using UnityEngine;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Text;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Coroutines;
@@ -11,6 +6,11 @@ using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Service;
 using Beamable.Spew;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Text;
+using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Api.Payments
@@ -28,7 +28,9 @@ namespace Beamable.Api.Payments
 
 		private const string unfulfilledStorageKey = "unfulfilled_transactions";
 
-		public TransactionManager() { }
+		public TransactionManager()
+		{
+		}
 
 		public void Initialize()
 		{
@@ -352,10 +354,12 @@ namespace Beamable.Api.Payments
 			}
 		}
 
-		public PurchaseInfo() { }
+		public PurchaseInfo()
+		{
+		}
 
 		public PurchaseInfo(long txid,
-		                    string listingSymbol)
+							string listingSymbol)
 		{
 			_txid = txid;
 			_listingSymbol = listingSymbol;

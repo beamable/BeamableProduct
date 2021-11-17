@@ -1,7 +1,7 @@
+using Beamable.Editor.Environment;
 using System;
 using System.IO;
 using System.Linq;
-using Beamable.Editor.Environment;
 
 namespace Beamable.Server.Editor.CodeGen
 {
@@ -75,12 +75,13 @@ command=/usr/sbin/sshd -D
 		string WriteToFile(string multiline, string fileName)
 		{
 			return
-				$@"RUN {string.Join(" && \\\n", multiline.Split(new[] {Environment.NewLine}, StringSplitOptions.RemoveEmptyEntries).Select(x => $"echo \"{x}\" >> {fileName}"))}";
+				$@"RUN {string.Join(" && \\\n", multiline.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries).Select(x => $"echo \"{x}\" >> {fileName}"))}";
 		}
 
 		string GetDebugLayer()
 		{
-			if (!DebuggingEnabled) return "";
+			if (!DebuggingEnabled)
+				return "";
 
 			return $@"
 #inject the debugging tools

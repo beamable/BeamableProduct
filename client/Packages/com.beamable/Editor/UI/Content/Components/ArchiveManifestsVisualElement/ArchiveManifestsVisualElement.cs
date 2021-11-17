@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Beamable.Editor.UI.Buss.Components;
+﻿using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Common.Models;
 using Beamable.Editor.UI.Components;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -32,15 +32,15 @@ namespace Beamable.Editor.Content.Components
 		public static BeamablePopupWindow OpenAsUtilityWindow() => OpenAsUtilityWindow(null, out var _);
 
 		public static BeamablePopupWindow OpenAsUtilityWindow(EditorWindow parent,
-		                                                      out ArchiveManifestsVisualElement content)
+															  out ArchiveManifestsVisualElement content)
 		{
 			content = new ArchiveManifestsVisualElement();
 			var window = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ArchiveManifests, content, parent,
-			                                             ContentManagerConstants.WindowSizeMinimum, (callbackWindow) =>
-			                                             {
-				                                             callbackWindow?.Close();
-				                                             OpenAsUtilityWindow();
-			                                             });
+														 ContentManagerConstants.WindowSizeMinimum, (callbackWindow) =>
+														 {
+															 callbackWindow?.Close();
+															 OpenAsUtilityWindow();
+														 });
 			window.minSize = ContentManagerConstants.WindowSizeMinimum;
 			content.OnCompleted += window.Close;
 			content.OnCancelled += window.Close;
@@ -64,7 +64,8 @@ namespace Beamable.Editor.Content.Components
 
 				foreach (var manifest in manifests.manifests.OrderBy(x => x.id))
 				{
-					if (manifest.id == BeamableConstants.DEFAULT_MANIFEST_ID) continue;
+					if (manifest.id == BeamableConstants.DEFAULT_MANIFEST_ID)
+						continue;
 					var enabled = manifest.id != _model.Current?.DisplayName;
 					_entries.Add(new Entry(manifest, _listRoot, enabled, UpdateArchiveButtonInteractivity));
 				}

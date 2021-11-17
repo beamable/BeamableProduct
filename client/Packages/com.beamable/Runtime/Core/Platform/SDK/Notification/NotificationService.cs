@@ -1,8 +1,8 @@
-using UnityEngine;
-using System;
-using System.Collections.Generic;
 using Beamable.Api.Notification.Internal;
 using Beamable.Spew;
+using System;
+using System.Collections.Generic;
+using UnityEngine;
 
 #if UNITY_IOS
 using NotificationServices = UnityEngine.iOS.NotificationServices;
@@ -84,7 +84,7 @@ namespace Beamable.Api.Notification
 				default:
 					LocalRelay = new DummyLocalNotificationRelay();
 					NotificationLogger.LogFormat("Local notifications using dummy provider on platform='{0}'.",
-					                             Application.platform);
+												 Application.platform);
 					break;
 			}
 		}
@@ -177,9 +177,9 @@ namespace Beamable.Api.Notification
          * @param timeFromNow: The amount of time into the future to fire this notification
          */
 		public void ScheduleInGameNotification(string key,
-		                                       string message,
-		                                       TimeSpan timeFromNow,
-		                                       InGameNotificationCB callback)
+											   string message,
+											   TimeSpan timeFromNow,
+											   InGameNotificationCB callback)
 		{
 			// Check for an existing one
 			if (inGameNotifications.ContainsKey(key))
@@ -247,7 +247,7 @@ namespace Beamable.Api.Notification
 								catch (Exception exc)
 								{
 									Debug.LogError(string.Format("Exception processing In Game Notification {0}: {1}",
-									                             keyList[i], exc));
+																 keyList[i], exc));
 								}
 							}
 							else
@@ -281,7 +281,7 @@ namespace Beamable.Api.Notification
 		{
 			LocalRelay.CreateNotificationChannel(id, name, description);
 			NotificationLogger.LogFormat("Create notification channel. id={0}, name={1}, description={2}.", id, name,
-			                             description);
+										 description);
 		}
 
 		/// <summary>
@@ -297,13 +297,13 @@ namespace Beamable.Api.Notification
 		/// <param name="restrictTime">If true the notification will be placed inside the restricted time window.</param>
 		/// <param name="customData">Optional list of custom data to store in the notification for later use.</param>
 		public void ScheduleLocalNotification(string channel,
-		                                      string key,
-		                                      int trackingId,
-		                                      string title,
-		                                      string message,
-		                                      TimeSpan timeFromNow,
-		                                      bool restrictTime,
-		                                      Dictionary<string, string> customData = null)
+											  string key,
+											  int trackingId,
+											  string title,
+											  string message,
+											  TimeSpan timeFromNow,
+											  bool restrictTime,
+											  Dictionary<string, string> customData = null)
 		{
 			var fireTime = CalculateNotificationFireDateTime(timeFromNow, restrictTime);
 			LocalRelay.ScheduleNotification(channel, key, title, message, fireTime, customData);
@@ -312,7 +312,7 @@ namespace Beamable.Api.Notification
 			//new CustomEvent(instance, key).Category("note:schedule").Subcategory("local").Value(trackingId).Send();
 
 			NotificationLogger.LogFormat("Local Notification {0} ({1}) scheduled for {2} on channel {3}.", key,
-			                             key.GetHashCode(), fireTime, channel);
+										 key.GetHashCode(), fireTime, channel);
 		}
 
 		/// <summary>

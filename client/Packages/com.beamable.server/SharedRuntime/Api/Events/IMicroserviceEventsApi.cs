@@ -14,5 +14,7 @@ namespace Beamable.Server.Api.Events
 	/// ![img beamable-logo]
 	/// 
 	/// </summary>
-	public interface IMicroserviceEventsApi : IEventsApi { }
+	public interface IMicroserviceEventsApi : IEventsApi
+	{
+	}
 }

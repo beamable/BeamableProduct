@@ -1,6 +1,6 @@
-using System;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
+using System;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -20,7 +20,9 @@ namespace Beamable.Common.Announcements
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class AnnouncementLink : ContentLink<AnnouncementContent> { }
+	public class AnnouncementLink : ContentLink<AnnouncementContent>
+	{
+	}
 
 	/// <summary>
 	/// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
@@ -36,7 +38,9 @@ namespace Beamable.Common.Announcements
 	/// </summary>
 	[Agnostic]
 	[System.Serializable]
-	public class AnnouncementRef : AnnouncementRef<AnnouncementContent> { }
+	public class AnnouncementRef : AnnouncementRef<AnnouncementContent>
+	{
+	}
 
 	/// <summary>
 	/// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
@@ -51,7 +55,9 @@ namespace Beamable.Common.Announcements
 	///
 	/// </summary>
 	[System.Serializable]
-	public class AnnouncementRef<TContent> : ContentRef<TContent> where TContent : AnnouncementContent, new() { }
+	public class AnnouncementRef<TContent> : ContentRef<TContent> where TContent : AnnouncementContent, new()
+	{
+	}
 
 	[System.Serializable]
 	[Agnostic]

@@ -1,6 +1,6 @@
+using Beamable.Common.Content;
 using System;
 using System.Collections.Generic;
-using Beamable.Common.Content;
 
 namespace Beamable.Experimental.Api.Matchmaking
 {

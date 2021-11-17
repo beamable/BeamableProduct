@@ -1,6 +1,6 @@
+using Beamable.Common.Api;
 using System;
 using System.Collections.Generic;
-using Beamable.Common.Api;
 
 namespace Beamable.Server
 {
@@ -37,7 +37,9 @@ namespace Beamable.Server
 	{
 		public MissingScopesException(IEnumerable<string> currentScopes)
 			: base(403, "invalidScopes",
-			       $"The scopes [{string.Join(",", currentScopes)}] aren't sufficient for the request.") { }
+				   $"The scopes [{string.Join(",", currentScopes)}] aren't sufficient for the request.")
+		{
+		}
 	}
 
 	public class UnhandledPathException : MicroserviceException
@@ -50,14 +52,18 @@ namespace Beamable.Server
 	{
 		public ParameterCardinalityException(int requiredCount, int actualCount)
 			: base(400, "inputParameterFailure",
-			       $"Parameter cardinality failure. required={requiredCount} given={actualCount}") { }
+				   $"Parameter cardinality failure. required={requiredCount} given={actualCount}")
+		{
+		}
 	}
 
 	public class ParameterLegacyException : MicroserviceException
 	{
 		public ParameterLegacyException()
 			: base(400, "inputParameterFailure",
-			       $"Parameters could not be resolved due to legacy reasons. Please don't use the parameter name, \"payload\". Consider using the [Parameter] attribute to rename the parameter. ") { }
+				   $"Parameters could not be resolved due to legacy reasons. Please don't use the parameter name, \"payload\". Consider using the [Parameter] attribute to rename the parameter. ")
+		{
+		}
 	}
 
 	public class ParameterMissingRequiredException : MicroserviceException
@@ -70,6 +76,8 @@ namespace Beamable.Server
 	{
 		public ParameterNullException()
 			: base(400, "inputParameterFailure",
-			       $"Parameters payload cannot be null. Use an empty array for no parameters.") { }
+				   $"Parameters payload cannot be null. Use an empty array for no parameters.")
+		{
+		}
 	}
 }

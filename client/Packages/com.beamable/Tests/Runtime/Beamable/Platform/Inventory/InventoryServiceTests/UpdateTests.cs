@@ -1,8 +1,8 @@
+using Beamable.Common.Api;
+using Beamable.Common.Api.Inventory;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Beamable.Common.Api;
-using Beamable.Common.Api.Inventory;
 using UnityEngine.TestTools;
 
 namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
@@ -30,7 +30,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
 		[UnityTest]
 		public IEnumerator TestAddItemWithUpdateBuilder()
 		{
-			var props = new Dictionary<string, string> {{"a", "b"}};
+			var props = new Dictionary<string, string> { { "a", "b" } };
 			var updateBuilder = new InventoryUpdateBuilder
 			{
 				newItems =
@@ -41,19 +41,19 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
 
 			// stub out request.
 			_requester.MockRequest<EmptyResponse>(Method.PUT, $"{objectUrl}")
-			          .WithoutJsonField("transaction")
-			          .WithJsonFieldMatch("newItems[0].contentId", obj =>
-			          {
-				          if (obj is string contentId)
-				          {
-					          return contentId.Equals(InventoryTestItem.FULL_CONTENT_ID);
-				          }
+					  .WithoutJsonField("transaction")
+					  .WithJsonFieldMatch("newItems[0].contentId", obj =>
+					  {
+						  if (obj is string contentId)
+						  {
+							  return contentId.Equals(InventoryTestItem.FULL_CONTENT_ID);
+						  }
 
-				          return false;
-			          })
-			          .WithoutJsonField("currencies")
-			          .WithoutJsonField("updateItems")
-			          .WithoutJsonField("deleteItems")
+						  return false;
+					  })
+					  .WithoutJsonField("currencies")
+					  .WithoutJsonField("updateItems")
+					  .WithoutJsonField("deleteItems")
 				;
 
 			yield return _service.Update(updateBuilder).Then(_ =>

@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Beamable.Common.Content;
+﻿using Beamable.Common.Content;
 using Beamable.Common.Shop;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Validation;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -62,7 +62,9 @@ namespace Beamable.Editor.Schedules
 		#endregion
 
 		public ListingScheduleWindow() : base(
-			$"{BeamableComponentsConstants.SCHEDULES_PATH}/{nameof(ListingScheduleWindow)}") { }
+			$"{BeamableComponentsConstants.SCHEDULES_PATH}/{nameof(ListingScheduleWindow)}")
+		{
+		}
 
 		public override void Refresh()
 		{
@@ -145,14 +147,14 @@ namespace Beamable.Editor.Schedules
 				_periodFromHourComponent, _periodToHourComponent, RefreshConfirmButton);
 
 			ListingDaysScheduleModel daysModel = new ListingDaysScheduleModel(_descriptionComponent,
-			                                                                  _daysPickerComponent,
-			                                                                  _neverExpiresComponent,
-			                                                                  _activeToDateComponent,
-			                                                                  _activeToHourComponent,
-			                                                                  _allDayComponent,
-			                                                                  _periodFromHourComponent,
-			                                                                  _periodToHourComponent,
-			                                                                  RefreshConfirmButton);
+																			  _daysPickerComponent,
+																			  _neverExpiresComponent,
+																			  _activeToDateComponent,
+																			  _activeToHourComponent,
+																			  _allDayComponent,
+																			  _periodFromHourComponent,
+																			  _periodToHourComponent,
+																			  RefreshConfirmButton);
 
 			ListingDatesScheduleModel datesModel = new ListingDatesScheduleModel(_descriptionComponent,
 				_calendarComponent, _neverExpiresComponent, _activeToDateComponent, _activeToHourComponent,
@@ -217,10 +219,14 @@ namespace Beamable.Editor.Schedules
 
 		protected override void OnDestroy()
 		{
-			if (_neverExpiresComponent != null) _neverExpiresComponent.OnValueChanged -= OnExpirationChanged;
-			if (_allDayComponent != null) _allDayComponent.OnValueChanged -= OnAllDayChanged;
-			if (_confirmButton != null) _confirmButton.Button.clickable.clicked -= ConfirmClicked;
-			if (_cancelButton != null) _cancelButton.OnClick -= CancelClicked;
+			if (_neverExpiresComponent != null)
+				_neverExpiresComponent.OnValueChanged -= OnExpirationChanged;
+			if (_allDayComponent != null)
+				_allDayComponent.OnValueChanged -= OnAllDayChanged;
+			if (_confirmButton != null)
+				_confirmButton.Button.clickable.clicked -= ConfirmClicked;
+			if (_cancelButton != null)
+				_cancelButton.OnClick -= CancelClicked;
 		}
 
 		public void Set(Schedule schedule, ListingContent content)
@@ -240,8 +246,8 @@ namespace Beamable.Editor.Schedules
 			_neverExpiresComponent.Value = neverExpires;
 
 			bool isPeriod = schedule.definitions.Any(def => def.hour[0].Contains("-")) ||
-			                schedule.definitions.Any(def => def.minute[0].Contains("-")) ||
-			                schedule.definitions.Any(def => def.second[0].Contains("-"));
+							schedule.definitions.Any(def => def.minute[0].Contains("-")) ||
+							schedule.definitions.Any(def => def.second[0].Contains("-"));
 
 			_allDayComponent.Value = !isPeriod;
 
@@ -312,7 +318,8 @@ namespace Beamable.Editor.Schedules
 
 		private void RefreshSingleGroup(VisualElement ve, ScheduleWindowModel.WindowMode mode)
 		{
-			if (ve == null) return;
+			if (ve == null)
+				return;
 			ve.visible = _currentModel.Mode == mode;
 			ve.EnableInClassList("--positionHidden", !ve.visible);
 		}

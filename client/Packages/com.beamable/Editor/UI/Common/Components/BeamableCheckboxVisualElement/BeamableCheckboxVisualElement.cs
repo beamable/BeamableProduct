@@ -1,9 +1,9 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Editor.Realms;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Common.Models;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -17,7 +17,9 @@ namespace Beamable.Editor.UI.Components
 {
 	public class BeamableCheckboxVisualElement : BeamableVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<BeamableCheckboxVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<BeamableCheckboxVisualElement, UxmlTraits>
+		{
+		}
 
 		// TODO: remove after implementing composite validation rules
 		public Action OnValueChangedNotifier;
@@ -42,7 +44,9 @@ namespace Beamable.Editor.UI.Components
 		private Button _button;
 
 		public BeamableCheckboxVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(BeamableCheckboxVisualElement)}/{nameof(BeamableCheckboxVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(BeamableCheckboxVisualElement)}/{nameof(BeamableCheckboxVisualElement)}")
+		{
+		}
 
 		public override void Refresh()
 		{

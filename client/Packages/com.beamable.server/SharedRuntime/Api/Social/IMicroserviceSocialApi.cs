@@ -14,5 +14,7 @@ namespace Beamable.Server.Api.Social
 	/// ![img beamable-logo]
 	/// 
 	/// </summary>
-	public interface IMicroserviceSocialApi : ISocialApi { }
+	public interface IMicroserviceSocialApi : ISocialApi
+	{
+	}
 }

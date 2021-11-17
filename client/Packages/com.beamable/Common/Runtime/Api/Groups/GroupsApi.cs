@@ -1,9 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Pooling;
 using Beamable.Serialization.SmallerJSON;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Beamable.Common.Api.Groups
 {
@@ -85,14 +85,14 @@ namespace Beamable.Common.Api.Groups
 		}
 
 		public Promise<GroupSearchResponse> Search(string name = null,
-		                                           List<string> enrollmentTypes = null,
-		                                           bool? hasSlots = null,
-		                                           long? scoreMin = null,
-		                                           long? scoreMax = null,
-		                                           string sortField = null,
-		                                           int? sortValue = null,
-		                                           int? offset = null,
-		                                           int? limit = null)
+												   List<string> enrollmentTypes = null,
+												   bool? hasSlots = null,
+												   long? scoreMin = null,
+												   long? scoreMax = null,
+												   string sortField = null,
+												   int? sortValue = null,
+												   int? offset = null,
+												   int? limit = null)
 		{
 			string args = "";
 
@@ -164,7 +164,7 @@ namespace Beamable.Common.Api.Groups
 
 				var json = Json.Serialize(dict, pooledBuilder.Builder);
 				return Requester.Request<GroupCreateResponse>(Method.POST, $"/object/group-users/{Ctx.UserId}/group",
-				                                              json);
+															  json);
 			}
 		}
 
@@ -336,7 +336,7 @@ namespace Beamable.Common.Api.Groups
 			Groups = groups.Select(group =>
 			{
 				var membership = user.member.guild.Find(m => m.id == group.id);
-				return new GroupView {Group = group, Joined = membership.joined};
+				return new GroupView { Group = group, Joined = membership.joined };
 			}).ToList();
 		}
 	}

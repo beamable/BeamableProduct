@@ -1,18 +1,18 @@
-using Beamable.Editor.Content.Models;
+using Beamable.Common;
+using Beamable.Common.Content;
 using Beamable.Editor.Content;
+using Beamable.Editor.Content.Models;
 using Beamable.Editor.UI.Buss.Components;
+using Beamable.Editor.UI.Common;
+using Beamable.Editor.UI.Common.Models;
+using Beamable.Editor.UI.Components;
+using Beamable.Platform.SDK;
+using Modules.Content;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Beamable.Common;
-using Beamable.Common.Content;
-using Beamable.Editor.UI.Common;
-using Beamable.Editor.UI.Common.Models;
-using Beamable.Platform.SDK;
-using Beamable.Editor.UI.Components;
-using Modules.Content;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -63,7 +63,8 @@ namespace Beamable.Editor.Content.Components
 			set
 			{
 				_createNewManifest = value;
-				if (_manifestNameContainer != null) _manifestNameContainer.visible = value;
+				if (_manifestNameContainer != null)
+					_manifestNameContainer.visible = value;
 			}
 		}
 
@@ -112,9 +113,10 @@ namespace Beamable.Editor.Content.Components
 				_isManifestNameValid = _manifestNameField.AddErrorLabel("Manifest Namespace", name =>
 				{
 					_manifestArchivedMessage.EnableInClassList("visible",
-					                                           _manifestModel.ArchivedManifestModels?.Any(
-						                                           m => m.id == name) ?? false);
-					if (!_completed && !ValidateManifestName(name, out var msg)) return msg;
+															   _manifestModel.ArchivedManifestModels?.Any(
+																   m => m.id == name) ?? false);
+					if (!_completed && !ValidateManifestName(name, out var msg))
+						return msg;
 					return null;
 				});
 				_isManifestNameValid.Check();
@@ -141,7 +143,10 @@ namespace Beamable.Editor.Content.Components
 			var addSource = new List<ContentDownloadEntryDescriptor>();
 			var addList = new ListView
 			{
-				itemHeight = 24, itemsSource = addSource, makeItem = MakeElement, bindItem = CreateBinder(addSource)
+				itemHeight = 24,
+				itemsSource = addSource,
+				makeItem = MakeElement,
+				bindItem = CreateBinder(addSource)
 			};
 
 			addFoldoutElem.contentContainer.Add(addList);
@@ -309,21 +314,21 @@ namespace Beamable.Editor.Content.Components
 
 			_loadingBar.RunWithoutUpdater = true;
 			OnPublishRequested?.Invoke(publishSet, (progress, processed, total) =>
-			                           {
-				                           _loadingBar.Progress = progress;
-			                           },
-			                           promise =>
-			                           {
-				                           _publishBtn.Load(promise);
-				                           promise.Then(_ =>
-				                           {
-					                           _completed = true;
-					                           _messageLabel.text = ContentManagerConstants.PublishCompleteMessage;
-					                           _publishBtn.SetText("Okay");
-					                           _loadingBar.RunWithoutUpdater = false;
-					                           MarkChecked();
-				                           });
-			                           });
+									   {
+										   _loadingBar.Progress = progress;
+									   },
+									   promise =>
+									   {
+										   _publishBtn.Load(promise);
+										   promise.Then(_ =>
+										   {
+											   _completed = true;
+											   _messageLabel.text = ContentManagerConstants.PublishCompleteMessage;
+											   _publishBtn.SetText("Okay");
+											   _loadingBar.RunWithoutUpdater = false;
+											   MarkChecked();
+										   });
+									   });
 		}
 
 		private ContentPopupLinkVisualElement MakeElement()
@@ -418,8 +423,8 @@ namespace Beamable.Editor.Content.Components
 				_messageLabel.visible = true;
 				_messageLabel.AddTextWrapStyle();
 				_messageLabel.text = string.Format(ContentManagerConstants.PublishMessagePreview,
-				                                   api.Realm.DisplayName,
-				                                   ContentConfiguration.Instance.EditorManifestID);
+												   api.Realm.DisplayName,
+												   ContentConfiguration.Instance.EditorManifestID);
 			});
 		}
 	}

@@ -19,6 +19,8 @@ namespace Beamable.Api.Tournaments
 	public class TournamentService : TournamentApi
 	{
 		public TournamentService(StatsService stats, IBeamableRequester requester, IUserContext ctx) : base(
-			stats, requester, ctx) { }
+			stats, requester, ctx)
+		{
+		}
 	}
 }

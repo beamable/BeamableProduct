@@ -21,7 +21,8 @@ namespace Beamable.UI.Scripts
 
 		void RegisterButton()
 		{
-			if (_lastButton == Button) return;
+			if (_lastButton == Button)
+				return;
 
 			if (_lastButton != null)
 			{
@@ -38,7 +39,8 @@ namespace Beamable.UI.Scripts
 
 		void OnClick()
 		{
-			if (Clip == null) return;
+			if (Clip == null)
+				return;
 			var source = SoundConfiguration.Instance.GetAudioSource();
 			source.PlayOneShot(Clip, Volume);
 			SoundConfiguration.Instance.RecycleAudioSource(source);

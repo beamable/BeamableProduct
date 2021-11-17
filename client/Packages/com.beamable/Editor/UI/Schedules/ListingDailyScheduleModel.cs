@@ -1,7 +1,7 @@
-﻿using System;
-using Beamable.Common.Content;
+﻿using Beamable.Common.Content;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Validation;
+using System;
 
 namespace Beamable.Editor.Schedules
 {
@@ -16,13 +16,13 @@ namespace Beamable.Editor.Schedules
 		private readonly LabeledHourPickerVisualElement _periodToHourComponent;
 
 		public ListingDailyScheduleModel(LabeledTextField descriptionComponent,
-		                                 LabeledCheckboxVisualElement neverExpiresComponent,
-		                                 LabeledDatePickerVisualElement activeToDateComponent,
-		                                 LabeledHourPickerVisualElement activeToHourComponent,
-		                                 LabeledCheckboxVisualElement allDayComponent,
-		                                 LabeledHourPickerVisualElement periodFromHourComponent,
-		                                 LabeledHourPickerVisualElement periodToHourComponent,
-		                                 Action<bool, string> refreshConfirmButton)
+										 LabeledCheckboxVisualElement neverExpiresComponent,
+										 LabeledDatePickerVisualElement activeToDateComponent,
+										 LabeledHourPickerVisualElement activeToHourComponent,
+										 LabeledCheckboxVisualElement allDayComponent,
+										 LabeledHourPickerVisualElement periodFromHourComponent,
+										 LabeledHourPickerVisualElement periodToHourComponent,
+										 Action<bool, string> refreshConfirmButton)
 		{
 			_descriptionComponent = descriptionComponent;
 			_neverExpiresComponent = neverExpiresComponent;
@@ -42,9 +42,9 @@ namespace Beamable.Editor.Schedules
 			Schedule newSchedule = new Schedule();
 
 			ScheduleParser.PrepareGeneralData(newSchedule, _descriptionComponent.Value,
-			                                  DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ssZ"),
-			                                  _neverExpiresComponent.Value,
-			                                  $"{_activeToDateComponent.SelectedDate}{_activeToHourComponent.SelectedHour}");
+											  DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+											  _neverExpiresComponent.Value,
+											  $"{_activeToDateComponent.SelectedDate}{_activeToHourComponent.SelectedHour}");
 
 			int fromHour = 0;
 			int toHour = 0;
@@ -62,7 +62,7 @@ namespace Beamable.Editor.Schedules
 			if (!_allDayComponent.Value)
 			{
 				ScheduleParser.PrepareListingDailyModeData(newSchedule, fromHour, toHour, fromMinute,
-				                                           toMinute);
+														   toMinute);
 			}
 
 			return newSchedule;

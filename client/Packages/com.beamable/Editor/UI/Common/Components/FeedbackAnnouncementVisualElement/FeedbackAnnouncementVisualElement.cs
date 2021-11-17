@@ -21,7 +21,9 @@ namespace Beamable.Editor.Toolbox.Components
 		}
 
 		public FeedbackAnnouncementVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(FeedbackAnnouncementVisualElement)}/{nameof(FeedbackAnnouncementVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(FeedbackAnnouncementVisualElement)}/{nameof(FeedbackAnnouncementVisualElement)}")
+		{
+		}
 
 		public override void Refresh()
 		{

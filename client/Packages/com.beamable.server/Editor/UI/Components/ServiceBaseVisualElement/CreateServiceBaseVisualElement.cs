@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
-using Beamable.Editor.UI.Components;
+﻿using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.UI.Components;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -70,7 +70,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void InjectStyleSheets()
 		{
-			if (string.IsNullOrWhiteSpace(ScriptName)) return;
+			if (string.IsNullOrWhiteSpace(ScriptName))
+				return;
 			_rootVisualElement.AddStyleSheet($"{Constants.COMP_PATH}/{ScriptName}/{ScriptName}.uss");
 		}
 
@@ -150,8 +151,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_nameTextField.value = NewServiceName;
 			_canCreateService = !_servicesNames.Contains(NewServiceName)
-			                    && NewServiceName.Length > 2
-			                    && NewServiceName.Length <= MAX_NAME_LENGTH;
+								&& NewServiceName.Length > 2
+								&& NewServiceName.Length <= MAX_NAME_LENGTH;
 			_createBtn.SetEnabled(_canCreateService);
 		}
 	}

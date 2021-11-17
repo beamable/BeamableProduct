@@ -29,8 +29,10 @@ namespace Beamable.Common
 
 		public bool AcceptIdContains(string id)
 		{
-			if (IdContainsConstraint == null) return true;
-			if (id == null) return false;
+			if (IdContainsConstraint == null)
+				return true;
+			if (id == null)
+				return false;
 			return id.Split('.').Last().Contains(IdContainsConstraint.ToLower());
 		}
 	}
@@ -50,9 +52,9 @@ namespace Beamable.Common
 		public delegate bool SerializeRule<in T>(T query, out string serializedpart) where T : DefaultQuery;
 
 		public static string ToString<T>(string existing,
-		                                 T query,
-		                                 List<SerializeRule<T>> serializeRules,
-		                                 Dictionary<string, ApplyParseRule<T>> parseRules)
+										 T query,
+										 List<SerializeRule<T>> serializeRules,
+										 Dictionary<string, ApplyParseRule<T>> parseRules)
 			where T : DefaultQuery, new()
 		{
 			if (existing == null)
@@ -74,7 +76,8 @@ namespace Beamable.Common
 
 			foreach (var rule in serializeRules)
 			{
-				if (!rule.Invoke(query, out var clause)) continue;
+				if (!rule.Invoke(query, out var clause))
+					continue;
 
 				if (clause.Contains(":"))
 				{
@@ -158,8 +161,8 @@ namespace Beamable.Common
 			if (partMap.Count > 0)
 			{
 				var partStr = partMap.Select(kvp => kvp.Key.Equals("id")
-					                             ? kvp.Value
-					                             : $"{kvp.Key}:{kvp.Value}").ToList();
+												 ? kvp.Value
+												 : $"{kvp.Key}:{kvp.Value}").ToList();
 
 				extraPartStr = string.Join(", ", partStr);
 				//strParts.AddRange(partStr);

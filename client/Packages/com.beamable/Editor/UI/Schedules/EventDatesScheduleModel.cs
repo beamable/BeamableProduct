@@ -1,7 +1,7 @@
-﻿using System;
-using Beamable.Common.Content;
+﻿using Beamable.Common.Content;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Validation;
+using System;
 
 namespace Beamable.Editor.Schedules
 {
@@ -17,12 +17,12 @@ namespace Beamable.Editor.Schedules
 		public override WindowMode Mode => WindowMode.Dates;
 
 		public EventDatesScheduleModel(LabeledTextField descriptionComponent,
-		                               LabeledHourPickerVisualElement startTimeComponent,
-		                               LabeledCalendarVisualElement calendarComponent,
-		                               LabeledCheckboxVisualElement neverExpiresComponent,
-		                               LabeledDatePickerVisualElement activeToDateComponent,
-		                               LabeledHourPickerVisualElement activeToHourComponent,
-		                               Action<bool, string> refreshConfirmButtonCallback)
+									   LabeledHourPickerVisualElement startTimeComponent,
+									   LabeledCalendarVisualElement calendarComponent,
+									   LabeledCheckboxVisualElement neverExpiresComponent,
+									   LabeledDatePickerVisualElement activeToDateComponent,
+									   LabeledHourPickerVisualElement activeToHourComponent,
+									   Action<bool, string> refreshConfirmButtonCallback)
 		{
 			_descriptionComponent = descriptionComponent;
 			_startTimeComponent = startTimeComponent;
@@ -33,7 +33,7 @@ namespace Beamable.Editor.Schedules
 
 			Validator = new ComponentsValidator(refreshConfirmButtonCallback);
 			Validator.RegisterRule(new AtLeastOneDaySelectedRule(_calendarComponent.Label),
-			                       _calendarComponent);
+								   _calendarComponent);
 		}
 
 		public override Schedule GetSchedule()
@@ -41,11 +41,11 @@ namespace Beamable.Editor.Schedules
 			Schedule newSchedule = new Schedule();
 
 			ScheduleParser.PrepareGeneralData(newSchedule, _descriptionComponent.Value,
-			                                  _startTimeComponent.SelectedHour, _neverExpiresComponent.Value,
-			                                  $"{_activeToDateComponent.SelectedDate}{_activeToHourComponent.SelectedHour}");
+											  _startTimeComponent.SelectedHour, _neverExpiresComponent.Value,
+											  $"{_activeToDateComponent.SelectedDate}{_activeToHourComponent.SelectedHour}");
 			ScheduleParser.PrepareDateModeData(newSchedule, _startTimeComponent.Hour, _startTimeComponent.Minute,
-			                                   _startTimeComponent.Second,
-			                                   _calendarComponent.SelectedDays);
+											   _startTimeComponent.Second,
+											   _calendarComponent.SelectedDays);
 
 			return newSchedule;
 		}

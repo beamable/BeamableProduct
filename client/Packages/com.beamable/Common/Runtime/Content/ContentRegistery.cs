@@ -1,8 +1,8 @@
+using Beamable.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Beamable.Content;
 using UnityEngine;
 
 namespace Beamable.Common.Content
@@ -60,7 +60,8 @@ namespace Beamable.Common.Content
 				var formerlySerializedTypeNames = GetAllValidContentTypeNames(type, true).ToList();
 				foreach (var possibleTypeName in formerlySerializedTypeNames)
 				{
-					if (possibleTypeName == null) continue;
+					if (possibleTypeName == null)
+						continue;
 					contentTypeToClass[possibleTypeName] = type;
 				}
 
@@ -76,7 +77,8 @@ namespace Beamable.Common.Content
 			foreach (var assembly in assemblies)
 			{
 				var asmName = assembly.GetName().Name;
-				if ("Tests".Equals(asmName)) continue; // TODO think harder about this.
+				if ("Tests".Equals(asmName))
+					continue; // TODO think harder about this.
 				try
 				{
 					foreach (var type in assembly.GetTypes())
@@ -148,7 +150,7 @@ namespace Beamable.Common.Content
 
 			var startType = contentTypeAttribute.TypeName;
 
-			var possibleNames = new HashSet<string> {startType};
+			var possibleNames = new HashSet<string> { startType };
 
 			if (includeFormerlySerialized)
 			{
@@ -156,7 +158,8 @@ namespace Beamable.Common.Content
 					contentType.GetCustomAttributes<ContentFormerlySerializedAsAttribute>(false);
 				foreach (var formerlySerializedAsAttribute in formerlySerializedAsAttributes)
 				{
-					if (string.IsNullOrEmpty(formerlySerializedAsAttribute?.OldTypeName)) continue;
+					if (string.IsNullOrEmpty(formerlySerializedAsAttribute?.OldTypeName))
+						continue;
 					possibleNames.Add(formerlySerializedAsAttribute.OldTypeName);
 				}
 			}
@@ -188,7 +191,7 @@ namespace Beamable.Common.Content
 		{
 			foreach (var kvp in classToContentType)
 			{
-				yield return new ContentTypePair {Type = kvp.Key, Name = kvp.Value};
+				yield return new ContentTypePair { Type = kvp.Key, Name = kvp.Value };
 			}
 		}
 

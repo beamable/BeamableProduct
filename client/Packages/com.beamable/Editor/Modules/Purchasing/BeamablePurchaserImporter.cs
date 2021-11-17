@@ -46,14 +46,16 @@ namespace Beamable.Editor.Modules.Purchasing
 
 			void Check()
 			{
-				if (!request.IsCompleted) return;
+				if (!request.IsCompleted)
+					return;
 
 				EditorApplication.update -= Check;
-				if (request.Status != StatusCode.Success) return;
+				if (request.Status != StatusCode.Success)
+					return;
 
 				var hasPackage = request.Result.Any(x =>
-					                                    x.name.Equals(UNITY_PURCHASING_PACKAGE_NAME) &&
-					                                    !x.version.StartsWith(UNITY_PURCHASING_PACKAGE_LEGACY_VERSION));
+														x.name.Equals(UNITY_PURCHASING_PACKAGE_NAME) &&
+														!x.version.StartsWith(UNITY_PURCHASING_PACKAGE_LEGACY_VERSION));
 				if (hasPackage)
 				{
 					// THIS IS THE 3X FLOW

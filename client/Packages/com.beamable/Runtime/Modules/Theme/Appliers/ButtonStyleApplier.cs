@@ -17,7 +17,8 @@ namespace Beamable.Theme.Appliers
 		public override void Apply(ThemeObject theme, BeamableButton component)
 		{
 			var buttonStyle = theme.GetPaletteStyle(Button);
-			if (buttonStyle == null) return;
+			if (buttonStyle == null)
+				return;
 
 			if (component.Button != null)
 			{

@@ -1,9 +1,9 @@
+using Beamable.Editor.UI.Buss.Model;
+using Beamable.Editor.UI.Buss.Wizard.Model;
+using Beamable.UI.Buss;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Remoting.Messaging;
-using Beamable.Editor.UI.Buss.Wizard.Model;
-using Beamable.Editor.UI.Buss.Model;
-using Beamable.UI.Buss;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -44,7 +44,7 @@ namespace Beamable.Editor.UI.Buss.Wizard.Components
 		}
 
 		private const string COMMON = BeamableComponentsConstants.UI_PACKAGE_PATH +
-		                              "/Buss/Wizard/Components/wizardStepVisualElement";
+									  "/Buss/Wizard/Components/wizardStepVisualElement";
 
 		protected VisualElement _questionContainer, _aboutContainer, _answerContainer;
 
@@ -62,7 +62,9 @@ namespace Beamable.Editor.UI.Buss.Wizard.Components
 			OnActivate(ctx);
 		}
 
-		protected virtual void OnActivate(WizardContext ctx) { }
+		protected virtual void OnActivate(WizardContext ctx)
+		{
+		}
 
 		public void Refresh(WizardContext ctx)
 		{

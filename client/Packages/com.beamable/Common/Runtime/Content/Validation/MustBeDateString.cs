@@ -45,21 +45,21 @@ namespace Beamable.Common.Content.Validation
 		}
 
 		public void ValidateString(string strValue,
-		                           ValidationFieldWrapper validationField,
-		                           IContentObject obj,
-		                           IValidationContext ctx)
+								   ValidationFieldWrapper validationField,
+								   IContentObject obj,
+								   IValidationContext ctx)
 		{
 			if (string.IsNullOrEmpty(strValue))
 			{
 				throw new ContentValidationException(obj, validationField,
-				                                     "date cannot be an empty string. yyyy-MM-ddTHH:mm:ssZ");
+													 "date cannot be an empty string. yyyy-MM-ddTHH:mm:ssZ");
 			}
 
 			if (!DateTime.TryParseExact(strValue, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture,
-			                            DateTimeStyles.None, out _))
+										DateTimeStyles.None, out _))
 			{
 				throw new ContentValidationException(obj, validationField,
-				                                     "date is not in 8601 iso format. yyyy-MM-ddTHH:mm:ssZ");
+													 "date is not in 8601 iso format. yyyy-MM-ddTHH:mm:ssZ");
 			}
 		}
 	}

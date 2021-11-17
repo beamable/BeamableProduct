@@ -1,17 +1,17 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Linq;
 using Beamable.Common.Api.Auth;
+using Beamable.Editor;
 using Beamable.Editor.Content.Components;
 using Beamable.Editor.Content.Models;
-using Beamable.Editor;
 using Beamable.Editor.Login.UI;
-using UnityEditor;
 using Beamable.Editor.NoUser;
 using Beamable.Editor.Realms;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Platform.SDK;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 #if UNITY_2018
@@ -50,7 +50,7 @@ namespace Beamable.Editor.Content
 				if (_instance == null)
 				{
 					_instance = GetWindow<ContentManagerWindow>(BeamableConstants.CONTENT_MANAGER, true,
-					                                            typeof(ContentManagerWindow), typeof(SceneView));
+																typeof(ContentManagerWindow), typeof(SceneView));
 				}
 
 				return _instance;
@@ -207,13 +207,13 @@ namespace Beamable.Editor.Content
 				}
 
 				_currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ValidateContent,
-				                                                 GetValidateContentVisualElement(), this,
-				                                                 ContentManagerConstants.WindowSizeMinimum, (window) =>
-				                                                 {
-					                                                 // trigger after Unity domain reload
-					                                                 window?.SwapContent(
-						                                                 Instance.GetValidateContentVisualElement());
-				                                                 });
+																 GetValidateContentVisualElement(), this,
+																 ContentManagerConstants.WindowSizeMinimum, (window) =>
+																 {
+																	 // trigger after Unity domain reload
+																	 window?.SwapContent(
+																		 Instance.GetValidateContentVisualElement());
+																 });
 
 				_currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
 			};
@@ -230,14 +230,14 @@ namespace Beamable.Editor.Content
 				_cachedCreateNewManifestFlag = createNew;
 
 				_currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ValidateContent,
-				                                                 GetValidateContentVisualElementWithPublish(), this,
-				                                                 ContentManagerConstants.WindowSizeMinimum, (window) =>
-				                                                 {
-					                                                 // trigger after Unity domain reload
-					                                                 window?.SwapContent(
-						                                                 Instance
-							                                                 .GetValidateContentVisualElementWithPublish());
-				                                                 });
+																 GetValidateContentVisualElementWithPublish(), this,
+																 ContentManagerConstants.WindowSizeMinimum, (window) =>
+																 {
+																	 // trigger after Unity domain reload
+																	 window?.SwapContent(
+																		 Instance
+																			 .GetValidateContentVisualElementWithPublish());
+																 });
 
 				_currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
 
@@ -256,13 +256,13 @@ namespace Beamable.Editor.Content
 
 				_cachedItemsToDownload = null;
 				_currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.DownloadContent,
-				                                                 GetDownloadContentVisualElement(), this,
-				                                                 ContentManagerConstants.WindowSizeMinimum, (window) =>
-				                                                 {
-					                                                 // trigger after Unity domain reload
-					                                                 window?.SwapContent(
-						                                                 Instance.GetDownloadContentVisualElement());
-				                                                 });
+																 GetDownloadContentVisualElement(), this,
+																 ContentManagerConstants.WindowSizeMinimum, (window) =>
+																 {
+																	 // trigger after Unity domain reload
+																	 window?.SwapContent(
+																		 Instance.GetDownloadContentVisualElement());
+																 });
 				_currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
 			};
 
@@ -339,14 +339,14 @@ namespace Beamable.Editor.Content
 
 			_cachedItemsToDownload = items.Select(x => x.Id).ToList();
 			_currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.DownloadContent,
-			                                                 GetDownloadContentVisualElement(), this,
-			                                                 ContentManagerConstants.WindowSizeMinimum, (window) =>
-			                                                 {
-				                                                 // trigger after Unity domain reload
-				                                                 window?.SwapContent(
-					                                                 Instance.GetDownloadContentVisualElement());
-				                                                 window?.FitToContent();
-			                                                 }).FitToContent();
+															 GetDownloadContentVisualElement(), this,
+															 ContentManagerConstants.WindowSizeMinimum, (window) =>
+															 {
+																 // trigger after Unity domain reload
+																 window?.SwapContent(
+																	 Instance.GetDownloadContentVisualElement());
+																 window?.FitToContent();
+															 }).FitToContent();
 
 			_currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
 		}
@@ -440,8 +440,8 @@ namespace Beamable.Editor.Content
 			EditorApplication.delayCall += () =>
 			{
 				Instance._contentManager
-				        ?.ValidateContent(validatePopup.SetProgress, validatePopup.HandleValidationErrors)
-				        .Then(_ => validatePopup.HandleFinished());
+						?.ValidateContent(validatePopup.SetProgress, validatePopup.HandleValidationErrors)
+						.Then(_ => validatePopup.HandleFinished());
 			};
 
 			return validatePopup;
@@ -467,20 +467,21 @@ namespace Beamable.Editor.Content
 			EditorApplication.delayCall += () =>
 			{
 				_contentManager.ValidateContent(validatePopup.SetProgress, validatePopup.HandleValidationErrors)
-				               .Then(errors =>
-				               {
-					               validatePopup.HandleFinished();
+							   .Then(errors =>
+							   {
+								   validatePopup.HandleFinished();
 
-					               if (errors.Count != 0) return;
+								   if (errors.Count != 0)
+									   return;
 
-					               _currentWindow.SwapContent(GetPublishContentVisualElement(), (window) =>
-					               {
-						               // trigger after domain reload
-						               window?.SwapContent(Instance.GetPublishContentVisualElement());
-					               });
+								   _currentWindow.SwapContent(GetPublishContentVisualElement(), (window) =>
+								   {
+									   // trigger after domain reload
+									   window?.SwapContent(Instance.GetPublishContentVisualElement());
+								   });
 
-					               _currentWindow.titleContent = new GUIContent(ContentManagerConstants.PublishContent);
-				               });
+								   _currentWindow.titleContent = new GUIContent(ContentManagerConstants.PublishContent);
+							   });
 			};
 
 			return validatePopup;
@@ -537,7 +538,9 @@ namespace Beamable.Editor.Content
 			}
 		}
 
-		public void OnBeforeSerialize() { }
+		public void OnBeforeSerialize()
+		{
+		}
 
 		public void OnAfterDeserialize()
 		{
@@ -556,16 +559,16 @@ namespace Beamable.Editor.Content
 			Instance._currentWindow = null;
 
 			Instance._currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.RemoveLocalContent,
-			                                                          Instance.GetResetContentVisualElement(), null,
-			                                                          ContentManagerConstants.WindowSizeMinimum,
-			                                                          (window) =>
-			                                                          {
-				                                                          // trigger after Unity domain reload
+																	  Instance.GetResetContentVisualElement(), null,
+																	  ContentManagerConstants.WindowSizeMinimum,
+																	  (window) =>
+																	  {
+																		  // trigger after Unity domain reload
 
-				                                                          window?.SwapContent(
-					                                                          Instance.GetResetContentVisualElement());
-				                                                          window?.FitToContent();
-			                                                          });
+																		  window?.SwapContent(
+																			  Instance.GetResetContentVisualElement());
+																		  window?.FitToContent();
+																	  });
 
 			Instance._currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
 		}

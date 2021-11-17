@@ -1,6 +1,6 @@
-﻿using UnityEngine;
+﻿using System;
 using UnityEditor;
-using System;
+using UnityEngine;
 
 namespace Beamable.Samples.SampleProjectBase
 {
@@ -57,7 +57,7 @@ namespace Beamable.Samples.SampleProjectBase
 			var window = EditorWindow.GetWindow(inspWndType);
 			window.Focus();
 
-			Selection.objects = new UnityEngine.Object[] {readmeObject};
+			Selection.objects = new UnityEngine.Object[] { readmeObject };
 			return (Readme)readmeObject;
 		}
 

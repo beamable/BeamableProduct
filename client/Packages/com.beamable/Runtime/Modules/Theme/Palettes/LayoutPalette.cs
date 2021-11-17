@@ -13,10 +13,12 @@ namespace Beamable.Theme.Palettes
 	{
 		public override LayoutStyle DefaultValue()
 		{
-			return new LayoutStyle {Name = "default", Enabled = true, Padding = new RectOffset()};
+			return new LayoutStyle { Name = "default", Enabled = true, Padding = new RectOffset() };
 		}
 	}
 
 	[System.Serializable]
-	public class LayoutBinding : LayoutPalette.PaletteBinding { }
+	public class LayoutBinding : LayoutPalette.PaletteBinding
+	{
+	}
 }

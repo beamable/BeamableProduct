@@ -16,7 +16,7 @@ namespace PubNubMessaging.Core
 #if (SILVERLIGHT || WINDOWS_PHONE || MONOTOUCH || __IOS__ || MONODROID || __ANDROID__ || UNITY_STANDALONE || UNITY_WEBPLAYER || UNITY_IOS || UNITY_ANDROID || UNITY_5 || UNITY_WEBGL)
 			HashAlgorithm algorithm = new System.Security.Cryptography.SHA256Managed();
 #else
-            HashAlgorithm algorithm = new SHA256CryptoServiceProvider ();
+			HashAlgorithm algorithm = new SHA256CryptoServiceProvider();
 #endif
 
 			Byte[] inputBytes = System.Text.Encoding.UTF8.GetBytes(input);

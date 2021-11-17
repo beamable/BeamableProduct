@@ -1,7 +1,7 @@
-using System;
-using System.Linq;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.UI.Buss;
+using System;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -138,7 +138,8 @@ namespace Beamable.Editor.UI.Buss
 
 		private static void DrawHighlightSelector()
 		{
-			if (_highlightSelector == null) return;
+			if (_highlightSelector == null)
+				return;
 
 			// TODO: this will be really slow, because its calling on the draw thread every tick. We really don't need to do that.
 			var all = GameObject.FindObjectsOfType<StyleBehaviour>();

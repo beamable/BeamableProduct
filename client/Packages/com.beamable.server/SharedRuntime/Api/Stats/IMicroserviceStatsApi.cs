@@ -1,7 +1,7 @@
-using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Stats;
+using System.Collections.Generic;
 
 namespace Beamable.Server.Api.Stats
 {
@@ -60,16 +60,16 @@ namespace Beamable.Server.Api.Stats
 		Promise<EmptyResponse> SetProtectedPlayerStats(long userId, Dictionary<string, string> stats);
 
 		Promise<EmptyResponse> SetStats(string domain,
-		                                string access,
-		                                string type,
-		                                long userId,
-		                                Dictionary<string, string> stats);
+										string access,
+										string type,
+										long userId,
+										Dictionary<string, string> stats);
 
 		Promise<Dictionary<string, string>> GetStats(string domain,
-		                                             string access,
-		                                             string type,
-		                                             long userId,
-		                                             string[] stats);
+													 string access,
+													 string type,
+													 long userId,
+													 string[] stats);
 
 		Promise<StatsSearchResponse> SearchStats(string domain, string access, string type, List<Criteria> criteria);
 	}

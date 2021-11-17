@@ -1,5 +1,5 @@
-using System.Linq;
 using Beamable.Avatars;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -38,7 +38,7 @@ namespace Beamable.AccountManagement
 			_lastAvatarName = avatarName;
 
 			var avatar = AccountManagementConfiguration.Instance.Overrides.GetAvailableAvatars()
-			                                           .FirstOrDefault(a => a.Name.Equals(avatarName));
+													   .FirstOrDefault(a => a.Name.Equals(avatarName));
 			if (avatar == null)
 			{
 				avatar = AccountManagementConfiguration.Instance.Overrides.GetDefaultAvatar();

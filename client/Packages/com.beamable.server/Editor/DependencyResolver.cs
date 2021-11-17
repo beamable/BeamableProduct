@@ -1,3 +1,11 @@
+using Beamable.Api;
+using Beamable.Common;
+using Beamable.Common.Content;
+using Beamable.Content;
+using Beamable.Platform.SDK;
+using Beamable.Serialization;
+using Beamable.Serialization.SmallerJSON;
+using Beamable.Server.Editor;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -6,14 +14,6 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Text;
-using Beamable.Api;
-using Beamable.Common;
-using Beamable.Common.Content;
-using Beamable.Server.Editor;
-using Beamable.Platform.SDK;
-using Beamable.Serialization;
-using Beamable.Serialization.SmallerJSON;
-using Beamable.Content;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -42,13 +42,17 @@ namespace Beamable.Server
 	public class AssemblyDefinitionNotFoundException : Exception
 	{
 		public AssemblyDefinitionNotFoundException(string assemblyName) : base(
-			$"Cannot find unity assembly {assemblyName}") { }
+			$"Cannot find unity assembly {assemblyName}")
+		{
+		}
 	}
 
 	public class DllReferenceNotFoundException : Exception
 	{
 		public DllReferenceNotFoundException(string dllReference) :
-			base($"Cannot find dll reference {dllReference}") { }
+			base($"Cannot find dll reference {dllReference}")
+		{
+		}
 	}
 
 	public class AssemblyDefinitionInfoCollection : IEnumerable<AssemblyDefinitionInfo>
@@ -176,11 +180,13 @@ namespace Beamable.Server
 		public static HashSet<Type> GetReferencedTypes(Type type)
 		{
 			var results = new HashSet<Type>();
-			if (type == null) return results;
+			if (type == null)
+				return results;
 
 			void Add(Type t)
 			{
-				if (t == null) return;
+				if (t == null)
+					return;
 
 				results.Add(t);
 				if (t.IsGenericType)
@@ -319,7 +325,7 @@ namespace Beamable.Server
 		}
 
 		private static bool IsStubbed(AssemblyDefinitionInfoCollection assemblies,
-		                              string assemblyName)
+									  string assemblyName)
 		{
 			// TODO: maybe don't rebuild this every check?
 			var rejectedAssemblies = new HashSet<AssemblyDefinitionInfo>
@@ -352,14 +358,16 @@ namespace Beamable.Server
 			{
 				var isTestAssembly = assembly.FullName.Contains("Test");
 				var isEditorAssembly = assembly.FullName.Contains("Editor");
-				if (isTestAssembly || isEditorAssembly) continue;
+				if (isTestAssembly || isEditorAssembly)
+					continue;
 				var types = assembly.GetTypes();
 				foreach (var type in types)
 				{
 					var contentAttr = type.GetCustomAttribute<ContentTypeAttribute>();
-					if (contentAttr == null) continue;
+					if (contentAttr == null)
+						continue;
 
-					output.Add(new MicroserviceFileDependency {Agnostic = contentAttr, Type = type});
+					output.Add(new MicroserviceFileDependency { Agnostic = contentAttr, Type = type });
 				}
 			}
 
@@ -367,7 +375,7 @@ namespace Beamable.Server
 		}
 
 		private static List<PluginImporter> GatherDllDependencies(MicroserviceDescriptor descriptor,
-		                                                          AssemblyDefinitionInfoGroup knownAssemblies)
+																  AssemblyDefinitionInfoGroup knownAssemblies)
 		{
 			var importers = PluginImporter.GetAllImporters();
 			var dllImporters = knownAssemblies.DllReferences.Select(dllReference =>
@@ -408,7 +416,8 @@ namespace Beamable.Server
 			while (unityAssembliesToExpand.Count > 0)
 			{
 				var curr = unityAssembliesToExpand.Dequeue();
-				if (curr == null) continue;
+				if (curr == null)
+					continue;
 				if (IsStubbed(unityAssemblies, curr.Name))
 				{
 					stubbedAssemblies.Add(curr);
@@ -527,7 +536,8 @@ namespace Beamable.Server
 							$"WARNING: The type will be pulled into your microservice through an Agnostic attribute. Beamable suggests you put this type into a shared assembly definition instead. type=[{curr}]");
 						fileDependencies.Add(new MicroserviceFileDependency
 						{
-							Type = curr, Agnostic = agnosticAttribute
+							Type = curr,
+							Agnostic = agnosticAttribute
 						});
 					}
 				}
@@ -557,10 +567,10 @@ namespace Beamable.Server
 			}
 
 			var unstubbedDistinctFileDependencies = fileDependencies
-			                                        .Where(d => !knownAssemblies.ToCopy.Contains(d.Type) &&
-			                                                    !knownAssemblies.Stubbed.Contains(d.Type))
-			                                        .Distinct(new MicroserviceFileDependencyComparer())
-			                                        .ToList();
+													.Where(d => !knownAssemblies.ToCopy.Contains(d.Type) &&
+																!knownAssemblies.Stubbed.Contains(d.Type))
+													.Distinct(new MicroserviceFileDependencyComparer())
+													.ToList();
 
 			return unstubbedDistinctFileDependencies;
 		}
@@ -572,7 +582,9 @@ namespace Beamable.Server
 			var infos = GatherSingleFileDependencies(descriptor, assemblyRequirements);
 			return new MicroserviceDependencies
 			{
-				FilesToCopy = infos, Assemblies = assemblyRequirements, DllsToCopy = dlls
+				FilesToCopy = infos,
+				Assemblies = assemblyRequirements,
+				DllsToCopy = dlls
 			};
 		}
 	}

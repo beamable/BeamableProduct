@@ -15,7 +15,7 @@ namespace Beamable.Editor.UI.Validation
 			string pattern = "[0-9]";
 
 			Satisfied = Regex.IsMatch(split[0], pattern) && Regex.IsMatch(split[1], pattern) &&
-			            Regex.IsMatch(split[2], pattern);
+						Regex.IsMatch(split[2], pattern);
 		}
 	}
 
@@ -84,8 +84,8 @@ namespace Beamable.Editor.UI.Validation
 			string[] split = value.Split(':');
 
 			if (!int.TryParse(split[0], out int hour) ||
-			    !int.TryParse(split[1], out int minute) ||
-			    !int.TryParse(split[2], out int second))
+				!int.TryParse(split[1], out int minute) ||
+				!int.TryParse(split[2], out int second))
 			{
 				success = false;
 				return new DateTime(2000, 1, 1, 0, 0, 0);

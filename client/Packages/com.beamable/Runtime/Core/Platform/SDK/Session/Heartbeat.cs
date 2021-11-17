@@ -1,6 +1,6 @@
-using UnityEngine;
-using System.Collections;
 using Beamable.Coroutines;
+using System.Collections;
+using UnityEngine;
 
 namespace Beamable.Api.Sessions
 {

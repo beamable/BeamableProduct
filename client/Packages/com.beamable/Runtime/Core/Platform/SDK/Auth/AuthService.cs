@@ -48,14 +48,14 @@ namespace Beamable.Api.Auth
 		{
 			var encodedDeviceId = Requester.EscapeURL(SystemInfo.deviceUniqueIdentifier);
 			return Requester.Request<AvailabilityResponse>(Method.GET,
-			                                               $"{ACCOUNT_URL}/available/device-id?deviceId={encodedDeviceId}",
-			                                               null, false)
-			                .Map(resp => resp.available);
+														   $"{ACCOUNT_URL}/available/device-id?deviceId={encodedDeviceId}",
+														   null, false)
+							.Map(resp => resp.available);
 		}
 
 		public Promise<TokenResponse> LoginDeviceId()
 		{
-			var req = new LoginDeviceIdRequest {grant_type = "device", device_id = SystemInfo.deviceUniqueIdentifier};
+			var req = new LoginDeviceIdRequest { grant_type = "device", device_id = SystemInfo.deviceUniqueIdentifier };
 			return Requester.Request<TokenResponse>(Method.POST, TOKEN_URL, req);
 		}
 
@@ -87,7 +87,7 @@ namespace Beamable.Api.Auth
 
 			public static RegisterDeviceIdRequest Create()
 			{
-				var req = new RegisterDeviceIdRequest {deviceId = SystemInfo.deviceUniqueIdentifier};
+				var req = new RegisterDeviceIdRequest { deviceId = SystemInfo.deviceUniqueIdentifier };
 				return req;
 			}
 		}

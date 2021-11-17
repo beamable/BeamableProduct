@@ -1,6 +1,6 @@
 ﻿using Beamable.Common;
-using Beamable.UI.Scripts;
 using Beamable.Platform.SDK;
+using Beamable.UI.Scripts;
 using UnityEngine;
 using UnityEngine.UI;
 

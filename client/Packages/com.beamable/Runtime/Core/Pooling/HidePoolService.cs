@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using Beamable.Service;
+﻿using Beamable.Service;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 

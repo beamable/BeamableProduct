@@ -27,7 +27,8 @@ namespace Beamable.UI.SDF
 		{
 			get
 			{
-				if (backgroundTexture == null) return base.material;
+				if (backgroundTexture == null)
+					return base.material;
 
 				if (_materialWithBackgroundTexture == null)
 				{
@@ -109,14 +110,14 @@ namespace Beamable.UI.SDF
 					var uvSize = new Vector2(uvValues[xi + 1].x, uvValues[yi + 1].y) - uvMin;
 					var uvRect = new Rect(uvMin, uvSize);
 					var coordsRect = Rect.MinMaxRect(coordsValues[xi].x, coordsValues[yi].y, coordsValues[xi + 1].x,
-					                                 coordsValues[yi + 1].y);
+													 coordsValues[yi + 1].y);
 					AddRect(vh, positionRect, uvRect, coordsRect, size);
 				}
 			}
 
 			AddFrame(vh,
-			         new Rect(startPosition, endPosition - startPosition),
-			         new Rect(uvValues[0], uvValues[3]));
+					 new Rect(startPosition, endPosition - startPosition),
+					 new Rect(uvValues[0], uvValues[3]));
 		}
 
 		private Rect GetNormalizedSpriteRect()
@@ -134,7 +135,8 @@ namespace Beamable.UI.SDF
 		/// </summary>
 		private void AddFrame(VertexHelper vh, Rect position, Rect uv)
 		{
-			if (meshFrame < .01f) return;
+			if (meshFrame < .01f)
+				return;
 			var size = rectTransform.rect.size;
 			var doubledFrame = meshFrame * 2f;
 			// GrownPosition and GrownUV are outer rects of the frame.

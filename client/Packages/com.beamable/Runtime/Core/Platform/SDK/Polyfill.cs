@@ -9,7 +9,7 @@ namespace Beamable.Api
 #if UNITY_2020_1_OR_NEWER
 			return webRequest.result == UnityWebRequest.Result.ProtocolError;
 #else
-         return webRequest.isHttpError;
+			return webRequest.isHttpError;
 #endif
 		}
 
@@ -18,7 +18,7 @@ namespace Beamable.Api
 #if UNITY_2020_1_OR_NEWER
 			return webRequest.result == UnityWebRequest.Result.ConnectionError;
 #else
-         return webRequest.isNetworkError;
+			return webRequest.isNetworkError;
 #endif
 		}
 	}

@@ -1,11 +1,11 @@
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Editor.Content;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Common.Models;
-using UnityEngine;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -18,7 +18,9 @@ namespace Beamable.Editor.UI.Components
 {
 	public class ManifestButtonVisualElement : BeamableVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<ManifestButtonVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<ManifestButtonVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
@@ -47,7 +49,9 @@ namespace Beamable.Editor.UI.Components
 		private Label _manifestLabel;
 
 		public ManifestButtonVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(ManifestButtonVisualElement)}/{nameof(ManifestButtonVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(ManifestButtonVisualElement)}/{nameof(ManifestButtonVisualElement)}")
+		{
+		}
 
 		public override void Refresh()
 		{
@@ -94,10 +98,10 @@ namespace Beamable.Editor.UI.Components
 		{
 			var popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
 
-			var content = new SearchabledDropdownVisualElement(string.Empty) {Model = Model};
+			var content = new SearchabledDropdownVisualElement(string.Empty) { Model = Model };
 
 			var wnd = BeamablePopupWindow.ShowDropdown("Select Manifest", popupWindowRect, new Vector2(200, 300),
-			                                           content);
+													   content);
 
 			content.OnElementDelete += (manifest) =>
 			{

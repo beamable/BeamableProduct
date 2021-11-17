@@ -1,9 +1,9 @@
-using System;
-using System.Collections;
 using Beamable.Common;
 using Beamable.Coroutines;
 using Beamable.Platform.SDK;
 using Beamable.Service;
+using System;
+using System.Collections;
 using UnityEngine;
 
 namespace Beamable.UI.Scripts
@@ -21,10 +21,10 @@ namespace Beamable.UI.Scripts
 		const float C4 = (float)((2 * Math.PI) / 3);
 
 		public static Promise<Unit> RunAnimation(this MonoBehaviour root,
-		                                         Action<float> handler,
-		                                         float duration = .2f,
-		                                         int steps = 10,
-		                                         Func<float, float> easing = null)
+												 Action<float> handler,
+												 float duration = .2f,
+												 int steps = 10,
+												 Func<float, float> easing = null)
 		{
 			var promise = new Promise<Unit>();
 			promise.Error(ex =>
@@ -59,9 +59,9 @@ namespace Beamable.UI.Scripts
 		}
 
 		public static IEnumerator Animate(Action<float, float> handler,
-		                                  float duration = .2f,
-		                                  int steps = 10,
-		                                  Func<float, float> easing = null)
+										  float duration = .2f,
+										  int steps = 10,
+										  Func<float, float> easing = null)
 		{
 			var startTime = Time.realtimeSinceStartup;
 			var endTime = startTime + duration;

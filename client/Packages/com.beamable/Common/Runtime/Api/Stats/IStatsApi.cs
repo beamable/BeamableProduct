@@ -74,7 +74,7 @@ namespace Beamable.Common.Api.Stats
 			set = new List<StatEntry>();
 			foreach (var stat in stats)
 			{
-				var entry = new StatEntry {k = stat.Key, v = stat.Value};
+				var entry = new StatEntry { k = stat.Key, v = stat.Value };
 				set.Add(entry);
 			}
 		}

@@ -1,6 +1,6 @@
-using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Beamable.Experimental.Api.Sim
 {
@@ -50,7 +50,9 @@ namespace Beamable.Experimental.Api.Sim
 		}
 
 		// Called when the object enters the simulation for the first time
-		public virtual void SimEnter() { }
+		public virtual void SimEnter()
+		{
+		}
 
 		// Called when the object exits the simulation
 		public virtual void SimExit()

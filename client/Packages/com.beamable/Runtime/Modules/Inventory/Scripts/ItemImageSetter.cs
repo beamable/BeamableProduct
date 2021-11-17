@@ -31,10 +31,12 @@ namespace Beamable.Inventory
 
 		public void Refresh()
 		{
-			if (Image == null || Item == null) return;
+			if (Image == null || Item == null)
+				return;
 			Item.Resolve().Then(async content =>
 			{
-				if (content.icon == null) return;
+				if (content.icon == null)
+					return;
 				Image.sprite = await content.icon.LoadSprite();
 			}).Error(Debug.LogError);
 		}

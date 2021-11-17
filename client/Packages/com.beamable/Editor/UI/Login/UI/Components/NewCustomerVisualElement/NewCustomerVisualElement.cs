@@ -1,8 +1,8 @@
-using System;
-using System.Linq;
 using Beamable.Editor.Login.UI.Components;
 using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
+using System;
+using System.Linq;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -54,15 +54,15 @@ namespace Beamable.Editor.Login.UI.Components
 			_passwordField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_PASSWORD_FIELD);
 			_passwordField.isPasswordField = true;
 			var isPasswordValid = _passwordField.AddErrorLabel("Password", m => PrimaryButtonVisualElement.IsPassword(m)
-				                                                   ? null
-				                                                   : "A valid password must be at least 4 characters long");
+																   ? null
+																   : "A valid password must be at least 4 characters long");
 
 			_passwordConfField = Root.Q<TextField>("confirmPassword");
 			_passwordConfField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_PASSWORD_CONFIRM_FIELD);
 			_passwordConfField.isPasswordField = true;
 			var doPasswordsMatch = _passwordConfField.AddErrorLabel("Password Match", m => m != _passwordField.value
-				                                                        ? "Passwords don't match"
-				                                                        : null);
+																		? "Passwords don't match"
+																		: null);
 			_legalCheckbox = Root.Q<Toggle>();
 			_legalCheckbox.SetValueWithoutNotify(Model.ReadLegalCopy);
 			_legalCheckbox.RegisterValueChangedCallback(evt => Model.ReadLegalCopy = evt.newValue);
@@ -77,7 +77,7 @@ namespace Beamable.Editor.Login.UI.Components
 			_continueButton = Root.Q<PrimaryButtonVisualElement>();
 			_continueButton.Button.clickable.clicked += CreateCustomer_OnClicked;
 
-			var constraints = new[] {doPasswordsMatch, isPasswordValid, isEmail, isAlias, isGame, isLegal};
+			var constraints = new[] { doPasswordsMatch, isPasswordValid, isEmail, isAlias, isGame, isLegal };
 			_continueButton.AddGateKeeper(constraints);
 			_continueButton.RegisterCallback<MouseEnterEvent>(evt => ContinueButton_OnMouseEnter(evt, constraints));
 
@@ -92,7 +92,7 @@ namespace Beamable.Editor.Login.UI.Components
 		private void CreateCustomer_OnClicked()
 		{
 			Model.Customer.SetNewCustomer(_cidTextField.value, _gameNameField.value, _emailField.value,
-			                              _passwordField.value);
+										  _passwordField.value);
 			var promise = Manager.AttemptNewCustomer(Model);
 			_continueButton.Load(AddErrorLabel(promise, _errorText));
 		}

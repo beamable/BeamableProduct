@@ -224,7 +224,8 @@ namespace Beamable.UI.Scripts
 
 		private void EnableTopMenu()
 		{
-			if (_history.Count == 0) return;
+			if (_history.Count == 0)
+				return;
 
 			var menu = _history.Peek();
 			Activate(menu);

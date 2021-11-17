@@ -8,8 +8,8 @@ namespace Beamable.Editor.Tests.Content
 		[Test]
 		public void LocalHasOneLessTag()
 		{
-			var serverTags = new string[] {"one", "two"};
-			var localTags = new string[] {"one"};
+			var serverTags = new string[] { "one", "two" };
+			var localTags = new string[] { "one" };
 			var tagsAreNotEqual = ContentIO.AreTagsEqual(localTags, serverTags);
 			Assert.AreEqual(false, tagsAreNotEqual);
 		}
@@ -17,8 +17,8 @@ namespace Beamable.Editor.Tests.Content
 		[Test]
 		public void ServerHasOneLessTag()
 		{
-			var serverTags = new string[] {"one"};
-			var localTags = new string[] {"one", "two"};
+			var serverTags = new string[] { "one" };
+			var localTags = new string[] { "one", "two" };
 			var tagsAreNotEqual = ContentIO.AreTagsEqual(localTags, serverTags);
 			Assert.AreEqual(false, tagsAreNotEqual);
 		}
@@ -26,7 +26,7 @@ namespace Beamable.Editor.Tests.Content
 		[Test]
 		public void LocalHasNoTags()
 		{
-			var serverTags = new string[] {"one"};
+			var serverTags = new string[] { "one" };
 			var localTags = new string[] { };
 			var tagsAreNotEqual = ContentIO.AreTagsEqual(localTags, serverTags);
 			Assert.AreEqual(false, tagsAreNotEqual);
@@ -36,7 +36,7 @@ namespace Beamable.Editor.Tests.Content
 		public void ServerHasNoTags()
 		{
 			var serverTags = new string[] { };
-			var localTags = new string[] {"one"};
+			var localTags = new string[] { "one" };
 			var tagsAreNotEqual = ContentIO.AreTagsEqual(localTags, serverTags);
 			Assert.AreEqual(false, tagsAreNotEqual);
 		}
@@ -44,8 +44,8 @@ namespace Beamable.Editor.Tests.Content
 		[Test]
 		public void AllTagsAreTheSame()
 		{
-			var serverTags = new string[] {"one", "two"};
-			var localTags = new string[] {"one", "two"};
+			var serverTags = new string[] { "one", "two" };
+			var localTags = new string[] { "one", "two" };
 			var tagsAreEqual = ContentIO.AreTagsEqual(localTags, serverTags);
 			Assert.IsTrue(tagsAreEqual);
 		}
@@ -53,8 +53,8 @@ namespace Beamable.Editor.Tests.Content
 		[Test]
 		public void AllTagsAreTheSameUnsorted()
 		{
-			var serverTags = new string[] {"four", "three", "one", "two"};
-			var localTags = new string[] {"one", "two", "three", "four"};
+			var serverTags = new string[] { "four", "three", "one", "two" };
+			var localTags = new string[] { "one", "two", "three", "four" };
 			var tagsAreEqual = ContentIO.AreTagsEqual(localTags, serverTags);
 			Assert.IsTrue(tagsAreEqual);
 		}

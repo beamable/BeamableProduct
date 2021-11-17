@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Beamable.UI.Buss.Properties;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.UI.Buss.Properties;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -45,7 +45,7 @@ namespace Beamable.UI.Buss
 			{
 				Rule = new SelectorWithStyle
 				{
-					Selector = new Selector {InlineConstraint = this},
+					Selector = new Selector { InlineConstraint = this },
 					Style = InlineStyle ?? (InlineStyle = new StyleObject())
 				},
 			});
@@ -123,15 +123,16 @@ namespace Beamable.UI.Buss
 		public static string AsId(string name)
 		{
 			return name
-			       .Replace(" ", "_")
-			       .Replace("(", "")
-			       .Replace(")", "");
+				   .Replace(" ", "_")
+				   .Replace("(", "")
+				   .Replace(")", "");
 		}
 
 		public HashSet<string> GetClassNames()
 		{
 			var set = new HashSet<string>();
-			if (string.IsNullOrEmpty(ClassString)) return set;
+			if (string.IsNullOrEmpty(ClassString))
+				return set;
 
 			foreach (var className in ClassString.Split(' '))
 			{
@@ -143,7 +144,8 @@ namespace Beamable.UI.Buss
 
 		public StyleBehaviour GetParent()
 		{
-			if (!this || !transform) return null;
+			if (!this || !transform)
+				return null;
 
 			var parent = transform.parent;
 			if (parent == null || !parent)
@@ -221,10 +223,12 @@ namespace Beamable.UI.Buss
 			// must match first element.
 			var currentNode = this;
 			var matchesFirstNode = iter.Current.Accept(this);
-			if (!matchesFirstNode) return false;
+			if (!matchesFirstNode)
+				return false;
 
 			var hasMoreSelection = iter.MoveNext();
-			if (!hasMoreSelection) return true; // we are done!
+			if (!hasMoreSelection)
+				return true; // we are done!
 
 			foreach (var child in currentNode.Climb())
 			{
@@ -232,7 +236,8 @@ namespace Beamable.UI.Buss
 				if (isMatch)
 				{
 					hasMoreSelection = iter.MoveNext();
-					if (!hasMoreSelection) return true;
+					if (!hasMoreSelection)
+						return true;
 				}
 			}
 
@@ -311,11 +316,13 @@ namespace Beamable.UI.Buss
 			var currentNode = this;
 			foreach (var part in query.Ascend())
 			{
-				if (currentNode == null) return false;
+				if (currentNode == null)
+					return false;
 
 				var matchCurrent = part.Accept(currentNode);
 
-				if (!matchCurrent) return false;
+				if (!matchCurrent)
+					return false;
 				/*
 				 * TODO:
 				 * this function won't match correctly for parents that are higher up.
@@ -347,19 +354,19 @@ namespace Beamable.UI.Buss
 			{
 				var sheet = styleSheets[i];
 				var rules = sheet.Rules
-				                 .Where(rule => MatchesSelector(rule.Selector))
-				                 .Select(rule => new ComputeRuleBundle
-				                 {
-					                 Data = new StyleBundle {Rule = rule, Sheet = sheet},
-					                 SheetDistance = (i + 1)
-				                 }).ToList();
+								 .Where(rule => MatchesSelector(rule.Selector))
+								 .Select(rule => new ComputeRuleBundle
+								 {
+									 Data = new StyleBundle { Rule = rule, Sheet = sheet },
+									 SheetDistance = (i + 1)
+								 }).ToList();
 				output.AddRange(rules);
 			}
 
 			var orderedRules = output
-			                   .OrderByDescending(r => r.Data.Selector.WeightFrom(this) / r.SheetDistance)
-			                   .Select(r => r.Data)
-			                   .ToList();
+							   .OrderByDescending(r => r.Data.Selector.WeightFrom(this) / r.SheetDistance)
+							   .Select(r => r.Data)
+							   .ToList();
 
 			// need to include all inline styles from parents.
 			var parentInlineStyles = new List<StyleBundle>();
@@ -385,9 +392,9 @@ namespace Beamable.UI.Buss
 		public StyleObject ComputeStyleObject()
 		{
 			var output = GetApplicableStyles()
-			             .Select(x => x.Style)
-			             .Reverse()
-			             .Aggregate((agg, curr) => agg.Merge(curr));
+						 .Select(x => x.Style)
+						 .Reverse()
+						 .Aggregate((agg, curr) => agg.Merge(curr));
 			return output;
 		}
 

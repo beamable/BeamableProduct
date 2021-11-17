@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using Beamable.Common.Content.Validation;
+using System.Collections.Generic;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -12,7 +12,9 @@ namespace Beamable.Editor.Content.Components
 {
 	public class ContentValidationErrorVisualElement : ContentManagerComponent
 	{
-		public new class UxmlFactory : UxmlFactory<ContentValidationErrorVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<ContentValidationErrorVisualElement, UxmlTraits>
+		{
+		}
 
 		public override void Refresh()
 		{
@@ -29,7 +31,8 @@ namespace Beamable.Editor.Content.Components
 		{
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
 			{
-				name = "custom-text", defaultValue = "nada"
+				name = "custom-text",
+				defaultValue = "nada"
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription

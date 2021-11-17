@@ -1,5 +1,5 @@
-﻿using System;
-using Beamable.Common;
+﻿using Beamable.Common;
+using System;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -58,7 +58,8 @@ namespace Beamable.Editor.UI.Components
 
 		public void Kill()
 		{
-			if (Killed) return;
+			if (Killed)
+				return;
 			Killed = true;
 			OnKill();
 			OnKilledEvent?.Invoke();

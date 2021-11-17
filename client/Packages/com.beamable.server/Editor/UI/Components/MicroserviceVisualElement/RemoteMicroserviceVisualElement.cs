@@ -16,7 +16,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class RemoteMicroserviceVisualElement : MicroserviceVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<RemoteMicroserviceVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<RemoteMicroserviceVisualElement, UxmlTraits>
+		{
+		}
 
 		protected override string ScriptName => nameof(MicroserviceVisualElement);
 
@@ -26,7 +28,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			base.OnDestroy();
 
-			if (_microserviceModel == null) return;
+			if (_microserviceModel == null)
+				return;
 
 			_microserviceModel.OnDockerLoginRequired -= LoginToDocker;
 			_microserviceModel.ServiceBuilder.OnLastImageIdChanged -= HandleLastImageIdChanged;
@@ -50,7 +53,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_statusLabel.RemoveFromHierarchy();
 
 			var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
-			manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
+			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 			_moreBtn.clickable.activators.Clear();
 			_moreBtn.AddManipulator(manipulator);
 			_moreBtn.tooltip = "More...";
@@ -104,6 +107,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_remoteStatusIcon.AddToClassList(statusClassName);
 		}
 
-		protected override void UpdateStatusIcon() { }
+		protected override void UpdateStatusIcon()
+		{
+		}
 	}
 }

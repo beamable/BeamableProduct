@@ -23,7 +23,7 @@ namespace Beamable.Common.Api.Announcements
 
 		public Promise<EmptyResponse> MarkRead(string id)
 		{
-			return MarkRead(new List<string> {id});
+			return MarkRead(new List<string> { id });
 		}
 
 		public virtual Promise<EmptyResponse> MarkRead(List<string> ids)
@@ -37,7 +37,7 @@ namespace Beamable.Common.Api.Announcements
 
 		public Promise<EmptyResponse> MarkDeleted(string id)
 		{
-			return MarkDeleted(new List<string> {id});
+			return MarkDeleted(new List<string> { id });
 		}
 
 		public virtual Promise<EmptyResponse> MarkDeleted(List<string> ids)
@@ -51,7 +51,7 @@ namespace Beamable.Common.Api.Announcements
 
 		public Promise<EmptyResponse> Claim(string id)
 		{
-			return Claim(new List<string> {id});
+			return Claim(new List<string> { id });
 		}
 
 		public virtual Promise<EmptyResponse> Claim(List<string> ids)

@@ -76,8 +76,8 @@ namespace Beamable.UI.Scripts
 #elif UNITY_WEBGL_API
          return 50; // TODO: This is obviously wrong; I just guessed.
 #else
-         var height = Mathf.RoundToInt(TouchScreenKeyboard.area.height);
-        return height >= Display.main.systemHeight ? 0 : height;
+			var height = Mathf.RoundToInt(TouchScreenKeyboard.area.height);
+			return height >= Display.main.systemHeight ? 0 : height;
 #endif
 		}
 	}

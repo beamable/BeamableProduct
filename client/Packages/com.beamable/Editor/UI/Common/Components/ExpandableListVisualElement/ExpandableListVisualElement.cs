@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using Beamable.Editor.UI.Buss;
+﻿using Beamable.Editor.UI.Buss;
+using System.Collections.Generic;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -23,10 +23,14 @@ namespace Beamable.Editor.UI.Components
 		private Label plusLabel;
 		private VisualElement arrowImage;
 
-		public new class UxmlFactory : UxmlFactory<ExpandableListVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<ExpandableListVisualElement, UxmlTraits>
+		{
+		}
 
 		public ExpandableListVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(ExpandableListVisualElement)}/{nameof(ExpandableListVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(ExpandableListVisualElement)}/{nameof(ExpandableListVisualElement)}")
+		{
+		}
 
 		public override void Refresh()
 		{

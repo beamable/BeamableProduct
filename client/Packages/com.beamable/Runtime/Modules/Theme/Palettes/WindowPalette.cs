@@ -27,10 +27,12 @@ namespace Beamable.Theme.Palettes
 	{
 		public override WindowStyle DefaultValue()
 		{
-			return new WindowStyle {Name = "default", Enabled = true};
+			return new WindowStyle { Name = "default", Enabled = true };
 		}
 	}
 
 	[System.Serializable]
-	public class WindowBinding : WindowPalette.PaletteBinding { }
+	public class WindowBinding : WindowPalette.PaletteBinding
+	{
+	}
 }

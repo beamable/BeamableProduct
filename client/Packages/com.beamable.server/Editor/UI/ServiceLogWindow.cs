@@ -1,9 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.UI.Components;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -22,7 +22,7 @@ namespace Beamable.Editor.Microservice.UI
 		public static void ShowService(ServiceModelBase service)
 		{
 			var existing = Resources.FindObjectsOfTypeAll<ServiceLogWindow>().ToList()
-			                        .FirstOrDefault(w => w._serviceName.Equals(service.Name));
+									.FirstOrDefault(w => w._serviceName.Equals(service.Name));
 			if (existing != null)
 			{
 				existing.Show(true);
@@ -71,7 +71,8 @@ namespace Beamable.Editor.Microservice.UI
 
 		private void RegisterEvents()
 		{
-			if (_registeredEvents) return;
+			if (_registeredEvents)
+				return;
 			_registeredEvents = true;
 			_model.OnLogsAttached -= OnLogsAttached;
 			_model.OnLogsAttached += OnLogsAttached;

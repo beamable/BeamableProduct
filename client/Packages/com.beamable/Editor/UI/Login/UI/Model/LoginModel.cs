@@ -1,8 +1,8 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Editor.Modules.Account;
 using Beamable.Editor.Realms;
+using System;
+using System.Collections.Generic;
 
 namespace Beamable.Editor.Login.UI.Model
 {
@@ -76,7 +76,9 @@ namespace Beamable.Editor.Login.UI.Model
 		public event Action<RealmView> OnGameChanged;
 		public event Action<LoginModel> OnStateChanged;
 
-		public LoginModel() { }
+		public LoginModel()
+		{
+		}
 
 		public void SetError(string error)
 		{

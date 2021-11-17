@@ -1,9 +1,9 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Globalization;
 
 namespace PubNubMessaging.Core
 {
@@ -413,8 +413,8 @@ namespace PubNubMessaging.Core
 			int end = inputOffset + count;
 			for (i = outputOffset, j = inputOffset; j < end; i++, j += 4)
 				output[i] = ((uint)input[j]) | (((uint)input[j + 1]) << 8) | (((uint)input[j + 2]) << 16) |
-				            (((uint)input[j + 3]) <<
-				             24);
+							(((uint)input[j + 3]) <<
+							 24);
 		}
 
 		#endregion
@@ -509,10 +509,10 @@ namespace PubNubMessaging.Core
 		}
 
 		public int TransformBlock(byte[] inputBuffer,
-		                          int inputOffset,
-		                          int inputCount,
-		                          byte[] outputBuffer,
-		                          int outputOffset)
+								  int inputOffset,
+								  int inputCount,
+								  byte[] outputBuffer,
+								  int outputOffset)
 		{
 			if (inputBuffer == null)
 			{
@@ -550,8 +550,8 @@ namespace PubNubMessaging.Core
 		}
 
 		public byte[] TransformFinalBlock(byte[] inputBuffer,
-		                                  int inputOffset,
-		                                  int inputCount)
+										  int inputOffset,
+										  int inputCount)
 		{
 			if (inputBuffer == null)
 			{

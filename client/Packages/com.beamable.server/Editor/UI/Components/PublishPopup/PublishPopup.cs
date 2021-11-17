@@ -1,10 +1,10 @@
-using System.Collections.Generic;
-using System;
-using System.Linq;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.UI.Components;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -19,13 +19,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class PublishPopup : MicroserviceComponent
 	{
-		public new class UxmlFactory : UxmlFactory<PublishPopup, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<PublishPopup, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
 			{
-				name = "custom-text", defaultValue = "nada"
+				name = "custom-text",
+				defaultValue = "nada"
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -99,7 +102,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				{
 					var serviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(model.Name);
 					if (serviceModel != null && !(serviceModel is RemoteMicroserviceModel) &&
-					    serviceModel.Descriptor.IsPublishFeatureDisabled())
+						serviceModel.Descriptor.IsPublishFeatureDisabled())
 					{
 						DisablePublishFeature(
 							"Warning! Publish feature is disabled due to Microservices dependent on Storage Objects.");

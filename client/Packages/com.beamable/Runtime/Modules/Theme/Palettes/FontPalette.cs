@@ -13,10 +13,12 @@ namespace Beamable.Theme.Palettes
 	{
 		public override FontStyle DefaultValue()
 		{
-			return new FontStyle {Name = "default", Enabled = true, FontAsset = null};
+			return new FontStyle { Name = "default", Enabled = true, FontAsset = null };
 		}
 	}
 
 	[System.Serializable]
-	public class FontBinding : FontPalette.PaletteBinding { }
+	public class FontBinding : FontPalette.PaletteBinding
+	{
+	}
 }

@@ -1,8 +1,8 @@
+using Beamable.Common.Inventory;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Common.Inventory;
 using UnityEngine;
 
 namespace Beamable.Common.Content.Validation
@@ -136,7 +136,8 @@ namespace Beamable.Common.Content.Validation
 			// check for null strings
 			if (string.IsNullOrEmpty(id))
 			{
-				if (AllowNull) return;
+				if (AllowNull)
+					return;
 				throw new ContentValidationException(obj, field, "reference cannot be null. ");
 			}
 

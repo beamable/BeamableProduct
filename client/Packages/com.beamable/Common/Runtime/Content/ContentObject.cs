@@ -1,3 +1,7 @@
+using Beamable.Common.Content.Serialization;
+using Beamable.Common.Content.Validation;
+using Beamable.Content;
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -5,10 +9,6 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
-using Beamable.Common.Content.Serialization;
-using Beamable.Common.Content.Validation;
-using Beamable.Content;
-using Beamable.Serialization.SmallerJSON;
 using UnityEngine;
 
 namespace Beamable.Common.Content
@@ -221,7 +221,9 @@ namespace Beamable.Common.Content
 			private set;
 		}
 
-		[SerializeField] [IgnoreContentField] [HideInInspector]
+		[SerializeField]
+		[IgnoreContentField]
+		[HideInInspector]
 		private string[] _tags;
 
 		/// <summary>
@@ -229,7 +231,7 @@ namespace Beamable.Common.Content
 		/// </summary>
 		public string[] Tags
 		{
-			get => _tags ?? (_tags = new[] {"base"});
+			get => _tags ?? (_tags = new[] { "base" });
 			set => _tags = value;
 		}
 
@@ -441,13 +443,13 @@ namespace Beamable.Common.Content
 			errors = new List<string>();
 
 			if (ContentName != null &&
-			    ContentNameValidationException.HasNameValidationErrors(this, ContentName, out var nameErrors))
+				ContentNameValidationException.HasNameValidationErrors(this, ContentName, out var nameErrors))
 			{
 				errors.AddRange(nameErrors.Select(e => e.Message));
 			}
 
 			errors.AddRange(GetMemberValidationErrors(ctx)
-				                .Select(e => e.Message));
+								.Select(e => e.Message));
 
 			return errors.Count > 0;
 		}
@@ -462,7 +464,7 @@ namespace Beamable.Common.Content
 		{
 			exceptions = new List<ContentException>();
 			if (ContentName != null &&
-			    ContentNameValidationException.HasNameValidationErrors(this, ContentName, out var nameErrors))
+				ContentNameValidationException.HasNameValidationErrors(this, ContentName, out var nameErrors))
 			{
 				exceptions.AddRange(nameErrors);
 			}
@@ -490,7 +492,8 @@ namespace Beamable.Common.Content
 					continue;
 				}
 
-				if (obj == null) continue;
+				if (obj == null)
+					continue;
 
 				seen.Add(obj);
 				var type = obj.GetType();

@@ -1,5 +1,5 @@
-using Beamable.Theme.Palettes;
 using Beamable.Theme;
+using Beamable.Theme.Palettes;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
@@ -40,7 +40,7 @@ namespace Beamable.Editor.Style
 
 			var transitionProperty = property.FindPropertyRelative(nameof(ButtonStyleData.Transition));
 			EditorGUI.PropertyField(new Rect(position.x, position.y, position.width, 10), transitionProperty,
-			                        new GUIContent("Transition Type"));
+									new GUIContent("Transition Type"));
 
 			var height = 17f;
 

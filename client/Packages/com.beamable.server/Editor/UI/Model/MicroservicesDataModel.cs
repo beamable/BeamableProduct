@@ -1,9 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.ManagerClient;
 using Beamable.Server.Editor.UI.Components;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Editor.UI.Model
@@ -59,11 +59,11 @@ namespace Beamable.Editor.UI.Model
 
 		public List<MicroserviceModel> Services =>
 			AllLocalServices.Where(service => service.ServiceType == ServiceType.MicroService)
-			                .Select(service => service as MicroserviceModel).ToList();
+							.Select(service => service as MicroserviceModel).ToList();
 
 		public List<MongoStorageModel> Storages =>
 			AllLocalServices.Where(service => service.ServiceType == ServiceType.StorageObject)
-			                .Select(service => service as MongoStorageModel).ToList();
+							.Select(service => service as MongoStorageModel).ToList();
 
 		public ServiceManifest ServerManifest = new ServiceManifest();
 		public GetStatusResponse Status = new GetStatusResponse();
@@ -131,7 +131,7 @@ namespace Beamable.Editor.UI.Model
 						if (ContainsRemoteOnlyModel(singleManifest.serviceName))
 							continue;
 
-						var descriptor = new MicroserviceDescriptor {Name = singleManifest.serviceName};
+						var descriptor = new MicroserviceDescriptor { Name = singleManifest.serviceName };
 
 						AllRemoteOnlyServices.Add(RemoteMicroserviceModel.CreateNew(descriptor, this));
 					}
@@ -144,7 +144,7 @@ namespace Beamable.Editor.UI.Model
 		public void AddLogMessage(IDescriptor descriptor, LogMessage message)
 		{
 			AllLocalServices.FirstOrDefault(r => r.Descriptor.Name.Equals(descriptor.Name))
-			                ?.Logs.AddMessage(message);
+							?.Logs.AddMessage(message);
 		}
 
 		public ServiceStatus GetStatus(MicroserviceDescriptor descriptor)

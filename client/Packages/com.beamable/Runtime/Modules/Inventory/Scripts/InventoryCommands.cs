@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Beamable.Api;
+﻿using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.ConsoleCommands;
 using Beamable.Service;
+using System;
+using System.Collections.Generic;
+using System.Text;
 using UnityEngine.Scripting;
 
 namespace Beamable.Inventory
@@ -17,10 +17,12 @@ namespace Beamable.Inventory
 		private PlatformService PlatformService => ServiceManager.Resolve<PlatformService>();
 
 		[Preserve]
-		public InventoryCommands() { }
+		public InventoryCommands()
+		{
+		}
 
 		[BeamableConsoleCommand("SET_CURRENCY", "Set currency to a specified value",
-		                        "SET_CURRENCY <currencyType> <amount>")]
+								"SET_CURRENCY <currencyType> <amount>")]
 		public string SetCurrency(string[] args)
 		{
 			if (args.Length < 2)
@@ -62,7 +64,7 @@ namespace Beamable.Inventory
 		}
 
 		[BeamableConsoleCommand("ADD_CURRENCY", "Add some amount of specified currency",
-		                        "ADD_CURRENCY <currencyType> <amount>")]
+								"ADD_CURRENCY <currencyType> <amount>")]
 		public string AddCurrency(string[] args)
 		{
 			if (args.Length < 2)

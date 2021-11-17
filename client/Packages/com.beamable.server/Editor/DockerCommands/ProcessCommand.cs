@@ -1,16 +1,18 @@
+using Beamable.Platform.SDK;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Beamable.Platform.SDK;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Server.Editor.DockerCommands
 {
-	public class DockerNotInstalledException : Exception { }
+	public class DockerNotInstalledException : Exception
+	{
+	}
 
 	public abstract class DockerCommand
 	{
@@ -48,7 +50,9 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		public abstract string GetCommandString();
 
-		protected virtual void HandleOnExit() { }
+		protected virtual void HandleOnExit()
+		{
+		}
 
 		protected virtual void HandleStandardOut(string data)
 		{
@@ -96,10 +100,13 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		public void Kill()
 		{
-			if (_process == null || !_started || _hasExited) return;
+			if (_process == null || !_started || _hasExited)
+				return;
 
 			_process.Kill();
-			try { }
+			try
+			{
+			}
 			catch (InvalidOperationException ex)
 			{
 				Debug.LogWarning("Unable to stop process, but likely was already stopped. " + ex.Message);
@@ -122,20 +129,22 @@ namespace Beamable.Server.Editor.DockerCommands
 		protected void LogInfo(string data)
 		{
 			Debug.Log(ColorizeMessage(
-				          data,
-				          MicroserviceConfiguration.Instance.LogProcessLabelColor,
-				          MicroserviceConfiguration.Instance.LogStandardOutColor));
+						  data,
+						  MicroserviceConfiguration.Instance.LogProcessLabelColor,
+						  MicroserviceConfiguration.Instance.LogStandardOutColor));
 		}
 
 		protected void LogError(string data)
 		{
 			Debug.Log(ColorizeMessage(
-				          data,
-				          MicroserviceConfiguration.Instance.LogProcessLabelColor,
-				          MicroserviceConfiguration.Instance.LogStandardErrColor));
+						  data,
+						  MicroserviceConfiguration.Instance.LogProcessLabelColor,
+						  MicroserviceConfiguration.Instance.LogStandardErrColor));
 		}
 
-		protected virtual void ModifyStartInfo(ProcessStartInfo processStartInfo) { }
+		protected virtual void ModifyStartInfo(ProcessStartInfo processStartInfo)
+		{
+		}
 
 		async void Run(string command)
 		{

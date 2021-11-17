@@ -1,7 +1,7 @@
-using System.Collections.Generic;
 using Beamable.Common.Content;
 using Beamable.Editor.Content;
 using NUnit.Framework;
+using System.Collections.Generic;
 
 namespace Beamable.Editor.Tests.Beamable.Content.ContentQueryTests
 {
@@ -10,9 +10,9 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentQueryTests
 		[Test]
 		public void AcceptsOneTag()
 		{
-			var query = new ContentQuery {TagConstraints = new HashSet<string> {"a"}};
+			var query = new ContentQuery { TagConstraints = new HashSet<string> { "a" } };
 
-			var content = new ExampleContent {Tags = new[] {"a", "b"}};
+			var content = new ExampleContent { Tags = new[] { "a", "b" } };
 
 			Assert.IsTrue(query.AcceptTag(content));
 		}
@@ -20,9 +20,9 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentQueryTests
 		[Test]
 		public void AcceptsManyTags()
 		{
-			var query = new ContentQuery {TagConstraints = new HashSet<string> {"a", "b", "c"}};
+			var query = new ContentQuery { TagConstraints = new HashSet<string> { "a", "b", "c" } };
 
-			var content = new ExampleContent {Tags = new[] {"a", "b", "c"}};
+			var content = new ExampleContent { Tags = new[] { "a", "b", "c" } };
 
 			Assert.IsTrue(query.AcceptTag(content));
 		}
@@ -30,9 +30,9 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentQueryTests
 		[Test]
 		public void Rejects()
 		{
-			var query = new ContentQuery {TagConstraints = new HashSet<string> {"a", "b", "c"}};
+			var query = new ContentQuery { TagConstraints = new HashSet<string> { "a", "b", "c" } };
 
-			var content = new ExampleContent {Tags = new[] {"a", "c"}};
+			var content = new ExampleContent { Tags = new[] { "a", "c" } };
 
 			Assert.IsFalse(query.AcceptTag(content));
 		}

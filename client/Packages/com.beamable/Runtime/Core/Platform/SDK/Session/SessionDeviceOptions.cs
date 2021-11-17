@@ -36,7 +36,7 @@ namespace Beamable.Api.Sessions
 			public override bool ForceEnabled => true;
 		}
 
-		public ClientVersionProperty ClientVersion = new ClientVersionProperty {UserEnabled = true};
+		public ClientVersionProperty ClientVersion = new ClientVersionProperty { UserEnabled = true };
 
 		[Serializable]
 		public class ClientVersionProperty : SessionOption
@@ -209,7 +209,7 @@ namespace Beamable.Api.Sessions
 #if USE_STEAMWORKS
 					return "Steam";
 #else
-            return SystemInfo.operatingSystem.ToString();
+					return SystemInfo.operatingSystem.ToString();
 #endif
 				};
 		}

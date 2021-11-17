@@ -1,13 +1,15 @@
+using Beamable.Coroutines;
 using System;
 using System.Collections;
-using Beamable.Coroutines;
 using UnityEngine;
 using UnityEngine.Events;
 
 namespace Beamable.UI.Layouts
 {
 	[System.Serializable]
-	public class MediaQueryEvent : UnityEvent<MediaSourceBehaviour, bool> { }
+	public class MediaQueryEvent : UnityEvent<MediaSourceBehaviour, bool>
+	{
+	}
 
 	public class MediaQueryBehaviour : MonoBehaviour
 	{

@@ -1,10 +1,10 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Common.Content;
-using Beamable.Tests.Content.Serialization.Support;
 using Beamable.Content;
+using Beamable.Tests.Content.Serialization.Support;
 using Beamable.UI;
 using NUnit.Framework;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 
@@ -15,7 +15,7 @@ namespace Beamable.Tests.Content.ContentRegistryTests
 		[Test]
 		public void NonNested_Simple()
 		{
-			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>() {typeof(SimpleContent)});
+			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>() { typeof(SimpleContent) });
 
 			var type = ContentRegistry.GetTypeFromId("simple.foo");
 
@@ -25,7 +25,7 @@ namespace Beamable.Tests.Content.ContentRegistryTests
 		[Test]
 		public void Polymorphic_Simple()
 		{
-			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>() {typeof(SimpleContent), typeof(SimpleSubContent)});
+			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>() { typeof(SimpleContent), typeof(SimpleSubContent) });
 
 			var type = ContentRegistry.GetTypeFromId("simple.sub.foo");
 
@@ -55,7 +55,7 @@ namespace Beamable.Tests.Content.ContentRegistryTests
 		[Test]
 		public void Polymorphic_MissingSubType()
 		{
-			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>() {typeof(SimpleContent)});
+			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>() { typeof(SimpleContent) });
 
 			var type = ContentRegistry.GetTypeFromId("simple.sub.foo");
 
@@ -65,7 +65,7 @@ namespace Beamable.Tests.Content.ContentRegistryTests
 		[Test]
 		public void FormerlySerializedAs_Simple()
 		{
-			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>() {typeof(SimpleFormerlyContent)});
+			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>() { typeof(SimpleFormerlyContent) });
 
 			var type = ContentRegistry.GetTypeFromId("oldschool.foo");
 
@@ -75,7 +75,7 @@ namespace Beamable.Tests.Content.ContentRegistryTests
 		[Test]
 		public void FormerlySerializedAs_Many()
 		{
-			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>() {typeof(ManyFormerlyContent)});
+			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>() { typeof(ManyFormerlyContent) });
 
 			var type = ContentRegistry.GetTypeFromId("cool.foo");
 
@@ -112,7 +112,7 @@ namespace Beamable.Tests.Content.ContentRegistryTests
 		[Test]
 		public void FormerlySerializedAs_Missing_Polymorphic()
 		{
-			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>() {typeof(SimpleFormerlyContent)});
+			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>() { typeof(SimpleFormerlyContent) });
 
 			var type1 = ContentRegistry.GetTypeFromId("oldschool.oldsub.foo");
 			var type2 = ContentRegistry.GetTypeFromId("simple.oldsub.foo");
@@ -125,25 +125,35 @@ namespace Beamable.Tests.Content.ContentRegistryTests
 		[Serializable]
 		[ContentType("simple")]
 		[ContentFormerlySerializedAs("oldschool")]
-		class SimpleFormerlyContent : TestContentObject { }
+		class SimpleFormerlyContent : TestContentObject
+		{
+		}
 
 		[Serializable]
 		[ContentType("sub")]
 		[ContentFormerlySerializedAs("oldsub")]
-		class SubFormerlyContent : SimpleFormerlyContent { }
+		class SubFormerlyContent : SimpleFormerlyContent
+		{
+		}
 
 		[Serializable]
 		[ContentType("simple")]
 		[ContentFormerlySerializedAs("oldschool")]
 		[ContentFormerlySerializedAs("cool")]
-		class ManyFormerlyContent : TestContentObject { }
+		class ManyFormerlyContent : TestContentObject
+		{
+		}
 
 		[Serializable]
 		[ContentType("simple")]
-		class SimpleContent : TestContentObject { }
+		class SimpleContent : TestContentObject
+		{
+		}
 
 		[Serializable]
 		[ContentType("sub")]
-		class SimpleSubContent : SimpleContent { }
+		class SimpleSubContent : SimpleContent
+		{
+		}
 	}
 }

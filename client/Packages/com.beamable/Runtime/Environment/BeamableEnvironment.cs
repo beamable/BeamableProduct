@@ -1,8 +1,8 @@
-using System;
-using System.IO;
 using Beamable.Common;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
+using System;
+using System.IO;
 using UnityEngine;
 
 namespace Beamable

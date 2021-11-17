@@ -1,5 +1,5 @@
-using UnityEngine;
 using Beamable.UnityEngineClone.UI.Extensions;
+using UnityEngine;
 using Gradient = Beamable.UnityEngineClone.UI.Extensions.Gradient;
 using GradientMode = Beamable.UnityEngineClone.UI.Extensions.GradientMode;
 

@@ -1,7 +1,7 @@
-using System;
-using System.Reflection;
 using Beamable.Editor.UI.Buss.Extensions;
 using Beamable.UI.Buss.Properties;
+using System;
+using System.Reflection;
 
 namespace Beamable.Editor.UI.Buss.Model
 {
@@ -24,10 +24,10 @@ namespace Beamable.Editor.UI.Buss.Model
 		}
 
 		public OptionalPropertyFieldWrapper(BUSSProperty property,
-		                                    Optional optional,
-		                                    FieldInfo optionalField,
-		                                    FieldInfo valueField,
-		                                    StyleRuleBundle trace)
+											Optional optional,
+											FieldInfo optionalField,
+											FieldInfo valueField,
+											StyleRuleBundle trace)
 		{
 			_property = property;
 			_optional = optional;
@@ -47,13 +47,13 @@ namespace Beamable.Editor.UI.Buss.Model
 
 		public void Set(object data)
 		{
-			_setValueMethod.Invoke(_optional, new object[] {true, data});
+			_setValueMethod.Invoke(_optional, new object[] { true, data });
 			StyleBehaviourExtensions.Refresh();
 		}
 
 		public object GetValue(IVariableScope scope)
 		{
-			return _getValueMethod.Invoke(_optional, new object[] {scope});
+			return _getValueMethod.Invoke(_optional, new object[] { scope });
 		}
 
 		public void Enable()
@@ -81,7 +81,7 @@ namespace Beamable.Editor.UI.Buss.Model
 		public string GetName()
 		{
 			var baseName = _optionalField.DeclaringType.GetCustomAttribute<BussPropertyAttribute>()?.Name ??
-			               _optionalField.DeclaringType.Name.Replace("Buss", "").Replace("Property", "");
+						   _optionalField.DeclaringType.Name.Replace("Buss", "").Replace("Property", "");
 			var partName = _optionalField.GetCustomAttribute<BussPropertyFieldAttribute>()?.Name ?? _optionalField.Name;
 
 			if (partName.Length > 0)

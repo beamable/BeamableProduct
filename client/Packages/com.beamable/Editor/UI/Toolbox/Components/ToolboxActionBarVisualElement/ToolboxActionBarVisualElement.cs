@@ -1,20 +1,20 @@
-using Beamable.Editor.Content.Models;
-using Beamable.Editor.Content;
-using UnityEngine;
-using Beamable.Editor.UI.Buss.Components;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Common;
 using Beamable.Editor.Config;
+using Beamable.Editor.Content;
 using Beamable.Editor.Content.Components;
+using Beamable.Editor.Content.Models;
 using Beamable.Editor.Environment;
 using Beamable.Editor.Login.UI;
 using Beamable.Editor.Modules.Theme;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.Toolbox.UI.Components;
+using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
+using UnityEngine;
 using Debug = UnityEngine.Debug;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -28,13 +28,16 @@ namespace Beamable.Editor.Toolbox.Components
 {
 	public class ToolboxActionBarVisualElement : ToolboxComponent
 	{
-		public new class UxmlFactory : UxmlFactory<ToolboxActionBarVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<ToolboxActionBarVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
 			{
-				name = "custom-text", defaultValue = "nada"
+				name = "custom-text",
+				defaultValue = "nada"
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -128,7 +131,7 @@ namespace Beamable.Editor.Toolbox.Components
 				var wnd = LoginWindow.Init();
 				Rect popupWindowRect = BeamablePopupWindow.GetLowerRightOfBounds(_accountButton.worldBound);
 				wnd.position = new Rect(popupWindowRect.x - wnd.minSize.x, popupWindowRect.y + 10, wnd.minSize.x,
-				                        wnd.minSize.y);
+										wnd.minSize.y);
 			};
 		}
 
@@ -139,7 +142,7 @@ namespace Beamable.Editor.Toolbox.Components
 
 		private Promise<string> GetPortalUrl =>
 			EditorAPI.Instance.Map(de =>
-				                       $"{BeamableEnvironment.PortalUrl}/{de.CidOrAlias}?refresh_token={de.Token.RefreshToken}");
+									   $"{BeamableEnvironment.PortalUrl}/{de.CidOrAlias}?refresh_token={de.Token.RefreshToken}");
 
 		private void TypeButton_OnClicked(Rect visualElementBounds)
 		{
@@ -174,9 +177,9 @@ namespace Beamable.Editor.Toolbox.Components
 					return;
 				}
 
-				var content = new InstallServerVisualElement {Model = meta};
+				var content = new InstallServerVisualElement { Model = meta };
 				var wnd = BeamablePopupWindow.ShowDropdown("Install Microservices", popupWindowRect,
-				                                           new Vector2(250, 185), content);
+														   new Vector2(250, 185), content);
 				content.OnClose += () => wnd.Close();
 				content.OnInfo += () =>
 				{

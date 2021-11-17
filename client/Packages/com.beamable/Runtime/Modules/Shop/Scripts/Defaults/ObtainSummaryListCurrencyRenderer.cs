@@ -18,7 +18,7 @@ namespace Beamable.Shop.Defaults
 			Name.text = data.symbol.Split('.')[1];
 			Quantity.text = data.amount.ToString();
 
-			var currency = await new CurrencyRef {Id = data.symbol}.Resolve();
+			var currency = await new CurrencyRef { Id = data.symbol }.Resolve();
 			Icon.texture = await currency.icon.LoadTexture();
 		}
 	}

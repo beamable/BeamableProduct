@@ -1,6 +1,6 @@
-using System;
 using Beamable.Editor.UI.Buss.Extensions;
 using Beamable.UI.Buss;
+using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -78,7 +78,8 @@ namespace Beamable.Editor.UI.Buss.Components
 
 		private void HandleTextEnter(KeyUpEvent evt)
 		{
-			if (evt.keyCode != KeyCode.Return) return;
+			if (evt.keyCode != KeyCode.Return)
+				return;
 			CommitChange();
 			ShowLabel();
 		}
@@ -91,7 +92,8 @@ namespace Beamable.Editor.UI.Buss.Components
 
 		private void HandleLabelClick(MouseDownEvent evt)
 		{
-			if (evt.button != 0) return;
+			if (evt.button != 0)
+				return;
 			ShowTextfield();
 			_textField.BeamableFocus();
 		}

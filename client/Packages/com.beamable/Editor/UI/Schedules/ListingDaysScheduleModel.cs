@@ -1,7 +1,7 @@
-﻿using System;
-using Beamable.Common.Content;
+﻿using Beamable.Common.Content;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Validation;
+using System;
 
 namespace Beamable.Editor.Schedules
 {
@@ -17,14 +17,14 @@ namespace Beamable.Editor.Schedules
 		private readonly LabeledHourPickerVisualElement _periodToHourComponent;
 
 		public ListingDaysScheduleModel(LabeledTextField descriptionComponent,
-		                                LabeledDaysPickerVisualElement daysPickerComponent,
-		                                LabeledCheckboxVisualElement neverExpiresComponent,
-		                                LabeledDatePickerVisualElement activeToDateComponent,
-		                                LabeledHourPickerVisualElement activeToHourComponent,
-		                                LabeledCheckboxVisualElement allDayComponent,
-		                                LabeledHourPickerVisualElement periodFromHourComponent,
-		                                LabeledHourPickerVisualElement periodToHourComponent,
-		                                Action<bool, string> refreshConfirmButton)
+										LabeledDaysPickerVisualElement daysPickerComponent,
+										LabeledCheckboxVisualElement neverExpiresComponent,
+										LabeledDatePickerVisualElement activeToDateComponent,
+										LabeledHourPickerVisualElement activeToHourComponent,
+										LabeledCheckboxVisualElement allDayComponent,
+										LabeledHourPickerVisualElement periodFromHourComponent,
+										LabeledHourPickerVisualElement periodToHourComponent,
+										Action<bool, string> refreshConfirmButton)
 		{
 			_descriptionComponent = descriptionComponent;
 			_daysPickerComponent = daysPickerComponent;
@@ -37,11 +37,11 @@ namespace Beamable.Editor.Schedules
 
 			Validator = new ComponentsValidator(refreshConfirmButton);
 			Validator.RegisterRule(new AtLeastOneDaySelectedRule(_daysPickerComponent.Label),
-			                       _daysPickerComponent);
+								   _daysPickerComponent);
 			Validator.RegisterRule(new NotAllDaysSelectedRule(_daysPickerComponent.Label),
-			                       _daysPickerComponent);
+								   _daysPickerComponent);
 			Validator.RegisterRule(new IsProperDate(_activeToDateComponent.Label),
-			                       _activeToDateComponent.DatePicker);
+								   _activeToDateComponent.DatePicker);
 		}
 
 		public override WindowMode Mode => WindowMode.Days;
@@ -51,9 +51,9 @@ namespace Beamable.Editor.Schedules
 			Schedule newSchedule = new Schedule();
 
 			ScheduleParser.PrepareGeneralData(newSchedule, _descriptionComponent.Value,
-			                                  DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ssZ"),
-			                                  _neverExpiresComponent.Value,
-			                                  $"{_activeToDateComponent.SelectedDate}{_activeToHourComponent.SelectedHour}");
+											  DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+											  _neverExpiresComponent.Value,
+											  $"{_activeToDateComponent.SelectedDate}{_activeToHourComponent.SelectedHour}");
 
 			int fromHour = 0;
 			int toHour = 0;
@@ -71,12 +71,12 @@ namespace Beamable.Editor.Schedules
 			if (!_allDayComponent.Value)
 			{
 				ScheduleParser.PrepareListingDaysModeData(newSchedule, fromHour, toHour, fromMinute,
-				                                          toMinute, _daysPickerComponent.DaysPicker.GetSelectedDays());
+														  toMinute, _daysPickerComponent.DaysPicker.GetSelectedDays());
 			}
 			else
 			{
 				ScheduleParser.PrepareDaysModeData(newSchedule, "*", "*",
-				                                   "*", _daysPickerComponent.DaysPicker.GetSelectedDays());
+												   "*", _daysPickerComponent.DaysPicker.GetSelectedDays());
 			}
 
 			return newSchedule;

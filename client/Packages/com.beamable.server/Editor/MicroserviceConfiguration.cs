@@ -1,10 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Editor;
 using Beamable.Editor.Microservice.UI;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.ManagerClient;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -135,7 +135,9 @@ namespace Beamable.Server.Editor
 					Enabled = true,
 					DebugData = new MicroserviceConfigurationDebugEntry
 					{
-						Password = "Password!", Username = "root", SshPort = 11100 + Microservices.Count
+						Password = "Password!",
+						Username = "root",
+						SshPort = 11100 + Microservices.Count
 					}
 				};
 				Microservices.Add(existing);
@@ -153,7 +155,7 @@ namespace Beamable.Server.Editor
 				EditorApplication.delayCall +=
 					() => // using delayCall to avoid Unity warning about sending messages from OnValidate()
 						EditorAPI.Instance.Then(api => api.SaveConfig(
-							                        api.CidOrAlias, api.Pid, api.Host, api.Cid, CustomContainerPrefix));
+													api.CidOrAlias, api.Pid, api.Host, api.Cid, CustomContainerPrefix));
 			}
 
 			if (_dockerCommandCached != DockerCommand || _enableStoragePreviewCached != EnableStoragePreview)
@@ -205,10 +207,13 @@ namespace Beamable.Server.Editor
 		public int MicroserviceOrderComparer(string a, string b)
 		{
 			var aIdx = GetMicroserviceIndex(a);
-			if (aIdx < 0) aIdx = Int32.MaxValue;
+			if (aIdx < 0)
+				aIdx = Int32.MaxValue;
 			var bIdx = GetMicroserviceIndex(b);
-			if (bIdx < 0) bIdx = Int32.MaxValue;
-			if (aIdx > bIdx) return 1;
+			if (bIdx < 0)
+				bIdx = Int32.MaxValue;
+			if (aIdx > bIdx)
+				return 1;
 			return -1;
 		}
 	}

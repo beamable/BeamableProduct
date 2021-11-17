@@ -1,4 +1,3 @@
-using System;
 using Beamable.Common;
 using Beamable.Editor;
 using Beamable.Editor.Content;
@@ -7,6 +6,7 @@ using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.UI.Scripts;
+using System;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018

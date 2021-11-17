@@ -11,7 +11,8 @@ namespace Beamable.Tournaments
 
 		public void Set(int number)
 		{
-			if (gameObject == null) return;
+			if (gameObject == null)
+				return;
 
 			var isActive = number > 0;
 			gameObject.SetActive(isActive);

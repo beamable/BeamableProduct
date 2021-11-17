@@ -1,13 +1,13 @@
-using UnityEngine;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Service;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using UnityEngine;
 
 namespace Beamable.Api.Sessions
 {
@@ -84,7 +84,8 @@ namespace Beamable.Api.Sessions
 			{
 				foreach (var option in _deviceOptions.All)
 				{
-					if (option == null || !option.IsEnabled) continue;
+					if (option == null || !option.IsEnabled)
+						continue;
 					deviceParams.Add(option.Key, option.Get(args));
 				}
 			}
@@ -108,7 +109,7 @@ namespace Beamable.Api.Sessions
 		/// <returns></returns>
 		public Promise<EmptyResponse> StartSession(User user, string advertisingId, string locale)
 		{
-			var args = new SessionStartRequestArgs {advertisingId = advertisingId, locale = locale};
+			var args = new SessionStartRequestArgs { advertisingId = advertisingId, locale = locale };
 			var deviceParams = GenerateDeviceParams(args);
 
 			var promise = GenerateCustomParams(deviceParams, user);

@@ -2,15 +2,15 @@
 //ver3.7.2/Unity5
 
 using System;
-using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-using System.Text;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Net;
 using System.ComponentModel;
+using System.Linq;
+using System.Net;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
+using System.Text;
+using UnityEngine;
 
 #if DEBUG
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor")]
@@ -163,7 +163,7 @@ namespace PubNubMessaging.Core
 
 			set
 			{
-#if(UNITY_IOS)
+#if (UNITY_IOS)
                 pubnubWebRequestCallbackIntervalInSeconds = Utility.CheckTimeoutValue(value);
 #else
 				pubnubWebRequestCallbackIntervalInSeconds = value;
@@ -193,7 +193,7 @@ namespace PubNubMessaging.Core
 
 			set
 			{
-#if(UNITY_IOS)
+#if (UNITY_IOS)
                 pubnubOperationTimeoutIntervalInSeconds = Utility.CheckTimeoutValue(value);
 #else
 				pubnubOperationTimeoutIntervalInSeconds = value;
@@ -485,22 +485,22 @@ namespace PubNubMessaging.Core
 			LoggingMethod.LogLevel = pubnubLogLevel;
 			PubnubErrorFilter.ErrorLevel = errorLevel;
 
-#if(UNITY_IOS)
+#if (UNITY_IOS)
             Version = string.Format("PubNub-CSharp-UnityIOS/{0}", build);
-#elif(UNITY_STANDALONE_WIN)
+#elif (UNITY_STANDALONE_WIN)
 			Version = string.Format("PubNub-CSharp-UnityWin/{0}", build);
-#elif(UNITY_STANDALONE_OSX)
+#elif (UNITY_STANDALONE_OSX)
             Version = string.Format("PubNub-CSharp-UnityOSX/{0}", build);
-#elif(UNITY_ANDROID)
+#elif (UNITY_ANDROID)
             Version = string.Format("PubNub-CSharp-UnityAndroid/{0}", build);
-#elif(UNITY_STANDALONE_LINUX)
+#elif (UNITY_STANDALONE_LINUX)
             Version = string.Format("PubNub-CSharp-UnityLinux/{0}", build);
-#elif(UNITY_WEBPLAYER)
+#elif (UNITY_WEBPLAYER)
             Version = string.Format("PubNub-CSharp-UnityWeb/{0}", build);
-#elif(UNITY_WEBGL)
+#elif (UNITY_WEBGL)
             Version = string.Format("PubNub-CSharp-UnityWebGL/{0}", build);
 #else
-            Version = string.Format("PubNub-CSharp-Unity5/{0}", build);
+			Version = string.Format("PubNub-CSharp-Unity5/{0}", build);
 #endif
 			LoggingMethod.WriteToLog(Version, LoggingMethod.LevelInfo);
 
@@ -523,7 +523,7 @@ namespace PubNubMessaging.Core
 			resetTimetoken = true;
 			publishMessageCounter = new Counter();
 
-#if(UNITY_ANDROID || UNITY_STANDALONE || UNITY_IOS)
+#if (UNITY_ANDROID || UNITY_STANDALONE || UNITY_IOS)
 			ServicePointManager.ServerCertificateValidationCallback = ValidatorUnity;
 #endif
 		}
@@ -532,7 +532,7 @@ namespace PubNubMessaging.Core
 
 		#region "ValidatorUnity"
 
-#if(UNITY_ANDROID || MONOTOUCH || __IOS__||UNITY_STANDALONE || UNITY_IOS)
+#if (UNITY_ANDROID || MONOTOUCH || __IOS__ || UNITY_STANDALONE || UNITY_IOS)
 		/// <summary>
 		/// Workaround for the bug described here 
 		/// https://bugzilla.xamarin.com/show_bug.cgi?id=6501
@@ -558,20 +558,20 @@ namespace PubNubMessaging.Core
 		#region "Subscribe"
 
 		public void Subscribe<T>(string channel,
-		                         string channelGroup,
-		                         long timetoken,
-		                         Action<T> userCallback,
-		                         Action<T> connectCallback,
-		                         Action<T> wildcardPresenceCallback,
-		                         Action<PubnubClientError> errorCallback)
+								 string channelGroup,
+								 long timetoken,
+								 Action<T> userCallback,
+								 Action<T> connectCallback,
+								 Action<T> wildcardPresenceCallback,
+								 Action<PubnubClientError> errorCallback)
 		{
 			LoggingMethod.WriteToLog(string.Format(
-				                         "DateTime {0}, requested subscribe for channel={1}, channelGroup={2}",
-				                         DateTime.Now.ToString(), channel, channelGroup), LoggingMethod.LevelInfo);
+										 "DateTime {0}, requested subscribe for channel={1}, channelGroup={2}",
+										 DateTime.Now.ToString(), channel, channelGroup), LoggingMethod.LevelInfo);
 
 			MultiChannelSubscribeInit<T>(ResponseType.SubscribeV2, channel, channelGroup, timetoken, userCallback,
-			                             connectCallback,
-			                             errorCallback, wildcardPresenceCallback);
+										 connectCallback,
+										 errorCallback, wildcardPresenceCallback);
 		}
 
 		#endregion
@@ -579,11 +579,11 @@ namespace PubNubMessaging.Core
 		#region "Publish"
 
 		public bool Publish<T>(string channel,
-		                       object message,
-		                       bool storeInHistory,
-		                       Dictionary<string, string> metadata,
-		                       Action<T> userCallback,
-		                       Action<PubnubClientError> errorCallback)
+							   object message,
+							   bool storeInHistory,
+							   Dictionary<string, string> metadata,
+							   Action<T> userCallback,
+							   Action<PubnubClientError> errorCallback)
 		{
 			string jsonMessage = (enableJsonEncodingForPublish)
 				? Helpers.JsonEncodePublishMsg(message, this.cipherKey, JsonPluggableLibrary)
@@ -595,17 +595,17 @@ namespace PubNubMessaging.Core
 			}
 
 			List<ChannelEntity> channelEntity =
-				Helpers.CreateChannelEntity(new string[] {channel}, false, false, null, userCallback, null,
-				                            errorCallback, null, null);
+				Helpers.CreateChannelEntity(new string[] { channel }, false, false, null, userCallback, null,
+											errorCallback, null, null);
 
 			string request = BuildRequests.BuildPublishRequest(channel, jsonMessage, storeInHistory, this.SessionUUID,
-			                                                   this.ssl, this.Origin, this.AuthenticationKey,
-			                                                   this.publishKey, this.subscribeKey, this.cipherKey,
-			                                                   this.secretKey, jsonMetadata,
-			                                                   this.publishMessageCounter.NextValue());
+															   this.ssl, this.Origin, this.AuthenticationKey,
+															   this.publishKey, this.subscribeKey, this.cipherKey,
+															   this.secretKey, jsonMetadata,
+															   this.publishMessageCounter.NextValue());
 
 			RequestState<T> requestState = BuildRequests.BuildRequestState<T>(channelEntity, ResponseType.Publish,
-			                                                                  false, 0, false, 0, null);
+																			  false, 0, false, 0, null);
 
 			return UrlProcessRequest<T>(request, requestState);
 		}
@@ -615,18 +615,18 @@ namespace PubNubMessaging.Core
 		#region "Presence"
 
 		public void Presence<T>(string channel,
-		                        string channelGroup,
-		                        long timetoken,
-		                        Action<T> userCallback,
-		                        Action<T> connectCallback,
-		                        Action<PubnubClientError> errorCallback)
+								string channelGroup,
+								long timetoken,
+								Action<T> userCallback,
+								Action<T> connectCallback,
+								Action<PubnubClientError> errorCallback)
 		{
 			LoggingMethod.WriteToLog(string.Format(
-				                         "DateTime {0}, Presence: requested presence for channel={1}, channelGroup={2}",
-				                         DateTime.Now.ToString(), channel, channelGroup), LoggingMethod.LevelInfo);
+										 "DateTime {0}, Presence: requested presence for channel={1}, channelGroup={2}",
+										 DateTime.Now.ToString(), channel, channelGroup), LoggingMethod.LevelInfo);
 
 			MultiChannelSubscribeInit<T>(ResponseType.PresenceV2, channel, channelGroup, timetoken, userCallback,
-			                             connectCallback, errorCallback, null);
+										 connectCallback, errorCallback, null);
 		}
 
 		#endregion
@@ -634,27 +634,27 @@ namespace PubNubMessaging.Core
 		#region "Detailed History"
 
 		public bool DetailedHistory<T>(string channel,
-		                               long start,
-		                               long end,
-		                               int count,
-		                               bool reverse,
-		                               bool includeToken,
-		                               Action<T> userCallback,
-		                               Action<PubnubClientError> errorCallback)
+									   long start,
+									   long end,
+									   int count,
+									   bool reverse,
+									   bool includeToken,
+									   Action<T> userCallback,
+									   Action<PubnubClientError> errorCallback)
 		{
-			string[] channels = new string[] {channel};
+			string[] channels = new string[] { channel };
 			LoggingMethod.WriteToLog(
 				string.Format("DateTime {0}, DetailedHistory: channels={1}, channel={2}", DateTime.Now.ToString(),
-				              channels.Length, channel), LoggingMethod.LevelInfo);
+							  channels.Length, channel), LoggingMethod.LevelInfo);
 
 			List<ChannelEntity> channelEntity =
 				Helpers.CreateChannelEntity<T>(channels, false, false, null, userCallback, null, errorCallback, null,
-				                               null);
+											   null);
 
 			string request = BuildRequests.BuildDetailedHistoryRequest(channel, start, end, count, reverse,
-			                                                           includeToken, this.SessionUUID,
-			                                                           this.ssl, this.Origin, this.AuthenticationKey,
-			                                                           this.subscribeKey);
+																	   includeToken, this.SessionUUID,
+																	   this.ssl, this.Origin, this.AuthenticationKey,
+																	   this.subscribeKey);
 
 			RequestState<T> requestState = BuildRequests.BuildRequestState<T>(
 				channelEntity, ResponseType.DetailedHistory, false,
@@ -668,25 +668,25 @@ namespace PubNubMessaging.Core
 		#region "HereNow"
 
 		public bool HereNow<T>(string channel,
-		                       string channelGroup,
-		                       bool showUUIDList,
-		                       bool includeUserState,
-		                       Action<T> userCallback,
-		                       Action<PubnubClientError> errorCallback)
+							   string channelGroup,
+							   bool showUUIDList,
+							   bool includeUserState,
+							   Action<T> userCallback,
+							   Action<PubnubClientError> errorCallback)
 		{
 			List<ChannelEntity> channelEntity =
-				Helpers.CreateChannelEntity(new string[] {channel}, false, false, null, userCallback, null,
-				                            errorCallback, null, null);
+				Helpers.CreateChannelEntity(new string[] { channel }, false, false, null, userCallback, null,
+											errorCallback, null, null);
 
 			List<ChannelEntity> channelGroupEntity = Helpers.CreateChannelEntity(
-				new string[] {channelGroup}, false, true, null, userCallback, null, errorCallback, null, null);
+				new string[] { channelGroup }, false, true, null, userCallback, null, errorCallback, null, null);
 
 			channelEntity.AddRange(channelGroupEntity);
 
 			string request = BuildRequests.BuildHereNowRequest(channel, channelGroup, showUUIDList, includeUserState,
-			                                                   this.SessionUUID,
-			                                                   this.ssl, this.Origin, this.AuthenticationKey,
-			                                                   this.subscribeKey);
+															   this.SessionUUID,
+															   this.ssl, this.Origin, this.AuthenticationKey,
+															   this.subscribeKey);
 
 			RequestState<T> requestState = BuildRequests.BuildRequestState<T>(
 				channelEntity, ResponseType.HereNow, false,
@@ -700,17 +700,17 @@ namespace PubNubMessaging.Core
 		#region "Global Here Now"
 
 		public bool GlobalHereNow<T>(bool showUUIDList,
-		                             bool includeUserState,
-		                             Action<T> userCallback,
-		                             Action<PubnubClientError> errorCallback)
+									 bool includeUserState,
+									 Action<T> userCallback,
+									 Action<PubnubClientError> errorCallback)
 		{
 			string request = BuildRequests.BuildGlobalHereNowRequest(showUUIDList, includeUserState, this.SessionUUID,
-			                                                         this.ssl, this.Origin, this.AuthenticationKey,
-			                                                         this.subscribeKey);
+																	 this.ssl, this.Origin, this.AuthenticationKey,
+																	 this.subscribeKey);
 
 			RequestState<T> requestState = BuildRequests.BuildRequestState<T>(userCallback, errorCallback,
-			                                                                  ResponseType.GlobalHereNow, false, 0,
-			                                                                  false, 0, null, "");
+																			  ResponseType.GlobalHereNow, false, 0,
+																			  false, 0, null, "");
 
 			return UrlProcessRequest<T>(request, requestState);
 		}
@@ -727,8 +727,8 @@ namespace PubNubMessaging.Core
 			}
 
 			string request = BuildRequests.BuildWhereNowRequest(uuid, this.SessionUUID,
-			                                                    this.ssl, this.Origin, this.AuthenticationKey,
-			                                                    this.subscribeKey);
+																this.ssl, this.Origin, this.AuthenticationKey,
+																this.subscribeKey);
 
 			RequestState<T> requestState = BuildRequests.BuildRequestState<T>(
 				userCallback, errorCallback, ResponseType.WhereNow, false,
@@ -742,17 +742,17 @@ namespace PubNubMessaging.Core
 		#region "Unsubscribe Presence And Subscribe"
 
 		public void PresenceUnsubscribe<T>(string channel,
-		                                   string channelGroup,
-		                                   Action<T> userCallback,
-		                                   Action<T> connectCallback,
-		                                   Action<T> disconnectCallback,
-		                                   Action<PubnubClientError> errorCallback)
+										   string channelGroup,
+										   Action<T> userCallback,
+										   Action<T> connectCallback,
+										   Action<T> disconnectCallback,
+										   Action<PubnubClientError> errorCallback)
 		{
 			LoggingMethod.WriteToLog(string.Format(
-				                         "DateTime {0}, PresenceUnsubscribe: requested presence-unsubscribe for channel(s)={1}, channelGroup={2}",
-				                         DateTime.Now.ToString(), channel, channelGroup), LoggingMethod.LevelInfo);
+										 "DateTime {0}, PresenceUnsubscribe: requested presence-unsubscribe for channel(s)={1}, channelGroup={2}",
+										 DateTime.Now.ToString(), channel, channelGroup), LoggingMethod.LevelInfo);
 			MultiChannelUnsubscribeInit<T>(ResponseType.PresenceUnsubscribe, channel, channelGroup, userCallback,
-			                               connectCallback, disconnectCallback, errorCallback);
+										   connectCallback, disconnectCallback, errorCallback);
 		}
 
 		/// <summary>
@@ -765,18 +765,18 @@ namespace PubNubMessaging.Core
 		/// <param name="disconnectCallback"></param>
 		/// <param name="errorCallback"></param>
 		public void Unsubscribe<T>(string channel,
-		                           string channelGroup,
-		                           Action<T> userCallback,
-		                           Action<T> connectCallback,
-		                           Action<T> disconnectCallback,
-		                           Action<T> wildcardPresenceCallback,
-		                           Action<PubnubClientError> errorCallback)
+								   string channelGroup,
+								   Action<T> userCallback,
+								   Action<T> connectCallback,
+								   Action<T> disconnectCallback,
+								   Action<T> wildcardPresenceCallback,
+								   Action<PubnubClientError> errorCallback)
 		{
 			LoggingMethod.WriteToLog(string.Format(
-				                         "DateTime {0}, Unsubscribe: requested unsubscribe for channel(s)={1}, channelGroup={2}",
-				                         DateTime.Now.ToString(), channel, channelGroup), LoggingMethod.LevelInfo);
+										 "DateTime {0}, Unsubscribe: requested unsubscribe for channel(s)={1}, channelGroup={2}",
+										 DateTime.Now.ToString(), channel, channelGroup), LoggingMethod.LevelInfo);
 			MultiChannelUnsubscribeInit<T>(ResponseType.Unsubscribe, channel, channelGroup, userCallback,
-			                               connectCallback, disconnectCallback, errorCallback);
+										   connectCallback, disconnectCallback, errorCallback);
 		}
 
 		#endregion
@@ -800,24 +800,24 @@ namespace PubNubMessaging.Core
 		#region "Grant Access"
 
 		public bool GrantAccess<T>(string channel,
-		                           string authenticationKey,
-		                           bool read,
-		                           bool write,
-		                           int ttl,
-		                           Action<T> userCallback,
-		                           Action<PubnubClientError> errorCallback)
+								   string authenticationKey,
+								   bool read,
+								   bool write,
+								   int ttl,
+								   Action<T> userCallback,
+								   Action<PubnubClientError> errorCallback)
 		{
 			if (ttl < 0)
 				ttl = 1440;
 
-			List<ChannelEntity> channelEntity = Helpers.CreateChannelEntity(new string[] {channel}, false, false, null,
-			                                                                userCallback, null, errorCallback, null,
-			                                                                null);
+			List<ChannelEntity> channelEntity = Helpers.CreateChannelEntity(new string[] { channel }, false, false, null,
+																			userCallback, null, errorCallback, null,
+																			null);
 
 			string request = BuildRequests.BuildGrantAccessRequest(channel, read, write, ttl, this.SessionUUID,
-			                                                       this.ssl, this.Origin, authenticationKey,
-			                                                       this.publishKey, this.subscribeKey, this.cipherKey,
-			                                                       this.secretKey);
+																   this.ssl, this.Origin, authenticationKey,
+																   this.publishKey, this.subscribeKey, this.cipherKey,
+																   this.secretKey);
 
 			RequestState<T> requestState = BuildRequests.BuildRequestState<T>(
 				channelEntity, ResponseType.GrantAccess, false,
@@ -831,12 +831,12 @@ namespace PubNubMessaging.Core
 		#region "Grant Presence Access"
 
 		public bool GrantPresenceAccess<T>(string channel,
-		                                   string authenticationKey,
-		                                   bool read,
-		                                   bool write,
-		                                   int ttl,
-		                                   Action<T> userCallback,
-		                                   Action<PubnubClientError> errorCallback)
+										   string authenticationKey,
+										   bool read,
+										   bool write,
+										   int ttl,
+										   Action<T> userCallback,
+										   Action<PubnubClientError> errorCallback)
 		{
 			string[] multiChannels = channel.Split(',');
 			if (multiChannels.Length > 0)
@@ -864,31 +864,31 @@ namespace PubNubMessaging.Core
 		#region "Audit Access"
 
 		public void AuditAccess<T>(string channel,
-		                           string authenticationKey,
-		                           Action<T> userCallback,
-		                           Action<PubnubClientError> errorCallback)
+								   string authenticationKey,
+								   Action<T> userCallback,
+								   Action<PubnubClientError> errorCallback)
 		{
 			string request = BuildRequests.BuildAuditAccessRequest(channel, this.SessionUUID,
-			                                                       this.ssl, this.Origin, authenticationKey,
-			                                                       this.publishKey, this.subscribeKey, this.cipherKey,
-			                                                       this.secretKey);
+																   this.ssl, this.Origin, authenticationKey,
+																   this.publishKey, this.subscribeKey, this.cipherKey,
+																   this.secretKey);
 
 			RequestState<T> requestState = null;
 			if (string.IsNullOrEmpty(channel))
 			{
 				requestState = BuildRequests.BuildRequestState<T>(userCallback, errorCallback,
-				                                                  ResponseType.AuditAccess, false, 0, false, 0, null,
-				                                                  "");
+																  ResponseType.AuditAccess, false, 0, false, 0, null,
+																  "");
 			}
 			else
 			{
 				List<ChannelEntity> channelEntity = Helpers.CreateChannelEntity(
-					new string[] {channel}, false, false, null,
+					new string[] { channel }, false, false, null,
 					userCallback, null, errorCallback, null, null);
 
 				requestState = BuildRequests.BuildRequestState<T>(channelEntity,
-				                                                  ResponseType.AuditAccess, false, 0, false, 0, null,
-				                                                  "", userCallback, errorCallback);
+																  ResponseType.AuditAccess, false, 0, false, 0, null,
+																  "", userCallback, errorCallback);
 			}
 
 			UrlProcessRequest<T>(request, requestState);
@@ -899,9 +899,9 @@ namespace PubNubMessaging.Core
 		#region "Audit Presence"
 
 		public void AuditPresenceAccess<T>(string channel,
-		                                   string authenticationKey,
-		                                   Action<T> userCallback,
-		                                   Action<PubnubClientError> errorCallback)
+										   string authenticationKey,
+										   Action<T> userCallback,
+										   Action<PubnubClientError> errorCallback)
 		{
 			string[] multiChannels = channel.Split(',');
 			if (multiChannels.Length > 0)
@@ -923,11 +923,11 @@ namespace PubNubMessaging.Core
 		#region "Set User State"
 
 		public void SetUserState<T>(string channel,
-		                            string channelGroup,
-		                            string uuid,
-		                            string jsonUserState,
-		                            Action<T> userCallback,
-		                            Action<PubnubClientError> errorCallback)
+									string channelGroup,
+									string uuid,
+									string jsonUserState,
+									Action<T> userCallback,
+									Action<PubnubClientError> errorCallback)
 		{
 			if (!JsonPluggableLibrary.IsDictionaryCompatible(jsonUserState))
 			{
@@ -946,34 +946,34 @@ namespace PubNubMessaging.Core
 					string userState = "";
 					List<ChannelEntity> channelEntities;
 					if (Helpers.CheckAndAddExistingUserState<T>(channel, channelGroup,
-					                                            deserializeUserState, userCallback, errorCallback,
-					                                            errorLevel, false,
-					                                            out userState, out channelEntities
+																deserializeUserState, userCallback, errorCallback,
+																errorLevel, false,
+																out userState, out channelEntities
 					))
 					{
 						SharedSetUserState<T>(channel, channelGroup,
-						                      channelEntities, uuid, userState);
+											  channelEntities, uuid, userState);
 					}
 				}
 			}
 		}
 
 		public void SetUserState<T>(string channel,
-		                            string channelGroup,
-		                            string uuid,
-		                            KeyValuePair<string, object> keyValuePair,
-		                            Action<T> userCallback,
-		                            Action<PubnubClientError> errorCallback)
+									string channelGroup,
+									string uuid,
+									KeyValuePair<string, object> keyValuePair,
+									Action<T> userCallback,
+									Action<PubnubClientError> errorCallback)
 		{
 			string userState = "";
 			List<ChannelEntity> channelEntities;
 			if (Helpers.CheckAndAddExistingUserState<T>(channel, channelGroup,
-			                                            new Dictionary<string, object>
-			                                            {
-				                                            {keyValuePair.Key, keyValuePair.Value}
-			                                            }, userCallback,
-			                                            errorCallback, errorLevel, true, out userState,
-			                                            out channelEntities
+														new Dictionary<string, object>
+														{
+															{keyValuePair.Key, keyValuePair.Value}
+														}, userCallback,
+														errorCallback, errorLevel, true, out userState,
+														out channelEntities
 			))
 			{
 				SharedSetUserState<T>(channel, channelGroup, channelEntities, uuid, userState);
@@ -985,10 +985,10 @@ namespace PubNubMessaging.Core
 		#region "User State"
 
 		private void SharedSetUserState<T>(string channel,
-		                                   string channelGroup,
-		                                   List<ChannelEntity> channelEntities,
-		                                   string uuid,
-		                                   string jsonUserState)
+										   string channelGroup,
+										   List<ChannelEntity> channelEntities,
+										   string uuid,
+										   string jsonUserState)
 		{
 			if (string.IsNullOrEmpty(uuid))
 			{
@@ -996,22 +996,22 @@ namespace PubNubMessaging.Core
 			}
 
 			string request = BuildRequests.BuildSetUserStateRequest(channel, channelGroup, jsonUserState, uuid,
-			                                                        this.SessionUUID,
-			                                                        this.ssl, this.Origin, authenticationKey,
-			                                                        this.subscribeKey);
+																	this.SessionUUID,
+																	this.ssl, this.Origin, authenticationKey,
+																	this.subscribeKey);
 
 			RequestState<T> requestState = BuildRequests.BuildRequestState<T>(
 				channelEntities, ResponseType.SetUserState, false,
 				0, false, 0, null);
 
 			LoggingMethod.WriteToLog(string.Format("DateTime {0}, SharedSetUserState: channelEntities count {1}, " +
-			                                       "channelGroup: {2}, channel: {3}, uuid: {4}, sessionUUID: {5}",
-			                                       DateTime.Now.ToString(),
-			                                       (channelEntities != null)
-				                                       ? channelEntities.Count.ToString()
-				                                       : "null",
-			                                       channelGroup, channel, uuid, this.SessionUUID
-			                         ), LoggingMethod.LevelInfo);
+												   "channelGroup: {2}, channel: {3}, uuid: {4}, sessionUUID: {5}",
+												   DateTime.Now.ToString(),
+												   (channelEntities != null)
+													   ? channelEntities.Count.ToString()
+													   : "null",
+												   channelGroup, channel, uuid, this.SessionUUID
+									 ), LoggingMethod.LevelInfo);
 
 			UrlProcessRequest<T>(request, requestState);
 
@@ -1024,41 +1024,41 @@ namespace PubNubMessaging.Core
 		#region "Get User State"
 
 		public void GetUserState<T>(string channel,
-		                            string channelGroup,
-		                            string uuid,
-		                            Action<T> userCallback,
-		                            Action<PubnubClientError> errorCallback)
+									string channelGroup,
+									string uuid,
+									Action<T> userCallback,
+									Action<PubnubClientError> errorCallback)
 		{
 			if (string.IsNullOrEmpty(uuid))
 			{
 				uuid = this.SessionUUID;
 			}
 
-			List<ChannelEntity> channelEntity = Helpers.CreateChannelEntity(new string[] {channel}, false, false, null,
-			                                                                userCallback, null, errorCallback, null,
-			                                                                null);
+			List<ChannelEntity> channelEntity = Helpers.CreateChannelEntity(new string[] { channel }, false, false, null,
+																			userCallback, null, errorCallback, null,
+																			null);
 
 			List<ChannelEntity> channelGroupsEntity = Helpers.CreateChannelEntity(
-				new string[] {channelGroup}, false, true, null,
+				new string[] { channelGroup }, false, true, null,
 				userCallback, null, errorCallback, null, null);
 
 			channelEntity.AddRange(channelGroupsEntity);
 
 			string request = BuildRequests.BuildGetUserStateRequest(channel, channelGroup, uuid, this.SessionUUID,
-			                                                        this.ssl, this.Origin, authenticationKey,
-			                                                        this.subscribeKey);
+																	this.ssl, this.Origin, authenticationKey,
+																	this.subscribeKey);
 
 			RequestState<T> requestState = BuildRequests.BuildRequestState<T>(
 				channelEntity, ResponseType.GetUserState, false,
 				0, false, 0, null);
 
 			LoggingMethod.WriteToLog(string.Format("DateTime {0}, GetUserState: channelEntities count {1}, " +
-			                                       "channelGroup: {2}, channel: {3}, uuid: {4}, sessionUUID: {5} ",
-			                                       DateTime.Now.ToString(),
-			                                       (channelEntity != null) ? channelEntity.Count.ToString() : "null",
-			                                       channelGroup, channel,
-			                                       uuid, this.SessionUUID
-			                         ), LoggingMethod.LevelInfo);
+												   "channelGroup: {2}, channel: {3}, uuid: {4}, sessionUUID: {5} ",
+												   DateTime.Now.ToString(),
+												   (channelEntity != null) ? channelEntity.Count.ToString() : "null",
+												   channelGroup, channel,
+												   uuid, this.SessionUUID
+									 ), LoggingMethod.LevelInfo);
 
 			UrlProcessRequest<T>(request, requestState);
 		}
@@ -1068,75 +1068,75 @@ namespace PubNubMessaging.Core
 		#region "MobilePush"
 
 		public void RegisterDeviceForPush<T>(string channel,
-		                                     PushTypeService pushType,
-		                                     string pushToken,
-		                                     Action<T> userCallback,
-		                                     Action<PubnubClientError> errorCallback)
+											 PushTypeService pushType,
+											 string pushToken,
+											 Action<T> userCallback,
+											 Action<PubnubClientError> errorCallback)
 		{
 			string request = BuildRequests.BuildRegisterDevicePushRequest(
 				channel, pushType, pushToken, this.SessionUUID,
 				this.ssl, this.Origin, authenticationKey, this.subscribeKey);
 
-			List<ChannelEntity> channelEntity = Helpers.CreateChannelEntity(new string[] {channel}, false, false, null,
-			                                                                userCallback, null, errorCallback, null,
-			                                                                null);
+			List<ChannelEntity> channelEntity = Helpers.CreateChannelEntity(new string[] { channel }, false, false, null,
+																			userCallback, null, errorCallback, null,
+																			null);
 
 			RequestState<T> requestState = BuildRequests.BuildRequestState<T>(channelEntity,
-			                                                                  ResponseType.PushRegister, false, 0,
-			                                                                  false, 0, null);
+																			  ResponseType.PushRegister, false, 0,
+																			  false, 0, null);
 
 			UrlProcessRequest<T>(request, requestState);
 		}
 
 		public void UnregisterDeviceForPush<T>(PushTypeService pushType,
-		                                       string pushToken,
-		                                       Action<T> userCallback,
-		                                       Action<PubnubClientError> errorCallback)
+											   string pushToken,
+											   Action<T> userCallback,
+											   Action<PubnubClientError> errorCallback)
 		{
 			string request = BuildRequests.BuildUnregisterDevicePushRequest(pushType, pushToken, this.SessionUUID,
-			                                                                this.ssl, this.Origin, authenticationKey,
-			                                                                this.subscribeKey);
+																			this.ssl, this.Origin, authenticationKey,
+																			this.subscribeKey);
 
 			RequestState<T> requestState = BuildRequests.BuildRequestState<T>(userCallback, errorCallback,
-			                                                                  ResponseType.PushUnregister, false, 0,
-			                                                                  false, 0, null, "");
+																			  ResponseType.PushUnregister, false, 0,
+																			  false, 0, null, "");
 
 			UrlProcessRequest<T>(request, requestState);
 		}
 
 		public void RemoveChannelForDevicePush<T>(string channel,
-		                                          PushTypeService pushType,
-		                                          string pushToken,
-		                                          Action<T> userCallback,
-		                                          Action<PubnubClientError> errorCallback)
+												  PushTypeService pushType,
+												  string pushToken,
+												  Action<T> userCallback,
+												  Action<PubnubClientError> errorCallback)
 		{
 			string request = BuildRequests.BuildRemoveChannelPushRequest(channel, pushType, pushToken, this.SessionUUID,
-			                                                             this.ssl, this.Origin, authenticationKey,
-			                                                             this.subscribeKey);
+																		 this.ssl, this.Origin, authenticationKey,
+																		 this.subscribeKey);
 
-			List<ChannelEntity> channelEntity = Helpers.CreateChannelEntity(new string[] {channel}, false, false, null,
-			                                                                userCallback, null, errorCallback, null,
-			                                                                null);
+			List<ChannelEntity> channelEntity = Helpers.CreateChannelEntity(new string[] { channel }, false, false, null,
+																			userCallback, null, errorCallback, null,
+																			null);
 
 			RequestState<T> requestState = BuildRequests.BuildRequestState<T>(channelEntity,
-			                                                                  ResponseType.PushRemove, false, 0, false,
-			                                                                  0, null);
+																			  ResponseType.PushRemove, false, 0, false,
+																			  0, null);
 
 			UrlProcessRequest<T>(request, requestState);
 		}
 
 		public void GetChannelsForDevicePush<T>(PushTypeService pushType,
-		                                        string pushToken,
-		                                        Action<T> userCallback,
-		                                        Action<PubnubClientError> errorCallback)
+												string pushToken,
+												Action<T> userCallback,
+												Action<PubnubClientError> errorCallback)
 		{
 			string request = BuildRequests.BuildGetChannelsPushRequest(pushType, pushToken, this.SessionUUID,
-			                                                           this.ssl, this.Origin, authenticationKey,
-			                                                           this.subscribeKey);
+																	   this.ssl, this.Origin, authenticationKey,
+																	   this.subscribeKey);
 
 			RequestState<T> requestState = BuildRequests.BuildRequestState<T>(userCallback, errorCallback,
-			                                                                  ResponseType.PushGet, false, 0, false, 0,
-			                                                                  null, "");
+																			  ResponseType.PushGet, false, 0, false, 0,
+																			  null, "");
 
 			UrlProcessRequest<T>(request, requestState);
 		}
@@ -1146,137 +1146,137 @@ namespace PubNubMessaging.Core
 		#region "Channel Groups"
 
 		public void AddChannelsToChannelGroup<T>(string[] channels,
-		                                         string nameSpace,
-		                                         string groupName,
-		                                         Action<T> userCallback,
-		                                         Action<PubnubClientError> errorCallback)
+												 string nameSpace,
+												 string groupName,
+												 Action<T> userCallback,
+												 Action<PubnubClientError> errorCallback)
 		{
 			string request = BuildRequests.BuildAddChannelsToChannelGroupRequest(
 				channels, nameSpace, groupName, this.SessionUUID,
 				this.ssl, this.Origin, authenticationKey, this.subscribeKey);
 
 			List<ChannelEntity> channelGroupEntity = Helpers.CreateChannelEntity(
-				new string[] {groupName}, false, true, null,
+				new string[] { groupName }, false, true, null,
 				userCallback, null, errorCallback, null, null);
 
 			RequestState<T> requestState = BuildRequests.BuildRequestState<T>(channelGroupEntity,
-			                                                                  ResponseType.ChannelGroupAdd, false, 0,
-			                                                                  false, 0, null
+																			  ResponseType.ChannelGroupAdd, false, 0,
+																			  false, 0, null
 			);
 
 			UrlProcessRequest<T>(request, requestState);
 		}
 
 		public void RemoveChannelsFromChannelGroup<T>(string[] channels,
-		                                              string nameSpace,
-		                                              string groupName,
-		                                              Action<T> userCallback,
-		                                              Action<PubnubClientError> errorCallback)
+													  string nameSpace,
+													  string groupName,
+													  Action<T> userCallback,
+													  Action<PubnubClientError> errorCallback)
 		{
 			string request = BuildRequests.BuildRemoveChannelsFromChannelGroupRequest(
 				channels, nameSpace, groupName, this.SessionUUID,
 				this.ssl, this.Origin, authenticationKey, this.subscribeKey);
 
 			List<ChannelEntity> channelGroupEntity = Helpers.CreateChannelEntity(
-				new string[] {groupName}, false, true, null,
+				new string[] { groupName }, false, true, null,
 				userCallback, null, errorCallback, null, null);
 
 			RequestState<T> requestState = BuildRequests.BuildRequestState<T>(channelGroupEntity,
-			                                                                  ResponseType.ChannelGroupRemove, false, 0,
-			                                                                  false, 0, null
+																			  ResponseType.ChannelGroupRemove, false, 0,
+																			  false, 0, null
 			);
 
 			UrlProcessRequest<T>(request, requestState);
 		}
 
 		public void RemoveChannelGroup<T>(string nameSpace,
-		                                  string groupName,
-		                                  Action<T> userCallback,
-		                                  Action<PubnubClientError> errorCallback)
+										  string groupName,
+										  Action<T> userCallback,
+										  Action<PubnubClientError> errorCallback)
 		{
 			string request = BuildRequests.BuildRemoveChannelsFromChannelGroupRequest(
 				null, nameSpace, groupName, this.SessionUUID,
 				this.ssl, this.Origin, authenticationKey, this.subscribeKey);
 
 			List<ChannelEntity> channelGroupEntity = Helpers.CreateChannelEntity(
-				new string[] {groupName}, false, true, null,
+				new string[] { groupName }, false, true, null,
 				userCallback, null, errorCallback, null, null);
 
 			RequestState<T> requestState = BuildRequests.BuildRequestState<T>(channelGroupEntity,
-			                                                                  ResponseType.ChannelGroupRemove, false, 0,
-			                                                                  false, 0, null
+																			  ResponseType.ChannelGroupRemove, false, 0,
+																			  false, 0, null
 			);
 
 			UrlProcessRequest<T>(request, requestState);
 		}
 
 		public void GetChannelsForChannelGroup<T>(string nameSpace,
-		                                          string groupName,
-		                                          Action<T> userCallback,
-		                                          Action<PubnubClientError> errorCallback)
+												  string groupName,
+												  Action<T> userCallback,
+												  Action<PubnubClientError> errorCallback)
 		{
 			string request = BuildRequests.BuildGetChannelsForChannelGroupRequest(
 				nameSpace, groupName, false, this.SessionUUID,
 				this.ssl, this.Origin, authenticationKey, this.subscribeKey);
 
 			List<ChannelEntity> channelGroupEntity = Helpers.CreateChannelEntity(
-				new string[] {groupName}, false, true, null,
+				new string[] { groupName }, false, true, null,
 				userCallback, null, errorCallback, null, null);
 
 			RequestState<T> requestState = BuildRequests.BuildRequestState<T>(channelGroupEntity,
-			                                                                  ResponseType.ChannelGroupGet, false, 0,
-			                                                                  false, 0, null
+																			  ResponseType.ChannelGroupGet, false, 0,
+																			  false, 0, null
 			);
 
 			UrlProcessRequest<T>(request, requestState);
 		}
 
 		public void GetAllChannelGroups<T>(string nameSpace,
-		                                   Action<T> userCallback,
-		                                   Action<PubnubClientError> errorCallback)
+										   Action<T> userCallback,
+										   Action<PubnubClientError> errorCallback)
 		{
 			string request = BuildRequests.BuildGetChannelsForChannelGroupRequest(nameSpace, "", true, this.SessionUUID,
 				this.ssl, this.Origin, authenticationKey, this.subscribeKey);
 
 			RequestState<T> requestState = BuildRequests.BuildRequestState<T>(userCallback, errorCallback,
-			                                                                  ResponseType.ChannelGroupGet, false, 0,
-			                                                                  false, 0, null,
-			                                                                  ""
+																			  ResponseType.ChannelGroupGet, false, 0,
+																			  false, 0, null,
+																			  ""
 			);
 
 			UrlProcessRequest<T>(request, requestState);
 		}
 
 		public void ChannelGroupAuditAccess<T>(string channelGroup,
-		                                       string authenticationKey,
-		                                       Action<T> userCallback,
-		                                       Action<PubnubClientError> errorCallback)
+											   string authenticationKey,
+											   Action<T> userCallback,
+											   Action<PubnubClientError> errorCallback)
 		{
 			string request = BuildRequests.BuildChannelGroupAuditAccessRequest(channelGroup, this.SessionUUID,
-			                                                                   this.ssl, this.Origin, authenticationKey,
-			                                                                   this.publishKey, this.subscribeKey,
-			                                                                   this.cipherKey, this.secretKey);
+																			   this.ssl, this.Origin, authenticationKey,
+																			   this.publishKey, this.subscribeKey,
+																			   this.cipherKey, this.secretKey);
 
 			List<ChannelEntity> channelGroupEntity = Helpers.CreateChannelEntity(
-				new string[] {channelGroup}, false, true, null,
+				new string[] { channelGroup }, false, true, null,
 				userCallback, null, errorCallback, null, null);
 
 			RequestState<T> requestState = BuildRequests.BuildRequestState<T>(channelGroupEntity,
-			                                                                  ResponseType.ChannelGroupAuditAccess,
-			                                                                  false, 0, false, 0, null
+																			  ResponseType.ChannelGroupAuditAccess,
+																			  false, 0, false, 0, null
 			);
 
 			UrlProcessRequest<T>(request, requestState);
 		}
 
 		public bool ChannelGroupGrantAccess<T>(string channelGroup,
-		                                       string authenticationKey,
-		                                       bool read,
-		                                       bool write,
-		                                       bool manage,
-		                                       int ttl,
-		                                       Action<T> userCallback,
-		                                       Action<PubnubClientError> errorCallback)
+											   string authenticationKey,
+											   bool read,
+											   bool write,
+											   bool manage,
+											   int ttl,
+											   Action<T> userCallback,
+											   Action<PubnubClientError> errorCallback)
 		{
 			if (ttl < 0)
 				ttl = 1440;
@@ -1287,12 +1287,12 @@ namespace PubNubMessaging.Core
 				this.secretKey);
 
 			List<ChannelEntity> channelGroupEntity = Helpers.CreateChannelEntity(
-				new string[] {channelGroup}, false, true, null,
+				new string[] { channelGroup }, false, true, null,
 				userCallback, null, errorCallback, null, null);
 
 			RequestState<T> requestState = BuildRequests.BuildRequestState<T>(channelGroupEntity,
-			                                                                  ResponseType.ChannelGroupGrantAccess,
-			                                                                  false, 0, false, 0, null
+																			  ResponseType.ChannelGroupGrantAccess,
+																			  false, 0, false, 0, null
 			);
 
 			return UrlProcessRequest<T>(request, requestState);
@@ -1337,9 +1337,9 @@ namespace PubNubMessaging.Core
 			}
 
 			LoggingMethod.WriteToLog(string.Format("DateTime {0} TerminateCurrentSubscriberRequest RequestState {1}",
-			                                       DateTime.Now.ToString(),
-			                                       (reqState == null) ? "null" : reqState.ID.ToString()
-			                         ), LoggingMethod.LevelInfo);
+												   DateTime.Now.ToString(),
+												   (reqState == null) ? "null" : reqState.ID.ToString()
+									 ), LoggingMethod.LevelInfo);
 		}
 
 		public void EndPendingRequests<T>()
@@ -1358,7 +1358,7 @@ namespace PubNubMessaging.Core
 			Subscription.Instance.CleanUp();
 			LoggingMethod.WriteToLog(
 				string.Format("DateTime {0}, EndPendingRequests: Subscription cleanup complete.",
-				              DateTime.Now.ToString()), LoggingMethod.LevelInfo);
+							  DateTime.Now.ToString()), LoggingMethod.LevelInfo);
 		}
 
 		public void ResetPublishMessageCounter()
@@ -1381,7 +1381,7 @@ namespace PubNubMessaging.Core
 
 			LoggingMethod.WriteToLog("CleanUp: Destructing GameObject", LoggingMethod.LevelInfo);
 			LoggingMethod.WriteToLog(string.Format("DateTime {0} Clean up complete.", DateTime.Now.ToString()),
-			                         LoggingMethod.LevelInfo);
+									 LoggingMethod.LevelInfo);
 		}
 
 		#endregion
@@ -1432,7 +1432,7 @@ namespace PubNubMessaging.Core
 		void StopHeartbeat<T>()
 		{
 			LoggingMethod.WriteToLog(string.Format("DateTime {0}, Stopping Heartbeat ", DateTime.Now.ToString()),
-			                         LoggingMethod.LevelInfo);
+									 LoggingMethod.LevelInfo);
 			keepHearbeatRunning = false;
 			isHearbeatRunning = false;
 			coroutine.HeartbeatCoroutineComplete -= CoroutineCompleteHandler<T>;
@@ -1466,9 +1466,9 @@ namespace PubNubMessaging.Core
 
 					string requestUrl = BuildRequests.BuildPresenceHeartbeatRequest(
 						Helpers.GetNamesFromChannelEntities(Subscription.Instance.AllNonPresenceChannelsOrChannelGroups,
-						                                    false),
+															false),
 						Helpers.GetNamesFromChannelEntities(Subscription.Instance.AllNonPresenceChannelsOrChannelGroups,
-						                                    true),
+															true),
 						channelsJsonState, this.SessionUUID,
 						this.ssl, this.Origin, authenticationKey, this.subscribeKey);
 
@@ -1482,14 +1482,14 @@ namespace PubNubMessaging.Core
 					coroutine.Run<T>(requestUrl, requestState, HeartbeatTimeout, pauseTime);
 					LoggingMethod.WriteToLog(
 						string.Format("DateTime {0}, StartPresenceHeartbeat: PresenceHeartbeat running for {1}",
-						              DateTime.Now.ToString(), pubnubRequestState.ID), LoggingMethod.LevelInfo);
+									  DateTime.Now.ToString(), pubnubRequestState.ID), LoggingMethod.LevelInfo);
 				}
 			}
 			catch (Exception ex)
 			{
 				LoggingMethod.WriteToLog(
 					string.Format("DateTime {0}, StartPresenceHeartbeat: PresenceHeartbeat exception {1}",
-					              DateTime.Now.ToString(), ex.ToString()), LoggingMethod.LevelError);
+								  DateTime.Now.ToString(), ex.ToString()), LoggingMethod.LevelError);
 			}
 		}
 
@@ -1504,7 +1504,7 @@ namespace PubNubMessaging.Core
 			{
 				LoggingMethod.WriteToLog(
 					string.Format("DateTime {0}, RunPresenceHeartbeat: PresenceHeartbeat Already Running ",
-					              DateTime.Now.ToString()), LoggingMethod.LevelInfo);
+								  DateTime.Now.ToString()), LoggingMethod.LevelInfo);
 			}
 		}
 
@@ -1514,7 +1514,7 @@ namespace PubNubMessaging.Core
 			{
 				isHearbeatRunning = true;
 				string requestUrl = BuildRequests.BuildTimeRequest(this.SessionUUID,
-				                                                   this.ssl, this.Origin);
+																   this.ssl, this.Origin);
 
 				coroutine.HeartbeatCoroutineComplete += CoroutineCompleteHandler<T>;
 				//for heartbeat and presence heartbeat treat reconnect as pause
@@ -1524,13 +1524,13 @@ namespace PubNubMessaging.Core
 				coroutine.Run<T>(requestUrl, requestState, HeartbeatTimeout, pauseTime);
 				LoggingMethod.WriteToLog(
 					string.Format("DateTime {0}, StartHeartbeat: Heartbeat running for {1}", DateTime.Now.ToString(),
-					              pubnubRequestState.ID), LoggingMethod.LevelInfo);
+								  pubnubRequestState.ID), LoggingMethod.LevelInfo);
 			}
 			catch (Exception ex)
 			{
 				LoggingMethod.WriteToLog(
 					string.Format("DateTime {0}, StartHeartbeat: Heartbeat exception {1}", DateTime.Now.ToString(),
-					              ex.ToString()), LoggingMethod.LevelError);
+								  ex.ToString()), LoggingMethod.LevelError);
 			}
 		}
 
@@ -1561,12 +1561,12 @@ namespace PubNubMessaging.Core
 			{
 				string cbMessage =
 					string.Format("DateTime {0}, InternetConnectionAvailableHandler: Internet Connection Available.",
-					              DateTime.Now.ToString());
+								  DateTime.Now.ToString());
 				LoggingMethod.WriteToLog(cbMessage, LoggingMethod.LevelInfo);
 
 				PubnubCallbacks.FireErrorCallbacksForAllChannels<T>(cbMessage, cea.PubnubRequestState,
-				                                                    PubnubErrorSeverity.Info,
-				                                                    PubnubErrorCode.YesInternet, PubnubErrorLevel);
+																	PubnubErrorSeverity.Info,
+																	PubnubErrorCode.YesInternet, PubnubErrorLevel);
 
 				MultiplexExceptionHandler<T>(ResponseType.SubscribeV2, false, true);
 			}
@@ -1581,7 +1581,7 @@ namespace PubNubMessaging.Core
 				RetryLoop<T>(cea.PubnubRequestState);
 				LoggingMethod.WriteToLog(
 					string.Format("DateTime {0}, HeartbeatHandler: Heartbeat timeout={1}", DateTime.Now.ToString(),
-					              cea.Message.ToString()), LoggingMethod.LevelError);
+								  cea.Message.ToString()), LoggingMethod.LevelError);
 			}
 			else
 			{
@@ -1593,7 +1593,7 @@ namespace PubNubMessaging.Core
 			{
 				LoggingMethod.WriteToLog(
 					string.Format("DateTime {0}, HeartbeatHandler: Restarting Heartbeat {1}", DateTime.Now.ToString(),
-					              cea.PubnubRequestState.ID), LoggingMethod.LevelInfo);
+								  cea.PubnubRequestState.ID), LoggingMethod.LevelInfo);
 
 				if (internetStatus)
 				{
@@ -1614,20 +1614,20 @@ namespace PubNubMessaging.Core
 			{
 				LoggingMethod.WriteToLog(
 					string.Format("DateTime {0}, PresenceHeartbeatHandler: Presence Heartbeat timeout={1}",
-					              DateTime.Now.ToString(), cea.Message.ToString()), LoggingMethod.LevelError);
+								  DateTime.Now.ToString(), cea.Message.ToString()), LoggingMethod.LevelError);
 			}
 			else
 			{
 				LoggingMethod.WriteToLog(
 					string.Format("DateTime {0}, PresenceHeartbeatHandler: Presence Heartbeat response: {1}",
-					              DateTime.Now.ToString(), cea.Message.ToString()), LoggingMethod.LevelInfo);
+								  DateTime.Now.ToString(), cea.Message.ToString()), LoggingMethod.LevelInfo);
 			}
 
 			if (keepPresenceHearbeatRunning)
 			{
 				LoggingMethod.WriteToLog(
 					string.Format("DateTime {0}, PresenceHeartbeatHandler: Restarting PresenceHeartbeat ID {1}",
-					              DateTime.Now.ToString(), cea.PubnubRequestState.ID), LoggingMethod.LevelInfo);
+								  DateTime.Now.ToString(), cea.PubnubRequestState.ID), LoggingMethod.LevelInfo);
 
 				RunPresenceHeartbeat<T>(true, PresenceHeartbeatInterval, cea.PubnubRequestState);
 			}
@@ -1639,18 +1639,18 @@ namespace PubNubMessaging.Core
 			{
 				LoggingMethod.WriteToLog(
 					string.Format("DateTime {0}, SubscribePresenceHanlder: Sub timeout={1}", DateTime.Now.ToString(),
-					              cea.Message.ToString()), LoggingMethod.LevelError);
+								  cea.Message.ToString()), LoggingMethod.LevelError);
 			}
 			else if (cea.IsError)
 			{
 				LoggingMethod.WriteToLog(
 					string.Format("DateTime {0}, SubscribePresenceHanlder: Sub Error={1}", DateTime.Now.ToString(),
-					              cea.Message.ToString()), LoggingMethod.LevelError);
+								  cea.Message.ToString()), LoggingMethod.LevelError);
 				if ((cea.Message.Contains("403"))
-				    || (cea.Message.Contains("451"))
-				    || (cea.Message.Contains("481"))
-				    || (cea.Message.Contains("\"error\":true"))
-				    || (cea.Message.Contains("error: true"))
+					|| (cea.Message.Contains("451"))
+					|| (cea.Message.Contains("481"))
+					|| (cea.Message.Contains("\"error\":true"))
+					|| (cea.Message.Contains("error: true"))
 				)
 				{
 					requestDelayTime = NetworkCheckRetryInterval;
@@ -1666,31 +1666,31 @@ namespace PubNubMessaging.Core
 			{
 				LoggingMethod.WriteToLog(
 					string.Format("DateTime {0}, NonSubscribeHandler: NonSub timeout={1}", DateTime.Now.ToString(),
-					              cea.Message.ToString()), LoggingMethod.LevelError);
+								  cea.Message.ToString()), LoggingMethod.LevelError);
 				ExceptionHandlers.UrlRequestCommonExceptionHandler<T>(cea.Message.ToString(), cea.PubnubRequestState,
-				                                                      true,
-				                                                      false, PubnubErrorLevel);
+																	  true,
+																	  false, PubnubErrorLevel);
 			}
 			else if (cea.IsError)
 			{
 				LoggingMethod.WriteToLog(
 					string.Format("DateTime {0}, NonSubscribeHandler: NonSub Error={1}", DateTime.Now.ToString(),
-					              cea.Message.ToString()), LoggingMethod.LevelError);
+								  cea.Message.ToString()), LoggingMethod.LevelError);
 				ExceptionHandlers.UrlRequestCommonExceptionHandler<T>(cea.Message.ToString(), cea.PubnubRequestState,
-				                                                      false, false, PubnubErrorLevel);
+																	  false, false, PubnubErrorLevel);
 			}
 			else
 			{
 				List<object> result = new List<object>();
 				Helpers.WrapResultBasedOnResponseType<T>(cea.PubnubRequestState, cea.Message,
-				                                         JsonPluggableLibrary, PubnubErrorLevel, this.cipherKey,
-				                                         ref result);
+														 JsonPluggableLibrary, PubnubErrorLevel, this.cipherKey,
+														 ref result);
 				LoggingMethod.WriteToLog(
 					string.Format("DateTime {0}, NonSubscribeHandler: result={1}", DateTime.Now.ToString(),
-					              (result != null) ? result.Count.ToString() : "null"), LoggingMethod.LevelInfo);
+								  (result != null) ? result.Count.ToString() : "null"), LoggingMethod.LevelInfo);
 
 				Helpers.ProcessResponseCallbacks<T>(ref result, cea.PubnubRequestState,
-				                                    this.cipherKey, JsonPluggableLibrary);
+													this.cipherKey, JsonPluggableLibrary);
 			}
 		}
 
@@ -1744,7 +1744,7 @@ namespace PubNubMessaging.Core
 					{
 						LoggingMethod.WriteToLog(
 							string.Format("DateTime {0}, CoroutineCompleteHandler: PubnubRequestState null",
-							              DateTime.Now.ToString()), LoggingMethod.LevelError);
+										  DateTime.Now.ToString()), LoggingMethod.LevelError);
 					}
 				}
 				else
@@ -1758,10 +1758,10 @@ namespace PubNubMessaging.Core
 			{
 				LoggingMethod.WriteToLog(
 					string.Format("DateTime {0}, CoroutineCompleteHandler: Exception={1}", DateTime.Now.ToString(),
-					              ex.ToString()), LoggingMethod.LevelError);
+								  ex.ToString()), LoggingMethod.LevelError);
 
 				ExceptionHandlers.UrlRequestCommonExceptionHandler<T>(ex.Message, cea.PubnubRequestState,
-				                                                      false, false, PubnubErrorLevel);
+																	  false, false, PubnubErrorLevel);
 			}
 		}
 
@@ -1780,20 +1780,20 @@ namespace PubNubMessaging.Core
 				case ResponseType.SubscribeV2:
 				case ResponseType.PresenceV2:
 					Helpers.ProcessResponseCallbacksV2<T>(ref resultSubscribeEnvelope, requestState, this.cipherKey,
-					                                      JsonPluggableLibrary);
+														  JsonPluggableLibrary);
 					if ((resultSubscribeEnvelope != null) && (resultSubscribeEnvelope.TimetokenMeta != null))
 					{
 						ParseReceiedTimetoken<T>(requestState, resultSubscribeEnvelope.TimetokenMeta.Timetoken);
 
 						MultiChannelSubscribeRequest<T>(requestState.RespType,
-						                                resultSubscribeEnvelope.TimetokenMeta.Timetoken, false);
+														resultSubscribeEnvelope.TimetokenMeta.Timetoken, false);
 					}
 
 					else
 					{
 						LoggingMethod.WriteToLog(string.Format(
-							                         "DateTime {0}, ResponseCallbackNonErrorHandler ERROR: Couldn't extract timetoken, initiating fresh subscribe request. \nJSON response:\n {1}",
-							                         DateTime.Now.ToString(), jsonString), LoggingMethod.LevelError);
+													 "DateTime {0}, ResponseCallbackNonErrorHandler ERROR: Couldn't extract timetoken, initiating fresh subscribe request. \nJSON response:\n {1}",
+													 DateTime.Now.ToString(), jsonString), LoggingMethod.LevelError);
 
 						MultiChannelSubscribeRequest<T>(requestState.RespType, 0, false);
 					}
@@ -1814,7 +1814,7 @@ namespace PubNubMessaging.Core
 				{
 					LoggingMethod.WriteToLog(
 						string.Format("DateTime {0}, UrlProcessResponseCallbackNonAsync Message: {1}",
-						              DateTime.Now.ToString(), cea.Message), LoggingMethod.LevelError);
+									  DateTime.Now.ToString(), cea.Message), LoggingMethod.LevelError);
 					ExceptionHandlers.ResponseCallbackErrorOrTimeoutHandler<T>(cea, requestState, PubnubErrorLevel);
 				}
 				else
@@ -1839,19 +1839,19 @@ namespace PubNubMessaging.Core
 			List<ChannelEntity> channelEntities = Subscription.Instance.AllSubscribedChannelsAndChannelGroups;
 			LoggingMethod.WriteToLog(
 				string.Format("DateTime {0}, MultiplexExceptionHandler: responsetype={1}", DateTime.Now.ToString(),
-				              type.ToString()), LoggingMethod.LevelInfo);
+							  type.ToString()), LoggingMethod.LevelInfo);
 			string channelGroups = Helpers.GetNamesFromChannelEntities(channelEntities, true);
 			string channels = Helpers.GetNamesFromChannelEntities(channelEntities, false);
 
 			if (reconnectMaxTried)
 			{
 				LoggingMethod.WriteToLog(string.Format(
-					                         "DateTime {0}, MultiplexExceptionHandler: MAX retries reached. Exiting the subscribe for channels = {1} and channelgroups = {2}",
-					                         DateTime.Now.ToString(), channels, channelGroups),
-				                         LoggingMethod.LevelInfo);
+											 "DateTime {0}, MultiplexExceptionHandler: MAX retries reached. Exiting the subscribe for channels = {1} and channelgroups = {2}",
+											 DateTime.Now.ToString(), channels, channelGroups),
+										 LoggingMethod.LevelInfo);
 
 				MultiChannelUnsubscribeInit<T>(ResponseType.Unsubscribe, channels, channelGroups, null, null, null,
-				                               null);
+											   null);
 
 				Helpers.CheckSubscribedChannelsAndSendCallbacks<T>(
 					Subscription.Instance.AllSubscribedChannelsAndChannelGroups,
@@ -1863,9 +1863,9 @@ namespace PubNubMessaging.Core
 				if (!internetStatus)
 				{
 					LoggingMethod.WriteToLog(string.Format(
-						                         "DateTime {0}, MultiplexExceptionHandler: Subscribe channels = {1} and channelgroups = {2} - No internet connection. ",
-						                         DateTime.Now.ToString(), channels, channelGroups),
-					                         LoggingMethod.LevelInfo);
+												 "DateTime {0}, MultiplexExceptionHandler: Subscribe channels = {1} and channelgroups = {2} - No internet connection. ",
+												 DateTime.Now.ToString(), channels, channelGroups),
+											 LoggingMethod.LevelInfo);
 
 					return;
 				}
@@ -1875,14 +1875,14 @@ namespace PubNubMessaging.Core
 				{
 					tt = 0; //send 0 time token to enable presence event
 					LoggingMethod.WriteToLog(string.Format(
-						                         "DateTime {0}, MultiplexExceptionHandler: Reconnect true and EnableResumeOnReconnect false sending tt = 0. ",
-						                         DateTime.Now.ToString()), LoggingMethod.LevelInfo);
+												 "DateTime {0}, MultiplexExceptionHandler: Reconnect true and EnableResumeOnReconnect false sending tt = 0. ",
+												 DateTime.Now.ToString()), LoggingMethod.LevelInfo);
 				}
 				else
 				{
 					LoggingMethod.WriteToLog(string.Format(
-						                         "DateTime {0}, MultiplexExceptionHandler: sending tt = {1}. ",
-						                         DateTime.Now.ToString(), tt.ToString()), LoggingMethod.LevelInfo);
+												 "DateTime {0}, MultiplexExceptionHandler: sending tt = {1}. ",
+												 DateTime.Now.ToString(), tt.ToString()), LoggingMethod.LevelInfo);
 				}
 
 				MultiChannelSubscribeRequest<T>(type, tt, reconnect);
@@ -1905,7 +1905,7 @@ namespace PubNubMessaging.Core
 			{
 				LoggingMethod.WriteToLog(
 					string.Format("DateTime {0}, ParseReceiedJSONV2: jsonString = {1}", DateTime.Now.ToString(),
-					              jsonString), LoggingMethod.LevelInfo);
+								  jsonString), LoggingMethod.LevelInfo);
 				//this doesnt work on JSONFx for Unity in case a string is passed in an variable of type object
 				//SubscribeEnvelope resultSubscribeEnvelope = jsonPluggableLibrary.Deserialize<SubscribeEnvelope>(jsonString);
 				object resultSubscribeEnvelope = jsonPluggableLibrary.DeserializeToObject(jsonString);
@@ -1922,8 +1922,8 @@ namespace PubNubMessaging.Core
 				else
 				{
 					LoggingMethod.WriteToLog(string.Format(
-						                         "DateTime {0}, ParseReceiedJSONV2: resultSubscribeEnvelope is not dict",
-						                         DateTime.Now.ToString()), LoggingMethod.LevelError);
+												 "DateTime {0}, ParseReceiedJSONV2: resultSubscribeEnvelope is not dict",
+												 DateTime.Now.ToString()), LoggingMethod.LevelError);
 					return null;
 				}
 			}
@@ -1936,8 +1936,8 @@ namespace PubNubMessaging.Core
 		void ParseReceiedTimetoken<T>(RequestState<T> requestState, long receivedTimetoken)
 		{
 			LoggingMethod.WriteToLog(string.Format("DateTime {0}, ParseReceiedTimetoken: receivedTimetoken = {1}",
-			                                       DateTime.Now.ToString(), receivedTimetoken.ToString()),
-			                         LoggingMethod.LevelInfo);
+												   DateTime.Now.ToString(), receivedTimetoken.ToString()),
+									 LoggingMethod.LevelInfo);
 			lastSubscribeTimetoken = receivedTimetoken;
 			if (!enableResumeOnReconnect)
 			{
@@ -1964,7 +1964,7 @@ namespace PubNubMessaging.Core
 		private void RunRequests<T>(string requestUri, RequestState<T> pubnubRequestState)
 		{
 			if (pubnubRequestState.RespType.Equals(ResponseType.SubscribeV2) ||
-			    pubnubRequestState.RespType.Equals(ResponseType.PresenceV2)
+				pubnubRequestState.RespType.Equals(ResponseType.PresenceV2)
 			)
 			{
 				RequestState<T> pubnubRequestStateHB = pubnubRequestState;
@@ -2005,14 +2005,14 @@ namespace PubNubMessaging.Core
 			{
 				LoggingMethod.WriteToLog(
 					string.Format("DateTime {0}, UrlProcessRequest: MissingReferenceException={1}",
-					              DateTime.Now.ToString(), ex.ToString()), LoggingMethod.LevelError);
+								  DateTime.Now.ToString(), ex.ToString()), LoggingMethod.LevelError);
 				return false;
 			}
 			catch (System.NullReferenceException ex)
 			{
 				LoggingMethod.WriteToLog(
 					string.Format("DateTime {0}, UrlProcessRequest: NullReferenceException={1}",
-					              DateTime.Now.ToString(), ex.ToString()), LoggingMethod.LevelError);
+								  DateTime.Now.ToString(), ex.ToString()), LoggingMethod.LevelError);
 				return false;
 			}
 			catch (System.Exception ex)
@@ -2020,16 +2020,16 @@ namespace PubNubMessaging.Core
 				if (pubnubRequestState != null && pubnubRequestState.ErrorCallback != null)
 				{
 					PubnubCallbacks.FireErrorCallbacksForAllChannels<T>(ex, pubnubRequestState,
-					                                                    PubnubErrorSeverity.Critical,
-					                                                    PubnubErrorCode.None, PubnubErrorLevel);
+																		PubnubErrorSeverity.Critical,
+																		PubnubErrorCode.None, PubnubErrorLevel);
 				}
 
 				LoggingMethod.WriteToLog(
 					string.Format("DateTime {0} UrlProcessRequest: Exception={1}", DateTime.Now.ToString(),
-					              ex.ToString()), LoggingMethod.LevelError);
+								  ex.ToString()), LoggingMethod.LevelError);
 
 				ExceptionHandlers.UrlRequestCommonExceptionHandler<T>(ex.Message, pubnubRequestState,
-				                                                      false, false, PubnubErrorLevel);
+																	  false, false, PubnubErrorLevel);
 				return false;
 			}
 
@@ -2039,11 +2039,11 @@ namespace PubNubMessaging.Core
 		private void AbortPreviousRequest<T>(List<ChannelEntity> existingChannels)
 		{
 			LoggingMethod.WriteToLog(string.Format(
-				                         "DateTime {0}, AbortPreviousRequest: Aborting previous subscribe/presence requests having channel(s)={1} and ChannelGroup(s) = {2}",
-				                         DateTime.Now.ToString(),
-				                         Helpers.GetNamesFromChannelEntities(existingChannels, false),
-				                         Helpers.GetNamesFromChannelEntities(existingChannels, true)),
-			                         LoggingMethod.LevelInfo);
+										 "DateTime {0}, AbortPreviousRequest: Aborting previous subscribe/presence requests having channel(s)={1} and ChannelGroup(s) = {2}",
+										 DateTime.Now.ToString(),
+										 Helpers.GetNamesFromChannelEntities(existingChannels, false),
+										 Helpers.GetNamesFromChannelEntities(existingChannels, true)),
+									 LoggingMethod.LevelInfo);
 
 			coroutine.BounceRequest<T>(CurrentRequestType.Subscribe, null, false);
 		}
@@ -2057,21 +2057,21 @@ namespace PubNubMessaging.Core
 				if (Subscription.Instance.Delete(ce))
 				{
 					string jsonString = string.Format("{0} Unsubscribed from {1}",
-					                                  (ce.ChannelID.IsPresenceChannel) ? "Presence" : "",
-					                                  channelToBeRemoved.Replace(Utility.PresenceChannelSuffix, ""));
+													  (ce.ChannelID.IsPresenceChannel) ? "Presence" : "",
+													  channelToBeRemoved.Replace(Utility.PresenceChannelSuffix, ""));
 					List<object> result = Helpers.CreateJsonResponse(
 						jsonString, channelToBeRemoved.Replace(Utility.PresenceChannelSuffix, ""),
 						JsonPluggableLibrary);
 					LoggingMethod.WriteToLog(
 						string.Format("DateTime {0}, RemoveUnsubscribedChannelsAndDeleteUserState: JSON response={1}",
-						              DateTime.Now.ToString(), jsonString), LoggingMethod.LevelInfo);
+									  DateTime.Now.ToString(), jsonString), LoggingMethod.LevelInfo);
 					PubnubCallbacks.GoToCallback<T>(result, channelCallback.DisconnectCallback, JsonPluggableLibrary);
 				}
 				else
 				{
 					string message =
 						string.Format("Unsubscribe Error. Please retry the unsubscribe operation. channel{0}",
-						              channelToBeRemoved);
+									  channelToBeRemoved);
 					PubnubErrorCode errorType = (ce.ChannelID.IsPresenceChannel)
 						? PubnubErrorCode.PresenceUnsubscribeFailed
 						: PubnubErrorCode.UnsubscribeFailed;
@@ -2080,15 +2080,15 @@ namespace PubNubMessaging.Core
 							"DateTime {0}, RemoveUnsubscribedChannelsAndDeleteUserState: channel={1} unsubscribe error",
 							DateTime.Now.ToString(), channelToBeRemoved), LoggingMethod.LevelInfo);
 					PubnubCallbacks.CallErrorCallback<T>(message, channelCallback.ErrorCallback,
-					                                     errorType, PubnubErrorSeverity.Critical, PubnubErrorLevel);
+														 errorType, PubnubErrorSeverity.Critical, PubnubErrorLevel);
 				}
 			}
 		}
 
 		void ContinueToSubscribeRestOfChannels<T>(ResponseType type,
-		                                          Action<T> userCallback,
-		                                          Action<T> connectCallback,
-		                                          Action<PubnubClientError> errorCallback)
+												  Action<T> userCallback,
+												  Action<T> connectCallback,
+												  Action<PubnubClientError> errorCallback)
 		{
 			List<ChannelEntity> subscribedChannels = Subscription.Instance.AllSubscribedChannelsAndChannelGroups;
 
@@ -2129,12 +2129,12 @@ namespace PubNubMessaging.Core
 		}
 
 		private void MultiChannelUnsubscribeInit<T>(ResponseType respType,
-		                                            string channel,
-		                                            string channelGroups,
-		                                            Action<T> userCallback,
-		                                            Action<T> connectCallback,
-		                                            Action<T> disconnectCallback,
-		                                            Action<PubnubClientError> errorCallback)
+													string channel,
+													string channelGroups,
+													Action<T> userCallback,
+													Action<T> connectCallback,
+													Action<T> disconnectCallback,
+													Action<PubnubClientError> errorCallback)
 		{
 			string[] rawChannels = channel.Split(',');
 			string[] rawChannelGroups = channelGroups.Split(',');
@@ -2142,10 +2142,10 @@ namespace PubNubMessaging.Core
 
 			List<ChannelEntity> newChannelEntities;
 			Helpers.RemoveDuplicatesCheckAlreadySubscribedAndGetChannels<T>(respType, userCallback, connectCallback,
-			                                                                errorCallback, null, disconnectCallback,
-			                                                                rawChannels, rawChannelGroups,
-			                                                                PubnubErrorLevel, true,
-			                                                                out newChannelEntities);
+																			errorCallback, null, disconnectCallback,
+																			rawChannels, rawChannelGroups,
+																			PubnubErrorLevel, true,
+																			out newChannelEntities);
 
 			if (newChannelEntities.Count > 0)
 			{
@@ -2159,7 +2159,7 @@ namespace PubNubMessaging.Core
 						this.ssl, this.Origin, authenticationKey, this.subscribeKey);
 					RequestState<T> requestState =
 						BuildRequests.BuildRequestState<T>(newChannelEntities, ResponseType.Leave, false, 0, false, 0,
-						                                   null);
+														   null);
 					UrlProcessRequest<T>(request, requestState);
 				}
 
@@ -2179,13 +2179,13 @@ namespace PubNubMessaging.Core
 		}
 
 		public void MultiChannelSubscribeInit<T>(ResponseType respType,
-		                                         string channel,
-		                                         string channelGroup,
-		                                         long timetokenToUse,
-		                                         Action<T> userCallback,
-		                                         Action<T> connectCallback,
-		                                         Action<PubnubClientError> errorCallback,
-		                                         Action<T> wildcardPresenceCallback)
+												 string channel,
+												 string channelGroup,
+												 long timetokenToUse,
+												 Action<T> userCallback,
+												 Action<T> connectCallback,
+												 Action<PubnubClientError> errorCallback,
+												 Action<T> wildcardPresenceCallback)
 		{
 			string[] rawChannels = channel.Split(',');
 			string[] rawChannelGroups = channelGroup.Split(',');
@@ -2221,9 +2221,9 @@ namespace PubNubMessaging.Core
 			else
 			{
 				LoggingMethod.WriteToLog(string.Format(
-					                         "DateTime {0}, MultiChannelSubscribeInit: channelsOrChannelGroupsAdded {1}, internet status {2}",
-					                         DateTime.Now.ToString(), channelsOrChannelGroupsAdded.ToString(),
-					                         internetStatus.ToString()), LoggingMethod.LevelInfo);
+											 "DateTime {0}, MultiChannelSubscribeInit: channelsOrChannelGroupsAdded {1}, internet status {2}",
+											 DateTime.Now.ToString(), channelsOrChannelGroupsAdded.ToString(),
+											 internetStatus.ToString()), LoggingMethod.LevelInfo);
 			}
 		}
 
@@ -2274,7 +2274,7 @@ namespace PubNubMessaging.Core
 				//this is done to use the timetoken prior to the latest response from the server 
 				//and is true in case new channels are added to the subscribe list.
 				if (!sentTimetoken.Equals(0) && !lastSubscribeTimetokenForNewMultiplex.Equals(0) &&
-				    !lastSubscribeTimetoken.Equals(lastSubscribeTimetokenForNewMultiplex))
+					!lastSubscribeTimetoken.Equals(lastSubscribeTimetokenForNewMultiplex))
 				{
 					lastTimetoken = lastSubscribeTimetokenForNewMultiplex;
 					lastSubscribeTimetokenForNewMultiplex = 0;
@@ -2326,10 +2326,10 @@ namespace PubNubMessaging.Core
 				long lastTimetoken = SaveLastTimetoken(timetoken);
 
 				LoggingMethod.WriteToLog(string.Format(
-					                         "DateTime {0}, MultiChannelSubscribeRequest: Building request for {1} with timetoken={2}",
-					                         DateTime.Now.ToString(),
-					                         Helpers.GetNamesFromChannelEntities(channelEntities), lastTimetoken),
-				                         LoggingMethod.LevelInfo);
+											 "DateTime {0}, MultiChannelSubscribeRequest: Building request for {1} with timetoken={2}",
+											 DateTime.Now.ToString(),
+											 Helpers.GetNamesFromChannelEntities(channelEntities), lastTimetoken),
+										 LoggingMethod.LevelInfo);
 
 				// Build URL
 				string channelsJsonState = Subscription.Instance.CompiledUserState;
@@ -2353,13 +2353,13 @@ namespace PubNubMessaging.Core
 			catch (Exception ex)
 			{
 				LoggingMethod.WriteToLog(string.Format(
-					                         "DateTime {0}, MultiChannelSubscribeRequest: method:_subscribe \n channel={1} \n timetoken={2} \n Exception Details={3}",
-					                         DateTime.Now.ToString(),
-					                         Helpers.GetNamesFromChannelEntities(channelEntities), timetoken.ToString(),
-					                         ex.ToString()), LoggingMethod.LevelError);
+											 "DateTime {0}, MultiChannelSubscribeRequest: method:_subscribe \n channel={1} \n timetoken={2} \n Exception Details={3}",
+											 DateTime.Now.ToString(),
+											 Helpers.GetNamesFromChannelEntities(channelEntities), timetoken.ToString(),
+											 ex.ToString()), LoggingMethod.LevelError);
 				PubnubCallbacks.CallErrorCallback<T>(ex, channelEntities,
-				                                     PubnubErrorCode.None, PubnubErrorSeverity.Critical,
-				                                     PubnubErrorLevel);
+													 PubnubErrorCode.None, PubnubErrorSeverity.Critical,
+													 PubnubErrorLevel);
 
 				this.MultiChannelSubscribeRequest<T>(type, timetoken, false);
 			}
@@ -2372,14 +2372,14 @@ namespace PubNubMessaging.Core
 			if (retryCount <= NetworkCheckMaxRetries)
 			{
 				string cbMessage = string.Format("Internet Disconnected, retrying. Retry count {0} of {1}",
-				                                 retryCount.ToString(), NetworkCheckMaxRetries);
+												 retryCount.ToString(), NetworkCheckMaxRetries);
 				LoggingMethod.WriteToLog(
 					string.Format("DateTime {0}, RetryLoop: {1}", DateTime.Now.ToString(), cbMessage),
 					LoggingMethod.LevelError);
 				PubnubCallbacks.FireErrorCallbacksForAllChannels<T>(cbMessage, pubnubRequestState,
-				                                                    PubnubErrorSeverity.Warn,
-				                                                    PubnubErrorCode.NoInternetRetryConnect,
-				                                                    PubnubErrorLevel);
+																	PubnubErrorSeverity.Warn,
+																	PubnubErrorCode.NoInternetRetryConnect,
+																	PubnubErrorLevel);
 			}
 			else
 			{
@@ -2399,9 +2399,9 @@ namespace PubNubMessaging.Core
 				coroutine.BounceRequest<T>(CurrentRequestType.Subscribe, null, false);
 
 				PubnubCallbacks.FireErrorCallbacksForAllChannels<T>(cbMessage, pubnubRequestState,
-				                                                    PubnubErrorSeverity.Warn,
-				                                                    PubnubErrorCode.NoInternetRetryConnect,
-				                                                    PubnubErrorLevel);
+																	PubnubErrorSeverity.Warn,
+																	PubnubErrorCode.NoInternetRetryConnect,
+																	PubnubErrorLevel);
 
 				MultiplexExceptionHandler<T>(ResponseType.SubscribeV2, true, false);
 			}

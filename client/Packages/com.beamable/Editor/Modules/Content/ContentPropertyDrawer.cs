@@ -1,9 +1,9 @@
+using Beamable.Common.Content;
+using Beamable.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Beamable.Common.Content;
-using Beamable.Content;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -29,7 +29,7 @@ namespace Beamable.Editor.Content
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
 		{
 			var fieldRect = new Rect(position.x + EditorGUIUtility.labelWidth, position.y,
-			                         position.width - EditorGUIUtility.labelWidth, position.height);
+									 position.width - EditorGUIUtility.labelWidth, position.height);
 			var labelRect = new Rect(position.x, position.y, EditorGUIUtility.labelWidth, position.height);
 			var fieldValue = GetTargetObjectOfProperty(property) as BaseContentRef;
 
@@ -64,7 +64,7 @@ namespace Beamable.Editor.Content
 			}
 
 			if (_typeToContent.ContainsKey(referenceType) && !_typeToContent[referenceType].Contains(idVal) &&
-			    !idVal.Contains("(missing)"))
+				!idVal.Contains("(missing)"))
 			{
 				idVal += " (missing)";
 			}
@@ -84,7 +84,7 @@ namespace Beamable.Editor.Content
 				wnd.Init();
 				var xy = EditorGUIUtility.GUIToScreenPoint(new Vector2(fieldRect.x, fieldRect.y));
 				wnd.ShowAsDropDown(new Rect((int)xy.x, (int)xy.y + fieldRect.height, 0, 0),
-				                   new Vector2(fieldRect.width, 300));
+								   new Vector2(fieldRect.width, 300));
 			}
 		}
 
@@ -93,7 +93,8 @@ namespace Beamable.Editor.Content
 
 		private static object GetTargetObjectOfProperty(SerializedProperty prop, object obj)
 		{
-			if (prop == null) return null;
+			if (prop == null)
+				return null;
 			var path = prop.propertyPath.Replace(".Array.data[", "[");
 			var elements = path.Split('.');
 
@@ -103,7 +104,7 @@ namespace Beamable.Editor.Content
 				{
 					var elementName = element.Substring(0, element.IndexOf("["));
 					var index = System.Convert.ToInt32(element.Substring(element.IndexOf("[")).Replace("[", "")
-					                                          .Replace("]", ""));
+															  .Replace("]", ""));
 					obj = GetValue_Imp(obj, elementName, index);
 				}
 				else
@@ -132,7 +133,8 @@ namespace Beamable.Editor.Content
 
 		public static object GetTargetParentObjectOfProperty(SerializedProperty prop, int parentsUp = 1)
 		{
-			if (prop == null) return null;
+			if (prop == null)
+				return null;
 
 			var path = prop.propertyPath.Replace(".Array.data[", "[");
 			object obj = prop.serializedObject.targetObject;
@@ -144,7 +146,7 @@ namespace Beamable.Editor.Content
 				{
 					var elementName = element.Substring(0, element.IndexOf("["));
 					var index = System.Convert.ToInt32(element.Substring(element.IndexOf("[")).Replace("[", "")
-					                                          .Replace("]", ""));
+															  .Replace("]", ""));
 					obj = GetValue_Imp(obj, elementName, index);
 				}
 				else
@@ -169,8 +171,8 @@ namespace Beamable.Editor.Content
 					return f.GetValue(source);
 
 				var p = type.GetProperty(name,
-				                         BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance |
-				                         BindingFlags.IgnoreCase);
+										 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance |
+										 BindingFlags.IgnoreCase);
 				if (p != null)
 					return p.GetValue(source, null);
 
@@ -183,7 +185,8 @@ namespace Beamable.Editor.Content
 		private static object GetValue_Imp(object source, string name, int index)
 		{
 			var enumerable = GetValue_Imp(source, name) as System.Collections.IEnumerable;
-			if (enumerable == null) return null;
+			if (enumerable == null)
+				return null;
 			var enm = enumerable.GetEnumerator();
 			//while (index-- >= 0)
 			//    enm.MoveNext();
@@ -191,7 +194,8 @@ namespace Beamable.Editor.Content
 
 			for (int i = 0; i <= index; i++)
 			{
-				if (!enm.MoveNext()) return null;
+				if (!enm.MoveNext())
+					return null;
 			}
 
 			return enm.Current;
@@ -267,13 +271,15 @@ namespace Beamable.Editor.Content
 				var displayName = content.Id.Substring(_typeName.Length + 1);
 				var option = new Option
 				{
-					Id = content.Id, DisplayName = displayName, DisplayNameLower = displayName.ToLower()
+					Id = content.Id,
+					DisplayName = displayName,
+					DisplayNameLower = displayName.ToLower()
 				};
 				_options.Add(option);
 				_idToOption.Add(content.Id, option);
 			}
 
-			var nullOption = new Option {DisplayName = "<none>", DisplayNameLower = "none", Id = null};
+			var nullOption = new Option { DisplayName = "<none>", DisplayNameLower = "none", Id = null };
 			_options.Insert(0, nullOption);
 			_idToOption.Add("", nullOption);
 
@@ -289,10 +295,12 @@ namespace Beamable.Editor.Content
 
 			_activeStyle = new GUIStyle(GUI.skin.label)
 			{
-				normal = {background = _activeTexture}, hover = {background = _highlightTexture}, wordWrap = true
+				normal = { background = _activeTexture },
+				hover = { background = _highlightTexture },
+				wordWrap = true
 			};
 
-			_normalStyle = new GUIStyle(GUI.skin.label) {hover = {background = _highlightTexture}, wordWrap = true};
+			_normalStyle = new GUIStyle(GUI.skin.label) { hover = { background = _highlightTexture }, wordWrap = true };
 			_initialized = true;
 		}
 
@@ -323,8 +331,8 @@ namespace Beamable.Editor.Content
 			GUI.SetNextControlName(SearchControlName);
 			_searchString =
 				GUILayout.TextField(_searchString,
-				                    GUI.skin.FindStyle(
-					                    "ToolbarSeachTextField")); // SIC. The "ToolbarSeachTextField" is on purpose. It's a Unity typo.
+									GUI.skin.FindStyle(
+										"ToolbarSeachTextField")); // SIC. The "ToolbarSeachTextField" is on purpose. It's a Unity typo.
 			GUI.FocusControl(SearchControlName);
 
 			if (GUILayout.Button("", GUI.skin.FindStyle("ToolbarSeachCancelButton")))
@@ -340,8 +348,8 @@ namespace Beamable.Editor.Content
 			var searchLower = _searchString?.ToLower() ?? "";
 
 			var filteredOptions = _options.Where(option =>
-				                                     string.IsNullOrEmpty(_searchString) ||
-				                                     option.DisplayNameLower.Contains(searchLower)).ToArray();
+													 string.IsNullOrEmpty(_searchString) ||
+													 option.DisplayNameLower.Contains(searchLower)).ToArray();
 			var contents = filteredOptions.Select(option => new GUIContent(option.DisplayName)).ToList();
 
 			var index = -1;

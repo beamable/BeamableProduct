@@ -18,7 +18,7 @@ namespace Beamable.UI.Buss
 
 		public static Selector Parse(string selectorString)
 		{
-			var subSelections = selectorString.Split(new char[] {' '}, StringSplitOptions.RemoveEmptyEntries);
+			var subSelections = selectorString.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 			var entireSelector = new Selector();
 
 			Selector selector = entireSelector;
@@ -36,7 +36,7 @@ namespace Beamable.UI.Buss
 				var type = SelectorPartType.ELEMENT;
 				var buffer = "";
 
-				var breakCharacters = new char[] {'.', ':', '(', ')', '#'};
+				var breakCharacters = new char[] { '.', ':', '(', ')', '#' };
 				for (var i = 0; i <= subSelector.Length; i++)
 				{
 					char c = ' ';
@@ -95,7 +95,7 @@ namespace Beamable.UI.Buss
 										break;
 									case string s when s.StartsWith("nth-child(") && s.EndsWith(")"):
 										var inner = s.Substring("nth-child(".Length,
-										                        s.Length - ("nth-child(".Length + ")".Length));
+																s.Length - ("nth-child(".Length + ")".Length));
 										selector.PseudoConstraints.Add(new PseudoNthChildSelector(inner));
 										break;
 
@@ -239,7 +239,8 @@ namespace Beamable.UI.Buss
 
 			if (!string.IsNullOrEmpty(ElementTypeConstraint))
 			{
-				if (element == null) return false;
+				if (element == null)
+					return false;
 
 				if (!string.Equals(element.TypeString, ElementTypeConstraint))
 				{

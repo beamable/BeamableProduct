@@ -1,7 +1,7 @@
-using System;
-using System.Collections.Generic;
 using Beamable.AccountManagement;
 using Beamable.Stats;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -128,7 +128,8 @@ namespace Beamable.Tournaments
 
 		private void HandleScrollEvent(Vector2 pos)
 		{
-			if (_emptySlotObject == null) return;
+			if (_emptySlotObject == null)
+				return;
 
 			var slot = _emptySlotObject.GetComponent<RectTransform>();
 

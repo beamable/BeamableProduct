@@ -65,10 +65,12 @@ namespace Beamable.Theme.Palettes
 	{
 		public override ButtonStyle DefaultValue()
 		{
-			return new ButtonStyle {Name = "default", Enabled = true};
+			return new ButtonStyle { Name = "default", Enabled = true };
 		}
 	}
 
 	[System.Serializable]
-	public class ButtonBinding : ButtonPalette.PaletteBinding { }
+	public class ButtonBinding : ButtonPalette.PaletteBinding
+	{
+	}
 }

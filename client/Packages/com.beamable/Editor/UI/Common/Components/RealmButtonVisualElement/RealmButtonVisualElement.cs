@@ -1,8 +1,8 @@
-using System.Collections.Generic;
 using Beamable.Editor.Realms;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Common.Models;
+using System.Collections.Generic;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -16,13 +16,16 @@ namespace Beamable.Editor.UI.Components
 {
 	public class RealmButtonVisualElement : BeamableVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<RealmButtonVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<RealmButtonVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
 			{
-				name = "custom-text", defaultValue = "nada"
+				name = "custom-text",
+				defaultValue = "nada"
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -50,7 +53,9 @@ namespace Beamable.Editor.UI.Components
 		private Label _realmLabel;
 
 		public RealmButtonVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(RealmButtonVisualElement)}/{nameof(RealmButtonVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(RealmButtonVisualElement)}/{nameof(RealmButtonVisualElement)}")
+		{
+		}
 
 		public override void Refresh()
 		{

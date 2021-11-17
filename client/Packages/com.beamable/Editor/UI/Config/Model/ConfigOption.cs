@@ -10,12 +10,14 @@ namespace Beamable.Editor.Config.Model
 		public string Help; // TODO: Make this work. The tooltip property is broken
 		public string Module;
 
-		public ConfigOption() { }
+		public ConfigOption()
+		{
+		}
 
 		public ConfigOption(SerializedObject obj,
-		                    BaseModuleConfigurationObject config,
-		                    SerializedProperty property,
-		                    string help)
+							BaseModuleConfigurationObject config,
+							SerializedProperty property,
+							string help)
 		{
 			Object = obj;
 			Property = property;

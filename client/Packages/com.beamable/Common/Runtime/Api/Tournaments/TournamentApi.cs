@@ -1,9 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Stats;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Beamable.Common.Api.Tournaments
 {
@@ -23,14 +23,14 @@ namespace Beamable.Common.Api.Tournaments
 		public Promise<TournamentInfo> GetTournamentInfo(string tournamentContentId)
 		{
 			return GetAllTournaments().Map(resp =>
-				                               resp.tournaments.FirstOrDefault(
-					                               tournament =>
-						                               string.Equals(tournament.contentId, tournamentContentId)));
+											   resp.tournaments.FirstOrDefault(
+												   tournament =>
+													   string.Equals(tournament.contentId, tournamentContentId)));
 		}
 
 		public Promise<TournamentInfoResponse> GetAllTournaments(string contentId = null,
-		                                                         int? cycle = null,
-		                                                         bool? isRunning = null)
+																 int? cycle = null,
+																 bool? isRunning = null)
 		{
 			string queryArgs = "";
 			if (!string.IsNullOrEmpty(contentId))
@@ -57,10 +57,10 @@ namespace Beamable.Common.Api.Tournaments
 		}
 
 		private string ConstructStandingsURLArgs(string tournamentId,
-		                                         int cycle = -1,
-		                                         int from = -1,
-		                                         int max = -1,
-		                                         int focus = -1)
+												 int cycle = -1,
+												 int from = -1,
+												 int max = -1,
+												 int focus = -1)
 		{
 			var cycleArg = cycle < 0 ? "" : $"&cycle={cycle}";
 			var fromArg = from < 0 ? "" : $"&from={from}";
@@ -76,20 +76,20 @@ namespace Beamable.Common.Api.Tournaments
 		}
 
 		public Promise<TournamentStandingsResponse> GetGlobalStandings(string tournamentId,
-		                                                               int cycle = -1,
-		                                                               int from = -1,
-		                                                               int max = -1,
-		                                                               int focus = -1)
+																	   int cycle = -1,
+																	   int from = -1,
+																	   int max = -1,
+																	   int focus = -1)
 		{
 			var path = $"{SERVICE_PATH}/global{ConstructStandingsURLArgs(tournamentId, cycle, from, max, focus)}";
 			return WithEmptyResultsOn404(_requester.Request<TournamentStandingsResponse>(Method.GET, path));
 		}
 
 		public Promise<TournamentStandingsResponse> GetStandings(string tournamentId,
-		                                                         int cycle = -1,
-		                                                         int from = -1,
-		                                                         int max = -1,
-		                                                         int focus = -1)
+																 int cycle = -1,
+																 int from = -1,
+																 int max = -1,
+																 int focus = -1)
 		{
 			var path = $"{SERVICE_PATH}/standings{ConstructStandingsURLArgs(tournamentId, cycle, from, max, focus)}";
 			return WithEmptyResultsOn404(_requester.Request<TournamentStandingsResponse>(Method.GET, path));
@@ -102,7 +102,7 @@ namespace Beamable.Common.Api.Tournaments
 				switch (ex)
 				{
 					case IRequestErrorWithStatus err when err.Status == 404:
-						return new TournamentStandingsResponse {entries = new List<TournamentEntry>(), me = null};
+						return new TournamentStandingsResponse { entries = new List<TournamentEntry>(), me = null };
 					default:
 						throw ex;
 				}
@@ -116,7 +116,7 @@ namespace Beamable.Common.Api.Tournaments
 				switch (ex)
 				{
 					case IRequestErrorWithStatus err when err.Status == 404:
-						return new TournamentGroupsResponse {entries = new List<TournamentGroupEntry>(), focus = null};
+						return new TournamentGroupsResponse { entries = new List<TournamentGroupEntry>(), focus = null };
 					default:
 						throw ex;
 				}
@@ -149,7 +149,7 @@ namespace Beamable.Common.Api.Tournaments
 				{
 					// we actually need to join, and set a start score.
 					var path = $"{SERVICE_PATH}";
-					var body = new TournamentJoinRequest {tournamentId = tournamentId};
+					var body = new TournamentJoinRequest { tournamentId = tournamentId };
 					return _requester.Request<TournamentPlayerStatus>(Method.POST, path, body).FlatMap(status =>
 						SetScore(tournamentId, status.playerId, startScore).Map(_ => status)
 					);
@@ -162,15 +162,18 @@ namespace Beamable.Common.Api.Tournaments
 			var path = $"{SERVICE_PATH}/score";
 			var body = new TournamentScoreRequest
 			{
-				tournamentId = tournamentId, score = score, playerId = dbid, increment = incrementScore
+				tournamentId = tournamentId,
+				score = score,
+				playerId = dbid,
+				increment = incrementScore
 			};
 
 			return _requester.Request<TournamentScoreResponse>(Method.POST, path, body).Map(_ => PromiseBase.Unit);
 		}
 
 		public Promise<TournamentPlayerStatusResponse> GetPlayerStatus(string tournamentId = null,
-		                                                               string contentId = null,
-		                                                               bool? hasUnclaimedRewards = null)
+																	   string contentId = null,
+																	   bool? hasUnclaimedRewards = null)
 		{
 			string queryArgs = "";
 			if (!string.IsNullOrEmpty(tournamentId))
@@ -203,7 +206,7 @@ namespace Beamable.Common.Api.Tournaments
 		}
 
 		public Promise<TournamentGroupStatusResponse> GetGroupStatus(string tournamentId = null,
-		                                                             string contentId = null)
+																	 string contentId = null)
 		{
 			string queryArgs = "";
 			if (!string.IsNullOrEmpty(tournamentId))
@@ -228,7 +231,7 @@ namespace Beamable.Common.Api.Tournaments
 		public Promise<TournamentGroupStatusResponse> GetGroupStatuses(List<long> groupIds, string contentId)
 		{
 			var path = $"{SERVICE_PATH}/search/groups";
-			var body = new TournamentGetStatusesRequest {contentId = contentId, groupIds = groupIds};
+			var body = new TournamentGetStatusesRequest { contentId = contentId, groupIds = groupIds };
 
 			return _requester.Request<TournamentGroupStatusResponse>(Method.POST, path, body);
 		}
@@ -254,10 +257,10 @@ namespace Beamable.Common.Api.Tournaments
 		}
 
 		public Promise<TournamentStandingsResponse> GetGroupPlayers(string tournamentId,
-		                                                            int cycle = -1,
-		                                                            int from = -1,
-		                                                            int max = -1,
-		                                                            int focus = -1)
+																	int cycle = -1,
+																	int from = -1,
+																	int max = -1,
+																	int focus = -1)
 		{
 			var path =
 				$"{SERVICE_PATH}/standings/group{ConstructStandingsURLArgs(tournamentId, cycle, from, max, focus)}";
@@ -265,10 +268,10 @@ namespace Beamable.Common.Api.Tournaments
 		}
 
 		public Promise<TournamentGroupsResponse> GetGroups(string tournamentId,
-		                                                   int cycle = -1,
-		                                                   int from = -1,
-		                                                   int max = -1,
-		                                                   int focus = -1)
+														   int cycle = -1,
+														   int from = -1,
+														   int max = -1,
+														   int focus = -1)
 		{
 			var path = $"{SERVICE_PATH}/groups{ConstructStandingsURLArgs(tournamentId, cycle, from, max, focus)}";
 			return WithEmptyResultsOn404(_requester.Request<TournamentGroupsResponse>(Method.GET, path));

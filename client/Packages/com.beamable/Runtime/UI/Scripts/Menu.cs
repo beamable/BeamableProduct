@@ -1,5 +1,5 @@
-using System;
 using Beamable.Theme.Palettes;
+using System;
 using UnityEngine;
 using UnityEngine.Events;
 

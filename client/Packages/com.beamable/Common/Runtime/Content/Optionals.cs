@@ -27,12 +27,12 @@ namespace Beamable.Common.Content
 	{
 		public static Optional<int> ToOptional(this int number)
 		{
-			return new Optional<int> {HasValue = true, Value = number};
+			return new Optional<int> { HasValue = true, Value = number };
 		}
 
 		public static Optional<double> ToOptional(this double number)
 		{
-			return new Optional<double> {HasValue = true, Value = number};
+			return new Optional<double> { HasValue = true, Value = number };
 		}
 	}
 
@@ -73,13 +73,13 @@ namespace Beamable.Common.Content
 		}
 
 		public override object ConvertTo(ITypeDescriptorContext context,
-		                                 CultureInfo culture,
-		                                 object value,
-		                                 Type destinationType)
+										 CultureInfo culture,
+										 object value,
+										 Type destinationType)
 		{
 			if (value is long number)
 			{
-				return new OptionalInt {Value = (int)number, HasValue = true};
+				return new OptionalInt { Value = (int)number, HasValue = true };
 			}
 
 			return base.ConvertTo(context, culture, value, destinationType);
@@ -88,31 +88,45 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalBoolean : Optional<bool> { }
+	public class OptionalBoolean : Optional<bool>
+	{
+	}
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalInt : Optional<int> { }
+	public class OptionalInt : Optional<int>
+	{
+	}
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalLong : Optional<long> { }
+	public class OptionalLong : Optional<long>
+	{
+	}
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalDouble : Optional<double> { }
+	public class OptionalDouble : Optional<double>
+	{
+	}
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalListInt : Optional<List<int>> { }
+	public class OptionalListInt : Optional<List<int>>
+	{
+	}
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalListString : Optional<List<string>> { }
+	public class OptionalListString : Optional<List<string>>
+	{
+	}
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalString : Optional<string> { }
+	public class OptionalString : Optional<string>
+	{
+	}
 
 	[System.Serializable]
 	public abstract class DisplayableList<T> : DisplayableList

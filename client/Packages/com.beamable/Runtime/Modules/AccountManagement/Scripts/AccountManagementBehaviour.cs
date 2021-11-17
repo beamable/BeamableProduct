@@ -1,7 +1,7 @@
-﻿using System.Collections;
-using Beamable.Common.Api.Auth;
-using Beamable.UI.Scripts;
+﻿using Beamable.Common.Api.Auth;
 using Beamable.Coroutines;
+using Beamable.UI.Scripts;
+using System.Collections;
 using UnityEngine;
 
 namespace Beamable.AccountManagement
@@ -23,7 +23,9 @@ namespace Beamable.AccountManagement
 		}
 
 		// Update is called once per frame
-		void Update() { }
+		void Update()
+		{
+		}
 
 		public void Toggle(bool accountDesiredState)
 		{
@@ -45,7 +47,8 @@ namespace Beamable.AccountManagement
 
 		public void ShowLoggedInAccount(User user)
 		{
-			if (!MenuManager) return;
+			if (!MenuManager)
+				return;
 			AccountManagementConfiguration.Instance.Overrides.HandleUserChange(MenuManager, user);
 		}
 

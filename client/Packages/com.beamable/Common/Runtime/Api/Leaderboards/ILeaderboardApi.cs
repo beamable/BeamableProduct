@@ -1,6 +1,6 @@
+using Beamable.Common.Leaderboards;
 using System;
 using System.Collections.Generic;
-using Beamable.Common.Leaderboards;
 
 namespace Beamable.Common.Api.Leaderboards
 {
@@ -54,10 +54,10 @@ namespace Beamable.Common.Api.Leaderboards
 		/// <param name="outlier"></param>
 		/// <returns></returns>
 		Promise<LeaderBoardView> GetBoard(LeaderboardRef leaderBoard,
-		                                  int from,
-		                                  int max,
-		                                  long? focus = null,
-		                                  long? outlier = null);
+										  int from,
+										  int max,
+										  long? focus = null,
+										  long? outlier = null);
 
 		/// <summary>
 		/// Get a view with ranking of a specific leaderboard
@@ -81,10 +81,10 @@ namespace Beamable.Common.Api.Leaderboards
 		/// <param name="outlier"></param>
 		/// <returns></returns>
 		Promise<LeaderBoardView> GetAssignedBoard(LeaderboardRef leaderBoard,
-		                                          int from,
-		                                          int max,
-		                                          long? focus = null,
-		                                          long? outlier = null);
+												  int from,
+												  int max,
+												  long? focus = null,
+												  long? outlier = null);
 
 		/// <summary>
 		/// For partitioned or cohorted leaderboards
@@ -97,10 +97,10 @@ namespace Beamable.Common.Api.Leaderboards
 		/// <param name="outlier"></param>
 		/// <returns></returns>
 		Promise<LeaderBoardView> GetAssignedBoard(string boardId,
-		                                          int from,
-		                                          int max,
-		                                          long? focus = null,
-		                                          long? outlier = null);
+												  int from,
+												  int max,
+												  long? focus = null,
+												  long? outlier = null);
 
 		/// <summary>
 		/// Get a specific list of rankings by player id/gamer tag from a leaderboard
@@ -127,8 +127,8 @@ namespace Beamable.Common.Api.Leaderboards
 		/// <param name="stats"></param>
 		/// <returns></returns>
 		Promise<EmptyResponse> SetScore(LeaderboardRef leaderBoard,
-		                                double score,
-		                                IDictionary<string, object> stats = null);
+										double score,
+										IDictionary<string, object> stats = null);
 
 		/// <summary>
 		/// Replace the score of the current player
@@ -149,8 +149,8 @@ namespace Beamable.Common.Api.Leaderboards
 		/// <param name="stats"></param>
 		/// <returns></returns>
 		Promise<EmptyResponse> IncrementScore(LeaderboardRef leaderBoard,
-		                                      double score,
-		                                      IDictionary<string, object> stats = null);
+											  double score,
+											  IDictionary<string, object> stats = null);
 
 		/// <summary>
 		/// Increment (add to) the score of the current player

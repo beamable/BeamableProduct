@@ -20,7 +20,7 @@ namespace Beamable.Samples.SampleProjectBase
 			"Beamable.Samples.SampleProjectBase.AutoOpenReadme.wasAlreadyShown";
 
 		private const string FindAssetsFilter = "Readme t:Readme";
-		private static readonly string[] FindAssetsFolders = new string[] {"Packages"};
+		private static readonly string[] FindAssetsFolders = new string[] { "Packages" };
 
 		static AutoOpenReadme()
 		{
@@ -31,7 +31,8 @@ namespace Beamable.Samples.SampleProjectBase
 
 		private static void SelectReadmeAutomatically()
 		{
-			if (EditorPrefs.GetBool(SessionStateKeyWasAlreadyShown, false)) return;
+			if (EditorPrefs.GetBool(SessionStateKeyWasAlreadyShown, false))
+				return;
 			SelectSpecificReadmeMenuItem();
 			EditorPrefs.SetBool(SessionStateKeyWasAlreadyShown, true);
 		}

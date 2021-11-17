@@ -16,7 +16,9 @@ namespace Beamable.Api.Analytics.Batch
 		/// <param name="batchMaxSize">Batch max size.</param>
 		/// <param name="batchTimeoutSeconds">Batch timeout seconds.</param>
 		public SerializableBatch(int batchMaxSize, double batchTimeoutSeconds) :
-			base(batchMaxSize, batchTimeoutSeconds) { }
+			base(batchMaxSize, batchTimeoutSeconds)
+		{
+		}
 
 		/// <summary>
 		/// Serialize the batch back and forth from JSON

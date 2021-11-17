@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
@@ -9,6 +6,9 @@ using Beamable.Server.Editor;
 using Beamable.Server.Editor.ManagerClient;
 using Beamable.Server.Editor.UI.Components;
 using Beamable.Server.Editor.UI.Components.DockerLoginWindow;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -22,7 +22,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class MicroserviceVisualElement : ServiceBaseVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<MicroserviceVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<MicroserviceVisualElement, UxmlTraits>
+		{
+		}
 
 		protected override string ScriptName => nameof(MicroserviceVisualElement);
 
@@ -38,7 +40,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			base.OnDestroy();
 
-			if (_microserviceModel == null) return;
+			if (_microserviceModel == null)
+				return;
 
 			_microserviceModel.OnBuildAndStart -= SetupProgressBarForBuildAndStart;
 			_microserviceModel.OnBuildAndRestart -= SetupProgressBarForBuildAndRestart;
@@ -63,7 +66,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_buildDropDownIcon.RegisterCallback<MouseEnterEvent>(evt => _mouseOverBuildDropdown = true);
 			_buildDropDownIcon.RegisterCallback<MouseLeaveEvent>(evt => _mouseOverBuildDropdown = false);
 			var buildBtnManipulator = new ContextualMenuManipulator(HandleBuildButtonClicked);
-			buildBtnManipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
+			buildBtnManipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 			_buildDropDown.clickable.activators.Clear();
 			_buildDropDown.AddManipulator(buildBtnManipulator);
 
@@ -161,17 +164,17 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void SetupProgressBarForBuildAndStart(Task task)
 		{
 			var _ = new GroupLoadingBarUpdater("Build and Run", _loadingBar, false,
-			                                   new StepLogParser(new VirtualLoadingBar(), Model, null),
-			                                   new RunImageLogParser(new VirtualLoadingBar(), Model)
+											   new StepLogParser(new VirtualLoadingBar(), Model, null),
+											   new RunImageLogParser(new VirtualLoadingBar(), Model)
 			);
 		}
 
 		private void SetupProgressBarForBuildAndRestart(Task task)
 		{
 			var _ = new GroupLoadingBarUpdater("Build and Rerun", _loadingBar, false,
-			                                   new StepLogParser(new VirtualLoadingBar(), Model, null),
-			                                   new RunImageLogParser(new VirtualLoadingBar(), Model),
-			                                   new StopImageLogParser(new VirtualLoadingBar(), Model)
+											   new StepLogParser(new VirtualLoadingBar(), Model, null),
+											   new RunImageLogParser(new VirtualLoadingBar(), Model),
+											   new StopImageLogParser(new VirtualLoadingBar(), Model)
 			);
 		}
 
@@ -186,13 +189,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				evt.menu.BeamableAppendAction("Build", pos => _microserviceModel.Build());
 				evt.menu.BeamableAppendAction(_microserviceModel.IncludeDebugTools
-					                              ? Constants.BUILD_DISABLE_DEBUG
-					                              : Constants.BUILD_ENABLE_DEBUG, pos =>
-				                              {
-					                              _microserviceModel.IncludeDebugTools =
-						                              !_microserviceModel.IncludeDebugTools;
-					                              UpdateButtons();
-				                              });
+												  ? Constants.BUILD_DISABLE_DEBUG
+												  : Constants.BUILD_ENABLE_DEBUG, pos =>
+											  {
+												  _microserviceModel.IncludeDebugTools =
+													  !_microserviceModel.IncludeDebugTools;
+												  UpdateButtons();
+											  });
 			}
 			else
 			{
@@ -205,9 +208,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			base.UpdateButtons();
 			_stopButton.visible = Model.IsRunning;
 			_buildDefaultLabel.text = Constants.GetBuildButtonString(_microserviceModel.IncludeDebugTools,
-			                                                         _microserviceModel.IsRunning
-				                                                         ? Constants.BUILD_RESET
-				                                                         : Constants.BUILD_START);
+																	 _microserviceModel.IsRunning
+																		 ? Constants.BUILD_RESET
+																		 : Constants.BUILD_START);
 
 			if (_microserviceModel.IsRunning)
 			{

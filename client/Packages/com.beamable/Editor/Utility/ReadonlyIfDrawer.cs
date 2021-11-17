@@ -1,5 +1,5 @@
-﻿using System.Reflection;
-using Beamable.Common.Content;
+﻿using Beamable.Common.Content;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
@@ -40,9 +40,9 @@ namespace Beamable.Editor
 		}
 
 		private void Draw(Rect position,
-		                  SerializedProperty property,
-		                  GUIContent label,
-		                  ReadonlyIfAttribute.SpecialDrawer specialDrawer)
+						  SerializedProperty property,
+						  GUIContent label,
+						  ReadonlyIfAttribute.SpecialDrawer specialDrawer)
 		{
 			switch (specialDrawer)
 			{

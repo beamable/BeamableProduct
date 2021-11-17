@@ -1,7 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using Beamable.UI.Buttons;
+﻿using Beamable.UI.Buttons;
 using Beamable.UI.Prompt;
+using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -15,10 +15,14 @@ public class DePromptBehaviour : MonoBehaviour
 	public UnityEvent OnClicked;
 
 	// Start is called before the first frame update
-	void Start() { }
+	void Start()
+	{
+	}
 
 	// Update is called once per frame
-	void Update() { }
+	void Update()
+	{
+	}
 
 	public void Set(DePromptData data)
 	{

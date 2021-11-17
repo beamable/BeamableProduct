@@ -1,10 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Beamable.Common.Api;
 using Beamable.Pooling;
 using Beamable.Serialization;
 using Beamable.Spew;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace Beamable.Api.Analytics
 {
@@ -42,7 +42,8 @@ namespace Beamable.Api.Analytics
 		/// <param name="eventBatch">Event batch.</param>
 		internal void SendAnalyticsEventBatch(List<AnalyticsEventRequest> eventBatch)
 		{
-			if (eventBatch.Count == 0) return;
+			if (eventBatch.Count == 0)
+				return;
 			var batch = new List<string>();
 
 			for (int i = 0; i < eventBatch.Count; i++)
@@ -88,7 +89,7 @@ namespace Beamable.Api.Analytics
 
 			byte[] batchPayload = Encoding.UTF8.GetBytes(batchJson);
 			AnalyticsLogger.LogFormat("AnalyticsService.AnalyticsEventBatchRequest: Sending batch of {0} to uri: {1}",
-			                          eventBatch.Count, uri);
+									  eventBatch.Count, uri);
 
 			var request = _requester.BuildWebRequest(Method.POST, uri, "application/json", batchPayload);
 			request.SendWebRequest();
@@ -120,7 +121,9 @@ namespace Beamable.Api.Analytics
 		/// Initializes a new instance of the <see cref="AnalyticsEventRequest"/> class.
 		/// Used mostly for serialization
 		/// </summary>
-		public AnalyticsEventRequest() { }
+		public AnalyticsEventRequest()
+		{
+		}
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="AnalyticsEventRequest"/> class.

@@ -1,5 +1,5 @@
-﻿using System;
-using Beamable.Editor.UI.Components;
+﻿using Beamable.Editor.UI.Components;
+using System;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -22,9 +22,9 @@ namespace Beamable.Editor.UI.Buss.Components
 		private readonly bool _showCancelButton;
 
 		public ConfirmationPopupVisualElement(string contentText,
-		                                      Action onConfirm,
-		                                      Action onClose,
-		                                      bool showCancelButton = true) : base(
+											  Action onConfirm,
+											  Action onClose,
+											  bool showCancelButton = true) : base(
 			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(ConfirmationPopupVisualElement)}/{nameof(ConfirmationPopupVisualElement)}")
 		{
 			_contentText = contentText;

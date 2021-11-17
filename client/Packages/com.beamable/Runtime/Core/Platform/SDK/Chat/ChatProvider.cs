@@ -1,7 +1,7 @@
-using System.Collections.Generic;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Spew;
+using System.Collections.Generic;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -116,18 +116,18 @@ namespace Beamable.Experimental.Api.Chat
 		public Promise<List<Room>> FetchAndUpdateRooms()
 		{
 			return FetchMyRooms().Then(rooms =>
-			                     {
-				                     for (int i = 0; i < _rooms.Count; i++)
-				                     {
-					                     _rooms[i].Leave();
-				                     }
+								 {
+									 for (int i = 0; i < _rooms.Count; i++)
+									 {
+										 _rooms[i].Leave();
+									 }
 
-				                     _rooms.Clear();
-				                     _rooms.AddRange(rooms);
-			                     })
-			                     // We want to immediately join the AlwaysSubscribedRooms. This will allow us to show toasts for
-			                     // guild messages or direct messages if we wish. Other rooms we'll join only when the chat panel opens.
-			                     .FlatMap(_ => JoinRooms(AlwaysSubscribedRooms));
+									 _rooms.Clear();
+									 _rooms.AddRange(rooms);
+								 })
+								 // We want to immediately join the AlwaysSubscribedRooms. This will allow us to show toasts for
+								 // guild messages or direct messages if we wish. Other rooms we'll join only when the chat panel opens.
+								 .FlatMap(_ => JoinRooms(AlwaysSubscribedRooms));
 		}
 
 		public void AddOnRoomAdded(OnRoomAddedDelegate callback)

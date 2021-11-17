@@ -1,12 +1,12 @@
-using Beamable.Editor.Content.Models;
 using Beamable.Editor.Content;
-using UnityEngine;
+using Beamable.Editor.Content.Models;
 using Beamable.Editor.UI.Buss.Components;
+using Beamable.Editor.UI.Components;
+using Modules.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Editor.UI.Components;
-using Modules.Content;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -19,13 +19,16 @@ namespace Beamable.Editor.Content.Components
 {
 	public class ActionBarVisualElement : ContentManagerComponent
 	{
-		public new class UxmlFactory : UxmlFactory<ActionBarVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<ActionBarVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
 			{
-				name = "custom-text", defaultValue = "nada"
+				name = "custom-text",
+				defaultValue = "nada"
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -71,7 +74,7 @@ namespace Beamable.Editor.Content.Components
 
 			_createNewButton = Root.Q<Button>("createNewButton");
 			var manipulator = new ContextualMenuManipulator(CreateNewButton_CreateMenu);
-			manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
+			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 			_createNewButton.clickable.activators.Clear();
 			_createNewButton.AddManipulator(manipulator);
 
@@ -93,7 +96,7 @@ namespace Beamable.Editor.Content.Components
 			RefreshPublishDropdownVisibility();
 
 			var publishButtonManipulator = new ContextualMenuManipulator(HandlePublishButtonClick);
-			publishButtonManipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
+			publishButtonManipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 			_publishButton.clickable.activators.Clear();
 			_publishButton.AddManipulator(publishButtonManipulator);
 
@@ -149,11 +152,12 @@ namespace Beamable.Editor.Content.Components
 
 		public void RefreshPublishDropdownVisibility()
 		{
-			if (_publishDropdownButton?.parent == null) return;
+			if (_publishDropdownButton?.parent == null)
+				return;
 
 			_publishDropdownButton.parent.EnableInClassList("hidden",
-			                                                !ContentConfiguration.Instance
-				                                                .EnableMultipleContentNamespaces);
+															!ContentConfiguration.Instance
+																.EnableMultipleContentNamespaces);
 		}
 
 		private void SearchBar_OnSearchChanged(string obj)
@@ -233,7 +237,7 @@ namespace Beamable.Editor.Content.Components
 					OnPublishButtonClicked(true);
 				});
 				evt.menu.BeamableAppendAction("Archive namespaces",
-				                              pos => ArchiveManifestsVisualElement.OpenAsUtilityWindow());
+											  pos => ArchiveManifestsVisualElement.OpenAsUtilityWindow());
 				evt.menu.BeamableAppendAction("Publish (default)", pos =>
 				{
 					OnPublishButtonClicked(false);

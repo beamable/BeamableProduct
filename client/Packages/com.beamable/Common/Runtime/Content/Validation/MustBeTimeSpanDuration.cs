@@ -44,9 +44,9 @@ namespace Beamable.Common.Content.Validation
 		}
 
 		public void ValidateString(string strValue,
-		                           ValidationFieldWrapper validationField,
-		                           IContentObject obj,
-		                           IValidationContext ctx)
+								   ValidationFieldWrapper validationField,
+								   IContentObject obj,
+								   IValidationContext ctx)
 		{
 			if (string.IsNullOrEmpty(strValue))
 			{
@@ -56,7 +56,7 @@ namespace Beamable.Common.Content.Validation
 			if (!TimeSpan.TryParseExact(strValue, @"\P%d\D", CultureInfo.InvariantCulture, TimeSpanStyles.None, out _))
 			{
 				throw new ContentValidationException(obj, validationField,
-				                                     "duration must be expressed in days. e.g. P30D");
+													 "duration must be expressed in days. e.g. P30D");
 			}
 		}
 	}

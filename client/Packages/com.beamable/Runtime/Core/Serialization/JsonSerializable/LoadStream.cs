@@ -1,10 +1,10 @@
+using Beamable.Pooling;
+using Beamable.Spew;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using Beamable.Pooling;
-using Beamable.Spew;
 using UnityEngine;
 
 namespace Beamable.Serialization
@@ -401,7 +401,7 @@ namespace Beamable.Serialization
 					if (vals == null || vals.Count != 4)
 						return false;
 					target = new Rect(Convert.ToSingle(vals[0]), Convert.ToSingle(vals[1]), Convert.ToSingle(vals[2]),
-					                  Convert.ToSingle(vals[3]));
+									  Convert.ToSingle(vals[3]));
 					return true;
 				}
 
@@ -490,9 +490,9 @@ namespace Beamable.Serialization
 					if (vals == null || vals.Count != 4)
 						return false;
 					target = new Quaternion(Convert.ToSingle(vals[0]),
-					                        Convert.ToSingle(vals[1]),
-					                        Convert.ToSingle(vals[2]),
-					                        Convert.ToSingle(vals[3]));
+											Convert.ToSingle(vals[1]),
+											Convert.ToSingle(vals[2]),
+											Convert.ToSingle(vals[3]));
 					return true;
 				}
 
@@ -531,7 +531,7 @@ namespace Beamable.Serialization
 					{
 						GradientColorKey ck =
 							new GradientColorKey(new Color(colorKeys[i + 1], colorKeys[i + 2], colorKeys[i + 3]),
-							                     colorKeys[i]);
+												 colorKeys[i]);
 						target.colorKeys[index] = ck;
 						index++;
 					}
@@ -599,7 +599,7 @@ namespace Beamable.Serialization
 				if (list == null && entry != null)
 				{
 					Debug.LogError(string.Format("Could not match data ({0}) to field: {1} != {2}", key, typeof(T),
-					                             entry.GetType()));
+												 entry.GetType()));
 				}
 
 				return list;
@@ -720,7 +720,8 @@ namespace Beamable.Serialization
 				for (int i = 0; i < list.Count; ++i)
 				{
 					var d = list[i] as IDictionary<string, object>;
-					if (d == null) continue;
+					if (d == null)
+						continue;
 
 					bool found = false;
 					object idObject;
@@ -796,7 +797,7 @@ namespace Beamable.Serialization
 				// merge/replace existing based on id string
 				// This is mainly used by our client/server sync, but can be used to merge/replace any data
 				if ((mode == ListMode.kReplace) || (!typeof(ISerializeIdentifiable).IsAssignableFrom(elemType)) ||
-				    target.Count == 0)
+					target.Count == 0)
 				{
 					// replace or merge with no id
 					target.Clear();
@@ -933,7 +934,7 @@ namespace Beamable.Serialization
 				else
 				{
 					Debug.LogError(string.Format("Could not match data ({0}) to field: {1} != {2}", key, typeof(T),
-					                             entry.GetType()));
+												 entry.GetType()));
 					return false;
 				}
 			}
@@ -961,7 +962,7 @@ namespace Beamable.Serialization
 							else
 							{
 								NetMsgLogger.LogFormat("Nested update for {0}:{1} ignored, no root object found.",
-								                       elemType.Name, d["id"]);
+													   elemType.Name, d["id"]);
 								return false;
 							}
 						}
@@ -970,7 +971,7 @@ namespace Beamable.Serialization
 					if (JsonSerializable.IsPartial(d))
 					{
 						NetMsgLogger.LogFormat("Nested update for {0}:{1} ignored, no root object found.",
-						                       elemType.Name, d["id"]);
+											   elemType.Name, d["id"]);
 						return false;
 					}
 

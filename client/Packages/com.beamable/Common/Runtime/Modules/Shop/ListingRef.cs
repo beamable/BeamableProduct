@@ -17,5 +17,7 @@ namespace Beamable.Common.Shop
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class ListingRef : ContentRef<ListingContent> { }
+	public class ListingRef : ContentRef<ListingContent>
+	{
+	}
 }

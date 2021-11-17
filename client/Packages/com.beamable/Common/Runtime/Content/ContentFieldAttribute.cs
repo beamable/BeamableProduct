@@ -17,7 +17,9 @@ namespace Beamable.Common.Content
 			set;
 		}
 
-		public ContentFieldAttribute() { }
+		public ContentFieldAttribute()
+		{
+		}
 
 		public ContentFieldAttribute(string name)
 		{

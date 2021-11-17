@@ -1,7 +1,7 @@
-using System.IO;
-using System.Reflection;
 using Beamable.Api.Sessions;
 using Beamable.Sessions;
+using System.IO;
+using System.Reflection;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
@@ -32,8 +32,9 @@ namespace Beamable.Editor.Modules.Sessions
 			}
 
 			var path = EditorUtility.SaveFilePanelInProject("Provider Name", "CustomSessionParameterProvider", "cs",
-			                                                "Create your custom session provider script", startPath);
-			if (string.IsNullOrEmpty(path)) return;
+															"Create your custom session provider script", startPath);
+			if (string.IsNullOrEmpty(path))
+				return;
 
 			// TODO: replace this with codeDom
 			var name = Path.GetFileNameWithoutExtension(path);
@@ -63,7 +64,8 @@ namespace Beamable.Editor.Modules.Sessions
 		public static void After()
 		{
 			var path = EditorPrefs.GetString(EditorPrefKey);
-			if (string.IsNullOrEmpty(path)) return;
+			if (string.IsNullOrEmpty(path))
+				return;
 
 			var typeName = Path.GetFileNameWithoutExtension(path);
 

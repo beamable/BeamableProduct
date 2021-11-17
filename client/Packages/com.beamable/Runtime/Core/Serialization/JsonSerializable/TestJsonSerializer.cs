@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using Beamable.Pooling;
+﻿using Beamable.Pooling;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.Serialization

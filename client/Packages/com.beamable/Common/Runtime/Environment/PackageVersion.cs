@@ -33,11 +33,11 @@ namespace Beamable.Common
 		public int? RC => IsReleaseCandidate ? _rc : default;
 
 		public PackageVersion(int major,
-		                      int minor,
-		                      int patch,
-		                      int rc = -1,
-		                      long nightlyTime = -1,
-		                      bool isPreview = false)
+							  int minor,
+							  int patch,
+							  int rc = -1,
+							  long nightlyTime = -1,
+							  bool isPreview = false)
 		{
 			_major = major;
 			_minor = minor;
@@ -50,14 +50,17 @@ namespace Beamable.Common
 		protected bool Equals(PackageVersion other)
 		{
 			return _major == other._major && _minor == other._minor && _patch == other._patch && _rc == other._rc &&
-			       _nightlyTime == other._nightlyTime && _isPreview == other._isPreview;
+				   _nightlyTime == other._nightlyTime && _isPreview == other._isPreview;
 		}
 
 		public override bool Equals(object obj)
 		{
-			if (ReferenceEquals(null, obj)) return false;
-			if (ReferenceEquals(this, obj)) return true;
-			if (obj.GetType() != this.GetType()) return false;
+			if (ReferenceEquals(null, obj))
+				return false;
+			if (ReferenceEquals(this, obj))
+				return true;
+			if (obj.GetType() != this.GetType())
+				return false;
 			return Equals((PackageVersion)obj);
 		}
 
@@ -82,13 +85,13 @@ namespace Beamable.Common
 		public static bool operator <(PackageVersion a, PackageVersion b)
 		{
 			return a.Major < b.Major || (a.Major <= b.Major && a.Minor < b.Minor) ||
-			       (a.Major <= b.Minor && a.Minor <= b.Minor && (a.Patch < b.Patch));
+				   (a.Major <= b.Minor && a.Minor <= b.Minor && (a.Patch < b.Patch));
 		}
 
 		public static bool operator >(PackageVersion b, PackageVersion a)
 		{
 			return a.Major < b.Major || (a.Major <= b.Major && a.Minor < b.Minor) ||
-			       (a.Major <= b.Minor && a.Minor <= b.Minor && a.Patch < b.Patch);
+				   (a.Major <= b.Minor && a.Minor <= b.Minor && a.Patch < b.Patch);
 		}
 
 		public static bool operator ==(PackageVersion a, PackageVersion b)
@@ -179,7 +182,7 @@ namespace Beamable.Common
 				{
 					// add one to ignore the expected - character
 					if (!long.TryParse(semanticVersion.Substring(i + 1, semanticVersion.Length - (i + 1)),
-					                   out nightlyTime))
+									   out nightlyTime))
 					{
 						throw new ArgumentException("nightly time not a long");
 					}

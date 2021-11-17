@@ -1,11 +1,11 @@
-﻿using System;
+﻿using Beamable.ConsoleCommands;
+using Beamable.InputManagerIntegration;
+using Beamable.Service;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Beamable.ConsoleCommands;
-using Beamable.InputManagerIntegration;
-using Beamable.Service;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -36,16 +36,19 @@ namespace Beamable.Console
 
 #if UNITY_ANDROID // webGL doesn't support the touchscreen keyboard.
         private bool _isMobileKeyboardOpened = false;
-        #pragma warning disable CS0649
+#pragma warning disable CS0649
         [SerializeField] private RectTransform consolePortrait;
         [SerializeField] private RectTransform consoleLandscape;
-        #pragma warning restore CS0649
+#pragma warning restore CS0649
 #endif
 
-		[Space] [Header("Text auto complete settings")] [SerializeField]
+		[Space]
+		[Header("Text auto complete settings")]
+		[SerializeField]
 		private KeyCode acceptSuggestionKey = KeyCode.Tab;
 
-		[Header("History settings")] [SerializeField]
+		[Header("History settings")]
+		[SerializeField]
 		private KeyCode historyPreviousKey = KeyCode.UpArrow;
 
 		[SerializeField] private KeyCode historyNextKey = KeyCode.DownArrow;
@@ -75,7 +78,8 @@ namespace Beamable.Console
 
 		private void Update()
 		{
-			if (!_isInitialized) return;
+			if (!_isInitialized)
+				return;
 
 			if (_showNextTick)
 			{
@@ -83,7 +87,8 @@ namespace Beamable.Console
 				_showNextTick = false;
 			}
 
-			if (ConsoleShouldToggle() && ConsoleIsEnabled()) ToggleConsole();
+			if (ConsoleShouldToggle() && ConsoleIsEnabled())
+				ToggleConsole();
 
 			if (Input.GetKeyDown(historyPreviousKey))
 			{
@@ -131,11 +136,13 @@ namespace Beamable.Console
 			txtInput.onValueChanged.AddListener(_textAutoCompleter.FindMatchingCommands);
 			txtInput.onEndEdit.AddListener(evt =>
 			{
-				if (txtInput.text.Length > 0) Execute(txtInput.text);
+				if (txtInput.text.Length > 0)
+					Execute(txtInput.text);
 			});
 
 			txtInput.interactable = true;
-			if (canvas.isActiveAndEnabled) txtInput.Select();
+			if (canvas.isActiveAndEnabled)
+				txtInput.Select();
 
 			_isInitialized = true;
 
@@ -201,22 +208,25 @@ namespace Beamable.Console
 #if UNITY_EDITOR
 			return true;
 #else
-            return ConsoleConfiguration.Instance.ForceEnabled || _beamable.User.HasScope("cli:console");
+			return ConsoleConfiguration.Instance.ForceEnabled || _beamable.User.HasScope("cli:console");
 #endif
 		}
 
 		private void Execute(string txt)
 		{
-			if (!_isActive) return;
+			if (!_isActive)
+				return;
 
 			_consoleHistory.Push(txt);
 			var parts = txt.Split(' ');
 			txtInput.text = "";
 			txtInput.Select();
 			txtInput.ActivateInputField();
-			if (parts.Length == 0) return;
+			if (parts.Length == 0)
+				return;
 			var args = new string[parts.Length - 1];
-			for (var i = 1; i < parts.Length; i++) args[i - 1] = parts[i];
+			for (var i = 1; i < parts.Length; i++)
+				args[i - 1] = parts[i];
 
 			Log(ServiceManager.Resolve<BeamableConsole>().Execute(parts[0], args));
 		}
@@ -225,19 +235,21 @@ namespace Beamable.Console
 		{
 			foreach (var name in command.Names)
 			{
-				var cmd = new ConsoleCommand {Command = command, Callback = callback};
+				var cmd = new ConsoleCommand { Command = command, Callback = callback };
 				ConsoleCommandsByName[name.ToLower()] = cmd;
 			}
 		}
 
 		private string ExecuteCommand(string command, string[] args)
 		{
-			if (command == "help") return OnHelp(args);
+			if (command == "help")
+				return OnHelp(args);
 
 			if (ConsoleCommandsByName.TryGetValue(command.ToLower(), out var cmd))
 			{
 				var echoLine = "> " + command;
-				foreach (var arg in args) echoLine += " " + arg;
+				foreach (var arg in args)
+					echoLine += " " + arg;
 
 				Log(echoLine);
 				return cmd.Callback(args);
@@ -256,7 +268,8 @@ namespace Beamable.Console
 				var commands = ConsoleCommandsByName.Values;
 				foreach (var command in commands)
 				{
-					if (uniqueCommands.Contains(command)) continue;
+					if (uniqueCommands.Contains(command))
+						continue;
 
 					uniqueCommands.Add(command);
 					var line = $"{command.Command.Usage} - {command.Command.Description}\n";
@@ -385,7 +398,8 @@ namespace Beamable.Console
 
 		private float GetKeyboardHeight()
 		{
-			if (Application.isEditor) return txtInput.isFocused ? 0.25f : 0;
+			if (Application.isEditor)
+				return txtInput.isFocused ? 0.25f : 0;
 
 #if UNITY_ANDROID
             using (AndroidJavaClass UnityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
@@ -457,8 +471,8 @@ namespace Beamable.Console
 				if (string.IsNullOrWhiteSpace(input))
 				{
 					_foundCommands = ConsoleCommandsByName.OrderBy(x => x.Key)
-					                                      .Select(x => x.Key)
-					                                      .ToList();
+														  .Select(x => x.Key)
+														  .ToList();
 
 					_currentSuggestedCommand = string.Empty;
 					_textSuggestion.text = string.Empty;
@@ -467,11 +481,11 @@ namespace Beamable.Console
 				{
 					_foundCommands = input.Length < _previousInput.Length || _previousInput.Length == 0
 						? ConsoleCommandsByName.Where(x => x.Key.StartsWith(input))
-						                       .OrderBy(x => x.Key)
-						                       .Select(x => x.Key)
-						                       .ToList()
+											   .OrderBy(x => x.Key)
+											   .Select(x => x.Key)
+											   .ToList()
 						: _foundCommands.Where(x => x.StartsWith(input))
-						                .ToList();
+										.ToList();
 
 					_currentSuggestedCommand = _foundCommands.Count > 0 ? _foundCommands[0] : string.Empty;
 					SuggestCommand();

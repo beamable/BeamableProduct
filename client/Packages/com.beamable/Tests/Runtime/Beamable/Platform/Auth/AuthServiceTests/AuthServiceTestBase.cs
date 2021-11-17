@@ -1,8 +1,8 @@
-using System.Collections.Generic;
-using System.Reflection;
 using Beamable.Common.Api.Auth;
 using Beamable.Platform.SDK.Auth;
 using NUnit.Framework;
+using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 
 namespace Beamable.Platform.Tests.Auth.AuthServiceTests
@@ -25,6 +25,8 @@ namespace Beamable.Platform.Tests.Auth.AuthServiceTests
 		}
 
 		[TearDown]
-		public void Cleanup() { }
+		public void Cleanup()
+		{
+		}
 	}
 }

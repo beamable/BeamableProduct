@@ -84,7 +84,8 @@ namespace Beamable.Serialization.SmallerJSON
 
 			public bool Equals(StringSlice other)
 			{
-				if (length != other.length) return false;
+				if (length != other.length)
+					return false;
 				for (int i = 0; i < length; ++i)
 				{
 					if (buffer[start + i] != other.buffer[other.start + i])
@@ -460,10 +461,10 @@ namespace Beamable.Serialization.SmallerJSON
 				}
 
 				if (current == '.' ||
-				    current == 'e' ||
-				    current == 'E' ||
-				    current == '+' ||
-				    current == '-')
+					current == 'e' ||
+					current == 'E' ||
+					current == '+' ||
+					current == '-')
 				{
 					floatingPoint = true;
 					++_pos;
@@ -483,7 +484,7 @@ namespace Beamable.Serialization.SmallerJSON
 			{
 				long result;
 				if (long.TryParse(numberString, System.Globalization.NumberStyles.Any,
-				                  System.Globalization.CultureInfo.InvariantCulture, out result))
+								  System.Globalization.CultureInfo.InvariantCulture, out result))
 				{
 					if (negative)
 						result = -result;
@@ -499,7 +500,7 @@ namespace Beamable.Serialization.SmallerJSON
 		{
 			double parsedDouble;
 			double.TryParse(numberString, System.Globalization.NumberStyles.Any,
-			                System.Globalization.CultureInfo.InvariantCulture, out parsedDouble);
+							System.Globalization.CultureInfo.InvariantCulture, out parsedDouble);
 			if (negative)
 			{
 				parsedDouble = -parsedDouble;
@@ -534,10 +535,10 @@ namespace Beamable.Serialization.SmallerJSON
 			}
 
 			if ((_chars[_pos + 0] == 'f') &&
-			    (_chars[_pos + 1] == 'a') &&
-			    (_chars[_pos + 2] == 'l') &&
-			    (_chars[_pos + 3] == 's') &&
-			    (_chars[_pos + 4] == 'e'))
+				(_chars[_pos + 1] == 'a') &&
+				(_chars[_pos + 2] == 'l') &&
+				(_chars[_pos + 3] == 's') &&
+				(_chars[_pos + 4] == 'e'))
 			{
 				_pos += 5;
 				return true;
@@ -554,9 +555,9 @@ namespace Beamable.Serialization.SmallerJSON
 			}
 
 			if ((_chars[_pos + 0] == 't') &&
-			    (_chars[_pos + 1] == 'r') &&
-			    (_chars[_pos + 2] == 'u') &&
-			    (_chars[_pos + 3] == 'e'))
+				(_chars[_pos + 1] == 'r') &&
+				(_chars[_pos + 2] == 'u') &&
+				(_chars[_pos + 3] == 'e'))
 			{
 				_pos += 4;
 				return true;
@@ -573,9 +574,9 @@ namespace Beamable.Serialization.SmallerJSON
 			}
 
 			if ((_chars[_pos + 0] == 'n') &&
-			    (_chars[_pos + 1] == 'u') &&
-			    (_chars[_pos + 2] == 'l') &&
-			    (_chars[_pos + 3] == 'l'))
+				(_chars[_pos + 1] == 'u') &&
+				(_chars[_pos + 2] == 'l') &&
+				(_chars[_pos + 3] == 'l'))
 			{
 				_pos += 4;
 				return true;

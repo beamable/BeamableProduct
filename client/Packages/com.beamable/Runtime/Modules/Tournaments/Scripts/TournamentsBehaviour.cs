@@ -1,17 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Beamable.AccountManagement;
 using Beamable.Common;
-using Beamable.Common.Content;
-using Beamable.UI.Scripts;
-using Beamable.Common.Api.Tournaments;
-using Beamable.AccountManagement;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Api.Tournaments;
+using Beamable.Common.Content;
 using Beamable.Common.Inventory;
 using Beamable.Common.Shop;
 using Beamable.Common.Tournaments;
 using Beamable.Shop;
+using Beamable.UI.Scripts;
 using JetBrains.Annotations;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -43,9 +43,9 @@ namespace Beamable.Tournaments
 		public List<TournamentStageGainDefinition> StagePrefabs;
 
 		public List<GameObject> ActiveOnlyForDaily,
-		                        ActiveOnlyForGlobal,
-		                        ActiveOnlyForChampion,
-		                        DeactivedOnlyForChampion, ActiveOnlyForToday, ActiveOnlyForYesterday;
+								ActiveOnlyForGlobal,
+								ActiveOnlyForChampion,
+								DeactivedOnlyForChampion, ActiveOnlyForToday, ActiveOnlyForYesterday;
 
 		public TabBehaviour DayTabs, TypeTodayTabs, TypeYesterdayTabs;
 		public GameObject GeneralErrorPage;
@@ -54,7 +54,7 @@ namespace Beamable.Tournaments
 		private Color EntryColor;
 
 		public Color YesterdayEntryColor, NormalEntryColor, DisabledButtonColor, TodayBackgroundColor,
-		             YesterdayBackgroundColor;
+					 YesterdayBackgroundColor;
 
 		private TournamentEntryProvider _dataProvider;
 		private TournamentTier _playerTier;
@@ -99,7 +99,8 @@ namespace Beamable.Tournaments
 
 		private void OnDestroy()
 		{
-			if (_beamableApi == null) return;
+			if (_beamableApi == null)
+				return;
 			_beamableApi.OnUserChanged -= HandleUserChange;
 		}
 
@@ -116,7 +117,9 @@ namespace Beamable.Tournaments
 		}
 
 		// Update is called once per frame
-		void Update() { }
+		void Update()
+		{
+		}
 
 		Promise<TournamentBundle> Refresh()
 		{
@@ -256,7 +259,7 @@ namespace Beamable.Tournaments
 			// https://answers.unity.com/questions/1184410/scrollrect-changing-velocity-with-script.html
 			InfoScroller.horizontalNormalizedPosition =
 				Mathf.Clamp(InfoScroller.horizontalNormalizedPosition, 0.0001f,
-				            0.9999f); //Clamping between 0 and 1 just didn't do...
+							0.9999f); //Clamping between 0 and 1 just didn't do...
 			InfoScroller.velocity = Vector2.right * InfoScroller.viewport.rect.width * speed * 2;
 		}
 
@@ -303,10 +306,11 @@ namespace Beamable.Tournaments
 				var rewards = new TournamentPlayerRewards
 				{
 					UnclaimedRewards = response.rewardCurrencies
-					                           .Select(x => new OfferObtainCurrency
-					                           {
-						                           amount = x.amount, symbol = new CurrencyRef(x.symbol)
-					                           }).ToList()
+											   .Select(x => new OfferObtainCurrency
+											   {
+												   amount = x.amount,
+												   symbol = new CurrencyRef(x.symbol)
+											   }).ToList()
 				};
 				RewardsPage.Set(rewards);
 				RefreshRewardCount(response.rewardCurrencies.Count);
@@ -397,25 +401,25 @@ namespace Beamable.Tournaments
 			var limit = 30;
 			ChampionText.text = $"Fetching Champions...";
 			return data.Service.GetChampions(data.TournamentInfo.tournamentId, limit).Map(championsResponse =>
-			           {
-				           var others = championsResponse.entries.ToViewData();
-				           RefreshEntryObjects(data, null, others);
-				           return others.Count;
-			           })
-			           .Then(size =>
-			           {
-				           if (size == 0)
-				           {
-					           ChampionText.text = $"There are no Champions yet.";
-				           }
-				           else
-				           {
-					           var displaySize = Mathf.Min(limit, size);
-					           var displayUnit = displaySize == 1 ? "day" : "days";
-					           ChampionText.text = $"Champions from the last {displaySize} {displayUnit}";
-				           }
-			           })
-			           .ToUnit();
+					   {
+						   var others = championsResponse.entries.ToViewData();
+						   RefreshEntryObjects(data, null, others);
+						   return others.Count;
+					   })
+					   .Then(size =>
+					   {
+						   if (size == 0)
+						   {
+							   ChampionText.text = $"There are no Champions yet.";
+						   }
+						   else
+						   {
+							   var displaySize = Mathf.Min(limit, size);
+							   var displayUnit = displaySize == 1 ? "day" : "days";
+							   ChampionText.text = $"Champions from the last {displaySize} {displayUnit}";
+						   }
+					   })
+					   .ToUnit();
 		}
 
 		void FadeContent(float alpha)
@@ -523,13 +527,16 @@ namespace Beamable.Tournaments
 		{
 			return new TournamentEntryViewData
 			{
-				Data = data, IsGrey = Day == TournamentDay.YESTERDAY, Master = this, Tournament = bundle
+				Data = data,
+				IsGrey = Day == TournamentDay.YESTERDAY,
+				Master = this,
+				Tournament = bundle
 			};
 		}
 
 		private void RefreshEntryObjects(TournamentBundle bundle,
-		                                 TournamentEntryData playerData,
-		                                 List<TournamentEntryData> entries)
+										 TournamentEntryData playerData,
+										 List<TournamentEntryData> entries)
 		{
 			var viewData = entries.Select(e => UpgradeEntryData(bundle, e)).ToList();
 
@@ -538,9 +545,9 @@ namespace Beamable.Tournaments
 			if (_dataProvider == null)
 			{
 				_dataProvider = new TournamentEntryProvider(playerIndex,
-				                                            viewData,
-				                                            EntryPrefab,
-				                                            PlayerInstance);
+															viewData,
+															EntryPrefab,
+															PlayerInstance);
 			}
 			else
 			{
@@ -565,35 +572,36 @@ namespace Beamable.Tournaments
 		{
 			// TODO: maybe make parallel instead of serial?
 			return API.Instance.FlatMap(de =>
-				                            Tournament.Resolve()
-				                                      .RecoverWith(err =>
-				                                      {
-					                                      if (!(err is ContentNotFoundException)) throw err;
+											Tournament.Resolve()
+													  .RecoverWith(err =>
+													  {
+														  if (!(err is ContentNotFoundException))
+															  throw err;
 
-					                                      GeneralErrorPage.SetActive(true);
-					                                      Debug.LogException(err);
-					                                      Debug.LogError(
-						                                      "Make sure you have a tournament content reference set on the tournament Game Object",
-						                                      this);
+														  GeneralErrorPage.SetActive(true);
+														  Debug.LogException(err);
+														  Debug.LogError(
+															  "Make sure you have a tournament content reference set on the tournament Game Object",
+															  this);
 
-					                                      var emptyContent = ScriptableObject
-						                                      .CreateInstance<TournamentContent>();
-					                                      return Promise<TournamentContent>.Successful(emptyContent);
-				                                      })
-				                                      .FlatMap(content =>
-					                                               de.TournamentsService.GetTournamentInfo(content.Id)
-					                                                 .FlatMap(info => de.TournamentsService
-						                                                          .JoinTournament(info.tournamentId)
-						                                                          .Map(status => new TournamentBundle
-						                                                          {
-							                                                          Content = content,
-							                                                          Service = de
-								                                                          .TournamentsService,
-							                                                          TournamentInfo = info,
-							                                                          Status = status
-						                                                          })
-					                                                 )
-				                                      )
+														  var emptyContent = ScriptableObject
+															  .CreateInstance<TournamentContent>();
+														  return Promise<TournamentContent>.Successful(emptyContent);
+													  })
+													  .FlatMap(content =>
+																   de.TournamentsService.GetTournamentInfo(content.Id)
+																	 .FlatMap(info => de.TournamentsService
+																				  .JoinTournament(info.tournamentId)
+																				  .Map(status => new TournamentBundle
+																				  {
+																					  Content = content,
+																					  Service = de
+																						  .TournamentsService,
+																					  TournamentInfo = info,
+																					  Status = status
+																				  })
+																	 )
+													  )
 			);
 		}
 	}

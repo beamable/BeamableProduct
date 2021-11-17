@@ -1,6 +1,6 @@
-using System;
 using Beamable.Spew;
 using PubNubMessaging.Core;
+using System;
 
 namespace Beamable.Api.Notification.Internal
 {
@@ -16,9 +16,9 @@ namespace Beamable.Api.Notification.Internal
 		public bool ignoreError;
 
 		public void Setup(string channelList,
-		                  Action<object> connectCallback,
-		                  Action<object> disconnectCallback,
-		                  Action<PubnubClientError> errorCallback)
+						  Action<object> connectCallback,
+						  Action<object> disconnectCallback,
+						  Action<PubnubClientError> errorCallback)
 		{
 			mExpectedCount = 1;
 			for (int i = 0; i < channelList.Length; i++)

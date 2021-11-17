@@ -52,8 +52,8 @@ namespace Beamable.Common.Pooling
 		private EmptyPoolBehavior mEmptyBehavior;
 
 		private StringBuilderPool(int builderCapacity,
-		                          int startingCapacity,
-		                          EmptyPoolBehavior emptyBehavior = EmptyPoolBehavior.AllocateToHeap)
+								  int startingCapacity,
+								  EmptyPoolBehavior emptyBehavior = EmptyPoolBehavior.AllocateToHeap)
 		{
 			mStartingCapacity = startingCapacity;
 			mEmptyBehavior = emptyBehavior;

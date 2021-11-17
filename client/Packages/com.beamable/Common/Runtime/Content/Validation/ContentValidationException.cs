@@ -109,10 +109,10 @@ namespace Beamable.Common.Content.Validation
 		}
 
 		public ContentNameValidationException(IContentObject content,
-		                                      char invalidChar,
-		                                      string invalidCharName,
-		                                      int position,
-		                                      string name)
+											  char invalidChar,
+											  string invalidCharName,
+											  int position,
+											  string name)
 			: base(content, $"Content name=[{name}] cannot contain {invalidCharName} at position=[{position}]")
 		{
 			InvalidChar = invalidChar;
@@ -122,8 +122,8 @@ namespace Beamable.Common.Content.Validation
 		}
 
 		public static bool HasNameValidationErrors(IContentObject content,
-		                                           string contentName,
-		                                           out List<ContentNameValidationException> errors)
+												   string contentName,
+												   out List<ContentNameValidationException> errors)
 		{
 			errors = new List<ContentNameValidationException>();
 			for (var i = 0; i < contentName.Length; i++)
@@ -133,10 +133,10 @@ namespace Beamable.Common.Content.Validation
 				{
 					var invalidChar = INVALID_CHARS[badCharIndex];
 					errors.Add(new ContentNameValidationException(content,
-					                                              invalidChar,
-					                                              INVALID_CHARACTERS[invalidChar],
-					                                              i,
-					                                              contentName));
+																  invalidChar,
+																  INVALID_CHARACTERS[invalidChar],
+																  i,
+																  contentName));
 				}
 			}
 

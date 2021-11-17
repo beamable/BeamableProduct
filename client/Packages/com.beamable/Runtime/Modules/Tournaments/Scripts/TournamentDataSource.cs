@@ -14,9 +14,9 @@ namespace Beamable.Tournaments
 		private GameObject _emptySlotGameObject;
 
 		public TournamentEntryProvider(int playerIndex,
-		                               IList<TournamentEntryViewData> list,
-		                               TournamentEntryBehavior entryPrefab,
-		                               TournamentEntryPlayerBehaviour playerInstance) : base(list)
+									   IList<TournamentEntryViewData> list,
+									   TournamentEntryBehavior entryPrefab,
+									   TournamentEntryPlayerBehaviour playerInstance) : base(list)
 		{
 			EntryPrefab = entryPrefab;
 			PlayerIndex = playerIndex;

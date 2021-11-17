@@ -1,11 +1,11 @@
-using System.Collections.Generic;
-using Beamable.Editor.UI.Buss;
-using Beamable.Editor.Content.Models;
-using UnityEditor.IMGUI.Controls;
-using System.Linq;
-using System;
 using Beamable.Common;
+using Beamable.Editor.Content.Models;
+using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEditor.IMGUI.Controls;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -54,9 +54,9 @@ namespace Beamable.Editor.Content.Components
 		}
 
 		public Breadcrumb(string text,
-		                  BreadcrumbType breadcrumbType,
-		                  ContentTypeTreeViewItem contentTypeTreeViewItem = null,
-		                  ContentItemDescriptor contentItemDescriptor = null)
+						  BreadcrumbType breadcrumbType,
+						  ContentTypeTreeViewItem contentTypeTreeViewItem = null,
+						  ContentItemDescriptor contentItemDescriptor = null)
 		{
 			Text = text;
 			BreadcrumbType = breadcrumbType;
@@ -116,20 +116,20 @@ namespace Beamable.Editor.Content.Components
 
 			// Add the master token
 			breadCrumbs.Add(new Breadcrumb(ContentManagerConstants.BreadcrumbsAllContentText,
-			                               BreadcrumbType.AllContents));
+										   BreadcrumbType.AllContents));
 
 			// Add on the types
 			foreach (ContentTypeTreeViewItem contentTypeTreeViewItem in _selectedContentTypeBranch)
 			{
 				breadCrumbs.Add(new Breadcrumb(contentTypeTreeViewItem.displayName, BreadcrumbType.ContenType,
-				                               contentTypeTreeViewItem, null));
+											   contentTypeTreeViewItem, null));
 			}
 
 			// Add on the item, if it exists
 			if (_selectedContentItemDescriptor != null)
 			{
 				breadCrumbs.Add(new Breadcrumb(_selectedContentItemDescriptor.Name, BreadcrumbType.ContentItem,
-				                               null, _selectedContentItemDescriptor));
+											   null, _selectedContentItemDescriptor));
 			}
 
 			//Loop and render all tokens

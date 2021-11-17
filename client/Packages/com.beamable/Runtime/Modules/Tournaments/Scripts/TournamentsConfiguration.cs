@@ -7,7 +7,7 @@ namespace Beamable.Tournaments
 	[CreateAssetMenu(
 		fileName = "Tournament Configuration",
 		menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
-		           "Tournament Configuration",
+				   "Tournament Configuration",
 		order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 	public class TournamentsConfiguration : ModuleConfigurationObject
 	{

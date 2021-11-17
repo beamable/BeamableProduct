@@ -6,6 +6,8 @@ namespace Beamable.Api.Analytics
 	{
 		public BillerPurchaseFailedEvent(string sku, ErrorCode error)
 			: base("commerce", "purchase_failed",
-			       new Dictionary<string, object> {["sku"] = sku, ["error"] = error.ToString()}) { }
+				   new Dictionary<string, object> { ["sku"] = sku, ["error"] = error.ToString() })
+		{
+		}
 	}
 }

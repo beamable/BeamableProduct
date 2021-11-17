@@ -1,9 +1,9 @@
+using Beamable.Extensions;
+using Beamable.Pooling;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using Beamable.Pooling;
-using Beamable.Extensions;
 using UnityEngine;
 
 namespace Beamable.Serialization

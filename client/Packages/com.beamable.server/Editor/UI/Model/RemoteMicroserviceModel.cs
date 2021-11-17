@@ -12,7 +12,7 @@ namespace Beamable.Editor.UI.Model
 	public class RemoteMicroserviceModel : MicroserviceModel
 	{
 		public new static RemoteMicroserviceModel CreateNew(MicroserviceDescriptor descriptor,
-		                                                    MicroservicesDataModel dataModel)
+															MicroservicesDataModel dataModel)
 		{
 			return new RemoteMicroserviceModel
 			{
@@ -49,12 +49,12 @@ namespace Beamable.Editor.UI.Model
 					OnSortChanged?.Invoke();
 				}, MicroserviceConfiguration.Instance.GetMicroserviceIndex(Name) > 0);
 				evt.menu.BeamableAppendAction($"Order/Move Down", pos =>
-				                              {
-					                              MicroserviceConfiguration.Instance.MoveMicroserviceIndex(Name, 1);
-					                              OnSortChanged?.Invoke();
-				                              },
-				                              MicroserviceConfiguration.Instance.GetMicroserviceIndex(Name) <
-				                              MicroserviceConfiguration.Instance.Microservices.Count - 1);
+											  {
+												  MicroserviceConfiguration.Instance.MoveMicroserviceIndex(Name, 1);
+												  OnSortChanged?.Invoke();
+											  },
+											  MicroserviceConfiguration.Instance.GetMicroserviceIndex(Name) <
+											  MicroserviceConfiguration.Instance.Microservices.Count - 1);
 			}
 		}
 	}

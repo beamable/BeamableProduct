@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using Beamable.AccountManagement;
 using Beamable.Avatars;
 using Beamable.Console;
@@ -12,6 +8,10 @@ using Beamable.Shop;
 using Beamable.Sound;
 using Beamable.Theme;
 using Beamable.Tournaments;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
@@ -84,13 +84,15 @@ namespace Beamable.Editor.Config
 					foreach (var type in types)
 					{
 						var isConfigurationType = typeof(BaseModuleConfigurationObject).IsAssignableFrom(type);
-						if (!isConfigurationType) continue;
+						if (!isConfigurationType)
+							continue;
 
 						var staticInstanceProperty = type.GetProperty(nameof(AvatarConfiguration.Instance),
-						                                              BindingFlags.Static | BindingFlags.Public);
+																	  BindingFlags.Static | BindingFlags.Public);
 
 						var hasInstanceProperty = staticInstanceProperty != null && staticInstanceProperty.CanRead;
-						if (!hasInstanceProperty) continue;
+						if (!hasInstanceProperty)
+							continue;
 
 						MethodInfo staticExistenceGenericMethod = null;
 						var searchType = type.BaseType;
@@ -128,21 +130,23 @@ namespace Beamable.Editor.Config
 		{
 			ConfigModuleDescriptors = GetConfigDescriptors();
 			BaseModuleConfigurationObject.PrepareInstances(ConfigModuleDescriptors.Select(c => c.ConfigType).ToArray())
-			                             .Then(
-				                             _ =>
-				                             {
-					                             ConfigObjects = ConfigModuleDescriptors
-					                                             .Where(d => forceCreation || d.Exists)
-					                                             .Select(d => d.Getter())
-					                                             .ToArray();
-					                             ConfigModules = ConfigObjects
-					                                             .Select(
-						                                             c => c.GetType().Name.Replace("Configuration", ""))
-					                                             .ToArray();
-				                             });
+										 .Then(
+											 _ =>
+											 {
+												 ConfigObjects = ConfigModuleDescriptors
+																 .Where(d => forceCreation || d.Exists)
+																 .Select(d => d.Getter())
+																 .ToArray();
+												 ConfigModules = ConfigObjects
+																 .Select(
+																	 c => c.GetType().Name.Replace("Configuration", ""))
+																 .ToArray();
+											 });
 		}
 
-		public void Destroy() { }
+		public void Destroy()
+		{
+		}
 
 		public static List<ConfigOption> GenerateOptions()
 		{
@@ -164,9 +168,10 @@ namespace Beamable.Editor.Config
 			{
 				var likelyUnityInternal =
 					iter.name.StartsWith("m_"); // TODO: Temporary solution to not showing Unity internal properties
-				if (likelyUnityInternal) continue;
+				if (likelyUnityInternal)
+					continue;
 
-				var parameters = new[] {iter, null};
+				var parameters = new[] { iter, null };
 				var fieldObj = (FieldInfo)getFieldMethod.Invoke(null, parameters);
 				var help = iter.tooltip;
 				if (fieldObj != null)

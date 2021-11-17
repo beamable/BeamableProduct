@@ -1,7 +1,7 @@
-﻿using System;
-using System.Linq;
-using Beamable.Editor.UI.Components;
+﻿using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
+using System;
+using System.Linq;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
@@ -25,7 +25,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void OnMessagesUpdated()
 		{
 			var message = _model.Logs.Messages.LastOrDefault()?.Message;
-			if (string.IsNullOrWhiteSpace(message)) return;
+			if (string.IsNullOrWhiteSpace(message))
+				return;
 
 			if (DetectSuccess(message))
 			{

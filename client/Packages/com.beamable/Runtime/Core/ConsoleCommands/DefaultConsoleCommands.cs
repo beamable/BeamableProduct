@@ -1,6 +1,6 @@
+using Beamable.Service;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Beamable.Service;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -12,7 +12,9 @@ namespace Beamable.ConsoleCommands
 		private BeamableConsole Console => ServiceManager.Resolve<BeamableConsole>();
 
 		[Preserve]
-		public DefaultConsoleCommands() { }
+		public DefaultConsoleCommands()
+		{
+		}
 
 		[BeamableConsoleCommand("ECHO", "Repeat message to console.", "ECHO <message>")]
 		private string Echo(params string[] args)
@@ -21,8 +23,8 @@ namespace Beamable.ConsoleCommands
 		}
 
 		[BeamableConsoleCommand(nameof(Where),
-		                        "Find where a specific console command was registered from, if it was registered with a BeamableConsoleCommand attribute",
-		                        "WHERE <command>")]
+								"Find where a specific console command was registered from, if it was registered with a BeamableConsoleCommand attribute",
+								"WHERE <command>")]
 		private string Where(params string[] args)
 		{
 			if (args.Length == 0)

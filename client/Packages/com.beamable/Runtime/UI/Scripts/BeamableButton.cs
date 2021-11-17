@@ -1,8 +1,8 @@
+using Beamable;
+using Beamable.UnityEngineClone.UI.Extensions;
 using TMPro;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using Beamable.UnityEngineClone.UI.Extensions;
-using Beamable;
 
 namespace Beamable.UI.Scripts
 {

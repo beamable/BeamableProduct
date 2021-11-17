@@ -7,7 +7,9 @@ namespace Beamable.Api.Mail
 	public class MailSubscription : PlatformSubscribable<MailQueryResponse, MailQueryResponse>
 	{
 		public MailSubscription(IPlatformService platform, IBeamableRequester requester) : base(
-			platform, requester, AbsMailApi.SERVICE_NAME) { }
+			platform, requester, AbsMailApi.SERVICE_NAME)
+		{
+		}
 
 		protected override void OnRefresh(MailQueryResponse data)
 		{
@@ -28,7 +30,7 @@ namespace Beamable.Api.Mail
 	/// 
 	/// </summary>
 	public class MailService : AbsMailApi,
-	                           IHasPlatformSubscriber<MailSubscription, MailQueryResponse, MailQueryResponse>
+							   IHasPlatformSubscriber<MailSubscription, MailQueryResponse, MailQueryResponse>
 	{
 		public MailSubscription Subscribable
 		{

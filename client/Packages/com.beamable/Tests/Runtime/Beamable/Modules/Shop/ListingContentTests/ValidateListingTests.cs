@@ -12,7 +12,7 @@ namespace Beamable.Tests.Modules.Shop.ListingContentTests
 		public void StoreWithNoTitles_YieldsNoValidationErrors()
 		{
 			var listing = ScriptableObject.CreateInstance<ListingContent>();
-			listing.offer = new ListingOffer {titles = new OptionalNonBlankStringList {HasValue = false}};
+			listing.offer = new ListingOffer { titles = new OptionalNonBlankStringList { HasValue = false } };
 
 			var anyErrors = listing.HasValidationErrors(new ValidationContext(), out var _);
 			Assert.IsFalse(anyErrors);
@@ -25,7 +25,7 @@ namespace Beamable.Tests.Modules.Shop.ListingContentTests
 			listing.activePeriod = new OptionalPeriod
 			{
 				HasValue = false,
-				Value = new ActivePeriod {end = new OptionalString {HasValue = false}, start = "not-a-date"}
+				Value = new ActivePeriod { end = new OptionalString { HasValue = false }, start = "not-a-date" }
 			};
 
 			var anyErrors = listing.HasValidationErrors(new ValidationContext(), out var _);
@@ -39,7 +39,7 @@ namespace Beamable.Tests.Modules.Shop.ListingContentTests
 			listing.activePeriod = new OptionalPeriod
 			{
 				HasValue = true,
-				Value = new ActivePeriod {end = new OptionalString {HasValue = false}, start = "not-a-date"}
+				Value = new ActivePeriod { end = new OptionalString { HasValue = false }, start = "not-a-date" }
 			};
 
 			var anyErrors = listing.HasValidationErrors(new ValidationContext(), out var errors);

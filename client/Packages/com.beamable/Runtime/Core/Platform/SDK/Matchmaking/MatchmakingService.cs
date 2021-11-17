@@ -1,12 +1,12 @@
-using System;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Beamable.Serialization.SmallerJSON;
+using System;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Beamable.Experimental.Api.Matchmaking
@@ -43,9 +43,9 @@ namespace Beamable.Experimental.Api.Matchmaking
 		/// <param name="timeoutHandler"></param>
 		/// <returns>A `MatchmakingHandle` which will be updated via push notifications.</returns>
 		public Promise<MatchmakingHandle> StartMatchmaking(ContentRef<SimGameType> gameTypeRef,
-		                                                   Action<MatchmakingHandle> updateHandler = null,
-		                                                   Action<MatchmakingHandle> readyHandler = null,
-		                                                   Action<MatchmakingHandle> timeoutHandler = null)
+														   Action<MatchmakingHandle> updateHandler = null,
+														   Action<MatchmakingHandle> readyHandler = null,
+														   Action<MatchmakingHandle> timeoutHandler = null)
 		{
 			return gameTypeRef.Resolve().FlatMap(gameType =>
 			{
@@ -75,20 +75,20 @@ namespace Beamable.Experimental.Api.Matchmaking
 		/// <param name="maxWait"></param>
 		/// <returns>A `MatchmakingHandle` which will be updated via push notifications.</returns>
 		public Promise<MatchmakingHandle> StartMatchmaking(string gameType,
-		                                                   Action<MatchmakingHandle> updateHandler = null,
-		                                                   Action<MatchmakingHandle> readyHandler = null,
-		                                                   Action<MatchmakingHandle> timeoutHandler = null,
-		                                                   TimeSpan? maxWait = null)
+														   Action<MatchmakingHandle> updateHandler = null,
+														   Action<MatchmakingHandle> readyHandler = null,
+														   Action<MatchmakingHandle> timeoutHandler = null,
+														   TimeSpan? maxWait = null)
 		{
 			return MakeMatchmakingRequest(gameType).Map(tickets => new MatchmakingHandle(
-				                                            this,
-				                                            _platform,
-				                                            tickets.tickets,
-				                                            maxWait,
-				                                            updateHandler,
-				                                            readyHandler,
-				                                            timeoutHandler
-			                                            ));
+															this,
+															_platform,
+															tickets.tickets,
+															maxWait,
+															updateHandler,
+															readyHandler,
+															timeoutHandler
+														));
 		}
 
 		/// <summary>
@@ -101,7 +101,7 @@ namespace Beamable.Experimental.Api.Matchmaking
 			return _requester.Request<TicketReservationResponse>(
 				Method.POST,
 				$"/matchmaking/tickets",
-				new TicketReservationRequest(new[] {_platform.User.id.ToString()}, gameTypes)
+				new TicketReservationRequest(new[] { _platform.User.id.ToString() }, gameTypes)
 			);
 		}
 
@@ -181,12 +181,12 @@ namespace Beamable.Experimental.Api.Matchmaking
 		private readonly MatchmakingService _service;
 
 		public MatchmakingHandle(MatchmakingService service,
-		                         PlatformService platform,
-		                         Ticket[] tickets,
-		                         TimeSpan? maxWait = null,
-		                         Action<MatchmakingHandle> onUpdate = null,
-		                         Action<MatchmakingHandle> onMatchReady = null,
-		                         Action<MatchmakingHandle> onMatchTimeout = null)
+								 PlatformService platform,
+								 Ticket[] tickets,
+								 TimeSpan? maxWait = null,
+								 Action<MatchmakingHandle> onUpdate = null,
+								 Action<MatchmakingHandle> onMatchReady = null,
+								 Action<MatchmakingHandle> onMatchTimeout = null)
 		{
 			OnUpdate = onUpdate;
 			OnMatchReady = onMatchReady;

@@ -1,8 +1,8 @@
+using Beamable.Common.Pooling;
+using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Threading;
-using Beamable.Common.Pooling;
-using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 

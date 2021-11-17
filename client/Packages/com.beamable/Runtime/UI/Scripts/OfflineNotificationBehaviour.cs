@@ -1,8 +1,8 @@
-﻿using UnityEngine;
+﻿using Beamable;
 using TMPro;
+using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using Beamable;
 
 public class OfflineNotificationBehaviour : MonoBehaviour
 {

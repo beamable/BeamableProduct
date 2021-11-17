@@ -1,8 +1,8 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using Beamable.Serialization.SmallerJSON;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.Api.Sessions
@@ -40,7 +40,9 @@ namespace Beamable.Api.Sessions
 			}
 		}
 
-		public virtual void AddCustomParameters(Dictionary<string, string> parameters, User user) { }
+		public virtual void AddCustomParameters(Dictionary<string, string> parameters, User user)
+		{
+		}
 
 		public virtual Promise<Unit> AddCustomParametersAsync(Dictionary<string, string> customParameters, User user)
 		{

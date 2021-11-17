@@ -1,8 +1,8 @@
-using System.Collections;
-using System.Collections.Generic;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Inventory;
 using NUnit.Framework;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine.TestTools;
 
 namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
@@ -14,9 +14,9 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
 		{
 			// mock out a piece of content.
 			var contentName = "test";
-			_content.Provide(new InventoryTestItem {name = "junk", Foo = 1}.SetContentName("junk"));
-			_content.Provide(new InventoryTestItem {name = contentName, Foo = 123}.SetContentName(contentName));
-			_content.Provide(new InventoryTestItem {name = "rando", Foo = 2}.SetContentName("rando"));
+			_content.Provide(new InventoryTestItem { name = "junk", Foo = 1 }.SetContentName("junk"));
+			_content.Provide(new InventoryTestItem { name = contentName, Foo = 123 }.SetContentName(contentName));
+			_content.Provide(new InventoryTestItem { name = "rando", Foo = 2 }.SetContentName("rando"));
 
 			// Mock out a network request that get an item. This semi defines the web API itself.
 			_requester
@@ -62,14 +62,14 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
 
 			// test our sdk code, and verify that the response is what we expect.
 			yield return _service
-			             .GetItems<InventoryTestItem>(
-				             new InventoryTestItemRef($"items.inventoryTestItem.{contentName}")).Then(view =>
-			             {
-				             Assert.AreEqual(1, view.Count);
-				             Assert.AreEqual(contentName, view[0].ItemContent.name);
-				             Assert.AreEqual("bar1", view[0].Properties["foo"]);
-				             Assert.AreEqual(123, view[0].ItemContent.Foo);
-			             }).AsYield();
+						 .GetItems<InventoryTestItem>(
+							 new InventoryTestItemRef($"items.inventoryTestItem.{contentName}")).Then(view =>
+						 {
+							 Assert.AreEqual(1, view.Count);
+							 Assert.AreEqual(contentName, view[0].ItemContent.name);
+							 Assert.AreEqual("bar1", view[0].Properties["foo"]);
+							 Assert.AreEqual(123, view[0].ItemContent.Foo);
+						 }).AsYield();
 		}
 
 		[UnityTest]
@@ -77,7 +77,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
 		{
 			// mock out a piece of content.
 			var contentName = "test";
-			var content = new InventoryTestItem {Foo = 123};
+			var content = new InventoryTestItem { Foo = 123 };
 			content.SetContentName(contentName);
 			_content.Provide(content);
 
@@ -141,7 +141,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
 		{
 			// mock out a piece of content.
 			var contentName = "test";
-			var content = new InventoryTestItem {Foo = 123};
+			var content = new InventoryTestItem { Foo = 123 };
 			content.SetContentName(contentName);
 			_content.Provide(content);
 

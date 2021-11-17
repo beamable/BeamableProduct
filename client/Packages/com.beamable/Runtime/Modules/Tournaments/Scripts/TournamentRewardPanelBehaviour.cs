@@ -1,7 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using Beamable.Platform.SDK;
 using Beamable.UI.Scripts;
-using Beamable.Platform.SDK;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.Tournaments
@@ -19,10 +19,14 @@ namespace Beamable.Tournaments
 		private int _currentPage = 0;
 
 		// Start is called before the first frame update
-		void Start() { }
+		void Start()
+		{
+		}
 
 		// Update is called once per frame
-		void Update() { }
+		void Update()
+		{
+		}
 
 		public void HandleClick()
 		{

@@ -16,7 +16,9 @@ namespace Beamable.Experimental.Common.Calendars
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class CalendarLink : ContentLink<CalendarContent> { }
+	public class CalendarLink : ContentLink<CalendarContent>
+	{
+	}
 
 	/// <summary>
 	/// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
@@ -32,7 +34,9 @@ namespace Beamable.Experimental.Common.Calendars
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class CalendarRef : CalendarRef<CalendarContent> { }
+	public class CalendarRef : CalendarRef<CalendarContent>
+	{
+	}
 
 	/// <summary>
 	/// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
@@ -48,5 +52,7 @@ namespace Beamable.Experimental.Common.Calendars
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class CalendarRef<TContent> : ContentRef<TContent> where TContent : CalendarContent, new() { }
+	public class CalendarRef<TContent> : ContentRef<TContent> where TContent : CalendarContent, new()
+	{
+	}
 }

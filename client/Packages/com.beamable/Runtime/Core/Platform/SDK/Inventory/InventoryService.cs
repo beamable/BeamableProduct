@@ -82,7 +82,7 @@ namespace Beamable.Api.Inventory
 	///
 	/// </summary>
 	public class InventoryService : AbsInventoryApi,
-	                                IHasPlatformSubscriber<InventorySubscription, InventoryResponse, InventoryView>
+									IHasPlatformSubscriber<InventorySubscription, InventoryResponse, InventoryView>
 	{
 		public InventorySubscription Subscribable
 		{

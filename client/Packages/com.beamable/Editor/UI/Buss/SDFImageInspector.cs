@@ -1,5 +1,5 @@
-﻿using System.Linq;
-using Beamable.UI.SDF;
+﻿using Beamable.UI.SDF;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,7 +16,7 @@ namespace Beamable.Editor.UI.SDF
 			EditorGUILayout.PropertyField(serializedObject.FindProperty("m_Color"), new GUIContent("Color"));
 			EditorGUILayout.PropertyField(serializedObject.FindProperty("threshold"), new GUIContent("Threshold"));
 			EditorGUILayout.PropertyField(serializedObject.FindProperty("backgroundTexture"),
-			                              new GUIContent("Background"));
+										  new GUIContent("Background"));
 			EditorGUILayout.PropertyField(serializedObject.FindProperty("meshFrame"), new GUIContent("Frame"));
 			EditorGUILayout.PropertyField(serializedObject.FindProperty("m_Type"), new GUIContent("Type"));
 			EditorGUILayout.PropertyField(serializedObject.FindProperty("rounding"), new GUIContent("Round Corners"));
@@ -24,17 +24,17 @@ namespace Beamable.Editor.UI.SDF
 			EditorGUILayout.Space();
 			EditorGUILayout.LabelField("Outline");
 			EditorGUILayout.PropertyField(serializedObject.FindProperty("outlineWidth"),
-			                              new GUIContent("Outline Width"));
+										  new GUIContent("Outline Width"));
 			EditorGUILayout.PropertyField(serializedObject.FindProperty("outlineColor"),
-			                              new GUIContent("Outline Color"));
+										  new GUIContent("Outline Color"));
 
 			EditorGUILayout.Space();
 			EditorGUILayout.LabelField("Shadow");
 			EditorGUILayout.PropertyField(serializedObject.FindProperty("shadowColor"), new GUIContent("Shadow Color"));
 			EditorGUILayout.PropertyField(serializedObject.FindProperty("shadowThreshold"),
-			                              new GUIContent("Shadow Threshold"));
+										  new GUIContent("Shadow Threshold"));
 			EditorGUILayout.PropertyField(serializedObject.FindProperty("shadowOffset"),
-			                              new GUIContent("Shadow Offset"));
+										  new GUIContent("Shadow Offset"));
 
 			if (EditorGUI.EndChangeCheck())
 			{

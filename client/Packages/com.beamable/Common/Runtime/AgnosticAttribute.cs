@@ -55,8 +55,8 @@ namespace Beamable
 		}
 
 		public AgnosticAttribute(Type[] supportTypes = null,
-		                         [CallerFilePath] string sourcePath = "",
-		                         [CallerMemberName] string memberName = "")
+								 [CallerFilePath] string sourcePath = "",
+								 [CallerMemberName] string memberName = "")
 		{
 			SupportTypes = supportTypes;
 			SourcePath = sourcePath;

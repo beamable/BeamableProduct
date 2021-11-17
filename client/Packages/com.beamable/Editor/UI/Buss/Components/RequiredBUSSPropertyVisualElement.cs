@@ -1,10 +1,10 @@
+using Beamable.Editor.UI.Buss.Extensions;
+using Beamable.Editor.UI.Buss.Model;
+using Beamable.UI.Buss.Properties;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Beamable.Editor.UI.Buss.Extensions;
-using Beamable.Editor.UI.Buss.Model;
-using Beamable.UI.Buss.Properties;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
@@ -21,7 +21,7 @@ namespace Beamable.Editor.UI.Buss.Components
 	public class RequiredBUSSPropertyVisualElement : BeamableVisualElement
 	{
 		private const string COMMON = BeamableComponentsConstants.UI_PACKAGE_PATH +
-		                              "/Buss/Components/requiredBUSSPropertyVisualElement";
+									  "/Buss/Components/requiredBUSSPropertyVisualElement";
 
 		private readonly OptionalPropertyFieldWrapper _propertyField;
 		private readonly StyleRuleBundle _model;
@@ -85,7 +85,7 @@ namespace Beamable.Editor.UI.Buss.Components
 
 				var method = _model.Style.Scope.GetType().GetMethod(nameof(VariableScope.TryResolve));
 				var genMethod = method.MakeGenericMethod(_propertyField.PropertyType);
-				var parameters = new object[] {variableName, null};
+				var parameters = new object[] { variableName, null };
 
 				var styleObject = _model.Behaviour?.ComputeStyleObject() ?? _model.Style;
 				var result = (bool)genMethod.Invoke(styleObject.Scope, parameters);

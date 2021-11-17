@@ -1,16 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Beamable.Api;
+﻿using Beamable.Api;
+using Beamable.Avatars;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
-using Beamable.Avatars;
-using Beamable.Theme;
-using Beamable.Theme.Palettes;
-using Beamable.Stats;
-using Beamable.UI.Scripts;
 using Beamable.Platform.SDK;
 using Beamable.Platform.SDK.Auth;
+using Beamable.Stats;
+using Beamable.Theme;
+using Beamable.Theme.Palettes;
+using Beamable.UI.Scripts;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -51,7 +51,9 @@ namespace Beamable.AccountManagement
 		}
 
 		// Update is called once per frame
-		void Update() { }
+		void Update()
+		{
+		}
 
 		public void Refresh()
 		{
@@ -63,7 +65,8 @@ namespace Beamable.AccountManagement
 
 		public void ResetPlaceholder()
 		{
-			if (string.Equals(AliasPlaceholder.text, PlaceholderMessage)) return;
+			if (string.Equals(AliasPlaceholder.text, PlaceholderMessage))
+				return;
 			AliasPlaceholder.text = PlaceholderMessage;
 			AliasPlaceholder.color =
 				ThemeConfiguration.Instance.Style.ColorPalette.Find(PlaceholderDefaultColor).Color;

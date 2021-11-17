@@ -1,8 +1,8 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.Toolbox.UI.Components;
 using Beamable.Editor.UI.Buss;
+using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -20,7 +20,9 @@ namespace Beamable.Editor.Toolbox.Components
 		private VisualElement _mainContainer;
 		public event Action<float> OnHeightChanged;
 
-		public new class UxmlFactory : UxmlFactory<ToolboxAnnouncementListVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<ToolboxAnnouncementListVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{

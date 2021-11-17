@@ -1,6 +1,6 @@
-﻿using System.Threading.Tasks;
-using Beamable.Server.Editor;
+﻿using Beamable.Server.Editor;
 using Beamable.Server.Editor.ManagerClient;
+using System.Threading.Tasks;
 
 namespace Beamable.Editor.UI.Model
 {

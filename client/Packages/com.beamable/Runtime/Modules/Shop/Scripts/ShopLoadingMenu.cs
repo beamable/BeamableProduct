@@ -1,6 +1,8 @@
-﻿using System.Collections;
+﻿using Beamable.UI.Scripts;
+using System.Collections;
 using System.Collections.Generic;
-using Beamable.UI.Scripts;
 using UnityEngine;
 
-public class ShopLoadingMenu : MenuBase { }
+public class ShopLoadingMenu : MenuBase
+{
+}

@@ -1,12 +1,12 @@
-using Beamable.Editor.Content.Models;
 using Beamable.Editor.Content;
-using UnityEngine;
+using Beamable.Editor.Content.Models;
+using Beamable.Editor.Toolbox.Models;
+using Beamable.Editor.Toolbox.UI.Components;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Beamable.Editor.Toolbox.Models;
-using Beamable.Editor.Toolbox.UI.Components;
 using UnityEditor;
+using UnityEngine;
 using Object = UnityEngine.Object;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -20,13 +20,16 @@ namespace Beamable.Editor.Toolbox.Components
 {
 	public class ToolboxFeatureVisualElement : ToolboxComponent
 	{
-		public new class UxmlFactory : UxmlFactory<ToolboxContentListVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<ToolboxContentListVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
 			{
-				name = "custom-text", defaultValue = "nada"
+				name = "custom-text",
+				defaultValue = "nada"
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -55,7 +58,8 @@ namespace Beamable.Editor.Toolbox.Components
 		public override void Refresh()
 		{
 			base.Refresh();
-			if (WidgetModel == null) return;
+			if (WidgetModel == null)
+				return;
 
 			Label titlelabel = Root.Q<Label>("title");
 			titlelabel.text = WidgetModel.Name;
@@ -72,7 +76,8 @@ namespace Beamable.Editor.Toolbox.Components
 
 			Root.RegisterCallback<MouseOverEvent, VisualElement>((evt, widgetNode) =>
 			{
-				if (isButtonDown) return;
+				if (isButtonDown)
+					return;
 				var imageMask = widgetNode.Q("imageMask");
 				imageMask.RemoveFromClassList("imageMaskDefault");
 				imageMask.RemoveFromClassList("imageMaskSelected");
@@ -104,7 +109,8 @@ namespace Beamable.Editor.Toolbox.Components
 
 			void Check(int id)
 			{
-				if (id != checkNumber) return;
+				if (id != checkNumber)
+					return;
 				if (EditorApplication.timeSinceStartup > lastUpdatedTime + .2)
 				{
 					// Clean up, phase.
@@ -149,7 +155,7 @@ namespace Beamable.Editor.Toolbox.Components
 
 			DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
 
-			DragAndDrop.objectReferences = new Object[] {WidgetModel.Prefab};
+			DragAndDrop.objectReferences = new Object[] { WidgetModel.Prefab };
 
 			DragAndDrop.StartDrag($"Create {WidgetModel.Name}");
 		}

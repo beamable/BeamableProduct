@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-using Beamable.Common.Api.Inventory;
+﻿using Beamable.Common.Api.Inventory;
 using Modules.Inventory.Prototype.GenericComponents;
 using Modules.Inventory.Prototype.LanguageLocalization;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -138,7 +138,7 @@ namespace Modules.Inventory.Prototype
 					.GetComponent<ItemPresenter>();
 
 				newPresenter.Setup(data.Content.icon, LocalizationHelper.GetItemName(data.Content.Id),
-				                   data.Items.Count);
+								   data.Items.Count);
 				_spawnedItems.Add(newPresenter);
 			}
 		}

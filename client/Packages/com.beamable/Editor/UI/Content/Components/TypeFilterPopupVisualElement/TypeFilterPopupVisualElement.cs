@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Beamable.Editor.Content.Models;
+﻿using Beamable.Editor.Content.Models;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
+using System.Collections.Generic;
+using System.Linq;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -43,7 +43,8 @@ namespace Beamable.Editor.Content.Components
 			listRoot.Clear();
 			foreach (var typeDescriptor in allTypes)
 			{
-				if (!string.IsNullOrEmpty(filter) && !typeDescriptor.TypeName.ToLower().Contains(filter)) continue;
+				if (!string.IsNullOrEmpty(filter) && !typeDescriptor.TypeName.ToLower().Contains(filter))
+					continue;
 
 				var shouldBeChecked = Model.Filter?.TypeConstraints?.Contains(typeDescriptor.ContentType) ?? false;
 				var row1 = new FilterRowVisualElement();

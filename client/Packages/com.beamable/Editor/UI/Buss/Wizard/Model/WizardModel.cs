@@ -1,9 +1,9 @@
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Editor.UI.Buss.Extensions;
+using Beamable.Editor.UI.Buss.Model;
 using Beamable.UI.Buss;
 using Beamable.UI.Buss.Properties;
-using Beamable.Editor.UI.Buss.Model;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -59,7 +59,7 @@ namespace Beamable.Editor.UI.Buss.Wizard.Model
 			var rootRule = sheet.Rules.FirstOrDefault(x => x.Selector.ToString().Equals(":root"));
 			if (rootRule == null)
 			{
-				rootRule = new SelectorWithStyle {Selector = SelectorParser.Parse(":root"), Style = new StyleObject()};
+				rootRule = new SelectorWithStyle { Selector = SelectorParser.Parse(":root"), Style = new StyleObject() };
 				sheet.Rules.Add(rootRule);
 			}
 

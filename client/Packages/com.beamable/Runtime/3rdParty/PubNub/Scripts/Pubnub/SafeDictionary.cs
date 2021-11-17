@@ -148,13 +148,13 @@ namespace PubNubMessaging.Core
 		}
 
 		public void CopyTo(KeyValuePair<TKey, TValue>[] array,
-		                   int
-			                   arrayIndex)
+						   int
+							   arrayIndex)
 		{
 			lock (syncRoot)
 			{
 				((ICollection<KeyValuePair<TKey, TValue>>)d).CopyTo(array,
-				                                                    arrayIndex);
+																	arrayIndex);
 			}
 		}
 

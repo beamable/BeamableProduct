@@ -73,7 +73,8 @@ namespace Beamable.Pooling
 		{
 			// Skip preallocation if the pool is not empty
 			// This tolerates force-restart
-			if (free.First != null) return;
+			if (free.First != null)
+				return;
 
 			for (int i = 0; i < count; ++i)
 			{
@@ -97,7 +98,9 @@ namespace Beamable.Pooling
 		}
 
 		// overload to do cleanup
-		public virtual void OnRecycle() { }
+		public virtual void OnRecycle()
+		{
+		}
 	}
 
 #if UNITY_EDITOR

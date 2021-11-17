@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Beamable.UI.Scripts;
+using System;
 using System.Collections.Generic;
-using Beamable.UI.Scripts;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -32,7 +32,7 @@ namespace Beamable.UI.Layouts
 	[CreateAssetMenu(
 		fileName = "Media Query",
 		menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE + "/" +
-		           "Media Query",
+				   "Media Query",
 		order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 	public class MediaQueryObject : ScriptableObject
 
@@ -160,7 +160,7 @@ namespace Beamable.UI.Layouts
 
 			System.Reflection.MethodInfo GetSizeOfMainGameView =
 				T.GetMethod("GetSizeOfMainGameView",
-				            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+							System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
 
 			System.Object Res = GetSizeOfMainGameView.Invoke(null, null);
 

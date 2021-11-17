@@ -1,11 +1,11 @@
+using Beamable.Common;
+using Beamable.Editor.Config;
+using Beamable.Editor.Modules.Account;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using Beamable.Common;
-using Beamable.Editor.Config;
-using Beamable.Editor.Modules.Account;
 using UnityEditor;
 using UnityEngine;
 
@@ -23,7 +23,10 @@ namespace Beamable.Editor.Environment
 		{
 			return new ExceptionData
 			{
-				Exists = true, Message = ex.Message, Type = ex.GetType().Name, StackTrace = ex.StackTrace
+				Exists = true,
+				Message = ex.Message,
+				Type = ex.GetType().Name,
+				StackTrace = ex.StackTrace
 			};
 		}
 	}

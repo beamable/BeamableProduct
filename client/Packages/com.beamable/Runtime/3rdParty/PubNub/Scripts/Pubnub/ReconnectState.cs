@@ -82,7 +82,9 @@ namespace PubNubMessaging.Core
 		private static volatile StoredRequestState instance;
 		private static readonly object syncRoot = new Object();
 
-		private StoredRequestState() { }
+		private StoredRequestState()
+		{
+		}
 
 		public static StoredRequestState Instance
 		{
@@ -109,7 +111,7 @@ namespace PubNubMessaging.Core
 			object reqState = requestState as object;
 			requestStates.AddOrUpdate(intKey, reqState, (oldData, newData) => reqState);
 			LoggingMethod.WriteToLog(string.Format("DateTime {0}, SetStoredRequestState {1}",
-			                                       DateTime.Now.ToString(), key.ToString()), LoggingMethod.LevelInfo);
+												   DateTime.Now.ToString(), key.ToString()), LoggingMethod.LevelInfo);
 		}
 
 		public object GetStoredRequestState(CurrentRequestType aKey)
@@ -120,8 +122,8 @@ namespace PubNubMessaging.Core
 				if (requestStates.ContainsKey(intKey))
 				{
 					LoggingMethod.WriteToLog(string.Format("DateTime {0}, GetStoredRequestState {1}",
-					                                       DateTime.Now.ToString(), aKey.ToString()),
-					                         LoggingMethod.LevelInfo);
+														   DateTime.Now.ToString(), aKey.ToString()),
+											 LoggingMethod.LevelInfo);
 					return requestStates[intKey];
 				}
 
@@ -132,8 +134,8 @@ namespace PubNubMessaging.Core
 			else
 			{
 				LoggingMethod.WriteToLog(string.Format("DateTime {0}, GetStoredRequestState doesnt contain key {1}",
-				                                       DateTime.Now.ToString(), aKey.ToString()),
-				                         LoggingMethod.LevelInfo);
+													   DateTime.Now.ToString(), aKey.ToString()),
+										 LoggingMethod.LevelInfo);
 			}
 
 			return null;

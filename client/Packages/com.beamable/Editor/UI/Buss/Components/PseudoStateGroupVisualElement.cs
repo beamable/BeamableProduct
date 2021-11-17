@@ -1,6 +1,6 @@
-using System;
-using Beamable.UI.Buss;
 using Beamable.Editor.UI.Buss.Model;
+using Beamable.UI.Buss;
+using System;
 using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -14,13 +14,13 @@ namespace Beamable.Editor.UI.Buss.Components
 	public class PseudoStateGroupVisualElement : BeamableVisualElement
 	{
 		public const string COMMON = BeamableComponentsConstants.UI_PACKAGE_PATH +
-		                             "/Buss/Components/pseudoStateGroupVisualElement";
+									 "/Buss/Components/pseudoStateGroupVisualElement";
 
 		public Action OnStateChanged;
 
 		private StyleBehaviour _model;
 
-		private string[] _states = new[] {"hover", "active"};
+		private string[] _states = new[] { "hover", "active" };
 
 		private VisualElement _container;
 

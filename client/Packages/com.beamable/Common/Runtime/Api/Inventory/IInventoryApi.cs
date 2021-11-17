@@ -1,7 +1,7 @@
+using Beamable.Common.Inventory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Common.Inventory;
 
 namespace Beamable.Common.Api.Inventory
 {
@@ -90,30 +90,30 @@ namespace Beamable.Common.Api.Inventory
 		Promise<long> GetCurrency(CurrencyRef currency);
 
 		Promise<Unit> SetCurrencyProperties(string currencyId,
-		                                    List<CurrencyProperty> properties,
-		                                    string transaction = null);
+											List<CurrencyProperty> properties,
+											string transaction = null);
 
 		Promise<Unit> SetCurrencyProperties(CurrencyRef currency,
-		                                    List<CurrencyProperty> properties,
-		                                    string transaction = null);
+											List<CurrencyProperty> properties,
+											string transaction = null);
 
 		Promise<Unit> AddItem(ItemRef itemRef, Dictionary<string, string> properties = null, string transaction = null);
 
 		Promise<Unit> AddItem(string contentId,
-		                      Dictionary<string, string> properties = null,
-		                      string transaction = null);
+							  Dictionary<string, string> properties = null,
+							  string transaction = null);
 
 		Promise<Unit> DeleteItem(string contentId, long itemId, string transaction = null);
 
 		Promise<Unit> UpdateItem(ItemRef itemRef,
-		                         long itemId,
-		                         Dictionary<string, string> properties,
-		                         string transaction = null);
+								 long itemId,
+								 Dictionary<string, string> properties,
+								 string transaction = null);
 
 		Promise<Unit> UpdateItem(string contentId,
-		                         long itemId,
-		                         Dictionary<string, string> properties,
-		                         string transaction = null);
+								 long itemId,
+								 Dictionary<string, string> properties,
+								 string transaction = null);
 
 		Promise<Unit> Update(Action<InventoryUpdateBuilder> action, string transaction = null);
 		Promise<Unit> Update(InventoryUpdateBuilder builder, string transaction = null);
@@ -248,7 +248,7 @@ namespace Beamable.Common.Api.Inventory
 			notifyScopes.UnionWith(items.Select(item => item.id));
 			notifyScopes.UnionWith(Scopes);
 			notifyScopes.Add(""); // always notify the root scope
-			// TODO: if a scope is in notifySCopes, 'a.b.c', we should also make sure 'a.b', and 'a' are also in the set, so that item parent/child relationships are respected.
+								  // TODO: if a scope is in notifySCopes, 'a.b.c', we should also make sure 'a.b', and 'a' are also in the set, so that item parent/child relationships are respected.
 
 			return ResolveAllScopes(notifyScopes);
 		}

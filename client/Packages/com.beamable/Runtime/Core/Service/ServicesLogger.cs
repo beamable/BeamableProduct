@@ -1,5 +1,5 @@
-using System.Diagnostics;
 using Beamable.Spew;
+using System.Diagnostics;
 
 namespace Beamable.Service
 {

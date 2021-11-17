@@ -1,8 +1,8 @@
-using System.Collections.Generic;
 using Beamable.Common.Content;
 using Beamable.Editor.Content;
 using Beamable.Editor.Content.Models;
 using NUnit.Framework;
+using System.Collections.Generic;
 
 namespace Beamable.Editor.Tests.Content.UI.Models.ContentDataModelTests
 {

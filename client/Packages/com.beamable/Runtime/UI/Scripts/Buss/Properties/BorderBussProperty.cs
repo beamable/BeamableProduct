@@ -36,7 +36,7 @@ namespace Beamable.UI.Buss.Properties
 
 		public BorderBussProperty Clone()
 		{
-			return new BorderBussProperty {Enabled = Enabled, Width = Width, Radius = Radius, Color = Color};
+			return new BorderBussProperty { Enabled = Enabled, Width = Width, Radius = Radius, Color = Color };
 		}
 	}
 }

@@ -1,11 +1,11 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Editor.Content.Models;
 using Beamable.Editor.UI.Buss;
-using UnityEditor.IMGUI.Controls;
-using UnityEngine;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.IMGUI.Controls;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -47,7 +47,7 @@ namespace Beamable.Editor.Content.Components
 			_mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
 
 			_headerVisualElement = Root.Q<HeaderVisualElement>("headerVisualElement");
-			_headerVisualElement.Headers = new[] {ContentManagerConstants.ContentTypeViewHeaderText};
+			_headerVisualElement.Headers = new[] { ContentManagerConstants.ContentTypeViewHeaderText };
 			_headerVisualElement.Refresh();
 
 			//Create IMGUI, The VisualElement Wrapper, and add to the parent
@@ -56,12 +56,12 @@ namespace Beamable.Editor.Content.Components
 			_imguiContainer = CreateTreeViewIMGUIContainer(_treeViewIMGUI);
 			_mainVisualElement.Add(_imguiContainer);
 			_imguiContainer.RegisterCallback<MouseDownEvent>(IMGUIContainer_OnMouseDownEvent,
-			                                                 TrickleDown.NoTrickleDown);
+															 TrickleDown.NoTrickleDown);
 
 			VisualElement lowerBackgroundVisualElement = new VisualElement();
 			lowerBackgroundVisualElement.name = "lowerBackgroundVisualElement";
 			lowerBackgroundVisualElement.RegisterCallback<MouseDownEvent>(LowerBackgroundVisualElement_OnMouseDownEvent,
-			                                                              TrickleDown.NoTrickleDown);
+																		  TrickleDown.NoTrickleDown);
 			_mainVisualElement.Add(lowerBackgroundVisualElement);
 
 			Model.OnSelectedContentTypesChanged += Model_OnSelectedContentTypeTreeViewItemsChanged;
@@ -79,7 +79,7 @@ namespace Beamable.Editor.Content.Components
 
 			TreeViewIMGUI treeViewIMGUI = new TreeViewIMGUI(_treeViewState);
 			treeViewIMGUI.SelectionType = ContentManagerConstants.ContentTypeViewSelectionType;
-			treeViewIMGUI.TreeViewItemRoot = new TreeViewItem {id = 0, depth = -1, displayName = "Root"};
+			treeViewIMGUI.TreeViewItemRoot = new TreeViewItem { id = 0, depth = -1, displayName = "Root" };
 
 			//
 			treeViewIMGUI.OnSelectionChanged += TreeViewIMGUI_OnSelectionChanged;
@@ -94,8 +94,8 @@ namespace Beamable.Editor.Content.Components
 			{
 				// Tree view - Re-render every frame
 				Rect rect = GUILayoutUtility.GetRect(200, 200,
-				                                     treeViewIMGUI.GetCalculatedHeight(),
-				                                     treeViewIMGUI.GetCalculatedHeight());
+													 treeViewIMGUI.GetCalculatedHeight(),
+													 treeViewIMGUI.GetCalculatedHeight());
 
 				_treeViewIMGUI.OnGUI(rect);
 			});
@@ -134,7 +134,9 @@ namespace Beamable.Editor.Content.Components
 		/// <summary>
 		/// Capture when the background (Not an item) is clicked
 		/// </summary>
-		private void IMGUIContainer_OnMouseDownEvent(MouseDownEvent evt) { }
+		private void IMGUIContainer_OnMouseDownEvent(MouseDownEvent evt)
+		{
+		}
 
 		private void LowerBackgroundVisualElement_OnMouseDownEvent(MouseDownEvent evt)
 		{
@@ -164,7 +166,7 @@ namespace Beamable.Editor.Content.Components
 			}
 
 			string actionTitle = string.Format(ContentManagerConstants.CreateNewPopupAddButtonEnabledText,
-			                                   selectedContentTypeTreeViewItem.TypeDescriptor.ContentType.Name);
+											   selectedContentTypeTreeViewItem.TypeDescriptor.ContentType.Name);
 
 			evt.menu.BeamableAppendAction(actionTitle, (pos) =>
 			{

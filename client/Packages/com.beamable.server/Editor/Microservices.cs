@@ -1,20 +1,20 @@
+using Beamable.Common;
+using Beamable.Editor;
+using Beamable.Editor.UI.Model;
+using Beamable.Platform.SDK;
+using Beamable.Server;
+using Beamable.Server.Editor.CodeGen;
+using Beamable.Server.Editor.DockerCommands;
+using Beamable.Server.Editor.ManagerClient;
+using Beamable.Server.Editor.UI.Components;
+using Beamable.Server.Editor.Uploader;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
-using Beamable.Server;
 using System.Threading.Tasks;
-using Beamable.Common;
-using Beamable.Server.Editor.CodeGen;
-using Beamable.Server.Editor.ManagerClient;
-using Beamable.Server.Editor.DockerCommands;
-using Beamable.Server.Editor.UI.Components;
-using Beamable.Server.Editor.Uploader;
-using Beamable.Platform.SDK;
-using Beamable.Editor;
-using Beamable.Editor.UI.Model;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
@@ -41,7 +41,8 @@ namespace Beamable.Server.Editor
 		{
 			get
 			{
-				if (_allDescriptors != null) return _allDescriptors;
+				if (_allDescriptors != null)
+					return _allDescriptors;
 				RefreshDescriptors();
 				return _allDescriptors;
 			}
@@ -51,7 +52,8 @@ namespace Beamable.Server.Editor
 		{
 			get
 			{
-				if (_descriptors != null) return _descriptors;
+				if (_descriptors != null)
+					return _descriptors;
 				RefreshDescriptors();
 				return _descriptors;
 			}
@@ -63,7 +65,8 @@ namespace Beamable.Server.Editor
 		{
 			get
 			{
-				if (_storageDescriptors != null) return _storageDescriptors;
+				if (_storageDescriptors != null)
+					return _storageDescriptors;
 				RefreshDescriptors();
 				return _storageDescriptors;
 			}
@@ -86,7 +89,8 @@ namespace Beamable.Server.Editor
 				where TAttr : Attribute
 			{
 				attr = type.GetCustomAttribute<TAttr>(false);
-				if (!type.IsClass || attr == null) return false;
+				if (!type.IsClass || attr == null)
+					return false;
 
 				if (!typeof(TObj).IsAssignableFrom(type))
 				{
@@ -208,8 +212,8 @@ namespace Beamable.Server.Editor
 					{
 						var configEntry =
 							MicroserviceConfiguration.Instance
-							                         .GetEntry(
-								                         name); //config.FirstOrDefault(s => s.ServiceName == name);
+													 .GetEntry(
+														 name); //config.FirstOrDefault(s => s.ServiceName == name);
 						return new ManifestEntryModel
 						{
 							Comment = "",
@@ -257,7 +261,8 @@ namespace Beamable.Server.Editor
 		[DidReloadScripts]
 		static void AutomaticMachine()
 		{
-			if (DockerCommand.DockerNotInstalled) return;
+			if (DockerCommand.DockerNotInstalled)
+				return;
 			try
 			{
 				foreach (var d in Descriptors)
@@ -320,19 +325,21 @@ namespace Beamable.Server.Editor
 		{
 			var storageCheck = new CheckImageReturnableCommand(storage);
 			var isStorageRunning = await storageCheck.Start(null);
-			if (!isStorageRunning) return false;
+			if (!isStorageRunning)
+				return false;
 
 			var dumpCommand = new MongoDumpCommand(storage);
 			var dumpResult = await dumpCommand.Start(null);
-			if (!dumpResult) return false;
+			if (!dumpResult)
+				return false;
 
 			var cpCommand = new DockerCopyCommand(storage, "/beamable/.", destPath);
 			return await cpCommand.Start(null);
 		}
 
 		public static async Promise<bool> RestoreMongoSnapshot(StorageObjectDescriptor storage,
-		                                                       string srcPath,
-		                                                       bool hardReset = true)
+															   string srcPath,
+															   bool hardReset = true)
 		{
 			if (hardReset)
 			{
@@ -351,7 +358,8 @@ namespace Beamable.Server.Editor
 			var cpCommand =
 				new DockerCopyCommand(storage, "/beamable", srcPath, DockerCopyCommand.CopyType.HOST_TO_CONTAINER);
 			var cpResult = await cpCommand.Start(null);
-			if (!cpResult) return false;
+			if (!cpResult)
+				return false;
 
 			var restoreCommand = new MongoRestoreCommand(storage);
 			return await restoreCommand.Start(null);
@@ -483,10 +491,11 @@ namespace Beamable.Server.Editor
 		public static event Action<ManifestModel, int> onAfterDeploy;
 
 		public static async System.Threading.Tasks.Task Deploy(ManifestModel model,
-		                                                       CommandRunnerWindow context,
-		                                                       Action<IDescriptor> onServiceDeployed = null)
+															   CommandRunnerWindow context,
+															   Action<IDescriptor> onServiceDeployed = null)
 		{
-			if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
+			if (Descriptors.Count == 0)
+				return; // don't do anything if there are no descriptors.
 
 			var descriptorsCount = Descriptors.Count;
 			onBeforeDeploy?.Invoke(model, descriptorsCount);
@@ -528,7 +537,7 @@ namespace Beamable.Server.Editor
 				var serviceDependencies = new List<ServiceDependency>();
 				foreach (var storage in descriptor.GetStorageReferences())
 				{
-					serviceDependencies.Add(new ServiceDependency {id = storage.Name, type = "storage"});
+					serviceDependencies.Add(new ServiceDependency { id = storage.Name, type = "storage" });
 				}
 
 				entryModel.Dependencies = serviceDependencies;
@@ -536,18 +545,18 @@ namespace Beamable.Server.Editor
 				Debug.Log($"Uploading container service=[{descriptor.Name}]");
 
 				await uploader.UploadContainer(descriptor, () =>
-				                               {
-					                               Debug.Log(string.Format(
-						                                         BeamableLogConstants.UploadedContainerMessage,
-						                                         descriptor.Name));
-					                               onServiceDeployed?.Invoke(descriptor);
-				                               },
-				                               () =>
-				                               {
-					                               Debug.LogError(
-						                               string.Format(BeamableLogConstants.CantUploadContainerMessage,
-						                                             descriptor.Name));
-				                               }, imageId);
+											   {
+												   Debug.Log(string.Format(
+																 BeamableLogConstants.UploadedContainerMessage,
+																 descriptor.Name));
+												   onServiceDeployed?.Invoke(descriptor);
+											   },
+											   () =>
+											   {
+												   Debug.LogError(
+													   string.Format(BeamableLogConstants.CantUploadContainerMessage,
+																	 descriptor.Name));
+											   }, imageId);
 			}
 
 			Debug.Log($"Deploying manifest");
@@ -578,7 +587,7 @@ namespace Beamable.Server.Editor
 			}).ToList();
 
 			await client.Deploy(
-				new ServiceManifest {comments = model.Comment, manifest = manifest, storages = storages});
+				new ServiceManifest { comments = model.Comment, manifest = manifest, storages = storages });
 
 			onAfterDeploy?.Invoke(model, descriptorsCount);
 

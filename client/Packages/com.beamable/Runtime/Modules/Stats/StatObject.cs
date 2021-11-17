@@ -1,9 +1,9 @@
+using Beamable.Common;
+using Beamable.Platform.SDK;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using Beamable.Common;
-using Beamable.Platform.SDK;
 using UnityEngine;
 
 namespace Beamable.Stats
@@ -41,7 +41,7 @@ namespace Beamable.Stats
 	[CreateAssetMenu(
 		fileName = "Stat",
 		menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE + "/" +
-		           "Stat",
+				   "Stat",
 		order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 	[System.Serializable]
 	public class StatObject : ScriptableObject
@@ -68,7 +68,7 @@ namespace Beamable.Stats
 				if (ProfanityChecked)
 				{
 					profanityPromise = de.Experimental.ChatService.ProfanityAssert(value)
-					                     .Map(empty => PromiseBase.Unit);
+										 .Map(empty => PromiseBase.Unit);
 				}
 				else
 				{
@@ -78,9 +78,9 @@ namespace Beamable.Stats
 				return profanityPromise.FlatMap(unit =>
 				{
 					var writeOperation =
-						de.StatsService.SetStats(Access.GetString(), new Dictionary<string, string> {{StatKey, value}});
+						de.StatsService.SetStats(Access.GetString(), new Dictionary<string, string> { { StatKey, value } });
 
-					var changeEvent = new StatObjectChangeEvent {UserId = de.User.id, NewValue = value, Stat = this};
+					var changeEvent = new StatObjectChangeEvent { UserId = de.User.id, NewValue = value, Stat = this };
 
 					writeOperation.Then(_ =>
 					{

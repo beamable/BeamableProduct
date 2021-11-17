@@ -1,15 +1,15 @@
-﻿using System;
+﻿using Beamable.Coroutines;
+using Beamable.Platform.SDK;
+using Beamable.Platform.SDK.Auth;
+using Beamable.Signals;
+using Beamable.UI;
+using Beamable.UI.Scripts;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Security.Authentication;
-using Beamable.Signals;
-using Beamable.Coroutines;
-using Beamable.Platform.SDK;
-using Beamable.Platform.SDK.Auth;
-using Beamable.UI;
-using Beamable.UI.Scripts;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -18,7 +18,9 @@ namespace Beamable.Announcements
 
 {
 	[System.Serializable]
-	public class ToggleEvent : DeSignal<bool> { }
+	public class ToggleEvent : DeSignal<bool>
+	{
+	}
 
 	[HelpURL(BeamableConstants.URL_FEATURE_ANNOUNCEMENTS_FLOW)]
 	public class AnnouncementSignals : DeSignalTower
@@ -48,7 +50,8 @@ namespace Beamable.Announcements
 		public void ToggleAnnouncement(bool desiredState)
 
 		{
-			if (desiredState == ToggleState) return;
+			if (desiredState == ToggleState)
+				return;
 
 			_toggleState = desiredState;
 

@@ -66,8 +66,8 @@ namespace Beamable.Platform.SDK.Auth
 		/// <param name="callback">Callback to be invoked when the result is complete</param>
 		/// <param name="errback">Callback to call if authentication failed</param>
 		public static void HandleResponse(string message,
-		                                  Action<string> callback,
-		                                  Action<GoogleInvalidTokenException> errback)
+										  Action<string> callback,
+										  Action<GoogleInvalidTokenException> errback)
 		{
 			if (message.StartsWith("CANCELED"))
 			{

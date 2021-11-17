@@ -18,10 +18,12 @@ namespace Beamable.Theme.Palettes
 	{
 		public override ImageStyle DefaultValue()
 		{
-			return new ImageStyle {Name = "default", Enabled = true};
+			return new ImageStyle { Name = "default", Enabled = true };
 		}
 	}
 
 	[System.Serializable]
-	public class ImageBinding : ImagePalette.PaletteBinding { }
+	public class ImageBinding : ImagePalette.PaletteBinding
+	{
+	}
 }

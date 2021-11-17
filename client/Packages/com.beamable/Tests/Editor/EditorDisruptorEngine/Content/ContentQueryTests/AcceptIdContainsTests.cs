@@ -10,7 +10,7 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentQueryTests
 		[Test]
 		public void Accepts()
 		{
-			var query = new ContentQuery {IdContainsConstraint = "foo"};
+			var query = new ContentQuery { IdContainsConstraint = "foo" };
 			var content = new ExampleContent();
 			content.SetIdAndVersion("example.containfoosomewhere", "");
 
@@ -20,7 +20,7 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentQueryTests
 		[Test]
 		public void HandlesNullContent_NoConstraint()
 		{
-			var query = new ContentQuery {IdContainsConstraint = null};
+			var query = new ContentQuery { IdContainsConstraint = null };
 			ExampleContent content = null;
 			Assert.IsTrue(query.AcceptIdContains(content));
 		}
@@ -28,7 +28,7 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentQueryTests
 		[Test]
 		public void HandlesNullContent_IdConstraint()
 		{
-			var query = new ContentQuery {IdContainsConstraint = "a"};
+			var query = new ContentQuery { IdContainsConstraint = "a" };
 			ExampleContent content = null;
 			Assert.IsFalse(query.AcceptIdContains(content));
 		}
@@ -36,7 +36,7 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentQueryTests
 		[Test]
 		public void Rejects()
 		{
-			var query = new ContentQuery {IdContainsConstraint = "bar"};
+			var query = new ContentQuery { IdContainsConstraint = "bar" };
 			var content = new ExampleContent();
 			content.SetIdAndVersion("example.containfoosomewhere", "");
 
@@ -46,7 +46,7 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentQueryTests
 		[Test]
 		public void RejectsOnTypeParts()
 		{
-			var query = new ContentQuery {IdContainsConstraint = "exa"};
+			var query = new ContentQuery { IdContainsConstraint = "exa" };
 			var content = new ExampleContent();
 			content.SetIdAndVersion("example.containfoosomewhere", "");
 

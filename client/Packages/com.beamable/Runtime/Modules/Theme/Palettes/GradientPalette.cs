@@ -1,5 +1,5 @@
-using UnityEngine;
 using Beamable.UnityEngineClone.UI.Extensions;
+using UnityEngine;
 using GradientMode = Beamable.UnityEngineClone.UI.Extensions.GradientMode;
 
 namespace Beamable.Theme.Palettes
@@ -11,7 +11,10 @@ namespace Beamable.Theme.Palettes
 		{
 			return new GradientStyle
 			{
-				Name = "default", Enabled = true, Start = new ColorBinding(), Finish = new ColorBinding()
+				Name = "default",
+				Enabled = true,
+				Start = new ColorBinding(),
+				Finish = new ColorBinding()
 			};
 		}
 	}
@@ -49,5 +52,7 @@ namespace Beamable.Theme.Palettes
 	}
 
 	[System.Serializable]
-	public class GradientBinding : GradientPalette.PaletteBinding { }
+	public class GradientBinding : GradientPalette.PaletteBinding
+	{
+	}
 }

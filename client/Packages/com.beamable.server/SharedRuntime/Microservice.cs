@@ -1,6 +1,6 @@
+using Beamable.Common.Api;
 using System;
 using System.ComponentModel.Design;
-using Beamable.Common.Api;
 
 namespace Beamable.Server
 {
@@ -82,7 +82,7 @@ namespace Beamable.Server
 		}
 
 		public void ProvideDefaultServices(IServiceProvider provider,
-		                                   Func<RequestContext, IServiceProvider> scopeGenerator)
+										   Func<RequestContext, IServiceProvider> scopeGenerator)
 		{
 			Context = provider.GetService<RequestContext>();
 			Requester = provider.GetService<IBeamableRequester>();
@@ -104,7 +104,7 @@ namespace Beamable.Server
 
 			var requester = provider.GetService<IBeamableRequester>();
 			var services = provider.GetService<IBeamableServices>();
-			return new RequestHandlerData {Context = newCtx, Requester = requester, Services = services};
+			return new RequestHandlerData { Context = newCtx, Requester = requester, Services = services };
 		}
 	}
 }

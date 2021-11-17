@@ -1,10 +1,10 @@
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Buss.Extensions;
 using Beamable.Editor.UI.Buss.Model;
 using Beamable.UI.Buss;
 using Beamable.UI.Buss.Properties;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -42,7 +42,8 @@ namespace Beamable.Editor.UI.Buss
 	{
 		public static void Init(StyleSheetObject target)
 		{
-			if (target == null) return;
+			if (target == null)
+				return;
 
 			var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
 
@@ -113,7 +114,7 @@ namespace Beamable.Editor.UI.Buss
 
 			foreach (var rule in sheet.Rules)
 			{
-				var styleBundle = new StyleBundle {Rule = rule, Sheet = sheet};
+				var styleBundle = new StyleBundle { Rule = rule, Sheet = sheet };
 				var ruleBundle = new StyleRuleBundle(styleBundle, null);
 				var elem = new StyleRuleVisualElement(ruleBundle);
 				elem.OnDeleteRequested += () =>

@@ -14,7 +14,7 @@ namespace Beamable.Avatars
 	[CreateAssetMenu(
 		fileName = "Avatar Configuration",
 		menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
-		           "Avatar Configuration",
+				   "Avatar Configuration",
 		order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 	public class AvatarConfiguration : ModuleConfigurationObject
 	{

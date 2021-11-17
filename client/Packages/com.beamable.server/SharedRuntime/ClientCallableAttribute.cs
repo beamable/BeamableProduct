@@ -96,7 +96,9 @@ namespace Beamable.Server
 	public class AdminOnlyCallableAttribute : ClientCallableAttribute
 	{
 		public AdminOnlyCallableAttribute(string pathnameOverride = "") : base(pathnameOverride,
-		                                                                       requiredScopes: new[] {"*"}) { }
+																			   requiredScopes: new[] { "*" })
+		{
+		}
 	}
 
 	[System.AttributeUsage(System.AttributeTargets.Method)]

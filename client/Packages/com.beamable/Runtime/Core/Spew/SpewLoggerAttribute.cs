@@ -8,5 +8,7 @@ namespace Beamable.Spew
 	/// </summary>
 	[Conditional("UNITY_EDITOR")]
 	[AttributeUsage(AttributeTargets.Class)]
-	public sealed class SpewLoggerAttribute : Attribute { }
+	public sealed class SpewLoggerAttribute : Attribute
+	{
+	}
 }

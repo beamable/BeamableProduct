@@ -1,6 +1,6 @@
-using System.Collections.Generic;
 using Beamable.Common.Api.Inventory;
 using NUnit.Framework;
+using System.Collections.Generic;
 
 namespace Beamable.Platform.Tests.Inventory.InventoryResponseTests
 {
@@ -9,7 +9,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryResponseTests
 		[Test]
 		public void EmptyView_PlusEmptyResponse_YieldsEmptyView()
 		{
-			var res = new InventoryResponse {scope = "items"};
+			var res = new InventoryResponse { scope = "items" };
 			var view = new InventoryView();
 			res.MergeView(view);
 
@@ -23,7 +23,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryResponseTests
 			var res = new InventoryResponse
 			{
 				scope = "currency",
-				currencies = new List<Currency> {new Currency {amount = 1, id = "currency.gems"}}
+				currencies = new List<Currency> { new Currency { amount = 1, id = "currency.gems" } }
 			};
 			var view = new InventoryView();
 			res.MergeView(view);
@@ -38,9 +38,9 @@ namespace Beamable.Platform.Tests.Inventory.InventoryResponseTests
 			var res = new InventoryResponse
 			{
 				scope = "currency.gems",
-				currencies = new List<Currency> {new Currency {amount = 1, id = "currency.gems"}}
+				currencies = new List<Currency> { new Currency { amount = 1, id = "currency.gems" } }
 			};
-			var view = new InventoryView {currencies = new Dictionary<string, long> {{"currency.tunas", 1}}};
+			var view = new InventoryView { currencies = new Dictionary<string, long> { { "currency.tunas", 1 } } };
 			res.MergeView(view);
 
 			Assert.AreEqual(2, view.currencies.Count);
@@ -56,9 +56,9 @@ namespace Beamable.Platform.Tests.Inventory.InventoryResponseTests
 			var res = new InventoryResponse
 			{
 				scope = "currency.gems",
-				currencies = new List<Currency> {new Currency {amount = 3, id = "currency.gems"}}
+				currencies = new List<Currency> { new Currency { amount = 3, id = "currency.gems" } }
 			};
-			var view = new InventoryView {currencies = new Dictionary<string, long> {{"currency.gems", 2}}};
+			var view = new InventoryView { currencies = new Dictionary<string, long> { { "currency.gems", 2 } } };
 			res.MergeView(view);
 
 			Assert.AreEqual(1, view.currencies.Count);
@@ -106,7 +106,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryResponseTests
 				scope = "currency",
 				// empty currency set...
 			};
-			var view = new InventoryView {currencies = new Dictionary<string, long> {{"currency.gems", 1}}};
+			var view = new InventoryView { currencies = new Dictionary<string, long> { { "currency.gems", 1 } } };
 			res.MergeView(view);
 
 			Assert.AreEqual(0, view.currencies.Count);
@@ -121,7 +121,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryResponseTests
 				scope = "currency.blah",
 				// empty currency set...
 			};
-			var view = new InventoryView {currencies = new Dictionary<string, long> {{"currency.gems", 1}}};
+			var view = new InventoryView { currencies = new Dictionary<string, long> { { "currency.gems", 1 } } };
 			res.MergeView(view);
 
 			Assert.AreEqual(1, view.currencies.Count);
@@ -137,7 +137,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryResponseTests
 				scope = "currency.gems.b",
 				// empty currency set...
 			};
-			var view = new InventoryView {currencies = new Dictionary<string, long> {{"currency.gems.a", 1}}};
+			var view = new InventoryView { currencies = new Dictionary<string, long> { { "currency.gems.a", 1 } } };
 			res.MergeView(view);
 
 			Assert.AreEqual(1, view.currencies.Count);
@@ -153,7 +153,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryResponseTests
 				scope = "currency",
 				// empty currency set...
 			};
-			var view = new InventoryView {currencies = new Dictionary<string, long> {{"currency.gems.a", 1}}};
+			var view = new InventoryView { currencies = new Dictionary<string, long> { { "currency.gems.a", 1 } } };
 			res.MergeView(view);
 
 			Assert.AreEqual(0, view.currencies.Count);
@@ -171,7 +171,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryResponseTests
 			};
 			var view = new InventoryView
 			{
-				currencies = new Dictionary<string, long> {{"currency.gems.a", 1}, {"currency.gems", 1},}
+				currencies = new Dictionary<string, long> { { "currency.gems.a", 1 }, { "currency.gems", 1 }, }
 			};
 			res.MergeView(view);
 
@@ -188,7 +188,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryResponseTests
 				scope = "currency.gems2",
 				// empty currency set...
 			};
-			var view = new InventoryView {currencies = new Dictionary<string, long> {{"currency.gems", 1}}};
+			var view = new InventoryView { currencies = new Dictionary<string, long> { { "currency.gems", 1 } } };
 			res.MergeView(view);
 
 			Assert.AreEqual(1, view.currencies.Count);

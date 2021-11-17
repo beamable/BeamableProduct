@@ -1,9 +1,9 @@
+using Beamable.Common.Leaderboards;
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Web;
-using Beamable.Common.Leaderboards;
-using Beamable.Serialization.SmallerJSON;
 
 namespace Beamable.Common.Api.Leaderboards
 {
@@ -30,8 +30,8 @@ namespace Beamable.Common.Api.Leaderboards
 			new Dictionary<string, LeaderboardAssignmentInfo>();
 
 		public LeaderboardApi(IBeamableRequester requester,
-		                      IUserContext userContext,
-		                      UserDataCache<RankEntry>.FactoryFunction factoryFunction)
+							  IUserContext userContext,
+							  UserDataCache<RankEntry>.FactoryFunction factoryFunction)
 		{
 			_factoryFunction = factoryFunction;
 			Requester = requester;
@@ -88,17 +88,17 @@ namespace Beamable.Common.Api.Leaderboards
 		}
 
 		public Promise<LeaderBoardView> GetBoard(LeaderboardRef leaderBoard,
-		                                         int @from,
-		                                         int max,
-		                                         long? focus = null,
-		                                         long? outlier = null) =>
+												 int @from,
+												 int max,
+												 long? focus = null,
+												 long? outlier = null) =>
 			GetBoard(leaderBoard.Id, from, max, focus, outlier);
 
 		public Promise<LeaderBoardView> GetBoard(string boardId,
-		                                         int @from,
-		                                         int max,
-		                                         long? focus = null,
-		                                         long? outlier = null)
+												 int @from,
+												 int max,
+												 long? focus = null,
+												 long? outlier = null)
 		{
 			if (string.IsNullOrEmpty(boardId))
 			{
@@ -125,22 +125,22 @@ namespace Beamable.Common.Api.Leaderboards
 
 		/// <inheritdoc/>
 		public Promise<LeaderBoardView> GetAssignedBoard(string boardId,
-		                                                 int @from,
-		                                                 int max,
-		                                                 long? focus = null,
-		                                                 long? outlier = null)
+														 int @from,
+														 int max,
+														 long? focus = null,
+														 long? outlier = null)
 		{
 			return ResolveAssignment(boardId, UserContext.UserId).FlatMap(assignment =>
-				                                                              GetBoard(assignment.leaderboardId, @from,
-					                                                              max, focus, outlier));
+																			  GetBoard(assignment.leaderboardId, @from,
+																				  max, focus, outlier));
 		}
 
 		/// <inheritdoc/>
 		public Promise<LeaderBoardView> GetAssignedBoard(LeaderboardRef leaderBoard,
-		                                                 int @from,
-		                                                 int max,
-		                                                 long? focus = null,
-		                                                 long? outlier = null) =>
+														 int @from,
+														 int max,
+														 long? focus = null,
+														 long? outlier = null) =>
 			GetAssignedBoard(leaderBoard.Id, @from, max, focus, outlier);
 
 		public Promise<LeaderBoardView> GetFriendRanks(LeaderboardRef leaderboard) => GetFriendRanks(leaderboard.Id);
@@ -173,8 +173,8 @@ namespace Beamable.Common.Api.Leaderboards
 		}
 
 		public Promise<EmptyResponse> SetScore(LeaderboardRef leaderBoard,
-		                                       double score,
-		                                       IDictionary<string, object> stats = null) =>
+											   double score,
+											   IDictionary<string, object> stats = null) =>
 			SetScore(leaderBoard.Id, score, stats);
 
 		public Promise<EmptyResponse> SetScore(string boardId, double score, IDictionary<string, object> stats = null)
@@ -183,25 +183,25 @@ namespace Beamable.Common.Api.Leaderboards
 		}
 
 		public Promise<EmptyResponse> IncrementScore(LeaderboardRef leaderBoard,
-		                                             double score,
-		                                             IDictionary<string, object> stats = null) =>
+													 double score,
+													 IDictionary<string, object> stats = null) =>
 			IncrementScore(leaderBoard.Id, score, stats);
 
 		public Promise<EmptyResponse> IncrementScore(string boardId,
-		                                             double score,
-		                                             IDictionary<string, object> stats = null)
+													 double score,
+													 IDictionary<string, object> stats = null)
 		{
 			return Update(boardId, score, true, stats);
 		}
 
 		protected Promise<EmptyResponse> Update(string boardId,
-		                                        double score,
-		                                        bool increment = false,
-		                                        IDictionary<string, object> stats = null)
+												double score,
+												bool increment = false,
+												IDictionary<string, object> stats = null)
 		{
 			return ResolveAssignment(boardId, UserContext.UserId).FlatMap(assignment =>
 			{
-				var req = new ArrayDict {{"score", score}, {"id", UserContext.UserId}, {"increment", increment}};
+				var req = new ArrayDict { { "score", score }, { "id", UserContext.UserId }, { "increment", increment } };
 				if (stats != null)
 				{
 					req["stats"] = new ArrayDict(stats);

@@ -1,6 +1,6 @@
+using Beamable.Common;
 using System;
 using System.Collections.Generic;
-using Beamable.Common;
 using UnityEditor;
 
 namespace Beamable.Server.Editor.DockerCommands
@@ -54,11 +54,13 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		private void ForceContextUpdateOnFinish()
 		{
-			if (_context == null) return;
+			if (_context == null)
+				return;
 
 			void Check()
 			{
-				if (!_finished) return;
+				if (!_finished)
+					return;
 				try
 				{
 					if (_context != null)

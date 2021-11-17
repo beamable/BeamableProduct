@@ -1,10 +1,10 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Content;
 using Beamable.Editor.Content;
 using Beamable.Platform.SDK;
+using System;
+using System.Collections.Generic;
 using Manifest = Beamable.Editor.Content.Manifest;
 
 namespace Beamable.Editor.Tests.Beamable.Content.ContentIOTests

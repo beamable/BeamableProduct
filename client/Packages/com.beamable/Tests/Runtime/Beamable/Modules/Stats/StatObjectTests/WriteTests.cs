@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Beamable.Api;
 using Beamable.Api.Stats;
 using Beamable.Common.Api;
@@ -6,6 +5,7 @@ using Beamable.Common.Api.Stats;
 using Beamable.Stats;
 using Beamable.Tests.Runtime;
 using NUnit.Framework;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.Tests.Modules.Stats.StatObjectTests
@@ -16,7 +16,7 @@ namespace Beamable.Tests.Modules.Stats.StatObjectTests
 		{
 			base.OnSetupBeamable();
 			MockApi.StatsService = new StatsService(MockPlatform, MockRequester,
-			                                        UnityUserDataCache<Dictionary<string, string>>.CreateInstance);
+													UnityUserDataCache<Dictionary<string, string>>.CreateInstance);
 		}
 
 		[Test]
@@ -33,8 +33,8 @@ namespace Beamable.Tests.Modules.Stats.StatObjectTests
 			};
 
 			MockRequester.MockRequest<EmptyResponse>(Method.POST, null)
-			             .WithURIPrefix("/object/stats")
-			             .WithBodyMatch<StatUpdates>(_ => true);
+						 .WithURIPrefix("/object/stats")
+						 .WithBodyMatch<StatUpdates>(_ => true);
 
 			so.Write("a");
 

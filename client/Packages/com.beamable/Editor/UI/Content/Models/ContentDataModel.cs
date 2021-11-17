@@ -1,11 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Editor.Content.Extensions;
 using Beamable.Editor.Content.SaveRequest;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
@@ -152,7 +152,7 @@ namespace Beamable.Editor.Content.Models
 			}
 
 			if (contentItemDescriptor.Status == ContentModificationStatus.LOCAL_ONLY &&
-			    SelectedContents.Contains(contentItemDescriptor))
+				SelectedContents.Contains(contentItemDescriptor))
 			{
 				SelectedContents.Remove(contentItemDescriptor);
 			}
@@ -303,8 +303,10 @@ namespace Beamable.Editor.Content.Models
 		{
 			foreach (var content in _content)
 			{
-				if (Filter != null && !Filter.Accepts(content)) continue;
-				if (SystemFilter != null && !SystemFilter.Accepts(content)) continue;
+				if (Filter != null && !Filter.Accepts(content))
+					continue;
+				if (SystemFilter != null && !SystemFilter.Accepts(content))
+					continue;
 
 				yield return content;
 			}
@@ -318,8 +320,10 @@ namespace Beamable.Editor.Content.Models
 			_filteredContent.Clear();
 			foreach (var content in _content)
 			{
-				if (Filter != null && !Filter.Accepts(content)) continue;
-				if (SystemFilter != null && !SystemFilter.Accepts(content)) continue;
+				if (Filter != null && !Filter.Accepts(content))
+					continue;
+				if (SystemFilter != null && !SystemFilter.Accepts(content))
+					continue;
 
 				_filteredContent.Add(content);
 			}
@@ -418,7 +422,7 @@ namespace Beamable.Editor.Content.Models
 				var selection = viewItems.FirstOrDefault()?.TypeDescriptor?.ContentType;
 				SystemFilter.TypeConstraints = selection == null
 					? new HashSet<Type>()
-					: new HashSet<Type> {selection};
+					: new HashSet<Type> { selection };
 
 				RefreshFilteredContents();
 				OnFilterChanged?.Invoke();
@@ -569,7 +573,7 @@ namespace Beamable.Editor.Content.Models
 				{
 					// if the content is not local, then we can assume its identity...
 					if (existingItem.LocalStatus == HostStatus.NOT_AVAILABLE &&
-					    oldItem.ServerStatus == HostStatus.NOT_AVAILABLE)
+						oldItem.ServerStatus == HostStatus.NOT_AVAILABLE)
 					{
 						oldItem.EnrichWithLocalData(content, nextAssetPath);
 						oldItem.EnrichWithServerData(existingItem.GetServerData());
@@ -580,7 +584,7 @@ namespace Beamable.Editor.Content.Models
 						OnContentDeleted?.Invoke(existingItem);
 					}
 					else if (existingItem.LocalStatus == HostStatus.NOT_AVAILABLE &&
-					         oldItem.ServerStatus == HostStatus.AVAILABLE)
+							 oldItem.ServerStatus == HostStatus.AVAILABLE)
 					{
 						var oldServerData = oldItem.GetServerData();
 						var existingServerData = existingItem.GetServerData();
@@ -612,7 +616,7 @@ namespace Beamable.Editor.Content.Models
 						AccumulateContentTags(oldItem);
 
 						if (_lastServerManifest != null &&
-						    _lastServerManifest.TryGetValue(content.Id, out var manifestEntry))
+							_lastServerManifest.TryGetValue(content.Id, out var manifestEntry))
 						{
 							oldItem.EnrichWithServerData(manifestEntry);
 						}

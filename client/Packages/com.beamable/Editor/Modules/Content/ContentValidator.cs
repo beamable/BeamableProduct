@@ -1,12 +1,12 @@
+using Beamable.Common;
+using Beamable.Common.Content.Validation;
+using Beamable.Editor.Content.Models;
+using Beamable.Platform.SDK;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Beamable.Common;
-using Beamable.Common.Content.Validation;
-using Beamable.Editor.Content.Models;
-using Beamable.Platform.SDK;
 using UnityEditor;
 using Debug = UnityEngine.Debug;
 
@@ -24,10 +24,10 @@ namespace Beamable.Editor.Content
 		}
 
 		public Promise<List<ContentExceptionCollection>> Validate(IValidationContext ctx,
-		                                                          int allContentCount,
-		                                                          IEnumerable<ContentItemDescriptor> allContent,
-		                                                          HandleContentProgress progressHandler = null,
-		                                                          HandleValidationErrors errorHandler = null)
+																  int allContentCount,
+																  IEnumerable<ContentItemDescriptor> allContent,
+																  HandleContentProgress progressHandler = null,
+																  HandleValidationErrors errorHandler = null)
 		{
 			var promise = new Promise<List<ContentExceptionCollection>>();
 			Task.Run(() =>

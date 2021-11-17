@@ -1,10 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Common;
 using Beamable.Editor.Realms;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -99,7 +99,8 @@ namespace Beamable.Editor.UI.Components
 		private void SetList(IEnumerable<ISearchableElement> elements, VisualElement listRoot, string filter = null)
 		{
 			listRoot.Clear();
-			if (elements == null) return;
+			if (elements == null)
+				return;
 
 			elements = elements.Where(r => r.IsAvailable()).OrderBy(r => r.GetOrder());
 			foreach (var singleElement in elements)

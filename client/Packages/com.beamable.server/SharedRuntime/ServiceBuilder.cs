@@ -41,8 +41,8 @@ namespace Beamable.Server
 		///  - If it is read-only, you can access fields here without any fear.
 		/// </summary>
 		[Obsolete("There's currently an issue with this implementation. It'll be fixed in the future.\n" +
-		          "For now, manually create an instance of T and use the AddSingleton<T>(ServiceFactory<T>) overload to " +
-		          "register a factory method that returns your manually created instance.")]
+				  "For now, manually create an instance of T and use the AddSingleton<T>(ServiceFactory<T>) overload to " +
+				  "register a factory method that returns your manually created instance.")]
 		void AddSingleton<T>();
 
 		/// <summary>
@@ -56,8 +56,8 @@ namespace Beamable.Server
 			where TImplementation : class, TService;
 
 		[Obsolete("There's currently an issue with this implementation. It'll be fixed in the future.\n" +
-		          "For now, manually create an instance of TImplementation and use the AddSingleton<T>(ServiceFactory<T>) overload to " +
-		          "register a factory method that returns your manually created instance.")]
+				  "For now, manually create an instance of TImplementation and use the AddSingleton<T>(ServiceFactory<T>) overload to " +
+				  "register a factory method that returns your manually created instance.")]
 		void AddSingleton<TService, TImplementation>()
 			where TService : class
 			where TImplementation : class, TService;

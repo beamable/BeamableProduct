@@ -1,10 +1,10 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using Beamable.Common.Inventory;
 using Beamable.Content;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -58,7 +58,7 @@ namespace Beamable.Common.Shop
 		public OptionalInt activeDurationSeconds;
 
 		[Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipDurationSeconds1 +
-		         ContentObject.TooltipActiveCooldown2)]
+				 ContentObject.TooltipActiveCooldown2)]
 		[MustBePositive]
 		public OptionalInt activeDurationCoolDownSeconds;
 
@@ -92,7 +92,9 @@ namespace Beamable.Common.Shop
 	}
 
 	[System.Serializable]
-	public class OptionalNonBlankStringList : Optional<NonBlankStringList> { }
+	public class OptionalNonBlankStringList : Optional<NonBlankStringList>
+	{
+	}
 
 	[System.Serializable]
 	public class NonBlankStringList : DisplayableList
@@ -218,7 +220,7 @@ namespace Beamable.Common.Shop
 	public class OfferRequirement
 	{
 		[Tooltip(ContentObject.TooltipSymbol1)]
-		[MustReferenceContent(AllowedTypes = new[] {typeof(ListingContent)})]
+		[MustReferenceContent(AllowedTypes = new[] { typeof(ListingContent) })]
 		public string offerSymbol;
 
 		[Tooltip(ContentObject.TooltipPurchase1)]
@@ -287,22 +289,32 @@ namespace Beamable.Common.Shop
 	{
 		public static OptionalColor From(Color color)
 		{
-			return new OptionalColor {HasValue = true, Value = color};
+			return new OptionalColor { HasValue = true, Value = color };
 		}
 	}
 
 	[System.Serializable]
-	public class OptionalPeriod : Optional<ActivePeriod> { }
+	public class OptionalPeriod : Optional<ActivePeriod>
+	{
+	}
 
 	[System.Serializable]
-	public class OptionalStats : Optional<List<StatRequirement>> { }
+	public class OptionalStats : Optional<List<StatRequirement>>
+	{
+	}
 
 	[System.Serializable]
-	public class OptionalOffers : Optional<List<OfferRequirement>> { }
+	public class OptionalOffers : Optional<List<OfferRequirement>>
+	{
+	}
 
 	[System.Serializable]
-	public class OptionalDict : Optional<ContentDictionary> { }
+	public class OptionalDict : Optional<ContentDictionary>
+	{
+	}
 
 	[System.Serializable]
-	public class OptionalCohort : Optional<List<CohortRequirement>> { }
+	public class OptionalCohort : Optional<List<CohortRequirement>>
+	{
+	}
 }

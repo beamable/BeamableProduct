@@ -1,7 +1,7 @@
+using Beamable.Theme.Palettes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Theme.Palettes;
 using UnityEngine;
 using Object = System.Object;
 

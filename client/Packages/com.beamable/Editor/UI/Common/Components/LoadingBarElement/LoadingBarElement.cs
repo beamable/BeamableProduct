@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Beamable.Editor.UI.Buss;
+using System;
 using System.Collections.Generic;
-using Beamable.Editor.UI.Buss;
 using UnityEditor;
 using UnityEditor.Experimental;
 using UnityEngine;
@@ -17,13 +17,16 @@ namespace Beamable.Editor.UI.Components
 {
 	public class LoadingBarElement : BeamableVisualElement, ILoadingBar
 	{
-		public new class UxmlFactory : UxmlFactory<LoadingBarElement, LoadingBarElement.UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<LoadingBarElement, LoadingBarElement.UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
 			{
-				name = "custom-text", defaultValue = "nada"
+				name = "custom-text",
+				defaultValue = "nada"
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -44,7 +47,9 @@ namespace Beamable.Editor.UI.Components
 		private static Texture _animationTexture;
 
 		public LoadingBarElement() : base(
-			$"{BeamableComponentsConstants.UI_PACKAGE_PATH}/Common/Components/{nameof(LoadingBarElement)}/{nameof(LoadingBarElement)}") { }
+			$"{BeamableComponentsConstants.UI_PACKAGE_PATH}/Common/Components/{nameof(LoadingBarElement)}/{nameof(LoadingBarElement)}")
+		{
+		}
 
 		private VisualElement _fillElement;
 		private Label _label;
@@ -62,7 +67,8 @@ namespace Beamable.Editor.UI.Components
 			get => _smallBar;
 			set
 			{
-				if (_smallBar == value) return;
+				if (_smallBar == value)
+					return;
 				_smallBar = value;
 				UpdateClasses();
 			}
@@ -100,7 +106,8 @@ namespace Beamable.Editor.UI.Components
 			get => _failed;
 			set
 			{
-				if (_failed == value) return;
+				if (_failed == value)
+					return;
 				_failed = value;
 				UpdateClasses();
 			}
@@ -127,7 +134,7 @@ namespace Beamable.Editor.UI.Components
 			_button = Root.Q<Button>("button");
 			if (_button == null)
 			{
-				_button = new Button {name = "button", text = "Confirm"};
+				_button = new Button { name = "button", text = "Confirm" };
 				_label.parent.Add(_button);
 				_button.BringToFront();
 			}
@@ -137,7 +144,7 @@ namespace Beamable.Editor.UI.Components
 			RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
 			UpdateClasses();
 
-			_animation = new IMGUIContainer(AnimationOnGUIHandler) {name = "animation"};
+			_animation = new IMGUIContainer(AnimationOnGUIHandler) { name = "animation" };
 			_fillElement.parent.Add(_animation);
 			_animation.PlaceInFront(_fillElement);
 			EditorApplication.update += Update;
@@ -178,7 +185,7 @@ namespace Beamable.Editor.UI.Components
 			var rect = EditorGUILayout.GetControlRect(false, layout.height);
 			var time = (float)((EditorApplication.timeSinceStartup * .7) % 1);
 			GUI.DrawTextureWithTexCoords(rect, _animationTexture,
-			                             new Rect(-time + _animationOffset, 0, 1.2f, 1));
+										 new Rect(-time + _animationOffset, 0, 1.2f, 1));
 		}
 
 		private void OnGeometryChanged(GeometryChangedEvent _)
@@ -192,9 +199,9 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void UpdateProgress(float progress,
-		                           string message = null,
-		                           bool failed = false,
-		                           bool hideOnFinish = false)
+								   string message = null,
+								   bool failed = false,
+								   bool hideOnFinish = false)
 		{
 			Progress = progress;
 			Message = message;
@@ -208,7 +215,8 @@ namespace Beamable.Editor.UI.Components
 
 		public void SetUpdater(LoadingBarUpdater updater)
 		{
-			if (updater == _updater) return;
+			if (updater == _updater)
+				return;
 			_updater?.Kill();
 			_updater = updater;
 			Failed = false;

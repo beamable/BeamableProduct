@@ -1,10 +1,10 @@
+using Beamable.Editor.UI.Buss.Components;
+using Beamable.Editor.UI.Buss.Wizard.Components;
+using Beamable.Editor.UI.Buss.Wizard.Model;
+using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Editor.UI.Buss.Wizard.Components;
-using Beamable.Editor.UI.Buss.Wizard.Model;
-using Beamable.Editor.UI.Buss.Components;
-using Beamable.UI.Buss;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -111,7 +111,8 @@ namespace Beamable.Editor.UI.Buss.Wizard
 				var tocLabel = new Label($"{(i + 1)}. {step.StepName}");
 				tocLabel.RegisterCallback<MouseUpEvent>(evt =>
 				{
-					if (!step.Enabled) return;
+					if (!step.Enabled)
+						return;
 					SelectStep(index);
 				});
 				_tocElements.Add(tocLabel);
@@ -127,15 +128,15 @@ namespace Beamable.Editor.UI.Buss.Wizard
 			{
 				new StyleSheetStep(_model),
 				new ColorStep(_model.PrimaryColor,
-				              "Primary Color",
-				              "What is the main color of your game?",
-				              "Every Beamable Module will use this color as the primary color. You should pick a color that matches the genre and feel of your game.",
-				              _model),
+							  "Primary Color",
+							  "What is the main color of your game?",
+							  "Every Beamable Module will use this color as the primary color. You should pick a color that matches the genre and feel of your game.",
+							  _model),
 				new ColorStep(_model.SecondaryColor,
-				              "Secondary Color",
-				              "What color compliments your game?",
-				              "This color will be used as the secondary color for all Beamable Modules. You should pick a value that looks good with the primary color",
-				              _model),
+							  "Secondary Color",
+							  "What color compliments your game?",
+							  "This color will be used as the secondary color for all Beamable Modules. You should pick a value that looks good with the primary color",
+							  _model),
 			};
 		}
 

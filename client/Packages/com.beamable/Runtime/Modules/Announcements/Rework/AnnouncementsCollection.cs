@@ -1,9 +1,9 @@
-﻿using System;
-using Beamable;
+﻿using Beamable;
 using Beamable.Api;
 using Beamable.Api.Announcements;
 using Beamable.Common.Api.Announcements;
 using Modules.Inventory.Prototype;
+using System;
 using UnityEngine;
 
 namespace Modules.Content

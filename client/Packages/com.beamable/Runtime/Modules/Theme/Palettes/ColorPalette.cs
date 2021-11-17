@@ -13,10 +13,12 @@ namespace Beamable.Theme.Palettes
 	{
 		public override ColorStyle DefaultValue()
 		{
-			return new ColorStyle {Name = "default", Enabled = true, Color = Color.white};
+			return new ColorStyle { Name = "default", Enabled = true, Color = Color.white };
 		}
 	}
 
 	[System.Serializable]
-	public class ColorBinding : ColorPalette.PaletteBinding { }
+	public class ColorBinding : ColorPalette.PaletteBinding
+	{
+	}
 }

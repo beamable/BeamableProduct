@@ -1,6 +1,6 @@
-using System.Collections.Generic;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.Common.Groups

@@ -1,9 +1,9 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Inventory;
 using Beamable.Common.Pooling;
 using Beamable.Serialization.SmallerJSON;
+using System;
+using System.Collections.Generic;
 
 namespace Beamable.Common.Api.Mail
 {
@@ -46,8 +46,8 @@ namespace Beamable.Common.Api.Mail
 				new SearchMailRequestClause
 				{
 					name = key,
-					categories = new[] {category},
-					states = new[] {"Read", "Unread"},
+					categories = new[] { category },
+					states = new[] { "Read", "Unread" },
 					limit = limit,
 					start = startId > 0 ? (long?)(startId) : null
 				}
@@ -55,7 +55,7 @@ namespace Beamable.Common.Api.Mail
 			return SearchMail(req).Map(res =>
 			{
 				var content = res.results.Find(set => set.name == key)?.content;
-				return new ListMailResponse {result = content};
+				return new ListMailResponse { result = content };
 			});
 		}
 
@@ -128,7 +128,7 @@ namespace Beamable.Common.Api.Mail
 				serializedClauses[i] = clauses[i].Serialize();
 			}
 
-			return new ArrayDict {{nameof(clauses), serializedClauses}};
+			return new ArrayDict { { nameof(clauses), serializedClauses } };
 		}
 	}
 
@@ -296,7 +296,7 @@ namespace Beamable.Common.Api.Mail
 
 		public MailUpdateRequest Add(long id, MailState state, bool acceptAttachments, string expires)
 		{
-			var entry = new MailUpdateEntry {id = id, update = new MailUpdate(id, state, acceptAttachments, expires)};
+			var entry = new MailUpdateEntry { id = id, update = new MailUpdate(id, state, acceptAttachments, expires) };
 			updateMailRequests.Add(entry);
 			return this;
 		}

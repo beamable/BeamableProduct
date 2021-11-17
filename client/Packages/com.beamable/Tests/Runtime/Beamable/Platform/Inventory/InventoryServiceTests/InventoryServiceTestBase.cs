@@ -28,10 +28,10 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
 			_requester = new MockPlatformAPI();
 			_platform = new MockPlatformService();
 			_content = new MockContentService();
-			ServiceManager.ProvideWithDefaultContainer(new ContentParameterProvider {manifestID = "global"});
+			ServiceManager.ProvideWithDefaultContainer(new ContentParameterProvider { manifestID = "global" });
 			ContentApi.Instance = Promise<IContentApi>.Successful(_content);
 
-			_platform.User = new User {id = 1234};
+			_platform.User = new User { id = 1234 };
 
 			_service = new InventoryService(_platform, _requester);
 
@@ -39,6 +39,8 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
 		}
 
 		[TearDown]
-		public void Cleanup() { }
+		public void Cleanup()
+		{
+		}
 	}
 }

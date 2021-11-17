@@ -1,10 +1,10 @@
+using Beamable.Editor.UI.Buss.Components;
+using Beamable.Editor.UI.Buss.Model;
+using Beamable.UI.Buss.Properties;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Beamable.Editor.UI.Buss.Components;
-using Beamable.Editor.UI.Buss.Model;
-using Beamable.UI.Buss.Properties;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -34,13 +34,15 @@ namespace Beamable.Editor.UI.Buss.Extensions
 				var optionalValue = optionalField.GetValue(self) as Optional;
 
 				var disabled = !(optionalValue?.HasValue ?? false);
-				if (onlyEnabled && (disabled || !self.Enabled)) continue; // there no value here.
-				if (onlyDisabled && (!disabled && self.Enabled)) continue; // there no value here.
+				if (onlyEnabled && (disabled || !self.Enabled))
+					continue; // there no value here.
+				if (onlyDisabled && (!disabled && self.Enabled))
+					continue; // there no value here.
 
 				var valueField =
 					optionalValue.GetType()
-					             .GetField(nameof(Optional<object>
-						                              .Value)); // TODO: Don't access the field directly, use the GetValue(), so that variables are supported.
+								 .GetField(nameof(Optional<object>
+													  .Value)); // TODO: Don't access the field directly, use the GetValue(), so that variables are supported.
 				if (valueField != null)
 				{
 					yield return

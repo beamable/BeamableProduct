@@ -5,5 +5,7 @@ namespace Beamable.Common.Content
 		Promise<TContent> Resolve<TContent>(IContentRef<TContent> reference) where TContent : IContentObject, new();
 	}
 
-	public static class ContentServiceResolver { }
+	public static class ContentServiceResolver
+	{
+	}
 }

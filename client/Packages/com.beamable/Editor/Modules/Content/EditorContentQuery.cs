@@ -1,7 +1,7 @@
-using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Editor.Content.Models;
+using System.Collections.Generic;
 
 namespace Beamable.Editor.Content
 {
@@ -85,7 +85,9 @@ namespace Beamable.Editor.Content
 			}
 		}
 
-		public EditorContentQuery() { }
+		public EditorContentQuery()
+		{
+		}
 
 		public EditorContentQuery(EditorContentQuery other) : base(other)
 		{
@@ -103,14 +105,16 @@ namespace Beamable.Editor.Content
 
 		public bool AcceptValidation(ContentValidationStatus status)
 		{
-			if (!HasValidationConstraint) return true;
+			if (!HasValidationConstraint)
+				return true;
 
 			return status == ValidationConstraint;
 		}
 
 		public bool AcceptStatus(ContentModificationStatus status)
 		{
-			if (!HasStatusConstraint) return true;
+			if (!HasStatusConstraint)
+				return true;
 			return status == (StatusConstraint & status);
 		}
 
@@ -126,14 +130,15 @@ namespace Beamable.Editor.Content
 
 		public bool EqualsEditorContentQuery(EditorContentQuery other)
 		{
-			if (other == null) return false;
+			if (other == null)
+				return false;
 
 			var parentSame = base.Equals(other);
 			return parentSame
-			       && other.HasStatusConstraint == HasStatusConstraint
-			       && other.HasValidationConstraint == HasValidationConstraint
-			       && other.StatusConstraint == StatusConstraint
-			       && other.ValidationConstraint == ValidationConstraint;
+				   && other.HasStatusConstraint == HasStatusConstraint
+				   && other.HasValidationConstraint == HasValidationConstraint
+				   && other.StatusConstraint == StatusConstraint
+				   && other.ValidationConstraint == ValidationConstraint;
 		}
 
 		public override bool Equals(object obj)

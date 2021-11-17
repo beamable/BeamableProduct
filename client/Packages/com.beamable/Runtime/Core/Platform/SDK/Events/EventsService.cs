@@ -1,15 +1,17 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Events;
+using System;
+using System.Collections.Generic;
 
 namespace Beamable.Api.Events
 {
 	public class EventSubscription : PlatformSubscribable<EventsGetResponse, EventsGetResponse>
 	{
 		public EventSubscription(PlatformService platform, IBeamableRequester requester) : base(
-			platform, requester, AbsEventsApi.SERVICE_NAME) { }
+			platform, requester, AbsEventsApi.SERVICE_NAME)
+		{
+		}
 
 		public void ForceRefresh()
 		{
@@ -36,7 +38,7 @@ namespace Beamable.Api.Events
 	/// 
 	/// </summary>
 	public class EventsService : AbsEventsApi,
-	                             IHasPlatformSubscriber<EventSubscription, EventsGetResponse, EventsGetResponse>
+								 IHasPlatformSubscriber<EventSubscription, EventsGetResponse, EventsGetResponse>
 	{
 		public EventSubscription Subscribable
 		{

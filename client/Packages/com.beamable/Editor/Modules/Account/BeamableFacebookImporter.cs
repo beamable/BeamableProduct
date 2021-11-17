@@ -32,11 +32,13 @@ namespace Beamable.Editor.Modules.Account
 			var found = false;
 			foreach (var path in paths)
 			{
-				if (!ACCOUNT_CONFIG_PATH.Equals(path)) continue;
+				if (!ACCOUNT_CONFIG_PATH.Equals(path))
+					continue;
 				found = true;
 			}
 
-			if (!found) return paths;
+			if (!found)
+				return paths;
 			SetFlag();
 
 			return paths;

@@ -23,7 +23,8 @@ namespace Beamable.Common.Content.Validation
 			if (typeof(Optional).IsAssignableFrom(type))
 			{
 				var optional = value as Optional;
-				if (!optional.HasValue) return;
+				if (!optional.HasValue)
+					return;
 
 				value = optional.GetValue();
 				type = optional.GetOptionalType();

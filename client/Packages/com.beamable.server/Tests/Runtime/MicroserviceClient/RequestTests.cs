@@ -1,8 +1,8 @@
-using System.Collections;
-using System.Collections.Generic;
 using Beamable.Common.Api;
 using Beamable.Tests.Runtime;
 using NUnit.Framework;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.TestTools;
 
@@ -18,8 +18,8 @@ namespace Beamable.Server.Tests.Runtime
 			var client = new TestClient(ROUTE);
 
 			MockRequester.MockRequest<List<int>>(Method.POST,
-			                                     client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
-			             .WithRawResponse("[1,2,3,4,5]");
+												 client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+						 .WithRawResponse("[1,2,3,4,5]");
 
 			var req = client.Request<List<int>>(ROUTE, new string[] { });
 
@@ -40,13 +40,13 @@ namespace Beamable.Server.Tests.Runtime
 			var client = new TestClient(ROUTE);
 
 			MockRequester.MockRequest<List<string>>(Method.POST,
-			                                        client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
-			             .WithRawResponse("[\"a\", \"b\", \"c\"]");
+													client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+						 .WithRawResponse("[\"a\", \"b\", \"c\"]");
 
 			var req = client.Request<List<string>>(ROUTE, new string[] { });
 
 			yield return req.ToYielder();
-			Assert.AreEqual(new List<string> {"a", "b", "c"}, req.GetResult());
+			Assert.AreEqual(new List<string> { "a", "b", "c" }, req.GetResult());
 		}
 
 		[UnityTest]
@@ -55,13 +55,13 @@ namespace Beamable.Server.Tests.Runtime
 			var client = new TestClient(ROUTE);
 
 			MockRequester.MockRequest<List<SimplePoco>>(Method.POST,
-			                                            client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
-			             .WithRawResponse("[{\"A\": 1}, {\"A\": 2}]");
+														client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+						 .WithRawResponse("[{\"A\": 1}, {\"A\": 2}]");
 
 			var req = client.Request<List<SimplePoco>>(ROUTE, new string[] { });
 
 			yield return req.ToYielder();
-			Assert.AreEqual(new List<SimplePoco> {new SimplePoco {A = 1}, new SimplePoco {A = 2}}, req.GetResult());
+			Assert.AreEqual(new List<SimplePoco> { new SimplePoco { A = 1 }, new SimplePoco { A = 2 } }, req.GetResult());
 		}
 
 		[UnityTest]
@@ -70,8 +70,8 @@ namespace Beamable.Server.Tests.Runtime
 			var client = new TestClient(ROUTE);
 
 			MockRequester.MockRequest<List<object>>(Method.POST,
-			                                        client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
-			             .WithRawResponse("[3, {\"A\": 2}, \"b\", true]");
+													client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+						 .WithRawResponse("[3, {\"A\": 2}, \"b\", true]");
 
 			var req = client.Request<List<object>>(ROUTE, new string[] { });
 
@@ -103,8 +103,8 @@ namespace Beamable.Server.Tests.Runtime
 			var client = new TestClient(ROUTE);
 
 			MockRequester.MockRequest<bool>(Method.POST,
-			                                client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
-			             .WithRawResponse("true");
+											client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+						 .WithRawResponse("true");
 
 			var req = client.Request<bool>(ROUTE, new string[] { });
 
@@ -118,8 +118,8 @@ namespace Beamable.Server.Tests.Runtime
 			var client = new TestClient(ROUTE);
 
 			MockRequester.MockRequest<int>(Method.POST,
-			                               client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
-			             .WithRawResponse("31");
+										   client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+						 .WithRawResponse("31");
 
 			var req = client.Request<int>(ROUTE, new string[] { });
 
@@ -133,8 +133,8 @@ namespace Beamable.Server.Tests.Runtime
 			var client = new TestClient(ROUTE);
 
 			MockRequester.MockRequest<string>(Method.POST,
-			                                  client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
-			             .WithRawResponse("hello world");
+											  client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+						 .WithRawResponse("hello world");
 
 			var req = client.Request<string>(ROUTE, new string[] { });
 
@@ -148,8 +148,8 @@ namespace Beamable.Server.Tests.Runtime
 			var client = new TestClient(ROUTE);
 
 			MockRequester.MockRequest<Vector2>(Method.POST,
-			                                   client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
-			             .WithRawResponse("{\"x\": 1, \"y\": 3}");
+											   client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+						 .WithRawResponse("{\"x\": 1, \"y\": 3}");
 
 			var req = client.Request<Vector2>(ROUTE, new string[] { });
 

@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Validation;
+using System;
 using System.Collections.Generic;
 using System.Text;
-using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Validation;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -16,7 +16,9 @@ namespace Beamable.Editor.UI.Components
 {
 	public class DatePickerVisualElement : ValidableVisualElement<string>
 	{
-		public new class UxmlFactory : UxmlFactory<DatePickerVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<DatePickerVisualElement, UxmlTraits>
+		{
+		}
 
 		private Action _onDateChanged;
 
@@ -39,7 +41,9 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public DatePickerVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(DatePickerVisualElement)}/{nameof(DatePickerVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(DatePickerVisualElement)}/{nameof(DatePickerVisualElement)}")
+		{
+		}
 
 		public override void Refresh()
 		{

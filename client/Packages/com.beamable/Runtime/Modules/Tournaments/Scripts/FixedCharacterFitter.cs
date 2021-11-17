@@ -29,7 +29,8 @@ namespace Beamable.Tournaments
 
 		public void Refresh()
 		{
-			if (!TextElement || !Target) return;
+			if (!TextElement || !Target)
+				return;
 
 			TextElement.ForceMeshUpdate();
 			var charCount = TextElement.text.Length;

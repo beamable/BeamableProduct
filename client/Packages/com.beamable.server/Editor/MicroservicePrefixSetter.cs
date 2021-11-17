@@ -1,5 +1,5 @@
-using Beamable.Server.Editor.DockerCommands;
 using Beamable.Editor.UI.Model;
+using Beamable.Server.Editor.DockerCommands;
 using UnityEditor;
 using UnityEngine;
 
@@ -16,13 +16,14 @@ namespace Beamable.Server.Editor
 
 		private static async void LogPlayModeState(PlayModeStateChange state)
 		{
-			if (DockerCommand.DockerNotInstalled) return;
+			if (DockerCommand.DockerNotInstalled)
+				return;
 
 			try
 			{
 				foreach (var service in Microservices.ListMicroservices())
 				{
-					var command = new CheckImageCommand(service) {WriteLogToUnity = false};
+					var command = new CheckImageCommand(service) { WriteLogToUnity = false };
 					var isRunning = await command.Start();
 					if (isRunning)
 					{
@@ -33,9 +34,9 @@ namespace Beamable.Server.Editor
 						if (state == PlayModeStateChange.EnteredPlayMode)
 						{
 							MicroserviceLogHelper.HandleLog(service, LogLevel.INFO,
-							                                BeamableLogConstants.UsingRemoteServiceMessage,
-							                                MicroserviceConfiguration.Instance.LogWarningLabelColor,
-							                                true, "remote_icon");
+															BeamableLogConstants.UsingRemoteServiceMessage,
+															MicroserviceConfiguration.Instance.LogWarningLabelColor,
+															true, "remote_icon");
 						}
 
 						MicroserviceIndividualization.ClearServicePrefix(service.Name);

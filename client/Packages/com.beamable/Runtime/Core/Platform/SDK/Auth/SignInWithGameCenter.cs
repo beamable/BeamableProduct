@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Beamable.Common.Api.Auth;
+using System;
 using System.Text;
 using UnityEngine;
-using Beamable.Common.Api.Auth;
 
 namespace Beamable.Platform.SDK.Auth
 {
@@ -88,11 +88,11 @@ namespace Beamable.Platform.SDK.Auth
 			public string bundleID;
 
 			public GameCenterVerificationRequest(string publicKeyUrl,
-			                                     string signature,
-			                                     string salt,
-			                                     long timestamp,
-			                                     string playerID,
-			                                     string bundleID)
+												 string signature,
+												 string salt,
+												 long timestamp,
+												 string playerID,
+												 string bundleID)
 			{
 				this.publicKeyUrl = publicKeyUrl;
 				this.signature = signature;

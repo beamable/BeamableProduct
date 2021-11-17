@@ -1,6 +1,6 @@
-using System;
 using Beamable.Common;
 using MongoDB.Driver;
+using System;
 
 namespace Beamable.Server
 {

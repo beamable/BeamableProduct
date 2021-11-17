@@ -1,10 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Beamable.Api.Notification.Internal;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Spew;
 using PubNubMessaging.Core;
+using System;
+using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -195,7 +195,7 @@ namespace Beamable.Api.Notification
 		public void EnqueueOperation(PubNubOp operation, bool shouldRunNextOp = false)
 		{
 			PubnubSubscriptionLogger.Log("==> Queuing Operation: " + operation.operation.ToString() + "channel: " +
-			                             operation.channel + ")");
+										 operation.channel + ")");
 			pendingOps.Enqueue(operation);
 			if (pendingOps.Count >= 1 && shouldRunNextOp && PubnubIsConnected)
 			{
@@ -217,7 +217,7 @@ namespace Beamable.Api.Notification
 				PubNubOp nextOp = pendingOps.Dequeue();
 
 				PubnubSubscriptionLogger.Log("==> Running Operation: " + nextOp.operation.ToString() + "channel: " +
-				                             nextOp.channel + ")");
+											 nextOp.channel + ")");
 
 				switch (nextOp.operation)
 				{
@@ -231,8 +231,8 @@ namespace Beamable.Api.Notification
 						else
 						{
 							mMultiChannelSubscriptionHelper.Setup(nextOp.channel, OnSubscribeMessage,
-							                                      OnUnsubscribeMessage,
-							                                      OnSubscribeError);
+																  OnUnsubscribeMessage,
+																  OnSubscribeError);
 							pubnub.Subscribe(
 								nextOp.channel,
 								OnMessageReceived,
@@ -253,8 +253,8 @@ namespace Beamable.Api.Notification
 						{
 							// The MultiChannelSubscriptionHelper tracks all of the callbacks so that when all of them are complete, the next operation is called at the next Update Call.
 							mMultiChannelSubscriptionHelper.Setup(nextOp.channel, OnSubscribeMessage,
-							                                      OnUnsubscribeMessage,
-							                                      OnUnsubscribeError);
+																  OnUnsubscribeMessage,
+																  OnUnsubscribeError);
 							pubnub.Unsubscribe(
 								nextOp.channel,
 								OnMessageReceived,
@@ -315,7 +315,7 @@ namespace Beamable.Api.Notification
 				if (channelList.Length > 0 || presenceList.Length > 0)
 				{
 					pendingOps.Enqueue(new PubNubOp(PubNubOp.PNO.OpUnsubscribe, channelList.ToString(),
-					                                presenceList.ToString()));
+													presenceList.ToString()));
 				}
 
 				if (operationsNeedToRun)
@@ -331,9 +331,9 @@ namespace Beamable.Api.Notification
        * Be judicious on the amount of history retrieved
        */
 		public void LoadChannelHistory(string channel,
-		                               int msgLimit,
-		                               Action<List<object>> onHistory,
-		                               Action<PubnubClientError> onHistoryError)
+									   int msgLimit,
+									   Action<List<object>> onHistory,
+									   Action<PubnubClientError> onHistoryError)
 		{
 			if (pubnub == null)
 			{
@@ -538,7 +538,7 @@ namespace Beamable.Api.Notification
 			}
 
 			errorMsg.Append(string.Format("ECode: {0}) Desc: {1}, Channel: {2}, Time: {3}", pubnubError.StatusCode,
-			                              pubnubError.Description, pubnubError.Channel, pubnubError.ErrorDateTimeGMT));
+										  pubnubError.Description, pubnubError.Channel, pubnubError.ErrorDateTimeGMT));
 			if (isAnError)
 			{
 				Debug.LogError(errorMsg.ToString());
@@ -564,7 +564,7 @@ namespace Beamable.Api.Notification
 					pubnub.EndPendingRequests();
 
 					if ((pubnubError.StatusCode == (int)PubnubErrorCode.UnsubscribedAfterMaxRetries) ||
-					    (pubnubError.StatusCode == (int)PubnubErrorCode.PresenceUnsubscribedAfterMaxRetries))
+						(pubnubError.StatusCode == (int)PubnubErrorCode.PresenceUnsubscribedAfterMaxRetries))
 					{
 						// A network problem has to caused the subscribed channels to be unsubscribed.
 					}
@@ -611,7 +611,7 @@ namespace Beamable.Api.Notification
 			}
 
 			errorMsg.Append(string.Format("ECode: {0}) Desc: {1}, Channel: {2}, Time: {3}", pubnubError.StatusCode,
-			                              pubnubError.Description, pubnubError.Channel, pubnubError.ErrorDateTimeGMT));
+										  pubnubError.Description, pubnubError.Channel, pubnubError.ErrorDateTimeGMT));
 			if (isAnError)
 			{
 				Debug.LogError(errorMsg.ToString());

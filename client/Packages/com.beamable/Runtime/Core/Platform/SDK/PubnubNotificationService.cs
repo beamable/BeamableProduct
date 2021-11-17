@@ -1,6 +1,6 @@
-using System;
 using Beamable.Common;
 using Beamable.Common.Api;
+using System;
 
 namespace Beamable.Api
 {

@@ -52,7 +52,7 @@ namespace Beamable.ConsoleCommands
 				foreach (var type in assembly.GetTypes())
 				{
 					if (!type.IsClass ||
-					    type.GetCustomAttribute<BeamableConsoleCommandProviderAttribute>(false) == null)
+						type.GetCustomAttribute<BeamableConsoleCommandProviderAttribute>(false) == null)
 					{
 						continue;
 					}
@@ -68,11 +68,11 @@ namespace Beamable.ConsoleCommands
 					var staticMethods =
 						type.GetMethods(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
 					ProcessMethods(instanceMethods,
-					               (method) => (ConsoleCommandCallback)Delegate.CreateDelegate(
-						               typeof(ConsoleCommandCallback), instance, method, false));
+								   (method) => (ConsoleCommandCallback)Delegate.CreateDelegate(
+									   typeof(ConsoleCommandCallback), instance, method, false));
 					ProcessMethods(staticMethods,
-					               (method) => (ConsoleCommandCallback)Delegate.CreateDelegate(
-						               typeof(ConsoleCommandCallback), method, false));
+								   (method) => (ConsoleCommandCallback)Delegate.CreateDelegate(
+									   typeof(ConsoleCommandCallback), method, false));
 				}
 			}
 
@@ -95,7 +95,7 @@ namespace Beamable.ConsoleCommands
 			}
 
 			void ProcessMethods(IEnumerable<MethodInfo> methods,
-			                    Func<MethodInfo, ConsoleCommandCallback> callbackCreator)
+								Func<MethodInfo, ConsoleCommandCallback> callbackCreator)
 			{
 				foreach (var method in methods)
 				{

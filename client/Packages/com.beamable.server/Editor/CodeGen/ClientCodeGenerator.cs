@@ -1,3 +1,6 @@
+using Beamable.Common;
+using Beamable.Platform.SDK;
+using Beamable.Server;
 using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
@@ -6,9 +9,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Beamable.Common;
-using Beamable.Server;
-using Beamable.Platform.SDK;
 
 namespace Beamable.Server.Editor.CodeGen
 {
@@ -55,8 +55,8 @@ namespace Beamable.Server.Editor.CodeGen
 			targetClass.BaseTypes.Add(new CodeTypeReference(typeof(MicroserviceClient)));
 
 			targetClass.Comments.Add(new CodeCommentStatement(
-				                         $"<summary> A generated client for <see cref=\"{Descriptor.Type.FullName}\"/> </summary",
-				                         true));
+										 $"<summary> A generated client for <see cref=\"{Descriptor.Type.FullName}\"/> </summary",
+										 true));
 
 			samples.Types.Add(targetClass);
 			targetUnit.Namespaces.Add(samples);
@@ -71,7 +71,7 @@ namespace Beamable.Server.Editor.CodeGen
 					continue;
 				}
 
-				var callable = new CallableMethodInfo {MethodInfo = method, ClientCallable = clientCallable};
+				var callable = new CallableMethodInfo { MethodInfo = method, ClientCallable = clientCallable };
 				_callableMethods.Add(callable);
 
 				AddCallableMethod(callable);
@@ -103,8 +103,8 @@ namespace Beamable.Server.Editor.CodeGen
 					new CodeMethodReferenceExpression(
 						new CodeThisReferenceExpression(),
 						"SerializeArgument",
-						new CodeTypeReference[] {new CodeTypeReference(paramType),}),
-					new CodeExpression[] {new CodeArgumentReferenceExpression(paramName),});
+						new CodeTypeReference[] { new CodeTypeReference(paramType), }),
+					new CodeExpression[] { new CodeArgumentReferenceExpression(paramName), });
 
 				var assignment = new CodeAssignStatement(declare, serializeInvoke);
 				genMethod.Statements.Add(assignment);
@@ -113,8 +113,8 @@ namespace Beamable.Server.Editor.CodeGen
 			// add some docstrings to the method.
 			genMethod.Comments.Add(new CodeCommentStatement("<summary>", true));
 			genMethod.Comments.Add(new CodeCommentStatement(
-				                       $"Call the {info.MethodInfo.Name} method on the {Descriptor.Name} microservice",
-				                       true));
+									   $"Call the {info.MethodInfo.Name} method on the {Descriptor.Name} microservice",
+									   true));
 
 			genMethod.Comments.Add(
 				new CodeCommentStatement($"<see cref=\"{Descriptor.Type.FullName}.{info.MethodInfo.Name}\"/>", true));
@@ -168,7 +168,7 @@ namespace Beamable.Server.Editor.CodeGen
 				new CodeMethodReferenceExpression(
 					new CodeThisReferenceExpression(),
 					"Request",
-					new CodeTypeReference[] {new CodeTypeReference(resultType),}),
+					new CodeTypeReference[] { new CodeTypeReference(resultType), }),
 				new CodeExpression[]
 				{
 					// first argument is the service name

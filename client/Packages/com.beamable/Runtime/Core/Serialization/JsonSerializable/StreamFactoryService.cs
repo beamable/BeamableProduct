@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
-using Beamable.Service;
+﻿using Beamable.Service;
 using Beamable.Spew;
+using System.Collections.Generic;
 
 namespace Beamable.Serialization
 {
@@ -34,7 +34,7 @@ namespace Beamable.Serialization
 		}
 
 		public JsonSerializable.LoadStream CreateLoadStream(IDictionary<string, object> data,
-		                                                    JsonSerializable.ListMode mode)
+															JsonSerializable.ListMode mode)
 		{
 			var ls = JsonSerializable.LoadStream.Spawn();
 			ls.Init(data, mode);

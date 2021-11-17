@@ -15,7 +15,8 @@ namespace Beamable.Theme.Appliers
 		{
 			Components.ForEach(c =>
 			{
-				if (c != null) Apply(theme, c);
+				if (c != null)
+					Apply(theme, c);
 			});
 		}
 

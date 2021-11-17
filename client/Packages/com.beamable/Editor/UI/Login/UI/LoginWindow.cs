@@ -1,9 +1,9 @@
-using System;
-using System.Threading.Tasks;
 using Beamable.Editor.Config;
 using Beamable.Editor.Login.UI.Components;
 using Beamable.Editor.Login.UI.Model;
 using Beamable.Editor.UI.Components;
+using System;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -61,7 +61,8 @@ namespace Beamable.Editor.Login.UI
 
 		public static LoginWindow Show(params Type[] dockLocations)
 		{
-			if (dockLocations == null) dockLocations = new Type[] { };
+			if (dockLocations == null)
+				dockLocations = new Type[] { };
 			if (LoginWindow.IsInstantiated)
 			{
 				LoginWindow.Instance.Close();

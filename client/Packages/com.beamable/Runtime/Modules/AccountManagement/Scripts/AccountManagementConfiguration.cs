@@ -1,11 +1,11 @@
-using System;
-using System.Collections.Generic;
+using Beamable;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
-using Beamable;
-using Beamable.Stats;
 using Beamable.Platform.SDK;
 using Beamable.Platform.SDK.Auth;
+using Beamable.Stats;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.AccountManagement
@@ -13,7 +13,7 @@ namespace Beamable.AccountManagement
 	[CreateAssetMenu(
 		fileName = "Account Management Configuration",
 		menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
-		           "Account Management Configuration",
+				   "Account Management Configuration",
 		order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 	public class AccountManagementConfiguration : ModuleConfigurationObject, IAuthSettings
 	{
@@ -140,12 +140,12 @@ namespace Beamable.AccountManagement
 				{
 					// TODO, somehow we should be able to cache this fact, so we don't keep on pinging apis.
 					promises.Add(Overrides.DoesUserHaveThirdParty(user, thirdParty).Map(hasThirdParty =>
-						             new UserThirdPartyAssociation
-						             {
-							             HasAssociation = hasThirdParty,
-							             ThirdParty = thirdParty,
-							             ThirdPartyEnabled = true
-						             }));
+									 new UserThirdPartyAssociation
+									 {
+										 HasAssociation = hasThirdParty,
+										 ThirdParty = thirdParty,
+										 ThirdPartyEnabled = true
+									 }));
 				}
 			}
 

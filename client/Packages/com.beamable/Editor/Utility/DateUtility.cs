@@ -9,12 +9,12 @@ namespace Beamable.Editor
 		public const string ISO_FORMAT = "yyyy-MM-ddTHH:mm:ssZ";
 
 		public static bool TryToCreateDateTime(int year,
-		                                       int month,
-		                                       int day,
-		                                       int hour,
-		                                       int minute,
-		                                       int second,
-		                                       out DateTime dateTime)
+											   int month,
+											   int day,
+											   int hour,
+											   int minute,
+											   int second,
+											   out DateTime dateTime)
 		{
 			try
 			{
@@ -36,7 +36,7 @@ namespace Beamable.Editor
 					? Mathf.Min(dateTime.Day, DateTime.DaysInMonth(year, dateTime.Month))
 					: dateTime.Day;
 				result = new DateTime(year, dateTime.Month, day, dateTime.Hour,
-				                      dateTime.Minute, dateTime.Second, dateTime.Millisecond);
+									  dateTime.Minute, dateTime.Second, dateTime.Millisecond);
 				return true;
 			}
 			catch (ArgumentOutOfRangeException)
@@ -47,9 +47,9 @@ namespace Beamable.Editor
 		}
 
 		public static bool TryReplaceMonth(this DateTime dateTime,
-		                                   int month,
-		                                   out DateTime result,
-		                                   bool clampDays = false)
+										   int month,
+										   out DateTime result,
+										   bool clampDays = false)
 		{
 			try
 			{
@@ -57,7 +57,7 @@ namespace Beamable.Editor
 					? Mathf.Min(dateTime.Day, DateTime.DaysInMonth(dateTime.Year, month))
 					: dateTime.Day;
 				result = new DateTime(dateTime.Year, month, day, dateTime.Hour,
-				                      dateTime.Minute, dateTime.Second, dateTime.Millisecond);
+									  dateTime.Minute, dateTime.Second, dateTime.Millisecond);
 				return true;
 			}
 			catch (ArgumentOutOfRangeException)
@@ -72,7 +72,7 @@ namespace Beamable.Editor
 			try
 			{
 				result = new DateTime(dateTime.Year, dateTime.Month, day, dateTime.Hour,
-				                      dateTime.Minute, dateTime.Second, dateTime.Millisecond);
+									  dateTime.Minute, dateTime.Second, dateTime.Millisecond);
 				return true;
 			}
 			catch (ArgumentOutOfRangeException)
@@ -87,7 +87,7 @@ namespace Beamable.Editor
 			try
 			{
 				result = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, hour,
-				                      dateTime.Minute, dateTime.Second, dateTime.Millisecond);
+									  dateTime.Minute, dateTime.Second, dateTime.Millisecond);
 				return true;
 			}
 			catch (ArgumentOutOfRangeException)
@@ -102,7 +102,7 @@ namespace Beamable.Editor
 			try
 			{
 				result = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour,
-				                      minute, dateTime.Second, dateTime.Millisecond);
+									  minute, dateTime.Second, dateTime.Millisecond);
 				return true;
 			}
 			catch (ArgumentOutOfRangeException)
@@ -117,7 +117,7 @@ namespace Beamable.Editor
 			try
 			{
 				result = new DateTime(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour,
-				                      dateTime.Minute, second, dateTime.Millisecond);
+									  dateTime.Minute, second, dateTime.Millisecond);
 				return true;
 			}
 			catch (ArgumentOutOfRangeException)

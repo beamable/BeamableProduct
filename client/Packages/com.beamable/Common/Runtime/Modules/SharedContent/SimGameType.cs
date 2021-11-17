@@ -1,6 +1,6 @@
+using Beamable.Common.Content.Validation;
 using System;
 using System.Collections.Generic;
-using Beamable.Common.Content.Validation;
 using UnityEngine;
 
 namespace Beamable.Common.Content
@@ -18,7 +18,9 @@ namespace Beamable.Common.Content
 	///
 	/// </summary>
 	[System.Serializable]
-	public class SimGameTypeLink : ContentLink<SimGameType> { }
+	public class SimGameTypeLink : ContentLink<SimGameType>
+	{
+	}
 
 	/// <summary>
 	/// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
@@ -33,7 +35,9 @@ namespace Beamable.Common.Content
 	///
 	/// </summary>
 	[Serializable]
-	public class SimGameTypeRef : ContentRef<SimGameType> { }
+	public class SimGameTypeRef : ContentRef<SimGameType>
+	{
+	}
 
 	/// <summary>
 	/// This type defines a %Beamable %ContentObject subclass for the %Multiplayer feature.

@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Beamable.Common.Content;
+using Beamable.Editor.UI.Buss;
+using System;
 using System.Collections.Generic;
 using System.Text;
-using Beamable.Common.Content;
-using Beamable.Editor.UI.Buss;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -16,7 +16,9 @@ namespace Beamable.Editor.UI.Components
 {
 	public class HourPickerVisualElement : BeamableVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<HourPickerVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<HourPickerVisualElement, UxmlTraits>
+		{
+		}
 
 		private LabeledNumberPicker _hourPicker;
 		private LabeledNumberPicker _minutePicker;
@@ -32,7 +34,9 @@ namespace Beamable.Editor.UI.Components
 		public string Second => _secondPicker?.Value;
 
 		public HourPickerVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(HourPickerVisualElement)}/{nameof(HourPickerVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(HourPickerVisualElement)}/{nameof(HourPickerVisualElement)}")
+		{
+		}
 
 		public override void Refresh()
 		{
@@ -75,9 +79,9 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void Setup(Action onHourChanged,
-		                  bool activeHour = true,
-		                  bool activeMinute = true,
-		                  bool activeSecond = true)
+						  bool activeHour = true,
+						  bool activeMinute = true,
+						  bool activeSecond = true)
 		{
 			_onHourChanged = onHourChanged;
 			_activeHour = activeHour;

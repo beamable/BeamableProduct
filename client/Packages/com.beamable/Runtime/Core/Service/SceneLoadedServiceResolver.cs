@@ -52,9 +52,9 @@ namespace Beamable.Service
 			if (ApplicationLifetime.isQuitting)
 			{
 				Debug.LogError(string.Format(
-					               "Application is quiting, but something is still resolving service {0}, which is going to return null. Use check existence with ServiceManager before resolving on cleanup code",
-					               typeof(TResolvedAs).Name
-				               ));
+								   "Application is quiting, but something is still resolving service {0}, which is going to return null. Use check existence with ServiceManager before resolving on cleanup code",
+								   typeof(TResolvedAs).Name
+							   ));
 			}
 
 			return service;

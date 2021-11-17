@@ -22,7 +22,9 @@ namespace Beamable.Editor.Toolbox.Components
 		}
 
 		public UpdateAvailableAnnouncementVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(UpdateAvailableAnnouncementVisualElement)}/{nameof(UpdateAvailableAnnouncementVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(UpdateAvailableAnnouncementVisualElement)}/{nameof(UpdateAvailableAnnouncementVisualElement)}")
+		{
+		}
 
 		public override void Refresh()
 		{

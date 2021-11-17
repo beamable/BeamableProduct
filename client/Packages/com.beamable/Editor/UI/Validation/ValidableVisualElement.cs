@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Beamable.Editor.UI.Buss;
+using System;
 using System.Collections.Generic;
-using Beamable.Editor.UI.Buss;
 
 namespace Beamable.Editor.UI.Validation
 {

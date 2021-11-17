@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Beamable.Server.Editor.ManagerClient;
-using Beamable.Editor.UI.Buss;
+﻿using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
+using Beamable.Server.Editor.ManagerClient;
 using Beamable.Server.Editor.UI.Components;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -32,7 +32,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 
 		public DependentServicesStorageObjectEntryVisualElement() : base(
-			nameof(DependentServicesStorageObjectEntryVisualElement)) { }
+			nameof(DependentServicesStorageObjectEntryVisualElement))
+		{
+		}
 
 		public override void Refresh()
 		{

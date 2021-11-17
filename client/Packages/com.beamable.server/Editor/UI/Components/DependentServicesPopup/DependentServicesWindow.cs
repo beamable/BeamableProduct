@@ -1,10 +1,10 @@
-﻿using System.Collections.Generic;
-using System;
-using System.Linq;
-using Beamable.Editor.UI.Components;
+﻿using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.UI.Components;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -40,7 +40,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			wnd.ShowUtility();
 			wnd.minSize = new Vector2(620, 400);
 			wnd.position = new Rect((Screen.width + wnd.minSize.x) * 0.5f, Screen.width * 0.5f, wnd.minSize.x,
-			                        wnd.minSize.y);
+									wnd.minSize.y);
 			wnd.Refresh();
 
 			return wnd;

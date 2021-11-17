@@ -1,11 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Editor.Content.Models;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.Toolbox.UI.Components;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -50,7 +50,8 @@ namespace Beamable.Editor.Toolbox.Components
 			{
 				var typeName = type.Serialize();
 
-				if (!string.IsNullOrEmpty(filter) && !typeName.ToLower().Contains(filter)) continue;
+				if (!string.IsNullOrEmpty(filter) && !typeName.ToLower().Contains(filter))
+					continue;
 
 				var row = new FilterRowVisualElement();
 				row.OnValueChanged += nextValue =>
@@ -61,7 +62,7 @@ namespace Beamable.Editor.Toolbox.Components
 				row.FilterName = typeName;
 				row.Refresh();
 				var hasTag = (Model.Query?.HasTagConstraint ?? false)
-				             && Model.Query.FilterIncludes(type);
+							 && Model.Query.FilterIncludes(type);
 				row.SetValue(hasTag);
 
 				listRoot.Add(row);

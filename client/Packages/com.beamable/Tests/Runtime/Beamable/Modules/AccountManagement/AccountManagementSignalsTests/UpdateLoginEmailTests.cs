@@ -1,12 +1,12 @@
-using System.Collections;
+using Beamable.AccountManagement;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
-using Beamable.AccountManagement;
 using Beamable.Platform.SDK;
 using Beamable.Platform.SDK.Auth;
 using Beamable.Platform.Tests;
 using NUnit.Framework;
 using Packages.Beamable.Runtime.Tests.Beamable;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.TestTools;
 

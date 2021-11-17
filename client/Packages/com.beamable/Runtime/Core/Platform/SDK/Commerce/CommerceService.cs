@@ -1,5 +1,5 @@
-using Beamable.Common;
 using Beamable.Api.Payments;
+using Beamable.Common;
 using Beamable.Common.Api;
 
 namespace Beamable.Api.Commerce
@@ -19,7 +19,9 @@ namespace Beamable.Api.Commerce
 	public class CommerceService : PlatformSubscribable<GetOffersResponse, PlayerStoreView>
 	{
 		public CommerceService(PlatformService platform, PlatformRequester requester) : base(
-			platform, requester, "commerce") { }
+			platform, requester, "commerce")
+		{
+		}
 
 		protected override void OnRefresh(GetOffersResponse data)
 		{

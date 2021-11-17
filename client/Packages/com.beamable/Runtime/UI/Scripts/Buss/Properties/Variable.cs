@@ -39,11 +39,12 @@ namespace Beamable.UI.Buss.Properties
 
 		public bool AnyDefinition => All.Any(x => x.AnyDefinition);
 
-		public VariableSet[] All => new VariableSet[] {Colors, Vectors, Numbers, Textures};
+		public VariableSet[] All => new VariableSet[] { Colors, Vectors, Numbers, Textures };
 
 		public VariableScope Merge(VariableScope other)
 		{
-			if (other == null) return Clone();
+			if (other == null)
+				return Clone();
 			var next = new VariableScope
 			{
 				Numbers = Numbers.Merge(other.Numbers),
@@ -56,7 +57,7 @@ namespace Beamable.UI.Buss.Properties
 
 		public VariableScope Clone()
 		{
-			return new VariableScope {Numbers = Numbers, Colors = Colors, Vectors = Vectors, Textures = Textures};
+			return new VariableScope { Numbers = Numbers, Colors = Colors, Vectors = Vectors, Textures = Textures };
 		}
 
 		public VariableSet GetVariableSet<T>()
@@ -79,19 +80,27 @@ namespace Beamable.UI.Buss.Properties
 
 	[System.Serializable]
 	[VariableTypeName("Number")]
-	public class NumberVariableSet : VariableSet<float> { }
+	public class NumberVariableSet : VariableSet<float>
+	{
+	}
 
 	[System.Serializable]
 	[VariableTypeName("Vector2")]
-	public class Vector2VariableSet : VariableSet<Vector2> { }
+	public class Vector2VariableSet : VariableSet<Vector2>
+	{
+	}
 
 	[System.Serializable]
 	[VariableTypeName("Color")]
-	public class ColorVariableSet : VariableSet<Color> { }
+	public class ColorVariableSet : VariableSet<Color>
+	{
+	}
 
 	[System.Serializable]
 	[VariableTypeName("Texture")]
-	public class TextureVariableSet : VariableSet<Texture2D> { }
+	public class TextureVariableSet : VariableSet<Texture2D>
+	{
+	}
 
 	public abstract class VariableSet
 	{
@@ -125,7 +134,8 @@ namespace Beamable.UI.Buss.Properties
 		public T Get(string variable)
 		{
 			var index = _variableNames.IndexOf(variable);
-			if (index < 0 || index >= _variableValues.Count) return _defaultValue;
+			if (index < 0 || index >= _variableValues.Count)
+				return _defaultValue;
 			return _variableValues[index];
 		}
 
@@ -133,7 +143,8 @@ namespace Beamable.UI.Buss.Properties
 		{
 			var index = _variableNames.IndexOf(variable);
 			result = _defaultValue;
-			if (index < 0 || index >= _variableValues.Count) return false;
+			if (index < 0 || index >= _variableValues.Count)
+				return false;
 			result = _variableValues[index];
 			return true;
 		}
@@ -187,7 +198,9 @@ namespace Beamable.UI.Buss.Properties
 
 			return new TOther()
 			{
-				_defaultValue = other._defaultValue, _variableNames = nextNames, _variableValues = nextValues,
+				_defaultValue = other._defaultValue,
+				_variableNames = nextNames,
+				_variableValues = nextValues,
 			};
 		}
 

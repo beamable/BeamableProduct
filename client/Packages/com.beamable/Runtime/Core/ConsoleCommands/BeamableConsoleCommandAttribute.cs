@@ -23,7 +23,7 @@ namespace Beamable.ConsoleCommands
 
 		public BeamableConsoleCommandAttribute(string name, string description, string usage)
 		{
-			Names = new[] {name.ToUpperInvariant()};
+			Names = new[] { name.ToUpperInvariant() };
 			Description = description;
 			Usage = usage;
 		}

@@ -1,9 +1,9 @@
-﻿using Beamable.Editor.Content.Models;
+﻿using Beamable.Common;
+using Beamable.Editor.Content.Models;
+using Beamable.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Common;
-using Beamable.Editor.UI.Components;
 
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -30,7 +30,7 @@ namespace Beamable.Editor.Content.Components
 			List<ContentDownloadEntryDescriptor> tmp = base.GetDeleteSource(summary);
 
 			var entries = DataModel.GetAllContents()?.Where(c => c.Status == ContentModificationStatus.LOCAL_ONLY)
-			                       .ToList();
+								   .ToList();
 
 			foreach (var toClear in entries)
 			{

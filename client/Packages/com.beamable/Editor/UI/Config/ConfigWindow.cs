@@ -1,7 +1,7 @@
+using Beamable.Editor.Config.Model;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Beamable.Editor.Config.Model;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -17,9 +17,9 @@ namespace Beamable.Editor.Config
 	public class ConfigWindow : EditorWindow
 	{
 		public static void CreateFields(VisualElement rootElement,
-		                                ConfigQuery query,
-		                                List<ConfigOption> options,
-		                                bool useFoldout)
+										ConfigQuery query,
+										List<ConfigOption> options,
+										bool useFoldout)
 		{
 			rootElement.Clear();
 
@@ -64,9 +64,10 @@ namespace Beamable.Editor.Config
 								.GetField("m_SerializedProperty", BindingFlags.Instance | BindingFlags.NonPublic)
 								?.GetValue(propField) as SerializedProperty;
 
-						if (serializedPropField == null) return;
+						if (serializedPropField == null)
+							return;
 
-						var parameters = new[] {serializedPropField, null};
+						var parameters = new[] { serializedPropField, null };
 						var fieldObj = (FieldInfo)getFieldMethod.Invoke(null, parameters);
 						var help = serializedPropField.tooltip;
 						if (fieldObj != null)

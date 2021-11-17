@@ -79,9 +79,9 @@ namespace Beamable.UI.MSDF
 				vh.PopulateUIVertex(ref vert, i);
 				center += vert.position;
 				mins = new Vector2(x < mins.x ? x : mins.x,
-				                   y < mins.y
-					                   ? y
-					                   : mins.y); // don't care about z axis. :/ (UNLESS WE DO!?!? MORE DATA?!?!?)
+								   y < mins.y
+									   ? y
+									   : mins.y); // don't care about z axis. :/ (UNLESS WE DO!?!? MORE DATA?!?!?)
 				maxes = new Vector2(x > maxes.x ? x : maxes.x, y > maxes.y ? y : maxes.y);
 			}
 
@@ -144,32 +144,32 @@ namespace Beamable.UI.MSDF
 			var outerTopLeft = new UIVertex
 			{
 				position = center + .5f * new Vector3(-size.x - Properties.VertexPadding.x,
-				                                      size.y + Properties.VertexPadding.y, growthZ),
+													  size.y + Properties.VertexPadding.y, growthZ),
 				uv0 = new Vector2(-outterUv.x, 1 + outterUv.y)
 			};
 			var outerTopRight = new UIVertex
 			{
 				position = center + .5f * new Vector3(size.x + Properties.VertexPadding.x,
-				                                      size.y + Properties.VertexPadding.y, growthZ),
+													  size.y + Properties.VertexPadding.y, growthZ),
 				uv0 = new Vector2(1 + outterUv.x, 1 + outterUv.y)
 			};
 			var outerLowLeft = new UIVertex
 			{
 				position = center + .5f * new Vector3(-size.x - Properties.VertexPadding.x,
-				                                      -size.y - Properties.VertexPadding.y, growthZ),
+													  -size.y - Properties.VertexPadding.y, growthZ),
 				uv0 = new Vector2(-outterUv.x, -outterUv.y)
 			};
 			var outerLowRight = new UIVertex
 			{
 				position = center + .5f * new Vector3(size.x + Properties.VertexPadding.x,
-				                                      -size.y - Properties.VertexPadding.y, growthZ),
+													  -size.y - Properties.VertexPadding.y, growthZ),
 				uv0 = new Vector2(1 + outterUv.x, -outterUv.y)
 			};
 
-			var innerTopLeft = new UIVertex {position = new Vector3(mins.x, maxes.y, growthZ), uv0 = Vector2.up};
-			var innerTopRight = new UIVertex {position = new Vector3(maxes.x, maxes.y, growthZ), uv0 = Vector2.one};
-			var innerLowLeft = new UIVertex {position = new Vector3(mins.x, mins.y, growthZ), uv0 = Vector2.zero};
-			var innerLowRight = new UIVertex {position = new Vector3(maxes.x, mins.y, growthZ), uv0 = Vector2.right};
+			var innerTopLeft = new UIVertex { position = new Vector3(mins.x, maxes.y, growthZ), uv0 = Vector2.up };
+			var innerTopRight = new UIVertex { position = new Vector3(maxes.x, maxes.y, growthZ), uv0 = Vector2.one };
+			var innerLowLeft = new UIVertex { position = new Vector3(mins.x, mins.y, growthZ), uv0 = Vector2.zero };
+			var innerLowRight = new UIVertex { position = new Vector3(maxes.x, mins.y, growthZ), uv0 = Vector2.right };
 
 			vh.AddVert(innerTopLeft);
 			vh.AddVert(innerTopRight);
@@ -207,7 +207,8 @@ namespace Beamable.UI.MSDF
 		public void RefreshMaterial()
 		{
 			var hash = Properties.GetHashCode();
-			if (hash == _lastHash) return;
+			if (hash == _lastHash)
+				return;
 
 			_material = MSDFMaterialManager.TradeMaterial(hash, _lastHash, _material, Properties);
 			if (Image.material != _material)
@@ -317,7 +318,7 @@ namespace Beamable.UI.MSDF
 
 		public Vector4 BackgroundRect =>
 			new Vector4(BackgroundLeftPosition, BackgroundBottomPosition, BackgroundRightPosition,
-			            BackgroundTopPosition);
+						BackgroundTopPosition);
 
 		public Vector4 DropShadowData => new Vector4(DropShadowOffset.x, DropShadowOffset.y, DropShadowSoftness, 0);
 
@@ -384,13 +385,13 @@ namespace Beamable.UI.MSDF
 		string GetCodeString()
 		{
 			return $"{BackgroundTexture?.GetHashCode() ?? 0}" +
-			       $"_{ForegroundColor}_{StrokeColor}_{Threshold}_{StrokeThreshold}" +
-			       $"_{Softness}_{Erosion}_{StrokeErosion}_{RadiusAmount}" +
-			       $"_{DropShadowColor}_{DropShadowOffset.GetHashCode()}_{DropShadowSoftness}" +
-			       $"_{ForegroundGradientAmount}_{ForegroundGradientDegrees}_{ForegroundGradientOffset}" +
-			       $"_{ForegroundGradientStart}_{ForegroundGradientEnd}_{ForegroundGradientScale}" +
-			       $"_{BackgroundRect.GetHashCode()}_{BackgroundScale.GetHashCode()}_{BackgroundOffset.GetHashCode()}" +
-			       $"_{BackgroundPreserveAspect}";
+				   $"_{ForegroundColor}_{StrokeColor}_{Threshold}_{StrokeThreshold}" +
+				   $"_{Softness}_{Erosion}_{StrokeErosion}_{RadiusAmount}" +
+				   $"_{DropShadowColor}_{DropShadowOffset.GetHashCode()}_{DropShadowSoftness}" +
+				   $"_{ForegroundGradientAmount}_{ForegroundGradientDegrees}_{ForegroundGradientOffset}" +
+				   $"_{ForegroundGradientStart}_{ForegroundGradientEnd}_{ForegroundGradientScale}" +
+				   $"_{BackgroundRect.GetHashCode()}_{BackgroundScale.GetHashCode()}_{BackgroundOffset.GetHashCode()}" +
+				   $"_{BackgroundPreserveAspect}";
 		}
 	}
 
@@ -437,7 +438,7 @@ namespace Beamable.UI.MSDF
 #if UNITY_EDITOR
 			Object.DestroyImmediate(_material);
 #else
-                 Object.Destroy(_material);
+			Object.Destroy(_material);
 #endif
 		}
 	}
@@ -471,9 +472,9 @@ namespace Beamable.UI.MSDF
 		}
 
 		public static Material TradeMaterial(int nextHash,
-		                                     int lastHash,
-		                                     Material lastMaterial,
-		                                     MSDFPropertyCollection properties)
+											 int lastHash,
+											 Material lastMaterial,
+											 MSDFPropertyCollection properties)
 		{
 			if (_hashToMaterial.TryGetValue(lastHash, out var wrapper))
 			{

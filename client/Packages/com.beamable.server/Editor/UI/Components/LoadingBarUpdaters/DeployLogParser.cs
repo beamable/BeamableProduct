@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Beamable.Editor.UI.Components;
+﻿using Beamable.Editor.UI.Components;
 using Beamable.Server.Editor.UI.Components;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Editor.Microservice.UI.Components
@@ -14,8 +14,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public DeployLogParser(ILoadingBar loadingBar, ManifestModel model, int totalSteps) : base(loadingBar)
 		{
 			_records = model.Services.Values
-			                .Select(m => new MicroserviceRecord(m.Name))
-			                .ToArray();
+							.Select(m => new MicroserviceRecord(m.Name))
+							.ToArray();
 			TotalSteps = totalSteps;
 
 			Application.logMessageReceived += HandleLog;

@@ -1,7 +1,7 @@
-using System;
-using System.Linq;
 using Beamable.Editor.UI.Buss.Model;
 using Beamable.UI.Buss;
+using System;
+using System.Linq;
 using TMPro;
 using UnityEditor;
 using UnityEditor.Experimental.UIElements;

@@ -1,25 +1,35 @@
+using Beamable.Common.Content.Validation;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using Beamable.Common.Content.Validation;
 using UnityEngine;
 
 namespace Beamable.Common.Content
 {
 	[Serializable]
-	public class OptionalSchedule : Optional<Schedule> { }
+	public class OptionalSchedule : Optional<Schedule>
+	{
+	}
 
 	[Serializable]
-	public class OptionalListingSchedule : Optional<ListingSchedule> { }
+	public class OptionalListingSchedule : Optional<ListingSchedule>
+	{
+	}
 
 	[Serializable]
-	public class OptionalEventSchedule : Optional<EventSchedule> { }
+	public class OptionalEventSchedule : Optional<EventSchedule>
+	{
+	}
 
 	[Serializable]
-	public class EventSchedule : Schedule { }
+	public class EventSchedule : Schedule
+	{
+	}
 
 	[Serializable]
-	public class ListingSchedule : Schedule { }
+	public class ListingSchedule : Schedule
+	{
+	}
 
 	[Serializable]
 	public class Schedule
@@ -57,19 +67,19 @@ namespace Beamable.Common.Content
 		public List<string> dayOfWeek;
 
 		public ScheduleDefinition(string second,
-		                          string minute,
-		                          string hour,
-		                          List<string> dayOfMonth,
-		                          string month,
-		                          string year,
-		                          List<string> dayOfWeek)
+								  string minute,
+								  string hour,
+								  List<string> dayOfMonth,
+								  string month,
+								  string year,
+								  List<string> dayOfWeek)
 		{
-			this.second = new List<string> {second};
-			this.minute = new List<string> {minute};
-			this.hour = new List<string> {hour};
+			this.second = new List<string> { second };
+			this.minute = new List<string> { minute };
+			this.hour = new List<string> { hour };
 			this.dayOfMonth = new List<string>(dayOfMonth);
-			this.month = new List<string> {month};
-			this.year = new List<string> {year};
+			this.month = new List<string> { month };
+			this.year = new List<string> { year };
 			this.dayOfWeek = new List<string>(dayOfWeek);
 		}
 	}

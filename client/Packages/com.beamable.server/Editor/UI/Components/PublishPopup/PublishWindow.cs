@@ -60,7 +60,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			var container = this.GetRootVisualContainer();
 			container.Clear();
 
-			var e = new PublishPopup {Model = _model};
+			var e = new PublishPopup { Model = _model };
 
 			e.OnCloseRequested += Close;
 			e.OnSubmit += async (model) =>

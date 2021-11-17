@@ -46,7 +46,8 @@ namespace Beamable.UI.Scripts
 
 		public void ApplyOffset()
 		{
-			if (Target == null) return;
+			if (Target == null)
+				return;
 
 			Target.anchoredPosition = Offset;
 			Target.anchorMin = Vector2.up;

@@ -1,13 +1,13 @@
-﻿using System;
-using System.IO;
-using System.Text;
-using System.Threading.Tasks;
-using Beamable.Common;
+﻿using Beamable.Common;
 using Beamable.Editor.Environment;
 using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.ManagerClient;
+using System;
+using System.IO;
+using System.Text;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -121,7 +121,8 @@ namespace Beamable.Editor.UI.Model
 
 		public void DetachLogs()
 		{
-			if (!AreLogsAttached) return;
+			if (!AreLogsAttached)
+				return;
 
 			AreLogsAttached = false;
 			OnLogsDetached?.Invoke();
@@ -130,7 +131,8 @@ namespace Beamable.Editor.UI.Model
 
 		public void AttachLogs()
 		{
-			if (AreLogsAttached) return;
+			if (AreLogsAttached)
+				return;
 			AreLogsAttached = true;
 			OnLogsAttached?.Invoke();
 			OnLogsAttachmentChanged?.Invoke(true);

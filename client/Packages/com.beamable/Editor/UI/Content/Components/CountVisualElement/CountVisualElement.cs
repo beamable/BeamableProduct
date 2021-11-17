@@ -35,7 +35,9 @@ namespace Beamable.Editor.Content.Components
 			}
 		}
 
-		public new class UxmlFactory : UxmlFactory<CountVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<CountVisualElement, UxmlTraits>
+		{
+		}
 
 		public CountVisualElement() : base(nameof(CountVisualElement)) { }
 
@@ -66,7 +68,8 @@ namespace Beamable.Editor.Content.Components
 		{
 			private UxmlBoolAttributeDescription isDangerous = new UxmlBoolAttributeDescription
 			{
-				name = "is-dangerous", defaultValue = false
+				name = "is-dangerous",
+				defaultValue = false
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription

@@ -16,7 +16,9 @@ namespace Beamable.Common.Shop
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class SKULink : ContentLink<SKUContent> { }
+	public class SKULink : ContentLink<SKUContent>
+	{
+	}
 
 	/// <summary>
 	/// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
@@ -32,5 +34,7 @@ namespace Beamable.Common.Shop
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class SKURef : ContentRef<SKUContent> { }
+	public class SKURef : ContentRef<SKUContent>
+	{
+	}
 }

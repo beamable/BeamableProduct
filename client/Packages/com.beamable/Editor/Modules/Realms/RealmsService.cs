@@ -31,13 +31,13 @@ namespace Beamable.Editor.Realms
 			}
 
 			return _requester.Request<GetCustomerResponseDTO>(Method.GET, $"/basic/realms/customer", useCache: true)
-			                 .Map(resp => new CustomerView
-			                 {
-				                 Cid = resp.customer.cid.ToString(),
-				                 Alias = resp.customer.alias,
-				                 DisplayName = resp.customer.name,
-				                 Projects = ProcessProjects(resp.customer.projects)
-			                 });
+							 .Map(resp => new CustomerView
+							 {
+								 Cid = resp.customer.cid.ToString(),
+								 Alias = resp.customer.alias,
+								 DisplayName = resp.customer.name,
+								 Projects = ProcessProjects(resp.customer.projects)
+							 });
 		}
 
 		public Promise<List<RealmView>> GetGames()
@@ -48,20 +48,20 @@ namespace Beamable.Editor.Realms
 			}
 
 			return _requester.Request<GetGameResponseDTO>(Method.GET, $"/basic/realms/games", useCache: true)
-			                 .Map(resp =>
-			                 {
-				                 var processed = ProcessProjects(resp.projects);
-				                 return processed;
-			                 })
-			                 .Recover(ex =>
-			                 {
-				                 if (ex is PlatformRequesterException err && err.Status == 403)
-				                 {
-					                 return new List<RealmView>(); // empty list.
-				                 }
+							 .Map(resp =>
+							 {
+								 var processed = ProcessProjects(resp.projects);
+								 return processed;
+							 })
+							 .Recover(ex =>
+							 {
+								 if (ex is PlatformRequesterException err && err.Status == 403)
+								 {
+									 return new List<RealmView>(); // empty list.
+								 }
 
-				                 throw ex;
-			                 });
+								 throw ex;
+							 });
 		}
 
 		public Promise<RealmView> GetRealm()
@@ -146,17 +146,17 @@ namespace Beamable.Editor.Realms
 
 			// TODO: Consider using helper methods here to do the parent/child stuff, and the bfs-depth-find stuff
 			return _requester
-			       .Request<GetGameResponseDTO>(Method.GET, $"/basic/realms/game?rootPID={pid}", useCache: true)
-			       .Map(resp => ProcessProjects(resp.projects))
-			       .Recover(ex =>
-			       {
-				       if (ex is PlatformRequesterException err && err.Status == 403)
-				       {
-					       return new List<RealmView>(); // empty set.
-				       }
+				   .Request<GetGameResponseDTO>(Method.GET, $"/basic/realms/game?rootPID={pid}", useCache: true)
+				   .Map(resp => ProcessProjects(resp.projects))
+				   .Recover(ex =>
+				   {
+					   if (ex is PlatformRequesterException err && err.Status == 403)
+					   {
+						   return new List<RealmView>(); // empty set.
+					   }
 
-				       throw ex;
-			       });
+					   throw ex;
+				   });
 		}
 	}
 
@@ -201,7 +201,8 @@ namespace Beamable.Editor.Realms
 
 		public bool Equals(RealmView other)
 		{
-			if (other == null) return false;
+			if (other == null)
+				return false;
 			return Pid == other.Pid;
 		}
 

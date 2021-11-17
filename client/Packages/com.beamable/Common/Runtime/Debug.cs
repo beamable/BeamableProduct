@@ -15,7 +15,7 @@ namespace Beamable.Common
 #if UNITY_EDITOR || UNITY_ENGINE
 		private static readonly BeamableLogProvider DefaultProvider = new BeamableLogUnityProvider();
 #else
-      private static readonly BeamableLogProvider DefaultProvider = new SilentLogProvider();
+		private static readonly BeamableLogProvider DefaultProvider = new SilentLogProvider();
 #endif // UNITY_EDITOR || UNITY_ENGINE
 
 		public static BeamableLogProvider Provider
@@ -93,13 +93,27 @@ namespace Beamable.Common
 	/// </summary>
 	public class SilentLogProvider : BeamableLogProvider
 	{
-		public override void Info(string message) { }
-		public override void Info(string message, params object[] args) { }
-		public override void Warning(string message) { }
-		public override void Warning(string message, params object[] args) { }
-		public override void Error(Exception ex) { }
-		public override void Error(string error) { }
-		public override void Error(string error, params object[] args) { }
+		public override void Info(string message)
+		{
+		}
+		public override void Info(string message, params object[] args)
+		{
+		}
+		public override void Warning(string message)
+		{
+		}
+		public override void Warning(string message, params object[] args)
+		{
+		}
+		public override void Error(Exception ex)
+		{
+		}
+		public override void Error(string error)
+		{
+		}
+		public override void Error(string error, params object[] args)
+		{
+		}
 	}
 
 	/// <summary>

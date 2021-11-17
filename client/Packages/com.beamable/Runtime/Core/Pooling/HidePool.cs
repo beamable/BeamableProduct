@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using Beamable.Extensions;
+﻿using Beamable.Extensions;
+using System.Collections.Generic;
 using UnityEngine;
 
 // Because moving objects outside of the camera is like 100x faster than activating and deactivating them.
@@ -145,9 +145,9 @@ namespace Beamable.Pooling
 		}
 
 		public GameObject SpawnAttached(GameObject prefab,
-		                                Vector3 worldPos,
-		                                Transform parent,
-		                                LinkedList<HidePoolObject> owner)
+										Vector3 worldPos,
+										Transform parent,
+										LinkedList<HidePoolObject> owner)
 		{
 			GameObject go = SpawnAt(prefab, worldPos, owner);
 			Transform t = go.transform;
@@ -180,8 +180,8 @@ namespace Beamable.Pooling
 				Recycle(hpo, owner);
 			}
 #else
-         hpo = instance.GetComponent<HidePoolObject>();
-         Recycle(hpo, owner);
+			hpo = instance.GetComponent<HidePoolObject>();
+			Recycle(hpo, owner);
 #endif
 		}
 

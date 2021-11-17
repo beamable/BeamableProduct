@@ -1,3 +1,6 @@
+using Beamable.Content;
+// Promise library
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -5,9 +8,6 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-// Promise library
-using Beamable.Serialization.SmallerJSON;
-using Beamable.Content;
 // pull into common
 using UnityEngine;
 using UnityEngine.AddressableAssets;
@@ -28,7 +28,8 @@ namespace Beamable.Common.Content
 
 			public void SetValue(object obj, object value)
 			{
-				if (!FieldType.IsAssignableFrom(value?.GetType())) return;
+				if (!FieldType.IsAssignableFrom(value?.GetType()))
+					return;
 
 				RawField.SetValue(obj, value);
 			}
@@ -44,7 +45,7 @@ namespace Beamable.Common.Content
 			}
 
 			if (!typeof(string).IsAssignableFrom(argType) &&
-			    argType.GetCustomAttribute<System.SerializableAttribute>() != null)
+				argType.GetCustomAttribute<System.SerializableAttribute>() != null)
 			{
 				try
 				{
@@ -94,7 +95,7 @@ namespace Beamable.Common.Content
 					foreach (var elem in arr)
 					{
 						var serializedElem = SerializeArgument(elem, elem?.GetType() ?? typeof(void));
-						serializedArray[index] = new PropertyValue {rawJson = serializedElem};
+						serializedArray[index] = new PropertyValue { rawJson = serializedElem };
 						index++;
 					}
 
@@ -113,7 +114,8 @@ namespace Beamable.Common.Content
 				case byte by:
 				case int i:
 					return Json.Serialize(arg, new StringBuilder());
-				case char c: return Json.Serialize((int)c, new StringBuilder());
+				case char c:
+					return Json.Serialize((int)c, new StringBuilder());
 
 				/* SPECIAL TYPES... */
 				case IContentRef contentRef:
@@ -127,7 +129,7 @@ namespace Beamable.Common.Content
 #endif
 
 				case AssetReference addressable:
-					var addressableDict = new ArrayDict {{"referenceKey", addressable.AssetGUID},};
+					var addressableDict = new ArrayDict { { "referenceKey", addressable.AssetGUID }, };
 					if (addressable.SubObjectName != null)
 					{
 						addressableDict.Add("subObjectName", addressable.SubObjectName);
@@ -167,7 +169,7 @@ namespace Beamable.Common.Content
 						}
 
 						var fieldJson = SerializeArgument(fieldValue, fieldType);
-						dict.Add(field.SerializedName, new PropertyValue {rawJson = fieldJson});
+						dict.Add(field.SerializedName, new PropertyValue { rawJson = fieldJson });
 					}
 
 					return Json.Serialize(dict, new StringBuilder());
@@ -285,7 +287,8 @@ namespace Beamable.Common.Content
 
 						IList GetList(string fieldName, Type t, object ins)
 						{
-							if (t == typeof(object)) return null;
+							if (t == typeof(object))
+								return null;
 							var field = t.GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
 							if (field == null)
 							{
@@ -305,7 +308,7 @@ namespace Beamable.Common.Content
 
 						return dictInst;
 					case IList list when type.IsArray:
-						var output = (IList)Activator.CreateInstance(type, new object[] {list.Count});
+						var output = (IList)Activator.CreateInstance(type, new object[] { list.Count });
 						var fieldType = type.GetElementType();
 						for (var index = 0; index < list.Count; index++)
 						{
@@ -316,7 +319,7 @@ namespace Beamable.Common.Content
 
 					case IList list when TryGetElementType(list, type, out var listElementType):
 
-						var countConstructor = type.GetConstructor(new[] {typeof(int)});
+						var countConstructor = type.GetConstructor(new[] { typeof(int) });
 						var hasCountConstructor = countConstructor != null;
 
 						var listInstance = hasCountConstructor
@@ -430,7 +433,7 @@ namespace Beamable.Common.Content
 
 				// XXX: Revisit this check when we allow customers to only implement IContentObject instead of subclass ContentObject
 				var isCustomContentObject = currentType.BaseType == typeof(System.Object) &&
-				                            currentType.GetInterfaces().Contains(typeof(IContentObject));
+											currentType.GetInterfaces().Contains(typeof(IContentObject));
 				if (isNull || isObjectType || isScriptableObjectType || isContentObject || isCustomContentObject)
 				{
 					return new List<FieldInfo>();
@@ -438,9 +441,9 @@ namespace Beamable.Common.Content
 
 				// private fields are only available via reflection on the target type, and any base type fields will need to be gathered by manually walking the type tree.
 				var privateFields = currentType
-				                    .GetFields(BindingFlags.NonPublic | BindingFlags.Instance |
-				                               BindingFlags.DeclaredOnly)
-				                    .ToList();
+									.GetFields(BindingFlags.NonPublic | BindingFlags.Instance |
+											   BindingFlags.DeclaredOnly)
+									.ToList();
 				privateFields.AddRange(GetAllPrivateFields(currentType.BaseType));
 				return privateFields;
 			}
@@ -449,7 +452,7 @@ namespace Beamable.Common.Content
 			var listOfPrivateFields = GetAllPrivateFields(type).Where(field =>
 			{
 				return field.GetCustomAttributes<SerializeField>() != null ||
-				       field.GetCustomAttribute<ContentFieldAttribute>() != null;
+					   field.GetCustomAttribute<ContentFieldAttribute>() != null;
 			});
 
 			var serializableFields = listOfPublicFields.Union(listOfPrivateFields);
@@ -532,7 +535,7 @@ namespace Beamable.Common.Content
 						}
 
 						var jsonValue = SerializeArgument(fieldValue, fieldType);
-						fieldDict.Add("data", new PropertyValue {rawJson = jsonValue});
+						fieldDict.Add("data", new PropertyValue { rawJson = jsonValue });
 						propertyDict.Add(fieldName, fieldDict);
 						break;
 				}
@@ -551,12 +554,12 @@ namespace Beamable.Common.Content
 		public string Serialize<TContent>(TContent content)
 			where TContent : IContentObject, new()
 		{
-			var contentDict = new ArrayDict {{"id", content.Id}, {"version", content.Version ?? ""}};
+			var contentDict = new ArrayDict { { "id", content.Id }, { "version", content.Version ?? "" } };
 
 			if (content is ISerializationCallbackReceiver receiver)
 				receiver.OnBeforeSerialize();
 
-			var propertyDict = new PropertyValue {rawJson = SerializeProperties(content)};
+			var propertyDict = new PropertyValue { rawJson = SerializeProperties(content) };
 			contentDict.Add("properties", propertyDict);
 
 			var json = Json.Serialize(contentDict, new StringBuilder());
@@ -568,9 +571,9 @@ namespace Beamable.Common.Content
 		public TContentBase DeserializeByType(string json, Type contentType)
 		{
 			return (TContentBase)GetType()
-			                     .GetMethod(nameof(Deserialize))
-			                     .MakeGenericMethod(contentType)
-			                     .Invoke(this, new[] {json});
+								 .GetMethod(nameof(Deserialize))
+								 .MakeGenericMethod(contentType)
+								 .Invoke(this, new[] { json });
 		}
 
 		public TContent Deserialize<TContent>(string json)
@@ -582,7 +585,8 @@ namespace Beamable.Common.Content
 			var deserializedResult = Json.Deserialize(json);
 			var root = deserializedResult as ArrayDict;
 
-			if (root == null) throw new ContentDeserializationException(json);
+			if (root == null)
+				throw new ContentDeserializationException(json);
 			var id = root["id"].ToString();
 
 			// the id may be a former name. We should always prefer to use the latest name based on the actual type of data being deserialized.
@@ -640,12 +644,12 @@ namespace Beamable.Common.Content
 						var hackResult = DeserializeResult(dataValue, field.FieldType);
 						field.SetValue(instance, hackResult);
 						if (hackResult is ISerializationCallbackReceiver rec &&
-						    !(hackResult is IIgnoreSerializationCallbacks))
+							!(hackResult is IIgnoreSerializationCallbacks))
 							rec.OnAfterDeserialize();
 					}
 
 					if (propertyDict.TryGetValue("$link", out var linkValue) ||
-					    propertyDict.TryGetValue("link", out linkValue))
+						propertyDict.TryGetValue("link", out linkValue))
 					{
 						if (!typeof(IContentLink).IsAssignableFrom(field.FieldType))
 						{
@@ -660,7 +664,7 @@ namespace Beamable.Common.Content
 					}
 
 					if (propertyDict.TryGetValue("$links", out var linksValue) ||
-					    propertyDict.TryGetValue("links", out linksValue))
+						propertyDict.TryGetValue("links", out linksValue))
 					{
 						var set = (IList<object>)linksValue;
 						var links = Activator.CreateInstance(field.FieldType, set.Count);

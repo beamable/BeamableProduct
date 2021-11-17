@@ -1,9 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.Toolbox.UI.Components;
 using Beamable.Editor.UI.Buss;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -51,7 +51,7 @@ namespace Beamable.Editor.Toolbox.Components
 				row.FilterName = typeName;
 				row.Refresh();
 				var isOrientationSupported = (Model.Query?.HasOrientationConstraint ?? false)
-				                             && Model.Query.FilterIncludes(orientation);
+											 && Model.Query.FilterIncludes(orientation);
 				row.SetValue(isOrientationSupported);
 
 				listRoot.Add(row);

@@ -12,7 +12,8 @@ namespace Beamable.Theme.Appliers
 		public override void Apply(ThemeObject theme, TransformOffsetBehaviour component)
 		{
 			var transformStyle = theme.GetPaletteStyle(Transform);
-			if (transformStyle == null) return;
+			if (transformStyle == null)
+				return;
 
 			component.Offset = transformStyle.PositionOffset;
 			component.Scale = transformStyle.Scale;

@@ -16,7 +16,7 @@ namespace Beamable.Server
 		}
 
 		public StorageObjectAttribute(string storageName,
-		                              [System.Runtime.CompilerServices.CallerFilePath] string sourcePath = "")
+									  [System.Runtime.CompilerServices.CallerFilePath] string sourcePath = "")
 		{
 			StorageName = storageName;
 			SourcePath = sourcePath;

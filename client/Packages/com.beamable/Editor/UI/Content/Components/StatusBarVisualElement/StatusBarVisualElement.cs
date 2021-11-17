@@ -1,10 +1,10 @@
+using Beamable.Editor.Content.Models;
+using Beamable.Editor.UI.Buss;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using Beamable.Editor.Content.Models;
-using Beamable.Editor.UI.Buss;
-using UnityEngine;
 using UnityEditor;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -17,12 +17,14 @@ namespace Beamable.Editor.Content.Components
 {
 	public class StatusBarVisualElement : ContentManagerComponent
 	{
-		public new class UxmlFactory : UxmlFactory<StatusBarVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<StatusBarVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription customText =
-				new UxmlStringAttributeDescription {name = "custom-text", defaultValue = "nada"};
+				new UxmlStringAttributeDescription { name = "custom-text", defaultValue = "nada" };
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
 			{

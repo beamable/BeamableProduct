@@ -15,7 +15,9 @@ namespace Beamable.Platform.Tests.Inventory
 	[System.Serializable]
 	public class InventoryTestItemRef : ItemRef<InventoryTestItem>
 	{
-		public InventoryTestItemRef() { }
+		public InventoryTestItemRef()
+		{
+		}
 
 		public InventoryTestItemRef(string id)
 		{

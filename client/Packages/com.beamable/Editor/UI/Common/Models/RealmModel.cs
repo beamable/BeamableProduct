@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Beamable.Common;
+using Beamable.Editor.Realms;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Common;
-using Beamable.Editor.Realms;
 using UnityEngine;
 
 namespace Beamable.Editor.UI.Common.Models

@@ -1,7 +1,7 @@
-﻿using System;
-using Beamable.Common.Content;
+﻿using Beamable.Common.Content;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Validation;
+using System;
 
 namespace Beamable.Editor.Schedules
 {
@@ -17,12 +17,12 @@ namespace Beamable.Editor.Schedules
 		private readonly LabeledHourPickerVisualElement _activeToHourComponent;
 
 		public EventDaysScheduleModel(LabeledTextField descriptionComponent,
-		                              LabeledHourPickerVisualElement startTimeComponent,
-		                              LabeledDaysPickerVisualElement daysComponent,
-		                              LabeledCheckboxVisualElement neverExpiresComponent,
-		                              LabeledDatePickerVisualElement activeToDateComponent,
-		                              LabeledHourPickerVisualElement activeToHourComponent,
-		                              Action<bool, string> refreshConfirmButtonCallback)
+									  LabeledHourPickerVisualElement startTimeComponent,
+									  LabeledDaysPickerVisualElement daysComponent,
+									  LabeledCheckboxVisualElement neverExpiresComponent,
+									  LabeledDatePickerVisualElement activeToDateComponent,
+									  LabeledHourPickerVisualElement activeToHourComponent,
+									  Action<bool, string> refreshConfirmButtonCallback)
 		{
 			_descriptionComponent = descriptionComponent;
 			_startTimeComponent = startTimeComponent;
@@ -40,11 +40,11 @@ namespace Beamable.Editor.Schedules
 			Schedule newSchedule = new Schedule();
 
 			ScheduleParser.PrepareGeneralData(newSchedule, _descriptionComponent.Value,
-			                                  _startTimeComponent.SelectedHour, _neverExpiresComponent.Value,
-			                                  $"{_activeToDateComponent.SelectedDate}{_activeToHourComponent.SelectedHour}");
+											  _startTimeComponent.SelectedHour, _neverExpiresComponent.Value,
+											  $"{_activeToDateComponent.SelectedDate}{_activeToHourComponent.SelectedHour}");
 
 			ScheduleParser.PrepareDaysModeData(newSchedule, _startTimeComponent.Hour, _startTimeComponent.Minute,
-			                                   _startTimeComponent.Second, _daysComponent.DaysPicker.GetSelectedDays());
+											   _startTimeComponent.Second, _daysComponent.DaysPicker.GetSelectedDays());
 
 			return newSchedule;
 		}

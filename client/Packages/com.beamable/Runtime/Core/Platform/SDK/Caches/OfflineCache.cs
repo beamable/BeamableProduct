@@ -1,19 +1,21 @@
-﻿using System;
+﻿using Beamable.Common;
+using Beamable.Common.Api;
+using System;
 using System.Collections.Generic;
-using UnityEngine;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Security.Cryptography;
-using Beamable.Common;
-using Beamable.Common.Api;
+using System.Text;
+using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Api.Caches
 {
 	public class OfflineCache
 	{
-		private OfflineCache() { }
+		private OfflineCache()
+		{
+		}
 
 		private const string _offlineCacheRoot = "beamable";
 		private const string _offlineCacheDir = "cache";
@@ -27,7 +29,7 @@ namespace Beamable.Api.Caches
 
 		private readonly static string _offlineCacheRootDir =
 			Path.Combine(Application.persistentDataPath, _offlineCacheRoot, _offlineCacheDir, _cid, _pid,
-			             Application.version);
+						 Application.version);
 
 		private readonly MD5 _md5 = MD5.Create();
 
@@ -42,8 +44,8 @@ namespace Beamable.Api.Caches
 		}
 
 		public static void Merge<TKey, TValue>(string key,
-		                                       IAccessToken token,
-		                                       Dictionary<long, Dictionary<TKey, TValue>> data)
+											   IAccessToken token,
+											   Dictionary<long, Dictionary<TKey, TValue>> data)
 		{
 			_instance.Merge(key + token.RefreshToken, data);
 		}
@@ -122,7 +124,7 @@ namespace Beamable.Api.Caches
 						CacheToDict<TKey, TValue>(currentData); //Convert offlinecache data to dictionary
 
 					//Take the Union of the data
-					var dictionaries = new Dictionary<long, Dictionary<TKey, TValue>>[] {currentDictionary, nextData};
+					var dictionaries = new Dictionary<long, Dictionary<TKey, TValue>>[] { currentDictionary, nextData };
 
 					foreach (var dict in dictionaries)
 					{
@@ -143,8 +145,8 @@ namespace Beamable.Api.Caches
 			foreach (Dictionary<K, V> dict in dictionaries)
 			{
 				result = result.Union(dict)
-				               .GroupBy(g => g.Key)
-				               .ToDictionary(pair => pair.Key, pair => pair.First().Value);
+							   .GroupBy(g => g.Key)
+							   .ToDictionary(pair => pair.Key, pair => pair.First().Value);
 			}
 
 			return result;

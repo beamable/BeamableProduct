@@ -26,7 +26,7 @@ namespace Beamable.Theme
 		public static T Clone<T>(this T binding)
 			where T : GeneralPaletteBinding, new()
 		{
-			return new T {Name = binding.Name};
+			return new T { Name = binding.Name };
 		}
 	}
 
@@ -71,7 +71,8 @@ namespace Beamable.Theme
 
 		public T Find(string name, T defaultValue = default)
 		{
-			if (string.IsNullOrEmpty(name)) return defaultValue;
+			if (string.IsNullOrEmpty(name))
+				return defaultValue;
 
 			var option = Styles?.FirstOrDefault(c => c.Enabled && c.Name.ToLower().Equals(name.ToLower()));
 			return option ?? defaultValue;

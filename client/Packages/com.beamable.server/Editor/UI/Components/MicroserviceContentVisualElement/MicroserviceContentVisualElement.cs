@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.UI.Components;
@@ -8,6 +5,9 @@ using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI.Components;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -37,15 +37,18 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public IEnumerable<ServiceBaseVisualElement> ServiceVisualElements =>
 			_servicesListElement.Children().Where(ve => ve is ServiceBaseVisualElement)
-			                    .Cast<ServiceBaseVisualElement>();
+								.Cast<ServiceBaseVisualElement>();
 
-		public new class UxmlFactory : UxmlFactory<MicroserviceContentVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<MicroserviceContentVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
 			{
-				name = "custom-text", defaultValue = "nada"
+				name = "custom-text",
+				defaultValue = "nada"
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -99,7 +102,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				var dockerAnnouncement = new DockerAnnouncementModel();
 				dockerAnnouncement.OnInstall = () => Application.OpenURL("https://docs.docker.com/get-docker/");
-				var element = new DockerAnnouncementVisualElement() {DockerAnnouncementModel = dockerAnnouncement};
+				var element = new DockerAnnouncementVisualElement() { DockerAnnouncementModel = dockerAnnouncement };
 				Root.Q<VisualElement>("announcementList").Add(element);
 				element.Refresh();
 				return;
@@ -171,7 +174,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				var storagePreviewWarning = new StorageDepencencyWarningModel();
 				var previewElement =
-					new StorageDepencencyWarningVisualElement() {StorageDepencencyWarningModel = storagePreviewWarning};
+					new StorageDepencencyWarningVisualElement() { StorageDepencencyWarningModel = storagePreviewWarning };
 				Root.Q<VisualElement>("announcementList").Add(previewElement);
 				previewElement.Refresh();
 			}
@@ -181,13 +184,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 
 		private MicroserviceVisualElement GetMicroserviceVisualElement(string serviceName,
-		                                                               out bool isPublishFeatureDisabled)
+																	   out bool isPublishFeatureDisabled)
 		{
 			var service = Model.GetModel<MicroserviceModel>(serviceName);
 
 			if (service != null)
 			{
-				var serviceElement = new MicroserviceVisualElement {Model = service};
+				var serviceElement = new MicroserviceVisualElement { Model = service };
 				_modelToVisual[service] = serviceElement;
 				service.OnLogsDetached += () =>
 				{
@@ -217,7 +220,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			if (service != null)
 			{
-				var serviceElement = new RemoteMicroserviceVisualElement {Model = service};
+				var serviceElement = new RemoteMicroserviceVisualElement { Model = service };
 
 				_modelToVisual[service] = serviceElement;
 				serviceElement.Refresh();
@@ -237,7 +240,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			if (mongoService != null)
 			{
-				var mongoServiceElement = new StorageObjectVisualElement {Model = mongoService};
+				var mongoServiceElement = new StorageObjectVisualElement { Model = mongoService };
 				_modelToVisual[mongoService] = mongoServiceElement;
 				mongoService.OnLogsDetached += () =>
 				{
@@ -326,8 +329,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			int Comparer(VisualElement a, VisualElement b)
 			{
-				if (a is CreateServiceBaseVisualElement) return -1;
-				if (b is CreateServiceBaseVisualElement) return 1;
+				if (a is CreateServiceBaseVisualElement)
+					return -1;
+				if (b is CreateServiceBaseVisualElement)
+					return 1;
 				return config.MicroserviceOrderComparer(a.name, b.name);
 			}
 

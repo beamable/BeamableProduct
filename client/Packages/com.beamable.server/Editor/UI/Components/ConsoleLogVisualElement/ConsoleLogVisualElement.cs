@@ -1,10 +1,10 @@
-using System.Collections.Generic;
 using Beamable.Common.Content;
 using Beamable.Editor.Content.Models;
 using Beamable.Editor.UI.Buss;
-using UnityEngine;
-using System;
 using Beamable.Editor.UI.Model;
+using System;
+using System.Collections.Generic;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -24,13 +24,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private VisualElement _postfixIcon;
 		private LogMessage _model;
 
-		public new class UxmlFactory : UxmlFactory<ConsoleLogVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<ConsoleLogVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
 			{
-				name = "custom-text", defaultValue = "nada"
+				name = "custom-text",
+				defaultValue = "nada"
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription

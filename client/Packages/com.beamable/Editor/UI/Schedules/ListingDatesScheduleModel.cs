@@ -1,7 +1,7 @@
-﻿using System;
-using Beamable.Common.Content;
+﻿using Beamable.Common.Content;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Validation;
+using System;
 
 namespace Beamable.Editor.Schedules
 {
@@ -17,14 +17,14 @@ namespace Beamable.Editor.Schedules
 		private readonly LabeledHourPickerVisualElement _periodToHourComponent;
 
 		public ListingDatesScheduleModel(LabeledTextField descriptionComponent,
-		                                 LabeledCalendarVisualElement calendarComponent,
-		                                 LabeledCheckboxVisualElement neverExpiresComponent,
-		                                 LabeledDatePickerVisualElement activeToDateComponent,
-		                                 LabeledHourPickerVisualElement activeToHourComponent,
-		                                 LabeledCheckboxVisualElement allDayComponent,
-		                                 LabeledHourPickerVisualElement periodFromHourComponent,
-		                                 LabeledHourPickerVisualElement periodToHourComponent,
-		                                 Action<bool, string> refreshConfirmButton)
+										 LabeledCalendarVisualElement calendarComponent,
+										 LabeledCheckboxVisualElement neverExpiresComponent,
+										 LabeledDatePickerVisualElement activeToDateComponent,
+										 LabeledHourPickerVisualElement activeToHourComponent,
+										 LabeledCheckboxVisualElement allDayComponent,
+										 LabeledHourPickerVisualElement periodFromHourComponent,
+										 LabeledHourPickerVisualElement periodToHourComponent,
+										 Action<bool, string> refreshConfirmButton)
 		{
 			_descriptionComponent = descriptionComponent;
 			_calendarComponent = calendarComponent;
@@ -46,9 +46,9 @@ namespace Beamable.Editor.Schedules
 			Schedule newSchedule = new Schedule();
 
 			ScheduleParser.PrepareGeneralData(newSchedule, _descriptionComponent.Value,
-			                                  DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ssZ"),
-			                                  _neverExpiresComponent.Value,
-			                                  $"{_activeToDateComponent.SelectedDate}{_activeToHourComponent.SelectedHour}");
+											  DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+											  _neverExpiresComponent.Value,
+											  $"{_activeToDateComponent.SelectedDate}{_activeToHourComponent.SelectedHour}");
 
 			int fromHour = 0;
 			int toHour = 0;
@@ -66,12 +66,12 @@ namespace Beamable.Editor.Schedules
 			if (!_allDayComponent.Value)
 			{
 				ScheduleParser.PrepareListingDatesModeData(newSchedule, fromHour, toHour, fromMinute, toMinute,
-				                                           _calendarComponent.SelectedDays);
+														   _calendarComponent.SelectedDays);
 			}
 			else
 			{
 				ScheduleParser.PrepareDateModeData(newSchedule, "*", "*", "*",
-				                                   _calendarComponent.SelectedDays);
+												   _calendarComponent.SelectedDays);
 			}
 
 			return newSchedule;

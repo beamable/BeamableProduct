@@ -1,8 +1,8 @@
-using System.Collections.Generic;
 using Beamable.Api.Analytics.Batch;
 using Beamable.Coroutines;
 using Beamable.Serialization;
 using Beamable.Spew;
+using System.Collections.Generic;
 
 namespace Beamable.Api.Analytics
 {
@@ -85,15 +85,15 @@ namespace Beamable.Api.Analytics
 		/// <param name="batchTimeoutSeconds">Batch timeout seconds before expiration.</param>
 		/// <param name="batchMaxSize">Batch max size before expiration.</param>
 		public AnalyticsTracker(PlatformService platform,
-		                        PlatformRequester requester,
-		                        CoroutineService coroutineService,
-		                        int batchTimeoutSeconds,
-		                        int batchMaxSize)
+								PlatformRequester requester,
+								CoroutineService coroutineService,
+								int batchTimeoutSeconds,
+								int batchMaxSize)
 		{
 			_platform = platform;
 			batchManager =
 				new PersistentBatchManager<AnalyticsEventRequest>(coroutineService, _storageKey, _defaultBatchCapacity,
-				                                                  _defaultBatchTimeout);
+																  _defaultBatchTimeout);
 
 			this.service = new AnalyticsService(platform, requester);
 
@@ -132,13 +132,13 @@ namespace Beamable.Api.Analytics
 			if (sendImmediately)
 			{
 				AnalyticsLogger.LogFormat("AnalyticsTracker.TrackEvent: Immediate payload={0}",
-				                          analyticsEventRequest.Payload);
+										  analyticsEventRequest.Payload);
 				service.SendAnalyticsEvent(analyticsEventRequest);
 			}
 			else
 			{
 				AnalyticsLogger.LogFormat("AnalyticsTracker.TrackEvent: Batching payload={0}",
-				                          analyticsEventRequest.Payload);
+										  analyticsEventRequest.Payload);
 				batchManager.Add(analyticsEventRequest);
 			}
 		}

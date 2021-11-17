@@ -31,16 +31,16 @@ namespace Beamable.Server.Editor
 			var assemblyBuilder = new AssemblyBuilder(outputAssembly, scripts);
 
 			// Exclude a reference to the copy of the assembly in the Assets folder, if any.
-			assemblyBuilder.excludeReferences = new string[] {assemblyProjectPath};
+			assemblyBuilder.excludeReferences = new string[] { assemblyProjectPath };
 
 			// Called on main thread
-			assemblyBuilder.buildStarted += delegate(string assemblyPath)
+			assemblyBuilder.buildStarted += delegate (string assemblyPath)
 			{
 				Debug.LogFormat("Assembly build started for {0}", assemblyPath);
 			};
 
 			// Called on main thread
-			assemblyBuilder.buildFinished += delegate(string assemblyPath, CompilerMessage[] compilerMessages)
+			assemblyBuilder.buildFinished += delegate (string assemblyPath, CompilerMessage[] compilerMessages)
 			{
 				var errorCount = compilerMessages.Count(m => m.type == CompilerMessageType.Error);
 				var warningCount = compilerMessages.Count(m => m.type == CompilerMessageType.Warning);

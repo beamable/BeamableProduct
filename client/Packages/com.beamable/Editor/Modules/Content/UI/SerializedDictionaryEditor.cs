@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using Beamable.Common.Content;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -57,7 +57,8 @@ namespace Beamable.Editor.Content.UI
 			var nextFoldout = EditorGUI.Foldout(foldoutRect, property.isExpanded, label);
 			property.isExpanded = nextFoldout;
 
-			if (!nextFoldout) return;
+			if (!nextFoldout)
+				return;
 
 			var labelRect = new Rect(position.x + 10, foldoutRect.yMax, position.width - 10, foldoutRect.height);
 			EditorGUI.LabelField(labelRect, "(keys)", "(values)");

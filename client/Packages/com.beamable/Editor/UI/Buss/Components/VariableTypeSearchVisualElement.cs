@@ -1,10 +1,10 @@
+using Beamable.Editor.UI.Buss.Extensions;
+using Beamable.Editor.UI.Buss.Model;
+using Beamable.UI.Buss;
+using Beamable.UI.Buss.Properties;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Beamable.Editor.UI.Buss.Extensions;
-using Beamable.UI.Buss;
-using Beamable.UI.Buss.Properties;
-using Beamable.Editor.UI.Buss.Model;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -23,7 +23,7 @@ namespace Beamable.Editor.UI.Buss.Components
 		}
 
 		public const string COMMON = BeamableComponentsConstants.UI_PACKAGE_PATH +
-		                             "/Buss/Components/variableTypeSearchVisualElement";
+									 "/Buss/Components/variableTypeSearchVisualElement";
 
 		public Action<VariableSetWrapper, string> OnSelected;
 
@@ -66,7 +66,8 @@ namespace Beamable.Editor.UI.Buss.Components
 				var attr = wrapper.VariableSet.GetType().GetCustomAttribute<VariableTypeNameAttribute>();
 				var name = attr?.Name ?? wrapper.VariableSet.VariableType.Name;
 
-				if (!name.ToLower().Contains(_filterText)) continue;
+				if (!name.ToLower().Contains(_filterText))
+					continue;
 
 				button.text = name;
 				button.clickable.clicked += () =>

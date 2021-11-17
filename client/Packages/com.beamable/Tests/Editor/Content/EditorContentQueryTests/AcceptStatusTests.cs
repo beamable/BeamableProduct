@@ -11,7 +11,8 @@ namespace Beamable.Editor.Tests.Content.EditorContentQueryTests
 		{
 			var query = new EditorContentQuery
 			{
-				StatusConstraint = ContentModificationStatus.SERVER_ONLY, HasStatusConstraint = true
+				StatusConstraint = ContentModificationStatus.SERVER_ONLY,
+				HasStatusConstraint = true
 			};
 
 			Assert.IsTrue(query.AcceptStatus(ContentModificationStatus.SERVER_ONLY));

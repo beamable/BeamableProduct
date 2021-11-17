@@ -1,21 +1,21 @@
-using Beamable.Editor.Content.Models;
-using Beamable.Editor.Content;
-using UnityEngine;
-using Beamable.Editor.UI.Buss.Components;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Common;
 using Beamable.Editor.Config;
+using Beamable.Editor.Content;
 using Beamable.Editor.Content.Components;
+using Beamable.Editor.Content.Models;
 using Beamable.Editor.Environment;
 using Beamable.Editor.Modules.Theme;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.Toolbox.UI.Components;
+using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
+using UnityEngine;
 using Debug = UnityEngine.Debug;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -29,13 +29,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class MicroserviceBreadcrumbsVisualElement : MicroserviceComponent
 	{
-		public new class UxmlFactory : UxmlFactory<MicroserviceBreadcrumbsVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<MicroserviceBreadcrumbsVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
 			{
-				name = "custom-text", defaultValue = "nada"
+				name = "custom-text",
+				defaultValue = "nada"
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription

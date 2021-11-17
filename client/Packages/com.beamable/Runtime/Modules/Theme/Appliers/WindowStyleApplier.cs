@@ -15,7 +15,8 @@ namespace Beamable.Theme.Appliers
 		public override void Apply(ThemeObject theme, BeamableWindow component)
 		{
 			var style = theme.GetPaletteStyle(Window);
-			if (style == null) return;
+			if (style == null)
+				return;
 
 			if (component.HeaderImage != null)
 			{

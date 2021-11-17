@@ -1,7 +1,7 @@
-using System.Collections.Generic;
 using Beamable.UI.Buss;
 using Beamable.UI.Buss.Properties;
 using NUnit.Framework;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.Tests.UI.Buss.BussCascadeTests

@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using Beamable.Serialization;
+using System.Collections.Generic;
 
 namespace Beamable.Api.Analytics
 {

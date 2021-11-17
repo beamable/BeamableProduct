@@ -1,9 +1,9 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Experimental.Common.Api.Calendars;
+using System;
+using System.Collections.Generic;
 
 namespace Beamable.Experimental.Api.Calendars
 {
@@ -21,7 +21,9 @@ namespace Beamable.Experimental.Api.Calendars
 	public class CalendarsSubscription : PlatformSubscribable<CalendarQueryResponse, CalendarView>
 	{
 		public CalendarsSubscription(PlatformService platform, IBeamableRequester requester, string service) : base(
-			platform, requester, service) { }
+			platform, requester, service)
+		{
+		}
 
 		public void ForceRefresh(string scope)
 		{
@@ -69,7 +71,7 @@ namespace Beamable.Experimental.Api.Calendars
 	/// 
 	/// </summary>
 	public class CalendarsService : AbsCalendarApi,
-	                                IHasPlatformSubscriber<CalendarsSubscription, CalendarQueryResponse, CalendarView>
+									IHasPlatformSubscriber<CalendarsSubscription, CalendarQueryResponse, CalendarView>
 	{
 		public CalendarsSubscription Subscribable
 		{

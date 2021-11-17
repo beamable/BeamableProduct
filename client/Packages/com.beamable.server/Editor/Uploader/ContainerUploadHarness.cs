@@ -1,10 +1,10 @@
+using Beamable.Editor;
+using Beamable.Server.Editor.DockerCommands;
+using ICSharpCode.SharpZipLib.Tar;
 using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using Beamable.Server.Editor.DockerCommands;
-using Beamable.Editor;
-using ICSharpCode.SharpZipLib.Tar;
 using UnityEditor;
 using UnityEngine;
 
@@ -69,9 +69,9 @@ namespace Beamable.Server.Editor.Uploader
 		/// Upload the specified container to the private Docker registry.
 		/// </summary>
 		public async Task UploadContainer(MicroserviceDescriptor descriptor,
-		                                  Action onSuccess,
-		                                  Action onFailure,
-		                                  string imageId = null)
+										  Action onSuccess,
+										  Action onFailure,
+										  string imageId = null)
 		{
 			// TODO: Either check disk space prior to extraction, or offer a streaming-only solution? ~ACM 2019-12-18
 			var filename = FileUtil.GetUniqueTempPathInProject() + ".tar";

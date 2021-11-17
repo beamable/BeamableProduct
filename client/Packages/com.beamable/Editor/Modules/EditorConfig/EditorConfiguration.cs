@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEditor;
 using UnityEditor.Callbacks;
+using UnityEngine;
 
 namespace Beamable.Editor.Modules.EditorConfig
 {
@@ -120,7 +120,7 @@ namespace Beamable.Editor.Modules.EditorConfig
 		public static HashSet<string> GetDefineSymbols()
 		{
 			var symbolString = PlayerSettings.GetScriptingDefineSymbolsForGroup(BuildTargetGroup.Standalone);
-			var symbols = symbolString.Split(new char[] {';'}, StringSplitOptions.RemoveEmptyEntries);
+			var symbols = symbolString.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
 			return new HashSet<string>(symbols);
 		}
 

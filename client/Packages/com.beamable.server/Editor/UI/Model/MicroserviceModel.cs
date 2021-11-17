@@ -1,14 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Editor.Environment;
 using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.ManagerClient;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -179,7 +179,7 @@ namespace Beamable.Editor.UI.Model
 			}, ServiceBuilder.HasBuildDirectory);
 
 			evt.menu.BeamableAppendAction($"Run Snyk Tests{hasImageSuffix}", pos => RunSnykTests(),
-			                              ServiceBuilder.HasImage);
+										  ServiceBuilder.HasImage);
 
 			evt.menu.BeamableAppendAction($"{localCategory}/Open in CLI", pos => OpenInCli(), IsRunning);
 			evt.menu.BeamableAppendAction($"{localCategory}/View Documentation", pos => OpenLocalDocs(), IsRunning);
@@ -209,12 +209,12 @@ namespace Beamable.Editor.UI.Model
 					OnSortChanged?.Invoke();
 				}, MicroserviceConfiguration.Instance.GetMicroserviceIndex(Name) > 0);
 				evt.menu.BeamableAppendAction($"Order/Move Down", pos =>
-				                              {
-					                              MicroserviceConfiguration.Instance.MoveMicroserviceIndex(Name, 1);
-					                              OnSortChanged?.Invoke();
-				                              },
-				                              MicroserviceConfiguration.Instance.GetMicroserviceIndex(Name) <
-				                              MicroserviceConfiguration.Instance.Microservices.Count - 1);
+											  {
+												  MicroserviceConfiguration.Instance.MoveMicroserviceIndex(Name, 1);
+												  OnSortChanged?.Invoke();
+											  },
+											  MicroserviceConfiguration.Instance.GetMicroserviceIndex(Name) <
+											  MicroserviceConfiguration.Instance.Microservices.Count - 1);
 			}
 
 			if (!AreLogsAttached)
@@ -294,8 +294,8 @@ namespace Beamable.Editor.UI.Model
 				baseProcess.StartInfo.FileName = "cmd.exe";
 				baseProcess.StartInfo.Arguments = $"/C {command}";
 #else
-                baseProcess.StartInfo.FileName = "sh";
-                baseProcess.StartInfo.Arguments = $"-c \"{command}\"";
+				baseProcess.StartInfo.FileName = "sh";
+				baseProcess.StartInfo.Arguments = $"-c \"{command}\"";
 #endif
 				return baseProcess;
 			}
@@ -306,25 +306,26 @@ namespace Beamable.Editor.UI.Model
 			var process = GetProcess(baseCommand);
 			process.Start();
 #else
-            var tmpPath = Path.Combine(FileUtil.GetUniqueTempPathInProject(), "..");
+			var tmpPath = Path.Combine(FileUtil.GetUniqueTempPathInProject(), "..");
 
-            tmpPath = Path.Combine(tmpPath, $"{Descriptor.ContainerName}_cli_shell");
-            tmpPath = Path.GetFullPath(tmpPath);
-            if(File.Exists(tmpPath))
-                FileUtil.DeleteFileOrDirectory(tmpPath);
+			tmpPath = Path.Combine(tmpPath, $"{Descriptor.ContainerName}_cli_shell");
+			tmpPath = Path.GetFullPath(tmpPath);
+			if (File.Exists(tmpPath))
+				FileUtil.DeleteFileOrDirectory(tmpPath);
 
-            using (var file = new StreamWriter(tmpPath, false, Encoding.UTF8)) {
-                file.WriteLine("#!/bin/sh");
-                file.WriteLine(baseCommand);
-            }
-            using (var process = GetProcess($"chmod +x {tmpPath}"))
-            {
-                process.Start();
-            }
-            using (var process = GetProcess($"open {tmpPath}"))
-            {
-                process.Start();
-            }
+			using (var file = new StreamWriter(tmpPath, false, Encoding.UTF8))
+			{
+				file.WriteLine("#!/bin/sh");
+				file.WriteLine(baseCommand);
+			}
+			using (var process = GetProcess($"chmod +x {tmpPath}"))
+			{
+				process.Start();
+			}
+			using (var process = GetProcess($"open {tmpPath}"))
+			{
+				process.Start();
+			}
 #endif
 		}
 

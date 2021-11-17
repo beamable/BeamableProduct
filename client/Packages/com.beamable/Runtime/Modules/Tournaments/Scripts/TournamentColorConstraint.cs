@@ -29,11 +29,14 @@ namespace Beamable.Tournaments
 		}
 
 		// Update is called once per frame
-		void Update() { }
+		void Update()
+		{
+		}
 
 		public void ReleaseOverride()
 		{
-			if (!_useOverride) return;
+			if (!_useOverride)
+				return;
 			_useOverride = false;
 			Refresh();
 		}
@@ -49,7 +52,8 @@ namespace Beamable.Tournaments
 
 		public void Refresh(TournamentsBehaviour master = null)
 		{
-			if (_useOverride) return;
+			if (_useOverride)
+				return;
 
 			if (master == null)
 			{
@@ -59,7 +63,7 @@ namespace Beamable.Tournaments
 			var colorData = master.GetColorForClass(Color);
 
 			var modColor = new Color(colorData.r * RedCoef, colorData.g * GreenCoef, colorData.b * BlueCoef,
-			                         colorData.a * AlphaCoef);
+									 colorData.a * AlphaCoef);
 			foreach (var image in BoundImages)
 			{
 				image.color = modColor;

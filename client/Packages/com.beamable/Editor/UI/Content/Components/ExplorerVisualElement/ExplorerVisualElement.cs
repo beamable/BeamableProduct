@@ -1,11 +1,11 @@
-using System.Collections.Generic;
-using Beamable.Editor.Content.Models;
-using Beamable.Editor.UI.Buss;
-using UnityEditor.IMGUI.Controls;
-using System;
 using Beamable.Common;
 using Beamable.Common.Content;
+using Beamable.Editor.Content.Models;
+using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
+using System;
+using System.Collections.Generic;
+using UnityEditor.IMGUI.Controls;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -44,8 +44,8 @@ namespace Beamable.Editor.Content.Components
 
 			var contentElem = Root.Q<VisualElement>("content");
 
-			_treeContainer = new VisualElement() {name = "tree-container"};
-			_listContainer = new VisualElement() {name = "list-container"};
+			_treeContainer = new VisualElement() { name = "tree-container" };
+			_listContainer = new VisualElement() { name = "list-container" };
 			contentElem.AddSplitPane(_treeContainer, _listContainer);
 
 			_breadcrumbsElement = new BreadcrumbsVisualElement();
@@ -86,11 +86,11 @@ namespace Beamable.Editor.Content.Components
 					Model.ClearSelectedContentTypes();
 					break;
 				case BreadcrumbType.ContenType:
-					Model.SelectedContentTypes = new List<TreeViewItem> {breadCrumb.ContentTypeTreeViewItem};
+					Model.SelectedContentTypes = new List<TreeViewItem> { breadCrumb.ContentTypeTreeViewItem };
 
 					break;
 				case BreadcrumbType.ContentItem:
-					Model.SelectedContents = new List<ContentItemDescriptor> {breadCrumb.ContentItemDescriptor};
+					Model.SelectedContents = new List<ContentItemDescriptor> { breadCrumb.ContentItemDescriptor };
 					break;
 			}
 		}

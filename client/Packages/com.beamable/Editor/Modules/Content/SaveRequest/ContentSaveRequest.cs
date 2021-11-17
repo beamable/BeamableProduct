@@ -1,10 +1,10 @@
-using System.Collections.Generic;
-using System.Text;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Content;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
+using System.Collections.Generic;
+using System.Text;
 
 namespace Beamable.Editor.Content.SaveRequest
 {

@@ -15,6 +15,6 @@ namespace Beamable.Common.Content.Validation
 	/// </summary>
 	public class MustBeItem : MustReferenceContent
 	{
-		public MustBeItem(bool allowNull = false) : base(allowNull, allowedTypes: new[] {typeof(ItemContent)}) { }
+		public MustBeItem(bool allowNull = false) : base(allowNull, allowedTypes: new[] { typeof(ItemContent) }) { }
 	}
 }

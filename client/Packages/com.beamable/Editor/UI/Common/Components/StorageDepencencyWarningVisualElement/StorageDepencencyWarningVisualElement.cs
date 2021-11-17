@@ -21,7 +21,9 @@ namespace Beamable.Editor.Toolbox.Components
 		}
 
 		public StorageDepencencyWarningVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(StorageDepencencyWarningVisualElement)}/{nameof(StorageDepencencyWarningVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(StorageDepencencyWarningVisualElement)}/{nameof(StorageDepencencyWarningVisualElement)}")
+		{
+		}
 
 		public override void Refresh()
 		{

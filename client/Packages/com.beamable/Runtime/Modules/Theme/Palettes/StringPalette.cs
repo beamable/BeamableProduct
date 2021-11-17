@@ -11,12 +11,14 @@ namespace Beamable.Theme.Palettes
 	{
 		public override StringStyle DefaultValue()
 		{
-			return new StringStyle {DefaultContent = ""};
+			return new StringStyle { DefaultContent = "" };
 		}
 	}
 
 	[System.Serializable]
-	public class StringBinding : StringPalette.PaletteBinding { }
+	public class StringBinding : StringPalette.PaletteBinding
+	{
+	}
 
 	public static class StringBindingExtensions
 	{

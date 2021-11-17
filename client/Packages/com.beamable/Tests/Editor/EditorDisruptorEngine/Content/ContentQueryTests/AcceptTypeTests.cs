@@ -1,11 +1,11 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Common.Content;
 using Beamable.Common.Inventory;
 using Beamable.Content;
 using Beamable.Editor.Content;
 using Beamable.Inventory;
 using NUnit.Framework;
+using System;
+using System.Collections.Generic;
 
 namespace Beamable.Editor.Tests.Beamable.Content.ContentQueryTests
 {
@@ -14,7 +14,7 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentQueryTests
 		[Test]
 		public void DisallowsUnrelatedType()
 		{
-			var query = new ContentQuery {TypeConstraints = new HashSet<Type> {typeof(int)}};
+			var query = new ContentQuery { TypeConstraints = new HashSet<Type> { typeof(int) } };
 
 			Assert.IsFalse(query.AcceptType<ItemContent>(false));
 		}
@@ -22,7 +22,7 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentQueryTests
 		[Test]
 		public void DisallowInheritedType()
 		{
-			var query = new ContentQuery {TypeConstraints = new HashSet<Type> {typeof(SubContent)}};
+			var query = new ContentQuery { TypeConstraints = new HashSet<Type> { typeof(SubContent) } };
 
 			Assert.IsFalse(query.AcceptType<ParentContent>(false));
 		}
@@ -30,7 +30,7 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentQueryTests
 		[Test]
 		public void AllowInheritedType()
 		{
-			var query = new ContentQuery {TypeConstraints = new HashSet<Type> {typeof(ParentContent)}};
+			var query = new ContentQuery { TypeConstraints = new HashSet<Type> { typeof(ParentContent) } };
 
 			Assert.IsTrue(query.AcceptType<SubContent>(true));
 		}
@@ -38,7 +38,7 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentQueryTests
 		[Test]
 		public void AllowExact()
 		{
-			var query = new ContentQuery {TypeConstraints = new HashSet<Type> {typeof(SubContent)}};
+			var query = new ContentQuery { TypeConstraints = new HashSet<Type> { typeof(SubContent) } };
 
 			Assert.IsTrue(query.AcceptType<SubContent>(true));
 		}
@@ -46,13 +46,17 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentQueryTests
 		[Test]
 		public void AllowExact2()
 		{
-			var query = new ContentQuery {TypeConstraints = new HashSet<Type> {typeof(SubContent)}};
+			var query = new ContentQuery { TypeConstraints = new HashSet<Type> { typeof(SubContent) } };
 
 			Assert.IsTrue(query.AcceptType<SubContent>(false));
 		}
 
-		class ParentContent : ContentObject { }
+		class ParentContent : ContentObject
+		{
+		}
 
-		class SubContent : ParentContent { }
+		class SubContent : ParentContent
+		{
+		}
 	}
 }

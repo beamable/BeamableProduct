@@ -12,7 +12,8 @@ namespace Beamable.Editor
 			base.OnInspectorGUI();
 
 			var obj = target as ReparenterBehaviour;
-			if (obj == null) return;
+			if (obj == null)
+				return;
 
 			if (GUILayout.Button("Recalculate"))
 			{

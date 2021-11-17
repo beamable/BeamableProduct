@@ -1,7 +1,7 @@
+using Beamable.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Common;
 using UnityEditor;
 using UnityEditor.PackageManager;
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
@@ -126,7 +126,8 @@ namespace Beamable.Editor.Environment
 
 			void Callback()
 			{
-				if (!req.IsCompleted) return;
+				if (!req.IsCompleted)
+					return;
 				EditorApplication.update -= Callback;
 
 				if (req.Status == StatusCode.Success)
@@ -165,13 +166,14 @@ namespace Beamable.Editor.Environment
 						if (beamablePackage.version != serverPackage.version)
 						{
 							promise.CompleteError(new Exception(
-								                      $"Beamable and Beamable Server need to be at the same version to work. Go to the Unity package manager and resolve the issue. server=[{serverPackage.version}] beamable=[{beamablePackage.version}]"));
+													  $"Beamable and Beamable Server need to be at the same version to work. Go to the Unity package manager and resolve the issue. server=[{serverPackage.version}] beamable=[{beamablePackage.version}]"));
 							return;
 						}
 
 						promise.CompleteSuccess(new BeamablePackageMeta
 						{
-							IsPackageAvailable = true, VersionNumber = serverPackage.version
+							IsPackageAvailable = true,
+							VersionNumber = serverPackage.version
 						});
 					}
 				}
@@ -203,7 +205,8 @@ namespace Beamable.Editor.Environment
 
 			void Callback()
 			{
-				if (!req.IsCompleted) return;
+				if (!req.IsCompleted)
+					return;
 
 				EditorApplication.update -= Callback;
 
@@ -249,7 +252,8 @@ namespace Beamable.Editor.Environment
 
 			void Callback()
 			{
-				if (!req.IsCompleted) return;
+				if (!req.IsCompleted)
+					return;
 
 				EditorApplication.update -= Callback;
 
@@ -281,7 +285,8 @@ namespace Beamable.Editor.Environment
 
 			void Callback()
 			{
-				if (!req.IsCompleted) return;
+				if (!req.IsCompleted)
+					return;
 
 				EditorApplication.update -= Callback;
 
@@ -383,7 +388,7 @@ namespace Beamable.Editor.Environment
 				}
 
 				promise.CompleteSuccess(BeamablePackageUpdateMeta.CurrentVersionNumber ==
-				                        BeamablePackageUpdateMeta.NewestVersionNumber);
+										BeamablePackageUpdateMeta.NewestVersionNumber);
 			}
 
 			EditorApplication.update += Check;

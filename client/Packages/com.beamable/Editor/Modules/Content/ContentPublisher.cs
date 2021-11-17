@@ -1,8 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
@@ -12,6 +7,11 @@ using Beamable.Editor.Content.SaveRequest;
 using Beamable.Platform.SDK;
 using Beamable.Serialization.SmallerJSON;
 using Modules.Content;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -79,7 +79,10 @@ namespace Beamable.Editor.Content
 		{
 			var definition = new ContentDefinition
 			{
-				Checksum = _io.Checksum(content), Id = content.Id, Content = content, Tags = content.Tags
+				Checksum = _io.Checksum(content),
+				Id = content.Id,
+				Content = content,
+				Tags = content.Tags
 			};
 
 			return definition;
@@ -93,8 +96,8 @@ namespace Beamable.Editor.Content
 				References = new List<ManifestReferenceSuperset>()
 			};
 			return _requester
-			       .RequestJson<ContentManifest>(Method.POST, $"/basic/content/manifest?id={manifest.Id}", manifest)
-			       .Map(response => new Unit());
+				   .RequestJson<ContentManifest>(Method.POST, $"/basic/content/manifest?id={manifest.Id}", manifest)
+				   .Map(response => new Unit());
 		}
 
 		/// <summary>
@@ -107,11 +110,11 @@ namespace Beamable.Editor.Content
 			var operation =
 				PushEachPieceOfContentToComet(publishSet, progressCallback)
 					.FlatMap(referenceSet =>
-						         PushManifestToComet(referenceSet.Values.ToList(), publishSet.ManifestId))
+								 PushManifestToComet(referenceSet.Values.ToList(), publishSet.ManifestId))
 					.Then(_ =>
 					{
 						var totalOperations = publishSet.totalOpsCount + 1; // one comes from saving the new manifest...
-						// We're done here. Just call the final progressCallback with a "finished" PublishProgress.
+																			// We're done here. Just call the final progressCallback with a "finished" PublishProgress.
 						progressCallback(new PublishProgress
 						{
 							TotalOperations = totalOperations,
@@ -196,12 +199,12 @@ namespace Beamable.Editor.Content
 				var promiseGenerator = new Func<Promise<int>>(() =>
 				{
 					var promise = PushContentToComet(batch)
-					              .Map(response =>
-					              {
-						              response.content.ForEach(UpdateReference);
-						              return batch.Count;
-					              })
-					              .Then(_ => CallProgressCallback());
+								  .Map(response =>
+								  {
+									  response.content.ForEach(UpdateReference);
+									  return batch.Count;
+								  })
+								  .Then(_ => CallProgressCallback());
 					progressPromises.Add(promise);
 					return promise;
 				});
@@ -217,8 +220,8 @@ namespace Beamable.Editor.Content
 			}
 
 			return Promise.ExecuteSerially(promiseGenerators).FlatMap(__ =>
-				                                                          Promise.Sequence(progressPromises)
-					                                                          .Map(_ => workingReferenceSet));
+																		  Promise.Sequence(progressPromises)
+																			  .Map(_ => workingReferenceSet));
 		}
 
 		/// <summary>
@@ -234,7 +237,7 @@ namespace Beamable.Editor.Content
 				contentDefs.Add(PrepareContentForPublish(contentObj));
 			}
 
-			var dict = new ArrayDict {{"content", contentDefs}};
+			var dict = new ArrayDict { { "content", contentDefs } };
 			var reqJson = Json.Serialize(dict, new StringBuilder());
 			return _requester.Request<ContentSaveResponse>(Method.POST, "/basic/content", reqJson);
 		}
@@ -245,7 +248,7 @@ namespace Beamable.Editor.Content
 		/// <param name="references"></param>
 		/// <returns></returns>
 		private Promise<ContentManifest> PushManifestToComet(List<ManifestReferenceSuperset> references,
-		                                                     string manifestId)
+															 string manifestId)
 		{
 			var manifest = new ManifestSaveRequest
 			{
@@ -255,7 +258,7 @@ namespace Beamable.Editor.Content
 				References = references
 			};
 			return _requester.RequestJson<ContentManifest>(Method.POST, $"/basic/content/manifest?id={manifest.Id}",
-			                                               manifest);
+														   manifest);
 		}
 	}
 }

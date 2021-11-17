@@ -13,15 +13,15 @@ namespace Beamable.Spew
 		private List<string> _allFlags;
 
 		public BeamableSpewSettingsProvider(string path,
-		                                    SettingsScope scopes = SettingsScope.Project,
-		                                    IEnumerable<string> keywords = null) : base(path, scopes, keywords) { }
+											SettingsScope scopes = SettingsScope.Project,
+											IEnumerable<string> keywords = null) : base(path, scopes, keywords) { }
 
 		[SettingsProvider]
 		public static SettingsProvider CreateSpewSettingsProvider()
 		{
 			BeamableSpewSettingsProvider provider =
 				new BeamableSpewSettingsProvider("Project/Beamable/Verbose Logging", SettingsScope.Project);
-			provider.keywords = new HashSet<string>(new[] {"Spew"});
+			provider.keywords = new HashSet<string>(new[] { "Spew" });
 			return provider;
 		}
 
@@ -65,12 +65,13 @@ namespace Beamable.Spew
 			}
 
 			PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup,
-			                                                 sb.ToString());
+															 sb.ToString());
 		}
 
 		private void ScrapeAllFlags()
 		{
-			if (_allFlags != null) return;
+			if (_allFlags != null)
+				return;
 
 			var allFlagsSet = new HashSet<string>();
 

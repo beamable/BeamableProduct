@@ -21,7 +21,7 @@ namespace Beamable.UI.Buss.Properties
 		[BussPropertyField("style")]
 		public OptionalFontStyle Style = new OptionalFontStyle();
 
-		private List<Optional> AllOptions => new List<Optional> {Size, FontAsset, FontMaterial, Style};
+		private List<Optional> AllOptions => new List<Optional> { Size, FontAsset, FontMaterial, Style };
 
 		public FontBussProperty OverrideWith(FontBussProperty other)
 		{

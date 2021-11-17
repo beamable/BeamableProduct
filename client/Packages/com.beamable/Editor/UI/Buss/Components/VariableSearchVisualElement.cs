@@ -1,10 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Editor.UI.Buss.Extensions;
 using Beamable.Editor.UI.Buss.Model;
 using Beamable.UI.Buss;
 using Beamable.UI.Buss.Properties;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER
@@ -22,7 +22,7 @@ namespace Beamable.Editor.UI.Buss.Components
 		}
 
 		public const string COMMON = BeamableComponentsConstants.UI_PACKAGE_PATH +
-		                             "/Buss/Components/variableSearchVisualElement";
+									 "/Buss/Components/variableSearchVisualElement";
 
 		private VisualElement _container;
 		private TextField _textField;
@@ -49,9 +49,9 @@ namespace Beamable.Editor.UI.Buss.Components
 			// find the available variables...
 
 			_availableTypeSet = _model.SafeComputedStyles.Scope.GetAvailableTypes()
-			                          .FirstOrDefault(
-				                          t => t.VariableSet.VariableType.IsAssignableFrom(
-					                          PropertyFieldWrapper.PropertyType));
+									  .FirstOrDefault(
+										  t => t.VariableSet.VariableType.IsAssignableFrom(
+											  PropertyFieldWrapper.PropertyType));
 
 			if (_availableTypeSet == null)
 			{
@@ -85,7 +85,8 @@ namespace Beamable.Editor.UI.Buss.Components
 
 			foreach (var variable in _availableVariables)
 			{
-				if (!variable.Name.ToLower().Contains(_filterText)) continue;
+				if (!variable.Name.ToLower().Contains(_filterText))
+					continue;
 				var button = new Button();
 				button.text = variable.Name;
 

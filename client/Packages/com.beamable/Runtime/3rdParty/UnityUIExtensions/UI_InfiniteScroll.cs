@@ -108,7 +108,7 @@ namespace Beamable.UnityEngineClone.UI.Extensions
 			if (_isVertical)
 			{
 				_recordOffsetY = items[0].GetComponent<RectTransform>().anchoredPosition.y -
-				                 items[1].GetComponent<RectTransform>().anchoredPosition.y;
+								 items[1].GetComponent<RectTransform>().anchoredPosition.y;
 				_disableMarginY =
 					_recordOffsetY * _itemCount /
 					2; // _scrollRect.GetComponent<RectTransform>().rect.height/2 + items[0].sizeDelta.y;
@@ -117,7 +117,7 @@ namespace Beamable.UnityEngineClone.UI.Extensions
 			if (_isHorizontal)
 			{
 				_recordOffsetX = items[1].GetComponent<RectTransform>().anchoredPosition.x -
-				                 items[0].GetComponent<RectTransform>().anchoredPosition.x;
+								 items[0].GetComponent<RectTransform>().anchoredPosition.x;
 				_disableMarginX =
 					_recordOffsetX * _itemCount /
 					2; //_scrollRect.GetComponent<RectTransform>().rect.width/2 + items[0].sizeDelta.x;
@@ -156,7 +156,7 @@ namespace Beamable.UnityEngineClone.UI.Extensions
 				if (_isHorizontal)
 				{
 					if (_scrollRect.transform.InverseTransformPoint(items[i].gameObject.transform.position).x >
-					    _disableMarginX + _treshold)
+						_disableMarginX + _treshold)
 					{
 						_newAnchoredPosition = items[i].anchoredPosition;
 						_newAnchoredPosition.x -= _itemCount * _recordOffsetX;
@@ -164,7 +164,7 @@ namespace Beamable.UnityEngineClone.UI.Extensions
 						_scrollRect.content.GetChild(_itemCount - 1).transform.SetAsFirstSibling();
 					}
 					else if (_scrollRect.transform.InverseTransformPoint(items[i].gameObject.transform.position).x <
-					         -_disableMarginX)
+							 -_disableMarginX)
 					{
 						_newAnchoredPosition = items[i].anchoredPosition;
 						_newAnchoredPosition.x += _itemCount * _recordOffsetX;
@@ -176,7 +176,7 @@ namespace Beamable.UnityEngineClone.UI.Extensions
 				if (_isVertical)
 				{
 					if (_scrollRect.transform.InverseTransformPoint(items[i].gameObject.transform.position).y >
-					    _disableMarginY + _treshold)
+						_disableMarginY + _treshold)
 					{
 						_newAnchoredPosition = items[i].anchoredPosition;
 						_newAnchoredPosition.y -= _itemCount * _recordOffsetY;
@@ -184,7 +184,7 @@ namespace Beamable.UnityEngineClone.UI.Extensions
 						_scrollRect.content.GetChild(_itemCount - 1).transform.SetAsFirstSibling();
 					}
 					else if (_scrollRect.transform.InverseTransformPoint(items[i].gameObject.transform.position).y <
-					         -_disableMarginY)
+							 -_disableMarginY)
 					{
 						_newAnchoredPosition = items[i].anchoredPosition;
 						_newAnchoredPosition.y += _itemCount * _recordOffsetY;

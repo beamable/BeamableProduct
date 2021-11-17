@@ -1,12 +1,12 @@
-﻿using System;
+﻿using Beamable.Api;
+using Beamable.Api.Inventory;
+using Beamable.Common;
+using Beamable.Common.Api.Inventory;
+using Beamable.Platform.SDK;
+using Beamable.UI.Scripts;
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using Beamable.Api;
-using Beamable.Common;
-using Beamable.UI.Scripts;
-using Beamable.Platform.SDK;
-using Beamable.Api.Inventory;
-using Beamable.Common.Api.Inventory;
 using UnityEngine;
 
 namespace Beamable.Inventory.Scripts
@@ -33,7 +33,9 @@ namespace Beamable.Inventory.Scripts
 			}
 		}
 
-		void Start() { }
+		void Start()
+		{
+		}
 
 		private void OnDestroy()
 		{

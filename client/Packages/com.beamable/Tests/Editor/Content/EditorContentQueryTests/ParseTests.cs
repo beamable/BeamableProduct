@@ -31,7 +31,7 @@ namespace Beamable.Editor.Tests.Content.EditorContentQueryTests
 			var q = EditorContentQuery.Parse("status:modified local");
 			Assert.AreEqual(true, q.HasStatusConstraint);
 			Assert.AreEqual(ContentModificationStatus.MODIFIED | ContentModificationStatus.LOCAL_ONLY,
-			                q.StatusConstraint);
+							q.StatusConstraint);
 		}
 
 		[Test]

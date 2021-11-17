@@ -1,9 +1,9 @@
-using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Leaderboards;
 using Beamable.Common.Content;
 using Beamable.Common.Leaderboards;
+using System.Collections.Generic;
 
 namespace Beamable.Server.Api.Leaderboards
 {
@@ -33,10 +33,10 @@ namespace Beamable.Server.Api.Leaderboards
 		/// <param name="derivatives">Board Ids for boards that must be recalculated when a entry is updated in this board.</param>
 		/// <param name="freezeTime">An arbitrary time since jan 1st 1970 when this leaderboard should be frozen</param>
 		Promise<EmptyResponse> CreateLeaderboard(string leaderboardId,
-		                                         LeaderboardContent templateLeaderboardContent,
-		                                         OptionalLong ttl = null,
-		                                         OptionalListString derivatives = null,
-		                                         OptionalLong freezeTime = null);
+												 LeaderboardContent templateLeaderboardContent,
+												 OptionalLong ttl = null,
+												 OptionalListString derivatives = null,
+												 OptionalLong freezeTime = null);
 
 		/// <summary>
 		/// Call to create a leaderboard without a template as a base.
@@ -50,13 +50,13 @@ namespace Beamable.Server.Api.Leaderboards
 		/// <param name="permissions">Whether or not a client can write to this leaderboard</param>
 		/// <param name="freezeTime">An arbitrary time since jan 1st 1970 when this leaderboard should be frozen</param>
 		Promise<EmptyResponse> CreateLeaderboard(string leaderboardId,
-		                                         OptionalInt maxEntries,
-		                                         OptionalLong ttl,
-		                                         OptionalBoolean partitioned,
-		                                         OptionalCohortSettings cohortSettings,
-		                                         OptionalListString derivatives,
-		                                         OptionalClientPermissions permissions,
-		                                         OptionalLong freezeTime);
+												 OptionalInt maxEntries,
+												 OptionalLong ttl,
+												 OptionalBoolean partitioned,
+												 OptionalCohortSettings cohortSettings,
+												 OptionalListString derivatives,
+												 OptionalClientPermissions permissions,
+												 OptionalLong freezeTime);
 
 		/// <summary>
 		/// Call to create a leaderboard without a template as a base.

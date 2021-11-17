@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -23,13 +23,17 @@ namespace Beamable.Editor.UI.Components
 		public float HalfSize => Size * .5f;
 
 		public LoadingSpinnerVisualElement() : base(
-			$"{BeamableComponentsConstants.UI_PACKAGE_PATH}/Common/Components/{nameof(LoadingSpinnerVisualElement)}/{nameof(LoadingSpinnerVisualElement)}") { }
+			$"{BeamableComponentsConstants.UI_PACKAGE_PATH}/Common/Components/{nameof(LoadingSpinnerVisualElement)}/{nameof(LoadingSpinnerVisualElement)}")
+		{
+		}
 
-		public new class UxmlFactory : UxmlFactory<LoadingSpinnerVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<LoadingSpinnerVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
-			UxmlFloatAttributeDescription size = new UxmlFloatAttributeDescription() {name = "size", defaultValue = 20};
+			UxmlFloatAttributeDescription size = new UxmlFloatAttributeDescription() { name = "size", defaultValue = 20 };
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
 			{

@@ -1,6 +1,6 @@
-using System.Collections.Generic;
 using Beamable.Common.Inventory;
 using Beamable.Content;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.Inventory.Scripts
@@ -15,7 +15,7 @@ namespace Beamable.Inventory.Scripts
 	[CreateAssetMenu(
 		fileName = "Inventory Configuration",
 		menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
-		           "Inventory Configuration",
+				   "Inventory Configuration",
 		order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 	public class InventoryConfiguration : ModuleConfigurationObject
 	{

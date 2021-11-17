@@ -82,17 +82,17 @@ namespace Beamable.Common.Content.Validation
 		public bool IsArray;
 
 		public static ContentValidationArgs Create(ValidationFieldWrapper field,
-		                                           IContentObject obj,
-		                                           IValidationContext ctx)
+												   IContentObject obj,
+												   IValidationContext ctx)
 		{
-			return new ContentValidationArgs {ValidationField = field, Content = obj, Context = ctx};
+			return new ContentValidationArgs { ValidationField = field, Content = obj, Context = ctx };
 		}
 
 		public static ContentValidationArgs Create(ValidationFieldWrapper field,
-		                                           IContentObject obj,
-		                                           IValidationContext ctx,
-		                                           int arrayIndex,
-		                                           bool isArray)
+												   IContentObject obj,
+												   IValidationContext ctx,
+												   int arrayIndex,
+												   bool isArray)
 		{
 			return new ContentValidationArgs
 			{

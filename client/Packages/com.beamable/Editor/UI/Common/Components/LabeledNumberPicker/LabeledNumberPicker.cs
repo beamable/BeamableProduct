@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Beamable.Editor.UI.Buss;
+using System;
 using System.Collections.Generic;
-using Beamable.Editor.UI.Buss;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -13,23 +13,28 @@ namespace Beamable.Editor.UI.Components
 {
 	public class LabeledNumberPicker : BeamableVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<LabeledNumberPicker, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<LabeledNumberPicker, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
 			{
-				name = "label", defaultValue = "Label"
+				name = "label",
+				defaultValue = "Label"
 			};
 
 			private readonly UxmlIntAttributeDescription _minValue = new UxmlIntAttributeDescription
 			{
-				name = "min", defaultValue = Int32.MinValue
+				name = "min",
+				defaultValue = Int32.MinValue
 			};
 
 			private readonly UxmlIntAttributeDescription _maxValue = new UxmlIntAttributeDescription
 			{
-				name = "max", defaultValue = Int32.MaxValue
+				name = "max",
+				defaultValue = Int32.MaxValue
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -116,7 +121,7 @@ namespace Beamable.Editor.UI.Components
 		private void ConfigureOptions()
 		{
 			ContextualMenuManipulator manipulator = new ContextualMenuManipulator(BuildOptions);
-			manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
+			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 			_button.clickable.activators.Clear();
 			_button.AddManipulator(manipulator);
 

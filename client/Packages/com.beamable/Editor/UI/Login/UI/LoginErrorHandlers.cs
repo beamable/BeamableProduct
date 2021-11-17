@@ -1,7 +1,7 @@
+using Beamable.Api;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Api;
 
 namespace Beamable.Editor.Login.UI
 {

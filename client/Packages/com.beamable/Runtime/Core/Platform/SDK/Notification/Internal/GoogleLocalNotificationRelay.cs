@@ -1,7 +1,7 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Pooling;
 using Beamable.Serialization.SmallerJSON;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.Api.Notification.Internal
@@ -35,11 +35,11 @@ namespace Beamable.Api.Notification.Internal
 		}
 
 		public void ScheduleNotification(string channel,
-		                                 string key,
-		                                 string title,
-		                                 string message,
-		                                 DateTime when,
-		                                 Dictionary<string, string> data)
+										 string key,
+										 string title,
+										 string message,
+										 DateTime when,
+										 Dictionary<string, string> data)
 		{
 			try
 			{

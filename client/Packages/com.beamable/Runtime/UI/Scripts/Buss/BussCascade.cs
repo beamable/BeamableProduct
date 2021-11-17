@@ -34,9 +34,9 @@ namespace Beamable.UI.Buss
 
 			// this is the recursive method that we can run for all children, starting with the given element.
 			void Apply(StyleBehaviour element,
-			           StyleObject inherit,
-			           List<SelectorWithStyle> parentRules,
-			           List<SelectorWithStyle> inheritableRules)
+					   StyleObject inherit,
+					   List<SelectorWithStyle> parentRules,
+					   List<SelectorWithStyle> inheritableRules)
 			{
 				var selfRules = new List<SelectorWithStyle>();
 				foreach (var sheet in element.StyleSheets)
@@ -50,14 +50,15 @@ namespace Beamable.UI.Buss
 
 				// find and merge any styles from this element's style sheets
 				var inheritedRules = selfRules.ToList();
-				if (inheritableRules != null) inheritedRules.AddRange(inheritableRules);
+				if (inheritableRules != null)
+					inheritedRules.AddRange(inheritableRules);
 
 				var potentiallyInheritedRules =
 					inheritedRules.Where(r => element.MatchSelectorDistance(r.Selector) > 1).ToList();
 
 				var potentiallyInheritedStyles = potentiallyInheritedRules
-				                                 .SortByWeight()
-				                                 .Select(r => r.Style).ToList();
+												 .SortByWeight()
+												 .Select(r => r.Style).ToList();
 
 				var potentiallyInheritedStyleObject = potentiallyInheritedStyles.MergeStyles();
 
@@ -72,8 +73,8 @@ namespace Beamable.UI.Buss
 				var directMatches = selfRules.Where(r => element.IsDirectMatch(r.Selector)).ToList();
 
 				var styles = directMatches
-				             .SortByWeight()
-				             .Select(r => r.Style).ToList();
+							 .SortByWeight()
+							 .Select(r => r.Style).ToList();
 
 				var direct = styles.MergeStyles();
 

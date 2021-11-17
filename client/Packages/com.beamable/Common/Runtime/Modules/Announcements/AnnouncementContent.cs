@@ -1,7 +1,7 @@
-using System.Collections.Generic;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using Beamable.Common.Shop;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -42,16 +42,16 @@ namespace Beamable.Common.Announcements
 		public string body = "body";
 
 		[Tooltip(ContentObject.TooltipOptional0 +
-		         "The startDate specifies when the announcement becomes available for players to see. If no startDate is specified, the announcement will become visible immediately " +
-		         ContentObject.TooltipStartDate2)]
+				 "The startDate specifies when the announcement becomes available for players to see. If no startDate is specified, the announcement will become visible immediately " +
+				 ContentObject.TooltipStartDate2)]
 		[FormerlySerializedAs("start_date")]
 		[MustBeDateString]
 		[ContentField("start_date")]
 		public OptionalString startDate;
 
 		[Tooltip(ContentObject.TooltipOptional0 +
-		         "The endDate specifies when the announcement stops being available for players to see. If no endDate is specified, the announcement will be visible forever " +
-		         ContentObject.TooltipEndDate2)]
+				 "The endDate specifies when the announcement stops being available for players to see. If no endDate is specified, the announcement will be visible forever " +
+				 ContentObject.TooltipEndDate2)]
 		[FormerlySerializedAs("end_date")]
 		[MustBeDateString]
 		[ContentField("end_date")]
@@ -61,7 +61,7 @@ namespace Beamable.Common.Announcements
 		public List<AnnouncementAttachment> attachments;
 
 		[Tooltip(ContentObject.TooltipOptional0 +
-		         "If specified, stat requirements will limit the audience of this announcement based on player stats")]
+				 "If specified, stat requirements will limit the audience of this announcement based on player stats")]
 		[ContentField("stat_requirements")]
 		public OptionalStats statRequirements;
 

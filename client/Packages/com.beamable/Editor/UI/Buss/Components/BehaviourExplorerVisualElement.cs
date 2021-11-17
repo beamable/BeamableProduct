@@ -1,8 +1,8 @@
+using Beamable.Editor.UI.Buss.Model;
+using Beamable.UI.Buss;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Remoting.Messaging;
-using Beamable.UI.Buss;
-using Beamable.Editor.UI.Buss.Model;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -17,7 +17,7 @@ namespace Beamable.Editor.UI.Buss.Components
 	public class BehaviourExplorerVisualElement : BeamableVisualElement
 	{
 		private const string COMMON = BeamableComponentsConstants.UI_PACKAGE_PATH +
-		                              "/Buss/Components/behaviourExplorerVisualElement";
+									  "/Buss/Components/behaviourExplorerVisualElement";
 
 		private ScrollView _scrollView;
 
@@ -58,10 +58,10 @@ namespace Beamable.Editor.UI.Buss.Components
 
 			// find all root elements.
 			var roots = UnityEngine.SceneManagement.SceneManager.GetActiveScene()
-			                       .GetRootGameObjects()
-			                       //.Select(g => g.GetComponent<StyleBehaviour>())
-			                       .Where(c => c != null)
-			                       .ToList();
+								   .GetRootGameObjects()
+								   //.Select(g => g.GetComponent<StyleBehaviour>())
+								   .Where(c => c != null)
+								   .ToList();
 
 			foreach (var root in roots)
 			{
@@ -161,15 +161,18 @@ namespace Beamable.Editor.UI.Buss.Components
 				style,
 				new StyleVisualElementData
 				{
-					StyleBehaviour = style, Footer = footerElem, Header = headerElem, Body = container
+					StyleBehaviour = style,
+					Footer = footerElem,
+					Header = headerElem,
+					Body = container
 				});
 			return elem;
 		}
 
 		private void HandleMouseOver(StyleBehaviour style,
-		                             MouseOverEvent evt,
-		                             VisualElement header,
-		                             VisualElement footer)
+									 MouseOverEvent evt,
+									 VisualElement header,
+									 VisualElement footer)
 		{
 			header?.AddToClassList("hover");
 			footer?.AddToClassList("hover");

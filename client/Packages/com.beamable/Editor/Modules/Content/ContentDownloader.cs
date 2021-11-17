@@ -1,12 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Content;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using UnityEditor;
 
 namespace Beamable.Editor.Content
@@ -37,25 +37,25 @@ namespace Beamable.Editor.Content
 			var downloadPromiseGenerators = summary.GetAllDownloadEntries().Select(operation =>
 			{
 				return new Func<Promise<Tuple<ContentObject, string>>>(() => FetchContentFromCDN(operation.Uri).Map(
-					                                                       response =>
-					                                                       {
-						                                                       var contentType =
-							                                                       ContentRegistry.GetTypeFromId(
-								                                                       operation.ContentId);
+																		   response =>
+																		   {
+																			   var contentType =
+																				   ContentRegistry.GetTypeFromId(
+																					   operation.ContentId);
 
-						                                                       var newAsset =
-							                                                       serializer.DeserializeByType(
-								                                                       response, contentType);
-						                                                       newAsset.Tags = operation.Tags;
+																			   var newAsset =
+																				   serializer.DeserializeByType(
+																					   response, contentType);
+																			   newAsset.Tags = operation.Tags;
 
-						                                                       completed += 1;
-						                                                       progressCallback?.Invoke(
-							                                                       completed / totalOperations,
-							                                                       (int)completed, totalOperations);
+																			   completed += 1;
+																			   progressCallback?.Invoke(
+																				   completed / totalOperations,
+																				   (int)completed, totalOperations);
 
-						                                                       return new Tuple<ContentObject, string>(
-							                                                       newAsset, operation.AssetPath);
-					                                                       }));
+																			   return new Tuple<ContentObject, string>(
+																				   newAsset, operation.AssetPath);
+																		   }));
 			}).ToList();
 
 			var downloadPromises = new Promise<Unit>();
@@ -98,9 +98,9 @@ namespace Beamable.Editor.Content
 		private IList<ContentDownloadEntryDescriptor> _additions;
 
 		public DownloadSummary(ContentIO contentIO,
-		                       LocalContentManifest localManifest,
-		                       Manifest serverManifest,
-		                       params string[] contentIdFilters)
+							   LocalContentManifest localManifest,
+							   Manifest serverManifest,
+							   params string[] contentIdFilters)
 		{
 			_localManifest = localManifest;
 			_serverManifest = serverManifest;
@@ -117,7 +117,8 @@ namespace Beamable.Editor.Content
 					continue; // don't download this.
 				}
 
-				if (reference.Visibility != "public") continue;
+				if (reference.Visibility != "public")
+					continue;
 
 				var assetPath = ""; // default.
 				var exists = false;

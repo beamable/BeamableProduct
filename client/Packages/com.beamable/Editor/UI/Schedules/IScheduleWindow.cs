@@ -1,5 +1,5 @@
-using System;
 using Beamable.Common.Content;
+using System;
 
 namespace Beamable.Editor.Schedules
 {

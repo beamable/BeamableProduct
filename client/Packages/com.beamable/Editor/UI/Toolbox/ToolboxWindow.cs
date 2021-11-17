@@ -1,16 +1,16 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Editor.Environment;
-using Beamable.Editor.UI.Components;
 using Beamable.Editor.Login.UI;
-using UnityEditor;
 using Beamable.Editor.NoUser;
 using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.Toolbox.UI.Components;
 using Beamable.Editor.UI.Buss.Components;
+using Beamable.Editor.UI.Components;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking.PlayerConnection;
 using Debug = UnityEngine.Debug;
@@ -41,7 +41,7 @@ namespace Beamable.Editor.Toolbox.UI
 			if (ToolboxWindow.IsInstantiated)
 			{
 				if (ToolboxWindow.Instance != null && Instance &&
-				    EditorWindow.FindObjectOfType(typeof(ToolboxWindow)) != null)
+					EditorWindow.FindObjectOfType(typeof(ToolboxWindow)) != null)
 				{
 					ToolboxWindow.Instance.Close();
 				}
@@ -112,8 +112,8 @@ namespace Beamable.Editor.Toolbox.UI
 			BeamablePackages.IsPackageUpdated().Then(isUpdated =>
 			{
 				if (isUpdated && BeamablePackageUpdateMeta.IsBlogSiteAvailable &&
-				    !BeamablePackageUpdateMeta.IsBlogVisited &&
-				    !EditorPrefs.GetBool(BeamableEditorPrefsConstants.IS_PACKAGE_WHATSNEW_ANNOUNCEMENT_IGNORED, true))
+					!BeamablePackageUpdateMeta.IsBlogVisited &&
+					!EditorPrefs.GetBool(BeamableEditorPrefsConstants.IS_PACKAGE_WHATSNEW_ANNOUNCEMENT_IGNORED, true))
 				{
 					ShowWhatsNewAnnouncement();
 				}
@@ -203,7 +203,7 @@ namespace Beamable.Editor.Toolbox.UI
 			EditorAPI.Instance.Then(api =>
 			{
 				if (api.HasDependencies() ||
-				    _model.IsSpecificAnnouncementCurrentlyDisplaying(typeof(WelcomeAnnouncementModel)))
+					_model.IsSpecificAnnouncementCurrentlyDisplaying(typeof(WelcomeAnnouncementModel)))
 				{
 					return;
 				}
@@ -309,7 +309,7 @@ namespace Beamable.Editor.Toolbox.UI
 			{
 				_model.RemoveAnnouncement(updateAvailableAnnouncement);
 				if (!BeamablePackageUpdateMeta.IsBlogVisited &&
-				    BeamablePackageUpdateMeta.IsBlogSiteAvailable)
+					BeamablePackageUpdateMeta.IsBlogSiteAvailable)
 				{
 					ShowWhatsNewAnnouncement();
 				}

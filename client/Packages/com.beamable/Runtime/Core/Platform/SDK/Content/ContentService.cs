@@ -1,12 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Content;
 using Beamable.Service;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Content
@@ -39,8 +39,8 @@ namespace Beamable.Content
 		public Dictionary<Type, ContentCache> _contentCaches = new Dictionary<Type, ContentCache>();
 
 		public ManifestSubscription(IPlatformService platform,
-		                            IBeamableRequester requester,
-		                            string manifestID) : base(platform, requester, "content")
+									IBeamableRequester requester,
+									string manifestID) : base(platform, requester, "content")
 		{
 			ManifestID = manifestID;
 		}
@@ -77,7 +77,7 @@ namespace Beamable.Content
 				// TODO: Put "global" as a constant value somewhere. Currently it lives in a different asm, and its too much trouble.
 				if (ex is PlatformRequesterException err && err.Status == 404 && ManifestID.Equals("global"))
 				{
-					return new ClientManifest {entries = new List<ClientContentInfo>()};
+					return new ClientManifest { entries = new List<ClientContentInfo>() };
 				}
 
 				throw ex;
@@ -89,7 +89,8 @@ namespace Beamable.Content
 			_latestManifiest = data;
 			// TODO work on better refresh strategy. A total wipe isn't very performant.
 			_contentIdTable.Clear();
-			foreach (var entry in _latestManifiest.entries) _contentIdTable.Add(entry.contentId, entry);
+			foreach (var entry in _latestManifiest.entries)
+				_contentIdTable.Add(entry.contentId, entry);
 
 			Notify(data);
 
@@ -107,8 +108,8 @@ namespace Beamable.Content
 	/// ![img beamable-logo]
 	/// </summary>
 	public class ContentService : IContentApi,
-	                              IHasPlatformSubscriber<ManifestSubscription, ClientManifest, ClientManifest>,
-	                              IHasPlatformSubscribers<ManifestSubscription, ClientManifest, ClientManifest>
+								  IHasPlatformSubscriber<ManifestSubscription, ClientManifest, ClientManifest>,
+								  IHasPlatformSubscribers<ManifestSubscription, ClientManifest, ClientManifest>
 	{
 		public string CurrentDefaultManifestID
 		{
@@ -159,8 +160,8 @@ namespace Beamable.Content
 #endif
 
 		public ContentService(IPlatformService platform,
-		                      IBeamableRequester requester,
-		                      IBeamableFilesystemAccessor filesystemAccessor)
+							  IBeamableRequester requester,
+							  IBeamableFilesystemAccessor filesystemAccessor)
 		{
 			CurrentDefaultManifestID = ServiceManager.Resolve<ContentParameterProvider>().manifestID;
 			Requester = requester;
@@ -230,7 +231,7 @@ namespace Beamable.Content
 					typeof(IHttpRequester),
 					typeof(IBeamableFilesystemAccessor)
 				});
-				rawCache = (ContentCache)constructor.Invoke(new[] {Requester, (object)FilesystemAccessor});
+				rawCache = (ContentCache)constructor.Invoke(new[] { Requester, (object)FilesystemAccessor });
 
 				_contentCaches.Add(contentType, rawCache);
 			}

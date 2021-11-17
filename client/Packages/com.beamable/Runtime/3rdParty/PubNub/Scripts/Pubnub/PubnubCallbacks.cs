@@ -41,10 +41,10 @@ namespace PubNubMessaging.Core
 	internal static class PubnubCallbacks
 	{
 		internal static void SendCallbacks<T>(IJsonPluggableLibrary jsonPluggableLibrary,
-		                                      ChannelEntity channelEntity,
-		                                      List<object> itemMessage,
-		                                      CallbackType callbackType,
-		                                      bool checkType)
+											  ChannelEntity channelEntity,
+											  List<object> itemMessage,
+											  CallbackType callbackType,
+											  bool checkType)
 		{
 			if ((itemMessage != null) && (itemMessage.Count > 0))
 			{
@@ -59,22 +59,22 @@ namespace PubNubMessaging.Core
 		}
 
 		internal static void SendCallbackChannelEntity<T>(IJsonPluggableLibrary jsonPluggableLibrary,
-		                                                  ChannelEntity channelEntity,
-		                                                  List<object> itemMessage,
-		                                                  CallbackType callbackType,
-		                                                  bool checkType)
+														  ChannelEntity channelEntity,
+														  List<object> itemMessage,
+														  CallbackType callbackType,
+														  bool checkType)
 		{
 			LoggingMethod.WriteToLog(string.Format(
-				                         "DateTime {0}, SendCallbackChannelEntity: currentChannel: {1},  typeof(T): {2}, TypeParameterType: {3}",
-				                         DateTime.Now.ToString(),
-				                         channelEntity.ChannelID.ChannelOrChannelGroupName,
-				                         typeof(T).ToString(), channelEntity.ChannelParams.TypeParameterType
-			                         ), LoggingMethod.LevelInfo);
+										 "DateTime {0}, SendCallbackChannelEntity: currentChannel: {1},  typeof(T): {2}, TypeParameterType: {3}",
+										 DateTime.Now.ToString(),
+										 channelEntity.ChannelID.ChannelOrChannelGroupName,
+										 typeof(T).ToString(), channelEntity.ChannelParams.TypeParameterType
+									 ), LoggingMethod.LevelInfo);
 
 			if (checkType)
 			{
 				if ((channelEntity.ChannelParams.TypeParameterType.Equals(typeof(string)))
-				    || (channelEntity.ChannelParams.TypeParameterType.Equals(typeof(object))))
+					|| (channelEntity.ChannelParams.TypeParameterType.Equals(typeof(object))))
 				{
 					SendCallback<T>(jsonPluggableLibrary, channelEntity, itemMessage, callbackType);
 				}
@@ -86,21 +86,21 @@ namespace PubNubMessaging.Core
 		}
 
 		internal static void SendCallbacks<T>(IJsonPluggableLibrary jsonPluggableLibrary,
-		                                      RequestState<T> asynchRequestState,
-		                                      List<object> itemMessage,
-		                                      CallbackType callbackType,
-		                                      bool checkType)
+											  RequestState<T> asynchRequestState,
+											  List<object> itemMessage,
+											  CallbackType callbackType,
+											  bool checkType)
 		{
 			if (asynchRequestState.ChannelEntities != null)
 			{
 				SendCallbacks<T>(jsonPluggableLibrary, asynchRequestState.ChannelEntities, itemMessage, callbackType,
-				                 checkType);
+								 checkType);
 			}
 			else
 			{
 				LoggingMethod.WriteToLog(
 					string.Format("DateTime {0}, SendCallbacks1: Callback type={1}", DateTime.Now.ToString(),
-					              callbackType.ToString()), LoggingMethod.LevelInfo);
+								  callbackType.ToString()), LoggingMethod.LevelInfo);
 
 				if (callbackType.Equals(CallbackType.Success))
 				{
@@ -110,9 +110,9 @@ namespace PubNubMessaging.Core
 		}
 
 		internal static void SendCallbackBasedOnType<T>(IJsonPluggableLibrary jsonPluggableLibrary,
-		                                                PubnubChannelCallback<T> channelCallbacks,
-		                                                List<object> itemMessage,
-		                                                CallbackType callbackType)
+														PubnubChannelCallback<T> channelCallbacks,
+														List<object> itemMessage,
+														CallbackType callbackType)
 		{
 			if (callbackType.Equals(CallbackType.Connect))
 			{
@@ -133,45 +133,45 @@ namespace PubNubMessaging.Core
 		}
 
 		internal static void SendCallbacks<T>(IJsonPluggableLibrary jsonPluggableLibrary,
-		                                      List<ChannelEntity> channelEntities,
-		                                      List<object> itemMessage,
-		                                      CallbackType callbackType,
-		                                      bool checkType)
+											  List<ChannelEntity> channelEntities,
+											  List<object> itemMessage,
+											  CallbackType callbackType,
+											  bool checkType)
 		{
 			if (channelEntities != null)
 			{
 				if ((itemMessage != null) && (itemMessage.Count > 0))
 				{
 					LoggingMethod.WriteToLog(string.Format("DateTime {0}, SendCallbacks2: itemMessage.Count={1} {2}",
-					                                       DateTime.Now.ToString(),
-					                                       itemMessage.Count.ToString(),
-					                                       channelEntities.Count.ToString()
-					                         ), LoggingMethod.LevelInfo);
+														   DateTime.Now.ToString(),
+														   itemMessage.Count.ToString(),
+														   channelEntities.Count.ToString()
+											 ), LoggingMethod.LevelInfo);
 
 					foreach (ChannelEntity channelEntity in channelEntities)
 					{
 						SendCallbackChannelEntity<T>(jsonPluggableLibrary, channelEntity, itemMessage, callbackType,
-						                             checkType);
+													 checkType);
 					}
 				}
 				else
 				{
 					LoggingMethod.WriteToLog(
 						string.Format("DateTime {0}, SendCallbacks2: itemMessage null or count <0",
-						              DateTime.Now.ToString()), LoggingMethod.LevelInfo);
+									  DateTime.Now.ToString()), LoggingMethod.LevelInfo);
 				}
 			}
 			else
 			{
 				LoggingMethod.WriteToLog(string.Format("DateTime {0}, SendCallbacks2: channelEntities null",
-				                                       DateTime.Now.ToString()), LoggingMethod.LevelInfo);
+													   DateTime.Now.ToString()), LoggingMethod.LevelInfo);
 			}
 		}
 
 		internal static void SendCallback<T>(IJsonPluggableLibrary jsonPluggableLibrary,
-		                                     ChannelEntity channelEntity,
-		                                     List<object> itemMessage,
-		                                     CallbackType callbackType)
+											 ChannelEntity channelEntity,
+											 List<object> itemMessage,
+											 CallbackType callbackType)
 		{
 			PubnubChannelCallback<T> channelCallbacks =
 				channelEntity.ChannelParams.Callbacks as PubnubChannelCallback<T>;
@@ -188,9 +188,9 @@ namespace PubNubMessaging.Core
 		}
 
 		internal static void FireErrorCallbacksForAllChannels<T>(WebException webEx,
-		                                                         RequestState<T> requestState,
-		                                                         PubnubErrorSeverity severity,
-		                                                         PubnubErrorFilter.Level errorLevel)
+																 RequestState<T> requestState,
+																 PubnubErrorSeverity severity,
+																 PubnubErrorFilter.Level errorLevel)
 		{
 			foreach (ChannelEntity channelEntity in requestState.ChannelEntities)
 			{
@@ -198,29 +198,29 @@ namespace PubNubMessaging.Core
 					webEx, requestState, channelEntity.ChannelID.ChannelOrChannelGroupName,
 					severity);
 				FireErrorCallback<T>(channelEntity,
-				                     errorLevel, error);
+									 errorLevel, error);
 			}
 		}
 
 		internal static void FireErrorCallbacksForAllChannels<T>(Exception ex,
-		                                                         RequestState<T> requestState,
-		                                                         PubnubErrorSeverity severity,
-		                                                         PubnubErrorCode errorType,
-		                                                         PubnubErrorFilter.Level errorLevel)
+																 RequestState<T> requestState,
+																 PubnubErrorSeverity severity,
+																 PubnubErrorCode errorType,
+																 PubnubErrorFilter.Level errorLevel)
 		{
 			FireErrorCallbacksForAllChannelsCommon<T>(ex, "", requestState, requestState.ChannelEntities, severity,
-			                                          errorType, requestState.RespType, errorLevel
+													  errorType, requestState.RespType, errorLevel
 			);
 		}
 
 		internal static void FireErrorCallbacksForAllChannelsCommon<T>(Exception ex,
-		                                                               string message,
-		                                                               RequestState<T> requestState,
-		                                                               List<ChannelEntity> channelEntities,
-		                                                               PubnubErrorSeverity severity,
-		                                                               PubnubErrorCode errorType,
-		                                                               ResponseType responseType,
-		                                                               PubnubErrorFilter.Level errorLevel)
+																	   string message,
+																	   RequestState<T> requestState,
+																	   List<ChannelEntity> channelEntities,
+																	   PubnubErrorSeverity severity,
+																	   PubnubErrorCode errorType,
+																	   ResponseType responseType,
+																	   PubnubErrorFilter.Level errorLevel)
 		{
 			if ((channelEntities != null) && (channelEntities.Count > 0))
 			{
@@ -241,16 +241,16 @@ namespace PubNubMessaging.Core
 					if (ex != null)
 					{
 						error = Helpers.CreatePubnubClientError<T>(ex, requestState, errorType,
-						                                           severity, channel, channelGroup);
+																   severity, channel, channelGroup);
 					}
 					else
 					{
 						error = Helpers.CreatePubnubClientError<T>(message, requestState, errorType,
-						                                           severity, channel, channelGroup);
+																   severity, channel, channelGroup);
 					}
 
 					FireErrorCallback<T>(channelEntity,
-					                     errorLevel, error);
+										 errorLevel, error);
 				}
 			}
 
@@ -262,12 +262,12 @@ namespace PubNubMessaging.Core
 					if (ex != null)
 					{
 						error = Helpers.CreatePubnubClientError<T>(ex, requestState, errorType,
-						                                           severity, "", "");
+																   severity, "", "");
 					}
 					else
 					{
 						error = Helpers.CreatePubnubClientError<T>(message, requestState, errorType,
-						                                           severity, "", "");
+																   severity, "", "");
 					}
 
 					GoToCallback(error, requestState.ErrorCallback, errorLevel);
@@ -275,38 +275,38 @@ namespace PubNubMessaging.Core
 				else
 				{
 					LoggingMethod.WriteToLog(string.Format("DateTime {0}, FireErrorCallbacksForAllChannelsCommon: {1}",
-					                                       DateTime.Now.ToString(),
-					                                       (requestState != null)
-						                                       ? "ErrorCallback null"
-						                                       : "requestState null"
-					                         ), LoggingMethod.LevelInfo);
+														   DateTime.Now.ToString(),
+														   (requestState != null)
+															   ? "ErrorCallback null"
+															   : "requestState null"
+											 ), LoggingMethod.LevelInfo);
 				}
 
 				LoggingMethod.WriteToLog(string.Format(
-					                         "DateTime {0}, FireErrorCallbacksForAllChannelsCommon: channelEntities count: {1}",
-					                         DateTime.Now.ToString(),
-					                         (channelEntities != null)
-						                         ? channelEntities.Count.ToString()
-						                         : "channelEntities null"
-				                         ), LoggingMethod.LevelInfo);
+											 "DateTime {0}, FireErrorCallbacksForAllChannelsCommon: channelEntities count: {1}",
+											 DateTime.Now.ToString(),
+											 (channelEntities != null)
+												 ? channelEntities.Count.ToString()
+												 : "channelEntities null"
+										 ), LoggingMethod.LevelInfo);
 			}
 		}
 
 		internal static void FireErrorCallbacksForAllChannels<T>(string message,
-		                                                         RequestState<T> requestState,
-		                                                         PubnubErrorSeverity severity,
-		                                                         PubnubErrorCode errorType,
-		                                                         PubnubErrorFilter.Level errorLevel)
+																 RequestState<T> requestState,
+																 PubnubErrorSeverity severity,
+																 PubnubErrorCode errorType,
+																 PubnubErrorFilter.Level errorLevel)
 		{
 			FireErrorCallbacksForAllChannelsCommon<T>(null, message, requestState, requestState.ChannelEntities,
-			                                          severity,
-			                                          errorType, requestState.RespType, errorLevel
+													  severity,
+													  errorType, requestState.RespType, errorLevel
 			);
 		}
 
 		internal static void FireErrorCallback<T>(ChannelEntity channelEntity,
-		                                          PubnubErrorFilter.Level errorLevel,
-		                                          PubnubClientError error)
+												  PubnubErrorFilter.Level errorLevel,
+												  PubnubClientError error)
 		{
 			PubnubChannelCallback<T> channelCallback =
 				channelEntity.ChannelParams.Callbacks as PubnubChannelCallback<T>;
@@ -317,10 +317,10 @@ namespace PubNubMessaging.Core
 		}
 
 		internal static PubnubChannelCallback<T> GetPubnubChannelCallback<T>(Action<T> userCallback,
-		                                                                     Action<T> connectCallback,
-		                                                                     Action<PubnubClientError> errorCallback,
-		                                                                     Action<T> disconnectCallback,
-		                                                                     Action<T> wildcardPresenceCallback)
+																			 Action<T> connectCallback,
+																			 Action<PubnubClientError> errorCallback,
+																			 Action<T> disconnectCallback,
+																			 Action<T> wildcardPresenceCallback)
 		{
 			PubnubChannelCallback<T> pubnubChannelCallbacks = new PubnubChannelCallback<T>();
 			pubnubChannelCallbacks.SuccessCallback = userCallback;
@@ -334,10 +334,10 @@ namespace PubNubMessaging.Core
 		#region "Error Callbacks"
 
 		internal static void CallErrorCallback<T>(Exception ex,
-		                                          List<ChannelEntity> channelEntities,
-		                                          PubnubErrorCode errorCode,
-		                                          PubnubErrorSeverity severity,
-		                                          PubnubErrorFilter.Level errorLevel)
+												  List<ChannelEntity> channelEntities,
+												  PubnubErrorCode errorCode,
+												  PubnubErrorSeverity severity,
+												  PubnubErrorFilter.Level errorLevel)
 		{
 			PubnubClientError clientError =
 				Helpers.CreatePubnubClientError<T>(ex, null, channelEntities, errorCode, severity);
@@ -345,29 +345,29 @@ namespace PubNubMessaging.Core
 		}
 
 		internal static void CallErrorCallback<T>(string message,
-		                                          Action<PubnubClientError> errorCallback,
-		                                          PubnubErrorCode errorCode,
-		                                          PubnubErrorSeverity severity,
-		                                          PubnubErrorFilter.Level errorLevel)
+												  Action<PubnubClientError> errorCallback,
+												  PubnubErrorCode errorCode,
+												  PubnubErrorSeverity severity,
+												  PubnubErrorFilter.Level errorLevel)
 		{
 			//request state can be null
 
 			PubnubClientError clientError = Helpers.CreatePubnubClientError<T>(message, null, null,
-			                                                                   errorCode, severity);
+																			   errorCode, severity);
 
 			GoToCallback(clientError, errorCallback, errorLevel);
 		}
 
 		internal static void CallErrorCallback<T>(ChannelEntity channelEntity,
-		                                          string message,
-		                                          PubnubErrorCode errorCode,
-		                                          PubnubErrorSeverity severity,
-		                                          PubnubErrorFilter.Level errorLevel)
+												  string message,
+												  PubnubErrorCode errorCode,
+												  PubnubErrorSeverity severity,
+												  PubnubErrorFilter.Level errorLevel)
 		{
 			List<ChannelEntity> channelEntities = new List<ChannelEntity>();
 			channelEntities.Add(channelEntity);
 			PubnubClientError clientError = Helpers.CreatePubnubClientError<T>(message, null, channelEntities,
-			                                                                   errorCode, severity);
+																			   errorCode, severity);
 
 			PubnubChannelCallback<T> channelCallback =
 				channelEntity.ChannelParams.Callbacks as PubnubChannelCallback<T>;
@@ -375,15 +375,15 @@ namespace PubNubMessaging.Core
 			{
 				LoggingMethod.WriteToLog(
 					string.Format("DateTime {0}, CallErrorCallback calling GoToCallback: clientError={1} ",
-					              DateTime.Now.ToString(), clientError), LoggingMethod.LevelInfo);
+								  DateTime.Now.ToString(), clientError), LoggingMethod.LevelInfo);
 
 				GoToCallback(clientError, channelCallback.ErrorCallback, errorLevel);
 			}
 		}
 
 		internal static void CallCallbackForEachChannelEntity<T>(List<ChannelEntity> channelEntities,
-		                                                         PubnubClientError clientError,
-		                                                         PubnubErrorFilter.Level errorLevel)
+																 PubnubClientError clientError,
+																 PubnubErrorFilter.Level errorLevel)
 		{
 			foreach (ChannelEntity ce in channelEntities)
 			{
@@ -396,9 +396,9 @@ namespace PubNubMessaging.Core
 		}
 
 		internal static void CallErrorCallback<T>(Action<PubnubClientError> errorCallback,
-		                                          List<ChannelEntity> channelEntities,
-		                                          PubnubClientError clientError,
-		                                          PubnubErrorFilter.Level errorLevel)
+												  List<ChannelEntity> channelEntities,
+												  PubnubClientError clientError,
+												  PubnubErrorFilter.Level errorLevel)
 		{
 			if (channelEntities != null)
 			{
@@ -411,15 +411,15 @@ namespace PubNubMessaging.Core
 			else
 			{
 				LoggingMethod.WriteToLog(string.Format(
-					                         "DateTime {0}, CallErrorCallback errorCallback null, clientError = {1} ",
-					                         DateTime.Now.ToString(), clientError.ToString()),
-				                         LoggingMethod.LevelWarning);
+											 "DateTime {0}, CallErrorCallback errorCallback null, clientError = {1} ",
+											 DateTime.Now.ToString(), clientError.ToString()),
+										 LoggingMethod.LevelWarning);
 			}
 		}
 
 		private static void JsonResponseToCallback<T>(List<object> result,
-		                                              Action<T> callback,
-		                                              IJsonPluggableLibrary jsonPluggableLibrary)
+													  Action<T> callback,
+													  IJsonPluggableLibrary jsonPluggableLibrary)
 		{
 			string callbackJson = "";
 
@@ -433,8 +433,8 @@ namespace PubNubMessaging.Core
 		}
 
 		private static void JsonResponseToCallback<T>(object result,
-		                                              Action<T> callback,
-		                                              IJsonPluggableLibrary jsonPluggableLibrary)
+													  Action<T> callback,
+													  IJsonPluggableLibrary jsonPluggableLibrary)
 		{
 			string callbackJson = "";
 
@@ -445,7 +445,7 @@ namespace PubNubMessaging.Core
 					callbackJson = jsonPluggableLibrary.SerializeToJsonString(result);
 					LoggingMethod.WriteToLog(
 						string.Format("DateTime {0}, after _jsonPluggableLibrary.SerializeToJsonString {1}",
-						              DateTime.Now.ToString(), callbackJson), LoggingMethod.LevelInfo);
+									  DateTime.Now.ToString(), callbackJson), LoggingMethod.LevelInfo);
 					Action<string> castCallback = callback as Action<string>;
 					castCallback(callbackJson);
 				}
@@ -453,14 +453,14 @@ namespace PubNubMessaging.Core
 				{
 					LoggingMethod.WriteToLog(
 						string.Format("DateTime {0}, JsonResponseToCallback = {1} ", DateTime.Now.ToString(),
-						              ex.ToString()), LoggingMethod.LevelError);
+									  ex.ToString()), LoggingMethod.LevelError);
 				}
 			}
 		}
 
 		internal static void GoToCallback<T>(object result,
-		                                     Action<T> Callback,
-		                                     IJsonPluggableLibrary jsonPluggableLibrary)
+											 Action<T> Callback,
+											 IJsonPluggableLibrary jsonPluggableLibrary)
 		{
 			if (Callback != null)
 			{
@@ -482,8 +482,8 @@ namespace PubNubMessaging.Core
 		}
 
 		internal static void GoToCallback(object result,
-		                                  Action<string> Callback,
-		                                  IJsonPluggableLibrary jsonPluggableLibrary)
+										  Action<string> Callback,
+										  IJsonPluggableLibrary jsonPluggableLibrary)
 		{
 			if (Callback != null)
 			{
@@ -500,8 +500,8 @@ namespace PubNubMessaging.Core
 		}
 
 		internal static void GoToCallback(PubnubClientError error,
-		                                  Action<PubnubClientError> Callback,
-		                                  PubnubErrorFilter.Level errorLevel)
+										  Action<PubnubClientError> Callback,
+										  PubnubErrorFilter.Level errorLevel)
 		{
 			if (Callback != null && error != null)
 			{
@@ -512,9 +512,9 @@ namespace PubNubMessaging.Core
 					//Do not send 105 = WebRequestCancelled
 					//Do not send 130 = PubnubClientMachineSleep
 					if (error.StatusCode != 107
-					    && error.StatusCode != 105
-					    && error.StatusCode != 130
-					    && error.StatusCode != 4040)
+						&& error.StatusCode != 105
+						&& error.StatusCode != 130
+						&& error.StatusCode != 4040)
 					{
 						//Error Code that should not go out
 						Callback(error);

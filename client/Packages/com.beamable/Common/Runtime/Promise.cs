@@ -2,11 +2,11 @@
 #define DISABLE_THREADING
 #endif
 
+using Beamable.Common.Runtime.Collections;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Beamable.Common.Runtime.Collections;
 
 #if !DISABLE_BEAMABLE_ASYNCMETHODBUILDER
 
@@ -14,7 +14,9 @@ namespace System.Runtime.CompilerServices
 {
 	public sealed class AsyncMethodBuilderAttribute : Attribute
 	{
-		public AsyncMethodBuilderAttribute(Type taskLike) { }
+		public AsyncMethodBuilderAttribute(Type taskLike)
+		{
+		}
 	}
 }
 #endif
@@ -54,8 +56,10 @@ namespace Beamable.Common
 			get => (System.Threading.Interlocked.CompareExchange(ref _doneSignal, 1, 1) == 1);
 			set
 			{
-				if (value) System.Threading.Interlocked.CompareExchange(ref _doneSignal, 1, 0);
-				else System.Threading.Interlocked.CompareExchange(ref _doneSignal, 0, 1);
+				if (value)
+					System.Threading.Interlocked.CompareExchange(ref _doneSignal, 1, 0);
+				else
+					System.Threading.Interlocked.CompareExchange(ref _doneSignal, 0, 1);
 			}
 		}
 #endif
@@ -351,7 +355,7 @@ namespace Beamable.Common
 		/// <returns></returns>
 		public static Promise<T> Successful(T value)
 		{
-			return new Promise<T> {done = true, _val = value};
+			return new Promise<T> { done = true, _val = value };
 		}
 
 		/// <summary>
@@ -361,7 +365,7 @@ namespace Beamable.Common
 		/// <returns></returns>
 		public static Promise<T> Failed(Exception err)
 		{
-			return new Promise<T> {done = true, err = err};
+			return new Promise<T> { done = true, err = err };
 		}
 
 		void ICriticalNotifyCompletion.UnsafeOnCompleted(Action continuation)
@@ -471,7 +475,8 @@ namespace Beamable.Common
 
 		public void ReportEntryError(SequenceEntryException exception)
 		{
-			if (_indexToResult.ContainsKey(exception.Index) || exception.Index >= Count) return;
+			if (_indexToResult.ContainsKey(exception.Index) || exception.Index >= Count)
+				return;
 
 			_errors.Add(exception);
 			_indexToResult.TryAdd(exception.Index, exception);
@@ -482,7 +487,8 @@ namespace Beamable.Common
 
 		public void ReportEntrySuccess(SequenceEntrySuccess<T> success)
 		{
-			if (_indexToResult.ContainsKey(success.Index) || success.Index >= Count) return;
+			if (_indexToResult.ContainsKey(success.Index) || success.Index >= Count)
+				return;
 
 			_successes.Add(success);
 			_indexToResult.TryAdd(success.Index, success);
@@ -677,8 +683,8 @@ namespace Beamable.Common
 		/// <typeparam name="T"></typeparam>
 		/// <returns></returns>
 		public static SequencePromise<T> ExecuteRolling<T>(int maxProcessSize,
-		                                                   List<Func<Promise<T>>> generators,
-		                                                   Func<bool> stopWhen = null)
+														   List<Func<Promise<T>>> generators,
+														   Func<bool> stopWhen = null)
 		{
 			var current = new AtomicInt();
 			var running = new AtomicInt();
@@ -840,7 +846,7 @@ namespace Beamable.Common
 		{
 			var result = new Promise<T>();
 			promise.Then(value => result.CompleteSuccess(value))
-			       .Error(err => result.CompleteSuccess(callback(err)));
+				   .Error(err => result.CompleteSuccess(callback(err)));
 			return result;
 		}
 
@@ -964,7 +970,9 @@ namespace Beamable.Common
 	/// ![img beamable-logo]
 	///
 	/// </summary>
-	public readonly struct Unit { }
+	public readonly struct Unit
+	{
+	}
 
 	/// <summary>
 	/// https://github.com/dotnet/roslyn/blob/main/docs/features/task-types.md
@@ -1013,7 +1021,7 @@ namespace Beamable.Common
 		}
 
 		public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter,
-		                                                            ref TStateMachine stateMachine)
+																	ref TStateMachine stateMachine)
 			where TAwaiter : ICriticalNotifyCompletion
 			where TStateMachine : IAsyncStateMachine
 		{
@@ -1071,7 +1079,7 @@ namespace Beamable.Common
 		}
 
 		public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter,
-		                                                            ref TStateMachine stateMachine)
+																	ref TStateMachine stateMachine)
 			where TAwaiter : ICriticalNotifyCompletion
 			where TStateMachine : IAsyncStateMachine
 		{

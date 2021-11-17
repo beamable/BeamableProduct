@@ -1,7 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using Beamable.Api.Leaderboard;
+﻿using Beamable.Api.Leaderboard;
 using Beamable.Common.Api.Leaderboards;
+using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 

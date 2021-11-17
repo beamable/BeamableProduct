@@ -12,9 +12,12 @@ namespace Beamable.Common.Content
 		{
 			switch (str?.ToLower())
 			{
-				case ContentConstants.PUBLIC: return ContentVisibility.Public;
-				case ContentConstants.PRIVATE: return ContentVisibility.Private;
-				default: return ContentVisibility.Public;
+				case ContentConstants.PUBLIC:
+					return ContentVisibility.Public;
+				case ContentConstants.PRIVATE:
+					return ContentVisibility.Private;
+				default:
+					return ContentVisibility.Public;
 			}
 		}
 	}

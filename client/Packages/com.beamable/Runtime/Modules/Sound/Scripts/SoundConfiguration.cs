@@ -1,5 +1,5 @@
-using System;
 using Beamable.Pooling;
+using System;
 using UnityEngine;
 
 namespace Beamable.Sound
@@ -7,7 +7,7 @@ namespace Beamable.Sound
 	[CreateAssetMenu(
 		fileName = "Sound Configuration",
 		menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
-		           "Sound Configuration",
+				   "Sound Configuration",
 		order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 	public class SoundConfiguration : ModuleConfigurationObject
 	{

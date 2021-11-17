@@ -26,9 +26,9 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void UpdateProgress(float progress,
-		                           string message = null,
-		                           bool failed = false,
-		                           bool hideOnFinish = false)
+								   string message = null,
+								   bool failed = false,
+								   bool hideOnFinish = false)
 		{
 			Progress = progress;
 			Message = message;
@@ -36,7 +36,9 @@ namespace Beamable.Editor.UI.Components
 			OnUpdated?.Invoke();
 		}
 
-		public void SetUpdater(LoadingBarUpdater updater) { }
+		public void SetUpdater(LoadingBarUpdater updater)
+		{
+		}
 
 		public event Action OnUpdated;
 	}
@@ -52,9 +54,9 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public GroupLoadingBarUpdater(string processName,
-		                              ILoadingBar loadingBar,
-		                              bool singleSteps,
-		                              params LoadingBarUpdater[] children) : base(loadingBar)
+									  ILoadingBar loadingBar,
+									  bool singleSteps,
+									  params LoadingBarUpdater[] children) : base(loadingBar)
 		{
 			_singleSteps = singleSteps;
 			_children = children.ToList();

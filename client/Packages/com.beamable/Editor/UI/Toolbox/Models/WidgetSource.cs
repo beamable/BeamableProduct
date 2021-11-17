@@ -1,7 +1,7 @@
+using Beamable.Editor.UI.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Editor.UI.Common;
 using UnityEngine;
 
 namespace Beamable.Editor.Toolbox.Models
@@ -113,7 +113,7 @@ namespace Beamable.Editor.Toolbox.Models
 
 		public static bool TryParse(string str, out WidgetOrientationSupport status)
 		{
-			var parts = str.Split(new[] {' '}, StringSplitOptions.None);
+			var parts = str.Split(new[] { ' ' }, StringSplitOptions.None);
 			status = WidgetOrientationSupport.PORTRAIT;
 
 			var any = false;

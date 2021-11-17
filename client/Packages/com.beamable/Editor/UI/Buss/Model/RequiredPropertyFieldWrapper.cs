@@ -1,8 +1,8 @@
-using System;
-using System.Reflection;
 using Beamable.Editor.UI.Buss.Extensions;
 using Beamable.UI.Buss;
 using Beamable.UI.Buss.Properties;
+using System;
+using System.Reflection;
 
 namespace Beamable.Editor.UI.Buss.Model
 {

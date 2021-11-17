@@ -1,13 +1,13 @@
-﻿using System;
-using System.IO;
-using System.Text;
-using System.Threading.Tasks;
-using Beamable.Common;
+﻿using Beamable.Common;
 using Beamable.Editor.Environment;
 using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.ManagerClient;
+using System;
+using System.IO;
+using System.Text;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -80,11 +80,11 @@ namespace Beamable.Editor.UI.Model
 			evt.menu.BeamableAppendAction($"Erase data", _ => AssemblyDefinitionHelper.ClearMongo(ServiceDescriptor));
 			//evt.menu.BeamableAppendAction($"Copy connection strings", _ => Debug.Log("Not implemented!"));
 			evt.menu.BeamableAppendAction($"Goto data explorer",
-			                              _ => AssemblyDefinitionHelper.OpenMongoExplorer(ServiceDescriptor));
+										  _ => AssemblyDefinitionHelper.OpenMongoExplorer(ServiceDescriptor));
 			evt.menu.BeamableAppendAction($"Create a snapshot",
-			                              _ => AssemblyDefinitionHelper.SnapshotMongo(ServiceDescriptor));
+										  _ => AssemblyDefinitionHelper.SnapshotMongo(ServiceDescriptor));
 			evt.menu.BeamableAppendAction($"Download a snapshot",
-			                              _ => AssemblyDefinitionHelper.RestoreMongo(ServiceDescriptor));
+										  _ => AssemblyDefinitionHelper.RestoreMongo(ServiceDescriptor));
 			evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());
 		}
 

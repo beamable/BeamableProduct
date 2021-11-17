@@ -1,8 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using Beamable.Common.Content;
+﻿using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using Beamable.Common.Inventory;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.Common.Tournaments
@@ -21,7 +21,9 @@ namespace Beamable.Common.Tournaments
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class TournamentLink : ContentLink<TournamentContent> { }
+	public class TournamentLink : ContentLink<TournamentContent>
+	{
+	}
 
 	/// <summary>
 	/// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
@@ -37,7 +39,9 @@ namespace Beamable.Common.Tournaments
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class TournamentRef : ContentRef<TournamentContent> { }
+	public class TournamentRef : ContentRef<TournamentContent>
+	{
+	}
 
 	[System.Serializable]
 	[Agnostic]
@@ -158,7 +162,7 @@ namespace Beamable.Common.Tournaments
 	/// </summary>
 	[ContentType("tournaments")]
 	[System.Serializable]
-	[Agnostic(new[] {typeof(TournamentColorConstants)})]
+	[Agnostic(new[] { typeof(TournamentColorConstants) })]
 	public class TournamentContent : ContentObject
 	{
 		[Tooltip(ContentObject.TooltipName1)]
@@ -201,7 +205,7 @@ namespace Beamable.Common.Tournaments
 		public int stagesPerTier;
 
 		[Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipDivider +
-		         "The number of a stages a player regresses if they do not participate in a cycle.")]
+				 "The number of a stages a player regresses if they do not participate in a cycle.")]
 		[MustBePositive]
 		public OptionalInt passiveDecayStages;
 
@@ -259,7 +263,7 @@ namespace Beamable.Common.Tournaments
 		public TournamentTier GetTier(int tierIndex)
 		{
 			if (tierIndex < 0 || tierIndex >= tiers.Count)
-				return new TournamentTier {color = new Color(.2f, .2f, .2f), name = "Void"};
+				return new TournamentTier { color = new Color(.2f, .2f, .2f), name = "Void" };
 
 			return tiers[tierIndex];
 		}

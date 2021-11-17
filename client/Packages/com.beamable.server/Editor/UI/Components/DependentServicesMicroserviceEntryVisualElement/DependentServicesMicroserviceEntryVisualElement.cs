@@ -1,13 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Beamable.Server.Editor.ManagerClient;
+﻿using Beamable.Editor;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
+using Beamable.Server.Editor.ManagerClient;
 using Beamable.Server.Editor.UI.Components;
-using Beamable.Editor;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -77,7 +77,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				var isRelation = _dependentServices.Contains(storageObjectModel);
 				var newElement =
-					new DependentServicesCheckboxVisualElement(isRelation) {MongoStorageModel = storageObjectModel};
+					new DependentServicesCheckboxVisualElement(isRelation) { MongoStorageModel = storageObjectModel };
 				newElement.OnServiceRelationChanged += TriggerServiceRelationChanged;
 				newElement.Refresh();
 				_dependencyCheckboxes.Add(newElement);
@@ -102,7 +102,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			foreach (var storageObjectModel in MicroservicesDataModel.Instance.Storages)
 			{
 				var newElement =
-					new DependentServicesCheckboxVisualElement(false) {MongoStorageModel = storageObjectModel};
+					new DependentServicesCheckboxVisualElement(false) { MongoStorageModel = storageObjectModel };
 				newElement.Refresh();
 				newElement.Q<BeamableCheckboxVisualElement>("checkbox").RemoveFromHierarchy();
 				_dependencyCheckboxes.Add(newElement);

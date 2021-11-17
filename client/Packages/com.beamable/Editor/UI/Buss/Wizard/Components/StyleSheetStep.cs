@@ -1,10 +1,10 @@
+using Beamable.Editor.UI.Buss.Model;
+using Beamable.Editor.UI.Buss.Wizard.Model;
+using Beamable.UI.Buss;
+using Beamable.UI.Buss.Properties;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Remoting.Messaging;
-using Beamable.Editor.UI.Buss.Wizard.Model;
-using Beamable.UI.Buss;
-using Beamable.Editor.UI.Buss.Model;
-using Beamable.UI.Buss.Properties;
 using UnityEditor;
 using UnityEditor.Experimental.UIElements;
 using UnityEngine;
@@ -48,8 +48,8 @@ namespace Beamable.Editor.UI.Buss.Wizard.Components
 			get
 			{
 				return "Let's get your Beamable UIs looking perfect! Beamable themes live in style sheets. " +
-				       "you can have many style sheets, configured at a project level, or a Gameobject level. " +
-				       "We're going to start by creating a project wide theme, but you can always override it later on. ";
+					   "you can have many style sheets, configured at a project level, or a Gameobject level. " +
+					   "We're going to start by creating a project wide theme, but you can always override it later on. ";
 			}
 		}
 
@@ -94,8 +94,8 @@ namespace Beamable.Editor.UI.Buss.Wizard.Components
 				var existing = BussConfiguration.Instance.DefaultSheets;
 
 				var names = existing
-				            .Where(x => x != null)
-				            .Select(x => x.name).ToList();
+							.Where(x => x != null)
+							.Select(x => x.name).ToList();
 				names.Insert(0, "New...");
 				var indexValues = new List<int>();
 				for (var i = 0; i < names.Count; i++)

@@ -136,9 +136,9 @@ namespace Beamable.UnityEngineClone.UI.Extensions
 					if (!_overwriteAllColor && uiVertex.color != targetGraphic.color)
 						continue;
 					uiVertex.color *= Color.Lerp(_vertex2, _vertex1,
-					                             ((_gradientDir == GradientDir.Vertical
-						                             ? uiVertex.position.y
-						                             : uiVertex.position.x) - bottomY) / uiElementHeight);
+												 ((_gradientDir == GradientDir.Vertical
+													 ? uiVertex.position.y
+													 : uiVertex.position.x) - bottomY) / uiElementHeight);
 					vh.SetUIVertex(uiVertex, i);
 				}
 			}
@@ -177,7 +177,7 @@ namespace Beamable.UnityEngineClone.UI.Extensions
 		private bool CompareCarefully(Color col1, Color col2)
 		{
 			if (Mathf.Abs(col1.r - col2.r) < 0.003f && Mathf.Abs(col1.g - col2.g) < 0.003f &&
-			    Mathf.Abs(col1.b - col2.b) < 0.003f && Mathf.Abs(col1.a - col2.a) < 0.003f)
+				Mathf.Abs(col1.b - col2.b) < 0.003f && Mathf.Abs(col1.a - col2.a) < 0.003f)
 				return true;
 			return false;
 		}

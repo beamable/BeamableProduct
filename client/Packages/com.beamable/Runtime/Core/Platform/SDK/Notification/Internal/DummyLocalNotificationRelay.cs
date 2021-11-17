@@ -1,6 +1,6 @@
+using Beamable.Spew;
 using System;
 using System.Collections.Generic;
-using Beamable.Spew;
 
 namespace Beamable.Api.Notification.Internal
 {
@@ -18,11 +18,11 @@ namespace Beamable.Api.Notification.Internal
 		}
 
 		public void ScheduleNotification(string channel,
-		                                 string key,
-		                                 string title,
-		                                 string message,
-		                                 DateTime when,
-		                                 Dictionary<string, string> data)
+										 string key,
+										 string title,
+										 string message,
+										 DateTime when,
+										 Dictionary<string, string> data)
 		{
 			NotificationLogger.LogFormat(
 				"[DummyLocalNote] Schedule notification. channel={0}, key={1}, title={2}, message={3}.", channel, key,

@@ -1,5 +1,5 @@
-﻿using Beamable.UI.Scripts;
-using Beamable.Api.Inventory;
+﻿using Beamable.Api.Inventory;
+using Beamable.UI.Scripts;
 using UnityEngine;
 
 namespace Beamable.Inventory.Scripts
@@ -16,7 +16,9 @@ namespace Beamable.Inventory.Scripts
 		}
 
 		// Update is called once per frame
-		void Update() { }
+		void Update()
+		{
+		}
 
 		void RefreshGroups()
 		{

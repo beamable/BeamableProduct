@@ -1,7 +1,7 @@
+using Beamable.Common.Api;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Common.Api;
 
 namespace Beamable.Server
 {
@@ -73,7 +73,8 @@ namespace Beamable.Server
 
 		public bool HasScopes(params string[] scopes)
 		{
-			if (Scopes.Contains("*")) return true;
+			if (Scopes.Contains("*"))
+				return true;
 			var missingCount = scopes.Count(required => !Scopes.Contains(required));
 			return missingCount == 0;
 		}
@@ -107,14 +108,14 @@ namespace Beamable.Server
 		public bool IsInvalidUser => _userId < 0;
 
 		public RequestContext(string cid,
-		                      string pid,
-		                      long id,
-		                      int status,
-		                      long userId,
-		                      string path,
-		                      string method,
-		                      string body,
-		                      HashSet<string> scopes = null)
+							  string pid,
+							  long id,
+							  int status,
+							  long userId,
+							  string path,
+							  string method,
+							  string body,
+							  HashSet<string> scopes = null)
 		{
 			Cid = cid;
 			Pid = pid;

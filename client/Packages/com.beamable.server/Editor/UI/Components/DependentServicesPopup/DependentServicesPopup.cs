@@ -1,11 +1,11 @@
-﻿using System.Collections.Generic;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Beamable.Editor.UI.Components;
+﻿using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.UI.Components;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using UnityEditorInternal;
 using UnityEngine;
 #if UNITY_2018
@@ -86,7 +86,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 					MicroservicesDataModel.Instance.Storages.Count);
 			foreach (var storageObjectModel in MicroservicesDataModel.Instance.Storages)
 			{
-				var newElement = new DependentServicesStorageObjectEntryVisualElement {Model = storageObjectModel};
+				var newElement = new DependentServicesStorageObjectEntryVisualElement { Model = storageObjectModel };
 				newElement.Refresh();
 				_storageObjectsContainer.Add(newElement);
 				StorageObjectEntries.Add(storageObjectModel, newElement);
@@ -102,7 +102,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				var dependentServices = GetDependentServices(microserviceModel);
 				var newElement =
-					new DependentServicesMicroserviceEntryVisualElement(dependentServices) {Model = microserviceModel};
+					new DependentServicesMicroserviceEntryVisualElement(dependentServices) { Model = microserviceModel };
 				newElement.Refresh();
 				newElement.OnServiceRelationChanged += (storageObjectModel, isServiceRelation) =>
 					HandleServiceRelationChange(microserviceModel, storageObjectModel, isServiceRelation);
@@ -112,7 +112,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_emptyRowFillEntry = new DependentServicesMicroserviceEntryVisualElement(new List<MongoStorageModel>())
 			{
-				name = "EmptyRowFillEntry", style = {flexGrow = 1}
+				name = "EmptyRowFillEntry",
+				style = { flexGrow = 1 }
 			};
 			_emptyRowFillEntry.SetEmptyEntries();
 			_microservicesContainer.Add(_emptyRowFillEntry);
@@ -138,8 +139,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 
 		private void HandleServiceRelationChange(MicroserviceModel microserviceModel,
-		                                         MongoStorageModel storageObjectModel,
-		                                         bool isServiceRelation)
+												 MongoStorageModel storageObjectModel,
+												 bool isServiceRelation)
 		{
 			if (_lastRelationChangedStorageObject != null && _lastRelationChangedMicroservice != null)
 				ChangeSelectionHighlight(false);
@@ -222,34 +223,34 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 
 		private void SetAssemblyReferences(MicroserviceModel microserviceModel,
-		                                   Dictionary<MongoStorageModel, AssemblyDefinitionAsset>
-			                                   storageObjectAssemblyDefinitionsAssets)
+										   Dictionary<MongoStorageModel, AssemblyDefinitionAsset>
+											   storageObjectAssemblyDefinitionsAssets)
 		{
 			if (!_changedDependencies.ContainsKey(microserviceModel))
 				return;
 
 			var intersect = storageObjectAssemblyDefinitionsAssets.Where(x => _changedDependencies[microserviceModel]
-			                                                                  .Where(y => y.IsServiceRelation)
-			                                                                  .Select(z => z.Model)
-			                                                                  .Contains(x.Key))
-			                                                      .ToDictionary(x => x.Key, x =>
-				                                                      AssemblyDefinitionHelper
-					                                                      .ConvertToInfo(
-						                                                      storageObjectAssemblyDefinitionsAssets
-							                                                      [x.Key]).Name).Values.ToList();
+																			  .Where(y => y.IsServiceRelation)
+																			  .Select(z => z.Model)
+																			  .Contains(x.Key))
+																  .ToDictionary(x => x.Key, x =>
+																	  AssemblyDefinitionHelper
+																		  .ConvertToInfo(
+																			  storageObjectAssemblyDefinitionsAssets
+																				  [x.Key]).Name).Values.ToList();
 
 			var nonIntersect = storageObjectAssemblyDefinitionsAssets.Where(x => _changedDependencies[microserviceModel]
-				                                                                .Where(y => !y.IsServiceRelation)
-				                                                                .Select(z => z.Model)
-				                                                                .Contains(x.Key))
-			                                                         .ToDictionary(x => x.Key, x =>
-				                                                         AssemblyDefinitionHelper
-					                                                         .ConvertToInfo(
-						                                                         storageObjectAssemblyDefinitionsAssets
-							                                                         [x.Key]).Name).Values.ToList();
+																				.Where(y => !y.IsServiceRelation)
+																				.Select(z => z.Model)
+																				.Contains(x.Key))
+																	 .ToDictionary(x => x.Key, x =>
+																		 AssemblyDefinitionHelper
+																			 .ConvertToInfo(
+																				 storageObjectAssemblyDefinitionsAssets
+																					 [x.Key]).Name).Values.ToList();
 
 			AssemblyDefinitionHelper.AddAndRemoveReferences(microserviceModel.ServiceDescriptor, intersect,
-			                                                nonIntersect);
+															nonIntersect);
 
 			if (GetDependentServices(microserviceModel).Any())
 				AssemblyDefinitionHelper.AddMongoLibraries(microserviceModel.ServiceDescriptor);

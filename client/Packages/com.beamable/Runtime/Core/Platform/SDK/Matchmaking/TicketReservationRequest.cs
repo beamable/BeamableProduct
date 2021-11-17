@@ -26,9 +26,9 @@ namespace Beamable.Experimental.Api.Matchmaking
 		public string team;
 
 		public TicketReservationRequest(string[] players,
-		                                string[] matchTypes,
-		                                string team = null,
-		                                int? maxWaitDurationSecs = null)
+										string[] matchTypes,
+										string team = null,
+										int? maxWaitDurationSecs = null)
 		{
 			this.players = players;
 			this.matchTypes = matchTypes;

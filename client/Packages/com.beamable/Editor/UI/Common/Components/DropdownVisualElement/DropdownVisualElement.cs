@@ -1,8 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using Beamable.Common;
+﻿using Beamable.Common;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
+using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -33,11 +33,14 @@ namespace Beamable.Editor.UI.Components
 			private set
 			{
 				_value = value;
-				if (_label != null) _label.text = Value;
+				if (_label != null)
+					_label.text = Value;
 			}
 		}
 
-		public new class UxmlFactory : UxmlFactory<DropdownVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<DropdownVisualElement, UxmlTraits>
+		{
+		}
 
 		public DropdownVisualElement() : base(
 			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(DropdownVisualElement)}/{nameof(DropdownVisualElement)}")
@@ -111,17 +114,17 @@ namespace Beamable.Editor.UI.Components
 			foreach (DropdownSingleOption option in _optionModels)
 			{
 				allOptions.Add(new DropdownSingleOptionVisualElement().Setup(option.Label,
-				                                                             option.OnClick, _root.localBound.width,
-				                                                             _root.localBound.height));
+																			 option.OnClick, _root.localBound.width,
+																			 _root.localBound.height));
 			}
 
 			DropdownOptionsVisualElement optionsWindow =
 				new DropdownOptionsVisualElement().Setup(allOptions, OnOptionsClosed);
 
 			_optionsPopup = await BeamablePopupWindow.ShowDropdownAsync("", popupWindowRect,
-			                                                            new Vector2(
-				                                                            _root.localBound.width,
-				                                                            optionsWindow.GetHeight()), optionsWindow);
+																		new Vector2(
+																			_root.localBound.width,
+																			optionsWindow.GetHeight()), optionsWindow);
 		}
 
 		private void OnOptionsClosed()

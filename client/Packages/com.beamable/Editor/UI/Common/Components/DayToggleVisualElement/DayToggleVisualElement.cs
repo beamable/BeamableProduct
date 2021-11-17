@@ -1,5 +1,5 @@
-﻿using System;
-using Beamable.Editor.UI.Buss;
+﻿using Beamable.Editor.UI.Buss;
+using System;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -12,7 +12,9 @@ namespace Beamable.Editor.UI.Components
 {
 	public class DayToggleVisualElement : BeamableVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<DayToggleVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<DayToggleVisualElement, UxmlTraits>
+		{
+		}
 
 		public Action OnValueChanged;
 
@@ -34,7 +36,9 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public DayToggleVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(DayToggleVisualElement)}/{nameof(DayToggleVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(DayToggleVisualElement)}/{nameof(DayToggleVisualElement)}")
+		{
+		}
 
 		public override void Refresh()
 		{

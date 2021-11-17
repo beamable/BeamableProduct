@@ -1,3 +1,6 @@
+using Beamable.Editor;
+using Beamable.Editor.Environment;
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,9 +12,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Beamable.Serialization.SmallerJSON;
-using Beamable.Editor;
-using Beamable.Editor.Environment;
 using UnityEngine;
 
 namespace Beamable.Server.Editor.Uploader
@@ -43,9 +43,9 @@ namespace Beamable.Server.Editor.Uploader
 		private long _partsAmount;
 
 		public ContainerUploader(EditorAPI api,
-		                         ContainerUploadHarness harness,
-		                         MicroserviceDescriptor descriptor,
-		                         string imageId)
+								 ContainerUploadHarness harness,
+								 MicroserviceDescriptor descriptor,
+								 string imageId)
 		{
 			_client = new HttpClient();
 			_client.DefaultRequestHeaders.Add("x-ks-clientid", api.CustomerView.Cid);
@@ -160,7 +160,7 @@ namespace Beamable.Server.Editor.Uploader
 				var digest = HashDigest(fileStream);
 				if (await CheckBlobExistence(digest))
 				{
-					return new FileBlobResult {Digest = digest, Size = fileStream.Length};
+					return new FileBlobResult { Digest = digest, Size = fileStream.Length };
 				}
 
 				fileStream.Position = 0;
@@ -173,7 +173,7 @@ namespace Beamable.Server.Editor.Uploader
 					location = NormalizeWithDigest(response.Headers.Location, digest);
 				}
 
-				return new FileBlobResult {Digest = digest, Size = fileStream.Length};
+				return new FileBlobResult { Digest = digest, Size = fileStream.Length };
 			}
 		}
 
@@ -194,7 +194,7 @@ namespace Beamable.Server.Editor.Uploader
 		{
 			var uri = location;
 			var method = chunk.IsLast ? HttpMethod.Put : new HttpMethod("PATCH");
-			var request = new HttpRequestMessage(method, uri) {Content = new StreamContent(chunk.Stream)};
+			var request = new HttpRequestMessage(method, uri) { Content = new StreamContent(chunk.Stream) };
 			request.Content.Headers.ContentLength = chunk.Length;
 			request.Content.Headers.ContentRange =
 				new ContentRangeHeaderValue(chunk.Start, chunk.End, chunk.FullLength);
@@ -259,7 +259,7 @@ namespace Beamable.Server.Editor.Uploader
 		private static Uri NormalizeWithDigest(Uri uri, string digest)
 		{
 			// TODO: Figure out whether http->https redirect is possible without "buffering is needed" error. ~ACM 2019-12-18
-			var builder = new UriBuilder(uri) {Scheme = Uri.UriSchemeHttps, Port = -1};
+			var builder = new UriBuilder(uri) { Scheme = Uri.UriSchemeHttps, Port = -1 };
 			builder.Query += $"&digest={digest}";
 			return builder.Uri;
 		}

@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Validation;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Validation;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -22,20 +22,24 @@ namespace Beamable.Editor.UI.Components
 			DigitsOnly,
 		}
 
-		public new class UxmlFactory : UxmlFactory<LabeledTextField, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<LabeledTextField, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
 			{
-				name = "label", defaultValue = "Label"
+				name = "label",
+				defaultValue = "Label"
 			};
 
-			readonly UxmlStringAttributeDescription _value = new UxmlStringAttributeDescription {name = "value"};
+			readonly UxmlStringAttributeDescription _value = new UxmlStringAttributeDescription { name = "value" };
 
 			readonly UxmlStringAttributeDescription _mode = new UxmlStringAttributeDescription
 			{
-				name = "mode", defaultValue = "default"
+				name = "mode",
+				defaultValue = "default"
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -91,7 +95,9 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public LabeledTextField() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledTextField)}/{nameof(LabeledTextField)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledTextField)}/{nameof(LabeledTextField)}")
+		{
+		}
 
 		public override void Refresh()
 		{

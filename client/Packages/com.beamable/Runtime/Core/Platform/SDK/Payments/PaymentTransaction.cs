@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using Beamable.Serialization;
+using System.Collections.Generic;
 
 namespace Beamable.Api.Payments
 {
@@ -24,7 +24,9 @@ namespace Beamable.Api.Payments
 			}
 		}
 
-		public NonceTransactionPair() { }
+		public NonceTransactionPair()
+		{
+		}
 
 		public NonceTransactionPair(string nonce, long transactionid)
 		{
@@ -138,14 +140,16 @@ namespace Beamable.Api.Payments
 			}
 		}
 
-		public PaymentTransaction() { }
+		public PaymentTransaction()
+		{
+		}
 
 		public PaymentTransaction(string dbid,
-		                          string symbol,
-		                          string receipt,
-		                          string priceInLocalCurrency,
-		                          string isoCurrencySymbol,
-		                          NonceTransactionPair nonceTxPair = null)
+								  string symbol,
+								  string receipt,
+								  string priceInLocalCurrency,
+								  string isoCurrencySymbol,
+								  NonceTransactionPair nonceTxPair = null)
 		{
 			_dbid = dbid;
 			_symbol = symbol;

@@ -8,14 +8,14 @@ namespace Beamable.Editor.Modules.Theme
 	public class CanHideDrawer : PropertyDrawer
 	{
 		public override float GetPropertyHeight(SerializedProperty property,
-		                                        GUIContent label)
+												GUIContent label)
 		{
 			return EditorGUI.GetPropertyHeight(property, label, true);
 		}
 
 		public override void OnGUI(Rect position,
-		                           SerializedProperty property,
-		                           GUIContent label)
+								   SerializedProperty property,
+								   GUIContent label)
 		{
 			if (CanHideAttribute.Hide)
 			{

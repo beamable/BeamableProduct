@@ -75,7 +75,7 @@ namespace Beamable.Serialization.SmallerJSON
 
 			strInput = strInput.Trim();
 			if ((strInput.StartsWith("{") && strInput.EndsWith("}")) ||
-			    (strInput.StartsWith("[") && strInput.EndsWith("]")))
+				(strInput.StartsWith("[") && strInput.EndsWith("]")))
 			{
 				try
 				{
@@ -111,14 +111,14 @@ namespace Beamable.Serialization.SmallerJSON
 						if (quoteCount % 2 == 0)
 						{
 							result += ch + Environment.NewLine +
-							          string.Concat(Enumerable.Repeat(indentString, indentation));
+									  string.Concat(Enumerable.Repeat(indentString, indentation));
 						}
 
 						break;
 					case '{':
 					case '[':
 						var openFormatted = string.Concat(Enumerable.Repeat(indentString, ++indentation))
-						                    + indent;
+											+ indent;
 						result += string.Format("{0}{1}{2}", ch, Environment.NewLine, openFormatted);
 						break;
 					case '}':
@@ -153,7 +153,8 @@ namespace Beamable.Serialization.SmallerJSON
 
 			public bool Equals(StringSlice other)
 			{
-				if (length != other.length) return false;
+				if (length != other.length)
+					return false;
 				for (int i = 0; i < length; ++i)
 				{
 					if (array[start + i] != other.array[other.start + i])
@@ -547,10 +548,10 @@ namespace Beamable.Serialization.SmallerJSON
 					}
 
 					if (current == (byte)'.' ||
-					    current == (byte)'e' ||
-					    current == (byte)'E' ||
-					    current == (byte)'+' ||
-					    current == (byte)'-')
+						current == (byte)'e' ||
+						current == (byte)'E' ||
+						current == (byte)'+' ||
+						current == (byte)'-')
 					{
 						floatingPoint = true;
 						++_pos;
@@ -570,7 +571,7 @@ namespace Beamable.Serialization.SmallerJSON
 				{
 					long result;
 					if (long.TryParse(numberString, System.Globalization.NumberStyles.Any,
-					                  System.Globalization.CultureInfo.InvariantCulture, out result))
+									  System.Globalization.CultureInfo.InvariantCulture, out result))
 					{
 						if (negative)
 							result = -result;
@@ -586,7 +587,7 @@ namespace Beamable.Serialization.SmallerJSON
 			{
 				double parsedDouble;
 				double.TryParse(numberString, System.Globalization.NumberStyles.Any,
-				                System.Globalization.CultureInfo.InvariantCulture, out parsedDouble);
+								System.Globalization.CultureInfo.InvariantCulture, out parsedDouble);
 				if (negative)
 				{
 					parsedDouble = -parsedDouble;
@@ -621,10 +622,10 @@ namespace Beamable.Serialization.SmallerJSON
 				}
 
 				if ((_bytes[_pos + 0] == (byte)'f') &&
-				    (_bytes[_pos + 1] == (byte)'a') &&
-				    (_bytes[_pos + 2] == (byte)'l') &&
-				    (_bytes[_pos + 3] == (byte)'s') &&
-				    (_bytes[_pos + 4] == (byte)'e'))
+					(_bytes[_pos + 1] == (byte)'a') &&
+					(_bytes[_pos + 2] == (byte)'l') &&
+					(_bytes[_pos + 3] == (byte)'s') &&
+					(_bytes[_pos + 4] == (byte)'e'))
 				{
 					_pos += 5;
 					return true;
@@ -641,9 +642,9 @@ namespace Beamable.Serialization.SmallerJSON
 				}
 
 				if ((_bytes[_pos + 0] == (byte)'t') &&
-				    (_bytes[_pos + 1] == (byte)'r') &&
-				    (_bytes[_pos + 2] == (byte)'u') &&
-				    (_bytes[_pos + 3] == (byte)'e'))
+					(_bytes[_pos + 1] == (byte)'r') &&
+					(_bytes[_pos + 2] == (byte)'u') &&
+					(_bytes[_pos + 3] == (byte)'e'))
 				{
 					_pos += 4;
 					return true;
@@ -660,9 +661,9 @@ namespace Beamable.Serialization.SmallerJSON
 				}
 
 				if ((_bytes[_pos + 0] == (byte)'n') &&
-				    (_bytes[_pos + 1] == (byte)'u') &&
-				    (_bytes[_pos + 2] == (byte)'l') &&
-				    (_bytes[_pos + 3] == (byte)'l'))
+					(_bytes[_pos + 1] == (byte)'u') &&
+					(_bytes[_pos + 2] == (byte)'l') &&
+					(_bytes[_pos + 3] == (byte)'l'))
 				{
 					_pos += 4;
 					return true;
@@ -929,21 +930,21 @@ namespace Beamable.Serialization.SmallerJSON
 					builder.Append(((float)value).ToString("R", System.Globalization.CultureInfo.InvariantCulture));
 				}
 				else if (value is int
-				         || value is uint
-				         || value is long
-				         || value is sbyte
-				         || value is byte
-				         || value is short
-				         || value is ushort
-				         || value is ulong)
+						 || value is uint
+						 || value is long
+						 || value is sbyte
+						 || value is byte
+						 || value is short
+						 || value is ushort
+						 || value is ulong)
 				{
 					builder.Append(value);
 				}
 				else if (value is double
-				         || value is decimal)
+						 || value is decimal)
 				{
 					builder.Append(Convert.ToDouble(value)
-					                      .ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+										  .ToString("R", System.Globalization.CultureInfo.InvariantCulture));
 				}
 				else if (value is IRawJsonProvider provider)
 				{

@@ -17,9 +17,9 @@ namespace Beamable.Server.Editor.DockerCommands
 		}
 
 		public DockerCopyCommand(IDescriptor descriptor,
-		                         string containerPath,
-		                         string host,
-		                         CopyType direction = CopyType.CONTAINER_TO_HOST)
+								 string containerPath,
+								 string host,
+								 CopyType direction = CopyType.CONTAINER_TO_HOST)
 		{
 			_descriptor = descriptor;
 			_containerPath = containerPath;
@@ -34,9 +34,12 @@ namespace Beamable.Server.Editor.DockerCommands
 			var containerPart = $"{_descriptor.ContainerName}:{_containerPath}";
 			switch (_type)
 			{
-				case CopyType.CONTAINER_TO_HOST: return $"{containerPart} {_host}";
-				case CopyType.HOST_TO_CONTAINER: return $"{_host} {containerPart}";
-				default: return "";
+				case CopyType.CONTAINER_TO_HOST:
+					return $"{containerPart} {_host}";
+				case CopyType.HOST_TO_CONTAINER:
+					return $"{_host} {containerPart}";
+				default:
+					return "";
 			}
 		}
 

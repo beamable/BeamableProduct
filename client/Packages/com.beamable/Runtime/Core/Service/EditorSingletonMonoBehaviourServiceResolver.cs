@@ -1,5 +1,5 @@
-﻿using UnityEngine;
-using Beamable.Extensions;
+﻿using Beamable.Extensions;
+using UnityEngine;
 
 namespace Beamable.Service
 {
@@ -27,8 +27,8 @@ namespace Beamable.Service
 			if (ApplicationLifetime.isQuitting)
 			{
 				Debug.LogError(string.Format(
-					               "Application is quiting, but something is still calling ServiceManager.Resolve<{0}>, which is going to return null. Use ServiceManager.Exists before ServiceManager.Resolve on cleanup code",
-					               typeof(TResolvedAs).ToString()));
+								   "Application is quiting, but something is still calling ServiceManager.Resolve<{0}>, which is going to return null. Use ServiceManager.Exists before ServiceManager.Resolve on cleanup code",
+								   typeof(TResolvedAs).ToString()));
 				return null;
 			}
 
@@ -61,11 +61,17 @@ namespace Beamable.Service
 			}
 		}
 
-		protected virtual void OnCreate(TCreatedAs createdAs) { }
+		protected virtual void OnCreate(TCreatedAs createdAs)
+		{
+		}
 
-		protected virtual void AfterCreate(TCreatedAs createdAs) { }
+		protected virtual void AfterCreate(TCreatedAs createdAs)
+		{
+		}
 	}
 
 	public class EditorSingletonMonoBehaviourServiceResolver<T> : EditorSingletonMonoBehaviourServiceResolver<T, T>
-		where T : MonoBehaviour { }
+		where T : MonoBehaviour
+	{
+	}
 }

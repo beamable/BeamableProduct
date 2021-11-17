@@ -1,7 +1,7 @@
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Beamable.Serialization.SmallerJSON;
 
 namespace Beamable.Common.Api.Events
 {
@@ -34,9 +34,9 @@ namespace Beamable.Common.Api.Events
 		}
 
 		public virtual Promise<Unit> SetScore(string eventId,
-		                                      double score,
-		                                      bool incremental = false,
-		                                      IDictionary<string, object> stats = null)
+											  double score,
+											  bool incremental = false,
+											  IDictionary<string, object> stats = null)
 		{
 			var payload = new ArrayDict
 			{

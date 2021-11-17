@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Beamable.Editor.UI.Buss;
+using System;
 using System.Collections.Generic;
-using Beamable.Editor.UI.Buss;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -13,13 +13,16 @@ namespace Beamable.Editor.UI.Components
 {
 	public class LabeledDropdownVisualElement : BeamableVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<LabeledDropdownVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<LabeledDropdownVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
 			{
-				name = "label", defaultValue = "Label"
+				name = "label",
+				defaultValue = "Label"
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -57,7 +60,9 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public LabeledDropdownVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledDropdownVisualElement)}/{nameof(LabeledDropdownVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledDropdownVisualElement)}/{nameof(LabeledDropdownVisualElement)}")
+		{
+		}
 
 		public override void Refresh()
 		{

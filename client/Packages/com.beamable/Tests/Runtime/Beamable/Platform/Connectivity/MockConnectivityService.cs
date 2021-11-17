@@ -1,5 +1,5 @@
-using System;
 using Beamable.Api.Connectivity;
+using System;
 
 namespace Beamable.Platform.Tests.Connectivity
 {

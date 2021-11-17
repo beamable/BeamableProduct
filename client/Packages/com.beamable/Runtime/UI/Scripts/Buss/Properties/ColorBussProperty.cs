@@ -15,13 +15,14 @@ namespace Beamable.UI.Buss.Properties
 		{
 			return new ColorBussProperty
 			{
-				Enabled = other?.Enabled ?? Enabled, Color = Color.Merge<OptionalColor, Color>(other.Color),
+				Enabled = other?.Enabled ?? Enabled,
+				Color = Color.Merge<OptionalColor, Color>(other.Color),
 			};
 		}
 
 		public ColorBussProperty Clone()
 		{
-			return new ColorBussProperty {Enabled = Enabled, Color = Color};
+			return new ColorBussProperty { Enabled = Enabled, Color = Color };
 		}
 	}
 }

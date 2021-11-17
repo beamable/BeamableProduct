@@ -1,10 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Common;
 using Beamable.Config;
 using Beamable.Editor.Environment;
 using Beamable.Editor.UI.Model;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Server.Editor.DockerCommands
@@ -27,7 +27,7 @@ namespace Beamable.Server.Editor.DockerCommands
 				[ENV_MONGO_INITDB_ROOT_PASSWORD] = config.LocalInitPass,
 			};
 
-			Ports = new Dictionary<uint, uint> {[config.LocalDataPort] = 27017};
+			Ports = new Dictionary<uint, uint> { [config.LocalDataPort] = 27017 };
 
 			NamedVolumes = new Dictionary<string, string>
 			{
@@ -90,7 +90,7 @@ namespace Beamable.Server.Editor.DockerCommands
 				[ENV_MONGO_SERVER] =
 					$"mongodb://{config.LocalInitUser}:{config.LocalInitPass}@gateway.docker.internal:{config.LocalDataPort}"
 			};
-			Ports = new Dictionary<uint, uint> {[config.LocalUIPort] = 8081};
+			Ports = new Dictionary<uint, uint> { [config.LocalUIPort] = 8081 };
 
 			OnStandardErr += OnMessage;
 			OnStandardOut += OnMessage;
@@ -108,7 +108,8 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		private void OnMessage(string message)
 		{
-			if (message == null) return;
+			if (message == null)
+				return;
 			if (message.Contains(RUNNING_STRING))
 			{
 				IsAvailable?.CompleteSuccess(true);
@@ -130,10 +131,10 @@ namespace Beamable.Server.Editor.DockerCommands
 		public const string ENV_NAME_PREFIX = "NAME_PREFIX";
 
 		public RunServiceCommand(MicroserviceDescriptor service,
-		                         string cid,
-		                         string secret,
-		                         Dictionary<string, string> env) : base(service.ImageName, service.ContainerName,
-		                                                                service)
+								 string cid,
+								 string secret,
+								 Dictionary<string, string> env) : base(service.ImageName, service.ContainerName,
+																		service)
 		{
 			Environment = new Dictionary<string, string>()
 			{
@@ -156,7 +157,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			var config = MicroserviceConfiguration.Instance.GetEntry(service.Name);
 			if (config.IncludeDebugTools)
 			{
-				Ports = new Dictionary<uint, uint> {[(uint)config.DebugData.SshPort] = 2222};
+				Ports = new Dictionary<uint, uint> { [(uint)config.DebugData.SshPort] = 2222 };
 			}
 		}
 	}
@@ -199,11 +200,11 @@ namespace Beamable.Server.Editor.DockerCommands
 		public Action<string> OnStandardErr;
 
 		public RunImageCommand(string imageName,
-		                       string containerName,
-		                       IDescriptor descriptor = null,
-		                       Dictionary<string, string> env = null,
-		                       Dictionary<uint, uint> ports = null,
-		                       Dictionary<string, string> namedVolumes = null)
+							   string containerName,
+							   IDescriptor descriptor = null,
+							   Dictionary<string, string> env = null,
+							   Dictionary<uint, uint> ports = null,
+							   Dictionary<string, string> namedVolumes = null)
 		{
 			_descriptor = descriptor;
 			ImageName = imageName;
@@ -258,11 +259,11 @@ namespace Beamable.Server.Editor.DockerCommands
 		public override string GetCommandString()
 		{
 			var command = $"{DockerCmd} run --rm " +
-			              $"-P " +
-			              $"{GetNamedVolumeString()} " +
-			              $"{GetPortString()} " +
-			              $"{GetEnvironmentString()} " +
-			              $"--name {ContainerName} {ImageName}";
+						  $"-P " +
+						  $"{GetNamedVolumeString()} " +
+						  $"{GetPortString()} " +
+						  $"{GetEnvironmentString()} " +
+						  $"--name {ContainerName} {ImageName}";
 			return command;
 		}
 	}

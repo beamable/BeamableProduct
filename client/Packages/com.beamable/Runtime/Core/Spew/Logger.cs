@@ -118,7 +118,8 @@ namespace Beamable.Spew
 			Logger.DoSpew(msg);
 		}
 
-		[Conditional(SpewConstants.SPEW_ALL)] [Conditional(SpewConstants.SPEW_PUBNUB_SUBSCRIPTION)]
+		[Conditional(SpewConstants.SPEW_ALL)]
+		[Conditional(SpewConstants.SPEW_PUBNUB_SUBSCRIPTION)]
 		public static void LogFormat(string msg, params object[] args)
 		{
 			Logger.DoSpew(msg, args);
@@ -150,7 +151,8 @@ namespace Beamable.Spew
 			Logger.DoSpew(msg);
 		}
 
-		[Conditional(SpewConstants.SPEW_ALL)] [Conditional(SpewConstants.SPEW_UI_MATERIAL_FILL)]
+		[Conditional(SpewConstants.SPEW_ALL)]
+		[Conditional(SpewConstants.SPEW_UI_MATERIAL_FILL)]
 		public static void LogFormat(string msg, params object[] args)
 		{
 			Logger.DoSpew(msg, args);
@@ -166,7 +168,8 @@ namespace Beamable.Spew
 			Logger.DoSpew(msg);
 		}
 
-		[Conditional(SpewConstants.SPEW_ALL)] [Conditional(SpewConstants.SPEW_TOUCH)]
+		[Conditional(SpewConstants.SPEW_ALL)]
+		[Conditional(SpewConstants.SPEW_TOUCH)]
 		public static void LogFormat(string msg, params object[] args)
 		{
 			Logger.DoSpew(msg, args);
@@ -247,7 +250,8 @@ namespace Beamable.Spew
 		}
 	}
 
-	[SpewLogger] public static class MailLogger
+	[SpewLogger]
+	public static class MailLogger
 	{
 		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_MAIL)]
 		public static void Log(object msg)

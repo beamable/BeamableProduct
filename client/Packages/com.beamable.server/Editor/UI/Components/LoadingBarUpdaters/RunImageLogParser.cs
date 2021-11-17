@@ -1,7 +1,7 @@
-﻿using System.Linq;
-using Beamable.Editor.UI.Components;
+﻿using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.DockerCommands;
+using System.Linq;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {

@@ -8,5 +8,7 @@ namespace Beamable.ConsoleCommands
 	/// The class must have an empty constructor, or no console commands will be loaded.
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Class)]
-	public class BeamableConsoleCommandProviderAttribute : PreserveAttribute { }
+	public class BeamableConsoleCommandProviderAttribute : PreserveAttribute
+	{
+	}
 }

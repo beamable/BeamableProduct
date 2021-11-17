@@ -14,5 +14,7 @@ namespace Beamable.Server.Api.Calendars
 	/// ![img beamable-logo]
 	/// 
 	/// </summary>
-	public interface IMicroserviceCalendarsApi : ICalendarApi { }
+	public interface IMicroserviceCalendarsApi : ICalendarApi
+	{
+	}
 }

@@ -1,10 +1,10 @@
+using Beamable.Common;
+using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Beamable.Common;
-using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Common;
 using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -18,7 +18,7 @@ namespace Beamable.Editor.UI.Components
 {
 	public class PrimaryButtonVisualElement : BeamableVisualElement
 	{
-		private static char[] _digitChars = new[] {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
+		private static char[] _digitChars = new[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
 		private LoadingSpinnerVisualElement _spinner;
 
 		private Dictionary<string, bool> _fieldValid = new Dictionary<string, bool>();
@@ -37,14 +37,18 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public PrimaryButtonVisualElement() : base(
-			$"{BeamableComponentsConstants.UI_PACKAGE_PATH}/Common/Components/{nameof(PrimaryButtonVisualElement)}/{nameof(PrimaryButtonVisualElement)}") { }
+			$"{BeamableComponentsConstants.UI_PACKAGE_PATH}/Common/Components/{nameof(PrimaryButtonVisualElement)}/{nameof(PrimaryButtonVisualElement)}")
+		{
+		}
 
-		public new class UxmlFactory : UxmlFactory<PrimaryButtonVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<PrimaryButtonVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription text =
-				new UxmlStringAttributeDescription {name = "text", defaultValue = "Continue"};
+				new UxmlStringAttributeDescription { name = "text", defaultValue = "Continue" };
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
 			{
@@ -92,7 +96,8 @@ namespace Beamable.Editor.UI.Components
 
 			for (var i = 0; i < _constraints.Count; i++)
 			{
-				if (_constraints[i] == src) continue;
+				if (_constraints[i] == src)
+					continue;
 				_constraints[i].Notify();
 			}
 
@@ -165,7 +170,8 @@ namespace Beamable.Editor.UI.Components
 
 		public static string AliasErrorHandler(string alias)
 		{
-			if (string.IsNullOrEmpty(alias)) return "Alias is required";
+			if (string.IsNullOrEmpty(alias))
+				return "Alias is required";
 			if (!IsSlug(alias))
 				return
 					"Alias must start with a lowercase letter, and must contain all lower case letters, numbers, or dashes";
@@ -174,12 +180,14 @@ namespace Beamable.Editor.UI.Components
 
 		public static string AliasOrCidErrorHandler(string aliasOrCid)
 		{
-			if (string.IsNullOrEmpty(aliasOrCid)) return "Alias or CID required";
+			if (string.IsNullOrEmpty(aliasOrCid))
+				return "Alias or CID required";
 
 			// if there are leading numbers, this is a CID. Otherwise, it is an alias.
 			var isCid = _digitChars.Contains(aliasOrCid[0]);
 
-			if (!isCid) return AliasErrorHandler(aliasOrCid);
+			if (!isCid)
+				return AliasErrorHandler(aliasOrCid);
 
 			// there can only be digits...
 			var replaced = Regex.Replace(aliasOrCid, @"^\d+", "");
@@ -200,7 +208,8 @@ namespace Beamable.Editor.UI.Components
 
 		public static string ExistErrorHandler(string field)
 		{
-			if (string.IsNullOrEmpty(field)) return "Required";
+			if (string.IsNullOrEmpty(field))
+				return "Required";
 			return null;
 		}
 
@@ -235,7 +244,8 @@ namespace Beamable.Editor.UI.Components
 
 		public static bool IsSlug(string slug)
 		{
-			if (slug == null) return false;
+			if (slug == null)
+				return false;
 			return slug.Length > 1 && GenerateSlug(slug).Equals(slug.Trim());
 		}
 

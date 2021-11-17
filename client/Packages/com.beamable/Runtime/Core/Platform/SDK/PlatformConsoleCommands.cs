@@ -1,12 +1,12 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using Beamable.ConsoleCommands;
-using Beamable.Coroutines;
 using Beamable.Api.Analytics;
 using Beamable.Common.Api.Groups;
 using Beamable.Common.Api.Mail;
+using Beamable.ConsoleCommands;
+using Beamable.Coroutines;
 using Beamable.Service;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Scripting;
@@ -20,14 +20,16 @@ namespace Beamable.Api
 		private CoroutineService CoroutineService => ServiceManager.Resolve<CoroutineService>();
 
 		[Preserve]
-		public PlatformConsoleCommands() { }
+		public PlatformConsoleCommands()
+		{
+		}
 
 		[BeamableConsoleCommand("IDFA", "print advertising identifier", "IDFA")]
 		private string PrintAdvertisingIdentifier(string[] args)
 		{
 			Application.RequestAdvertisingIdentifierAsync((id, trackingEnabled, error) =>
-				                                              Console.Log(
-					                                              $"AdId = {id}\nTrackingEnabled={trackingEnabled}\nError = {error}"));
+															  Console.Log(
+																  $"AdId = {id}\nTrackingEnabled={trackingEnabled}\nError = {error}"));
 
 			return String.Empty;
 		}
@@ -41,8 +43,8 @@ namespace Beamable.Api
 			return "Attempting access token reset...";
 		}
 
-		[BeamableConsoleCommand(new[] {"FORCE-RESTART", "FR"}, "Restart the game as if it had just been launched",
-		                        "FORCE-RESTART")]
+		[BeamableConsoleCommand(new[] { "FORCE-RESTART", "FR" }, "Restart the game as if it had just been launched",
+								"FORCE-RESTART")]
 		public static string ForceRestart(params string[] args)
 		{
 			ServiceManager.OnTeardown();
@@ -52,8 +54,8 @@ namespace Beamable.Api
 		/// <summary>
 		/// Send a local notification test at some delay.
 		/// </summary>
-		[BeamableConsoleCommand(new[] {"LOCALNOTE", "LN"}, "Send a local notification. Default delay is 10 seconds.",
-		                        "LOCALNOTE [<delay> [<title> [<body>]]]")]
+		[BeamableConsoleCommand(new[] { "LOCALNOTE", "LN" }, "Send a local notification. Default delay is 10 seconds.",
+								"LOCALNOTE [<delay> [<title> [<body>]]]")]
 		private string LocalNotificationCommand(params string[] args)
 		{
 			var title = "Test Notification Message Title";
@@ -75,15 +77,15 @@ namespace Beamable.Api
 				message = args[2];
 			}
 
-			var customData = new Dictionary<string, string> {{"evt", "test"}, {"foo", "123"}};
+			var customData = new Dictionary<string, string> { { "evt", "test" }, { "foo", "123" } };
 			var service = ServiceManager.Resolve<PlatformService>();
 
 			string channel = "test";
 
 			service.Notification.CreateNotificationChannel(channel, "Test",
-			                                               "Test notifications of regular importance.");
+														   "Test notifications of regular importance.");
 			service.Notification.ScheduleLocalNotification(channel, "DBCONSOLE", 0, title, message,
-			                                               TimeSpan.FromSeconds(delay), false, customData);
+														   TimeSpan.FromSeconds(delay), false, customData);
 			return string.Format("Scheduled notification for {0} seconds in the future.", delay);
 		}
 
@@ -101,8 +103,8 @@ namespace Beamable.Api
 			return "";
 		}
 
-		[BeamableConsoleCommand(new[] {"TIMESCALE", "TS"}, "Sets the current timescale",
-		                        "TIMESCALE <value> | variable")]
+		[BeamableConsoleCommand(new[] { "TIMESCALE", "TS" }, "Sets the current timescale",
+								"TIMESCALE <value> | variable")]
 		private string Timescale(params string[] args)
 		{
 			if (args.Length < 1)
@@ -172,14 +174,14 @@ namespace Beamable.Api
 
 			var dbid = long.Parse(args[0]);
 			ServiceManager.Resolve<PlatformService>().Session.GetHeartbeat(dbid)
-			              .Then(rsp =>
-			              {
-				              Console.Log(rsp.ToString());
-			              })
-			              .Error(err =>
-			              {
-				              Console.Log(String.Format("Error:", err));
-			              });
+						  .Then(rsp =>
+						  {
+							  Console.Log(rsp.ToString());
+						  })
+						  .Error(err =>
+						  {
+							  Console.Log(String.Format("Error:", err));
+						  });
 
 			return "Querying...";
 		}
@@ -188,7 +190,7 @@ namespace Beamable.Api
          * Login to a previously registered account with the given username and password.
          */
 		[BeamableConsoleCommand("LOGIN_ACCOUNT", "Log in to the DBID designated by the given username and password",
-		                        "LOGIN_ACCOUNT <email> <password>")]
+								"LOGIN_ACCOUNT <email> <password>")]
 		string LoginAccount(params string[] args)
 		{
 			if (args.Length < 2)
@@ -208,18 +210,18 @@ namespace Beamable.Api
 				if (err is PlatformRequesterException code && code.Error.error == "UnableToMergeError")
 				{
 					ServiceManager.Resolve<PlatformService>().Auth.Login(email, password, mergeGamerTagToAccount: false)
-					              .Then(rsp =>
-					              {
-						              ServiceManager.Resolve<PlatformService>().SaveToken(rsp);
-						              ServiceManager.Resolve<PlatformService>().ReloadUser();
-						              Console.Log(String.Format("Successfully SWITCHED to {0}. Resetting", email));
-						              Console.Execute("RESET");
-					              }).Error(err2 =>
-					              {
-						              Console.Log(String.Format(
-							                          "There was an error trying to log in as user: {0} - {1}", email,
-							                          err2));
-					              });
+								  .Then(rsp =>
+								  {
+									  ServiceManager.Resolve<PlatformService>().SaveToken(rsp);
+									  ServiceManager.Resolve<PlatformService>().ReloadUser();
+									  Console.Log(String.Format("Successfully SWITCHED to {0}. Resetting", email));
+									  Console.Execute("RESET");
+								  }).Error(err2 =>
+								  {
+									  Console.Log(String.Format(
+													  "There was an error trying to log in as user: {0} - {1}", email,
+													  err2));
+								  });
 				}
 				else
 				{
@@ -324,7 +326,7 @@ namespace Beamable.Api
          * Registers the current DBID to the given username and password.
          */
 		[BeamableConsoleCommand("REGISTER_ACCOUNT", "Registers this DBID with the given username and password",
-		                        "REGISTER_ACCOUNT <email> <password>")]
+								"REGISTER_ACCOUNT <email> <password>")]
 		string RegisterAccount(params string[] args)
 		{
 			if (args.Length < 2)
@@ -335,14 +337,14 @@ namespace Beamable.Api
 			var email = args[0];
 			var password = args[1];
 			ServiceManager.Resolve<PlatformService>().Auth.RegisterDBCredentials(email, password)
-			              .Then(rsp =>
-			              {
-				              Console.Log(String.Format("Successfully registered user {0}", email));
-			              })
-			              .Error(err =>
-			              {
-				              Console.Log(err.ToString());
-			              });
+						  .Then(rsp =>
+						  {
+							  Console.Log(String.Format("Successfully registered user {0}", email));
+						  })
+						  .Error(err =>
+						  {
+							  Console.Log(err.ToString());
+						  });
 
 			return "Registering user: " + email;
 		}
@@ -354,7 +356,7 @@ namespace Beamable.Api
 		}
 
 		[BeamableConsoleCommand("EXPIRE_TOKEN", "Expires the current access token to trigger the refresh flow",
-		                        "EXPIRE_TOKEN")]
+								"EXPIRE_TOKEN")]
 		public string ExpireAccessToken(params string[] args)
 		{
 			var platform = ServiceManager.Resolve<PlatformService>();
@@ -364,7 +366,7 @@ namespace Beamable.Api
 		}
 
 		[BeamableConsoleCommand("CORRUPT_TOKEN", "Corrupts the current access token to trigger the refresh flow",
-		                        "CORRUPT_TOKEN")]
+								"CORRUPT_TOKEN")]
 		public string CorruptAccessToken(params string[] args)
 		{
 			var platform = ServiceManager.Resolve<PlatformService>();
@@ -387,7 +389,7 @@ namespace Beamable.Api
 		}
 
 		[BeamableConsoleCommand("IAP_BUY", "Invokes the real money transaction flow to purchase the given item_symbol.",
-		                        "IAP_BUY <listing> <sku>")]
+								"IAP_BUY <listing> <sku>")]
 		string IAPBuy(params string[] args)
 		{
 			if (args.Length != 2)
@@ -396,14 +398,14 @@ namespace Beamable.Api
 			}
 
 			ServiceManager.Resolve<PlatformService>().BeamablePurchaser.StartPurchase(args[0], args[1])
-			              .Then((txn) =>
-			              {
-				              Console.Log("Purchase Complete: " + txn.Txid);
-			              })
-			              .Error((err) =>
-			              {
-				              Console.Log("Purchase Failed: " + err.ToString());
-			              });
+						  .Then((txn) =>
+						  {
+							  Console.Log("Purchase Complete: " + txn.Txid);
+						  })
+						  .Error((err) =>
+						  {
+							  Console.Log("Purchase Failed: " + err.ToString());
+						  });
 
 			return "Purchasing item: " + args[0];
 		}
@@ -437,14 +439,14 @@ namespace Beamable.Api
 			}
 
 			ServiceManager.Resolve<PlatformService>().Groups.GetUser(gamerTag)
-			              .Then(rsp =>
-			              {
-				              Console.Log(JsonUtility.ToJson(rsp));
-			              })
-			              .Error(err =>
-			              {
-				              Console.Log(String.Format("Error:", err));
-			              });
+						  .Then(rsp =>
+						  {
+							  Console.Log(JsonUtility.ToJson(rsp));
+						  })
+						  .Error(err =>
+						  {
+							  Console.Log(String.Format("Error:", err));
+						  });
 			return "Querying...";
 		}
 
@@ -453,20 +455,20 @@ namespace Beamable.Api
 		{
 			long gamerTag = ServiceManager.Resolve<PlatformService>().User.id;
 			ServiceManager.Resolve<PlatformService>().Groups.GetUser(gamerTag)
-			              .FlatMap<GroupMembershipResponse>(userRsp =>
-			              {
-				              long group = 0;
-				              if (userRsp.member.guild.Count > 0)
-				              {
-					              group = userRsp.member.guild[0].id;
-				              }
+						  .FlatMap<GroupMembershipResponse>(userRsp =>
+						  {
+							  long group = 0;
+							  if (userRsp.member.guild.Count > 0)
+							  {
+								  group = userRsp.member.guild[0].id;
+							  }
 
-				              return ServiceManager.Resolve<PlatformService>().Groups.LeaveGroup(group);
-			              })
-			              .Error(err =>
-			              {
-				              Console.Log(String.Format("Error:", err));
-			              });
+							  return ServiceManager.Resolve<PlatformService>().Groups.LeaveGroup(group);
+						  })
+						  .Error(err =>
+						  {
+							  Console.Log(String.Format("Error:", err));
+						  });
 			return "Querying...";
 		}
 
@@ -483,19 +485,19 @@ namespace Beamable.Api
 
 			var platform = ServiceManager.Resolve<PlatformService>();
 			platform.Stats.GetStats(args[0], args[1], args[2], long.Parse(args[3]))
-			        .Then(rsp =>
-			        {
-				        foreach (var next in rsp)
-				        {
-					        Console.Log(String.Format("{0} = {1}", next.Key, next.Value));
-				        }
+					.Then(rsp =>
+					{
+						foreach (var next in rsp)
+						{
+							Console.Log(String.Format("{0} = {1}", next.Key, next.Value));
+						}
 
-				        Console.Log("Done");
-			        })
-			        .Error(err =>
-			        {
-				        Console.Log(String.Format("Error:", err));
-			        });
+						Console.Log("Done");
+					})
+					.Error(err =>
+					{
+						Console.Log(String.Format("Error:", err));
+					});
 			return "Querying...";
 		}
 
@@ -514,8 +516,8 @@ namespace Beamable.Api
 			Dictionary<string, string> stats = new Dictionary<string, string>();
 			stats.Add(args[1], args[2]);
 			platform.Stats.SetStats(args[0], stats)
-			        .Then(rsp => Console.Log("Done"))
-			        .Error(err => Console.Log(String.Format("Error:", err)));
+					.Then(rsp => Console.Log("Done"))
+					.Error(err => Console.Log(String.Format("Error:", err)));
 			return "Querying...";
 		}
 

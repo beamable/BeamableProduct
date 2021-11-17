@@ -1,6 +1,6 @@
-﻿using System.Collections;
+﻿using Beamable.UI.Layouts;
+using System.Collections;
 using System.Collections.Generic;
-using Beamable.UI.Layouts;
 using UnityEngine;
 
 public class MediaSourceBehaviour : MonoBehaviour
@@ -13,13 +13,16 @@ public class MediaSourceBehaviour : MonoBehaviour
 	private List<MediaQueryCallback> _callbacks = new List<MediaQueryCallback>();
 
 	// Start is called before the first frame update
-	void Start() { }
+	void Start()
+	{
+	}
 
 	// Update is called once per frame
 	void Update()
 	{
 		var curr = Calculate();
-		if (!_first && curr == _lastOutput) return;
+		if (!_first && curr == _lastOutput)
+			return;
 
 		_first = false;
 		_lastOutput = curr;

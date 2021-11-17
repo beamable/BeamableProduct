@@ -1,8 +1,8 @@
-﻿using UnityEngine;
+﻿using Beamable.Editor.Content.Models;
 using System;
 using System.Collections.Generic;
-using Beamable.Editor.Content.Models;
 using UnityEditor.IMGUI.Controls;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -75,7 +75,7 @@ namespace Beamable.Editor.Content.Components
 			createItemButton.AddToClassList("addItemButton");
 			createItemButton.SetEnabled(true);
 			createItemButton.text = string.Format(ContentManagerConstants.CreateNewPopupAddButtonEnabledText,
-			                                      typeDescriptor.TypeName);
+												  typeDescriptor.TypeName);
 			createItemButton.clickable.clicked += () =>
 			{
 				OnAddItemButtonClicked?.Invoke(typeDescriptor);

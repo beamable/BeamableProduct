@@ -1,14 +1,14 @@
-using Beamable.Editor.Content.Models;
 using Beamable.Editor.Content;
-using UnityEngine;
+using Beamable.Editor.Content.Components;
+using Beamable.Editor.Content.Models;
+using Beamable.Editor.Toolbox.Models;
+using Beamable.Editor.Toolbox.UI.Components;
 using Beamable.Editor.UI.Buss.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Editor.Content.Components;
-using Beamable.Editor.Toolbox.Models;
-using Beamable.Editor.Toolbox.UI.Components;
 using UnityEditor;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -25,13 +25,16 @@ namespace Beamable.Editor.Toolbox.Components
 		private IWidgetSource _widgetSource;
 		private ScrollView _scrollView;
 
-		public new class UxmlFactory : UxmlFactory<ToolboxContentListVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<ToolboxContentListVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
 			{
-				name = "custom-text", defaultValue = "nada"
+				name = "custom-text",
+				defaultValue = "nada"
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -88,8 +91,9 @@ namespace Beamable.Editor.Toolbox.Components
 
 			extraElements =
 				Mathf.Min(extraElements,
-				          totalElements); // a sane upper limit, so we don't accidently create thousands of elements on page load.
-			if (ExtraElementCount == extraElements) return;
+						  totalElements); // a sane upper limit, so we don't accidently create thousands of elements on page load.
+			if (ExtraElementCount == extraElements)
+				return;
 			ExtraElementCount = extraElements;
 
 			SetExtraElements();
@@ -102,7 +106,8 @@ namespace Beamable.Editor.Toolbox.Components
 
 		private void Model_OnWidgetSourceAvailable(IWidgetSource source)
 		{
-			if (_widgetSource == source) return; // nothing to do; no change.
+			if (_widgetSource == source)
+				return; // nothing to do; no change.
 
 			_widgetSource = source;
 			RefreshWidgetElements(_gridContainer);

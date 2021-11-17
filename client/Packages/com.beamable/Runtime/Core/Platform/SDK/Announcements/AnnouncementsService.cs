@@ -1,15 +1,17 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Announcements;
+using System;
+using System.Collections.Generic;
 
 namespace Beamable.Api.Announcements
 {
 	public class AnnouncementsSubscription : PlatformSubscribable<AnnouncementQueryResponse, AnnouncementQueryResponse>
 	{
 		public AnnouncementsSubscription(PlatformService platform, IBeamableRequester requester, string service) : base(
-			platform, requester, service) { }
+			platform, requester, service)
+		{
+		}
 
 		protected override void OnRefresh(AnnouncementQueryResponse data)
 		{
@@ -35,8 +37,8 @@ namespace Beamable.Api.Announcements
 	/// 
 	/// </summary>
 	public class AnnouncementsService : AbsAnnouncementsApi,
-	                                    IHasPlatformSubscriber<AnnouncementsSubscription, AnnouncementQueryResponse,
-		                                    AnnouncementQueryResponse>
+										IHasPlatformSubscriber<AnnouncementsSubscription, AnnouncementQueryResponse,
+											AnnouncementQueryResponse>
 	{
 		public AnnouncementsSubscription Subscribable
 		{
@@ -53,7 +55,8 @@ namespace Beamable.Api.Announcements
 			return base.Claim(ids).Then(_ =>
 			{
 				var data = Subscribable.GetLatest();
-				if (data == null) return;
+				if (data == null)
+					return;
 
 				var announcements = data.announcements.FindAll((next) => ids.Contains(next.id));
 				if (announcements != null)

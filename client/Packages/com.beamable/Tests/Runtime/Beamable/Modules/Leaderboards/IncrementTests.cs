@@ -1,6 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using Beamable.Api;
 using Beamable.Api.Leaderboard;
 using Beamable.Common.Api;
@@ -8,6 +5,9 @@ using Beamable.Common.Api.Leaderboards;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Tests.Runtime;
 using NUnit.Framework;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.TestTools;
 
@@ -21,15 +21,15 @@ namespace Beamable.Tests.Modules.Leaderboards
 		public IEnumerator UpdateIncludesDataInBody_WithoutStats()
 		{
 			MockRequester.MockRequest<LeaderboardAssignmentInfo>(Method.GET,
-			                                                     "/basic/leaderboards/assignment?boardId=leaderboard.test&joinBoard=True")
-			             .WithResponse(new LeaderboardAssignmentInfo(LEADERBOARD_ID, MockApi.User.id));
+																 "/basic/leaderboards/assignment?boardId=leaderboard.test&joinBoard=True")
+						 .WithResponse(new LeaderboardAssignmentInfo(LEADERBOARD_ID, MockApi.User.id));
 
 			var req = MockRequester
-			          .MockRequest<EmptyResponse>(Method.PUT, $"/object/leaderboards/{LEADERBOARD_ID}/entry")
-			          .WithJsonFieldMatch("increment", true)
-			          .WithJsonFieldMatch("id", MockApi.User.id)
-			          .WithoutJsonField("stats")
-			          .WithJsonFieldMatch("score", CheckDouble(10));
+					  .MockRequest<EmptyResponse>(Method.PUT, $"/object/leaderboards/{LEADERBOARD_ID}/entry")
+					  .WithJsonFieldMatch("increment", true)
+					  .WithJsonFieldMatch("id", MockApi.User.id)
+					  .WithoutJsonField("stats")
+					  .WithJsonFieldMatch("score", CheckDouble(10));
 			yield return MockApi.LeaderboardService.IncrementScore(LEADERBOARD_ID, 10).ToYielder();
 			Assert.IsTrue(req.Called);
 		}
@@ -38,15 +38,15 @@ namespace Beamable.Tests.Modules.Leaderboards
 		public IEnumerator GiantNumberWorks_WithoutStats()
 		{
 			MockRequester.MockRequest<LeaderboardAssignmentInfo>(Method.GET,
-			                                                     "/basic/leaderboards/assignment?boardId=leaderboard.test&joinBoard=True")
-			             .WithResponse(new LeaderboardAssignmentInfo(LEADERBOARD_ID, MockApi.User.id));
+																 "/basic/leaderboards/assignment?boardId=leaderboard.test&joinBoard=True")
+						 .WithResponse(new LeaderboardAssignmentInfo(LEADERBOARD_ID, MockApi.User.id));
 
 			var req = MockRequester
-			          .MockRequest<EmptyResponse>(Method.PUT, $"/object/leaderboards/{LEADERBOARD_ID}/entry")
-			          .WithJsonFieldMatch("increment", true)
-			          .WithJsonFieldMatch("id", MockApi.User.id)
-			          .WithoutJsonField("stats")
-			          .WithJsonFieldMatch("score", CheckDouble(1e15));
+					  .MockRequest<EmptyResponse>(Method.PUT, $"/object/leaderboards/{LEADERBOARD_ID}/entry")
+					  .WithJsonFieldMatch("increment", true)
+					  .WithJsonFieldMatch("id", MockApi.User.id)
+					  .WithoutJsonField("stats")
+					  .WithJsonFieldMatch("score", CheckDouble(1e15));
 			yield return MockApi.LeaderboardService.IncrementScore(LEADERBOARD_ID, 1e15).ToYielder();
 			Assert.IsTrue(req.Called);
 		}
@@ -55,17 +55,17 @@ namespace Beamable.Tests.Modules.Leaderboards
 		public IEnumerator UpdateIncludesDataInBody_WithStats()
 		{
 			MockRequester.MockRequest<LeaderboardAssignmentInfo>(Method.GET,
-			                                                     "/basic/leaderboards/assignment?boardId=leaderboard.test&joinBoard=True")
-			             .WithResponse(new LeaderboardAssignmentInfo(LEADERBOARD_ID, MockApi.User.id));
+																 "/basic/leaderboards/assignment?boardId=leaderboard.test&joinBoard=True")
+						 .WithResponse(new LeaderboardAssignmentInfo(LEADERBOARD_ID, MockApi.User.id));
 
 			var req = MockRequester
-			          .MockRequest<EmptyResponse>(Method.PUT, $"/object/leaderboards/{LEADERBOARD_ID}/entry")
-			          .WithJsonFieldMatch("increment", true)
-			          .WithJsonFieldMatch("id", MockApi.User.id)
-			          .WithJsonFieldMatch("stats", (actual) => actual is ArrayDict dict && dict.Count == 0)
-			          .WithJsonFieldMatch("score", CheckDouble(10));
+					  .MockRequest<EmptyResponse>(Method.PUT, $"/object/leaderboards/{LEADERBOARD_ID}/entry")
+					  .WithJsonFieldMatch("increment", true)
+					  .WithJsonFieldMatch("id", MockApi.User.id)
+					  .WithJsonFieldMatch("stats", (actual) => actual is ArrayDict dict && dict.Count == 0)
+					  .WithJsonFieldMatch("score", CheckDouble(10));
 			yield return MockApi.LeaderboardService.IncrementScore(LEADERBOARD_ID, 10, new Dictionary<string, object>())
-			                    .ToYielder();
+								.ToYielder();
 			Assert.IsTrue(req.Called);
 		}
 

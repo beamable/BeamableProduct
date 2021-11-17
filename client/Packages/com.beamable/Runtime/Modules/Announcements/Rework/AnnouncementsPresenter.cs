@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using Beamable;
+﻿using Beamable;
 using Beamable.Announcements;
 using Modules.Inventory.Prototype;
 using Modules.Inventory.Prototype.GenericComponents;
+using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Assertions;

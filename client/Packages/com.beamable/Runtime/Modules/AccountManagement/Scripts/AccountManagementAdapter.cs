@@ -1,12 +1,12 @@
-using System;
-using System.Collections.Generic;
+using Beamable.Avatars;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
-using Beamable.Avatars;
-using Beamable.UI.Scripts;
 using Beamable.Platform.SDK;
 using Beamable.Platform.SDK.Auth;
 using Beamable.Stats;
+using Beamable.UI.Scripts;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.AccountManagement
@@ -24,7 +24,8 @@ namespace Beamable.AccountManagement
 
 			user.GetStat(aliasStat).Then(alias =>
 			{
-				if (!menuManager) return;
+				if (!menuManager)
+					return;
 
 				// only show the player data menu if there is no alias, and if there the menu wasn't just opened
 				var isAliasUndefined = string.IsNullOrEmpty(alias);

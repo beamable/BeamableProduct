@@ -1,11 +1,11 @@
-using System;
-using System.Text;
 using Beamable.Api;
 using Beamable.Api.Connectivity;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Spew;
+using System;
+using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -51,8 +51,8 @@ namespace Core.Platform.SDK
 		private readonly AccessTokenStorage _accessTokenStorage;
 
 		public BeamableApiRequester(string host,
-		                            AccessTokenStorage accessTokenStorage,
-		                            IConnectivityService connectivityService)
+									AccessTokenStorage accessTokenStorage,
+									IConnectivityService connectivityService)
 		{
 			Host = host;
 			_accessTokenStorage = accessTokenStorage;
@@ -65,11 +65,11 @@ namespace Core.Platform.SDK
 		}
 
 		public Promise<T> Request<T>(Method method,
-		                             string uri,
-		                             object body = null,
-		                             bool includeAuthHeader = true,
-		                             Func<string, T> parser = null,
-		                             bool useCache = false)
+									 string uri,
+									 object body = null,
+									 bool includeAuthHeader = true,
+									 Func<string, T> parser = null,
+									 bool useCache = false)
 		{
 			byte[] bodyBytes = null;
 
@@ -84,9 +84,9 @@ namespace Core.Platform.SDK
 		}
 
 		private Promise<T> MakeRequestWithTokenRefresh<T>(Method method,
-		                                                  string uri,
-		                                                  byte[] body,
-		                                                  bool includeAuthHeader)
+														  string uri,
+														  byte[] body,
+														  bool includeAuthHeader)
 		{
 			return MakeRequest<T>(method, uri, body, includeAuthHeader).RecoverWith(error =>
 			{
@@ -95,15 +95,17 @@ namespace Core.Platform.SDK
 					case PlatformRequesterException e when e.Status == 401:
 						var authBody = new BeamableApiTokenRequest
 						{
-							refreshToken = Token.RefreshToken, customerId = Token.Cid, realmId = Token.Pid
+							refreshToken = Token.RefreshToken,
+							customerId = Token.Cid,
+							realmId = Token.Pid
 						};
 						return Request<BeamableApiTokenResponse>(Method.POST, "/auth/refresh-token", authBody, false)
-						       .Map(rsp =>
-						       {
-							       _newJwt = rsp.accessToken;
-							       return PromiseBase.Unit;
-						       })
-						       .FlatMap(_ => MakeRequest<T>(method, uri, body, includeAuthHeader));
+							   .Map(rsp =>
+							   {
+								   _newJwt = rsp.accessToken;
+								   return PromiseBase.Unit;
+							   })
+							   .FlatMap(_ => MakeRequest<T>(method, uri, body, includeAuthHeader));
 				}
 
 				return Promise<T>.Failed(error);
@@ -111,9 +113,9 @@ namespace Core.Platform.SDK
 		}
 
 		private Promise<T> MakeRequest<T>(Method method,
-		                                  string uri,
-		                                  byte[] body,
-		                                  bool includeAuthHeader)
+										  string uri,
+										  byte[] body,
+										  bool includeAuthHeader)
 		{
 			var result = new Promise<T>();
 			var request = BuildWebRequest(method, uri, body, includeAuthHeader);
@@ -172,13 +174,14 @@ namespace Core.Platform.SDK
 			// Prepare the request
 			var request = new UnityWebRequest(address)
 			{
-				downloadHandler = new DownloadHandlerBuffer(), method = method.ToString()
+				downloadHandler = new DownloadHandlerBuffer(),
+				method = method.ToString()
 			};
 
 			// Set the body
 			if (body != null)
 			{
-				var upload = new UploadHandlerRaw(body) {contentType = "application/json"};
+				var upload = new UploadHandlerRaw(body) { contentType = "application/json" };
 				request.uploadHandler = upload;
 			}
 

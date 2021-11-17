@@ -1,8 +1,8 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Content;
+using System;
+using System.Collections.Generic;
 
 namespace Beamable.Platform.Tests.Content
 {

@@ -1,7 +1,7 @@
-using System;
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Platform.SDK;
+using System;
 using UnityEngine;
 
 namespace Beamable.Tests.Content.Serialization.Support

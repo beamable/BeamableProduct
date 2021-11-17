@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Beamable.Editor.UI.Buss;
+using System;
 using System.Collections.Generic;
-using Beamable.Editor.UI.Buss;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -20,10 +20,14 @@ namespace Beamable.Editor.UI.Components
 
 		private Action _onDestroy;
 
-		public new class UxmlFactory : UxmlFactory<DropdownOptionsVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<DropdownOptionsVisualElement, UxmlTraits>
+		{
+		}
 
 		public DropdownOptionsVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(DropdownVisualElement)}/{nameof(DropdownOptionsVisualElement)}/{nameof(DropdownOptionsVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(DropdownVisualElement)}/{nameof(DropdownOptionsVisualElement)}/{nameof(DropdownOptionsVisualElement)}")
+		{
+		}
 
 		public override void Refresh()
 		{

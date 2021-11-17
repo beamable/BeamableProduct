@@ -1,17 +1,17 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
-using Beamable.Editor.Content;
-using Beamable.Editor.Environment;
 using Beamable.Config;
 using Beamable.Editor.Config;
+using Beamable.Editor.Content;
+using Beamable.Editor.Environment;
 using Beamable.Editor.Modules.Account;
 using Beamable.Editor.Realms;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.VersionControl;
@@ -187,7 +187,8 @@ namespace Beamable.Editor
 				fileInfo.IsReadOnly = false;
 			}
 
-			if (!Provider.enabled) return;
+			if (!Provider.enabled)
+				return;
 			var vcTask = Provider.Checkout(path, CheckoutMode.Asset);
 			vcTask.Wait();
 			if (!vcTask.success)
@@ -213,8 +214,8 @@ namespace Beamable.Editor
 
 			// we need to remember the last realm the user was on in this game.
 			var hadSelectedPid = EditorPrefHelper
-			                     .GetMap(BeamableConstants.REALM_PREFERENCE)
-			                     .TryGetValue($"{CustomerView.Cid}.{game.Pid}", out var existingPid);
+								 .GetMap(BeamableConstants.REALM_PREFERENCE)
+								 .TryGetValue($"{CustomerView.Cid}.{game.Pid}", out var existingPid);
 			if (!hadSelectedPid)
 			{
 				existingPid = game.Pid;
@@ -229,7 +230,7 @@ namespace Beamable.Editor
 			return AuthService.Login(email, password, customerScoped: true).FlatMap(tokenRes =>
 			{
 				var token = new AccessToken(_accessTokenStorage, CidOrAlias, null, tokenRes.access_token,
-				                            tokenRes.refresh_token, tokenRes.expires_in);
+											tokenRes.refresh_token, tokenRes.expires_in);
 
 				// use this token.
 				return ApplyToken(token);
@@ -279,10 +280,10 @@ namespace Beamable.Editor
 			return AuthService.CreateUser().FlatMap(newToken =>
 			{
 				var token = new AccessToken(_accessTokenStorage, CidOrAlias, Pid, newToken.access_token,
-				                            newToken.refresh_token, newToken.expires_in);
+											newToken.refresh_token, newToken.expires_in);
 				_requester.Token = token;
 				return AuthService.RegisterDBCredentials(customerEmail, customerPassword)
-				                  .FlatMap(user => Login(token).ToUnit());
+								  .FlatMap(user => Login(token).ToUnit());
 			});
 		}
 
@@ -319,21 +320,21 @@ namespace Beamable.Editor
 			AddressableAssetSettingsDefaultObject.GetSettings(true);
 
 			return TextMeshProImporter.ImportEssentials()
-			                          .FlatMap(_ =>
-			                          {
-				                          AssetDatabase.Refresh();
-				                          ContentIO.EnsureAllDefaultContent();
+									  .FlatMap(_ =>
+									  {
+										  AssetDatabase.Refresh();
+										  ContentIO.EnsureAllDefaultContent();
 
-				                          ConfigManager.Initialize();
+										  ConfigManager.Initialize();
 
-				                          return ContentIO.OnManifest.FlatMap(serverManifest =>
-				                          {
-					                          var hasNoContent = serverManifest.References.Count == 0;
-					                          return hasNoContent
-						                          ? DoSilentContentPublish()
-						                          : PromiseBase.SuccessfulUnit;
-				                          });
-			                          });
+										  return ContentIO.OnManifest.FlatMap(serverManifest =>
+										  {
+											  var hasNoContent = serverManifest.References.Count == 0;
+											  return hasNoContent
+												  ? DoSilentContentPublish()
+												  : PromiseBase.SuccessfulUnit;
+										  });
+									  });
 		}
 
 #if BEAMABLE_DEVELOPER
@@ -355,21 +356,21 @@ namespace Beamable.Editor
 		{
 			var clearPromise = force ? ContentPublisher.ClearManifest() : Promise<Unit>.Successful(PromiseBase.Unit);
 			return clearPromise
-			       .FlatMap(_ =>
-			       {
-				       return ContentPublisher.CreatePublishSet().FlatMap(set =>
-				       {
-					       return ContentPublisher.Publish(set, progress => { });
-				       });
-			       })
-			       .FlatMap(_ =>
-			       {
-				       return ContentIO.FetchManifest();
-			       }).Map(_ =>
-			       {
-				       Debug.Log("Beamable Content Publish: Complete.");
-				       return PromiseBase.Unit;
-			       });
+				   .FlatMap(_ =>
+				   {
+					   return ContentPublisher.CreatePublishSet().FlatMap(set =>
+					   {
+						   return ContentPublisher.Publish(set, progress => { });
+					   });
+				   })
+				   .FlatMap(_ =>
+				   {
+					   return ContentIO.FetchManifest();
+				   }).Map(_ =>
+				   {
+					   Debug.Log("Beamable Content Publish: Complete.");
+					   return PromiseBase.Unit;
+				   });
 		}
 
 		public async Promise<Unit> SwitchRealm(RealmView game, string pid)
@@ -395,9 +396,9 @@ namespace Beamable.Editor
 			var realms = await RealmService.GetRealms(game);
 
 			var set = EditorPrefHelper
-			          .GetMap(BeamableConstants.REALM_PREFERENCE)
-			          .Set($"{game.Cid}.{game.Pid}", pid)
-			          .Save();
+					  .GetMap(BeamableConstants.REALM_PREFERENCE)
+					  .Set($"{game.Cid}.{game.Pid}", pid)
+					  .Save();
 
 			var realm = realms.FirstOrDefault(r => string.Equals(r.Pid, pid));
 
@@ -414,10 +415,10 @@ namespace Beamable.Editor
 		}
 
 		public void SaveConfig(string alias,
-		                       string pid,
-		                       string host = null,
-		                       string cid = null,
-		                       string containerPrefix = null)
+							   string pid,
+							   string host = null,
+							   string cid = null,
+							   string containerPrefix = null)
 		{
 			if (string.IsNullOrEmpty(host))
 			{
@@ -464,37 +465,37 @@ namespace Beamable.Editor
 		public Promise<EditorAPI> Login(TokenResponse tokenResponse)
 		{
 			var token = new AccessToken(_accessTokenStorage, CidOrAlias, Pid, tokenResponse.access_token,
-			                            tokenResponse.refresh_token, tokenResponse.expires_in);
+										tokenResponse.refresh_token, tokenResponse.expires_in);
 			return Login(token);
 		}
 
 		public Promise<EditorAPI> Login(AccessToken token)
 		{
 			return ApplyToken(token)
-			       .FlatMap(_ =>
-			       {
-				       return RealmService.GetRealm()
-				                          .Recover(ex =>
-				                          {
-					                          if (ex is RealmServiceException err)
-					                          {
-						                          // there is no realm.
-						                          return null;
-					                          }
+				   .FlatMap(_ =>
+				   {
+					   return RealmService.GetRealm()
+										  .Recover(ex =>
+										  {
+											  if (ex is RealmServiceException err)
+											  {
+												  // there is no realm.
+												  return null;
+											  }
 
-					                          throw ex;
-				                          })
-				                          .FlatMap(realm =>
-				                          {
-					                          if (realm == null)
-					                          {
-						                          return Promise<Unit>.Successful(PromiseBase.Unit); // nothing to do.
-					                          }
+											  throw ex;
+										  })
+										  .FlatMap(realm =>
+										  {
+											  if (realm == null)
+											  {
+												  return Promise<Unit>.Successful(PromiseBase.Unit); // nothing to do.
+											  }
 
-					                          return SwitchRealm(realm);
-				                          });
-			       })
-			       .Map(_ => this);
+											  return SwitchRealm(realm);
+										  });
+				   })
+				   .Map(_ => this);
 		}
 
 		Promise<Unit> ApplyToken(AccessToken token)
@@ -539,29 +540,30 @@ namespace Beamable.Editor
 			// TODO: This call may fail because we're getting a customer scoped token now..
 
 			return RefreshCustomerData().FlatMap(_ => AuthService.GetUserForEditor().Map(user =>
-			                                                     {
-				                                                     User = user;
-				                                                     OnUserChange?.Invoke(user);
-				                                                     return this;
-			                                                     })
-			                                                     .RecoverWith(ex =>
-			                                                     {
-				                                                     if (ex is PlatformRequesterException err &&
-				                                                         err.Status == 403)
-				                                                     {
-					                                                     return AuthService.GetUser().Map(user2 =>
-					                                                     {
-						                                                     User = new EditorUser(user2);
-						                                                     OnUserChange?.Invoke(User);
-						                                                     return this;
-					                                                     });
-				                                                     }
-				                                                     else throw ex;
-			                                                     })
-			                                                     .Error(err =>
-			                                                     {
-				                                                     Logout();
-			                                                     }));
+																 {
+																	 User = user;
+																	 OnUserChange?.Invoke(user);
+																	 return this;
+																 })
+																 .RecoverWith(ex =>
+																 {
+																	 if (ex is PlatformRequesterException err &&
+																		 err.Status == 403)
+																	 {
+																		 return AuthService.GetUser().Map(user2 =>
+																		 {
+																			 User = new EditorUser(user2);
+																			 OnUserChange?.Invoke(User);
+																			 return this;
+																		 });
+																	 }
+																	 else
+																		 throw ex;
+																 })
+																 .Error(err =>
+																 {
+																	 Logout();
+																 }));
 		}
 	}
 

@@ -1,9 +1,9 @@
-using System.Collections.Generic;
-using UnityEngine.UI;
 using Beamable.Theme;
 using Beamable.Theme.Palettes;
 using Beamable.UI.Scripts;
+using System.Collections.Generic;
 using TMPro;
+using UnityEngine.UI;
 
 namespace Beamable.AccountManagement
 {

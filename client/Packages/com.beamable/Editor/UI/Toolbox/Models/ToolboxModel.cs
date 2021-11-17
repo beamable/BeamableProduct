@@ -1,10 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Common;
 using Beamable.Editor.Modules.Account;
 using Beamable.Editor.Realms;
 using Beamable.Editor.Toolbox.UI;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 
 namespace Beamable.Editor.Toolbox.Models
@@ -117,7 +117,8 @@ namespace Beamable.Editor.Toolbox.Models
 			for (var i = 0; i < WidgetSource.Count; i++)
 			{
 				var widget = WidgetSource.Get(i);
-				if (Query != null && !Query.Accepts(widget)) continue;
+				if (Query != null && !Query.Accepts(widget))
+					continue;
 
 				yield return widget;
 			}
@@ -164,7 +165,7 @@ namespace Beamable.Editor.Toolbox.Models
 		public void SetQueryTag(WidgetTags tags, bool shouldHaveTag)
 		{
 			var hasOrientation = (Query?.HasTagConstraint ?? false) &&
-			                     Query.FilterIncludes(tags);
+								 Query.FilterIncludes(tags);
 			var nextQuery = new ToolboxQuery(Query);
 
 			if (hasOrientation && !shouldHaveTag)
@@ -184,7 +185,7 @@ namespace Beamable.Editor.Toolbox.Models
 		public void SetOrientationSupport(WidgetOrientationSupport orientation, bool shouldHaveOrientation)
 		{
 			var hasOrientation = (Query?.HasOrientationConstraint ?? false) &&
-			                     Query.FilterIncludes(orientation);
+								 Query.FilterIncludes(orientation);
 			var nextQuery = new ToolboxQuery(Query);
 
 			if (hasOrientation && !shouldHaveOrientation)

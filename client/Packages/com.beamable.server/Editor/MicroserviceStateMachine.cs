@@ -1,9 +1,9 @@
+using Beamable.Common;
+using Beamable.Editor;
+using Beamable.Platform.SDK;
+using Beamable.Server.Editor.DockerCommands;
 using System;
 using System.Collections.Generic;
-using Beamable.Common;
-using Beamable.Server.Editor.DockerCommands;
-using Beamable.Platform.SDK;
-using Beamable.Editor;
 using UnityEngine;
 
 namespace Beamable.Server.Editor
@@ -77,7 +77,7 @@ namespace Beamable.Server.Editor
 		}
 
 		public MicroserviceStateMachine(MicroserviceDescriptor descriptor,
-		                                MicroserviceState initialState = MicroserviceState.IDLE)
+										MicroserviceState initialState = MicroserviceState.IDLE)
 		{
 			ServiceDescriptor = descriptor;
 			CurrentState = initialState;

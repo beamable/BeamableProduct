@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using Beamable.Serialization;
+using System.Collections.Generic;
 
 namespace Beamable.Api.Payments
 {
@@ -92,14 +92,16 @@ namespace Beamable.Api.Payments
 			set;
 		}
 
-		public CompletedTransaction() { }
+		public CompletedTransaction()
+		{
+		}
 
 		public CompletedTransaction(long txid,
-		                            string receipt,
-		                            string priceInLocalCurrency,
-		                            string isoCurrencySymbol,
-		                            string listingSymbol = "",
-		                            string skuSymbol = "")
+									string receipt,
+									string priceInLocalCurrency,
+									string isoCurrencySymbol,
+									string listingSymbol = "",
+									string skuSymbol = "")
 		{
 			_txid = txid;
 			_receipt = receipt;

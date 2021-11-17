@@ -1,10 +1,10 @@
-using System.Collections.Generic;
-using Beamable.Common;
 using Beamable.Avatars;
-using Beamable.Theme.Palettes;
-using Beamable.Stats;
-using Beamable.UI.Scripts;
+using Beamable.Common;
 using Beamable.Platform.SDK;
+using Beamable.Stats;
+using Beamable.Theme.Palettes;
+using Beamable.UI.Scripts;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;

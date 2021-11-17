@@ -48,7 +48,8 @@ namespace Beamable.Serialization.SmallerJSON
 		/// <param name="dictionary">Source dictionary to copy.</param>
 		public ArrayDict(IDictionary<TKey, TValue> dictionary) : this()
 		{
-			if (dictionary == null) return;
+			if (dictionary == null)
+				return;
 			foreach (var kvp in dictionary)
 			{
 				this[kvp.Key] = kvp.Value;
@@ -108,7 +109,7 @@ namespace Beamable.Serialization.SmallerJSON
 
 						break;
 					case '[': // array access
-						// consume index.
+							  // consume index.
 						var closeIndex = jsonPath.IndexOf("]", i);
 						var intStr = jsonPath.Substring(i + 1, closeIndex - (i + 1));
 						if (!int.TryParse(intStr, out var index))
@@ -495,7 +496,9 @@ namespace Beamable.Serialization.SmallerJSON
 
 			#region IDisposable implementation
 
-			public void Dispose() { }
+			public void Dispose()
+			{
+			}
 
 			#endregion
 

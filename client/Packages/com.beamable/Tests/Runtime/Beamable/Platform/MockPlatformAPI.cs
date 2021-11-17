@@ -1,13 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using Beamable.Api;
+using Beamable.Api.Auth;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
-using Beamable.Api;
-using Beamable.Api.Auth;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
 using AccessToken = Beamable.Api.AccessToken;
@@ -35,10 +35,10 @@ namespace Beamable.Platform.Tests
 		public abstract string Invoke(object body, bool includeAuth, IAccessToken token);
 
 		public abstract bool MatchesRequest<T>(Method method,
-		                                       string uri,
-		                                       string token,
-		                                       object body,
-		                                       bool includeAuthHeader);
+											   string uri,
+											   string token,
+											   object body,
+											   bool includeAuthHeader);
 	}
 
 	public class MockPlatformRoute<T> : MockPlatformRouteBase
@@ -162,10 +162,10 @@ namespace Beamable.Platform.Tests
 		}
 
 		public override bool MatchesRequest<T1>(Method method,
-		                                        string uri,
-		                                        string token,
-		                                        object body,
-		                                        bool includeAuthHeader)
+												string uri,
+												string token,
+												object body,
+												bool includeAuthHeader)
 		{
 			var tokenMatch = string.Equals(Token, token);
 			var authMatch = includeAuthHeader == IncludeAuthHeader;
@@ -244,16 +244,16 @@ namespace Beamable.Platform.Tests
 		}
 
 		public Promise<T> RequestJson<T>(Method method,
-		                                 string uri,
-		                                 JsonSerializable.ISerializable body,
-		                                 bool includeAuthHeader = true)
+										 string uri,
+										 JsonSerializable.ISerializable body,
+										 bool includeAuthHeader = true)
 		{
 			throw new NotImplementedException();
 		}
 
 		public MockPlatformRoute<T> MockRequest<T>(Method method, string uri)
 		{
-			var route = new MockPlatformRoute<T>() {Method = method, Uri = uri,};
+			var route = new MockPlatformRoute<T>() { Method = method, Uri = uri, };
 
 			_routes.Add(route);
 
@@ -261,11 +261,11 @@ namespace Beamable.Platform.Tests
 		}
 
 		public Promise<T> Request<T>(Method method,
-		                             string uri,
-		                             object body = null,
-		                             bool includeAuthHeader = true,
-		                             Func<string, T> parser = null,
-		                             bool useCache = false)
+									 string uri,
+									 object body = null,
+									 bool includeAuthHeader = true,
+									 Func<string, T> parser = null,
+									 bool useCache = false)
 		{
 			// XXX this won't support multiple calls to the same route with different bodies.
 			var route = _routes.FirstOrDefault(
@@ -273,7 +273,8 @@ namespace Beamable.Platform.Tests
 
 			if (route != null)
 			{
-				if (parser == null) return route.Invoke<T>(body, includeAuthHeader, AccessToken);
+				if (parser == null)
+					return route.Invoke<T>(body, includeAuthHeader, AccessToken);
 
 				var output = route.Invoke(body, includeAuthHeader, AccessToken);
 				return Promise<T>.Successful(parser(output));

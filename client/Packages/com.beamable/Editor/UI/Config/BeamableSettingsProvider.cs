@@ -47,7 +47,10 @@ namespace Beamable.Editor.Config
 								{
 									Open();
 									SettingsService.NotifySettingsProviderChanged();
-								}) {text = "Create Beamable Config Files"};
+								})
+								{
+									text = "Create Beamable Config Files"
+								};
 								var missingConfigs =
 									string.Join(",\n", ConfigManager.MissingConfigurations.Select(d => $" - {d.Name}"));
 								var lbl = new Label()
@@ -74,7 +77,7 @@ namespace Beamable.Editor.Config
 							AssetDatabase.Refresh();
 						}
 					},
-					keywords = new HashSet<string>(new[] {"Beamable"})
+					keywords = new HashSet<string>(new[] { "Beamable" })
 				};
 
 				return provider;

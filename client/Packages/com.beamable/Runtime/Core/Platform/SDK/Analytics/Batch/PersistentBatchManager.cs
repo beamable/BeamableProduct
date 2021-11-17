@@ -1,10 +1,10 @@
-﻿using UnityEngine;
-using System;
-using System.Collections.Generic;
-using Beamable.Coroutines;
+﻿using Beamable.Coroutines;
 using Beamable.Pooling;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
+using System;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace Beamable.Api.Analytics.Batch
 {
@@ -33,10 +33,10 @@ namespace Beamable.Api.Analytics.Batch
 		/// <param name="batchTimeoutSeconds">Maximum seconds before a batch is expired.</param>
 		/// <param name="heartbeatInterval">Heartbeat interval.</param>
 		public PersistentBatchManager(CoroutineService coroutineService,
-		                              string storageKey,
-		                              int batchCapacity,
-		                              double batchTimeoutSeconds,
-		                              float heartbeatInterval = 1f)
+									  string storageKey,
+									  int batchCapacity,
+									  double batchTimeoutSeconds,
+									  float heartbeatInterval = 1f)
 			: base(coroutineService, batchCapacity, batchTimeoutSeconds, heartbeatInterval)
 		{
 			_storageKey = storageKey;

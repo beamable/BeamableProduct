@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Beamable.Server.Editor;
+using Beamable.Server.Editor.DockerCommands;
+using System;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Beamable.Server.Editor;
-using Beamable.Server.Editor.DockerCommands;
 using UnityEditor;
 using UnityEngine;
 
@@ -52,7 +52,8 @@ namespace Beamable.Editor.UI.Model
 			get => _isRunning;
 			set
 			{
-				if (value == _isRunning) return;
+				if (value == _isRunning)
+					return;
 				_isRunning = value;
 				// XXX: If OnIsRunningChanged is mutated at before delayCall triggers, non-deterministic behaviour could occur
 				EditorApplication.delayCall += () => OnIsRunningChanged?.Invoke(value);
@@ -75,7 +76,8 @@ namespace Beamable.Editor.UI.Model
 		{
 			var checkProcess = new CheckImageReturnableCommand(Descriptor)
 			{
-				WriteLogToUnity = false, WriteCommandToUnity = false
+				WriteLogToUnity = false,
+				WriteCommandToUnity = false
 			};
 
 			_isRunning = await checkProcess.Start(null);
@@ -86,8 +88,10 @@ namespace Beamable.Editor.UI.Model
 		public async Task TryToStart()
 		{
 			// if the service is already running; don't do anything.
-			if (IsRunning) return;
-			if (_runProcess != null) return;
+			if (IsRunning)
+				return;
+			if (_runProcess != null)
+				return;
 
 			_runProcess = await PrepareRunCommand();
 			_runProcess.OnStandardOut += message => MicroserviceLogHelper.HandleRunCommandOutput(this, message);
@@ -117,8 +121,10 @@ namespace Beamable.Editor.UI.Model
 
 		public async Task TryToStop()
 		{
-			if (!IsRunning) return;
-			if (_isStopping) return;
+			if (!IsRunning)
+				return;
+			if (_isStopping)
+				return;
 
 			_isStopping = true;
 			try
@@ -135,7 +141,8 @@ namespace Beamable.Editor.UI.Model
 
 		public async Task TryToRestart()
 		{
-			if (!IsRunning) return;
+			if (!IsRunning)
+				return;
 
 			await TryToStop();
 			await TryToStart();

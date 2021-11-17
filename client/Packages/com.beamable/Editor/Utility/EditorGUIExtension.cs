@@ -9,11 +9,11 @@ namespace Beamable.Editor
 	public static class EditorGUIExtension
 	{
 		public static int IntFieldWithDropdown(Rect rect,
-		                                       int value,
-		                                       int[] dropdownValues,
-		                                       Action<int> onValueChange,
-		                                       string fieldFormat = null,
-		                                       GUIContent[] customDropdownLabels = null)
+											   int value,
+											   int[] dropdownValues,
+											   Action<int> onValueChange,
+											   string fieldFormat = null,
+											   GUIContent[] customDropdownLabels = null)
 		{
 			const float dropdownButtonWidth = 15f;
 			const string darkModeDropdownIcon = "d_icon dropdown";
@@ -21,9 +21,9 @@ namespace Beamable.Editor
 			var rc = new EditorGUIRectController(rect);
 			value = GUIIntField(rc.ReserveWidth(rect.width - dropdownButtonWidth), value, fieldFormat);
 			if (GUI.Button(rc.rect,
-			               EditorGUIUtility.IconContent(EditorGUIUtility.isProSkin
-				                                            ? darkModeDropdownIcon
-				                                            : lightModeDropdownIcon)))
+						   EditorGUIUtility.IconContent(EditorGUIUtility.isProSkin
+															? darkModeDropdownIcon
+															: lightModeDropdownIcon)))
 			{
 				var hasCustomLabels =
 					customDropdownLabels != null && customDropdownLabels.Length >= dropdownValues.Length;
@@ -35,7 +35,7 @@ namespace Beamable.Editor
 						? customDropdownLabels[i]
 						: new GUIContent(dropdownValue.ToString(fieldFormat));
 					generic.AddItem(label, false,
-					                () => onValueChange(dropdownValue));
+									() => onValueChange(dropdownValue));
 				}
 
 				generic.DropDown(rect);
@@ -64,7 +64,7 @@ namespace Beamable.Editor
 			for (int i = 0; i < pathParts.Length; i++)
 			{
 				fieldInfo = parentType.GetField(pathParts[i],
-				                                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+												BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 				parentType = fieldInfo.FieldType;
 			}
 
@@ -78,8 +78,8 @@ namespace Beamable.Editor
 			for (int i = 0; i < pathParts.Length - 1; i++)
 			{
 				var fieldInfo = parentType.GetField(pathParts[i],
-				                                    BindingFlags.Instance | BindingFlags.Public |
-				                                    BindingFlags.NonPublic);
+													BindingFlags.Instance | BindingFlags.Public |
+													BindingFlags.NonPublic);
 				parentType = fieldInfo.FieldType;
 			}
 
@@ -93,8 +93,8 @@ namespace Beamable.Editor
 			for (int i = 0; i < pathParts.Length - 1; i++)
 			{
 				var fieldInfo = parent.GetType().GetField(pathParts[i],
-				                                          BindingFlags.Instance | BindingFlags.Public |
-				                                          BindingFlags.NonPublic);
+														  BindingFlags.Instance | BindingFlags.Public |
+														  BindingFlags.NonPublic);
 				parent = fieldInfo.GetValue(parent);
 			}
 

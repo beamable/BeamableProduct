@@ -15,5 +15,7 @@ namespace Beamable.Content
 	/// 
 	/// </summary>
 	[AttributeUsage(validOn: AttributeTargets.Field)]
-	public class IgnoreContentFieldAttribute : Attribute { }
+	public class IgnoreContentFieldAttribute : Attribute
+	{
+	}
 }

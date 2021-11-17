@@ -1,8 +1,8 @@
+using Beamable.Common.Content;
+using NUnit.Framework;
 using System;
 using System.Linq;
 using System.Reflection;
-using Beamable.Common.Content;
-using NUnit.Framework;
 using UnityEngine;
 
 namespace Beamable.Editor.Tests.Beamable.Content
@@ -21,7 +21,7 @@ namespace Beamable.Editor.Tests.Beamable.Content
 		{
 			var contentObjectSubclasses =
 				typeof(ContentObject).Assembly.GetTypes()
-				                     .Where(type => type.IsSubclassOf(typeof(ContentObject)));
+									 .Where(type => type.IsSubclassOf(typeof(ContentObject)));
 
 			int invalidClassesCount = 0;
 			foreach (Type type in contentObjectSubclasses)
@@ -46,7 +46,7 @@ namespace Beamable.Editor.Tests.Beamable.Content
 					if (tooltipAttribute == null || tooltipAttribute.tooltip.Length == 0)
 					{
 						Debug.LogWarning($"\t{type.Name} - MUST Add [Tooltip] on" +
-						                 $" {fieldInfo.Name}\n");
+										 $" {fieldInfo.Name}\n");
 
 						invalidFieldInfoCount++;
 					}
@@ -61,7 +61,7 @@ namespace Beamable.Editor.Tests.Beamable.Content
 				if (invalidFieldInfoCount > 0)
 				{
 					Debug.LogWarning($"NO {type.Name} - Is NOT Valid because " +
-					                 $"{invalidFieldInfoCount} of {fieldInfos.Count} incorrect.\n");
+									 $"{invalidFieldInfoCount} of {fieldInfos.Count} incorrect.\n");
 					invalidClassesCount++;
 				}
 				else
@@ -74,7 +74,7 @@ namespace Beamable.Editor.Tests.Beamable.Content
 			if (invalidClassesCount > 0)
 			{
 				Assert.That(invalidClassesCount, Is.EqualTo(0),
-				            $"Test failed. {invalidClassesCount} classes are NOT valid, per tooltips.\n");
+							$"Test failed. {invalidClassesCount} classes are NOT valid, per tooltips.\n");
 			}
 		}
 	}

@@ -1,12 +1,12 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using Beamable.Editor.Content.Models;
 using Beamable.Editor.UI.Components;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -81,7 +81,8 @@ namespace Beamable.Editor.Content.Components
 			_listView.BeamableOnSelectionsChanged(enumerableSelection =>
 			{
 				var selections = enumerableSelection.ToList();
-				if (selections.Count != 1) return;
+				if (selections.Count != 1)
+					return;
 
 				var errs = selections[0] as ContentExceptionCollection;
 				Selection.SetActiveObjectWithContext(errs.Content as ScriptableObject, null);

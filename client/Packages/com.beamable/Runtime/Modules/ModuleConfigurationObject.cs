@@ -1,8 +1,8 @@
+using Beamable.Common;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using Beamable.Common;
 using UnityEditor;
 using UnityEngine;
 
@@ -32,7 +32,9 @@ namespace Beamable
 		/// <summary>
 		/// Called by the Configuration.Instance spawn function, the FIRST time the configuration is copied from the Beamable package into the /Assets
 		/// </summary>
-		public virtual void OnFreshCopy() { }
+		public virtual void OnFreshCopy()
+		{
+		}
 
 #if UNITY_EDITOR
 		public static Promise PrepareInstances(params Type[] configTypes)
@@ -189,8 +191,12 @@ namespace Beamable
 	public class ModuleConfigurationNotReadyException : Exception
 	{
 		public ModuleConfigurationNotReadyException(Type type) : base(
-			$"Configuration of type=[{type.Name}] is not available yet.") { }
+			$"Configuration of type=[{type.Name}] is not available yet.")
+		{
+		}
 	}
 
-	public class ModuleConfigurationObject : AbsModuleConfigurationObject<BeamableConfigurationConstants> { }
+	public class ModuleConfigurationObject : AbsModuleConfigurationObject<BeamableConfigurationConstants>
+	{
+	}
 }

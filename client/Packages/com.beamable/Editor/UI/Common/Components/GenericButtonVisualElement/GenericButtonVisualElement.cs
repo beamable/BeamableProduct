@@ -1,6 +1,6 @@
+using Beamable.Editor.UI.Buss;
 using System;
 using System.Collections.Generic;
-using Beamable.Editor.UI.Buss;
 using UnityEngine;
 
 #if UNITY_2018
@@ -23,7 +23,9 @@ namespace Beamable.Editor.UI.Components
 			Link
 		}
 
-		public new class UxmlFactory : UxmlFactory<GenericButtonVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<GenericButtonVisualElement, UxmlTraits>
+		{
+		}
 
 		public event Action OnClick;
 
@@ -33,17 +35,20 @@ namespace Beamable.Editor.UI.Components
 
 			readonly UxmlStringAttributeDescription _text = new UxmlStringAttributeDescription
 			{
-				name = "text", defaultValue = ""
+				name = "text",
+				defaultValue = ""
 			};
 
 			readonly UxmlStringAttributeDescription _tooltip = new UxmlStringAttributeDescription
 			{
-				name = "tooltip", defaultValue = ""
+				name = "tooltip",
+				defaultValue = ""
 			};
 
 			readonly UxmlStringAttributeDescription _type = new UxmlStringAttributeDescription
 			{
-				name = "type", defaultValue = ""
+				name = "type",
+				defaultValue = ""
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -92,7 +97,9 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public GenericButtonVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(GenericButtonVisualElement)}/{nameof(GenericButtonVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(GenericButtonVisualElement)}/{nameof(GenericButtonVisualElement)}")
+		{
+		}
 
 		public override void Refresh()
 		{

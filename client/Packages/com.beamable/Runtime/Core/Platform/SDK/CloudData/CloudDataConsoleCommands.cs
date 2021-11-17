@@ -1,11 +1,11 @@
-﻿using UnityEngine;
-using Beamable.Common;
-using Beamable.Service;
-using Beamable.ConsoleCommands;
-using UnityEngine.Scripting;
-using UnityEngine.Networking;
-using System.Collections.Generic;
+﻿using Beamable.Common;
 using Beamable.Common.Api.CloudData;
+using Beamable.ConsoleCommands;
+using Beamable.Service;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Networking;
+using UnityEngine.Scripting;
 
 namespace Beamable.Api.CloudData
 {
@@ -15,7 +15,9 @@ namespace Beamable.Api.CloudData
 		private BeamableConsole Console => ServiceManager.Resolve<BeamableConsole>();
 
 		[Preserve]
-		public CloudDataConsoleCommands() { }
+		public CloudDataConsoleCommands()
+		{
+		}
 
 		[BeamableConsoleCommand("CLOUD-MANIFEST", "Fetch the game cloud manifest", "CLOUD-MANIFEST")]
 		protected string GetManifest(params string[] args)

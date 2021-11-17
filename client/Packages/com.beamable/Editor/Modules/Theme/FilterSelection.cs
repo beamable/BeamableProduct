@@ -36,8 +36,8 @@ namespace Beamable.Editor.Modules.Theme
 
 			MethodInfo setSearchType =
 				typeof(SearchableEditorWindow).GetMethod("SetSearchFilter",
-				                                         BindingFlags.NonPublic | BindingFlags.Instance);
-			object[] parameters = new object[] {filter, filterMode, false, false};
+														 BindingFlags.NonPublic | BindingFlags.Instance);
+			object[] parameters = new object[] { filter, filterMode, false, false };
 
 			setSearchType.Invoke(hierarchy, parameters);
 			setSearchType.Invoke(sceneView, parameters);

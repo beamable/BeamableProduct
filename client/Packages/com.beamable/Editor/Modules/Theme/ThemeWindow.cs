@@ -1,14 +1,14 @@
+using Beamable.Theme;
+using Beamable.Theme.Appliers;
+using Beamable.Theme.Palettes;
+using Beamable.UnityEngineClone.UI.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Beamable.Theme;
-using Beamable.Theme.Appliers;
-using Beamable.Theme.Palettes;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using Beamable.UnityEngineClone.UI.Extensions;
 using FontStyle = UnityEngine.FontStyle;
 
 namespace Beamable.Editor.Modules.Theme
@@ -69,20 +69,20 @@ namespace Beamable.Editor.Modules.Theme
 				_greyPixel.Apply();
 			}
 
-			_backBarStyle = new GUIStyle {normal = new GUIStyleState {background = _greyPixel,}};
+			_backBarStyle = new GUIStyle { normal = new GUIStyleState { background = _greyPixel, } };
 
 			_backButtonStyle = new GUIStyle
 			{
-				normal = new GUIStyleState {background = _greyPixel, textColor = new Color(.8f, .8f, .8f)},
-				active = new GUIStyleState {background = _greyPixel, textColor = Color.white},
+				normal = new GUIStyleState { background = _greyPixel, textColor = new Color(.8f, .8f, .8f) },
+				active = new GUIStyleState { background = _greyPixel, textColor = Color.white },
 				padding = new RectOffset(5, 5, 5, 5)
 			};
 
 			_parentLabelStyle = new GUIStyle
 			{
 				fontStyle = FontStyle.Bold,
-				normal = new GUIStyleState {textColor = new Color(.8f, .8f, .8f)},
-				active = new GUIStyleState {textColor = Color.white},
+				normal = new GUIStyleState { textColor = new Color(.8f, .8f, .8f) },
+				active = new GUIStyleState { textColor = Color.white },
 				padding = new RectOffset(2, 2, 3, 3)
 			};
 
@@ -180,7 +180,7 @@ namespace Beamable.Editor.Modules.Theme
 			var rect = EditorGUILayout.GetControlRect(
 				false, 1f * EditorGUI.GetPropertyHeight(SerializedPropertyType.ObjectReference, GUIContent.none));
 			var objectFieldRect = new Rect(rect.x + arrowWidth + indent, rect.y, rect.width - (arrowWidth + indent),
-			                               rect.height);
+										   rect.height);
 			EditorGUI.ObjectField(objectFieldRect, gob, typeof(GameObject), true);
 
 			if (hasChildren)
@@ -231,7 +231,8 @@ namespace Beamable.Editor.Modules.Theme
 
 		private void RefactorHierarchy()
 		{
-			if (_lastRawSelection == null) return;
+			if (_lastRawSelection == null)
+				return;
 			RenderParentBar();
 			RenderGameObjectTree(_lastRawSelection, 0);
 		}
@@ -284,7 +285,8 @@ namespace Beamable.Editor.Modules.Theme
 
 		private bool RenderBindingValue(FieldInfo bindingField, GeneralPaletteBinding bindingValue, bool recursive)
 		{
-			if (!bindingValue.HasName) return false;
+			if (!bindingValue.HasName)
+				return false;
 
 			var anyEdit = false;
 			var createPaletteCopierMethod = typeof(ThemeObject).GetMethod(nameof(ThemeObject.CloneParentPaletteStyle));
@@ -293,8 +295,8 @@ namespace Beamable.Editor.Modules.Theme
 			var wrapper = _styleToWrapper[bindingField.FieldType];
 
 			var copier = createPaletteCopierMethod.MakeGenericMethod(paletteStyleType)
-			                                      .Invoke(ThemeConfiguration.Instance.Style,
-			                                              new object[] {bindingValue}) as IPaletteStyleCopier;
+												  .Invoke(ThemeConfiguration.Instance.Style,
+														  new object[] { bindingValue }) as IPaletteStyleCopier;
 			var paletteStyle = copier.GetStyle();
 			wrapper.SetStyle(paletteStyle);
 
@@ -304,7 +306,7 @@ namespace Beamable.Editor.Modules.Theme
 				var sow = new SerializedObject(so);
 
 				EditorGUILayout.PropertyField(sow.FindProperty("Style"),
-				                              new GUIContent(bindingField.Name + $" ({bindingValue.Name})"), true);
+											  new GUIContent(bindingField.Name + $" ({bindingValue.Name})"), true);
 
 				sow.ApplyModifiedProperties();
 				if (wrapper.Modified)
@@ -322,8 +324,8 @@ namespace Beamable.Editor.Modules.Theme
 			}
 
 			var subBindings = paletteStyle.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public)
-			                              .Where(f => typeof(GeneralPaletteBinding).IsAssignableFrom(f.FieldType))
-			                              .ToList();
+										  .Where(f => typeof(GeneralPaletteBinding).IsAssignableFrom(f.FieldType))
+										  .ToList();
 
 			if (subBindings.Count > 0 && recursive)
 			{
@@ -367,9 +369,9 @@ namespace Beamable.Editor.Modules.Theme
 			EditorGUILayout.LabelField(applier.GetType().Name);
 
 			var bindingFields = applier.GetType()
-			                           .GetFields(BindingFlags.Instance | BindingFlags.Public)
-			                           .Where(f => typeof(GeneralPaletteBinding).IsAssignableFrom(f.FieldType))
-			                           .ToList();
+									   .GetFields(BindingFlags.Instance | BindingFlags.Public)
+									   .Where(f => typeof(GeneralPaletteBinding).IsAssignableFrom(f.FieldType))
+									   .ToList();
 
 			var anyEdit = false;
 			foreach (var bindingField in bindingFields)

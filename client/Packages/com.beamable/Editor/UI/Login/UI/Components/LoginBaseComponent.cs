@@ -28,14 +28,14 @@ namespace Beamable.Editor.Login.UI.Components
 		protected Promise<LoginManagerResult> AddErrorLabel(Promise<LoginManagerResult> promise, Label errorLabel)
 		{
 			return promise.Then(res =>
-			              {
-				              errorLabel.text = res.Error;
-			              })
-			              .Error(err =>
-			              {
-				              BeamableLogger.LogError("Failed " + err.Message);
-				              errorLabel.text = err.Message;
-			              });
+						  {
+							  errorLabel.text = res.Error;
+						  })
+						  .Error(err =>
+						  {
+							  BeamableLogger.LogError("Failed " + err.Message);
+							  errorLabel.text = err.Message;
+						  });
 		}
 	}
 }

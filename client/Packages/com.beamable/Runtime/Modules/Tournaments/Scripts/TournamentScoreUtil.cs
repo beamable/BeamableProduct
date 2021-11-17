@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Beamable.Platform.SDK;
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using Beamable.Platform.SDK;
 using UnityEngine;
 
 namespace Beamable.Tournaments
@@ -14,7 +14,7 @@ namespace Beamable.Tournaments
 		private const float TRILLION = 1000000000000;
 		private const float QUADRILLION = 1000000000000000;
 
-		private static readonly char[] Units = new[] {'K', 'M', 'B', 'T', 'Q'};
+		private static readonly char[] Units = new[] { 'K', 'M', 'B', 'T', 'Q' };
 
 		public static string GetCommaString(long number)
 		{

@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using Beamable.Common.Content.Validation;
+﻿using Beamable.Common.Content.Validation;
 using Beamable.Common.Leaderboards;
 using Beamable.Common.Shop;
 using Beamable.Content;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -25,7 +25,9 @@ namespace Beamable.Common.Content
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class EventLink : ContentLink<EventContent> { }
+	public class EventLink : ContentLink<EventContent>
+	{
+	}
 
 	/// <summary>
 	/// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
@@ -41,7 +43,9 @@ namespace Beamable.Common.Content
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class EventRef : ContentRef<EventContent> { } // TODO: Factor
+	public class EventRef : ContentRef<EventContent>
+	{
+	} // TODO: Factor
 
 	/// <summary>
 	/// This type defines a %Beamable %ContentObject subclass for the %EventsService.
@@ -124,7 +128,7 @@ namespace Beamable.Common.Content
 			// if anything is in the legacy phases, move them into the new list.
 			if (legacyPhases != null && legacyPhases.Count > 0)
 			{
-				phases = new PhaseList {listData = legacyPhases.ToList()};
+				phases = new PhaseList { listData = legacyPhases.ToList() };
 			}
 
 			legacyPhases = null;
@@ -205,10 +209,14 @@ namespace Beamable.Common.Content
 	}
 
 	[Serializable]
-	public class OptionalEventCurrencyList : Optional<List<EventCurrencyObtain>> { }
+	public class OptionalEventCurrencyList : Optional<List<EventCurrencyObtain>>
+	{
+	}
 
 	[Serializable]
-	public class OptionalEventItemList : Optional<List<EventItemObtain>> { }
+	public class OptionalEventItemList : Optional<List<EventItemObtain>>
+	{
+	}
 
 	[Serializable]
 	public class EventCurrencyObtain

@@ -34,7 +34,9 @@ namespace Beamable.Tournaments
 	}
 
 	[System.Serializable]
-	public class TabChangeEvent : UnityEvent<TabChangeEventArgs> { }
+	public class TabChangeEvent : UnityEvent<TabChangeEventArgs>
+	{
+	}
 
 	public class TabBehaviour : MonoBehaviour
 	{
@@ -74,7 +76,7 @@ namespace Beamable.Tournaments
 			}
 
 			Refresh();
-			var arg = new TabChangeEventArgs {Tab = Tabs[index], index = index};
+			var arg = new TabChangeEventArgs { Tab = Tabs[index], index = index };
 			OnActive?.Invoke(arg);
 		}
 

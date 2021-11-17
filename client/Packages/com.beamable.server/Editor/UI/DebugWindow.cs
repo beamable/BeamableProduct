@@ -1,16 +1,16 @@
+using Beamable.Config;
+using Beamable.Editor;
+using Beamable.Editor.Environment;
+using Beamable.Platform.SDK;
+using Beamable.Server;
+using Beamable.Server.Editor;
+using Beamable.Server.Editor.DockerCommands;
+using Beamable.Server.Editor.ManagerClient;
+using Beamable.Server.Editor.UI;
+using Beamable.Server.Editor.Uploader;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Server;
-using Beamable.Server.Editor;
-using Beamable.Server.Editor.ManagerClient;
-using Beamable.Server.Editor.DockerCommands;
-using Beamable.Server.Editor.UI;
-using Beamable.Server.Editor.Uploader;
-using Beamable.Config;
-using Beamable.Platform.SDK;
-using Beamable.Editor;
-using Beamable.Editor.Environment;
 using UnityEditor;
 using UnityEngine;
 
@@ -219,19 +219,19 @@ namespace Beamable.Server.Editor
 						EditorGUILayout.PrefixLabel("user");
 
 						EditorGUILayout.SelectableLabel(config.DebugData.Username,
-						                                GUILayout.Height(EditorGUIUtility.singleLineHeight));
+														GUILayout.Height(EditorGUIUtility.singleLineHeight));
 						EditorGUILayout.EndHorizontal();
 						EditorGUILayout.BeginHorizontal();
 						EditorGUILayout.PrefixLabel("password");
 
 						EditorGUILayout.SelectableLabel(config.DebugData.Password,
-						                                GUILayout.Height(EditorGUIUtility.singleLineHeight));
+														GUILayout.Height(EditorGUIUtility.singleLineHeight));
 						EditorGUILayout.EndHorizontal();
 						EditorGUILayout.BeginHorizontal();
 						EditorGUILayout.PrefixLabel("port");
 
 						EditorGUILayout.SelectableLabel("" + config.DebugData.SshPort,
-						                                GUILayout.Height(EditorGUIUtility.singleLineHeight));
+														GUILayout.Height(EditorGUIUtility.singleLineHeight));
 						EditorGUILayout.EndHorizontal();
 
 						EditorGUILayout.Space();

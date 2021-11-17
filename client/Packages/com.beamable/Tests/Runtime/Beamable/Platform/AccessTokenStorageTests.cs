@@ -1,8 +1,8 @@
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Api;
 using Beamable.Common.Api.Auth;
 using NUnit.Framework;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Platform.Tests
@@ -80,7 +80,7 @@ namespace Beamable.Platform.Tests
 		public void CanAddMany()
 		{
 			var tokens = _refreshTokens.Select(refresh => new AccessToken(_storage, _cid, _pid, "token", refresh, 123))
-			                           .ToList();
+									   .ToList();
 			tokens.ForEach(t => _storage.StoreDeviceRefreshToken(_cid, _pid, t));
 
 			var value = PlayerPrefs.GetString(DeviceTokensKey);
@@ -103,7 +103,7 @@ namespace Beamable.Platform.Tests
 		{
 			PlayerPrefs.SetString(DeviceTokensKey, "token1|test1,token2|test2");
 			_storage.RemoveDeviceRefreshToken(
-				_cid, _pid, new TokenResponse {access_token = "token2", refresh_token = "test2"});
+				_cid, _pid, new TokenResponse { access_token = "token2", refresh_token = "test2" });
 			var value = PlayerPrefs.GetString(DeviceTokensKey);
 			Assert.AreEqual("token1|test1", value);
 		}
@@ -113,7 +113,7 @@ namespace Beamable.Platform.Tests
 		{
 			PlayerPrefs.SetString(DeviceTokensKey, "token1|test1,token2|test2");
 			_storage.RemoveDeviceRefreshToken(
-				_cid, _pid, new TokenResponse {access_token = "token1", refresh_token = "test1"});
+				_cid, _pid, new TokenResponse { access_token = "token1", refresh_token = "test1" });
 			var value = PlayerPrefs.GetString(DeviceTokensKey);
 			Assert.AreEqual("token2|test2", value);
 		}
@@ -123,7 +123,7 @@ namespace Beamable.Platform.Tests
 		{
 			PlayerPrefs.SetString(DeviceTokensKey, "token1|test1,token2|test2,token3|test3");
 			_storage.RemoveDeviceRefreshToken(
-				_cid, _pid, new TokenResponse {access_token = "token2", refresh_token = "test2"});
+				_cid, _pid, new TokenResponse { access_token = "token2", refresh_token = "test2" });
 			var value = PlayerPrefs.GetString(DeviceTokensKey);
 			Assert.AreEqual("token1|test1,token3|test3", value);
 		}
@@ -133,7 +133,7 @@ namespace Beamable.Platform.Tests
 		{
 			PlayerPrefs.SetString(DeviceTokensKey, "token1|test1,token2|test2,token3|test3");
 			_storage.RemoveDeviceRefreshToken(
-				_cid, _pid, new TokenResponse {access_token = "token4", refresh_token = "test4"});
+				_cid, _pid, new TokenResponse { access_token = "token4", refresh_token = "test4" });
 			var value = PlayerPrefs.GetString(DeviceTokensKey);
 			Assert.AreEqual("token1|test1,token2|test2,token3|test3", value);
 		}

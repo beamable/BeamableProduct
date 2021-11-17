@@ -1,7 +1,7 @@
+using Beamable.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Common;
 
 namespace Beamable.Editor.Config.Model
 {
@@ -25,11 +25,14 @@ namespace Beamable.Editor.Config.Model
 			};
 		}
 
-		public ConfigQuery() { }
+		public ConfigQuery()
+		{
+		}
 
 		public ConfigQuery(ConfigQuery other)
 		{
-			if (other == null) return;
+			if (other == null)
+				return;
 
 			ModuleConstraint = other.ModuleConstraint != null
 				? new HashSet<string>(other.ModuleConstraint.ToArray())
@@ -51,7 +54,7 @@ namespace Beamable.Editor.Config.Model
 
 		private static void ApplyModuleRule(string raw, ConfigQuery query)
 		{
-			var modules = raw.Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
+			var modules = raw.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 			query.ModuleConstraint = new HashSet<string>(modules);
 		}
 
@@ -72,12 +75,13 @@ namespace Beamable.Editor.Config.Model
 
 		public bool EqualsConfigQuery(ConfigQuery other)
 		{
-			if (other == null) return false;
+			if (other == null)
+				return false;
 
 			var parentSame = base.Equals(other);
 			return parentSame
-			       && other.IdContainsConstraint == IdContainsConstraint
-			       && other.ModuleConstraint == ModuleConstraint;
+				   && other.IdContainsConstraint == IdContainsConstraint
+				   && other.ModuleConstraint == ModuleConstraint;
 		}
 
 		public override bool Equals(object obj)
@@ -102,7 +106,8 @@ namespace Beamable.Editor.Config.Model
 
 		public bool AcceptModule(ConfigOption config)
 		{
-			if (ModuleConstraint == null) return true;
+			if (ModuleConstraint == null)
+				return true;
 			if (config == null)
 			{
 				return ModuleConstraint.Count == 0;

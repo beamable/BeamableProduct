@@ -1,5 +1,5 @@
-using System;
 using Beamable.Spew;
+using System;
 
 namespace Beamable.Api.Notification.Internal
 {
@@ -20,9 +20,9 @@ namespace Beamable.Api.Notification.Internal
 		}
 
 		public InGameNotification(string key,
-		                          string message,
-		                          TimeSpan secondsFromNow,
-		                          NotificationService.InGameNotificationCB callback)
+								  string message,
+								  TimeSpan secondsFromNow,
+								  NotificationService.InGameNotificationCB callback)
 		{
 			this.key = key;
 			this.message = message;

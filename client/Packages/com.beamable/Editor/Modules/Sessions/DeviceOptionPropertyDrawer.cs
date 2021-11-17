@@ -19,7 +19,7 @@ namespace Beamable.Editor.Modules.Sessions
 #if UNITY_2019_1_OR_NEWER
 			PropertyDrawer
 #else
-      UIElementsPropertyDrawer
+	  UIElementsPropertyDrawer
 #endif
 	{
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)

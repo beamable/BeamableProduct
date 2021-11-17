@@ -1,8 +1,8 @@
-﻿using UnityEngine;
+﻿using Beamable.ConsoleCommands;
 using Beamable.Service;
-using Beamable.ConsoleCommands;
-using UnityEngine.Scripting;
 using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace Beamable.Api.Inventory
 {
@@ -24,14 +24,16 @@ namespace Beamable.Api.Inventory
 		private BeamableConsole Console => ServiceManager.Resolve<BeamableConsole>();
 
 		[Preserve]
-		public InventoryConsoleCommands() { }
+		public InventoryConsoleCommands()
+		{
+		}
 
 		[BeamableConsoleCommand("CURRENCY-PREVIEW", "Preview currency gain and any bonuses that might result from VIP",
-		                        "CURRENCY-PREVIEW")]
+								"CURRENCY-PREVIEW")]
 		protected string PreviewCurrency(params string[] args)
 		{
 			var platform = ServiceManager.Resolve<PlatformService>();
-			var currencies = new Dictionary<string, long>() {{"currency.gems", 100}};
+			var currencies = new Dictionary<string, long>() { { "currency.gems", 100 } };
 
 			platform.Inventory.PreviewCurrencyGain(currencies).Then(response =>
 			{
@@ -43,7 +45,7 @@ namespace Beamable.Api.Inventory
 		}
 
 		[BeamableConsoleCommand("CURRENCY-MULTIPLIERS", "Get the currency multipliers for this player",
-		                        "CURRENCY-MULTIPLIERS")]
+								"CURRENCY-MULTIPLIERS")]
 		protected string GetMultipliers(params string[] args)
 		{
 			var platform = ServiceManager.Resolve<PlatformService>();

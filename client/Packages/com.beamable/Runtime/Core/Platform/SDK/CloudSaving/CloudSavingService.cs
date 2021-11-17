@@ -1,16 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Security.Cryptography;
-using UnityEngine.Networking;
-using UnityEngine;
-using System.Collections;
-using System.Globalization;
-using Beamable.Coroutines;
-using Beamable.Api.Connectivity;
+﻿using Beamable.Api.Connectivity;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Runtime.Collections;
+using Beamable.Coroutines;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Security.Cryptography;
+using UnityEngine;
+using UnityEngine.Networking;
 
 namespace Beamable.Api.CloudSaving
 {
@@ -50,8 +50,8 @@ namespace Beamable.Api.CloudSaving
 		public bool isInitializing = false;
 
 		public CloudSavingService(PlatformService platform,
-		                          PlatformRequester requester,
-		                          CoroutineService coroutineService) : base(platform, requester, ServiceName)
+								  PlatformRequester requester,
+								  CoroutineService coroutineService) : base(platform, requester, ServiceName)
 		{
 			_platform = platform;
 			_requester = requester;
@@ -84,23 +84,23 @@ namespace Beamable.Api.CloudSaving
 				Directory.CreateDirectory(LocalCloudDataFullPath);
 
 				return EnsureRemoteManifest()
-				       .FlatMap(SyncRemoteContent)
-				       .FlatMap(startRoutines =>
-				       {
-					       Subscribe(cb =>
-					       {
-						       //DO NOT REMOVE THIS, WE NEED THIS TO GET DEFAULT NOTIFICATIONS
-					       });
+					   .FlatMap(SyncRemoteContent)
+					   .FlatMap(startRoutines =>
+					   {
+						   Subscribe(cb =>
+						   {
+							   //DO NOT REMOVE THIS, WE NEED THIS TO GET DEFAULT NOTIFICATIONS
+						   });
 
-					       _fileWatchingRoutine = StartFileSystemWatchingCoroutine();
-					       _platform.Notification.Subscribe(
-						       "cloudsaving.datareplaced",
-						       OnReplacedNtf
-					       );
-					       _initDone.CompleteSuccess(PromiseBase.Unit);
-					       isInitializing = false;
-					       return _initDone;
-				       });
+						   _fileWatchingRoutine = StartFileSystemWatchingCoroutine();
+						   _platform.Notification.Subscribe(
+							   "cloudsaving.datareplaced",
+							   OnReplacedNtf
+						   );
+						   _initDone.CompleteSuccess(PromiseBase.Unit);
+						   isInitializing = false;
+						   return _initDone;
+					   });
 			});
 		}
 
@@ -119,7 +119,7 @@ namespace Beamable.Api.CloudSaving
 			if (manifestResponse.replacement)
 			{
 				DeleteLocalUserData().Then(_ =>
-					                           Directory.CreateDirectory(LocalCloudDataFullPath)
+											   Directory.CreateDirectory(LocalCloudDataFullPath)
 				);
 			}
 
@@ -149,7 +149,7 @@ namespace Beamable.Api.CloudSaving
 				if (Directory.Exists(LocalCloudDataFullPath))
 				{
 					foreach (var filepath in Directory.GetFiles(LocalCloudDataFullPath, "*.*",
-					                                            SearchOption.AllDirectories))
+																SearchOption.AllDirectories))
 					{
 						yield return SetPendingUploads(filepath);
 					}
@@ -253,9 +253,9 @@ namespace Beamable.Api.CloudSaving
 				}
 
 				return HandleRequest(response.Item1,
-				                     response.Item2,
-				                     Method.PUT,
-				                     "/data/uploadURL"
+									 response.Item2,
+									 Method.PUT,
+									 "/data/uploadURL"
 					).FlatMap(_ => CommitManifest(response.Item1))
 					 .RecoverWith(_ => UploadUserData())
 					 .Error(ProvideErrorCallback(nameof(UploadUserData)));
@@ -290,11 +290,11 @@ namespace Beamable.Api.CloudSaving
 				GenerateChecksum(fullPathToFile).Then(checksum =>
 				{
 					var uploadObjectRequest = new ManifestEntry(objectKey,
-					                                            (int)contentLength,
-					                                            checksum,
-					                                            null,
-					                                            _platform.User.id,
-					                                            lastModified);
+																(int)contentLength,
+																checksum,
+																null,
+																_platform.User.id,
+																lastModified);
 					_previouslyDownloaded[fullPathToFile] = checksum;
 					uploadRequest.Add(uploadObjectRequest);
 				});
@@ -324,53 +324,53 @@ namespace Beamable.Api.CloudSaving
 			return GenerateDownloadRequest(missingLocalFiles).FlatMap(downloadRequest =>
 			{
 				return HandleRequest(new GetS3DownloadURLsRequest(downloadRequest),
-				                     missingLocalFiles,
-				                     Method.GET,
-				                     "/data/downloadURL"
-				       )
-				       .Error(ProvideErrorCallback(nameof(DownloadUserData)))
-				       .FlatMap(__ =>
-				       {
-					       if (manifestResponse.replacement)
-					       {
-						       var upload = new UploadManifestRequest(new List<ManifestEntry>());
-						       foreach (var r in manifestResponse.manifest)
-						       {
-							       upload.request.Add(new ManifestEntry(r.key,
-							                                            r.size,
-							                                            r.eTag,
-							                                            null,
-							                                            _platform.User.id,
-							                                            r.lastModified)
-							       );
-						       }
+									 missingLocalFiles,
+									 Method.GET,
+									 "/data/downloadURL"
+					   )
+					   .Error(ProvideErrorCallback(nameof(DownloadUserData)))
+					   .FlatMap(__ =>
+					   {
+						   if (manifestResponse.replacement)
+						   {
+							   var upload = new UploadManifestRequest(new List<ManifestEntry>());
+							   foreach (var r in manifestResponse.manifest)
+							   {
+								   upload.request.Add(new ManifestEntry(r.key,
+																		r.size,
+																		r.eTag,
+																		null,
+																		_platform.User.id,
+																		r.lastModified)
+								   );
+							   }
 
-						       return CommitManifest(upload).FlatMap(_ =>
-						       {
-							       // We want to ensure that we explicitly invoke the event with the ORIGINAL manifest.
-							       UpdateReceived?.Invoke(manifestResponse);
-							       return PromiseBase.SuccessfulUnit;
-						       });
-					       }
-					       else
-					       {
-						       if (downloadRequest.Count > 0)
-						       {
-							       return Promise.ExecuteRolling(10, _ProcessFilesPromiseList)
-							                     .Map(_ => PromiseBase.Unit).FlatMap(downloads =>
-							                     {
-								                     _ProcessFilesPromiseList.Clear();
-								                     return WriteManifestToDisk(manifestResponse).FlatMap(manifest =>
-								                     {
-									                     UpdateReceived?.Invoke(manifestResponse);
-									                     return PromiseBase.SuccessfulUnit;
-								                     });
-							                     });
-						       }
-					       }
+							   return CommitManifest(upload).FlatMap(_ =>
+							   {
+								   // We want to ensure that we explicitly invoke the event with the ORIGINAL manifest.
+								   UpdateReceived?.Invoke(manifestResponse);
+								   return PromiseBase.SuccessfulUnit;
+							   });
+						   }
+						   else
+						   {
+							   if (downloadRequest.Count > 0)
+							   {
+								   return Promise.ExecuteRolling(10, _ProcessFilesPromiseList)
+												 .Map(_ => PromiseBase.Unit).FlatMap(downloads =>
+												 {
+													 _ProcessFilesPromiseList.Clear();
+													 return WriteManifestToDisk(manifestResponse).FlatMap(manifest =>
+													 {
+														 UpdateReceived?.Invoke(manifestResponse);
+														 return PromiseBase.SuccessfulUnit;
+													 });
+												 });
+							   }
+						   }
 
-					       return PromiseBase.SuccessfulUnit;
-				       });
+						   return PromiseBase.SuccessfulUnit;
+					   });
 			});
 		}
 
@@ -433,9 +433,9 @@ namespace Beamable.Api.CloudSaving
 		}
 
 		private Promise<Unit> HandleRequest<T>(T request,
-		                                       ConcurrentDictionary<string, string> fileNameToKey,
-		                                       Method method,
-		                                       string endpoint)
+											   ConcurrentDictionary<string, string> fileNameToKey,
+											   Method method,
+											   string endpoint)
 		{
 			var promiseList = new List<Func<Promise<Unit>>>();
 			Dictionary<string, PreSignedURL> s3Response = new Dictionary<string, PreSignedURL>();
@@ -477,8 +477,8 @@ namespace Beamable.Api.CloudSaving
 			var tempFile = GetTempFileName();
 			var s3Request = BuildS3Request(method, url.url, tempFile, fullPathToDestinationFile);
 			return MakeRequestToS3(fullPathToDestinationFile,
-			                       tempFile,
-			                       s3Request);
+								   tempFile,
+								   s3Request);
 		}
 
 		private string GetTempFileName()
@@ -498,9 +498,9 @@ namespace Beamable.Api.CloudSaving
 		}
 
 		private IEnumerator HandleResponse(string filename,
-		                                   string fullPathToTempFile,
-		                                   Promise<Unit> promise,
-		                                   UnityWebRequest request)
+										   string fullPathToTempFile,
+										   Promise<Unit> promise,
+										   UnityWebRequest request)
 		{
 			UnityWebRequest currentRequest = request;
 			var isGet = currentRequest.method == Method.GET.ToString();
@@ -599,8 +599,8 @@ namespace Beamable.Api.CloudSaving
 		}
 
 		private Promise<Unit> ProcessTempFiles(string fullPathToTempFile,
-		                                       string fullPathToDestinationFile,
-		                                       bool isValid)
+											   string fullPathToDestinationFile,
+											   bool isValid)
 		{
 			Promise<Unit> promise = new Promise<Unit>();
 			if (isValid)
@@ -640,7 +640,8 @@ namespace Beamable.Api.CloudSaving
 			{
 				request = new UnityWebRequest(uri)
 				{
-					downloadHandler = new DownloadHandlerFile(fullPathToTempFile), method = method.ToString()
+					downloadHandler = new DownloadHandlerFile(fullPathToTempFile),
+					method = method.ToString()
 				};
 			}
 			else
@@ -649,7 +650,7 @@ namespace Beamable.Api.CloudSaving
 				{
 					contentType = "application/octet-stream"
 				};
-				request = new UnityWebRequest(uri) {uploadHandler = upload, method = method.ToString()};
+				request = new UnityWebRequest(uri) { uploadHandler = upload, method = method.ToString() };
 			}
 
 			return request;
@@ -675,19 +676,19 @@ namespace Beamable.Api.CloudSaving
 		private Promise<ManifestResponse> FetchUserManifest()
 		{
 			return _requester.Request<ManifestResponse>(
-				                 Method.GET,
-				                 string.Format($"/basic/cloudsaving?playerId={_platform.User.id}"),
-				                 null)
-			                 .Error(ProvideErrorCallback(nameof(FetchUserManifest)));
+								 Method.GET,
+								 string.Format($"/basic/cloudsaving?playerId={_platform.User.id}"),
+								 null)
+							 .Error(ProvideErrorCallback(nameof(FetchUserManifest)));
 		}
 
 		private Promise<URLResponse> GetPresignedURL<T>(T request, string endpoint)
 		{
 			return _requester.Request<URLResponse>(
-				                 Method.POST,
-				                 string.Format($"/basic/cloudsaving{endpoint}"),
-				                 request)
-			                 .Error(ProvideErrorCallback(nameof(GetPresignedURL)));
+								 Method.POST,
+								 string.Format($"/basic/cloudsaving{endpoint}"),
+								 request)
+							 .Error(ProvideErrorCallback(nameof(GetPresignedURL)));
 		}
 
 		private Promise<ManifestResponse> CommitManifest(UploadManifestRequest request)
@@ -718,7 +719,7 @@ namespace Beamable.Api.CloudSaving
 			return GenerateChecksum(filePath).FlatMap(checksum =>
 			{
 				var checksumEqual = _previouslyDownloaded.ContainsKey(filePath) &&
-				                    _previouslyDownloaded[filePath].Equals(checksum);
+									_previouslyDownloaded[filePath].Equals(checksum);
 				var missingKey = !_previouslyDownloaded.ContainsKey(filePath);
 				var fileLengthNotZero = new FileInfo(filePath).Length > 0;
 				if ((!checksumEqual || missingKey) && fileLengthNotZero)
@@ -772,7 +773,7 @@ namespace Beamable.Api.CloudSaving
 				using (var stream = new FileStream(content, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
 				{
 					return Promise<string>.Successful(BitConverter.ToString(md5.ComputeHash(stream))
-					                                              .Replace("-", string.Empty));
+																  .Replace("-", string.Empty));
 				}
 			}
 		}
@@ -864,11 +865,11 @@ namespace Beamable.Api.CloudSaving
 		public long lastModified;
 
 		public ManifestEntry(string objectKey,
-		                     int sizeInBytes,
-		                     string checksum,
-		                     List<MetadataPair> metadata,
-		                     long playerId,
-		                     long lastModified)
+							 int sizeInBytes,
+							 string checksum,
+							 List<MetadataPair> metadata,
+							 long playerId,
+							 long lastModified)
 		{
 			this.objectKey = objectKey;
 			this.sizeInBytes = sizeInBytes;

@@ -1,11 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Editor.Content.Models;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -26,12 +26,14 @@ namespace Beamable.Editor.Content.Components
 	{
 		private SplitterVisualElement _splitter;
 
-		public new class UxmlFactory : UxmlFactory<HeaderVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<HeaderVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription customText =
-				new UxmlStringAttributeDescription {name = "custom-text", defaultValue = "nada"};
+				new UxmlStringAttributeDescription { name = "custom-text", defaultValue = "nada" };
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
 			{
@@ -66,7 +68,8 @@ namespace Beamable.Editor.Content.Components
 		{
 			base.Refresh();
 
-			if (Headers == null || Headers.Length == 0) return;
+			if (Headers == null || Headers.Length == 0)
+				return;
 
 			_splitter = new SplitterVisualElement();
 			Root.Add(_splitter);
@@ -94,7 +97,7 @@ namespace Beamable.Editor.Content.Components
 			{
 				var width = children[i].localBound.width;
 
-				output.Add(new HeaderSizeChange {MinWidth = width, Flex = obj[i]});
+				output.Add(new HeaderSizeChange { MinWidth = width, Flex = obj[i] });
 			}
 
 			OnValuesChanged?.Invoke(output);
@@ -110,7 +113,7 @@ namespace Beamable.Editor.Content.Components
 
 				var width = children[i].localBound.width;
 
-				output.Add(new HeaderSizeChange {MinWidth = width, Flex = startFlexSizes[i]});
+				output.Add(new HeaderSizeChange { MinWidth = width, Flex = startFlexSizes[i] });
 			}
 
 			this.MarkDirtyRepaint();

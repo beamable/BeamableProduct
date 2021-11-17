@@ -1,9 +1,9 @@
-﻿using UnityEngine;
-using Beamable.Service;
+﻿using Beamable.Common.Api;
 using Beamable.ConsoleCommands;
-using Beamable.Common.Api;
-using UnityEngine.Scripting;
+using Beamable.Service;
 using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace Beamable.Api.Tournaments
 {
@@ -25,7 +25,9 @@ namespace Beamable.Api.Tournaments
 		private BeamableConsole Console => ServiceManager.Resolve<BeamableConsole>();
 
 		[Preserve]
-		public TournamentConsoleCommands() { }
+		public TournamentConsoleCommands()
+		{
+		}
 
 		[BeamableConsoleCommand("TOURNAMENT-JOIN", "Join a tournament cycle by id.", "TOURNAMENT-JOIN <tournament-id>")]
 		protected string JoinTournament(params string[] args)
@@ -49,7 +51,7 @@ namespace Beamable.Api.Tournaments
 		}
 
 		[BeamableConsoleCommand("TOURNAMENT-END", "End a tournament cycle by id. (Admin Only)",
-		                        "TOURNAMENT-END <tournament-id>")]
+								"TOURNAMENT-END <tournament-id>")]
 		protected string ChangeCycle(params string[] args)
 		{
 			if (args.Length == 1)

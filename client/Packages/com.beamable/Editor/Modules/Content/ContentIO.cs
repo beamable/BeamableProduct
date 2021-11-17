@@ -1,10 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Security.Cryptography;
-using System.Text;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
@@ -14,6 +7,13 @@ using Beamable.Common.Content.Validation;
 using Beamable.Editor.Content.UI;
 using Beamable.Serialization;
 using Modules.Content;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
@@ -28,7 +28,7 @@ namespace Beamable.Editor.Content
 		{
 			if (AssetDatabase.IsValidFolder(assetPath))
 			{
-				var subAssets = AssetDatabase.FindAssets("", new string[] {assetPath});
+				var subAssets = AssetDatabase.FindAssets("", new string[] { assetPath });
 				foreach (var sub in subAssets)
 				{
 					var subPath = AssetDatabase.GUIDToAssetPath(sub);
@@ -39,12 +39,13 @@ namespace Beamable.Editor.Content
 			}
 
 			var asset = AssetDatabase.LoadAssetAtPath<ContentObject>(assetPath);
-			if (asset == null) return AssetDeleteResult.DidNotDelete;
+			if (asset == null)
+				return AssetDeleteResult.DidNotDelete;
 
 			var method = typeof(ContentIO).GetMethod(nameof(ContentIO.NotifyDeleted),
-			                                         BindingFlags.NonPublic | BindingFlags.Static);
+													 BindingFlags.NonPublic | BindingFlags.Static);
 			var genMethod = method.MakeGenericMethod(asset.GetType());
-			genMethod.Invoke(null, new object[] {asset});
+			genMethod.Invoke(null, new object[] { asset });
 
 			return AssetDeleteResult.DidNotDelete;
 		}
@@ -54,10 +55,11 @@ namespace Beamable.Editor.Content
 			foreach (var path in paths)
 			{
 				var asset = AssetDatabase.LoadAssetAtPath<ContentObject>(path);
-				if (asset == null) continue;
+				if (asset == null)
+					continue;
 
 				var method = typeof(ContentIO).GetMethod(nameof(ContentIO.NotifyCreated),
-				                                         BindingFlags.NonPublic | BindingFlags.Static);
+														 BindingFlags.NonPublic | BindingFlags.Static);
 				var genMethod = method.MakeGenericMethod(asset.GetType());
 
 				var rootPath = $"{BeamableConstants.DATA_DIR}/{asset.ContentType}/";
@@ -66,7 +68,7 @@ namespace Beamable.Editor.Content
 
 				asset.SetContentName(qualifiedName);
 
-				genMethod.Invoke(null, new object[] {asset});
+				genMethod.Invoke(null, new object[] { asset });
 			}
 
 			return paths;
@@ -107,7 +109,7 @@ namespace Beamable.Editor.Content
 
 		public static AvailableManifestModel CreateId(string id)
 		{
-			return new AvailableManifestModel() {id = id, checksum = "", createdAt = 0};
+			return new AvailableManifestModel() { id = id, checksum = "", createdAt = 0 };
 		}
 
 		public void Serialize(JsonSerializable.IStreamSerializer s)
@@ -141,7 +143,7 @@ namespace Beamable.Editor.Content
 	public static class ManifestModelExtensions
 	{
 		public static bool AreManifestIdsEquals(this IEnumerable<AvailableManifestModel> self,
-		                                        IEnumerable<AvailableManifestModel> other)
+												IEnumerable<AvailableManifestModel> other)
 		{
 			var selfIds = self == null
 				? new HashSet<string>()
@@ -182,7 +184,7 @@ namespace Beamable.Editor.Content
 		private ValidationContext ValidationContext
 		{
 			get;
-		} = new ValidationContext {AllContent = new Dictionary<string, IContentObject>()};
+		} = new ValidationContext { AllContent = new Dictionary<string, IContentObject>() };
 
 		public ContentIO(IBeamableRequester requester)
 		{
@@ -322,7 +324,7 @@ namespace Beamable.Editor.Content
 				var archivedManifests = source.manifests.Where(m => m.archived).ToList();
 				source.manifests.RemoveAll(m => m.archived);
 				if (source.manifests.Count == 0 ||
-				    source.manifests.All(m => m.id != BeamableConstants.DEFAULT_MANIFEST_ID))
+					source.manifests.All(m => m.id != BeamableConstants.DEFAULT_MANIFEST_ID))
 				{
 					source.manifests.Insert(0, AvailableManifestModel.CreateId(BeamableConstants.DEFAULT_MANIFEST_ID));
 				}
@@ -348,7 +350,7 @@ namespace Beamable.Editor.Content
 			}
 
 			if (!ContentConfiguration.Instance.EnableMultipleContentNamespaces &&
-			    manifestID != BeamableConstants.DEFAULT_MANIFEST_ID)
+				manifestID != BeamableConstants.DEFAULT_MANIFEST_ID)
 			{
 				Debug.LogWarning("You are switching manifest while manifest namespaces feature is disabled!");
 			}
@@ -430,7 +432,7 @@ namespace Beamable.Editor.Content
 		{
 			var assetGuids = AssetDatabase.FindAssets(
 				$"t:{content.GetType().Name}",
-				new[] {BeamableConstants.DATA_DIR}
+				new[] { BeamableConstants.DATA_DIR }
 			);
 			foreach (var guid in assetGuids)
 			{
@@ -446,7 +448,8 @@ namespace Beamable.Editor.Content
 		public IEnumerable<TContent> FindAllContent<TContent>(ContentQuery query = null, bool inherit = true)
 			where TContent : ContentObject, new()
 		{
-			if (query == null) query = ContentQuery.Unit;
+			if (query == null)
+				query = ContentQuery.Unit;
 			if (!AssetDatabase.IsValidFolder(BeamableConstants.DATA_DIR))
 			{
 				Directory.CreateDirectory(BeamableConstants.DATA_DIR);
@@ -455,7 +458,7 @@ namespace Beamable.Editor.Content
 
 			var assetGuids = AssetDatabase.FindAssets(
 				$"t:{typeof(TContent).Name}",
-				new[] {BeamableConstants.DATA_DIR}
+				new[] { BeamableConstants.DATA_DIR }
 			);
 			var contentType = ContentRegistry.TypeToName(typeof(TContent));
 
@@ -527,7 +530,7 @@ namespace Beamable.Editor.Content
 			{
 				var assetGuids = AssetDatabase.FindAssets(
 					$"t:{contentType.Name}",
-					new[] {BeamableConstants.DATA_DIR}
+					new[] { BeamableConstants.DATA_DIR }
 				);
 				var typeName = ContentRegistry.TypeToName(contentType);
 
@@ -539,13 +542,16 @@ namespace Beamable.Editor.Content
 
 					var fileName = Path.GetFileNameWithoutExtension(assetPath);
 
-					if (content == null || rawAsset.GetType() != contentType) continue;
+					if (content == null || rawAsset.GetType() != contentType)
+						continue;
 					var contentId = $"{typeName}.{fileName}";
 					content.SetIdAndVersion(contentId, "");
 
 					var entry = new LocalContentManifestEntry
 					{
-						ContentType = contentType, Content = content, AssetPath = assetPath
+						ContentType = contentType,
+						Content = content,
+						AssetPath = assetPath
 					};
 					ValidationContext.AllContent[content.Id] = content;
 					if (!localManifest.Content.ContainsKey(content.Id))
@@ -580,12 +586,12 @@ namespace Beamable.Editor.Content
 		}
 
 		public IEnumerable<ContentObject> FindAllContentByType(Type type,
-		                                                       ContentQuery query = null,
-		                                                       bool inherit = true)
+															   ContentQuery query = null,
+															   bool inherit = true)
 		{
 			var methodName = nameof(FindAllContent);
 			var method = typeof(ContentIO).GetMethod(methodName).MakeGenericMethod(type);
-			var content = method.Invoke(this, new object[] {query, inherit}) as IEnumerable<ContentObject>;
+			var content = method.Invoke(this, new object[] { query, inherit }) as IEnumerable<ContentObject>;
 			return content;
 		}
 
@@ -637,7 +643,7 @@ namespace Beamable.Editor.Content
 			{
 				var assetGuids = AssetDatabase.FindAssets(
 					$"t:{nextContentType.Name}",
-					new[] {BeamableConstants.DATA_DIR}
+					new[] { BeamableConstants.DATA_DIR }
 				);
 
 				foreach (var assetGuid in assetGuids)
@@ -646,10 +652,11 @@ namespace Beamable.Editor.Content
 					var rawAsset = AssetDatabase.LoadAssetAtPath(assetPath, typeof(IContentObject));
 					var nextContent = rawAsset as IContentObject;
 
-					if (nextContent == null || rawAsset.GetType() != nextContentType) continue;
+					if (nextContent == null || rawAsset.GetType() != nextContentType)
+						continue;
 
 					if (nextContentType == contentType &&
-					    nextContent == content)
+						nextContent == content)
 					{
 						return assetPath;
 					}
@@ -714,7 +721,7 @@ namespace Beamable.Editor.Content
 					readOnly: false,
 					postEvent: true,
 					schemasToCopy: new List<AddressableAssetGroupSchema>(),
-					types: new Type[] {typeof(ContentUpdateGroupSchema), typeof(BundledAssetGroupSchema)}
+					types: new Type[] { typeof(ContentUpdateGroupSchema), typeof(BundledAssetGroupSchema) }
 				);
 			}
 
@@ -726,7 +733,7 @@ namespace Beamable.Editor.Content
 			}
 
 			addressableAssetSettings.SetDirty(AddressableAssetSettings.ModificationEvent.EntryMoved, addedEntries,
-			                                  true);
+											  true);
 			CommitAssetDatabase();
 		}
 
@@ -789,7 +796,7 @@ namespace Beamable.Editor.Content
 		{
 			var methodName = nameof(Delete);
 			var method = typeof(ContentIO).GetMethod(methodName).MakeGenericMethod(type);
-			method.Invoke(this, new object[] {content});
+			method.Invoke(this, new object[] { content });
 		}
 
 		/// <summary>
@@ -846,8 +853,8 @@ namespace Beamable.Editor.Content
 		{
 			// TODO: Un-confuse this if statement.
 			if (content is ContentObject contentObj && contentObj &&
-			    _checksumTable.TryGetValue(contentObj.Id, out var existing) &&
-			    existing.ValidationId == contentObj.ValidationGuid)
+				_checksumTable.TryGetValue(contentObj.Id, out var existing) &&
+				existing.ValidationId == contentObj.ValidationGuid)
 			{
 				return existing.Checksum;
 			}
@@ -863,7 +870,8 @@ namespace Beamable.Editor.Content
 				{
 					_checksumTable[contentObj2.Id] = new ValidationChecksum
 					{
-						ValidationId = contentObj2.ValidationGuid, Checksum = checksum
+						ValidationId = contentObj2.ValidationGuid,
+						Checksum = checksum
 					};
 				}
 
@@ -900,8 +908,8 @@ namespace Beamable.Editor.Content
 			}
 
 			EditorUtility.SetDirty(content);
-			AssetDatabase.ForceReserializeAssets(new[] {nextAssetpath},
-			                                     ForceReserializeAssetsOptions.ReserializeAssetsAndMetadata);
+			AssetDatabase.ForceReserializeAssets(new[] { nextAssetpath },
+												 ForceReserializeAssetsOptions.ReserializeAssetsAndMetadata);
 		}
 
 		private void CommitAssetDatabase()

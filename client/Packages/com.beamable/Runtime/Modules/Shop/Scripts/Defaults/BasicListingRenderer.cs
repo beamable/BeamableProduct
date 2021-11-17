@@ -1,12 +1,12 @@
-using TMPro;
-using UnityEngine;
-using System;
-using System.Threading.Tasks;
 using Beamable.Api;
 using Beamable.Api.Payments;
 using Beamable.Common.Content;
 using Beamable.Common.Inventory;
 using Beamable.Signals;
+using System;
+using System.Threading.Tasks;
+using TMPro;
+using UnityEngine;
 
 namespace Beamable.Shop.Defaults
 {
@@ -50,7 +50,7 @@ namespace Beamable.Shop.Defaults
 			}
 			else
 			{
-				var contentRef = new ContentRef<CurrencyContent> {Id = listing.offer.price.symbol};
+				var contentRef = new ContentRef<CurrencyContent> { Id = listing.offer.price.symbol };
 				var currency = await beamable.ContentService.GetContent(contentRef);
 				ButtonText.text = $"{listing.offer.price.amount} {currency.name}";
 			}

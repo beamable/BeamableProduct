@@ -14,7 +14,8 @@ namespace Beamable.Common.Content
 			}
 
 			if (!DateTime.TryParseExact(schedule.activeTo.Value, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture,
-			                            DateTimeStyles.None, out activeToDate)) return false;
+										DateTimeStyles.None, out activeToDate))
+				return false;
 			activeToDate = activeToDate.ToUniversalTime();
 
 			return true;
@@ -25,7 +26,8 @@ namespace Beamable.Common.Content
 			activeFromDate = DateTime.Now;
 
 			if (!DateTime.TryParseExact(schedule.activeFrom, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture,
-			                            DateTimeStyles.None, out activeFromDate)) return false;
+										DateTimeStyles.None, out activeFromDate))
+				return false;
 			activeFromDate = activeFromDate.ToUniversalTime();
 			return true;
 		}

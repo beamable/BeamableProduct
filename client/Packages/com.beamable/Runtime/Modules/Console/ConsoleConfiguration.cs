@@ -9,7 +9,7 @@ namespace Beamable.Console
 		public static ConsoleConfiguration Instance => Get<ConsoleConfiguration>();
 
 #if !ENABLE_INPUT_SYSTEM || ENABLE_LEGACY_INPUT_MANAGER
-		public InputActionArg ToggleAction = new InputActionArg {KeyCode = KeyCode.BackQuote};
+		public InputActionArg ToggleAction = new InputActionArg { KeyCode = KeyCode.BackQuote };
 #elif ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
       public InputActionArg ToggleAction;
 #endif

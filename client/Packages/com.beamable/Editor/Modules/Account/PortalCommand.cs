@@ -22,6 +22,6 @@ namespace Beamable.Editor.Modules.Account
 
 		private Promise<string> GetPortalUrl(string DBID) =>
 			EditorAPI.Instance.Map(api =>
-				                       $"{BeamableEnvironment.PortalUrl}/{api.CidOrAlias}/games/{api.ProductionRealm.Pid}/realms/{api.Pid}?playerQuery={DBID}&refresh_token={api.Token.RefreshToken}");
+									   $"{BeamableEnvironment.PortalUrl}/{api.CidOrAlias}/games/{api.ProductionRealm.Pid}/realms/{api.Pid}?playerQuery={DBID}&refresh_token={api.Token.RefreshToken}");
 	}
 }

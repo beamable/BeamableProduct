@@ -1,12 +1,12 @@
+using Beamable.Common;
+using Beamable.Coroutines;
+using Beamable.Platform.SDK;
+using Beamable.Service;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Beamable.Common;
-using Beamable.Coroutines;
-using Beamable.Platform.SDK;
-using Beamable.Service;
 using UnityEngine;
 
 namespace Beamable
@@ -27,7 +27,7 @@ namespace Beamable
 		public static void RegisterBeamableDefaultUncaughtPromiseHandler(bool replaceExistingHandlers = true)
 		{
 			PromiseBase.SetPotentialUncaughtErrorHandler(PromiseBaseOnPotentialOnPotentialUncaughtError,
-			                                             replaceExistingHandlers);
+														 replaceExistingHandlers);
 		}
 
 		private static void PromiseBaseOnPotentialOnPotentialUncaughtError(PromiseBase promise, Exception ex)

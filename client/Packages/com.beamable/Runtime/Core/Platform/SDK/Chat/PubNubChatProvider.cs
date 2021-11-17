@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using Beamable.Common;
+using System.Collections.Generic;
 
 namespace Beamable.Experimental.Api.Chat
 {
@@ -9,7 +9,7 @@ namespace Beamable.Experimental.Api.Chat
 	{
 		public override Promise<Room> CreatePrivateRoom(List<long> gamerTags)
 		{
-			var gamerTagsPlusMe = new List<long> {Platform.User.id};
+			var gamerTagsPlusMe = new List<long> { Platform.User.id };
 			gamerTagsPlusMe.AddRange(gamerTags);
 
 			var roomName = CreateRoomNameFromGamerTags(gamerTagsPlusMe);
@@ -30,16 +30,16 @@ namespace Beamable.Experimental.Api.Chat
 		protected override Promise<List<Room>> FetchMyRooms()
 		{
 			return Platform.Chat.GetMyRooms()
-			               .Map(roomInfos =>
-			               {
-				               var rooms = new List<Room>();
-				               foreach (var roomInfo in roomInfos)
-				               {
-					               rooms.Add(new PubNubRoom(roomInfo));
-				               }
+						   .Map(roomInfos =>
+						   {
+							   var rooms = new List<Room>();
+							   foreach (var roomInfo in roomInfos)
+							   {
+								   rooms.Add(new PubNubRoom(roomInfo));
+							   }
 
-				               return rooms;
-			               });
+							   return rooms;
+						   });
 		}
 	}
 }

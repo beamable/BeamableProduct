@@ -1,9 +1,9 @@
-using System;
 using Beamable.Common.Content;
 using Beamable.Common.Shop;
 using Beamable.Editor.Schedules;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
+using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -27,9 +27,9 @@ namespace Beamable.Editor.Content
 		}
 
 		protected override void UpdateSchedule(SerializedProperty property,
-		                                       EventContent evtContent,
-		                                       Schedule schedule,
-		                                       Schedule nextSchedule)
+											   EventContent evtContent,
+											   Schedule schedule,
+											   Schedule nextSchedule)
 		{
 			base.UpdateSchedule(property, evtContent, schedule, nextSchedule);
 			var startDate = DateTime.Parse(evtContent.startDate);
@@ -48,10 +48,10 @@ namespace Beamable.Editor.Content
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
 		{
 			return EditorGUIUtility.singleLineHeight * 4
-			       + EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.description))) + 2
-			       + EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.definitions))) + 2
-			       + EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.activeTo))) + 2
-			       + EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.activeFrom)));
+				   + EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.description))) + 2
+				   + EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.definitions))) + 2
+				   + EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.activeTo))) + 2
+				   + EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.activeFrom)));
 		}
 
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
@@ -70,7 +70,8 @@ namespace Beamable.Editor.Content
 			var nextY = buttonRect.y + 20;
 			buttonRect = new Rect(buttonRect.x, nextY, buttonRect.width, 20);
 			var toggleRaw = GUI.Button(buttonRect, "Modify Raw Data");
-			if (toggleRaw) allowRawEdit = !allowRawEdit;
+			if (toggleRaw)
+				allowRawEdit = !allowRawEdit;
 			nextY = buttonRect.y + 20;
 
 			void RenderProperty(SerializedProperty prop)
@@ -98,8 +99,8 @@ namespace Beamable.Editor.Content
 		{
 			var element = new TWindow();
 			var window = BeamablePopupWindow.ShowUtility(BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER,
-			                                             element, null,
-			                                             BeamableComponentsConstants.SchedulesWindowSize);
+														 element, null,
+														 BeamableComponentsConstants.SchedulesWindowSize);
 
 			var data = GetDataObject(property);
 			if (data == null)
@@ -120,9 +121,9 @@ namespace Beamable.Editor.Content
 		protected abstract TData GetDataObject(SerializedProperty property);
 
 		protected virtual void UpdateSchedule(SerializedProperty property,
-		                                      TData data,
-		                                      Schedule schedule,
-		                                      Schedule nextSchedule)
+											  TData data,
+											  Schedule schedule,
+											  Schedule nextSchedule)
 		{
 			schedule.description = nextSchedule.description;
 			schedule.definitions = nextSchedule.definitions;

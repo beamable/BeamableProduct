@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using Beamable.Api.Sessions;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -11,7 +11,8 @@ namespace Beamable.Editor.Modules.Sessions
 		public override void OnInspectorGUI()
 		{
 			var provider = target as SessionParameterProvider;
-			if (provider == null) return;
+			if (provider == null)
+				return;
 
 			if (GUILayout.Button("Open Script"))
 			{

@@ -1,6 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Content;
@@ -10,6 +7,9 @@ using Beamable.Platform.SDK;
 using Beamable.Platform.Tests;
 using Beamable.Tests;
 using NUnit.Framework;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.TestTools;
 using Manifest = Beamable.Editor.Content.Manifest;
 
@@ -49,7 +49,7 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentPublisherTests
 		[UnityTest]
 		public IEnumerator ReturnsAdditions()
 		{
-			_content = new List<ContentObject> {ContentObject.Make<ExampleContent>("test")};
+			_content = new List<ContentObject> { ContentObject.Make<ExampleContent>("test") };
 
 			yield return _publisher.CreatePublishSet().Then(set =>
 			{
@@ -66,10 +66,12 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentPublisherTests
 
 			_serverContent.Add(new ContentManifestReference()
 			{
-				id = modifiedContent.Id, checksum = "olddata", tags = new string[] { }
+				id = modifiedContent.Id,
+				checksum = "olddata",
+				tags = new string[] { }
 			});
 
-			_content = new List<ContentObject> {modifiedContent};
+			_content = new List<ContentObject> { modifiedContent };
 
 			yield return _publisher.CreatePublishSet().Then(set =>
 			{
@@ -82,7 +84,7 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentPublisherTests
 		public IEnumerator ReturnsDeletions()
 		{
 			var id = "example.old";
-			_serverContent.Add(new ContentManifestReference {id = id, checksum = "olddata"});
+			_serverContent.Add(new ContentManifestReference { id = id, checksum = "olddata" });
 			yield return _publisher.CreatePublishSet().Then(set =>
 			{
 				Assert.AreEqual(1, set.ToDelete.Count);

@@ -28,11 +28,11 @@ namespace Beamable.InputManagerIntegration
 
       protected InputAction GetAction()
       {
-         #if UNITY_2018
+#if UNITY_2018
          return actionAsset?.FindAction(action.name);
-         #else
+#else
          return actionAsset?.FindAction(action.id);
-         #endif
+#endif
       }
 
       public bool IsTriggered()

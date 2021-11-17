@@ -53,13 +53,13 @@ namespace Beamable.Common.Content.Validation
 			}
 
 			throw new ContentValidationException(obj, validationField,
-			                                     "string must not contain spaces and special characters (i.e. slug).");
+												 "string must not contain spaces and special characters (i.e. slug).");
 		}
 
 		public void ValidateString(string strValue,
-		                           ValidationFieldWrapper validationField,
-		                           IContentObject obj,
-		                           IValidationContext ctx)
+								   ValidationFieldWrapper validationField,
+								   IContentObject obj,
+								   IValidationContext ctx)
 		{
 			if (string.IsNullOrEmpty(strValue))
 			{
@@ -69,13 +69,14 @@ namespace Beamable.Common.Content.Validation
 			if (!IsSlug(strValue))
 			{
 				throw new ContentValidationException(obj, validationField,
-				                                     "value can contain alphanumeric, underscore, and hyphen characters.");
+													 "value can contain alphanumeric, underscore, and hyphen characters.");
 			}
 		}
 
 		private bool IsSlug(string slug)
 		{
-			if (string.IsNullOrEmpty(slug)) return false;
+			if (string.IsNullOrEmpty(slug))
+				return false;
 
 			string str = slug.ToLower().Trim();
 			if (_config == MustBeSlugStringConfig.STRICT)

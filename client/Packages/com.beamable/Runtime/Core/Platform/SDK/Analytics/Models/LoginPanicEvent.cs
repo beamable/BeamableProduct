@@ -1,5 +1,5 @@
-﻿using UnityEngine;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace Beamable.Api.Analytics
 {
@@ -7,7 +7,7 @@ namespace Beamable.Api.Analytics
 	{
 		public LoginPanicEvent(string step, string error, bool retry)
 			: base("loading", "login_panic",
-			       new Dictionary<string, object> {["step"] = step, ["error"] = error, ["retry"] = retry})
+				   new Dictionary<string, object> { ["step"] = step, ["error"] = error, ["retry"] = retry })
 		{
 			if (retry)
 				Debug.LogError("LOGIN PANIC (retry): " + step + " " + error);

@@ -1,6 +1,6 @@
-using UnityEngine;
-using System;
 using Beamable.Common;
+using System;
+using UnityEngine;
 
 namespace Beamable.Api.Payments
 {

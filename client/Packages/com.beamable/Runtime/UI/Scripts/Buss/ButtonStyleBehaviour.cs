@@ -1,6 +1,6 @@
-using System;
-using Beamable.UI.MSDF;
 using Beamable.UI.Buss.Extensions;
+using Beamable.UI.MSDF;
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 

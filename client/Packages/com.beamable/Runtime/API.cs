@@ -1,39 +1,39 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using Beamable.AccountManagement;
 using Beamable.Api;
 using Beamable.Api.Analytics;
 using Beamable.Api.Announcements;
 using Beamable.Api.Auth;
 using Beamable.Api.Caches;
-using Beamable.Common;
-using Beamable.Content;
-using Beamable.Config;
-using Beamable.Coroutines;
-using Beamable.Api.Commerce;
-using Beamable.Api.Inventory;
-using Beamable.Api.Leaderboard;
-using Beamable.Api.Payments;
-using Beamable.Api.Stats;
 using Beamable.Api.CloudSaving;
-using Beamable.Service;
-using UnityEngine;
-using UnityEngine.SceneManagement;
-using Object = UnityEngine.Object;
+using Beamable.Api.Commerce;
 using Beamable.Api.Connectivity;
 using Beamable.Api.Events;
 using Beamable.Api.Groups;
+using Beamable.Api.Inventory;
+using Beamable.Api.Leaderboard;
 using Beamable.Api.Mail;
 using Beamable.Api.Notification;
+using Beamable.Api.Payments;
 using Beamable.Api.Sessions;
+using Beamable.Api.Stats;
+using Beamable.Common;
 using Beamable.Common.Api;
-using Beamable.Common.Api.CloudData;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Api.CloudData;
 using Beamable.Common.Api.Tournaments;
+using Beamable.Config;
+using Beamable.Content;
+using Beamable.Coroutines;
 using Beamable.Experimental;
+using Beamable.Service;
 using Beamable.Sessions;
 using Modules.Content;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using Object = UnityEngine.Object;
 
 #if BEAMABLE_PURCHASING
 using Beamable.Purchasing;
@@ -302,7 +302,8 @@ namespace Beamable
 			var api = new API();
 			return api.Initialize().RecoverWith(ex =>
 			{
-				if (!(ex is NoConnectivityException)) throw ex;
+				if (!(ex is NoConnectivityException))
+					throw ex;
 
 				Debug.LogWarning(
 					$"Beamable requires an internet connection to initialize the first session. Will retry in {SECONDS_UNTIL_RETRY} seconds...");
@@ -558,10 +559,10 @@ namespace Beamable
 			}
 
 			return _platform.SaveToken(tokenResponse)
-			                .FlatMap(_ => _platform.ReloadUser())
-			                .FlatMap(user => _platform.StartNewSession().Map(_ => user))
-			                .Then(user => OnUserChanged?.Invoke(user))
-			                .Map(_ => PromiseBase.Unit);
+							.FlatMap(_ => _platform.ReloadUser())
+							.FlatMap(user => _platform.StartNewSession().Map(_ => user))
+							.Then(user => OnUserChanged?.Invoke(user))
+							.Map(_ => PromiseBase.Unit);
 		}
 
 		public Promise<ISet<UserBundle>> GetDeviceUsers()
@@ -611,7 +612,9 @@ namespace Beamable
 			SceneManager.LoadScene(0, LoadSceneMode.Single);
 		}
 
-		private class CoroutineBehaviour : MonoBehaviour { }
+		private class CoroutineBehaviour : MonoBehaviour
+		{
+		}
 	}
 
 	public class BeamableResolver : IServiceResolver<API>

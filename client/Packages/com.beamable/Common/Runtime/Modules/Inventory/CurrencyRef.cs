@@ -18,7 +18,9 @@ namespace Beamable.Common.Inventory
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class CurrencyLink : ContentLink<CurrencyContent> { }
+	public class CurrencyLink : ContentLink<CurrencyContent>
+	{
+	}
 
 	/// <summary>
 	/// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
@@ -36,7 +38,9 @@ namespace Beamable.Common.Inventory
 	[Agnostic]
 	public class CurrencyRef : CurrencyRef<CurrencyContent>
 	{
-		public CurrencyRef() { }
+		public CurrencyRef()
+		{
+		}
 
 		public CurrencyRef(string id)
 		{
@@ -57,7 +61,9 @@ namespace Beamable.Common.Inventory
 	///
 	/// </summary>
 	[System.Serializable]
-	public class CurrencyRef<TContent> : ContentRef<TContent> where TContent : CurrencyContent, new() { }
+	public class CurrencyRef<TContent> : ContentRef<TContent> where TContent : CurrencyContent, new()
+	{
+	}
 
 	[System.Serializable]
 	[Agnostic]

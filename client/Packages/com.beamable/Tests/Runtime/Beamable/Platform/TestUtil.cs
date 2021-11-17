@@ -1,9 +1,9 @@
+using Beamable.Common;
+using Beamable.Platform.SDK;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
-using Beamable.Common;
-using Beamable.Platform.SDK;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -20,10 +20,10 @@ namespace Beamable.Platform.Tests
 		{
 			var fieldNames =
 				typeof(WWWForm).GetField("fieldNames", BindingFlags.Instance | BindingFlags.NonPublic)
-				               .GetValue(form) as List<string>;
+							   .GetValue(form) as List<string>;
 			var formData =
 				typeof(WWWForm).GetField("formData", BindingFlags.Instance | BindingFlags.NonPublic)
-				               .GetValue(form) as List<byte[]>;
+							   .GetValue(form) as List<byte[]>;
 
 			var formIndex = fieldNames.IndexOf(field);
 			if (formIndex == -1)

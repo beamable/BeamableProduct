@@ -1,7 +1,7 @@
+using Beamable.Config;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Beamable.Config;
 using UnityEditor;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -40,12 +40,12 @@ namespace Beamable.Server.Editor
 				{
 					ServiceType.MicroService,
 					new ServiceCreateInfo(ServiceType.MicroService, DESTINATION_MICROSERVICE_DIRECTORY,
-					                      TEMPLATE_MICROSERVICE_DIRECTORY)
+										  TEMPLATE_MICROSERVICE_DIRECTORY)
 				},
 				{
 					ServiceType.StorageObject,
 					new ServiceCreateInfo(ServiceType.StorageObject, DESTINATION_STORAGE_OBJECT_DIRECTORY,
-					                      TEMPLATE_STORAGE_OBJECT_DIRECTORY)
+										  TEMPLATE_STORAGE_OBJECT_DIRECTORY)
 				}
 			};
 
@@ -69,7 +69,8 @@ namespace Beamable.Server.Editor
 		private static void setAutoRun(bool value)
 		{
 			Menu.SetChecked(MENU_TOGGLE_AUTORUN, value);
-			if (ConfigDatabase.HasKey(CONFIG_AUTO_RUN)) ConfigDatabase.SetBool(CONFIG_AUTO_RUN, value);
+			if (ConfigDatabase.HasKey(CONFIG_AUTO_RUN))
+				ConfigDatabase.SetBool(CONFIG_AUTO_RUN, value);
 
 			EditorPrefs.SetBool(CONFIG_AUTO_RUN, value);
 		}
@@ -99,15 +100,15 @@ namespace Beamable.Server.Editor
 			var destinationDirectory = Directory.CreateDirectory(servicePath);
 
 			SetupServiceFileInfo(serviceName,
-			                     Path.Combine(rootPath, serviceCreateInfo.TemplateDirectoryPath,
-			                                  $"Unity.Beamable.Runtime.User{serviceCreateInfo.ServiceTypeName}.XXXX.asmdef"),
-			                     destinationDirectory.FullName +
-			                     $"/Unity.Beamable.Runtime.User{serviceCreateInfo.ServiceTypeName}.{serviceName}.asmdef");
+								 Path.Combine(rootPath, serviceCreateInfo.TemplateDirectoryPath,
+											  $"Unity.Beamable.Runtime.User{serviceCreateInfo.ServiceTypeName}.XXXX.asmdef"),
+								 destinationDirectory.FullName +
+								 $"/Unity.Beamable.Runtime.User{serviceCreateInfo.ServiceTypeName}.{serviceName}.asmdef");
 
 			SetupServiceFileInfo(serviceName,
-			                     Path.Combine(rootPath, serviceCreateInfo.TemplateDirectoryPath,
-			                                  $"{serviceCreateInfo.ServiceTypeName}.cs"),
-			                     destinationDirectory.FullName + $"/{serviceName}.cs");
+								 Path.Combine(rootPath, serviceCreateInfo.TemplateDirectoryPath,
+											  $"{serviceCreateInfo.ServiceTypeName}.cs"),
+								 destinationDirectory.FullName + $"/{serviceName}.cs");
 
 			AssetDatabase.Refresh();
 		}
@@ -144,8 +145,8 @@ namespace Beamable.Server.Editor
 			}
 
 			public ServiceCreateInfo(ServiceType serviceType,
-			                         string destinationDirectoryPath,
-			                         string templateDirectoryPath)
+									 string destinationDirectoryPath,
+									 string templateDirectoryPath)
 			{
 				ServiceType = serviceType;
 				DestinationDirectoryPath = destinationDirectoryPath;

@@ -1,7 +1,7 @@
-using System;
-using System.Globalization;
 using Beamable.Common;
 using Beamable.Common.Api;
+using System;
+using System.Globalization;
 
 namespace Beamable.Api
 {
@@ -53,11 +53,11 @@ namespace Beamable.Api
 		public bool IsExpired => DateTime.UtcNow.AddDays(1) > ExpiresAt;
 
 		public AccessToken(AccessTokenStorage storage,
-		                   string cid,
-		                   string pid,
-		                   string token,
-		                   string refreshToken,
-		                   long expiresAt)
+						   string cid,
+						   string pid,
+						   string token,
+						   string refreshToken,
+						   long expiresAt)
 		{
 			_storage = storage;
 			Cid = cid;
@@ -68,11 +68,11 @@ namespace Beamable.Api
 		}
 
 		public AccessToken(AccessTokenStorage storage,
-		                   string cid,
-		                   string pid,
-		                   string token,
-		                   string refreshToken,
-		                   string expiresAtISO)
+						   string cid,
+						   string pid,
+						   string token,
+						   string refreshToken,
+						   string expiresAtISO)
 		{
 			_storage = storage;
 			Cid = cid;

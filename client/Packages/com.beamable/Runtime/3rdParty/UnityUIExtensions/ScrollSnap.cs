@@ -141,7 +141,7 @@ namespace Beamable.UnityEngineClone.UI.Extensions
 			if (_scroll_rect.horizontalScrollbar != null && _scroll_rect.horizontal)
 			{
 				var hscroll = _scroll_rect.horizontalScrollbar.gameObject
-				                          .GetOrAddComponent<ScrollSnapScrollbarHelper>();
+										  .GetOrAddComponent<ScrollSnapScrollbarHelper>();
 				hscroll.ss = this;
 			}
 
@@ -290,7 +290,7 @@ namespace Beamable.UnityEngineClone.UI.Extensions
 
 				_itemsCount = activeCount;
 				_listContainerCachedSize.Set(_listContainerRectTransform.rect.size.x,
-				                             _listContainerRectTransform.rect.size.y);
+											 _listContainerRectTransform.rect.size.y);
 			}
 		}
 
@@ -573,7 +573,9 @@ namespace Beamable.UnityEngineClone.UI.Extensions
 			}
 		}
 
-		public void StartScreenChange() { }
+		public void StartScreenChange()
+		{
+		}
 
 		#endregion
 	}

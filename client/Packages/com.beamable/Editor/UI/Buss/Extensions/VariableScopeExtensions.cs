@@ -1,9 +1,9 @@
+using Beamable.UI.Buss.Properties;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Beamable.UI.Buss.Properties;
 
 namespace Beamable.Editor.UI.Buss.Extensions
 {
@@ -32,7 +32,7 @@ namespace Beamable.Editor.UI.Buss.Extensions
 			var output = new List<VariableWrapper>();
 			for (var i = 0; i < names.Count; i++)
 			{
-				output.Add(new VariableWrapper {Name = names[i], Value = values[i], VariableSet = this});
+				output.Add(new VariableWrapper { Name = names[i], Value = values[i], VariableSet = this });
 			}
 
 			return output;
@@ -103,7 +103,7 @@ namespace Beamable.Editor.UI.Buss.Extensions
 			var matchingFields = fields.Where(f => typeof(VariableSet).IsAssignableFrom(f.FieldType));
 			return matchingFields.Select(f =>
 			{
-				return new VariableSetWrapper {Scope = self, VariableSet = (VariableSet)f.GetValue(self), Field = f};
+				return new VariableSetWrapper { Scope = self, VariableSet = (VariableSet)f.GetValue(self), Field = f };
 			}).ToList();
 		}
 	}

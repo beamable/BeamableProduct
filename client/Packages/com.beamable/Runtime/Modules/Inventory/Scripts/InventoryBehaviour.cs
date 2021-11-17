@@ -1,17 +1,19 @@
-using System.Collections.Generic;
 using Beamable;
 using Beamable.Api;
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Inventory;
 using Beamable.Content;
 using Beamable.Inventory.Scripts;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
 namespace Beamable.Inventory.Scripts
 {
 	[System.Serializable]
-	public class InventoryUpdateEvent : UnityEvent<InventoryUpdateArg> { }
+	public class InventoryUpdateEvent : UnityEvent<InventoryUpdateArg>
+	{
+	}
 
 	public class InventoryBehaviour : MonoBehaviour
 	{
@@ -25,7 +27,8 @@ namespace Beamable.Inventory.Scripts
 		{
 			Beamable.API.Instance.Then(de =>
 			{
-				if (this == null) return; // unity lifecycle check.
+				if (this == null)
+					return; // unity lifecycle check.
 
 				Group.ItemRef.Resolve().Then(content =>
 				{
@@ -48,7 +51,7 @@ namespace Beamable.Inventory.Scripts
 				itemGroup = new List<ItemView>();
 			}
 
-			var arg = new InventoryUpdateArg {Group = Group, Inventory = itemGroup};
+			var arg = new InventoryUpdateArg { Group = Group, Inventory = itemGroup };
 			OnInventoryReceived?.Invoke(arg);
 		}
 	}

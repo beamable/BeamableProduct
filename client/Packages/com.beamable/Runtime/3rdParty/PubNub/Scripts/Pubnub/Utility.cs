@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Text;
-using System.Collections.Generic;
 using System.Collections;
+using System.Collections.Generic;
+using System.Text;
 
 namespace PubNubMessaging.Core
 {
@@ -23,7 +23,7 @@ namespace PubNubMessaging.Core
 		internal const string PresenceChannelSuffix = "-pnpres";
 		internal const int iOSRequestTimeout = 59;
 
-#if(UNITY_IOS)
+#if (UNITY_IOS)
         internal static int CheckTimeoutValue(int value){
             if (value > iOSRequestTimeout) {
                 LoggingMethod.WriteToLog (string.Format("Forcing timeout value to {0} as iOS force closes the www request after {0} secs", iOSRequestTimeout), LoggingMethod.LevelInfo);
@@ -44,8 +44,8 @@ namespace PubNubMessaging.Core
 				if (!Int64.TryParse(dict[key].ToString(), out seqNumber))
 				{
 					LoggingMethod.WriteToLog(string.Format("DateTime {0}, {1}, {2} conversion failed: {3}.",
-					                                       DateTime.Now.ToString(), what, key, dict[key].ToString()),
-					                         LoggingMethod.LevelInfo);
+														   DateTime.Now.ToString(), what, key, dict[key].ToString()),
+											 LoggingMethod.LevelInfo);
 				}
 
 				sequenceNumber = seqNumber;
@@ -132,7 +132,7 @@ namespace PubNubMessaging.Core
 		internal static void CheckChannelOrChannelGroup(string channel, string channelGroup)
 		{
 			if ((string.IsNullOrEmpty(channel) || string.IsNullOrEmpty(channel.Trim()))
-			    && (string.IsNullOrEmpty(channelGroup) || string.IsNullOrEmpty(channelGroup.Trim())))
+				&& (string.IsNullOrEmpty(channelGroup) || string.IsNullOrEmpty(channelGroup.Trim())))
 			{
 				throw new ArgumentException("Both Channel and ChannelGroup are empty.");
 			}
@@ -260,9 +260,9 @@ namespace PubNubMessaging.Core
 		private static Dictionary<string, string> _CachedEncodedUriComponents = new Dictionary<string, string>();
 
 		public static string EncodeUricomponent(string s,
-		                                        ResponseType type,
-		                                        bool ignoreComma,
-		                                        bool ignorePercent2fEncode)
+												ResponseType type,
+												bool ignoreComma,
+												bool ignorePercent2fEncode)
 		{
 			string encodedUri;
 
@@ -300,9 +300,9 @@ namespace PubNubMessaging.Core
 
 			encodedUri = o.ToString();
 			if (type == ResponseType.HereNow || type == ResponseType.DetailedHistory || type == ResponseType.Leave ||
-			    type == ResponseType.PresenceHeartbeat
-			    || type == ResponseType.PushRegister || type == ResponseType.PushRemove ||
-			    type == ResponseType.PushGet || type == ResponseType.PushUnregister
+				type == ResponseType.PresenceHeartbeat
+				|| type == ResponseType.PushRegister || type == ResponseType.PushRemove ||
+				type == ResponseType.PushGet || type == ResponseType.PushUnregister
 			)
 			{
 				if (!ignorePercent2fEncode)

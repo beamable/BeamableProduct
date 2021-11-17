@@ -1,9 +1,9 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Content;
 using NUnit.Framework;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine.TestTools;
 
 namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
@@ -13,7 +13,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 		[SetUp]
 		public void Setup()
 		{
-			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type> {typeof(InventoryTestItem)});
+			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type> { typeof(InventoryTestItem) });
 		}
 
 		[Test]
@@ -21,7 +21,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 		{
 			var updateBuilder = new InventoryUpdateBuilder();
 
-			var props = new Dictionary<string, string> {{"key", "value"}};
+			var props = new Dictionary<string, string> { { "key", "value" } };
 			var contentId = "contentId";
 			updateBuilder.AddItem(contentId, props);
 

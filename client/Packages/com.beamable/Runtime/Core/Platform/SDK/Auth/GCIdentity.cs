@@ -9,7 +9,9 @@ namespace GCIdentityPlugin
       [DllImport("__Internal")]
       private static extern void _GenerateIdentity(string gameObjectName);
 #else
-		private static void _GenerateIdentity(string gameObjectName) { }
+		private static void _GenerateIdentity(string gameObjectName)
+		{
+		}
 #endif
 
 		public static void GenerateIdentity(string gameObjectName)

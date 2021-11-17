@@ -107,11 +107,11 @@ namespace Beamable.Editor.UI.Buss.SDF
 		/// How to fill the destination texture's RGB channels.
 		/// </param>
 		public static void Generate(Texture2D source,
-		                            Texture2D destination,
-		                            float maxInside,
-		                            float maxOutside,
-		                            float postProcessDistance,
-		                            RGBFillMode rgbMode)
+									Texture2D destination,
+									float maxInside,
+									float maxOutside,
+									float postProcessDistance,
+									RGBFillMode rgbMode)
 		{
 			if (source.height != destination.height || source.width != destination.width)
 			{
@@ -186,7 +186,7 @@ namespace Beamable.Editor.UI.Buss.SDF
 						for (x = 0; x < width; x++)
 						{
 							c.a = 0.5f + (destination.GetPixel(x, y).a -
-							              Mathf.Clamp01(pixels[x, y].distance * scale)) * 0.5f;
+										  Mathf.Clamp01(pixels[x, y].distance * scale)) * 0.5f;
 							destination.SetPixel(x, y, c);
 						}
 					}

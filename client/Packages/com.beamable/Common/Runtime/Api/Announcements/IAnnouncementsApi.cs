@@ -1,6 +1,6 @@
+using Beamable.Common.Announcements;
 using System;
 using System.Collections.Generic;
-using Beamable.Common.Announcements;
 
 namespace Beamable.Common.Api.Announcements
 {

@@ -1,11 +1,11 @@
-using System;
-using System.Threading.Tasks;
 using Beamable.Api;
-using Beamable.Platform.SDK;
 using Beamable.Api.Leaderboard;
 using Beamable.Common;
 using Beamable.Common.Api.Leaderboards;
+using Beamable.Platform.SDK;
 using Beamable.UI.Scripts;
+using System;
+using System.Threading.Tasks;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -57,11 +57,11 @@ namespace Beamable.Leaderboards
 		private Promise<LeaderBoardView> FetchBoard(IBeamableAPI de)
 		{
 			return de.LeaderboardService.GetBoard(LeaderboardBehavior.Leaderboard.Id, 0, 50)
-			         .Error(err =>
-			         {
-				         // Explicitly do nothing to prevent an error from being logged.
-			         })
-			         .Then(HandleBoard);
+					 .Error(err =>
+					 {
+						 // Explicitly do nothing to prevent an error from being logged.
+					 })
+					 .Then(HandleBoard);
 		}
 
 		private void HandleBoard(LeaderBoardView board)

@@ -1,6 +1,6 @@
-using System;
 using Beamable.Common;
 using Beamable.Common.Api;
+using System;
 
 namespace Beamable.Api.Notification
 {
@@ -28,7 +28,7 @@ namespace Beamable.Api.Notification
 		public Promise<EmptyResponse> Register(PushProvider provider, string token)
 		{
 			return _requester.Request<EmptyResponse>(Method.POST, "/basic/push/register",
-			                                         new PushRegisterRequest(provider.ToRequestString(), token));
+													 new PushRegisterRequest(provider.ToRequestString(), token));
 		}
 	}
 

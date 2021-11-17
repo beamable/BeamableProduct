@@ -10,10 +10,10 @@ using UnityEngine.UIElements;
 namespace Beamable.Editor.Register
 {
 	delegate void RegisterAttemptEvent(string email,
-	                                   string password,
-	                                   string projectName,
-	                                   string customerName,
-	                                   string alias);
+									   string password,
+									   string projectName,
+									   string customerName,
+									   string alias);
 
 	class RegisterVisualElement : VisualElement
 	{
@@ -54,19 +54,23 @@ namespace Beamable.Editor.Register
 			Add(_root);
 			_root.RegisterCallback<KeyDownEvent>(evt =>
 			{
-				if (KeyCode.Return == evt.keyCode) AttemptLogin();
+				if (KeyCode.Return == evt.keyCode)
+					AttemptLogin();
 			});
 			_passwordField.RegisterCallback<KeyDownEvent>(evt =>
 			{
-				if (KeyCode.Return == evt.keyCode) AttemptLogin();
+				if (KeyCode.Return == evt.keyCode)
+					AttemptLogin();
 			});
 			_emailField.RegisterCallback<KeyDownEvent>(evt =>
 			{
-				if (KeyCode.Return == evt.keyCode) AttemptLogin();
+				if (KeyCode.Return == evt.keyCode)
+					AttemptLogin();
 			});
 			_projectField.RegisterCallback<KeyDownEvent>(evt =>
 			{
-				if (KeyCode.Return == evt.keyCode) AttemptLogin();
+				if (KeyCode.Return == evt.keyCode)
+					AttemptLogin();
 			});
 
 			_button.clickable.clicked += AttemptLogin;

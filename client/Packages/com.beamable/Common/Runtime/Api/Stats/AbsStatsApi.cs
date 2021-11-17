@@ -1,7 +1,7 @@
+using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Beamable.Serialization.SmallerJSON;
 using UnityEngine;
 
 namespace Beamable.Common.Api.Stats
@@ -26,8 +26,8 @@ namespace Beamable.Common.Api.Stats
 			new Dictionary<string, UserDataCache<Dictionary<string, string>>>();
 
 		public AbsStatsApi(IBeamableRequester requester,
-		                   IUserContext userContext,
-		                   UserDataCache<Dictionary<string, string>>.FactoryFunction cacheFactory)
+						   IUserContext userContext,
+						   UserDataCache<Dictionary<string, string>>.FactoryFunction cacheFactory)
 		{
 			_cacheFactory = cacheFactory;
 			Requester = requester;
@@ -71,9 +71,9 @@ namespace Beamable.Common.Api.Stats
 		/// <para>IMPORTANT: This method only works for admin role</para>
 		/// </summary>
 		public Promise<StatsSearchResponse> SearchStats(string domain,
-		                                                string access,
-		                                                string type,
-		                                                List<Criteria> criteriaList)
+														string access,
+														string type,
+														List<Criteria> criteriaList)
 		{
 			void IsValid(out string error)
 			{
@@ -114,7 +114,7 @@ namespace Beamable.Common.Api.Stats
 
 			ArrayDict ConvertCriteriaToArrayDict(Criteria criteria)
 			{
-				return new ArrayDict {{"stat", criteria.Stat}, {"rel", criteria.Rel}, {"value", criteria.Value}};
+				return new ArrayDict { { "stat", criteria.Stat }, { "rel", criteria.Rel }, { "value", criteria.Value } };
 			}
 
 			IsValid(out var errorMessage);

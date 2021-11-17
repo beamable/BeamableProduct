@@ -1,6 +1,6 @@
-using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Platform.SDK;
+using System.Threading.Tasks;
 using UnityEditor;
 
 namespace Beamable.Editor

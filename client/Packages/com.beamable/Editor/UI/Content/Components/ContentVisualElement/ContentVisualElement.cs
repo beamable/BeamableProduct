@@ -1,12 +1,12 @@
-using System.Collections.Generic;
+using Beamable.Common;
 using Beamable.Common.Content;
+using Beamable.Common.Content.Validation;
+using Beamable.Content;
 using Beamable.Editor.Content.Models;
 using Beamable.Editor.UI.Buss;
 using System;
+using System.Collections.Generic;
 using System.Linq;
-using Beamable.Common;
-using Beamable.Common.Content.Validation;
-using Beamable.Content;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 #if UNITY_2018
@@ -63,7 +63,7 @@ namespace Beamable.Editor.Content.Components
 			base.Refresh();
 
 			RegisterCallback<MouseDownEvent>(OnMouseDownEvent,
-			                                 TrickleDown.TrickleDown);
+											 TrickleDown.TrickleDown);
 
 			_pathLabel = Root.Q<Label>("pathLabel");
 
@@ -77,13 +77,13 @@ namespace Beamable.Editor.Content.Components
 			UpdateStatusIcon();
 
 			_nameTextField.RegisterCallback<FocusEvent>(NameLabel_OnFocus,
-			                                            TrickleDown.TrickleDown);
+														TrickleDown.TrickleDown);
 			_nameTextField.RegisterCallback<BlurEvent>(NameLabel_OnBlur,
-			                                           TrickleDown.TrickleDown);
+													   TrickleDown.TrickleDown);
 			_nameTextField.RegisterCallback<KeyDownEvent>(NameLabel_OnKeydown,
-			                                              TrickleDown.TrickleDown);
+														  TrickleDown.TrickleDown);
 			_nameTextField.RegisterCallback<KeyUpEvent>(NameLabel_OnKeyup,
-			                                            TrickleDown.TrickleDown);
+														TrickleDown.TrickleDown);
 
 			_tagListVisualElement = Root.Q<TagListVisualElement>("tagListVisualElement");
 
@@ -172,7 +172,8 @@ namespace Beamable.Editor.Content.Components
 		public void RenameGestureBegin()
 		{
 			// can only rename if we have local data.
-			if (ContentItemDescriptor.LocalStatus != HostStatus.AVAILABLE) return;
+			if (ContentItemDescriptor.LocalStatus != HostStatus.AVAILABLE)
+				return;
 
 			_nameBackup = _nameTextField.value;
 			_nameTextField.SetEnabled(true);
@@ -241,7 +242,7 @@ namespace Beamable.Editor.Content.Components
 			var name = _nameTextField.value;
 			var content = ContentItemDescriptor?.GetContent();
 			if (content != null &&
-			    ContentNameValidationException.HasNameValidationErrors(content, name, out var errors))
+				ContentNameValidationException.HasNameValidationErrors(content, name, out var errors))
 			{
 				foreach (var error in errors)
 				{

@@ -1,10 +1,10 @@
-using System;
 using Beamable.Api.Auth;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Platform.SDK;
 using Beamable.Platform.SDK.Auth;
+using System;
 
 namespace Packages.Beamable.Runtime.Tests.Beamable
 {
@@ -57,16 +57,16 @@ namespace Packages.Beamable.Runtime.Tests.Beamable
 		}
 
 		public Promise<TokenResponse> Login(string username,
-		                                    string password,
-		                                    bool mergeGamerTagToAccount = true,
-		                                    bool customerScoped = false)
+											string password,
+											bool mergeGamerTagToAccount = true,
+											bool customerScoped = false)
 		{
 			return LoginDelegate(username, password, mergeGamerTagToAccount);
 		}
 
 		public Promise<TokenResponse> LoginThirdParty(AuthThirdParty thirdParty,
-		                                              string thirdPartyToken,
-		                                              bool includeAuthHeader = true)
+													  string thirdPartyToken,
+													  bool includeAuthHeader = true)
 		{
 			throw new System.NotImplementedException();
 		}
@@ -102,10 +102,10 @@ namespace Packages.Beamable.Runtime.Tests.Beamable
 		}
 
 		public Promise<CustomerRegistrationResponse> RegisterCustomer(string email,
-		                                                              string password,
-		                                                              string projectName,
-		                                                              string customerName,
-		                                                              string alias)
+																	  string password,
+																	  string projectName,
+																	  string customerName,
+																	  string alias)
 		{
 			throw new System.NotImplementedException();
 		}

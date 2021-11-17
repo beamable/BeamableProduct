@@ -27,11 +27,11 @@ namespace Beamable.Api.Notification.Internal
 		/// <param name="when">Time when the notification should arrive. This should be a future timestamp.</param>
 		/// <param name="data">Arbitrary key/value data to attach to the notification.</param>
 		void ScheduleNotification(string channel,
-		                          string key,
-		                          string title,
-		                          string message,
-		                          DateTime when,
-		                          Dictionary<string, string> data);
+								  string key,
+								  string title,
+								  string message,
+								  DateTime when,
+								  Dictionary<string, string> data);
 
 		/// <summary>
 		/// Cancel a specific notification.

@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using Beamable.Editor.Content.Models;
+﻿using Beamable.Editor.Content.Models;
 using Beamable.Editor.UI.Buss;
+using System;
+using System.Collections.Generic;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -41,7 +41,7 @@ namespace Beamable.Editor.Content.Components
 					Refresh();
 				};
 				filterRow.SetValue((Model?.Filter?.HasValidationConstraint ?? false) &&
-				                   Model.Filter.ValidationConstraint == validationValue);
+								   Model.Filter.ValidationConstraint == validationValue);
 				_scroller.contentContainer.Add(filterRow);
 			}
 
@@ -51,7 +51,8 @@ namespace Beamable.Editor.Content.Components
 			{
 				var statusValue = (ContentModificationStatus)value;
 
-				if (statusValue == ContentModificationStatus.NOT_AVAILABLE_ANYWHERE) continue;
+				if (statusValue == ContentModificationStatus.NOT_AVAILABLE_ANYWHERE)
+					continue;
 
 				var filterRow = new FilterRowVisualElement();
 				filterRow.FilterName = statusValue.Serialize();

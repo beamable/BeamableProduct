@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using Beamable.Api.Payments;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.Shop.Defaults

@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Beamable.Editor.UI.Buss;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Editor.UI.Buss;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -15,13 +15,16 @@ namespace Beamable.Editor.UI.Components
 {
 	public class LabeledDatePickerVisualElement : BeamableVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<LabeledDatePickerVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<LabeledDatePickerVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
 			{
-				name = "label", defaultValue = "Label"
+				name = "label",
+				defaultValue = "Label"
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -60,7 +63,9 @@ namespace Beamable.Editor.UI.Components
 		public string SelectedDate => DatePicker.GetIsoDate();
 
 		public LabeledDatePickerVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledDatePickerVisualElement)}/{nameof(LabeledDatePickerVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledDatePickerVisualElement)}/{nameof(LabeledDatePickerVisualElement)}")
+		{
+		}
 
 		public override void Refresh()
 		{

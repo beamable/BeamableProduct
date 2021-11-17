@@ -1,11 +1,11 @@
-﻿using System;
+﻿using Beamable.Api;
+using Beamable.Api.Notification;
+using Beamable.Common;
+using Beamable.Serialization;
+using Beamable.Service;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
-using Beamable.Common;
-using Beamable.Service;
-using Beamable.Serialization;
-using Beamable.Api;
-using Beamable.Api.Notification;
 
 namespace Beamable.Experimental.Api.Chat
 {
@@ -172,21 +172,21 @@ namespace Beamable.Experimental.Api.Chat
 
 			var promise = new Promise<Unit>();
 			pubnub.LoadChannelHistory(Id, 50,
-			                          pubnubMessages =>
-			                          {
-				                          Messages.Clear();
-				                          foreach (var message in pubnubMessages)
-				                          {
-					                          Messages.Add(ToMessage(message));
-				                          }
+									  pubnubMessages =>
+									  {
+										  Messages.Clear();
+										  foreach (var message in pubnubMessages)
+										  {
+											  Messages.Add(ToMessage(message));
+										  }
 
-				                          promise.CompleteSuccess(PromiseBase.Unit);
-			                          },
-			                          error =>
-			                          {
-				                          Debug.LogError(error.Message);
-				                          promise.CompleteError(new ErrorCode(error.StatusCode));
-			                          }
+										  promise.CompleteSuccess(PromiseBase.Unit);
+									  },
+									  error =>
+									  {
+										  Debug.LogError(error.Message);
+										  promise.CompleteError(new ErrorCode(error.StatusCode));
+									  }
 			);
 
 			return promise;

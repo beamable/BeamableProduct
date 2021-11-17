@@ -14,10 +14,12 @@ namespace Beamable.Theme.Palettes
 	{
 		public override SoundStyle DefaultValue()
 		{
-			return new SoundStyle {Name = "default", Enabled = true, Volume = 1};
+			return new SoundStyle { Name = "default", Enabled = true, Volume = 1 };
 		}
 	}
 
 	[System.Serializable]
-	public class SoundBinding : SoundPalette.PaletteBinding { }
+	public class SoundBinding : SoundPalette.PaletteBinding
+	{
+	}
 }

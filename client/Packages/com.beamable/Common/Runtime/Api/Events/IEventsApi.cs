@@ -17,9 +17,9 @@ namespace Beamable.Common.Api.Events
 		/// <param name="stats">Optional key-value mapping of stats to apply to the score.</param>
 		/// <returns>Promise indicating success or failure.</returns>
 		Promise<Unit> SetScore(string eventId,
-		                       double score,
-		                       bool incremental = false,
-		                       IDictionary<string, object> stats = null);
+							   double score,
+							   bool incremental = false,
+							   IDictionary<string, object> stats = null);
 	}
 
 	[Serializable]

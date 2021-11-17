@@ -1,6 +1,6 @@
+using Beamable.Common.Api.Auth;
 using System;
 using System.Collections.Generic;
-using Beamable.Common.Api.Auth;
 
 namespace Beamable.Common.Api
 {
@@ -13,7 +13,9 @@ namespace Beamable.Common.Api
 	}
 
 	[Serializable]
-	public class EmptyResponse { }
+	public class EmptyResponse
+	{
+	}
 
 	/// <summary>
 	/// This type defines the %IBeamableRequester.
@@ -34,11 +36,11 @@ namespace Beamable.Common.Api
 		}
 
 		Promise<T> Request<T>(Method method,
-		                      string uri,
-		                      object body = null,
-		                      bool includeAuthHeader = true,
-		                      Func<string, T> parser = null,
-		                      bool useCache = false);
+							  string uri,
+							  object body = null,
+							  bool includeAuthHeader = true,
+							  Func<string, T> parser = null,
+							  bool useCache = false);
 
 		IBeamableRequester WithAccessToken(TokenResponse tokenResponse);
 
@@ -48,11 +50,11 @@ namespace Beamable.Common.Api
 	public interface IHttpRequester
 	{
 		Promise<T> ManualRequest<T>(Method method,
-		                            string url,
-		                            object body = null,
-		                            Dictionary<string, string> headers = null,
-		                            string contentType = "application/json",
-		                            Func<string, T> parser = null);
+									string url,
+									object body = null,
+									Dictionary<string, string> headers = null,
+									string contentType = "application/json",
+									Func<string, T> parser = null);
 
 		string EscapeURL(string url);
 	}
@@ -74,10 +76,10 @@ namespace Beamable.Common.Api
 		}
 
 		static string GenerateMessage(string prefix,
-		                              string method,
-		                              string uri,
-		                              long responseCode,
-		                              string responsePayload)
+									  string method,
+									  string uri,
+									  long responseCode,
+									  string responsePayload)
 		{
 			return $"{prefix}. method=[{method}] uri=[{uri}] code=[{responseCode}] payload=[{responsePayload}]";
 		}
@@ -97,8 +99,8 @@ namespace Beamable.Common.Api
 			RecoverFromStatus(self, 404, recovery);
 
 		public static Promise<T> RecoverFromStatus<T>(this Promise<T> self,
-		                                              long status,
-		                                              System.Func<RequesterException, T> recovery)
+													  long status,
+													  System.Func<RequesterException, T> recovery)
 		{
 			return self.Recover(err =>
 			{

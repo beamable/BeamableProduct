@@ -1,15 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using Beamable.Common;
+using Beamable.Editor.Content;
+using Beamable.Editor.Content.Components;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.UI.Buss;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
 using UnityEditor;
 using UnityEngine;
-using Beamable.Editor.Content.Components;
-using Beamable.Editor.Content;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.IO;
-using Beamable.Common;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -94,9 +94,9 @@ namespace Beamable.Editor.UI.Buss.Components
 		/// <param name="content"></param>
 		/// <returns></returns>
 		public static async Promise<BeamablePopupWindow> ShowDropdownAsync(string title,
-		                                                                   Rect sourceRect,
-		                                                                   Vector2 size,
-		                                                                   BeamableVisualElement content)
+																		   Rect sourceRect,
+																		   Vector2 size,
+																		   BeamableVisualElement content)
 		{
 			var wnd = CreateInstance<BeamablePopupWindow>();
 			var promise = new Promise();
@@ -123,9 +123,9 @@ namespace Beamable.Editor.UI.Buss.Components
 		/// <param name="content"></param>
 		/// <returns></returns>
 		public static BeamablePopupWindow ShowDropdown(string title,
-		                                               Rect sourceRect,
-		                                               Vector2 size,
-		                                               BeamableVisualElement content)
+													   Rect sourceRect,
+													   Vector2 size,
+													   BeamableVisualElement content)
 		{
 			var wnd = CreateInstance<BeamablePopupWindow>();
 			wnd.titleContent = new GUIContent(title);
@@ -139,10 +139,10 @@ namespace Beamable.Editor.UI.Buss.Components
 		}
 
 		public static BeamablePopupWindow ShowUtility(string title,
-		                                              BeamableVisualElement content,
-		                                              EditorWindow parent,
-		                                              Vector2 defaultSize,
-		                                              Action<BeamablePopupWindow> onDomainReload = null)
+													  BeamableVisualElement content,
+													  EditorWindow parent,
+													  Vector2 defaultSize,
+													  Action<BeamablePopupWindow> onDomainReload = null)
 		{
 			var wnd = CreateInstance<BeamablePopupWindow>();
 			wnd.titleContent = new GUIContent(title);
@@ -163,12 +163,12 @@ namespace Beamable.Editor.UI.Buss.Components
 		}
 
 		public static BeamablePopupWindow ShowConfirmationUtility(string title,
-		                                                          ConfirmationPopupVisualElement element,
-		                                                          EditorWindow parent,
-		                                                          Action<BeamablePopupWindow> onDomainReload = null)
+																  ConfirmationPopupVisualElement element,
+																  EditorWindow parent,
+																  Action<BeamablePopupWindow> onDomainReload = null)
 		{
 			var window = ShowUtility(title, element, parent, ContentManagerConstants.ConfirmationPopupSize,
-			                         onDomainReload).FitToContent();
+									 onDomainReload).FitToContent();
 
 			return window;
 		}
@@ -192,7 +192,7 @@ namespace Beamable.Editor.UI.Buss.Components
 				$"{BeamableComponentsConstants.COMP_PATH}/BeamablePopupWindow/beamablePopupWindow.uxml");
 			_windowRoot = uiAsset.CloneTree();
 			this.GetRootVisualContainer()
-			    .AddStyleSheet($"{BeamableComponentsConstants.COMP_PATH}/BeamablePopupWindow/beamablePopupWindow.uss");
+				.AddStyleSheet($"{BeamableComponentsConstants.COMP_PATH}/BeamablePopupWindow/beamablePopupWindow.uss");
 			_windowRoot.name = nameof(_windowRoot);
 
 			root.Add(_windowRoot);

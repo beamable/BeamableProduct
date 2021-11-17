@@ -1,8 +1,8 @@
+using Beamable.Editor.UI.Buss;
+using Beamable.Server.Editor.ManagerClient;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Server.Editor.ManagerClient;
-using Beamable.Editor.UI.Buss;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -36,7 +36,7 @@ namespace Beamable.Server.Editor.UI.Components
 
 			var container = Root.Q<VisualElement>("container");
 
-			var templateSizes = new[] {"small", "medium", "large"};
+			var templateSizes = new[] { "small", "medium", "large" };
 
 			var cancelButton = Root.Q<Button>("cancelButton");
 			cancelButton.clickable.clicked += () => OnCancel?.Invoke();

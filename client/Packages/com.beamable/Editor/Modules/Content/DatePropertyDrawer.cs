@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Beamable.Common.Content;
+using Beamable.Common.Content.Validation;
+using System;
 using System.Globalization;
 using System.Linq;
-using Beamable.Common.Content;
-using Beamable.Common.Content.Validation;
 using UnityEditor;
 using UnityEngine;
 
@@ -27,7 +27,7 @@ namespace Beamable.Editor.Content
 
 		private static readonly GUIContent[] monthNames =
 			DateTimeFormatInfo.InvariantInfo.MonthNames
-			                  .Select(s => new GUIContent($"{(_monthNum++).ToString("00")} - {s}")).ToArray();
+							  .Select(s => new GUIContent($"{(_monthNum++).ToString("00")} - {s}")).ToArray();
 
 		private static readonly int[] monthsArray = GetIncrementalArray(1, 12);
 		private static readonly int[] days28Array = GetIncrementalArray(1, 28);
@@ -52,7 +52,7 @@ namespace Beamable.Editor.Content
 			var noValue = IsOptionalString(property) && !property.FindPropertyRelative("HasValue").boolValue;
 			var useTextField = EditorPrefs.GetBool(TextFieldPref, false);
 			return (EditorGUIUtility.currentViewWidth >= SingleLineWidth || useTextField || noValue ? 1f : 2f) *
-			       EditorGUIUtility.singleLineHeight;
+				   EditorGUIUtility.singleLineHeight;
 		}
 
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
@@ -99,8 +99,8 @@ namespace Beamable.Editor.Content
 					context.AddItem(new GUIContent("Paste"), false, () => Paste(property));
 					context.AddSeparator("");
 					context.AddItem(new GUIContent("Use Text Field"), useTextField,
-					                () => EditorPrefs.SetBool(TextFieldPref,
-					                                          !EditorPrefs.GetBool(TextFieldPref, false)));
+									() => EditorPrefs.SetBool(TextFieldPref,
+															  !EditorPrefs.GetBool(TextFieldPref, false)));
 
 					context.ShowAsContext();
 				}
@@ -117,15 +117,15 @@ namespace Beamable.Editor.Content
 		}
 
 		private void DrawSingleFieldProperty(SerializedProperty property,
-		                                     EditorGUIRectController rectController,
-		                                     DateTime date)
+											 EditorGUIRectController rectController,
+											 DateTime date)
 		{
 			EditorGUI.BeginChangeCheck();
 			var text = EditorGUI.DelayedTextField(
 				rectController.ReserveWidth(rectController.rect.width - CalendarButtonWidth - SpaceWidth),
 				date.ToUniversalTime().ToString(DateUtility.ISO_FORMAT));
 			if (EditorGUI.EndChangeCheck() &&
-			    DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out date))
+				DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out date))
 			{
 				ApplyNewDate(property, date.ToUniversalTime());
 			}
@@ -133,17 +133,17 @@ namespace Beamable.Editor.Content
 			rectController.ReserveWidth(SpaceWidth);
 
 			if (GUI.Button(rectController.ReserveWidth(CalendarButtonWidth),
-			               EditorGUIUtility.IconContent(EditorGUIUtility.isProSkin
-				                                            ? CalendarIconDark
-				                                            : CalendarIconLight)))
+						   EditorGUIUtility.IconContent(EditorGUIUtility.isProSkin
+															? CalendarIconDark
+															: CalendarIconLight)))
 			{
 				ShowCalendar(date, property);
 			}
 		}
 
 		private void DrawMultiFieldProperty(SerializedProperty property,
-		                                    EditorGUIRectController rectController,
-		                                    DateTime date)
+											EditorGUIRectController rectController,
+											DateTime date)
 		{
 			const float yearFieldWidth = 50f;
 			const float doubleDigitFieldWidth = 36f;
@@ -186,9 +186,9 @@ namespace Beamable.Editor.Content
 			timeRectController.ReserveWidth(SpaceWidth);
 
 			if (GUI.Button(dateRectController.ReserveWidth(CalendarButtonWidth),
-			               EditorGUIUtility.IconContent(EditorGUIUtility.isProSkin
-				                                            ? "d_GridLayoutGroup Icon"
-				                                            : "GridLayoutGroup Icon")))
+						   EditorGUIUtility.IconContent(EditorGUIUtility.isProSkin
+															? "d_GridLayoutGroup Icon"
+															: "GridLayoutGroup Icon")))
 			{
 				ShowCalendar(date, property);
 			}
@@ -226,12 +226,12 @@ namespace Beamable.Editor.Content
 		private static DateTime GetCurrentDateTime(SerializedProperty property)
 		{
 			if (!DateTime.TryParseExact(GetStringProperty(property).stringValue, DateUtility.ISO_FORMAT,
-			                            CultureInfo.InvariantCulture,
-			                            DateTimeStyles.None, out var date))
+										CultureInfo.InvariantCulture,
+										DateTimeStyles.None, out var date))
 			{
 				var now = DateTime.UtcNow;
 				date = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute,
-				                    now.Second); // skipping milliseconds
+									now.Second); // skipping milliseconds
 				ApplyNewDate(property, date.ToUniversalTime());
 			}
 
@@ -252,7 +252,7 @@ namespace Beamable.Editor.Content
 
 			var currentYear = date.Year;
 			return EditorGUIExtension.IntFieldWithDropdown(rect, currentYear,
-			                                               GetIncrementalArray(currentYear - 5, 11), SetYear);
+														   GetIncrementalArray(currentYear - 5, 11), SetYear);
 		}
 
 		private int DrawMonthSelection(DateTime date, Rect rect, SerializedProperty property)
@@ -266,7 +266,7 @@ namespace Beamable.Editor.Content
 			}
 
 			return EditorGUIExtension.IntFieldWithDropdown(rect, date.Month,
-			                                               monthsArray, SetMonth, "00", monthNames);
+														   monthsArray, SetMonth, "00", monthNames);
 		}
 
 		private int DrawDaySelection(DateTime date, int month, Rect rect, SerializedProperty property)
@@ -280,7 +280,7 @@ namespace Beamable.Editor.Content
 			}
 
 			return EditorGUIExtension.IntFieldWithDropdown(rect, date.Day,
-			                                               GetDayArray(date.Year, month), SetDay, "00");
+														   GetDayArray(date.Year, month), SetDay, "00");
 		}
 
 		private int DrawHourSelection(DateTime date, Rect rect, SerializedProperty property)
@@ -294,7 +294,7 @@ namespace Beamable.Editor.Content
 			}
 
 			return EditorGUIExtension.IntFieldWithDropdown(rect, date.Hour,
-			                                               hoursArray, SetHour, "00");
+														   hoursArray, SetHour, "00");
 		}
 
 		private int DrawMinuteSelection(DateTime date, Rect rect, SerializedProperty property)
@@ -308,7 +308,7 @@ namespace Beamable.Editor.Content
 			}
 
 			return EditorGUIExtension.IntFieldWithDropdown(rect, date.Minute,
-			                                               minutesArray, SetMinute, "00");
+														   minutesArray, SetMinute, "00");
 		}
 
 		private int DrawSecondSelection(DateTime date, Rect rect, SerializedProperty property)
@@ -322,7 +322,7 @@ namespace Beamable.Editor.Content
 			}
 
 			return EditorGUIExtension.IntFieldWithDropdown(rect, date.Second,
-			                                               minutesArray, SetSecond, "00");
+														   minutesArray, SetSecond, "00");
 		}
 
 		private static int[] GetDayArray(int year, int month)
@@ -332,10 +332,14 @@ namespace Beamable.Editor.Content
 				var dayCount = DateTime.DaysInMonth(year, month);
 				switch (dayCount)
 				{
-					case 28: return days28Array;
-					case 29: return days29Array;
-					case 30: return days30Array;
-					case 31: return days31Array;
+					case 28:
+						return days28Array;
+					case 29:
+						return days29Array;
+					case 30:
+						return days30Array;
+					case 31:
+						return days31Array;
 				}
 
 				return GetIncrementalArray(1, dayCount);

@@ -1,6 +1,6 @@
-using System;
 using Beamable.Theme.Appliers;
 using Beamable.UI.Layouts;
+using System;
 using UnityEngine;
 
 namespace Beamable.Theme
@@ -24,7 +24,8 @@ namespace Beamable.Theme
 
 		public void Refresh()
 		{
-			if (!gameObject.activeInHierarchy || !isActiveAndEnabled) return;
+			if (!gameObject.activeInHierarchy || !isActiveAndEnabled)
+				return;
 
 			var theme = ThemeConfiguration.Instance.Style;
 			_lastTheme = theme;

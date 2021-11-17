@@ -16,10 +16,14 @@ namespace Beamable.Tournaments
 		private OfferObtainCurrency _data;
 
 		// Start is called before the first frame update
-		void Start() { }
+		void Start()
+		{
+		}
 
 		// Update is called once per frame
-		void Update() { }
+		void Update()
+		{
+		}
 
 		public void Set(TournamentEntryViewData owner, OfferObtainCurrency data)
 		{
@@ -28,12 +32,15 @@ namespace Beamable.Tournaments
 
 			currencyRef.Resolve().Then(async currency =>
 			{
-				if (!Image) return;
+				if (!Image)
+					return;
 				var sprite = await currency.icon.LoadSprite();
-				if (!Image) return;
+				if (!Image)
+					return;
 				Image.sprite = sprite;
 				Image.material = owner.IsGrey ? GreyMaterial : null;
-				if (!AmountText) return;
+				if (!AmountText)
+					return;
 				AmountText.Value = TournamentScoreUtil.GetShortScore((ulong)data.amount);
 			});
 		}

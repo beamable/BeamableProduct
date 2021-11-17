@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
-using Beamable.Editor.UI.Buss;
+﻿using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Validation;
+using System.Collections.Generic;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -13,13 +13,16 @@ namespace Beamable.Editor.UI.Components
 {
 	public class LabeledCalendarVisualElement : ValidableVisualElement<int>
 	{
-		public new class UxmlFactory : UxmlFactory<LabeledCalendarVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<LabeledCalendarVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
 			{
-				name = "label", defaultValue = "Label"
+				name = "label",
+				defaultValue = "Label"
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -53,7 +56,9 @@ namespace Beamable.Editor.UI.Components
 		public CalendarVisualElement Calendar => _calendar;
 
 		public LabeledCalendarVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledCalendarVisualElement)}/{nameof(LabeledCalendarVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledCalendarVisualElement)}/{nameof(LabeledCalendarVisualElement)}")
+		{
+		}
 
 		public override void Refresh()
 		{

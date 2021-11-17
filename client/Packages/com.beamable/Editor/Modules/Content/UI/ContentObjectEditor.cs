@@ -1,11 +1,11 @@
-using System;
-using System.Linq;
-using System.Reflection;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Common.Content.Validation;
 using Beamable.Content;
+using System;
+using System.Linq;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -25,17 +25,18 @@ namespace Beamable.Editor.Content.UI
 			var rightMargin = 56;
 			Rect lastRect = GUILayoutUtility.GetLastRect();
 			Rect r = new Rect(lastRect.x + leftMargin, lastRect.height - 25,
-			                  lastRect.width - (leftMargin + rightMargin),
-			                  20);
+							  lastRect.width - (leftMargin + rightMargin),
+							  20);
 
 			var contentObject = target as ContentObject;
-			if (contentObject == null) return;
+			if (contentObject == null)
+				return;
 
 			if (contentObject.ContentName == null)
 				contentObject.SetContentName(contentObject.name);
 
 			if (ContentNameValidationException.HasNameValidationErrors(contentObject, contentObject.ContentName,
-			                                                           out var nameErrors))
+																	   out var nameErrors))
 			{
 				var errorText = string.Join(",", nameErrors.Select(n => n.Message));
 				var idValidationRect = new Rect(lastRect.x, lastRect.y, 4, lastRect.height);
@@ -45,7 +46,7 @@ namespace Beamable.Editor.Content.UI
 				redStyle.normal.textColor = Color.red;
 				redStyle.fontSize = 8;
 				EditorGUI.LabelField(new Rect(lastRect.x + leftMargin, lastRect.y, lastRect.width - leftMargin, 12),
-				                     $"({errorText})", redStyle);
+									 $"({errorText})", redStyle);
 			}
 
 			EditorGUI.BeginChangeCheck();
@@ -58,7 +59,8 @@ namespace Beamable.Editor.Content.UI
 				for (var i = 0; i < targets.Length; i++)
 				{
 					var otherContentObject = targets[i] as ContentObject;
-					if (otherContentObject == null) continue;
+					if (otherContentObject == null)
+						continue;
 					var otherValue = GetTagString(otherContentObject.Tags);
 					if (otherValue != value)
 					{
@@ -86,7 +88,8 @@ namespace Beamable.Editor.Content.UI
 
 		void DebounceTagSet(long id, string edit)
 		{
-			if (id != latestDebounceId) return; // a more recent debounce is scheduled. this one can die.
+			if (id != latestDebounceId)
+				return; // a more recent debounce is scheduled. this one can die.
 
 			if (EditorApplication.timeSinceStartup < SetTagAt)
 			{
@@ -111,7 +114,8 @@ namespace Beamable.Editor.Content.UI
 		public override void OnInspectorGUI()
 		{
 			var contentObject = target as ContentObject;
-			if (contentObject == null) return;
+			if (contentObject == null)
+				return;
 
 			if (contentObject.SerializeToConsoleRequested)
 			{
@@ -128,8 +132,8 @@ namespace Beamable.Editor.Content.UI
 				checksumStyle.alignment = TextAnchor.MiddleRight;
 
 				float contextWidth = (float)typeof(EditorGUIUtility)
-				                            .GetProperty("contextWidth", BindingFlags.NonPublic | BindingFlags.Static)
-				                            .GetValue(null, null);
+											.GetProperty("contextWidth", BindingFlags.NonPublic | BindingFlags.Static)
+											.GetValue(null, null);
 
 				var rect = EditorGUILayout.GetControlRect(false, 12, checksumStyle);
 
@@ -149,7 +153,7 @@ namespace Beamable.Editor.Content.UI
 
 		public string[] GetTagsFromString(string tagString)
 		{
-			return tagString?.Split(new[] {" "}, StringSplitOptions.RemoveEmptyEntries) ?? new string[0];
+			return tagString?.Split(new[] { " " }, StringSplitOptions.RemoveEmptyEntries) ?? new string[0];
 		}
 	}
 #endif

@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Beamable.UI.Buss.Properties;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.UI.Buss.Properties;
 using UnityEngine;
 
 namespace Beamable.UI.Buss
@@ -69,7 +69,8 @@ namespace Beamable.UI.Buss
 			T PreferOther<T>(Func<StyleObject, T> getter) where T : BUSSProperty, IBUSSProperty<T>
 			{
 				var selfProp = getter(this);
-				if (other == null) return selfProp.Clone();
+				if (other == null)
+					return selfProp.Clone();
 				var otherProp = getter(other);
 				return
 					// is the other property enabled, and does is it not null?

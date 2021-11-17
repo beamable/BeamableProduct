@@ -11,7 +11,8 @@ namespace Beamable.Editor.Tests.Content.EditorContentQueryTests
 		{
 			var query = new EditorContentQuery
 			{
-				ValidationConstraint = ContentValidationStatus.VALID, HasValidationConstraint = true
+				ValidationConstraint = ContentValidationStatus.VALID,
+				HasValidationConstraint = true
 			};
 			var str = query.ToString();
 
@@ -36,7 +37,8 @@ namespace Beamable.Editor.Tests.Content.EditorContentQueryTests
 		{
 			var query = new EditorContentQuery
 			{
-				StatusConstraint = ContentModificationStatus.MODIFIED, HasStatusConstraint = true
+				StatusConstraint = ContentModificationStatus.MODIFIED,
+				HasStatusConstraint = true
 			};
 			var str = query.ToString();
 
@@ -58,7 +60,8 @@ namespace Beamable.Editor.Tests.Content.EditorContentQueryTests
 		{
 			var query = new EditorContentQuery
 			{
-				StatusConstraint = ContentModificationStatus.NOT_MODIFIED, HasStatusConstraint = true
+				StatusConstraint = ContentModificationStatus.NOT_MODIFIED,
+				HasStatusConstraint = true
 			};
 			var str = query.ToString();
 

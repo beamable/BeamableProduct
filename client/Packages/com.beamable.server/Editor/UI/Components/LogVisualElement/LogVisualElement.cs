@@ -1,9 +1,9 @@
+using Beamable.Editor.UI.Buss.Components;
+using Beamable.Editor.UI.Components;
+using Beamable.Editor.UI.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Editor.UI.Buss.Components;
-using Beamable.Editor.UI.Model;
-using Beamable.Editor.UI.Components;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -25,13 +25,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private ListView _listView;
 		private string _statusClassName;
 
-		public new class UxmlFactory : UxmlFactory<LogVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<LogVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
 			{
-				name = "custom-text", defaultValue = "nada"
+				name = "custom-text",
+				defaultValue = "nada"
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -80,7 +83,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void OnDestroy()
 		{
 			base.OnDestroy();
-			if (Model == null) return;
+			if (Model == null)
+				return;
 			Model.Logs.OnMessagesUpdated -= HandleMessagesUpdated;
 			Model.Logs.OnSelectedMessageChanged -= UpdateSelectedMessageText;
 			Model.Logs.OnViewFilterChanged -= LogsOnOnViewFilterChanged;
@@ -98,7 +102,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			if (!NoModel)
 			{
 				var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
-				manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
+				manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 				_advanceDropDown.clickable.activators.Clear();
 				_advanceDropDown.AddManipulator(manipulator);
 			}

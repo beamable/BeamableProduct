@@ -1,17 +1,17 @@
-using System;
-using System.Collections.Generic;
-using Beamable.Platform.SDK;
-using Beamable.Platform.SDK.Auth;
 using Beamable;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
-using Beamable.Theme;
+using Beamable.Platform.SDK;
+using Beamable.Platform.SDK.Auth;
 using Beamable.Stats;
+using Beamable.Theme;
 using Beamable.UI.Scripts;
+using System;
+using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 namespace Beamable.AccountManagement
 {
@@ -75,7 +75,8 @@ namespace Beamable.AccountManagement
 
 		void InitializeStatCallbacks()
 		{
-			if (_initializedStatCallbacks) return;
+			if (_initializedStatCallbacks)
+				return;
 			_initializedStatCallbacks = true;
 			DisplayNameStat.OnStatReceived.AddListener(OnAliasAvailable);
 			SubTextStat.OnStatReceived.AddListener(OnSubtextAvailable);
@@ -173,7 +174,8 @@ namespace Beamable.AccountManagement
 
 		public void SetRemoveAccountElements(bool active)
 		{
-			if (AccountButton == null) return;
+			if (AccountButton == null)
+				return;
 
 			AccountButton.interactable = !active;
 			foreach (var element in RemoveAccountElements)
@@ -240,7 +242,7 @@ namespace Beamable.AccountManagement
 			IsCurrent = isCurrent;
 			if (TokenReference != null && token != null)
 			{
-				TokenReference.Bundle = new UserBundle {User = user, Token = token};
+				TokenReference.Bundle = new UserBundle { User = user, Token = token };
 			}
 
 			StatPromise = user.GetStats(
@@ -252,7 +254,7 @@ namespace Beamable.AccountManagement
 				AccountManagementConfiguration.Instance.GetAllEnabledThirdPartiesForUser(User);
 
 			LoadingPromise = Promise.Sequence(StatPromise.ToUnit(), ThirdPartyAssociationPromise.ToUnit())
-			                        .Map(_ => this);
+									.Map(_ => this);
 
 			return LoadingPromise;
 		}

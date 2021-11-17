@@ -5,7 +5,9 @@ namespace Beamable.Editor.UI.Common
 {
 	public class EnumFlagsAttribute : PropertyAttribute
 	{
-		public EnumFlagsAttribute() { }
+		public EnumFlagsAttribute()
+		{
+		}
 	}
 
 	[CustomPropertyDrawer(typeof(EnumFlagsAttribute))]

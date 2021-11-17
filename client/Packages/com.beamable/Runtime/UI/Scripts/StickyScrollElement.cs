@@ -158,7 +158,8 @@ namespace Beamable.UI.Scripts
 
 		void ScrollChanged(Vector2 scrollPos)
 		{
-			if (StickyElement == null) return;
+			if (StickyElement == null)
+				return;
 
 			var scrollTop = Scroller.content.offsetMax.y;
 			var scrollLow = scrollTop + Scroller.viewport.rect.height;

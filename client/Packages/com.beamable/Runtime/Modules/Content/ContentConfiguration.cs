@@ -1,8 +1,8 @@
-﻿using System;
-using System.Linq;
-using Beamable;
+﻿using Beamable;
 using Beamable.Common.Content;
 using Beamable.Content;
+using System;
+using System.Linq;
 using UnityEngine;
 
 namespace Modules.Content
@@ -10,7 +10,7 @@ namespace Modules.Content
 	[CreateAssetMenu(
 		fileName = "Content Configuration",
 		menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
-		           "Content Configuration")]
+				   "Content Configuration")]
 	public class ContentConfiguration : ModuleConfigurationObject
 	{
 		public static ContentConfiguration Instance => Get<ContentConfiguration>();
@@ -28,7 +28,7 @@ namespace Modules.Content
 			"This is the starting manifest ID that will be used when the game starts up. If you change it here, the Beamable API will initialize with content from this namespace. You can also update the setting at runtime.")]
 		[SerializeField,
 		 ReadonlyIf(nameof(EnableMultipleContentNamespaces), negate = true,
-		            specialDrawer = ReadonlyIfAttribute.SpecialDrawer.DelayedString)]
+					specialDrawer = ReadonlyIfAttribute.SpecialDrawer.DelayedString)]
 		private string _runtimeManifestID = BeamableConstants.DEFAULT_MANIFEST_ID;
 
 		public string RuntimeManifestID
@@ -48,7 +48,7 @@ namespace Modules.Content
 						$"Beamable API is using manifest with id '{manifestID}' while manifest namespaces feature is disabled!");
 				}
 
-				return new ContentParameterProvider() {manifestID = manifestID};
+				return new ContentParameterProvider() { manifestID = manifestID };
 			}
 		}
 

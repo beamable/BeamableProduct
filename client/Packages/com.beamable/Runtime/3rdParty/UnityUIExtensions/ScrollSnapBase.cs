@@ -42,13 +42,19 @@ namespace Beamable.UnityEngineClone.UI.Extensions
 		private int _bottomItem, _topItem;
 
 		[Serializable]
-		public class SelectionChangeStartEvent : UnityEvent { }
+		public class SelectionChangeStartEvent : UnityEvent
+		{
+		}
 
 		[Serializable]
-		public class SelectionPageChangedEvent : UnityEvent<int> { }
+		public class SelectionPageChangedEvent : UnityEvent<int>
+		{
+		}
 
 		[Serializable]
-		public class SelectionChangeEndEvent : UnityEvent<int> { }
+		public class SelectionChangeEndEvent : UnityEvent<int>
+		{
+		}
 
 		[Tooltip("The screen / page to start the control on\n*Note, this is a 0 indexed array")]
 		[SerializeField]
@@ -139,12 +145,14 @@ namespace Beamable.UnityEngineClone.UI.Extensions
 				}
 
 				if ((value != _currentPage && value >= 0 && value < _screensContainer.childCount) ||
-				    (value == 0 && _screensContainer.childCount == 0))
+					(value == 0 && _screensContainer.childCount == 0))
 				{
 					_previousPage = _currentPage;
 					_currentPage = value;
-					if (MaskArea) UpdateVisible();
-					if (!_lerp) ScreenChange();
+					if (MaskArea)
+						UpdateVisible();
+					if (!_lerp)
+						ScreenChange();
 					OnCurrentScreenChange(_currentPage);
 				}
 			}
@@ -335,14 +343,16 @@ namespace Beamable.UnityEngineClone.UI.Extensions
 			for (int i = _halfNoVisibleItems + 1; i > 0; i--)
 			{
 				_bottomItem = _currentPage - i < 0 ? 0 : i;
-				if (_bottomItem > 0) break;
+				if (_bottomItem > 0)
+					break;
 			}
 
 			//work out how many items above the current page can be visible
 			for (int i = _halfNoVisibleItems + 1; i > 0; i--)
 			{
 				_topItem = _screensContainer.childCount - _currentPage - i < 0 ? 0 : i;
-				if (_topItem > 0) break;
+				if (_topItem > 0)
+					break;
 			}
 
 			//Set the active items active
@@ -359,7 +369,8 @@ namespace Beamable.UnityEngineClone.UI.Extensions
 			}
 
 			//Deactivate items out of visibility at the bottom of the ScrollRect Mask (only on scroll)
-			if (_currentPage > _halfNoVisibleItems) ChildObjects[CurrentPage - _bottomItem].SetActive(false);
+			if (_currentPage > _halfNoVisibleItems)
+				ChildObjects[CurrentPage - _bottomItem].SetActive(false);
 			//Deactivate items out of visibility at the top of the ScrollRect Mask (only on scroll)
 			if (_screensContainer.childCount - _currentPage > _topItem)
 				ChildObjects[CurrentPage + _topItem].SetActive(false);
@@ -370,7 +381,8 @@ namespace Beamable.UnityEngineClone.UI.Extensions
 		{
 			if (_currentPage < _screens - 1 || _isInfinate)
 			{
-				if (!_lerp) StartScreenChange();
+				if (!_lerp)
+					StartScreenChange();
 
 				_lerp = true;
 				CurrentPage = _currentPage + 1;
@@ -384,7 +396,8 @@ namespace Beamable.UnityEngineClone.UI.Extensions
 		{
 			if (_currentPage > 0 || _isInfinate)
 			{
-				if (!_lerp) StartScreenChange();
+				if (!_lerp)
+					StartScreenChange();
 
 				_lerp = true;
 				CurrentPage = _currentPage - 1;
@@ -402,7 +415,8 @@ namespace Beamable.UnityEngineClone.UI.Extensions
 		{
 			if (screenIndex <= _screens - 1 && screenIndex >= 0)
 			{
-				if (!_lerp) StartScreenChange();
+				if (!_lerp)
+					StartScreenChange();
 
 				_lerp = true;
 				CurrentPage = screenIndex;

@@ -1,6 +1,6 @@
-﻿using System.Collections;
+﻿using Beamable.UI.Scripts;
+using System.Collections;
 using System.Collections.Generic;
-using Beamable.UI.Scripts;
 using UnityEngine;
 
 namespace Beamable.Tournaments
@@ -14,10 +14,14 @@ namespace Beamable.Tournaments
 			new Dictionary<TournamentInfoPageSection, GameObject>();
 
 		// Start is called before the first frame update
-		void Start() { }
+		void Start()
+		{
+		}
 
 		// Update is called once per frame
-		void Update() { }
+		void Update()
+		{
+		}
 
 		public void Set(TournamentInfoPageSection infoPageSection)
 		{

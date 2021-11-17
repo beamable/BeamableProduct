@@ -1,11 +1,11 @@
+using Beamable.Common;
+using Beamable.Platform.SDK;
+using Beamable.Server.Editor.CodeGen;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using Beamable.Common;
-using Beamable.Server.Editor.CodeGen;
-using Beamable.Platform.SDK;
 using UnityEditor.VersionControl;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -141,8 +141,8 @@ namespace Beamable.Server.Editor.DockerCommands
 		}
 
 		private void CopyFolderToBuildDirectory(string sourceFolderPath,
-		                                        string subFolder,
-		                                        MicroserviceDescriptor descriptor)
+												string subFolder,
+												MicroserviceDescriptor descriptor)
 		{
 			var directoryQueue = new Queue<string>();
 			directoryQueue.Enqueue(sourceFolderPath);
@@ -176,7 +176,7 @@ namespace Beamable.Server.Editor.DockerCommands
 				foreach (var subDir in subDirs)
 				{
 					var dirName = Path.GetFileName(subDir);
-					if (new[] {"~", "obj", "bin"}.Contains(dirName) || dirName.StartsWith("."))
+					if (new[] { "~", "obj", "bin" }.Contains(dirName) || dirName.StartsWith("."))
 						continue; // skip hidden or dumb folders...
 
 					directoryQueue.Enqueue(subDir);

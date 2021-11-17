@@ -1,11 +1,11 @@
-﻿using System;
+﻿using Beamable;
+using Beamable.UI.Scripts;
+using System;
 using System.Collections.Generic;
-using UnityEngine;
 using TMPro;
+using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using Beamable;
-using Beamable.UI.Scripts;
 
 public class OfflineObject : MonoBehaviour
 {
@@ -38,7 +38,7 @@ public class OfflineObject : MonoBehaviour
 					break;
 				default:
 					Debug.LogWarning("No Offline Functionality selected for GameObject: " + gameObject.name +
-					                 ". Consider removing this component if not planned for use.");
+									 ". Consider removing this component if not planned for use.");
 					break;
 			}
 		}

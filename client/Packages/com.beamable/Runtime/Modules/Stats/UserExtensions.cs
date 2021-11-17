@@ -1,10 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using Beamable.Platform.SDK;
 using Beamable.Platform.SDK.Auth;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Beamable.Stats
 {
@@ -34,7 +34,8 @@ namespace Beamable.Stats
 				var output = new StatCollection();
 				for (var i = 0; i < stats.Length; i++)
 				{
-					if (stats[i] == null) continue;
+					if (stats[i] == null)
+						continue;
 					values.TryGetValue(stats[i].StatKey, out var value);
 					output[stats[i]] = value ?? stats[i].DefaultValue;
 				}
@@ -45,7 +46,8 @@ namespace Beamable.Stats
 
 		public static Promise<string> GetStat(this User user, StatObject statObject)
 		{
-			if (statObject == null) return null;
+			if (statObject == null)
+				return null;
 
 			return API.Instance.FlatMap(de =>
 			{
@@ -58,8 +60,8 @@ namespace Beamable.Stats
 		}
 
 		public static Promise<Dictionary<string, string>> GetStats(this User user,
-		                                                           StatAccess access,
-		                                                           params string[] stats)
+																   StatAccess access,
+																   params string[] stats)
 		{
 			return API.Instance.FlatMap(de =>
 			{
@@ -68,7 +70,8 @@ namespace Beamable.Stats
 					var output = new Dictionary<string, string>();
 					for (var i = 0; i < stats.Length; i++)
 					{
-						if (string.IsNullOrEmpty(stats[i])) continue;
+						if (string.IsNullOrEmpty(stats[i]))
+							continue;
 						if (all.TryGetValue(stats[i], out var result))
 						{
 							output[stats[i]] = result;
@@ -84,7 +87,8 @@ namespace Beamable.Stats
 		{
 			public string Get(StatObject stat)
 			{
-				if (stat == null) return null;
+				if (stat == null)
+					return null;
 				TryGetValue(stat, out var value);
 				return value ?? stat.DefaultValue;
 			}

@@ -1,7 +1,7 @@
-using System;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using Beamable.Content;
+using System;
 using UnityEngine;
 using UnityEngine.Serialization;
 

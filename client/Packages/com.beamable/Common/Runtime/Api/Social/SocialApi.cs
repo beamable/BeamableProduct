@@ -50,7 +50,7 @@ namespace Beamable.Common.Api.Social
 			return Requester.Request<EmptyResponse>(
 				Method.POST,
 				"/basic/social/friends/import",
-				new ImportFriendsRequest {source = source.GetString(), token = token}
+				new ImportFriendsRequest { source = source.GetString(), token = token }
 			);
 		}
 
@@ -59,7 +59,7 @@ namespace Beamable.Common.Api.Social
 			return Requester.Request<FriendStatus>(
 				Method.POST,
 				"/basic/social/blocked",
-				new PlayerIdRequest {playerId = playerId.ToString()}
+				new PlayerIdRequest { playerId = playerId.ToString() }
 			);
 		}
 
@@ -68,7 +68,7 @@ namespace Beamable.Common.Api.Social
 			return Requester.Request<FriendStatus>(
 				Method.DELETE,
 				"/basic/social/blocked",
-				new PlayerIdRequest {playerId = playerId.ToString()}
+				new PlayerIdRequest { playerId = playerId.ToString() }
 			);
 		}
 
@@ -87,7 +87,7 @@ namespace Beamable.Common.Api.Social
 			return Requester.Request<EmptyResponse>(
 				Method.DELETE,
 				"/basic/social/friends/invite",
-				new PlayerIdRequest {playerId = playerId.ToString()}
+				new PlayerIdRequest { playerId = playerId.ToString() }
 			);
 		}
 
@@ -96,7 +96,7 @@ namespace Beamable.Common.Api.Social
 			return Requester.Request<EmptyResponse>(
 				Method.DELETE,
 				"/basic/social/friends",
-				new PlayerIdRequest {playerId = playerId.ToString()}
+				new PlayerIdRequest { playerId = playerId.ToString() }
 			);
 		}
 

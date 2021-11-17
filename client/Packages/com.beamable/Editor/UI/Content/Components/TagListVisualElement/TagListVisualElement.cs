@@ -1,9 +1,9 @@
-using System.Collections.Generic;
 using Beamable.Common.Content;
 using Beamable.Editor.Content.Models;
 using Beamable.Editor.UI.Buss;
-using UnityEngine;
 using System;
+using System.Collections.Generic;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -16,12 +16,14 @@ namespace Beamable.Editor.Content.Components
 {
 	public class TagListVisualElement : ContentManagerComponent
 	{
-		public new class UxmlFactory : UxmlFactory<TagListVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<TagListVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription customText =
-				new UxmlStringAttributeDescription {name = "custom-text", defaultValue = "nada"};
+				new UxmlStringAttributeDescription { name = "custom-text", defaultValue = "nada" };
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
 			{
@@ -57,10 +59,10 @@ namespace Beamable.Editor.Content.Components
 			foreach (var tagDescriptor in TagDescriptors)
 			{
 				AddTagVisualElement(tagDescriptor.Tag,
-				                    tagDescriptor.LocalStatus == HostStatus.AVAILABLE &&
-				                    tagDescriptor.ServerStatus != HostStatus.AVAILABLE,
-				                    tagDescriptor.LocalStatus == HostStatus.NOT_AVAILABLE &&
-				                    tagDescriptor.ServerStatus == HostStatus.AVAILABLE);
+									tagDescriptor.LocalStatus == HostStatus.AVAILABLE &&
+									tagDescriptor.ServerStatus != HostStatus.AVAILABLE,
+									tagDescriptor.LocalStatus == HostStatus.NOT_AVAILABLE &&
+									tagDescriptor.ServerStatus == HostStatus.AVAILABLE);
 			}
 		}
 

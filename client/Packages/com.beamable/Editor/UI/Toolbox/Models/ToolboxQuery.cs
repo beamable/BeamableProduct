@@ -1,7 +1,7 @@
+using Beamable.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Common;
 
 namespace Beamable.Editor.Toolbox.Models
 {
@@ -29,11 +29,14 @@ namespace Beamable.Editor.Toolbox.Models
 			};
 		}
 
-		public ToolboxQuery() { }
+		public ToolboxQuery()
+		{
+		}
 
 		public ToolboxQuery(ToolboxQuery other)
 		{
-			if (other == null) return;
+			if (other == null)
+				return;
 
 			TagConstraint = other.TagConstraint;
 			IdContainsConstraint = other.IdContainsConstraint;
@@ -45,30 +48,34 @@ namespace Beamable.Editor.Toolbox.Models
 		public bool Accepts(Widget widget)
 		{
 			return AcceptIdContains(widget.Name.ToLower()) && AcceptsTag(widget.Tags) &&
-			       AcceptsOrientation(widget.OrientationSupport);
+				   AcceptsOrientation(widget.OrientationSupport);
 		}
 
 		public bool AcceptsTag(WidgetTags tags)
 		{
-			if (!HasTagConstraint) return true;
+			if (!HasTagConstraint)
+				return true;
 			return tags.ContainsAllFlags(TagConstraint);
 		}
 
 		public bool AcceptsOrientation(WidgetOrientationSupport orientationSupport)
 		{
-			if (!HasOrientationConstraint) return true;
+			if (!HasOrientationConstraint)
+				return true;
 			return orientationSupport.ContainsAllFlags(OrientationConstraint);
 		}
 
 		public bool FilterIncludes(WidgetOrientationSupport orientationSupport)
 		{
-			if (!HasOrientationConstraint) return false;
+			if (!HasOrientationConstraint)
+				return false;
 			return OrientationConstraint.ContainsAnyFlag(orientationSupport);
 		}
 
 		public bool FilterIncludes(WidgetTags tags)
 		{
-			if (!HasTagConstraint) return false;
+			if (!HasTagConstraint)
+				return false;
 			return TagConstraint.ContainsAnyFlag(tags);
 		}
 
@@ -133,12 +140,13 @@ namespace Beamable.Editor.Toolbox.Models
 
 		private bool Equals(ToolboxQuery other)
 		{
-			if (other == null) return false;
+			if (other == null)
+				return false;
 			return other.HasOrientationConstraint == HasOrientationConstraint
-			       && other.OrientationConstraint == OrientationConstraint
-			       && other.IdContainsConstraint == IdContainsConstraint
-			       && other.HasTagConstraint == HasTagConstraint
-			       && other.TagConstraint == TagConstraint;
+				   && other.OrientationConstraint == OrientationConstraint
+				   && other.IdContainsConstraint == IdContainsConstraint
+				   && other.HasTagConstraint == HasTagConstraint
+				   && other.TagConstraint == TagConstraint;
 		}
 
 		public override bool Equals(object obj)

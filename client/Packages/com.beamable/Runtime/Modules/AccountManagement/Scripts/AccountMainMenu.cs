@@ -1,12 +1,12 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using Beamable.Coroutines;
 using Beamable.Platform.SDK;
 using Beamable.Platform.SDK.Auth;
 using Beamable.UI.Scripts;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -72,7 +72,8 @@ namespace Beamable.AccountManagement
 
 		public void PositionPagination()
 		{
-			if (!_promoObj.gameObject.activeInHierarchy) return;
+			if (!_promoObj.gameObject.activeInHierarchy)
+				return;
 			var promoPaginationTransform = _promoPagination.transform;
 			var promoPadding = 30;
 
@@ -92,7 +93,7 @@ namespace Beamable.AccountManagement
 
 			// reset position
 			promoPaginationTransform.localPosition = new Vector3(promoPaginationTransform.localPosition.x,
-			                                                     -textTransform.rect.height - promoPadding, 0);
+																 -textTransform.rect.height - promoPadding, 0);
 
 			// unparent, but keep position
 			promoPaginationTransform.SetParent(existingParent);
@@ -199,10 +200,10 @@ namespace Beamable.AccountManagement
 			_otherAccountsPromise = new Promise<DeviceUserArg>();
 			OnInitialize?.Invoke();
 			_allUsersPromise = Promise
-			                   .Sequence(new List<Promise<Unit>>
-			                   {
-				                   _mainAccountPromise.ToUnit(), _otherAccountsPromise.ToUnit()
-			                   }).ToUnit();
+							   .Sequence(new List<Promise<Unit>>
+							   {
+								   _mainAccountPromise.ToUnit(), _otherAccountsPromise.ToUnit()
+							   }).ToUnit();
 			var entireLoadingSession = new Promise<Unit>();
 			LoadingIndicator.Show(entireLoadingSession.ToLoadingArg());
 			_allUsersPromise.Then(_ =>
@@ -210,7 +211,7 @@ namespace Beamable.AccountManagement
 				var user = _mainAccountPromise.GetResult();
 				var data = _otherAccountsPromise.GetResult();
 				var mainAccountLoading = _accountObj.StartLoading(user, true, null);
-				var allAccountPromises = new List<Promise<AccountDisplayItem>> {mainAccountLoading};
+				var allAccountPromises = new List<Promise<AccountDisplayItem>> { mainAccountLoading };
 				foreach (var otherAccount in data.OtherUsers)
 				{
 					var accountDisplay = Instantiate(AccountDisplayPrefab, otherAccountsContainer);

@@ -1,9 +1,9 @@
 using Beamable.Api;
-using Beamable.Experimental.Api.Social;
+using Beamable.Experimental.Api.Calendars;
 using Beamable.Experimental.Api.Chat;
 using Beamable.Experimental.Api.Matchmaking;
 using Beamable.Experimental.Api.Sim;
-using Beamable.Experimental.Api.Calendars;
+using Beamable.Experimental.Api.Social;
 
 namespace Beamable.Experimental
 {

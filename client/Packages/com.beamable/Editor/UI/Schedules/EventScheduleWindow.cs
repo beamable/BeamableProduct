@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Beamable.Common.Content;
+﻿using Beamable.Common.Content;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Validation;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -54,7 +54,9 @@ namespace Beamable.Editor.Schedules
 		#endregion
 
 		public EventScheduleWindow() : base(
-			$"{BeamableComponentsConstants.SCHEDULES_PATH}/{nameof(EventScheduleWindow)}") { }
+			$"{BeamableComponentsConstants.SCHEDULES_PATH}/{nameof(EventScheduleWindow)}")
+		{
+		}
 
 		public override void Refresh()
 		{
@@ -118,22 +120,22 @@ namespace Beamable.Editor.Schedules
 		private void SetupModels()
 		{
 			EventDailyScheduleModel dailyModel = new EventDailyScheduleModel(_descriptionComponent, _startTimeComponent,
-			                                                                 _neverExpiresComponent,
-			                                                                 _activeToDateComponent,
-			                                                                 _activeToHourComponent,
-			                                                                 RefreshConfirmButton);
+																			 _neverExpiresComponent,
+																			 _activeToDateComponent,
+																			 _activeToHourComponent,
+																			 RefreshConfirmButton);
 
 			EventDaysScheduleModel daysModel = new EventDaysScheduleModel(_descriptionComponent, _startTimeComponent,
-			                                                              _daysPickerComponent, _neverExpiresComponent,
-			                                                              _activeToDateComponent,
-			                                                              _activeToHourComponent,
-			                                                              RefreshConfirmButton);
+																		  _daysPickerComponent, _neverExpiresComponent,
+																		  _activeToDateComponent,
+																		  _activeToHourComponent,
+																		  RefreshConfirmButton);
 
 			EventDatesScheduleModel datesModel = new EventDatesScheduleModel(_descriptionComponent, _startTimeComponent,
-			                                                                 _calendarComponent, _neverExpiresComponent,
-			                                                                 _activeToDateComponent,
-			                                                                 _activeToHourComponent,
-			                                                                 RefreshConfirmButton);
+																			 _calendarComponent, _neverExpiresComponent,
+																			 _activeToDateComponent,
+																			 _activeToHourComponent,
+																			 RefreshConfirmButton);
 
 			_models.Clear();
 			_models.Add(dailyModel);
@@ -197,7 +199,8 @@ namespace Beamable.Editor.Schedules
 
 		protected override void OnDestroy()
 		{
-			if (_neverExpiresComponent == null) return;
+			if (_neverExpiresComponent == null)
+				return;
 			_neverExpiresComponent.OnValueChanged -= OnExpirationChanged;
 		}
 
@@ -225,7 +228,8 @@ namespace Beamable.Editor.Schedules
 
 		private void RefreshSingleGroup(VisualElement ve, ScheduleWindowModel.WindowMode mode)
 		{
-			if (ve == null) return;
+			if (ve == null)
+				return;
 			ve.visible = _currentModel.Mode == mode;
 			ve.EnableInClassList("--positionHidden", !ve.visible);
 		}

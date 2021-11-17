@@ -19,7 +19,9 @@ namespace Beamable.Common.Inventory
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class VipLink : ContentLink<VipContent> { }
+	public class VipLink : ContentLink<VipContent>
+	{
+	}
 
 	/// <summary>
 	/// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
@@ -35,7 +37,9 @@ namespace Beamable.Common.Inventory
 	/// </summary>
 	[System.Serializable]
 	[Agnostic]
-	public class VipRef : ContentRef<VipContent> { }
+	public class VipRef : ContentRef<VipContent>
+	{
+	}
 
 	/// <summary>
 	/// This type defines a %Beamable %ContentObject subclass for a %Vip.

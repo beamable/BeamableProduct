@@ -1,6 +1,6 @@
-﻿using System;
-using Beamable.Editor.Toolbox.Components;
+﻿using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.UI.Buss;
+using System;
 
 namespace Beamable.Editor.Toolbox.Models
 {
@@ -13,7 +13,7 @@ namespace Beamable.Editor.Toolbox.Models
 
 		public override BeamableVisualElement CreateVisualElement()
 		{
-			return new WelcomeAnnouncementVisualElement() {WelcomeAnnouncementModel = this};
+			return new WelcomeAnnouncementVisualElement() { WelcomeAnnouncementModel = this };
 		}
 	}
 }

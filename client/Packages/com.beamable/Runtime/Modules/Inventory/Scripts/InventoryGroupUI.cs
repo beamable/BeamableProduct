@@ -22,7 +22,9 @@ namespace Beamable.Inventory.Scripts
 		}
 
 		// Update is called once per frame
-		void Update() { }
+		void Update()
+		{
+		}
 
 		public void Setup(InventoryGroup group)
 		{

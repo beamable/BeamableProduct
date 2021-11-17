@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Editor;
 using Beamable.Editor.Login.UI;
 using Beamable.Editor.Microservice.UI.Components;
@@ -9,8 +6,11 @@ using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
-using UnityEditor;
 using Beamable.Server.Editor.UI.Components;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEditor;
 using UnityEngine;
 // using ActionBarVisualElement = Beamable.Editor.Microservice.UI.Components.ActionBarVisualElement;
 // using MicroserviceBreadcrumbsVisualElement = Beamable.Editor.Microservice.UI.Components.MicroserviceBreadcrumbsVisualElement;
@@ -68,7 +68,7 @@ namespace Beamable.Editor.Microservice.UI
 				{
 					var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
 					_instance = GetWindow<MicroserviceWindow>(BeamableConstants.MICROSERVICES_MANAGER, false,
-					                                          inspector);
+															  inspector);
 					_instance.Show(true);
 				}
 
@@ -209,7 +209,7 @@ namespace Beamable.Editor.Microservice.UI
 		private void HideAllLoadingBars()
 		{
 			foreach (var microserviceVisualElement in _windowRoot.Q<MicroserviceContentVisualElement>()
-			                                                     .ServiceVisualElements)
+																 .ServiceVisualElements)
 			{
 				microserviceVisualElement.Q<LoadingBarElement>().Hidden = true;
 			}
@@ -271,7 +271,9 @@ namespace Beamable.Editor.Microservice.UI
 			}
 		}
 
-		public void OnBeforeSerialize() { }
+		public void OnBeforeSerialize()
+		{
+		}
 
 		public void OnAfterDeserialize()
 		{

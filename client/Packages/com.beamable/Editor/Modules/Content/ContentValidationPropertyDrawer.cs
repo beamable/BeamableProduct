@@ -1,11 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using Beamable.Content;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
@@ -66,9 +66,9 @@ namespace Beamable.Editor.Content
 			{
 				var leftBracketIndex = property.propertyPath.LastIndexOf('[');
 				if (leftBracketIndex > 0 &&
-				    int.TryParse(property.propertyPath.Substring(leftBracketIndex + 1,
-				                                                 (rightBracketIndex - leftBracketIndex) - 1),
-				                 out var index))
+					int.TryParse(property.propertyPath.Substring(leftBracketIndex + 1,
+																 (rightBracketIndex - leftBracketIndex) - 1),
+								 out var index))
 				{
 					arrayIndex = index;
 					return true;
@@ -91,7 +91,9 @@ namespace Beamable.Editor.Content
 			var parentValue = ContentRefPropertyDrawer.GetTargetParentObjectOfProperty(property);
 			var value = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property);
 			//
-			if (property.propertyPath.Contains("description")) { }
+			if (property.propertyPath.Contains("description"))
+			{
+			}
 			//
 			//         if (property.propertyPath.Contains("title"))
 			//         {
@@ -149,7 +151,7 @@ namespace Beamable.Editor.Content
 					var content = new GUIContent($"  {ex.FriendlyMessage}");
 					EditorGUI.LabelField(
 						new Rect(position.x, position.y + position.height + EditorGUIUtility.singleLineHeight * (i - 1),
-						         position.width, EditorGUIUtility.singleLineHeight), content, _lblStyle);
+								 position.width, EditorGUIUtility.singleLineHeight), content, _lblStyle);
 					//EditorGUILayout.LabelField(content, _lblStyle);
 
 					//maxY += _lblStyle.CalcSize(content).y;
@@ -183,7 +185,7 @@ namespace Beamable.Editor.Content
 			var t2 = Type.GetType(asmName.Replace("UnityEditor.PropertyDrawer", "UnityEditor.EditorAssemblies"));
 			var subClassMethod = t2.GetMethod("SubclassesOf", BindingFlags.Static | BindingFlags.NonPublic);
 
-			var propertyDrawerTypesObj = subClassMethod?.Invoke(null, new object[] {typeof(PropertyDrawer)});
+			var propertyDrawerTypesObj = subClassMethod?.Invoke(null, new object[] { typeof(PropertyDrawer) });
 			_propertyDrawerTypes = propertyDrawerTypesObj as Type[];
 
 			var t = typeof(EditorGUI);
@@ -262,9 +264,9 @@ namespace Beamable.Editor.Content
 				else
 				{
 					type = type.GetField(slices[i],
-					                     BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy |
-					                     BindingFlags.Instance)
-					           .FieldType;
+										 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy |
+										 BindingFlags.Instance)
+							   .FieldType;
 				}
 			}
 
@@ -278,13 +280,14 @@ namespace Beamable.Editor.Content
 				var attributes = drawerType.GetCustomAttributes<CustomPropertyDrawer>();
 				var attribute = attributes.FirstOrDefault();
 				//var attribute = drawerType.GetCustomAttribute<CustomPropertyDrawer>();
-				if (attribute == null) return false;
+				if (attribute == null)
+					return false;
 
 				var typeField =
 					typeof(CustomPropertyDrawer).GetField("m_Type", BindingFlags.Instance | BindingFlags.NonPublic);
 				var useChildrenField =
 					typeof(CustomPropertyDrawer).GetField("m_UseForChildren",
-					                                      BindingFlags.Instance | BindingFlags.NonPublic);
+														  BindingFlags.Instance | BindingFlags.NonPublic);
 				var drawerTargetType = (Type)typeField?.GetValue(attribute);
 				var drawerChildren = (bool)useChildrenField?.GetValue(attribute);
 

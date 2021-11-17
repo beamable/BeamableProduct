@@ -1,6 +1,6 @@
-using System;
 using Beamable.AccountManagement;
 using Beamable.Theme;
+using System;
 using TMPro;
 using UnityEngine;
 
@@ -77,8 +77,10 @@ namespace Beamable.UI.Scripts
 
 		void SetStyle(bool valid)
 		{
-			if (ValidStyle == null) return;
-			if (ValidStyle.StyledImages == null) return;
+			if (ValidStyle == null)
+				return;
+			if (ValidStyle.StyledImages == null)
+				return;
 
 			foreach (var image in ValidStyle.StyledImages.Components)
 			{

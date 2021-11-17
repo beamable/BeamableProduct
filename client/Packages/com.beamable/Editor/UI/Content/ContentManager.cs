@@ -1,19 +1,19 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
-using Beamable.Editor.Content.Models;
-using Beamable.Platform.SDK;
 using Beamable.Content;
 using Beamable.Editor;
 using Beamable.Editor.Content;
+using Beamable.Editor.Content.Models;
 using Beamable.Editor.Modules.Account;
+using Beamable.Platform.SDK;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
-using UnityEditor;
 
 namespace Beamable.Editor.Content
 {
@@ -109,14 +109,14 @@ namespace Beamable.Editor.Content
 				var ctx = de.ContentIO.GetValidationContext();
 				ContentObject.ValidationContext = ctx;
 				var promise = contentValidator.Validate(ctx, Model.TotalContentCount, Model.GetAllContents(),
-				                                        progressHandler, errorHandler);
+														progressHandler, errorHandler);
 				return promise;
 			});
 		}
 
 		public Promise<Unit> PublishContent(ContentPublishSet publishSet,
-		                                    HandleContentProgress progressHandler,
-		                                    HandleDownloadFinished finishedHandler)
+											HandleContentProgress progressHandler,
+											HandleDownloadFinished finishedHandler)
 		{
 			return EditorAPI.Instance.FlatMap(de =>
 			{
@@ -135,8 +135,8 @@ namespace Beamable.Editor.Content
 		}
 
 		public Promise<Unit> DownloadContent(DownloadSummary summary,
-		                                     HandleContentProgress progressHandler,
-		                                     HandleDownloadFinished finishedHandler)
+											 HandleContentProgress progressHandler,
+											 HandleDownloadFinished finishedHandler)
 		{
 			return EditorAPI.Instance.FlatMap(de =>
 			{
@@ -196,7 +196,7 @@ namespace Beamable.Editor.Content
 					var localManifest = de.ContentIO.BuildLocalManifest();
 
 					return new DownloadSummary(de.ContentIO, localManifest, serverManifest,
-					                           filter.Select(x => x.Id).ToArray());
+											   filter.Select(x => x.Id).ToArray());
 				});
 			});
 		}

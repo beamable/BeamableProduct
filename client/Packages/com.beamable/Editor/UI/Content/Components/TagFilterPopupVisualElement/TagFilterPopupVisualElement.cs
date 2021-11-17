@@ -1,8 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Beamable.Editor.Content.Models;
+﻿using Beamable.Editor.Content.Models;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -47,7 +47,8 @@ namespace Beamable.Editor.Content.Components
 			listRoot.Clear();
 			foreach (var tagDescriptor in allTags)
 			{
-				if (!string.IsNullOrEmpty(filter) && !tagDescriptor.Tag.ToLower().Contains(filter)) continue;
+				if (!string.IsNullOrEmpty(filter) && !tagDescriptor.Tag.ToLower().Contains(filter))
+					continue;
 
 				var shouldBeChecked = Model.Filter?.TagConstraints?.Contains(tagDescriptor.Tag) ?? false;
 				var row1 = new FilterRowVisualElement();

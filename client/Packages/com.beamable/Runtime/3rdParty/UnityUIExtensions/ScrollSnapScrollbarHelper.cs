@@ -9,7 +9,7 @@ using UnityEngine.EventSystems;
 namespace Beamable.UnityEngineClone.UI.Extensions
 {
 	public class ScrollSnapScrollbarHelper : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IBeginDragHandler,
-	                                         IEndDragHandler, IDragHandler
+											 IEndDragHandler, IDragHandler
 	{
 		internal IScrollSnap ss;
 

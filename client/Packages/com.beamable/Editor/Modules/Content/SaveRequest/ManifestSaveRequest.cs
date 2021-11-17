@@ -1,6 +1,6 @@
-using System.Collections.Generic;
 using Beamable.Serialization;
 using JetBrains.Annotations;
+using System.Collections.Generic;
 
 namespace Beamable.Editor.Content.SaveRequest
 {

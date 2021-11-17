@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using Beamable.AccountManagement;
 using Beamable.Coroutines;
 using Beamable.Service;
-using Beamable.AccountManagement;
 using Beamable.UI.Scripts;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -83,7 +83,8 @@ public class LoadingIndicator : MonoBehaviour
 
 	private void Start()
 	{
-		if (_showEverRequested) return;
+		if (_showEverRequested)
+			return;
 
 		if (StartOff)
 		{

@@ -45,12 +45,12 @@ namespace Beamable.UI.Buss.Properties
 
 		public static TOptional CreateInstance<TOptional>(T value) where TOptional : Optional<T>, new()
 		{
-			return new TOptional {Value = value, HasValue = true};
+			return new TOptional { Value = value, HasValue = true };
 		}
 
 		public static TOptional CreateInstance<TOptional>() where TOptional : Optional<T>, new()
 		{
-			return new TOptional {HasValue = false};
+			return new TOptional { HasValue = false };
 		}
 	}
 
@@ -105,28 +105,44 @@ namespace Beamable.UI.Buss.Properties
 	}
 
 	[System.Serializable]
-	public class OptionalColor : Optional<Color> { }
+	public class OptionalColor : Optional<Color>
+	{
+	}
 
 	[System.Serializable]
-	public class OptionalTexture : Optional<Texture2D> { }
+	public class OptionalTexture : Optional<Texture2D>
+	{
+	}
 
 	[System.Serializable]
-	public class OptionalSprite : Optional<Sprite> { }
+	public class OptionalSprite : Optional<Sprite>
+	{
+	}
 
 	[System.Serializable]
-	public class OptionalNumber : Optional<float> { }
+	public class OptionalNumber : Optional<float>
+	{
+	}
 
 	[System.Serializable]
-	public class OptionalVector2 : Optional<Vector2> { }
+	public class OptionalVector2 : Optional<Vector2>
+	{
+	}
 
 	[System.Serializable]
-	public class OptionalFontAsset : Optional<TMPro.TMP_FontAsset> { }
+	public class OptionalFontAsset : Optional<TMPro.TMP_FontAsset>
+	{
+	}
 
 	[System.Serializable]
-	public class OptionalMaterial : Optional<Material> { }
+	public class OptionalMaterial : Optional<Material>
+	{
+	}
 
 	[System.Serializable]
-	public class OptionalFontStyle : Optional<TMPro.FontStyles> { }
+	public class OptionalFontStyle : Optional<TMPro.FontStyles>
+	{
+	}
 
 	// NOT SUPPORTED ON WINDOWS
 	//   [System.Serializable]

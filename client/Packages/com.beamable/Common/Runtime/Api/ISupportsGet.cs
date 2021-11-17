@@ -46,9 +46,9 @@ namespace Beamable.Common.Api
 	public class BeamableGetApiResource<ScopedRsp>
 	{
 		public Promise<ScopedRsp> RequestData(IBeamableRequester requester,
-		                                      IUserContext ctx,
-		                                      string serviceName,
-		                                      string scope)
+											  IUserContext ctx,
+											  string serviceName,
+											  string scope)
 		{
 			return RequestData(requester, CreateRefreshUrl(ctx, serviceName, scope));
 		}

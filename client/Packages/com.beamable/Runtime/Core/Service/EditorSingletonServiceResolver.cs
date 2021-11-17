@@ -33,5 +33,7 @@
 	}
 
 	public class EditorSingletonServiceResolver<T> : EditorSingletonServiceResolver<T, T>
-		where T : class, new() { }
+		where T : class, new()
+	{
+	}
 }

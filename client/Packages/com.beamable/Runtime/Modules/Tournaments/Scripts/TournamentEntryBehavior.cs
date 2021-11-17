@@ -1,13 +1,13 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using Beamable.AccountManagement;
 using Beamable.Common;
-using Beamable.AccountManagement;
-using Beamable.Stats;
-using Beamable.UI.Scripts;
 using Beamable.Common.Api.Tournaments;
 using Beamable.Common.Inventory;
 using Beamable.Common.Shop;
 using Beamable.Shop;
+using Beamable.Stats;
+using Beamable.UI.Scripts;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using VirtualList;
@@ -115,7 +115,8 @@ namespace Beamable.Tournaments
 				Destroy(StageContainer.GetChild(i).gameObject);
 			}
 
-			if (!viewData.Master.ShouldShowStageGain) return;
+			if (!viewData.Master.ShouldShowStageGain)
+				return;
 
 			var stageGainDef = viewData.Master.StagePrefabs.FirstOrDefault(x => x.StageGain == viewData.Data.StageGain);
 
@@ -133,7 +134,8 @@ namespace Beamable.Tournaments
 				Destroy(RewardContainer.GetChild(i).gameObject);
 			}
 
-			if (!viewData.Master.ShouldShowRewards) return;
+			if (!viewData.Master.ShouldShowRewards)
+				return;
 
 			_rewardEntries.Clear();
 			foreach (var rewardData in viewData.Data.RewardCurrencies)
@@ -169,7 +171,8 @@ namespace Beamable.Tournaments
 	{
 		public static TournamentEntryData ToViewData(this TournamentEntry self)
 		{
-			if (self == null) return null;
+			if (self == null)
+				return null;
 			return new TournamentEntryData
 			{
 				Dbid = self.playerId,
@@ -178,16 +181,17 @@ namespace Beamable.Tournaments
 				StageGain = self.stageChange,
 				RewardCurrencies =
 					self.currencyRewards
-					    ?.Select(x => new OfferObtainCurrency
-					    {
-						    amount = x.amount, symbol = new CurrencyRef(x.symbol)
-					    }).ToList() ?? new List<OfferObtainCurrency>()
+						?.Select(x => new OfferObtainCurrency
+						{
+							amount = x.amount,
+							symbol = new CurrencyRef(x.symbol)
+						}).ToList() ?? new List<OfferObtainCurrency>()
 			};
 		}
 
 		public static TournamentEntryData ToViewData(this TournamentChampionEntry self)
 		{
-			return new TournamentEntryData {Dbid = self.playerId, Score = self.score, Cycle = self.cyclesPrior};
+			return new TournamentEntryData { Dbid = self.playerId, Score = self.score, Cycle = self.cyclesPrior };
 		}
 
 		public static List<TournamentEntryData> ToViewData(this List<TournamentEntry> self)

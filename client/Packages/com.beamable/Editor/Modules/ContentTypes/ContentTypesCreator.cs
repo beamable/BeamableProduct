@@ -16,7 +16,7 @@ namespace Beamable.Editor.Modules.ContentTypes
 		}
 
 		[MenuItem("CurrencyContent", menuItem = "Assets/Create/Beamable/Content Types/Currency Content",
-		          priority = 200)]
+				  priority = 200)]
 		public static void CreateCurrencyContent()
 		{
 			CreateFile("CurrencyContent");

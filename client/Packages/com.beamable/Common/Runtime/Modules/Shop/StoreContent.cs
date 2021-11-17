@@ -1,7 +1,7 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.Common.Shop
@@ -38,7 +38,7 @@ namespace Beamable.Common.Shop
 		/// The default value is 20. If you need to show more than 20 listings at a time, change this field.
 		/// </summary>
 		[Tooltip(ContentObject.TooltipOptional0 +
-		         "The default value is 20. If you need to show more than 20 listings at a time, change this field. ")]
+				 "The default value is 20. If you need to show more than 20 listings at a time, change this field. ")]
 		[MustBePositive]
 		public OptionalInt activeListingLimit;
 	}

@@ -1,20 +1,24 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
-using Beamable.UI.Scripts;
 using Beamable.Platform.SDK;
 using Beamable.Platform.SDK.Auth;
 using Beamable.Service;
+using Beamable.UI.Scripts;
+using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
 namespace Beamable.Stats
 {
 	[System.Serializable]
-	public class StatUpdateEvent : UnityEngine.Events.UnityEvent<string> { }
+	public class StatUpdateEvent : UnityEngine.Events.UnityEvent<string>
+	{
+	}
 
-	public class StatUserChangeException : Exception { }
+	public class StatUserChangeException : Exception
+	{
+	}
 
 	public class StatBehaviour : MonoBehaviour
 	{

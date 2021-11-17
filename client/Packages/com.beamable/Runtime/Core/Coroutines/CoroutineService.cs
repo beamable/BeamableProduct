@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Beamable.Service;
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using Beamable.Service;
 using UnityEngine;
 
 namespace Beamable.Coroutines

@@ -12,29 +12,29 @@ namespace Beamable.UI.SDF
 		/// Packs SDFImage parameters in vertex data and adds quad to the vertex helper;
 		/// </summary>
 		public static void AddRect(this VertexHelper vh,
-		                           Rect position,
-		                           Rect uvs,
-		                           Rect coords,
-		                           Color32 vertexColor,
-		                           Vector2 size,
-		                           float threshold,
-		                           Vector2 uvToCoordsFactor,
-		                           float rounding,
-		                           float outlineWidth,
-		                           Color outlineColor,
-		                           Color shadowColor,
-		                           float shadowThreshold,
-		                           Vector2 shadowOffset)
+								   Rect position,
+								   Rect uvs,
+								   Rect coords,
+								   Color32 vertexColor,
+								   Vector2 size,
+								   float threshold,
+								   Vector2 uvToCoordsFactor,
+								   float rounding,
+								   float outlineWidth,
+								   Color outlineColor,
+								   Color shadowColor,
+								   float shadowThreshold,
+								   Vector2 shadowOffset)
 		{
 			var uv2 = new Vector2(outlineWidth,
-			                      PackVector3ToFloat(outlineColor.r, outlineColor.g, outlineColor.b));
+								  PackVector3ToFloat(outlineColor.r, outlineColor.g, outlineColor.b));
 			var normal = new Vector3(
 				threshold,
 				uvToCoordsFactor.x,
 				uvToCoordsFactor.y);
 			var tangent = new Vector4(shadowOffset.x, shadowOffset.y,
-			                          PackVector3ToFloat(shadowThreshold, shadowColor.a, 0),
-			                          PackVector3ToFloat(shadowColor.r, shadowColor.g, shadowColor.b));
+									  PackVector3ToFloat(shadowThreshold, shadowColor.a, 0),
+									  PackVector3ToFloat(shadowColor.r, shadowColor.g, shadowColor.b));
 
 			AddRect(vh, position, rounding, uvs, coords, vertexColor, size, uv2, normal, tangent);
 		}
@@ -43,15 +43,15 @@ namespace Beamable.UI.SDF
 		/// Adds quad to the vertex helper.
 		/// </summary>
 		private static void AddRect(this VertexHelper vh,
-		                            Rect position,
-		                            float z,
-		                            Rect uvs,
-		                            Rect coords,
-		                            Color32 vertexColor,
-		                            Vector2 uv1,
-		                            Vector2 uv2,
-		                            Vector3 normal,
-		                            Vector4 tangent)
+									Rect position,
+									float z,
+									Rect uvs,
+									Rect coords,
+									Color32 vertexColor,
+									Vector2 uv1,
+									Vector2 uv2,
+									Vector3 normal,
+									Vector4 tangent)
 		{
 			var startVertexIndex = vh.currentVertCount;
 			vh.AddVert(

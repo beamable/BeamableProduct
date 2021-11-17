@@ -1,7 +1,7 @@
-using System;
-using System.IO;
 using Beamable.Common;
 using Beamable.Platform.SDK;
+using System;
+using System.IO;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
@@ -32,7 +32,7 @@ namespace Beamable.Editor
 			AssetDatabase.importPackageCompleted += ImportCallback;
 
 			AssetDatabase.ImportPackage(packageFullPath + "/Package Resources/TMP Essential Resources.unitypackage",
-			                            false);
+										false);
 			return promise;
 		}
 
@@ -64,7 +64,8 @@ namespace Beamable.Editor
 				string[] matchingPaths =
 					Directory.GetDirectories(packagePath, "TextMesh Pro", SearchOption.AllDirectories);
 				string path = ValidateLocation(matchingPaths, packagePath);
-				if (path != null) return packagePath + path;
+				if (path != null)
+					return packagePath + path;
 			}
 
 			return null;

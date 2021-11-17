@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using Beamable.Common.Content;
+﻿using Beamable.Common.Content;
 using Beamable.Editor.UI.Buss;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -15,10 +15,14 @@ namespace Beamable.Editor.UI.Components
 {
 	public class CalendarVisualElement : BeamableVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<CalendarVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<CalendarVisualElement, UxmlTraits>
+		{
+		}
 
 		public CalendarVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(CalendarVisualElement)}/{nameof(CalendarVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(CalendarVisualElement)}/{nameof(CalendarVisualElement)}")
+		{
+		}
 
 		public Action<List<string>> OnValueChanged;
 

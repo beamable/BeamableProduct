@@ -1,6 +1,6 @@
-using UnityEditor;
-using System.IO;
 using Beamable.Theme;
+using System.IO;
+using UnityEditor;
 using UnityEngine;
 
 namespace Beamable.Editor.Style
@@ -17,7 +17,8 @@ namespace Beamable.Editor.Style
 
 		public override void OnInspectorGUI()
 		{
-			if (_configuration == null) return;
+			if (_configuration == null)
+				return;
 
 			string[] guids = AssetDatabase.FindAssets($"t:{typeof(ThemeObject)}");
 			string[] names = new string[guids.Length + 1];
@@ -53,14 +54,14 @@ namespace Beamable.Editor.Style
 				if (outputIndex == guids.Length)
 				{
 					string path = EditorUtility.SaveFilePanelInProject("Create Theme", "Custom", "asset",
-					                                                   "Please enter a file name for your new theme");
+																	   "Please enter a file name for your new theme");
 					var themeName = Path.GetFileNameWithoutExtension(path);
 					var newTheme = ScriptableObject.CreateInstance<ThemeObject>();
 					newTheme.name = themeName;
 					newTheme.Parent = ThemeConfiguration.Instance.Style;
 					AssetDatabase.CreateAsset(newTheme, path);
 					ThemeConfiguration.Instance.Style = newTheme;
-					AssetDatabase.ForceReserializeAssets(new[] {path});
+					AssetDatabase.ForceReserializeAssets(new[] { path });
 				}
 				else
 				{

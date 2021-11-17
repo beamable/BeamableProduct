@@ -4,7 +4,9 @@ using MongoDB.Driver;
 namespace Beamable.Server
 {
 	[StorageObject("XXXX")]
-	public class XXXX : MongoStorageObject { }
+	public class XXXX : MongoStorageObject
+	{
+	}
 
 	public static class XXXXExtension
 	{

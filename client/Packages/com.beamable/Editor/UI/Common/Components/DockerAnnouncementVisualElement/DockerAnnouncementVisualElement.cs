@@ -21,7 +21,9 @@ namespace Beamable.Editor.Toolbox.Components
 		}
 
 		public DockerAnnouncementVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(DockerAnnouncementVisualElement)}/{nameof(DockerAnnouncementVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(DockerAnnouncementVisualElement)}/{nameof(DockerAnnouncementVisualElement)}")
+		{
+		}
 
 		public override void Refresh()
 		{

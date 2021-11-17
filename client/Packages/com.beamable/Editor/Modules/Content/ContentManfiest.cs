@@ -1,9 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Common.Content;
 using Beamable.Editor.Content.SaveRequest;
 using Beamable.Serialization;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Beamable.Editor.Content
 {
@@ -55,8 +55,8 @@ namespace Beamable.Editor.Content
 			_allReferences = source.references;
 			_checksum = source.checksum;
 			_lookup = source.references
-			                .Where(r => r.visibility.Equals("public"))
-			                .ToDictionary(r => r.id);
+							.Where(r => r.visibility.Equals("public"))
+							.ToDictionary(r => r.id);
 		}
 
 		public ContentManifestReference Get(string id)
@@ -103,7 +103,9 @@ namespace Beamable.Editor.Content
 
 			return new ManifestDifference()
 			{
-				Additions = additions, Modifications = modifications, Deletions = deletions
+				Additions = additions,
+				Modifications = modifications,
+				Deletions = deletions
 			};
 		}
 	}

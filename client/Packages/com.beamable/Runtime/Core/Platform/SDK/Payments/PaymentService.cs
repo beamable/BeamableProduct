@@ -1,11 +1,11 @@
-using UnityEngine;
-using System;
-using System.Collections.Generic;
+using Beamable.Api.Inventory;
 using Beamable.Common;
 using Beamable.Common.Api;
-using Beamable.Api.Inventory;
 using Beamable.Common.Api.Inventory;
 using Beamable.Service;
+using System;
+using System.Collections.Generic;
+using UnityEngine;
 using CometClientData = Beamable.Platform.SDK.CometClientData;
 
 namespace Beamable.Api.Payments
@@ -59,7 +59,7 @@ namespace Beamable.Api.Payments
 #elif USE_STEAMWORKS
                     return "steam";
 #else
-                    return "bogus";
+					return "bogus";
 #endif
 				}
 			}
@@ -144,10 +144,10 @@ namespace Beamable.Api.Payments
 				$"/basic/payments/coupon/purchase/begin",
 				new BeginPurchaseRequest(purchaseId)
 			).FlatMap(beginRsp => _requester.Request<EmptyResponse>(
-				          Method.POST,
-				          $"/basic/payments/coupon/purchase/complete",
-				          new CompleteTransactionRequest(beginRsp.txid)
-			          ).Map(completeRsp => beginRsp)
+						  Method.POST,
+						  $"/basic/payments/coupon/purchase/complete",
+						  new CompleteTransactionRequest(beginRsp.txid)
+					  ).Map(completeRsp => beginRsp)
 			);
 		}
 
@@ -235,13 +235,13 @@ namespace Beamable.Api.Payments
 		public List<ObtainItem> obtainItems;
 
 		public TrackPurchaseRequest(string purchaseId,
-		                            string skuName,
-		                            string skuProductId,
-		                            string store,
-		                            double priceInLocalCurrency,
-		                            string isoCurrencySymbol,
-		                            List<ObtainCurrency> obtainCurrency = null,
-		                            List<ObtainItem> obtainItems = null)
+									string skuName,
+									string skuProductId,
+									string store,
+									double priceInLocalCurrency,
+									string isoCurrencySymbol,
+									List<ObtainCurrency> obtainCurrency = null,
+									List<ObtainItem> obtainItems = null)
 		{
 			this.purchaseId = purchaseId;
 			this.skuName = skuName;

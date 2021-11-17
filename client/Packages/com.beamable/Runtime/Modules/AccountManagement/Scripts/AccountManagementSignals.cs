@@ -1,24 +1,28 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using Beamable.Api;
+﻿using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
+using Beamable.Coroutines;
 //using Beamable.Common.Api.Auth;
 using Beamable.Signals;
 using Beamable.UI.Scripts;
-using Beamable.Coroutines;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.AccountManagement
 {
 	[System.Serializable]
-	public class ToggleEvent : DeSignal<bool> { }
+	public class ToggleEvent : DeSignal<bool>
+	{
+	}
 
 	[System.Serializable]
-	public class EmailEvent : DeSignal<string> { }
+	public class EmailEvent : DeSignal<string>
+	{
+	}
 
 	[System.Serializable]
 	public class ErrorEvent : DeSignal<string>
@@ -29,7 +33,9 @@ namespace Beamable.AccountManagement
 	}
 
 	[System.Serializable]
-	public class LoadingEvent : DeSignal<LoadingArg> { }
+	public class LoadingEvent : DeSignal<LoadingArg>
+	{
+	}
 
 	[System.Serializable]
 	public class LoadingArg
@@ -44,7 +50,9 @@ namespace Beamable.AccountManagement
 			Critical = critical;
 		}
 
-		public LoadingArg() { }
+		public LoadingArg()
+		{
+		}
 
 		public void Complete()
 		{
@@ -55,8 +63,8 @@ namespace Beamable.AccountManagement
 	public static class LoadingArgPromiseExtensions
 	{
 		public static LoadingArg ToLoadingArg<T>(this Promise<T> self,
-		                                         string message = "loading",
-		                                         bool critical = false)
+												 string message = "loading",
+												 bool critical = false)
 		{
 			var arg = new LoadingArg(message, critical);
 			self.Then(x => arg.Complete());
@@ -66,10 +74,14 @@ namespace Beamable.AccountManagement
 	}
 
 	[System.Serializable]
-	public class UserEvent : DeSignal<User> { }
+	public class UserEvent : DeSignal<User>
+	{
+	}
 
 	[System.Serializable]
-	public class UsersEvent : DeSignal<DeviceUserArg> { }
+	public class UsersEvent : DeSignal<DeviceUserArg>
+	{
+	}
 
 	[System.Serializable]
 	public class ThirdPartyLoginPromise : Promise<ThirdPartyLoginResponse>
@@ -90,7 +102,9 @@ namespace Beamable.AccountManagement
 		public string AuthToken;
 		public readonly bool Cancelled;
 
-		public ThirdPartyLoginResponse() { }
+		public ThirdPartyLoginResponse()
+		{
+		}
 
 		public ThirdPartyLoginResponse(string authToken, bool cancelled = false)
 		{
@@ -102,7 +116,9 @@ namespace Beamable.AccountManagement
 	}
 
 	[System.Serializable]
-	public class ThirdPartyLoginPromiseEvent : DeSignal<ThirdPartyLoginPromise> { }
+	public class ThirdPartyLoginPromiseEvent : DeSignal<ThirdPartyLoginPromise>
+	{
+	}
 
 	[System.Serializable]
 	public class DeviceUserArg
@@ -127,7 +143,8 @@ namespace Beamable.AccountManagement
 		public EmailEvent EmailIsRegistered;
 		public EmailEvent EmailIsInvalid;
 
-		[Space(10f)] [Header("Forgot Password Events")]
+		[Space(10f)]
+		[Header("Forgot Password Events")]
 		public EmailEvent ForgotPasswordEmailSent;
 
 		[Space(10f)]
@@ -180,7 +197,8 @@ namespace Beamable.AccountManagement
 
 		public void ToggleAccountManagement(bool desiredState)
 		{
-			if (desiredState == ToggleState) return;
+			if (desiredState == ToggleState)
+				return;
 
 			_toggleState = desiredState;
 			Broadcast(_toggleState, s => s.OnToggleAccountManagement);
@@ -203,11 +221,11 @@ namespace Beamable.AccountManagement
 				return de.GetDeviceUsers().Map(userBundles =>
 				{
 					var otherUserBundles = userBundles
-					                       .Where(userBundle => userBundle.User.id != activeUser.id)
-					                       .ToList();
+										   .Where(userBundle => userBundle.User.id != activeUser.id)
+										   .ToList();
 					otherUserBundles.Sort((a, b) => a.User.id.CompareTo(b.User.id));
 
-					var deviceUserArg = new DeviceUserArg {ActiveUser = activeUser, OtherUsers = otherUserBundles};
+					var deviceUserArg = new DeviceUserArg { ActiveUser = activeUser, OtherUsers = otherUserBundles };
 					Broadcast(deviceUserArg, s => s.DeviceUsersAvailable);
 					return deviceUserArg;
 				});
@@ -355,34 +373,34 @@ namespace Beamable.AccountManagement
 					var token = thirdPartyResponse.AuthToken;
 
 					return de.AuthService.IsThirdPartyAvailable(thirdParty, token)
-					         .FlatMap(available =>
-					         {
-						         var userHasCredentials = de.User.HasThirdPartyAssociation(thirdParty);
+							 .FlatMap(available =>
+							 {
+								 var userHasCredentials = de.User.HasThirdPartyAssociation(thirdParty);
 
-						         var shouldSwitchUsers = !available;
-						         var shouldCreateUser = available && userHasCredentials;
-						         var shouldAttachToCurrentUser = available && !userHasCredentials;
+								 var shouldSwitchUsers = !available;
+								 var shouldCreateUser = available && userHasCredentials;
+								 var shouldAttachToCurrentUser = available && !userHasCredentials;
 
-						         if (shouldSwitchUsers)
-						         {
-							         return GetAccountWithCredentials(de, thirdParty, token)
-								         .Then(OfferSwitch);
-						         }
+								 if (shouldSwitchUsers)
+								 {
+									 return GetAccountWithCredentials(de, thirdParty, token)
+										 .Then(OfferSwitch);
+								 }
 
-						         if (shouldCreateUser)
-						         {
-							         return LoginToNewUser(de)
-								         .FlatMap(_ => AttachThirdPartyToCurrentUser(de, thirdParty, token));
-						         }
+								 if (shouldCreateUser)
+								 {
+									 return LoginToNewUser(de)
+										 .FlatMap(_ => AttachThirdPartyToCurrentUser(de, thirdParty, token));
+								 }
 
-						         if (shouldAttachToCurrentUser)
-						         {
-							         return AttachThirdPartyToCurrentUser(de, thirdParty, token);
-						         }
+								 if (shouldAttachToCurrentUser)
+								 {
+									 return AttachThirdPartyToCurrentUser(de, thirdParty, token);
+								 }
 
-						         throw new Exception(
-							         $"unrecognized third party state. thirdparty=[{thirdParty}] available=[{available}] userHasCredentials=[{userHasCredentials}]");
-					         });
+								 throw new Exception(
+									 $"unrecognized third party state. thirdparty=[{thirdParty}] available=[{available}] userHasCredentials=[{userHasCredentials}]");
+							 });
 				});
 			})).Error(HandleError);
 			DeferBroadcast(promise, s => s.ThirdPartyLoginAttempted);
@@ -504,13 +522,13 @@ namespace Beamable.AccountManagement
 		private Promise<User> GetAccountWithCredentials(IBeamableAPI de, string email, string password)
 		{
 			return de.AuthService.Login(email, password, false)
-			         .FlatMap(token => SetPendingUser(de, token));
+					 .FlatMap(token => SetPendingUser(de, token));
 		}
 
 		private Promise<User> GetAccountWithCredentials(IBeamableAPI de, AuthThirdParty thirdParty, string accessToken)
 		{
 			return de.AuthService.LoginThirdParty(thirdParty, accessToken, false)
-			         .FlatMap(token => SetPendingUser(de, token));
+					 .FlatMap(token => SetPendingUser(de, token));
 		}
 
 		private Promise<User> SetPendingUser(IBeamableAPI de, TokenResponse token)
@@ -525,22 +543,22 @@ namespace Beamable.AccountManagement
 		private Promise<Unit> LoginToNewUser(IBeamableAPI de)
 		{
 			return WithCriticalLoading("New Account...", de.AuthService.CreateUser()
-			                                               .FlatMap(de.ApplyToken));
+														   .FlatMap(de.ApplyToken));
 		}
 
 		private Promise<User> AttachEmailToCurrentUser(IBeamableAPI de, string email, string password)
 		{
 			return WithCriticalLoading("Loading...", de.AuthService.RegisterDBCredentials(email, password)
-			                                           .Then(de.UpdateUserData));
+													   .Then(de.UpdateUserData));
 		}
 
 		private Promise<User> AttachThirdPartyToCurrentUser(IBeamableAPI de,
-		                                                    AuthThirdParty thirdParty,
-		                                                    string accessToken)
+															AuthThirdParty thirdParty,
+															string accessToken)
 		{
 			return WithCriticalLoading("Loading...",
-			                           de.AuthService.RegisterThirdPartyCredentials(thirdParty, accessToken)
-			                             .Then(de.UpdateUserData));
+									   de.AuthService.RegisterThirdPartyCredentials(thirdParty, accessToken)
+										 .Then(de.UpdateUserData));
 		}
 
 		private Promise<User> GetExistingAccount(IBeamableAPI de, UserBundle bundle)
@@ -579,7 +597,7 @@ namespace Beamable.AccountManagement
 		private Promise<bool> IsEmailRegistered(string email)
 		{
 			return API.Instance.FlatMap(de => de.AuthService.IsEmailAvailable(email)
-			                                    .Map(available => !available));
+												.Map(available => !available));
 		}
 
 		public void DeferBroadcast<TArg>(TArg arg, Func<AccountManagementSignals, DeSignal<TArg>> getter)

@@ -10,13 +10,14 @@ namespace Beamable.Editor
 		public const string DEFAULT_DELIMITER = ";";
 
 		public static bool TryGetValue<TValue>(this EditorPrefItemSet<KeyValuePair<string, TValue>> self,
-		                                       string key,
-		                                       out TValue value)
+											   string key,
+											   out TValue value)
 		{
 			value = default;
 
 			var existing = self.FirstOrDefault(kvp => string.Equals(kvp.Key, key));
-			if (string.IsNullOrEmpty(existing.Key)) return false;
+			if (string.IsNullOrEmpty(existing.Key))
+				return false;
 
 			value = existing.Value;
 			return true;
@@ -36,12 +37,12 @@ namespace Beamable.Editor
 			GetItems<string>(key, delimiter, x => x);
 
 		public static EditorPrefItemSet<KeyValuePair<string, string>> GetMap(string key,
-		                                                                     string elementDelimiter = "|",
-		                                                                     string delimiter = DEFAULT_DELIMITER)
+																			 string elementDelimiter = "|",
+																			 string delimiter = DEFAULT_DELIMITER)
 		{
 			KeyValuePair<string, string> Deserializer(string raw)
 			{
-				var parts = raw.Split(new[] {elementDelimiter}, StringSplitOptions.RemoveEmptyEntries);
+				var parts = raw.Split(new[] { elementDelimiter }, StringSplitOptions.RemoveEmptyEntries);
 				return new KeyValuePair<string, string>(parts[0], parts[1]);
 			}
 
@@ -51,12 +52,12 @@ namespace Beamable.Editor
 		}
 
 		public static EditorPrefItemSet<T> GetItems<T>(string key,
-		                                               string delimiter = DEFAULT_DELIMITER,
-		                                               Func<string, T> deserializer = null,
-		                                               Func<T, string> serializer = null)
+													   string delimiter = DEFAULT_DELIMITER,
+													   Func<string, T> deserializer = null,
+													   Func<T, string> serializer = null)
 		{
 			var raw = EditorPrefs.GetString(key, "");
-			var parts = raw.Split(new[] {delimiter}, StringSplitOptions.RemoveEmptyEntries);
+			var parts = raw.Split(new[] { delimiter }, StringSplitOptions.RemoveEmptyEntries);
 
 			if (deserializer == null)
 			{
@@ -68,9 +69,9 @@ namespace Beamable.Editor
 		}
 
 		public static void SetItems<T>(string key,
-		                               HashSet<T> items,
-		                               string delimiter = DEFAULT_DELIMITER,
-		                               Func<T, string> serializer = null)
+									   HashSet<T> items,
+									   string delimiter = DEFAULT_DELIMITER,
+									   Func<T, string> serializer = null)
 		{
 			if (serializer == null)
 			{
@@ -101,9 +102,9 @@ namespace Beamable.Editor
 			}
 
 			public EditorPrefItemSet(string key,
-			                         string delimiter,
-			                         IEnumerable<T> items,
-			                         Func<T, string> serializer = null) : base(items)
+									 string delimiter,
+									 IEnumerable<T> items,
+									 Func<T, string> serializer = null) : base(items)
 			{
 				Key = key;
 				Delimiter = delimiter;

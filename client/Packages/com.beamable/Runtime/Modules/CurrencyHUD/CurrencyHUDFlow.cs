@@ -1,7 +1,7 @@
-﻿using System.Collections;
-using Beamable.Common.Inventory;
+﻿using Beamable.Common.Inventory;
 using Beamable.Coroutines;
 using Beamable.Service;
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -42,12 +42,15 @@ namespace Beamable.CurrencyHUD
 		{
 			var deltaTotal = targetAmount - currentAmount;
 			var deltaStep = deltaTotal / 50;
-			if (deltaStep == 0) deltaStep = deltaTotal < 0 ? -1 : 1;
+			if (deltaStep == 0)
+				deltaStep = deltaTotal < 0 ? -1 : 1;
 			while (currentAmount != targetAmount)
 			{
 				currentAmount += deltaStep;
-				if (deltaTotal > 0 && currentAmount > targetAmount) currentAmount = targetAmount;
-				else if (deltaTotal < 0 && currentAmount < targetAmount) currentAmount = targetAmount;
+				if (deltaTotal > 0 && currentAmount > targetAmount)
+					currentAmount = targetAmount;
+				else if (deltaTotal < 0 && currentAmount < targetAmount)
+					currentAmount = targetAmount;
 				txtAmount.text = currentAmount.ToString();
 				yield return new WaitForSeconds(0.02f);
 			}

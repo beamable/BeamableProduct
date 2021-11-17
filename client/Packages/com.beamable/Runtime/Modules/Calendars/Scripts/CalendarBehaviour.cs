@@ -1,8 +1,8 @@
 ﻿using Beamable.Content;
-using Beamable.UI.Scripts;
 using Beamable.Experimental.Common.Api.Calendars;
 using Beamable.Experimental.Common.Calendars;
 using Beamable.Tournaments;
+using Beamable.UI.Scripts;
 using UnityEngine;
 using UnityEngine.UI;
 

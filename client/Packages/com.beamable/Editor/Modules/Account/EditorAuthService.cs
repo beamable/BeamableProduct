@@ -13,7 +13,9 @@ namespace Beamable.Editor.Modules.Account
 	public class EditorAuthService : AuthService, IEditorAuthApi
 	{
 		public EditorAuthService(IBeamableRequester requester) : base(
-			requester, new DefaultAuthSettings {PasswordResetCodeType = CodeType.PIN}) { }
+			requester, new DefaultAuthSettings { PasswordResetCodeType = CodeType.PIN })
+		{
+		}
 
 		// This API call will only work if made by editor code.
 		public Promise<EditorUser> GetUserForEditor()
@@ -38,7 +40,9 @@ namespace Beamable.Editor.Modules.Account
 
 		public bool CanPushContent => IsAtLeastDeveloper;
 
-		public EditorUser() { }
+		public EditorUser()
+		{
+		}
 
 		public EditorUser(User user)
 		{

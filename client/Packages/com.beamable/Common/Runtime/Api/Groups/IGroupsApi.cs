@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using Beamable.Common.Api.Inventory;
+using System.Collections.Generic;
 
 namespace Beamable.Common.Api.Groups
 {
@@ -14,14 +14,14 @@ namespace Beamable.Common.Api.Groups
 		Promise<GroupSearchResponse> GetRecommendations();
 
 		Promise<GroupSearchResponse> Search(string name = null,
-		                                    List<string> enrollmentTypes = null,
-		                                    bool? hasSlots = null,
-		                                    long? scoreMin = null,
-		                                    long? scoreMax = null,
-		                                    string sortField = null,
-		                                    int? sortValue = null,
-		                                    int? offset = null,
-		                                    int? limit = null);
+											List<string> enrollmentTypes = null,
+											bool? hasSlots = null,
+											long? scoreMin = null,
+											long? scoreMax = null,
+											string sortField = null,
+											int? sortValue = null,
+											int? offset = null,
+											int? limit = null);
 
 		Promise<GroupCreateResponse> CreateGroup(GroupCreateRequest request);
 		Promise<AvailabilityResponse> CheckAvailability(string name, string tag);

@@ -1,13 +1,13 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using Beamable.Platform.SDK;
 using Beamable;
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Platform.SDK;
+using Beamable.Serialization.SmallerJSON;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
-using Beamable.Serialization.SmallerJSON;
 
 namespace Beamable.Server
 {
@@ -132,7 +132,8 @@ namespace Beamable.Server
 			T Parser(string json)
 			{
 				// TODO: Remove this in 0.13.0
-				if (!(json?.StartsWith("{\"payload\":\"") ?? false)) return DeserializeResult<T>(json);
+				if (!(json?.StartsWith("{\"payload\":\"") ?? false))
+					return DeserializeResult<T>(json);
 
 #pragma warning disable 618
 				Debug.LogWarning(
@@ -146,7 +147,7 @@ namespace Beamable.Server
 			var b = await API.Instance;
 			var requester = b.Requester;
 			var url = CreateUrl(b.Token.Cid, b.Token.Pid, serviceName, endpoint);
-			var req = new RequestObject {payload = argArray};
+			var req = new RequestObject { payload = argArray };
 			Debug.Log($"Sending Request uri=[{url}]");
 			return await requester.Request<T>(Method.POST, url, req, parser: Parser);
 		}

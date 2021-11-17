@@ -1,15 +1,15 @@
-﻿using System.Collections.Generic;
-using Beamable.Common.Content;
+﻿using Beamable.Common.Content;
+using System.Collections.Generic;
 
 namespace Beamable.Editor.Schedules
 {
 	public class ScheduleParser
 	{
 		public void PrepareGeneralData(Schedule newSchedule,
-		                               string description,
-		                               string activeFrom,
-		                               bool expires,
-		                               string activeTo)
+									   string description,
+									   string activeFrom,
+									   bool expires,
+									   string activeTo)
 		{
 			newSchedule.description = description;
 			newSchedule.activeFrom = activeFrom;
@@ -20,27 +20,27 @@ namespace Beamable.Editor.Schedules
 		public void PrepareDailyModeData(Schedule newSchedule, string hour, string minute, string second)
 		{
 			ScheduleDefinition definition =
-				new ScheduleDefinition(second, minute, hour, new List<string> {"*"}, "*", "*", new List<string> {"*"});
+				new ScheduleDefinition(second, minute, hour, new List<string> { "*" }, "*", "*", new List<string> { "*" });
 			newSchedule.AddDefinition(definition);
 		}
 
 		public void PrepareDaysModeData(Schedule newSchedule,
-		                                string hour,
-		                                string minute,
-		                                string second,
-		                                List<string> selectedDays)
+										string hour,
+										string minute,
+										string second,
+										List<string> selectedDays)
 		{
 			ScheduleDefinition definition = new ScheduleDefinition(second,
-			                                                       minute, hour, new List<string> {"*"}, "*", "*",
-			                                                       selectedDays);
+																   minute, hour, new List<string> { "*" }, "*", "*",
+																   selectedDays);
 			newSchedule.AddDefinition(definition);
 		}
 
 		public void PrepareDateModeData(Schedule newSchedule,
-		                                string hour,
-		                                string minute,
-		                                string second,
-		                                List<string> selectedDays)
+										string hour,
+										string minute,
+										string second,
+										List<string> selectedDays)
 		{
 			Dictionary<string, List<string>> sortedDates = ParseDates(selectedDays);
 
@@ -60,32 +60,32 @@ namespace Beamable.Editor.Schedules
 				}
 
 				ScheduleDefinition definition = new ScheduleDefinition(second,
-				                                                       minute, hour, daysInCurrentMonthAndYear, month,
-				                                                       year,
-				                                                       new List<string> {"*"});
+																	   minute, hour, daysInCurrentMonthAndYear, month,
+																	   year,
+																	   new List<string> { "*" });
 
 				newSchedule.AddDefinition(definition);
 			}
 		}
 
 		public void PrepareListingDailyModeData(Schedule newSchedule,
-		                                        int fromHour,
-		                                        int toHour,
-		                                        int fromMinute,
-		                                        int toMinute)
+												int fromHour,
+												int toHour,
+												int fromMinute,
+												int toMinute)
 		{
 			List<ScheduleDefinition> definitions = GetPeriodsSchedulesDefinitions(fromHour, toHour, fromMinute,
 				toMinute,
-				new List<string> {"*"});
+				new List<string> { "*" });
 			newSchedule.AddDefinitions(definitions);
 		}
 
 		public void PrepareListingDaysModeData(Schedule newSchedule,
-		                                       int fromHour,
-		                                       int toHour,
-		                                       int fromMinute,
-		                                       int toMinute,
-		                                       List<string> selectedDays)
+											   int fromHour,
+											   int toHour,
+											   int fromMinute,
+											   int toMinute,
+											   List<string> selectedDays)
 		{
 			List<ScheduleDefinition> definitions = GetPeriodsSchedulesDefinitions(fromHour, toHour, fromMinute,
 				toMinute,
@@ -94,15 +94,15 @@ namespace Beamable.Editor.Schedules
 		}
 
 		public void PrepareListingDatesModeData(Schedule newSchedule,
-		                                        int fromHour,
-		                                        int toHour,
-		                                        int fromMinute,
-		                                        int toMinute,
-		                                        List<string> selectedDates)
+												int fromHour,
+												int toHour,
+												int fromMinute,
+												int toMinute,
+												List<string> selectedDates)
 		{
 			Dictionary<string, List<string>> sortedDates = ParseDates(selectedDates);
 			List<ScheduleDefinition> periodsSchedulesDefinitions =
-				GetPeriodsSchedulesDefinitions(fromHour, toHour, fromMinute, toMinute, new List<string> {"*"});
+				GetPeriodsSchedulesDefinitions(fromHour, toHour, fromMinute, toMinute, new List<string> { "*" });
 
 			foreach (KeyValuePair<string, List<string>> pair in sortedDates)
 			{
@@ -122,11 +122,11 @@ namespace Beamable.Editor.Schedules
 					}
 
 					ScheduleDefinition definition = new ScheduleDefinition("*",
-					                                                       scheduleDefinition.minute[0],
-					                                                       scheduleDefinition.hour[0],
-					                                                       daysInCurrentMonthAndYear, month,
-					                                                       year,
-					                                                       new List<string> {"*"});
+																		   scheduleDefinition.minute[0],
+																		   scheduleDefinition.hour[0],
+																		   daysInCurrentMonthAndYear, month,
+																		   year,
+																		   new List<string> { "*" });
 
 					newSchedule.AddDefinition(definition);
 				}
@@ -134,10 +134,10 @@ namespace Beamable.Editor.Schedules
 		}
 
 		private List<ScheduleDefinition> GetPeriodsSchedulesDefinitions(int fromHour,
-		                                                                int toHour,
-		                                                                int fromMinute,
-		                                                                int toMinute,
-		                                                                List<string> selectedDays)
+																		int toHour,
+																		int fromMinute,
+																		int toMinute,
+																		List<string> selectedDays)
 		{
 			int hoursDelta = toHour - fromHour;
 
@@ -146,40 +146,40 @@ namespace Beamable.Editor.Schedules
 			if (hoursDelta == 0)
 			{
 				ScheduleDefinition definition = new ScheduleDefinition("*", $"{fromMinute}-{toMinute}",
-				                                                       fromHour.ToString(), new List<string> {"*"}, "*",
-				                                                       "*", selectedDays);
+																	   fromHour.ToString(), new List<string> { "*" }, "*",
+																	   "*", selectedDays);
 				definitions.Add(definition);
 			}
 			else if (hoursDelta == 1)
 			{
 				ScheduleDefinition startDefinition = new ScheduleDefinition("*", $"{fromMinute}-59",
-				                                                            fromHour.ToString(), new List<string> {"*"},
-				                                                            "*", "*", selectedDays);
+																			fromHour.ToString(), new List<string> { "*" },
+																			"*", "*", selectedDays);
 				definitions.Add(startDefinition);
 
 				ScheduleDefinition endDefinition = new ScheduleDefinition("*", $"0-{toMinute}",
-				                                                          toHour.ToString(), new List<string> {"*"},
-				                                                          "*", "*", selectedDays);
+																		  toHour.ToString(), new List<string> { "*" },
+																		  "*", "*", selectedDays);
 				definitions.Add(endDefinition);
 			}
 			else
 			{
 				ScheduleDefinition startDefinition = new ScheduleDefinition("*", $"{fromMinute}-59",
-				                                                            fromHour.ToString(), new List<string> {"*"},
-				                                                            "*", "*", selectedDays);
+																			fromHour.ToString(), new List<string> { "*" },
+																			"*", "*", selectedDays);
 				definitions.Add(startDefinition);
 
 				ScheduleDefinition middleDefinition = new ScheduleDefinition("*", $"*",
-				                                                             hoursDelta == 2
-					                                                             ? $"{fromHour + 1}"
-					                                                             : $"{fromHour + 1}-{toHour - 1}",
-				                                                             new List<string> {"*"}, "*",
-				                                                             "*", selectedDays);
+																			 hoursDelta == 2
+																				 ? $"{fromHour + 1}"
+																				 : $"{fromHour + 1}-{toHour - 1}",
+																			 new List<string> { "*" }, "*",
+																			 "*", selectedDays);
 				definitions.Add(middleDefinition);
 
 				ScheduleDefinition endDefinition = new ScheduleDefinition("*", $"0-{toMinute}",
-				                                                          toHour.ToString(), new List<string> {"*"},
-				                                                          "*", "*", selectedDays);
+																		  toHour.ToString(), new List<string> { "*" },
+																		  "*", "*", selectedDays);
 				definitions.Add(endDefinition);
 			}
 
@@ -206,7 +206,7 @@ namespace Beamable.Editor.Schedules
 				}
 				else
 				{
-					sortedDates.Add(monthAndYear, new List<string> {date});
+					sortedDates.Add(monthAndYear, new List<string> { date });
 				}
 			}
 

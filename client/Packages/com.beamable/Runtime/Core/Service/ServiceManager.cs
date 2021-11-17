@@ -58,7 +58,7 @@ namespace Beamable.Service
 		public static void RuntimeOnlyDontDestroyOnLoad(GameObject go)
 		{
 #if !UNITY_EDITOR
-		Object.DontDestroyOnLoad(go);
+			Object.DontDestroyOnLoad(go);
 #endif
 		}
 
@@ -108,7 +108,7 @@ namespace Beamable.Service
 			Resolvers.Remove(typeof(T));
 			ResolverHolder<T>.Resolver = null;
 			ServicesLogger.LogFormat("Removed {0} from providing service {1}.",
-			                         (resolver == null ? "null" : resolver.GetType().Name), typeof(T).Name);
+									 (resolver == null ? "null" : resolver.GetType().Name), typeof(T).Name);
 		}
 
 		// Returns true if the next call to Resolve<T>() will return a valid instance of the required service.  Note, this

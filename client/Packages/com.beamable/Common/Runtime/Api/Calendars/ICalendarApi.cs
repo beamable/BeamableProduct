@@ -1,7 +1,7 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.Experimental.Common.Api.Calendars

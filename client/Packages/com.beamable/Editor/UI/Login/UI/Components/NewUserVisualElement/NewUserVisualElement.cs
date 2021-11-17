@@ -1,6 +1,6 @@
-using System;
 using Beamable.Editor.Login.UI.Components;
 using Beamable.Editor.UI.Components;
+using System;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -89,7 +89,7 @@ namespace Beamable.Editor.Login.UI.Components
 		private void Continue_OnClicked()
 		{
 			Model.Customer.SetExistingCustomerData(_cidOrAliasTextField.value, _emailTextField.value,
-			                                       _passwordTextField.value);
+												   _passwordTextField.value);
 			var promise = Manager.AttemptNewUser(Model);
 			_continueButton.Load(AddErrorLabel(promise, _errorText));
 		}

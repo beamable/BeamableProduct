@@ -1,10 +1,10 @@
-using System.Collections.Generic;
 using Beamable.Api;
-using Beamable.Common;
 using Beamable.Api.Notification;
+using Beamable.Common;
 using Beamable.Serialization;
 using Beamable.Service;
 using Beamable.Spew;
+using System.Collections.Generic;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Experimental.Api.Chat

@@ -1,5 +1,5 @@
-using System.Reflection;
 using Beamable.Common.Content;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
@@ -21,7 +21,7 @@ namespace Beamable.Editor.Content
 			else
 			{
 				EditorGUI.LabelField(position, property.name,
-				                     "Only Available in play mode. Use a Content Reference to set.");
+									 "Only Available in play mode. Use a Content Reference to set.");
 			}
 		}
 	}

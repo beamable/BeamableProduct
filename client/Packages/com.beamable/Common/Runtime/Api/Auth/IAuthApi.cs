@@ -11,13 +11,13 @@ namespace Beamable.Common.Api.Auth
 		Promise<TokenResponse> LoginRefreshToken(string refreshToken);
 
 		Promise<TokenResponse> Login(string username,
-		                             string password,
-		                             bool mergeGamerTagToAccount = true,
-		                             bool customerScoped = false);
+									 string password,
+									 bool mergeGamerTagToAccount = true,
+									 bool customerScoped = false);
 
 		Promise<TokenResponse> LoginThirdParty(AuthThirdParty thirdParty,
-		                                       string thirdPartyToken,
-		                                       bool includeAuthHeader = true);
+											   string thirdPartyToken,
+											   bool includeAuthHeader = true);
 
 		Promise<User> RegisterDBCredentials(string email, string password);
 		Promise<User> RegisterThirdPartyCredentials(AuthThirdParty thirdParty, string accessToken);
@@ -28,10 +28,10 @@ namespace Beamable.Common.Api.Auth
 		Promise<EmptyResponse> ConfirmPasswordUpdate(string code, string newPassword);
 
 		Promise<CustomerRegistrationResponse> RegisterCustomer(string email,
-		                                                       string password,
-		                                                       string projectName,
-		                                                       string customerName,
-		                                                       string alias);
+															   string password,
+															   string projectName,
+															   string customerName,
+															   string alias);
 
 		Promise<User> RemoveThirdPartyAssociation(AuthThirdParty thirdParty, string token);
 	}

@@ -1,9 +1,9 @@
-using System.Collections;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Platform.SDK;
 using Beamable.Platform.SDK.Auth;
 using NUnit.Framework;
+using System.Collections;
 using UnityEngine.TestTools;
 
 namespace Beamable.Platform.Tests.Auth.AuthServiceTests
@@ -19,16 +19,16 @@ namespace Beamable.Platform.Tests.Auth.AuthServiceTests
 			var result = new TokenResponse();
 
 			var req = _requester.MockRequest<TokenResponse>(Method.POST, $"{TOKEN_URL}")
-			                    .WithNoAuthHeader(merge)
-			                    .WithJsonFieldMatch("username", email)
-			                    .WithJsonFieldMatch("grant_type", "password")
-			                    .WithJsonFieldMatch("password", password)
-			                    .WithJsonFieldMatch("customerScoped", false)
-			                    .WithResponse(result);
+								.WithNoAuthHeader(merge)
+								.WithJsonFieldMatch("username", email)
+								.WithJsonFieldMatch("grant_type", "password")
+								.WithJsonFieldMatch("password", password)
+								.WithJsonFieldMatch("customerScoped", false)
+								.WithResponse(result);
 
 			yield return _service.Login(email, password, merge)
-			                     .Then(response => Assert.AreEqual(result, response))
-			                     .AsYield();
+								 .Then(response => Assert.AreEqual(result, response))
+								 .AsYield();
 
 			Assert.AreEqual(1, req.CallCount);
 		}

@@ -1,5 +1,5 @@
-﻿using Beamable.UI.MSDF;
-using Beamable.UI.Buss.Extensions;
+﻿using Beamable.UI.Buss.Extensions;
+using Beamable.UI.MSDF;
 using UnityEngine;
 
 namespace Beamable.UI.Buss

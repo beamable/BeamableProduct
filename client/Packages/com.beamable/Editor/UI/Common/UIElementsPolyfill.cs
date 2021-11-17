@@ -1,9 +1,9 @@
+using Beamable.Editor.UI.Components;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Beamable.Editor.UI.Components;
 using UnityEditor;
 
 #if UNITY_2018
@@ -352,15 +352,15 @@ public static class UIElementsPolyfill2020
 #else
 public static class UIElementsPolyfillPre2020
 {
-  public static void BeamableOnSelectionsChanged(this ListView listView, Action<List<object>> cb)
-  {
-    listView.onSelectionChanged += cb;
-  }
+	public static void BeamableOnSelectionsChanged(this ListView listView, Action<List<object>> cb)
+	{
+		listView.onSelectionChanged += cb;
+	}
 
-  public static void BeamableOnItemChosen(this ListView listView, Action<object> cb)
-  {
-    listView.onItemChosen += cb;
-  }
+	public static void BeamableOnItemChosen(this ListView listView, Action<object> cb)
+	{
+		listView.onItemChosen += cb;
+	}
 
 }
 #endif
@@ -369,7 +369,7 @@ public static class UssLoader
 {
 	public static List<string> GetAvailableSheetPaths(string ussPath)
 	{
-		var ussPaths = new List<string> {ussPath};
+		var ussPaths = new List<string> { ussPath };
 
 		var darkPath = ussPath.Replace(".uss", ".dark.uss");
 		var lightPath = ussPath.Replace(".uss", ".light.uss");

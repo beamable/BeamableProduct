@@ -1,16 +1,10 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using Beamable.Common;
-using Beamable.Config;
-using Beamable.Coroutines;
 using Beamable.Api.Analytics;
 using Beamable.Api.Announcements;
 using Beamable.Api.Auth;
-using Beamable.Api.Connectivity;
-using Beamable.Experimental.Api.Chat;
+using Beamable.Api.CloudData;
 using Beamable.Api.CloudSaving;
 using Beamable.Api.Commerce;
+using Beamable.Api.Connectivity;
 using Beamable.Api.Events;
 using Beamable.Api.Groups;
 using Beamable.Api.Inventory;
@@ -21,18 +15,24 @@ using Beamable.Api.Payments;
 using Beamable.Api.Sessions;
 using Beamable.Api.Stats;
 using Beamable.Api.Tournaments;
-using Beamable.Api.CloudData;
+using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Leaderboards;
+using Beamable.Config;
 using Beamable.Content;
+using Beamable.Coroutines;
 using Beamable.Experimental.Api.Calendars;
+using Beamable.Experimental.Api.Chat;
 using Beamable.Experimental.Api.Matchmaking;
 using Beamable.Experimental.Api.Sim;
 using Beamable.Experimental.Api.Social;
 using Beamable.Service;
 using Core.Platform.SDK;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 using Object = UnityEngine.Object;
@@ -211,7 +211,9 @@ namespace Beamable.Api
 			set => _requester.Host = value;
 		}
 
-		public PlatformService() { }
+		public PlatformService()
+		{
+		}
 
 		public PlatformService(bool debugMode, bool withLocalNote = true)
 		{
@@ -254,7 +256,7 @@ namespace Beamable.Api
 			// This will be talking to the new C# services.
 			_beamableApiRequester =
 				new BeamableApiRequester(ConfigDatabase.GetString("platform"), _accessTokenStorage,
-				                         ConnectivityService);
+										 ConnectivityService);
 			Matchmaking = new MatchmakingService(this, _beamableApiRequester);
 
 			Payments = new PaymentService(this, _requester);
@@ -273,8 +275,8 @@ namespace Beamable.Api
 			_filesystemAccessor = new PlatformFilesystemAccessor();
 			ContentService = new ContentService(this, _requester, _filesystemAccessor);
 			ContentApi.Instance
-			          .CompleteSuccess(
-				          ContentService); // TODO: This is hacky until we can get the serviceManager into common.
+					  .CompleteSuccess(
+						  ContentService); // TODO: This is hacky until we can get the serviceManager into common.
 			CloudDataService = new CloudDataService(this, _requester);
 		}
 
@@ -311,18 +313,18 @@ namespace Beamable.Api
 		public Promise<Unit> StartNewSession()
 		{
 			return AdvertisingIdentifier.AdvertisingIdentifier.GetIdentifier()
-			                            .FlatMap(id => Session.StartSession(_user, id, _requester.Language))
-			                            .Map(_ => PromiseBase.Unit);
+										.FlatMap(id => Session.StartSession(_user, id, _requester.Language))
+										.Map(_ => PromiseBase.Unit);
 		}
 
 		public Promise<ISet<UserBundle>> GetDeviceUsers()
 		{
 			var promises = Array.ConvertAll(_accessTokenStorage.RetrieveDeviceRefreshTokens(Cid, Pid),
-			                                token => Auth.GetUser(token)
-			                                             .Map(user => new UserBundle {User = user, Token = token}));
+											token => Auth.GetUser(token)
+														 .Map(user => new UserBundle { User = user, Token = token }));
 
 			return Promise.Sequence(promises)
-			              .Map(userBundles => (new HashSet<UserBundle>(userBundles) as ISet<UserBundle>));
+						  .Map(userBundles => (new HashSet<UserBundle>(userBundles) as ISet<UserBundle>));
 		}
 
 		public void RemoveDeviceUsers(TokenResponse token)
@@ -354,7 +356,7 @@ namespace Beamable.Api
 		{
 			ClearToken();
 			_requester.Token = new AccessToken(_accessTokenStorage, Cid, Pid, rsp.access_token, rsp.refresh_token,
-			                                   rsp.expires_in);
+											   rsp.expires_in);
 			_beamableApiRequester.Token = _requester.Token;
 			return _requester.Token.Save();
 		}

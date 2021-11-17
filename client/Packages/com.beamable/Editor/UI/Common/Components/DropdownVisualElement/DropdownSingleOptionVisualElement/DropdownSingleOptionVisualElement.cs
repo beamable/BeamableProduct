@@ -1,5 +1,5 @@
-﻿using System;
-using Beamable.Editor.UI.Buss;
+﻿using Beamable.Editor.UI.Buss;
+using System;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -22,7 +22,9 @@ namespace Beamable.Editor.UI.Components
 
 		public float Height => _height;
 
-		public new class UxmlFactory : UxmlFactory<DropdownSingleOptionVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<DropdownSingleOptionVisualElement, UxmlTraits>
+		{
+		}
 
 		public DropdownSingleOptionVisualElement() : base(
 			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(DropdownVisualElement)}/{nameof(DropdownSingleOptionVisualElement)}/{nameof(DropdownSingleOptionVisualElement)}")

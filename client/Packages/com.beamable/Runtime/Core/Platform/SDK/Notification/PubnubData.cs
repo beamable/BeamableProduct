@@ -16,15 +16,17 @@ namespace Beamable.Api.Notification
 
 		// TODO: Might be worth having some factory methods around create each PubNubOp
 		public PubNubOp(PNO operation,
-		                string channel,
-		                PubnubSubscriptionManager.OnPubNubOperationDelegate onProcessCallback = null) : this(
+						string channel,
+						PubnubSubscriptionManager.OnPubNubOperationDelegate onProcessCallback = null) : this(
 			operation, channel, "",
-			onProcessCallback) { }
+			onProcessCallback)
+		{
+		}
 
 		public PubNubOp(PNO operation,
-		                string channel,
-		                string presenceChannel,
-		                PubnubSubscriptionManager.OnPubNubOperationDelegate onProcessCallback = null)
+						string channel,
+						string presenceChannel,
+						PubnubSubscriptionManager.OnPubNubOperationDelegate onProcessCallback = null)
 		{
 			this.operation = operation;
 			this.channel = channel;

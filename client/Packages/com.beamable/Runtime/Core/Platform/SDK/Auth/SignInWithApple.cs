@@ -107,7 +107,7 @@ namespace Beamable.Platform.SDK.Auth
             s_CredentialStateCallback = null;
         }
 
-        #region events
+#region events
 
         [Header("Event fired when login is complete.")]
         public SignInWithAppleEvent onLogin;
@@ -118,7 +118,7 @@ namespace Beamable.Platform.SDK.Auth
         [Header("Event fired when there is an error.")]
         public SignInWithAppleEvent onError;
 
-        #endregion
+#endregion
 
         /// <summary>
         /// Get credential state and trigger onCredentialState or onError event when action is completed.
@@ -246,7 +246,7 @@ namespace Beamable.Platform.SDK.Auth
             }
         }
 
-        #region native hooks
+#region native hooks
 #if (UNITY_IOS || UNITY_TVOS) && !UNITY_EDITOR
 
         [DllImport("__Internal")]
@@ -255,7 +255,7 @@ namespace Beamable.Platform.SDK.Auth
         [DllImport("__Internal")]
         private static extern void UnitySignInWithApple_GetCredentialState(string userID, IntPtr callback);
 #endif
-       #endregion
+#endregion
     }
 }
 #endif

@@ -1,10 +1,10 @@
-using System;
-using System.Collections.Generic;
 using Beamable;
 using Beamable.Api;
 using Beamable.Api.Inventory;
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Inventory;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Modules.Inventory.Prototype
@@ -60,7 +60,7 @@ namespace Modules.Inventory.Prototype
 
 		private void RegisterItemGroup(ItemContent content, out ItemGroupData itemGroupData)
 		{
-			itemGroupData = new ItemGroupData {Content = content, Items = new List<ItemView>()};
+			itemGroupData = new ItemGroupData { Content = content, Items = new List<ItemView>() };
 
 			Add(itemGroupData);
 		}

@@ -1,8 +1,8 @@
-using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Editor.Content.Models;
 using Beamable.Editor.UI.Buss;
 using Beamable.Platform.SDK;
+using System.Collections.Generic;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -26,14 +26,18 @@ namespace Beamable.Editor.UI.Components
 		private PromiseBase _promise;
 
 		public LoadingIndicatorVisualElement() : base(
-			$"{BeamableComponentsConstants.UI_PACKAGE_PATH}/Common/Components/{nameof(LoadingIndicatorVisualElement)}/{nameof(LoadingIndicatorVisualElement)}") { }
+			$"{BeamableComponentsConstants.UI_PACKAGE_PATH}/Common/Components/{nameof(LoadingIndicatorVisualElement)}/{nameof(LoadingIndicatorVisualElement)}")
+		{
+		}
 
-		public new class UxmlFactory : UxmlFactory<LoadingIndicatorVisualElement, UxmlTraits> { }
+		public new class UxmlFactory : UxmlFactory<LoadingIndicatorVisualElement, UxmlTraits>
+		{
+		}
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription loadingText =
-				new UxmlStringAttributeDescription {name = "text", defaultValue = "Loading"};
+				new UxmlStringAttributeDescription { name = "text", defaultValue = "Loading" };
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
 			{

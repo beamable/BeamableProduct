@@ -1,7 +1,7 @@
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Editor.UI.Buss.Model;
 using Beamable.UI.Buss;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 
 #if UNITY_2018
@@ -25,7 +25,7 @@ namespace Beamable.Editor.UI.Buss.Components
 		private ScrollView _ruleContainer;
 
 		private VisualElement _pseudoContainer, _computedStyleContainer, _cascadeContainer, _computedContainer,
-		                      _sheetSelectorContainer;
+							  _sheetSelectorContainer;
 
 		private Label _selectedLabel;
 		private Button _addRuleBtn, _tabCascade, _tabComputed;
@@ -41,14 +41,16 @@ namespace Beamable.Editor.UI.Buss.Components
 
 		private void HandleAddRuleClicked()
 		{
-			if (_currentSelection == null) return;
+			if (_currentSelection == null)
+				return;
 
 			// create a rule that only applies to this object.
 			var rule = new SelectorWithStyle
 			{
 				Selector = new Selector
 				{
-					IdConstraint = _currentSelection.Id, ElementTypeConstraint = _currentSelection.TypeString
+					IdConstraint = _currentSelection.Id,
+					ElementTypeConstraint = _currentSelection.TypeString
 				},
 				Style = new StyleObject()
 			};
@@ -85,7 +87,8 @@ namespace Beamable.Editor.UI.Buss.Components
 			_ruleContainer.Clear();
 			_selectedLabel.text = "None";
 
-			if (_currentSelection == null) return;
+			if (_currentSelection == null)
+				return;
 
 			_pseudoElement = new PseudoStateGroupVisualElement(_currentSelection);
 			_pseudoElement.OnStateChanged += Refresh;
