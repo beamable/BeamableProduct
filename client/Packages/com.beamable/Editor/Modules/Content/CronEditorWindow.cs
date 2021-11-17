@@ -1,4 +1,5 @@
 ﻿using System;
+using Beamable.CronExpression;
 using UnityEditor;
 using UnityEngine;
 
@@ -31,15 +32,18 @@ namespace Beamable.Editor.Content
         {
             _inputString = cronRawFormat;
             _result = result;
+            _errorData = new ErrorData();
         }
+
+        private ErrorData _errorData;
         private void OnGUI() 
         {
             GUI.Label(new Rect(10, 120, 280, 20), "Enter cron string");
             _inputString = GUI.TextField(new Rect(10, 140, 280, 20), _inputString);
-
+            
             if (!_inputString.Equals(_currentString))
             {
-                _humanFormat = CronExpression.ExpressionDescriptor.GetDescription(_inputString);
+                _humanFormat = ExpressionDescriptor.GetDescription(_inputString, out _errorData);
                 _currentString = _inputString;
             }
 
@@ -53,11 +57,14 @@ namespace Beamable.Editor.Content
             {
                 _window.Close();
             }
+
+            GUI.enabled = !_errorData.IsError;
             if (GUI.Button(new Rect(230, 180, 60, 20), "Save"))
             {
                 _result?.Invoke(_currentString);
                 _window.Close();
             }
+            GUI.enabled = true;
         }
     }
 }

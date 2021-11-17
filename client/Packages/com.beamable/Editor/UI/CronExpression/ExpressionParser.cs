@@ -51,58 +51,49 @@ namespace Beamable.CronExpression
 
             if (string.IsNullOrEmpty(_expression))
             {
-#if NET_STANDARD_1X
-        throw new Exception("Field 'expression' not found.");
-#else
-                throw new MissingFieldException("Field 'expression' not found.");
-#endif
+                throw new FormatException($"Error: Field 'expression' not found.");
+                // errorData = new ErrorData("Field 'expression' not found.");
             }
 
             var expressionPartsTemp = _expression.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
-            if (expressionPartsTemp.Length < 5)
-            {
-                throw new FormatException(string.Format(
-                    "Error: Expression only has {0} parts.  At least 5 part are required.",
-                    expressionPartsTemp.Length));
-            }
+            //       if (expressionPartsTemp.Length < 5)
+            //       {
+            //           throw new FormatException(string.Format(
+            //               "Error: Expression only has {0} parts.  At least 5 part are required.",
+            //               expressionPartsTemp.Length));
+            //       }
+            //
+            //       if (expressionPartsTemp.Length == 5)
+            //       {
+            //           //5 part cron so shift array past seconds element
+            //           Array.Copy(expressionPartsTemp, 0, parsed, 1, 5);
+            //       }
+            //       else if (expressionPartsTemp.Length == 6)
+            //       {
+            //           /* We will detect if this 6 part expression has a year specified and if so we will shift the parts and treat the 
+            //              first part as a minute part rather than a second part. 
+            //
+            //              Ways we detect:
+            //                1. Last part is a literal year (i.e. 2020)
+            //                2. 3rd or 5th part is specified as "?" (DOM or DOW)
+            //           */
+            //           var isYearWithNoSecondsPart = Regex.IsMatch(expressionPartsTemp[5], "\\d{4}$") ||
+            //                                         expressionPartsTemp[4] == "?" || expressionPartsTemp[2] == "?";
+            //
+            //           if (isYearWithNoSecondsPart)
+            //               // Shift parts over by one
+            //               Array.Copy(expressionPartsTemp, 0, parsed, 1, 6);
+            //           else
+            //               Array.Copy(expressionPartsTemp, 0, parsed, 0, 6);
+            //       }
+            if (expressionPartsTemp.Length != 7)
+                throw new FormatException($"Error: Expression has {expressionPartsTemp.Length} parts. Exactly 7 parts are required.");
 
-            if (expressionPartsTemp.Length == 5)
-            {
-                //5 part cron so shift array past seconds element
-                Array.Copy(expressionPartsTemp, 0, parsed, 1, 5);
-            }
-            else if (expressionPartsTemp.Length == 6)
-            {
-                /* We will detect if this 6 part expression has a year specified and if so we will shift the parts and treat the 
-                   first part as a minute part rather than a second part. 
-      
-                   Ways we detect:
-                     1. Last part is a literal year (i.e. 2020)
-                     2. 3rd or 5th part is specified as "?" (DOM or DOW)
-                */
-                var isYearWithNoSecondsPart = Regex.IsMatch(expressionPartsTemp[5], "\\d{4}$") ||
-                                              expressionPartsTemp[4] == "?" || expressionPartsTemp[2] == "?";
-
-                if (isYearWithNoSecondsPart)
-                    // Shift parts over by one
-                    Array.Copy(expressionPartsTemp, 0, parsed, 1, 6);
-                else
-                    Array.Copy(expressionPartsTemp, 0, parsed, 0, 6);
-            }
-            else if (expressionPartsTemp.Length == 7)
-            {
+            if (expressionPartsTemp.Length == 7) 
                 parsed = expressionPartsTemp;
-            }
-            else
-            {
-                throw new FormatException(string.Format(
-                    "Error: Expression has too many parts ({0}).  Expression must not have more than 7 parts.",
-                    expressionPartsTemp.Length));
-            }
 
             NormalizeExpression(parsed);
-
             return parsed;
         }
 
@@ -237,7 +228,7 @@ namespace Beamable.CronExpression
                     if (stepRangeThrough != null)
                     {
                         var parts = expressionParts[i].Split('/');
-                        expressionParts[i] = string.Format("{0}-{1}/{2}", parts[0], stepRangeThrough, parts[1]);
+                        expressionParts[i] = $"{parts[0]}-{stepRangeThrough}/{parts[1]}";
                     }
                 }
             }

@@ -130,7 +130,7 @@ namespace Beamable.Editor.Content
       {
           var newDefinition = ExpressionDescriptor.CronToScheduleDefinition(scheduleDefinition.cronRawFormat);
           newDefinition.cronRawFormat = scheduleDefinition.cronRawFormat;
-          newDefinition.cronHumanFormat = ExpressionDescriptor.GetDescription(newDefinition.cronRawFormat);
+          newDefinition.cronHumanFormat = ExpressionDescriptor.GetDescription(newDefinition.cronRawFormat, out _);
           _schedule.definitions[scheduleDefinition.index] = newDefinition;
       }
 
@@ -150,7 +150,7 @@ namespace Beamable.Editor.Content
           foreach (var definition in schedule.definitions)
           {
               definition.cronRawFormat = ExpressionDescriptor.ScheduleDefinitionToCron(definition);
-              definition.cronHumanFormat = ExpressionDescriptor.GetDescription(definition.cronRawFormat);
+              definition.cronHumanFormat = ExpressionDescriptor.GetDescription(definition.cronRawFormat, out _);
           }
       }
    }

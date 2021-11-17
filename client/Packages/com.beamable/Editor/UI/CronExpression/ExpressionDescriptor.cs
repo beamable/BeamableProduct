@@ -10,6 +10,26 @@ using UnityEngine;
 
 namespace Beamable.CronExpression
 {
+
+    public struct ErrorData
+    {
+        public bool IsError { get; private set; }
+        public string ErrorMessage
+        {
+            get => _errorMessage;
+            set
+            {
+                IsError = !string.IsNullOrWhiteSpace(value);
+                _errorMessage = value;
+            }
+        }
+        private string _errorMessage;
+
+        public ErrorData(string errorMessage) : this()
+        {
+            ErrorMessage = errorMessage;
+        }
+    }
     /// <summary>
     ///     Converts a Cron Expression into a human readable string
     /// </summary>
@@ -50,7 +70,7 @@ namespace Beamable.CronExpression
             _options = options;
             _expressionParts = new string[7];
             _parsed = false;
-            
+
             _localizationDatabase = AssetDatabase.LoadAssetAtPath<CronLocalizationDatabase>(Constants.CRON_LOCALIZATION_DATABASE_PATH);
             if (_localizationDatabase == null)
             {
@@ -74,10 +94,10 @@ namespace Beamable.CronExpression
         /// </summary>
         /// <param name="type">Which part(s) of the expression to describe</param>
         /// <returns>The cron expression description</returns>
-        public string GetDescription(DescriptionTypeEnum type)
+        public string GetDescription(DescriptionTypeEnum type, out ErrorData errorData)
         {
+            errorData = new ErrorData();
             var description = string.Empty;
-
             try
             {
                 if (!_parsed)
@@ -124,6 +144,7 @@ namespace Beamable.CronExpression
             catch (Exception ex)
             {
                 description = ex.Message;
+                errorData = new ErrorData(ex.Message);
                 return description;
             }
 
@@ -629,9 +650,9 @@ namespace Beamable.CronExpression
         /// </summary>
         /// <param name="expression">The cron expression string</param>
         /// <returns>The cron expression description</returns>
-        public static string GetDescription(string expression)
+        public static string GetDescription(string expression, out ErrorData errorData)
         {
-            return GetDescription(expression, new Options());
+            return GetDescription(expression, new Options(), out errorData);
         }
 
         /// <summary>
@@ -640,10 +661,10 @@ namespace Beamable.CronExpression
         /// <param name="expression">The cron expression string</param>
         /// <param name="options">Options to control the output description</param>
         /// <returns>The cron expression description</returns>
-        public static string GetDescription(string expression, Options options)
+        public static string GetDescription(string expression, Options options, out ErrorData errorData)
         {
             var descriptor = new ExpressionDescriptor(expression, options);
-            return descriptor.GetDescription(DescriptionTypeEnum.FULL);
+            return descriptor.GetDescription(DescriptionTypeEnum.FULL, out errorData);
         }
         
         /// <summary>
@@ -651,9 +672,9 @@ namespace Beamable.CronExpression
         /// </summary>
         /// <param name="scheduleDefinition">Schedule definition</param>
         /// <returns>The cron expression description</returns>
-        public static string GetDescription(ScheduleDefinition scheduleDefinition)
+        public static string GetDescription(ScheduleDefinition scheduleDefinition, out ErrorData errorData)
         {
-            return GetDescription(scheduleDefinition, new Options());
+            return GetDescription(scheduleDefinition, new Options(), out errorData);
         }
         
         /// <summary>
@@ -662,10 +683,10 @@ namespace Beamable.CronExpression
         /// <param name="scheduleDefinition">Schedule definition</param>
         /// <param name="options">Options to control the output description</param>
         /// <returns>The cron expression description</returns>
-        public static string GetDescription(ScheduleDefinition scheduleDefinition, Options options)
+        public static string GetDescription(ScheduleDefinition scheduleDefinition, Options options, out ErrorData errorData)
         {
             var expression = ScheduleDefinitionToCron(scheduleDefinition);
-            return GetDescription(expression, options);
+            return GetDescription(expression, options, out errorData);
         }
 
         /// <summary>
