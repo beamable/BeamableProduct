@@ -38,8 +38,9 @@ namespace Beamable.Editor.UI.Components
         }
 
         private Label _label;
-        private List<string> _options;
-        private Action<string> _onOptionSelected;
+        private List<string> _labels;
+        private Action<int> _onOptionSelected;
+        
         public DropdownVisualElement Dropdown { get; private set; }
 
         private string Label { get; set; }
@@ -58,19 +59,19 @@ namespace Beamable.Editor.UI.Components
             _label.text = Label;
 
             Dropdown = Root.Q<DropdownVisualElement>("dropdown");
-            Dropdown.Setup(_options, _onOptionSelected);
+            Dropdown.Setup(_labels, _onOptionSelected);
             Dropdown.Refresh();
         }
 
-        public void Setup(List<string> options, Action<string> onOptionSelected)
+        public void Setup(List<string> labels, Action<int> onOptionSelected)
         {
-            _options = options;
+            _labels = labels;
             _onOptionSelected = onOptionSelected;
         }
 
-        public void Set(string option)
+        public void Set(int id)
         {
-            Dropdown.Set(option);
+            Dropdown.Set(id);
         }
     }
 }

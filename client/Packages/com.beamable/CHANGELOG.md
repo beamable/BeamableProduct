@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `SearchStats()` admin method is usable from client and microservice code now.
 - `CoreConfiguration` to project settings to tweak how our Promise library handles uncaught promises by default
 - Exposed `CreateLeaderboard` methods in `IMicroserviceLeaderboardsApi` to enable the dynamic creation of leaderboards in C#MS (can take a `LeaderboardRef` as a template or explicit parameters). 
+- Limit amount of elements displayed by `list_content` command in Admin console, allow to specify start index for `list_content` command
+- Added `RemoveDeviceId` method in `AuthService`
+- Added minutes support in scheduled listings
 - Added clearer unsupported message for C# Microservice's implementation of `IAuthService.GetUser(TokenResponse)`
 
 ### Changed
