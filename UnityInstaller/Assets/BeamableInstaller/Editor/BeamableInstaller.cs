@@ -36,6 +36,7 @@ namespace Beamable.Installer.Editor
 
       private static HashSet<Request> _pendingCommands = new HashSet<Request>();
       public static bool IsBusy => _pendingCommands.Count > 0;
+      private static bool _isUninstalling = false;
 
       static BeamableInstaller()
       {
@@ -167,7 +168,16 @@ namespace Beamable.Installer.Editor
       [MenuItem(BeamableMenuPath + "Remove Installer Asset Package", priority = 120)]
       public static void RemoveSelf()
       {
-         var assets = AssetDatabase.FindAssets($"Beamable.Installer t:{nameof(AssemblyDefinitionAsset)}");
+          if (_isUninstalling)
+              return;
+          _isUninstalling = true;
+          
+          EditorUtility.DisplayDialog(
+              "Beamable Package Installer", 
+              "Unity is currently removing the Beamable Package Installer", 
+              "Ok");
+
+          var assets = AssetDatabase.FindAssets($"Beamable.Installer t:{nameof(AssemblyDefinitionAsset)}");
          var asset = assets[0];
          var selfPath = AssetDatabase.GUIDToAssetPath(asset);
          var parentDir = Directory.GetParent(selfPath);
