@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics;
 using Beamable.UnityEngineClone.UI.Extensions;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UI;
@@ -33,6 +35,7 @@ namespace Beamable
         [Conditional("UNITY_EDITOR")]
         private void CheckForCanvas()
         {
+#if UNITY_EDITOR
             void StrechRectTransform(RectTransform t)
             {
                 t.anchorMin = Vector2.zero;
@@ -71,6 +74,7 @@ namespace Beamable
                 EditorApplication.delayCall += () => StrechRectTransform(parentTransform);
                 EditorApplication.delayCall += () => StrechRectTransform(GetComponent<RectTransform>());
             }
+#endif
         }
     }
 }
