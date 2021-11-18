@@ -166,7 +166,6 @@ GameObject:
   m_Component:
   - component: {fileID: 2770759281027105687}
   - component: {fileID: 2770759281027105685}
-  - component: {fileID: 1679189580881237423}
   - component: {fileID: 2623599122911511757}
   - component: {fileID: 30795191907311199}
   m_Layer: 0
@@ -204,21 +203,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2770759281027105688}
   m_CullTransparentMesh: 0
---- !u!114 &1679189580881237423
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2770759281027105688}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 16811512df1848df8e79972e62e99493, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sheet: {fileID: 11400000, guid: 0aeb1d6a9f10d6242a4b97c79a6be1c7, type: 2}
-  _providersTree:
-  - {fileID: 1679189580881237423}
 --- !u!114 &2623599122911511757
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -294,7 +278,7 @@ MonoBehaviour:
   _classes: []
   _inlineStyle:
     _properties: []
-  _styleSheet: {fileID: 11400000, guid: 0aeb1d6a9f10d6242a4b97c79a6be1c7, type: 2}
+  _styleSheet: {fileID: 0}
   _pseudoClassDefinitions: []
   _parent: {fileID: 0}
   _children: []

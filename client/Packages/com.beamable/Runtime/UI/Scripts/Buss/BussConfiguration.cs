@@ -108,6 +108,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
         }
 
         public static void ApplyStyleSheet(BussElement element, BussStyleSheet sheet) {
+            if (element == null || sheet == null) return;
             foreach (var descriptor in sheet.Styles) {
                 if (descriptor.Selector?.CheckMatch(element) ?? false) {
                     ApplyDescriptor(element, descriptor);
@@ -116,6 +117,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
         }
 
         public static void ApplyDescriptor(BussElement element, BussStyleDescription descriptor) {
+            if (element == null || descriptor == null) return;
             foreach (var property in descriptor.Properties) {
                 element.Style[property.Key] = property.GetProperty();
             }
