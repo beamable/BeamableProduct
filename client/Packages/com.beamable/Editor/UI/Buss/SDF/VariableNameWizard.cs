@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEditor;
 
-namespace Beamable.Editor.UI.SDF {
+namespace Beamable.Editor.UI.Buss {
     public class VariableNameWizard : ScriptableWizard {
         public string variableName;
         private Action<string> onVariableCreated;

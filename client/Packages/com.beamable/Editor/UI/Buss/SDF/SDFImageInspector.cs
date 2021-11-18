@@ -1,15 +1,15 @@
 ﻿using System.Linq;
-using Beamable.UI.BUSS;
-using Beamable.UI.SDF;
+using Beamable.UI.Buss;
+using Beamable.UI.Sdf;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Beamable.Editor.UI.SDF {
-    [CustomEditor(typeof(SDFImage))]
+namespace Beamable.Editor.UI.Buss {
+    [CustomEditor(typeof(SdfImage))]
     public class SDFImageInspector : UnityEditor.Editor {
         public override void OnInspectorGUI() {
-            var bussElement = ((SDFImage) serializedObject.targetObject).GetComponent<BUSSElement>();
+            var bussElement = ((SdfImage) serializedObject.targetObject).GetComponent<BussElement>();
             var useStyles = (bussElement != null) && bussElement.enabled;
             
             if (useStyles) {
@@ -50,7 +50,7 @@ namespace Beamable.Editor.UI.SDF {
 
                 if (EditorGUI.EndChangeCheck()) {
                     serializedObject.ApplyModifiedProperties();
-                    foreach (var sdfImage in serializedObject.targetObjects.Cast<SDFImage>()) {
+                    foreach (var sdfImage in serializedObject.targetObjects.Cast<SdfImage>()) {
                         sdfImage.Rebuild(CanvasUpdate.Layout);
                     }
                 }

@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using Beamable.UI.BUSS;
-using Beamable.UI.SDF.Styles;
+using Beamable.UI.Buss;
+using Beamable.UI.Sdf.Styles;
 using UnityEditor;
 using UnityEngine;
 
-namespace Beamable.Editor.UI.SDF {
+namespace Beamable.Editor.UI.Buss {
     [CustomPropertyDrawer(typeof(SerializableValueImplementsAttribute))]
     [CustomPropertyDrawer(typeof(SerializableValueObject))]
     public class SerializableValueObjectDrawer : PropertyDrawer {

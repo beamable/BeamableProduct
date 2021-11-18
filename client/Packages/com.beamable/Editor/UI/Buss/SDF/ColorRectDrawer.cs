@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Reflection;
-using Beamable.UI.SDF.Styles;
+using Beamable.UI.Sdf.Styles;
 using UnityEditor;
 using UnityEngine;
 
-namespace Beamable.Editor.UI.SDF {
+namespace Beamable.Editor.UI.Buss {
     [CustomPropertyDrawer(typeof(ColorRect))]
     public class ColorRectDrawer : PropertyDrawer {
         private static readonly FieldInfo _drawerModeField =

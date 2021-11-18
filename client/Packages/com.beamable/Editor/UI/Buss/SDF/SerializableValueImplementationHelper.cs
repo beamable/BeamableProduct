@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace Beamable.Editor.UI.SDF {
+namespace Beamable.Editor.UI.Buss {
     public static class SerializableValueImplementationHelper {
 
         private static Dictionary<Type, ImplementationData> _data = new Dictionary<Type, ImplementationData>();

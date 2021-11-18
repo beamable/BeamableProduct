@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Beamable.UI.BUSS;
+using Beamable.UI.Buss;
 using UnityEngine;
 
 #if UNITY_2018
@@ -12,38 +12,14 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 {
     public class BussConfiguration : ModuleConfigurationObject
     {
-        #region Old system
-
-        public StyleSheetObject FallbackSheet;
-
-        public List<StyleSheetObject> DefaultSheets = new List<StyleSheetObject>();
-
-        public IEnumerable<StyleSheetObject> EnumerateSheets()
-        {
-            foreach (var sheet in DefaultSheets)
-            {
-                if (sheet != null)
-                {
-                    yield return sheet;
-                }
-            }
-
-            if (FallbackSheet != null)
-            {
-                yield return FallbackSheet;
-            }
-        }
-
-        #endregion
-
         // New system
         public static BussConfiguration Instance => Get<BussConfiguration>();
-        [SerializeField] private BUSSStyleSheet globalStyleSheet = null;
+        [SerializeField] private BussStyleSheet globalStyleSheet = null;
 
         // TODO: serialized only for debug purposes. Remove before final push
-        [SerializeField] private List<BUSSElement> _rootBussElements = new List<BUSSElement>();
+        [SerializeField] private List<BussElement> _rootBussElements = new List<BussElement>();
 
-        public void RegisterObserver(BUSSElement bussElement)
+        public void RegisterObserver(BussElement bussElement)
         {
             // TODO: serve case when user adds (by Add Component opiton, not by changing hierarchy) BUSSStyleProvider
             // component somewhere "above" currently topmost BUSSStyleProvider(s) causing to change whole hierarchy 
@@ -54,12 +30,12 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
             }
         }
 
-        public void UnregisterObserver(BUSSElement bussElement)
+        public void UnregisterObserver(BussElement bussElement)
         {
             _rootBussElements.Remove(bussElement);
         }
 
-        public void UpdateStyleSheet(BUSSStyleSheet styleSheet) {
+        public void UpdateStyleSheet(BussStyleSheet styleSheet) {
             // this should happen only in editor
             if (styleSheet == null) return;
             if (styleSheet == globalStyleSheet) {
@@ -74,7 +50,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
             }
         }
 
-        private void OnStyleSheetChanged(BUSSElement element, BUSSStyleSheet styleSheet) {
+        private void OnStyleSheetChanged(BussElement element, BussStyleSheet styleSheet) {
             if (element.StyleSheet == styleSheet) {
                 element.OnStyleChanged();
             }
@@ -112,7 +88,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
         // TODO: in future move to some styles repository class which responsibility will be caching styles and recalculate them
         #region Styles parsing
 
-        public void RecalculateStyle(BUSSElement element) {
+        public void RecalculateStyle(BussElement element) {
             element.Style.Clear();
             element.PseudoStyles.Clear();
 
@@ -131,7 +107,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
             element.ApplyStyle();
         }
 
-        public static void ApplyStyleSheet(BUSSElement element, BUSSStyleSheet sheet) {
+        public static void ApplyStyleSheet(BussElement element, BussStyleSheet sheet) {
             foreach (var descriptor in sheet.Styles) {
                 if (descriptor.Selector?.CheckMatch(element) ?? false) {
                     ApplyDescriptor(element, descriptor);
@@ -139,7 +115,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
             }
         }
 
-        public static void ApplyDescriptor(BUSSElement element, BUSSStyleDescription descriptor) {
+        public static void ApplyDescriptor(BussElement element, BussStyleDescription descriptor) {
             foreach (var property in descriptor.Properties) {
                 element.Style[property.Key] = property.GetProperty();
             }
