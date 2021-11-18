@@ -1,3 +1,7 @@
 #mainVisualElement {
-    padding-top: 10px;
+    height: 300px;
+}
+
+#scrollView {
+    flex-grow: 1;
 }

@@ -31,68 +31,85 @@ namespace Beamable.UI.BUSS
 			                                BUSSConstants.HierarchyWindowSize);
 		}
 
-		public BUSSHierarchyWindow() : base(
+		private IndentedLabelVisualElement _selectedComponent;
+		private ScrollView _container;
+
+		private BUSSHierarchyWindow() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BUSSHierarchyWindow)}/{nameof(BUSSHierarchyWindow)}") { }
 
 		public override void Refresh()
 		{
 			base.Refresh();
 
-			// IndentedLabelVisualElement label = new IndentedLabelVisualElement();
-			// label.Setup("Test test");
-			// label.Refresh();
-			//
-			// IndentedLabelVisualElement label1 = new IndentedLabelVisualElement();
-			// label1.Setup("Test test", 1);
-			// label1.Refresh();
-			//
-			// Root.Add(label);
-			// Root.Add(label1);
+			_container = Root.Q<ScrollView>("scrollView");
 			
-			foreach (Object o in Object.FindObjectsOfType(typeof(GameObject)))
+			EditorApplication.hierarchyChanged += OnHierarchyChanged;
+			
+			OnHierarchyChanged();
+		}
+
+		protected override void OnDestroy()
+		{
+			base.OnDestroy();
+			EditorApplication.hierarchyChanged -= OnHierarchyChanged;
+		}
+
+		private void OnHierarchyChanged()
+		{
+			_container.Clear();
+
+			foreach (Object foundObject in Object.FindObjectsOfType(typeof(GameObject)))
 			{
-				GameObject obj = (GameObject) o;
-				if (obj.transform.parent == null)
+				GameObject gameObject = (GameObject) foundObject;
+				if (gameObject.transform.parent == null)
 				{
-					Text component = obj.GetComponent<Text>();
-
-					if (component != null)
-					{
-						IndentedLabelVisualElement label = new IndentedLabelVisualElement();
-						label.Setup(obj.name);
-						label.Refresh();
-						Root.Add(label);
-					}
-
-					Traverse(obj, 0);
+					Traverse(gameObject, 0);
 				}
 			}
 		}
-		
-		
-		void Traverse(GameObject obj, int level)
-		{
-			Text component = obj.GetComponent<Text>();
 
-			if (component != null)
+		private void OnMouseClicked(IndentedLabelVisualElement clickedComponent)
+		{
+			_selectedComponent?.Deselect();
+			_selectedComponent = clickedComponent;
+			_selectedComponent?.Select();
+			Selection.SetActiveObjectWithContext(_selectedComponent?.RelatedBussElement, _selectedComponent?.RelatedBussElement);
+		}
+
+		private void Traverse(GameObject gameObject, int currentLevel)
+		{
+			// TODO: this is temporary component class. It should be removed after buss-system branch will be merged into main
+			// BUSSElement component will be available
+			Text foundComponent = gameObject.GetComponent<Text>();
+
+			if (foundComponent != null)
 			{
-				IndentedLabelVisualElement label = new IndentedLabelVisualElement();
-				label.Setup(obj.name, level + 1);
+				IndentedLabelVisualElement label = new IndentedLabelVisualElement(); 
+				_container.Add(label);
+				label.Setup(foundComponent, OnMouseClicked, currentLevel);
 				label.Refresh();
-				Root.Add(label);
 				
-				foreach (Transform child in obj.transform)
+				foreach (Transform child in gameObject.transform)
 				{
-					Traverse(child.gameObject, level + 1);
+					Traverse(child.gameObject, currentLevel + 1);
 				}
 			}
 			else
 			{
-				foreach (Transform child in obj.transform)
+				foreach (Transform child in gameObject.transform)
 				{
-					Traverse(child.gameObject, level);
+					Traverse(child.gameObject, currentLevel);
 				}
 			}
+		}
+	}
+
+	// TODO: this is temporary class. It should be removed after buss-system branch will be merged into main
+	public class BUSSElement : MonoBehaviour
+	{
+		public string Name
+		{
+			get;
 		}
 	}
 }

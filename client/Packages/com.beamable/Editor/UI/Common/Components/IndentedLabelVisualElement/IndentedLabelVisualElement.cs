@@ -1,7 +1,9 @@
 ﻿using Beamable.Editor.UI.Buss;
+using Beamable.UI.BUSS;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -57,25 +59,34 @@ namespace Beamable.Editor.UI.Components
 
 		private Label _label;
 
-		public float SingleIndentWidth
+		public Text RelatedBussElement
+		{
+			get;
+			private set;
+		}
+
+		private VisualElement _container;
+		private Action<IndentedLabelVisualElement> _onMouseClicked;
+
+		private float SingleIndentWidth
 		{
 			get;
 			set;
 		}
 
-		public float Level
+		private float Level
 		{
 			get;
 			set;
 		}
 
-		public string Label
+		private string Label
 		{
 			get;
 			set;
 		}
 
-		public float Width => SingleIndentWidth * Level;
+		private float Width => (SingleIndentWidth * Level) + SingleIndentWidth;
 
 		public IndentedLabelVisualElement() : base(
 			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(IndentedLabelVisualElement)}/{nameof(IndentedLabelVisualElement)}") { }
@@ -84,23 +95,56 @@ namespace Beamable.Editor.UI.Components
 		{
 			base.Refresh();
 
+			_container = Root.Q<VisualElement>("container");
+
 			_label = Root.Q<Label>("label");
 			_label.style.paddingLeft = new StyleLength(Width);
 			_label.text = Label;
-			
-			_label.RegisterCallback<MouseDownEvent>(Clicked);
+
+			_label.RegisterCallback<MouseDownEvent>(OnMouseClicked);
+			_label.RegisterCallback<MouseOverEvent>(OnMouseOver);
+			_label.RegisterCallback<MouseOutEvent>(OnMouseOut);
 		}
 
-		private void Clicked(MouseDownEvent evt)
+		public void Setup(Text relatedBussElement,
+		                  Action<IndentedLabelVisualElement> onMouseClicked,
+		                  int? level = null,
+		                  int? width = null)
 		{
-			Debug.Log("clicked");
-		}
+			_onMouseClicked = onMouseClicked;
 
-		public void Setup(string value, int? level = null, int? width = null)
-		{
-			Label = value;
+			RelatedBussElement = relatedBussElement;
+			Label = relatedBussElement.gameObject.name;
 			Level = level ?? 0;
 			SingleIndentWidth = width ?? DEFAULT_SINGLE_INDENT_WIDTH;
+		}
+
+		public void Select()
+		{
+			_container.AddToClassList("selected");
+		}
+
+		public void Deselect()
+		{
+			_container.RemoveFromClassList("selected");
+		}
+
+		private void OnMouseOver(MouseOverEvent evt)
+		{
+			if (!_container.ClassListContains("selected"))
+			{
+				_container.AddToClassList("hovered");
+			}
+		}
+
+		private void OnMouseOut(MouseOutEvent evt)
+		{
+			_container.RemoveFromClassList("hovered");
+		}
+
+		private void OnMouseClicked(MouseDownEvent evt)
+		{
+			_onMouseClicked?.Invoke(this);
 		}
 	}
 }
