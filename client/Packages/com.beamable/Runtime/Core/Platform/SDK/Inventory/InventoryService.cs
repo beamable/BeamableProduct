@@ -1,6 +1,8 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Inventory;
+using Beamable.Serialization.SmallerJSON;
+using System.Collections.Generic;
 
 namespace Beamable.Api.Inventory
 {
@@ -22,14 +24,57 @@ namespace Beamable.Api.Inventory
 
       private readonly InventoryView view = new InventoryView();
 
+      /// <summary>
+      /// Mapping of each requested scope to the body generated for it.
+      /// </summary>
+      private Dictionary<string, ArrayDict> ScopesToBodyMap;
+
+      /// <summary>
+      /// Last value that passed through <see cref="CreateRefreshUrl"/>.
+      /// </summary>
+      private ArrayDict OutgoingBody;
+
       public InventorySubscription(IPlatformService platform, IBeamableRequester requester) : base(platform, requester, SERVICE)
       {
-         UsesHierarchyScopes = true;
+	      ScopesToBodyMap = new Dictionary<string, ArrayDict>();
+	      
+	      UsesHierarchyScopes = true;        
+         
+         _executeRequestDelegate = RequestData;
+         _createRefreshUrlDelegate = CreateRefreshUrl;
+         getter = null;
       }
 
       protected override void Reset()
       {
          view.Clear();
+      }
+      
+      /// <summary>
+      /// Makes a request using the last-defined <see cref="OutgoingBody"/>. This relies on the fact that <see cref="PlatformSubscribable{ScopedRsp,Data}.ExecuteRequest"/> is always called
+      /// with <see cref="PlatformSubscribable{ScopedRsp,Data}.CreateRefreshUrl"/> as its <paramref name="url"/> parameter. 
+      /// </summary>
+      protected Promise<InventoryResponse> RequestData(IBeamableRequester requester, string url)
+      {
+	      return requester.Request<InventoryResponse>(Method.POST, url, OutgoingBody);
+      }
+      
+      /// <summary>
+      /// Builds a <see cref="Method.POST"/> request's body for the given scope and caches it in <see cref="ScopesToBodyMap"/>.
+      /// </summary>
+      /// <param name="scope">A ","-separated string with all item types or ids that we want to get.</param>      
+      protected  string CreateRefreshUrl(IUserContext ctx, string serviceName, string scope)
+      {
+	      if (!ScopesToBodyMap.TryGetValue(scope, out var body))
+	      {
+		      body = OutgoingBody = new ArrayDict()
+		      {
+			      { "scopes", scope.Split(',')}
+		      };
+		      ScopesToBodyMap.Add(scope, body);		      
+	      }
+	      
+	      return $"/object/{serviceName}/{ctx.UserId}";
       }
 
       protected override void OnRefresh(InventoryResponse data)

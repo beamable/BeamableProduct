@@ -79,7 +79,18 @@ namespace Beamable.Api
    {
       protected IPlatformService platform;
       protected IBeamableRequester requester;
+      
       protected BeamableGetApiResource<ScopedRsp> getter;
+      
+      /// <summary>
+      /// Called by <see cref="ExecuteRequest"/> when <see cref="getter"/> is null. Sub-classes are expected to set <see cref="getter"/> to null in order to use these instead.
+      /// </summary>
+      protected ExecuteRequestDelegate _executeRequestDelegate;
+      /// <summary>
+      /// Called by <see cref="CreateRefreshUrl"/> when <see cref="getter"/> is null. Sub-classes are expected to set <see cref="getter"/> to null in order to use these instead.
+      /// </summary>
+      protected CreateRefreshUrlDelegate _createRefreshUrlDelegate;
+      
       private string service;
       private Dictionary<string, Data> scopedData = new Dictionary<string, Data>();
 
@@ -118,6 +129,9 @@ namespace Beamable.Api
          };
       }
 
+      protected delegate Promise<ScopedRsp> ExecuteRequestDelegate(IBeamableRequester requester, string url);
+      protected delegate string CreateRefreshUrlDelegate(IUserContext ctx, string serviceName, string scope);
+      
       private void OnTimeOverride()
       {
          Refresh();
@@ -272,12 +286,18 @@ namespace Beamable.Api
 
       protected virtual Promise<ScopedRsp> ExecuteRequest(IBeamableRequester requester, string url)
       {
-         return getter.RequestData(requester, url);
+	      if(getter != null)
+			return getter.RequestData(requester, url);
+
+	      return _executeRequestDelegate.Invoke(requester, url);
       }
 
       protected virtual string CreateRefreshUrl(string scope)
       {
-         return getter.CreateRefreshUrl(platform, service, scope);
+	      if(getter != null)
+			return getter.CreateRefreshUrl(platform, service, scope);
+
+	      return _createRefreshUrlDelegate.Invoke(platform, service, scope);
       }
 
       /// <summary>

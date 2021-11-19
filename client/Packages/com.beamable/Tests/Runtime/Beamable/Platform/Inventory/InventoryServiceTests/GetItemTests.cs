@@ -20,7 +20,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
 
          // Mock out a network request that get an item. This semi defines the web API itself.
          _requester
-            .MockRequest<InventoryResponse>(Method.GET, $"{objectUrl}?scope=items.inventoryTestItem.{contentName}")
+            .MockRequest<InventoryResponse>(Method.POST, $"{objectUrl}")
             .WithResponse(new InventoryResponse
             {
                currencies = new List<Currency>(),
@@ -89,7 +89,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
 
          // Mock out a network request that get an item. This semi defines the web API itself.
          _requester
-            .MockRequest<InventoryResponse>(Method.GET, $"{objectUrl}?scope=items.inventoryTestItem")
+            .MockRequest<InventoryResponse>(Method.POST, $"{objectUrl}")
             .WithResponse(new InventoryResponse
             {
                currencies = new List<Currency>(),
@@ -156,7 +156,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
 
          // Mock out a network request that get an item. This semi defines the web API itself.
          _requester
-            .MockRequest<InventoryResponse>(Method.GET, $"{objectUrl}?scope=items.inventoryTestItem")
+            .MockRequest<InventoryResponse>(Method.POST, $"{objectUrl}")
             .WithResponse(new InventoryResponse
             {
                currencies = new List<Currency>(),
