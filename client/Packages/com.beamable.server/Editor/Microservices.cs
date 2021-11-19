@@ -470,7 +470,7 @@ namespace Beamable.Server.Editor
       {
          if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
 
-         var descriptorsCount = Descriptors.Count + StorageDescriptors.Count;
+         var descriptorsCount = Descriptors.Count;
          onBeforeDeploy?.Invoke(model, descriptorsCount);
 
          // TODO perform sort of diff, and only do what is required. Because this is a lot of work.
@@ -526,7 +526,6 @@ namespace Beamable.Server.Editor
             () =>
             {
                 Debug.LogError(string.Format(BeamableLogConstants.CantUploadContainerMessage, descriptor.Name));
-                return;
             }, imageId);
          }
 
