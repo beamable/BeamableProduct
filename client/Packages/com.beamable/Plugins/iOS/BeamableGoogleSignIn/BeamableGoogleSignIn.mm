@@ -1,6 +1,6 @@
 #if __has_include(<GoogleSignIn/GIDSignIn.h>)
 
-#import "GoogleSignIn.h"
+#import "BeamableGoogleSignIn.h"
 #import <GoogleSignIn/GIDAuthentication.h>
 #import <GoogleSignIn/GIDGoogleUser.h>
 #import <GoogleSignIn/GIDSignIn.h>
