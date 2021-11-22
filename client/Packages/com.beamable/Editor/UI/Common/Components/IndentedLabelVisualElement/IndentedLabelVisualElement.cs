@@ -59,7 +59,7 @@ namespace Beamable.Editor.UI.Components
 
 		private Label _label;
 
-		public Text RelatedBussElement
+		public GameObject RelatedGameObject
 		{
 			get;
 			private set;
@@ -106,15 +106,16 @@ namespace Beamable.Editor.UI.Components
 			_label.RegisterCallback<MouseOutEvent>(OnMouseOut);
 		}
 
-		public void Setup(Text relatedBussElement,
+		public void Setup(GameObject relatedGameObject,
+		                  string label,
 		                  Action<IndentedLabelVisualElement> onMouseClicked,
 		                  int? level = null,
 		                  int? width = null)
 		{
 			_onMouseClicked = onMouseClicked;
 
-			RelatedBussElement = relatedBussElement;
-			Label = relatedBussElement.gameObject.name;
+			RelatedGameObject = relatedGameObject;
+			Label = label;
 			Level = level ?? 0;
 			SingleIndentWidth = width ?? DEFAULT_SINGLE_INDENT_WIDTH;
 		}
