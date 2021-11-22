@@ -27,6 +27,7 @@ namespace Beamable.CronExpression
         private readonly string _expression;
         private readonly Options _options;
         private readonly CultureInfo _en_culture;
+        private readonly Regex _regex = new Regex(@"^\s*($|#|\w+\s*=|(\?|\*|(?:[0-5]?\d)(?:(?:-|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[0-5]?\d)(?:(?:-|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[01]?\d|2[0-3])(?:(?:-|\,)(?:[01]?\d|2[0-3]))?(?:,(?:[01]?\d|2[0-3])(?:(?:-|\,)(?:[01]?\d|2[0-3]))?)*)\s+(\?|\*|(?:0?[1-9]|[12]\d|3[01])(?:(?:-|\,)(?:0?[1-9]|[12]\d|3[01]))?(?:,(?:0?[1-9]|[12]\d|3[01])(?:(?:-|\,)(?:0?[1-9]|[12]\d|3[01]))?)*)\s+(\?|\*|(?:[1-9]|1[012])(?:(?:-|\,)(?:[1-9]|1[012]))?(?:L|W)?(?:,(?:[1-9]|1[012])(?:(?:-|\,)(?:[1-9]|1[012]))?(?:L|W)?)*|\?|\*|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?(?:,(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?)*)\s+(\?|\*|(?:[0-6])(?:(?:-|\,|#)(?:[0-6]))?(?:L)?(?:,(?:[0-6])(?:(?:-|\,|#)(?:[0-6]))?(?:L)?)*|\?|\*|(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?(?:,(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?)*)(|\s)+(\?|\*|(?:|\d{4})(?:(?:-|\,)(?:|\d{4}))?(?:,(?:|\d{4})(?:(?:-|\,)(?:|\d{4}))?)*))$");
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="ExpressionParser" /> class
@@ -44,10 +45,11 @@ namespace Beamable.CronExpression
         ///     Parses the cron expression string
         /// </summary>
         /// <returns>A 7 part string array, one part for each component of the cron expression (seconds, minutes, etc.)</returns>
-        public string[] Parse()
+        public string[] Parse(out ErrorData errorData)
         {
-            // Initialize all elements of parsed array to empty strings
-            var parsed = new string[7].Select(el => "").ToArray();
+	        // Initialize all elements of parsed array to empty strings
+	        errorData = new ErrorData();
+	        var parsed = new string[7].Select(el => "").ToArray();
 
             if (string.IsNullOrEmpty(_expression))
             {
@@ -90,6 +92,12 @@ namespace Beamable.CronExpression
             if (expressionPartsTemp.Length != 7)
                 throw new FormatException($"Error: Expression has {expressionPartsTemp.Length} parts. Exactly 7 parts are required.");
 
+            if (!IsValidFormat)
+            {
+	            errorData.ErrorMessage = "Error: CRON validation is not passing. CRON supports only numbers [0-9] and special characters [,-*]";
+	            return null;
+            }
+            
             if (expressionPartsTemp.Length == 7) 
                 parsed = expressionPartsTemp;
 
@@ -233,5 +241,7 @@ namespace Beamable.CronExpression
                 }
             }
         }
+        
+        private bool IsValidFormat => _regex.IsMatch(_expression);
     }
 }

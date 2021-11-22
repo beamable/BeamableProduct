@@ -50,7 +50,7 @@ namespace Beamable.CronExpression
         private readonly CultureInfo _culture;
         private CronLocalizationData _localizationData;
         private CronLocalizationDatabase _localizationDatabase;
-
+        
         /// <summary>
         ///     Initializes a new instance of the <see cref="ExpressionDescriptor" /> class
         /// </summary>
@@ -103,7 +103,9 @@ namespace Beamable.CronExpression
                 if (!_parsed)
                 {
                     var parser = new ExpressionParser(_expression, _options);
-                    _expressionParts = parser.Parse();
+                    _expressionParts = parser.Parse(out errorData);
+                    if (errorData.IsError)
+	                    return errorData.ErrorMessage;
                     _parsed = true;
                 }
 
@@ -698,9 +700,40 @@ namespace Beamable.CronExpression
         {
             string Convert(IReadOnlyList<string> part)
             {
-                var converted = string.Empty;
+	            int ConvertToInt(string text) => int.Parse(TryCutFirstZero(text));
+	            string TryCutFirstZero(string text) => text.Length == 2 && text.StartsWith("0") ? $"{text[1]}" : text;
+
+	            if (part.Count == 1)
+		            return TryCutFirstZero(part[0]);
+	            
+	            var converted = string.Empty;
+	            var dashedStrings = new List<int>();
+	            
                 for (var i = 0; i < part.Count; i++)
-                    converted += i + 1 == part.Count ? part[i] : $"{part[i]},";
+                {
+	                var from = ConvertToInt(part[i]);
+	                dashedStrings.Add(from);
+
+	                if (i == part.Count - 1)
+		                break;
+	                
+	                var to = ConvertToInt(part[i + 1]);
+
+	                if (from + 1 == to)
+		                continue;
+
+	                converted += dashedStrings.Count == 1 ? i + 1 == part.Count ? $"{dashedStrings[0]}" :
+		                $"{dashedStrings[0]}," :
+		                i + 1 == part.Count ? $"{dashedStrings[0]}-{dashedStrings[dashedStrings.Count - 1]}" :
+		                $"{dashedStrings[0]}-{dashedStrings[dashedStrings.Count - 1]},";
+
+	                dashedStrings.Clear();
+                }
+
+                if (dashedStrings.Count == 1)
+	                converted += $"{dashedStrings[0]}";
+                else if (dashedStrings.Count != 0)
+	                converted += $"{dashedStrings[0]}-{dashedStrings[dashedStrings.Count - 1]}";
 
                 return converted;
             }
@@ -724,7 +757,31 @@ namespace Beamable.CronExpression
         /// <returns>Schedule definition</returns>
         public static ScheduleDefinition CronToScheduleDefinition(string expression)
         {
-            List<string> Convert(string part) => part.Split(',').ToList();
+	        List<string> Convert(string part)
+	        {
+		        var subParts = part.Split(',').ToList();
+		        var finalList = new List<string>();
+		        
+		        foreach (var subPart in subParts)
+		        {
+			        if (!subPart.Contains('-'))
+			        {
+				        finalList.Add(subPart.Length == 1 && subPart.Contains('*') && subPart.Contains('0') 
+					                      ? $"0{subPart}" 
+					                      : subPart);
+				        continue;
+			        }
+			        
+			        var range = subPart.Split('-').ToList();
+			        var from = int.Parse(range[0]);
+			        var to = int.Parse(range[1]);
+
+			        for (int i = from; i <= to; i++)
+				        finalList.Add(i >= 0 && i < 10 ? $"0{i}" : $"{i}");
+		        }
+		        
+		        return finalList;
+	        }
 
             var split = expression.Split(' ');
 
