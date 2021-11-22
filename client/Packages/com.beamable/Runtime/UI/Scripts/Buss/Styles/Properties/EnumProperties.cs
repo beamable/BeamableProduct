@@ -5,14 +5,14 @@ using Beamable.UI.Tweening;
 using UnityEngine.UI;
 
 namespace Beamable.UI.Buss {
-    public abstract class EnumProperty<T> : IEnumProperty where T : Enum {
+    public abstract class EnumBussProperty<T> : IEnumBussProperty where T : Enum {
         public T Enum;
 
         public Enum EnumValue => Enum;
 
-        protected EnumProperty() { }
+        protected EnumBussProperty() { }
 
-        protected EnumProperty(T @enum) {
+        protected EnumBussProperty(T @enum) {
             Enum = @enum;
         }
 
@@ -20,68 +20,68 @@ namespace Beamable.UI.Buss {
             return (T1) EnumValue;
         }
 
-        public abstract IBussProperty Clone();
+        public abstract IBussProperty CopyProperty();
     }
     
     [Serializable]
-    public class ImageTypeProperty : EnumProperty<SdfImage.ImageType> {
-        public ImageTypeProperty() { }
-        public ImageTypeProperty(SdfImage.ImageType @enum) : base(@enum) { }
+    public class ImageTypeBussProperty : EnumBussProperty<SdfImage.ImageType> {
+        public ImageTypeBussProperty() { }
+        public ImageTypeBussProperty(SdfImage.ImageType @enum) : base(@enum) { }
 
-        public override IBussProperty Clone() {
-            return new ImageTypeProperty(Enum);
+        public override IBussProperty CopyProperty() {
+            return new ImageTypeBussProperty(Enum);
         }
     }
 
     // TODO: can't we move BorderMode class into Beamable.UI.BUSS namespace?
     [Serializable]
-    public class SdfModeProperty : EnumProperty<SdfImage.SdfMode> {
-        public SdfModeProperty() { }
-        public SdfModeProperty(SdfImage.SdfMode @enum) : base(@enum) { }
+    public class SdfModeBussProperty : EnumBussProperty<SdfImage.SdfMode> {
+        public SdfModeBussProperty() { }
+        public SdfModeBussProperty(SdfImage.SdfMode @enum) : base(@enum) { }
 
-        public override IBussProperty Clone() {
-            return new SdfModeProperty(Enum);
+        public override IBussProperty CopyProperty() {
+            return new SdfModeBussProperty(Enum);
         }
     }
 
     [Serializable]
-    public class BorderModeProperty : EnumProperty<SdfImage.BorderMode> {
-        public BorderModeProperty() { }
-        public BorderModeProperty(SdfImage.BorderMode @enum) : base(@enum) { }
+    public class BorderModeBussProperty : EnumBussProperty<SdfImage.BorderMode> {
+        public BorderModeBussProperty() { }
+        public BorderModeBussProperty(SdfImage.BorderMode @enum) : base(@enum) { }
 
-        public override IBussProperty Clone() {
-            return new BorderModeProperty(Enum);
+        public override IBussProperty CopyProperty() {
+            return new BorderModeBussProperty(Enum);
         }
     }
 
     [Serializable]
-    public class BackgroundModeProperty : EnumProperty<SdfBackgroundMode> {
-        public BackgroundModeProperty(){}
-        public BackgroundModeProperty(SdfBackgroundMode @enum) : base(@enum) { }
+    public class BackgroundModeBussProperty : EnumBussProperty<SdfBackgroundMode> {
+        public BackgroundModeBussProperty(){}
+        public BackgroundModeBussProperty(SdfBackgroundMode @enum) : base(@enum) { }
 
-        public override IBussProperty Clone() {
-            return new BackgroundModeProperty(Enum);
+        public override IBussProperty CopyProperty() {
+            return new BackgroundModeBussProperty(Enum);
         }
     }
 
     [Serializable]
-    public class ShadowModeProperty : EnumProperty<SdfShadowMode> {
-        public ShadowModeProperty(){}
-        public ShadowModeProperty(SdfShadowMode @enum) : base(@enum) { }
+    public class ShadowModeBussProperty : EnumBussProperty<SdfShadowMode> {
+        public ShadowModeBussProperty(){}
+        public ShadowModeBussProperty(SdfShadowMode @enum) : base(@enum) { }
 
-        public override IBussProperty Clone() {
-            return new ShadowModeProperty(Enum);
+        public override IBussProperty CopyProperty() {
+            return new ShadowModeBussProperty(Enum);
         }
     }
 
     [Serializable]
-    public class EasingProperty : EnumProperty<Easing> {
-        public EasingProperty(){}
+    public class EasingBussProperty : EnumBussProperty<Easing> {
+        public EasingBussProperty(){}
 
-        public EasingProperty(Easing easing) : base(easing) { }
+        public EasingBussProperty(Easing easing) : base(easing) { }
 
-        public override IBussProperty Clone() {
-            return new EasingProperty(Enum);
+        public override IBussProperty CopyProperty() {
+            return new EasingBussProperty(Enum);
         }
     }
 }

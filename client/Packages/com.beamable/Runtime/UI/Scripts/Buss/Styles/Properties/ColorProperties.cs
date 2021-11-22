@@ -6,7 +6,7 @@ namespace Beamable.UI.Buss {
     
     // BUSS: color: #232323
     [Serializable]
-    public class SingleColorProperty : IColorProperty, IVertexColorProperty {
+    public class SingleColorBussProperty : IColorBussProperty, IVertexColorBussProperty {
         [SerializeField]
         private Color _color;
 
@@ -17,31 +17,31 @@ namespace Beamable.UI.Buss {
 
         public ColorRect ColorRect => new ColorRect(_color);
 
-        public SingleColorProperty() { }
+        public SingleColorBussProperty() { }
 
-        public SingleColorProperty(Color color) {
+        public SingleColorBussProperty(Color color) {
             Color = color;
         }
         
-        public IBussProperty Clone() {
-            return new SingleColorProperty(_color);
+        public IBussProperty CopyProperty() {
+            return new SingleColorBussProperty(_color);
         }
 
         public IBussProperty Interpolate(IBussProperty other, float value) {
-            if (other is IColorProperty col) {
-                return new SingleColorProperty(Color.Lerp(_color, col.Color, value));
+            if (other is IColorBussProperty col) {
+                return new SingleColorBussProperty(Color.Lerp(_color, col.Color, value));
             }
-            if (other is IVertexColorProperty vert) {
-                return new VertexColorProperty(ColorRect.Lerp(new ColorRect(_color), vert.ColorRect, value));
+            if (other is IVertexColorBussProperty vert) {
+                return new VertexColorBussProperty(ColorRect.Lerp(new ColorRect(_color), vert.ColorRect, value));
             }
 
-            return Clone();
+            return CopyProperty();
         }
     }
 
     // BUSS: color: #232323 #a3a3a3 #a3a3a3 #241321
     [Serializable]
-    public class VertexColorProperty : IVertexColorProperty {
+    public class VertexColorBussProperty : IVertexColorBussProperty {
         [SerializeField]
         public ColorRect _colorRect;
 
@@ -50,33 +50,33 @@ namespace Beamable.UI.Buss {
             set => _colorRect = value;
         }
         
-        public VertexColorProperty() { }
+        public VertexColorBussProperty() { }
         
-        public VertexColorProperty(Color color) {
+        public VertexColorBussProperty(Color color) {
             _colorRect = new ColorRect(color);
         }
         
-        public VertexColorProperty(Color bl, Color br, Color tl, Color tr) {
+        public VertexColorBussProperty(Color bl, Color br, Color tl, Color tr) {
             _colorRect = new ColorRect(bl, br, tl ,tr);
         }
 
-        public VertexColorProperty(ColorRect colorRect) {
+        public VertexColorBussProperty(ColorRect colorRect) {
             _colorRect = colorRect;
         }
 
-        public IBussProperty Clone() {
-            return new VertexColorProperty(_colorRect);
+        public IBussProperty CopyProperty() {
+            return new VertexColorBussProperty(_colorRect);
         }
 
         public IBussProperty Interpolate(IBussProperty other, float value) {
-            if (other is IVertexColorProperty vert) {
-                return new VertexColorProperty(ColorRect.Lerp(ColorRect, vert.ColorRect, value));
+            if (other is IVertexColorBussProperty vert) {
+                return new VertexColorBussProperty(ColorRect.Lerp(ColorRect, vert.ColorRect, value));
             }
-            if (other is IColorProperty col) {
-                return new VertexColorProperty(ColorRect.Lerp(ColorRect, new ColorRect(col.Color), value));
+            if (other is IColorBussProperty col) {
+                return new VertexColorBussProperty(ColorRect.Lerp(ColorRect, new ColorRect(col.Color), value));
             }
 
-            return Clone();
+            return CopyProperty();
         }
     }
 }

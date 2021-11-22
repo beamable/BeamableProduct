@@ -16,32 +16,32 @@ namespace Beamable.UI.Buss {
     }
 
     [Serializable]
-    public class SpriteProperty : BaseAssetProperty<Sprite>, ISpriteProperty {
+    public class SpriteBussProperty : BaseAssetProperty<Sprite>, ISpriteBussProperty {
         public Sprite SpriteValue => Asset;
         
-        public SpriteProperty() { }
+        public SpriteBussProperty() { }
 
-        public SpriteProperty(Sprite sprite) {
+        public SpriteBussProperty(Sprite sprite) {
             Asset = sprite;
         }
 
-        public IBussProperty Clone() {
-            return new SpriteProperty(Asset);
+        public IBussProperty CopyProperty() {
+            return new SpriteBussProperty(Asset);
         }
     }
 
     [Serializable]
-    public class FontAssetProperty : BaseAssetProperty<TMP_FontAsset>, IFontProperty {
+    public class FontBussAssetProperty : BaseAssetProperty<TMP_FontAsset>, IFontBussProperty {
         public TMP_FontAsset FontAsset => Asset;
 
-        public FontAssetProperty() { }
+        public FontBussAssetProperty() { }
 
-        public FontAssetProperty(TMP_FontAsset asset) {
+        public FontBussAssetProperty(TMP_FontAsset asset) {
             Asset = asset;
         }
 
-        public IBussProperty Clone() {
-            return new FontAssetProperty(Asset);
+        public IBussProperty CopyProperty() {
+            return new FontBussAssetProperty(Asset);
         }
     }
 }

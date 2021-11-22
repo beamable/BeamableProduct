@@ -35,47 +35,54 @@ namespace Beamable.UI.Sdf.MaterialManagement {
         }
 
         public static void ApplySdfMode(SdfImage.SdfMode mode, Material material) {
+            const string modeDefault = "_MODE_DEFAULT";
+            const string modeRect = "_MODE_RECT";
             switch (mode) {
                 case SdfImage.SdfMode.Default:
-                    material.EnableKeyword("_MODE_DEFAULT");
-                    material.DisableKeyword("_MODE_RECT");
+                    material.EnableKeyword(modeDefault);
+                    material.DisableKeyword(modeRect);
                     break;
                 case SdfImage.SdfMode.RectOnly:
-                    material.DisableKeyword("_MODE_DEFAULT");
-                    material.EnableKeyword("_MODE_RECT");
+                    material.DisableKeyword(modeDefault);
+                    material.EnableKeyword(modeRect);
                     break;
             }
         }
 
         public static void ApplyShadowMode(SdfShadowMode mode, Material material) {
+            const string shadowmodeDefault = "_SHADOWMODE_DEFAULT";
+            const string shadowmodeInner = "_SHADOWMODE_INNER";
             switch (mode) {
                 case SdfShadowMode.Default:
-                    material.EnableKeyword("_SHADOWMODE_DEFAULT");
-                    material.DisableKeyword("_SHADOWMODE_INNER");
+                    material.EnableKeyword(shadowmodeDefault);
+                    material.DisableKeyword(shadowmodeInner);
                     break;
                 case SdfShadowMode.Inner:
-                    material.DisableKeyword("_SHADOWMODE_DEFAULT");
-                    material.EnableKeyword("_SHADOWMODE_INNER");
+                    material.DisableKeyword(shadowmodeDefault);
+                    material.EnableKeyword(shadowmodeInner);
                     break;
             }
         }
 
         public static void ApplyBackgroundMode(SdfBackgroundMode mode, Material material) {
+            const string bgmodeDefault = "_BGMODE_DEFAULT";
+            const string bgmodeOutline = "_BGMODE_OUTLINE";
+            const string bgmodeFull = "_BGMODE_FULL";
             switch (mode) {
                 case SdfBackgroundMode.Default:
-                    material.EnableKeyword("_BGMODE_DEFAULT");
-                    material.DisableKeyword("_BGMODE_OUTLINE");
-                    material.DisableKeyword("_BGMODE_FULL");
+                    material.EnableKeyword(bgmodeDefault);
+                    material.DisableKeyword(bgmodeOutline);
+                    material.DisableKeyword(bgmodeFull);
                     break;
                 case SdfBackgroundMode.Outline:
-                    material.DisableKeyword("_BGMODE_DEFAULT");
-                    material.EnableKeyword("_BGMODE_OUTLINE");
-                    material.DisableKeyword("_BGMODE_FULL");
+                    material.DisableKeyword(bgmodeDefault);
+                    material.EnableKeyword(bgmodeOutline);
+                    material.DisableKeyword(bgmodeFull);
                     break;
                 case SdfBackgroundMode.Full:
-                    material.DisableKeyword("_BGMODE_DEFAULT");
-                    material.DisableKeyword("_BGMODE_OUTLINE");
-                    material.EnableKeyword("_BGMODE_FULL");
+                    material.DisableKeyword(bgmodeDefault);
+                    material.DisableKeyword(bgmodeOutline);
+                    material.EnableKeyword(bgmodeFull);
                     break;
             }
         }

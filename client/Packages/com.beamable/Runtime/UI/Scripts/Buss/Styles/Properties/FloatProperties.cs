@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Beamable.UI.Buss {
     [Serializable]
-    public class FloatProperty : IFloatProperty, IFloatFromFloatProperty {
+    public class FloatBussProperty : IFloatBussProperty, IFloatFromFloatBussProperty {
         [SerializeField]
         private float _floatValue;
         
@@ -12,37 +12,37 @@ namespace Beamable.UI.Buss {
             set => _floatValue = value;
         }
 
-        public FloatProperty() { }
+        public FloatBussProperty() { }
 
-        public FloatProperty(float floatValue) {
+        public FloatBussProperty(float floatValue) {
             _floatValue = floatValue;
         }
 
         public float GetFloatValue(float input) => FloatValue;
-        public IBussProperty Clone() {
-            return new FloatProperty(FloatValue);
+        public IBussProperty CopyProperty() {
+            return new FloatBussProperty(FloatValue);
         }
 
         public IBussProperty Interpolate(IBussProperty other, float value) {
-            if (other is IFloatProperty fl) {
-                return new FloatProperty(Mathf.Lerp(FloatValue, fl.FloatValue, value));
+            if (other is IFloatBussProperty fl) {
+                return new FloatBussProperty(Mathf.Lerp(FloatValue, fl.FloatValue, value));
             }
 
-            if (other is FractionFloatProperty frac) {
-                return new FractionFloatProperty(Mathf.Lerp(0f, frac.Fraction, value), Mathf.Lerp(FloatValue, frac.Offset, value));
+            if (other is FractionFloatBussProperty frac) {
+                return new FractionFloatBussProperty(Mathf.Lerp(0f, frac.Fraction, value), Mathf.Lerp(FloatValue, frac.Offset, value));
             }
 
-            return Clone();
+            return CopyProperty();
         }
     }
 
     [Serializable]
-    public class FractionFloatProperty : IFloatFromFloatProperty {
+    public class FractionFloatBussProperty : IFloatFromFloatBussProperty {
         public float Fraction;
         public float Offset;
-        public FractionFloatProperty() { }
+        public FractionFloatBussProperty() { }
 
-        public FractionFloatProperty(float fraction, float offset) {
+        public FractionFloatBussProperty(float fraction, float offset) {
             Fraction = fraction;
             Offset = offset;
         }
@@ -51,20 +51,20 @@ namespace Beamable.UI.Buss {
             return input * Fraction + Offset;
         }
 
-        public IBussProperty Clone() {
-            return new FractionFloatProperty(Fraction, Offset);
+        public IBussProperty CopyProperty() {
+            return new FractionFloatBussProperty(Fraction, Offset);
         }
 
         public IBussProperty Interpolate(IBussProperty other, float value) {
-            if (other is IFloatProperty fp) {
-                return new FractionFloatProperty(Mathf.Lerp(Fraction, 0f, value), Mathf.Lerp(Offset, fp.FloatValue, value));
+            if (other is IFloatBussProperty fp) {
+                return new FractionFloatBussProperty(Mathf.Lerp(Fraction, 0f, value), Mathf.Lerp(Offset, fp.FloatValue, value));
             }
 
-            if (other is FractionFloatProperty frac) {
-                return new FractionFloatProperty(Mathf.Lerp(Fraction, frac.Fraction, value), Mathf.Lerp(Offset, frac.Offset, value));
+            if (other is FractionFloatBussProperty frac) {
+                return new FractionFloatBussProperty(Mathf.Lerp(Fraction, frac.Fraction, value), Mathf.Lerp(Offset, frac.Offset, value));
             }
 
-            return Clone();
+            return CopyProperty();
         }
     }
 }

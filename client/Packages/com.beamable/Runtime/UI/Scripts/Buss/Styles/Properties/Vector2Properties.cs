@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Beamable.UI.Buss {
     [Serializable]
-    public class Vector2Property : IVector2Property {
+    public class Vector2BussProperty : IVector2BussProperty {
         [SerializeField]
         private Vector2 _vector2Value;
 
@@ -12,14 +12,14 @@ namespace Beamable.UI.Buss {
             set => _vector2Value = value;
         }
 
-        public Vector2Property() { }
+        public Vector2BussProperty() { }
 
-        public Vector2Property(Vector2 vector2Value) {
+        public Vector2BussProperty(Vector2 vector2Value) {
             _vector2Value = vector2Value;
         }
 
-        public IBussProperty Clone() {
-            return new Vector2Property(_vector2Value);
+        public IBussProperty CopyProperty() {
+            return new Vector2BussProperty(_vector2Value);
         }
     }
 }

@@ -7,49 +7,49 @@ namespace Beamable.UI.Buss
 {
     public interface IBussProperty
     {
-        IBussProperty Clone();
+        IBussProperty CopyProperty();
     }
 
-    public interface IInterpolatedProperty : IBussProperty {
+    public interface IInterpolatedBussProperty : IBussProperty {
         IBussProperty Interpolate(IBussProperty other, float value);
     }
 
-    public interface IColorProperty : IInterpolatedProperty
+    public interface IColorBussProperty : IInterpolatedBussProperty
     {
         Color Color { get; }
     }
 
-    public interface IVertexColorProperty : IInterpolatedProperty
+    public interface IVertexColorBussProperty : IInterpolatedBussProperty
     {
         ColorRect ColorRect { get; }
     }
 
-    public interface IFloatProperty : IInterpolatedProperty
+    public interface IFloatBussProperty : IInterpolatedBussProperty
     {
         float FloatValue { get; }
     }
 
-    public interface IFloatFromFloatProperty : IInterpolatedProperty
+    public interface IFloatFromFloatBussProperty : IInterpolatedBussProperty
     {
         float GetFloatValue(float input);
     }
 
-    public interface IVector2Property : IBussProperty
+    public interface IVector2BussProperty : IBussProperty
     {
         Vector2 Vector2Value { get; }
     }
 
-    public interface IEnumProperty : IBussProperty
+    public interface IEnumBussProperty : IBussProperty
     {
         Enum EnumValue { get; }
         T CastEnumValue<T>() where T : Enum;
     }
 
-    public interface ISpriteProperty : IBussProperty {
+    public interface ISpriteBussProperty : IBussProperty {
         Sprite SpriteValue { get; }
     }
 
-    public interface IFontProperty : IBussProperty {
+    public interface IFontBussProperty : IBussProperty {
         TMP_FontAsset FontAsset { get; }
     }
 }

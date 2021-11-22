@@ -20,7 +20,7 @@ namespace Beamable.UI.Buss {
             VariableName = variableName;
         }
 
-        public IBussProperty Clone() {
+        public IBussProperty CopyProperty() {
             return new VariableProperty(VariableName);
         }
     }
