@@ -78,7 +78,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
 
          _signaler.CheckSignedInUser();
 
-         yield return _pendingPromise.AsYield();
+         yield return _pendingPromise.AsYield(2);
          Assert.AreEqual(true, listenerCalled);
          Assert.AreEqual(true, _loadingArg.Promise.IsCompleted);
 
