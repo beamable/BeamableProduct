@@ -36,7 +36,7 @@ namespace Beamable.UI.Sdf.Styles {
             if (string.IsNullOrWhiteSpace(type) || string.IsNullOrWhiteSpace(json)) {
                 value = null;
             }
-            var sysType = Type.GetType(type, true);
+            var sysType = Type.GetType(type, false);
             if (type == null) {
                 value = null;
                 return;

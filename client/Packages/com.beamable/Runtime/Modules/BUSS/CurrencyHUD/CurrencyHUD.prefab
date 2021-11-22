@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1315967390}
   - component: {fileID: 1315967392}
-  - component: {fileID: 8058862272576646016}
   m_Layer: 5
   m_Name: img
   m_TagString: Untagged
@@ -45,32 +44,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1315967389}
   m_CullTransparentMesh: 0
---- !u!114 &8058862272576646016
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1315967389}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Texture: {fileID: 0}
-  m_UVRect:
-    serializedVersion: 2
-    x: 0
-    y: 0
-    width: 1
-    height: 1
 --- !u!1 &1538361852517479061
 GameObject:
   m_ObjectHideFlags: 0
@@ -118,7 +91,7 @@ MonoBehaviour:
   content:
     Id: currency.gems
   displayModule: {fileID: 8458693691216143897}
-  img: {fileID: 8058862272576646016}
+  img: {fileID: 0}
   txtAmount: {fileID: 4235553723617248118}
 --- !u!114 &8458693691216143897
 MonoBehaviour:
@@ -169,7 +142,6 @@ MonoBehaviour:
   m_Material: {fileID: 2100000, guid: 025c4eae80abaa6448977ea4cdf0d0fc, type: 2}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
-  m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -182,7 +154,6 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
   imageType: 0
   mode: 1
   colorRect:
@@ -691,7 +662,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_sharedMaterial
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
     - target: {fileID: 8113742381834706421, guid: 19884e0df85be430fabc863b924bf605,
         type: 3}
       propertyPath: m_fontColor32.rgba
