@@ -576,11 +576,15 @@ namespace Beamable.Editor.Content
           }
           
           BakeLog($"Baking {allContent.Count()} items");
+          
+          var serverManifest = await api.ContentIO.FetchManifest();
 
           string json = "{\"content\":[";
           bool first = true;
           foreach (var content in allContent)
           {
+	          var version = serverManifest.References.Find(reference => reference.Id == content.Id).Version;
+	          content.SetIdAndVersion(content.Id, version);
               if (!first)
               {
                   json += ",";
