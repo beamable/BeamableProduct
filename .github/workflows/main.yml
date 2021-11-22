@@ -147,24 +147,12 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           message: Have a ${{ matrix.targetPlatform }} build, friend. [${{github.sha}}](https://beamable-product-github-builds.s3.us-west-2.amazonaws.com/uploads/${{github.sha}}/WebGL/index.html)
-      #Build iOS
-      - uses: actions/download-artifact@v2
-        with:
-          name: Build-iOS
-      - name: Change directory to the location of the xcode project
-        run: cd iOS/
-      - uses: yukiarrr/ios-build-action@v1.4.0
-        with:
-          project-path: Unity-iPhone.xcodeproj
-          p12-base64: ${{ secrets.P12_BASE64 }}
-          mobileprovision-base64: ${{ secrets.PROD_MOBILEPROVISION_BASE64 }}
-          code-signing-identity: ${{ secrets.CODE_SIGNING_IDENTITY }}
-          team-id: ${{ secrets.TEAM_ID }}
 
   ios:
-    name: Build for iOS ipa and upload to Testflight
+    name: Build for iOS .ipa and upload to Testflight
     runs-on: macos-latest
     timeout-minutes: 60
+    needs: build
     steps:
       - uses: actions/download-artifact@v2
         with:
