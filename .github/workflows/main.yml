@@ -103,7 +103,7 @@ jobs:
           UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/prepare_base_image.sh
         shell: bash
       - name: Cache Unity Folders
-        uses: actions/cache@v2`
+        uses: actions/cache@v2
         with:
           path: |
             ${{ matrix.projectPath }}/Library
