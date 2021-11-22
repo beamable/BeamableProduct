@@ -4,7 +4,9 @@
 //#define DB_MICROSERVICE  // I sometimes enable this to see code better in rider
 
 
+using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Leaderboards;
@@ -80,6 +82,7 @@ namespace Beamable.Server
 
       private ConcurrentDictionary<long, Task> _runningTaskTable = new ConcurrentDictionary<long, Task>();
       private const int EXIT_CODE_PENDING_TASKS_STILL_RUNNING = 11;
+      private const int EXIT_CODE_FAILED_CUSTOM_INITIALIZATION_HOOK = 110;
       private const int HTTP_STATUS_GONE = 410;
       private const int ShutdownLimitSeconds = 5;
       private Promise<Unit> _serviceInitialized = new Promise<Unit>();
@@ -166,7 +169,7 @@ namespace Beamable.Server
          }
 
          _args = args.Copy();
-         Log.Debug("Starting... {host} {prefix} {cid} {pid} {sdkVersionExecution} {sdkVersionBuild}", args.Host, args.NamePrefix, args.CustomerID, args.ProjectName, args.SdkVersionExecution, args.SdkVersionBaseBuild);
+         Log.Debug(LogConstants.STARTING_PREFIX + " {host} {prefix} {cid} {pid} {sdkVersionExecution} {sdkVersionBuild}", args.Host, args.NamePrefix, args.CustomerID, args.ProjectName, args.SdkVersionExecution, args.SdkVersionBaseBuild);
 
 
 
@@ -295,10 +298,14 @@ namespace Beamable.Server
          try
          {
             await _requester.Authenticate();
+            
+            // Custom Initialization hook for C#MS --- will terminate MS user-code throws
+            await ResolveCustomInitializationHook();
+            
             await ProvideService(QualifiedName);
 
             HasInitialized = true;
-            Log.Information("Service ready for traffic. baseVersion={baseVersion} executionVersion={executionVersion}", _args.SdkVersionBaseBuild, _args.SdkVersionExecution);
+            Log.Information(LogConstants.READY_FOR_TRAFFIC_PREFIX + "baseVersion={baseVersion} executionVersion={executionVersion}", _args.SdkVersionBaseBuild, _args.SdkVersionExecution);
             _serviceInitialized.CompleteSuccess(PromiseBase.Unit);
          }
          catch (Exception ex)
@@ -308,6 +315,97 @@ namespace Beamable.Server
          }
 
       }
+
+      /// <summary>
+      /// Handles custom initialization hooks. Makes the following assumptions:
+      ///   - User defined at least one <see cref="InitializeServicesAttribute"/> over a static async method that returns a <see cref="Promise{Unit}"/> and receives a <see cref="IServiceInitializer"/>.
+      ///   - Any exception will fail loudly and prevent the C#MS from receiving traffic.
+      /// <para/>
+      /// </summary>
+      private async Task ResolveCustomInitializationHook()
+      {
+         // Gets Service Initialization Methods
+         var serviceInitialization = _microserviceType
+            .GetMethods(BindingFlags.Static | BindingFlags.Public)
+            .Where(method => method.GetCustomAttribute<InitializeServicesAttribute>() != null)
+            .Select(method =>
+            {
+               var attr = method.GetCustomAttribute<InitializeServicesAttribute>();
+               return (method, attr);
+            })
+            .ToList();
+            
+         // Sorts them by an user-defined order. By default (and tie-breaking), is sorted in file declaration order.
+         // TODO: Add reflection utility that sorts (MemberInfo, ISortableByType<>) tuples to ReflectionCache and replace this usage.
+         serviceInitialization.Sort(delegate((MethodInfo method, InitializeServicesAttribute attr) t1, (MethodInfo method, InitializeServicesAttribute attr) t2)
+         {
+            var (_, attr1) = t1;
+            var (_, attr2) = t2;
+            return attr1.ExecutionOrder.CompareTo(attr2.ExecutionOrder);
+         });
+            
+         // Invokes each Service Initialization Method --- skips any that do not match the void(IServiceInitializer) signature.
+         var serviceInitializers = new DefaultServiceInitializer(ServiceCollection, _args);
+         foreach (var (initializationMethod, _) in serviceInitialization)
+         {
+            // TODO: Add compile-time check for this signature so we can educate our users on this without them having to deep dive into docs
+            var parameters = initializationMethod.GetParameters();
+            if (parameters.Length != 1 || parameters[0].ParameterType != typeof(IServiceInitializer))
+            {
+               BeamableLogger.LogWarning($"Skipping method with [{nameof(InitializeServicesAttribute)}] since it does not take a single [{nameof(IServiceInitializer)}] parameter.");
+               continue; 
+               
+            } 
+            
+            var resultType = initializationMethod.ReturnType;
+            Promise<Unit> promise;
+            if (resultType == typeof(void))
+            {
+               var isAsync = null != initializationMethod.GetCustomAttribute<AsyncStateMachineAttribute>();
+               if (isAsync)
+               {
+                  BeamableLogger.LogWarning($"Skipping method [{initializationMethod.DeclaringType?.FullName}.{initializationMethod.Name}] " +
+                                            $"with [{nameof(InitializeServicesAttribute)}] since it is an async void method. Since these do not return a Task or Promise, " +
+                                            $"we can't await it's return and using this may cause non-deterministic behaviour depending on your implementation. " +
+                                            $"We recommend not using this unless you know exactly what you are doing.");
+                  continue;
+               }
+
+               promise = Task.FromResult(initializationMethod.Invoke(null, new object[] { serviceInitializers })).ToPromise().ToUnit();
+            }
+            else if (resultType == typeof(Task))
+            {
+               promise = ((Task)initializationMethod.Invoke(null, new object[] { serviceInitializers })).ToPromise();
+            }
+            else if (resultType == typeof(Promise<Unit>))
+            {
+               promise = (Promise<Unit>)initializationMethod.Invoke(null, new object[] { serviceInitializers });
+            }
+            else
+            {
+               BeamableLogger.LogWarning($"Skipping method with [{nameof(InitializeServicesAttribute)}] since it isn't a synchronous [void] method, a [{nameof(Task)}] or a [{nameof(Promise<Unit>)}]");
+               continue;
+            }
+
+            try
+            {
+               await promise;
+               BeamableLogger.Log($"Custom service initializer [{initializationMethod.DeclaringType?.FullName}.{initializationMethod.Name}] succeeded.\n");
+            }
+            catch (Exception ex)
+            {
+               BeamableLogger.LogError($"Custom service initializer [{initializationMethod.DeclaringType?.FullName}.{initializationMethod.Name}] failed.\n" +
+                                       $"{ex.Message}\n" +
+                                       $"{{stacktrace}}", ex.StackTrace);
+                     
+               BeamableLogger.LogException(ex);
+               Environment.Exit(EXIT_CODE_FAILED_CUSTOM_INITIALIZATION_HOOK);
+            }
+         }
+         
+      }
+
+      
 
       public Promise<IConnection> GetWebsocketPromise()
       {
@@ -415,7 +513,7 @@ namespace Beamable.Server
 
       void InitServices()
       {
-         Log.Debug("Registering standard services");
+         Log.Debug(LogConstants.REGISTERING_STANDARD_SERVICES);
          try
          {
             ServiceCollection = new ServiceCollection();
@@ -449,15 +547,33 @@ namespace Beamable.Server
                .AddScoped<IBeamableServices>(ExtractSdks)
                ;
 
-            Log.Debug("Registering custom services");
+            Log.Debug(LogConstants.REGISTERING_CUSTOM_SERVICES);
             var builder = new DefaultServiceBuilder(ServiceCollection);
 
 
-            var configurationMethods = _microserviceType.GetMethods(BindingFlags.Static | BindingFlags.Public).Where(
-               method =>
-                  method.GetCustomAttribute<ConfigureServicesAttribute>() != null);
-            foreach (var configurationMethod in configurationMethods)
+            // Gets Service Configuration Methods
+            var configurationMethods = _microserviceType
+               .GetMethods(BindingFlags.Static | BindingFlags.Public)
+               .Where(method => method.GetCustomAttribute<ConfigureServicesAttribute>() != null)
+               .Select(method =>
+               {
+                  var attr = method.GetCustomAttribute<ConfigureServicesAttribute>();
+                  return (method, attr);
+               })
+               .ToList();
+            
+            // Sorts them by an user-defined order. By default (and tie-breaking), is sorted in file declaration order.
+            configurationMethods.Sort(delegate((MethodInfo method, ConfigureServicesAttribute attr) t1, (MethodInfo method, ConfigureServicesAttribute attr) t2)
             {
+               var (_, attr1) = t1;
+               var (_, attr2) = t2;
+               return attr1.ExecutionOrder.CompareTo(attr2.ExecutionOrder);
+            });
+            
+            // Invokes each Service Configuration Method --- skips any that do not match the void(IServiceBuilder) signature.
+            foreach (var (configurationMethod, _) in configurationMethods)
+            {
+               // TODO: Add compile-time check for this signature
                var parameters = configurationMethod.GetParameters();
                if (parameters.Length != 1 || parameters[0].ParameterType != typeof(IServiceBuilder)) continue;
 
@@ -527,6 +643,7 @@ namespace Beamable.Server
             BeamableSerilogProvider.LogContext.Value.Debug("Responding with {json}", responseJson);
             var webSocket = await _webSocketPromise;
             webSocket.SendMessage(responseJson);
+            // TODO: Kill Scope
          }
          catch (MicroserviceException ex)
          {
@@ -705,11 +822,11 @@ namespace Beamable.Server
          };
          var serviceProvider = _requester.Request<MicroserviceProviderResponse>(Method.POST, "gateway/provider", req).Then(res =>
          {
-            Log.Debug("Service provider initialized");
+            Log.Debug(LogConstants.SERVICE_PROVIDER_INITIALIZED);
          }).ToUnit();
          var eventProvider = _requester.InitializeSubscription().Then(res =>
          {
-            Log.Debug("Event provider initialized");
+            Log.Debug(LogConstants.EVENT_PROVIDER_INITIALIZED);
          }).ToUnit();
          return Promise.Sequence(serviceProvider, eventProvider).ToUnit();
       }

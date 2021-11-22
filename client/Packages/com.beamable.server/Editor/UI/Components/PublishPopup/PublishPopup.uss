@@ -20,7 +20,7 @@
 #header{
     margin-top: 10px;
     padding-left: 10px;
-    padding-right: 10px;
+    padding-right: 40px;
     padding-bottom: 10px;
     -unity-text-align: upper-center;
     flex-direction: row;
@@ -28,17 +28,23 @@
     justify-content: space-between;
 }
 
-#nameMS{
+#nameMS {
     align-self: center;
     margin-left: 3px;
 }
-#nameC {
-    width: 200px;
-    align-self: stretch;
+
+#nameC, #depsC {
     flex-direction: row;
-    align-content: stretch;
-    flex-grow: 3;
-    padding-left: 12px;
+    flex: 1;
+    margin-right: 10px;
+}
+
+#depsC {
+    margin-right: 10px;
+}
+
+#typeC {
+    width: 90px;
 }
 
 #enabledC {
@@ -46,13 +52,11 @@
     justify-content: center;
 }
 #CommentsC {
-    width: 250px;
-    padding-left: 15px;
-    justify-content: center;
+    width: 155px;
+    padding-left: 20px;
 }
 #SizeC {
-    width: 100px;
-    padding-left: 15px;
+    width: 140px;
 }
 #commentsText, #SizeC .template{
     width: 80px;
@@ -109,29 +113,31 @@
     padding-right: 10px;
     padding-bottom: 10px;
     padding-left: 10px;
-    min-height: 100px;
+    margin-bottom: 40px;
+    margin-left: 20px;
+    margin-right: 40px;
+    margin-top: 15px;
+    min-height: 140px; 
 }
 #buttonStrip {
     flex-direction: row;
     justify-content: flex-end;
     flex-shrink: 0;
-    margin-top: 15px;
+    margin-right: 40px;
+    padding-bottom: 10px;
+    margin-top: 5px;
     margin-bottom: 5px;
 }
 
 #cancelBtn{
-    margin-left: 0px;
-    margin-right: 10px;
-    margin-top: 0px;
-    margin-bottom: 0px;
+    margin-top: 2px;
     border-radius: 5px;
     border-left-width: 1px;
     border-right-width: 1px;
     border-top-width: 1px;
     border-bottom-width: 1px;
-    right: 10px;
-    width: 100px;
-    height: 28px;
+    width: 140px;
+    height: 35px;
     border-color: #DCDCDC;
     cursor: pan;
     background-image: none;
@@ -143,27 +149,16 @@
     -unity-font-style: bold;
 }
 
-
-#buttonStrip {
-    flex-direction: row;
-    justify-content: flex-end;
-    flex-shrink: 0;
-    margin-top: 5px;
-    margin-bottom: 5px;
-}
-
 #continueBtn{
-    margin-right: 10px;
-    width: 100px;
-    height: 28px;
+    margin-right: 25px;
+    width: 152px;
+    height: 38px;
 }
 
 #manifestsContainer{
     border-color: #000000;
     border-width: 1px;
     padding: 10px;
-    margin-right: 13px;
-    margin-left: 13px;
     min-height: 100px;
     flex-grow: 1;
 }

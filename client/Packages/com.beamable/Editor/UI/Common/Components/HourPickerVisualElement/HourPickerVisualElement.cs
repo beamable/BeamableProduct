@@ -131,13 +131,6 @@ namespace Beamable.Editor.UI.Components
             _secondPicker?.Set(date.Second.ToString());
         }
 
-        public void SetPeriod(ScheduleDefinition definition, int index)
-        {
-            _hourPicker?.Set(definition.hour[0].Split('-')[index]);
-            _minutePicker?.Set(definition.minute[0].Split('-')[index]);
-            _secondPicker?.Set(definition.second[0].Split('-')[index]);
-        }
-
         public void SetGroupEnabled(bool b)
         {
             _hourPicker?.SetEnabled(b);

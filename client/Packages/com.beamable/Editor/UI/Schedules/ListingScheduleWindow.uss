@@ -42,11 +42,6 @@ ListingScheduleWindow ScrollView #ContentView.content-view {
     height: 28px;
 }
 
-#cancelBtn {
-    width: 100px;
-    height: 28px;
-}
-
 Label {
     color: #FFFFFF
 }

@@ -64,5 +64,7 @@ namespace Beamable.Server.Api.Stats
 
       Promise<Dictionary<string, string>> GetStats(string domain, string access, string type, long userId,
          string[] stats);
+      
+      Promise<StatsSearchResponse> SearchStats(string domain, string access, string type, List<Criteria> criteria);
    }
 }
