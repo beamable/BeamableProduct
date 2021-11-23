@@ -1,6 +1,6 @@
 public static class BeamableConstants
 { 
-    public const string DATA_DIR = "Assets/Beamable/Editor/content";
+   public const string DATA_DIR = "Assets/Beamable/Editor/content";
    public const string ASSET_DIR = "Assets/Beamable/DefaultAssets";
    public const string DEFAULT_DATA_DIR = "Packages/com.beamable/Editor/Modules/Content/DefaultContent";
    public const string DEFAULT_ASSET_DIR = "Packages/com.beamable/Editor/Modules/Content/DefaultAssets~";
