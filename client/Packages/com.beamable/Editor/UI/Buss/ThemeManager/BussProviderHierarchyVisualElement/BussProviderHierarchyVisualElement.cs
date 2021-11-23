@@ -1,4 +1,5 @@
 ﻿using Beamable.Editor.UI.Buss;
+using Beamable.UI.Buss;
 using UnityEngine.UI;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -10,8 +11,7 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-	// TODO: change generic type from Text to BussElement before final merge
-	public class BussProviderHierarchyVisualElement : ComponentBasedHierarchyVisualElement<Text>	
+	public class BussProviderHierarchyVisualElement : ComponentBasedHierarchyVisualElement<BussElement>	
 	{
 		public new class UxmlFactory : UxmlFactory<BussProviderHierarchyVisualElement, UxmlTraits>
 		{
@@ -20,9 +20,11 @@ namespace Beamable.Editor.UI.Components
 		public BussProviderHierarchyVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussProviderHierarchyVisualElement)}/{nameof(BussProviderHierarchyVisualElement)}") { }
 
-		protected override string GetLabel(Text component)
+		protected override string GetLabel(BussElement component)
 		{
-			return component.name;
+			return string.IsNullOrEmpty(component.Id) || string.IsNullOrWhiteSpace(component.Id)
+				? component.name
+				: component.Id;
 		}
 	}
 }
