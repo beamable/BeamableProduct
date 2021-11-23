@@ -28,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Renamed Beamable's iOS plugin for Google Sign-In from `GoogleSignIn` to `BeamableGoogleSignIn` to prevent name collisions with public plugins.
 
+## [0.17.4]
+- no changes
+
 ## [0.17.3]
 ### Added
 - Added `RemoveDeviceId` method in `AuthService`
@@ -36,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Removes _Menu Window/Panels/1_ warning after opening schedule type dropdown on Unity 2019 and 2020
 - Limit displayed admin console output
+
 
 ## [0.17.2]
 ### Added
