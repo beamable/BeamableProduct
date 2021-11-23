@@ -18,11 +18,11 @@
             <engine:VisualElement name="term">
                 <engine:Toggle name="checkBox"/>
                 <engine:Label text="I have read and agree to the" class="labelText"/>
-                <engine:Button name="legalButton" class="linkText" text="terms and conditions"/>
+                <beamable:GenericButtonVisualElement name="legalButton" text="terms and conditions" type="Link" />
             </engine:VisualElement>
             <engine:VisualElement name="existAccount">
                 <engine:Label text="I have an account." class="labelText"/>
-                <engine:Button name="existingAccount" class="linkText" text="Login now"/>
+                <beamable:GenericButtonVisualElement name="existingAccount" text="Login now" type="Link" />
             </engine:VisualElement>
             <engine:VisualElement name="actionBtn">
                 <beamable:PrimaryButtonVisualElement name="signIn" text="Sign In"/>
