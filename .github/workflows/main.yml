@@ -153,6 +153,7 @@ jobs:
     timeout-minutes: 60
     needs: build
     steps:
+      - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
         with:
           name: Build-iOS
