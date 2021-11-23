@@ -3,6 +3,7 @@ using Beamable.UI.BUSS;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Experimental.UIElements.StyleSheets;
 using UnityEngine.UI;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -98,7 +99,11 @@ namespace Beamable.Editor.UI.Components
 			_container = Root.Q<VisualElement>("container");
 
 			_label = Root.Q<Label>("label");
+#if UNITY_2018
+			_label.style.paddingLeft = new StyleValue<float>(Width);
+#else
 			_label.style.paddingLeft = new StyleLength(Width);
+#endif
 			_label.text = Label;
 
 			_label.RegisterCallback<MouseDownEvent>(OnMouseClicked);
