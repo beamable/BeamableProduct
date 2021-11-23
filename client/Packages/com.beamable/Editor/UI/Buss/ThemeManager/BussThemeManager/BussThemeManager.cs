@@ -31,7 +31,7 @@ namespace Beamable.UI.BUSS
 			                                BUSSConstants.HierarchyWindowSize);
 		}
 
-		private BussProviderHierarchyVisualElement _hierarchy;
+		private BussElementHierarchyVisualElement _hierarchy;
 
 		private BussThemeManager() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussThemeManager)}/{nameof(BussThemeManager)}") { }
@@ -40,7 +40,7 @@ namespace Beamable.UI.BUSS
 		{
 			base.Refresh();
 
-			_hierarchy = Root.Q<BussProviderHierarchyVisualElement>("hierarchy");
+			_hierarchy = Root.Q<BussElementHierarchyVisualElement>("hierarchy");
 			_hierarchy.Refresh();
 		}
 	}

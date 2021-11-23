@@ -11,14 +11,14 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class BussProviderHierarchyVisualElement : ComponentBasedHierarchyVisualElement<BussElement>	
+	public class BussElementHierarchyVisualElement : ComponentBasedHierarchyVisualElement<BussElement>	
 	{
-		public new class UxmlFactory : UxmlFactory<BussProviderHierarchyVisualElement, UxmlTraits>
+		public new class UxmlFactory : UxmlFactory<BussElementHierarchyVisualElement, UxmlTraits>
 		{
 		}
 
-		public BussProviderHierarchyVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussProviderHierarchyVisualElement)}/{nameof(BussProviderHierarchyVisualElement)}") { }
+		public BussElementHierarchyVisualElement() : base(
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussElementHierarchyVisualElement)}/{nameof(BussElementHierarchyVisualElement)}") { }
 
 		protected override string GetLabel(BussElement component)
 		{

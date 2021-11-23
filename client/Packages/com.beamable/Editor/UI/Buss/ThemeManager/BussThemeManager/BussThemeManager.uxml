@@ -7,7 +7,7 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:VisualElement name="mainVisualElement">
-        <beamable:BussProviderHierarchyVisualElement name="hierarchy"/>
+        <beamable:BussElementHierarchyVisualElement name="hierarchy"/>
     </engine:VisualElement>
 
 </UXML>
