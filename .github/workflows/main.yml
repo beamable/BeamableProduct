@@ -8,7 +8,6 @@ on:
  pull_request:
   branches:
     - 'main'
-    - 'staging'
     - 'iOS'
 jobs:
   testMicroserviceBaseImage:
@@ -157,18 +156,6 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: Build-iOS
-      - uses: actions/download-artifact@v2
-        with:
-          name: beamable.p12
-          path: /build/ios
-      - uses: actions/download-artifact@v2
-        with:
-          name: ios_distribution.cer
-          path: /build/ios
-      - uses: actions/download-artifact@v2
-        with:
-          name: Beamable_Product_Prod.mobileprovision
-          path: /build/ios
       - name: Change directory to the location of the xcode project
         run: cd iOS/
       - uses: yukiarrr/ios-build-action@v1.4.0
