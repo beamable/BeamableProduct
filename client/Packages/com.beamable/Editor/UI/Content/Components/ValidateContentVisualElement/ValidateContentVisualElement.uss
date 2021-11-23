@@ -6,8 +6,8 @@ ValidateContentVisualElement > TemplateContainer
 
 ValidateContentVisualElement > TemplateContainer > #mainElementContent {
     flex-grow: 1;
-    margin-left: 30px;
-    margin-right: 30px;
+    margin-left: 26px;
+    margin-right: 26px;
 }
 ValidateContentVisualElement > TemplateContainer > #mainElementContent > #summaryContainer {
     flex-direction: row;
