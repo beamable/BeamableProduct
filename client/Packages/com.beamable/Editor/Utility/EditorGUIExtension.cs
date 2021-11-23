@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
@@ -73,5 +72,7 @@ namespace Beamable.Editor {
 
             return parent;
         }
+        
+        public static EditorGUIRectController ToRectController(this Rect rect) => new EditorGUIRectController(rect);
     }
 }

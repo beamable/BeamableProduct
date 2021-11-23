@@ -1,26 +1,33 @@
 ﻿using System.Collections;
 using Beamable.Common.Inventory;
+using Beamable.Content;
 using Beamable.Coroutines;
+using Beamable.Inventory;
 using Beamable.Service;
+using Beamable.UI.Scripts;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.AddressableAssets;
+
 
 namespace Beamable.CurrencyHUD
+
 {
     [HelpURL(BeamableConstants.URL_FEATURE_CURRENCY_HUD)]
     public class CurrencyHUDFlow : MonoBehaviour
     {
         public CurrencyRef content;
-        public Canvas canvas;
+        public BeamableDisplayModule displayModule;
         public RawImage img;
         public TextMeshProUGUI txtAmount;
-        private long targetAmount;
-        private long currentAmount;
+        private long targetAmount = 0;
+        private long currentAmount = 0;
+        readonly WaitForSeconds _waitForSeconds = new WaitForSeconds(0.02f);
 
-        private void Awake()
+        void Awake()
         {
-            canvas.enabled = false;
+            displayModule.SetVisible(false);
         }
 
         private async void Start()
@@ -33,23 +40,40 @@ namespace Beamable.CurrencyHUD
             });
             var currency = await content.Resolve();
             var currencyAddress = currency.icon;
-            await img.SetTexture(currencyAddress);
-            
-            canvas.enabled = true;
+            img.texture = await currencyAddress.LoadTexture();
+            displayModule.SetVisible();
         }
 
         private IEnumerator DisplayCurrency()
         {
-            var deltaTotal = targetAmount - currentAmount;
-            var deltaStep = deltaTotal / 50;
-            if (deltaStep == 0) deltaStep = deltaTotal < 0 ? -1 : 1;
+            long deltaTotal = targetAmount - currentAmount;
+            long deltaStep = deltaTotal / 50;
+
+            if (deltaStep == 0)
+            {
+                deltaStep = deltaTotal < 0 ? -1 : 1;
+            }
+
             while (currentAmount != targetAmount)
+
             {
                 currentAmount += deltaStep;
-                if (deltaTotal > 0 && currentAmount > targetAmount) currentAmount = targetAmount;
-                else if (deltaTotal < 0 && currentAmount < targetAmount) currentAmount = targetAmount;
+
+                if (deltaTotal > 0 && currentAmount > targetAmount)
+
+                {
+                    currentAmount = targetAmount;
+                }
+
+                else if (deltaTotal < 0 && currentAmount < targetAmount)
+
+                {
+                    currentAmount = targetAmount;
+                }
+
+
                 txtAmount.text = currentAmount.ToString();
-                yield return new WaitForSeconds(0.02f);
+                yield return _waitForSeconds;
             }
         }
     }
