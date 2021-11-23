@@ -16,6 +16,9 @@ namespace Beamable.Common.Content
 
       [ContentField("addItems")]
       public OptionalNewItemList items;
+
+      [ContentField("applyVipBonus")]
+      public OptionalBoolean applyVipBonus;
    }
 
    [Serializable]

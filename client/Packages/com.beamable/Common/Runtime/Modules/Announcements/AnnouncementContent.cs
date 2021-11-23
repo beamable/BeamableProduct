@@ -59,8 +59,8 @@ namespace Beamable.Common.Announcements
       public List<AnnouncementAttachment> attachments;
 
       [Tooltip("Players who claim the announcement can receive the rewards listed below")]
-      [ContentField("rewards")]
-      public AnnouncementPlayerRewards rewards;
+      [ContentField("gift")]
+      public AnnouncementPlayerRewards gift;
 
       [Tooltip(ContentObject.TooltipOptional0 +"If specified, stat requirements will limit the audience of this announcement based on player stats")]
       [ContentField("stat_requirements")]
