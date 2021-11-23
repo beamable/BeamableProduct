@@ -22,9 +22,7 @@ namespace Beamable.Editor.UI.Components
 
 		protected override string GetLabel(BussElement component)
 		{
-			return string.IsNullOrEmpty(component.Id) || string.IsNullOrWhiteSpace(component.Id)
-				? component.name
-				: component.Id;
+			return string.IsNullOrWhiteSpace(component.Id) ? component.name : component.Id;
 		}
 	}
 }

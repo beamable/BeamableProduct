@@ -16,7 +16,7 @@ namespace Beamable.Editor.UI.Components
 	{
 		private IndentedLabelVisualElement _selectedComponent;
 		private ScrollView _container;
-		
+
 		protected ComponentBasedHierarchyVisualElement(string commonPath) : base(commonPath) { }
 
 		public override void Refresh()
@@ -25,6 +25,7 @@ namespace Beamable.Editor.UI.Components
 
 			_container = Root.Q<ScrollView>("scrollView");
 
+			EditorApplication.hierarchyChanged -= OnHierarchyChanged;
 			EditorApplication.hierarchyChanged += OnHierarchyChanged;
 
 			OnHierarchyChanged();
@@ -72,8 +73,9 @@ namespace Beamable.Editor.UI.Components
 			{
 				IndentedLabelVisualElement label = new IndentedLabelVisualElement();
 				_container.Add(label);
-				
-				label.Setup(foundComponent.gameObject, GetLabel(foundComponent), OnMouseClicked, currentLevel);
+
+				label.Setup(foundComponent.gameObject, GetLabel(foundComponent), OnMouseClicked,
+				             currentLevel, IndentedLabelVisualElement.DEFAULT_SINGLE_INDENT_WIDTH);
 				label.Refresh();
 
 				foreach (Transform child in gameObject.transform)

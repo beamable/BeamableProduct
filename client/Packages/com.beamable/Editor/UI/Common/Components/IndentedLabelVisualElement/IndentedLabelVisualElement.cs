@@ -54,18 +54,17 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
-		private const float DEFAULT_SINGLE_INDENT_WIDTH = 20.0f;
+		public const float DEFAULT_SINGLE_INDENT_WIDTH = 20.0f;
 
 		private Label _label;
+		private VisualElement _container;
+		private Action<IndentedLabelVisualElement> _onMouseClicked;
 
 		public GameObject RelatedGameObject
 		{
 			get;
 			private set;
 		}
-
-		private VisualElement _container;
-		private Action<IndentedLabelVisualElement> _onMouseClicked;
 
 		private float SingleIndentWidth
 		{
@@ -112,38 +111,38 @@ namespace Beamable.Editor.UI.Components
 		public void Setup(GameObject relatedGameObject,
 		                  string label,
 		                  Action<IndentedLabelVisualElement> onMouseClicked,
-		                  int? level = null,
-		                  int? width = null)
+		                  int level,
+		                  float width)
 		{
 			_onMouseClicked = onMouseClicked;
 
 			RelatedGameObject = relatedGameObject;
 			Label = label;
-			Level = level ?? 0;
-			SingleIndentWidth = width ?? DEFAULT_SINGLE_INDENT_WIDTH;
+			Level = level;
+			SingleIndentWidth = width;
 		}
 
 		public void Select()
 		{
-			_container.AddToClassList("selected");
+			_container.SetSelected(true);
 		}
 
 		public void Deselect()
 		{
-			_container.RemoveFromClassList("selected");
+			_container.SetSelected(false);
 		}
 
 		private void OnMouseOver(MouseOverEvent evt)
 		{
-			if (!_container.ClassListContains("selected"))
+			if (!_container.IsSelected())
 			{
-				_container.AddToClassList("hovered");
+				_container.SetHovered(true);
 			}
 		}
 
 		private void OnMouseOut(MouseOutEvent evt)
 		{
-			_container.RemoveFromClassList("hovered");
+			_container.SetHovered(false);
 		}
 
 		private void OnMouseClicked(MouseDownEvent evt)
