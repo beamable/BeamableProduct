@@ -101,7 +101,7 @@ namespace Beamable.Editor.UI.Components
 			_label = Root.Q<Label>("label");
 #if UNITY_2018
 			_label.style.paddingLeft = new StyleValue<float>(Width);
-#else
+#elif UNITY_2019_1_OR_NEWER
 			_label.style.paddingLeft = new StyleLength(Width);
 #endif
 			_label.text = Label;
