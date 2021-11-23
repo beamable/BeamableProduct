@@ -58,7 +58,7 @@ namespace Beamable.Server.Tests.Runtime
       }
 
       [UnityTest]
-      public IEnumerator CanNotDeserializePolymorphicList()
+      public IEnumerator CanDeserializePolymorphicList()
       {
          var client = new TestClient(ROUTE);
 
@@ -69,7 +69,7 @@ namespace Beamable.Server.Tests.Runtime
          var req = client.Request<List<object>>( ROUTE, new string[] { });
 
          yield return req.ToYielder();
-         Assert.IsNull(req.GetResult());
+         Assert.IsNotNull(req.GetResult());
       }
 
       [System.Serializable]
