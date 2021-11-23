@@ -26,7 +26,6 @@ public static class BeamableConstants
    public const string BUSS_WIZARD = "Theme Wizard";
    public const string LOGIN = "Beamble Login";
    public const string SDF_GENERATOR = "SDF Generator";
-   public const string BUSS_HIERARCHY_WINDOW = "Hierarchy Window";
 
    //Help Urls
    public const string URL_BEAMABLE_MAIN_WEBSITE = "http://www.beamable.com";
