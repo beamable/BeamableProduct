@@ -1,24 +1,11 @@
 #if UNITY_WEBGL
 #define DISABLE_THREADING
 #endif
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Beamable.Common.Runtime.Collections;
-
-#if !DISABLE_BEAMABLE_ASYNCMETHODBUILDER
-
-namespace System.Runtime.CompilerServices
-{
-   public sealed class AsyncMethodBuilderAttribute : Attribute
-   {
-      public AsyncMethodBuilderAttribute(Type taskLike)
-      { }
-   }
-}
-#endif
 
 namespace Beamable.Common
 {

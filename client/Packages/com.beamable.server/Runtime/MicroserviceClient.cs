@@ -9,6 +9,7 @@ using Beamable.Common.Api;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 using Beamable.Serialization.SmallerJSON;
+using Utf8Json;
 
 namespace Beamable.Server
 {
@@ -30,88 +31,30 @@ namespace Beamable.Server
 
       protected string SerializeArgument<T>(T arg)
       {
-         // JSONUtility will serialize objects correctly, but doesn't handle primitives well.
-         if (arg == null)
-         {
-            return "null";
-         }
+	      try
+	      {
+		      return JsonSerializer.ToJsonString(arg);
+	      }
+	      catch(Exception e)
+	      {
+		      Debug.LogError(e);
+	      }
 
-         switch (arg)
-         {
-            case IEnumerable enumerable when !(enumerable is string):
-               var output = new List<string>();
-               foreach (var elem in enumerable)
-               {
-                  output.Add(SerializeArgument(elem));
-               }
-
-               var outputJson = "[" + string.Join(",", output) + "]";
-               return outputJson;
-
-            case bool prim:
-               return prim ? "true": "false";
-            case long prim:
-               return prim.ToString();
-            case string prim:
-               return Json.IsValidJson(prim) ? "[" + prim + "]" : "\"" + prim + "\"";
-            case double prim:
-               return prim.ToString();
-            case float prim:
-               return prim.ToString();
-            case int prim:
-               return prim.ToString();
-            case Vector2Int prim:
-               return JsonUtility.ToJson(new Vector2IntEx(prim));
-            case Vector3Int prim:
-               return JsonUtility.ToJson(new Vector3IntEx(prim));
-            }
-         return JsonUtility.ToJson(arg);
+	      return string.Empty;
       }
 
       protected T DeserializeResult<T>(string json)
       {
-         var defaultInstance = default(T);
+	      try
+	      {
+		      return JsonSerializer.Deserialize<T>(json);
+	      }
+	      catch(Exception e)
+	      {
+		      Debug.LogError(e);
+	      }
 
-         if (typeof(Unit).IsAssignableFrom(typeof(T)))
-         {
-            return (T)(object) PromiseBase.Unit;
-         }
-
-         if (typeof(T).Equals(typeof(string)))
-         {
-            return (T)(object) json;
-         }
-         switch (defaultInstance)
-         {
-            case float _:
-               return (T) (object) float.Parse(json);
-            case long _:
-               return (T) (object) long.Parse(json);
-            case double _:
-               return (T) (object) double.Parse(json);
-            case bool _:
-               return (T) (object) bool.Parse(json);
-            case int _:
-               return (T) (object) int.Parse(json);
-            case Vector2Int _:
-               return (T)(object)Vector2IntEx.DeserializeToVector2(json);
-            case Vector3Int _:
-               return (T)(object)Vector3IntEx.DeserializeToVector3(json);
-            }
-
-         if (json.StartsWith("[") && json.EndsWith("]"))
-         {
-            json = $"{{\"items\": {json}}}";
-            var wrapped = JsonUtility.FromJson<JsonUtilityWrappedList<T>>(json);
-            return wrapped.items;
-         }
-
-         return JsonUtility.FromJson<T>(json);
-      }
-
-      private class JsonUtilityWrappedList<TList>
-      {
-         public TList items = default;
+	      return default;
       }
 
       protected string CreateUrl(string cid, string pid, string serviceName, string endpoint)
