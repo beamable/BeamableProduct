@@ -161,7 +161,7 @@ jobs:
         run: cd iOS/
       - uses: yukiarrr/ios-build-action@v1.4.0
         with:
-          project-path: Unity-iPhone.xcodeproj
+          project-path: ${{ secrets.XCODEPROJ_PATH }}
           p12-key-path: ${{ secrets.P12_KEY_PATH }}
           p12-cer-path: ${{ secrets.P12_CER_PATH }}
           certificate-password: ${{ secrets.P12_PASSWORD }}
