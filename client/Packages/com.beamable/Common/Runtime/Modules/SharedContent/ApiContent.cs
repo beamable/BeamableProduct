@@ -135,7 +135,7 @@ namespace Beamable.Common.Content
       [Tooltip("The endpoint that will be invoked for this api callback")]
       public string Endpoint;
 
-      [ContentField("serviceType")]
+      [ContentField("serviceTypeStr")]
       public PlatformServiceType Type;
    }
 
@@ -173,7 +173,7 @@ namespace Beamable.Common.Content
       [Tooltip("The raw json payload of this parameter")]
       public string Data;
 
-      [ContentField("parameterType")]
+      [ContentField("typeName")]
       [Tooltip("The type of this parameter")]
       public string TypeName;
    }

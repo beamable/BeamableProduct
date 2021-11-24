@@ -87,7 +87,6 @@ namespace Beamable.Common.Content
         private List<EventPhase> legacyPhases;
 
         public PlayerReward RewardTest;
-        // public WebhookInvocation OnStart, OnEnd, OnRewardClaim;
 
         [CannotBeEmpty]
         [Tooltip(ContentObject.TooltipPhase1)]
