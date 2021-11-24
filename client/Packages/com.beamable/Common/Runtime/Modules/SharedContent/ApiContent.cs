@@ -41,6 +41,7 @@ namespace Beamable.Common.Content
 
       [ContentField("route")]
       [Tooltip("The route information for the api call")]
+      [ServiceRouteMustBeValid]
       public ServiceRoute ServiceRoute = new ServiceRoute();
 
       [ContentField("variables")]
@@ -50,6 +51,7 @@ namespace Beamable.Common.Content
 
       [ContentField("parameters")]
       [Tooltip("The required parameters of the api call")]
+      [RouteParametersMustBeValid]
       public RouteParameters Parameters = new RouteParameters();
 
 

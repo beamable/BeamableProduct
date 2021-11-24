@@ -14,7 +14,8 @@ namespace Beamable.Common.Announcements
       {
          return new[]
          {
-            new ApiVariable {Name = "announcementId2", TypeName = ApiVariable.TYPE_STRING}
+	         new ApiVariable {Name = "announcementId", TypeName = ApiVariable.TYPE_STRING},
+	         new ApiVariable {Name = "derp", TypeName = ApiVariable.TYPE_STRING},
          };
       }
    }

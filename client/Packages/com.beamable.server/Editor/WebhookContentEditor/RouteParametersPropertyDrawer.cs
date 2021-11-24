@@ -2,14 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Editor;
-using Beamable.Editor.Content;
 using Beamable.Server.Editor.CodeGen;
 using UnityEditor;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace Beamable.Server.Editor
 {
@@ -129,12 +126,40 @@ namespace Beamable.Server.Editor
                   options.Add(new GUIContent(variableName));
                }
 
-               var selectedIndex = options.FindIndex(o => o.text.Equals(info.variableValueProperty.stringValue));
+               var existingVariableName = info.variableValueProperty.stringValue;
+               var selectedIndex = options.FindIndex(o => o.text.Equals(existingVariableName));
+
+               var originalSelectedIndex = selectedIndex;
+               var force = false;
+               if (originalSelectedIndex == -1)
+               {
+	               if (string.IsNullOrEmpty(existingVariableName))
+	               {
+		               if (options.Count == 1)
+		               {
+			               originalSelectedIndex = 0; // automatically fix the issue and pick the first available variable.
+			               selectedIndex = 0;
+			               force = true;
+		               }
+		               else
+		               {
+			               options.Insert(0, new GUIContent("<none>"));
+			               selectedIndex = 0;
+		               }
+	               }
+	               else
+	               {
+		               options.Insert(0, new GUIContent($"{existingVariableName} (missing)"));
+		               selectedIndex = 0;
+	               }
+               }
 
                EditorGUI.BeginChangeCheck();
                var nextSelectedIndex = EditorGUI.Popup(fieldPosition, infoLabel, selectedIndex, options.ToArray());
-               if (EditorGUI.EndChangeCheck())
+               if (EditorGUI.EndChangeCheck() || force)
                {
+	               if (originalSelectedIndex == -1 && nextSelectedIndex == 0) continue;
+
                   info.variableValueProperty.stringValue = options[nextSelectedIndex].text;
                }
 
@@ -170,6 +195,8 @@ namespace Beamable.Server.Editor
          var output = new List<SerializedRouteParameterInfo>();
 
          var parametersProperty = property.FindPropertyRelative(nameof(RouteParameters.Parameters));
+         if (parametersProperty == null || method == null) return output;
+
          var oldLength = parametersProperty.arraySize;
          parametersProperty.arraySize = method.Parameters.Length;
 
@@ -266,6 +293,10 @@ namespace Beamable.Server.Editor
          {
             isUsingVariableProperty.boolValue = !isUsingVariableProperty.boolValue;
 
+            if (!isUsingVariableProperty.boolValue)
+            {
+	            variableValueProperty.stringValue = "";
+            }
             isUsingVariableProperty.serializedObject.ApplyModifiedProperties();
             return IsUsingVariable;
          }

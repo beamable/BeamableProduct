@@ -11,9 +11,13 @@ namespace Beamable.Server.Editor
       public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
       {
          var variablesProperty = property.FindPropertyRelative(nameof(RouteVariables.Variables));
-         if (variablesProperty.arraySize == 0 || !property.isExpanded)
+         if (variablesProperty.arraySize == 0 )
          {
-            return 0;
+	         return 0;
+         }
+         else if (!property.isExpanded)
+         {
+	         return EditorGUIUtility.singleLineHeight;
          }
          else
          {

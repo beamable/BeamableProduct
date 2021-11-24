@@ -19,7 +19,7 @@ namespace Beamable.Server.Editor
       {
          // need to show a dropdown for the available services...
          var descriptors = Microservices.Descriptors;
-         //
+
          if (descriptors.Count == 0)
          {
             position = EditorGUI.PrefixLabel(position, label);
@@ -32,16 +32,42 @@ namespace Beamable.Server.Editor
          EditorGUI.indentLevel += 1;
 
          var serviceGuiContents = descriptors
-            .Select(d => new GUIContent(d.Name))
-            .ToArray();
+	         .Select(d => new GUIContent(d.Name))
+	         .ToList();
+
 
          var nextRect = new Rect(position.x, position.y + EditorGUIUtility.singleLineHeight + PADDING, position.width, EditorGUIUtility.singleLineHeight);
 
          var serviceProperty = property.FindPropertyRelative(nameof(ServiceRoute.Service));
          var originalServiceIndex = descriptors.FindIndex(d => d.Name.Equals(serviceProperty.stringValue));
-         originalServiceIndex = originalServiceIndex == -1 ? 0 : originalServiceIndex;
-         var serviceIndex = EditorGUI.Popup(nextRect, new GUIContent("Microservice"), originalServiceIndex, serviceGuiContents, EditorStyles.popup);
-         serviceProperty.stringValue = descriptors[serviceIndex].Name;
+
+         if (originalServiceIndex == -1)
+         {
+	         if (string.IsNullOrEmpty(serviceProperty.stringValue))
+	         {
+		         serviceGuiContents.Insert(0, new GUIContent("<none>"));
+		         originalServiceIndex = 0;
+	         }
+	         else
+	         {
+		         serviceGuiContents.Insert(0, new GUIContent(serviceProperty.stringValue));
+		         originalServiceIndex = 0;
+		         if (!serviceProperty.stringValue.EndsWith(ContentConstants.MISSING_SUFFIX))
+		         {
+			         serviceProperty.stringValue += ContentConstants.MISSING_SUFFIX;
+		         }
+	         }
+         }
+
+         EditorGUI.BeginChangeCheck();
+         var nextServiceIndex = EditorGUI.Popup(nextRect, new GUIContent("Microservice"), originalServiceIndex, serviceGuiContents.ToArray(), EditorStyles.popup);
+         if (EditorGUI.EndChangeCheck())
+         {
+	         serviceProperty.stringValue = descriptors
+	                                       .FirstOrDefault(
+		                                       d => d.Name.Equals(serviceGuiContents[nextServiceIndex].text)).Name;
+         }
+
 
          nextRect = new Rect(nextRect.x, nextRect.y + EditorGUIUtility.singleLineHeight + PADDING, nextRect.width, EditorGUIUtility.singleLineHeight);
          var service = descriptors.FirstOrDefault(d => d.Name.Equals(serviceProperty.stringValue));
@@ -54,13 +80,53 @@ namespace Beamable.Server.Editor
 
          var clientCallableGuis = service.Methods
             .Select(m => new GUIContent(m.Path))
-            .ToArray();
+            .ToList();
 
          var routeProperty = property.FindPropertyRelative(nameof(ServiceRoute.Endpoint));
          var originalRouteIndex = service.Methods.FindIndex(d => d.Path.Equals(routeProperty.stringValue));
-         originalRouteIndex = originalRouteIndex == -1 ? 0 : originalRouteIndex;
-         var routeIndex = EditorGUI.Popup(nextRect, new GUIContent("Method"), originalRouteIndex, clientCallableGuis, EditorStyles.popup);
-         routeProperty.stringValue = service.Methods[routeIndex].Path;
+
+         var forceRoute = false;
+         if (originalRouteIndex == -1)
+         {
+	         var hasSuffix = routeProperty.stringValue.EndsWith(ContentConstants.MISSING_SUFFIX);
+	         var withoutSuffix = hasSuffix
+		         ? routeProperty.stringValue.Substring(
+			         0, routeProperty.stringValue.Length - ContentConstants.MISSING_SUFFIX.Length)
+		         : routeProperty.stringValue;
+	         var existing = clientCallableGuis.ToList().FindIndex(m => m.text.Equals(withoutSuffix));
+
+	         if (existing != -1 && hasSuffix)
+	         {
+		         originalRouteIndex = existing;
+		         forceRoute = true;
+	         }
+	         else if (clientCallableGuis.Count == 1)
+	         {
+		         originalRouteIndex = 0;
+		         forceRoute = true;
+	         }
+	         else if (string.IsNullOrEmpty(routeProperty.stringValue))
+	         {
+		         clientCallableGuis.Insert(0, new GUIContent("<none>"));
+		         originalRouteIndex = 0;
+	         }
+	         else
+	         {
+		         clientCallableGuis.Insert(0, new GUIContent(routeProperty.stringValue));
+		         originalRouteIndex = 0;
+		         if (!routeProperty.stringValue.EndsWith(ContentConstants.MISSING_SUFFIX))
+		         {
+			         routeProperty.stringValue += ContentConstants.MISSING_SUFFIX;
+		         }
+	         }
+         }
+
+         EditorGUI.BeginChangeCheck();
+         var routeIndex = EditorGUI.Popup(nextRect, new GUIContent("Method"), originalRouteIndex, clientCallableGuis.ToArray(), EditorStyles.popup);
+         if (EditorGUI.EndChangeCheck() || forceRoute)
+         {
+	         routeProperty.stringValue = service.Methods.FirstOrDefault(m => m.Path.Equals(clientCallableGuis[routeIndex].text)).Path;
+         }
 
          EditorGUI.indentLevel -= 1;
 
