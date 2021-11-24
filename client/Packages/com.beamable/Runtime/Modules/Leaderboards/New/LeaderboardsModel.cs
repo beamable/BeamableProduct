@@ -40,17 +40,17 @@ namespace Beamable.UI.Leaderboards
 
             _api = await Beamable.API.Instance;
             _dbid = _api.User.id;
-
             _leaderboardService = _api.LeaderboardService;
+            
+            if (_testMode)
+            {
+	            await SetTestScore();
+            }
+
             await _leaderboardService.GetUser(_leaderboardRef, _dbid).Then(rankEntry =>
             {
                 CurrentUserRankEntry = rankEntry;
             });
-
-            if (_testMode)
-            {
-                await SetTestScore();
-            }
 
             await _leaderboardService.GetBoard(_leaderboardRef, FirstEntryId, LastEntryId).Then(OnLeaderboardReceived);
         }
