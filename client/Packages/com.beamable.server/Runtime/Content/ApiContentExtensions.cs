@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using Beamable.Common;
-using Beamable.Common.Api;
 using Beamable.Common.Content;
 using UnityEngine;
 
@@ -10,15 +8,32 @@ namespace Beamable.Server
    {
       private static readonly ApiVariableBag EMPTY_VARIABLES = new ApiVariableBag();
 
+      /// <summary>
+      /// Invoke the api callback for some <see cref="ApiRef"/> with some variables.
+      /// This call will go to your local running microservice if its running else the remote microservice.
+      ///
+      /// If you are running this from Unity, <b> This call won't have admin privledges </b> because it is originating from client code.
+      /// However, if you are executing this method from a Microservice context, the call <i>will</i> have admin privs.
+      /// </summary>
+      /// <param name="apiRef"></param>
+      /// <param name="variables">Optionally, you can pass variables to this call. If the api callback requires variables, and you don't pass sufficient variables, the call will fail.</param>
       public static async Promise RequestApi(this ApiRef apiRef, ApiVariableBag variables=null)
       {
          var content = await apiRef.Resolve();
          await RequestApi(content, variables);
       }
 
+      /// <summary>
+      /// Invoke the api callback for some <see cref="ApiContent"/> with some variables.
+      /// This call will go to your local running microservice if its running else the remote microservice.
+      ///
+      /// If you are running this from Unity, <b> This call won't have admin privledges </b> because it is originating from client code.
+      /// However, if you are executing this method from a Microservice context, the call <i>will</i> have admin privs.
+      /// </summary>
+      /// <param name="api"></param>
+      /// <param name="variables">Optionally, you can pass variables to this call. If the api callback requires variables, and you don't pass sufficient variables, the call will fail.</param>
       public static async Promise RequestApi(this ApiContent api, ApiVariableBag variables=null)
       {
-         Debug.Log("Sending API Request " + api.Id);
          await MicroserviceClientHelper.Request<Unit>(
             api.ServiceRoute.Service,
             api.ServiceRoute.Endpoint,
@@ -26,7 +41,7 @@ namespace Beamable.Server
       }
 
 
-      public static string[] PrepareParameters(this ApiContent content, ApiVariableBag variableBag=null)
+      private static string[] PrepareParameters(this ApiContent content, ApiVariableBag variableBag=null)
       {
          variableBag = variableBag ?? EMPTY_VARIABLES;
 
@@ -38,12 +53,10 @@ namespace Beamable.Server
          {
             outputs[i] = parameters[i].ResolveParameter(variableBag);
          }
-
-         Debug.Log($"outputs are {string.Join(",\n", outputs)}");
          return outputs;
       }
 
-      public static string ResolveParameter(this RouteParameter parameter, ApiVariableBag variables = null)
+      private static string ResolveParameter(this RouteParameter parameter, ApiVariableBag variables = null)
       {
          variables = variables ?? EMPTY_VARIABLES;
          if (parameter.variableReference.HasValue)

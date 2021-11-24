@@ -16,12 +16,12 @@ namespace Beamable.Common.Content
 
    public enum PlatformWebhookRetryStrategy
    {
-      Never
+      None
    }
 
    public enum PlatformWebhookInvocationType
    {
-      FireAndForget
+      NonBlocking
    }
 
    [ContentType("api")]
@@ -43,10 +43,6 @@ namespace Beamable.Common.Content
       [Tooltip("The route information for the api call")]
       public ServiceRoute ServiceRoute = new ServiceRoute();
 
-      [ContentField("isIdempotent")]
-      [Tooltip("If this method can be multiple times with the same inputs, without causing multiple side effects, you should mark it as idempotent. If you intend to use a retry-strategy on this method, then you *MUST* implement the method to be idempotent, and mark it as such.")]
-      public bool Idempotent;
-
       [ContentField("variables")]
       [SerializeField]
       private RouteVariables _variables = new RouteVariables();
@@ -57,6 +53,13 @@ namespace Beamable.Common.Content
       public RouteParameters Parameters = new RouteParameters();
 
 
+      /// <summary>
+      /// Return the set of variables that can be used on this entire class type of api callbacks.
+      /// All <see cref="ApiVariable"/> will be bound to actual values from the call site of the API.
+      /// If you are creating your own custom API subclass, and you are implementing this method, be careful not to include variables that are not documented by Beamable.
+      /// Any variable listed in the response that isn't provided at the callsite will cause the api callback to fail.
+      /// </summary>
+      /// <returns></returns>
       protected virtual ApiVariable[] GetVariables()
       {
          return EMPTY_VARIABLE_SET;
@@ -125,9 +128,11 @@ namespace Beamable.Common.Content
    public class ServiceRoute
    {
       [ContentField("service")]
+      [Tooltip("The Microservice that will be invoked for this api callback")]
       public string Service;
 
       [ContentField("endpoint")]
+      [Tooltip("The endpoint that will be invoked for this api callback")]
       public string Endpoint;
 
       [ContentField("serviceType")]
@@ -217,12 +222,12 @@ namespace Beamable.Common.Content
    public class ApiInvocationStrategy
    {
       [ContentField("retryType")]
+      [Tooltip("Control how the api callback is retried in the event it fails. Be careful! If you have any Retry Strategy other than None, then you need to make sure your method is idempotent.")]
       public PlatformWebhookRetryStrategy RetryStrategy;
 
       [ContentField("invocationType")]
+      [Tooltip("Control if the api callback is going to block or not-block the server process. If set to Blocking, then the call must succeed before the rest of the server operation can continue. If set to NonBlocking, then the api callback's response won't affect the rest of the server operation at all.")]
       public PlatformWebhookInvocationType InvocationType;
-
-      // TODO: We could add variable overrides here if we wanted to. // variableOverrides: WebhookVariables = Map.empty
    }
 
    [Serializable]
