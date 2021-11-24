@@ -16,14 +16,15 @@ namespace Beamable.Editor.Content
       {
          if (!CanDisplay()) return 0;
 
-         var isOptional = (typeof(Optional).IsAssignableFrom(fieldInfo.FieldType));
-         if (isOptional)
+         var drawer = PropertyDrawerFinder.FindDrawerForProperty(property);
+         if (drawer == null)
          {
-            var optionalDrawer = new OptionalPropertyDrawer();
-            return optionalDrawer.GetPropertyHeight(property, label);
+	         return EditorGUI.GetPropertyHeight(property);
          }
-
-         return EditorGUI.GetPropertyHeight(property);
+         else
+         {
+	         return drawer.GetPropertyHeight(property, label);
+         }
 
       }
 
@@ -39,7 +40,19 @@ namespace Beamable.Editor.Content
             return;
          }
 
-         EditorGUI.PropertyField(position, property, label, true);
+         var drawer = PropertyDrawerFinder.FindDrawerForProperty(property);
+         if (drawer == null)
+         {
+	         EditorGUI.PropertyField(position, property, label, true);
+         }
+         else
+         {
+	         var height = drawer.GetPropertyHeight(property, label);
+	         position.height = height;
+	         drawer.OnGUI(position, property, label);
+         }
+
+         // EditorGUI.PropertyField(position, property, label, true);
       }
 
       private bool CanDisplay()

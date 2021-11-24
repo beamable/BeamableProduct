@@ -2,10 +2,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Beamable.Common.Content;
+using Beamable.Common.Content.Validation;
 
 namespace Beamable.Common.Announcements
 {
-   [ContentType("announcement")]
+   [ContentType("announcementApi")]
    [Serializable]
    public class AnnouncementApiContent : ApiContent
    {
@@ -13,7 +14,7 @@ namespace Beamable.Common.Announcements
       {
          return new[]
          {
-            new ApiVariable {Name = "announcementId", TypeName = ApiVariable.TYPE_STRING}
+            new ApiVariable {Name = "announcementId2", TypeName = ApiVariable.TYPE_STRING}
          };
       }
    }

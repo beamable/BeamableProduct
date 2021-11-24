@@ -201,6 +201,7 @@ namespace Beamable.Common.Content
       where TRef : ApiRef<TApi>
    {
       [ContentField("webhookSymbol")]
+      [MustReferenceContent]
       public TRef Api;
 
       [ContentField("strategy")]
