@@ -2,7 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Inventory;
+using Beamable.Serialization.SmallerJSON;
 using NUnit.Framework;
+using System.Linq;
 using UnityEngine.TestTools;
 
 namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
@@ -21,6 +23,16 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
          // Mock out a network request that get an item. This semi defines the web API itself.
          _requester
             .MockRequest<InventoryResponse>(Method.POST, $"{objectUrl}")
+            .WithBodyMatch<ArrayDict>(sent =>
+            {
+	            var expected = new ArrayDict() {{"scopes", new[] {"items.inventoryTestItem.test"}}};
+
+	            var matchKeys = expected.Keys.SequenceEqual(sent.Keys);
+	            var matchValuesLength = expected.Values.Count == sent.Values.Count;
+	            var matchValues = ((string[])expected.Values.ElementAt(0))[0] == ((string[])sent.Values.ElementAt(0))[0]; 
+	            
+	            return matchKeys && matchValuesLength && matchValues;
+            })
             .WithResponse(new InventoryResponse
             {
                currencies = new List<Currency>(),
@@ -90,6 +102,16 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
          // Mock out a network request that get an item. This semi defines the web API itself.
          _requester
             .MockRequest<InventoryResponse>(Method.POST, $"{objectUrl}")
+            .WithBodyMatch<ArrayDict>(sent =>
+            {
+	            var expected = new ArrayDict() {{"scopes", new[] {"items.inventoryTestItem"}}};
+
+	            var matchKeys = expected.Keys.SequenceEqual(sent.Keys);
+	            var matchValuesLength = expected.Values.Count == sent.Values.Count;
+	            var matchValues = ((string[])expected.Values.ElementAt(0))[0] == ((string[])sent.Values.ElementAt(0))[0]; 
+	            
+	            return matchKeys && matchValuesLength && matchValues;
+            })
             .WithResponse(new InventoryResponse
             {
                currencies = new List<Currency>(),

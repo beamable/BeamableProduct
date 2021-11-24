@@ -81,16 +81,7 @@ namespace Beamable.Api
       protected IBeamableRequester requester;
       
       protected BeamableGetApiResource<ScopedRsp> getter;
-      
-      /// <summary>
-      /// Called by <see cref="ExecuteRequest"/> when <see cref="getter"/> is null. Sub-classes are expected to set <see cref="getter"/> to null in order to use these instead.
-      /// </summary>
-      protected ExecuteRequestDelegate _executeRequestDelegate;
-      /// <summary>
-      /// Called by <see cref="CreateRefreshUrl"/> when <see cref="getter"/> is null. Sub-classes are expected to set <see cref="getter"/> to null in order to use these instead.
-      /// </summary>
-      protected CreateRefreshUrlDelegate _createRefreshUrlDelegate;
-      
+
       private string service;
       private Dictionary<string, Data> scopedData = new Dictionary<string, Data>();
 
@@ -286,18 +277,12 @@ namespace Beamable.Api
 
       protected virtual Promise<ScopedRsp> ExecuteRequest(IBeamableRequester requester, string url)
       {
-	      if(getter != null)
-			return getter.RequestData(requester, url);
-
-	      return _executeRequestDelegate.Invoke(requester, url);
+	      return getter.RequestData(requester, url);
       }
 
       protected virtual string CreateRefreshUrl(string scope)
       {
-	      if(getter != null)
-			return getter.CreateRefreshUrl(platform, service, scope);
-
-	      return _createRefreshUrlDelegate.Invoke(platform, service, scope);
+	      return getter.CreateRefreshUrl(platform, service, scope);
       }
 
       /// <summary>
