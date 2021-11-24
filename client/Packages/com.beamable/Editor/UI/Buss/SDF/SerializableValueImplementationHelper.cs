@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 
 namespace Beamable.Editor.UI.Buss {
@@ -19,8 +20,8 @@ namespace Beamable.Editor.UI.Buss {
 
         public static ImplementationData GetWithSpecialRule(string rule, Type baseType, params Type[] additionalTypes) {
             if (!_specialRulesData.TryGetValue(new Tuple<Type, string>(baseType, rule), out var data)) {
-                data = new ImplementationData(baseType, additionalTypes);
-                _specialRulesData[new Tuple<Type, string>(baseType, rule)] = data;
+		           data = new ImplementationData(baseType, additionalTypes);
+		           _specialRulesData[new Tuple<Type, string>(baseType, rule)] = data;
             }
             return data;
         }

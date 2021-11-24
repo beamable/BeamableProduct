@@ -37,7 +37,7 @@ namespace Beamable.UI.Sdf.Styles {
                 value = null;
             }
             var sysType = Type.GetType(type, false);
-            if (type == null) {
+            if (sysType == null) {
                 value = null;
                 return;
             }

@@ -54,7 +54,7 @@
             #pragma multi_compile_fragment _BGMODE_DEFAULT _BGMODE_OUTLINE _BGMODE_FULL
 
             #include "UnityCG.cginc"
-            #include "Packages\com.beamable\Runtime\UI\Materials\SDF\SDFFunctions.cginc"
+            #include "Packages\com.beamable\Runtime\UI\Scripts\Sdf\SDFFunctions.cginc"
             
             struct appdata
             {

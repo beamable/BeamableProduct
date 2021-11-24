@@ -30,24 +30,27 @@ namespace Beamable.Editor.UI.Buss {
             if (baseTypeOverride != null || implementsAtt != null) {
                 var data = SerializableValueImplementationHelper.GetWithSpecialRule("withVariableProperty",
                     baseTypeOverride != null ? baseTypeOverride : implementsAtt.baseType, typeof(VariableProperty));
-                var dropdownRect = position;
-                dropdownRect.x += EditorGUIUtility.labelWidth;
-                dropdownRect.width -= EditorGUIUtility.labelWidth;
-                dropdownRect.height = EditorGUIUtility.singleLineHeight;
-                var types = data.subTypes;
-                var dropdownIndex = Array.IndexOf(types, Type.GetType(type));
-                var newIndex = EditorGUI.Popup(dropdownRect, dropdownIndex, data.labels);
-                if (dropdownIndex != newIndex && newIndex != -1) {
-                    hasChange = true;
-                    sysType = types[newIndex];
-                    type = sysType?.AssemblyQualifiedName;
-                    if (sysType == null) {
-                        json = null;
-                    }
-                    else {
-                        value = Activator.CreateInstance(sysType);
-                        json = JsonUtility.ToJson(value);
-                    }
+                if (data != null)
+                {
+	                var dropdownRect = position;
+	                dropdownRect.x += EditorGUIUtility.labelWidth;
+	                dropdownRect.width -= EditorGUIUtility.labelWidth;
+	                dropdownRect.height = EditorGUIUtility.singleLineHeight;
+	                var types = data.subTypes;
+	                var dropdownIndex = Array.IndexOf(types, Type.GetType(type));
+	                var newIndex = EditorGUI.Popup(dropdownRect, dropdownIndex, data.labels);
+	                if (dropdownIndex != newIndex && newIndex != -1) {
+		                hasChange = true;
+		                sysType = types[newIndex];
+		                type = sysType?.AssemblyQualifiedName;
+		                if (sysType == null) {
+			                json = null;
+		                }
+		                else {
+			                value = Activator.CreateInstance(sysType);
+			                json = JsonUtility.ToJson(value);
+		                }
+	                }
                 }
             }
 

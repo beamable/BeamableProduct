@@ -16,39 +16,39 @@ MonoBehaviour:
   - _properties:
     - key: backgroundColor
       property:
-        type: Beamable.UI.BUSS.SingleColorProperty, Unity.Beamable, Version=0.0.0.0,
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":1.0,"g":0.9802927374839783,"b":0.023529410362243654,"a":1.0}}'
     - key: roundCorners
       property:
-        type: Beamable.UI.BUSS.FloatProperty, Unity.Beamable, Version=0.0.0.0, Culture=neutral,
-          PublicKeyToken=null
+        type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":15.0}'
     - key: shadowSoftness
       property:
-        type: Beamable.UI.BUSS.FloatProperty, Unity.Beamable, Version=0.0.0.0, Culture=neutral,
-          PublicKeyToken=null
+        type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":1.0}'
     - key: shadowThreshold
       property:
-        type: Beamable.UI.BUSS.FloatProperty, Unity.Beamable, Version=0.0.0.0, Culture=neutral,
-          PublicKeyToken=null
+        type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":5.0}'
-    _name: '#currencyBackground'
+    _selector: '#currencyBackground'
   - _properties:
     - key: backgroundColor
       property:
-        type: Beamable.UI.BUSS.SingleColorProperty, Unity.Beamable, Version=0.0.0.0,
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":0.023529410362243654,"g":0.1390523612499237,"b":1.0,"a":1.0}}'
     - key: font
       property:
-        type: Beamable.UI.BUSS.FontAssetProperty, Unity.Beamable, Version=0.0.0.0,
+        type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_asset":{"instanceID":28318}}'
     - key: fontSize
       property:
-        type: Beamable.UI.BUSS.FloatProperty, Unity.Beamable, Version=0.0.0.0, Culture=neutral,
-          PublicKeyToken=null
+        type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":22.0}'
-    _name: '#currencyText'
+    _selector: '#currencyText'
