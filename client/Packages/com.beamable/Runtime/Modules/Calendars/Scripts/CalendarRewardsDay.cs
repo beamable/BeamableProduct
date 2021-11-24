@@ -5,7 +5,8 @@ using UnityEngine;
 using UnityEngine.UI;
 
 namespace Beamable.Experimental.Calendars
-{
+{ 
+	[HelpURL("https://docs.beamable.com/docs")]
    public class CalendarRewardsDay : MonoBehaviour
    {
       public Image RewardImage;

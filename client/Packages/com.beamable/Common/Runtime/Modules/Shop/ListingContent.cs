@@ -284,7 +284,7 @@ namespace Beamable.Common.Shop
    {
       public static OptionalColor From(Color color)
       {
-         return new OptionalColor {HasValue = true, Value = color};
+         return new OptionalColor {Value = color};
       }
    }
 

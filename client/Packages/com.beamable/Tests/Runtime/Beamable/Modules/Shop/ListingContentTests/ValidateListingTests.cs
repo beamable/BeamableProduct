@@ -14,10 +14,7 @@ namespace Beamable.Tests.Modules.Shop.ListingContentTests
          var listing = ScriptableObject.CreateInstance<ListingContent>();
          listing.offer = new ListingOffer
          {
-            titles = new OptionalNonBlankStringList
-            {
-               HasValue = false
-            }
+            titles = new OptionalNonBlankStringList()
          };
 
          var anyErrors = listing.HasValidationErrors(new ValidationContext(), out var _);
@@ -30,10 +27,9 @@ namespace Beamable.Tests.Modules.Shop.ListingContentTests
          var listing = ScriptableObject.CreateInstance<ListingContent>();
          listing.activePeriod = new OptionalPeriod
          {
-            HasValue = false,
             Value = new ActivePeriod
             {
-               end = new OptionalString {HasValue = false},
+               end = new OptionalString(),
                start = "not-a-date"
             }
          };
@@ -48,10 +44,9 @@ namespace Beamable.Tests.Modules.Shop.ListingContentTests
          var listing = ScriptableObject.CreateInstance<ListingContent>();
          listing.activePeriod = new OptionalPeriod
          {
-            HasValue = true,
             Value = new ActivePeriod
             {
-               end = new OptionalString {HasValue = false},
+               end = new OptionalString(),
                start = "not-a-date"
             }
          };

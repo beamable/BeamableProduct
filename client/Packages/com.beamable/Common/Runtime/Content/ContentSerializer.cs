@@ -176,22 +176,13 @@ namespace Beamable.Common.Content
 
       protected object DeserializeResult(object preParsedValue, Type type)
       {
-
-         try
+	      try
          {
             if (typeof(Optional).IsAssignableFrom(type))
             {
                var optional = (Optional) Activator.CreateInstance(type);
-
-               if (preParsedValue == null)
-               {
-                  optional.HasValue = false;
-               }
-               else
-               {
-                  var value = DeserializeResult(preParsedValue, optional.GetOptionalType());
-                  optional.SetValue(value);
-               }
+               var value = DeserializeResult(preParsedValue, optional.GetOptionalType());
+               optional.SetValue(value);
 
                return optional;
             }

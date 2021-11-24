@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+using System.Runtime.Serialization;
 using UnityEngine;
 
 namespace Beamable.Common.Content
@@ -11,7 +12,11 @@ namespace Beamable.Common.Content
     [Agnostic]
     public abstract class Optional
     {
-        public bool HasValue;
+	    public virtual bool HasValue
+	    {
+		    get;
+		    protected set;
+	    }
         public abstract object GetValue();
 
         static Optional()
@@ -28,19 +33,31 @@ namespace Beamable.Common.Content
 
        public static Optional<int> ToOptional(this int number)
        {
-          return new Optional<int>{HasValue = true, Value = number};
+          return new Optional<int>{Value = number};
        }
        public static Optional<double> ToOptional(this double number)
        {
-          return new Optional<double>{HasValue = true, Value = number};
+          return new Optional<double>{ Value = number};
        }
     }
 
     [System.Serializable]
     [Agnostic]
-    public class Optional<T> : Optional
+    public class Optional<T> : Optional//, ISerializable
     {
-        public T Value;
+	    [SerializeField]
+	    private T value;
+
+        public T Value
+        {
+	        get => value;
+	        set
+	        {
+		        this.value = value;
+		        HasValue = value != null;
+	        }
+        }
+
         public override object GetValue()
         {
             return Value;
@@ -49,7 +66,6 @@ namespace Beamable.Common.Content
         public override void SetValue(object value)
         {
            Value = (T) value;
-           HasValue = true;
         }
 
         public override Type GetOptionalType()
@@ -57,6 +73,17 @@ namespace Beamable.Common.Content
            return typeof(T);
         }
 
+        // public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
+        // {
+	       //  info.AddValue("", Value);
+        // }
+        //
+        // // The special constructor is used to deserialize values.
+        // public Optional(SerializationInfo info, StreamingContext context)
+        // {
+	       //  // Reset the property value using the GetValue method.
+	       //  Value = (T) info.GetValue("", typeof(T));
+        // }
     }
 
     [Agnostic]
@@ -74,7 +101,7 @@ namespace Beamable.Common.Content
        {
           if (value is long number)
           {
-             return new OptionalInt { Value = (int)number, HasValue = true };
+             return new OptionalInt { Value = (int)number };
           }
           return base.ConvertTo(context, culture, value, destinationType);
        }

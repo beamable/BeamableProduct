@@ -1,3 +1,4 @@
+using System.Runtime.Serialization;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -15,6 +16,7 @@ namespace Beamable.Common.Content
    
    [System.Serializable]
    [Agnostic]
-   public class OptionalClientPermissions : Optional<ClientPermissions> {}
+   public class OptionalClientPermissions : Optional<ClientPermissions>
+   { }
    
 }

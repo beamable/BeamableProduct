@@ -8,6 +8,7 @@ using NUnit.Framework;
 using Packages.Beamable.Runtime.Tests.Beamable;
 using Utf8Json;
 using Utf8Json.Formatters;
+using Utf8Json.Unity;
 
 namespace Beamable.Tests.Runtime
 {
@@ -31,6 +32,7 @@ namespace Beamable.Tests.Runtime
 			      Utf8Json.Resolvers.CompositeResolver.Instance,
 			      Utf8Json.Resolvers.DynamicGenericResolver.Instance,
 			      Utf8Json.Resolvers.AttributeFormatterResolver.Instance,
+			      UnityResolver.Instance
 		      }
 	      );
       }

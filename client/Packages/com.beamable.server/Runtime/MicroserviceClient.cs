@@ -39,8 +39,42 @@ namespace Beamable.Server
 	      {
 		      Debug.LogError(e);
 	      }
+         // JSONUtility will serialize objects correctly, but doesn't handle primitives well.
+         if (arg == null)
+         {
+            return "null";
+         }
 
-	      return string.Empty;
+         switch (arg)
+         {
+            case IEnumerable enumerable when !(enumerable is string):
+               var output = new List<string>();
+               foreach (var elem in enumerable)
+               {
+                  output.Add(SerializeArgument(elem));
+               }
+
+               var outputJson = "[" + string.Join(",", output) + "]";
+               return outputJson;
+
+            case bool prim:
+               return prim ? "true": "false";
+            case long prim:
+               return prim.ToString();
+            case string prim:
+               return Json.IsValidJson(prim) ? "[" + prim + "]" : "\"" + prim + "\"";
+            case double prim:
+               return prim.ToString();
+            case float prim:
+               return prim.ToString();
+            case int prim:
+               return prim.ToString();
+            case Vector2Int prim:
+               return JsonUtility.ToJson(new Vector2IntEx(prim));
+            case Vector3Int prim:
+               return JsonUtility.ToJson(new Vector3IntEx(prim));
+            }
+         return JsonUtility.ToJson(arg);
       }
 
       protected T DeserializeResult<T>(string json)
