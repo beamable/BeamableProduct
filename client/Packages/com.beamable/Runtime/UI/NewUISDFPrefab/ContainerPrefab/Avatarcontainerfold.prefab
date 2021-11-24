@@ -533,11 +533,6 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 5446257441653194039, guid: 6d13f99c775d640559ac3ff4791a20b9,
-        type: 3}
-      propertyPath: m_Name
-      value: Avatarcontainerfold
-      objectReference: {fileID: 0}
     - target: {fileID: 1286571111456208090, guid: 6d13f99c775d640559ac3ff4791a20b9,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -643,17 +638,23 @@ PrefabInstance:
       propertyPath: m_Pivot.y
       value: 0.5
       objectReference: {fileID: 0}
-    - target: {fileID: 7486212319572011514, guid: 6d13f99c775d640559ac3ff4791a20b9,
+    - target: {fileID: 5446257441653194039, guid: 6d13f99c775d640559ac3ff4791a20b9,
         type: 3}
-      propertyPath: _debugMaterialCount
-      value: 36
+      propertyPath: m_Name
+      value: Avatarcontainerfold
       objectReference: {fileID: 0}
     - target: {fileID: 7479767727143853854, guid: 6d13f99c775d640559ac3ff4791a20b9,
         type: 3}
       propertyPath: m_Material
       value: 
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    - target: {fileID: 7486212319572011514, guid: 6d13f99c775d640559ac3ff4791a20b9,
+        type: 3}
+      propertyPath: _debugMaterialCount
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents:
+    - {fileID: 114635315919313430, guid: 6d13f99c775d640559ac3ff4791a20b9, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 6d13f99c775d640559ac3ff4791a20b9, type: 3}
 --- !u!224 &6731744766745172643 stripped
 RectTransform:
