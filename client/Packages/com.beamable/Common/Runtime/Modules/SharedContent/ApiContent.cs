@@ -36,6 +36,7 @@ namespace Beamable.Common.Content
       public OptionalString Description;
 
       [ContentField("method")]
+      [Tooltip("The http method to use")]
       [HideInInspector]
       public Method Method = Method.POST;
 
@@ -46,6 +47,7 @@ namespace Beamable.Common.Content
 
       [ContentField("variables")]
       [SerializeField]
+      [Tooltip("The variables that may be referenced from the route parameters")]
       private RouteVariables _variables = new RouteVariables();
       public ApiVariable[] Variables => _variables.Variables;
 
@@ -92,9 +94,11 @@ namespace Beamable.Common.Content
    public class ApiVariable
    {
       [ContentField("name")]
+      [Tooltip("The unique name of the variable")]
       public string Name;
 
       [ContentField("typeName")]
+      [Tooltip("The type name of the variable")]
       public string TypeName;
 
       public static readonly string TYPE_NUMBER = "number";
@@ -138,6 +142,7 @@ namespace Beamable.Common.Content
       public string Endpoint;
 
       [ContentField("serviceTypeStr")]
+      [Tooltip("The type of service call.")]
       public PlatformServiceType Type;
    }
 
@@ -145,6 +150,7 @@ namespace Beamable.Common.Content
    public class RouteVariables
    {
       [ContentField("variables")]
+      [Tooltip("the variables that may be used")]
       public ApiVariable[] Variables;
    }
 
@@ -152,11 +158,13 @@ namespace Beamable.Common.Content
    public class RouteParameters
    {
       [ContentField("parameters")]
+      [Tooltip("the route parameters")]
       public RouteParameter[] Parameters;
 
       [SerializeField]
       [HideInInspector]
       [IgnoreContentField]
+      [Tooltip("a reference ot the api content ")]
       public ApiContent ApiContent;
    }
 
@@ -215,9 +223,11 @@ namespace Beamable.Common.Content
    {
       [ContentField("webhookSymbol")]
       [MustReferenceContent]
+      [Tooltip("Some api content to invoke")]
       public ApiRef Api;
 
       [ContentField("strategy")]
+      [Tooltip("The strategy that defines how the webhook is invoked")]
       public ApiInvocationStrategy Strategy;
    }
 
