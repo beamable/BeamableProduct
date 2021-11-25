@@ -23,30 +23,46 @@ namespace Common.Runtime.BeamHints
 		}
 
 		/// <summary>
-		/// The list of all user defined storages.
-		/// Our Beamable Assistant UI continuously detects hints added to these storages automatically --- so add your declared <see cref="IBeamHintStorage"/>s here.
-		/// We recommend you use our <see cref="BeamHintStorage"/> implementation, but you are free to provide your own and, as long as the semantics remain the same, it
-		/// should just work with our UI. 
+		/// User-defined domains go into this storage (see <see cref="BeamHintDomains.IsUserDomain"/>).
+		/// Our Beamable Assistant UI continuously detects hints added to this storage automatically and displays it in a special section for User domains.
 		/// </summary>
-		List<IBeamHintStorage> UserDefinedStorages
+		IBeamHintStorage UserDefinedStorage
 		{
 			get;
 		}
 
 		/// <summary>
-		/// The list of all Beamable-defined storages.
+		/// Beamable-defined hints are stored here.
 		/// </summary>
-		IReadOnlyList<IBeamHintStorage> BeamableStorages
+		IBeamHintStorage BeamableStorage
 		{
 			get;
 		}
+
+		/// <summary>
+		/// More performant version of <see cref="IBeamHintStorage.AddOrReplaceHints(System.Collections.Generic.IEnumerable{Common.Runtime.BeamHints.BeamHintHeader},System.Collections.Generic.IEnumerable{object})"/>
+		/// for the global case. Call this if you know that all hints are either <see cref="BeamHintDomains.IsBeamableDomain"/> or <see cref="BeamHintDomains.IsUserDomain"/>.
+		/// </summary>
+		/// <param name="domainOwner">Either <see cref="BeamHintDomains.BEAM_DOMAIN_PREFIX"/> or <see cref="BeamHintDomains.USER_DOMAIN_PREFIX"/>.</param>
+		/// <param name="headers">List of headers to add. Parallel to <paramref name="hintContextObj"/>.</param>
+		/// <param name="hintContextObj">List of context objects to add. Parallel to <paramref name="headers"/>.</param>
+		void BatchAddBeamHints(string domainOwner, IEnumerable<BeamHintHeader> headers, IEnumerable<object> hintContextObj);
+		
+		/// <summary>
+		/// More performant version of <see cref="IBeamHintStorage.AddOrReplaceHints(System.Collections.Generic.IEnumerable{Common.Runtime.BeamHints.BeamHint})"/>
+		/// for the global case. Call this if you know that all hints are either <see cref="BeamHintDomains.IsBeamableDomain"/> or <see cref="BeamHintDomains.IsUserDomain"/>.
+		/// </summary>
+		/// <param name="domainOwner">Either <see cref="BeamHintDomains.BEAM_DOMAIN_PREFIX"/> or <see cref="BeamHintDomains.USER_DOMAIN_PREFIX"/>.</param>
+		/// <param name="hints">The <see cref="BeamHint"/>s to add.</param>
+		void BatchAddBeamHints(string domainOwner, IEnumerable<BeamHint> hints);
+		
 
 		#region Per-Domain Beamable Storages
 
 		/// <summary>
 		/// Contains the <see cref="BeamHint"/>s for the entire <see cref="BeamHintDomains.BEAM_CSHARP_MICROSERVICES"/> domain.
 		/// </summary>
-		IBeamHintStorage CSharpMSHints
+		IEnumerable<BeamHint> CSharpMSHints
 		{
 			get;
 		}
@@ -54,7 +70,7 @@ namespace Common.Runtime.BeamHints
 		/// <summary>
 		/// Contains the <see cref="BeamHint"/>s for the entire <see cref="BeamHintDomains.BEAM_CONTENT"/> domain.
 		/// </summary>
-		IBeamHintStorage ContentHints
+		IEnumerable<BeamHint> ContentHints
 		{
 			get;
 		}
@@ -64,33 +80,32 @@ namespace Common.Runtime.BeamHints
 
 	public class BeamHintEditorStorage : IBeamHintGlobalStorage
 	{
-		public BeamHintType AcceptingTypes => BeamHintType.All;
-		public string AcceptingDomains => BeamHintDomains.ANY;
+		public IBeamHintStorage UserDefinedStorage
+		{
+			get;
+		}
 
-		public List<IBeamHintStorage> UserDefinedStorages
+		public IBeamHintStorage BeamableStorage
 		{
 			get;
 		}
-		public IReadOnlyList<IBeamHintStorage> BeamableStorages
-		{
-			get;
-		}
-		public IEnumerable<BeamHint> All => BeamableStorages.Union(UserDefinedStorages).SelectMany(storage => storage);
+
+		
+
+		public IEnumerable<BeamHint> All => BeamableStorage.Union(UserDefinedStorage);
 
 		#region Per-Domain Beamable Storages
 
-		public IBeamHintStorage CSharpMSHints => _CSharpMSStorage;
-		private BeamHintStorage _CSharpMSStorage = new BeamHintStorage(BeamHintType.All, new[] {BeamHintDomains.BEAM_CSHARP_MICROSERVICES});
+		public IEnumerable<BeamHint> CSharpMSHints => BeamableStorage.Where(hint => BeamHintDomains.IsCSharpMSDomain(hint.Header.Domain));
 
-		public IBeamHintStorage ContentHints => _contentStorage;
-		private BeamHintStorage _contentStorage = new BeamHintStorage(BeamHintType.All, new[] {BeamHintDomains.BEAM_CSHARP_MICROSERVICES});
+		public IEnumerable<BeamHint> ContentHints => BeamableStorage.Where(hint => BeamHintDomains.IsContentDomain(hint.Header.Domain));
 
 		#endregion
 
 		public BeamHintEditorStorage()
 		{
-			UserDefinedStorages = new List<IBeamHintStorage>();
-			BeamableStorages = new List<IBeamHintStorage>(32); // This number is large enough to fit all our systems.
+			UserDefinedStorage = new BeamHintStorage();
+			BeamableStorage = new BeamHintStorage();
 		}
 
 		#region IEnumerable Implementation
@@ -106,38 +121,122 @@ namespace Common.Runtime.BeamHints
 		}
 
 		#endregion
-		
-		
+
 		public void AddOrReplaceHint(BeamHintType type, string hintDomain, string uniqueId, object hintContextObj = null)
 		{
-			throw new System.NotImplementedException();
+			AddOrReplaceHint(new BeamHintHeader(type, hintDomain, uniqueId), hintContextObj);
 		}
 
 		public void AddOrReplaceHint(BeamHintHeader header, object hintContextObj = null)
 		{
-			var type = header.Type;
-			var domain = header.Domain;
-			
-			if(BeamHintDomains.IsBeamableDomain(domain))
-				// look through our storage
-				
-			if(BeamHintDomains.IsUserDomain(domain))
-				// look through user defined storages
-				
-			
+			if (BeamHintDomains.IsBeamableDomain(header.Domain))
+				BeamableStorage.AddOrReplaceHint(header, hintContextObj);
 
-
+			if (BeamHintDomains.IsUserDomain(header.Domain))
+				UserDefinedStorage.AddOrReplaceHint(header, hintContextObj);
 		}
 
 		public void AddOrReplaceHints(IEnumerable<BeamHintHeader> headers, IEnumerable<object> hintContextObjs)
 		{
-			throw new System.NotImplementedException();
+			AddOrReplaceHints(headers.Zip(hintContextObjs, (header, o) => new BeamHint(header, o)));
 		}
 
 		public void AddOrReplaceHints(IEnumerable<BeamHint> bakedHints)
 		{
-			throw new System.NotImplementedException();
+			foreach (BeamHint hint in bakedHints)
+			{
+				var header = hint.Header;
+				var hintContextObj = hint.ContextObject;
+				
+				if (BeamHintDomains.IsBeamableDomain(header.Domain))
+					BeamableStorage.AddOrReplaceHint(header, hintContextObj);
+
+				if (BeamHintDomains.IsUserDomain(header.Domain))
+					UserDefinedStorage.AddOrReplaceHint(header, hintContextObj);
+			}
 		}
+
+		public void RemoveHint(BeamHintHeader header)
+		{
+			if (BeamHintDomains.IsBeamableDomain(header.Domain))
+				BeamableStorage.RemoveHint(header);
+
+			if (BeamHintDomains.IsUserDomain(header.Domain))
+				BeamableStorage.RemoveHint(header);
+		}
+
+		public void RemoveHint(BeamHint hint)
+		{
+			RemoveHint(hint.Header);
+		}
+
+		public void RemoveHints(IEnumerable<BeamHintHeader> headers)
+		{
+			foreach (BeamHintHeader header in headers)
+			{
+				if (BeamHintDomains.IsBeamableDomain(header.Domain))
+					BeamableStorage.RemoveHint(header);
+
+				if (BeamHintDomains.IsUserDomain(header.Domain))
+					BeamableStorage.RemoveHint(header);
+			}
+		}
+
+		public void RemoveHints(IEnumerable<BeamHint> hints)
+		{
+			RemoveHints(hints.Select(h => h.Header));
+		}
+
+		public int RemoveAllHints(IEnumerable<string> hintDomains, IEnumerable<string> hintIds)
+		{
+			var hintDomainRegexStr = string.Join("|", hintDomains);
+			var hintIdRegexStr = string.Join("|", hintIds);
+
+			return RemoveAllHints(hintDomainRegexStr, hintIdRegexStr);
+		}
+
+		public int RemoveAllHints(BeamHintType type)
+		{
+			var removedFromBeamableCount = BeamableStorage.RemoveAllHints(type);
+			var removedFromUserCount = UserDefinedStorage.RemoveAllHints(type);
+			return removedFromBeamableCount + removedFromUserCount;
+		}
+
+		public int RemoveAllHints(string hintDomainRegex = ".*", string idRegex = ".*")
+		{
+			var removedFromBeamableCount = BeamableStorage.RemoveAllHints(hintDomainRegex, idRegex);
+			var removedFromUserCount = UserDefinedStorage.RemoveAllHints(hintDomainRegex, idRegex);
+			return removedFromBeamableCount + removedFromUserCount;
+		}
+
+
+		public void BatchAddBeamHints(string domainOwner, IEnumerable<BeamHintHeader> headers, IEnumerable<object> hintContextObj)
+		{
+			BatchAddBeamHints(domainOwner, headers.Zip(hintContextObj, (header, o) => new BeamHint(header, o)));
+		}
+
+		public void BatchAddBeamHints(string domainOwner, IEnumerable<BeamHint> hints)
+		{
+			var beamHints = hints.ToList();
+			
+			if (BeamHintDomains.IsBeamableDomain(domainOwner))
+			{
+				foreach (BeamHint beamHint in beamHints)
+				{
+					BeamableStorage.AddOrReplaceHint(beamHint.Header, beamHint.ContextObject);
+				}
+			}
+
+			if (BeamHintDomains.IsUserDomain(domainOwner))
+			{
+				foreach (BeamHint beamHint in beamHints)
+				{
+					UserDefinedStorage.AddOrReplaceHint(beamHint.Header, beamHint.ContextObject);
+				}
+			}
+		}
+		
+
 		
 	}
 }

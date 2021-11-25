@@ -1,15 +1,9 @@
-using NUnit.Framework;
 using System;
-using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 
 namespace Common.Runtime.BeamHints
 {
-	[System.Flags]
+	[Flags]
 	public enum BeamHintType
 	{
 		Invalid = 0,
@@ -32,7 +26,11 @@ namespace Common.Runtime.BeamHints
 		/// <param name="userDomainName">The "_"-separated all-caps name of your <see cref="BeamHint"/> domain.</param>
 		/// <returns>A prefixed <see cref="userDomainName"/> that you can use to declare your own <see cref="IBeamHintStorage"/>s and generate your own <see cref="BeamHint"/>s.</returns>
 		public static string GenerateUserDomain(string userDomainName) => $"{USER_DOMAIN_PREFIX}_{userDomainName}";
-		private const string USER_DOMAIN_PREFIX = "USER";
+		/// <summary>
+		/// Checks if a domain is a User-created domain.
+		/// </summary>
+		public static bool IsUserDomain(string domain) => domain.StartsWith(USER_DOMAIN_PREFIX);
+		public const string USER_DOMAIN_PREFIX = "USER";
 		
 		/// <summary>
 		/// Generates a Beamable-owned domain name.
@@ -41,7 +39,11 @@ namespace Common.Runtime.BeamHints
 		/// <param name="domainName">The "_"-separated all-caps name of your <see cref="BeamHint"/> domain.</param>
 		/// <returns>A prefixed <see cref="domainName"/> that we use to declare our <see cref="IBeamHintStorage"/>s and generate our <see cref="BeamHint"/>s.</returns>
 		internal static string GenerateBeamableDomain(string domainName) => $"{BEAM_DOMAIN_PREFIX}_{domainName}";
-		private const string BEAM_DOMAIN_PREFIX = "BEAM";
+		/// <summary>
+		/// Checks if a domain is a Beamable-created domain.
+		/// </summary>
+		public static bool IsBeamableDomain(string domain) => domain.StartsWith(BEAM_DOMAIN_PREFIX);
+		public const string BEAM_DOMAIN_PREFIX = "BEAM";
 		
 		/// <summary>
 		/// Generate a sub-domain. These are used by the UI to group <see cref="BeamHint"/>s hierarchically and display them in a more organized way. 
@@ -52,21 +54,17 @@ namespace Common.Runtime.BeamHints
 		public static string GenerateSubDomain(string ownerDomain, string subDomainName) => $"{ownerDomain}{SUB_DOMAIN_PREFIX}{subDomainName}";
 		public const string SUB_DOMAIN_PREFIX = "¬";
 
-		
-		
-		public static readonly string ANY = nameof(ANY);
-		public static readonly string ANY_BEAMABLE = GenerateSubDomain(ANY, "BEAMABLE");
-		public static readonly string ANY_USER_DEFINED = GenerateSubDomain(ANY, "USER");
-
 		public static readonly string BEAM_CSHARP_MICROSERVICES = GenerateBeamableDomain("C#MS");
 		public static readonly string BEAM_CSHARP_MICROSERVICES_CODE_MISUSE = GenerateSubDomain(BEAM_CSHARP_MICROSERVICES, "CODE_MISUSE");
 		public static readonly string BEAM_CSHARP_MICROSERVICES_DOCKER = GenerateSubDomain(BEAM_CSHARP_MICROSERVICES, "DOCKER");
+		public static bool IsCSharpMSDomain(string domain) => IsBeamableDomain(domain) && domain.Contains(BEAM_CSHARP_MICROSERVICES);
 
 
 		public static readonly string BEAM_CONTENT = GenerateBeamableDomain("Content");
 		public static readonly string BEAM_CONTENT_CODE_MISUSE = GenerateSubDomain(BEAM_CONTENT, "CODE_MISUSE");
+		public static bool IsContentDomain(string domain) => IsBeamableDomain(domain) && domain.Contains(BEAM_CONTENT);
 
-
+		
 	}
 
 	public readonly struct BeamHintHeader : IEquatable<BeamHintHeader>
@@ -140,8 +138,7 @@ namespace Common.Runtime.BeamHints
 
 			// Tries to add a hint of incorrect origin system here. This will throw an Assert Exception. The advantage for calling the correct one is performance related.
 			// This is also useful as a declaration of intent.
-			// Also, having multiple of these allow for easy iteration as shown below -- which will help BeamableAssistantControllers to be easily implementable.  
-			beamHintStorage.CSharpMSHints.AddOrReplaceHint(new BeamHintHeader(BeamHintType.Hint, BeamHintDomains.BEAM_CONTENT, "ContentTypeName"));
+			// Also, having multiple of these allow for easy iteration as shown below -- which will help BeamableAssistantControllers to be easily implementable. 
 			foreach (BeamHint asdCSharpMSHint in beamHintStorage.CSharpMSHints)
 			{
 				// GOES THROUGH ALL C#MS HINTS, INCLUDING DOCKER SPECIFIC ONES
@@ -149,17 +146,14 @@ namespace Common.Runtime.BeamHints
 
 			// Tries to add a hint of correct origin system here but incorrect class. This will throw an Assert Exception.
 			// The advantage for calling the correct one is performance related. This is also useful as a declaration of intent.
-			// Also, having multiple of these allow for easy iteration as shown below -- which will help BeamableAssistantControllers to be easily implementable.  
-			beamHintStorage.CSharpMSHints_Docker.AddOrReplaceHint(new BeamHintHeader(BeamHintType.Hint, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, "ConflictingMicroServiceName"));
-			foreach (BeamHint beamHint in beamHintStorage.CSharpMSHints_Docker)
+			// Also, having multiple of these allow for easy iteration as shown below -- which will help BeamableAssistantControllers to be easily implementable.
+			foreach (BeamHint beamHint in beamHintStorage.CSharpMSHints)
 			{
 				// GOES THROUGH ALL C#MS DOCKER SPECIFIC HINTS 
 			}
 
 			// Removing hints is pretty straight-forward... Clears the entire storage, each sub call clears the internal data for that specific storage.
 			beamHintStorage.RemoveAllHints();
-			beamHintStorage.CSharpMSHints.RemoveAllHints();
-			beamHintStorage.CSharpMSHints_Docker.RemoveAllHints();
 
 			// Removing supports filtering by class, origin system and type
 			beamHintStorage.RemoveAllHints(BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE); // clears all of the given domain

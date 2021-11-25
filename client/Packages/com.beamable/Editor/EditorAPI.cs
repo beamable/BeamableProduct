@@ -12,6 +12,7 @@ using Beamable.Config;
 using Beamable.Editor.Config;
 using Beamable.Editor.Modules.Account;
 using Beamable.Editor.Realms;
+using Common.Runtime.BeamHints;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.VersionControl;
@@ -44,6 +45,12 @@ namespace Beamable.Editor
             return _instance;
          }
       }
+
+
+      /// <summary>
+      /// Global <see cref="BeamHint"/> storage that is used to manage hints that are detected.
+      /// </summary>
+      public IBeamHintGlobalStorage HintGlobalStorage;
 
       // Services
       private AccessTokenStorage _accessTokenStorage;
@@ -90,7 +97,9 @@ namespace Beamable.Editor
 
       private Promise<EditorAPI> Initialize()
       {
-         if (!Application.isPlaying) 
+	      HintGlobalStorage = new BeamHintEditorStorage();
+
+	      if (!Application.isPlaying) 
          {
             var promiseHandlerConfig = CoreConfiguration.Instance.DefaultUncaughtPromiseHandlerConfiguration;
             switch (promiseHandlerConfig)

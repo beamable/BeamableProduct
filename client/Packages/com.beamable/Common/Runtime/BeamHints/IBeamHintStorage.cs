@@ -22,26 +22,7 @@ namespace Common.Runtime.BeamHints
 	public interface IBeamHintStorage : IEnumerable<BeamHint>
 	{
 		/// <summary>
-		/// The <see cref="BeamHintType"/>s that this storage will accept.
-		/// </summary>
-		BeamHintType AcceptingTypes
-		{
-			get;
-		}
-
-		/// <summary>
-		/// The '|' separated list of accepting domains.
-		/// <see cref="BeamHintDomains.ANY"/>, is returned if it can accept any domain.
-		/// <see cref="BeamHintDomains.ANY_BEAMABLE"/>, is returned if it can accept any beamable-owned domain.
-		/// <see cref="BeamHintDomains.ANY_USER_DEFINED"/>, is returned if it can accept any user-owned domain.
-		/// </summary>
-		string AcceptingDomains
-		{
-			get;
-		}
-
-		/// <summary>
-		/// Adds a hint to the storage. Verifies that the given types are accepted by this storage.
+		/// Adds a hint to the storage.
 		/// </summary>
 		/// <param name="type">The type of hint that it is.</param>
 		/// <param name="originSystem">The system that originated this hint.</param>
@@ -51,7 +32,7 @@ namespace Common.Runtime.BeamHints
 		void AddOrReplaceHint(BeamHintType type, string hintDomain, string uniqueId, object hintContextObj = null);
 
 		/// <summary>
-		/// Adds a hint to the storage. Verifies that the given types are accepted by this storage.
+		/// Adds a hint to the storage.
 		/// </summary>
 		/// <param name="header">A pre-built <see cref="BeamHintHeader"/> to add.</param>
 		/// <param name="hintContextObj">Any arbitrary data that you wish to tie to the hint.</param>
@@ -59,18 +40,13 @@ namespace Common.Runtime.BeamHints
 
 		/// <summary>
 		/// Takes in two parallel <see cref="IEnumerable{T}"/> (same-length arrays) of <see cref="BeamHintHeader"/>/<see cref="object"/> pairs and add them to the storage.
-		/// Validates each header individually against the <see cref="AcceptingTypes"/> and other Accepting filters.
 		/// </summary>
 		void AddOrReplaceHints(IEnumerable<BeamHintHeader> headers, IEnumerable<object> hintContextObjs);
 
 		/// <summary>
 		/// Adds the given <see cref="BeamHint"/>s.
-		/// Validates each header individually against the <see cref="AcceptingTypes"/> and other Accepting filters.
 		/// </summary>
 		void AddOrReplaceHints(IEnumerable<BeamHint> bakedHints);
-
-		void BatchAddOrReplaceHints(BeamHintType type, string domain, IEnumerable<BeamHintHeader> headers, IEnumerable<object> hintContextObjs);
-		void BatchAddOrReplaceHints(BeamHintType type, string domain, IEnumerable<BeamHint> bakedHints);
 
 		/// <summary>
 		/// Removes the <see cref="BeamHint"/> identified by the <paramref name="header"/>.
@@ -125,67 +101,20 @@ namespace Common.Runtime.BeamHints
 	/// </summary>
 	public class BeamHintStorage : IBeamHintStorage
 	{
-		public BeamHintType AcceptingTypes => _acceptingTypes;
-
-		public string AcceptingDomains
-		{
-			get
-			{
-				var str = _acceptingDomainsRegex.ToString();
-				switch (str)
-				{
-					case ".*":
-						return BeamHintDomains.ANY;
-					case "USER_.*":
-						return BeamHintDomains.ANY_USER_DEFINED;
-					case "BEAM_.*":
-						return BeamHintDomains.ANY_BEAMABLE;
-					default:
-						return str;
-				}
-			}
-		}
-
-		private readonly BeamHintType _acceptingTypes;
-		private readonly Regex _acceptingDomainsRegex;
-
 		private HashSet<BeamHintHeader> _headers;
 		private Dictionary<BeamHintHeader, object> _hintContextObjects;
 
 		/// <summary>
-		/// The given <see cref="BeamHintType"/>, <see cref="BeamHintOriginSystem"/> and <see cref="IReadOnlyList{T}"/> of <see cref="string"/>s are used to assert that this
-		/// <see cref="BeamHintStorage"/> instance only has the correct type of <see cref="BeamHint"/>s added to it. This allows us to sub-divide the querying area as the system evolves and we bump into
-		/// performance issues.
+		/// The given <see cref="BeamHintType"/>, <see cref="BeamHintDomains"/> are used to assert that this
+		/// <see cref="BeamHintStorage"/> instance only has the correct type of <see cref="BeamHint"/>s added to it.
+		/// This allows us to sub-divide the querying area as the system evolves and we bump into performance issues.
 		/// </summary>
-		/// <param name="acceptingTypes">Bitfield of types this storage will accept.</param>
-		/// <param name="acceptingDomains">List of accepting domains this storage will accept.</param>
-		public BeamHintStorage(BeamHintType acceptingTypes, IEnumerable<string> acceptingDomains)
+		public BeamHintStorage()
 		{
-			_acceptingTypes = acceptingTypes;
-
-			var regexPattern = string.Join("|", acceptingDomains.Select(acceptingDomain =>
-			{
-				if (acceptingDomain.Equals(BeamHintDomains.ANY)) return ".*";
-				if (acceptingDomain.Equals(BeamHintDomains.ANY_USER_DEFINED)) return "USER_.*";
-				if (acceptingDomain.Equals(BeamHintDomains.ANY_BEAMABLE)) return "BEAM_.*";
-				return acceptingDomain;
-			}));
-			_acceptingDomainsRegex = new Regex(regexPattern);
-
 			_headers = new HashSet<BeamHintHeader>();
 			_hintContextObjects = new Dictionary<BeamHintHeader, object>();
 		}
 
-		/// <summary>
-		/// Checks a <see cref="BeamHintHeader"/> against the configured accepting <see cref="_acceptingTypes"/>, <see cref="_acceptingSystems"/> and <see cref="_acceptingDomainsRegex"/>. 
-		/// </summary>
-		private bool CheckAcceptsHint(BeamHintHeader header)
-		{
-			var matchType = (header.Type & _acceptingTypes) != 0;
-			var matchDomain = _acceptingDomainsRegex.IsMatch(header.Domain);
-
-			return matchType && matchDomain;
-		}
 
 		#region IEnumerable Implementation
 
@@ -212,10 +141,6 @@ namespace Common.Runtime.BeamHints
 
 		public void AddOrReplaceHint(BeamHintHeader header, object hintContextObj = null)
 		{
-			// Guard to handle guarantee that hints are being added to the valid storages.
-			System.Diagnostics.Debug.Assert(CheckAcceptsHint(header),
-			                                $"This storage does not accept the given header.\nHeader = {header}\nAccepting Types={_acceptingTypes}\nAccepting Domains{_acceptingDomainsRegex}");
-
 			if (!_headers.Contains(header))
 				_headers.Add(header);
 
