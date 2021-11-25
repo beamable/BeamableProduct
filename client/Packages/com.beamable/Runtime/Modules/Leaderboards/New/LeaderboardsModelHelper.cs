@@ -1,4 +1,5 @@
 ﻿using Beamable.Common.Api.Leaderboards;
+using Beamable.Constats;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,22 +9,22 @@ namespace Beamable.UI.Leaderboards
 	{
 		public static RankEntry GenerateCurrentUserRankEntryTestData(string statKey, string statDefaultValue)
 		{
-			RankEntryStat[] stats =
-			{
-				new RankEntryStat
-					{name = statKey, value = statDefaultValue}
-			};
-			
+			RankEntryStat[] stats = {new RankEntryStat {name = statKey, value = statDefaultValue}};
+
 			return new RankEntry
 			{
-				gt = Random.Range(0, 1000000),
+				gt = (long)Random.Range(0, LeaderboardsConstants.TEST_DATA_MAX_GAMER_TAG),
 				rank = 1,
-				score = Random.Range(0, 1000000),
+				score = (long)Random.Range(0, LeaderboardsConstants.TEST_DATA_MAX_SCORE),
 				stats = stats
 			};
 		}
-		
-		public static List<RankEntry> GenerateLeaderboardsTestData(int firstId, int lastId, RankEntry currentUserEntry, string statKey, string statDefaultValue)
+
+		public static List<RankEntry> GenerateLeaderboardsTestData(int firstId,
+		                                                           int lastId,
+		                                                           RankEntry currentUserEntry,
+		                                                           string statKey,
+		                                                           string statDefaultValue)
 		{
 			List<RankEntry> entries = new List<RankEntry>();
 
@@ -39,11 +40,15 @@ namespace Beamable.UI.Leaderboards
 				{
 					RankEntryStat[] stats =
 					{
-						new RankEntryStat
-							{name = statKey, value = $"{statDefaultValue} {currentRank}"}
+						new RankEntryStat {name = statKey, value = $"{statDefaultValue} {currentRank}"}
 					};
 
-					entries.Add(new RankEntry {rank = currentRank, score = Random.Range(1, 1000000), stats = stats});
+					entries.Add(new RankEntry
+					{
+						rank = currentRank,
+						score = (long)Random.Range(0, LeaderboardsConstants.TEST_DATA_MAX_SCORE),
+						stats = stats
+					});
 				}
 			}
 

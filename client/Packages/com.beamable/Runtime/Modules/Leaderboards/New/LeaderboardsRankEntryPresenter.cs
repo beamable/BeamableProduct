@@ -19,8 +19,6 @@ namespace Beamable.UI.Leaderboards
         
         [SerializeField] private SdfImageBussElement _mainBussElement;
         [SerializeField] private SdfImageBussElement _rankBussElement;
-
-        [SerializeField] private bool _highlightCurrentUser;
 #pragma warning restore CS0649
 
 	    private long _currentPlayerRank;
@@ -39,7 +37,7 @@ namespace Beamable.UI.Leaderboards
             _name.text = Data.GetStat(_aliasStatObject.StatKey) ?? _aliasStatObject.DefaultValue;
             _score.text = Data.score.ToString(CultureInfo.InvariantCulture);
 
-            if (_currentPlayerRank == Data.rank && _highlightCurrentUser)
+            if (_currentPlayerRank == Data.rank)
             {
 	            _mainBussElement?.AddClass(LeaderboardsConstants.BUSS_CLASS_CURRENT_PLAYER);
             }
