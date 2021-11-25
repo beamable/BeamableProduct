@@ -119,9 +119,6 @@ namespace Beamable.Api
             Refresh();
          };
       }
-
-      protected delegate Promise<ScopedRsp> ExecuteRequestDelegate(IBeamableRequester requester, string url);
-      protected delegate string CreateRefreshUrlDelegate(IUserContext ctx, string serviceName, string scope);
       
       private void OnTimeOverride()
       {
