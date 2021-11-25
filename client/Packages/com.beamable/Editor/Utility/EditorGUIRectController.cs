@@ -22,6 +22,14 @@ namespace Beamable.Editor {
             rect.height -= height;
             return result;
         }
+
+        public Rect ReserveWidthByFraction(float fraction) {
+            return ReserveWidth(fraction * rect.width);
+        }
+
+        public Rect ReserveHeightByFraction(float fraction) {
+            return ReserveHeight(fraction * rect.height);
+        }
         
         public Rect ReserveWidthFromRight(float width) {
             var result = new Rect(rect.xMax - width, rect.y, width, rect.height);
@@ -41,6 +49,12 @@ namespace Beamable.Editor {
 
         public Rect ReserveSingleLine() {
             return ReserveHeight(EditorGUIUtility.singleLineHeight);
+        }
+
+        public void MoveIndent(int amount) {
+            var indent = 15 * amount;
+            rect.x += indent;
+            rect.width -= indent;
         }
     }
 }
