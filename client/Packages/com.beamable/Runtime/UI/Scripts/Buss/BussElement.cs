@@ -92,6 +92,22 @@ namespace Beamable.UI.Buss {
             }
         }
 
+        public void AddClass(string id)
+        {
+	        if (!_classes.Contains(id))
+	        {
+		        _classes.Add(id);
+	        }
+        }
+
+        public void RemoveClass(string id)
+        {
+	        if (_classes.Contains(id))
+	        {
+		        _classes.Remove(id);
+	        }
+        }
+
         public void OnStyleChanged() {
             RecalculateStyleSheets();
             BussConfiguration.Instance.RecalculateStyle(this);

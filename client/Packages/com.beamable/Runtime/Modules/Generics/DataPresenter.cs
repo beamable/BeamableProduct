@@ -16,7 +16,7 @@ namespace Beamable.Modules.Generics
             RefreshLoadingIndicator();
         }
 
-        public void Setup(T data)
+        public virtual void Setup(T data, params object[] additionalParams)
         {
             Data = data;
             RefreshLoadingIndicator();

@@ -1,0 +1,161 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6878a57282fc4d5dae9c2e3538013b26, type: 3}
+  m_Name: AnngieTest 1 (1)
+  m_EditorClassIdentifier: 
+  _styles:
+  - _properties:
+    - key: backgroundColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":0.0,"g":0.0,"b":0.0,"a":0.9490196108818054}}'
+    - key: roundCorners
+      property:
+        type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_floatValue":5.0}'
+    - key: --aaa
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":0.8542488217353821,"g":0.9803921580314636,"b":0.003921576775610447,"a":1.0}}'
+    _selector: '#PlayerCardLarge'
+  - _properties:
+    - key: backgroundColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":0.0,"g":0.0,"b":0.0,"a":0.0}}'
+    - key: roundCorners
+      property:
+        type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_floatValue":2.0}'
+    - key: borderWidth
+      property:
+        type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_floatValue":1.0}'
+    - key: borderColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
+    - key: borderMode
+      property:
+        type: Beamable.UI.Buss.BorderModeBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"Enum":0}'
+    _selector: '#Scorecard'
+  - _properties:
+    - key: backgroundColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":0.0}}'
+    - key: roundCorners
+      property:
+        type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_floatValue":2.0}'
+    - key: borderWidth
+      property:
+        type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_floatValue":2.0}'
+    - key: borderColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
+    - key: borderMode
+      property:
+        type: Beamable.UI.Buss.BorderModeBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"Enum":1}'
+    _selector: '#Avatar'
+  - _properties:
+    - key: backgroundColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":0.239215686917305,"g":0.21176470816135407,"b":0.1568627506494522,"a":1.0}}'
+    _selector: '#header'
+  - _properties:
+    - key: backgroundColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":0.0,"g":0.0,"b":0.0,"a":0.3490196168422699}}'
+    _selector: '#playerPanel'
+  - _properties:
+    - key: backgroundColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
+    - key: backgroundImage
+      property:
+        type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_asset":{"instanceID":43692}}'
+    _selector: '#backbutton'
+  - _properties:
+    - key: backgroundColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
+    - key: backgroundImage
+      property:
+        type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_asset":{"instanceID":43708}}'
+    _selector: '#topbutton'
+  - _properties:
+    - key: backgroundColor
+      property:
+        type: Beamable.UI.Buss.VertexColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_colorRect":{"BottomLeftColor":{"r":1.0,"g":1.0,"b":1.0,"a":0.929411768913269},"BottomRightColor":{"r":1.0,"g":1.0,"b":1.0,"a":0.929411768913269},"TopLeftColor":{"r":1.0,"g":1.0,"b":1.0,"a":0.929411768913269},"TopRightColor":{"r":1.0,"g":1.0,"b":1.0,"a":0.929411768913269},"_drawerMode":1}}'
+    - key: backgroundImage
+      property:
+        type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_asset":{"instanceID":43700}}'
+    _selector: '#gameBackground'
+  - _properties:
+    - key: backgroundColor
+      property:
+        type: Beamable.UI.Buss.VertexColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_colorRect":{"BottomLeftColor":{"r":0.6235294342041016,"g":0.37254902720451357,"b":0.10588235408067703,"a":0.658823549747467},"BottomRightColor":{"r":0.6235294342041016,"g":0.37254902720451357,"b":0.10588235408067703,"a":0.658823549747467},"TopLeftColor":{"r":0.9137254953384399,"g":0.6509804129600525,"b":0.21960784494876862,"a":0.658823549747467},"TopRightColor":{"r":0.9137254953384399,"g":0.6509804129600525,"b":0.21960784494876862,"a":0.658823549747467},"_drawerMode":3}}'
+    _selector: '#backgroundColor'
+  - _properties:
+    - key: backgroundColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
+    - key: backgroundImage
+      property:
+        type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_asset":{"instanceID":43688}}'
+    _selector: '#AvatarImage'
+  - _properties:
+    - key: backgroundImage
+      property:
+        type: 
+        json: 
+    _selector: '#topicon'

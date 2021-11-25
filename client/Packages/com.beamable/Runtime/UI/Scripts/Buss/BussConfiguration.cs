@@ -8,7 +8,7 @@ using UnityEngine.Experimental.UIElements;
 using UnityEngine.UIElements;
 #endif
 
-namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's namespace
+namespace Beamable.UI.Buss 
 {
     public class BussConfiguration : ModuleConfigurationObject
     {

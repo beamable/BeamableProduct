@@ -1,31 +1,36 @@
-﻿using System;
+﻿using Beamable.AccountManagement;
+using System;
 using System.Collections.Generic;
 using Beamable.Api.Leaderboard;
-using Beamable.Common;
-using Beamable.Common.Api;
 using Beamable.Common.Api.Leaderboards;
 using Beamable.Common.Leaderboards;
 using Beamable.Modules.Generics;
 using Beamable.Stats;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace Beamable.UI.Leaderboards
 {
     public class LeaderboardsModel : Model
     {
-        public List<RankEntry> CurrentRankEntries { get; private set; } = new List<RankEntry>();
-        public RankEntry CurrentUserRankEntry { get; private set; }
-        public int FirstEntryId { get; private set; }
+	    public event Action OnScrollRefresh;
 
         private IBeamableAPI _api;
         private LeaderboardService _leaderboardService;
         private LeaderBoardView _currentLeaderboardView;
         private LeaderboardRef _leaderboardRef;
         private int _entriesPerPage;
-        private StatObject _nameStatObject;
         private bool _testMode;
         private long _dbid;
+        
+        public List<RankEntry> CurrentRankEntries { get; private set; } = new List<RankEntry>();
+        public RankEntry CurrentUserRankEntry { get; private set; }
+        public int FirstEntryId { get; private set; }
+
+        public StatObject AliasStatObject
+        {
+	        get;
+	        private set;
+        }
         
         private int LastEntryId => FirstEntryId + _entriesPerPage;
 
@@ -34,22 +39,20 @@ namespace Beamable.UI.Leaderboards
             _leaderboardRef = (LeaderboardRef) initParams[0];
             _entriesPerPage = (int) initParams[1];
             _entriesPerPage = Mathf.Clamp(_entriesPerPage, 1, Int32.MaxValue);
-            _nameStatObject = (StatObject) initParams[2];
-            _testMode = (bool) initParams[3];
+            _testMode = (bool) initParams[2];
+            
+            AliasStatObject = AccountManagementConfiguration.Instance.DisplayNameStat;
             FirstEntryId = 1;
 
             _api = await Beamable.API.Instance;
             _dbid = _api.User.id;
             _leaderboardService = _api.LeaderboardService;
-            
-            if (_testMode)
-            {
-	            await SetTestScore();
-            }
 
             await _leaderboardService.GetUser(_leaderboardRef, _dbid).Then(rankEntry =>
             {
-                CurrentUserRankEntry = rankEntry;
+	            CurrentUserRankEntry = !_testMode
+		            ? rankEntry
+		            : LeaderboardsModelHelper.GenerateCurrentUserRankEntryTestData(AliasStatObject.StatKey, AliasStatObject.DefaultValue);
             });
 
             await _leaderboardService.GetBoard(_leaderboardRef, FirstEntryId, LastEntryId).Then(OnLeaderboardReceived);
@@ -85,45 +88,25 @@ namespace Beamable.UI.Leaderboards
             await _leaderboardService.GetBoard(_leaderboardRef, FirstEntryId, LastEntryId).Then(OnLeaderboardReceived);
         }
 
+        public void ScrollToTopButtonClicked()
+        {
+	        if (IsBusy)
+	        {
+		        return;
+	        }
+	        
+	        OnScrollRefresh?.Invoke();
+        }
+
         private void OnLeaderboardReceived(LeaderBoardView leaderboardView)
         {
             _currentLeaderboardView = leaderboardView;
 
             CurrentRankEntries = !_testMode
                 ? _currentLeaderboardView.ToList()
-                : GenerateTestData(FirstEntryId, LastEntryId - FirstEntryId);
+                : LeaderboardsModelHelper.GenerateLeaderboardsTestData(FirstEntryId, LastEntryId, CurrentUserRankEntry, AliasStatObject.StatKey, AliasStatObject.DefaultValue);
 
             InvokeRefresh();
         }
-
-        #region Test data
-
-        private Promise<EmptyResponse> SetTestScore()
-        {
-            return _leaderboardService.SetScore(_leaderboardRef, 200, new Dictionary<string, object>
-            {
-                {_nameStatObject.StatKey, _nameStatObject.DefaultValue}
-            });
-        }
-
-        private List<RankEntry> GenerateTestData(int firstId, int amount)
-        {
-            List<RankEntry> entries = new List<RankEntry>();
-
-            for (int i = 0; i < amount; i++)
-            {
-                RankEntryStat[] stats =
-                {
-                    new RankEntryStat
-                        {name = _nameStatObject.StatKey, value = $"{_nameStatObject.DefaultValue} {firstId + i}"}
-                };
-
-                entries.Add(new RankEntry {rank = firstId + i, score = Random.Range(1, 10000), stats = stats});
-            }
-
-            return entries;
-        }
-
-        #endregion
     }
 }

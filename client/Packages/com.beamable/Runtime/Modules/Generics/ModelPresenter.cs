@@ -13,9 +13,10 @@ namespace Beamable.Modules.Generics
             Model.OnRefresh = Refresh;
         }
 
-        protected void OnDestroy()
+        protected virtual void OnDestroy()
         {
             Model.OnRefresh = null;
+            Model.OnRefreshRequested = null;
         }
 
         protected abstract void RefreshRequested();
