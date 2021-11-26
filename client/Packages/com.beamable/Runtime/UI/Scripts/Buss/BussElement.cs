@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using Beamable.UI.Buss;
 using Beamable.UI.Tweening;
 using UnityEngine;
 
@@ -92,22 +91,6 @@ namespace Beamable.UI.Buss {
             }
         }
 
-        public void AddClass(string id)
-        {
-	        if (!_classes.Contains(id))
-	        {
-		        _classes.Add(id);
-	        }
-        }
-
-        public void RemoveClass(string id)
-        {
-	        if (_classes.Contains(id))
-	        {
-		        _classes.Remove(id);
-	        }
-        }
-
         public void OnStyleChanged() {
             RecalculateStyleSheets();
             BussConfiguration.Instance.RecalculateStyle(this);
@@ -117,8 +100,28 @@ namespace Beamable.UI.Buss {
                 child.OnStyleChanged();
             }
         }
+        
+        public void AddClass(string id)
+        {
+	        if (!_classes.Contains(id))
+	        {
+		        _classes.Add(id);
+	        }
+			
+	        OnStyleChanged();
+        }
 
-        private void CheckParent() {
+        public void RemoveClass(string id)
+        {
+	        if (_classes.Contains(id))
+	        {
+		        _classes.Remove(id);
+	        }
+			
+	        OnStyleChanged();
+        }
+
+        public void CheckParent() {
             var foundParent = (transform == null || transform.parent == null)
                 ? null
                 : transform.parent.GetComponentInParent<BussElement>();
@@ -128,8 +131,6 @@ namespace Beamable.UI.Buss {
             else {
                 BussConfiguration.Instance.UnregisterObserver(this);
             }
-
-            if (!isActiveAndEnabled) return;
 
             _parent = foundParent;
             if (Parent == null) {
