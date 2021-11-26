@@ -13,7 +13,7 @@ namespace Beamable.UI.Leaderboards
 		[SerializeField] private GenericButton _nextPageButton;
 		[SerializeField] private GenericButton _topButton;
 		[SerializeField] private LeaderboardsRankEntriesPresenter _rankEntries;
-		[SerializeField] private LeaderboardsRankEntryPresenter _currentPlayerEntryPresenter;
+		[SerializeField] private LeaderboardsRankEntryPresenter _currentUserRankEntry;
 
 		[Header("Debug")]
 		[SerializeField] private bool _testMode;
@@ -52,7 +52,7 @@ namespace Beamable.UI.Leaderboards
 		protected override void Refresh()
 		{
 			_rankEntries.Setup(Model.CurrentRankEntries, Model.CurrentUserRankEntry.rank);
-			_currentPlayerEntryPresenter.Setup(Model.CurrentUserRankEntry, Model.CurrentUserRankEntry.rank);
+			_currentUserRankEntry.Setup(Model.CurrentUserRankEntry, Model.CurrentUserRankEntry.rank);
 
 			_previousPageButton.interactable = Model.FirstEntryId > 0;
 		}
