@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
-using Beamable.UI.Buss;
 using Beamable.UI.Sdf.Styles;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -29,6 +28,11 @@ namespace Beamable.UI.Buss
     [Serializable]
     public class BussStyleRule : BussStyleDescription
     {
+	    public static BussStyleRule Create(string selector, List<BussPropertyProvider> properties)
+	    {
+		    return new BussStyleRule() {_selector = selector, _properties = properties};
+	    }
+	    
 #pragma warning disable CS0649
         [FormerlySerializedAs("_name")] [SerializeField] private string _selector;
 #pragma warning restore CS0649
@@ -41,7 +45,7 @@ namespace Beamable.UI.Buss
     [Serializable]
     public class BussStyleDescription {
 #pragma warning disable CS0649
-        [SerializeField] private List<BussPropertyProvider> _properties = new List<BussPropertyProvider>();
+        [SerializeField] protected List<BussPropertyProvider> _properties = new List<BussPropertyProvider>();
 #pragma warning restore CS0649
         public List<BussPropertyProvider> Properties => _properties;
     }
@@ -55,6 +59,13 @@ namespace Beamable.UI.Buss
         [SerializeField, SerializableValueImplements(typeof(IBussProperty))]
         private SerializableValueObject property;
 #pragma warning restore CS0649
+
+	    public static BussPropertyProvider Create(string key, IBussProperty property)
+	    {
+		    var propertyProvider = new SerializableValueObject();
+		    propertyProvider.Set(property);
+		    return new BussPropertyProvider() {key = key, property = propertyProvider};
+	    }
 
         public string Key {
             get => key;
