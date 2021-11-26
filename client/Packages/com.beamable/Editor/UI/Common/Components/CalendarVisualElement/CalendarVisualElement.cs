@@ -153,7 +153,7 @@ namespace Beamable.Editor.UI.Components
 
         private string FormatDate(int year, int month, int day)
         {
-            return $"{day:00}-{month:00}-{year}";
+            return $"{day}-{month}-{year}";
         }
 
         private int DetermineFirstDayOffset(int year, int month)
