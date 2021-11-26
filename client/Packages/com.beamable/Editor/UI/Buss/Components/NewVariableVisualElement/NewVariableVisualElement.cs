@@ -1,10 +1,10 @@
-﻿using Beamable.Editor.Toolbox.Models;
-using Beamable.Editor.Toolbox.UI.Components;
-using Beamable.Editor.UI.Buss;
+﻿using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
+using Beamable.UI.Buss;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Editor.UI.Buss;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -25,7 +25,7 @@ namespace Beamable.Editor.Toolbox.Components
 		private LabeledTextField _vertexColorType;
 		private LabeledTextField _floatType;
 		private LabeledTextField _floatFromFloatType;
-		private LabeledTextField _enumType;
+		private LabeledDropdownVisualElement _enumType;
 		private LabeledTextField _spriteType;
 		private LabeledTextField _fontType;
 
@@ -54,8 +54,10 @@ namespace Beamable.Editor.Toolbox.Components
 			_typesDict.Add("FloatFromFloat", _floatFromFloatType);
 			_floatFromFloatType.Refresh();
 			
-			_enumType = Root.Q<LabeledTextField>("enumType");
+			_enumType = Root.Q<LabeledDropdownVisualElement>("enumType");
 			_typesDict.Add("Enum", _enumType);
+			var enumProperties = Helper.GetAllClassesNamesInheritedFrom(typeof(EnumBussProperty<>));
+			_enumType.Setup(enumProperties, i => Debug.LogWarning(""));
 			_enumType.Refresh();
 			
 			_spriteType = Root.Q<LabeledTextField>("spriteType");
