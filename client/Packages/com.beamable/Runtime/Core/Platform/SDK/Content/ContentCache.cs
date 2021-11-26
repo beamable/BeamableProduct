@@ -8,6 +8,7 @@ using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Spew;
+using Core.Platform.SDK;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -37,7 +38,6 @@ namespace Beamable.Content
         private readonly Dictionary<string, ContentCacheEntry<TContent>> _cache =
             new Dictionary<string, ContentCacheEntry<TContent>>();
         
-        private ArrayDict[] deserializedBaked;
         private ClientManifest manifest;
 
         private readonly IHttpRequester _requester;
@@ -71,19 +71,19 @@ namespace Beamable.Content
             var cacheId = GetCacheKey(requestedInfo);
 
             // First, try the in memory cache
-            PlatformLogger.Log(
-                $"ContentCache: Fetching content from cache for {requestedInfo.contentId}: version: {requestedInfo.version}");
-            if (_cache.TryGetValue(cacheId, out var cacheEntry)) return await cacheEntry.Content;
-            
-            // Then, try the on disk cache
-            PlatformLogger.Log(
-                $"ContentCache: Loading content from disk for {requestedInfo.contentId}: version: {requestedInfo.version}");
-            if (TryGetValueFromDisk(requestedInfo, out var diskContent, _filesystemAccessor))
-            {
-                var promise = Promise<TContent>.Successful(diskContent);
-                SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
-                return diskContent;
-            }
+            // PlatformLogger.Log(
+            //     $"ContentCache: Fetching content from cache for {requestedInfo.contentId}: version: {requestedInfo.version}");
+            // if (_cache.TryGetValue(cacheId, out var cacheEntry)) return await cacheEntry.Content;
+            //
+            // // Then, try the on disk cache
+            // PlatformLogger.Log(
+            //     $"ContentCache: Loading content from disk for {requestedInfo.contentId}: version: {requestedInfo.version}");
+            // if (TryGetValueFromDisk(requestedInfo, out var diskContent, _filesystemAccessor))
+            // {
+            //     var promise = Promise<TContent>.Successful(diskContent);
+            //     SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
+            //     return diskContent;
+            // }
             
             // Check baked file for requested content
             PlatformLogger.Log(
@@ -148,61 +148,41 @@ namespace Beamable.Content
         private async Promise<TContent> TryGetValueFromBaked(ClientContentInfo info)
         {
             // initialize baked data and download manifest
-            if (deserializedBaked == null)
-            {
-                var json = Resources.Load<TextAsset>("Baked/content");
-
-                if (json != null)
-                {
-                    deserializedBaked = _serializer.DeserializeList(json.text);
-                    if (deserializedBaked == null || deserializedBaked.Length == 0)
-                    {
-                        return null;
-                    }
-                }
-                else
-                {
-                    return null;
-                }
-                
-                // download content manifest
-                manifest = await _contentService.GetManifestWithID(info.manifestID).Error(err =>
-                {
-	                Debug.LogError($"Could not download content manifest with ID '{info.manifestID}': {err.Message}");
-                });
-            }
+            // if (deserializedBaked == null)
+            // {
+            //     var json = Resources.Load<TextAsset>("Baked/content");
+            //
+            //     if (json != null)
+            //     {
+            //         deserializedBaked = _serializer.DeserializeList(json.text);
+            //         if (deserializedBaked == null || deserializedBaked.Length == 0)
+            //         {
+            //             return null;
+            //         }
+            //     }
+            //     else
+            //     {
+            //         return null;
+            //     }
+            //     
+            //     // download content manifest
+            //     manifest = await _contentService.GetManifestWithID(info.manifestID).Error(err =>
+            //     {
+	           //      Debug.LogError($"Could not download content manifest with ID '{info.manifestID}': {err.Message}");
+            //     });
+            // }
             
-            return GetContentFromBaked(info.contentId);
-        }
-
-        private TContent GetContentFromBaked(string contentId)
-        {
-	        var remote = manifest.entries.Find(i => i.contentId == contentId);
-	        foreach (var dict in deserializedBaked)
-	        {
-		        if (dict.TryGetValue("id", out object id) && id.ToString() == contentId)
-		        {
-			        try
-			        {
-				        TContent content = _serializer.ConvertItem<TContent>(dict);
-				                     
-				        // check if content is up to date
-				        if (content.Version != remote.version)
-				        {
-					        return null;
-				        }
-
-				        return content;
-			        }
-			        catch (Exception e)
-			        {
-				        Debug.LogError($"Could not convert content item to type {typeof(TContent)}: {e.Message}");
-				        break;
-			        }
-		        }
-	        }
-
-	        return null;
+            manifest = await _contentService.GetManifestWithID(info.manifestID).Error(err =>
+            {
+             Debug.LogError($"Could not download content manifest with ID '{info.manifestID}': {err.Message}");
+            });
+            
+            string bakedContentPath = "Baked/Content";
+            string resourcePath = Path.Combine(bakedContentPath, info.contentId);
+            var fileContent = Resources.Load<TextAsset>(resourcePath);
+            var json = Gzip.Decompress(fileContent.bytes);
+            
+            return _serializer.Deserialize<TContent>(json);
         }
 
         private static void SaveToDisk(ClientContentInfo info, string raw, IBeamableFilesystemAccessor fsa)

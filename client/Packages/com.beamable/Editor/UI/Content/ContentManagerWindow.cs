@@ -13,6 +13,8 @@ using Beamable.Editor.NoUser;
 using Beamable.Editor.Realms;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Platform.SDK;
+using Core.Platform.SDK;
+using ICSharpCode.SharpZipLib.Zip;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 #if UNITY_2018
@@ -579,42 +581,60 @@ namespace Beamable.Editor.Content
           
           var serverManifest = await api.ContentIO.FetchManifest();
 
-          string json = "{\"content\":[";
-          bool first = true;
-          foreach (var content in allContent)
-          {
-	          var version = serverManifest.References.Find(reference => reference.Id == content.Id).Version;
-	          content.SetIdAndVersion(content.Id, version);
-              if (!first)
-              {
-                  json += ",";
-              }
-              else
-              {
-                  first = false;
-              }
-              
-              json += content.ToJson();
-          }
-          json += "]}";
-
-          string resourcesPath = Application.dataPath + "/Beamable/Resources/Baked";
-          if (!Directory.Exists(resourcesPath))
-          {
-              Directory.CreateDirectory(resourcesPath);
-          }
-
-          string path = resourcesPath + "/content.json";
+          // bake to a json list
+          // string json = "{\"content\":[";
+          // bool first = true;
+          // foreach (var content in allContent)
+          // {
+	         //  var version = serverManifest.References.Find(reference => reference.Id == content.Id).Version;
+	         //  content.SetIdAndVersion(content.Id, version);
+          //     if (!first)
+          //     {
+          //         json += ",";
+          //     }
+          //     else
+          //     {
+          //         first = false;
+          //     }
+          //     
+          //     json += content.ToJson();
+          // }
+          // json += "]}";
           
+          // string path = resourcesPath + "/content.json";
+          //
+          // try
+          // {
+          //     File.WriteAllText(path, json);
+          //     BakeLog($"Content baked to {path}");
+          // }
+          // catch (Exception e)
+          // {
+          //     Debug.LogError($"Failed to write baked content: {e.Message}");
+          // }
+          
+          string contentPath = "Beamable/Resources/Baked/Content";
+          string resourcesPath = Path.Combine(Application.dataPath, contentPath);
+          Directory.CreateDirectory(resourcesPath);
+          
+          // bake to separate json files
           try
           {
-              File.WriteAllText(path, json);
-              BakeLog($"Content baked to {path}");
+	          foreach (var content in allContent)
+	          {
+		          var version = serverManifest.References.Find(reference => reference.Id == content.Id).Version;
+		          content.SetIdAndVersion(content.Id, version);
+		          string path = Path.Combine(resourcesPath, content.Id);
+		          var compressed = Gzip.Compress(content.ToJson());
+		          File.WriteAllBytes(path, compressed);
+	          }
           }
           catch (Exception e)
           {
-              Debug.LogError($"Failed to write baked content: {e.Message}");
+	          Debug.LogError($"Failed to write baked content: {e.Message}");
           }
+          
+          BakeLog($"Baked {allContent.Count()} content objects to '{contentPath}'");
       }
    }
 }
