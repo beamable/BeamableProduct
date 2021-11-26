@@ -102,7 +102,7 @@ namespace Beamable.UI.Buss {
             }
         }
 
-        private void CheckParent() {
+        public void CheckParent() {
             var foundParent = (transform == null || transform.parent == null)
                 ? null
                 : transform.parent.GetComponentInParent<BussElement>();
@@ -112,8 +112,6 @@ namespace Beamable.UI.Buss {
             else {
                 BussConfiguration.Instance.UnregisterObserver(this);
             }
-
-            if (!isActiveAndEnabled) return;
 
             _parent = foundParent;
             if (Parent == null) {
