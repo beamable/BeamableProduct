@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Linq;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Content;
 using Beamable.Editor.Content.Components;
 using Beamable.Editor.Content.Models;
 using Beamable.Editor;
@@ -571,48 +572,22 @@ namespace Beamable.Editor.Content
           var api = await EditorAPI.Instance;
           var allContent = api.ContentIO.FindAll();
           
-          if (allContent == null || !allContent.Any())
+          List<ContentObject> contentList = null;
+          if (allContent != null)
+          {
+              contentList = allContent.ToList();
+          }
+          
+          if (contentList == null || contentList.Count == 0)
           {
               BakeLog("Content list is empty");
               return;
           }
           
-          BakeLog($"Baking {allContent.Count()} items");
+          BakeLog($"Baking {contentList.Count} items");
           
           var serverManifest = await api.ContentIO.FetchManifest();
 
-          // bake to a json list
-          // string json = "{\"content\":[";
-          // bool first = true;
-          // foreach (var content in allContent)
-          // {
-	         //  var version = serverManifest.References.Find(reference => reference.Id == content.Id).Version;
-	         //  content.SetIdAndVersion(content.Id, version);
-          //     if (!first)
-          //     {
-          //         json += ",";
-          //     }
-          //     else
-          //     {
-          //         first = false;
-          //     }
-          //     
-          //     json += content.ToJson();
-          // }
-          // json += "]}";
-          
-          // string path = resourcesPath + "/content.json";
-          //
-          // try
-          // {
-          //     File.WriteAllText(path, json);
-          //     BakeLog($"Content baked to {path}");
-          // }
-          // catch (Exception e)
-          // {
-          //     Debug.LogError($"Failed to write baked content: {e.Message}");
-          // }
-          
           string contentPath = "Beamable/Resources/Baked/Content";
           string resourcesPath = Path.Combine(Application.dataPath, contentPath);
           Directory.CreateDirectory(resourcesPath);
@@ -620,21 +595,21 @@ namespace Beamable.Editor.Content
           // bake to separate json files
           try
           {
-	          foreach (var content in allContent)
+	          foreach (var content in contentList)
 	          {
 		          var version = serverManifest.References.Find(reference => reference.Id == content.Id).Version;
 		          content.SetIdAndVersion(content.Id, version);
-		          string path = Path.Combine(resourcesPath, content.Id);
+		          string path = Path.Combine(resourcesPath, content.Id + ".bytes");
 		          var compressed = Gzip.Compress(content.ToJson());
 		          File.WriteAllBytes(path, compressed);
-	          }
+              }
           }
           catch (Exception e)
           {
 	          Debug.LogError($"Failed to write baked content: {e.Message}");
           }
           
-          BakeLog($"Baked {allContent.Count()} content objects to '{contentPath}'");
+          BakeLog($"Baked {contentList.Count} content objects to '{contentPath}'");
       }
    }
 }

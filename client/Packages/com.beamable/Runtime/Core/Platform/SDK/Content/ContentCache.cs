@@ -6,7 +6,6 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
-using Beamable.Serialization.SmallerJSON;
 using Beamable.Spew;
 using Core.Platform.SDK;
 using UnityEngine;
@@ -38,8 +37,6 @@ namespace Beamable.Content
         private readonly Dictionary<string, ContentCacheEntry<TContent>> _cache =
             new Dictionary<string, ContentCacheEntry<TContent>>();
         
-        private ClientManifest manifest;
-
         private readonly IHttpRequester _requester;
         private readonly IBeamableFilesystemAccessor _filesystemAccessor;
         private readonly IContentApi _contentService;
@@ -66,35 +63,36 @@ namespace Beamable.Content
             _cache[cacheId] = entry;
         }
 
-        public async Promise<TContent> GetContent(ClientContentInfo requestedInfo)
+        public Promise<TContent> GetContent(ClientContentInfo requestedInfo)
         {
             var cacheId = GetCacheKey(requestedInfo);
 
             // First, try the in memory cache
-            // PlatformLogger.Log(
-            //     $"ContentCache: Fetching content from cache for {requestedInfo.contentId}: version: {requestedInfo.version}");
-            // if (_cache.TryGetValue(cacheId, out var cacheEntry)) return await cacheEntry.Content;
-            //
-            // // Then, try the on disk cache
-            // PlatformLogger.Log(
-            //     $"ContentCache: Loading content from disk for {requestedInfo.contentId}: version: {requestedInfo.version}");
-            // if (TryGetValueFromDisk(requestedInfo, out var diskContent, _filesystemAccessor))
-            // {
-            //     var promise = Promise<TContent>.Successful(diskContent);
-            //     SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
-            //     return diskContent;
-            // }
+            PlatformLogger.Log(
+                $"ContentCache: Fetching content from cache for {requestedInfo.contentId}: version: {requestedInfo.version}");
+            if (_cache.TryGetValue(cacheId, out var cacheEntry)) return cacheEntry.Content;
+            
+            // Then, try the on disk cache
+            PlatformLogger.Log(
+                $"ContentCache: Loading content from disk for {requestedInfo.contentId}: version: {requestedInfo.version}");
+            if (TryGetValueFromDisk(requestedInfo, out var diskContent, _filesystemAccessor))
+            {
+                var promise = Promise<TContent>.Successful(diskContent);
+                SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
+                return promise;
+            }
             
             // Check baked file for requested content
             PlatformLogger.Log(
                 $"ContentCache: Loading content from baked file for {requestedInfo.contentId}: version: {requestedInfo.version}");
-            var bakedContent = await TryGetValueFromBaked(requestedInfo);
-            if (bakedContent != null)
+            if (TryGetValueFromBaked(requestedInfo, out var bakedContent))
             {
                 var promise = Promise<TContent>.Successful(bakedContent);
                 SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
-                return bakedContent;
+                return promise;
             }
+            
+            Debug.LogError("CDN");
             
             // Finally, if not found, fetch the content from the CDN
             PlatformLogger.Log(
@@ -113,7 +111,7 @@ namespace Beamable.Content
                         $"ContentCache: Failed to resolve {requestedInfo.contentId} {requestedInfo.version} {requestedInfo.uri} ; ERR={err}");
                 });
             SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, fetchedContent));
-            return await fetchedContent;
+            return fetchedContent;
         }
 
 
@@ -145,44 +143,28 @@ namespace Beamable.Content
             }
         }
 
-        private async Promise<TContent> TryGetValueFromBaked(ClientContentInfo info)
+        private bool TryGetValueFromBaked(ClientContentInfo info, out TContent contentObject)
         {
-            // initialize baked data and download manifest
-            // if (deserializedBaked == null)
-            // {
-            //     var json = Resources.Load<TextAsset>("Baked/content");
-            //
-            //     if (json != null)
-            //     {
-            //         deserializedBaked = _serializer.DeserializeList(json.text);
-            //         if (deserializedBaked == null || deserializedBaked.Length == 0)
-            //         {
-            //             return null;
-            //         }
-            //     }
-            //     else
-            //     {
-            //         return null;
-            //     }
-            //     
-            //     // download content manifest
-            //     manifest = await _contentService.GetManifestWithID(info.manifestID).Error(err =>
-            //     {
-	           //      Debug.LogError($"Could not download content manifest with ID '{info.manifestID}': {err.Message}");
-            //     });
-            // }
-            
-            manifest = await _contentService.GetManifestWithID(info.manifestID).Error(err =>
-            {
-             Debug.LogError($"Could not download content manifest with ID '{info.manifestID}': {err.Message}");
-            });
+            contentObject = null;
             
             string bakedContentPath = "Baked/Content";
             string resourcePath = Path.Combine(bakedContentPath, info.contentId);
             var fileContent = Resources.Load<TextAsset>(resourcePath);
-            var json = Gzip.Decompress(fileContent.bytes);
             
-            return _serializer.Deserialize<TContent>(json);
+            if (fileContent == null)
+            {
+                return false;
+            }
+            
+            var json = Gzip.Decompress(fileContent.bytes);
+
+            contentObject = _serializer.Deserialize<TContent>(json);
+            if (contentObject.Version != info.version)
+            {
+                return false;
+            }
+            
+            return true;
         }
 
         private static void SaveToDisk(ClientContentInfo info, string raw, IBeamableFilesystemAccessor fsa)
