@@ -28,7 +28,6 @@ namespace Beamable
       {
          PromiseBase.SetPotentialUncaughtErrorHandler(PromiseBaseOnPotentialOnPotentialUncaughtError, replaceExistingHandlers);
       }
-
       private static void PromiseBaseOnPotentialOnPotentialUncaughtError(PromiseBase promise, Exception ex)
       {
          // we need to wait one frame before logging anything.
