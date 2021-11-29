@@ -166,6 +166,6 @@ jobs:
           p12-key-path: ${{ secrets.P12_KEY_PATH }}
           p12-cer-path: ${{ secrets.P12_CER_PATH }}
           certificate-password: ${{ secrets.P12_PASSWORD }}
-          mobileprovision-path: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/Beamable_Product_Prod.mobileprovision
+          mobileprovision-path: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/BeamableProductProd.mobileprovision
           code-signing-identity: ${{ secrets.CODE_SIGNING_IDENTITY }}
           team-id: ${{ secrets.TEAM_ID }}
