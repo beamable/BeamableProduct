@@ -95,8 +95,8 @@ namespace Beamable.Server.Editor
             position.y += height + 2;
 
             GUIStyle iconButtonStyle = GUI.skin.FindStyle("IconButton") ?? EditorGUIUtility.GetBuiltinSkin(EditorSkin.Inspector).FindStyle("IconButton");
-            GUIContent content = new GUIContent(EditorGUIUtility.Load("icons/_Popup.png") as Texture2D);
-
+            //GUIContent content = new GUIContent(EditorGUIUtility.Load("icons/d__Popup.png") as Texture2D);
+            GUIContent content = EditorGUIUtility.IconContent("_Popup");
             if (hasAnyVariables && EditorGUI.DropdownButton(buttonButton, content, FocusType.Keyboard,
                iconButtonStyle))
             {
