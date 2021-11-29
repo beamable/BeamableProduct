@@ -1,5 +1,6 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
+using Beamable.UI.Buss;
 using Beamable.UI.Tweening;
 using UnityEngine;
 
@@ -31,9 +32,29 @@ namespace Beamable.UI.Buss {
 
         public BussElement Parent => _parent;
 
-        private IReadOnlyList<BussElement> _childrenReadOnly = new BussElement[0];
+        private IReadOnlyList<BussElement> _childrenReadOnly;
         public IReadOnlyList<BussElement> Children => _childrenReadOnly ?? (_childrenReadOnly = _children.AsReadOnly());
 
+        public void AddClass(string id)
+        {
+	        if (!_classes.Contains(id))
+	        {
+		        _classes.Add(id);
+	        }
+			
+	        OnStyleChanged();
+        }
+
+        public void RemoveClass(string id)
+        {
+	        if (_classes.Contains(id))
+	        {
+		        _classes.Remove(id);
+	        }
+			
+	        OnStyleChanged();
+        }
+        
         public void RecalculateStyleSheets() {
             AllStyleSheets.Clear();
             AddParentStyleSheets(this);
@@ -99,26 +120,6 @@ namespace Beamable.UI.Buss {
             foreach (BussElement child in Children) {
                 child.OnStyleChanged();
             }
-        }
-        
-        public void AddClass(string id)
-        {
-	        if (!_classes.Contains(id))
-	        {
-		        _classes.Add(id);
-	        }
-			
-	        OnStyleChanged();
-        }
-
-        public void RemoveClass(string id)
-        {
-	        if (_classes.Contains(id))
-	        {
-		        _classes.Remove(id);
-	        }
-			
-	        OnStyleChanged();
         }
 
         public void CheckParent() {
