@@ -27,6 +27,6 @@ jobs:
       uses: xt0rted/dotnet-tool-restore@v1
     - run: dotnet tool install -g dotnet-format
     - name: Run dotnet format
-      uses: Leinnan/dotnet-format@v1
+      uses: Leinnan/dotnet-format@main
       with:
         only-changed-files: "true"
