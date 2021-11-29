@@ -1,10 +1,10 @@
+using Beamable.Common.Content;
+using Beamable.Tests.Content.Serialization.Support;
+using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
-using Beamable.Common.Content;
-using Beamable.Tests.Content.Serialization.Support;
-using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.TestTools;
@@ -994,7 +994,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 }";
 
 			var s = new TestSerializer();
-			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type> {typeof(FormerlyContentName)});
+			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type> { typeof(FormerlyContentName) });
 			var o = s.Deserialize<FormerlyContentName>(json);
 
 			Assert.AreEqual(5, o.x);

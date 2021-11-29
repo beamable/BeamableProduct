@@ -1,10 +1,10 @@
-using System;
-using System.Reflection;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Common.Inventory;
 using Beamable.Tests.Content.Serialization.Support;
 using NUnit.Framework;
+using System;
+using System.Reflection;
 using UnityEngine;
 
 namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
@@ -51,16 +51,16 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 
 			Assert.AreEqual("foo", o.test);
 			Assert.AreEqual("spendable_tokens",
-			                typeof(GFCurrencyContent)
-				                .GetField("spriteAssetName", BindingFlags.Instance | BindingFlags.NonPublic)
-				                .GetValue(o));
+							typeof(GFCurrencyContent)
+								.GetField("spriteAssetName", BindingFlags.Instance | BindingFlags.NonPublic)
+								.GetValue(o));
 			Assert.AreEqual(
 				"tuna",
 				typeof(GFCurrencyContent).GetField("amountFormat", BindingFlags.Instance | BindingFlags.NonPublic)
-				                         .GetValue(o));
+										 .GetValue(o));
 			Assert.IsTrue((typeof(GFCurrencyContent)
-			               .GetField("currencyTags", BindingFlags.Instance | BindingFlags.NonPublic)
-			               .GetValue(o) as string[]).Length == 1);
+						   .GetField("currencyTags", BindingFlags.Instance | BindingFlags.NonPublic)
+						   .GetValue(o) as string[]).Length == 1);
 		}
 
 		[Test]
@@ -71,11 +71,11 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 			c.test = "foo";
 
 			typeof(GFCurrencyContent).GetField("spriteAssetName", BindingFlags.Instance | BindingFlags.NonPublic)
-			                         .SetValue(c, "spendable_tokens");
+									 .SetValue(c, "spendable_tokens");
 			typeof(GFCurrencyContent).GetField("amountFormat", BindingFlags.Instance | BindingFlags.NonPublic)
-			                         .SetValue(c, "tuna");
+									 .SetValue(c, "tuna");
 			typeof(GFCurrencyContent).GetField("currencyTags", BindingFlags.Instance | BindingFlags.NonPublic)
-			                         .SetValue(c, new[] {"shop"});
+									 .SetValue(c, new[] { "shop" });
 
 			var expected = @"{
    ""id"": ""currency.gf.test.tuna"",
