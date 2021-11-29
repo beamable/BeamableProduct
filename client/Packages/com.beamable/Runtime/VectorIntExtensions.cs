@@ -23,7 +23,6 @@ namespace Beamable.Server
             return new Vector2Int(tmp.x, tmp.y);
         }
     }
-
     [Serializable]
     public struct Vector3IntEx
     {
