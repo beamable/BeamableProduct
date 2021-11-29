@@ -67,3 +67,9 @@ Label {
 #scroll > * {
     padding-bottom: 10px;
 }
+
+.hidden{
+    height: 0px;
+	opacity: 0;
+    visibility: hidden;
+}

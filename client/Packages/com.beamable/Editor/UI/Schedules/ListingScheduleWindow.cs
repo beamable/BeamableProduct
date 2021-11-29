@@ -315,7 +315,19 @@ namespace Beamable.Editor.Schedules
             _currentModel = _models[option];
 
 			if (_currentModel?.Mode == ScheduleWindowModel.WindowMode.Dates)
+			{
 				_calendarComponent.Calendar.SetDefaultValues();
+
+				_neverExpiresComponent.AddToClassList("hidden");
+				_activeToDateComponent.AddToClassList("hidden");
+				_activeToHourComponent.AddToClassList("hidden");
+			}
+			else
+			{
+				_neverExpiresComponent.RemoveFromClassList("hidden");
+				_activeToDateComponent.RemoveFromClassList("hidden");
+				_activeToHourComponent.RemoveFromClassList("hidden");
+			}
 
             _currentModel.ForceValidationCheck();
             RefreshGroups();
