@@ -9,6 +9,7 @@ ListingScheduleWindow > TemplateContainer > #mainVisualElement > * {
     padding-top: 10px;
     padding-bottom: 10px;
 }
+
 ListingScheduleWindow {
     position: absolute;
     top: 0px;
@@ -16,10 +17,12 @@ ListingScheduleWindow {
     left: 0px;
     right: 0px;
 }
+
 ListingScheduleWindow > TemplateContainer > #mainVisualElement,
 ListingScheduleWindow > TemplateContainer {
     flex-grow: 1;
 }
+
 ListingScheduleWindow ScrollView #ContentView.content-view {
     position: absolute;
     left: 0px;
@@ -68,8 +71,8 @@ Label {
     padding-bottom: 10px;
 }
 
-.hidden{
-	height: 0px;
-	opacity: 0;
-	visibility: hidden;
+.hidden {
+    height: 0px;
+    opacity: 0;
+    visibility: hidden;
 }
