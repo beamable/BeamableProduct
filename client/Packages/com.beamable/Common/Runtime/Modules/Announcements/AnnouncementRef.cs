@@ -1,8 +1,6 @@
-using System;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace Beamable.Common.Announcements
 {
@@ -14,14 +12,14 @@ namespace Beamable.Common.Announcements
    /// #### Related Links
    /// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-code#contentlink-vs-contentref">ContentLink vs ContentRef</a> documentation
    /// - See Beamable.Common.Content.ContentObject script reference
-   /// 
+   ///
    /// ![img beamable-logo]
    ///
    /// </summary>
    [System.Serializable]
    [Agnostic]
    public class AnnouncementLink : ContentLink<AnnouncementContent>{}
-   
+
    /// <summary>
    /// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
    ///
@@ -30,7 +28,7 @@ namespace Beamable.Common.Announcements
    /// #### Related Links
    /// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-code#contentlink-vs-contentref">ContentLink vs ContentRef</a> documentation
    /// - See Beamable.Common.Content.ContentObject script reference
-   /// 
+   ///
    /// ![img beamable-logo]
    ///
    /// </summary>
@@ -46,7 +44,7 @@ namespace Beamable.Common.Announcements
    /// #### Related Links
    /// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-code#contentlink-vs-contentref">ContentLink vs ContentRef</a> documentation
    /// - See Beamable.Common.Content.ContentObject script reference
-   /// 
+   ///
    /// ![img beamable-logo]
    ///
    /// </summary>

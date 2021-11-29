@@ -25,7 +25,7 @@ namespace Beamable.Editor.Content
       public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
       {
          label.tooltip = PropertyDrawerHelper.SetTooltipWithFallback(fieldInfo, property);
-         
+
          var baseHeight = RefEditorGUI.DefaultPropertyHeight(property, label);
 //         var baseHeight = EditorGUI.GetPropertyHeight(property, label);
 
@@ -41,6 +41,8 @@ namespace Beamable.Editor.Content
          var exceptions = new List<ContentException>();
          var isArray = TryGetArrayIndex(property, out var arrayIndex);
 
+         var newlineCount = 0;
+
          foreach (var attribute in attributes)
          {
             try
@@ -51,11 +53,12 @@ namespace Beamable.Editor.Content
             }
             catch (ContentException ex)
             {
+	            newlineCount += 1 + ex.FriendlyMessage.Count(c => c == '\n');
                exceptions.Add(ex);
             }
          }
 
-         return baseHeight + EditorGUIUtility.singleLineHeight * exceptions.Count;
+         return baseHeight + EditorGUIUtility.singleLineHeight * newlineCount;
       }
 
       protected bool TryGetArrayIndex(SerializedProperty property, out int arrayIndex)
@@ -80,7 +83,7 @@ namespace Beamable.Editor.Content
       public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
       {
          label.tooltip = PropertyDrawerHelper.SetTooltipWithFallback(fieldInfo, property);
-         
+
          if (property.serializedObject.isEditingMultipleObjects || !EditorAPI.Instance.IsCompleted)
          {
             RefEditorGUI.DefaultPropertyField(position, property, label);
@@ -150,7 +153,8 @@ namespace Beamable.Editor.Content
             {
                var ex = exceptions[i];
                var content = new GUIContent($"  {ex.FriendlyMessage}");
-               EditorGUI.LabelField(new Rect(position.x,position.y + position.height + EditorGUIUtility.singleLineHeight*(i-1), position.width, EditorGUIUtility.singleLineHeight), content, _lblStyle);
+               var newlineCount = ex.FriendlyMessage.Count(c => c == '\n');
+               EditorGUI.LabelField(new Rect(position.x,position.y + position.height + EditorGUIUtility.singleLineHeight*(i-(newlineCount+1)), position.width, EditorGUIUtility.singleLineHeight*(newlineCount+1)), content, _lblStyle);
                //EditorGUILayout.LabelField(content, _lblStyle);
 
                //maxY += _lblStyle.CalcSize(content).y;
