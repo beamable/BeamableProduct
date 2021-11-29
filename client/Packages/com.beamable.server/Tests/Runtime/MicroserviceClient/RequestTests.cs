@@ -271,7 +271,9 @@ namespace Beamable.Server.Tests.Runtime
 
       class CustomOptionClass
       {
+#pragma warning disable 649
 	      public OptionalInt value;
+#pragma warning restore 649
       }
 
       [UnityTest]
