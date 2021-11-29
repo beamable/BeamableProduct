@@ -17,8 +17,38 @@ namespace Beamable.Editor
 {
    public static class UIElementExtensions
    {
+	   private const string PROPERTY_SELECTED = "selected";
+	   private const string PROPERTY_HOVERED = "hovered";
+	   
+	   public static void SetSelected(this VisualElement element, bool value)
+	   {
+		   if (value)
+		   {
+			   element.AddToClassList(PROPERTY_SELECTED);
+		   }
+		   else
+		   {
+			   element.RemoveFromClassList(PROPERTY_SELECTED);
+		   }
+	   }
+	   
+	   public static void SetHovered(this VisualElement element, bool value)
+	   {
+		   if (value)
+		   {
+			   element.AddToClassList(PROPERTY_HOVERED);
+		   }
+		   else
+		   {
+			   element.RemoveFromClassList(PROPERTY_HOVERED);
+		   }
+	   }
 
-
+	   public static bool IsSelected(this VisualElement element)
+	   {
+		   return element.ClassListContains(PROPERTY_SELECTED);
+	   }
+	   
       public static Action<bool> AddErrorLabel(this Toggle self, FormConstraint constraint)
       {
          var errorLabel = new Label();

@@ -225,7 +225,11 @@ namespace Beamable.Editor.Schedules
         private void OnModeChanged(int option)
         {
             _currentModel = _models[option];
-            _currentModel.ForceValidationCheck();
+
+			if (_currentModel?.Mode == ScheduleWindowModel.WindowMode.Dates)
+				_calendarComponent.Calendar.SetDefaultValues();
+
+			_currentModel.ForceValidationCheck();
             RefreshGroups();
         }
 
