@@ -67,12 +67,12 @@ namespace Beamable.Server
             var key = parameter.variableReference.Value.Name;
             if (variables.TryGetValue(key, out var raw))
             {
-	            return raw?.ToString();
+	            return MicroserviceClientHelper.SerializeArgument(raw);
             }
             else
             {
                Debug.LogWarning($"There is no variable for {key}. Sending null reference");
-               return null; 
+               return null;
             }
          }
 
