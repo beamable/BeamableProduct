@@ -27,7 +27,7 @@ jobs:
       uses: xt0rted/dotnet-tool-restore@v1
     - run: dotnet tool install -g dotnet-format
     - name: Run dotnet format
-      uses: xt0rted/dotnet-format@v1
+      uses: Leinnan/dotnet-format@v1
       with:
         only-changed-files: "true"
   testMicroserviceBaseImage:
