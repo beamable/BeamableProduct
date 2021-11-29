@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Threading;
 using Beamable.Common.Content;
 using Beamable.Tests.Content.Serialization.Support;
+using Beamable.Content;
+using Beamable.UI;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
@@ -11,24 +13,23 @@ using UnityEngine.TestTools;
 
 namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 {
-	public class DeserializeTests
-	{
-		[TearDown]
-		public void Teardown()
-		{
-			System.Threading.Thread.CurrentThread.CurrentCulture =
-				System.Globalization.CultureInfo.GetCultureInfo("en-US");
-		}
+    public class DeserializeTests
+    {
+       [TearDown]
+       public void Teardown()
+       {
+          System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo("en-US");
+       }
 
-		[UnityTest]
-		public IEnumerator MultithreadedDeserialize()
-		{
-			// this test simulates what might happen if the content deserializer is hit by many threads (C#MS) at once.
+       [UnityTest]
+       public IEnumerator MultithreadedDeserialize()
+       {
+          // this test simulates what might happen if the content deserializer is hit by many threads (C#MS) at once.
 
-			const int cycleCount = 2500;
-			const int threadCount = 50;
+          const int cycleCount = 2500;
+          const int threadCount = 50;
 
-			const string json = @"{
+          const string json = @"{
                ""id"": ""test.nothing"",
                ""version"": ""123"",
                ""properties"": {
@@ -43,51 +44,52 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
                },
             }";
 
-			var s = new TestSerializer();
+          var s = new TestSerializer();
 
-			void LaunchThread()
-			{
-				var thread = new Thread(() => {
-					try
-					{
-						var cycle = cycleCount;
-						while (cycle-- > 0)
-						{
-							var o = s.Deserialize<TestContent>(json);
-							Assert.AreEqual(true, o.flag);
-							Assert.AreEqual(123, o.longNumber);
-							Assert.AreEqual(true, Mathf.Abs(o.number - 3.21f) < .001f);
-							Assert.AreEqual("testtext", o.text);
-							Assert.AreEqual(15000000000000000000.0, o.bigNumber);
-							Assert.AreEqual(7, o.positiveInteger);
-							Assert.AreEqual('#', o.character);
-							Assert.AreEqual(2, o.singleByte);
+          void LaunchThread()
+          {
+             var thread = new Thread(() =>
+             {
+                try
+                {
+                   var cycle = cycleCount;
+                   while (cycle-- > 0)
+                   {
+                      var o = s.Deserialize<TestContent>(json);
+                      Assert.AreEqual(true, o.flag);
+                      Assert.AreEqual(123, o.longNumber);
+                      Assert.AreEqual(true, Mathf.Abs(o.number - 3.21f) < .001f);
+                      Assert.AreEqual("testtext", o.text);
+                      Assert.AreEqual(15000000000000000000.0, o.bigNumber);
+                      Assert.AreEqual(7, o.positiveInteger);
+                      Assert.AreEqual('#', o.character);
+                      Assert.AreEqual(2, o.singleByte);
 
-							Thread.Sleep(1);
-						}
+                      Thread.Sleep(1);
+                   }
+                   Debug.Log($"Thread finished");
+                }
+                catch (Exception ex)
+                {
+                 Assert.Fail("Thread failed to deserialize. " + ex.Message + " " + ex.StackTrace);
+                }
 
-						Debug.Log($"Thread finished");
-					}
-					catch (Exception ex)
-					{
-						Assert.Fail("Thread failed to deserialize. " + ex.Message + " " + ex.StackTrace);
-					}
-				});
-				thread.Start();
-			}
+             });
+             thread.Start();
+          }
 
-			for (var i = 0; i < threadCount; i++)
-			{
-				LaunchThread();
-			}
+          for (var i = 0; i < threadCount; i++)
+          {
+             LaunchThread();
+          }
 
-			yield return new WaitForSecondsRealtime(7);
-		}
+          yield return new WaitForSecondsRealtime(7);
+       }
 
-		[Test]
-		public void Primitives()
-		{
-			var json = @"{
+        [Test]
+        public void Primitives()
+        {
+            var json = @"{
                ""id"": ""test.nothing"",
                ""version"": ""123"",
                ""properties"": {
@@ -102,23 +104,23 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
                },
             }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<TestContent>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<TestContent>(json);
 
-			Assert.AreEqual(true, o.flag);
-			Assert.AreEqual(123, o.longNumber);
-			Assert.AreEqual(true, Mathf.Abs(o.number - 3.21f) < .001f);
-			Assert.AreEqual("testtext", o.text);
-			Assert.AreEqual(15000000000000000000.0, o.bigNumber);
-			Assert.AreEqual(7, o.positiveInteger);
-			Assert.AreEqual('#', o.character);
-			Assert.AreEqual(2, o.singleByte);
-		}
+            Assert.AreEqual(true, o.flag);
+            Assert.AreEqual(123, o.longNumber);
+            Assert.AreEqual(true, Mathf.Abs(o.number - 3.21f) < .001f);
+            Assert.AreEqual("testtext", o.text);
+            Assert.AreEqual(15000000000000000000.0, o.bigNumber);
+            Assert.AreEqual(7, o.positiveInteger);
+            Assert.AreEqual('#', o.character);
+            Assert.AreEqual(2, o.singleByte);
+        }
 
-		[Test]
-		public void Primitives_WithEmptyString()
-		{
-			var json = @"{
+        [Test]
+        public void Primitives_WithEmptyString()
+        {
+           var json = @"{
                ""id"": ""test.nothing"",
                ""version"": ""123"",
                ""properties"": {
@@ -133,20 +135,20 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
                },
             }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<TestContentComplex>(json);
+           var s = new TestSerializer();
+           var o = s.Deserialize<TestContentComplex>(json);
 
-			Assert.AreEqual(true, o.sub.flag);
-			Assert.AreEqual(123, o.sub.longNumber);
-			Assert.AreEqual(true, Mathf.Abs(o.sub.number - 3.21f) < .001f);
-			Assert.AreEqual("", o.sub.text);
-			Assert.AreEqual(15000000000000000000.0, o.sub.bigNumber);
-		}
+           Assert.AreEqual(true, o.sub.flag);
+           Assert.AreEqual(123, o.sub.longNumber);
+           Assert.AreEqual(true, Mathf.Abs(o.sub.number - 3.21f) < .001f);
+           Assert.AreEqual("", o.sub.text);
+           Assert.AreEqual(15000000000000000000.0, o.sub.bigNumber);
+        }
 
-		[Test]
-		public void Primitives_WithNullString()
-		{
-			var json = @"{
+        [Test]
+        public void Primitives_WithNullString()
+        {
+           var json = @"{
                ""id"": ""test.nothing"",
                ""version"": ""123"",
                ""properties"": {
@@ -161,24 +163,23 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
                },
             }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<TestContentComplex>(json);
+           var s = new TestSerializer();
+           var o = s.Deserialize<TestContentComplex>(json);
 
-			Assert.AreEqual(true, o.sub.flag);
-			Assert.AreEqual(123, o.sub.longNumber);
-			Assert.AreEqual(true, Mathf.Abs(o.sub.number - 3.21f) < .001f);
-			Assert.AreEqual(null, o.sub.text);
-			Assert.AreEqual(15000000000000000000.0, o.sub.bigNumber);
-		}
+           Assert.AreEqual(true, o.sub.flag);
+           Assert.AreEqual(123, o.sub.longNumber);
+           Assert.AreEqual(true, Mathf.Abs(o.sub.number - 3.21f) < .001f);
+           Assert.AreEqual(null, o.sub.text);
+           Assert.AreEqual(15000000000000000000.0, o.sub.bigNumber);
+        }
 
-		[Test]
-		public void Primitives_WithNon_ENUS_Doubles()
-		{
-			// pretend you are not in EN_US
-			System.Threading.Thread.CurrentThread.CurrentCulture =
-				System.Globalization.CultureInfo.GetCultureInfo("gsw-FR");
+        [Test]
+        public void Primitives_WithNon_ENUS_Doubles()
+        {
+           // pretend you are not in EN_US
+           System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo("gsw-FR");
 
-			var json = @"{
+           var json = @"{
    ""id"": ""test.nothing"",
    ""version"": ""123"",
    ""properties"": {
@@ -190,20 +191,21 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    },
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<TestContent>(json);
+           var s = new TestSerializer();
+           var o = s.Deserialize<TestContent>(json);
 
-			Assert.AreEqual(true, o.flag);
-			Assert.AreEqual(123, o.longNumber);
-			Assert.AreEqual(true, Mathf.Abs(o.number - 3.21f) < .001f);
-			Assert.AreEqual("testtext", o.text);
-			Assert.AreEqual(true, Mathf.Abs((float)(o.bigNumber - 15.22)) < .001f);
-		}
+           Assert.AreEqual(true, o.flag);
+           Assert.AreEqual(123, o.longNumber);
+           Assert.AreEqual(true, Mathf.Abs(o.number - 3.21f) < .001f);
+           Assert.AreEqual("testtext", o.text);
+           Assert.AreEqual(true, Mathf.Abs((float)(o.bigNumber - 15.22)) < .001f);
+        }
 
-		[Test]
-		public void NegativeNumbers()
-		{
-			var json = @"{
+
+        [Test]
+        public void NegativeNumbers()
+        {
+            var json = @"{
                ""id"": ""test.nothing"",
                ""version"": ""123"",
                ""properties"": {
@@ -214,20 +216,20 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
                   ""flag"": { ""data"": true }
                },
             }";
-			var s = new TestSerializer();
-			var o = s.Deserialize<TestContent>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<TestContent>(json);
 
-			Assert.AreEqual(true, o.flag);
-			Assert.AreEqual(-123, o.longNumber);
-			Assert.AreEqual(true, Mathf.Abs(o.number - 3.21f) < .001f);
-			Assert.AreEqual("testtext", o.text);
-			Assert.AreEqual(-15000000000000000000.0, o.bigNumber);
-		}
+            Assert.AreEqual(true, o.flag);
+            Assert.AreEqual(-123, o.longNumber);
+            Assert.AreEqual(true, Mathf.Abs(o.number - 3.21f) < .001f);
+            Assert.AreEqual("testtext", o.text);
+            Assert.AreEqual(-15000000000000000000.0, o.bigNumber);
+        }
 
-		[Test]
-		public void IdAndVerion()
-		{
-			var json = @"{
+        [Test]
+        public void IdAndVerion()
+        {
+            var json = @"{
                ""id"": ""test.nothing"",
                ""version"": ""123"",
                ""properties"": {
@@ -238,17 +240,17 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
                },
             }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<TestContent>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<TestContent>(json);
 
-			Assert.AreEqual("test.nothing", o.Id);
-			Assert.AreEqual("123", o.Version);
-		}
+            Assert.AreEqual("test.nothing", o.Id);
+            Assert.AreEqual("123", o.Version);
+        }
 
-		[Test]
-		public void Nested()
-		{
-			var json = @"{
+        [Test]
+        public void Nested()
+        {
+            var json = @"{
                ""id"": ""test.nothing"",
                ""version"": ""123"",
                ""properties"": {
@@ -263,20 +265,20 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
                },
             }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<TestContentComplex>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<TestContentComplex>(json);
 
-			Assert.AreEqual(true, o.sub.flag);
-			Assert.AreEqual(123, o.sub.longNumber);
-			Assert.AreEqual(true, Mathf.Abs(o.sub.number - 3.21f) < .001f);
-			Assert.AreEqual("testtext", o.sub.text);
-			Assert.AreEqual(15000000000000000000.0, o.sub.bigNumber);
-		}
+            Assert.AreEqual(true, o.sub.flag);
+            Assert.AreEqual(123, o.sub.longNumber);
+            Assert.AreEqual(true, Mathf.Abs(o.sub.number - 3.21f) < .001f);
+            Assert.AreEqual("testtext", o.sub.text);
+            Assert.AreEqual(15000000000000000000.0, o.sub.bigNumber);
+        }
 
-		[Test]
-		public void OptionalWithValue()
-		{
-			var json = @"{
+        [Test]
+        public void OptionalWithValue()
+        {
+            var json = @"{
    ""id"": ""test.nothing"",
    ""version"": ""123"",
    ""properties"": {
@@ -284,17 +286,17 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    },
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<TestOptional>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<TestOptional>(json);
 
-			Assert.AreEqual(true, o.maybeNumber.HasValue);
-			Assert.AreEqual(5, o.maybeNumber.Value);
-		}
+            Assert.AreEqual(true, o.maybeNumber.HasValue);
+            Assert.AreEqual(5, o.maybeNumber.Value);
+        }
 
-		[Test]
-		public void OptionalNestedWithValue()
-		{
-			var json = @"{
+        [Test]
+        public void OptionalNestedWithValue()
+        {
+            var json = @"{
    ""id"": ""test.nothing"",
    ""version"": ""123"",
    ""properties"": {
@@ -302,17 +304,17 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    },
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<NestedOptional>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<NestedOptional>(json);
 
-			Assert.AreEqual(true, o.sub.maybeNumber.HasValue);
-			Assert.AreEqual(5, o.sub.maybeNumber.Value);
-		}
+            Assert.AreEqual(true, o.sub.maybeNumber.HasValue);
+            Assert.AreEqual(5, o.sub.maybeNumber.Value);
+        }
 
-		[Test]
-		public void OptionalNestedWithoutValue()
-		{
-			var json = @"{
+        [Test]
+        public void OptionalNestedWithoutValue()
+        {
+            var json = @"{
    ""id"": ""test.nothing"",
    ""version"": ""123"",
    ""properties"": {
@@ -320,16 +322,16 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    },
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<NestedOptional>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<NestedOptional>(json);
 
-			Assert.AreEqual(false, o.sub.maybeNumber.HasValue);
-		}
+            Assert.AreEqual(false, o.sub.maybeNumber.HasValue);
+        }
 
-		[Test]
-		public void OptionalWithoutValue()
-		{
-			var json = @"{
+        [Test]
+        public void OptionalWithoutValue()
+        {
+            var json = @"{
    ""id"": ""test.nothing"",
    ""version"": ""123"",
    ""properties"": {
@@ -337,66 +339,66 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    },
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<TestOptional>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<TestOptional>(json);
 
-			Assert.AreEqual(false, o.maybeNumber.HasValue);
-		}
+            Assert.AreEqual(false, o.maybeNumber.HasValue);
+        }
 
-		[Test]
-		public void OptionalStringWithoutValue()
-		{
-			var json = @"{
+        [Test]
+        public void OptionalStringWithoutValue()
+        {
+           var json = @"{
    ""id"": ""test.nothing"",
    ""version"": ""123"",
    ""properties"": {
 
    },
 }";
-			var s = new TestSerializer();
-			var o = s.Deserialize<TestOptionalString>(json);
+           var s = new TestSerializer();
+           var o = s.Deserialize<TestOptionalString>(json);
 
-			Assert.AreEqual(false, o.maybeString.HasValue);
-		}
+           Assert.AreEqual(false, o.maybeString.HasValue);
+        }
 
-		[Test]
-		public void OptionalStringWithValue()
-		{
-			var json = @"{
+        [Test]
+        public void OptionalStringWithValue()
+        {
+           var json = @"{
    ""id"": ""test.nothing"",
    ""version"": ""123"",
    ""properties"": {
    ""maybeString"": { ""data"": ""abc"" }
    },
 }";
-			var s = new TestSerializer();
-			var o = s.Deserialize<TestOptionalString>(json);
+           var s = new TestSerializer();
+           var o = s.Deserialize<TestOptionalString>(json);
 
-			Assert.AreEqual(true, o.maybeString.HasValue);
-			Assert.AreEqual("abc", o.maybeString.Value);
-		}
+           Assert.AreEqual(true, o.maybeString.HasValue);
+           Assert.AreEqual("abc", o.maybeString.Value);
+        }
 
-		[Test]
-		public void OptionalStringWithEmptyValue()
-		{
-			var json = @"{
+        [Test]
+        public void OptionalStringWithEmptyValue()
+        {
+           var json = @"{
    ""id"": ""test.nothing"",
    ""version"": ""123"",
    ""properties"": {
    ""maybeString"": { ""data"": """" }
    },
 }";
-			var s = new TestSerializer();
-			var o = s.Deserialize<TestOptionalString>(json);
+           var s = new TestSerializer();
+           var o = s.Deserialize<TestOptionalString>(json);
 
-			Assert.AreEqual(true, o.maybeString.HasValue);
-			Assert.AreEqual("", o.maybeString.Value);
-		}
+           Assert.AreEqual(true, o.maybeString.HasValue);
+           Assert.AreEqual("", o.maybeString.Value);
+        }
 
-		[Test]
-		public void Color()
-		{
-			var json = @"{
+        [Test]
+        public void Color()
+        {
+            var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -411,19 +413,19 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<ColorContent>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<ColorContent>(json);
 
-			Assert.AreEqual(1, o.color.r);
-			Assert.AreEqual(0, o.color.g);
-			Assert.AreEqual(0, o.color.b);
-			Assert.AreEqual(1, o.color.a);
-		}
+            Assert.AreEqual(1, o.color.r);
+            Assert.AreEqual(0, o.color.g);
+            Assert.AreEqual(0, o.color.b);
+            Assert.AreEqual(1, o.color.a);
+        }
 
-		[Test]
-		public void Ref_Legacy()
-		{
-			var json = @"{
+        [Test]
+        public void Ref_Legacy()
+        {
+            var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -435,16 +437,16 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<RefContent>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<RefContent>(json);
 
-			Assert.AreEqual("primitive.foo", o.reference.GetId());
-		}
+            Assert.AreEqual("primitive.foo", o.reference.GetId());
+        }
 
-		[Test]
-		public void Ref_AsString()
-		{
-			var json = @"{
+        [Test]
+        public void Ref_AsString()
+        {
+           var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -454,16 +456,16 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<RefContent>(json);
+           var s = new TestSerializer();
+           var o = s.Deserialize<RefContent>(json);
 
-			Assert.AreEqual("primitive.foo", o.reference.GetId());
-		}
+           Assert.AreEqual("primitive.foo", o.reference.GetId());
+        }
 
-		[Test]
-		public void RefNested_Legacy()
-		{
-			var json = @"{
+        [Test]
+        public void RefNested_Legacy()
+        {
+            var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -475,16 +477,16 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<NestedRefContent>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<NestedRefContent>(json);
 
-			Assert.AreEqual("primitive.foo", o.sub.reference.GetId());
-		}
+            Assert.AreEqual("primitive.foo", o.sub.reference.GetId());
+        }
 
-		[Test]
-		public void RefNested_AsString()
-		{
-			var json = @"{
+        [Test]
+        public void RefNested_AsString()
+        {
+           var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -496,16 +498,16 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<NestedRefContent>(json);
+           var s = new TestSerializer();
+           var o = s.Deserialize<NestedRefContent>(json);
 
-			Assert.AreEqual("primitive.foo", o.sub.reference.GetId());
-		}
+           Assert.AreEqual("primitive.foo", o.sub.reference.GetId());
+        }
 
-		[Test]
-		public void Link()
-		{
-			var json = @"{
+        [Test]
+        public void Link()
+        {
+            var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -515,17 +517,19 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<LinkContent>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<LinkContent>(json);
 
-			Assert.AreEqual("primitive.foo", o.link.GetId());
-			Assert.AreEqual(true, o.link.WasCreated);
-		}
+            Assert.AreEqual("primitive.foo", o.link.GetId());
+            Assert.AreEqual(true, o.link.WasCreated);
+        }
 
-		[Test]
-		public void LinkNested_Legacy()
-		{
-			var json = @"{
+
+
+        [Test]
+        public void LinkNested_Legacy()
+        {
+            var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -535,17 +539,17 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<LinkNestedContent>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<LinkNestedContent>(json);
 
-			Assert.AreEqual("primitive.foo", o.sub.link.GetId());
-			Assert.AreEqual(true, o.sub.link.WasCreated);
-		}
+            Assert.AreEqual("primitive.foo", o.sub.link.GetId());
+            Assert.AreEqual(true, o.sub.link.WasCreated);
+        }
 
-		[Test]
-		public void LinkNested_AsString()
-		{
-			var json = @"{
+        [Test]
+        public void LinkNested_AsString()
+        {
+           var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -555,17 +559,17 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<LinkNestedContent>(json);
+           var s = new TestSerializer();
+           var o = s.Deserialize<LinkNestedContent>(json);
 
-			Assert.AreEqual("primitive.foo", o.sub.link.GetId());
-			Assert.AreEqual(true, o.sub.link.WasCreated);
-		}
+           Assert.AreEqual("primitive.foo", o.sub.link.GetId());
+           Assert.AreEqual(true, o.sub.link.WasCreated);
+        }
 
-		[Test]
-		public void LinkNestedArray_Legacy()
-		{
-			var json = @"{
+        [Test]
+        public void LinkNestedArray_Legacy()
+        {
+            var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -575,20 +579,21 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<LinkArrayNestedContent>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<LinkArrayNestedContent>(json);
 
-			Assert.AreEqual(2, o.sub.links.Length);
-			Assert.AreEqual("primitive.foo", o.sub.links[0].GetId());
-			Assert.AreEqual("primitive.foo2", o.sub.links[1].GetId());
-			Assert.AreEqual(true, o.sub.links[0].WasCreated);
-			Assert.AreEqual(true, o.sub.links[1].WasCreated);
-		}
+            Assert.AreEqual(2, o.sub.links.Length);
+            Assert.AreEqual("primitive.foo", o.sub.links[0].GetId());
+            Assert.AreEqual("primitive.foo2", o.sub.links[1].GetId());
+            Assert.AreEqual(true, o.sub.links[0].WasCreated);
+            Assert.AreEqual(true, o.sub.links[1].WasCreated);
+        }
 
-		[Test]
-		public void LinkNestedArray_AsString()
-		{
-			var json = @"{
+
+        [Test]
+        public void LinkNestedArray_AsString()
+        {
+           var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -598,20 +603,21 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<LinkArrayNestedContent>(json);
+           var s = new TestSerializer();
+           var o = s.Deserialize<LinkArrayNestedContent>(json);
 
-			Assert.AreEqual(2, o.sub.links.Length);
-			Assert.AreEqual("primitive.foo", o.sub.links[0].GetId());
-			Assert.AreEqual("primitive.foo2", o.sub.links[1].GetId());
-			Assert.AreEqual(true, o.sub.links[0].WasCreated);
-			Assert.AreEqual(true, o.sub.links[1].WasCreated);
-		}
+           Assert.AreEqual(2, o.sub.links.Length);
+           Assert.AreEqual("primitive.foo", o.sub.links[0].GetId());
+           Assert.AreEqual("primitive.foo2", o.sub.links[1].GetId());
+           Assert.AreEqual(true, o.sub.links[0].WasCreated);
+           Assert.AreEqual(true, o.sub.links[1].WasCreated);
+        }
 
-		[Test]
-		public void LinkArray()
-		{
-			var json = @"{
+
+        [Test]
+        public void LinkArray()
+        {
+            var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -621,20 +627,20 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<LinkArrayContent>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<LinkArrayContent>(json);
 
-			Assert.AreEqual(2, o.links.Length);
-			Assert.AreEqual("primitive.foo", o.links[0].GetId());
-			Assert.AreEqual(true, o.links[0].WasCreated);
-			Assert.AreEqual("primitive.foo2", o.links[1].GetId());
-			Assert.AreEqual(true, o.links[1].WasCreated);
-		}
+            Assert.AreEqual(2, o.links.Length);
+            Assert.AreEqual("primitive.foo", o.links[0].GetId());
+            Assert.AreEqual(true, o.links[0].WasCreated);
+            Assert.AreEqual("primitive.foo2", o.links[1].GetId());
+            Assert.AreEqual(true, o.links[1].WasCreated);
+        }
 
-		[Test]
-		public void LinkList()
-		{
-			var json = @"{
+        [Test]
+        public void LinkList()
+        {
+            var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -644,20 +650,21 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<LinkListContent>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<LinkListContent>(json);
 
-			Assert.AreEqual(2, o.links.Count);
-			Assert.AreEqual("primitive.foo", o.links[0].GetId());
-			Assert.AreEqual(true, o.links[0].WasCreated);
-			Assert.AreEqual("primitive.foo2", o.links[1].GetId());
-			Assert.AreEqual(true, o.links[1].WasCreated);
-		}
+            Assert.AreEqual(2, o.links.Count);
+            Assert.AreEqual("primitive.foo", o.links[0].GetId());
+            Assert.AreEqual(true, o.links[0].WasCreated);
+            Assert.AreEqual("primitive.foo2", o.links[1].GetId());
+            Assert.AreEqual(true, o.links[1].WasCreated);
+        }
 
-		[Test]
-		public void ArrayNumber()
-		{
-			var json = @"{
+
+        [Test]
+        public void ArrayNumber()
+        {
+            var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -667,19 +674,19 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<ArrayNumberContent>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<ArrayNumberContent>(json);
 
-			Assert.AreEqual(3, o.numbers.Length);
-			Assert.AreEqual(1, o.numbers[0]);
-			Assert.AreEqual(2, o.numbers[1]);
-			Assert.AreEqual(3, o.numbers[2]);
-		}
+            Assert.AreEqual(3, o.numbers.Length);
+            Assert.AreEqual(1, o.numbers[0]);
+            Assert.AreEqual(2, o.numbers[1]);
+            Assert.AreEqual(3, o.numbers[2]);
+        }
 
-		[Test]
-		public void ArrayNestedNumber()
-		{
-			var json = @"{
+        [Test]
+        public void ArrayNestedNumber()
+        {
+            var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -689,19 +696,19 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<NestedArrayNumberContent>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<NestedArrayNumberContent>(json);
 
-			Assert.AreEqual(3, o.sub.numbers.Length);
-			Assert.AreEqual(1, o.sub.numbers[0]);
-			Assert.AreEqual(2, o.sub.numbers[1]);
-			Assert.AreEqual(3, o.sub.numbers[2]);
-		}
+            Assert.AreEqual(3, o.sub.numbers.Length);
+            Assert.AreEqual(1, o.sub.numbers[0]);
+            Assert.AreEqual(2, o.sub.numbers[1]);
+            Assert.AreEqual(3, o.sub.numbers[2]);
+        }
 
-		[Test]
-		public void ListNumber()
-		{
-			var json = @"{
+        [Test]
+        public void ListNumber()
+        {
+            var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -711,19 +718,19 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<ListNumberContent>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<ListNumberContent>(json);
 
-			Assert.AreEqual(3, o.numbers.Count);
-			Assert.AreEqual(1, o.numbers[0]);
-			Assert.AreEqual(2, o.numbers[1]);
-			Assert.AreEqual(3, o.numbers[2]);
-		}
+            Assert.AreEqual(3, o.numbers.Count);
+            Assert.AreEqual(1, o.numbers[0]);
+            Assert.AreEqual(2, o.numbers[1]);
+            Assert.AreEqual(3, o.numbers[2]);
+        }
 
-		[Test]
-		public void ListString()
-		{
-			var json = @"{
+        [Test]
+        public void ListString()
+        {
+           var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -733,19 +740,19 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<ListStringContent>(json);
+           var s = new TestSerializer();
+           var o = s.Deserialize<ListStringContent>(json);
 
-			Assert.AreEqual(3, o.strings.Count);
-			Assert.AreEqual("a", o.strings[0]);
-			Assert.AreEqual("b", o.strings[1]);
-			Assert.AreEqual("c", o.strings[2]);
-		}
+           Assert.AreEqual(3, o.strings.Count);
+           Assert.AreEqual("a", o.strings[0]);
+           Assert.AreEqual("b", o.strings[1]);
+           Assert.AreEqual("c", o.strings[2]);
+        }
 
-		[Test]
-		public void ListStringEmpty()
-		{
-			var json = @"{
+        [Test]
+        public void ListStringEmpty()
+        {
+           var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -755,16 +762,16 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<ListStringContent>(json);
+           var s = new TestSerializer();
+           var o = s.Deserialize<ListStringContent>(json);
 
-			Assert.AreEqual(0, o.strings.Count);
-		}
+           Assert.AreEqual(0, o.strings.Count);
+        }
 
-		[Test]
-		public void ListStringWithNull()
-		{
-			var json = @"{
+        [Test]
+        public void ListStringWithNull()
+        {
+           var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -774,19 +781,19 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<ListStringContent>(json);
+           var s = new TestSerializer();
+           var o = s.Deserialize<ListStringContent>(json);
 
-			Assert.AreEqual(2, o.strings.Count);
+           Assert.AreEqual(2, o.strings.Count);
 
-			Assert.AreEqual(null, o.strings[0]);
-			Assert.AreEqual(null, o.strings[1]);
-		}
+           Assert.AreEqual(null, o.strings[0]);
+           Assert.AreEqual(null, o.strings[1]);
+        }
 
-		[Test]
-		public void InvalidJson_ThrowsException()
-		{
-			var json = @"{
+        [Test]
+        public void InvalidJson_ThrowsException()
+        {
+           var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -796,15 +803,15 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			Assert.Throws<ContentDeserializationException>(() => s.Deserialize<ListStringContent>(json));
-		}
+           var s = new TestSerializer();
+           Assert.Throws<ContentDeserializationException>(() => s.Deserialize<ListStringContent>(json));
+        }
 
-		[Test]
-		public void Addressable()
-		{
-			var fakeGuid = Guid.NewGuid().ToString();
-			var json = @"{
+        [Test]
+        public void Addressable()
+        {
+            var fakeGuid = Guid.NewGuid().ToString();
+            var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -816,17 +823,17 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<SpriteAddressableContent>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<SpriteAddressableContent>(json);
 
-			Assert.AreEqual(fakeGuid, o.sprite.AssetGUID);
-			Assert.AreEqual("tuna", o.sprite.SubObjectName);
-		}
+            Assert.AreEqual(fakeGuid, o.sprite.AssetGUID);
+            Assert.AreEqual("tuna", o.sprite.SubObjectName);
+        }
 
-		[Test]
-		public void Enum()
-		{
-			var json = @"{
+        [Test]
+        public void Enum()
+        {
+            var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -836,16 +843,16 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<EnumContent>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<EnumContent>(json);
 
-			Assert.AreEqual(TestEnum.B, o.e);
-		}
+            Assert.AreEqual(TestEnum.B, o.e);
+        }
 
-		[Test]
-		public void CustomContentField_Works()
-		{
-			var json = @"{
+        [Test]
+        public void CustomContentField_Works()
+        {
+            var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -855,16 +862,16 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<CustomContentField>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<CustomContentField>(json);
 
-			Assert.AreEqual(123, o.FooBar);
-		}
+            Assert.AreEqual(123, o.FooBar);
+        }
 
-		[Test]
-		public void DictStringToString()
-		{
-			var json = @"{
+        [Test]
+        public void DictStringToString()
+        {
+           var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -875,25 +882,24 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<SerializeDictStringToString>(json);
+           var s = new TestSerializer();
+           var o = s.Deserialize<SerializeDictStringToString>(json);
 
-			for (int i = 0; i < 66; i++)
-			{
-				s.Deserialize<SerializeDictStringToString>(json);
-			}
+           for (int i = 0; i < 66; i++) {
+              s.Deserialize<SerializeDictStringToString>(json);
+           }
+           
+           Assert.AreEqual(true, o.Dict.TryGetValue("a", out var aValue));
+           Assert.AreEqual("v1", aValue);
 
-			Assert.AreEqual(true, o.Dict.TryGetValue("a", out var aValue));
-			Assert.AreEqual("v1", aValue);
+           Assert.AreEqual(true, o.Dict.TryGetValue("b", out var bValue));
+           Assert.AreEqual("v2", bValue);
+        }
 
-			Assert.AreEqual(true, o.Dict.TryGetValue("b", out var bValue));
-			Assert.AreEqual("v2", bValue);
-		}
-
-		[Test]
-		public void DictStringToInt()
-		{
-			var json = @"{
+        [Test]
+        public void DictStringToInt()
+        {
+           var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -904,26 +910,26 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<SerializeDictStringToInt>(json);
+           var s = new TestSerializer();
+           var o = s.Deserialize<SerializeDictStringToInt>(json);
 
-			for (int i = 0; i < 66; i++)
-			{
-				s.Deserialize<SerializeDictStringToInt>(json);
-			}
+           for (int i = 0; i < 66; i++) {
+              s.Deserialize<SerializeDictStringToInt>(json);
+           }
+           Assert.AreEqual(true, o.Dict.TryGetValue("a", out var aValue));
+           Assert.AreEqual(2, aValue);
 
-			Assert.AreEqual(true, o.Dict.TryGetValue("a", out var aValue));
-			Assert.AreEqual(2, aValue);
+           Assert.AreEqual(true, o.Dict.TryGetValue("b", out var bValue));
+           Assert.AreEqual(4, bValue);
+        }
+        
+        
 
-			Assert.AreEqual(true, o.Dict.TryGetValue("b", out var bValue));
-			Assert.AreEqual(4, bValue);
-		}
-
-		[Test]
-		public void DeserializationWithCallback()
-		{
-			var s = new TestSerializer();
-			var json = @"{
+      [Test]
+      public void DeserializationWithCallback()
+      {
+         var s = new TestSerializer();
+         var json = @"{
    ""id"":""test.test"",
    ""version"":"""",
    ""properties"":{
@@ -936,18 +942,18 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
             }
          }
       }
-   }".Replace("\r\n", "").Replace("\n", "").Replace(" ", "");
-			var obj = s.Deserialize<SerializeWithCallbackContent>(json);
-			Assert.NotNull(obj);
-			Assert.Zero(obj.value);
-			Assert.NotNull(obj.nested);
-			Assert.Zero(obj.nested.value);
-		}
-
-		[Test]
-		public void FormerlyContentField_Works()
-		{
-			var json = @"{
+   }".Replace(Environment.NewLine, "").Replace(" ", "");
+         var obj = s.Deserialize<SerializeWithCallbackContent>(json);
+         Assert.NotNull(obj);
+         Assert.Zero(obj.value);
+         Assert.NotNull(obj.nested);
+         Assert.Zero(obj.nested.value);
+      }
+        
+        [Test]
+        public void FormerlyContentField_Works()
+        {
+            var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -957,16 +963,16 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<FormerlyContentField>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<FormerlyContentField>(json);
 
-			Assert.AreEqual(123, o.FooBar);
-		}
+            Assert.AreEqual(123, o.FooBar);
+        }
 
-		[Test]
-		public void NestedFormerlyContentField_Works()
-		{
-			var json = @"{
+        [Test]
+        public void NestedFormerlyContentField_Works()
+        {
+            var json = @"{
    ""id"": ""test.nothing"",
    ""version"": """",
    ""properties"": {
@@ -976,16 +982,16 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			var o = s.Deserialize<FormerlyContentNestedContent>(json);
+            var s = new TestSerializer();
+            var o = s.Deserialize<FormerlyContentNestedContent>(json);
 
-			Assert.AreEqual(123, o.Nested.FooBar);
-		}
+            Assert.AreEqual(123, o.Nested.FooBar);
+        }
 
-		[Test]
-		public void FormerlySerializedTypeName_Works()
-		{
-			var json = @"{
+        [Test]
+        public void FormerlySerializedTypeName_Works()
+        {
+           var json = @"{
    ""id"": ""bogus.nothing"",
    ""version"": """",
    ""properties"": {
@@ -993,208 +999,207 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    }
 }";
 
-			var s = new TestSerializer();
-			ContentRegistry.LoadRuntimeTypeData(new HashSet<Type> {typeof(FormerlyContentName)});
-			var o = s.Deserialize<FormerlyContentName>(json);
+           var s = new TestSerializer();
+           ContentRegistry.LoadRuntimeTypeData(new HashSet<Type>{ typeof(FormerlyContentName) });
+           var o = s.Deserialize<FormerlyContentName>(json);
 
-			Assert.AreEqual(5, o.x);
-			Assert.AreEqual("test.nothing", o.Id);
-		}
+           Assert.AreEqual(5, o.x);
+           Assert.AreEqual("test.nothing", o.Id);
+        }
 
-		[Test]
-		public void FormerlySerializedTypeName_WhenMissing_UsesDataId()
-		{
-			var json = @"{
+        [Test]
+        public void FormerlySerializedTypeName_WhenMissing_UsesDataId()
+        {
+           var json = @"{
    ""id"": ""bogus.nothing"",
    ""version"": """",
    ""properties"": {
       ""x"": { ""data"": 5 }
    }
 }";
-			var s = new TestSerializer();
-			var o = s.Deserialize<FormerlyContentName>(json);
+           var s = new TestSerializer();
+           var o = s.Deserialize<FormerlyContentName>(json);
 
-			Assert.AreEqual(5, o.x);
-			Assert.AreEqual("bogus.nothing", o.Id);
-		}
+           Assert.AreEqual(5, o.x);
+           Assert.AreEqual("bogus.nothing", o.Id);
+        }
+
 
 #pragma warning disable CS0649
 
-		class TestContent : TestContentObject
-		{
-			public string text;
-			public float number;
-			public long longNumber;
-			public bool flag;
-			public double bigNumber;
-			public uint positiveInteger;
-			public char character;
-			public byte singleByte;
-		}
+        class TestContent : TestContentObject
+        {
+            public string text;
+            public float number;
+            public long longNumber;
+            public bool flag;
+            public double bigNumber;
+            public uint positiveInteger;
+            public char character;
+            public byte singleByte;
+        }
 
-		class TestContentComplex : TestContentObject
-		{
-			public TestContent sub;
-		}
+        class TestContentComplex : TestContentObject
+        {
+            public TestContent sub;
+        }
 
-		class TestOptional : TestContentObject
-		{
-			public OptionalInt maybeNumber;
-		}
+        class TestOptional : TestContentObject
+        {
+            public OptionalInt maybeNumber;
+        }
 
-		class TestOptionalString : TestContentObject
-		{
-			public OptionalString maybeString;
-		}
+        class TestOptionalString : TestContentObject
+        {
+           public OptionalString maybeString;
+        }
 
-		class NestedOptional : TestContentObject
-		{
-			public TestOptional sub;
-		}
 
-		class ColorContent : TestContentObject
-		{
-			public Color color;
-		}
+        class NestedOptional : TestContentObject
+        {
+            public TestOptional sub;
+        }
 
-		class PrimitiveRef : TestContentRef<TestContent> { }
+        class ColorContent : TestContentObject
+        {
+            public Color color;
+        }
 
-		class PrimitiveLink : TestContentLink<TestContent> { }
+        class PrimitiveRef : TestContentRef<TestContent> { }
+        class PrimitiveLink : TestContentLink<TestContent> { }
 
-		class RefContent : TestContentObject
-		{
-			public PrimitiveRef reference;
-		}
+        class RefContent : TestContentObject
+        {
+            public PrimitiveRef reference;
+        }
 
-		class NestedRefContent : TestContentObject
-		{
-			public RefContent sub;
-		}
+        class NestedRefContent : TestContentObject
+        {
+            public RefContent sub;
+        }
 
-		class ListNumberContent : TestContentObject
-		{
-			public List<int> numbers;
-		}
+        class ListNumberContent : TestContentObject
+        {
+            public List<int> numbers;
+        }
 
-		class ListStringContent : TestContentObject
-		{
-			public List<string> strings;
-		}
+        class ListStringContent : TestContentObject
+        {
+           public List<string> strings;
+        }
 
-		class ArrayNumberContent : TestContentObject
-		{
-			public int[] numbers;
-		}
+        class ArrayNumberContent : TestContentObject
+        {
+            public int[] numbers;
+        }
 
-		class NestedArrayNumberContent : TestContentObject
-		{
-			public ArrayNumberContent sub;
-		}
+        class NestedArrayNumberContent : TestContentObject
+        {
+            public ArrayNumberContent sub;
+        }
 
-		class SpriteAddressableContent : TestContentObject
-		{
-			public AssetReferenceSprite sprite;
-		}
+        class SpriteAddressableContent : TestContentObject
+        {
+            public AssetReferenceSprite sprite;
+        }
 
-		class LinkContent : TestContentObject
-		{
-			public PrimitiveLink link;
-		}
+        class LinkContent : TestContentObject
+        {
+            public PrimitiveLink link;
+        }
 
-		class LinkArrayContent : TestContentObject
-		{
-			public PrimitiveLink[] links;
-		}
+        class LinkArrayContent : TestContentObject
+        {
+            public PrimitiveLink[] links;
+        }
+        class LinkListContent : TestContentObject
+        {
+            public List<PrimitiveLink> links;
+        }
 
-		class LinkListContent : TestContentObject
-		{
-			public List<PrimitiveLink> links;
-		}
+        class LinkNestedContent : TestContentObject
+        {
+            public LinkContent sub;
+        }
+        class LinkArrayNestedContent : TestContentObject
+        {
+            public LinkArrayContent sub;
+        }
 
-		class LinkNestedContent : TestContentObject
-		{
-			public LinkContent sub;
-		}
+        enum TestEnum { A, B, C }
 
-		class LinkArrayNestedContent : TestContentObject
-		{
-			public LinkArrayContent sub;
-		}
+        class EnumContent : TestContentObject
+        {
+            public TestEnum e;
+        }
 
-		enum TestEnum { A, B, C }
+        class CustomContentField : TestContentObject
+        {
+            [ContentField("tunafish")]
+            public int FooBar;
+        }
 
-		class EnumContent : TestContentObject
-		{
-			public TestEnum e;
-		}
+        class FormerlyContentField : TestContentObject
+        {
+            //[ContentField(FormerlySerializedAs = new []{"greatscott"})]
+            [ContentField(formerlySerializedAs: "greatscott")]
+            public int FooBar;
+        }
 
-		class CustomContentField : TestContentObject
-		{
-			[ContentField("tunafish")]
-			public int FooBar;
-		}
+        class FormerlyContentNestedContent : TestContentObject
+        {
+            public FormerlyContentField Nested;
+        }
 
-		class FormerlyContentField : TestContentObject
-		{
-			//[ContentField(FormerlySerializedAs = new []{"greatscott"})]
-			[ContentField(formerlySerializedAs: "greatscott")]
-			public int FooBar;
-		}
+        [ContentType("test")]
+        [ContentFormerlySerializedAs("bogus")]
+        class FormerlyContentName : TestContentObject
+        {
+           public int x;
+        }
 
-		class FormerlyContentNestedContent : TestContentObject
-		{
-			public FormerlyContentField Nested;
-		}
+        class SerializeDictStringToString : TestContentObject
+        {
+           public SerializableDictionaryStringToString Dict;
+        }
+        class SerializeDictStringToInt : TestContentObject
+        {
+           public SerializableDictionaryStringToInt Dict;
+        }
 
-		[ContentType("test")]
-		[ContentFormerlySerializedAs("bogus")]
-		class FormerlyContentName : TestContentObject
-		{
-			public int x;
-		}
+        class SerializeWithCallbackContent : TestContentObject, ISerializationCallbackReceiver
+        {
+           public int value = 0;
+           public SerializeWithCallbackObject nested = new SerializeWithCallbackObject();
+         
+           public void OnBeforeSerialize()
+           {
+              value += 1;
+           }
 
-		class SerializeDictStringToString : TestContentObject
-		{
-			public SerializableDictionaryStringToString Dict;
-		}
+           public void OnAfterDeserialize()
+           {
+              value -= 1;
+           }
+        }
 
-		class SerializeDictStringToInt : TestContentObject
-		{
-			public SerializableDictionaryStringToInt Dict;
-		}
+        [Serializable]
+        class SerializeWithCallbackObject : ISerializationCallbackReceiver
+        {
+           public int value = 0;
+         
+           public void OnBeforeSerialize()
+           {
+              value += 1;
+           }
 
-		class SerializeWithCallbackContent : TestContentObject, ISerializationCallbackReceiver
-		{
-			public int value = 0;
-			public SerializeWithCallbackObject nested = new SerializeWithCallbackObject();
-
-			public void OnBeforeSerialize()
-			{
-				value += 1;
-			}
-
-			public void OnAfterDeserialize()
-			{
-				value -= 1;
-			}
-		}
-
-		[Serializable]
-		class SerializeWithCallbackObject : ISerializationCallbackReceiver
-		{
-			public int value = 0;
-
-			public void OnBeforeSerialize()
-			{
-				value += 1;
-			}
-
-			public void OnAfterDeserialize()
-			{
-				value -= 1;
-			}
-		}
+           public void OnAfterDeserialize()
+           {
+              value -= 1;
+           }
+        }
 
 #pragma warning restore CS0649
-	}
+
+    }
 }
