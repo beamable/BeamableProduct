@@ -212,9 +212,11 @@ namespace Beamable.Common.Content
    {
       [ContentField("webhookSymbol")]
       [MustReferenceContent]
+      [Tooltip("Some api content to invoke")]
       public TRef Api;
 
       [ContentField("strategy")]
+      [Tooltip("The strategy that defines how the webhook is invoked")]
       public ApiInvocationStrategy Strategy;
    }
 
