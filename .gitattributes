@@ -1,3 +1,5 @@
-* text=crlf
+* text=auto
 
 *.sh eol=lf
+*.sln text eol=crlf
+*.cs text eol=crlf
