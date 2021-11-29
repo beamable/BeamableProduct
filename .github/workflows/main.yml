@@ -158,7 +158,7 @@ jobs:
         with:
           name: Build-iOS
       - name: Change directory to the location of the xcode project
-        run: pwd && cb BeamableProduct/build/ios && ls -lrt && cd ../../.. && cd iOS/
+        run: pwd && cd BeamableProduct/build/ios && ls -lrt && cd ../../.. && cd iOS/
       - uses: yukiarrr/ios-build-action@v1.4.0
         with:
           update-targets: Unity-iPhone
