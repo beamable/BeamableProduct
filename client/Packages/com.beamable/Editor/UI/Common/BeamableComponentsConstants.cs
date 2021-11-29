@@ -15,5 +15,11 @@ namespace Beamable.Editor.UI.Buss
       public static readonly Vector2 SchedulesWindowSize = new Vector2(450, 420);
       public const string SCHEDULES_PATH = UI_PACKAGE_PATH + "/Schedules";
       public const string SCHEDULES_WINDOW_HEADER = "Schedules";
+      
+      // Window labels
+      public const string COLOR_PICKER = "Color Picker";
+      
+      // Window sizes
+      public static readonly Vector2 ColorPickerSize = new Vector2(300, 300);
    }
 }

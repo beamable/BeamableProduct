@@ -7,8 +7,9 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:VisualElement name="mainVisualElement">
-<!--        <beamable:BussElementHierarchyVisualElement name="hierarchy"/>-->
-        <beamable:LabeledColorPickerVisualElement name="colorPicker" label="Background color"/>
+        <engine:Label name="label"/>
+        <beamable:ColorPickerVisualElement name="colorField"/>
     </engine:VisualElement>
 
 </UXML>
+

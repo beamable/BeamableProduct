@@ -40,8 +40,11 @@ namespace Beamable.UI.BUSS
 		{
 			base.Refresh();
 
-			_hierarchy = Root.Q<BussElementHierarchyVisualElement>("hierarchy");
-			_hierarchy.Refresh();
+			// _hierarchy = Root.Q<BussElementHierarchyVisualElement>("hierarchy");
+			// _hierarchy.Refresh();
+
+			LabeledColorPickerVisualElement pickerVisualElement = Root.Q<LabeledColorPickerVisualElement>("colorPicker");
+			pickerVisualElement.Refresh();
 		}
 	}
 }
