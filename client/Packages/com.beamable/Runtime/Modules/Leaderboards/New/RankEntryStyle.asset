@@ -122,7 +122,7 @@ MonoBehaviour:
       property:
         type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_asset":{"instanceID":35130}}'
+        json: '{"_asset":{"instanceID":0}}'
     _selector: '#avatarImage'
   - _properties:
     - key: backgroundColor
