@@ -44,8 +44,9 @@ namespace Beamable.UI.Sdf.Styles {
             try {
                 value = JsonUtility.FromJson(json, sysType);
             }
-            catch (Exception e) {
-                Debug.LogException(e);
+            catch (Exception)
+            {
+	            value = null;
             }
         }
     }
