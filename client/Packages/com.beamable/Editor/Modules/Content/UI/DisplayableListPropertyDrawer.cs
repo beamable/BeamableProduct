@@ -17,14 +17,7 @@ namespace Beamable.Editor.Content.UI
          var subProp = property.FindPropertyRelative(list.GetListPropertyPath());
          if (subProp == null)
          {
-            Debug.Log("Its a null ref in the displayable list!");
-            Debug.Log("- " + property.propertyPath);
-            while (property.Next(true))
-            {
-               Debug.Log("--- " + property.propertyPath);
-            }
-
-            return 0;
+	         return 0;
          }
          return EditorGUI.GetPropertyHeight(subProp);
       }
