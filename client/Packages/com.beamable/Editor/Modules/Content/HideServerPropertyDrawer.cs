@@ -16,7 +16,7 @@ namespace Beamable.Editor.Content
       {
          if (!CanDisplay()) return 0;
 
-         var drawer = PropertyDrawerFinder.FindDrawerForProperty(property);
+         var drawer = PropertyDrawerFinder.FindDrawerForProperty(property, typeof(HideServerPropertyDrawer));
          if (drawer == null)
          {
 	         return EditorGUI.GetPropertyHeight(property);
@@ -51,8 +51,6 @@ namespace Beamable.Editor.Content
 	         position.height = height;
 	         drawer.OnGUI(position, property, label);
          }
-
-         // EditorGUI.PropertyField(position, property, label, true);
       }
 
       private bool CanDisplay()

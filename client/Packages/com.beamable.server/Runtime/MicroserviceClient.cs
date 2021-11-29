@@ -50,7 +50,7 @@ namespace Beamable.Server
 
       public static void SetPrefix(string prefix) => _prefix = prefix;
 
-      public static string SerializeArgument<T>(T arg)
+      public static string SerializeArgument(object arg)
       {
          // JSONUtility will serialize objects correctly, but doesn't handle primitives well.
          if (arg == null)

@@ -42,7 +42,7 @@ namespace Beamable.Server.Editor.CodeGen
       public static string GetTargetParameterClassName(MicroserviceDescriptor descriptor) =>
           $"MicroserviceParameters{descriptor.Name}Client";
 
-      public static string GetParameterClassName(Type parameterType) => $"Parameter{parameterType.Name}";
+      public static string GetParameterClassName(Type parameterType) => $"Parameter{string.Join("_", parameterType.Namespace.Split('.'))}_{parameterType.Name}";
       public static Type GetDataWrapperTypeForParameter(MicroserviceDescriptor descriptor, Type parameterType)
       {
           var name =
@@ -73,7 +73,7 @@ namespace Beamable.Server.Editor.CodeGen
 
           parameterClass = new CodeTypeDeclaration(TargetParameterClassName);
           parameterClass.IsClass = true;
-          parameterClass.TypeAttributes = TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable;
+          parameterClass.TypeAttributes = TypeAttributes.NotPublic | TypeAttributes.Sealed | TypeAttributes.Serializable;
           // parameterClass.BaseTypes.Add();
 
           targetClass.Comments.Add(new CodeCommentStatement($"<summary> A generated client for <see cref=\"{Descriptor.Type.FullName}\"/> </summary", true));
@@ -116,7 +116,7 @@ namespace Beamable.Server.Editor.CodeGen
           wrapper.IsClass = true;
           wrapper.CustomAttributes.Add(
               new CodeAttributeDeclaration(new CodeTypeReference(typeof(SerializableAttribute))));
-          wrapper.TypeAttributes = TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable;
+          wrapper.TypeAttributes = TypeAttributes.NotPublic | TypeAttributes.Sealed | TypeAttributes.Serializable;
           wrapper.BaseTypes.Add(
               new CodeTypeReference(typeof(MicroserviceClientDataWrapper<>).MakeGenericType(parameterType)));
 

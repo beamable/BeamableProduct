@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Content;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace Beamable.Server
@@ -17,7 +18,8 @@ namespace Beamable.Server
       /// </summary>
       /// <param name="apiRef"></param>
       /// <param name="variables">Optionally, you can pass variables to this call. If the api callback requires variables, and you don't pass sufficient variables, the call will fail.</param>
-      public static async Promise RequestApi(this ApiRef apiRef, ApiVariableBag variables=null)
+      public static async Promise RequestApi<T>(this ApiRef<T> apiRef, ApiVariableBag variables=null)
+	      where T : ApiContent, new()
       {
          var content = await apiRef.Resolve();
          await RequestApi(content, variables);
@@ -52,6 +54,7 @@ namespace Beamable.Server
          for (var i = 0; i < outputs.Length; i++)
          {
             outputs[i] = parameters[i].ResolveParameter(variableBag);
+            outputs[i] = Regex.Unescape(outputs[i]);
          }
          return outputs;
       }
@@ -64,12 +67,12 @@ namespace Beamable.Server
             var key = parameter.variableReference.Value.Name;
             if (variables.TryGetValue(key, out var raw))
             {
-               return raw?.ToString();
+	            return raw?.ToString();
             }
             else
             {
                Debug.LogWarning($"There is no variable for {key}. Sending null reference");
-               return null;
+               return null; 
             }
          }
 

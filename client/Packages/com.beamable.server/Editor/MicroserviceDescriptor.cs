@@ -43,7 +43,6 @@ namespace Beamable.Server.Editor
       public string Path;
       public HashSet<string> Scopes;
       public ClientCallableParameterDescriptor[] Parameters;
-      public Type ReturnType;
    }
 
    [Serializable]

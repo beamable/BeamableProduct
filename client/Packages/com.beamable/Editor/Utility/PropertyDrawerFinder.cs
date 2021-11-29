@@ -30,7 +30,7 @@ namespace Beamable.Editor
         /// <summary>
         /// Searches for custom property drawer for given property, or returns null if no custom property drawer was found.
         /// </summary>
-        public static PropertyDrawer FindDrawerForProperty( SerializedProperty property )
+        public static PropertyDrawer FindDrawerForProperty( SerializedProperty property, params Type[] skipTypes )
         {
             PropertyDrawer drawer;
             TypeAndFieldInfo tfi;
@@ -48,7 +48,7 @@ namespace Beamable.Editor
 
             if( !s_TypeVsDrawerCache.TryGetValue( tfi.type, out drawer ) )
             {
-                drawer = FindDrawerForType( tfi.type );
+                drawer = FindDrawerForType( tfi.type, skipTypes );
                 s_TypeVsDrawerCache.Add( tfi.type, drawer );
             }
 
@@ -152,11 +152,13 @@ namespace Beamable.Editor
         /// Returns custom property drawer for type if one could be found, or null if
         /// no custom property drawer could be found. Does not use cached values, so it's resource intensive.
         /// </summary>
-        public static PropertyDrawer FindDrawerForType( Type propertyType )
+        public static PropertyDrawer FindDrawerForType( Type propertyType, params Type[] skipTypes )
         {
             var cpdType = typeof(CustomPropertyDrawer);
             FieldInfo typeField = cpdType.GetField("m_Type", BindingFlags.NonPublic | BindingFlags.Instance);
             FieldInfo childField = cpdType.GetField("m_UseForChildren", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            var skipTypeSet = new HashSet<Type>(skipTypes);
 
             // Optimization note:
             // For benchmark (on DungeonLooter 0.8.4)
@@ -174,6 +176,9 @@ namespace Beamable.Editor
                     // Wappen optimization: filter only "*Drawer" class name, like "SomeTypeDrawer"
                     if( !candidate.Name.Contains( "Drawer" ) )
                         continue;
+
+                    if (skipTypeSet.Contains(candidate))
+	                    continue;
 
                     // See if this is a class that has [CustomPropertyDrawer( typeof( T ) )]
                     foreach( Attribute a in candidate.GetCustomAttributes( typeof( CustomPropertyDrawer ) ) )

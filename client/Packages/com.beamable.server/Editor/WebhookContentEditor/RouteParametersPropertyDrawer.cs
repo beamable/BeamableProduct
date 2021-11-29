@@ -95,7 +95,6 @@ namespace Beamable.Server.Editor
             position.y += height + 2;
 
             GUIStyle iconButtonStyle = GUI.skin.FindStyle("IconButton") ?? EditorGUIUtility.GetBuiltinSkin(EditorSkin.Inspector).FindStyle("IconButton");
-            //GUIContent content = new GUIContent(EditorGUIUtility.Load("icons/d__Popup.png") as Texture2D);
             GUIContent content = EditorGUIUtility.IconContent("_Popup");
             if (hasAnyVariables && EditorGUI.DropdownButton(buttonButton, content, FocusType.Keyboard,
                iconButtonStyle))
@@ -176,9 +175,9 @@ namespace Beamable.Server.Editor
 
             EditorDebouncer.Debounce("api-content-route-parameter", () =>
             {
-               var json = (string) typeof(MicroserviceClientHelper)
-                  .GetMethod(nameof(MicroserviceClientHelper.SerializeArgument), BindingFlags.Static | BindingFlags.Public)
-                  .MakeGenericMethod(info.ParameterType).Invoke(null, new object[] {nextValue});
+	            var json = (string) typeof(MicroserviceClientHelper)
+	                                .GetMethod(nameof(MicroserviceClientHelper.SerializeArgument), BindingFlags.Static | BindingFlags.Public)
+	                                .Invoke(null, new object[] {nextValue});
                info.rawProperty.stringValue = json;
                info.rawProperty.serializedObject.ApplyModifiedProperties();
                info.rawProperty.serializedObject.Update();
@@ -218,7 +217,7 @@ namespace Beamable.Server.Editor
             var variableHasValueProperty = variableOptionProperty.FindPropertyRelative(nameof(Optional.HasValue));
             var variableValueProperty = variableOptionProperty.FindPropertyRelative(nameof(Optional<string>.Value)).FindPropertyRelative(nameof(ApiVariableReference.Name));
 
-            SerializedRouteParameterInfo info = new SerializedRouteParameterInfo
+            var info = new SerializedRouteParameterInfo
             {
                Name = parameter.Name,
                property = property,

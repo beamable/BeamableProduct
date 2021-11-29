@@ -62,7 +62,7 @@ namespace Beamable.Server.Editor
             return _storageDescriptors;
          }
       }
-      
+
       public const string SERVICE_PUBLISHED_KEY = "service_published_{0}";
 
       public static void RefreshDescriptors()
@@ -177,7 +177,6 @@ namespace Beamable.Server.Editor
                Path = string.IsNullOrEmpty(attr.PathName) ? method.Name : attr.PathName,
                Scopes = attr.RequiredScopes,
                Parameters = parameters.ToArray(),
-               ReturnType = method.ReturnType // TODO: resolve the return type if it was a Promise<T> or Task<T> to just T
             });
          }
 
