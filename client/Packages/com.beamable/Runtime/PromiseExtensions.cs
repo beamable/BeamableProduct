@@ -1,79 +1,80 @@
+using Beamable.Common;
+using Beamable.Coroutines;
+using Beamable.Platform.SDK;
+using Beamable.Service;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Beamable.Common;
-using Beamable.Coroutines;
-using Beamable.Platform.SDK;
-using Beamable.Service;
 using UnityEngine;
 
 namespace Beamable
 {
-   public static class PromiseExtensions
-   {
+	public static class PromiseExtensions
+	{
 
-      private static HashSet<Task> _uncaughtTasks = new HashSet<Task>();
-      public static async Task WaitForAllUncaughtHandlers()
-      {
-         var tasks = _uncaughtTasks.ToArray();
-         await Task.WhenAll(tasks);
-      }
+		private static HashSet<Task> _uncaughtTasks = new HashSet<Task>();
+		public static async Task WaitForAllUncaughtHandlers()
+		{
+			var tasks = _uncaughtTasks.ToArray();
+			await Task.WhenAll(tasks);
+		}
 
-      /// <summary>
-      /// Registers Beamable's default Uncaught Promise Handler. This removes all other handlers  
-      /// </summary>
-      public static void RegisterBeamableDefaultUncaughtPromiseHandler(bool replaceExistingHandlers = true)
-      {
-         PromiseBase.SetPotentialUncaughtErrorHandler(PromiseBaseOnPotentialOnPotentialUncaughtError, replaceExistingHandlers);
-      }
-      private static void PromiseBaseOnPotentialOnPotentialUncaughtError(PromiseBase promise, Exception ex)
-      {
-         // we need to wait one frame before logging anything.
-         async Task DelayedCheck()
-         {
-            await Task.Yield();
-            // execute check.
-            if (!promise.HadAnyErrbacks)
-            {
-               Beamable.Common.BeamableLogger.LogException(new UncaughtPromiseException(promise, ex));
-            }
-         }
-         var t = DelayedCheck(); // we don't want to await this call.
-         _uncaughtTasks.Add(t);
-         t.ContinueWith(_ => _uncaughtTasks.Remove(t));
-      }
+		/// <summary>
+		/// Registers Beamable's default Uncaught Promise Handler. This removes all other handlers  
+		/// </summary>
+		public static void RegisterBeamableDefaultUncaughtPromiseHandler(bool replaceExistingHandlers = true)
+		{
+			PromiseBase.SetPotentialUncaughtErrorHandler(PromiseBaseOnPotentialOnPotentialUncaughtError, replaceExistingHandlers);
+		}
 
-      public static Promise<T> WaitForSeconds<T>(this Promise<T> promise, float seconds)
-      {
-         var result = new Promise<T>();
-         IEnumerator Wait()
-         {
-            yield return Yielders.Seconds(seconds);
-            promise.Then(x => result.CompleteSuccess(x));
-         };
+		private static void PromiseBaseOnPotentialOnPotentialUncaughtError(PromiseBase promise, Exception ex)
+		{
+			// we need to wait one frame before logging anything.
+			async Task DelayedCheck()
+			{
+				await Task.Yield();
+				// execute check.
+				if (!promise.HadAnyErrbacks)
+				{
+					Beamable.Common.BeamableLogger.LogException(new UncaughtPromiseException(promise, ex));
+				}
+			}
+			var t = DelayedCheck(); // we don't want to await this call.
+			_uncaughtTasks.Add(t);
+			t.ContinueWith(_ => _uncaughtTasks.Remove(t));
+		}
 
-         ServiceManager.Resolve<CoroutineService>().StartCoroutine(Wait());
+		public static Promise<T> WaitForSeconds<T>(this Promise<T> promise, float seconds)
+		{
+			var result = new Promise<T>();
+			IEnumerator Wait()
+			{
+				yield return Yielders.Seconds(seconds);
+				promise.Then(x => result.CompleteSuccess(x));
+			};
 
-         return result;
-      }
+			ServiceManager.Resolve<CoroutineService>().StartCoroutine(Wait());
 
-      public static CustomYieldInstruction ToYielder<T>(this Promise<T> self)
-      {
-         return new PromiseYieldInstruction<T>(self);
-      }
-   }
+			return result;
+		}
 
-   public class PromiseYieldInstruction<T> : CustomYieldInstruction
-   {
-      private readonly Promise<T> _promise;
+		public static CustomYieldInstruction ToYielder<T>(this Promise<T> self)
+		{
+			return new PromiseYieldInstruction<T>(self);
+		}
+	}
 
-      public PromiseYieldInstruction(Promise<T> promise)
-      {
-         _promise = promise;
-      }
+	public class PromiseYieldInstruction<T> : CustomYieldInstruction
+	{
+		private readonly Promise<T> _promise;
 
-      public override bool keepWaiting => !_promise.IsCompleted;
-   }
+		public PromiseYieldInstruction(Promise<T> promise)
+		{
+			_promise = promise;
+		}
+
+		public override bool keepWaiting => !_promise.IsCompleted;
+	}
 }
