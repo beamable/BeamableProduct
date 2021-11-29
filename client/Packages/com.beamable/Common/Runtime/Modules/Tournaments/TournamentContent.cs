@@ -230,10 +230,10 @@ namespace Beamable.Common.Tournaments
             {
                 name = "Winner",
                 tier = 0,
-                minRank = new OptionalInt { Value = 1},
-                maxRank = new OptionalInt { Value = 1},
-                stageMin = new OptionalInt { Value = 1},
-                stageMax = new OptionalInt { Value = 1},
+                minRank = new OptionalInt { HasValue = true, Value = 1},
+                maxRank = new OptionalInt { HasValue = true, Value = 1},
+                stageMin = new OptionalInt { HasValue = true, Value = 1},
+                stageMax = new OptionalInt { HasValue = true, Value = 1},
                 currencyRewards = new List<CurrencyAmount>()
             }
         };
@@ -246,9 +246,9 @@ namespace Beamable.Common.Tournaments
                 name = "Winner Score",
                 tier = 0,
                 minScore = 1.0,
-                maxScore = new OptionalDouble { Value = 1.0},
-                stageMin = new OptionalInt { Value = 1},
-                stageMax = new OptionalInt { Value = 1},
+                maxScore = new OptionalDouble { HasValue = true, Value = 1.0},
+                stageMin = new OptionalInt { HasValue = true, Value = 1},
+                stageMax = new OptionalInt { HasValue = true, Value = 1},
                 currencyRewards = new List<CurrencyAmount>()
             }
         };

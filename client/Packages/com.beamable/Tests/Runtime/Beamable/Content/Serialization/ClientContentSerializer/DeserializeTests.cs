@@ -320,7 +320,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    ""properties"": {
       ""sub"": { ""data"": { } }
    },
-}";
+}".Replace(Environment.NewLine, "").Replace(" ", "");
 
             var s = new TestSerializer();
             var o = s.Deserialize<NestedOptional>(json);
@@ -337,7 +337,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
    ""properties"": {
 
    },
-}";
+}".Replace(Environment.NewLine, "").Replace(" ", "");
 
             var s = new TestSerializer();
             var o = s.Deserialize<TestOptional>(json);

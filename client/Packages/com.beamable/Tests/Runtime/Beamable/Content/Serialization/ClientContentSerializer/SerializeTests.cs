@@ -230,7 +230,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
          var c = new OptionalContent
          {
             Id = "test.nothing",
-            maybeNumber = new OptionalInt { Value = 32}
+            maybeNumber = new OptionalInt { HasValue = true, Value = 32}
          };
          var expected = @"{
    ""id"": ""test.nothing"",
@@ -252,7 +252,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
          var c = new OptionalContent
          {
             Id = "test.nothing",
-            maybeNumber = new OptionalInt ()
+            maybeNumber = new OptionalInt { HasValue = false, Value = 32}
          };
          var expected = @"{
    ""id"": ""test.nothing"",
@@ -276,7 +276,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
             sub = new OptionalContent
             {
                Id = "sub.nothing",
-               maybeNumber = new OptionalInt { Value = 30}
+               maybeNumber = new OptionalInt { HasValue = true, Value = 30}
             }
          };
          var expected = @"{
@@ -304,7 +304,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
             sub = new OptionalContent
             {
                Id = "sub.nothing",
-               maybeNumber = new OptionalInt()
+               maybeNumber = new OptionalInt { HasValue = false, Value = 30}
             }
          };
          var expected = @"{

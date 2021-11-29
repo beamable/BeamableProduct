@@ -6,6 +6,7 @@ using Beamable.Platform.SDK;
 using Beamable;
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Serialization;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 using Beamable.Serialization.SmallerJSON;
@@ -33,7 +34,7 @@ namespace Beamable.Server
       {
 	      try
 	      {
-		      return JsonSerializer.ToJsonString(arg);
+		      return BeamableJson.Serialize(arg);
 	      }
 	      catch(Exception e)
 	      {
@@ -81,7 +82,7 @@ namespace Beamable.Server
       {
 	      try
 	      {
-		      return JsonSerializer.Deserialize<T>(json);
+		      return BeamableJson.Deserialize<T>(json);
 	      }
 	      catch(Exception e)
 	      {

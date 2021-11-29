@@ -10,6 +10,7 @@ namespace Beamable.Editor.Schedules
         {
             newSchedule.description = description;
             newSchedule.activeFrom = activeFrom;
+            newSchedule.activeTo.HasValue = !expires;
             newSchedule.activeTo.Value = activeTo;
         }
 

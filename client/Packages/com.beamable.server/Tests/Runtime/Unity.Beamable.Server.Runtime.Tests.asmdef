@@ -1,27 +1,35 @@
 {
-  "name": "Unity.Beamable.Server.Runtime.Tests",
-  "references": [
-    "Unity.Beamable",
-    "Beamable.Platform",
-    "Beamable.Coroutines",
-    "Beamable.Service",
-    "Beamable.Content",
-    "Beamable.JsonSerializable",
-    "Unity.Addressables",
-    "Unity.Beamable.Runtime.Common",
-    "Beamable.SmallerJSON",
-    "Unity.Beamable.Tests",
-    "Unity.Beamable.Server.Runtime"
-  ],
-  "optionalUnityReferences": [
-    "TestAssemblies"
-  ],
-  "includePlatforms": [
-  ],
-  "excludePlatforms": [],
-  "allowUnsafeCode": false,
-  "overrideReferences": false,
-  "precompiledReferences": [],
-  "autoReferenced": true,
-  "defineConstraints": []
+    "name": "Unity.Beamable.Server.Runtime.Tests",
+    "rootNamespace": "",
+    "references": [
+        "Unity.Beamable",
+        "Beamable.Platform",
+        "Beamable.Coroutines",
+        "Beamable.Service",
+        "Beamable.Content",
+        "Beamable.JsonSerializable",
+        "Unity.Addressables",
+        "Unity.Beamable.Runtime.Common",
+        "Beamable.SmallerJSON",
+        "Unity.Beamable.Tests",
+        "Unity.Beamable.Server.Runtime",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll",
+        "System.Runtime.CompilerServices.Unsafe.dll",
+        "Utf8Json.dll",
+        "System.Threading.Tasks.Extensions.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

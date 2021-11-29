@@ -136,12 +136,12 @@ namespace Utf8Json.Unity
 				    return;
 			    
 				result = JsonSerializer.ToJsonString(optional.GetValue());
-		    } 
+		    }
 		    else
 		    {
-			    result = JsonUtility.ToJson(value);
-		    }
-		    
+				result = JsonUtility.ToJson(value);
+			}
+
 		    byte[] buffer = System.Text.Encoding.UTF8.GetBytes(result);
 		    writer.WriteRaw(buffer);
 	    }
@@ -153,35 +153,40 @@ namespace Utf8Json.Unity
 			    return default(T);
 		    }
 
-
 		    byte[] bytes = reader.GetBufferUnsafe();
 		    var start = reader.GetCurrentOffsetUnsafe();
 		    var end = start;
-		    while (!reader.ReadIsEndObject() && end < bytes.Length)
+		    int startObjectCounter = reader.ReadIsBeginObject() ? 1 : 0;
+		    while (startObjectCounter > 0 && end < bytes.Length)
 		    {
 			    reader.ReadNext();
 			    end = reader.GetCurrentOffsetUnsafe() + 1;
+			    
+			    if (reader.ReadIsBeginObject())
+				    startObjectCounter++;
+			    if (reader.ReadIsEndObject())
+				    startObjectCounter--;
 		    }
 
 		    end = end > bytes.Length ? bytes.Length : end;
-		    
-		    var resultBytes = new byte[end - start];
-		    for (int i = 0; i < end-start; i++)
+
+		    int newBufforLen = end - start;
+		    var resultBytes = new byte[newBufforLen];
+		    for (int i = 0; i < newBufforLen; i++)
 		    {
 			    resultBytes[i] = bytes[start + i];
 		    }
 
 		    var str = System.Text.Encoding.UTF8.GetString(resultBytes);
-		    Debug.Log(str);
-		    if (typeof(T).IsSubclassOf(typeof(Optional)))
+		    var value = JsonUtility.FromJson<T>(str);
+
+		    if (value is Optional optional)
 		    {
-			    if (System.Activator.CreateInstance<T>() is Optional value)
-			    {
-				    var typde = value.GetOptionalType();
-				    var s = formatterResolver.GetFormatter<typeof(typoe)>()
-			    }
+			    optional.HasValue = optional.GetValue() != null;
+			    return (T)(object)optional;
 		    }
-		    return JsonUtility.FromJson<T>(str);
+
+		    return value;
 	    }
     }
     public sealed class Vector2Formatter : global::Utf8Json.IJsonFormatter<global::UnityEngine.Vector2>

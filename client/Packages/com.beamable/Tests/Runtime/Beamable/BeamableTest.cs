@@ -22,21 +22,6 @@ namespace Beamable.Tests.Runtime
       protected MockBeamableApi MockApi;
       protected MockPlatformService MockPlatform;
 
-      public BeamableTest()
-      {
-	      Utf8Json.Resolvers.CompositeResolver.RegisterAndSetAsDefault(
-		      new IJsonFormatter[] {PrimitiveObjectFormatter.Default},
-		      new[]
-		      {
-			      Utf8Json.Resolvers.BuiltinResolver.Instance,
-			      Utf8Json.Resolvers.CompositeResolver.Instance,
-			      Utf8Json.Resolvers.DynamicGenericResolver.Instance,
-			      Utf8Json.Resolvers.AttributeFormatterResolver.Instance,
-			      UnityResolver.Instance
-		      }
-	      );
-      }
-
       [SetUp]
       public void SetupBeamable()
       {
