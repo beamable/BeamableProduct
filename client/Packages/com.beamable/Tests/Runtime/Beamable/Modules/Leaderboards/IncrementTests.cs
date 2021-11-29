@@ -8,7 +8,6 @@ using Beamable.Common.Api.Leaderboards;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Tests.Runtime;
 using NUnit.Framework;
-using UnityEngine;
 using UnityEngine.TestTools;
 
 namespace Beamable.Tests.Modules.Leaderboards

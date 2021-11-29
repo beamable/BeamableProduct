@@ -6,19 +6,12 @@ using Beamable.Tests.Runtime;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
-using Utf8Json;
 
 namespace Beamable.Server.Tests.Runtime
 {
    public class RequestTests : BeamableTest
    {
       private const string ROUTE = "test";
-
-      protected override void OnSetupBeamable()
-      {
-	      base.OnSetupBeamable();
-	      Debug.Log(JsonSerializer.ToJsonString("hello world"));
-      }
 
       [UnityTest]
       public IEnumerator CanDeserializeList_OfInt()

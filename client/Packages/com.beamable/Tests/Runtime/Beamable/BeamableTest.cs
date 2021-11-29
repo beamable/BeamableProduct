@@ -1,14 +1,9 @@
-using System.Collections.Generic;
 using Beamable.Api;
-using Beamable.Api.Stats;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using Beamable.Platform.Tests;
 using NUnit.Framework;
 using Packages.Beamable.Runtime.Tests.Beamable;
-using Utf8Json;
-using Utf8Json.Formatters;
-using Utf8Json.Unity;
 
 namespace Beamable.Tests.Runtime
 {
