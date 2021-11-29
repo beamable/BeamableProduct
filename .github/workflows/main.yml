@@ -30,9 +30,7 @@ jobs:
           .cs$
     - name: Test all modified files
       run: |
-        for file in ${{ steps.changed-files.outputs.all_modified_files }}; do
-          dotnet-format --check -f --include $file
-        done
+        dotnet-format --check -f --include ${{ steps.changed-files.outputs.all_modified_files }}
   testMicroserviceBaseImage:
     timeout-minutes: 10
     runs-on: ubuntu-latest
