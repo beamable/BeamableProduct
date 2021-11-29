@@ -1,6 +1,7 @@
 ﻿using Beamable.Common.Leaderboards;
 using Beamable.Modules.Generics;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace Beamable.UI.Leaderboards
 {

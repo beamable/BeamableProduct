@@ -86,7 +86,7 @@ MonoBehaviour:
     _drawerMode: 1
   threshold: 0
   rounding: 0
-  backgroundSprite: {fileID: 21300000, guid: ab8c5efca4685474e8cbc9b40d513815, type: 3}
+  backgroundSprite: {fileID: 2800000, guid: 40224f1b624de49538af36f0a31b8f2f, type: 3}
   backgroundMode: 0
   meshFrame: 0
   outlineWidth: 0
@@ -799,11 +799,11 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 17.2
+  m_fontSize: 12.6
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
-  m_fontSizeMin: 12
+  m_fontSizeMin: 6
   m_fontSizeMax: 18
   m_fontStyle: 0
   m_HorizontalAlignment: 1

@@ -7,7 +7,7 @@ namespace Beamable.Modules.Generics
         public Action OnRefreshRequested;
         public Action OnRefresh;
 
-        public bool IsBusy { get; protected set; } = true;
+        protected bool IsBusy { get; set; } = true;
         
         public abstract void Initialize(params object[] initParams);
 
