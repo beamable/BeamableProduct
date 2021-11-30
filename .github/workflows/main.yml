@@ -125,4 +125,4 @@ jobs:
           certificate-password: ${{ secrets.P12_PASSWORD }}
           mobileprovision-path: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/BeamableProductProd.mobileprovision
           code-signing-identity: ${{ secrets.CODE_SIGNING_IDENTITY }}
-          team-id: ${{ secrets.TEAM_ID }}
+          team-id: A6C4565DLF
