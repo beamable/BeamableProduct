@@ -33,9 +33,8 @@ namespace DefaultNamespace
 
 	public class TestingSerialization : MonoBehaviour
 	{
-		public async void Start()
+		public void Start()
 		{
-			await Task.Delay(1500);
 			{
 				Debug.Log("Serialize OptionalInt with value 5:");
 				OptionalInt test = new OptionalInt {Value = 5, HasValue = true};
