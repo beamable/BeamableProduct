@@ -300,7 +300,7 @@ namespace Beamable.Server.Tests.Runtime
 
 	      MockRequester.MockRequest<OptionalInt>(Method.POST,
 	                                             client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
-	                   .WithRawResponse("{\"Value\": 12}");
+	                   .WithRawResponse("12");
 
 	      var req = client.Request<OptionalInt>( ROUTE, new string[] { });
 
