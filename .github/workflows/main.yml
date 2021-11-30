@@ -114,8 +114,8 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: Build-iOS
-      - name: Change directory to the location of the xcode project
-        run: cd iOS/
+      - name: Make build scripts executeable and change directory to the location of the xcode project
+        run: chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/MapFileParser.sh && cd iOS/
       - uses: yukiarrr/ios-build-action@v1.4.0
         with:
           update-targets: Unity-iPhone
