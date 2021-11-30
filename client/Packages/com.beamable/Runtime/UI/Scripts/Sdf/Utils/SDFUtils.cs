@@ -14,20 +14,20 @@ namespace Beamable.UI.Sdf
 		/// Packs SDFImage parameters in vertex data and adds quad to the vertex helper;
 		/// </summary>
 		public static void AddRect(this VertexHelper vh,
-		                           Quad2D position,
-		                           Quad2D uvs,
-		                           Quad2D backgroundUvs,
-		                           Quad2D coords,
-		                           ColorRect vertexColor,
-		                           Vector2 size,
-		                           float threshold,
-		                           float rounding,
-		                           float outlineWidth,
-		                           ColorRect outlineColor,
-		                           ColorRect shadowColor,
-		                           float shadowThreshold,
-		                           Vector2 shadowOffset,
-		                           float shadowSoftness)
+								   Quad2D position,
+								   Quad2D uvs,
+								   Quad2D backgroundUvs,
+								   Quad2D coords,
+								   ColorRect vertexColor,
+								   Vector2 size,
+								   float threshold,
+								   float rounding,
+								   float outlineWidth,
+								   ColorRect outlineColor,
+								   ColorRect shadowColor,
+								   float shadowThreshold,
+								   Vector2 shadowOffset,
+								   float shadowSoftness)
 		{
 			var normal = new Vector3(
 				threshold,
@@ -43,52 +43,52 @@ namespace Beamable.UI.Sdf
 				uvs.bottomLeft,
 				backgroundUvs.bottomLeft,
 				new Vector2(outlineWidth,
-				            PackRGBToFloat(outlineColor.BottomLeftColor)),
+							PackRGBToFloat(outlineColor.BottomLeftColor)),
 				coords.bottomLeft,
 				normal,
 				new Vector4(shadowSoftness, PackVector2ToFloat(shadowOffset.x, shadowOffset.y),
-				            PackVector3ToFloat(shadowThreshold, shadowColor.BottomLeftColor.a,
-				                               outlineColor.BottomLeftColor.a),
-				            PackRGBToFloat(shadowColor.BottomLeftColor)));
+							PackVector3ToFloat(shadowThreshold, shadowColor.BottomLeftColor.a,
+											   outlineColor.BottomLeftColor.a),
+							PackRGBToFloat(shadowColor.BottomLeftColor)));
 			vh.AddVert(
 				new Vector3(position.bottomRight.x, position.bottomRight.y, rounding),
 				ClipColorAlpha(vertexColor.BottomRightColor),
 				uvs.bottomRight,
 				backgroundUvs.bottomRight,
 				new Vector2(outlineWidth,
-				            PackRGBToFloat(outlineColor.BottomRightColor)),
+							PackRGBToFloat(outlineColor.BottomRightColor)),
 				coords.bottomRight,
 				normal,
 				new Vector4(shadowSoftness, PackVector2ToFloat(shadowOffset.x, shadowOffset.y),
-				            PackVector3ToFloat(shadowThreshold, shadowColor.BottomRightColor.a,
-				                               outlineColor.BottomRightColor.a),
-				            PackRGBToFloat(shadowColor.BottomRightColor)));
+							PackVector3ToFloat(shadowThreshold, shadowColor.BottomRightColor.a,
+											   outlineColor.BottomRightColor.a),
+							PackRGBToFloat(shadowColor.BottomRightColor)));
 			vh.AddVert(
 				new Vector3(position.topRight.x, position.topRight.y, rounding),
 				ClipColorAlpha(vertexColor.TopRightColor),
 				uvs.topRight,
 				backgroundUvs.topRight,
 				new Vector2(outlineWidth,
-				            PackRGBToFloat(outlineColor.TopRightColor)),
+							PackRGBToFloat(outlineColor.TopRightColor)),
 				coords.topRight,
 				normal,
 				new Vector4(shadowSoftness, PackVector2ToFloat(shadowOffset.x, shadowOffset.y),
-				            PackVector3ToFloat(shadowThreshold, shadowColor.TopRightColor.a,
-				                               outlineColor.TopRightColor.a),
-				            PackRGBToFloat(shadowColor.TopRightColor)));
+							PackVector3ToFloat(shadowThreshold, shadowColor.TopRightColor.a,
+											   outlineColor.TopRightColor.a),
+							PackRGBToFloat(shadowColor.TopRightColor)));
 			vh.AddVert(
 				new Vector3(position.topLeft.x, position.topLeft.y, rounding),
 				ClipColorAlpha(vertexColor.TopLeftColor),
 				uvs.topLeft,
 				backgroundUvs.topLeft,
 				new Vector2(outlineWidth,
-				            PackRGBToFloat(outlineColor.TopLeftColor)),
+							PackRGBToFloat(outlineColor.TopLeftColor)),
 				coords.topLeft,
 				normal,
 				new Vector4(shadowSoftness, PackVector2ToFloat(shadowOffset.x, shadowOffset.y),
-				            PackVector3ToFloat(shadowThreshold, shadowColor.TopLeftColor.a,
-				                               outlineColor.TopLeftColor.a),
-				            PackRGBToFloat(shadowColor.TopLeftColor)));
+							PackVector3ToFloat(shadowThreshold, shadowColor.TopLeftColor.a,
+											   outlineColor.TopLeftColor.a),
+							PackRGBToFloat(shadowColor.TopLeftColor)));
 
 			vh.AddTriangle(startVertexIndex, startVertexIndex + 3, startVertexIndex + 2);
 			vh.AddTriangle(startVertexIndex, startVertexIndex + 2, startVertexIndex + 1);
@@ -98,15 +98,15 @@ namespace Beamable.UI.Sdf
 		/// Adds quad to the vertex helper.
 		/// </summary>
 		private static void AddRect(this VertexHelper vh,
-		                            Quad2D position,
-		                            float z,
-		                            Quad2D uvs,
-		                            Quad2D coords,
-		                            ColorRect vertexColor,
-		                            Quad2D uvs1,
-		                            Vector2 uv2,
-		                            Vector3 normal,
-		                            Vector4 tangent)
+									Quad2D position,
+									float z,
+									Quad2D uvs,
+									Quad2D coords,
+									ColorRect vertexColor,
+									Quad2D uvs1,
+									Vector2 uv2,
+									Vector3 normal,
+									Vector4 tangent)
 		{
 			var startVertexIndex = vh.currentVertCount;
 			vh.AddVert(
