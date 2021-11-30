@@ -54,12 +54,11 @@ namespace Beamable.Server.Editor.ManagerClient
 
       public Promise<Unit> Deploy(ServiceManifest manifest)
       {
-         return Requester.Request<EmptyResponse>(Method.POST, $"{SERVICE}/manifest", new PostManifestRequest
-         {
-            comments = manifest.comments,
-            manifest = manifest.manifest,
-            storages = manifest.storages
-         }).ToUnit();
+	      var post = new PostManifestRequest
+	      {
+		      comments = manifest.comments, manifest = manifest.manifest, storages = manifest.storages
+	      };
+         return Requester.Request<EmptyResponse>(Method.POST, $"{SERVICE}/manifest", post).ToUnit();
       }
 
       public Promise<GetStatusResponse> GetStatus()
@@ -130,7 +129,7 @@ namespace Beamable.Server.Editor.ManagerClient
    public class ServiceDependency
    {
        public string type;
-       public string id; 
+       public string id;
    }
 
    [System.Serializable]
