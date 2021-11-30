@@ -321,6 +321,7 @@ namespace Beamable.CronExpression
                     var exp = s.Contains("#") ? s.Remove(s.IndexOf("#")) :
                         s.Contains("L") ? s.Replace("L", string.Empty) : s;
 
+                    exp = int.Parse(exp) + 1 >= 7 ? "0" : (int.Parse(exp) + 1).ToString();
                     return _culture.DateTimeFormat.GetDayName((DayOfWeek)Convert.ToInt32(exp));
                 }, s => string.Format(_localizationData.ComaEveryX0DaysOfTheWeek, s), s => _localizationData.ComaX0ThroughX1, s =>
                 {
@@ -695,17 +696,16 @@ namespace Beamable.CronExpression
         ///     Converts schedule definition into cron expression
         /// </summary>
         /// <param name="scheduleDefinition">Schedule definition</param>
-        /// <returns>The cron expression</returns>
+        /// <returns>The cron expression<returns>
         public static string ScheduleDefinitionToCron(ScheduleDefinition scheduleDefinition)
         {
             string Convert(IReadOnlyList<string> part)
             {
-	            int ConvertToInt(string text) => int.Parse(TryCutFirstZero(text));
-	            string TryCutFirstZero(string text) => text.Length == 2 && text.StartsWith("0") ? $"{text[1]}" : text;
+	            int ConvertToInt(string text) => int.Parse(text);
 
-	            if (part.Count == 1)
-		            return TryCutFirstZero(part[0]);
-	            
+	            if (part.Contains("*") && part.Count == 1)
+		            return part[0];
+
 	            var converted = string.Empty;
 	            var dashedStrings = new List<int>();
 	            
@@ -766,9 +766,7 @@ namespace Beamable.CronExpression
 		        {
 			        if (!subPart.Contains('-'))
 			        {
-				        finalList.Add(subPart.Length == 1 && subPart.Contains('*') && subPart.Contains('0') 
-					                      ? $"0{subPart}" 
-					                      : subPart);
+				        finalList.Add(subPart);
 				        continue;
 			        }
 			        
@@ -777,7 +775,7 @@ namespace Beamable.CronExpression
 			        var to = int.Parse(range[1]);
 
 			        for (int i = from; i <= to; i++)
-				        finalList.Add(i >= 0 && i < 10 ? $"0{i}" : $"{i}");
+				        finalList.Add($"{i}");
 		        }
 		        
 		        return finalList;
