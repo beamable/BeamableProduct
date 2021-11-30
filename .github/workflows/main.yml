@@ -109,13 +109,13 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 30
     needs: build
+    env:
+      USYM_UPLOAD_AUTH_TOKEN: foo
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
         with:
           name: Build-iOS
-      - name: Set a workaround environment variable for Unity builds to get past cloud diagnostics
-        run: export USYM_UPLOAD_AUTH_TOKEN="foo"
       - name: Make build scripts executeable and change directory to the location of the xcode project
         run: chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/process_symbols.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/MapFileParser.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/usymtool && cd iOS/
       - uses: yukiarrr/ios-build-action@v1.4.0
