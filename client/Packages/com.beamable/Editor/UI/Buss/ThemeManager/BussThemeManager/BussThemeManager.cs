@@ -28,13 +28,14 @@ namespace Beamable.UI.BUSS
 		{
 			BussThemeManager window = new BussThemeManager();
 			BeamablePopupWindow.ShowUtility(BeamableConstants.THEME_MANAGER, window, null,
-			                                BUSSConstants.HierarchyWindowSize);
+				BUSSConstants.ThemeManagerWindowSize);
 		}
 
 		private BussElementHierarchyVisualElement _hierarchy;
 
 		private BussThemeManager() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussThemeManager)}/{nameof(BussThemeManager)}") { }
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussThemeManager)}/{nameof(BussThemeManager)}")
+		{ }
 
 		public override void Refresh()
 		{
@@ -42,6 +43,10 @@ namespace Beamable.UI.BUSS
 
 			_hierarchy = Root.Q<BussElementHierarchyVisualElement>("hierarchy");
 			_hierarchy.Refresh();
+
+			// Just for testing
+			LabeledColorPickerVisualElement pickerVisualElement = Root.Q<LabeledColorPickerVisualElement>("colorPicker");
+			pickerVisualElement.Refresh();
 		}
 	}
 }
