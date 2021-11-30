@@ -19,11 +19,9 @@ namespace Beamable.Editor.UI.Components
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
-			readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
-				{name = "label", defaultValue = "Label"};
+			readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription { name = "label", defaultValue = "Label" };
 
-			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-			{
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription {
 				get { yield break; }
 			}
 
@@ -40,8 +38,7 @@ namespace Beamable.Editor.UI.Components
 		private ColorPickerVisualElement _colorPicker;
 		private Label _label;
 
-		public string Label
-		{
+		public string Label {
 			get;
 			set;
 		}
@@ -49,7 +46,8 @@ namespace Beamable.Editor.UI.Components
 		public Color SelectedColor => _colorPicker.SelectedColor;
 
 		public LabeledColorPickerVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledColorPickerVisualElement)}/{nameof(LabeledColorPickerVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledColorPickerVisualElement)}/{nameof(LabeledColorPickerVisualElement)}")
+		{ }
 
 		public override void Refresh()
 		{
@@ -57,7 +55,7 @@ namespace Beamable.Editor.UI.Components
 
 			_label = Root.Q<Label>("label");
 			_label.text = Label;
-			
+
 			_colorPicker = Root.Q<ColorPickerVisualElement>("colorField");
 			_colorPicker.Refresh();
 		}

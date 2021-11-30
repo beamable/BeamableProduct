@@ -34,7 +34,8 @@ namespace Beamable.UI.BUSS
 		private BussElementHierarchyVisualElement _hierarchy;
 
 		private BussThemeManager() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussThemeManager)}/{nameof(BussThemeManager)}") { }
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussThemeManager)}/{nameof(BussThemeManager)}")
+		{ }
 
 		public override void Refresh()
 		{

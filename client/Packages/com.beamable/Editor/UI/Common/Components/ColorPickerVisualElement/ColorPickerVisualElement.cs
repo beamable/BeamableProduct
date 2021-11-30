@@ -15,10 +15,10 @@ namespace Beamable.Editor.UI.Components
 		public new class UxmlFactory : UxmlFactory<ColorPickerVisualElement, UxmlTraits> { }
 
 		public ColorPickerVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(ColorPickerVisualElement)}/{nameof(ColorPickerVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(ColorPickerVisualElement)}/{nameof(ColorPickerVisualElement)}")
+		{ }
 
-		public Color SelectedColor
-		{
+		public Color SelectedColor {
 			get;
 			set;
 		}
