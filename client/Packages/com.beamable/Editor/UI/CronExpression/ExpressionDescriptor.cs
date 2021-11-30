@@ -321,7 +321,6 @@ namespace Beamable.CronExpression
                     var exp = s.Contains("#") ? s.Remove(s.IndexOf("#")) :
                         s.Contains("L") ? s.Replace("L", string.Empty) : s;
 
-                    exp = int.Parse(exp) + 1 >= 7 ? "0" : (int.Parse(exp) + 1).ToString();
                     return _culture.DateTimeFormat.GetDayName((DayOfWeek)Convert.ToInt32(exp));
                 }, s => string.Format(_localizationData.ComaEveryX0DaysOfTheWeek, s), s => _localizationData.ComaX0ThroughX1, s =>
                 {
