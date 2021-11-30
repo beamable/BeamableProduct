@@ -10,24 +10,10 @@ namespace Beamable.CronExpression
     /// </summary>
     public class ExpressionParser
     {
-        /* Cron reference
-    
-          ┌───────────── minute (0 - 59)
-          │ ┌───────────── hour (0 - 23)
-          │ │ ┌───────────── day of month (1 - 31)
-          │ │ │ ┌───────────── month (1 - 12)
-          │ │ │ │ ┌───────────── day of week (0 - 6) (Sunday to Saturday; 7 is also Sunday on some systems)
-          │ │ │ │ │
-          │ │ │ │ │
-          │ │ │ │ │
-          * * * * *  command to execute
-    
-         */
-
-        private readonly string _expression;
+	    private readonly string _expression;
         private readonly Options _options;
         private readonly CultureInfo _en_culture;
-        private readonly Regex _regex = new Regex(@"^\s*($|#|\w+\s*=|(\?|\*|(?:[0-5]?\d)(?:(?:-|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[0-5]?\d)(?:(?:-|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[01]?\d|2[0-3])(?:(?:-|\,)(?:[01]?\d|2[0-3]))?(?:,(?:[01]?\d|2[0-3])(?:(?:-|\,)(?:[01]?\d|2[0-3]))?)*)\s+(\?|\*|(?:0?[1-9]|[12]\d|3[01])(?:(?:-|\,)(?:0?[1-9]|[12]\d|3[01]))?(?:,(?:0?[1-9]|[12]\d|3[01])(?:(?:-|\,)(?:0?[1-9]|[12]\d|3[01]))?)*)\s+(\?|\*|(?:[1-9]|1[012])(?:(?:-|\,)(?:[1-9]|1[012]))?(?:L|W)?(?:,(?:[1-9]|1[012])(?:(?:-|\,)(?:[1-9]|1[012]))?(?:L|W)?)*|\?|\*|(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?(?:,(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(?:(?:-)(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC))?)*)\s+(\?|\*|(?:[1-7])(?:(?:-|\,|#)(?:[1-7]))?(?:L)?(?:,(?:[1-7])(?:(?:-|\,|#)(?:[1-7]))?(?:L)?)*|\?|\*|(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?(?:,(?:MON|TUE|WED|THU|FRI|SAT|SUN)(?:(?:-)(?:MON|TUE|WED|THU|FRI|SAT|SUN))?)*)(|\s)+(\?|\*|(?:|\d{4})(?:(?:-|\,)(?:|\d{4}))?(?:,(?:|\d{4})(?:(?:-|\,)(?:|\d{4}))?)*))$");
+        private readonly Regex _regex = new Regex(@"^\s*($|#|\w+\s*=|(\?|\*|(?:[0-5]?\d)(?:(?:-|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[0-5]?\d)(?:(?:-|\,)(?:[0-5]?\d))?(?:,(?:[0-5]?\d)(?:(?:-|\,)(?:[0-5]?\d))?)*)\s+(\?|\*|(?:[01]?\d|2[0-3])(?:(?:-|\,)(?:[01]?\d|2[0-3]))?(?:,(?:[01]?\d|2[0-3])(?:(?:-|\,)(?:[01]?\d|2[0-3]))?)*)\s+(\?|\*|(?:0?[1-9]|[12]\d|3[01])(?:(?:-|\,)(?:0?[1-9]|[12]\d|3[01]))?(?:,(?:0?[1-9]|[12]\d|3[01])(?:(?:-|\,)(?:0?[1-9]|[12]\d|3[01]))?)*)\s+(\?|\*|(?:[1-9]|1[012])(?:(?:-|\,)(?:[1-9]|1[012]))?(?:L|W)?(?:,(?:[1-9]|1[012])(?:(?:-|\,)(?:[1-9]|1[012]))?(?:L|W)?)*|\?|\*|(?:(?:-))?(?:,(?:(?:-))?)*)\s+(\?|\*|(?:[1-7])(?:(?:-|\,|#)(?:[1-7]))?(?:L)?(?:,(?:[1-7])(?:(?:-|\,|#)(?:[1-7]))?(?:L)?)*|\?|\*)(|\s)+(\?|\*|(?:|\d{4})(?:(?:-|\,)(?:|\d{4}))?(?:,(?:|\d{4})(?:(?:-|\,)(?:|\d{4}))?)*))$");
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="ExpressionParser" /> class
@@ -54,41 +40,10 @@ namespace Beamable.CronExpression
             if (string.IsNullOrEmpty(_expression))
             {
                 throw new FormatException($"Error: Field 'expression' not found.");
-                // errorData = new ErrorData("Field 'expression' not found.");
             }
 
             var expressionPartsTemp = _expression.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-            //       if (expressionPartsTemp.Length < 5)
-            //       {
-            //           throw new FormatException(string.Format(
-            //               "Error: Expression only has {0} parts.  At least 5 part are required.",
-            //               expressionPartsTemp.Length));
-            //       }
-            //
-            //       if (expressionPartsTemp.Length == 5)
-            //       {
-            //           //5 part cron so shift array past seconds element
-            //           Array.Copy(expressionPartsTemp, 0, parsed, 1, 5);
-            //       }
-            //       else if (expressionPartsTemp.Length == 6)
-            //       {
-            //           /* We will detect if this 6 part expression has a year specified and if so we will shift the parts and treat the 
-            //              first part as a minute part rather than a second part. 
-            //
-            //              Ways we detect:
-            //                1. Last part is a literal year (i.e. 2020)
-            //                2. 3rd or 5th part is specified as "?" (DOM or DOW)
-            //           */
-            //           var isYearWithNoSecondsPart = Regex.IsMatch(expressionPartsTemp[5], "\\d{4}$") ||
-            //                                         expressionPartsTemp[4] == "?" || expressionPartsTemp[2] == "?";
-            //
-            //           if (isYearWithNoSecondsPart)
-            //               // Shift parts over by one
-            //               Array.Copy(expressionPartsTemp, 0, parsed, 1, 6);
-            //           else
-            //               Array.Copy(expressionPartsTemp, 0, parsed, 0, 6);
-            //       }
+            
             if (expressionPartsTemp.Length != 7)
                 throw new FormatException($"Error: Expression has {expressionPartsTemp.Length} parts. Exactly 7 parts are required.");
 
@@ -169,24 +124,6 @@ namespace Beamable.CronExpression
 
             // Convert DOM '?' to '*'
             if (expressionParts[3] == "?") expressionParts[3] = "*";
-
-            // // Convert SUN-SAT format to 0-6 format
-            // for (var i = 0; i <= 6; i++)
-            // {
-            //     var currentDay = (DayOfWeek)i;
-            //     var currentDayOfWeekDescription = currentDay.ToString().Substring(0, 3).ToUpperInvariant();
-            //     expressionParts[5] = Regex.Replace(expressionParts[5], currentDayOfWeekDescription, i.ToString(),
-            //         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-            // }
-            //
-            // // Convert JAN-DEC format to 1-12 format
-            // for (var i = 1; i <= 12; i++)
-            // {
-            //     var currentMonth = new DateTime(DateTime.Now.Year, i, 1);
-            //     var currentMonthDescription = currentMonth.ToString("MMM", _en_culture).ToUpperInvariant();
-            //     expressionParts[4] = Regex.Replace(expressionParts[4], currentMonthDescription, i.ToString(),
-            //         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-            // }
 
             // Convert 0 second to (empty)
             if (expressionParts[0] == "0") expressionParts[0] = string.Empty;
