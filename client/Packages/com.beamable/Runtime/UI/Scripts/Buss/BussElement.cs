@@ -33,28 +33,24 @@ namespace Beamable.UI.Buss {
         public BussElement Parent => _parent;
 
         private IReadOnlyList<BussElement> _childrenReadOnly;
-        public IReadOnlyList<BussElement> Children => _childrenReadOnly ?? (_childrenReadOnly = _children.AsReadOnly());
-
-        public void AddClass(string id)
+        public IReadOnlyList<BussElement> Children
         {
-	        if (!_classes.Contains(id))
+	        get
 	        {
-		        _classes.Add(id);
+		        if (_childrenReadOnly == null)
+		        {
+			        if (_children == null)
+			        {
+				        _children = new List<BussElement>();
+			        }
+
+			        _childrenReadOnly = _children.AsReadOnly();
+		        }
+
+		        return _childrenReadOnly;
 	        }
-			
-	        OnStyleChanged();
         }
 
-        public void RemoveClass(string id)
-        {
-	        if (_classes.Contains(id))
-	        {
-		        _classes.Remove(id);
-	        }
-			
-	        OnStyleChanged();
-        }
-        
         public void RecalculateStyleSheets() {
             AllStyleSheets.Clear();
             AddParentStyleSheets(this);
