@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Publish loading bars
 
+## [0.17.4]
+### Fixed
+- Publish loading bars
+
 ## [0.17.3]
 ### Added
 - Add `IMicroserviceStatsApi.GetAllProtectedPlayerStats` method without filtering stats
