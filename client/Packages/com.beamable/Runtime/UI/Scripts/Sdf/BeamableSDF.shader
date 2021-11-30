@@ -108,8 +108,7 @@
                 o.shadowColor.a = tangentZ.y;
                 o.shadowSoftness = v.tangent.x;
                 o.shadowOffset.xy = floatToRG(v.tangent.y);
-                o.shadowOffset.z = v.tangent.z;
-                o.shadowOffset.z = (tangentZ.x - .5) * o.sizeNCoords.x;
+                o.shadowOffset.z = (tangentZ.x - .5) * 100;
                 return o;
             }
             
