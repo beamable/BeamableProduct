@@ -4,7 +4,7 @@ using UnityEditor;
 namespace UnityEngine
 {
    [CustomEditor(typeof(StatBehaviour), true)]
-   public class StatEditor : Editor
+   public class StatEditor : UnityEditor.Editor
    {
       public override void OnInspectorGUI()
       {

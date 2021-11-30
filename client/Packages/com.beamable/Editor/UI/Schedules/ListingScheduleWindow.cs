@@ -313,10 +313,20 @@ namespace Beamable.Editor.Schedules
         private void OnModeChanged(int option)
         {
             _currentModel = _models[option];
+
+			bool isDatesVisible = _currentModel?.Mode == ScheduleWindowModel.WindowMode.Dates;
+
+			if (isDatesVisible)
+				_calendarComponent.Calendar.SetDefaultValues();
+
+			_neverExpiresComponent.EnableInClassList("hidden", isDatesVisible);
+			_activeToDateComponent.EnableInClassList("hidden", isDatesVisible);
+			_activeToHourComponent.EnableInClassList("hidden", isDatesVisible);
+
             _currentModel.ForceValidationCheck();
             RefreshGroups();
             PerformPeriodValidation();
-        }
+		}
 
         private List<string> PrepareOptions()
         {
