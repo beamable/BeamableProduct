@@ -1,4 +1,5 @@
-﻿using Beamable.Common.Api.Leaderboards;
+﻿using Beamable.Common;
+using Beamable.Common.Api.Leaderboards;
 using Beamable.Constats;
 using System.Collections.Generic;
 using UnityEngine;
@@ -20,11 +21,26 @@ namespace Beamable.UI.Leaderboards
 			};
 		}
 
+		public static Promise<List<RankEntry>> GetTestData(int firstEntryId,
+		                                                   int lastEntryId,
+		                                                   RankEntry currentUserRankEntry,
+		                                                   string statKey,
+		                                                   string defaultValue)
+		{
+			List<RankEntry> rankEntries =
+				GenerateLeaderboardsTestData(firstEntryId, lastEntryId, currentUserRankEntry, statKey, defaultValue);
+
+			Promise<List<RankEntry>> promise = new Promise<List<RankEntry>>();
+			promise.CompleteSuccess(rankEntries);
+
+			return promise;
+		}
+
 		public static List<RankEntry> GenerateLeaderboardsTestData(int firstId,
-		                                                           int lastId,
-		                                                           RankEntry currentUserEntry,
-		                                                           string statKey,
-		                                                           string statDefaultValue)
+		                                                            int lastId,
+		                                                            RankEntry currentUserEntry,
+		                                                            string statKey,
+		                                                            string statDefaultValue)
 		{
 			List<RankEntry> entries = new List<RankEntry>();
 

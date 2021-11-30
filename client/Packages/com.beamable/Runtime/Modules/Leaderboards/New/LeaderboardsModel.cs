@@ -17,9 +17,10 @@ namespace Beamable.UI.Leaderboards
 
 		private IBeamableAPI _api;
 		private LeaderboardService _leaderboardService;
-		private LeaderBoardView _currentLeaderboardView;
 		private LeaderboardRef _leaderboardRef;
-		private int _entriesPerPage;
+		private StatObject _aliasStatObject;
+		private int _firstEntryId;
+		private int _entriesAmount;
 		private bool _testMode;
 		private long _dbid;
 
@@ -35,46 +36,42 @@ namespace Beamable.UI.Leaderboards
 			private set;
 		}
 
-		public int FirstEntryId
-		{
-			get;
-			private set;
-		}
-
-		public StatObject AliasStatObject
-		{
-			get;
-			private set;
-		}
-
-		private int LastEntryId => FirstEntryId + _entriesPerPage;
+		private int LastEntryId => _firstEntryId + _entriesAmount;
 
 		public override async void Initialize(params object[] initParams)
 		{
 			_leaderboardRef = (LeaderboardRef)initParams[0];
-			_entriesPerPage = (int)initParams[1];
-			_entriesPerPage = Mathf.Clamp(_entriesPerPage, 1, Int32.MaxValue);
+			_entriesAmount = (int)initParams[1];
+			_entriesAmount = Mathf.Clamp(_entriesAmount, 1, Int32.MaxValue);
 			_testMode = (bool)initParams[2];
 
-			AliasStatObject = AccountManagementConfiguration.Instance.DisplayNameStat;
-			FirstEntryId = 1;
+			_aliasStatObject = AccountManagementConfiguration.Instance.DisplayNameStat;
+			_firstEntryId = 1;
 
-			Assert.IsNotNull(_leaderboardRef, "Leaderboard Ref has not been set");
-			Assert.IsNotNull(AliasStatObject, "Display Name Stat in Project Settings/Beamable/Account Management has not been set");
+			Validate();
 
 			_api = await Beamable.API.Instance;
 			_dbid = _api.User.id;
 			_leaderboardService = _api.LeaderboardService;
 
-			await _leaderboardService.GetUser(_leaderboardRef, _dbid).Then(rankEntry =>
+			if (!_testMode)
 			{
-				CurrentUserRankEntry = !_testMode
-					? rankEntry
-					: LeaderboardsModelHelper.GenerateCurrentUserRankEntryTestData(
-						AliasStatObject.StatKey, AliasStatObject.DefaultValue);
-			});
+				await _leaderboardService.GetUser(_leaderboardRef, _dbid).Then(OnUserRankEntryReceived);
+				await _leaderboardService.GetBoard(_leaderboardRef, _firstEntryId, LastEntryId).Then(OnLeaderboardReceived);
+			}
+			else
+			{
+				CurrentUserRankEntry =
+					LeaderboardsModelHelper.GenerateCurrentUserRankEntryTestData(
+						_aliasStatObject.StatKey, _aliasStatObject.DefaultValue);
 
-			await _leaderboardService.GetBoard(_leaderboardRef, FirstEntryId, LastEntryId).Then(OnLeaderboardReceived);
+				CurrentRankEntries = LeaderboardsModelHelper.GenerateLeaderboardsTestData(
+					_firstEntryId, LastEntryId, CurrentUserRankEntry,
+					_aliasStatObject.StatKey,
+					_aliasStatObject.DefaultValue);
+				
+				InvokeRefresh();
+			}
 		}
 
 		public void ScrollToTopButtonClicked()
@@ -87,17 +84,25 @@ namespace Beamable.UI.Leaderboards
 			OnScrollRefresh?.Invoke();
 		}
 
+		private void OnUserRankEntryReceived(RankEntry rankEntry)
+		{
+			CurrentUserRankEntry = rankEntry;
+		}
+
 		private void OnLeaderboardReceived(LeaderBoardView leaderboardView)
 		{
-			_currentLeaderboardView = leaderboardView;
-
-			CurrentRankEntries = !_testMode
-				? _currentLeaderboardView.ToList()
-				: LeaderboardsModelHelper.GenerateLeaderboardsTestData(FirstEntryId, LastEntryId, CurrentUserRankEntry,
-				                                                       AliasStatObject.StatKey,
-				                                                       AliasStatObject.DefaultValue);
-
+			CurrentRankEntries = leaderboardView.ToList();
 			InvokeRefresh();
+		}
+
+		private void Validate()
+		{
+			if (!_testMode)
+			{
+				Assert.IsFalse(string.IsNullOrEmpty(_leaderboardRef.Id), "Leaderboard Ref has not been set");
+			}
+
+			Assert.IsNotNull(_aliasStatObject, "Display Name Stat in Project Settings/Beamable/Account Management has not been set");
 		}
 	}
 }

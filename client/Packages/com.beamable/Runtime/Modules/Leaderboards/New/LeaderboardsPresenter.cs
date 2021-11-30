@@ -8,7 +8,7 @@ namespace Beamable.UI.Leaderboards
 	{
 #pragma warning disable CS0649
 		[SerializeField] private LeaderboardRef _leaderboardRef;
-		[SerializeField] private int _entriesPerPage;
+		[SerializeField] private int _entriesAmount;
 		[SerializeField] private GenericButton _topButton;
 		[SerializeField] private LeaderboardsRankEntriesPresenter _rankEntries;
 		[SerializeField] private LeaderboardsRankEntryPresenter _currentUserRankEntry;
@@ -26,7 +26,7 @@ namespace Beamable.UI.Leaderboards
 				Debug.LogWarning($"Use are using {name} in test mode");
 			}
 			
-			Model.Initialize(_leaderboardRef, _entriesPerPage, _testMode);
+			Model.Initialize(_leaderboardRef, _entriesAmount, _testMode);
 
 			Model.OnScrollRefresh += OnScrollRefresh;
 
