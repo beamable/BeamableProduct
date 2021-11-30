@@ -28,7 +28,7 @@ namespace Beamable.UI.BUSS
 		{
 			BussThemeManager window = new BussThemeManager();
 			BeamablePopupWindow.ShowUtility(BeamableConstants.THEME_MANAGER, window, null,
-			                                BUSSConstants.HierarchyWindowSize);
+				BUSSConstants.ThemeManagerWindowSize);
 		}
 
 		private BussElementHierarchyVisualElement _hierarchy;
@@ -40,9 +40,10 @@ namespace Beamable.UI.BUSS
 		{
 			base.Refresh();
 
-			// _hierarchy = Root.Q<BussElementHierarchyVisualElement>("hierarchy");
-			// _hierarchy.Refresh();
+			_hierarchy = Root.Q<BussElementHierarchyVisualElement>("hierarchy");
+			_hierarchy.Refresh();
 
+			// Just for testing
 			LabeledColorPickerVisualElement pickerVisualElement = Root.Q<LabeledColorPickerVisualElement>("colorPicker");
 			pickerVisualElement.Refresh();
 		}

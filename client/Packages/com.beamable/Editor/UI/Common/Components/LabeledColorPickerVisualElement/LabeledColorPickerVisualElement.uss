@@ -3,17 +3,17 @@
     flex-direction: row;
     align-items: center;
     height: 50px;
-    justify-content: center;
 }
 
 #label {
     padding-left: 20px;
     width: 120px;
-    height: 50px;
 }
 
 #colorField {
-    /*justify-content: center;*/
-    /*flex-grow: 1;*/
-    /*flex-shrink: 1;*/
+    padding-top: 2px;
+    min-width: 100px;
+    justify-content: center;
+    flex-grow: 1;
+    flex-shrink: 1;
 }
