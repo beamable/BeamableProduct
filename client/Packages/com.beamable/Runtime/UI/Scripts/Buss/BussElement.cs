@@ -50,6 +50,25 @@ namespace Beamable.UI.Buss {
 		        return _childrenReadOnly;
 	        }
         }
+        
+        public void AddClass(string id)
+        {
+	        if (!_classes.Contains(id))
+	        {
+		        _classes.Add(id);
+		        OnStyleChanged();
+	        }
+	        
+        }
+
+        public void RemoveClass(string id)
+        {
+	        if (_classes.Contains(id))
+	        {
+		        _classes.Remove(id);
+		        OnStyleChanged();
+	        }
+        }
 
         public void RecalculateStyleSheets() {
             AllStyleSheets.Clear();
