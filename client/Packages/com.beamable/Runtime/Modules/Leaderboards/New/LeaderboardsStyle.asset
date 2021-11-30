@@ -18,7 +18,7 @@ MonoBehaviour:
       property:
         type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_color":{"r":0.8784313797950745,"g":0.5921568870544434,"b":0.19607843458652497,"a":1.0}}'
+        json: '{"_color":{"r":0.9716981053352356,"g":0.596721887588501,"b":0.07791920006275177,"a":1.0}}'
     _selector: '#leaderboardsBackground'
   - _properties:
     - key: backgroundColor

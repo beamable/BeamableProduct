@@ -41,12 +41,6 @@ namespace Beamable.UI.Leaderboards
 			private set;
 		}
 
-		public bool Configured
-		{
-			get;
-			private set;
-		}
-
 		public StatObject AliasStatObject
 		{
 			get;
@@ -80,36 +74,6 @@ namespace Beamable.UI.Leaderboards
 						AliasStatObject.StatKey, AliasStatObject.DefaultValue);
 			});
 
-			await _leaderboardService.GetBoard(_leaderboardRef, FirstEntryId, LastEntryId).Then(OnLeaderboardReceived);
-		}
-
-		public async void NextPageClicked()
-		{
-			if (IsBusy)
-			{
-				return;
-			}
-
-			InvokeRefreshRequested();
-			FirstEntryId += _entriesPerPage;
-			await _leaderboardService.GetBoard(_leaderboardRef, FirstEntryId, LastEntryId).Then(OnLeaderboardReceived);
-		}
-
-		public async void PreviousPageClicked()
-		{
-			if (IsBusy)
-			{
-				return;
-			}
-
-			if (FirstEntryId <= 1)
-			{
-				return;
-			}
-
-			InvokeRefreshRequested();
-			FirstEntryId -= _entriesPerPage;
-			FirstEntryId = Mathf.Clamp(FirstEntryId, 1, Int32.MaxValue);
 			await _leaderboardService.GetBoard(_leaderboardRef, FirstEntryId, LastEntryId).Then(OnLeaderboardReceived);
 		}
 

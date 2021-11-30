@@ -5,6 +5,7 @@ using Beamable.Constats;
 using Beamable.Modules.Generics;
 using Beamable.Stats;
 using Beamable.UI.Buss;
+using Modules.Leaderboards.New;
 using TMPro;
 using UnityEngine;
 
@@ -55,5 +56,17 @@ namespace Beamable.UI.Leaderboards
 		            break;
             }
         }
+	    
+	    public class PoolData : PoolableScrollView.IItem
+	    {
+		    public RankEntry RankEntry;
+		    private float _height;
+
+		    public float Height
+		    {
+			    get => _height;
+			    set => _height = value;
+		    }
+	    }
     }
 }
