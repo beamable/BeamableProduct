@@ -5,10 +5,11 @@
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
-    <engine:VisualElement name="mainVisualElement">
-        <engine:VisualElement name="navigation"/>
-        <engine:VisualElement name="divider"/>
-        <engine:VisualElement name="styles"/>
+    <engine:VisualElement name="hierarchyContainer">
+        <engine:VisualElement name="header">
+            <engine:TextElement text="Navigation"/>
+        </engine:VisualElement>
+        <engine:ScrollView name="scrollView"/>
     </engine:VisualElement>
 
 </UXML>

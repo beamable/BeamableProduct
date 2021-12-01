@@ -3,7 +3,6 @@ using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
 using Editor.UI.BUSS;
 using UnityEditor;
-using UnityEngine;
 using UnityEngine.UI;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -31,7 +30,8 @@ namespace Beamable.UI.BUSS
 				BUSSConstants.ThemeManagerWindowSize);
 		}
 
-		private BussElementHierarchyVisualElement _hierarchy;
+		private VisualElement _navigationGroup;
+		private VisualElement _stylesGroup;
 
 		private BussThemeManager() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussThemeManager)}/{nameof(BussThemeManager)}")
@@ -41,12 +41,16 @@ namespace Beamable.UI.BUSS
 		{
 			base.Refresh();
 
-			_hierarchy = Root.Q<BussElementHierarchyVisualElement>("hierarchy");
-			_hierarchy.Refresh();
+			_navigationGroup = Root.Q<VisualElement>("navigation");
+			_stylesGroup = Root.Q<VisualElement>("styles");
+			
+			ComponentBasedHierarchyVisualElement<Text> hierarchyComponent = new ComponentBasedHierarchyVisualElement<Text>();
+			hierarchyComponent.Refresh();
+			_navigationGroup.Add(hierarchyComponent);
 
-			// Just for testing
-			LabeledColorPickerVisualElement pickerVisualElement = Root.Q<LabeledColorPickerVisualElement>("colorPicker");
-			pickerVisualElement.Refresh();
+			BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
+			styleCard.Refresh();
+			_stylesGroup.Add(styleCard);
 		}
 	}
 }
