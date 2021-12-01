@@ -1,10 +1,10 @@
+using UnityEngine;
+using UnityEditor;
+using UnityEngine.SceneManagement;
+using UnityEditor.SceneManagement;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using UnityEditor;
-using UnityEditor.SceneManagement;
-using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace Beamable.Assets.Editor
 {
@@ -92,7 +92,7 @@ namespace Beamable.Assets.Editor
 			{
 				EditorUtility.DisplayProgressBar("Searching Prefabs", "", 0.0f);
 				EditorUtility.DisplayCancelableProgressBar("Searching Prefabs", "Found " + files.Length + " prefabs",
-														   0.0f);
+				                                           0.0f);
 
 				Scene currentScene = EditorSceneManager.GetActiveScene();
 				string scenePath = currentScene.path;
@@ -105,7 +105,7 @@ namespace Beamable.Assets.Editor
 				if (!UnityEditorInternal.InternalEditorUtility.inBatchMode)
 				{
 					if (EditorUtility.DisplayCancelableProgressBar("Processing Prefabs " + i + "/" + files.Length,
-																   prefabPath, (float)i / (float)files.Length))
+					                                               prefabPath, (float)i / (float)files.Length))
 						break;
 				}
 
