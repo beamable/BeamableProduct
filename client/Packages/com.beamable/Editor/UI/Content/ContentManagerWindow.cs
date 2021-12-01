@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Threading.Tasks;
 using System.Linq;
 using Beamable.Common.Api.Auth;
@@ -588,28 +589,33 @@ namespace Beamable.Editor.Content
           
           var serverManifest = await api.ContentIO.FetchManifest();
 
-          string contentPath = "Beamable/Resources/Baked/Content";
-          string resourcesPath = Path.Combine(Application.dataPath, contentPath);
-          Directory.CreateDirectory(resourcesPath);
+          string assetsPath = Path.Combine(Application.streamingAssetsPath, "bakedContent.zip");
+          Directory.CreateDirectory(Application.streamingAssetsPath);
           
-          // bake to separate json files
-          try
+          using (var memoryStream = new MemoryStream())
           {
-	          foreach (var content in contentList)
-	          {
-		          var version = serverManifest.References.Find(reference => reference.Id == content.Id).Version;
-		          content.SetIdAndVersion(content.Id, version);
-		          string path = Path.Combine(resourcesPath, content.Id + ".bytes");
-		          var compressed = Gzip.Compress(content.ToJson());
-		          File.WriteAllBytes(path, compressed);
+              using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+              {
+                  foreach (var content in contentList)
+                  {    
+                      var version = serverManifest.References.Find(reference => reference.Id == content.Id).Version;
+                      content.SetIdAndVersion(content.Id, version);
+                      
+                      var entry = archive.CreateEntry(content.Id);
+                      using var entryStream = entry.Open();
+                      using var streamWriter = new StreamWriter(entryStream);
+                      await streamWriter.WriteAsync(content.ToJson());
+                  }
+              }
+
+              using (var fileStream = new FileStream(assetsPath, FileMode.Create))
+              {
+                  memoryStream.Seek(0, SeekOrigin.Begin);
+                  await memoryStream.CopyToAsync(fileStream);
               }
           }
-          catch (Exception e)
-          {
-	          Debug.LogError($"Failed to write baked content: {e.Message}");
-          }
           
-          BakeLog($"Baked {contentList.Count} content objects to '{contentPath}'");
+          BakeLog($"Baked {contentList.Count} content objects to '{assetsPath}'");
       }
    }
 }

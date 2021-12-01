@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Content;
@@ -92,8 +93,6 @@ namespace Beamable.Content
                 return promise;
             }
             
-            Debug.LogError("CDN");
-            
             // Finally, if not found, fetch the content from the CDN
             PlatformLogger.Log(
                 $"ContentCache: Fetching content from CDN for {requestedInfo.contentId}: version: {requestedInfo.version}");
@@ -147,24 +146,31 @@ namespace Beamable.Content
         {
             contentObject = null;
             
-            string bakedContentPath = "Baked/Content";
-            string resourcePath = Path.Combine(bakedContentPath, info.contentId);
-            var fileContent = Resources.Load<TextAsset>(resourcePath);
-            
-            if (fileContent == null)
+            // extract content archive if available
+            string contentPath = Path.Combine(Application.streamingAssetsPath, "bakedContent.zip");
+            string extractPath = Application.streamingAssetsPath + "/Baked/Content";
+            if (File.Exists(contentPath) && !Directory.Exists(extractPath))
             {
-                return false;
+                ZipFile.ExtractToDirectory(contentPath, extractPath);
+#if !UNITY_EDITOR
+                File.Delete(contentPath);
+#endif
             }
             
-            var json = Gzip.Decompress(fileContent.bytes);
+            string resourcePath = Path.Combine(extractPath, info.contentId);
+            if (File.Exists(resourcePath))
+            {
+                var json = File.ReadAllText(resourcePath);
+                contentObject = _serializer.Deserialize<TContent>(json);
+                if (contentObject == null || contentObject.Version != info.version)
+                {
+                    return false;
+                }
 
-            contentObject = _serializer.Deserialize<TContent>(json);
-            if (contentObject.Version != info.version)
-            {
-                return false;
+                return true;
             }
             
-            return true;
+            return false;
         }
 
         private static void SaveToDisk(ClientContentInfo info, string raw, IBeamableFilesystemAccessor fsa)
