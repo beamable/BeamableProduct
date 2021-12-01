@@ -4,14 +4,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unpublished]
 
+## [Unpublished]
 ### Added
 - Folding/Unfolding services cards in `Microservice Manager`
+- Api Content classes and execution methods to invoke Microservices through data
+
+
+## [0.17.4]
+### Fixed
+- Publish loading bars
+
+## [0.17.4]
+### Fixed
+- Publish loading bars
+
+## [0.17.3]
+### Added
+- Add `IMicroserviceStatsApi.GetAllProtectedPlayerStats` method without filtering stats
 
 ### Fixed
+- Filters now work for `IMicroserviceStatsApi.GetProtectedPlayerStats`
+
+## [0.17.2]
+### Fixed
 - Store Microservice window height between reloads
-- Ability to send JSON strings as input parameters to `ClientCallable` methods
+- Serialization support for `Vetor2Int` and `Vector3Int` as input parameters to `ClientCallable` methods
+- Serialization support for raw JSON strings as input parameters to `ClientCallable` methods
 
 ## [0.17.1]
 - no changes

@@ -12,4 +12,9 @@ namespace Beamable.Common.Content
       [ContentField("write_self")]
       public bool writeSelf;
    }
+   
+   [System.Serializable]
+   [Agnostic]
+   public class OptionalClientPermissions : Optional<ClientPermissions> {}
+   
 }

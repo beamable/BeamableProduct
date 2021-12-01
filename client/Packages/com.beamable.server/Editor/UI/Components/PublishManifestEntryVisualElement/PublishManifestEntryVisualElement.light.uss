@@ -1,0 +1,19 @@
+﻿.manifestRow.oddRow {
+    background-color: #B4B4B4;
+}
+
+#nameMS, .SubTitleText {
+    color: #111111;
+}
+
+.microserviceImage {
+    background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Microservice_dark.png");
+}
+
+.storageImage {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/Database_Dark.png");
+}
+
+.unpublished {
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Checked_Dark.png");
+}

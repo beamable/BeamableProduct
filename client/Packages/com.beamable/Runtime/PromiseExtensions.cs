@@ -21,9 +21,12 @@ namespace Beamable
          await Task.WhenAll(tasks);
       }
 
-      public static void RegisterUncaughtPromiseHandler()
+      /// <summary>
+      /// Registers Beamable's default Uncaught Promise Handler. This removes all other handlers  
+      /// </summary>
+      public static void RegisterBeamableDefaultUncaughtPromiseHandler(bool replaceExistingHandlers = true)
       {
-         PromiseBase.SetPotentialUncaughtErrorHandler(PromiseBaseOnPotentialOnPotentialUncaughtError);
+         PromiseBase.SetPotentialUncaughtErrorHandler(PromiseBaseOnPotentialOnPotentialUncaughtError, replaceExistingHandlers);
       }
 
       private static void PromiseBaseOnPotentialOnPotentialUncaughtError(PromiseBase promise, Exception ex)

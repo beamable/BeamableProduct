@@ -15,13 +15,17 @@ namespace Beamable.Editor.Content.UI
       {
          var list = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property) as DisplayableList;
          var subProp = property.FindPropertyRelative(list.GetListPropertyPath());
+         if (subProp == null)
+         {
+	         return 0;
+         }
          return EditorGUI.GetPropertyHeight(subProp);
       }
 
       public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
       {
          var list = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property) as DisplayableList;
-         
+
          label.tooltip = PropertyDrawerHelper.SetTooltipWithFallback(fieldInfo, property);
 
          var subProp = property.FindPropertyRelative(list.GetListPropertyPath());
