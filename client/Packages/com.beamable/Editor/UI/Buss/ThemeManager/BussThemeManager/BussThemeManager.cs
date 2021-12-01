@@ -47,6 +47,9 @@ namespace Beamable.UI.BUSS
 			// Just for testing
 			LabeledColorPickerVisualElement pickerVisualElement = Root.Q<LabeledColorPickerVisualElement>("colorPicker");
 			pickerVisualElement.Refresh();
+
+			LabeledSpritePickerVisualElement spritePickerVisualElement = Root.Q<LabeledSpritePickerVisualElement>("imagePicker");
+			spritePickerVisualElement.Refresh();
 		}
 	}
 }
