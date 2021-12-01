@@ -11,7 +11,6 @@ namespace Beamable.Common.Content
     [Agnostic]
     public abstract class Optional
     {
-	    [NonSerialized]
         public bool HasValue;
         public abstract object GetValue();
 
