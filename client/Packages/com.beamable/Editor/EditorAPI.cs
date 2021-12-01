@@ -13,6 +13,7 @@ using Beamable.Editor.Config;
 using Beamable.Editor.Modules.Account;
 using Beamable.Editor.Realms;
 using Common.Runtime.BeamHints;
+using Editor.BeamableAssistant;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.VersionControl;
@@ -51,6 +52,9 @@ namespace Beamable.Editor
       /// Global <see cref="BeamHint"/> storage that is used to manage hints that are detected.
       /// </summary>
       public IBeamHintGlobalStorage HintGlobalStorage;
+      public BeamHintLogManager HintLogManager;
+      public BeamHintPreferencesManager HintPreferencesManager;
+      public ReflectionCache EditorReflectionCache;
 
       // Services
       private AccessTokenStorage _accessTokenStorage;
@@ -97,7 +101,46 @@ namespace Beamable.Editor
 
       private Promise<EditorAPI> Initialize()
       {
+	      EditorReflectionCache = new ReflectionCache();
+
 	      HintGlobalStorage = new BeamHintEditorStorage();
+	      HintLogManager = new BeamHintLogManager();
+	      HintPreferencesManager = new BeamHintPreferencesManager();
+	      
+	      // Load up all Asset-based IReflectionCacheUserSystem (injected via ReflectionCacheUserSystemObject instances).
+	      // This was made to solve a cross-package injection problem. It doubles as a no-code way for users to inject their own
+	      // IReflectionCacheUserSystem into our pipeline. 
+	      // Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance
+	      // (that gets propagated down to any IReflectionCacheUserSystem that also implements IBeamHintProvider).
+	      {
+		      var reflectionCacheSystemGuids = AssetDatabase.FindAssets("t:ReflectionCacheUserSystemObject",
+		                                                                new string[]
+		                                                                {
+			                                                                "Assets/ReflectionCacheSystems", "Packages/com.beamable/ReflectionCacheSystems",
+			                                                                "Packages/com.beamable.server/ReflectionCacheSystems"
+		                                                                });
+
+		      foreach (string reflectionCacheSystemGuid in reflectionCacheSystemGuids)
+		      {
+			      var assetPath = AssetDatabase.GUIDToAssetPath(reflectionCacheSystemGuid);
+			      var userSystemObject = AssetDatabase.LoadAssetAtPath<ReflectionCacheUserSystemObject>(assetPath);
+			      EditorReflectionCache.RegisterTypeProvider(userSystemObject.UserTypeProvider);
+			      EditorReflectionCache.RegisterCacheUserSystem(userSystemObject.UserSystem);
+		      }
+		      
+		      EditorReflectionCache.SetStorage(HintGlobalStorage);
+		      EditorReflectionCache.GenerateReflectionCache();
+	      }
+
+	      {
+		      // TODO: Initialize BeamHintMicroserviceManager, BeamHintGlobalWindow
+	      }
+	      
+
+	      HintLogManager.SetStorage(HintGlobalStorage);
+	      HintLogManager.SetPreferencesManager(HintPreferencesManager);
+	      EditorApplication.update -= HintLogManager.Update;
+	      EditorApplication.update += HintLogManager.Update;
 
 	      if (!Application.isPlaying) 
          {

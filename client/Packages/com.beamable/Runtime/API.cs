@@ -409,8 +409,17 @@ namespace Beamable
                         throw new ArgumentOutOfRangeException();
                 }
             }
+#if UNITY_EDITOR
+	        // TODO: INITIALIZE REFLECTION CACHE FROM EditorAPI.cs
+	        // TODO: Register EditorExclusive Reflection Cache User Systems (Microservices)
+	        // TODO: Initialize and inject all BeamHint stuff into system that requires them.
+#else
+			// TODO: INITIALIZE A REFLECTION CACHE FROM API.cs
+	        // TODO: Register Reflection Cache User Systems
+	        // TODO: Inject a mock implementation with empty methods OR don't inject anything and make all Hint related methods have a Conditional attribute tied to the UNITY_EDITOR.
+#endif
 
-            // Build default game object
+	        // Build default game object
             _gameObject = new GameObject("Beamable");
             Object.DontDestroyOnLoad(_gameObject);
 

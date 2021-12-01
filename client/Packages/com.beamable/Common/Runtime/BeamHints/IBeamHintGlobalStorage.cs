@@ -60,6 +60,14 @@ namespace Common.Runtime.BeamHints
 		#region Per-Domain Beamable Storages
 
 		/// <summary>
+		/// Contains the <see cref="BeamHint"/> for the entire <see cref="BeamHintDomains.BEAM_REFLECTION_CACHE"/> domain.
+		/// </summary>
+		IEnumerable<BeamHint> ReflectionCacheHints
+		{
+			get;
+		}
+		
+		/// <summary>
 		/// Contains the <see cref="BeamHint"/>s for the entire <see cref="BeamHintDomains.BEAM_CSHARP_MICROSERVICES"/> domain.
 		/// </summary>
 		IEnumerable<BeamHint> CSharpMSHints
@@ -74,6 +82,8 @@ namespace Common.Runtime.BeamHints
 		{
 			get;
 		}
+
+		
 
 		#endregion
 	}
@@ -96,6 +106,7 @@ namespace Common.Runtime.BeamHints
 
 		#region Per-Domain Beamable Storages
 
+		public IEnumerable<BeamHint> ReflectionCacheHints => BeamableStorage.Where(hint => BeamHintDomains.IsReflectionCacheDomain(hint.Header.Domain));
 		public IEnumerable<BeamHint> CSharpMSHints => BeamableStorage.Where(hint => BeamHintDomains.IsCSharpMSDomain(hint.Header.Domain));
 
 		public IEnumerable<BeamHint> ContentHints => BeamableStorage.Where(hint => BeamHintDomains.IsContentDomain(hint.Header.Domain));

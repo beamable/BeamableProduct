@@ -5,16 +5,6 @@ using System.Text.RegularExpressions;
 
 namespace Common.Runtime.BeamHints
 {
-	public interface IBeamHintProvider
-	{
-		void SetStorage(params IBeamHintStorage[] storages);
-	}
-
-	public interface IBeamHintManager
-	{
-		void SetStorage(params IBeamHintStorage[] storages);
-	}
-
 	/// <summary>
 	/// Defines a storage for <see cref="BeamHint"/>s. It is a query-able in-memory database of <see cref="BeamHint"/>s.
 	/// Other <see cref="IBeamHintProvider"/> systems add hints to these and <see cref="IBeamHintManager"/> read, filter, clear and pass these along to the UI. 

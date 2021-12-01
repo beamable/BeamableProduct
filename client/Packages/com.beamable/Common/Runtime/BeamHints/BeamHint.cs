@@ -13,9 +13,19 @@ namespace Common.Runtime.BeamHints
 		All = Validation | Hint
 	}
 
+	public static class BeamHintSharedConstants
+	{
+		/// <summary> 
+		/// Separator used to split the stored string of serialized <see cref="BeamHintHeader"/>s (via <see cref="BeamHintHeader.AsKey"/>).
+		/// Used by <see cref="BeamHintPreferencesManager"/>.
+		/// </summary>
+		public const string BEAM_HINT_PREFERENCES_SEPARATOR = "₢"; 
+	}
+
 	/// <summary>
-	/// <see cref="BeamHint"/> domains are a large-scale contextual grouping for hints. We use these to organize and display them in a logical and easy to navigate way. 
-	/// <see cref="BeamHint"/>s can have multiple domains --- this will cause hints to be displayed under both domains' hierarchies.
+	/// <see cref="BeamHint"/> domains are a large-scale contextual grouping for hints. We use these to organize and display them in a logical and easy to navigate way.
+	/// <para/>
+	/// Domains cannot have "¬" or "₢" they are reserved characters (see <see cref="SUB_DOMAIN_SEPARATOR"/>). 
 	/// </summary>
 	public static class BeamHintDomains
 	{
@@ -46,13 +56,18 @@ namespace Common.Runtime.BeamHints
 		public const string BEAM_DOMAIN_PREFIX = "BEAM";
 		
 		/// <summary>
-		/// Generate a sub-domain. These are used by the UI to group <see cref="BeamHint"/>s hierarchically and display them in a more organized way. 
+		/// Generate a sub-domain. These are used by the UI to group <see cref="BeamHint"/>s hierarchically and display them in a more organized way.
+		/// Sub-domains are simply domain strings separated by <see cref="SUB_DOMAIN_SEPARATOR"/>.
 		/// </summary>
 		/// <param name="ownerDomain">A string generated via one of these <see cref="GenerateBeamableDomain"/>, <see cref="GenerateUserDomain"/> or <see cref="GenerateSubDomain"/>.</param>
 		/// <param name="subDomainName">The name of the sub-domain to append.</param>
 		/// <returns>A string defining the path to the sub-domain.</returns>
-		public static string GenerateSubDomain(string ownerDomain, string subDomainName) => $"{ownerDomain}{SUB_DOMAIN_PREFIX}{subDomainName}";
-		public const string SUB_DOMAIN_PREFIX = "¬";
+		public static string GenerateSubDomain(string ownerDomain, string subDomainName) => $"{ownerDomain}{SUB_DOMAIN_SEPARATOR}{subDomainName}";
+		public const string SUB_DOMAIN_SEPARATOR = "¬";
+
+		
+		public static readonly string BEAM_REFLECTION_CACHE = GenerateBeamableDomain("REFLECTION_CACHE");
+		public static bool IsReflectionCacheDomain(string domain) => IsBeamableDomain(domain) && domain.Contains(BEAM_REFLECTION_CACHE);
 
 		public static readonly string BEAM_CSHARP_MICROSERVICES = GenerateBeamableDomain("C#MS");
 		public static readonly string BEAM_CSHARP_MICROSERVICES_CODE_MISUSE = GenerateSubDomain(BEAM_CSHARP_MICROSERVICES, "CODE_MISUSE");
@@ -67,28 +82,39 @@ namespace Common.Runtime.BeamHints
 		
 	}
 
+	
 	public readonly struct BeamHintHeader : IEquatable<BeamHintHeader>
 	{
+		public const string AS_KEY_SEPARATOR = "¬¬";
+		
 		public readonly BeamHintType Type;
+		
+		/// <summary>
+		/// Domain this hint belongs to. See <see cref="BeamHintDomains"/> for more details.
+		/// </summary>
 		public readonly string Domain;
+		
+		/// <summary>
+		/// Unique Id, within <see cref="Domain"/> and <see cref="Type"/>, that represents these hints.
+		/// Cannot have "₢" character as it is reserved by the system. 
+		/// </summary>
 		public readonly string Id;
 
 		public BeamHintHeader(BeamHintType type, string domain, string id = "")
 		{
+			System.Diagnostics.Debug.Assert(!(domain.Contains(AS_KEY_SEPARATOR) || domain.Contains(BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR)),
+			                                $"Domain [{domain}] cannot contain: '{AS_KEY_SEPARATOR}' or '{BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR}'");
+			System.Diagnostics.Debug.Assert(!(id.Contains(AS_KEY_SEPARATOR) || id.Contains(BeamHintDomains.SUB_DOMAIN_SEPARATOR) || id.Contains(BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR)),
+			                                $"Id [{id}] cannot contain: '{AS_KEY_SEPARATOR}', '{BeamHintDomains.SUB_DOMAIN_SEPARATOR}' or '{BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR}'");
+			
 			Type = type;
 			Domain = domain;
 			Id = id;
 		}
 
-		public bool Equals(BeamHintHeader other)
-		{
-			return Type == other.Type && Domain == other.Domain && Id == other.Id;
-		}
+		public bool Equals(BeamHintHeader other) => Type == other.Type && Domain == other.Domain && Id == other.Id;
 
-		public override bool Equals(object obj)
-		{
-			return obj is BeamHintHeader other && Equals(other);
-		}
+		public override bool Equals(object obj) => obj is BeamHintHeader other && Equals(other);
 
 		public override int GetHashCode()
 		{
@@ -100,9 +126,13 @@ namespace Common.Runtime.BeamHints
 				return hashCode;
 			}
 		}
+
+		public string AsKey() => $"{Type}{AS_KEY_SEPARATOR}{Domain}{AS_KEY_SEPARATOR}{Id}";
+
+		public override string ToString() => $"{nameof(Type)}: {Type}, {nameof(Domain)}: {Domain}, {nameof(Id)}: {Id}";
 	}
 
-	public readonly struct BeamHint
+	public readonly struct BeamHint : IEquatable<BeamHint>, IEquatable<BeamHintHeader>
 	{
 		public readonly BeamHintHeader Header;
 		public readonly object ContextObject;
@@ -112,63 +142,49 @@ namespace Common.Runtime.BeamHints
 			this.Header = header;
 			ContextObject = contextObject;
 		}
-	}
 
+		public bool Equals(BeamHint other) => other.Header.Equals(Header);
+		public bool Equals(BeamHintHeader other) => other.Equals(Header);
+		public override string ToString() => $"{nameof(Header)}: {Header}, {nameof(ContextObject)}: {ContextObject}";
+	}
 	
-
-	public static class test
+	public interface IBeamHintProvider
 	{
-		public static void HUEHUEHUE()
-		{
-			var beamHintStorage = (IBeamHintGlobalStorage)new BeamHintEditorStorage();
-
-			// Adds a docker not running hint with no context object, since this hint doesn't need it
-			beamHintStorage.AddOrReplaceHint(new BeamHintHeader(BeamHintType.Hint, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER, "DOCKER_NOT_INSTALLED"));
-			beamHintStorage.AddOrReplaceHint(BeamHintType.Hint, BeamHintDomains.BEAM_CSHARP_MICROSERVICES, "DOCKER_NOT_RUNNING");
-			beamHintStorage.AddOrReplaceHint(BeamHintType.Hint, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER, "ConflictingPortBindings", new List<int>() {8000});
-
-			// Adds a validation hint with List<Type> as the context object (all the conflicting types) and the name as the Id
-			beamHintStorage.AddOrReplaceHint(new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, "ConflictingMicroServiceName"),
-			                        new List<Type> {typeof(int), typeof(Enum)});
-
-			foreach (BeamHint beamHint in beamHintStorage)
-			{
-				// GOES THROUGH ALL HINTS
-			}
-
-			// Tries to add a hint of incorrect origin system here. This will throw an Assert Exception. The advantage for calling the correct one is performance related.
-			// This is also useful as a declaration of intent.
-			// Also, having multiple of these allow for easy iteration as shown below -- which will help BeamableAssistantControllers to be easily implementable. 
-			foreach (BeamHint asdCSharpMSHint in beamHintStorage.CSharpMSHints)
-			{
-				// GOES THROUGH ALL C#MS HINTS, INCLUDING DOCKER SPECIFIC ONES
-			}
-
-			// Tries to add a hint of correct origin system here but incorrect class. This will throw an Assert Exception.
-			// The advantage for calling the correct one is performance related. This is also useful as a declaration of intent.
-			// Also, having multiple of these allow for easy iteration as shown below -- which will help BeamableAssistantControllers to be easily implementable.
-			foreach (BeamHint beamHint in beamHintStorage.CSharpMSHints)
-			{
-				// GOES THROUGH ALL C#MS DOCKER SPECIFIC HINTS 
-			}
-
-			// Removing hints is pretty straight-forward... Clears the entire storage, each sub call clears the internal data for that specific storage.
-			beamHintStorage.RemoveAllHints();
-
-			// Removing supports filtering by class, origin system and type
-			beamHintStorage.RemoveAllHints(BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE); // clears all of the given domain
-			beamHintStorage.RemoveAllHints(BeamHintType.Validation); // clears all validations
-
-			// Updating is achieved by getting the hint, creating a new struct from it, removing the old one and storing the new one
-			// TODO THINK: SHOULD I ADD HELPERS TO THIS INTERFACE?
-		}
+		void SetStorage(IBeamHintGlobalStorage hintGlobalStorage);
 	}
 
-	public class BeamableHintPreferencesManager
+	/// <summary>
+	/// Current State of display tied to any specific <see cref="BeamHintHeader"/>.
+	/// </summary>
+	public enum VisibilityState
 	{
-		// Handles Editor Preferences
-		// Stores key pair stuff on a per-beamable user state... 
-		// Not sure what's the best way to do this now...
+		Display,
+		Ignore,
+	}
+
+	/// <summary>
+	/// Different levels of persistence of any single <see cref="BeamHint"/>'s <see cref="VisibilityState"/> that the <see cref="BeamHintPreferencesManager"/> supports.
+	/// </summary>
+	public enum PersistenceLevel
+	{
+		Instance,
+		Session,
+		Permanent
+	}
+	
+	public interface IBeamHintPreferencesManager
+	{
+		void RebuildPerHintPreferences();
+
+		void SetHintPreferences(BeamHint hint, VisibilityState newVisibilityState, PersistenceLevel persistenceLevel);
+		
+		void ClearAllPreferences();
+	}
+	
+	public interface IBeamHintManager
+	{
+		void SetPreferencesManager(IBeamHintPreferencesManager preferencesManager);
+		void SetStorage(IBeamHintGlobalStorage hintGlobalStorage);
 	}
 
 	public class BaseBeamableAssistantController
