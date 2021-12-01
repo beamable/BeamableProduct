@@ -189,10 +189,11 @@ namespace Beamable.Editor.Schedules
         {
 	        var monthYearKeyDates =  PrepareMonthYearKeys();
 	        SortDays();
-            var groupsBasedOnDays = CreateGroupsBasedOnDays();
-            var tempModels = CreateDateModels();
+            var groupsWithMergedMonths = CreateGroupsBasedOnDaysAndYearAndMergeMonths();
+            var groupsWithMergedYears = CreateGroupsBasedOnDaysAndMonthsAndMergeYears();
+            var scheduleDateModeModels = CreateDateModels();
             
-            return tempModels;
+            return scheduleDateModeModels;
 
             Dictionary<string, string> PrepareMonthYearKeys()
             {
@@ -214,48 +215,70 @@ namespace Beamable.Editor.Schedules
             }
             void SortDays()
             {
-	            foreach (var sortedDate in monthYearKeyDates.ToList())
-		            monthYearKeyDates[sortedDate.Key] = String.Join(",", sortedDate.Value.Split(',').OrderBy(q => q).ToArray());
+	            foreach (var monthYearKeyDate in monthYearKeyDates.ToList())
+	            {
+		            monthYearKeyDates[monthYearKeyDate.Key] = String.Join(",", monthYearKeyDate.Value.Split(',').OrderBy(q => q).ToArray());
+	            }
             }
-            Dictionary<string, Dictionary<string, string>> CreateGroupsBasedOnDays()
+            Dictionary<string, Dictionary<string, string>> CreateGroupsBasedOnDaysAndYearAndMergeMonths()
             {
 	            var dict = new Dictionary<string, Dictionary<string, string>>();
-	            foreach (var sortedDate in monthYearKeyDates)
+	            foreach (var kvp in monthYearKeyDates)
 	            {
-		            var splittedKey = sortedDate.Key.Split('-');
+		            var splittedKey = kvp.Key.Split('-');
 		            var month = splittedKey[0];
 		            var year = splittedKey[1];
 
-		            if (dict.ContainsKey(sortedDate.Value))
+		            if (dict.ContainsKey(kvp.Value))
 		            {
-			            if (dict[sortedDate.Value].ContainsKey(year))
+			            if (dict[kvp.Value].ContainsKey(year))
 			            {
-				            dict[sortedDate.Value][year] += $"-{month}";
+				            dict[kvp.Value][year] += $",{month}";
 			            }
 			            else
 			            {
-				            dict[sortedDate.Value].Add(year, month);
+				            dict[kvp.Value].Add(year, month);
 			            }
 		            }
 		            else
 		            {
-			            dict.Add(sortedDate.Value, new Dictionary<string, string> {{year, month}});
+			            dict.Add(kvp.Value, new Dictionary<string, string> {{year, month}});
 		            }
+	            }
+	            return dict;
+            }
+            Dictionary<string, List<string>> CreateGroupsBasedOnDaysAndMonthsAndMergeYears()
+            {
+	            var dict = new Dictionary<string, List<string>>();
+	            foreach (var kvp in groupsWithMergedMonths)
+	            {
+		            foreach (var kvp2 in kvp.Value)
+		            {
+			            var newKey = $"{kvp.Key}-{kvp2.Value}";
+			            if (dict.ContainsKey(newKey))
+			            {
+				            dict[newKey].Add(kvp2.Key);
+			            }
+			            else
+			            {
+				            dict.Add(newKey, new List<string>{kvp2.Key});
+			            }
+		            }
+		            
 	            }
 	            return dict;
             }
             List<ScheduleDateModeModel> CreateDateModels()
             {
 	            var models = new List<ScheduleDateModeModel>();
-	            foreach (var kvp in groupsBasedOnDays)
+	            foreach (var kvp in groupsWithMergedYears)
 	            {
-		            foreach (var kvp2 in kvp.Value)
-		            {
-			            var days = kvp.Key.Split(',');
-			            var months = kvp2.Value.Split('-');
-			            var years = new List<string> {kvp2.Key};
-			            models.Add(new ScheduleDateModeModel(days, months, years));
-		            }
+		            var splittedKey = kvp.Key.Split('-');
+		            
+		            var days = splittedKey[0].Split(','); 
+		            var months = splittedKey[1].Split(',');
+		            var years = kvp.Value;
+		            models.Add(new ScheduleDateModeModel(days, months, years));
 	            }
 	            return models;
             }
