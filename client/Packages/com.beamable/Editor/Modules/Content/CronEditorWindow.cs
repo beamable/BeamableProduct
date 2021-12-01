@@ -15,7 +15,7 @@ namespace Beamable.Editor.Content
             
             _window = CreateInstance<CronEditorWindow>();
             _window.titleContent = new GUIContent("Cron Editor");
-            _window.minSize = _window.maxSize = new Vector2(300f, 210f);
+            _window.minSize = _window.maxSize = new Vector2(400f, 300f);
             _window.ShowUtility();
             _window.Init(cronRawFormat, result);
             
@@ -27,6 +27,7 @@ namespace Beamable.Editor.Content
         private static string _currentString = "-1";
         private static string _inputString = string.Empty;
         private static string _humanFormat = string.Empty;
+        private ErrorData _errorData;
 
         private void Init(string cronRawFormat, Action<string> result)
         {
@@ -35,11 +36,17 @@ namespace Beamable.Editor.Content
             _errorData = new ErrorData();
         }
 
-        private ErrorData _errorData;
         private void OnGUI() 
         {
-            GUI.Label(new Rect(10, 120, 280, 20), "Enter cron string");
-            _inputString = GUI.TextField(new Rect(10, 140, 280, 20), _inputString);
+            GUI.Label(new Rect(10, 190, 380, 20), "Enter cron string", new GUIStyle(GUI.skin.GetStyle("label"))
+            {
+	            alignment = TextAnchor.MiddleLeft
+            });
+            
+            _inputString = GUI.TextField(new Rect(10, 210, 380, 48), _inputString, new GUIStyle(GUI.skin.GetStyle("textField"))
+            {
+	            wordWrap = true
+            });
             
             if (!_inputString.Equals(_currentString))
             {
@@ -47,21 +54,21 @@ namespace Beamable.Editor.Content
                 _currentString = _inputString;
             }
 
-            GUI.Label(new Rect(10, 10, 280, 100), _humanFormat, new GUIStyle(GUI.skin.GetStyle("label"))
+            GUI.Label(new Rect(10, 10, 380, 100), _humanFormat, new GUIStyle(GUI.skin.GetStyle("label"))
             {
                 alignment = TextAnchor.UpperLeft,
                 wordWrap = true
             });
 
-            if (GUI.Button(new Rect(160, 180, 60, 20), "Cancel"))
+            if (GUI.Button(new Rect(260, 270, 60, 20), "Cancel"))
             {
                 _window.Close();
             }
 
             GUI.enabled = !_errorData.IsError;
-            if (GUI.Button(new Rect(230, 180, 60, 20), "Save"))
+            if (GUI.Button(new Rect(330, 270, 60, 20), "Save"))
             {
-                _result?.Invoke(_currentString);
+	            _result?.Invoke(_currentString.TrimEnd());
                 _window.Close();
             }
             GUI.enabled = true;
