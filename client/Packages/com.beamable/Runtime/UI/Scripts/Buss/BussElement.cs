@@ -114,7 +114,10 @@ namespace Beamable.UI.Buss {
             ApplyStyle();
 
             foreach (BussElement child in Children) {
-                child.OnStyleChanged();
+	            if (child != null)
+	            {
+		            child.OnStyleChanged();
+	            }
             }
         }
 
