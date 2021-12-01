@@ -251,8 +251,8 @@ namespace Beamable.Editor.Schedules
 	            {
 		            foreach (var kvp2 in kvp.Value)
 		            {
-			            var days = kvp.Key.Split(',').ToList();
-			            var months = kvp2.Value.Split('-').ToList();
+			            var days = kvp.Key.Split(',');
+			            var months = kvp2.Value.Split('-');
 			            var years = new List<string> {kvp2.Key};
 			            models.Add(new ScheduleDateModeModel(days, months, years));
 		            }
