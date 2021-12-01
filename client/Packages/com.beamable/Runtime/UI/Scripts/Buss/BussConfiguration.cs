@@ -72,7 +72,9 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
             }
         }
 
-        private void OnStyleSheetChanged(BussElement element, BussStyleSheet styleSheet) {
+        private void OnStyleSheetChanged(BussElement element, BussStyleSheet styleSheet)
+        {
+	        if (element == null) return;
             if (element.StyleSheet == styleSheet) {
                 element.OnStyleChanged();
             }
