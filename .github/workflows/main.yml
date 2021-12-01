@@ -128,6 +128,11 @@ jobs:
           mobileprovision-path: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/BeamableProductProd.mobileprovision
           code-signing-identity: "iPhone Distribution: Beamable, Inc (A6C4565DLF)"
           team-id: A6C4565DLF
+      - uses: actions/upload-artifact@v2
+        with:
+          name: beamableproduct.ipa
+          path: '/Users/runner/work/BeamableProduct/BeamableProduct/output.ipa'
+          retention-days: 3
       - uses: apple-actions/upload-testflight-build@v1
         with:
           app-path: '/Users/runner/work/BeamableProduct/BeamableProduct/output.ipa'
