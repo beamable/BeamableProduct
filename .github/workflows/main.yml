@@ -118,6 +118,7 @@ jobs:
           name: Build-iOS
       - name: Make build scripts executeable and change directory to the location of the xcode project
         run: chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/process_symbols.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/MapFileParser.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/usymtool && cd iOS/
+      - name: 'Build .ipa'
       - uses: yukiarrr/ios-build-action@v1.4.0
         with:
           update-targets: Unity-iPhone
@@ -128,3 +129,10 @@ jobs:
           mobileprovision-path: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/BeamableProductProd.mobileprovision
           code-signing-identity: "iPhone Distribution: Beamable, Inc (A6C4565DLF)"
           team-id: A6C4565DLF
+      - name: 'Upload app to TestFlight'
+        uses: apple-actions/upload-testflight-build@v1
+        with:
+          app-path: '/Users/runner/work/BeamableProduct/BeamableProduct/output.ipa'
+          issuer-id: 931b0669-dac0-496b-9964-8cba71e07ffc
+          api-key-id: LL66F96439
+          api-private-key: ${{ secrets.APPLE_API_KEY }}
