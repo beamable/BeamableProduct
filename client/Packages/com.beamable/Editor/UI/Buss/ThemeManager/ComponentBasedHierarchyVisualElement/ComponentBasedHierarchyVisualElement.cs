@@ -1,7 +1,6 @@
 ﻿using Beamable.Editor.UI.Buss;
 using UnityEditor;
 using UnityEngine;
-using Object = UnityEngine.Object;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -12,10 +11,13 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-	public abstract class ComponentBasedHierarchyVisualElement<T> : BeamableVisualElement where T : MonoBehaviour
+	public class ComponentBasedHierarchyVisualElement<T> : BeamableVisualElement where T : MonoBehaviour
 	{
 		private IndentedLabelVisualElement _selectedComponent;
 		private ScrollView _container;
+
+		public ComponentBasedHierarchyVisualElement() : base(
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement") { }
 
 		protected ComponentBasedHierarchyVisualElement(string commonPath) : base(commonPath) { }
 
@@ -75,7 +77,7 @@ namespace Beamable.Editor.UI.Components
 				_container.Add(label);
 
 				label.Setup(foundComponent.gameObject, GetLabel(foundComponent), OnMouseClicked,
-				             currentLevel, IndentedLabelVisualElement.DEFAULT_SINGLE_INDENT_WIDTH);
+				            currentLevel, IndentedLabelVisualElement.DEFAULT_SINGLE_INDENT_WIDTH);
 				label.Refresh();
 
 				foreach (Transform child in gameObject.transform)

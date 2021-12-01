@@ -87,7 +87,7 @@ namespace Beamable.Editor.UI.Components
 		private float Width => (SingleIndentWidth * Level) + SingleIndentWidth;
 
 		public IndentedLabelVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(IndentedLabelVisualElement)}/{nameof(IndentedLabelVisualElement)}") { }
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(IndentedLabelVisualElement)}/{nameof(IndentedLabelVisualElement)}") { }
 
 		public override void Refresh()
 		{

@@ -1,5 +1,22 @@
 #mainVisualElement {
-    height: 300px;
+    background-color: rgba(56, 56, 56, 1);
+    padding-top: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-bottom: 10px;
+}
+
+#navigation {
+    background-color: gray;
+    height: 200px;
+}
+
+#divider {
+    height: 10px;
+}
+
+#styles {
+    
 }
 
 #scrollView {

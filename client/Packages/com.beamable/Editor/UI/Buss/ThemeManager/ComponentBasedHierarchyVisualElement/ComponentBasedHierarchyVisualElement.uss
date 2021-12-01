@@ -1,0 +1,13 @@
+#header {
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    -unity-font-style: bold;
+    padding-left: 20px;
+    color: rgba(256, 256, 256, 1);
+    background-color: rgba(0, 0, 0, 1);
+    height: 30px;
+    justify-content: center;
+}
+
+#scrollView {
+    flex-grow: 1;
+}
