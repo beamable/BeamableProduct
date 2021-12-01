@@ -322,12 +322,6 @@ PlayerSettings:
       m_Height: 20
       m_Kind: 2
       m_SubKind: iPad
-    - m_Textures:
-      - {fileID: 2800000, guid: e07fb4ed5da194753bfaa0f90c6cb910, type: 3}
-      m_Width: 1024
-      m_Height: 1024
-      m_Kind: 4
-      m_SubKind: App Store
     - m_Textures: []
       m_Width: 87
       m_Height: 87
@@ -380,6 +374,12 @@ PlayerSettings:
       m_Height: 76
       m_Kind: 0
       m_SubKind: iPad
+    - m_Textures:
+      - {fileID: 2800000, guid: 58df946e141c75447b9ce41fee187390, type: 3}
+      m_Width: 1024
+      m_Height: 1024
+      m_Kind: 4
+      m_SubKind: App Store
   - m_BuildTarget: Android
     m_Icons:
     - m_Textures: []
