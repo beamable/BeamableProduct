@@ -34,7 +34,7 @@ namespace Beamable.Common.Content.Validation
 
 				if (!string.Equals(parameter.TypeName, variable.TypeName))
 				{
-					errors.Add( $"{parameter.Name} is a {parameter.TypeName} but references variable {variableName} which is a {variable.TypeName}");
+					errors.Add($"{parameter.Name} is a {parameter.TypeName} but references variable {variableName} which is a {variable.TypeName}");
 				}
 			}
 
