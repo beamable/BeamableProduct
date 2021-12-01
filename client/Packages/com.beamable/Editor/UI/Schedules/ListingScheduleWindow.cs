@@ -231,10 +231,10 @@ namespace Beamable.Editor.Schedules
             }
 
             _neverExpiresComponent.Value = neverExpires;
-
-            bool isPeriod = schedule.definitions.Any(def => def.hour[0].Contains("-")) ||
-                            schedule.definitions.Any(def => def.minute[0].Contains("-")) ||
-                            schedule.definitions.Any(def => def.second[0].Contains("-"));
+            
+            bool isPeriod = schedule.definitions.Any(def => def.hour.Count > 1) ||
+                            schedule.definitions.Any(def => def.minute.Count > 1) ||
+                            schedule.definitions.Any(def => def.second.Count > 1);
 
             _allDayComponent.Value = !isPeriod;
 
@@ -242,14 +242,8 @@ namespace Beamable.Editor.Schedules
             {
                 int startHour = Convert.ToInt32(schedule.definitions[0].hour[0]);
                 int endHour = Convert.ToInt32(schedule.definitions[schedule.definitions.Count - 1].hour[0]);
-
-                string startMinutesRange = schedule.definitions[0].minute[0];
-                string[] startSplitRange = startMinutesRange.Split('-');
-                int startMinute = Convert.ToInt32(startSplitRange[0]);
-
-                string endMinutesRange = schedule.definitions[schedule.definitions.Count - 1].minute[0];
-                string[] endSplitRange = endMinutesRange.Split('-');
-                int endMinute = Convert.ToInt32(endSplitRange[1]);
+                int startMinute = Convert.ToInt32(schedule.definitions[0].minute[0]);
+                int endMinute = Convert.ToInt32(schedule.definitions[schedule.definitions.Count - 1].minute[schedule.definitions[schedule.definitions.Count - 1].minute.Count - 1]);
 
                 _periodFromHourComponent.Set(new DateTime(2000, 1, 1, startHour, startMinute, 0));
                 _periodToHourComponent.Set(new DateTime(2000, 1, 1, endHour, endMinute, 0));
