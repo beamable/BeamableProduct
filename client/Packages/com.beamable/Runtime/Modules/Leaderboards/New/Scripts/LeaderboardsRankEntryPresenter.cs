@@ -1,4 +1,5 @@
 ﻿using Beamable.AccountManagement;
+using Beamable.Avatars;
 using System.Globalization;
 using Beamable.Common.Api.Leaderboards;
 using Beamable.Constats;
@@ -6,8 +7,10 @@ using Beamable.Modules.Generics;
 using Beamable.Stats;
 using Beamable.UI.Buss;
 using Modules.Leaderboards.New;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Beamable.UI.Leaderboards
 {
@@ -17,6 +20,7 @@ namespace Beamable.UI.Leaderboards
 		[SerializeField] private TextMeshProUGUI _rank;
 		[SerializeField] private TextMeshProUGUI _name;
 		[SerializeField] private TextMeshProUGUI _score;
+		[SerializeField] private Image _avatar;
 
 		[SerializeField] private SdfImageBussElement _mainBussElement;
 		[SerializeField] private SdfImageBussElement _rankBussElement;
@@ -24,11 +28,13 @@ namespace Beamable.UI.Leaderboards
 
 		private long _currentPlayerRank;
 		private StatObject _aliasStatObject;
+		private StatObject _avatarStatObject;
 
 		public override void Setup(RankEntry data, params object[] additionalParams)
 		{
 			_currentPlayerRank = (long)additionalParams[0];
 			_aliasStatObject = AccountManagementConfiguration.Instance.DisplayNameStat;
+			_avatarStatObject = AccountManagementConfiguration.Instance.AvatarStat;
 			base.Setup(data, additionalParams);
 		}
 
@@ -37,6 +43,12 @@ namespace Beamable.UI.Leaderboards
 			_rank.text = Data.rank.ToString();
 			_name.text = Data.GetStat(_aliasStatObject.StatKey) ?? _aliasStatObject.DefaultValue;
 			_score.text = Data.score.ToString(CultureInfo.InvariantCulture);
+
+			string spriteId = Data.GetStat(_avatarStatObject.StatKey);
+
+			_avatar.sprite = !string.IsNullOrWhiteSpace(spriteId)
+				? GetAvatar(spriteId)
+				: AvatarConfiguration.Instance.Default.Sprite;
 
 			if (_currentPlayerRank == Data.rank)
 			{
@@ -55,6 +67,13 @@ namespace Beamable.UI.Leaderboards
 					_rankBussElement?.AddClass(LeaderboardsConstants.BUSS_CLASS_THIRD_PLACE);
 					break;
 			}
+		}
+
+		private Sprite GetAvatar(string id)
+		{
+			List<AccountAvatar> accountAvatars = AvatarConfiguration.Instance.Avatars;
+			AccountAvatar accountAvatar = accountAvatars.Find(avatar => avatar.Name == id);
+			return accountAvatar.Sprite;
 		}
 
 		public class PoolData : PoolableScrollView.IItem

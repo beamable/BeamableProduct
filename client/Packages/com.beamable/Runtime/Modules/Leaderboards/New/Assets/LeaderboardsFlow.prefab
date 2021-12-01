@@ -681,27 +681,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _leaderboardRef:
     Id: leaderboards.TestLeaderboard
-  _entriesAmount: 100000
+  _entriesAmount: 1000
   _backButton: {fileID: 5688538835172806946}
   _topButton: {fileID: 5688538834932390776}
   _rankEntries: {fileID: 5688538833800635301}
   _currentUserRankEntry: {fileID: 3708268801500537101}
   _backButtonAction:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5688538834484492738}
-        m_TargetAssemblyTypeName: Beamable.UI.Leaderboards.LeaderboardsPresenter,
-          Unity.Beamable
-        m_MethodName: Test
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   _testMode: 1
 --- !u!1 &5688538834880844656
 GameObject:
@@ -1353,7 +1340,7 @@ PrefabInstance:
         type: 3}
       propertyPath: _children.Array.data[0]
       value: 
-      objectReference: {fileID: 1722388437781235139}
+      objectReference: {fileID: 0}
     - target: {fileID: 2516669601012151872, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
         type: 3}
       propertyPath: _parent
@@ -1641,6 +1628,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9, type: 3}
+--- !u!224 &3708268801500537100 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 9045432837593568316, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
+    type: 3}
+  m_PrefabInstance: {fileID: 5688538834635158832}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &3708268801500537101 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 9045432837593568317, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
@@ -1677,18 +1670,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b664d96326cd41a5b3f333aac566f578, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &1722388437781235139 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 6419486298360361203, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
-    type: 3}
-  m_PrefabInstance: {fileID: 5688538834635158832}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b664d96326cd41a5b3f333aac566f578, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &3145051897327688965 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 7301680694132205621, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
@@ -1701,12 +1682,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b664d96326cd41a5b3f333aac566f578, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!224 &3708268801500537100 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 9045432837593568316, guid: 3240131b6992f3d4f83dc1f8b1fc9fb9,
-    type: 3}
-  m_PrefabInstance: {fileID: 5688538834635158832}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &6381055770869107270
 PrefabInstance:
   m_ObjectHideFlags: 0

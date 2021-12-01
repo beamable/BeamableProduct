@@ -15,7 +15,8 @@ namespace Beamable.UI.Leaderboards
 		[SerializeField] private LeaderboardsRankEntriesPresenter _rankEntries;
 		[SerializeField] private LeaderboardsRankEntryPresenter _currentUserRankEntry;
 		
-		public UnityEvent _backButtonAction;
+		[Space]
+		[SerializeField] private UnityEvent _backButtonAction;
 
 		[Header("Debug")]
 		[SerializeField] private bool _testMode;
