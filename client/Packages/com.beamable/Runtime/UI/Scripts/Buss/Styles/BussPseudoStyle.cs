@@ -1,13 +1,26 @@
 ﻿using System.Collections.Generic;
+using Beamable.UI.Tweening;
 
-namespace Beamable.UI.Buss {
-    public class BussPseudoStyle : BussStyle {
-        public BussStyle BaseStyle { get; set; }
-        public float BlendValue;
-        private Dictionary<string, IBussProperty> _interpolatedStyles = new Dictionary<string, IBussProperty>();
+namespace Beamable.UI.Buss
+{
+	public class BussPseudoStyle : BussStyle
+	{
+		public BussStyle BaseStyle;
+		public bool Enabled;
+		public float BlendValue;
+		public FloatTween Tween;
 
-        public BussPseudoStyle(BussStyle baseStyle) {
-            BaseStyle = baseStyle;
-        }
-    }
+		private Dictionary<string, IBussProperty> _interpolatedProperties;
+
+		public BussStyle MergeWithBaseStyle(BussStyle baseStyle)
+		{
+			if (Enabled && BlendValue > 0f)
+			{
+				BaseStyle = baseStyle;
+				return GetCombinedStyle();
+			}
+
+			return baseStyle;
+		}
+	}
 }
