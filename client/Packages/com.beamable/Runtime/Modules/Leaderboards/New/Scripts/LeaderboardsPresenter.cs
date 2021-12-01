@@ -1,6 +1,7 @@
 ﻿using Beamable.Common.Leaderboards;
 using Beamable.Modules.Generics;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace Beamable.UI.Leaderboards
 {
@@ -9,9 +10,12 @@ namespace Beamable.UI.Leaderboards
 #pragma warning disable CS0649
 		[SerializeField] private LeaderboardRef _leaderboardRef;
 		[SerializeField] private int _entriesAmount;
+		[SerializeField] private GenericButton _backButton;
 		[SerializeField] private GenericButton _topButton;
 		[SerializeField] private LeaderboardsRankEntriesPresenter _rankEntries;
 		[SerializeField] private LeaderboardsRankEntryPresenter _currentUserRankEntry;
+		
+		public UnityEvent _backButtonAction;
 
 		[Header("Debug")]
 		[SerializeField] private bool _testMode;
@@ -26,11 +30,12 @@ namespace Beamable.UI.Leaderboards
 				Debug.LogWarning($"Use are using {name} in test mode");
 			}
 			
-			Model.Initialize(_leaderboardRef, _entriesAmount, _testMode);
+			Model.Initialize(_leaderboardRef, _entriesAmount, _testMode, _backButtonAction);
 
 			Model.OnScrollRefresh += OnScrollRefresh;
 
 			_topButton.Setup(Model.ScrollToTopButtonClicked);
+			_backButton.Setup(Model.BackButtonClicked);
 		}
 
 		protected override void OnDestroy()

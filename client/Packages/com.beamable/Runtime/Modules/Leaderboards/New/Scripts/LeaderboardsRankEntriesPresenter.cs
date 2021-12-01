@@ -55,6 +55,7 @@ namespace Beamable.UI.Leaderboards
 
 		public void ScrollToTop()
 		{
+			_poolableScrollView.Velocity = 0.0f;
 			_poolableScrollView.SetPosition(0.0f);
 		}
 

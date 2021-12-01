@@ -8,6 +8,7 @@ using Beamable.Modules.Generics;
 using Beamable.Stats;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.Events;
 
 namespace Beamable.UI.Leaderboards
 {
@@ -23,6 +24,7 @@ namespace Beamable.UI.Leaderboards
 		private int _entriesAmount;
 		private bool _testMode;
 		private long _dbid;
+		private UnityEvent _backButtonAction;
 
 		public List<RankEntry> CurrentRankEntries
 		{
@@ -44,6 +46,7 @@ namespace Beamable.UI.Leaderboards
 			_entriesAmount = (int)initParams[1];
 			_entriesAmount = Mathf.Clamp(_entriesAmount, 1, Int32.MaxValue);
 			_testMode = (bool)initParams[2];
+			_backButtonAction = (UnityEvent)initParams[3];
 
 			_aliasStatObject = AccountManagementConfiguration.Instance.DisplayNameStat;
 			_firstEntryId = 1;
@@ -82,6 +85,11 @@ namespace Beamable.UI.Leaderboards
 			}
 
 			OnScrollRefresh?.Invoke();
+		}
+
+		public void BackButtonClicked()
+		{
+			_backButtonAction?.Invoke();
 		}
 
 		private void OnUserRankEntryReceived(RankEntry rankEntry)
