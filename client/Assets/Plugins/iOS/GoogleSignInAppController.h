@@ -1,4 +1,4 @@
-#import "GoogleSignIn.h"
+#import "BeamableGoogleSignIn.h"
 #import <UnityAppController.h>
 
 

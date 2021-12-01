@@ -1,35 +1,36 @@
 ﻿
-ArchiveManifestsVisualElement {
-    flex-grow: 1;
-}
-ArchiveManifestsVisualElement > * {
+ArchiveManifestsVisualElement,
+ArchiveManifestsVisualElement > TemplateContainer
+{
     flex-grow: 1;
 }
 
-#mainVisualElement {
+ArchiveManifestsVisualElement > TemplateContainer > #mainVisualElement {
     flex-grow: 1;
     margin-left: 26px;
     margin-right: 26px;
+}
+
+#listRoot {
+    margin-left: 26px;
 }
 
 #manifestWarningMessage {
     margin-top: 4px;
 }
 
-#scroll{
+#scroll {
     background-color: #484848;
     margin-top: 10px;
     padding: 10px;
     flex-grow: 1;
     flex-shrink: 1;
     min-height: 40px;
-    margin-bottom: 20px;
 }
 
 #buttonStrip {
     flex-direction: row;
     justify-content: flex-end;
-    flex-shrink: 0;
     margin-top: 5px;
     margin-bottom: 5px;
 }

@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using UnityEngine;
@@ -6,7 +8,7 @@ using UnityEngine.Serialization;
 
 namespace Beamable.Common.Inventory
 {
-   
+
    /// <summary>
    /// This type defines a %Beamable %ContentObject subclass for %Currency related to the %InventoryService.
    ///
@@ -15,7 +17,7 @@ namespace Beamable.Common.Inventory
    /// #### Related Links
    /// - See Beamable.Common.Content.ContentObject script reference
    /// - See Beamable.Api.Inventory.InventoryService script reference
-   /// 
+   ///
    /// ![img beamable-logo]
    ///
    /// </summary>
@@ -28,7 +30,7 @@ namespace Beamable.Common.Inventory
       [FormerlySerializedAs("Icon")]
       [ContentField("icon", FormerlySerializedAs = new []{"Icon"})]
       public AssetReferenceSprite icon;
-      
+
       [Tooltip(ContentObject.TooltipClientPermission1)]
       public ClientPermissions clientPermission;
 
@@ -43,4 +45,24 @@ namespace Beamable.Common.Inventory
       public string symbol;
       public long amount;
    }
+
+   [System.Serializable]
+   public class CurrencyReward
+   {
+      [MustReferenceContent]
+      public CurrencyRef symbol;
+      public long amount;
+   }
+
+   [System.Serializable]
+   public class ListOfCurrencyChanges : DisplayableList<CurrencyReward>
+   {
+      public List<CurrencyReward> listData = new List<CurrencyReward>();
+
+      protected override IList InternalList => listData;
+      public override string GetListPropertyPath() => nameof(listData);
+   }
+
+   [System.Serializable]
+   public class OptionalCurrencyChangeList : Optional<ListOfCurrencyChanges> {}
 }

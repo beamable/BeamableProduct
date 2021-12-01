@@ -39,6 +39,11 @@ namespace Beamable.Server.Api.Stats
          return GetStats("game", "private", "player", userId, stats);
       }
 
+      public Promise<Dictionary<string, string>> GetAllProtectedPlayerStats(long userId)
+      {
+         return GetStats("game", "private", "player", userId, null);
+      }
+
       public Promise<EmptyResponse> SetProtectedPlayerStat(long userId, string key, string value)
       {
          return SetStats("game", "private", "player", userId, new Dictionary<string, string>
@@ -62,8 +67,8 @@ namespace Beamable.Server.Api.Stats
          string[] stats)
       {
          var key = $"{domain}.{access}.{type}.{userId}";
-         var statString = string.Join(",", stats);
-         return Requester.Request<StatsResponse>(Method.GET, $"{OBJECT_SERVICE}/{key}", new
+         var statString = stats == null ? string.Empty : string.Join(",", stats);
+         return Requester.Request<StatsResponse>(Method.GET, $"{OBJECT_SERVICE}/{key}", new StatsRequest
          {
             stats = statString
          }).Map(res =>
@@ -110,6 +115,11 @@ namespace Beamable.Server.Api.Stats
 
       public long id;
       public Dictionary<string, object> stats;
+   }
+
+   class StatsRequest
+   {
+      public string stats;
    }
 
 

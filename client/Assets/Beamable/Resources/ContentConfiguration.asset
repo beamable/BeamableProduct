@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: ContentConfiguration
   m_EditorClassIdentifier: 
   EnableMultipleContentNamespaces: 1
-  EditorManifestID: second-manifest
+  EditorManifestID: global
   _runtimeManifestID: global

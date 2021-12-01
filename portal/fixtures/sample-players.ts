@@ -4,6 +4,7 @@ export const playerWithFacebook: PlayerData = new PlayerData({
     email: 'test@beamable.com',
     createdTimeMillis: 400000,
     id: 1,
+    deviceId: 'abc',
     updatedTimeMillis: 400001,
     gamerTags: [{
         gamerTag: 123,
@@ -22,6 +23,7 @@ export const anonymousPlayer: PlayerData = new PlayerData({
     email: 'test@beamable.com',
     createdTimeMillis: 400000,
     id: 1,
+    deviceId: '',
     updatedTimeMillis: 400001,
     gamerTags: [{
         gamerTag: 123,

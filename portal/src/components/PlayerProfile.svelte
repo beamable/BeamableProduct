@@ -19,7 +19,6 @@
     let playerLocale = '?';
     let playerPlatform = '?';
     let playerInstallDate = '?';
-    let gamerTag = 0;
 
     let isNetworking;
 
@@ -28,13 +27,6 @@
     $: playerLocale = hasStats ? stats.find(s => s.name === 'locale').value : '?';
     $: playerPlatform = hasStats ? stats.find(s => s.name === 'THORIUM_GAME_PLATFORM').value : '?';
     $: playerInstallDate = hasStats ? stats.find(s => s.name === 'INSTALL_DATE').value : '?';
-
-    realm.subscribe(function (realm) {
-        if (realm) {
-            gamerTag = player.gamerTagForRealm();
-        }
-    });
-
 
     function findThirdParty(thirdPartyName){
         if (!thirdPartyName) return false;
@@ -51,6 +43,20 @@
         player.email = player.email || '';
     }
 
+    async function handlePersonallyIdentifiableInformation() {
+        let pii = await players.getPersonallyIdentifiableInformation(player.id)
+        var element = document.createElement('a');
+        element.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(pii)));
+        element.setAttribute('download', 'Profile');
+
+        element.style.display = 'none';
+        document.body.appendChild(element);
+
+        element.click();
+
+        document.body.removeChild(element);
+    }
+
     function isEmailValid(email) {
         const isValid = email.indexOf('@') > 2 && email.indexOf('.') > 3;
         if (!isValid) {
@@ -60,6 +66,11 @@
 
     async function handleEmailWrite(next, old){
         await players.updateEmail(player, next);
+        return next;
+    }
+
+    async function handleDeviceIdWrite(next, old){
+        await players.updateDeviceId(player, next);
         return next;
     }
 
@@ -152,6 +163,11 @@
         left: calc(66% + 2px);
     }
 
+    #download-pii {
+        width: auto;
+        padding:15px;
+    }
+
 </style>
 
 
@@ -175,12 +191,21 @@
                             Forget User
                         </span>
                     </button>
-
                 </span>
                 <span slot="primary-button">
                     Forget
                 </span>
             </WarningPopup>
+        </p>
+        <p class="control">
+            <button id="download-pii" class="button trigger-button" on:click={handlePersonallyIdentifiableInformation}>
+                <span class="icon is-small">
+                    <FeatherIcon icon="archive"/>
+                </span>
+                <span>
+                   Download Personally Identifiable Information 
+                </span>
+            </button>
         </p>
     </ComponentButtons>
 
@@ -204,13 +229,27 @@
             <label class="label">DBID</label>
             <div class="control-with-buttons">
                 <div class="control dbid-control">
-                    <input class="input is-static" type="text" placeholder="dbid" readonly bind:value={gamerTag}>
+                    <input class="input is-static" type="text" placeholder="dbid" readonly value={player.gamerTagForRealm()}>
 
                 </div>
                 <div class="buttons">
                     <!-- only exists to provide consisten spacing with email input. -->
                 </div>
             </div>
+        </div>
+
+        <div class="field">
+            <label class="label">Device Id</label>
+            <AsyncInput
+                value={player.deviceId}
+                inputType="text"
+                placeholder="No Device Id Provided"
+                onWrite={handleDeviceIdWrite}
+                editable={true}
+                floatError={true}
+                buttonTopPadding={4}
+            />
+       
         </div>
 
         <div class="field">

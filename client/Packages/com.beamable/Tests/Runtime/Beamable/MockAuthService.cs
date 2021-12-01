@@ -123,7 +123,12 @@ namespace Packages.Beamable.Runtime.Tests.Beamable
 
         public Promise<User> RegisterDeviceId()
         {
-            throw new NotImplementedException();
+           throw new NotImplementedException();
+        }
+
+        public Promise<User> RemoveDeviceId()
+        {
+           throw new NotImplementedException();
         }
 
         public IBeamableRequester Requester { get; }

@@ -63,6 +63,8 @@ namespace Beamable.Server.Editor
          }
       }
 
+      public const string SERVICE_PUBLISHED_KEY = "service_published_{0}";
+
       public static void RefreshDescriptors()
       {
          var assemblies = AppDomain.CurrentDomain.GetAssemblies();
@@ -106,7 +108,8 @@ namespace Beamable.Server.Editor
                      {
                         Name = serviceAttribute.MicroserviceName,
                         Type = type,
-                        AttributePath = serviceAttribute.GetSourcePath()
+                        AttributePath = serviceAttribute.GetSourcePath(),
+                        Methods = GetClientCallables(type)
                      };
                      _descriptors.Add(descriptor);
                      _allDescriptors.Add(descriptor);
@@ -141,6 +144,43 @@ namespace Beamable.Server.Editor
       {
          RefreshDescriptors();
          return _descriptors;
+      }
+
+      private static List<ClientCallableDescriptor> GetClientCallables(Type serviceType)
+      {
+         var methods = serviceType.GetMethods(BindingFlags.Instance | BindingFlags.Public);
+         var output = new List<ClientCallableDescriptor>();
+         foreach (var method in methods)
+         {
+            var attr = method.GetCustomAttribute<ClientCallableAttribute>();
+            if (attr == null) continue;
+
+            var parameters = new List<ClientCallableParameterDescriptor>();
+            var methodParameters = method.GetParameters();
+            for (var i = 0; i < methodParameters.Length; i++)
+            {
+               var param = methodParameters[i];
+               var paramAttr = param.GetCustomAttribute<ParameterAttribute>();
+               var paramName = string.IsNullOrEmpty(paramAttr?.ParameterNameOverride)
+                  ? param.Name
+                  : paramAttr.ParameterNameOverride;
+               parameters.Add(new ClientCallableParameterDescriptor
+               {
+                  Name = paramName,
+                  Index = i,
+                  Type = param.ParameterType
+               });
+            }
+
+            output.Add(new ClientCallableDescriptor
+            {
+               Path = string.IsNullOrEmpty(attr.PathName) ? method.Name : attr.PathName,
+               Scopes = attr.RequiredScopes,
+               Parameters = parameters.ToArray(),
+            });
+         }
+
+         return output;
       }
 
       [DidReloadScripts]
@@ -187,57 +227,57 @@ namespace Beamable.Server.Editor
                {
                   allServices.Add(serverSideService);
                }
-               
+
                // add in anything locally...
                foreach (var descriptor in Descriptors)
                {
                   allServices.Add(descriptor.Name);
                }
-               
+
                // get enablement for each service...
                var entries = allServices.Select(name =>
-               { 
+               {
                    var configEntry = MicroserviceConfiguration.Instance.GetEntry(name);//config.FirstOrDefault(s => s.ServiceName == name);
                    return new ManifestEntryModel
                    {
                      Comment = "",
-                     ServiceName = name,
+                     Name = name,
                      Enabled = configEntry?.Enabled ?? true,
                      TemplateId = configEntry?.TemplateId ?? "small",
                    };
                }).ToList();
-               
-               
+
+
                var allStorages = new HashSet<string>();
 
                foreach (var serverSideStorage in manifest.storages.Select(s => s.storageName))
                {
                    allStorages.Add(serverSideStorage);
                }
-               
+
                foreach (var storageDescriptor in StorageDescriptors)
                {
                    allStorages.Add(storageDescriptor.Name);
                }
-               
+
                var storageEntries = allStorages.Select(name =>
                {
-                   var configEntry = MicroserviceConfiguration.Instance.GetStorageEntry(name);
-                   return new StorageEntryModel
-                   {
-                       StorageName = name,
-                       StorageType = configEntry?.StorageType ?? "mongov1",
-                       Enabled = configEntry?.Enabled ?? true,
-                       TemplateId = configEntry?.TemplateId ?? "small",
-                   };
+                  var configEntry = MicroserviceConfiguration.Instance.GetStorageEntry(name);
+                  return new StorageEntryModel
+                  {
+                     Name = name,
+                     Type = configEntry?.StorageType ?? "mongov1",
+                     Enabled = configEntry?.Enabled ?? true,
+                     TemplateId = configEntry?.TemplateId ?? "small",
+                  };
                }).ToList();
 
                return new ManifestModel
                {
                   ServerManifest = manifest.manifest.ToDictionary(e => e.serviceName),
                   Comment = "",
-                  Services = entries.ToDictionary(e => e.ServiceName),
-                  Storages = storageEntries.ToDictionary(s => s.StorageName)
+                  Services = entries.ToDictionary(e => e.Name),
+                  Storages = storageEntries.ToDictionary(s => s.Name)
                };
             });
          });
@@ -419,10 +459,10 @@ namespace Beamable.Server.Editor
       public static MongoStorageBuilder GetStorageBuilder(StorageObjectDescriptor descriptor)
       {
          var key = descriptor.Name;
-         
-         if (_storageToBuilder.ContainsKey(key)) 
+
+         if (_storageToBuilder.ContainsKey(key))
             return _storageToBuilder[key];
-         
+
          var builder = new MongoStorageBuilder();
          builder.Init(descriptor);
          _storageToBuilder.Add(key, builder);
@@ -466,11 +506,11 @@ namespace Beamable.Server.Editor
       public static event Action<ManifestModel, int> onBeforeDeploy;
       public static event Action<ManifestModel, int> onAfterDeploy;
 
-      public static async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context)
+      public static async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context, Action<IDescriptor> onServiceDeployed = null)
       {
          if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
 
-         var descriptorsCount = Descriptors.Count + StorageDescriptors.Count;
+         var descriptorsCount = Descriptors.Count;
          onBeforeDeploy?.Invoke(model, descriptorsCount);
 
          // TODO perform sort of diff, and only do what is required. Because this is a lot of work.
@@ -501,17 +541,18 @@ namespace Beamable.Server.Editor
                if (existingReference.imageId == imageId)
                {
                   Debug.Log(string.Format(BeamableLogConstants.ContainerAlreadyUploadedMessage, descriptor.Name));
+                  onServiceDeployed?.Invoke(descriptor);
                   continue;
                }
             }
-            
+
             var entryModel = model.Services[descriptor.Name];
             var serviceDependencies = new List<ServiceDependency>();
             foreach (var storage in descriptor.GetStorageReferences())
             {
                 serviceDependencies.Add(new ServiceDependency
                 {
-                    id = storage.Name, 
+                    id = storage.Name,
                     type = "storage"
                 });
             }
@@ -522,11 +563,11 @@ namespace Beamable.Server.Editor
             await uploader.UploadContainer(descriptor, () =>
             {
                 Debug.Log(string.Format(BeamableLogConstants.UploadedContainerMessage, descriptor.Name));
+                onServiceDeployed?.Invoke(descriptor);
             },
             () =>
             {
                 Debug.LogError(string.Format(BeamableLogConstants.CantUploadContainerMessage, descriptor.Name));
-                return;
             }, imageId);
          }
 
@@ -534,10 +575,10 @@ namespace Beamable.Server.Editor
 
          var manifest = model.Services.Select(kvp =>
          {
-            kvp.Value.Enabled &= nameToImageId.TryGetValue(kvp.Value.ServiceName, out var imageId);
+            kvp.Value.Enabled &= nameToImageId.TryGetValue(kvp.Value.Name, out var imageId);
             return new ServiceReference
             {
-               serviceName = kvp.Value.ServiceName,
+               serviceName = kvp.Value.Name,
                templateId = kvp.Value.TemplateId,
                enabled = kvp.Value.Enabled,
                comments = kvp.Value.Comment,
@@ -545,18 +586,18 @@ namespace Beamable.Server.Editor
                dependencies = kvp.Value.Dependencies
             };
          }).ToList();
-         
+
          var storages = model.Storages.Select(kvp =>
          {
              return new ServiceStorageReference
              {
-                 storageName = kvp.Value.StorageName,
-                 storageType = kvp.Value.StorageType,
+                 storageName = kvp.Value.Name,
+                 storageType = kvp.Value.Type,
                  templateId = kvp.Value.TemplateId,
                  enabled = kvp.Value.Enabled,
              };
          }).ToList();
-         
+
          await client.Deploy(new ServiceManifest
          {
             comments = model.Comment,
@@ -570,5 +611,10 @@ namespace Beamable.Server.Editor
          Debug.Log("Service Deploy Complete");
       }
 
+      public static void MicroserviceCreated(string serviceName)
+      {
+         var key = string.Format(SERVICE_PUBLISHED_KEY, serviceName);
+         EditorPrefs.SetBool(key, false);
+      }
    }
 }

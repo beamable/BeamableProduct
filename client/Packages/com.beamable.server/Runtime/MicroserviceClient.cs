@@ -12,7 +12,27 @@ using Beamable.Serialization.SmallerJSON;
 
 namespace Beamable.Server
 {
+   [Serializable]
+   public class MicroserviceClientDataWrapper<T> : ScriptableObject
+   {
+      public T Data;
+   }
+
    public class MicroserviceClient
+   {
+      protected async Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
+      {
+         return await MicroserviceClientHelper.Request<T>(serviceName, endpoint, serializedFields);
+      }
+
+      protected string SerializeArgument<T>(T arg) => MicroserviceClientHelper.SerializeArgument(arg);
+
+      protected string CreateUrl(string cid, string pid, string serviceName, string endpoint)
+         => MicroserviceClientHelper.CreateUrl(cid, pid, serviceName, endpoint);
+   }
+
+
+   public static class MicroserviceClientHelper
    {
       [System.Serializable]
       public class ResponseObject
@@ -26,9 +46,11 @@ namespace Beamable.Server
          public string payload;
       }
 
-      protected string _prefix;
+      static string _prefix;
 
-      protected string SerializeArgument<T>(T arg)
+      public static void SetPrefix(string prefix) => _prefix = prefix;
+
+      public static string SerializeArgument(object arg)
       {
          // JSONUtility will serialize objects correctly, but doesn't handle primitives well.
          if (arg == null)
@@ -60,11 +82,15 @@ namespace Beamable.Server
                return prim.ToString();
             case int prim:
                return prim.ToString();
-         }
+            case Vector2Int prim:
+               return JsonUtility.ToJson(new Vector2IntEx(prim));
+            case Vector3Int prim:
+               return JsonUtility.ToJson(new Vector3IntEx(prim));
+            }
          return JsonUtility.ToJson(arg);
       }
 
-      protected T DeserializeResult<T>(string json)
+     public static T DeserializeResult<T>(string json)
       {
          var defaultInstance = default(T);
 
@@ -89,7 +115,11 @@ namespace Beamable.Server
                return (T) (object) bool.Parse(json);
             case int _:
                return (T) (object) int.Parse(json);
-         }
+            case Vector2Int _:
+               return (T)(object)Vector2IntEx.DeserializeToVector2(json);
+            case Vector3Int _:
+               return (T)(object)Vector3IntEx.DeserializeToVector3(json);
+            }
 
          if (json.StartsWith("[") && json.EndsWith("]"))
          {
@@ -106,7 +136,7 @@ namespace Beamable.Server
          public TList items = default;
       }
 
-      protected string CreateUrl(string cid, string pid, string serviceName, string endpoint)
+      public static string CreateUrl(string cid, string pid, string serviceName, string endpoint)
       {
          var prefix = _prefix ?? (_prefix = MicroserviceIndividualization.GetServicePrefix(serviceName));
          var path = $"{prefix}micro_{serviceName}/{endpoint}";
@@ -114,7 +144,7 @@ namespace Beamable.Server
          return url;
       }
 
-      protected async Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
+      public static async Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
       {
          Debug.Log($"Client called {endpoint} with {serializedFields.Length} arguments");
          var argArray = "[ " + string.Join(",", serializedFields) + " ]";
@@ -144,14 +174,7 @@ namespace Beamable.Server
          return await requester.Request<T>(Method.POST, url, req, parser: Parser);
       }
 
-      protected static string CreateEndpointPrefix(string serviceName)
-      {
-         #if UNITY_EDITOR
-
-         #endif
-
-         return serviceName;
-      }
 
    }
+
 }

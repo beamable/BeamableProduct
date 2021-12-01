@@ -11,6 +11,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         protected override void CreateService(string serviceName)
         {
             MicroserviceEditor.CreateNewServiceFile(ServiceType.MicroService, serviceName);
+            Microservices.MicroserviceCreated(serviceName);
         }
     }
 }

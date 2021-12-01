@@ -31,9 +31,16 @@ namespace Beamable.Server.Api.Stats
       /// Retrieve one or more stat values, each by key
       /// </summary>
       /// <param name="userId"></param>
-      /// <param name="key"></param>
+      /// <param name="stats"></param>
       /// <returns></returns>
       Promise<Dictionary<string, string>> GetProtectedPlayerStats(long userId, string[] stats);
+
+      /// <summary>
+      /// Retrieve all stat values, each by key
+      /// </summary>
+      /// <param name="userId"></param>
+      /// <returns></returns>
+      Promise<Dictionary<string, string>> GetAllProtectedPlayerStats(long userId);
 
       /// <summary>
       /// Set a stat value, by key
@@ -57,5 +64,7 @@ namespace Beamable.Server.Api.Stats
 
       Promise<Dictionary<string, string>> GetStats(string domain, string access, string type, long userId,
          string[] stats);
+      
+      Promise<StatsSearchResponse> SearchStats(string domain, string access, string type, List<Criteria> criteria);
    }
 }

@@ -16,6 +16,7 @@ EventScheduleWindow {
     left: 0px;
     right: 0px;
 }
+
 EventScheduleWindow > TemplateContainer > #mainVisualElement,
 EventScheduleWindow > TemplateContainer {
     flex-grow: 1;
@@ -32,18 +33,12 @@ EventScheduleWindow ScrollView #ContentView.content-view {
 
 #buttonStrip {
     flex-direction: row;
-    padding-right: 10px;
     justify-content: flex-end;
     margin-top: 5px;
     margin-bottom: 5px;
 }
 
 #confirmBtn {
-    width: 100px;
-    height: 28px;
-}
-
-#cancelBtn {
     width: 100px;
     height: 28px;
 }
