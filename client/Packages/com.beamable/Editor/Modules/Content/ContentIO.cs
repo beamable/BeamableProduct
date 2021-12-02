@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
@@ -916,5 +918,84 @@ namespace Beamable.Editor.Content
          OnContentDeleted?.Invoke(content);
       }
 
+      [MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Bake Content")]
+      public static async Task BakeContent()
+      {
+          void BakeLog(string message)
+          {
+              Debug.Log($"[Bake Content] {message}");
+          }
+          
+          var api = await EditorAPI.Instance;
+          var allContent = api.ContentIO.FindAll();
+          
+          List<ContentObject> contentList = null;
+          if (allContent != null)
+          {
+              contentList = allContent.ToList();
+          }
+          
+          if (contentList == null || contentList.Count == 0)
+          {
+              BakeLog("Content list is empty");
+              return;
+          }
+          
+          BakeLog($"Baking {contentList.Count} items");
+          
+          var serverManifest = await api.ContentIO.FetchManifest();
+          
+          string assetsPath = Path.Combine(Application.streamingAssetsPath, "bakedContent.zip");
+
+          if (ContentConfiguration.Instance.EnableBakedContentCompression)
+          {
+              BakeWithCompression(contentList, serverManifest);
+          }
+          else
+          {
+              BakeWithoutCompression(contentList, serverManifest);
+          }
+          
+          BakeLog($"Baked {contentList.Count} content objects to '{assetsPath}'");
+      }
+
+      private static async void BakeWithCompression(List<ContentObject> contentList, Manifest serverManifest)
+      {
+          Directory.CreateDirectory(Application.streamingAssetsPath);
+          
+          using var memoryStream = new MemoryStream();
+          using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+          {
+              foreach (var content in contentList)
+              {    
+                  var version = serverManifest.References.Find(reference => reference.Id == content.Id).Version;
+                  content.SetIdAndVersion(content.Id, version);
+                      
+                  var entry = archive.CreateEntry(content.Id);
+                  using var entryStream = entry.Open();
+                  using var streamWriter = new StreamWriter(entryStream);
+                  await streamWriter.WriteAsync(content.ToJson());
+              }
+          }
+
+          using (var fileStream = new FileStream(ContentConfiguration.Instance.CompressedContentPath, FileMode.Create))
+          {
+              memoryStream.Seek(0, SeekOrigin.Begin);
+              await memoryStream.CopyToAsync(fileStream);
+          }
+      }
+
+      private static void BakeWithoutCompression(List<ContentObject> contentList, Manifest serverManifest)
+      {
+          Directory.CreateDirectory(ContentConfiguration.Instance.DecompressedContentPath);
+          
+          foreach (var content in contentList)
+          {    
+              var version = serverManifest.References.Find(reference => reference.Id == content.Id).Version;
+              content.SetIdAndVersion(content.Id, version);
+              string path = Path.Combine(ContentConfiguration.Instance.DecompressedContentPath, content.Id);
+              File.WriteAllText(path, content.ToJson());
+          }
+      }
    }
 }

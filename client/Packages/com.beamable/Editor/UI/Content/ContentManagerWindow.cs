@@ -1,23 +1,14 @@
-using System;
 using System.Collections.Generic;
-using System.IO;
-using System.IO.Compression;
 using System.Threading.Tasks;
 using System.Linq;
 using Beamable.Common.Api.Auth;
-using Beamable.Common.Content;
 using Beamable.Editor.Content.Components;
 using Beamable.Editor.Content.Models;
-using Beamable.Editor;
 using Beamable.Editor.Login.UI;
 using UnityEditor;
 using Beamable.Editor.NoUser;
 using Beamable.Editor.Realms;
 using Beamable.Editor.UI.Buss.Components;
-using Beamable.Platform.SDK;
-using Core.Platform.SDK;
-using ICSharpCode.SharpZipLib.Zip;
-using Modules.Content;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 #if UNITY_2018
@@ -25,7 +16,6 @@ using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
 #endif
 
 namespace Beamable.Editor.Content
@@ -561,86 +551,6 @@ namespace Beamable.Editor.Content
          });
 
          Instance._currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
-      }
-
-      [MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Bake Content")]
-      private static async Task BakeContent()
-      {
-          void BakeLog(string message)
-          {
-              Debug.Log($"[Bake Content] {message}");
-          }
-          
-          var api = await EditorAPI.Instance;
-          var allContent = api.ContentIO.FindAll();
-          
-          List<ContentObject> contentList = null;
-          if (allContent != null)
-          {
-              contentList = allContent.ToList();
-          }
-          
-          if (contentList == null || contentList.Count == 0)
-          {
-              BakeLog("Content list is empty");
-              return;
-          }
-          
-          BakeLog($"Baking {contentList.Count} items");
-          
-          var serverManifest = await api.ContentIO.FetchManifest();
-          
-          string assetsPath = Path.Combine(Application.streamingAssetsPath, "bakedContent.zip");
-
-          if (ContentConfiguration.Instance.EnableBakedContentCompression)
-          {
-              BakeWithCompression(contentList, serverManifest);
-          }
-          else
-          {
-              BakeWithoutCompression(contentList, serverManifest);
-          }
-          
-          BakeLog($"Baked {contentList.Count} content objects to '{assetsPath}'");
-      }
-
-      private static async void BakeWithCompression(List<ContentObject> contentList, Manifest serverManifest)
-      {
-          Directory.CreateDirectory(Application.streamingAssetsPath);
-          
-          using var memoryStream = new MemoryStream();
-          using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
-          {
-              foreach (var content in contentList)
-              {    
-                  var version = serverManifest.References.Find(reference => reference.Id == content.Id).Version;
-                  content.SetIdAndVersion(content.Id, version);
-                      
-                  var entry = archive.CreateEntry(content.Id);
-                  using var entryStream = entry.Open();
-                  using var streamWriter = new StreamWriter(entryStream);
-                  await streamWriter.WriteAsync(content.ToJson());
-              }
-          }
-
-          using (var fileStream = new FileStream(ContentConfiguration.Instance.CompressedContentPath, FileMode.Create))
-          {
-              memoryStream.Seek(0, SeekOrigin.Begin);
-              await memoryStream.CopyToAsync(fileStream);
-          }
-      }
-
-      private static void BakeWithoutCompression(List<ContentObject> contentList, Manifest serverManifest)
-      {
-          Directory.CreateDirectory(ContentConfiguration.Instance.DecompressedContentPath);
-          
-          foreach (var content in contentList)
-          {    
-              var version = serverManifest.References.Find(reference => reference.Id == content.Id).Version;
-              content.SetIdAndVersion(content.Id, version);
-              string path = Path.Combine(ContentConfiguration.Instance.DecompressedContentPath, content.Id);
-              File.WriteAllText(path, content.ToJson());
-          }
       }
     }
 }
