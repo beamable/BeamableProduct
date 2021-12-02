@@ -1,9 +1,57 @@
-#header {
+#styleContainer {
+    height: 200px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    -unity-text-align: middle-left;
+    margin-bottom: 10px;
+}
+
+#header {
     -unity-font-style: bold;
-    padding-left: 20px;
+    padding-left: 10px;
     color: rgba(256, 256, 256, 1);
-    /*background-color: rgba(0, 0, 0, 1);*/
+    height: 36px;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-self: stretch;
+    margin-bottom: 6px;
+}
+
+#styleId {
+    margin-left: 10px;
+    min-width: 50px;
+    flex-grow: 1;
+}
+
+#colorBlock {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    width: 5px;
+    background-color: rgb(0,145,255);
+}
+
+.button {
+    -unity-text-align: middle-center;
+    align-self: center;
+    margin-left: 3px;
     height: 30px;
+    background-color: rgb(100,100,100);
+    flex-shrink: 0;
     justify-content: center;
+}
+
+.smallButton {
+    width: 30px;
+}
+
+.mediumButton {
+    width: 60px;
+}
+
+.largeButton {
+    width: 90px;
+}
+
+#properties {
+    /*min-height: 100px;*/
+    background-color: rgb(77,77,77);
 }

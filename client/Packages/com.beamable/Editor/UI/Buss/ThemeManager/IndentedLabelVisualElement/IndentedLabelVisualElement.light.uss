@@ -1,4 +1,8 @@
-﻿.hovered {
+﻿#label {
+    color: rgb(0,0,0);
+}
+
+.hovered {
     background-color: rgba(0,0,0,0.1);
 }
 

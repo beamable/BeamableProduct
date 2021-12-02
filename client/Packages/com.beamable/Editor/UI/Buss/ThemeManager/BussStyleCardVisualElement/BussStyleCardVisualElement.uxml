@@ -7,7 +7,18 @@
 
     <engine:VisualElement name="styleContainer">
         <engine:VisualElement name="header">
-            <engine:TextElement text="#someStyleId"/>
+            <engine:VisualElement name="colorBlock"/>
+            <engine:TextElement name="styleId" text="#someStyleId"/>
+            <engine:VisualElement name="button01" class="button largeButton">
+                <engine:TextElement text="Add new rule"/>
+            </engine:VisualElement>
+            <engine:VisualElement name="button02" class="button mediumButton">
+                <engine:TextElement text="Show all"/>
+            </engine:VisualElement>
+            <engine:VisualElement name="button03" class="button smallButton"/>
+            <engine:VisualElement name="button04" class="button smallButton"/>
+            <engine:VisualElement name="button05" class="button smallButton"/>
+            <engine:VisualElement name="button06" class="button smallButton"/>
         </engine:VisualElement>
         <engine:VisualElement name="properties"/>
     </engine:VisualElement>

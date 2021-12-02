@@ -1,4 +1,6 @@
 ﻿using Beamable.Editor.UI.Buss;
+using Beamable.UI.Buss;
+using System;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -16,9 +18,40 @@ namespace Beamable.Editor.UI.Components
 		public BussStyleCardVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}") { }
 
+		private BussStyleRule _styleRule;
+		private TextElement _styleId;
+		private VisualElement _properties;
+
 		public override void Refresh()
 		{
 			base.Refresh();
+
+			_styleId = Root.Q<TextElement>("styleId");
+			_styleId.text = _styleRule.SelectorString;
+
+			_properties = Root.Q<VisualElement>("properties");
+
+			CreateProperties();
+		}
+
+		public void Setup(BussStyleRule styleRule)
+		{
+			_styleRule = styleRule;
+		}
+
+		private void CreateProperties()
+		{
+			foreach (BussPropertyProvider property in _styleRule.Properties)
+			{
+				for (int i = 0; i < 4; i++)
+				{
+					LabeledTextField comp = new LabeledTextField();
+					comp.Setup(property.Key, String.Empty, () => {} , 0, 0);
+					TextElement label = new TextElement();
+					label.text = property.Key;
+					_properties.Add(label);
+				}
+			}
 		}
 	}
 }
