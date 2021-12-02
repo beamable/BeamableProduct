@@ -1,6 +1,8 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Inventory;
+using Beamable.Serialization.SmallerJSON;
+using System.Collections.Generic;
 
 namespace Beamable.Api.Inventory
 {
@@ -22,9 +24,10 @@ namespace Beamable.Api.Inventory
 
       private readonly InventoryView view = new InventoryView();
 
-      public InventorySubscription(IPlatformService platform, IBeamableRequester requester) : base(platform, requester, SERVICE)
+      public InventorySubscription(IPlatformService platform, IBeamableRequester requester) 
+	      : base(platform, requester, SERVICE, new BeamableGetApiResourceViaPost<InventoryResponse>())
       {
-         UsesHierarchyScopes = true;
+	      UsesHierarchyScopes = true;
       }
 
       protected override void Reset()

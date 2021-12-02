@@ -1,5 +1,8 @@
 using System.Collections.Generic;
-using Beamable.UI.Buss;
+#if UNITY_EDITOR
+using UnityEditor;
+using UnityEditor.SceneManagement;
+#endif
 using UnityEngine;
 
 #if UNITY_2018
@@ -18,6 +21,25 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 
         // TODO: serialized only for debug purposes. Remove before final push
         [SerializeField] private List<BussElement> _rootBussElements = new List<BussElement>();
+
+#if UNITY_EDITOR
+	    static BussConfiguration()
+	    {
+		    // temporary solution to refresh the list of BussElements on scene change
+		    EditorSceneManager.sceneOpened += (scene, mode) => Instance.RefreshBussElements();
+		    EditorSceneManager.sceneClosed += scene => Instance.RefreshBussElements();
+	    }
+
+	    void RefreshBussElements()
+	    {
+		    _rootBussElements.Clear();
+		    foreach (BussElement element in FindObjectsOfType<BussElement>())
+		    {
+			    element.CheckParent();
+		    }
+		    EditorUtility.SetDirty(this);
+	    }
+#endif
 
         public void RegisterObserver(BussElement bussElement)
         {
@@ -50,7 +72,9 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
             }
         }
 
-        private void OnStyleSheetChanged(BussElement element, BussStyleSheet styleSheet) {
+        private void OnStyleSheetChanged(BussElement element, BussStyleSheet styleSheet)
+        {
+	        if (element == null) return;
             if (element.StyleSheet == styleSheet) {
                 element.OnStyleChanged();
             }

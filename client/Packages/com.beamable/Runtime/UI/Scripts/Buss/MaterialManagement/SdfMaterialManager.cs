@@ -21,7 +21,7 @@ namespace Beamable.UI.Sdf.MaterialManagement {
                 backgroundMode = backgroundMode
             };
             
-            if (!_materials.TryGetValue(data, out var material)) {
+            if (!_materials.TryGetValue(data, out var material) || material == null) {
                 material = new Material(baseMaterial);
                 _materials[data] = material;
                 material.SetTexture(BackgroundTexturePropID, secondaryTexture);
