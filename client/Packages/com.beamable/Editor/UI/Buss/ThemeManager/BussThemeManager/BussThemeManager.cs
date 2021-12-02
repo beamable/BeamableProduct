@@ -1,8 +1,10 @@
 ﻿using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
+using Beamable.UI.Buss;
 using Editor.UI.BUSS;
 using UnityEditor;
+using UnityEngine;
 using UnityEngine.UI;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -32,6 +34,8 @@ namespace Beamable.UI.BUSS
 
 		private VisualElement _navigationGroup;
 		private VisualElement _stylesGroup;
+		private ObjectField _styleSheetSource;
+		private BussStyleSheet _currentStyleSheet;
 
 		private BussThemeManager() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussThemeManager)}/{nameof(BussThemeManager)}")
@@ -43,14 +47,38 @@ namespace Beamable.UI.BUSS
 
 			_navigationGroup = Root.Q<VisualElement>("navigation");
 			_stylesGroup = Root.Q<VisualElement>("styles");
+			_styleSheetSource = Root.Q<ObjectField>("styleSheetSource");
+			_styleSheetSource.objectType = typeof(BussStyleSheet);
+			_styleSheetSource.UnregisterValueChangedCallback(StyleSheetChanged);
+			_styleSheetSource.RegisterValueChangedCallback(StyleSheetChanged);
 			
 			ComponentBasedHierarchyVisualElement<Text> hierarchyComponent = new ComponentBasedHierarchyVisualElement<Text>();
 			hierarchyComponent.Refresh();
 			_navigationGroup.Add(hierarchyComponent);
+		}
 
-			BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-			styleCard.Refresh();
-			_stylesGroup.Add(styleCard);
+		private void StyleSheetChanged(ChangeEvent<Object> evt)
+		{
+			ClearCurrentStyleSheet();
+			_currentStyleSheet = (BussStyleSheet)evt.newValue;
+
+			if (_currentStyleSheet == null)
+			{
+				return;
+			}
+
+			foreach (BussStyleRule styleRule in _currentStyleSheet.Styles)
+			{
+				BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
+				styleCard.Setup(styleRule);
+				styleCard.Refresh();
+				_stylesGroup.Add(styleCard);
+			}
+		}
+
+		private void ClearCurrentStyleSheet()
+		{
+			_stylesGroup.Clear();
 		}
 	}
 }

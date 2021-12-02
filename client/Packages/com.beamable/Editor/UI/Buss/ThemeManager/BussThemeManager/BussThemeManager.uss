@@ -1,5 +1,5 @@
 #mainVisualElement {
-    background-color: rgba(56, 56, 56, 1);
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     padding-top: 10px;
     padding-left: 10px;
     padding-right: 10px;
@@ -7,18 +7,15 @@
 }
 
 #navigation {
-    background-color: gray;
-    height: 200px;
+    height: 210px;
+    background-color: rgb(77,77,77);
+    margin-bottom: 10px;
 }
 
-#divider {
-    height: 10px;
+#styleSheetSource {
+    margin-bottom: 10px;
 }
 
 #styles {
     
-}
-
-#scrollView {
-    flex-grow: 1;
 }

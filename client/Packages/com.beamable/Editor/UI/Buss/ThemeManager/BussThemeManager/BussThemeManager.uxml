@@ -2,12 +2,13 @@
 <UXML
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:engine="UnityEngine.Experimental.UIElements"
+        xmlns:editor="UnityEditor.UIElements"
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:VisualElement name="mainVisualElement">
         <engine:VisualElement name="navigation"/>
-        <engine:VisualElement name="divider"/>
+        <editor:ObjectField name="styleSheetSource" allow-scene-objects="false"/>
         <engine:VisualElement name="styles"/>
     </engine:VisualElement>
 
