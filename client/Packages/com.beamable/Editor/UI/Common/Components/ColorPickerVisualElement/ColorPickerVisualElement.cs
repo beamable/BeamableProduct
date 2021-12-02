@@ -17,20 +17,19 @@ namespace Beamable.Editor.UI.Components
 		public ColorPickerVisualElement() : base(
 			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(ColorPickerVisualElement)}/{nameof(ColorPickerVisualElement)}")
 		{ }
-
-		public Color SelectedColor {
-			get;
-			set;
-		}
+		
+		public Color SelectedColor { get; private set; }
 
 		public override void Refresh()
 		{
 			base.Refresh();
+			
+			VisualElement main = Root.Q<VisualElement>("mainVisualElement");
 
-			ColorField colorField = Root.Q<ColorField>("colorField");
-
-			colorField.UnregisterValueChangedCallback(OnColorChanged);
+			ColorField colorField = new ColorField();
+			colorField.name = "colorField";
 			colorField.RegisterValueChangedCallback(OnColorChanged);
+			main.Add(colorField);
 		}
 
 		private void OnColorChanged(ChangeEvent<Color> evt)
