@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using Beamable;
 using Beamable.Common.Content;
@@ -30,6 +31,12 @@ namespace Modules.Content
             get => ValidateManifestID(_runtimeManifestID);
             set => _runtimeManifestID = ValidateManifestID(value);
         }
+
+        [Tooltip("Create zip archive of content upon baking. Makes first content resolve call longer due to decompression.")]
+        public bool EnableBakedContentCompression = true;
+
+        public readonly string CompressedContentPath = Path.Combine(Application.streamingAssetsPath, "bakedContent.zip");
+        public readonly string DecompressedContentPath = Path.Combine(Application.streamingAssetsPath, "Baked/Content");
 
         public ContentParameterProvider ParameterProvider {
             get {
