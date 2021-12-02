@@ -117,7 +117,7 @@ namespace Beamable.Editor.Tests.Content
             window.StartTimeComponent.Set(DateTime.Now);
             window.CalendarComponent.Calendar.SetInitialValues(new List<string>
             {
-                "05-10-2021",
+                "5-10-2021",
                 "10-11-2021",
                 "12-12-2022"
             });
@@ -293,18 +293,12 @@ namespace Beamable.Editor.Tests.Content
             {
                 if (isPeriod)
                 {
-                    int startHour = Convert.ToInt32(schedule.definitions[0].hour[0]);
-                    int endHour = Convert.ToInt32(schedule.definitions[schedule.definitions.Count - 1].hour[0]);
+	                int startHour = Convert.ToInt32(schedule.definitions[0].hour[0]);
+	                int endHour = Convert.ToInt32(schedule.definitions[schedule.definitions.Count - 1].hour[0]);
+	                int startMinute = Convert.ToInt32(schedule.definitions[0].minute[0]);
+	                int endMinute = Convert.ToInt32(schedule.definitions[schedule.definitions.Count - 1].minute[schedule.definitions[schedule.definitions.Count - 1].minute.Count - 1]);
 
-                    string startMinutesRange = schedule.definitions[0].minute[0];
-                    string[] startSplitRange = startMinutesRange.Split('-');
-                    int startMinute = Convert.ToInt32(startSplitRange[0]);
-
-                    string endMinutesRange = schedule.definitions[schedule.definitions.Count - 1].minute[0];
-                    string[] endSplitRange = endMinutesRange.Split('-');
-                    int endMinute = Convert.ToInt32(endSplitRange[1]);
-
-                    bool valid = endHour > startHour || (endHour == startHour && endMinute > startMinute);
+	                bool valid = endHour > startHour || (endHour == startHour && endMinute > startMinute);
                     Assert.IsTrue(valid, $"{warningHeader} active period to should be later than active period from");
                 }
             }
