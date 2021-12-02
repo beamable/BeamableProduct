@@ -159,6 +159,7 @@ namespace Beamable.UI.Buss
 					var pseudoProperty = GetFromStyle(style);
 					if (Get(style.BaseStyle) is IInterpolatedBussProperty interpolatedProperty)
 					{
+						// TODO: cache interpolated properties
 						return (T)interpolatedProperty.Interpolate(pseudoProperty, style.BlendValue);
 					}
 

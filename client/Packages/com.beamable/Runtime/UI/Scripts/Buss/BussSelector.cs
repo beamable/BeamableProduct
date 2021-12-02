@@ -353,8 +353,17 @@ namespace Beamable.UI.Buss
 		public static readonly Regex TypeRegex = new Regex("^[a-zA-Z]+[a-zA-Z0-9_]*");
 		public static readonly Regex PseudoRegex = new Regex("\\:[a-zA-Z0-9-_]+");
 
+		private static readonly Dictionary<string, BussSelector> ParsedSelectors = new Dictionary<string, BussSelector>();
+
 		public static BussSelector Parse(string input)
 		{
+			if (ParsedSelectors.TryGetValue(input, out var cached))
+			{
+				return cached;
+			}
+
+			BussSelector result = null;
+
 			var separation = input.Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries);
 			var selectors = new List<BussSelector>();
 			foreach (var part in separation)
@@ -368,15 +377,16 @@ namespace Beamable.UI.Buss
 
 			if (selectors.Count > 1)
 			{
-				return new CombinedSelector(selectors.ToArray(), false);
+				result = new CombinedSelector(selectors.ToArray(), false);
 			}
-
-			if (selectors.Count > 0)
+			else if (selectors.Count > 0)
 			{
-				return selectors[0];
+				result = selectors[0];
 			}
 
-			return null;
+			ParsedSelectors[input] = result;
+
+			return result;
 		}
 
 		private static BussSelector TryParseSingle(string input)

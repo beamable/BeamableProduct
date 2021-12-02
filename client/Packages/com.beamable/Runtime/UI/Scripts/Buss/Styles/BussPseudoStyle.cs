@@ -10,8 +10,6 @@ namespace Beamable.UI.Buss
 		public float BlendValue;
 		public FloatTween Tween;
 
-		private Dictionary<string, IBussProperty> _interpolatedProperties;
-
 		public BussStyle MergeWithBaseStyle(BussStyle baseStyle)
 		{
 			if (Enabled && BlendValue > 0f)
