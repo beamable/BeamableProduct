@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -15,6 +14,7 @@ using Beamable.Common.Content.Serialization;
 using Beamable.Common.Content.Validation;
 using Beamable.Editor.Content.UI;
 using Beamable.Serialization;
+using Core.Platform.SDK;
 using Modules.Content;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
@@ -959,41 +959,34 @@ namespace Beamable.Editor.Content
           BakeLog($"Baked {contentList.Count} content objects to '{assetsPath}'");
       }
 
-      private static async void BakeWithCompression(List<ContentObject> contentList, Manifest serverManifest)
+      private static void BakeWithCompression(List<ContentObject> contentList, Manifest serverManifest)
       {
           Directory.CreateDirectory(Application.streamingAssetsPath);
           
-          using var memoryStream = new MemoryStream();
-          using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+          ContentDataInfo[] contentData = new ContentDataInfo[contentList.Count];
+          for (int i = 0; i < contentList.Count; i++)
           {
-              foreach (var content in contentList)
-              {    
-                  var version = serverManifest.References.Find(reference => reference.Id == content.Id).Version;
-                  content.SetIdAndVersion(content.Id, version);
-                      
-                  var entry = archive.CreateEntry(content.Id);
-                  using var entryStream = entry.Open();
-                  using var streamWriter = new StreamWriter(entryStream);
-                  await streamWriter.WriteAsync(content.ToJson());
-              }
+             var content = contentList[i]; 
+             var version = serverManifest.References.Find(reference => reference.Id == content.Id).Version;
+             content.SetIdAndVersion(content.Id, version);
+             contentData[i] = new ContentDataInfo { contentId = content.Id, data = content.ToJson() };
           }
 
-          using (var fileStream = new FileStream(ContentConfiguration.Instance.CompressedContentPath, FileMode.Create))
-          {
-              memoryStream.Seek(0, SeekOrigin.Begin);
-              await memoryStream.CopyToAsync(fileStream);
-          }
+          ContentDataInfoWrapper fileData = new ContentDataInfoWrapper { content = contentData.ToList() };
+          
+          var compressed = Gzip.Compress(JsonUtility.ToJson(fileData));
+          File.WriteAllBytes(ContentConstants.CompressedContentPath, compressed);
       }
 
       private static void BakeWithoutCompression(List<ContentObject> contentList, Manifest serverManifest)
       {
-          Directory.CreateDirectory(ContentConfiguration.Instance.DecompressedContentPath);
+          Directory.CreateDirectory(ContentConstants.DecompressedContentPath);
           
           foreach (var content in contentList)
           {    
               var version = serverManifest.References.Find(reference => reference.Id == content.Id).Version;
               content.SetIdAndVersion(content.Id, version);
-              string path = Path.Combine(ContentConfiguration.Instance.DecompressedContentPath, content.Id);
+              string path = Path.Combine(ContentConstants.DecompressedContentPath, content.Id);
               File.WriteAllText(path, content.ToJson());
           }
       }

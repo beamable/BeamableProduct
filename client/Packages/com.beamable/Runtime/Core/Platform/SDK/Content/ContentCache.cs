@@ -147,17 +147,13 @@ namespace Beamable.Content
             contentObject = null;
             
             // extract content archive if available
-            string contentPath = Path.Combine(Application.streamingAssetsPath, "bakedContent.zip");
-            string extractPath = Application.streamingAssetsPath + "/Baked/Content";
-            if (File.Exists(contentPath) && !Directory.Exists(extractPath))
+            if (File.Exists(ContentConstants.CompressedContentPath))
             {
-                ZipFile.ExtractToDirectory(contentPath, extractPath);
-#if !UNITY_EDITOR
-                File.Delete(contentPath);
-#endif
+                ExtractContent();
+                File.Delete(ContentConstants.CompressedContentPath);
             }
             
-            string resourcePath = Path.Combine(extractPath, info.contentId);
+            string resourcePath = Path.Combine(ContentConstants.DecompressedContentPath, info.contentId);
             if (File.Exists(resourcePath))
             {
                 var json = File.ReadAllText(resourcePath);
@@ -171,6 +167,20 @@ namespace Beamable.Content
             }
             
             return false;
+        }
+
+        private void ExtractContent()
+        {
+            Directory.CreateDirectory(ContentConstants.DecompressedContentPath);
+            var compressed = File.ReadAllBytes(ContentConstants.CompressedContentPath);
+            string content = Gzip.Decompress(compressed);
+            var list = JsonUtility.FromJson<ContentDataInfoWrapper>(content);
+            
+            foreach (var contentInfo in list.content)
+            {
+                string path = Path.Combine(ContentConstants.DecompressedContentPath, contentInfo.contentId);
+                File.WriteAllText(path, contentInfo.data);
+            }
         }
 
         private static void SaveToDisk(ClientContentInfo info, string raw, IBeamableFilesystemAccessor fsa)

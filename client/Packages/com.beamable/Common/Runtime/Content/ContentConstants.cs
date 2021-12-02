@@ -1,3 +1,6 @@
+using System.IO;
+using UnityEngine;
+
 namespace Beamable.Common.Content
 {
    public static class ContentConstants
@@ -8,5 +11,8 @@ namespace Beamable.Common.Content
 
       //Editor Property Drawer Utils
       public const string MISSING_SUFFIX = " (missing)";
+      
+      public static readonly string CompressedContentPath = Path.Combine(Application.streamingAssetsPath, "bakedContent");
+      public static readonly string DecompressedContentPath = Path.Combine(Application.streamingAssetsPath, "Baked/Content");
    }
 }
