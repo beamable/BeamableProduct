@@ -941,6 +941,24 @@ namespace Beamable.Editor.Content
               BakeLog("Content list is empty");
               return;
           }
+
+          foreach (var content in contentList)
+          {
+             var status = await api.ContentIO.GetStatus(content);
+             if (status != ContentStatus.CURRENT)
+             {
+                bool result = EditorUtility.DisplayDialog("Local changes", 
+                   "You have local changes in your content. Do you want to proceed with baking using this data?", 
+                   "Yes", "No");
+                
+                if (!result)
+                {
+                   return;
+                }
+
+                break;
+             }
+          }
           
           BakeLog($"Baking {contentList.Count} items");
           
