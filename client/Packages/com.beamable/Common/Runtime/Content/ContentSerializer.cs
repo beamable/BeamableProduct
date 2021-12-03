@@ -584,25 +584,6 @@ namespace Beamable.Common.Content
 
          return ConvertItem<TContent>(root);
       }
-
-      public ArrayDict[] DeserializeList(string json)
-      {
-         var root = Json.Deserialize(json) as ArrayDict;
-         if (root == null) throw new ContentDeserializationException(json);
-
-         if (root.Values.ToArray()[0] is List<object> list)
-         {
-            var array = new ArrayDict[list.Count];
-            for (int i = 0; i < list.Count; i++)
-            {
-               array[i] = list[i] as ArrayDict;
-            }
-
-            return array;
-         }
-         
-         return null;
-      }
       
       public TContent ConvertItem<TContent>(ArrayDict root)
          where TContent : TContentBase, IContentObject, new()

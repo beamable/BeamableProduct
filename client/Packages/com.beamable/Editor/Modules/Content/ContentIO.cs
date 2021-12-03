@@ -918,13 +918,14 @@ namespace Beamable.Editor.Content
          OnContentDeleted?.Invoke(content);
       }
 
+      /// <summary>
+      /// Writes all content objects to streaming assets in either compressed or uncompressed form
+      /// based on setting in Content Configuration.
+      /// </summary>
       [MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Bake Content")]
       public static async Task BakeContent()
       {
-          void BakeLog(string message)
-          {
-              Debug.Log($"[Bake Content] {message}");
-          }
+          void BakeLog(string message) => Debug.Log($"[Bake Content] {message}");
           
           var api = await EditorAPI.Instance;
           var allContent = api.ContentIO.FindAll();

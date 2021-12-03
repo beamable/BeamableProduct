@@ -205,8 +205,8 @@ namespace Beamable.Content
 			{
 				var cacheType = typeof(ContentCache<>).MakeGenericType(contentType);
 				var constructor = cacheType.GetConstructor(new[]
-					{typeof(IHttpRequester), typeof(IBeamableFilesystemAccessor), typeof(IContentApi)});
-				rawCache = (ContentCache) constructor.Invoke(new[] {Requester, (object) FilesystemAccessor, this});
+					{typeof(IHttpRequester), typeof(IBeamableFilesystemAccessor)});
+				rawCache = (ContentCache) constructor.Invoke(new[] {Requester, (object) FilesystemAccessor});
 
 				_contentCaches.Add(contentType, rawCache);
 			}

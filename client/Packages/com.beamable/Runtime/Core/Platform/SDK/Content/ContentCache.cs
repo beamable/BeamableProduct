@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Content;
@@ -10,7 +9,6 @@ using Beamable.Common.Content.Serialization;
 using Beamable.Spew;
 using Core.Platform.SDK;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
 
 namespace Beamable.Content
 {
@@ -40,13 +38,11 @@ namespace Beamable.Content
         
         private readonly IHttpRequester _requester;
         private readonly IBeamableFilesystemAccessor _filesystemAccessor;
-        private readonly IContentApi _contentService;
 
-        public ContentCache(IHttpRequester requester, IBeamableFilesystemAccessor filesystemAccessor, IContentApi contentService)
+        public ContentCache(IHttpRequester requester, IBeamableFilesystemAccessor filesystemAccessor)
         {
             _requester = requester;
             _filesystemAccessor = filesystemAccessor;
-            _contentService = contentService;
         }
 
         public override Promise<IContentObject> GetContentObject(ClientContentInfo requestedInfo)
