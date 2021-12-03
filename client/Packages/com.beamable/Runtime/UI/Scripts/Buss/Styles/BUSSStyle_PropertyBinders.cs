@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Beamable.UI.Tweening;
+using TMPro;
 using UnityEngine;
 
 namespace Beamable.UI.Buss
@@ -71,6 +72,13 @@ namespace Beamable.UI.Buss
 
 		public static readonly PropertyBinding<IFloatBussProperty> FontSize =
 			new PropertyBinding<IFloatBussProperty>("fontSize", new FloatBussProperty(18f));
+			
+        public static readonly PropertyBinding<IColorBussProperty> FontColor = 
+	        new PropertyBinding<IColorBussProperty>("fontColor", new SingleColorBussProperty(Color.white));
+	        
+        public static readonly PropertyBinding<TextAlignmentOptionsBussProperty> TextAlignment =
+	        new PropertyBinding<TextAlignmentOptionsBussProperty>("textAlignment", new TextAlignmentOptionsBussProperty(TextAlignmentOptions.TopLeft));
+
 
 		// Transitions
 		public static readonly PropertyBinding<IFloatBussProperty> TransitionDuration =
