@@ -121,7 +121,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         public void UpdateTextButtonTexts(bool allServicesSelected)
         {
             var startLabel = _startAll.Q<Label>();
-            startLabel.text = allServicesSelected ? "Start all" : "Start selected";
+            startLabel.text = allServicesSelected ? "Play all" : "Play selected";
             var buildLabel = _buildAll.Q<Label>();
             buildLabel.text = allServicesSelected ? "Build all" : "Build selected";
         }
