@@ -58,6 +58,8 @@ namespace Beamable.UI.Buss
 
 		public string Key => key;
 
+		public SerializableValueObject SerializedProperty => property;
+
 		public IBussProperty GetProperty()
 		{
 			return property.Get<IBussProperty>();
