@@ -55,7 +55,7 @@ namespace Beamable.Editor.UI.Components
             SetCurrentOption(currentOption);
         }
 
-        private void SetCurrentOption(int currentOption)
+		public void SetCurrentOption(int currentOption)
         {
             if (_options.Count == 0)
             {

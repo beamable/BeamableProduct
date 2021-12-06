@@ -17,8 +17,8 @@ namespace Beamable.UI.Buss
                 _image = GetComponent<SdfImage>();
                 _hasImage = true;
             }
-        
-            _image.Style = GetCombinedStyle();
+
+            _image.Style = Style.GetCombinedStyle();
         }
     }
 }
