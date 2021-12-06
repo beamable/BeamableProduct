@@ -67,3 +67,27 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         json: '{"Enum":1}'
     _selector: '#navButton'
+  - _properties:
+    - key: backgroundColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
+    - key: backgroundImage
+      property:
+        type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_asset":{"instanceID":43136}}'
+    _selector: '#backButton'
+  - _properties:
+    - key: backgroundColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
+    - key: backgroundImage
+      property:
+        type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_asset":{"instanceID":43132}}'
+    _selector: '#topButton'
