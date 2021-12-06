@@ -19,3 +19,25 @@ MonoBehaviour:
     shortDescription: 
     fullDescription: 
     testSteps: []
+  - name: 002 - Sdf Test
+    progress: 0
+    sceneAsset: {fileID: 102900000, guid: 87082cf671f2b48aea1f2649d5abee00, type: 3}
+    shortDescription: SDF Test
+    fullDescription: Testing SDF Image features.
+    testSteps:
+    - progress: 0
+      description: 'Select group 1.
+
+        Check if background color settings are working.'
+    - progress: 0
+      description: 'Select group 2.
+
+        Check if outline settings are working.'
+    - progress: 0
+      description: 'Select group 3.
+
+        Check if shadow settings are working.'
+    - progress: 0
+      description: 'Select group 4.
+
+        Check if texture shape is working.'
