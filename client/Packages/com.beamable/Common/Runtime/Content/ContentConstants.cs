@@ -11,8 +11,10 @@ namespace Beamable.Common.Content
 
       //Editor Property Drawer Utils
       public const string MISSING_SUFFIX = " (missing)";
-      
-      public static readonly string CompressedContentPath = Path.Combine(Application.streamingAssetsPath, "Beamable/bakedContent");
-      public static readonly string DecompressedContentPath = Path.Combine(Application.streamingAssetsPath, "Beamable/Baked/Content");
+
+      public static readonly string BeamableStreamingAssetsPath =
+	      Path.Combine(Application.streamingAssetsPath, "Beamable");
+      public static readonly string CompressedContentPath = Path.Combine(BeamableStreamingAssetsPath, "bakedContent");
+      public static readonly string DecompressedContentPath = Path.Combine(BeamableStreamingAssetsPath, "Baked/Content");
    }
 }
