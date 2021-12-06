@@ -79,8 +79,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 	            return;
             }
 
-            CreateNewServiceElement(ServiceType.MicroService,new CreateMicroserviceVisualElement());
-            CreateNewServiceElement(ServiceType.StorageObject,new CreateStorageObjectVisualElement());
+            CreateNewServiceElement(ServiceType.MicroService, new CreateMicroserviceVisualElement());
+            CreateNewServiceElement(ServiceType.StorageObject, new CreateStorageObjectVisualElement());
 
             _modelToVisual.Clear();
 
