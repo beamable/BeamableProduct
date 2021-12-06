@@ -143,7 +143,7 @@
             #if _MODE_RECT
                 return getRectDistance(coords, size, rounding);
             #else
-                return max(getDistance(uv, coords, size, rounding), getRectDistance(coords, size, rounding));
+                return getDistance(uv, coords, size, rounding);
             #endif
             }
             

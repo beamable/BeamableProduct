@@ -8,7 +8,7 @@ namespace Beamable.UI.Buss
 	{
 #pragma warning disable CS0649
 		[SerializeField] private string _id;
-		[SerializeField] private List<string> _classes;
+        [SerializeField] private List<string> _classes = new List<string>();
 		[SerializeField] private BussStyleDescription _inlineStyle;
 		[SerializeField] private BussStyleSheet _styleSheet;
 		private List<string> _pseudoClasses = new List<string>();
@@ -20,14 +20,36 @@ namespace Beamable.UI.Buss
 		public List<BussStyleSheet> AllStyleSheets { get; } = new List<BussStyleSheet>();
 		public BussStyle Style { get; } = new BussStyle();
 
-		public string Id => _id;
+        public string Id
+        {
+	        get
+	        {
+		        return _id;
+	        }
+	        set
+	        {
+		        _id = value;
+		        OnStyleChanged();
+	        }
+        }
 		public IEnumerable<string> Classes => _classes;
 		public IEnumerable<string> PseudoClasses => _pseudoClasses;
 		public string TypeName => GetType().Name;
 		public Dictionary<string, BussStyle> PseudoStyles { get; } = new Dictionary<string, BussStyle>();
 
 		public BussStyleDescription InlineStyle => _inlineStyle;
-		public BussStyleSheet StyleSheet => _styleSheet;
+        public BussStyleSheet StyleSheet
+        {
+	        get
+	        {
+		        return _styleSheet;
+	        }
+	        set
+	        {
+		        _styleSheet = value;
+		        OnStyleChanged();
+	        }
+        }
 
 		public BussElement Parent => _parent;
 
