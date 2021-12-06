@@ -110,7 +110,16 @@ jobs:
     timeout-minutes: 30
     needs: build
     env:
+      # The USYM_UPLOAD_AUTH_TOKEN environment variable is set to bypass Unity cloud checks
       USYM_UPLOAD_AUTH_TOKEN: foo
+      MOBILEPROVISION_DEV: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/BeamableProductDev.mobileprovision
+      MOBILEPROVISION_STAGING: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/BeamableProductStaging.mobileprovision
+      MOBILEPROVISION_PROD: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/BeamableProductProd.mobileprovision
+      CODE_SIGNING_IDENTITY: 'iPhone Distribution: Beamable, Inc (A6C4565DLF)'
+      TEAM_ID: A6C4565DLF
+      ISSUER_ID: 931b0669-dac0-496b-9964-8cba71e07ffc
+      API_KEY_ID: LL66F96439
+
     steps:
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
@@ -118,16 +127,47 @@ jobs:
           name: Build-iOS
       - name: Make build scripts executeable and change directory to the location of the xcode project
         run: chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/process_symbols.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/MapFileParser.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/usymtool && cd iOS/
+      - name: Update bundle identifier to com.beamable.dev
+        run: plutil -replace CFBundleIdentifier -string com.beamable.dev Info.plist
+      - name: Update bundle identifier to staging for staging builds
+        if: ${{ github.head_ref == 'staging' }}
+        run: plutil -replace CFBundleIdentifier -string com.beamable.staging Info.plist
+      - name: Update bundle identifier to staging for staging builds
+        if: ${{ github.head_ref == 'production' }}
+        run: plutil -replace CFBundleIdentifier -string com.beamable.prod Info.plist
       - uses: yukiarrr/ios-build-action@v1.4.0
+        if: ${{ github.head_ref == 'main' }}
         with:
           update-targets: Unity-iPhone
           project-path: ${{ secrets.XCODEPROJ_PATH }}
           p12-key-path: ${{ secrets.P12_KEY_PATH }}
           p12-cer-path: ${{ secrets.P12_CER_PATH }}
           certificate-password: ${{ secrets.P12_PASSWORD }}
-          mobileprovision-path: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/BeamableProductProd.mobileprovision
-          code-signing-identity: "iPhone Distribution: Beamable, Inc (A6C4565DLF)"
-          team-id: A6C4565DLF
+          mobileprovision-path: ${{ MOBILEPROVISION_DEV }}
+          code-signing-identity: ${{ CODE_SIGNING_IDENTITY }}
+          team-id: ${{ TEAM_ID }}
+      - uses: yukiarrr/ios-build-action@v1.4.0
+        if: ${{ github.head_ref == 'staging' }}
+        with:
+          update-targets: Unity-iPhone
+          project-path: ${{ secrets.XCODEPROJ_PATH }}
+          p12-key-path: ${{ secrets.P12_KEY_PATH }}
+          p12-cer-path: ${{ secrets.P12_CER_PATH }}
+          certificate-password: ${{ secrets.P12_PASSWORD }}
+          mobileprovision-path: ${{ MOBILEPROVISION_STAGING }}
+          code-signing-identity: ${{ CODE_SIGNING_IDENTITY }}
+          team-id: ${{ TEAM_ID }}
+      - uses: yukiarrr/ios-build-action@v1.4.0
+        if: ${{ github.head_ref == 'main' }}
+        with:
+          update-targets: Unity-iPhone
+          project-path: ${{ secrets.XCODEPROJ_PATH }}
+          p12-key-path: ${{ secrets.P12_KEY_PATH }}
+          p12-cer-path: ${{ secrets.P12_CER_PATH }}
+          certificate-password: ${{ secrets.P12_PASSWORD }}
+          mobileprovision-path: ${{ MOBILEPROVISION_PROD }}
+          code-signing-identity: ${{ CODE_SIGNING_IDENTITY }}
+          team-id: ${{ TEAM_ID }}
       - uses: actions/upload-artifact@v2
         with:
           name: beamableproduct.ipa
@@ -136,6 +176,6 @@ jobs:
       - uses: apple-actions/upload-testflight-build@v1
         with:
           app-path: '/Users/runner/work/BeamableProduct/BeamableProduct/output.ipa'
-          issuer-id: 931b0669-dac0-496b-9964-8cba71e07ffc
-          api-key-id: LL66F96439
+          issuer-id: ${{ ISSUER_ID }}
+          api-key-id: ${{ API_KEY_ID }}
           api-private-key: ${{ secrets.APPLE_API_KEY }}
