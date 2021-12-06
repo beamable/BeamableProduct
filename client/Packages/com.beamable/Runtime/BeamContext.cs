@@ -71,6 +71,8 @@ namespace Beamable
 		private PlayerAnnouncements _announcements;
 		[SerializeField]
 		private PlayerCurrencyGroup _currency;
+		[SerializeField]
+		private PlayerStats _playerStats;
 
 		public PlayerAnnouncements Announcements =>
 			_announcements?.IsInitialized ?? false
@@ -81,6 +83,12 @@ namespace Beamable
 			_currency?.IsInitialized ?? false
 				? _currency
 				: (_currency = ServiceProvider.GetService<PlayerCurrencyGroup>());
+
+		public PlayerStats Stats =>
+			_playerStats?.IsInitialized ?? false
+				? _playerStats
+				: (_playerStats = ServiceProvider.GetService<PlayerStats>());
+
 
 		/// <summary>
 		/// Each <see cref="BeamContext"/> has a set of components that need to live on a gameObject in the scene.
