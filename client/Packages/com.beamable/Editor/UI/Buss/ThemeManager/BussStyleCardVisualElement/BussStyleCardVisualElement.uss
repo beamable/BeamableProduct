@@ -14,10 +14,14 @@
     align-self: stretch;
 }
 
+#styleIdParent {
+    flex-grow: 1;
+    justify-content: center;
+}
+
 #styleId {
     margin-left: 10px;
     min-width: 50px;
-    flex-grow: 1;
 }
 
 #colorBlock {

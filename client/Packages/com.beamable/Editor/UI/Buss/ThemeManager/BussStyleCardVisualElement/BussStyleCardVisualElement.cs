@@ -1,6 +1,7 @@
 ﻿using Beamable.Editor.UI.Buss;
 using Beamable.UI.Buss;
 using System;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -21,17 +22,30 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleRule _styleRule;
 		private TextElement _styleId;
 		private VisualElement _properties;
+		private VisualElement _styleIdParent;
 
 		public override void Refresh()
 		{
 			base.Refresh();
 
+			_styleIdParent = Root.Q<VisualElement>("styleIdParent");
+			
 			_styleId = Root.Q<TextElement>("styleId");
 			_styleId.text = _styleRule.SelectorString;
 
+			_styleId.RegisterCallback<MouseDownEvent>(StyleIdClicked);
+			
+			
+			
 			_properties = Root.Q<VisualElement>("properties");
 
 			CreateProperties();
+		}
+
+		private void StyleIdClicked(MouseDownEvent evt)
+		{
+			
+			_styleId.visible = false;
 		}
 
 		public void Setup(BussStyleRule styleRule)
