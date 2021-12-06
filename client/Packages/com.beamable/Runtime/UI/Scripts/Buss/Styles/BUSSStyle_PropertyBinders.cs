@@ -10,7 +10,7 @@ namespace Beamable.UI.Buss
 	{
 		#region Property Binders
 
-		internal static Dictionary<string, IPropertyBinding> _bindings = new Dictionary<string, IPropertyBinding>();
+		private static Dictionary<string, IPropertyBinding> _bindings = new Dictionary<string, IPropertyBinding>();
 
 		protected readonly Dictionary<string, IBussProperty> _properties = new Dictionary<string, IBussProperty>();
 
