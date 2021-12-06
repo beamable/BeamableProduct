@@ -105,7 +105,7 @@ jobs:
           retention-days: 3
 
   ios:
-    name: Build for iOS .ipa and upload to Testflight
+    name: Build iOS .ipa and upload to Testflight
     runs-on: macos-latest
     timeout-minutes: 30
     needs: build
