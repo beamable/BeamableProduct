@@ -33,7 +33,6 @@ namespace Beamable.UI.Buss
 		private string _selector;
 #pragma warning restore CS0649
 
-		// TODO: maybe we could create selector by invoking some parent method in OnValidate callback?
 		public BussSelector Selector => BussSelectorParser.Parse(_selector);
 		public string SelectorString => _selector;
 	}

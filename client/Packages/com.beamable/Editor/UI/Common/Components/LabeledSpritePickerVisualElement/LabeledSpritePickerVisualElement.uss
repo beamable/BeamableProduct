@@ -10,7 +10,8 @@
     width: 120px;
 }
 
-#colorField {
+#imageField {
+    padding-top: 2px;
     min-width: 100px;
     justify-content: center;
     flex-grow: 1;
