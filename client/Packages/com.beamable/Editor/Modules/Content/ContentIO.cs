@@ -919,6 +919,8 @@ namespace Beamable.Editor.Content
       }
 
       /// <summary>
+      /// Checks if local content has changes. If no changes then it proceeds to baking.
+      /// If there are local changes then displays a warning.
       /// Writes all content objects to streaming assets in either compressed or uncompressed form
       /// based on setting in Content Configuration.
       /// </summary>
@@ -942,6 +944,7 @@ namespace Beamable.Editor.Content
               return;
           }
 
+          // check for local changes
           foreach (var content in contentList)
           {
              var status = await api.ContentIO.GetStatus(content);

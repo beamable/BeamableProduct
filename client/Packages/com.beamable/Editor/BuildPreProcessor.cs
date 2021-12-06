@@ -1,6 +1,7 @@
 using System.IO;
 using Beamable.Common.Content;
 using Beamable.Editor.Content;
+using Modules.Content;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 
@@ -12,9 +13,11 @@ namespace Beamable.Editor
 
         public async void OnPreprocessBuild(BuildReport report)
         {
-            RemoveOldBakedContent();
-            
-            await ContentIO.BakeContent();
+            if (ContentConfiguration.Instance.BakeContentOnBuild)
+            {
+                RemoveOldBakedContent();
+                await ContentIO.BakeContent();    
+            }
         }
 
         private void RemoveOldBakedContent()
