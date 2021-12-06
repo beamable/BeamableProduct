@@ -1,0 +1,32 @@
+#propertyContainer {
+    flex-direction: row;
+    justify-content: flex-start;
+    align-self: stretch;
+}
+
+#label {
+    width: 120px;
+    color: rgb(255,255,255);
+    min-height: 30px;
+    padding-left: 10px;
+    -unity-text-align: middle-left;
+}
+
+#value {
+    flex-grow: 1;
+    background-color: rgb(70,70,70);
+    justify-content: center;
+}
+
+#globalVariable {
+    width: 120px;
+    background-color: rgb(100,100,100);
+}
+
+.dropdown {
+    margin-left: 3px;
+    margin-right: 3px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    height: 20px;
+}

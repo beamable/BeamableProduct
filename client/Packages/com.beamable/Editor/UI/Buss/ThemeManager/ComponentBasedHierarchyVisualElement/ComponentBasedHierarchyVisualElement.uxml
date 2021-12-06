@@ -7,7 +7,7 @@
 
     <engine:VisualElement name="hierarchyContainer">
         <engine:VisualElement name="header">
-            <engine:TextElement text="Navigation"/>
+            <engine:TextElement text="Navigation window"/>
         </engine:VisualElement>
         <engine:ScrollView name="scrollView"/>
     </engine:VisualElement>

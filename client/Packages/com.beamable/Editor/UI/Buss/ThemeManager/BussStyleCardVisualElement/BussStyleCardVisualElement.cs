@@ -37,20 +37,16 @@ namespace Beamable.Editor.UI.Components
 		public void Setup(BussStyleRule styleRule)
 		{
 			_styleRule = styleRule;
+			Refresh();
 		}
 
 		private void CreateProperties()
 		{
 			foreach (BussPropertyProvider property in _styleRule.Properties)
 			{
-				for (int i = 0; i < 4; i++)
-				{
-					LabeledTextField comp = new LabeledTextField();
-					comp.Setup(property.Key, String.Empty, () => {} , 0, 0);
-					TextElement label = new TextElement();
-					label.text = property.Key;
-					_properties.Add(label);
-				}
+				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
+				element.Setup(property);
+				_properties.Add(element);
 			}
 		}
 	}
