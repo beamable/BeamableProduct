@@ -13,7 +13,7 @@ namespace Beamable.Samples.SampleProjectBase
 	/// </summary>
 	[CustomEditor(typeof(Beamable.Samples.SampleProjectBase.Readme))]
 	[InitializeOnLoad]
-	public class ReadmeEditor : UnityEditor.Editor
+	public class BeamableReadmeEditor : UnityEditor.Editor
 	{
 		static float kSpace = 16f;
 
