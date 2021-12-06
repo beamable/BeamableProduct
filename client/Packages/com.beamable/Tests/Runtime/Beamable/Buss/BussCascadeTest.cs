@@ -85,7 +85,7 @@ namespace Tests.Runtime.Beamable.Buss
 			bussElement.Id = id;
 			foreach (string @class in classes)
 			{
-				bussElement.Classes.Add(@class);
+				bussElement.AddClass(@class);
 			}
 			bussElement.StyleSheet = styleSheet;
 			_bussElements[id] = bussElement;

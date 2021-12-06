@@ -8,6 +8,10 @@
 
     <engine:VisualElement name="mainVisualElement">
         <beamable:BussElementHierarchyVisualElement name="hierarchy"/>
+        
+        <!-- Just for testing -->
+        <beamable:LabeledColorPickerVisualElement name="colorPicker" label="Background color"/> 
+        <beamable:LabeledSpritePickerVisualElement name="imagePicker" label="Some test image"/>
     </engine:VisualElement>
 
 </UXML>
