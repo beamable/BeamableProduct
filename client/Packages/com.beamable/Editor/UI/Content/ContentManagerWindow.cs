@@ -1,17 +1,14 @@
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using Beamable.Common.Api.Auth;
 using Beamable.Editor.Content.Components;
 using Beamable.Editor.Content.Models;
-using Beamable.Editor;
 using Beamable.Editor.Login.UI;
 using UnityEditor;
 using Beamable.Editor.NoUser;
 using Beamable.Editor.Realms;
 using Beamable.Editor.UI.Buss.Components;
-using Beamable.Platform.SDK;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 #if UNITY_2018
@@ -19,7 +16,6 @@ using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
 #endif
 
 namespace Beamable.Editor.Content
@@ -556,5 +552,5 @@ namespace Beamable.Editor.Content
 
          Instance._currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
       }
-   }
+    }
 }
