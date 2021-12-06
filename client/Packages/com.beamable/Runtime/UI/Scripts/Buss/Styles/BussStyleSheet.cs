@@ -36,13 +36,18 @@ namespace Beamable.UI.Buss
 
 		public BussSelector Selector => BussSelectorParser.Parse(_selector);
 		public string SelectorString => _selector;
+		
+	    public static BussStyleRule Create(string selector, List<BussPropertyProvider> properties)
+	    {
+		    return new BussStyleRule() {_selector = selector, _properties = properties};
+	    }
 	}
 
 	[Serializable]
 	public class BussStyleDescription
 	{
 #pragma warning disable CS0649
-		[SerializeField] private List<BussPropertyProvider> _properties = new List<BussPropertyProvider>();
+		[SerializeField] protected List<BussPropertyProvider> _properties = new List<BussPropertyProvider>();
 #pragma warning restore CS0649
 		public List<BussPropertyProvider> Properties => _properties;
 	}
@@ -61,6 +66,13 @@ namespace Beamable.UI.Buss
 		public string Key {
 			get => key;
 		}
+
+	    public static BussPropertyProvider Create(string key, IBussProperty property)
+	    {
+		    var propertyProvider = new SerializableValueObject();
+		    propertyProvider.Set(property);
+		    return new BussPropertyProvider() {key = key, property = propertyProvider};
+	    }
 
 		public IBussProperty GetProperty()
 		{
