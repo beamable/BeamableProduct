@@ -52,6 +52,8 @@ namespace Beamable.UI.Buss
 
 		public static IEnumerable<string> Keys => _bindings.Keys;
 
+        public static bool IsKeyValid(string key) => _bindings.ContainsKey(key);
+
 		public static Type GetBaseType(string key)
 		{
 			if (_bindings.TryGetValue(key, out var binding))
