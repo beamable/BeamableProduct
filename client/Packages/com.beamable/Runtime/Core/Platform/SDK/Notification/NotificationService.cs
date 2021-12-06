@@ -45,9 +45,9 @@ namespace Beamable.Api.Notification
         // Scheduled notifications must fall between 10AM - 10PM
         const int MinHour = 10;
         const int MaxHour = 22;
-#if USE_FIREBASE
-        private PlatformService _platform;
-#endif
+// #if USE_FIREBASE
+        // private IPlatformService _platform;
+// #endif
 
         /* Relay to use for local notifications. */
        private ILocalNotificationRelay LocalRelay;
@@ -55,11 +55,11 @@ namespace Beamable.Api.Notification
       /// <summary>
       /// Register for remote and local notifications
       /// </summary>
-      public void RegisterForNotifications (PlatformService platform)
+      public void RegisterForNotifications ()
       {
-#if USE_FIREBASE
-         _platform = platform;
-#endif
+// #if USE_FIREBASE
+         // _platform = null; // TODO: Fix this by just using the push service directly.
+// #endif
          RegisterForLocalNotifications();
          ClearDeliveredLocalNotifications();
          RegisterForPushNotifications();

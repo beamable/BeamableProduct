@@ -19,3 +19,15 @@ MonoBehaviour:
     shortDescription: 
     fullDescription: 
     testSteps: []
+  - name: 002 - BeamContext_Lifecycle
+    progress: 0
+    sceneAsset: {fileID: 102900000, guid: 45244e641a49a478db5ec8d9c4111fd9, type: 3}
+    shortDescription: BeamContext lifecycle should reset for plr2, but not for default
+    fullDescription: 
+    testSteps:
+    - progress: 0
+      description: On first load, do both text blobs (left and right) fill in with
+        data?
+    - progress: 0
+      description: Go to the main menu, and then re-enter the scene; left player's
+        session shouldn't restart, but the right player should

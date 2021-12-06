@@ -69,7 +69,7 @@ namespace Beamable.Common.Content
           }
           return base.CanConvertTo(context, destinationType);
        }
-    
+
        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
        {
           if (value is long number)
@@ -84,10 +84,18 @@ namespace Beamable.Common.Content
     [Agnostic]
     public class OptionalBoolean : Optional<bool> { }
 
+    public static class OptionalBooleanExtensions
+    {
+	    public static bool IsTruthy(this OptionalBoolean self)
+	    {
+		    return self != null && (self.HasValue && self.Value);
+	    }
+    }
+
     [System.Serializable]
     [Agnostic]
     public class OptionalInt : Optional<int> { }
-    
+
     [System.Serializable]
     [Agnostic]
     public class OptionalLong : Optional<long> { }
@@ -99,7 +107,7 @@ namespace Beamable.Common.Content
     [System.Serializable]
     [Agnostic]
     public class OptionalListInt : Optional<List<int>> { }
-    
+
     [System.Serializable]
     [Agnostic]
     public class OptionalListString : Optional<List<string>> { }

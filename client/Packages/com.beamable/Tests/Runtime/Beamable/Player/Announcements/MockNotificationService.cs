@@ -1,5 +1,6 @@
 using System;
 using Beamable.Common.Api.Notifications;
+using System.Collections.Generic;
 
 namespace Beamable.Tests.Runtime.Player.Notifications
 {
@@ -18,6 +19,26 @@ namespace Beamable.Tests.Runtime.Player.Notifications
       public void Publish(string name, object payload)
       {
 
+      }
+
+      public void CreateNotificationChannel(string id, string name, string description)
+      {
+
+      }
+
+      public void ScheduleLocalNotification(string channel,
+                                            string key,
+                                            int trackingId,
+                                            string title,
+                                            string message,
+                                            TimeSpan timeFromNow,
+                                            bool restrictTime,
+                                            Dictionary<string, string> customData = null)
+      {
+      }
+
+      public void RegisterForNotifications()
+      {
       }
    }
 }

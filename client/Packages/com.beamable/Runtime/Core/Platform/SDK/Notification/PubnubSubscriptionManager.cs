@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Beamable.Api.Notification.Internal;
+using Beamable.Common;
+using Beamable.Common.Dependencies;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Spew;
 using PubNubMessaging.Core;
@@ -10,10 +12,24 @@ using UnityEngine.Networking;
 
 namespace Beamable.Api.Notification
 {
+	public interface IPubnubSubscriptionManager
+	{
+		void Initialize(IPlatformService platform);
+		void UnsubscribeAll();
+		void SubscribeToProvider();
+
+		void LoadChannelHistory(string channel,
+		                        int msgLimit,
+		                        Action<List<object>> onHistory,
+		                        Action<PubnubClientError> onHistoryError);
+
+		void EnqueueOperation(PubNubOp operation, bool shouldRunNextOp = false);
+	}
+
    /**
     * Manage the connection and subscriptions to PubNub
     */
-   public class PubnubSubscriptionManager : MonoBehaviour
+   public class PubnubSubscriptionManager : MonoBehaviour, IPubnubSubscriptionManager, IBeamableDisposable
    {
       // We are setting the timeout value low due to a current bug in iOS Unity that is causing
       // disconnects and failed reconnects if we keep the timeout longer. The details of this change are summarized
@@ -38,7 +54,7 @@ namespace Beamable.Api.Notification
 
       public delegate void OnPubNubOperationDelegate();
 
-      private PlatformService _platform;
+      private IPlatformService _platform;
 
       public bool PubnubIsConnected
       {
@@ -89,10 +105,11 @@ namespace Beamable.Api.Notification
          }
       }
 
-      public void Initialize(PlatformService platform)
+      public void Initialize(IPlatformService platform)
       {
          _platform = platform;
-         Pubnub.SetGameObject = this.gameObject;
+
+         // Pubnub.SetGameObject = this.gameObject;
       }
 
       void removeActiveChannel(string channel)
@@ -168,7 +185,7 @@ namespace Beamable.Api.Notification
          }
 
          // Set up the connection
-         pubnub = new Pubnub("", subscriberDetails.subscribeKey, "", "", true);
+         pubnub = new Pubnub("", subscriberDetails.subscribeKey, "", "", true, gameObject);
          pubnub.SubscribeTimeout = SubscribeTimeout;
          pubnub.NonSubscribeTimeout = NonSubscribeTimeout;
          pubnub.NetworkCheckMaxRetries = MaxRetries;
@@ -631,6 +648,14 @@ namespace Beamable.Api.Notification
          {
             PubnubSubscriptionLogger.Log(errorMsg.ToString());
          }
+      }
+
+      public Promise OnDispose()
+      {
+	      UnsubscribeAll();
+	      pubnub?.Dispose();
+	      Destroy(this);
+	      return Promise.Success;
       }
    }
 }

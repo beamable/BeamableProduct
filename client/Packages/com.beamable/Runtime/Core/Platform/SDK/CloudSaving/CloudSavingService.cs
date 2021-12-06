@@ -30,7 +30,7 @@ namespace Beamable.Api.CloudSaving
    {
       private const string ServiceName = "cloudsaving";
       private ManifestResponse _localManifest;
-      private PlatformService _platform;
+      private IPlatformService _platform;
       private PlatformRequester _requester;
       private WaitForSecondsRealtime _delay;
       private CoroutineService _coroutineService;
@@ -48,7 +48,7 @@ namespace Beamable.Api.CloudSaving
       public string LocalCloudDataFullPath => localCloudDataPath.dataPath;
 
       public bool isInitializing = false;
-      public CloudSavingService(PlatformService platform, PlatformRequester requester,
+      public CloudSavingService(IPlatformService platform, PlatformRequester requester,
          CoroutineService coroutineService) : base(platform, requester, ServiceName)
       {
          _platform = platform;
@@ -915,7 +915,7 @@ namespace Beamable.Api.CloudSaving
       private const string _cloudSavingDir = "cloudsaving";
       private const string _temp = "tmp";
 
-      public LocalCloudDataPath(PlatformService platformService)
+      public LocalCloudDataPath(IPlatformService platformService)
       {
          platformService.OnReady.Then(plat =>
          {

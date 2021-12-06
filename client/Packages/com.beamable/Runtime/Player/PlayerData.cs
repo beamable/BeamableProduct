@@ -1,4 +1,4 @@
-using Beamable.Common.Player;
+
 using UnityEngine;
 
 namespace Beamable.Player
@@ -6,26 +6,18 @@ namespace Beamable.Player
    [System.Serializable]
    public class PlayerData
    {
-      private readonly IBeamableAPI _api;
+	   public BeamContext Ctx { get; }
 
-      // Lazy initialization of services.
-      [SerializeField]
-      private PlayerAnnouncements _announcements;
 
-      public PlayerAnnouncements Announcements =>
-         (_announcements?.IsInitialized ?? false) ? _announcements : (_announcements = new PlayerAnnouncements(_api.AnnouncementService,
-            _api.NotificationService,
-            _api.SdkEventService));
+      // [SerializeField]
+      // private PlayerCurrencyGroup _currencyGroup;
+      //
+      // public PlayerCurrencyGroup Currencies => (_currencyGroup?.IsInitialized ?? false) ? _currencyGroup : (_currencyGroup =
+      //    new PlayerCurrencyGroup(_api.InventoryService, _api.NotificationService, _api.SdkEventService));
 
-      [SerializeField]
-      private PlayerCurrencyGroup _currencyGroup;
-
-      public PlayerCurrencyGroup Currencies => (_currencyGroup?.IsInitialized ?? false) ? _currencyGroup : (_currencyGroup =
-         new PlayerCurrencyGroup(_api.InventoryService, _api.NotificationService, _api.SdkEventService));
-
-      public PlayerData(IBeamableAPI api)
+      public PlayerData(BeamContext ctx)
       {
-         _api = api;
+	      Ctx = ctx;
       }
    }
 }
