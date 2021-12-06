@@ -114,7 +114,7 @@ MonoBehaviour:
       property:
         type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_asset":{"instanceID":58338}}'
+        json: '{"_asset":{"instanceID":29766}}'
     - key: shadowOffset
       property:
         type: Beamable.UI.Buss.Vector2BussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -130,4 +130,9 @@ MonoBehaviour:
         type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":4.0}'
+    - key: textAlignment
+      property:
+        type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
+          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        json: '{"Enum":4098}'
     _selector: '#leaderboardHeaderLabel'

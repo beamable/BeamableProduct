@@ -223,12 +223,17 @@ MonoBehaviour:
       property:
         type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_asset":{"instanceID":0}}'
+        json: '{"_asset":{"instanceID":29766}}'
     - key: backgroundColor
       property:
         type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":0.34117648005485537,"g":0.13333334028720857,"b":0.0,"a":1.0}}'
+    - key: textAlignment
+      property:
+        type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
+          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        json: '{"Enum":4098}'
     _selector: '#playerNameLabel'
   - _properties:
     - key: borderColor
@@ -255,12 +260,17 @@ MonoBehaviour:
       property:
         type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_asset":{"instanceID":0}}'
+        json: '{"_asset":{"instanceID":29766}}'
     - key: backgroundColor
       property:
         type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
+    - key: textAlignment
+      property:
+        type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
+          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        json: '{"Enum":4098}'
     _selector: '#rankValueLabel'
   - _properties:
     - key: fontSize
@@ -272,10 +282,15 @@ MonoBehaviour:
       property:
         type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_asset":{"instanceID":58338}}'
+        json: '{"_asset":{"instanceID":29766}}'
     - key: backgroundColor
       property:
         type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":0.9803921580314636,"g":0.9450980424880981,"b":0.772549033164978,"a":1.0}}'
+    - key: textAlignment
+      property:
+        type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
+          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        json: '{"Enum":4098}'
     _selector: '#scoreValueLabel'
