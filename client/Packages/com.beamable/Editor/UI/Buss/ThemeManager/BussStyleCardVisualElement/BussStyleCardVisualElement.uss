@@ -1,5 +1,4 @@
 #styleContainer {
-    height: 200px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-text-align: middle-left;
     margin-bottom: 10px;
@@ -13,7 +12,6 @@
     flex-direction: row;
     justify-content: flex-start;
     align-self: stretch;
-    margin-bottom: 6px;
 }
 
 #styleId {

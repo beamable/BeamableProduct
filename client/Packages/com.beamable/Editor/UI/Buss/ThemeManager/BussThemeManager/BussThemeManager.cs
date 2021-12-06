@@ -71,7 +71,6 @@ namespace Beamable.UI.BUSS
 			{
 				BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
 				styleCard.Setup(styleRule);
-				styleCard.Refresh();
 				_stylesGroup.Add(styleCard);
 			}
 		}
