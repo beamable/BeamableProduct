@@ -31,6 +31,13 @@ namespace Modules.Content
             set => _runtimeManifestID = ValidateManifestID(value);
         }
 
+        [Header("Baking")]
+        [Tooltip("Create zip archive of content upon baking. Makes first content resolve call longer due to decompression.")]
+        public bool EnableBakedContentCompression = true;
+
+        [Tooltip("Re-bake content on each build.")]
+        public bool BakeContentOnBuild = true;
+
         public ContentParameterProvider ParameterProvider {
             get {
                 var manifestID = RuntimeManifestID;
