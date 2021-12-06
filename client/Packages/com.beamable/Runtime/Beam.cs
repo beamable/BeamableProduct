@@ -107,6 +107,7 @@ namespace Beamable
 
 			DependencyBuilder.AddSingleton<PlayerAnnouncements>();
 			DependencyBuilder.AddSingleton<PlayerCurrencyGroup>();
+			DependencyBuilder.AddSingleton<PlayerStats>();
 
 		}
 	}

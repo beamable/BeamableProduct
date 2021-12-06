@@ -150,6 +150,11 @@ namespace Beamable.Common.Player
       T this[int index] { get; }
    }
 
+   public interface IObservableReadonlyDictionary<TKey, TValue> : IReadOnlyDictionary<TKey, TValue>, IObservable
+   {
+
+   }
+
    public abstract class AbsObservableReadonlyList<T> : AbsObservable, IObservableReadonlyList<T>
    {
       [SerializeField]
@@ -188,6 +193,61 @@ namespace Beamable.Common.Player
       }
 
       public override object GetData() => _data;
+   }
+
+   public abstract class AbsObservableReadonlyDictionary<TValue, TDict>
+	   : AbsObservable, IObservableReadonlyDictionary<string, TValue>
+	   where TDict : SerializableDictionaryStringToSomething<TValue>, new()
+   {
+
+	   [SerializeField]
+	   private TDict _data =
+		   new TDict();
+
+	   public event Action<SerializableDictionaryStringToSomething<TValue>> OnDataUpdated;
+
+
+	   public IEnumerator<KeyValuePair<string, TValue>> GetEnumerator() => _data.GetEnumerator();
+	   IEnumerator IEnumerable.GetEnumerator() => _data.GetEnumerator();
+
+	   public int Count => _data.Count;
+
+	   public bool ContainsKey(string key) => _data.ContainsKey(key);
+
+	   public bool TryGetValue(string key, out TValue value) => _data.TryGetValue(key, out value);
+
+	   public TValue this[string key] => _data[key];
+
+	   public IEnumerable<string> Keys => _data.Keys;
+	   public IEnumerable<TValue> Values => _data.Values;
+
+	   public override object GetData() => _data;
+
+	   public bool IsInitialized { get; protected set; }
+
+	   public AbsObservableReadonlyDictionary()
+	   {
+		   OnUpdated += () => { OnDataUpdated?.Invoke(_data); };
+	   }
+
+	   protected void SetData(TDict nextData)
+	   {
+		   _data = nextData;
+	   }
+
+	   protected override int GetBroadcastHashCode()
+	   {
+		   /*
+			 * We want to use a hash code based on the elements of the list at the given moment.
+			 */
+		   var res = 0x2D2816FE;
+		   foreach(var item in this)
+		   {
+			   res = res * 31 + (item.Value == null ? 0 : item.GetHashCode());
+		   }
+		   // TODO: need to include keys in hash.
+		   return res;
+	   }
    }
 
 }
