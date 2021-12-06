@@ -8,6 +8,7 @@ namespace Beamable.UI.Buss
 	{
 		private TextMeshProUGUI _text;
 		private bool _hasText;
+		private bool _hasTMPEssentials;
 
 		public override void ApplyStyle()
 		{
@@ -26,6 +27,11 @@ namespace Beamable.UI.Buss
 
 			// Alignment
 			_text.alignment = BussStyle.TextAlignment.Get(Style).Enum;
+
+			if (!_hasTMPEssentials && null != Resources.Load<TMP_Settings>("TMP Settings"))
+				_hasTMPEssentials = true;
+			else
+				return;
 
 			// OUTLINE
 			float borderWidth = BussStyle.BorderWidth.Get(Style).FloatValue;
