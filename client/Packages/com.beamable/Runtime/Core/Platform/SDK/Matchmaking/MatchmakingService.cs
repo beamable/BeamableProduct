@@ -26,9 +26,9 @@ namespace Beamable.Experimental.Api.Matchmaking
   public class MatchmakingService
   {
     private readonly IBeamableRequester _requester;
-    private readonly PlatformService _platform;
+    private readonly IPlatformService _platform;
 
-    public MatchmakingService(PlatformService platform, IBeamableRequester requester)
+    public MatchmakingService(IPlatformService platform, IBeamableRequester requester)
     {
       _requester = requester;
       _platform = platform;
@@ -161,7 +161,7 @@ namespace Beamable.Experimental.Api.Matchmaking
     private readonly float _createdTime;
     private readonly TimeSpan? _maxWait;
 
-    private readonly PlatformService _platform;
+    private readonly IPlatformService _platform;
     private static string MessageType(string gameType) => $"matchmaking.update.{gameType}";
     private static string TimeoutMessageType(string gameType) => $"matchmaking.timeout.{gameType}";
 
@@ -169,7 +169,7 @@ namespace Beamable.Experimental.Api.Matchmaking
 
     public MatchmakingHandle(
       MatchmakingService service,
-      PlatformService platform,
+      IPlatformService platform,
       Ticket[] tickets,
       TimeSpan? maxWait = null,
       Action<MatchmakingHandle> onUpdate = null,

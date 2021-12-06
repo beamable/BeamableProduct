@@ -26,6 +26,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Leaderboards;
+using Beamable.Common.Api.Notifications;
 using Beamable.Content;
 using Beamable.Experimental.Api.Calendars;
 using Beamable.Experimental.Api.Matchmaking;
@@ -51,7 +52,11 @@ namespace Beamable.Api
 
 		User User { get; }
 		Promise<Unit> OnReady { get; }
-		NotificationService Notification { get; }
+		INotificationService Notification { get; }
+		IPubnubNotificationService PubnubNotificationService { get; }
+		IHeartbeatService Heartbeat { get; }
+		string Cid { get; }
+		string Pid { get; }
 
 		IConnectivityService ConnectivityService { get; }
 	}
@@ -60,7 +65,7 @@ namespace Beamable.Api
 	public class PlatformService : IDisposable, IPlatformService
 	{
 		public readonly ChatService Chat;
-		public readonly PubnubNotificationService PubnubNotificationService;
+		public IPubnubNotificationService PubnubNotificationService { get; }
 		public readonly ChatProvider ChatProvider;
 
 		// API Services
@@ -73,7 +78,7 @@ namespace Beamable.Api
 		public EventsService Events;
 		public GameRelayService GameRelay;
 		public GroupsService Groups;
-		public Heartbeat Heartbeat;
+		public IHeartbeatService Heartbeat { get; private set; }
 		public InventoryService Inventory;
 		public LeaderboardService Leaderboard;
 		public MailService Mail;
@@ -88,7 +93,7 @@ namespace Beamable.Api
 		public SocialService Social;
 		public StatsService Stats;
 		public AnalyticsTracker Analytics;
-		public PubnubSubscriptionManager PubnubSubscriptionManager;
+		public IPubnubSubscriptionManager PubnubSubscriptionManager;
 
 		// Configuration values
 		public bool DebugMode;
@@ -129,7 +134,7 @@ namespace Beamable.Api
 		public Promise<Unit> OnReady { get; set; }
 
 		public IConnectivityService ConnectivityService { get; set; }
-		public NotificationService Notification { get; set; }
+		public INotificationService Notification { get; set; }
 		public IBeamablePurchaser BeamablePurchaser => ServiceManager.ResolveIfAvailable<IBeamablePurchaser>();
 
 		public string Cid
@@ -241,7 +246,7 @@ namespace Beamable.Api
 			}
 
 			Push = new PushService(_requester);
-			Session = new SessionService(this, _requester);
+			Session = new SessionService(_requester);
 			Social = new SocialService(this, _requester);
 			Stats = new StatsService(this, _requester, UnityUserDataCache<Dictionary<string, string>>.CreateInstance);
 			Tournaments = new TournamentService(Stats, _requester, this);
@@ -479,8 +484,8 @@ namespace Beamable.Api
 			//If you lose internet in the middle of these warming up, we may not recover properly.
 			BeamablePurchaser?.Initialize().Then(_ => { InitializedBeamableIAP.CompleteSuccess(BeamablePurchaser); });
 			if (_withLocalNote)
-				Notification.RegisterForNotifications(this);
-			Heartbeat = new Heartbeat(this, ServiceManager.Resolve<CoroutineService>());
+				Notification.RegisterForNotifications(); // TODO: We will need to pass something in here eventually
+			Heartbeat = new Heartbeat(Session, ServiceManager.Resolve<CoroutineService>(), ConnectivityService);
 			Heartbeat.Start();
 			return Promise<Unit>.Successful(PromiseBase.Unit);
 		}

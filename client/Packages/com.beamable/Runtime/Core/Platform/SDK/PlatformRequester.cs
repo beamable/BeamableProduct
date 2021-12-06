@@ -173,6 +173,8 @@ namespace Beamable.Api
 
       public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser=null, bool useCache=false)
       {
+
+
          string contentType = null;
          byte[] bodyBytes = null;
 
@@ -235,6 +237,7 @@ namespace Beamable.Api
 
                     // if we get a 401 InvalidTokenError, let's refresh the token and retry the request.
                     case PlatformRequesterException code when code?.Error?.error == "InvalidTokenError":
+	                    Debug.LogError("The token was bad but we are going to retry, buddy!!" + uri);
                        return AuthService.LoginRefreshToken(Token.RefreshToken)
                           .Map(rsp =>
                           {
@@ -242,6 +245,10 @@ namespace Beamable.Api
                                 rsp.expires_in);
                              Token.Save();
                              return PromiseBase.Unit;
+                          })
+                          .Error(err => {
+	                          Debug.LogError($"Failed to refresh account for {Token.RefreshToken} for uri=[{uri}] method=[{method}] includeAuth=[{includeAuthHeader}]");
+	                          Debug.LogException(err);
                           })
                           .FlatMap(_ => MakeRequest(method, uri, contentType, body, includeAuthHeader, parser));
 

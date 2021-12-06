@@ -7,6 +7,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Beamable.Common.Runtime.Collections;
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.ExceptionServices;
 
 #if !DISABLE_BEAMABLE_ASYNCMETHODBUILDER
 
@@ -39,8 +42,9 @@ namespace Beamable.Common
       public bool HadAnyErrbacks { protected set; get; }
 
       protected Exception err;
+      protected ExceptionDispatchInfo errInfo;
+      protected StackTrace _errStackTrace;
       protected object _lock = new object();
-
 
 #if DISABLE_THREADING
       protected bool done { get; set; }
@@ -181,6 +185,7 @@ namespace Beamable.Common
 
             err = ex;
             done = true;
+            errInfo = ExceptionDispatchInfo.Capture(err);
 
             try
             {
@@ -390,9 +395,16 @@ namespace Beamable.Common
       /// <exception cref="Exception"></exception>
       public T GetResult()
       {
-         if (err != null)
-            throw err;
-         return _val;
+	      if (err != null)
+	      {
+		      if (RaiseInnerException)
+		      {
+			      errInfo.Throw();
+			      // ExceptionDispatchInfo.Capture(err).Throw();
+		      }
+		      else throw err;
+	      }
+	      return _val;
       }
 
       /// <summary>
@@ -404,6 +416,39 @@ namespace Beamable.Common
       {
          return this;
       }
+
+      internal bool RaiseInnerException { get; set; }
+   }
+
+   public static class ExceptionUtilities
+   {
+	   private static readonly FieldInfo STACK_TRACE_STRING_FI = typeof(Exception).GetField("_stackTraceString", BindingFlags.NonPublic | BindingFlags.Instance);
+	   private static readonly FieldInfo INNER_EXCEPTION_STRING_FI = typeof(Exception).GetField("_innerException", BindingFlags.NonPublic | BindingFlags.Instance);
+	   private static readonly Type TRACE_FORMAT_TI = Type.GetType("System.Diagnostics.StackTrace").GetNestedType("TraceFormat", BindingFlags.NonPublic);
+	   private static readonly MethodInfo TRACE_TO_STRING_MI = typeof(StackTrace).GetMethod("ToString", BindingFlags.NonPublic | BindingFlags.Instance, null, new[] { TRACE_FORMAT_TI }, null);
+
+	   public static Exception SetStackTrace(this Exception target, StackTrace stack)
+	   {
+		   var getStackTraceString = TRACE_TO_STRING_MI.Invoke(stack, new object[] { Enum.GetValues(TRACE_FORMAT_TI).GetValue(0) });
+		   STACK_TRACE_STRING_FI.SetValue(target, getStackTraceString);
+		   return target;
+	   }
+
+	   public static Exception SetInnerException(this Exception target, Exception inner)
+	   {
+		   INNER_EXCEPTION_STRING_FI.SetValue(target, inner);
+		   // target.InnerException =
+		   // var getStackTraceString = TRACE_TO_STRING_MI.Invoke(stack, new object[] { Enum.GetValues(TRACE_FORMAT_TI).GetValue(0) });
+		   // STACK_TRACE_STRING_FI.SetValue(target, getStackTraceString);
+		   return target;
+	   }
+   }
+   public class PromiseException : Exception
+   {
+	   public PromiseException(Exception inner) : base($"Promise failed with exception {inner.Message}", inner)
+	   {
+
+	   }
    }
 
    /// <summary>
@@ -942,7 +987,7 @@ namespace Beamable.Common
       public PromiseBase Promise { get; }
 
       public UncaughtPromiseException(PromiseBase promise, Exception ex) : base(
-         $"Uncaught promise innerMsg=[{ex.Message}]", ex)
+         $"Uncaught promise innerMsg=[{ex.Message}] ", ex)
       {
          Promise = promise;
       }
@@ -985,7 +1030,8 @@ namespace Beamable.Common
 
       public void SetException(Exception ex)
       {
-         _promise.CompleteError(ex);
+	      _promise.RaiseInnerException = true;
+	      _promise.CompleteError(ex);
       }
 
       public void SetStateMachine(IAsyncStateMachine machine)
@@ -1044,6 +1090,7 @@ namespace Beamable.Common
 
       public void SetException(Exception ex)
       {
+	      _promise.RaiseInnerException = true;
          _promise.CompleteError(ex);
       }
 

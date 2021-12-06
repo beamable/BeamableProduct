@@ -22,7 +22,7 @@ namespace Beamable
       }
 
       /// <summary>
-      /// Registers Beamable's default Uncaught Promise Handler. This removes all other handlers  
+      /// Registers Beamable's default Uncaught Promise Handler. This removes all other handlers
       /// </summary>
       public static void RegisterBeamableDefaultUncaughtPromiseHandler(bool replaceExistingHandlers = true)
       {
@@ -63,6 +63,32 @@ namespace Beamable
       public static CustomYieldInstruction ToYielder<T>(this Promise<T> self)
       {
          return new PromiseYieldInstruction<T>(self);
+      }
+
+      public static void SetupDefaultHandler()
+      {
+	      if (Application.isPlaying)
+	      {
+		      var promiseHandlerConfig = CoreConfiguration.Instance.DefaultUncaughtPromiseHandlerConfiguration;
+		      switch (promiseHandlerConfig)
+		      {
+			      case CoreConfiguration.EventHandlerConfig.Guarantee:
+			      {
+				      if(!PromiseBase.HasUncaughtErrorHandler)
+					      PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
+
+				      break;
+			      }
+			      case CoreConfiguration.EventHandlerConfig.Replace:
+			      case CoreConfiguration.EventHandlerConfig.Add:
+			      {
+				      PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler(promiseHandlerConfig == CoreConfiguration.EventHandlerConfig.Replace);
+				      break;
+			      }
+			      default:
+				      throw new ArgumentOutOfRangeException();
+		      }
+	      }
       }
    }
 

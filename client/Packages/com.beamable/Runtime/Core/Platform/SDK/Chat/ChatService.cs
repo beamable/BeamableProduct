@@ -34,25 +34,25 @@ namespace Beamable.Experimental.Api.Chat
 
     /// <summary>
     /// This type defines the %Client main entry point for the %Chat feature.
-    /// 
+    ///
     /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-    /// 
+    ///
     /// #### Related Links
     /// - See the <a target="_blank" href="https://docs.beamable.com/docs/chat-feature">Chat</a> feature documentation
     /// - See Beamable.API script reference
-    /// 
+    ///
     /// ![img beamable-logo]
-    /// 
+    ///
     /// </summary>
     public class ChatService : IHasPlatformSubscriber<ChatSubscription, GetMyRoomsResponse, ChatView>
     {
-        private readonly PlatformService _platform;
+        private readonly IPlatformService _platform;
         private IBeamableRequester _requester;
         private const string BaseUri = "/object/chatV2";
 
         public ChatSubscription Subscribable { get; }
 
-        public ChatService(PlatformService platform, IBeamableRequester requester)
+        public ChatService(IPlatformService platform, IBeamableRequester requester)
         {
             Subscribable = new ChatSubscription(platform, requester);
             _platform = platform;

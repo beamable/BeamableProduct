@@ -60,8 +60,6 @@ namespace Beamable
         User User { get; }
         AccessToken Token { get; }
 
-        PlayerData Player { get; }
-
         event Action<User> OnUserChanged;
         event Action<User> OnUserLoggingOut;
 
@@ -376,9 +374,6 @@ namespace Beamable
         /// </summary>
         public User User => _platform.User;
 
-        private PlayerData _player;
-        public PlayerData Player => _player ?? (_player = new PlayerData(this));
-
         /// <summary>
         /// Entry point for the AccessToken.
         /// </summary>
@@ -406,28 +401,7 @@ namespace Beamable
 
         private Promise<IBeamableAPI> Initialize()
         {
-            if (Application.isPlaying)
-            {
-                var promiseHandlerConfig = CoreConfiguration.Instance.DefaultUncaughtPromiseHandlerConfiguration;
-                switch (promiseHandlerConfig)
-                {
-                    case CoreConfiguration.EventHandlerConfig.Guarantee:
-                    {
-                        if(!PromiseBase.HasUncaughtErrorHandler)
-                            PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
-                        
-                        break;
-                    }
-                    case CoreConfiguration.EventHandlerConfig.Replace:                        
-                    case CoreConfiguration.EventHandlerConfig.Add:
-                    {
-                        PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler(promiseHandlerConfig == CoreConfiguration.EventHandlerConfig.Replace);
-                        break;
-                    }
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-            }
+	        PromiseExtensions.SetupDefaultHandler();
 
 
             // Build default game object

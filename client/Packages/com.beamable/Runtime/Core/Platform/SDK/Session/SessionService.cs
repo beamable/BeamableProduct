@@ -11,32 +11,43 @@ using Beamable.Service;
 
 namespace Beamable.Api.Sessions
 {
+	public interface ISessionService
+	{
+		Promise<EmptyResponse> StartSession(User user, string advertisingId, string locale);
+		Promise<Session> GetHeartbeat(long gamerTag);
+		Promise<EmptyResponse> SendHeartbeat();
+		float SessionStartedAt { get; }
+		float TimeSinceLastSessionStart { get; }
+
+	}
+
    /// <summary>
    /// This type defines the %Client main entry point for the %Session feature.
-   /// 
+   ///
    /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-   /// 
+   ///
    /// #### Related Links
    /// - See the <a target="_blank" href="https://docs.beamable.com/docs/accounts-feature">Accounts</a> feature documentation
    /// - See Beamable.API script reference
-   /// 
+   ///
    /// ![img beamable-logo]
-   /// 
+   ///
    /// </summary>
-   public class SessionService
+   public class SessionService : ISessionService
    {
       private static long TTL_MS = 60 * 1000;
 
       private UnityUserDataCache<Session> cache;
-      private PlatformService _platform;
       private PlatformRequester _requester;
 
       private readonly SessionParameterProvider _parameterProvider;
       private readonly SessionDeviceOptions _deviceOptions;
 
-      public SessionService (PlatformService platform, PlatformRequester requester)
+      public float SessionStartedAt { get; private set; }
+      public float TimeSinceLastSessionStart => Time.realtimeSinceStartup - SessionStartedAt;
+
+      public SessionService (PlatformRequester requester)
       {
-         _platform = platform;
          _requester = requester;
          _parameterProvider = ServiceManager.ResolveIfAvailable<SessionParameterProvider>();
          _deviceOptions = ServiceManager.ResolveIfAvailable<SessionDeviceOptions>();
@@ -103,6 +114,7 @@ namespace Beamable.Api.Sessions
       /// <returns></returns>
       public Promise<EmptyResponse> StartSession (User user, string advertisingId, string locale)
       {
+	      SessionStartedAt = Time.realtimeSinceStartup;
          var args = new SessionStartRequestArgs
          {
             advertisingId = advertisingId,

@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Beamable.Common;
+using Beamable.Common.Content;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Common.Player
@@ -24,6 +26,8 @@ namespace Beamable.Common.Player
 
       private int _lastBroadcastHashcode;
       private Promise _pendingRefresh;
+
+      public abstract object GetData();
 
       public async Promise Refresh()
       {
@@ -71,6 +75,75 @@ namespace Beamable.Common.Player
       protected abstract Promise PerformRefresh();
    }
 
+   [Serializable]
+   public class ObservableLong : Observable<long>
+   {
+	   public static implicit operator ObservableLong(long data) => new ObservableLong{ Value = data };
+   }
+
+   [Serializable]
+   public class ObservableString : Observable<string>
+   {
+	   public static implicit operator ObservableString(string data) => new ObservableString{ Value = data };
+   }
+
+   public class Observable<T> : AbsObservable
+   {
+	   [SerializeField]
+	   private T _data = default(T);
+
+	   private bool _assigned;
+
+	   public bool IsAssigned => _assigned;
+
+	   public bool IsNullOrUnassigned => !_assigned || _data == null;
+
+	   public event Action<T> OnDataUpdated;
+
+	   public T Value {
+		   get => _data;
+		   set {
+			   _assigned = true;
+			   _data = value;
+			   TriggerUpdate();
+		   }
+	   }
+
+	   public static implicit operator T(Observable<T> observable) => observable.Value;
+
+	   public Observable()
+	   {
+		   OnUpdated += () => { OnDataUpdated?.Invoke(_data); };
+	   }
+
+	   public Observable(T data) : this()
+	   {
+		   _data = data;
+	   }
+
+	   public void BindTo(Observable<T> other)
+	   {
+		   other.OnUpdated += () => Value = other.Value;
+	   }
+
+	   public override string ToString()
+	   {
+		   return _data?.ToString();
+	   }
+
+	   protected override Promise PerformRefresh()
+	   {
+		   // do nothing.
+		   return Promise.Success;
+	   }
+
+	   public override object GetData() => Value;
+
+	   protected override int GetBroadcastHashCode()
+	   {
+		   return _assigned ? _data?.GetHashCode() ?? 0 : -1;
+	   }
+   }
 
    public interface IObservableReadonlyList<out T> : IReadOnlyCollection<T>, IObservable
    {
@@ -86,8 +159,15 @@ namespace Beamable.Common.Player
 
       public int Count => _data.Count;
       public T this[int index] => _data[index];
+      public event Action<List<T>> OnDataUpdated;
+
 
       public bool IsInitialized { get; protected set; }
+
+      public AbsObservableReadonlyList()
+      {
+	      OnUpdated += () => { OnDataUpdated?.Invoke(_data.ToList()); };
+      }
 
       protected override int GetBroadcastHashCode()
       {
@@ -107,6 +187,7 @@ namespace Beamable.Common.Player
          _data = nextData;
       }
 
+      public override object GetData() => _data;
    }
 
 }

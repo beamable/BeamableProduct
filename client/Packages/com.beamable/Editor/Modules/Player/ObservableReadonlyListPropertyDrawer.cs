@@ -1,11 +1,13 @@
 using Beamable.Common.Player;
+using Beamable.Player;
 using UnityEditor;
 using UnityEngine;
 
 namespace Beamable.Editor.Player
 {
-   [CustomPropertyDrawer(typeof(PlayerAnnouncements))]
-   [CustomPropertyDrawer(typeof(PlayerCurrencyGroup))]
+   // [CustomPropertyDrawer(typeof(PlayerAnnouncements))]
+   // [CustomPropertyDrawer(typeof(PlayerCurrencyGroup))]
+   [CustomPropertyDrawer(typeof(AbsObservable), true)]
    public class ObservableReadonlyListPropertyDrawer : PropertyDrawer
    {
       public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
