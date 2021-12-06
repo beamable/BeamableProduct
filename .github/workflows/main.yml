@@ -121,13 +121,13 @@ jobs:
       - name: Make build scripts executeable and change directory to the location of the xcode project
         run: chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/process_symbols.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/MapFileParser.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/usymtool && cd iOS/
       - name: Update bundle identifier to com.beamable.dev
-        run: ls -lrt && plutil -replace CFBundleIdentifier -string com.beamable.dev Info.plist
+        run: cd iOS/ && plutil -replace CFBundleIdentifier -string com.beamable.dev Info.plist
       - name: Update bundle identifier to staging for staging builds
         if: ${{ github.head_ref == 'staging' }}
-        run: plutil -replace CFBundleIdentifier -string com.beamable.staging Info.plist
+        run: cd iOS/ && plutil -replace CFBundleIdentifier -string com.beamable.staging Info.plist
       - name: Update bundle identifier to staging for staging builds
         if: ${{ github.head_ref == 'production' }}
-        run: plutil -replace CFBundleIdentifier -string com.beamable.prod Info.plist
+        run: cd iOS/ && plutil -replace CFBundleIdentifier -string com.beamable.prod Info.plist
       - uses: yukiarrr/ios-build-action@v1.4.0
         if: ${{ github.head_ref == 'main' }}
         with:
