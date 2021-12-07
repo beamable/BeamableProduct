@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Folding/Unfolding services cards in `Microservice Manager`
 - Api Content classes and execution methods to invoke Microservices through data
 
+### Changed
+- Renamed `build and run` to `play` buttons in `Microservice Manager` to be more intuitive
 
 ## [0.17.4]
 ### Fixed
