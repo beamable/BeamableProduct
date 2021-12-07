@@ -5,13 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [Unpublished]
+## [0.18.0]
 ### Added
+- `ApiContent` classes and execution methods allow you to invoke Microservices with data
+- `InitializeServicesAttribute` can now be used over static methods to declare initialization hooks in microservices. Supported signatures are async/regular `
+  Task(IServiceInitializer)`, async/regular `Promise<Unit>(IServiceInitializer)` and synchronous `void(IServiceInitializer)`.
+  `void` methods must be fully synchronous --- it is not possible to guarantee that any promises started within a `void` initialization
+  method will have completed by the time the C#MS is receiving traffic.
+- Exposed `CreateLeaderboard` methods in `IMicroserviceLeaderboardsApi` to enable the dynamic creation of leaderboards in C#MS (can take a `LeaderboardRef` as a template or explicit parameters).
 - Folding/Unfolding services cards in `Microservice Manager`
-- Api Content classes and execution methods to invoke Microservices through data
+- Added clearer unsupported message for C# Microservice's implementation of `IAuthService.GetUser(TokenResponse)`
 
 ### Changed
 - Renamed `build and run` to `play` buttons in `Microservice Manager` to be more intuitive
+- Can have multiple `ConfigureServicesAttribute` and `InitializeServicesAttribute` explicitly ordered via `ExecutionOrder` property of the attributes.
 
 ## [0.17.4]
 ### Fixed
