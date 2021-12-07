@@ -158,6 +158,11 @@ namespace Beamable.Common
 			_registeredCacheUserSystems.Clear();
 		}
 
+		public T GetFirstRegisteredUserSystemOfType<T>() where T : IReflectionCacheUserSystem
+		{
+			return (T) _registeredCacheUserSystems.First(system => system.GetType() == typeof(T));
+		}
+
 		/// <summary>
 		/// Register a <see cref="IReflectionCacheTypeProvider"/> with the cache.
 		/// This must be called before Beamable's initialization or you must manage the initialization of this cache yourself.
@@ -392,7 +397,18 @@ namespace Beamable.Common
 	{
 		public static string ToHumanReadableSignature(this MethodInfo info)
 		{
-			return $"{info.ReturnType.Name}({string.Join(",", info.GetParameters().Select(param => $"{param.ParameterType.Name} {param.Name}"))})";
+			var paramsDeclaration = string.Join(",", info.GetParameters().Select(param =>
+			{
+				var prefix = param.IsOut ? "out " :
+					param.IsIn ? "in " :
+					param.ParameterType.IsByRef ? "ref " :
+					"";
+
+				return $"{prefix}{param.ParameterType.Name} {param.Name}";
+			}));
+			return $"{info.ReturnType.Name}({paramsDeclaration})";
 		}
+		
 	}
+
 }

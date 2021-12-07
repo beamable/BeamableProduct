@@ -1,0 +1,72 @@
+/* global styles for the window live here */
+
+#_windowRoot {
+    flex-grow: 1;
+    min-width:500px;
+}
+#window-main {
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    right: 0px;
+    left: 0px;
+}
+
+#assistant-container {
+    position: absolute;
+    top: 35px;
+    bottom: 30px;
+    left: 0px;
+    right: 0px;
+}
+
+
+/*VisualElement > TemplateContainer,*/
+/*VisualElement {*/
+/*    flex-grow: 1;*/
+/*}*/
+
+#beamable-assistant-action-bar{
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
+}
+
+#beam-hints-container {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+}
+
+#mainVisualElement {
+    flex-grow: 1;
+}
+
+#list-container {
+    flex-grow: 1;
+}
+
+#domain-tree-container {
+    flex-grow: 1;
+}
+
+#beam-hints-splitter {
+    flex-direction: row;
+    flex-grow: 1;
+}
+
+.splitWrapper.leftSplit {
+    flex-grow: .1;
+    border-right-width: 5px;
+    border-right-color: #FF0000;
+}
+
+.splitWrapper.rightSplit {
+    flex-grow: .9;
+}
+
+.splitWrapper {
+    flex-grow: 1;
+    min-width: 100px;
+}
+
+
+

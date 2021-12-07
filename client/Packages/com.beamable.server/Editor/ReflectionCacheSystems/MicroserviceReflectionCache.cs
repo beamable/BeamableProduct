@@ -14,6 +14,7 @@ namespace Editor.ReflectionCacheSystems
 	[CreateAssetMenu(fileName = "MicroserviceReflectionCache", menuName = "MENUNAME", order = 0)]
 	public class MicroserviceReflectionCache : ReflectionCacheUserSystemObject
 	{
+		[NonSerialized]
 		public Registry Cache;
 
 		public override IReflectionCacheUserSystem UserSystem => Cache;
@@ -22,7 +23,7 @@ namespace Editor.ReflectionCacheSystems
 
 		public override Type UserSystemType => typeof(Registry);
 
-		private void OnEnable()
+		private MicroserviceReflectionCache()
 		{
 			Cache = new Registry();
 		}
@@ -103,7 +104,7 @@ namespace Editor.ReflectionCacheSystems
 				validationResults.SplitValidationResults(out _, out _, out var errors);
 
 				// Register a hint with all its validation errors as the context object
-				//if (errors.Count > 0)
+				if (errors.Count > 0)
 				{
 					var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, "MicroserviceAttributeMisuse");
 					_hintStorage.AddOrReplaceHint(hint, errors);

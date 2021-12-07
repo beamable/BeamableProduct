@@ -21,7 +21,7 @@ namespace Beamable.Common
     /// <summary>
     /// Result of a data structure that holds the result of a validation performed by <see cref="IReflectionCachingAttribute{T}"/>. 
     /// </summary>
-    /// <typeparam name="T">The type of the attribute implementing this interface.</typeparam>
+    /// <typeparam name="T">The type of the attribute implementing the <see cref="IReflectionCachingAttribute{T}"/> interface.</typeparam>
     public readonly struct AttributeValidationResult<T> where T : Attribute, IReflectionCachingAttribute<T>
     {
         public readonly MemberAttributePair Pair;

@@ -116,8 +116,8 @@ namespace Beamable.Editor
 		      var reflectionCacheSystemGuids = AssetDatabase.FindAssets("t:ReflectionCacheUserSystemObject",
 		                                                                new string[]
 		                                                                {
-			                                                                "Assets/ReflectionCacheSystems", "Packages/com.beamable/ReflectionCacheSystems",
-			                                                                "Packages/com.beamable.server/ReflectionCacheSystems"
+			                                                                "Assets/ReflectionCacheSystems", "Packages/com.beamable/Editor/ReflectionCacheSystems",
+			                                                                "Packages/com.beamable.server/Editor/ReflectionCacheSystems"
 		                                                                });
 
 		      foreach (string reflectionCacheSystemGuid in reflectionCacheSystemGuids)
