@@ -129,7 +129,7 @@ jobs:
         if: ${{ github.head_ref == 'production' }}
         run: cd iOS/ && plutil -replace CFBundleIdentifier -string com.beamable.prod Info.plist
       - uses: yukiarrr/ios-build-action@v1.4.0
-        if: ${{ github.head_ref == 'main' }}
+        if: ${{ github.head_ref == 'iOS' }}
         with:
           update-targets: Unity-iPhone
           project-path: ${{ secrets.XCODEPROJ_PATH }}
