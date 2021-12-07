@@ -33,10 +33,13 @@ using Beamable.Experimental.Api.Matchmaking;
 using Beamable.Experimental.Api.Sim;
 using Beamable.Experimental.Api.Social;
 using Beamable.Player;
-using Beamable.Purchasing;
 using Beamable.Service;
 using Core.Platform.SDK;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using UnityEngine;
 
 namespace Beamable
 {
@@ -91,7 +94,11 @@ namespace Beamable
 			                    .AddSingleton<ICloudDataApi, CloudDataApi>()
 			                    .AddSingleton<ChatService>()
 			                    .AddSingleton<GameRelayService>()
-			                    .AddSingleton<MatchmakingService>()
+			                    .AddSingleton<MatchmakingService>(provider => new MatchmakingService(
+				                                                      provider.GetService<IPlatformService>(),
+				                                                      // the matchmaking service needs a special instance of the beamable api requester
+				                                                      provider.GetService<BeamableApiRequester>())
+				                    )
 			                    .AddSingleton<SocialService>()
 			                    .AddSingleton<CalendarsService>()
 			                    .AddSingleton<AnnouncementsService>()
@@ -109,6 +116,53 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<PlayerCurrencyGroup>();
 			DependencyBuilder.AddSingleton<PlayerStats>();
 
+			LoadCustomDependencies();
+		}
+
+		private static void LoadCustomDependencies()
+		{
+
+			var registrations = new List<(RegisterBeamableDependenciesAttribute, MethodInfo)>();
+			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+
+			foreach (var assembly in assemblies)
+			{
+				var asmName = assembly.GetName().Name;
+				if ("Tests".Equals(asmName)) continue; // TODO think harder about this.
+				try
+				{
+					foreach (var type in assembly.GetTypes())
+					{
+						var methodsWithAttr = type
+						                      .GetMethods(BindingFlags.Static | BindingFlags.Public)
+						                      .Where(m => {
+							                      var methodParameters = m.GetParameters();
+							                      return methodParameters.Length == 1 &&
+							                             typeof(IDependencyBuilder).IsAssignableFrom(
+								                             methodParameters[0].ParameterType);
+						                      })
+						                      .ToList();
+						var possibleMethods = methodsWithAttr;
+						foreach (var method in possibleMethods)
+						{
+							var attr = method.GetCustomAttribute<RegisterBeamableDependenciesAttribute>(false);
+							if (attr == null) continue;
+
+							registrations.Add((attr, method));
+						}
+					}
+				}
+				catch
+				{
+					// don't do anything.
+				}
+			}
+			registrations.Sort( (a, b) => a.Item1.Order.CompareTo(b.Item1));
+			foreach (var registration in registrations)
+			{
+				registration.Item2.Invoke(null, new[] {Beam.DependencyBuilder});
+			}
 		}
 	}
 }

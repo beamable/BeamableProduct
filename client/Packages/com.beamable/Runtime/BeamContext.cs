@@ -3,6 +3,7 @@ using Beamable.Api.AdvertisingIdentifier;
 using Beamable.Api.Auth;
 using Beamable.Api.Connectivity;
 using Beamable.Api.Notification;
+using Beamable.Api.Payments;
 using Beamable.Api.Sessions;
 using Beamable.Common;
 using Beamable.Common.Api;
@@ -13,6 +14,7 @@ using Beamable.Common.Dependencies;
 using Beamable.Common.Player;
 using Beamable.Config;
 using Beamable.Player;
+using Core.Platform.SDK;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -158,6 +160,13 @@ namespace Beamable
 					provider.GetService<IConnectivityService>()
 				)
 			);
+			builder.AddSingleton<BeamableApiRequester>(
+				provider => new BeamableApiRequester(
+					_environment.ApiUrl,
+					provider.GetService<AccessTokenStorage>(),
+					provider.GetService<IConnectivityService>())
+			);
+
 			builder.AddSingleton<BeamContext>(this);
 			builder.AddSingleton<IPlatformService>(this);
 			builder.AddSingleton<IGameObjectContext>(this);
@@ -199,6 +208,7 @@ namespace Beamable
 			                                   rsp.expires_in);
 			AccessToken.Value = _requester.Token;
 
+			// TODO: Where was this being used in the past?
 			// _beamableApiRequester.Token = _requester.Token;
 
 			await _requester.Token.Save();
@@ -260,9 +270,15 @@ namespace Beamable
 			// Register for notifications
 			_notification.RegisterForNotifications();
 			_heartbeatService.Start();
-			// TODO: BeamablePurchaser?
+
+			// Check if we should initialize the
+			if (ServiceProvider.CanBuildService<IBeamablePurchaser>())
+			{
+				await ServiceProvider.GetService<IBeamablePurchaser>().Initialize(ServiceProvider);
+			}
 
 		}
+
 
 		/// <summary>
 		/// Create or retrieve a <see cref="BeamContext"/> for the given <see cref="PlayerCode"/>. There is only one instance of a context per <see cref="PlayerCode"/>.
@@ -272,7 +288,6 @@ namespace Beamable
 		/// <param name="beamable">A component that will invite other Beamable components to exist on its GameObject</param>
 		/// <param name="playerCode">A named code that represents a player slot on the device. The <see cref="Default"/> context uses an empty string. </param>
 		/// <returns></returns>
-
 		public static BeamContext Instantiate(
 			BeamableBehaviour beamable=null,
 			string playerCode=null
@@ -316,6 +331,8 @@ namespace Beamable
 		/// Find the first <see cref="BeamableBehaviour.Context"/> in the parent lineage of the current component, or <see cref="BeamContext.Default"/> if no <see cref="BeamableBehaviour"/> components exist
 		/// </summary>
 		public static BeamContext ForContext(Component c) => c.GetBeamable();
+
+		public static BeamContext ForPlayer(string playerCode="") => Instantiate(playerCode: playerCode);
 
 		/// <summary>
 		/// This method will tear down a <see cref="BeamContext"/> and notify all internal services that the context should be destroyed.

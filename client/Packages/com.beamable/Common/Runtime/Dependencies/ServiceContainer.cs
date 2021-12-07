@@ -8,8 +8,10 @@ namespace Beamable.Common.Dependencies
 {
 	public interface IDependencyProvider
 	{
-		T GetService<T>();
+		bool CanBuildService(Type t);
 		object GetService(Type t);
+		T GetService<T>();
+		bool CanBuildService<T>();
 	}
 
 	public interface IDependencyProviderScope : IDependencyProvider
@@ -36,6 +38,18 @@ namespace Beamable.Common.Dependencies
 		public T GetService<T>()
 		{
 			return (T)GetService(typeof(T));
+		}
+
+		public bool CanBuildService<T>()
+		{
+			return CanBuildService(typeof(T));
+		}
+
+		public bool CanBuildService(Type t)
+		{
+			if (_destroyed) throw new Exception("Provider scope has been destroyed and can no longer be accessed.");
+
+			return Transients.ContainsKey(t) || Singletons.ContainsKey(t);
 		}
 
 		public object GetService(Type t)
@@ -133,6 +147,10 @@ namespace Beamable.Common.Dependencies
 
 		IDependencyProviderScope Build();
 
+		IDependencyBuilder Remove<T>();
+		bool Has<T>();
+		IDependencyBuilder IfHas<T>(Func<IDependencyBuilder> continuation);
+
 		IDependencyBuilder Fork();
 	}
 
@@ -217,6 +235,44 @@ namespace Beamable.Common.Dependencies
 				Transients = _transientServices.ToDictionary(s => s.Interface),
 				Singletons = _singletonServices.ToDictionary(s => s.Interface)
 			};
+		}
+
+		public IDependencyBuilder Remove<T>()
+		{
+			if (TryGetTransient(typeof(T), out var transient))
+			{
+				_transientServices.Remove(transient);
+				return this;
+			}
+
+			if (TryGetSingleton(typeof(T), out var singleton))
+			{
+				_singletonServices.Remove(singleton);
+				return this;
+			}
+
+			throw new Exception($"Service does not exist, so cannot be removed. type=[{typeof(T)}]");
+		}
+
+		public bool Has<T>()
+		{
+			return TryGetTransient(typeof(T), out _) || TryGetSingleton(typeof(T), out _);
+		}
+
+		public bool TryGetTransient(Type type, out ServiceDescriptor descriptor)
+		{
+			descriptor = _transientServices.FirstOrDefault(s => s.Interface == type);
+			return descriptor != null;
+		}
+		public bool TryGetSingleton(Type type, out ServiceDescriptor descriptor)
+		{
+			descriptor = _singletonServices.FirstOrDefault(s => s.Interface == type);
+			return descriptor != null;
+		}
+
+		public IDependencyBuilder IfHas<T>(Func<IDependencyBuilder> continuation)
+		{
+			throw new NotImplementedException();
 		}
 
 		public IDependencyBuilder Fork()
