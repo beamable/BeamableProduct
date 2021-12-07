@@ -19,11 +19,12 @@ namespace Beamable.UI.BUSS
 	public class BussThemeManager : BeamableVisualElement
 	{
 #if BEAMABLE_DEVELOPER
-		[MenuItem(
-			BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_THEME_MANAGER + "/" +
-			BeamableConstants.OPEN + " " +
-			BeamableConstants.THEME_MANAGER,
-			priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
+		// [MenuItem(
+		// 	BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_THEME_MANAGER + "/" +
+		// 	BeamableConstants.OPEN + " " +
+		// 	BeamableConstants.THEME_MANAGER,
+		// 	priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
+		[MenuItem("Private/Theme Manager")]
 #endif
 		public static void Init()
 		{

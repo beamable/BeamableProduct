@@ -1,6 +1,8 @@
 ﻿using Beamable.Editor.UI.Buss;
 using Beamable.UI.Buss;
 using System;
+using UnityEditor;
+using UnityEditor.EventSystems;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -19,33 +21,76 @@ namespace Beamable.Editor.UI.Components
 		public BussStyleCardVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}") { }
 
-		private BussStyleRule _styleRule;
-		private TextElement _styleId;
-		private VisualElement _properties;
 		private VisualElement _styleIdParent;
+		private TextElement _styleIdLabel;
+		private TextField _styleIdEditField;
+		
+		private BussStyleRule _styleRule;
+		private VisualElement _properties;
 
 		public override void Refresh()
 		{
 			base.Refresh();
 
 			_styleIdParent = Root.Q<VisualElement>("styleIdParent");
-			
-			_styleId = Root.Q<TextElement>("styleId");
-			_styleId.text = _styleRule.SelectorString;
-
-			_styleId.RegisterCallback<MouseDownEvent>(StyleIdClicked);
-			
-			
-			
 			_properties = Root.Q<VisualElement>("properties");
 
+			CreateStyleIdLabel();
 			CreateProperties();
+		}
+
+		private void CreateStyleIdLabel()
+		{
+			_styleIdLabel = new TextElement();
+			_styleIdLabel.name = "styleId";
+			_styleIdLabel.text = _styleRule.SelectorString;
+			_styleIdParent.Add(_styleIdLabel);
+			
+			_styleIdLabel.RegisterCallback<MouseDownEvent>(StyleIdClicked);
+		}
+
+		private void RemoveStyleIdLabel()
+		{
+			if (_styleIdLabel == null)
+			{
+				return;
+			}
+
+			_styleIdLabel.UnregisterCallback<MouseDownEvent>(StyleIdClicked);
+			_styleIdParent.Remove(_styleIdLabel);
+			_styleIdLabel = null;
 		}
 
 		private void StyleIdClicked(MouseDownEvent evt)
 		{
-			
-			_styleId.visible = false;
+			RemoveStyleIdLabel();
+			CreateStyleIdEditField();
+		}
+
+		private void CreateStyleIdEditField()
+		{
+			_styleIdEditField = new TextField();
+			_styleIdEditField.name = "styleId";
+			_styleIdEditField.value = _styleRule.SelectorString;
+			_styleIdEditField.RegisterValueChangedCallback(StyleIdChanged);
+			_styleIdParent.Add(_styleIdEditField);
+		}
+
+		private void RemoveStyleIdEditField()
+		{
+			if (_styleIdEditField == null)
+			{
+				return;
+			}
+
+			_styleIdEditField.UnregisterValueChangedCallback(StyleIdChanged);
+			_styleIdParent.Remove(_styleIdEditField);
+			_styleIdEditField = null;
+		}
+
+		private void StyleIdChanged(ChangeEvent<string> evt)
+		{
+			// TODO: apply change to property
 		}
 
 		public void Setup(BussStyleRule styleRule)
