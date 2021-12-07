@@ -57,6 +57,13 @@ namespace Beamable.Editor.UI.Model
             }
         }
         private bool _isSelected;
+        
+        public bool IsCollapsed
+        {
+            get => _isCollapsed;
+            set => _isCollapsed = value;
+        }
+        [SerializeField] private bool _isCollapsed = false;
 
         public Action OnLogsDetached { get; set; }
         public Action OnLogsAttached { get; set; }
@@ -88,9 +95,14 @@ namespace Beamable.Editor.UI.Model
         // TODO === BEGIN
         public abstract void PopulateMoreDropdown(ContextualMenuPopulateEvent evt);
         // TODO === END
-        
         public abstract void Refresh(IDescriptor descriptor);
         public abstract Task Start();
         public abstract Task Stop();
+        
+        protected void OpenCode()
+        {
+            var path = Path.GetDirectoryName(AssemblyDefinitionHelper.ConvertToInfo(Descriptor).Location);
+            EditorUtility.OpenWithDefaultApp($@"{path}/{Descriptor.Name}.cs");
+        }
     }
 }

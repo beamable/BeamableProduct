@@ -1,3 +1,4 @@
+using System;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
@@ -24,6 +25,14 @@ namespace Beamable.Server.Api
          {
             gamerTag = userId
          });
+      }
+
+      public override Promise<User> GetUser(TokenResponse token)
+      {
+         throw new NotImplementedException("This version of GetUser is not supported in the Microservice environment!\n" +
+                                           $"To get User data, please use {nameof(IMicroserviceAuthApi)}.{nameof(IMicroserviceAuthApi.GetUser)}(userId) instead.\n" +
+                                           $"Or, to make calls from the Microservice on behalf of a user with a given Id, " +
+                                           $"use Microservice.AssumeUser(userId) and use the returned {nameof(RequestHandlerData)}.{nameof(RequestHandlerData.Services)}.");
       }
 
       private class GetUserRequest

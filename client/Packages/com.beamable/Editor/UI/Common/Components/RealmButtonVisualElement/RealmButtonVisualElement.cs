@@ -53,29 +53,33 @@ namespace Beamable.Editor.UI.Components
             _realmButton.clickable.clicked += () => { OnButtonClicked(_realmButton.worldBound); };
 
             _realmLabel = _realmButton.Q<Label>();
-            if (Model.CurrentRealm == null)
+            if (Model.Current == null)
             {
                 _realmLabel.text = "Select realm";
             }
             else
             {
-                _realmLabel.text = Model.CurrentRealm.DisplayName;
-                if (Model.CurrentRealm.IsProduction)
+                _realmLabel.text = Model.Current.DisplayName;
+
+                RealmView currentRealmView = (RealmView)Model.Current;
+                if (currentRealmView.IsProduction)
                 {
                     _realmButton.AddToClassList("production");
                 }
-                if (Model.CurrentRealm.IsStaging)
+                if (currentRealmView.IsStaging)
                 {
                     _realmButton.AddToClassList("staging");
                 }
             }
-            Model.OnRealmChanged -= HandleRealmChanged;
-            Model.OnRealmChanged += HandleRealmChanged;
+            Model.OnElementChanged -= HandleRealmChanged;
+            Model.OnElementChanged += HandleRealmChanged;
         }
 
         
-        private void HandleRealmChanged(RealmView realm)
+        private void HandleRealmChanged(ISearchableElement view)
         {
+            RealmView realm = (RealmView)view;
+
             _realmLabel.text = realm.DisplayName;
             if (realm.IsProduction)
             {
@@ -95,13 +99,13 @@ namespace Beamable.Editor.UI.Components
         {
             var popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
 
-            var content = new RealmDropdownVisualElement();
+            var content = new SearchabledDropdownVisualElement("Switching Realm");
             content.Model = Model;
             var wnd = BeamablePopupWindow.ShowDropdown("Select Realm", popupWindowRect, new Vector2(200, 300), content);
 
-            content.OnRealmSelected += (realm) =>
+            content.OnElementSelected += (realm) =>
             {
-                EditorAPI.Instance.Then(beamable => { beamable.SwitchRealm(realm).Then(_ => { wnd.Close(); }); });
+                EditorAPI.Instance.Then(beamable => { beamable.SwitchRealm((RealmView)realm).Then(_ => { wnd.Close(); }); });
             };
             content.Refresh();
         }

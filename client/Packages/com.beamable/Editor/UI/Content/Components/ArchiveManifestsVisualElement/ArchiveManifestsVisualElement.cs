@@ -56,7 +56,7 @@ namespace Beamable.Editor.Content.Components
                 }
                 foreach (var manifest in manifests.manifests.OrderBy(x => x.id)) {
                     if(manifest.id == BeamableConstants.DEFAULT_MANIFEST_ID) continue;
-                    var enabled = manifest.id != _model.CurrentManifestId;
+                    var enabled = manifest.id != _model.Current?.DisplayName;
                     _entries.Add(new Entry(manifest, _listRoot, enabled, UpdateArchiveButtonInteractivity));
                 }
             });
@@ -69,8 +69,8 @@ namespace Beamable.Editor.Content.Components
             _archiveBtn.AddGateKeeper(_buttonGatekeeper);
             UpdateArchiveButtonInteractivity();
             
-            var cancelBtn = Root.Q<Button>("cancelBtn");
-            cancelBtn.clickable.clicked += CancelButton_OnClicked;
+            var cancelBtn = Root.Q<GenericButtonVisualElement>("cancelBtn");
+            cancelBtn.OnClick += CancelButton_OnClicked;
         }
 
         private void UpdateArchiveButtonInteractivity() {

@@ -49,6 +49,15 @@ MonoBehaviour:
       Username: root
       Password: Password!
       SshPort: 11103
+  - ServiceName: CacheDependentMS
+    Enabled: 1
+    TemplateId: small
+    CustomDockerFileStrings: 
+    IncludeDebugTools: 1
+    DebugData:
+      Username: root
+      Password: Password!
+      SshPort: 11104
   StorageObjects: []
   CustomContainerPrefix: 
   AutoReferenceContent: 0

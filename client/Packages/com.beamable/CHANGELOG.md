@@ -1,10 +1,31 @@
 
 
+
 # Changelog
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.18.0]
+### Added
+- Content can be prebaked with game-builds to speed up content initialization
+- `ScheduleDefinition` now supports CRON expression
+- Minute support for scheduled listings
+- Announcement content includes gifts in addition to attachments. Gifts support webhook calls.
+- `scheduleInstancePurchaseLimit` field to the `ListingContent` to enable setting a purchase limit scoped to the schedule instance
+- `SearchStats()` admin method is usable from client and microservice code.
+
+### Changed
+- `BeamableEnvironment` has moved to the Runtime to enable sdk version checking at runtime
+- `list_content` Admin Command displays limited results. You can specify start index for `list_content` command
+
+### Fixed
+- Renamed Beamable's iOS plugin for Google Sign-In from `GoogleSignIn` to `BeamableGoogleSignIn` to prevent name collisions with public plugins.
+- `InventoryService.GetCurrent` is no longer limited by URI length
+
+## [0.17.4]
+- no changes
 
 ## [0.17.3]
 ### Added
@@ -19,14 +40,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.17.2]
 ### Added
 - `CoreConfiguration` to project settings to tweak how our Promise library handles uncaught promises by default
+- `matchingIntervalSecs` for `SimGameType` allows game makers to specify the rate by which matchmaking occurs
+
 ### Changed
 - `PromiseBase.SetPotentialUncaughtErrorHandler(handler, replace)` -- replaces by default, but supports adding handlers by passing `false` to second parameter 
+- New design of Microservices Publish Window with support for Storage Objects
 
 ### Fixed
 - `CloudSavingService` serialization error caused by Invariant Culture
 - Content Manager Publish window loading bar width
 - Current Hud no longer emits null reference error if no image is assigned
-
 
 ## [0.17.1]
 ### Fixed

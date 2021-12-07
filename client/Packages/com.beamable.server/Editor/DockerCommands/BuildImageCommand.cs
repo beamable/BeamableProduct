@@ -182,6 +182,7 @@ namespace Beamable.Server.Editor.DockerCommands
          {
             base.HandleStandardOut(data);
          }
+         OnStandardOut?.Invoke(data);
       }
 
       protected override void HandleStandardErr(string data)
@@ -190,6 +191,7 @@ namespace Beamable.Server.Editor.DockerCommands
          {
             base.HandleStandardErr(data);
          }
+         OnStandardErr?.Invoke(data);
       }
 
       protected override void Resolve()

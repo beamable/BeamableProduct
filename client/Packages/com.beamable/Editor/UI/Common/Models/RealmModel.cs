@@ -1,50 +1,56 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Beamable.Common;
 using Beamable.Editor.Realms;
 using UnityEngine;
 
 namespace Beamable.Editor.UI.Common.Models
 {
-    public class RealmModel
+    public class RealmModel : ISearchableModel
     {
-        public event Action<List<RealmView>> OnAvailableRealmsChanged;
-        public event Action<RealmView> OnRealmChanged;
-        public RealmView CurrentRealm { get; set; }
-        public List<RealmView> Realms { get; set; }
+        public ISearchableElement Default { get; set; }
+        public ISearchableElement Current { get; set; }
+        public List<ISearchableElement> Elements { get; set; }
+
+        public event Action<List<ISearchableElement>> OnAvailableElementsChanged;
+        public event Action<ISearchableElement> OnElementChanged;
 
         public void Initialize()
         {
-            RefreshAvailableRealms();
+            RefreshAvailable();
 
             EditorAPI.Instance.Then(api =>
             {
                 api.OnRealmChange += HandleRealmChanged;
-                CurrentRealm = api.Realm;
-                OnRealmChanged?.Invoke(CurrentRealm);
+                Current = api.Realm;
+                OnElementChanged?.Invoke(Current);
             });
         }
-        
-        public Promise<List<RealmView>> RefreshAvailableRealms()
+
+        public Promise<List<ISearchableElement>> RefreshAvailable()
         {
             return EditorAPI.Instance.FlatMap(api =>
             {
-                CurrentRealm = api.Realm;
-                return api.RealmService.GetRealms();
+                Current = api.Realm;
+                return api.RealmService.GetRealms().Map(realms =>
+                {
+                    return realms.ToList<ISearchableElement>();
+                });
             }).Then(realms =>
             {
-                
-                Realms = realms;
-                OnAvailableRealmsChanged?.Invoke(realms);
+
+                Elements = realms.ToList<ISearchableElement>();
+                OnAvailableElementsChanged?.Invoke(Elements);
             });
         }
 
         private void HandleRealmChanged(RealmView realm)
         {
-            CurrentRealm = realm;
+            Current = realm;
             try
             {
-                OnRealmChanged?.Invoke(realm);
+                OnElementChanged?.Invoke(realm);
             }
             catch (Exception e)
             {

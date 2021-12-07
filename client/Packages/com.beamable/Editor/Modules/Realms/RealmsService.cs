@@ -1,13 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Beamable.Editor.Realms
 {
-   public class RealmServiceException : Exception
+    public class RealmServiceException : Exception
    {
 
       public RealmServiceException(string message) : base(message)
@@ -166,17 +166,19 @@ namespace Beamable.Editor.Realms
       public List<RealmView> Projects;
    }
 
-   public class RealmView
+   public class RealmView : ISearchableElement
    {
+      private const string PRODUCTION_DROPDOWN_CLASS_NAME = "production";
+      private const string STAGING_DROPDOWN_CLASS_NAME = "staging";
+
       public string Pid;
       public string Cid;
       public string ProjectName;
       public bool Archived;
       public List<RealmView> Children = new List<RealmView>();
       public RealmView Parent;
-      public int Depth;
-
-      public string DisplayName => IsProduction ? $"[PROD] {ProjectName}" : ProjectName;
+      public int Depth { get; set; }
+      public string DisplayName { get => IsProduction ? $"[PROD] {ProjectName}" : ProjectName;}
 
       public bool IsProduction => Depth == 0;
       public bool IsStaging => Depth == 1;
@@ -203,6 +205,35 @@ namespace Beamable.Editor.Realms
          return Parent == null
                 ? this
                 : Parent.FindRoot();
+      }
+
+      public int GetOrder()
+      {
+         return -Depth;
+      }
+
+      public bool IsAvailable()
+      {
+         return !Archived;
+      }
+
+      public bool IsToSkip(string filter)
+      {
+         return !string.IsNullOrEmpty(filter) && !ProjectName.ToLower().Contains(filter);
+      }
+
+      public string GetClassNameToAdd()
+      {
+         if (IsProduction)
+         {
+            return PRODUCTION_DROPDOWN_CLASS_NAME;
+         }
+         else if (IsStaging)
+         {
+            return STAGING_DROPDOWN_CLASS_NAME;
+         }
+
+         return string.Empty;
       }
    }
 
