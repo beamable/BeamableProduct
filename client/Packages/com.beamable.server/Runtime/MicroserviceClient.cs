@@ -6,12 +6,31 @@ using Beamable.Platform.SDK;
 using Beamable;
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Dependencies;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 using Beamable.Serialization.SmallerJSON;
 
 namespace Beamable.Server
 {
+	// a class that acts as vessel for extension methods for service clients
+	public class MicroserviceClients
+	{
+		private BeamContext _ctx;
+
+		public MicroserviceClients(BeamContext context)
+		{
+			_ctx = context;
+		}
+
+		public TClient GetClient<TClient>() where TClient : MicroserviceClient
+		{
+			return _ctx.ServiceProvider.GetService<TClient>();
+		}
+	}
+
+
+
    [Serializable]
    public class MicroserviceClientDataWrapper<T> : ScriptableObject
    {
@@ -20,12 +39,27 @@ namespace Beamable.Server
 
    public class MicroserviceClient
    {
-      protected async Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
-      {
-         return await MicroserviceClientHelper.Request<T>(serviceName, endpoint, serializedFields);
-      }
+	   protected Promise<IBeamableRequester> RequesterPromise { get; }
 
-      protected string SerializeArgument<T>(T arg) => MicroserviceClientHelper.SerializeArgument(arg);
+	   public MicroserviceClient(IBeamableRequester requester=null)
+	   {
+		   if (requester != null)
+		   {
+			   RequesterPromise = Promise<IBeamableRequester>.Successful(requester);
+		   }
+		   else
+		   {
+			   RequesterPromise = Beamable.API.Instance.Map(b => b.Requester);
+		   }
+	   }
+
+	   protected async Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
+	   {
+		   var requester = await RequesterPromise;
+		   return await MicroserviceClientHelper.Request<T>(requester, serviceName, endpoint, serializedFields);
+	   }
+
+	   protected string SerializeArgument<T>(T arg) => MicroserviceClientHelper.SerializeArgument(arg);
 
       protected string CreateUrl(string cid, string pid, string serviceName, string endpoint)
          => MicroserviceClientHelper.CreateUrl(cid, pid, serviceName, endpoint);
@@ -144,7 +178,7 @@ namespace Beamable.Server
          return url;
       }
 
-      public static async Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
+      public static async Promise<T> Request<T>(IBeamableRequester requester, string serviceName, string endpoint, string[] serializedFields)
       {
          Debug.Log($"Client called {endpoint} with {serializedFields.Length} arguments");
          var argArray = "[ " + string.Join(",", serializedFields) + " ]";
@@ -163,9 +197,9 @@ namespace Beamable.Server
             return result;
          }
 
-         var b = await API.Instance;
-         var requester = b.Requester;
-         var url = CreateUrl(b.Token.Cid, b.Token.Pid, serviceName, endpoint);
+         // var b = await API.Instance;
+         // var requester = b.Requester;
+         var url = CreateUrl(requester.AccessToken.Cid, requester.AccessToken.Pid, serviceName, endpoint);
          var req = new RequestObject
          {
             payload = argArray

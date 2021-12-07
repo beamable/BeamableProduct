@@ -1,8 +1,6 @@
 using UnityEngine;
 using Beamable;
 using Beamable.Api.Sessions;
-using Beamable.Common.Api;
-using Beamable.Common.Api.Auth;
 using Beamable.Server.Clients;
 using System.Collections.Generic;
 using System.Linq;
@@ -102,8 +100,11 @@ namespace DefaultNamespace
       async void SetStat()
       {
 	      await beamable.Stats.Set("tuna2", nextTunavalue);
-	      var service = beamable.CacheDependentMS();
+	      // var service = beamable.CacheDependentMS();
+	      // beamable.Microservices().GetClient<CacheDependentMSClient>()
 
+	      // var client = new CacheDependentMSClient();
+	      // beamable.Microservices().CacheDependentMS().GetCachedView();
 	      Debug.Log("The stat has been updated");
       }
    }
