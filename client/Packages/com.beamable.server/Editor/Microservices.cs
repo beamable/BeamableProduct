@@ -15,6 +15,7 @@ using Beamable.Server.Editor.Uploader;
 using Beamable.Platform.SDK;
 using Beamable.Editor;
 using Beamable.Editor.UI.Model;
+using Editor.ReflectionCacheSystems;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
@@ -31,6 +32,14 @@ namespace Beamable.Server.Editor
 
       private static List<MicroserviceDescriptor> _descriptors = null;
       private static List<IDescriptor> _allDescriptors = null;
+
+      private static MicroserviceReflectionCache obj;
+
+      static Microservices()
+      {
+	      obj = AssetDatabase.LoadAssetAtPath<MicroserviceReflectionCache>("Packages/com.beamable.server/Editor/ReflectionCacheSystems/MicroserviceReflectionCache.asset");
+      }
+      
       public static List<IDescriptor> AllDescriptors
       {
          get
@@ -98,23 +107,6 @@ namespace Beamable.Server.Editor
             {
                foreach (var type in assembly.GetTypes())
                {
-                  if (TryGetAttribute<MicroserviceAttribute, Microservice>(type, out var serviceAttribute))
-                  {
-                     if (serviceAttribute.MicroserviceName.ToLower().Equals("xxxx"))
-                     {
-                        continue; // TODO: XXX this is a hacky way to ignore the default microservice...
-                     }
-                     var descriptor = new MicroserviceDescriptor
-                     {
-                        Name = serviceAttribute.MicroserviceName,
-                        Type = type,
-                        AttributePath = serviceAttribute.GetSourcePath(),
-                        Methods = GetClientCallables(type)
-                     };
-                     _descriptors.Add(descriptor);
-                     _allDescriptors.Add(descriptor);
-                  }
-
                   if (TryGetAttribute<StorageObjectAttribute, StorageObject>(type, out var storageAttribute))
                   {
                      if (storageAttribute.StorageName.ToLower().Equals("xxxx"))
@@ -130,7 +122,6 @@ namespace Beamable.Server.Editor
                      _storageDescriptors.Add(descriptor);
                      _allDescriptors.Add(descriptor);
                   }
-
                }
             }
             catch (Exception)
@@ -138,6 +129,10 @@ namespace Beamable.Server.Editor
                continue; // ignore anything that doesn't have a Location property..
             }
          }
+
+         _descriptors = obj.Cache.Descriptors;
+         _allDescriptors.AddRange(_descriptors);
+
       }
 
       public static List<MicroserviceDescriptor> ListMicroservices()

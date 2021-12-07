@@ -28,5 +28,55 @@ namespace Beamable.Server.Clients
             string[] serializedFields = new string[0];
             return this.Request<Beamable.Common.Api.Leaderboards.LeaderBoardView>("CacheDependentMS", "GetCachedView", serializedFields);
         }
+        
+        /// <summary>
+        /// Call the GetCachedView method on the CacheDependentMS microservice
+        /// <see cref="Beamable.Server.CacheDependentMS.GetCachedView"/>
+        /// </summary>
+        public Beamable.Common.Promise<Beamable.Common.Api.Leaderboards.LeaderBoardView> GetCachedView(int testParameters)
+        {
+            string serialized_testParameters = this.SerializeArgument<int>(testParameters);
+            string[] serializedFields = new string[] {
+                    serialized_testParameters};
+            return this.Request<Beamable.Common.Api.Leaderboards.LeaderBoardView>("CacheDependentMS", "GetCachedView", serializedFields);
+        }
+        
+        /// <summary>
+        /// Call the AsyncVoidTestMethod method on the CacheDependentMS microservice
+        /// <see cref="Beamable.Server.CacheDependentMS.AsyncVoidTestMethod"/>
+        /// </summary>
+        public Beamable.Common.Promise<Beamable.Common.Unit> AsyncVoidTestMethod(int testParameters)
+        {
+            string serialized_testParameters = this.SerializeArgument<int>(testParameters);
+            string[] serializedFields = new string[] {
+                    serialized_testParameters};
+            return this.Request<Beamable.Common.Unit>("CacheDependentMS", "AsyncVoidTestMethod", serializedFields);
+        }
+        
+        /// <summary>
+        /// Call the TestUnsupportedParamters method on the CacheDependentMS microservice
+        /// <see cref="Beamable.Server.CacheDependentMS.TestUnsupportedParamters"/>
+        /// </summary>
+        public Beamable.Common.Promise<Beamable.Common.Unit> TestUnsupportedParamters(System.Action testAction)
+        {
+            string serialized_testAction = this.SerializeArgument<System.Action>(testAction);
+            string[] serializedFields = new string[] {
+                    serialized_testAction};
+            return this.Request<Beamable.Common.Unit>("CacheDependentMS", "TestUnsupportedParamters", serializedFields);
+        }
+    }
+    
+    internal sealed class MicroserviceParametersCacheDependentMSClient
+    {
+        
+        [System.SerializableAttribute()]
+        internal sealed class ParameterSystem_Int32 : Beamable.Server.MicroserviceClientDataWrapper<int>
+        {
+        }
+        
+        [System.SerializableAttribute()]
+        internal sealed class ParameterSystem_Action : Beamable.Server.MicroserviceClientDataWrapper<System.Action>
+        {
+        }
     }
 }

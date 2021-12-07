@@ -101,7 +101,9 @@ namespace Beamable.Common
 		{
 			Valid,
 			Warning,
-			Error
+			Error,
+			
+			Discarded
 		}
 
 		private const int PRE_ALLOC_SYSTEM_AND_PROVIDER_AMOUNT = 16;
@@ -175,9 +177,30 @@ namespace Beamable.Common
 			Debug.Assert(provider != null, "Provider cannot be null. Please ensure the provider instance exists when passing it in here.");
 			Debug.Assert(!_registeredProvider.Contains(provider), "Already registered this provider --- Please ensure providers are registered a single time. " +
 			                                                     "This is makes the Assembly Sweep more efficient.");
+			
+			// Guard so people don't accidentally shoot themselves in the foot when defining their attributes of interest.
+			foreach (var attributeOfInterest in provider.AttributesOfInterest)
+			{
+				// What this does is:
+				//   - If the attribute of interest Has a Method/Constructor/Property/Field/Event Target, we'll look for them into each individual type that's given in the two lists declared here., 
+				//   - Will work with structs, classes both declared at root or internal as the Assembly.GetTypes() returns all of these.
+				//
+				// Assumption 1 ===> Does not need work for parameters or return values --- this is specific enough that each individual user system can do their own thing here.            
+				if (attributeOfInterest.Targets.HasFlag(AttributeOfInterest.INTERNAL_TYPE_SEARCH_WHEN_TARGETS))
+				{
+					// If you didn't tell us where to look, we'd have to look everywhere -- which is terrible for editor performance so we don't support it.
+					if (attributeOfInterest.FoundInBaseTypes.Count == 0 && attributeOfInterest.FoundInTypesWithAttributes.Count == 0)
+					{
+						throw new ArgumentException($"{nameof(AttributeOfInterest)} [{attributeOfInterest.AttributeType.Name}] with these {nameof(AttributeTargets)} [{AttributeOfInterest.INTERNAL_TYPE_SEARCH_WHEN_TARGETS.ToString()}]" +
+						                            $"must have at least one entry into the {nameof(attributeOfInterest.FoundInBaseTypes)} or {nameof(attributeOfInterest.FoundInTypesWithAttributes)} lists.\n" +
+						                            $"Without it, we would need to go into every existing type which would be bad for editor performance.");
+					}
+				}   
+			}
 
 			_registeredProvider.Add(provider);
 
+			
 			// TODO: Add warning message for registering the same type twice.
 			// TODO: Add warning message for registering classes that implement a registered interface or similar cases.
 		}

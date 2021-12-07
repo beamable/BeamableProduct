@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Beamable.Common
@@ -28,7 +29,8 @@ namespace Beamable.Common
 		public readonly ParameterOfInterest[] Parameters;
 
 		/// <summary>
-		/// <see cref="SignatureOfInterest"/> default constructor.
+		/// <see cref="SignatureOfInterest"/> default constructor. Passing in a null value for <paramref name="parameters"/> will cause the signature to match using
+		/// only <paramref name="returnType"/> and <paramref name="isStatic"/>. 
 		/// </summary>
 		public SignatureOfInterest(bool isStatic, Type returnType, ParameterOfInterest[] parameters)
 		{
@@ -99,7 +101,7 @@ namespace Beamable.Common
 
 		/// <summary>
 		/// Iterates through a list of <paramref name="acceptedSignatures"/> and match the given <paramref name="methodInfo"/> against them.
-		/// Allow classes and sublclass
+		/// Allow classes and subclasses when matching the type. 
 		/// </summary>
 		/// <param name="acceptedSignatures">A list of <see cref="SignatureOfInterest"/> that the method is allowed to have.</param>
 		/// <param name="methodInfo">The <see cref="MethodInfo"/> to match against the <paramref name="acceptedSignatures"/>.</param>
@@ -115,21 +117,23 @@ namespace Beamable.Common
 			{
 				if (isStatic != acceptableSignature.IsStatic) return -1;
 				if (retValType != acceptableSignature.ReturnType) return -1;
-				if (parameters.Length != acceptableSignature.Parameters.Length) return -1;
 
-				for (var i = 0; i < parameters.Length; i++)
+				// If no parameters were passed, we assume the user does not care about it.
+				// If a parameter was passed, but has 0 length, it will be enforced that the method has 0 parameters.
+				if (acceptableSignature.Parameters != null)
 				{
-					var parameter = parameters[i];
-					var acceptableParameter = acceptableSignature.Parameters[i];
+					if (parameters.Length != acceptableSignature.Parameters.Length) return -1;
 
-					// Use assignable from in case we accept interfaces.
-					var matchType = acceptableParameter.ParameterType.IsAssignableFrom(parameter.ParameterType);
-					var matchIn = acceptableParameter.IsIn == parameter.IsIn;
-					var matchOut = acceptableParameter.IsOut == parameter.IsOut;
-					var matchRef = acceptableParameter.IsByRef == parameter.ParameterType.IsByRef;
+					for (var i = 0; i < parameters.Length; i++)
+					{
+						var parameter = parameters[i];
+						var acceptableParameter = acceptableSignature.Parameters[i];
 
-					if (!(matchType && matchIn && matchOut && matchRef))
-						return -1;
+						// Use assignable from in case we accept interfaces.
+						bool matchParameter = MatchParameter(acceptableParameter, parameter);
+						if (!(matchParameter))
+							return -1;
+					}
 				}
 
 				return signatureIdx;
@@ -137,5 +141,48 @@ namespace Beamable.Common
 
 			return matchedSignaturesIndices;
 		}
+		
+		/// <summary>
+		/// Checks if the given method info is an async method with the return type of <typeparamref name="T"/>>.
+		/// </summary>
+		public static bool IsAsyncMethodOfType(this MethodInfo methodInfo, Type returnType) => 
+			methodInfo.GetCustomAttribute<AsyncStateMachineAttribute>() != null && methodInfo.ReturnType == returnType;
+
+		/// <summary>
+		/// Checks all parameters of <paramref name="methodInfo"/> and returns true if any of its parameters match any of <paramref name="parametersOfInterest"/>.
+		/// Used mostly to detect forbidden types in method signatures. 
+		/// </summary>
+		/// <param name="parametersOfInterest">List of parameters types we care about. Currently, this only matches the type. It doesn't care about in/ref/out modifiers.</param>
+		/// <param name="methodInfo">The method whose parameters we want to look at.</param>
+		/// <returns>True, if any of the <paramref name="parametersOfInterest"/> match any of the parameters of <paramref name="methodInfo"/>.</returns>
+		public static bool MatchAnyParametersOfMethod(this IReadOnlyList<ParameterOfInterest> parametersOfInterest, MethodInfo methodInfo)
+		{
+			var parameters = methodInfo.GetParameters();
+			var result = false;
+			for (var i = 0; i < parameters.Length; i++)
+			{
+				result |= parametersOfInterest.Any(interest => MatchParameterTypeOnly(interest, parameters[i]));
+			}
+			return result;
+		}
+		
+		private static bool MatchParameter(ParameterOfInterest acceptableParameter, ParameterInfo parameter)
+		{
+			var matchType = acceptableParameter.ParameterType.IsAssignableFrom(parameter.ParameterType);
+			var matchIn = acceptableParameter.IsIn == parameter.IsIn;
+			var matchOut = acceptableParameter.IsOut == parameter.IsOut;
+			var matchRef = acceptableParameter.IsByRef == parameter.ParameterType.IsByRef;
+
+			var matchParameter = matchType && matchIn && matchOut && matchRef;
+			return matchParameter;
+		}
+		
+		private static bool MatchParameterTypeOnly(ParameterOfInterest acceptableParameter, ParameterInfo parameter)
+		{
+			var matchType = acceptableParameter.ParameterType.IsAssignableFrom(parameter.ParameterType);
+			return matchType;
+		}
+
+		
 	}
 }

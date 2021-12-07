@@ -7,10 +7,10 @@ using System.Text;
 namespace Beamable.Common
 {
     /// <summary>
-    /// Implement this interface over any <see cref="Attribute"/> to be able to use the existing <see cref="ReflectionCache"/> utilities to validate things with respect to Unique Names.
+    /// Implement this interface over any <see cref="Attribute"/> to be able to use the existing <see cref="ReflectionCache"/> utilities to validate things with respect to attributes that name members.
     /// </summary>
     /// <typeparam name="T">The type of the <see cref="Attribute"/> implementing this interface.</typeparam>
-    public interface IUniqueNamingAttribute<T> : IReflectionCachingAttribute<T> where T : Attribute, IUniqueNamingAttribute<T>
+    public interface INamingAttribute<T> : IReflectionCachingAttribute<T> where T : Attribute, INamingAttribute<T>
     {
         /// <summary>
         /// A list of names that must be unique between all uses of this attribute.
@@ -26,18 +26,18 @@ namespace Beamable.Common
 
 
     /// <summary>
-    /// Results of validation of a <see cref="IUniqueNamingAttribute{T}"/> implementation.
+    /// Results of validation of a <see cref="INamingAttribute{T}"/> implementation.
     /// </summary>
-    /// <typeparam name="T">The attribute implementing <see cref="IUniqueNamingAttribute{T}"/>.</typeparam>
-    public readonly struct UniqueNameValidationResults<T> where T : Attribute, IUniqueNamingAttribute<T>
+    /// <typeparam name="T">The attribute implementing <see cref="INamingAttribute{T}"/>.</typeparam>
+    public readonly struct UniqueNameValidationResults<T> where T : Attribute, INamingAttribute<T>
     {
         /// <summary>
-        /// List of results from each individual check of <see cref="IUniqueNamingAttribute{T}.AreValidNameForType"/>. 
+        /// List of results from each individual check of <see cref="INamingAttribute{T}.AreValidNameForType"/>. 
         /// </summary>
         public readonly List<AttributeValidationResult<T>> PerAttributeNameValidations;
         
         /// <summary>
-        /// List of name collisions identified when running a validation sweep over a list of <see cref="MemberAttributePair"/> containing attributes of type: <see cref="IUniqueNamingAttribute{T}"/>.
+        /// List of name collisions identified when running a validation sweep over a list of <see cref="MemberAttributePair"/> containing attributes of type: <see cref="INamingAttribute{T}"/>.
         /// </summary>
         public readonly List<UniqueNameCollisionData> PerNameCollisions;
         
@@ -89,11 +89,11 @@ namespace Beamable.Common
         /// Expects <paramref name="memberAttributePairs"/> to contain the entire selection of attributes whose names can't collide.
         /// </summary>
         /// <param name="memberAttributePairs">
-        /// All <see cref="MemberAttributePair"/> should contain attributes implementing <see cref="IUniqueNamingAttribute{T}/> whose declared names cannot collide. 
+        /// All <see cref="MemberAttributePair"/> should contain attributes implementing <see cref="INamingAttribute{T}. 
         /// </param>
-        /// <typeparam name="T">Any type implementing <see cref="IUniqueNamingAttribute{T}"/>.</typeparam>
+        /// <typeparam name="T">Any type implementing <see cref="INamingAttribute{T}"/>.</typeparam>
         /// <returns>A <see cref="UniqueNameValidationResults{T}"/> data structure with the validation results that you can use to display errors and warnings or parse valid pairs.</returns>
-        public static UniqueNameValidationResults<T> GetAndValidateUniqueNamingAttributes<T>(this IReadOnlyList<MemberAttributePair> memberAttributePairs) where T : Attribute, IUniqueNamingAttribute<T>
+        public static UniqueNameValidationResults<T> GetAndValidateUniqueNamingAttributes<T>(this IReadOnlyList<MemberAttributePair> memberAttributePairs) where T : Attribute, INamingAttribute<T>
         {
             // Allocates lists (assumes one name per-attribute, will re-allocate list if there's two attributes)
             var namesList = new List<(string name, MemberAttributePair pair)>(memberAttributePairs.Count);
@@ -149,6 +149,18 @@ namespace Beamable.Common
 
             return msgBuilder.ToString();
         }
+
+        public static string GetOptionalNameOrMemberName<TNamingAttribute>(this MemberAttributePair attributePair) 
+	        where TNamingAttribute : Attribute, INamingAttribute<TNamingAttribute>
+        {
+	        var attr = attributePair.AttrAs<TNamingAttribute>();
+	        var type = attributePair.Info;
+
+	        var firstNonNullName = attr.Names.FirstOrDefault(s => !string.IsNullOrEmpty(s));
+
+	        return string.IsNullOrEmpty(firstNonNullName) ? type.Name : firstNonNullName;
+        }
+
     }
     
     

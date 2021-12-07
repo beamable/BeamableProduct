@@ -1,5 +1,8 @@
+using Beamable.Common;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Threading.Tasks;
 
 namespace Beamable.Server
 {
@@ -32,8 +35,17 @@ namespace Beamable.Server
    /// 
    /// </summary>
    [System.AttributeUsage(System.AttributeTargets.Method)]
-   public class ClientCallableAttribute : System.Attribute
-   {
+   public class ClientCallableAttribute : System.Attribute, INamingAttribute<ClientCallableAttribute>
+   { 
+	   
+	   private static readonly SignatureOfInterest ASYNC_VOID_RETURN_TYPE_SIGNATURE = new SignatureOfInterest(false, typeof(void), null);
+
+	   private static readonly List<ParameterOfInterest> UNSUPPORTED_PARAMETER_TYPES = new List<ParameterOfInterest>() {
+		   new ParameterOfInterest(typeof(Delegate), false, false, false),
+		   new ParameterOfInterest(typeof(Task), false, false, false),
+		   new ParameterOfInterest(typeof(Promise), false, false, false),
+	   };
+	   
       private string pathName = "";
       public HashSet<string> RequiredScopes { get; }
 
@@ -54,6 +66,34 @@ namespace Beamable.Server
       {
          set { pathName = value; }
          get { return pathName; }
+      }
+
+      public string[] Names => new[] {pathName};
+      
+      public AttributeValidationResult<ClientCallableAttribute> IsAllowedOnMember(MemberInfo member)
+      {
+	      var methodInfo = (MethodInfo)member;
+
+	      // Check for void signatures to send out warning.
+	      if (methodInfo.IsAsyncMethodOfType(typeof(void)))
+	      {
+		      var message = $"AsyncVoidDeclaration";
+		      return new AttributeValidationResult<ClientCallableAttribute>(this, member, ReflectionCache.ValidationResultType.Warning, message);
+	      }
+
+	      // Check for any unsupported parameter types.
+	      if (UNSUPPORTED_PARAMETER_TYPES.MatchAnyParametersOfMethod(methodInfo))
+	      {
+		      var message = $"UnsupportedParameterType";
+		      return new AttributeValidationResult<ClientCallableAttribute>(this, member, ReflectionCache.ValidationResultType.Error, message);
+	      }
+	      
+	      return new AttributeValidationResult<ClientCallableAttribute>(this, member, ReflectionCache.ValidationResultType.Valid, $"");
+      }
+
+      public AttributeValidationResult<ClientCallableAttribute> AreValidNameForType(MemberInfo member, string[] potentialNames)
+      {
+	      return new AttributeValidationResult<ClientCallableAttribute>(this, member, ReflectionCache.ValidationResultType.Valid, $"");
       }
    }
 

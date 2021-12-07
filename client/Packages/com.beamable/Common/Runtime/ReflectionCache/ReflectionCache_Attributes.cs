@@ -44,11 +44,11 @@ namespace Beamable.Common
     /// </summary>
     public readonly struct AttributeOfInterest
     {
-        private const AttributeTargets INTERNAL_TYPE_SEARCH_WHEN_TARGETS = AttributeTargets.Constructor |
-                                                                          AttributeTargets.Event |
-                                                                          AttributeTargets.Field |
-                                                                          AttributeTargets.Method |
-                                                                          AttributeTargets.Property;
+	    public const AttributeTargets INTERNAL_TYPE_SEARCH_WHEN_TARGETS = AttributeTargets.Constructor |
+	                                                                      AttributeTargets.Event |
+	                                                                      AttributeTargets.Field |
+	                                                                      AttributeTargets.Method |
+	                                                                      AttributeTargets.Property;
 
         private const MemberTypes INTERNAL_TYPE_SEARCH_WHEN_MEMBER_TYPES = MemberTypes.Constructor | 
                                                                            MemberTypes.Event | 
@@ -135,22 +135,6 @@ namespace Beamable.Common
 
             FoundInBaseTypes = new List<Type>(foundInBaseTypes ?? new Type[]{});
             FoundInTypesWithAttributes = new List<Type>(foundInTypesWithAttributes ?? new Type[]{});
-
-            // What this does is:
-            //   - If the attribute of interest Has a Method/Constructor/Property/Field/Event Target, we'll look for them into each individual type that's given in the two lists declared here., 
-            //   - Will work with structs, classes both declared at root or internal as the Assembly.GetTypes() returns all of these.
-            //
-            // Assumption 1 ===> Does not need work for parameters or return values --- this is specific enough that each individual user system can do their own thing here.            
-            if (Targets.HasFlag(INTERNAL_TYPE_SEARCH_WHEN_TARGETS))
-            {
-                // If you didn't tell us where to look, we'd have to look everywhere -- which is terrible for editor performance so we don't support it.
-                if (FoundInBaseTypes.Count == 0 && FoundInTypesWithAttributes.Count == 0)
-                {
-                    throw new ArgumentException($"{nameof(AttributeOfInterest)} [{attributeType.Name}] with these {nameof(AttributeTargets)} [{INTERNAL_TYPE_SEARCH_WHEN_TARGETS.ToString()}]" +
-                                                $"must have at least one entry into the {nameof(FoundInBaseTypes)} or {nameof(FoundInTypesWithAttributes)} lists.\n" +
-                                                $"Without it, we would need to go into every existing type which would be bad for editor performance.");
-                }
-            }     
         }
     }
     

@@ -5,7 +5,7 @@ using System.Reflection;
 namespace Beamable.Server
 {
    [AttributeUsage(AttributeTargets.Class)]
-   public class MicroserviceAttribute : Attribute, IUniqueNamingAttribute<MicroserviceAttribute>
+   public class MicroserviceAttribute : Attribute, INamingAttribute<MicroserviceAttribute>
    {
       public string MicroserviceName { get; }
       public string SourcePath { get; }

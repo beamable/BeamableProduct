@@ -52,8 +52,8 @@ namespace Editor.ReflectionCacheSystems
 			private Dictionary<string, MicroserviceBuilder> _serviceToBuilder = new Dictionary<string, MicroserviceBuilder>();
 			private Dictionary<string, MongoStorageBuilder> _storageToBuilder = new Dictionary<string, MongoStorageBuilder>();
 
-			private List<MicroserviceDescriptor> _descriptors = new List<MicroserviceDescriptor>();
-			private List<IDescriptor> _allDescriptors = new List<IDescriptor>();
+			public readonly List<MicroserviceDescriptor> Descriptors = new List<MicroserviceDescriptor>();
+			public readonly List<IDescriptor> AllDescriptors = new List<IDescriptor>();
 
 			private IBeamHintGlobalStorage _hintStorage;
 
@@ -65,8 +65,8 @@ namespace Editor.ReflectionCacheSystems
 				_serviceToBuilder.Clear();
 				_storageToBuilder.Clear();
 
-				_descriptors.Clear();
-				_allDescriptors.Clear();
+				Descriptors.Clear();
+				AllDescriptors.Clear();
 			}
 
 			public void ParseFullCachedData(PerBaseTypeCache perBaseTypeCache,
@@ -90,24 +90,21 @@ namespace Editor.ReflectionCacheSystems
 
 			private void ParseMicroserviceSubTypes(IReadOnlyList<MemberInfo> cachedMicroserviceSubtypes)
 			{
-				var microserviceAttributePairs = new List<MemberAttributePair>();
 				var validationResults = cachedMicroserviceSubtypes
 					.GetAndValidateAttributeExistence(MICROSERVICE_ATTRIBUTE,
-					                                  info =>
-						                                  new AttributeValidationResult<MicroserviceAttribute>(null,
-						                                                                                       info,
-						                                                                                       ReflectionCache.ValidationResultType.Error,
-						                                                                                       $"Microservice sub-class [{info.Name}] does not have the [{nameof(Beamable.Server.MicroserviceAttribute)}]."),
-					                                  microserviceAttributePairs);
+					                                  info => {
+						                                  var message = $"Microservice sub-class [{info.Name}] does not have the [{nameof(MicroserviceAttribute)}].";
+						                                  return new AttributeValidationResult<MicroserviceAttribute>(null, info, ReflectionCache.ValidationResultType.Error, message);
+					                                  });
 
 				// Get all Microservice Attribute usage errors found
-				validationResults.SplitValidationResults(out _, out _, out var errors);
+				validationResults.SplitValidationResults(out _, out _, out var microserviceAttrErrors);
 
 				// Register a hint with all its validation errors as the context object
-				if (errors.Count > 0)
+				if (microserviceAttrErrors.Count > 0)
 				{
 					var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, "MicroserviceAttributeMisuse");
-					_hintStorage.AddOrReplaceHint(hint, errors);
+					_hintStorage.AddOrReplaceHint(hint, microserviceAttrErrors);
 				}
 			}
 
@@ -124,10 +121,37 @@ namespace Editor.ReflectionCacheSystems
 				}
 
 				// Gets all properly configured microservices
-				uniqueNameValidationResults.PerAttributeNameValidations.SplitValidationResults(out var valid, out _, out _);
+				uniqueNameValidationResults.PerAttributeNameValidations.SplitValidationResults(out var microserviceAttrValid, out _, out _);
 
-				// Register all configured microservices 
-				foreach (var memberAttributePair in valid.Select(result => result.Pair))
+				// Get all ClientCallables
+				var clientCallableValidationResults = cachedMicroserviceAttributes
+				                                      .SelectMany(pair => ((Type)pair.Info).GetMethods(BindingFlags.Public | BindingFlags.Instance))
+				                                      .GetOptionalAttributeInMembers<ClientCallableAttribute>();
+
+				// Handle invalid signatures and warnings
+				clientCallableValidationResults.SplitValidationResults(out var clientCallablesValid,
+				                                                       out var clientCallableWarnings,
+				                                                       out var clientCallableErrors);
+				if (clientCallableWarnings.Count > 0)
+				{
+					var hint = new BeamHintHeader(BeamHintType.Hint, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, "ClientCallableAsyncVoid");
+					_hintStorage.AddOrReplaceHint(hint, clientCallableWarnings);
+				}
+
+				if (clientCallableErrors.Count > 0)
+				{
+					var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, "ClientCallableUnsupportedParameters");
+					_hintStorage.AddOrReplaceHint(hint, clientCallableWarnings);
+				}
+
+				// Builds a lookup of DeclaringType => MemberAttributePair.
+				var validClientCallablesLookup = clientCallablesValid
+				                                 .Concat(clientCallableWarnings)
+				                                 .Select(result => result.Pair)
+				                                 .CreateMemberAttributePairOwnerLookupTable();
+
+				// Register all configured microservices  
+				foreach (var memberAttributePair in microserviceAttrValid.Select(result => result.Pair))
 				{
 					var serviceAttribute = (MicroserviceAttribute)memberAttributePair.Attribute;
 					var type = (Type)memberAttributePair.Info;
@@ -135,9 +159,45 @@ namespace Editor.ReflectionCacheSystems
 					// TODO: XXX this is a hacky way to ignore the default microservice...
 					if (serviceAttribute.MicroserviceName.ToLower().Equals("xxxx")) continue;
 
+					// Create descriptor
 					var descriptor = new MicroserviceDescriptor {Name = serviceAttribute.MicroserviceName, Type = type, AttributePath = serviceAttribute.GetSourcePath()};
-					_descriptors.Add(descriptor);
-					_allDescriptors.Add(descriptor);
+
+					// Add client callables for this microservice type
+					var clientCallables = validClientCallablesLookup[type].ToList();
+
+					// Generates descriptors for each of the individual client callables.
+					descriptor.Methods = clientCallables.Select(delegate(MemberAttributePair pair) {
+						
+						var clientCallableAttribute = pair.AttrAs<ClientCallableAttribute>();
+						var clientCallableMethod = pair.InfoAs<MethodInfo>();
+
+						var callableName = pair.GetOptionalNameOrMemberName<ClientCallableAttribute>();
+						var callableScopes = clientCallableAttribute.RequiredScopes;
+
+						var parameters = clientCallableMethod
+						                 .GetParameters()
+						                 .Select((param, i) => {
+							                 var paramAttr = param.GetCustomAttribute<ParameterAttribute>();
+							                 var paramName = string.IsNullOrEmpty(paramAttr?.ParameterNameOverride)
+								                 ? param.Name
+								                 : paramAttr.ParameterNameOverride;
+							                 return new ClientCallableParameterDescriptor {
+								                 Name = paramName,
+								                 Index = i,
+								                 Type = param.ParameterType
+							                 };
+						                 }).ToArray();
+
+						return new ClientCallableDescriptor() {
+							Path = callableName,
+							Scopes = callableScopes,
+							Parameters = parameters,
+						};
+						
+					}).ToList();
+
+					Descriptors.Add(descriptor);
+					AllDescriptors.Add(descriptor);
 				}
 			}
 		}
