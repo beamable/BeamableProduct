@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- Added `scheduleInstancePurchaseLimit` field to the `ListingContent` to enable setting a purchase limit scoped to the schedule instance
 - `InitializeServicesAttribute` can now be used over static methods to declare initialization hooks in microservices. Supported signatures are async/regular `
   Task(IServiceInitializer)`, async/regular `Promise<Unit>(IServiceInitializer)` and synchronous `void(IServiceInitializer)`. 
   `void` methods must be fully synchronous --- it is not possible to guarantee that any promises started within a `void` initialization 
