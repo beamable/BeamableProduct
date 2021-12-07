@@ -3,6 +3,7 @@ using Beamable;
 using Beamable.Api.Sessions;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Server.Clients;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -34,13 +35,19 @@ namespace DefaultNamespace
 		      Debug.Log($"there are now {currencies.Count} currencies ");
 
 	      beamable.OnReloadUser += () => {
-
-
 		      beamable.Api.Stats.SetStats("public", new Dictionary<string, string> {["tuna"] = "abc"})
 		              .Then(res => Debug.Log("Stats were set"));
 		      beamable.Api.Stats.GetStats("client", "public", "player", beamable.PlayerId).Then(res => {
 			      Debug.Log("Stats came back for player!");
 		      });
+	      };
+
+	      beamable.Stats.OnDataUpdated += stats => {
+		      Debug.Log($"Player stats updated! {beamable.PlayerId}");
+		      foreach (var kvp in stats)
+		      {
+			      Debug.Log($"k=[{kvp.Key}], v=[{kvp.Value}]");
+		      }
 	      };
 
 
@@ -88,6 +95,16 @@ namespace DefaultNamespace
       {
 	      await beamable.Announcements[_announcementReadIndex].Claim();
 	      Print();
+      }
+
+      public string nextTunavalue;
+      [ContextMenu("set tuna")]
+      async void SetStat()
+      {
+	      await beamable.Stats.Set("tuna2", nextTunavalue);
+	      var service = beamable.CacheDependentMS();
+
+	      Debug.Log("The stat has been updated");
       }
    }
 }

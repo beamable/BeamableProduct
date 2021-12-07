@@ -1,6 +1,5 @@
 using Beamable.Common.Content;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace Beamable
 {
