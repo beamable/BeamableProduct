@@ -21,12 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ScheduleDefinition` now supports CRON expression
 - Added minutes support in scheduled listings
 - Added clearer unsupported message for C# Microservice's implementation of `IAuthService.GetUser(TokenResponse)`
+- Added automatic content baking feature to speed-up first launch of an app.
 
 ### Changed
 - `BeamableEnvironment` has moved to the Runtime to enable sdk version checking at runtime
 
 ### Fixed
 - Renamed Beamable's iOS plugin for Google Sign-In from `GoogleSignIn` to `BeamableGoogleSignIn` to prevent name collisions with public plugins.
+- `InventoryService.GetCurrent` is no longer limited by URI length
 
 ## [0.17.4]
 - no changes

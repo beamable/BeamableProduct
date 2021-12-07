@@ -54,7 +54,7 @@
             #pragma multi_compile_fragment _BGMODE_DEFAULT _BGMODE_OUTLINE _BGMODE_FULL
 
             #include "UnityCG.cginc"
-            #include "Packages\com.beamable\Runtime\UI\Materials\SDF\SDFFunctions.cginc"
+            #include "Packages\com.beamable\Runtime\UI\Scripts\Sdf\SDFFunctions.cginc"
             
             struct appdata
             {
@@ -108,8 +108,7 @@
                 o.shadowColor.a = tangentZ.y;
                 o.shadowSoftness = v.tangent.x;
                 o.shadowOffset.xy = floatToRG(v.tangent.y);
-                o.shadowOffset.z = v.tangent.z;
-                o.shadowOffset.z = (tangentZ.x - .5) * o.sizeNCoords.x;
+                o.shadowOffset.z = (tangentZ.x - .5) * 100;
                 return o;
             }
             
@@ -144,7 +143,7 @@
             #if _MODE_RECT
                 return getRectDistance(coords, size, rounding);
             #else
-                return max(getDistance(uv, coords, size, rounding), getRectDistance(coords, size, rounding));
+                return getDistance(uv, coords, size, rounding);
             #endif
             }
             
