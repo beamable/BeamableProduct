@@ -245,6 +245,11 @@ namespace Beamable.Editor.Schedules
 			            dict.Add(kvp.Value, new Dictionary<string, string> {{year, month}});
 		            }
 	            }
+	            
+	            foreach (var kvp in dict)
+		            foreach (var kvp2 in kvp.Value.ToList())
+			            dict[kvp.Key][kvp2.Key] = String.Join(",", kvp2.Value.Split(',').OrderBy(q => q).ToArray());
+	            
 	            return dict;
             }
             Dictionary<string, List<string>> CreateGroupsBasedOnDaysAndMonthsAndMergeYears()
