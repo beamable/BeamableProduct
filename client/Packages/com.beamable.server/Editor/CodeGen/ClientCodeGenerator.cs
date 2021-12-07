@@ -86,7 +86,8 @@ namespace Beamable.Server.Editor.CodeGen
 
           targetClass.Members.Add(new CodeConstructor() {
 	          Attributes = MemberAttributes.Public,
-			Parameters = { new CodeParameterDeclarationExpression(new CodeTypeReference(typeof(BeamContext)), "context")}
+			Parameters = { new CodeParameterDeclarationExpression(new CodeTypeReference(typeof(BeamContext)), "context = null")},
+			BaseConstructorArgs = { new CodeArgumentReferenceExpression("context")}
           });
 
           parameterClass = new CodeTypeDeclaration(TargetParameterClassName);

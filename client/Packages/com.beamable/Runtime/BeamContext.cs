@@ -66,6 +66,8 @@ namespace Beamable
 		public IDependencyProvider ServiceProvider => _serviceScope;
 		private IDependencyProviderScope _serviceScope;
 
+		public IBeamableRequester Requester => ServiceProvider.GetService<IBeamableRequester>();
+
 		public bool IsDisposed => _isDisposed;
 
 		// Lazy initialization of services.
