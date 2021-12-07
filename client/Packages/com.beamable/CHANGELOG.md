@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Content can be prebaked with game-builds to speed up content initialization
 - `ScheduleDefinition` now supports CRON expression
 - Minute support for scheduled listings
+- Announcement content includes gifts in addition to attachments. Gifts support webhook calls.
 - `scheduleInstancePurchaseLimit` field to the `ListingContent` to enable setting a purchase limit scoped to the schedule instance
 - `SearchStats()` admin method is usable from client and microservice code.
 
