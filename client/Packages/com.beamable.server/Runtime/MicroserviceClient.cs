@@ -53,6 +53,11 @@ namespace Beamable.Server
 		   }
 	   }
 
+	   public MicroserviceClient(BeamContext ctx) : this(ctx?.Requester)
+	   {
+
+	   }
+
 	   protected async Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
 	   {
 		   var requester = await RequesterPromise;

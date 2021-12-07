@@ -158,7 +158,7 @@ namespace Beamable
 					// don't do anything.
 				}
 			}
-			registrations.Sort( (a, b) => a.Item1.Order.CompareTo(b.Item1));
+			registrations.Sort( (a, b) => a.Item1.Order.CompareTo(b.Item1.Order));
 			foreach (var registration in registrations)
 			{
 				registration.Item2.Invoke(null, new[] {Beam.DependencyBuilder});

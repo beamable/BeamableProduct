@@ -103,9 +103,29 @@ namespace DefaultNamespace
 	      // var service = beamable.CacheDependentMS();
 	      // beamable.Microservices().GetClient<CacheDependentMSClient>()
 
-	      // var client = new CacheDependentMSClient();
+	      var client = new CacheDependentMSClient(beamable);
 	      // beamable.Microservices().CacheDependentMS().GetCachedView();
 	      Debug.Log("The stat has been updated");
+      }
+
+      [ContextMenu("Call Microservice")]
+      async void CallMicroservice()
+      {
+
+	      // use the old way to use the BeamContext.Default
+	      var client0 = new CacheDependentMSClient();
+	      var res0 = client0.GetCachedView();
+
+	      // use a beam context to have the request use the authorization stored in a context
+	      var client1 = new CacheDependentMSClient(beamable);
+	      var res1 = await client1.GetCachedView();
+
+	      // use extension methods form the context to get a single client
+	      var client2 = beamable.Microservices().CacheDependentMS();
+	      var res2 = await client2.GetCachedView();
+
+
+	      Debug.Log($"res1=[{res1}] res2=[{res2}]");
       }
    }
 }
