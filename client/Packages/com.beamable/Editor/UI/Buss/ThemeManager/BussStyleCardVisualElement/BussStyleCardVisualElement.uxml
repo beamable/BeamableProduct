@@ -8,7 +8,9 @@
     <engine:VisualElement name="styleContainer">
         <engine:VisualElement name="header">
             <engine:VisualElement name="colorBlock"/>
-            <engine:TextElement name="styleId" text="#someStyleId"/>
+            <engine:VisualElement name="styleIdParent">
+                <engine:TextElement name="styleId" text="#someStyleId"/>
+            </engine:VisualElement>
             <engine:VisualElement name="button01" class="button largeButton">
                 <engine:TextElement text="Add new rule"/>
             </engine:VisualElement>
