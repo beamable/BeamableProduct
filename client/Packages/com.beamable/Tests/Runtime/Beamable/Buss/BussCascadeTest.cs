@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
 
-namespace Tests.Runtime.Beamable.Buss
+namespace Beamable.Tests.Buss
 {
 	public class BussCascadeTest
 	{
