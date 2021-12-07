@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Api.Content;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Spew;
+using Core.Platform.SDK;
+using UnityEngine;
 
 namespace Beamable.Content
 {
@@ -32,7 +35,7 @@ namespace Beamable.Content
 
         private readonly Dictionary<string, ContentCacheEntry<TContent>> _cache =
             new Dictionary<string, ContentCacheEntry<TContent>>();
-
+        
         private readonly IHttpRequester _requester;
         private readonly IBeamableFilesystemAccessor _filesystemAccessor;
 
@@ -65,7 +68,7 @@ namespace Beamable.Content
             PlatformLogger.Log(
                 $"ContentCache: Fetching content from cache for {requestedInfo.contentId}: version: {requestedInfo.version}");
             if (_cache.TryGetValue(cacheId, out var cacheEntry)) return cacheEntry.Content;
-
+            
             // Then, try the on disk cache
             PlatformLogger.Log(
                 $"ContentCache: Loading content from disk for {requestedInfo.contentId}: version: {requestedInfo.version}");
@@ -75,7 +78,17 @@ namespace Beamable.Content
                 SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
                 return promise;
             }
-
+            
+            // Check baked file for requested content
+            PlatformLogger.Log(
+                $"ContentCache: Loading content from baked file for {requestedInfo.contentId}: version: {requestedInfo.version}");
+            if (TryGetValueFromBaked(requestedInfo, out var bakedContent))
+            {
+                var promise = Promise<TContent>.Successful(bakedContent);
+                SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
+                return promise;
+            }
+            
             // Finally, if not found, fetch the content from the CDN
             PlatformLogger.Log(
                 $"ContentCache: Fetching content from CDN for {requestedInfo.contentId}: version: {requestedInfo.version}");
@@ -122,6 +135,47 @@ namespace Beamable.Content
                 PlatformLogger.Log($"ContentCache: Error fetching content from disk: {e}");
                 content = null;
                 return false;
+            }
+        }
+
+        private bool TryGetValueFromBaked(ClientContentInfo info, out TContent contentObject)
+        {
+            contentObject = null;
+            
+            // extract content archive if available
+            if (File.Exists(ContentConstants.CompressedContentPath))
+            {
+                ExtractContent();
+                File.Delete(ContentConstants.CompressedContentPath);
+            }
+            
+            string resourcePath = Path.Combine(ContentConstants.DecompressedContentPath, info.contentId);
+            if (File.Exists(resourcePath))
+            {
+                var json = File.ReadAllText(resourcePath);
+                contentObject = _serializer.Deserialize<TContent>(json);
+                if (contentObject == null || contentObject.Version != info.version)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+            
+            return false;
+        }
+
+        private void ExtractContent()
+        {
+            Directory.CreateDirectory(ContentConstants.DecompressedContentPath);
+            var compressed = File.ReadAllBytes(ContentConstants.CompressedContentPath);
+            string content = Gzip.Decompress(compressed);
+            var list = JsonUtility.FromJson<ContentDataInfoWrapper>(content);
+            
+            foreach (var contentInfo in list.content)
+            {
+                string path = Path.Combine(ContentConstants.DecompressedContentPath, contentInfo.contentId);
+                File.WriteAllText(path, contentInfo.data);
             }
         }
 
