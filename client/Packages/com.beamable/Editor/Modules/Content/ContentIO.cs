@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
@@ -13,6 +14,7 @@ using Beamable.Common.Content.Serialization;
 using Beamable.Common.Content.Validation;
 using Beamable.Editor.Content.UI;
 using Beamable.Serialization;
+using Core.Platform.SDK;
 using Modules.Content;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
@@ -93,12 +95,14 @@ namespace Beamable.Editor.Content
    }
 
    [System.Serializable]
-   public class AvailableManifestModel : JsonSerializable.ISerializable
-   {
+   public class AvailableManifestModel : JsonSerializable.ISerializable, ISearchableElement
+    {
       public string id;
       public string checksum;
       public long createdAt;
       public bool archived;
+
+      public string DisplayName { get => id;}
 
       public static AvailableManifestModel CreateId(string id)
       {
@@ -116,6 +120,28 @@ namespace Beamable.Editor.Content
          s.Serialize(nameof(checksum), ref checksum);
          s.Serialize(nameof(createdAt), ref createdAt);
       }
+
+
+      public int GetOrder()
+      {
+         return 0;
+      }
+
+      public bool IsAvailable()
+      {
+         return true;
+      }
+
+      public bool IsToSkip(string filter)
+      {
+        return !string.IsNullOrEmpty(filter) && !id.ToLower().Contains(filter);
+      }
+
+      public string GetClassNameToAdd()
+      {
+         return string.Empty;
+      }
+
    }
 
    public static class ManifestModelExtensions
@@ -892,5 +918,128 @@ namespace Beamable.Editor.Content
          OnContentDeleted?.Invoke(content);
       }
 
+      /// <summary>
+      /// Checks if local content has changes. If no changes then it proceeds to baking.
+      /// If there are local changes then displays a warning.
+      /// Writes all content objects to streaming assets in either compressed or uncompressed form
+      /// based on setting in Content Configuration.
+      /// </summary>
+      [MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Bake Content")]
+      public static async Task BakeContent()
+      {
+          void BakeLog(string message) => Debug.Log($"[Bake Content] {message}");
+          
+          var api = await EditorAPI.Instance;
+          var allContent = api.ContentIO.FindAll();
+          
+          List<ContentObject> contentList = null;
+          if (allContent != null)
+          {
+              contentList = allContent.ToList();
+          }
+          
+          if (contentList == null || contentList.Count == 0)
+          {
+              BakeLog("Content list is empty");
+              return;
+          }
+
+          // check for local changes
+          foreach (var content in contentList)
+          {
+             var status = await api.ContentIO.GetStatus(content);
+             if (status != ContentStatus.CURRENT)
+             {
+                bool result = EditorUtility.DisplayDialog("Local changes", 
+                   "You have local changes in your content. Do you want to proceed with baking using this data?", 
+                   "Yes", "No");
+                
+                if (!result)
+                {
+                   return;
+                }
+
+                break;
+             }
+          }
+          
+          BakeLog($"Baking {contentList.Count} items");
+          
+          var serverManifest = await api.ContentIO.FetchManifest();
+          
+          string assetsPath = Path.Combine(Application.streamingAssetsPath, "bakedContent.zip");
+
+          bool succeeded;
+          if (ContentConfiguration.Instance.EnableBakedContentCompression)
+          {
+              succeeded = BakeWithCompression(contentList, serverManifest);
+          }
+          else
+          {
+              succeeded = BakeWithoutCompression(contentList, serverManifest);
+          }
+
+          if (succeeded)
+          {
+	          BakeLog($"Baked {contentList.Count} content objects to '{assetsPath}'");
+          }
+          else
+          {
+	          Debug.LogError($"Baking failed");
+          }
+      }
+
+      private static bool BakeWithCompression(List<ContentObject> contentList, Manifest serverManifest)
+      {
+          Directory.CreateDirectory(ContentConstants.BeamableStreamingAssetsPath);
+          
+          ContentDataInfo[] contentData = new ContentDataInfo[contentList.Count];
+          for (int i = 0; i < contentList.Count; i++)
+          {
+             var content = contentList[i]; 
+             var version = serverManifest.References.Find(reference => reference.Id == content.Id).Version;
+             content.SetIdAndVersion(content.Id, version);
+             contentData[i] = new ContentDataInfo { contentId = content.Id, data = content.ToJson() };
+          }
+
+          ContentDataInfoWrapper fileData = new ContentDataInfoWrapper { content = contentData.ToList() };
+          
+          var compressed = Gzip.Compress(JsonUtility.ToJson(fileData));
+
+          try
+          {
+	          File.WriteAllBytes(ContentConstants.CompressedContentPath, compressed);
+          }
+          catch (Exception e)
+          {
+	          Debug.LogError($"Failed to write baked file to '{ContentConstants.CompressedContentPath}': {e.Message}");
+	          return false;
+          }
+
+          return true;
+      }
+
+      private static bool BakeWithoutCompression(List<ContentObject> contentList, Manifest serverManifest)
+      {
+          Directory.CreateDirectory(ContentConstants.DecompressedContentPath);
+
+          try
+          {
+	          foreach (var content in contentList)
+	          {    
+		          var version = serverManifest.References.Find(reference => reference.Id == content.Id).Version;
+		          content.SetIdAndVersion(content.Id, version);
+		          string path = Path.Combine(ContentConstants.DecompressedContentPath, content.Id);
+		          File.WriteAllText(path, content.ToJson());
+	          }
+          }
+          catch (Exception e)
+          {
+	          Debug.LogError($"Failed to write baked files to '{ContentConstants.DecompressedContentPath}': {e.Message}");
+	          return false;
+          }
+
+          return true;
+      }
    }
 }

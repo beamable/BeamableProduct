@@ -151,13 +151,6 @@ namespace Beamable.Editor.Microservice.UI
             _microserviceContentVisualElement = root.Q<MicroserviceContentVisualElement>("microserviceContentVisualElement");
             _microserviceContentVisualElement.Model = Model;
 
-            _microserviceContentVisualElement.OnPreviewFeatureWarningMessageShowed +=
-                (state) =>
-                {
-                    if(Model?.Services?.Count > 0)
-                        _actionBarVisualElement?.SetPublishButtonState(state);
-                };
-
             _microserviceContentVisualElement.Refresh();
 
             if (Model != null)

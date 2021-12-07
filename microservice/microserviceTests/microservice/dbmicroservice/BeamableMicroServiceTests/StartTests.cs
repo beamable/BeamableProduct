@@ -1,17 +1,21 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Inventory;
+using Beamable.Common.Leaderboards;
 using Beamable.Server;
 using Beamable.Microservice.Tests.Socket;
 using Beamable.Server.Content;
 using microserviceTests.microservice.Util;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using ClientRequest = Beamable.Microservice.Tests.Socket.ClientRequest;
 
@@ -260,6 +264,161 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
          Assert.IsTrue(testSocket.AllMocksCalled());
+      }
+
+      private static object[] sAdminCreateLeaderboardTestCases =
+      {
+         new object[]
+         {
+            JObject.Parse(@"{
+               ""id"":""leaderboards.New_LeaderboardContent"",
+               ""version"":""aac218bb99e7cd3b30d9b10165aeec7b262eef9f"",
+               ""properties"":{
+                  ""permissions"":{
+                     ""data"":{""write_self"":false}
+                  },
+                  ""partitioned"":{
+                     ""data"":true
+                  },
+                  ""max_entries"":{
+                     ""data"":100
+                  }
+               }
+            }"),
+            JObject.Parse(@"{""maxEntries"":100,""partitioned"":true,""permissions"":{""write_self"":false}}")
+         },
+         new object[]
+         {
+            JObject.Parse(@"{
+               ""id"":""leaderboards.New_LeaderboardContent"",
+               ""version"":""dfe16c142f6c9451e61117ee63bc04f47f6120fd"",
+               ""properties"":{
+                  ""cohortSettings"":{
+                     ""data"":{
+                        ""cohorts"":[
+                           {
+                              ""id"":""stat_a"",
+                              ""description"":""stat_a_description"",
+                              ""statRequirements"":[{""domain"":""game"",""access"":""public"",""stat"":""stat_a"",""constraint"":""eq"",""value"":2}]
+                           }
+                        ]
+                     }
+                  },
+                  ""permissions"":{""data"":{""write_self"":false}},
+                  ""partitioned"":{""data"":true},
+                  ""max_entries"":{""data"":100}
+                  }
+            }"),
+            JObject.Parse(@"{""maxEntries"":100,""partitioned"":true,""cohortSettings"":{""cohorts"":[{""id"":""stat_a"",""description"":""stat_a_description"",""statRequirements"":[{""domain"":""game"",""access"":""public"",""constraint"":""eq"",""stat"":""stat_a"",""value"":2}]}]},""permissions"":{""write_self"":false}}")
+         }
+      };
+      
+      [Test, TestCaseSource(nameof(sAdminCreateLeaderboardTestCases))]
+      [NonParallelizable]
+      public async Task HandleSimple_AdminCreateLeaderboard(JObject leaderboardTemplateContent, JObject expectedRequestBody)
+      {
+         LoggingUtil.Init();
+         TestSocket testSocket = null;
+         const int testCount = 1;
+         
+         // Leaderboard content 
+         var contentResolver = new TestContentResolver(async uri => leaderboardTemplateContent.ToString());
+         var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+         {
+            testSocket = socket;
+            socket.WithName("Test Socket");
+            socket.AddStandardMessageHandlers()
+               .AddInitialContentMessageHandler(id => true, new ContentReference
+               {
+                  id = "leaderboards.New_LeaderboardContent",
+                  visibility = "public",
+                  uri = "testuri"
+               })
+               .AddMessageHandler(
+                  MessageMatcher
+                     .WithPost()
+                     .WithRouteContains("object/leaderboards")
+                     .WithPayload(expectedRequestBody),
+                  MessageResponder.Success(new EmptyResponse()),
+                  MessageFrequency.Exactly(testCount)
+               )
+               .AddMessageHandler(
+                  MessageMatcher
+                     .WithStatus(200)
+                     .And(req => req.id >= 1),
+                  MessageResponder.NoResponse(),
+                  MessageFrequency.Exactly(testCount)
+               );
+         }), contentResolver);
+
+         await ms.Start<SimpleMicroservice>(new TestArgs());
+         Assert.IsTrue(ms.HasInitialized);
+
+         var tasks = new List<Task>();
+         for (var i = 0; i < testCount; i++)
+         {
+            var index = i + 1;
+            tasks.Add(Task.Run(() =>
+            {
+               if (!testSocket.Name.Equals("Test Socket"))
+               {
+                  Assert.Fail("Not the right socket..");
+               }
+
+               var leaderboardRef = new LeaderboardRef();
+               leaderboardRef.SetId("leaderboards.New_LeaderboardContent");
+               testSocket.SendToClient(ClientRequest.ClientCallableWithScopes("micro_sample", "LeaderboardCreateTest", index, 0, new []{"*"},
+                  $"leaderboards.New_LeaderboardContent_{index}",
+                  leaderboardRef));
+            }));
+         }
+
+         await Task.WhenAll(tasks);
+         await Task.Delay(10);
+         // simulate shutdown event...
+         await ms.OnShutdown(this, null);
+         Assert.IsTrue(testSocket.AllMocksCalled());
+      }
+
+      [Test]
+      [NonParallelizable]
+      public async Task HandleSimple_FailGetUserViaAccessToken()
+      {
+         LoggingUtil.Init();
+         TestSocket testSocket = null;
+         const int testCount = 3000;
+         var contentResolver = new TestContentResolver(async uri => "{}");
+         var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+         {
+            testSocket = socket;
+            socket.WithName("Test Socket");
+            socket.AddStandardMessageHandlers();
+         }), contentResolver);
+
+         await ms.Start<SimpleMicroservice>(new TestArgs());
+         Assert.IsTrue(ms.HasInitialized);
+
+         var tasks = new List<Task>();
+         for (var i = 0; i < testCount; i++)
+         {
+            var index = i + 1;
+            tasks.Add(Task.Run(() =>
+            {
+               if (!testSocket.Name.Equals("Test Socket"))
+               {
+                  Assert.Fail("Not the right socket..");
+               }
+
+               testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserViaAccessToken", index, 0, new TokenResponse()));
+            }));
+         }
+
+         await Task.WhenAll(tasks);
+         await Task.Delay(10);
+         // simulate shutdown event...
+         await ms.OnShutdown(this, null);
+         //Assert.IsTrue(testSocket.AllMocksCalled());
+         
       }
 
       [Test]

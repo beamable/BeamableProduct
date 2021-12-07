@@ -2,3 +2,7 @@
     background-color: #A7A7A7;
     border-color: #6C6C6C;
 }
+
+#warningMessage {
+    color: #111111;
+}
