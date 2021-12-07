@@ -114,6 +114,8 @@ jobs:
       USYM_UPLOAD_AUTH_TOKEN: foo
 
     steps:
+      - name: Whats my head ref?
+        run: echo "GITHUB.HEAD_REF"
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
         with:
