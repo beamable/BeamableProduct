@@ -3,7 +3,7 @@ using Beamable.UI.Buss;
 using UnityEditor;
 using UnityEngine;
 
-namespace Editor.UI.BUSS.Buss
+namespace Beamable.Editor.UI.Buss
 {
 	[CustomPropertyDrawer(typeof(BaseAssetProperty), true)]
 	public class BaseAssetBussPropertyDrawer : PropertyDrawer
