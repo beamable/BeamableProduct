@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Beamable.Common.Content.Validation;
+using Beamable.Content;
 using UnityEngine;
 
 namespace Beamable.Common.Content
@@ -47,13 +48,21 @@ namespace Beamable.Common.Content
    [Serializable]
    public class ScheduleDefinition
    {
-       public Action<ScheduleDefinition> OnCronRawSaveButtonPressed;
+	   [IgnoreContentField]
+	   public Action<ScheduleDefinition> OnCronRawSaveButtonPressed;
+	   
        [HideInInspector]
+       [IgnoreContentField]
        public int index = -1;
-       
-       [ShowOnly] public string cronHumanFormat;
-       [ShowOnly] public string cronRawFormat;
-       
+
+       [ShowOnly]
+       [IgnoreContentField]
+       public string cronHumanFormat;
+
+       [ShowOnly]
+       [IgnoreContentField]
+       public string cronRawFormat;
+
       public List<string> second;
       public List<string> minute;
       public List<string> hour;
@@ -86,5 +95,5 @@ namespace Beamable.Common.Content
       }
    }
 
-   
+
 }
