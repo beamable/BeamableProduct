@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Exposed `CreateLeaderboard` methods in `IMicroserviceLeaderboardsApi` to enable the dynamic creation of leaderboards in microservices (can take a `LeaderboardRef` as a template or explicit parameters).
 - Folding/Unfolding services cards in `Microservice Manager`
 - Added clearer unsupported message for microservice's implementation of `IAuthService.GetUser(TokenResponse)`
+- Added support for Dictionary serialization in ClientCallable methods using SmallerJSON
 
 ### Changed
 - Renamed `build and run` to `play` buttons in `Microservice Manager` to be more intuitive
