@@ -3,7 +3,7 @@ using Beamable;
 using Beamable.Api;
 using Beamable.Api.Announcements;
 using Beamable.Common.Api.Announcements;
-using Modules.Inventory.Prototype;
+using Beamable.Modules.Generics;
 using UnityEngine;
 
 namespace Modules.Content
