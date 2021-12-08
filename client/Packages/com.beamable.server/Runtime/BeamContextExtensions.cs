@@ -9,7 +9,7 @@ namespace Beamable
 		[RegisterBeamableDependencies]
 		public static void RegisterServices(IDependencyBuilder builder)
 		{
-			builder.AddSingleton<MicroserviceClients>();
+			builder.AddScoped<MicroserviceClients>();
 		}
 
 		public static MicroserviceClients Microservices(this BeamContext ctx) =>

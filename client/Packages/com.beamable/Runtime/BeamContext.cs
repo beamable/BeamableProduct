@@ -155,24 +155,24 @@ namespace Beamable
 			GameObject = behaviour.gameObject;
 
 			builder = builder.Fork();
-			builder.AddSingleton<PlatformRequester, PlatformRequester>(
+			builder.AddScoped<PlatformRequester, PlatformRequester>(
 				provider => new PlatformRequester(
 					_environment.ApiUrl,
 					provider.GetService<AccessTokenStorage>(),
 					provider.GetService<IConnectivityService>()
 				)
 			);
-			builder.AddSingleton<BeamableApiRequester>(
+			builder.AddScoped<BeamableApiRequester>(
 				provider => new BeamableApiRequester(
 					_environment.ApiUrl,
 					provider.GetService<AccessTokenStorage>(),
 					provider.GetService<IConnectivityService>())
 			);
 
-			builder.AddSingleton<BeamContext>(this);
-			builder.AddSingleton<IPlatformService>(this);
-			builder.AddSingleton<IGameObjectContext>(this);
-			builder.AddSingleton(new AccessTokenStorage(playerCode));
+			builder.AddScoped<BeamContext>(this);
+			builder.AddScoped<IPlatformService>(this);
+			builder.AddScoped<IGameObjectContext>(this);
+			builder.AddScoped(new AccessTokenStorage(playerCode));
 			_serviceScope = builder.Build();
 			behaviour.Initialize(this);
 
@@ -372,6 +372,11 @@ namespace Beamable
 
 			OnShutdownComplete?.Invoke();
 
+		}
+
+		public void View(long otherPlayerId)
+		{
+			
 		}
 
 		/// <summary>
