@@ -8,7 +8,9 @@
     height: 26px;
 }
 
+.link.unity-button,
 .link {
+    background-color: rgba(0,0,0,0);
     align-self: flex-end;
     background-image: none;
     max-height: 16px;
