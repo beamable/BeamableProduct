@@ -163,6 +163,7 @@ namespace Beamable.Common.Content
       internal const string TooltipWaitDurationSecsMax1 = "The maximum wait time in seconds";
       internal const string TooltipMatchingIntervalSecs1 = "The rate by which the matchmaking system finds matches. Defaults to 10 seconds.";
       internal const string WriteSelf1 = "True, content is writeable via client C# and server. False, only via server";
+      internal const string TooltipScheduleInstancePurchaseLimit = "The schedule instance purchase limit";
 
       // 2 Postpends (Keep leading spaces)
       internal const string TooltipActive2 = " active";

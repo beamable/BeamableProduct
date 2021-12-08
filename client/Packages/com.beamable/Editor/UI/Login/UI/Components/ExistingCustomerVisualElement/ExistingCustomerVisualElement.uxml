@@ -10,16 +10,16 @@
         <engine:VisualElement name="textField">
             <engine:Label name="organization" text="Please enter your Organization's Alias or CID" class="labelText"/>
             <engine:TextField name="organizationID" class="input" />
-            <engine:Button name="newOrganization" text="Create a new organization" class="linkText"/>
+            <beamable:GenericButtonVisualElement name="newOrganization" text="Create a new organization" type="Link"/>
 
             <engine:Label name="createAccount" text="Please enter your account info" class="labelText"/>
             <engine:TextField name="account" class="input"/>
             <engine:TextField name="password" class="input"/>
-            <engine:Button name="forgotPassword" text="Forgot Password" class="linkText"/>
+            <beamable:GenericButtonVisualElement name="forgotPassword" text="Forgot Password" type="Link"/>
             <engine:VisualElement name="linkBtn">
                 <engine:VisualElement name="createNew">
                     <engine:Label name="labelText" text="I don’t have an account."/>
-                    <engine:Button name="createNewLink" text="Create one now" class="linkText"/>
+                    <beamable:GenericButtonVisualElement name="createNewLink" text="Create one now" type="Link"/>
                 </engine:VisualElement>
             </engine:VisualElement>
             <engine:VisualElement name="actionBtn">

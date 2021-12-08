@@ -1,15 +1,34 @@
+using Beamable.Common;
+using Beamable.Common.Api;
+using Beamable.Serialization.SmallerJSON;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using Beamable.Common;
-using Beamable.Common.Api;
 using UnityEngine;
-using Beamable.Serialization.SmallerJSON;
-using System;
 
 namespace Beamable.Server
 {
+	[Serializable]
+	public class MicroserviceClientDataWrapper<T> : ScriptableObject
+	{
+		public T Data;
+	}
+
 	public class MicroserviceClient
+	{
+		protected async Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
+		{
+			return await MicroserviceClientHelper.Request<T>(serviceName, endpoint, serializedFields);
+		}
+
+		protected string SerializeArgument<T>(T arg) => MicroserviceClientHelper.SerializeArgument(arg);
+
+		protected string CreateUrl(string cid, string pid, string serviceName, string endpoint) =>
+			MicroserviceClientHelper.CreateUrl(cid, pid, serviceName, endpoint);
+	}
+
+	public static class MicroserviceClientHelper
 	{
 		[System.Serializable]
 		public class ResponseObject
@@ -23,11 +42,12 @@ namespace Beamable.Server
 			public string payload;
 		}
 
-		private static readonly StringBuilder Builder = new StringBuilder();
+		static readonly StringBuilder _builder = new StringBuilder();
+		static string _prefix;
 
-		protected string _prefix;
+		public static void SetPrefix(string prefix) => _prefix = prefix;
 
-		public static string SerializeArgument<T>(T arg)
+		public static string SerializeArgument(object arg)
 		{
 			// JSONUtility will serialize objects correctly, but doesn't handle primitives well.
 			if (arg == null)
@@ -40,7 +60,7 @@ namespace Beamable.Server
 				case string prim:
 					return Json.IsValidJson(prim) ? "[" + prim + "]" : "\"" + prim + "\"";
 				case IDictionary dictionary:
-					return Json.Serialize(dictionary, Builder);
+					return Json.Serialize(dictionary, _builder);
 				case IEnumerable enumerable:
 				{
 					var output = new List<string>();
@@ -157,7 +177,7 @@ namespace Beamable.Server
 			{
 				foreach (var pair in arrayDict)
 				{
-					var intValue =  (int)((long)pair.Value % Int32.MaxValue);
+					var intValue = (int)((long)pair.Value % Int32.MaxValue);
 					dictionary.Add(pair.Key, (T)(object)intValue);
 				}
 			}
@@ -185,7 +205,7 @@ namespace Beamable.Server
 			public TList items = default;
 		}
 
-		protected string CreateUrl(string cid, string pid, string serviceName, string endpoint)
+		public static string CreateUrl(string cid, string pid, string serviceName, string endpoint)
 		{
 			var prefix = _prefix ?? (_prefix = MicroserviceIndividualization.GetServicePrefix(serviceName));
 			var path = $"{prefix}micro_{serviceName}/{endpoint}";
@@ -193,7 +213,7 @@ namespace Beamable.Server
 			return url;
 		}
 
-		protected async Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
+		public static async Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
 		{
 			Debug.Log($"Client called {endpoint} with {serializedFields.Length} arguments");
 			var argArray = "[ " + string.Join(",", serializedFields) + " ]";
@@ -202,7 +222,8 @@ namespace Beamable.Server
 			T Parser(string json)
 			{
 				// TODO: Remove this in 0.13.0
-				if (!(json?.StartsWith("{\"payload\":\"") ?? false)) return DeserializeResult<T>(json);
+				if (!(json?.StartsWith("{\"payload\":\"") ?? false))
+					return DeserializeResult<T>(json);
 
 #pragma warning disable 618
 				Debug.LogWarning(
@@ -216,18 +237,9 @@ namespace Beamable.Server
 			var b = await API.Instance;
 			var requester = b.Requester;
 			var url = CreateUrl(b.Token.Cid, b.Token.Pid, serviceName, endpoint);
-			var req = new RequestObject {payload = argArray};
+			var req = new RequestObject { payload = argArray };
 			Debug.Log($"Sending Request uri=[{url}]");
 			return await requester.Request<T>(Method.POST, url, req, parser: Parser);
-		}
-
-		protected static string CreateEndpointPrefix(string serviceName)
-		{
-#if UNITY_EDITOR
-
-#endif
-
-			return serviceName;
 		}
 	}
 }

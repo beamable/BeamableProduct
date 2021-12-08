@@ -1,5 +1,8 @@
 ﻿using System.Collections.Generic;
 using Beamable.Common.Content;
+using System;
+using System.Linq;
+using UnityEngine;
 
 namespace Beamable.Editor.Schedules
 {
@@ -14,7 +17,7 @@ namespace Beamable.Editor.Schedules
             newSchedule.activeTo.Value = activeTo;
         }
 
-        public void PrepareDailyModeData(Schedule newSchedule, string second, string minute, string hour)
+        public void PrepareDailyModeData(Schedule newSchedule, string hour, string minute, string second)
         {
             ScheduleDefinition definition =
                 new ScheduleDefinition(second, minute, hour, new List<string> {"*"}, "*", "*", new List<string> {"*"});
@@ -30,59 +33,274 @@ namespace Beamable.Editor.Schedules
             newSchedule.AddDefinition(definition);
         }
 
-        public void PrepareDateModeData(Schedule newSchedule, List<string> selectedDays, string hour, string minute,
-            string second)
+        public void PrepareDateModeData(Schedule newSchedule, string hour, string minute, string second,
+            List<string> selectedDays)
         {
-            Dictionary<string, List<string>> sortedDates = ParseDates(selectedDays);
+	        var scheduleDateModeModels = ParseDates(selectedDays);
+	        foreach (var model in scheduleDateModeModels)
+	        {
+		        var definition = new ScheduleDefinition(
+			        new List<string> {second},
+			        new List<string> {minute}, 
+			        new List<string> {hour}, 
+			        model.Days, 
+			        model.Months, 
+			        model.Years, 
+			        new List<string> {"*"});
+		        newSchedule.AddDefinition(definition);
+	        }
+        }
 
-            foreach (KeyValuePair<string, List<string>> pair in sortedDates)
+        public void PrepareListingDailyModeData(Schedule newSchedule, int fromHour, int toHour, int fromMinute,
+            int toMinute)
+        {
+            List<ScheduleDefinition> definitions = GetPeriodsSchedulesDefinitions(fromHour, toHour, fromMinute,
+                toMinute,
+                new List<string> {"*"});
+            newSchedule.AddDefinitions(definitions);
+        }
+
+        public void PrepareListingDaysModeData(Schedule newSchedule, int fromHour, int toHour, int fromMinute,
+            int toMinute, List<string> selectedDays)
+        {
+            List<ScheduleDefinition> definitions = GetPeriodsSchedulesDefinitions(fromHour, toHour, fromMinute,
+                toMinute,
+                selectedDays);
+            newSchedule.AddDefinitions(definitions);
+        }
+
+        public void PrepareListingDatesModeData(Schedule newSchedule, int fromHour, int toHour, int fromMinute,
+            int toMinute, List<string> selectedDates)
+        {
+	        var scheduleDateModeModels = ParseDates(selectedDates);
+            var periodsSchedulesDefinitions = GetPeriodsSchedulesDefinitions(fromHour, toHour, fromMinute, toMinute, new List<string> {"*"});
+
+            foreach (var model in scheduleDateModeModels)
             {
-                string[] monthAndYear = pair.Key.Split('-');
-                string month = monthAndYear[0];
-                string year = monthAndYear[1];
-
-                List<string> daysInCurrentMonthAndYear = new List<string>();
-
-                foreach (string dateString in pair.Value)
-                {
-                    string[] splitDate = dateString.Split('-');
-                    string day = splitDate[0];
-                    daysInCurrentMonthAndYear.Add(day);
-                }
-
-                ScheduleDefinition definition = new ScheduleDefinition(second,
-                    minute, hour, daysInCurrentMonthAndYear, month, year,
-                    new List<string> {"*"});
-
-                newSchedule.AddDefinition(definition);
+	            foreach (var scheduleDefinition in periodsSchedulesDefinitions)
+	            {
+		            var definition = new ScheduleDefinition(
+			            new List<string>{"*"},
+			            scheduleDefinition.minute, 
+			            scheduleDefinition.hour,
+			            model.Days, 
+			            model.Months,
+			            model.Years,
+			            new List<string> {"*"});
+		            newSchedule.AddDefinition(definition);
+	            }
             }
         }
 
-        private Dictionary<string, List<string>> ParseDates(List<string> dates)
+        private List<ScheduleDefinition> GetPeriodsSchedulesDefinitions(int fromHour, int toHour, int fromMinute,
+            int toMinute, List<string> selectedDays)
         {
-            Dictionary<string, List<string>> sortedDates = new Dictionary<string, List<string>>();
+            int hoursDelta = toHour - fromHour;
+            var definitions = new List<ScheduleDefinition>();
 
-            foreach (string date in dates)
+            if (hoursDelta == 0)
             {
-                string[] dateElements = date.Split('-');
-                string month = dateElements[1];
-                string year = dateElements[2];
-                string monthAndYear = $"{month}-{year}";
+                var definition = new ScheduleDefinition(
+	                new List<string>{"*"}, 
+	                ConvertIntoRangeList(fromMinute, toMinute),
+	                new List<string> {$"{fromHour}"}, 
+	                new List<string> {"*"}, 
+	                new List<string> {"*"}, 
+	                new List<string> {"*"}, 
+	                selectedDays);
+                definitions.Add(definition);
+            }
+            else if (hoursDelta == 1)
+            {
+	            var definition = new ScheduleDefinition(
+		            new List<string>{"*"}, 
+		            ConvertIntoRangeList(fromMinute, toMinute), 
+		            new List<string> {$"{fromHour}"}, 
+		            new List<string> {"*"}, 
+		            new List<string> {"*"}, 
+		            new List<string> {"*"}, 
+		            selectedDays);
+	            definitions.Add(definition);
+	            
+                var startDefinition = new ScheduleDefinition(
+	                new List<string>{"*"},  
+	                ConvertIntoRangeList(fromMinute, 59),
+	                new List<string> {$"{fromHour}"},  
+	                new List<string> {"*"}, 
+	                new List<string>{"*"}, 
+	                new List<string>{"*"}, 
+	                selectedDays);
+                definitions.Add(startDefinition);
 
-                if (sortedDates.ContainsKey(monthAndYear))
-                {
-                    if (sortedDates.TryGetValue(monthAndYear, out var list))
-                    {
-                        list.Add(date);
-                    }
-                }
-                else
-                {
-                    sortedDates.Add(monthAndYear, new List<string> {date});
-                }
+                var endDefinition = new ScheduleDefinition(
+	                new List<string>{"*"}, 
+	                ConvertIntoRangeList(0, toMinute),
+	                new List<string> {$"{toHour}"}, 
+	                new List<string> {"*"}, 
+	                new List<string>{"*"}, 
+	                new List<string>{"*"}, 
+	                selectedDays);
+                definitions.Add(endDefinition);
+            }
+            else
+            {
+                var startDefinition = new ScheduleDefinition(
+	                new List<string>{"*"}, 
+	                ConvertIntoRangeList(fromMinute, 59),
+	                new List<string> {$"{fromHour}"}, 
+	                new List<string> {"*"}, 
+	                new List<string>{"*"}, 
+	                new List<string>{"*"}, 
+	                selectedDays);
+                definitions.Add(startDefinition);
+
+                var middleDefinition = new ScheduleDefinition(
+	                new List<string> {"*"},
+	                new List<string> {"*"},
+	                hoursDelta == 2 ? new List<string> {$"{fromHour+1}"} : ConvertIntoRangeList(fromHour + 1, toHour - 1),
+					new List<string> {"*"}, 
+					new List<string>{"*"},
+					new List<string>{"*"}, 
+					selectedDays);
+
+                var endDefinition = new ScheduleDefinition(
+	                new List<string>{"*"}, 
+	                ConvertIntoRangeList(0, toMinute),
+	                new List<string> {$"{toHour}"}, 
+	                new List<string> {"*"}, 
+	                new List<string>{"*"}, 
+	                new List<string>{"*"}, 
+	                selectedDays);
+                definitions.Add(endDefinition);
             }
 
-            return sortedDates;
+            return definitions;
+            
+            List<string> ConvertIntoRangeList(int from, int to)
+            {
+	            var tempList = new List<string>();
+	            for (int i = from; i <= to; i++)
+		            tempList.Add($"{i}");
+	            return tempList;
+            }
         }
+
+        private List<ScheduleDateModeModel> ParseDates(List<string> dates)
+        {
+	        var monthYearKeyDates =  PrepareMonthYearKeys();
+	        SortDays();
+            var groupsWithMergedMonths = CreateGroupsBasedOnDaysAndYearAndMergeMonths();
+            var groupsWithMergedYears = CreateGroupsBasedOnDaysAndMonthsAndMergeYears();
+            var scheduleDateModeModels = CreateDateModels();
+            
+            return scheduleDateModeModels;
+
+            Dictionary<string, string> PrepareMonthYearKeys()
+            {
+	            var dict = new Dictionary<string, string>();
+	            foreach (string date in dates)
+	            {
+		            string[] dateElements = date.Split('-');
+		            string day = dateElements[0];
+		            string month = dateElements[1];
+		            string year = dateElements[2];
+		            string monthAndYear = $"{month}-{year}";
+
+		            if (dict.ContainsKey(monthAndYear))
+			            dict[monthAndYear] += $",{day}";
+		            else
+			            dict.Add(monthAndYear, $"{day}");
+	            }
+	            return dict;
+            }
+            void SortDays()
+            {
+	            foreach (var monthYearKeyDate in monthYearKeyDates.ToList())
+	            {
+		            monthYearKeyDates[monthYearKeyDate.Key] = String.Join(",", monthYearKeyDate.Value.Split(',').OrderBy(q => q).ToArray());
+	            }
+            }
+            Dictionary<string, Dictionary<string, string>> CreateGroupsBasedOnDaysAndYearAndMergeMonths()
+            {
+	            var dict = new Dictionary<string, Dictionary<string, string>>();
+	            foreach (var kvp in monthYearKeyDates)
+	            {
+		            var splittedKey = kvp.Key.Split('-');
+		            var month = splittedKey[0];
+		            var year = splittedKey[1];
+
+		            if (dict.ContainsKey(kvp.Value))
+		            {
+			            if (dict[kvp.Value].ContainsKey(year))
+			            {
+				            dict[kvp.Value][year] += $",{month}";
+			            }
+			            else
+			            {
+				            dict[kvp.Value].Add(year, month);
+			            }
+		            }
+		            else
+		            {
+			            dict.Add(kvp.Value, new Dictionary<string, string> {{year, month}});
+		            }
+	            }
+	            
+	            foreach (var kvp in dict)
+		            foreach (var kvp2 in kvp.Value.ToList())
+			            dict[kvp.Key][kvp2.Key] = String.Join(",", kvp2.Value.Split(',').OrderBy(q => q).ToArray());
+	            
+	            return dict;
+            }
+            Dictionary<string, List<string>> CreateGroupsBasedOnDaysAndMonthsAndMergeYears()
+            {
+	            var dict = new Dictionary<string, List<string>>();
+	            foreach (var kvp in groupsWithMergedMonths)
+	            {
+		            foreach (var kvp2 in kvp.Value)
+		            {
+			            var newKey = $"{kvp.Key}-{kvp2.Value}";
+			            if (dict.ContainsKey(newKey))
+			            {
+				            dict[newKey].Add(kvp2.Key);
+			            }
+			            else
+			            {
+				            dict.Add(newKey, new List<string>{kvp2.Key});
+			            }
+		            }
+		            
+	            }
+	            return dict;
+            }
+            List<ScheduleDateModeModel> CreateDateModels()
+            {
+	            var models = new List<ScheduleDateModeModel>();
+	            foreach (var kvp in groupsWithMergedYears)
+	            {
+		            var splittedKey = kvp.Key.Split('-');
+		            
+		            var days = splittedKey[0].Split(','); 
+		            var months = splittedKey[1].Split(',');
+		            var years = kvp.Value;
+		            models.Add(new ScheduleDateModeModel(days, months, years));
+	            }
+	            return models;
+            }
+        }
+    }
+
+    public class ScheduleDateModeModel
+    {
+	    public List<string> Days { get; }
+	    public List<string> Months { get; }
+	    public List<string> Years { get; }
+
+	    public ScheduleDateModeModel(IEnumerable<string> days, IEnumerable<string> months, IEnumerable<string> years)
+	    {
+		    Days = days.OrderBy(x => x).ToList();
+		    Months = months.OrderBy(x => x).ToList();
+		    Years = years.OrderBy(x => x).ToList();
+	    }
     }
 }

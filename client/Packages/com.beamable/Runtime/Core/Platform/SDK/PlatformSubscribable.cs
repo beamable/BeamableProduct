@@ -79,7 +79,9 @@ namespace Beamable.Api
    {
       protected IPlatformService platform;
       protected IBeamableRequester requester;
+      
       protected BeamableGetApiResource<ScopedRsp> getter;
+
       private string service;
       private Dictionary<string, Data> scopedData = new Dictionary<string, Data>();
 
@@ -117,7 +119,7 @@ namespace Beamable.Api
             Refresh();
          };
       }
-
+      
       private void OnTimeOverride()
       {
          Refresh();
@@ -272,12 +274,12 @@ namespace Beamable.Api
 
       protected virtual Promise<ScopedRsp> ExecuteRequest(IBeamableRequester requester, string url)
       {
-         return getter.RequestData(requester, url);
+	      return getter.RequestData(requester, url);
       }
 
       protected virtual string CreateRefreshUrl(string scope)
       {
-         return getter.CreateRefreshUrl(platform, service, scope);
+	      return getter.CreateRefreshUrl(platform, service, scope);
       }
 
       /// <summary>

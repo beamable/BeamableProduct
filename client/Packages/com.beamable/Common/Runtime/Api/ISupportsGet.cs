@@ -1,3 +1,6 @@
+using Beamable.Serialization.SmallerJSON;
+using System.Collections.Generic;
+
 namespace Beamable.Common.Api
 {
    /// <summary>
@@ -50,12 +53,12 @@ namespace Beamable.Common.Api
          return RequestData(requester, CreateRefreshUrl(ctx, serviceName, scope));
       }
 
-      public Promise<ScopedRsp> RequestData(IBeamableRequester requester, string url)
+      public virtual Promise<ScopedRsp> RequestData(IBeamableRequester requester, string url)
       {
          return requester.Request<ScopedRsp>(Method.GET, url);
       }
 
-      public string CreateRefreshUrl(IUserContext ctx, string serviceName, string scope)
+      public virtual string CreateRefreshUrl(IUserContext ctx, string serviceName, string scope)
       {
          var queryArgs = "";
          if (!string.IsNullOrEmpty(scope))
@@ -65,5 +68,54 @@ namespace Beamable.Common.Api
 
          return $"/object/{serviceName}/{ctx.UserId}{queryArgs}";
       }
+   }
+   
+   /// <summary>
+   /// Helper class that can be used to make continuous <see cref="Method.POST"/> requests in order to keep some cached data somewhere.
+   /// </summary>
+   /// <typeparam name="ScopedRsp">The response type of the Post Request.</typeparam>
+   public class BeamableGetApiResourceViaPost<ScopedRsp> : BeamableGetApiResource<ScopedRsp>
+   {
+	   /// <summary>
+	   /// Mapping of each requested scope to the body generated for it.
+	   /// </summary>
+	   private Dictionary<string, ArrayDict> ScopesToBodyMap;
+
+	   /// <summary>
+	   /// Last value that passed through <see cref="CreateRefreshUrl"/>.
+	   /// TODO: Revise this approach when improving/changing PlatformSubscribable code in the Unity Runtime.
+	   /// </summary>
+	   private ArrayDict OutgoingBody;
+
+	   public BeamableGetApiResourceViaPost()
+	   {
+		   ScopesToBodyMap = new Dictionary<string, ArrayDict>();
+	   }
+
+	   public override Promise<ScopedRsp> RequestData(IBeamableRequester requester, string url)
+	   {
+		   return requester.Request<ScopedRsp>(Method.POST, url, OutgoingBody);
+	   }
+	   
+	   /// <summary>
+	   /// Builds a <see cref="Method.POST"/> request's body for the given scope and caches it in <see cref="ScopesToBodyMap"/>.
+	   /// </summary>
+	   /// <param name="scope">A ","-separated string with all item types or ids that we want to get OR an empty string. Null is not supported.</param>      
+	   public override string CreateRefreshUrl(IUserContext ctx, string serviceName, string scope)
+	   {
+		   if (!ScopesToBodyMap.TryGetValue(scope, out var body))
+		   {
+			   body = new ArrayDict()
+			   {
+				   { "scopes", scope.Split(',')}
+			   };
+			   ScopesToBodyMap.Add(scope, body);		      
+		   }
+
+		   OutgoingBody = body;
+	      
+		   return $"/object/{serviceName}/{ctx.UserId}";
+	   }
+
    }
 }
