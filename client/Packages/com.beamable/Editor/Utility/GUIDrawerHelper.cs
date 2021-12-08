@@ -3,7 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using Beamable.Editor.UI.Buss;
+using Beamable.UI.Buss;
 using Beamable.UI.Sdf.Styles;
+using Editor.UI.BUSS.Buss;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -82,6 +84,8 @@ namespace Beamable.Editor {
                 case ColorRect colorRect:
                     var colorRectDrawer = GetDrawer<ColorRectDrawer>(path, drawerData);
                     return colorRectDrawer.DrawColorRect(label, rc, colorRect);
+                case BaseAssetProperty assetProperty:
+	                return BaseAssetBussPropertyDrawer.DrawAssetProperty(label, rc, assetProperty);
                 // --- Unity Objects
                 case Object obj:
                     return EditorGUI.ObjectField(rc.ReserveSingleLine(), label, obj, enforcedType ?? typeof(Object), false);
