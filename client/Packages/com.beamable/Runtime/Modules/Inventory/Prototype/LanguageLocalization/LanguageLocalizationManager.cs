@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Modules.Inventory.Prototype.LanguageLocalization
+namespace Beamable.Modules.Inventory.Prototypes
 {
     public static class LanguageLocalizationManager
     {
