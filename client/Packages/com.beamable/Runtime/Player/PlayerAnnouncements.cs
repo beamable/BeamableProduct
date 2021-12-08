@@ -131,6 +131,7 @@ namespace Beamable.Player
 			// end up with a list of announcement...
 			await _platform.OnReady;
 
+			// TODO: add a toplevel awaitable thingy so that players can KNOW they have data
 			var data = await _announcementsApi.GetCurrent();
 
 			var nextAnnouncements = data.announcements.Select(view => new Announcement(this) {

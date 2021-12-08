@@ -32,8 +32,8 @@ namespace Beamable
 	/// </para>
 	///
 	/// <para>
-	/// From Monobehaviours or Unity components, you should use the <see cref="ForContext"/> method to access a <see cref="BeamContext"/>.
-	/// The <see cref="ForContext"/> will give you the closest context in the Unity object heirarchy from your script's location, or give you
+	/// From Monobehaviours or Unity components, you should use the <see cref="ForContext(UnityEngine.Component)"/> method to access a <see cref="BeamContext"/>.
+	/// The <see cref="ForContext(UnityEngine.Component)"/> will give you the closest context in the Unity object heirarchy from your script's location, or give you
 	/// <see cref="Default"/> if no context exists. You can add <see cref="BeamableBehaviour"/> components to add a context to a GameObject.
 	///
 	/// If you want to access an instance without using a context sensitive approach, you should use the <see cref="Instantiate"/> method.
@@ -334,7 +334,7 @@ namespace Beamable
 		/// </summary>
 		public static BeamContext ForContext(Component c) => c.GetBeamable();
 
-		public static BeamContext ForPlayer(string playerCode="") => Instantiate(playerCode: playerCode);
+		public static BeamContext ForContext(string playerCode="") => Instantiate(playerCode: playerCode);
 
 		/// <summary>
 		/// This method will tear down a <see cref="BeamContext"/> and notify all internal services that the context should be destroyed.

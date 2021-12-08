@@ -51,9 +51,10 @@ namespace Beamable
 			// set the default promise error handlers
 			PromiseExtensions.SetupDefaultHandler();
 
-			// TODO: Use dependency cache to add an attribute where folks can add their own services. This will also allow us to support the BeamablePurchaser
 			// register all services that are not context specific.
 			DependencyBuilder = new DependencyBuilder()
+			                    // TODO: AddSingleton should be AddScoped
+
 			                    .AddComponentSingleton<CoroutineService>()
 			                    .AddComponentSingleton<NotificationService>()
 			                    .AddComponentSingleton<BeamableBehaviour>()
