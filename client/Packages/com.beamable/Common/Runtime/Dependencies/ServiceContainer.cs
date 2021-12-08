@@ -136,14 +136,14 @@ namespace Beamable.Common.Dependencies
 		IDependencyBuilder AddTransient<T>(Func<T> factory);
 		IDependencyBuilder AddTransient<T>();
 
-		IDependencyBuilder AddSingleton<TInterface, TImpl>(Func<IDependencyProvider, TInterface> factory) where TImpl : TInterface;
-		IDependencyBuilder AddSingleton<TInterface, TImpl>(Func<TInterface> factory) where TImpl : TInterface;
-		IDependencyBuilder AddSingleton<TInterface, TImpl>(TInterface service) where TImpl : TInterface;
-		IDependencyBuilder AddSingleton<TInterface, TImpl>() where TImpl : TInterface;
-		IDependencyBuilder AddSingleton<T>(Func<IDependencyProvider, T> factory);
-		IDependencyBuilder AddSingleton<T>(Func<T> factory);
-		IDependencyBuilder AddSingleton<T>(T service);
-		IDependencyBuilder AddSingleton<T>();
+		IDependencyBuilder AddScoped<TInterface, TImpl>(Func<IDependencyProvider, TInterface> factory) where TImpl : TInterface;
+		IDependencyBuilder AddScoped<TInterface, TImpl>(Func<TInterface> factory) where TImpl : TInterface;
+		IDependencyBuilder AddScoped<TInterface, TImpl>(TInterface service) where TImpl : TInterface;
+		IDependencyBuilder AddScoped<TInterface, TImpl>() where TImpl : TInterface;
+		IDependencyBuilder AddScoped<T>(Func<IDependencyProvider, T> factory);
+		IDependencyBuilder AddScoped<T>(Func<T> factory);
+		IDependencyBuilder AddScoped<T>(T service);
+		IDependencyBuilder AddScoped<T>();
 
 		IDependencyProviderScope Build();
 
@@ -187,7 +187,7 @@ namespace Beamable.Common.Dependencies
 
 		public IDependencyBuilder AddTransient<T>() => AddTransient<T, T>();
 
-		public IDependencyBuilder AddSingleton<TInterface, TImpl>(Func<IDependencyProvider, TInterface> factory) where TImpl : TInterface
+		public IDependencyBuilder AddScoped<TInterface, TImpl>(Func<IDependencyProvider, TInterface> factory) where TImpl : TInterface
 		{
 			_singletonServices.Add(new ServiceDescriptor {
 				Interface = typeof(TInterface),
@@ -197,22 +197,22 @@ namespace Beamable.Common.Dependencies
 			return this;
 		}
 
-		public IDependencyBuilder AddSingleton<TInterface, TImpl>(Func<TInterface> factory) where TImpl : TInterface =>
-			AddSingleton<TInterface, TImpl>(_ => factory());
+		public IDependencyBuilder AddScoped<TInterface, TImpl>(Func<TInterface> factory) where TImpl : TInterface =>
+			AddScoped<TInterface, TImpl>(_ => factory());
 
-		public IDependencyBuilder AddSingleton<TInterface, TImpl>(TInterface service) where TImpl : TInterface =>
-			AddSingleton<TInterface, TImpl>(_ => service);
+		public IDependencyBuilder AddScoped<TInterface, TImpl>(TInterface service) where TImpl : TInterface =>
+			AddScoped<TInterface, TImpl>(_ => service);
 
-		public IDependencyBuilder AddSingleton<TInterface, TImpl>() where TImpl : TInterface =>
-			AddSingleton<TInterface, TImpl>(factory => Instantiate<TImpl>(factory));
+		public IDependencyBuilder AddScoped<TInterface, TImpl>() where TImpl : TInterface =>
+			AddScoped<TInterface, TImpl>(factory => Instantiate<TImpl>(factory));
 
-		public IDependencyBuilder AddSingleton<T>(Func<IDependencyProvider, T> factory) => AddSingleton<T, T>(factory);
+		public IDependencyBuilder AddScoped<T>(Func<IDependencyProvider, T> factory) => AddScoped<T, T>(factory);
 
-		public IDependencyBuilder AddSingleton<T>(Func<T> factory) => AddSingleton<T, T>(factory);
+		public IDependencyBuilder AddScoped<T>(Func<T> factory) => AddScoped<T, T>(factory);
 
-		public IDependencyBuilder AddSingleton<T>(T service) => AddSingleton<T, T>(service);
+		public IDependencyBuilder AddScoped<T>(T service) => AddScoped<T, T>(service);
 
-		public IDependencyBuilder AddSingleton<T>() => AddSingleton<T, T>();
+		public IDependencyBuilder AddScoped<T>() => AddScoped<T, T>();
 
 		private TImpl Instantiate<TImpl>(IDependencyProvider provider)
 		{

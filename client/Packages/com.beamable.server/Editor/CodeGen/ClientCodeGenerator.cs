@@ -113,7 +113,7 @@ namespace Beamable.Server.Editor.CodeGen
           registrationMethod.Statements.Add(new CodeMethodInvokeExpression {
 	          Method = new CodeMethodReferenceExpression(
 		          new CodeArgumentReferenceExpression("builder"),
-		          nameof(IDependencyBuilder.AddSingleton),
+		          nameof(IDependencyBuilder.AddScoped),
 		          new CodeTypeReference[] {
 			          new CodeTypeReference(TargetClassName) })
           });

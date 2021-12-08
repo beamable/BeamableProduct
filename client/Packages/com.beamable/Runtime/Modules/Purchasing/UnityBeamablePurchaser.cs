@@ -353,7 +353,7 @@ namespace Beamable.Purchasing
         [RegisterBeamableDependencies]
         public static void Register(IDependencyBuilder builder)
         {
-	        builder.AddSingleton<IBeamablePurchaser, UnityBeamablePurchaser>();
+	        builder.AddScoped<IBeamablePurchaser, UnityBeamablePurchaser>();
         }
     }
 
