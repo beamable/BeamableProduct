@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Modules.Inventory.Prototype
+namespace Beamable.Modules.Generics
 {
     public abstract class DataCollection<T> : List<T> where T : class
     {

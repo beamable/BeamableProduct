@@ -5,6 +5,7 @@ using Beamable.Api;
 using Beamable.Api.Inventory;
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Inventory;
+using Beamable.Modules.Generics;
 using UnityEngine;
 
 namespace Modules.Inventory.Prototype

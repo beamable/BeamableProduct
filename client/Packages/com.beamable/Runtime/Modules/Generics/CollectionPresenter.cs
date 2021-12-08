@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Modules.Inventory.Prototype
+namespace Beamable.Modules.Generics
 {
     public abstract class CollectionPresenter<T> : MonoBehaviour where T : class
     {
