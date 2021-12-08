@@ -130,6 +130,16 @@ namespace Packages.Beamable.Runtime.Tests.Beamable
         {
            throw new NotImplementedException();
         }
+        
+        public Promise<User> RemoveSpecificDeviceIds(string[] deviceIds)
+        {
+	        throw new NotImplementedException();
+        }
+        
+        public Promise<User> RemoveAllDeviceIds()
+        {
+	        throw new NotImplementedException();
+        }
 
         public IBeamableRequester Requester { get; }
    }
