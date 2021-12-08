@@ -14,6 +14,7 @@ namespace Beamable.UI.Sdf {
             get => _style;
             set {
                 _style = value;
+                ApplyStyle();
                 SetVerticesDirty();
                 SetMaterialDirty();
             }
@@ -54,7 +55,6 @@ namespace Beamable.UI.Sdf {
 #endif
 
         protected override void OnPopulateMesh(VertexHelper vh) {
-            ApplyStyle();
             if (sprite == null) {
                 mode = SdfMode.RectOnly;
             }
