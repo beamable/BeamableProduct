@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Beamable.UI.Buss
 {
@@ -43,6 +44,43 @@ namespace Beamable.UI.Buss
 		public static IEnumerable<BussPropertyProvider> GetVariablePropertyProviders(this BussStyleDescription target)
 		{
 			return target.Properties.Where(p => IsValidVariableName(p.Key));
+		}
+
+		public static void AssignAssetReferencesFromReferenceList(this BussStyleDescription style, List<Object> assetReferences) {
+			foreach (BussPropertyProvider propertyProvider in style.Properties) {
+				var property = propertyProvider.GetProperty();
+				if (property is BaseAssetProperty assetProperty) {
+					if (assetProperty.AssetSerializationKey >= 0 && assetProperty.AssetSerializationKey < assetReferences.Count) {
+						assetProperty.GenericAsset = assetReferences[assetProperty.AssetSerializationKey];
+					}
+					else
+					{
+						assetProperty.GenericAsset = null;
+						assetProperty.AssetSerializationKey = -1;
+					}
+				}
+			}
+		}
+
+		public static void PutAssetReferencesInReferenceList(this BussStyleDescription style, List<Object> assetReferences) {
+			foreach (BussPropertyProvider propertyProvider in style.Properties) {
+				var property = propertyProvider.GetProperty();
+				if (property is BaseAssetProperty assetProperty) {
+					var asset = assetProperty.GenericAsset;
+					if (asset != null) {
+						var index = assetReferences.IndexOf(asset);
+						if (index == -1) {
+							index = assetReferences.Count;
+							assetReferences.Add(asset);
+						}
+
+						assetProperty.AssetSerializationKey = index;
+					}
+					else {
+						assetProperty.AssetSerializationKey = -1;
+					}
+				}
+			}
 		}
 	}
 }

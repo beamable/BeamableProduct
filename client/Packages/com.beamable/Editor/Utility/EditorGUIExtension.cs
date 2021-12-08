@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
@@ -44,14 +46,22 @@ namespace Beamable.Editor {
             FieldInfo fieldInfo = null;
             var pathParts = property.propertyPath.Split('.');
             for (int i = 0; i < pathParts.Length; i++) {
-                fieldInfo = parentType.GetField(pathParts[i], BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                parentType = fieldInfo.FieldType;
+	            if (typeof(IEnumerable).IsAssignableFrom(parentType))
+	            {
+		            parentType = parentType.GetElementType() ?? parentType.GetGenericArguments()[0];
+		            i += 1;
+	            }
+	            else
+	            {
+		            fieldInfo = parentType.GetField(pathParts[i], BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+		            parentType = fieldInfo.FieldType;
+	            }
             }
 
             return fieldInfo;
         }
 
-        public static Type GetParentType(this SerializedProperty property) {
+        public static Type GetParentType(this SerializedProperty property) { // TODO: read arrays
             var parentType = property.serializedObject.targetObject.GetType();
             var pathParts = property.propertyPath.Split('.');
             for (int i = 0; i < pathParts.Length - 1; i++) {
@@ -66,8 +76,17 @@ namespace Beamable.Editor {
             object parent = property.serializedObject.targetObject;
             var pathParts = property.propertyPath.Split('.');
             for (int i = 0; i < pathParts.Length - 1; i++) {
-                var fieldInfo = parent.GetType().GetField(pathParts[i], BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                parent = fieldInfo.GetValue(parent);
+	            if (parent is IEnumerable enumerable)
+	            {
+		            i++;
+		            var index = int.Parse(pathParts[i].Split('[', ']')[1]);
+		            parent = enumerable.Cast<object>().ElementAt(index);
+	            }
+	            else
+	            {
+		            var fieldInfo = parent.GetType().GetField(pathParts[i], BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+		            parent = fieldInfo.GetValue(parent);
+	            }
             }
 
             return parent;
