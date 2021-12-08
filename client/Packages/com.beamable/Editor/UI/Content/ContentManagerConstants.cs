@@ -36,7 +36,7 @@ namespace Beamable.Editor.Content
       public const string ContentTypeViewHeaderText = "Content group/content";
       //
       public const string DownloadSummaryLabelText = "summary";
-      public const string DownloadMessageText = "Clicking download will overwrite local content changes with the content on published to Beamable.";
+      public const string DownloadMessageText = "Clicking download will overwrite any locally changed content with the published content from Beamable.";
       public const string DownloadNoDataText = "There is no content to download. All your local content is up to date.";
       public const string DownloadCompleteText = "All content has finished downloading.";
       public const string DownloadLoadText = "Getting latest server data...";
@@ -79,7 +79,7 @@ namespace Beamable.Editor.Content
       public static string CreateNewPopupWindowTitle = "Create New";
       public static string CreateNewPopupAddButtonDisabledText = "New Item";
       public static string CreateNewPopupAddButtonEnabledText = "Create: {0}";
-      
+
       // Confirmation window content
       public static string ConfirmWindowHeader = "Confirmation";
       public static string ConfirmItemDeletion = "Are You sure You want to delete this item?";
