@@ -116,7 +116,7 @@ jobs:
 
     steps:
       - name: Whats my head ref?
-        run: echo ${HEAD_REF}
+        run: echo $HEAD_REF && echo $USYM_UPLOAD_AUTH_TOKEN
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
         with:
