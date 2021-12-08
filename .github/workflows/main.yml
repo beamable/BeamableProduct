@@ -112,7 +112,7 @@ jobs:
     env:
       # The USYM_UPLOAD_AUTH_TOKEN environment variable is set to bypass Unity cloud checks
       USYM_UPLOAD_AUTH_TOKEN: foo
-      HEAD_REF: ${{ github.head_ref }}
+      HEAD_REF: ${{ github.event.pull_request.head.ref }}
 
     steps:
       - name: Whats my head ref?
