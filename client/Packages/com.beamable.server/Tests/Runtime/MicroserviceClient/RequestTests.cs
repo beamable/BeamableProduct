@@ -30,16 +30,106 @@ namespace Beamable.Server.Tests.Runtime
       [UnityTest]
       public IEnumerator CanDeserializeList_OfStrings()
       {
-         var client = new TestClient(ROUTE);
+	      var client = new TestClient(ROUTE);
 
-         MockRequester.MockRequest<List<string>>(Method.POST,
-               client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
-            .WithRawResponse("[\"a\", \"b\", \"c\"]");
+	      MockRequester.MockRequest<List<string>>(Method.POST,
+	                                              client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+	                   .WithRawResponse("[\"a\", \"b\", \"c\"]");
 
-         var req = client.Request<List<string>>( ROUTE, new string[] { });
+	      var req = client.Request<List<string>>( ROUTE, new string[] { });
 
-         yield return req.ToYielder();
-         Assert.AreEqual(new List<string>{"a", "b", "c"}, req.GetResult());
+	      yield return req.ToYielder();
+	      Assert.AreEqual(new List<string>{"a", "b", "c"}, req.GetResult());
+      }
+
+      [UnityTest]
+      public IEnumerator CanDeserializeDictionary_OfStrings()
+      {
+	      var client = new TestClient(ROUTE);
+	      
+	      MockRequester.MockRequest<Dictionary<string, string>>(Method.POST,
+	                                                            client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+	                   .WithRawResponse("{\"one\":\"15\",\"two\":\"151\",\"three\":\"125\"}");
+
+	      var req = client.Request<Dictionary<string, string>>( ROUTE, new string[] { });
+
+	      yield return req.ToYielder();
+	      Assert.AreEqual(new Dictionary<string, string> {{"one", "15"}, {"two", "151"}, {"three", "125"}}, req.GetResult());
+      }
+
+      [UnityTest]
+      public IEnumerator CanDeserializeDictionary_OfInts()
+      {
+	     var client = new TestClient(ROUTE);
+	      
+	      MockRequester.MockRequest<Dictionary<string, int>>(Method.POST,
+	                                                         client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+	                   .WithRawResponse("{\"one\":15,\"two\":151,\"three\":125}");
+
+	      var req = client.Request<Dictionary<string, int>>( ROUTE, new string[] { });
+
+	      yield return req.ToYielder();
+	      Assert.AreEqual(new Dictionary<string, int> {{"one", 15}, {"two", 151}, {"three", 125}}, req.GetResult());
+      }
+
+      [UnityTest]
+      public IEnumerator CanDeserializeDictionary_OfLongs()
+      {
+	      var client = new TestClient(ROUTE);
+	      
+	      MockRequester.MockRequest<Dictionary<string, long>>(Method.POST,
+	                                                          client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+	                   .WithRawResponse("{\"one\":15,\"two\":151,\"three\":125}");
+
+	      var req = client.Request<Dictionary<string, long>>( ROUTE, new string[] { });
+
+	      yield return req.ToYielder();
+	      Assert.AreEqual(new Dictionary<string, long> {{"one", 15}, {"two", 151}, {"three", 125}}, req.GetResult());
+      }
+
+      [UnityTest]
+      public IEnumerator CanDeserializeDictionary_OfFloats()
+      {
+	      var client = new TestClient(ROUTE);
+	      
+	      MockRequester.MockRequest<Dictionary<string, float>>(Method.POST,
+	                                                           client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+	                   .WithRawResponse("{\"one\":1.5,\"two\":1.51,\"three\":1.25}");
+
+	      var req = client.Request<Dictionary<string, float>>( ROUTE, new string[] { });
+
+	      yield return req.ToYielder();
+	      Assert.AreEqual(new Dictionary<string, float> {{"one", 1.5f}, {"two", 1.51f}, {"three", 1.25f}}, req.GetResult());
+      }
+
+      [UnityTest]
+      public IEnumerator CanDeserializeDictionary_OfDoubles()
+      {
+	      var client = new TestClient(ROUTE);
+	      
+	      MockRequester.MockRequest<Dictionary<string, double>>(Method.POST,
+	                                                           client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+	                   .WithRawResponse("{\"one\":1.5,\"two\":1.51,\"three\":1.25}");
+
+	      var req = client.Request<Dictionary<string, double>>( ROUTE, new string[] { });
+
+	      yield return req.ToYielder();
+	      Assert.AreEqual(new Dictionary<string, double> {{"one", 1.5}, {"two", 1.51}, {"three", 1.25}}, req.GetResult());
+      }
+
+      [UnityTest]
+      public IEnumerator CanDeserializeDictionary_OfBools()
+      {
+	      var client = new TestClient(ROUTE);
+	      
+	      MockRequester.MockRequest<Dictionary<string, bool>>(Method.POST,
+	                                                          client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+	                   .WithRawResponse("{\"one\":true,\"two\":false,\"three\":true}");
+
+	      var req = client.Request<Dictionary<string, bool>>( ROUTE, new string[] { });
+
+	      yield return req.ToYielder();
+	      Assert.AreEqual(new Dictionary<string, bool> {{"one", true}, {"two", false}, {"three", true}}, req.GetResult());
       }
 
       [UnityTest]

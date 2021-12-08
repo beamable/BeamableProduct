@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Beamable.Common.Api.Inventory;
+using Beamable.Modules.Generics;
 using Modules.Inventory.Prototype.GenericComponents;
 using Modules.Inventory.Prototype.LanguageLocalization;
 using UnityEngine;
