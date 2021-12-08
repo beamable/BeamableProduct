@@ -35,8 +35,10 @@ namespace Modules.Content
         [Tooltip("Create zip archive of content upon baking. Makes first content resolve call longer due to decompression.")]
         public bool EnableBakedContentCompression = true;
 
+#if UNITY_STANDALONE
         [Tooltip("Re-bake content on each build.")]
         public bool BakeContentOnBuild = true;
+#endif
 
         public ContentParameterProvider ParameterProvider {
             get {
