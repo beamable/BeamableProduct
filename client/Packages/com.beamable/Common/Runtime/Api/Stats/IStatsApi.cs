@@ -26,6 +26,14 @@ namespace Beamable.Common.Api.Stats
    }
 
    [Serializable]
+   public class BatchReadStatsRequest
+   {
+      public string objectIds;
+      public string stats;
+      public string format;
+   }
+
+   [Serializable]
    public class BatchReadEntry
    {
       public long id;
