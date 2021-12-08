@@ -8,7 +8,9 @@ using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Spew;
 using Core.Platform.SDK;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace Beamable.Content
 {
@@ -32,6 +34,7 @@ namespace Beamable.Content
     public class ContentCache<TContent> : ContentCache where TContent : ContentObject, new()
     {
         private static readonly ClientContentSerializer _serializer = new ClientContentSerializer();
+        private static readonly string _bakedDataExtractedKey = "beamable_baked_data_extracted";
 
         private readonly Dictionary<string, ContentCacheEntry<TContent>> _cache =
             new Dictionary<string, ContentCacheEntry<TContent>>();
@@ -145,38 +148,31 @@ namespace Beamable.Content
             bool dataExtracted = PlayerPrefs.GetInt(_bakedDataExtractedKey) == 1;
             if (!dataExtracted)
             {
-	            if (File.Exists(ContentConstants.CompressedContentPath))
+	            if (ExtractContent())
 	            {
-		            ExtractContent();
 		            PlayerPrefs.SetInt(_bakedDataExtractedKey, 1);
 		            return TryGetValueFromDisk(info, out contentObject, _filesystemAccessor);    
 	            }
-	            
-	            string resourcePath = Path.Combine(ContentConstants.DecompressedContentPath, info.contentId);
-            
-	            if (File.Exists(resourcePath))
-	            {
-		            var json = File.ReadAllText(resourcePath);
 
-		            contentObject = _serializer.Deserialize<TContent>(json);
-		            if (contentObject == null || contentObject.Version != info.version)
-		            {
-			            return false;
-		            }
-
-		            return true;
-	            }
-	            
-	            Debug.LogError($"[BAKED] File doesn't exist on path: {resourcePath}");
+	            return ReadDecompressedData(info, out contentObject);
             }
             
             return false;
         }
 
-        private void ExtractContent()
+#if UNITY_ANDROID && !UNITY_EDITOR
+	    private bool ExtractContent()
         {
-            Directory.CreateDirectory(ContentConstants.DecompressedContentPath);
-            var compressed = ReadBakedArchive();
+	        UnityWebRequest www = UnityWebRequest.Get(ContentConstants.CompressedContentPath);
+	        www.SendWebRequest();
+	        while (!www.isDone) { }
+
+	        var compressed = www.downloadHandler.data;
+	        if (compressed == null || compressed.Length == 0)
+	        {
+		        return false;
+	        }
+	        
             string content = Gzip.Decompress(compressed);
             var list = JsonUtility.FromJson<ContentDataInfoWrapper>(content);
 
@@ -185,28 +181,86 @@ namespace Beamable.Content
                 foreach (var contentInfo in list.content)
                 {
                     string path = ContentPath(contentInfo.contentId, _filesystemAccessor);
+                    Directory.CreateDirectory(Path.GetDirectoryName(path));
                     File.WriteAllText(path, contentInfo.data);
                 }
+
+                return true;
             }
             catch (Exception e)
             {
                 Debug.LogError($"[EXTRACT] ERROR: {e.Message}");
+                return false;
             }
         }
+	    
+	    private bool ReadDecompressedData(ClientContentInfo info, out TContent contentObject)
+		{
+			contentObject = null;
+			string resourcePath = Path.Combine(ContentConstants.DecompressedContentPath, info.contentId);
+            
+			UnityWebRequest www = UnityWebRequest.Get(resourcePath);
+			www.SendWebRequest();
+			while (!www.isDone) { }
+			var json = www.downloadHandler.text;
 
-#if UNITY_ANDROID && !UNITY_EDITOR
-        private byte[] ReadBakedArchive()
-        {
-	        UnityWebRequest www = UnityWebRequest.Get(ContentConstants.CompressedContentPath);
-	        www.SendWebRequest();
-	        while (!www.isDone) { }
-	        return www.downloadHandler.data;
-        }
+			contentObject = _serializer.Deserialize<TContent>(json);
+			if (contentObject == null || contentObject.Version != info.version)
+			{
+				return false;
+			}
+
+			return true;
+		}
 #else
-		private byte[] ReadBakedArchive()
-        {
-	        return File.ReadAllBytes(ContentConstants.CompressedContentPath);
-        }
+	    private bool ExtractContent()
+	    {
+		    if (!File.Exists(ContentConstants.CompressedContentPath))
+		    {
+			    return false;
+		    }
+	        
+		    var compressed = File.ReadAllBytes(ContentConstants.CompressedContentPath);
+		    string content = Gzip.Decompress(compressed);
+		    var list = JsonUtility.FromJson<ContentDataInfoWrapper>(content);
+
+		    try
+		    {
+			    foreach (var contentInfo in list.content)
+			    {
+				    string path = ContentPath(contentInfo.contentId, _filesystemAccessor);
+				    File.WriteAllText(path, contentInfo.data);
+			    }
+
+			    return true;
+		    }
+		    catch (Exception e)
+		    {
+			    Debug.LogError($"[EXTRACT] ERROR: {e.Message}");
+			    return false;
+		    }
+	    }
+
+		private bool ReadDecompressedData(ClientContentInfo info, out TContent contentObject)
+		{
+			contentObject = null;
+			string resourcePath = Path.Combine(ContentConstants.DecompressedContentPath, info.contentId);
+            
+			if (File.Exists(resourcePath))
+			{
+				var json = File.ReadAllText(resourcePath);
+
+				contentObject = _serializer.Deserialize<TContent>(json);
+				if (contentObject == null || contentObject.Version != info.version)
+				{
+					return false;
+				}
+
+				return true;
+			}
+
+			return false;
+		}
 #endif
 
         private static void SaveToDisk(ClientContentInfo info, string raw, IBeamableFilesystemAccessor fsa)
