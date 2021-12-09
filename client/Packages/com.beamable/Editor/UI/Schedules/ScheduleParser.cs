@@ -112,16 +112,6 @@ namespace Beamable.Editor.Schedules
             }
             else if (hoursDelta == 1)
             {
-	            var definition = new ScheduleDefinition(
-		            new List<string>{"*"}, 
-		            ConvertIntoRangeList(fromMinute, toMinute), 
-		            new List<string> {$"{fromHour}"}, 
-		            new List<string> {"*"}, 
-		            new List<string> {"*"}, 
-		            new List<string> {"*"}, 
-		            selectedDays);
-	            definitions.Add(definition);
-	            
                 var startDefinition = new ScheduleDefinition(
 	                new List<string>{"*"},  
 	                ConvertIntoRangeList(fromMinute, 59),
@@ -162,6 +152,7 @@ namespace Beamable.Editor.Schedules
 					new List<string>{"*"},
 					new List<string>{"*"}, 
 					selectedDays);
+                definitions.Add(middleDefinition);
 
                 var endDefinition = new ScheduleDefinition(
 	                new List<string>{"*"}, 
