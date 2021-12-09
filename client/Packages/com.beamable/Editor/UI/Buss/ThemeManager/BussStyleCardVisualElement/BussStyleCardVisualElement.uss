@@ -1,10 +1,10 @@
-#styleContainer {
+#cardContainer {
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-text-align: middle-left;
     margin-bottom: 10px;
 }
 
-#header {
+#cardHeader {
     -unity-font-style: bold;
     padding-left: 10px;
     color: rgba(256, 256, 256, 1);
@@ -36,24 +36,77 @@
     align-self: center;
     margin-left: 3px;
     height: 30px;
+    width: 30px;
     background-color: rgb(100,100,100);
     flex-shrink: 0;
     justify-content: center;
 }
 
-.smallButton {
-    width: 30px;
-}
-
 .mediumButton {
-    width: 60px;
+    width: 70px;
 }
 
 .largeButton {
     width: 90px;
 }
 
+.headerButton {
+    background-color: rgb(142,142,142);
+}
+
 #properties {
-    /*min-height: 100px;*/
+    background-color: rgb(77,77,77);
+}
+
+#sectionHeader {
+    color: rgb(255,255,255);
+    height: 30px;
+    background-color: rgb(89,89,89);
+    flex-direction: row;
+}
+
+#sectionLabel {
+    padding-left: 20px;
+    color: rgb(255,255,255);
+}
+
+.edit {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/edit.png");
+}
+
+.wizard {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/wizard.png");
+}
+
+.undo {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/undo.png");
+}
+
+.cleanAll {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/cleanAll.png");
+}
+
+.add {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new L.png");
+}
+
+#addVariableButton {
+    width: 30px;
+    height: 30px;
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/cleanAll.png");
+}
+
+#addRuleButton {
+    width: 30px;
+    height: 30px;
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/cleanAll.png");
+}
+
+#divider {
+    flex-grow: 1;
+}
+
+#variables {
+    min-height: 60px;
     background-color: rgb(77,77,77);
 }

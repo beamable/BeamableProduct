@@ -5,7 +5,7 @@
 }
 
 #label {
-    width: 120px;
+    width: 140px;
     color: rgb(255,255,255);
     min-height: 30px;
     padding-left: 10px;
@@ -13,14 +13,13 @@
 }
 
 #value {
-    flex-grow: 1;
-    background-color: rgb(70,70,70);
     justify-content: center;
+    min-width: 200px;
+    max-width: 200px;
 }
 
 #globalVariable {
-    width: 120px;
-    background-color: rgb(100,100,100);
+    width: 140px;
 }
 
 .dropdown {
@@ -29,4 +28,8 @@
     border-top-width: 1px;
     border-bottom-width: 1px;
     height: 20px;
+}
+
+.equalWidth {
+    width: 0;
 }
