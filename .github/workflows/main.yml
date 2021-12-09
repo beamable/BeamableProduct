@@ -90,6 +90,7 @@ jobs:
           versioning: Semantic
           allowDirtyBuild: true
           buildsPath: dist
+          buildMethod: BuildSampleProject.Development
 
       - name: Save Docker Image If Exits
         if: ${{ !steps.cache_docker.outputs.cache-hit }}
@@ -112,7 +113,8 @@ jobs:
     env:
       # The USYM_UPLOAD_AUTH_TOKEN environment variable is set to bypass Unity cloud checks
       USYM_UPLOAD_AUTH_TOKEN: foo
-      HEAD_REF: ${{ github.event.pull_request.head.ref }}
+      HEAD_REF: ${{ github.head_ref }}
+      PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
 
     steps:
       - name: Whats my head ref?
@@ -123,18 +125,7 @@ jobs:
           name: Build-iOS
       - name: Make build scripts executeable and change directory to the location of the xcode project
         run: chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/process_symbols.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/MapFileParser.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/usymtool && cd iOS/
-      - name: Update the pbxproj to the right bundle identifier
-        run: cd iOS/Unity-iPhone.xcodeproj/ && sed -i '' 's/com.beamable.prod/com.beamable.dev/g' project.pbxproj
-      - name: Update bundle identifier to com.beamable.dev
-        run: cd iOS/ && plutil -replace CFBundleIdentifier -string com.beamable.dev Info.plist && plutil -p Info.plist
-      - name: Update bundle identifier to staging for staging builds
-        if: ${{ github.head_ref == 'staging' }}
-        run: cd iOS/ && plutil -replace CFBundleIdentifier -string com.beamable.staging Info.plist
-      - name: Update bundle identifier to staging for staging builds
-        if: ${{ github.head_ref == 'production' }}
-        run: cd iOS/ && plutil -replace CFBundleIdentifier -string com.beamable.prod Info.plist
       - uses: yukiarrr/ios-build-action@v1.4.0
-        if: ${{ github.head_ref == 'iOS' }}
         with:
           update-targets: Unity-iPhone
           project-path: ${{ secrets.XCODEPROJ_PATH }}
