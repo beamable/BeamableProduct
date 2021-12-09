@@ -86,20 +86,16 @@
     background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/cleanAll.png");
 }
 
-.add {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new L.png");
-}
-
 #addVariableButton {
     width: 30px;
     height: 30px;
-    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/cleanAll.png");
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new L.png");
 }
 
 #addRuleButton {
     width: 30px;
     height: 30px;
-    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/cleanAll.png");
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new L.png");
 }
 
 #divider {
