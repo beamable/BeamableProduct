@@ -3,7 +3,7 @@ using Beamable.Modules.Generics;
 using UnityEngine;
 using UnityEngine.Events;
 
-namespace Beamable.UI.Leaderboards
+namespace Beamable.Modules.Leaderboards
 {
 	public class LeaderboardsPresenter : ModelPresenter<LeaderboardsModel>
 	{

@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 using Beamable.Common.Api.Leaderboards;
 using Beamable.Modules.Generics;
-using Modules.Leaderboards.New;
+using Beamable.UI.Scripts;
 using UnityEngine;
 
-namespace Beamable.UI.Leaderboards
+namespace Beamable.Modules.Leaderboards
 {
 	public class LeaderboardsRankEntriesPresenter : DataPresenter<List<RankEntry>>, PoolableScrollView.IContentProvider
 	{

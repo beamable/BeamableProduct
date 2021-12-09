@@ -12,20 +12,18 @@ using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Common.Content.Validation;
+using Beamable.Content;
 using Beamable.Editor.Content.UI;
 using Beamable.Serialization;
 using Core.Platform.SDK;
-using Modules.Content;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
 using UnityEditor.AddressableAssets.Settings.GroupSchemas;
 using UnityEngine;
 
-
 namespace Beamable.Editor.Content
 {
-
    public class ContentIOAssetProcessor : UnityEditor.AssetModificationProcessor
    {
       private static AssetDeleteResult OnWillDeleteAsset(string assetPath, RemoveAssetOptions options)

@@ -10,7 +10,7 @@ using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Events;
 
-namespace Beamable.UI.Leaderboards
+namespace Beamable.Modules.Leaderboards
 {
 	public class LeaderboardsModel : Model
 	{

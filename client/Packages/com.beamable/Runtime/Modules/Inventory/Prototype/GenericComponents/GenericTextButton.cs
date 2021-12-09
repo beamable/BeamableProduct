@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Modules.Inventory.Prototype.GenericComponents
+namespace Beamable.Modules.Inventory.Prototypes
 {
     [RequireComponent(typeof(Button))]
     public class GenericTextButton : MonoBehaviour

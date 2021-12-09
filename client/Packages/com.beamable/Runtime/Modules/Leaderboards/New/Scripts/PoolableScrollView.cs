@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-namespace Modules.Leaderboards.New
+namespace Beamable.UI.Scripts
 {
 	[DisallowMultipleComponent]
 	[RequireComponent(typeof(RectTransform))]
@@ -33,7 +33,6 @@ namespace Modules.Leaderboards.New
 		[SerializeField] private float _elasticity = 0.1f;
 		[SerializeField] private bool _inertia = true;
 		[SerializeField] private float _decelerationRate = 0.135f;
-		// [SerializeField] private float _scrollSensitivity = 1.0f;
 		[SerializeField] private float _spacing = 0.0f;
 		[SerializeField] private bool _trackLastElement;
 		[SerializeField] private float _trackSpeedFactor = 4.0f;
