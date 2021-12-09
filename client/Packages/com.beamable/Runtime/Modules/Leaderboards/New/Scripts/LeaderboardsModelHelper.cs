@@ -4,7 +4,7 @@ using Beamable.Constats;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Beamable.UI.Leaderboards
+namespace Beamable.Modules.Leaderboards
 {
 	public static class LeaderboardsModelHelper
 	{

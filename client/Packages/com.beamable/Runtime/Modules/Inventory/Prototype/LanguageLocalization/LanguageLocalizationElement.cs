@@ -1,7 +1,7 @@
 using TMPro;
 using UnityEngine;
 
-namespace Modules.Inventory.Prototype.LanguageLocalization
+namespace Beamable.Modules.Inventory.Prototypes
 {
     [RequireComponent(typeof(TextMeshProUGUI))]
     public class LanguageLocalizationElement : MonoBehaviour

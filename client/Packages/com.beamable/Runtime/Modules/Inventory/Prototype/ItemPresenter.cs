@@ -1,11 +1,11 @@
+using Beamable.Modules.Inventory.Prototypes;
 using Beamable.UI.Scripts;
-using Modules.Inventory.Prototype.LanguageLocalization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.UI;
 
-namespace Modules.Inventory.Prototype
+namespace Beamable.Modules.Inventory
 {
     public class ItemPresenter : MonoBehaviour
     {

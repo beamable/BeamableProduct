@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Beamable.UI.Buss;
 using Beamable.UI.Sdf.Styles;
 using UnityEditor;
@@ -55,7 +56,10 @@ namespace Beamable.Editor.UI.Buss {
             }
 
             sysType = type == null ? null : Type.GetType(type);
-            value = JsonUtility.FromJson(json, sysType);
+            var valueField =
+	            typeof(SerializableValueObject).GetField("value", BindingFlags.Instance | BindingFlags.NonPublic);
+            var obj = property.GetFieldInfo().GetValue(property.GetParentObject());
+            value = valueField.GetValue(obj);
             EditorGUI.BeginChangeCheck();
             value = GUIDrawerHelper.DrawObject(rc, label, value, _drawerData,
                 property.serializedObject.targetObject.GetInstanceID() + ":" + property.propertyPath);

@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Linq;
-using Beamable;
 using Beamable.Common.Content;
-using Beamable.Content;
 using UnityEngine;
 
-namespace Modules.Content
+namespace Beamable.Content
 {
     [CreateAssetMenu(
         fileName="Content Configuration",

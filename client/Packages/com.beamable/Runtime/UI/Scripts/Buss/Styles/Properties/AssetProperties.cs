@@ -3,45 +3,73 @@ using TMPro;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Beamable.UI.Buss {
-    public abstract class BaseAssetProperty<T> {
-        
-        [SerializeField]
-        protected T _asset;
+namespace Beamable.UI.Buss
+{
+	public abstract class BaseAssetProperty
+	{
+		public int AssetSerializationKey = -1;
 
-        public T Asset {
-            get => _asset;
-            set => _asset = value;
-        }
-    }
+		public abstract Object GenericAsset
+		{
+			get;
+			set;
+		}
 
-    [Serializable]
-    public class SpriteBussProperty : BaseAssetProperty<Sprite>, ISpriteBussProperty {
-        public Sprite SpriteValue => Asset;
-        
-        public SpriteBussProperty() { }
+		public abstract Type GetAssetType();
+	}
 
-        public SpriteBussProperty(Sprite sprite) {
-            Asset = sprite;
-        }
+	public abstract class BaseAssetProperty<T> : BaseAssetProperty where T : Object
+	{
+		protected T _asset;
 
-        public IBussProperty CopyProperty() {
-            return new SpriteBussProperty(Asset);
-        }
-    }
+		public T Asset
+		{
+			get => _asset;
+			set => _asset = value;
+		}
 
-    [Serializable]
-    public class FontBussAssetProperty : BaseAssetProperty<TMP_FontAsset>, IFontBussProperty {
-        public TMP_FontAsset FontAsset => Asset;
+		public override Object GenericAsset
+		{
+			get => Asset;
+			set => Asset = value as T;
+		}
 
-        public FontBussAssetProperty() { }
+		public override Type GetAssetType() => typeof(T);
+	}
 
-        public FontBussAssetProperty(TMP_FontAsset asset) {
-            Asset = asset;
-        }
+	[Serializable]
+	public class SpriteBussProperty : BaseAssetProperty<Sprite>, ISpriteBussProperty
+	{
+		public Sprite SpriteValue => Asset;
 
-        public IBussProperty CopyProperty() {
-            return new FontBussAssetProperty(Asset);
-        }
-    }
+		public SpriteBussProperty() { }
+
+		public SpriteBussProperty(Sprite sprite)
+		{
+			Asset = sprite;
+		}
+
+		public IBussProperty CopyProperty()
+		{
+			return new SpriteBussProperty(Asset);
+		}
+	}
+
+	[Serializable]
+	public class FontBussAssetProperty : BaseAssetProperty<TMP_FontAsset>, IFontBussProperty
+	{
+		public TMP_FontAsset FontAsset => Asset;
+
+		public FontBussAssetProperty() { }
+
+		public FontBussAssetProperty(TMP_FontAsset asset)
+		{
+			Asset = asset;
+		}
+
+		public IBussProperty CopyProperty()
+		{
+			return new FontBussAssetProperty(Asset);
+		}
+	}
 }

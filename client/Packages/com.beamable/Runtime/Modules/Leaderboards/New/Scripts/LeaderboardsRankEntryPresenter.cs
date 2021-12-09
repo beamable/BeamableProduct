@@ -6,13 +6,13 @@ using Beamable.Constats;
 using Beamable.Modules.Generics;
 using Beamable.Stats;
 using Beamable.UI.Buss;
-using Modules.Leaderboards.New;
+using Beamable.UI.Scripts;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Beamable.UI.Leaderboards
+namespace Beamable.Modules.Leaderboards
 {
 	public class LeaderboardsRankEntryPresenter : DataPresenter<RankEntry>
 	{
