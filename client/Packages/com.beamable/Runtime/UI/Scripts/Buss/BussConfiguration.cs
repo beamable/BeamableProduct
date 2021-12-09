@@ -17,14 +17,15 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 {
 	public class BussConfiguration : ModuleConfigurationObject
 	{
-		// New system
-		public static Optional<BussConfiguration> Instance
+
+		private static BussConfiguration Instance => Get<BussConfiguration>();
+		public static Optional<BussConfiguration> OptionalInstance
 		{
 			get
 			{
 				try
 				{
-					return new Optional<BussConfiguration> {Value = Get<BussConfiguration>(), HasValue = true};
+					return new Optional<BussConfiguration> {Value = Instance, HasValue = true};
 				}
 				catch (ModuleConfigurationNotReadyException)
 				{
@@ -35,7 +36,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 
 		public static void UseConfig(Action<BussConfiguration> callback)
 		{
-			Instance.DoIfExists(callback);
+			OptionalInstance.DoIfExists(callback);
 		}
 
 		[SerializeField] private BussStyleSheet globalStyleSheet = null;
