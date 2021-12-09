@@ -55,7 +55,7 @@ namespace Beamable.Player
 		}
 
 		private readonly BeamContext _ctx;
-		public User User => _ctx.UserData;
+		public User User => _ctx.AuthorizedUser;
 		public AccessToken Token => _ctx.AccessToken;
 
 #pragma warning disable CS0067

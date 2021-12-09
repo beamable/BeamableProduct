@@ -5,8 +5,11 @@ using System;
 using System.Collections;
 using System.Linq;
 using Beamable.Api;
+using Beamable.Api.Connectivity;
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Api.Notifications;
+using Beamable.Common.Dependencies;
 using Beamable.Coroutines;
 using Beamable.Service;
 using Beamable.Spew;
@@ -15,7 +18,7 @@ using UnityEngine;
 namespace Beamable.Api
 {
    // put constants in a separate class so that they are shared across generic params
-   
+
    /// <summary>
    /// This type defines the constants of %Subscribables.
    ///
@@ -25,7 +28,7 @@ namespace Beamable.Api
    /// - See Beamable.API script reference
    ///
    /// ![img beamable-logo]
-   /// 
+   ///
    /// </summary>
    internal static class SubscribableConsts
    {
@@ -41,7 +44,7 @@ namespace Beamable.Api
    /// - See Beamable.API script reference
    ///
    /// ![img beamable-logo]
-   /// 
+   ///
    /// </summary>
    /// <typeparam name="TPlatformSubscriber"></typeparam>
    /// <typeparam name="ScopedRsp"></typeparam>
@@ -54,7 +57,7 @@ namespace Beamable.Api
       /// </summary>
       TPlatformSubscriber Subscribable { get; }
    }
-   
+
    public interface IHasPlatformSubscribers<TPlatformSubscriber, ScopedRsp, Data>
       where TPlatformSubscriber : PlatformSubscribable<ScopedRsp, Data>
    {
@@ -77,9 +80,12 @@ namespace Beamable.Api
    /// </summary>
    public abstract class PlatformSubscribable<ScopedRsp, Data> : ISupportsGet<Data>, ISupportGetLatest<Data>
    {
-      protected IPlatformService platform;
+      // protected IPlatformService platform;
       protected IBeamableRequester requester;
-      
+      protected IConnectivityService connectivityService;
+      protected INotificationService notificationService;
+      protected IUserContext userContext;
+
       protected BeamableGetApiResource<ScopedRsp> getter;
 
       private string service;
@@ -96,6 +102,35 @@ namespace Beamable.Api
 
       public bool UsesHierarchyScopes { get; protected set; }
 
+      protected PlatformSubscribable(IDependencyProvider provider,
+                                     string service,
+                                     BeamableGetApiResource<ScopedRsp> getter = null)
+      {
+	      this.connectivityService = provider.GetService<IConnectivityService>();
+	      this.notificationService = provider.GetService<INotificationService>();
+	      this.userContext = provider.GetService<IUserContext>();
+	      if (getter == null)
+	      {
+		      getter = new BeamableGetApiResource<ScopedRsp>();
+	      }
+
+	      this.getter = getter;
+	      this.requester = provider.GetService<IBeamableRequester>();
+	      this.service = service;
+	      notificationService.Subscribe(String.Format("{0}.refresh", service), OnRefreshNtf);
+
+	      var platform = provider.GetService<IPlatformService>();
+	      platform.OnReady.Then(_ => { platform.TimeOverrideChanged += OnTimeOverride; });
+
+	      platform.OnShutdown += () => { platform.TimeOverrideChanged -= OnTimeOverride; };
+
+	      platform.OnReloadUser += () =>
+	      {
+		      Reset();
+		      Refresh();
+	      };
+      }
+
       protected PlatformSubscribable(IPlatformService platform, IBeamableRequester requester, string service, BeamableGetApiResource<ScopedRsp> getter=null)
       {
          if (getter == null)
@@ -104,9 +139,12 @@ namespace Beamable.Api
          }
 
          this.getter = getter;
-         this.platform = platform;
+         // this.platform = platform;
          this.requester = requester;
          this.service = service;
+         notificationService = platform.Notification;
+         connectivityService = platform.ConnectivityService;
+         userContext = platform;
          platform.Notification.Subscribe(String.Format("{0}.refresh", service), OnRefreshNtf);
 
          platform.OnReady.Then(_ => { platform.TimeOverrideChanged += OnTimeOverride; });
@@ -119,7 +157,7 @@ namespace Beamable.Api
             Refresh();
          };
       }
-      
+
       private void OnTimeOverride()
       {
          Refresh();
@@ -261,7 +299,7 @@ namespace Beamable.Api
 
             // Avoid incrementing the backoff if the device is definitely not connected to the network at all.
             // This is narrow, and would still increment if the device is connected, but the internet has other problems
-            if (platform.ConnectivityService.HasConnectivity)
+            if (connectivityService.HasConnectivity)
             {
                retry += 1;
             }
@@ -279,7 +317,7 @@ namespace Beamable.Api
 
       protected virtual string CreateRefreshUrl(string scope)
       {
-	      return getter.CreateRefreshUrl(platform, service, scope);
+	      return getter.CreateRefreshUrl(userContext, service, scope);
       }
 
       /// <summary>

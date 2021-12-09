@@ -23,7 +23,7 @@ namespace Beamable.Api.Stats
    public class StatsService : AbsStatsApi
    {
 
-      public StatsService (IPlatformService platform, IBeamableRequester requester, UserDataCache<Dictionary<string, string>>.FactoryFunction factoryFunction)
+      public StatsService (IUserContext platform, IBeamableRequester requester, UserDataCache<Dictionary<string, string>>.FactoryFunction factoryFunction)
       : base(requester, platform, factoryFunction)
       {
       }

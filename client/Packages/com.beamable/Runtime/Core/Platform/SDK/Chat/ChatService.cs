@@ -24,7 +24,7 @@ namespace Beamable.Experimental.Api.Chat
             if (!_group_subscribed)
             {
                 _group_subscribed = true;
-                platform.Notification.Subscribe(GroupMembershipEvent, _ => { Refresh(); });
+                notificationService.Subscribe(GroupMembershipEvent, _ => { Refresh(); });
             }
 
             view.Update(data.rooms);
