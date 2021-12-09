@@ -135,7 +135,7 @@ jobs:
           certificate-password: ${{ secrets.P12_PASSWORD }}
           mobileprovision-path: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/BeamableProductDev.mobileprovision
           code-signing-identity: 'iPhone Distribution: Beamable, Inc (A6C4565DLF)'
-          team-id: A6C4565DLF}
+          team-id: A6C4565DLF
       - uses: yukiarrr/ios-build-action@v1.4.0
         if: ${{ github.head_ref == 'staging' }}
         with:
