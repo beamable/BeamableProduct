@@ -42,7 +42,14 @@ namespace Beamable.UI.Sdf.Styles {
                 return;
             }
             try {
-                value = JsonUtility.FromJson(json, sysType);
+	            if (value != null && value.GetType() == sysType)
+	            {
+		            JsonUtility.FromJsonOverwrite(json, value);
+	            }
+	            else
+	            {
+		            value = JsonUtility.FromJson(json, sysType);
+	            }
             }
             catch (Exception)
             {

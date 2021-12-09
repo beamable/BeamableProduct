@@ -1,12 +1,11 @@
 ﻿using System;
-using Beamable;
 using Beamable.Api;
 using Beamable.Api.Announcements;
 using Beamable.Common.Api.Announcements;
 using Beamable.Modules.Generics;
 using UnityEngine;
 
-namespace Modules.Content
+namespace Beamable.Modules.Content
 {
     public class AnnouncementsCollection : DataCollection<AnnouncementView>
     {
