@@ -91,7 +91,8 @@ jobs:
           allowDirtyBuild: true
           buildsPath: dist
           buildMethod: BuildSampleProject.Development
-
+      - name: Where am I right now?
+        run: pwd && ls -lrt
       - name: Save Docker Image If Exits
         if: ${{ !steps.cache_docker.outputs.cache-hit }}
         run: |
