@@ -111,7 +111,7 @@ namespace Beamable.UI.Buss
 			}
 			else
 			{
-				BussConfiguration.Instance.UnregisterObserver(this);
+				BussConfiguration.UseConfig(c => c.UnregisterObserver(this));
 			}
 		}
 
@@ -207,7 +207,7 @@ namespace Beamable.UI.Buss
 		/// </summary>
 		public void RecalculateStyle()
 		{
-			BussConfiguration.Instance.RecalculateStyle(this);
+			BussConfiguration.UseConfig(c => c.RecalculateStyle(this));
 			ApplyStyle();
 
 			foreach (BussElement child in Children)
@@ -230,13 +230,13 @@ namespace Beamable.UI.Buss
 			}
 			else
 			{
-				BussConfiguration.Instance.UnregisterObserver(this);
+				BussConfiguration.UseConfig(c => c.UnregisterObserver(this));
 			}
 
 			_parent = foundParent;
 			if (Parent == null)
 			{
-				BussConfiguration.Instance.RegisterObserver(this);
+				BussConfiguration.UseConfig(c => c.RegisterObserver(this));
 			}
 			else
 			{
