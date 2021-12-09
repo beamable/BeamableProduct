@@ -58,60 +58,60 @@ namespace Beamable
 			                    .AddComponentSingleton<BeamableBehaviour>()
 			                    .AddComponentSingleton<PubnubSubscriptionManager>(
 				                    (manager, provider) => manager.Initialize(provider.GetService<IPlatformService>()))
-			                    .AddScoped<IBeamableRequester, PlatformRequester>(
+			                    .AddSingleton<IBeamableRequester, PlatformRequester>(
 				                    provider => provider.GetService<PlatformRequester>())
-			                    .AddScoped(ServiceManager.ResolveIfAvailable<IAuthSettings>())
-			                    .AddScoped(BeamableEnvironment.Data)
-			                    .AddScoped<IUserContext>(provider => provider.GetService<IPlatformService>())
-			                    .AddScoped<IConnectivityService, ConnectivityService>()
-			                    .AddScoped<IAuthService, AuthService>()
-			                    .AddScoped<IInventoryApi, InventoryService>()
-			                    .AddScoped<IAnnouncementsApi, AnnouncementsService>()
-			                    .AddScoped<ISessionService, SessionService>()
-			                    .AddScoped<CloudSavingService>()
-			                    .AddScoped<IBeamableFilesystemAccessor, PlatformFilesystemAccessor>()
-			                    .AddScoped<ContentService>()
+			                    .AddSingleton(ServiceManager.ResolveIfAvailable<IAuthSettings>())
+			                    .AddSingleton(BeamableEnvironment.Data)
+			                    .AddSingleton<IUserContext>(provider => provider.GetService<IPlatformService>())
+			                    .AddSingleton<IConnectivityService, ConnectivityService>()
+			                    .AddSingleton<IAuthService, AuthService>()
+			                    .AddScoped<IInventoryApi, InventoryService>( provider => provider.GetService<InventoryService>())
+			                    .AddSingleton<IAnnouncementsApi, AnnouncementsService>()
+			                    .AddSingleton<ISessionService, SessionService>()
+			                    .AddSingleton<CloudSavingService>()
+			                    .AddSingleton<IBeamableFilesystemAccessor, PlatformFilesystemAccessor>()
+			                    .AddSingleton<ContentService>()
 			                    .AddScoped<InventoryService>()
 			                    .AddScoped<StatsService>(provider =>
-				                                                new StatsService(
-					                                                provider.GetService<IPlatformService>(),
-					                                                provider.GetService<PlatformRequester>(),
-					                                                UnityUserDataCache<Dictionary<string, string>>
-						                                                .CreateInstance))
-			                    .AddScoped<IAnalyticsTracker, AnalyticsTracker>(provider =>
+				                                             new StatsService(
+					                                             provider.GetService<IPlatformService>(),
+					                                             provider.GetService<PlatformRequester>(),
+					                                             UnityUserDataCache<Dictionary<string, string>>
+						                                             .CreateInstance))
+			                    .AddSingleton<IAnalyticsTracker, AnalyticsTracker>(provider =>
 				                    new AnalyticsTracker(provider.GetService<IPlatformService>(),
 				                                         provider.GetService<PlatformRequester>(),
 				                                         provider.GetService<CoroutineService>(), 30, 10)
 			                    )
-			                    .AddScoped<MailService>()
-			                    .AddScoped<PushService>()
-			                    .AddScoped<CommerceService>()
-			                    .AddScoped<PaymentService>()
-			                    .AddScoped<GroupsService>()
-			                    .AddScoped<EventsService>()
-			                    .AddScoped<ITournamentApi, TournamentService>()
-			                    .AddScoped<ICloudDataApi, CloudDataApi>()
-			                    .AddScoped<ChatService>()
-			                    .AddScoped<GameRelayService>()
-			                    .AddScoped<MatchmakingService>(provider => new MatchmakingService(
+			                    .AddSingleton<MailService>()
+			                    .AddSingleton<PushService>()
+			                    .AddSingleton<CommerceService>()
+			                    .AddSingleton<PaymentService>()
+			                    .AddSingleton<GroupsService>()
+			                    .AddSingleton<EventsService>()
+			                    .AddSingleton<ITournamentApi, TournamentService>()
+			                    .AddSingleton<ICloudDataApi, CloudDataApi>()
+			                    .AddSingleton<ChatService>()
+			                    .AddSingleton<GameRelayService>()
+			                    .AddSingleton<MatchmakingService>(provider => new MatchmakingService(
 				                                                      provider.GetService<IPlatformService>(),
 				                                                      // the matchmaking service needs a special instance of the beamable api requester
 				                                                      provider.GetService<BeamableApiRequester>())
 				                    )
-			                    .AddScoped<SocialService>()
-			                    .AddScoped<CalendarsService>()
-			                    .AddScoped<AnnouncementsService>()
-			                    .AddScoped<IHeartbeatService, Heartbeat>()
-			                    .AddScoped<ISdkEventService, SdkEventService>()
-			                    .AddScoped<PubnubNotificationService>()
-			                    .AddScoped<IPubnubNotificationService, PubnubNotificationService>()
-			                    .AddScoped<IPubnubSubscriptionManager>(
+			                    .AddSingleton<SocialService>()
+			                    .AddSingleton<CalendarsService>()
+			                    .AddSingleton<AnnouncementsService>()
+			                    .AddSingleton<IHeartbeatService, Heartbeat>()
+			                    .AddSingleton<ISdkEventService, SdkEventService>()
+			                    .AddSingleton<PubnubNotificationService>()
+			                    .AddSingleton<IPubnubNotificationService, PubnubNotificationService>()
+			                    .AddSingleton<IPubnubSubscriptionManager>(
 				                    provider => provider.GetService<PubnubSubscriptionManager>())
-			                    .AddScoped<INotificationService>(
+			                    .AddSingleton<INotificationService>(
 				                    provider => provider.GetService<NotificationService>())
 				;
 
-			DependencyBuilder.AddScoped<PlayerAnnouncements>();
+			DependencyBuilder.AddSingleton<PlayerAnnouncements>();
 			DependencyBuilder.AddScoped<PlayerCurrencyGroup>();
 			DependencyBuilder.AddScoped<PlayerStats>();
 

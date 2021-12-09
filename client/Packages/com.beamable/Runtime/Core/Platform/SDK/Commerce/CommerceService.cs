@@ -61,7 +61,7 @@ namespace Beamable.Api.Commerce
 
       public Promise<EmptyResponse> Purchase (string storeSymbol, string listingSymbol)
       {
-         long gamerTag = platform.User.id;
+         long gamerTag = userContext.UserId;
          string purchaseId = $"{listingSymbol}:{storeSymbol}";
          return requester.Request<EmptyResponse>(
             Method.POST,

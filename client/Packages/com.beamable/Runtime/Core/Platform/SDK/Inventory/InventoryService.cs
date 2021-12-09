@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Inventory;
+using Beamable.Common.Dependencies;
 using Beamable.Serialization.SmallerJSON;
 using System.Collections.Generic;
 
@@ -24,7 +25,13 @@ namespace Beamable.Api.Inventory
 
       private readonly InventoryView view = new InventoryView();
 
-      public InventorySubscription(IPlatformService platform, IBeamableRequester requester) 
+      public InventorySubscription(IDependencyProvider provider)
+	      : base(provider, SERVICE, new BeamableGetApiResourceViaPost<InventoryResponse>())
+      {
+	      UsesHierarchyScopes = true;
+      }
+
+      public InventorySubscription(IPlatformService platform, IBeamableRequester requester)
 	      : base(platform, requester, SERVICE, new BeamableGetApiResourceViaPost<InventoryResponse>())
       {
 	      UsesHierarchyScopes = true;
@@ -87,9 +94,16 @@ namespace Beamable.Api.Inventory
    {
       public InventorySubscription Subscribable { get; }
 
-      public InventoryService (IPlatformService platform, IBeamableRequester requester) : base(requester, platform)
+
+      public InventoryService (IDependencyProvider provider) : base(provider.GetService<IBeamableRequester>(), provider.GetService<IUserContext>())
       {
-         Subscribable = new InventorySubscription(platform, requester);
+         Subscribable = new InventorySubscription(provider);
+      }
+
+      public InventoryService(IPlatformService platform, IBeamableRequester requester) : base(requester, platform)
+      {
+	      Subscribable = new InventorySubscription(platform, requester);
+
       }
 
       public override Promise<InventoryView> GetCurrent(string scope = "") => Subscribable.GetCurrent(scope);

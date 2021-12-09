@@ -5,6 +5,7 @@ using Beamable.Api.Connectivity;
 using Beamable.Api.Notification;
 using Beamable.Api.Payments;
 using Beamable.Api.Sessions;
+using Beamable.Api.Stats;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
@@ -48,27 +49,83 @@ namespace Beamable
 	[Serializable]
 	public class BeamContext : IPlatformService, IGameObjectContext
 	{
+
+		#region Internal State
 		/// <summary>
 		/// The <see cref="PlayerCode"/> is the name of a player's slot on the device. The <see cref="Default"/> context uses an empty string,
 		/// but you could use values like "player1" and "player2" to enable a feature like couch-coop.
 		/// </summary>
 		public string PlayerCode { get; private set; }
 
-		public ObservableLong PlayerId = new ObservableLong();
-		public ObservableUser UserData = new ObservableUser();
+		/// <summary>
+		/// The User that this context is authenticated with. Any web-calls that are made from this <see cref="BeamContext"/> are made by this User
+		/// </summary>
+		public ObservableUser AuthorizedUser = new ObservableUser();
+
+		/// <summary>
+		/// The <see cref="IDependencyProvider"/> is a collection of all services required to provide a Beamable SDK full funcitonality
+		/// </summary>
+		public IDependencyProvider ServiceProvider => _serviceScope;
+
+		/// <summary>
+		/// If the <see cref="Dispose"/> method has been run, this property will return true. Once a context is disposed, you shouldn't use
+		/// it anymore, and the <see cref="ServiceProvider"/> will throw exceptions if you do.
+		/// You can re-initialize the context by using <see cref="ForContext(UnityEngine.Component)"/>
+		/// </summary>
+		public bool IsDisposed => _isDisposed;
+
+		/// <summary>
+		/// Each <see cref="BeamContext"/> has a set of components that need to live on a gameObject in the scene.
+		/// </summary>
+		public GameObject GameObject => _gob ? _gob : _parent.GameObject;
+
+		public bool IsInitialized => _initPromise != null;
+
+		private IDependencyProviderScope _serviceScope;
+		private bool _isDisposed;
+		private GameObject _gob;
+		private Promise _initPromise;
+		private BeamContext _parent;
+		private HashSet<BeamContext> _children = new HashSet<BeamContext>();
+
+
+		#endregion
+
+		#region Service Accessors
+
+		public long PlayerId {
+			get {
+				var userContext = ServiceProvider.GetService<IUserContext>();
+				if (userContext == this) return AuthorizedUser?.Value?.id ?? 0;
+				return userContext.UserId;
+			}
+		}
 
 		public string Cid => _requester.Cid;
 
 		public string Pid => _requester.Pid; // TODO: rename to rid
 
-		public ObservableAccessToken AccessToken = new ObservableAccessToken();
-
-		public IDependencyProvider ServiceProvider => _serviceScope;
-		private IDependencyProviderScope _serviceScope;
+		public AccessToken AccessToken => _requester.Token;
 
 		public IBeamableRequester Requester => ServiceProvider.GetService<IBeamableRequester>();
 
-		public bool IsDisposed => _isDisposed;
+
+		private ApiServices _api;
+		public ApiServices Api => _api ?? (_api = new ApiServices(this));
+
+		private AccessTokenStorage _tokenStorage;
+		private EnvironmentData _environment;
+		private PlatformRequester _requester;
+
+		private IAuthService _authService;
+		private IConnectivityService _connectivityService;
+		private NotificationService _notification;
+		private IPubnubSubscriptionManager _pubnubSubscriptionManager;
+		private IPubnubNotificationService _pubnubNotificationService;
+		private ISessionService _sessionService;
+		private IHeartbeatService _heartbeatService;
+		private BeamableBehaviour _behaviour;
+
 
 		// Lazy initialization of services.
 		[SerializeField]
@@ -93,35 +150,13 @@ namespace Beamable
 				? _playerStats
 				: (_playerStats = ServiceProvider.GetService<PlayerStats>());
 
+		#endregion
 
-		/// <summary>
-		/// Each <see cref="BeamContext"/> has a set of components that need to live on a gameObject in the scene.
-		/// </summary>
-		public GameObject GameObject { get; private set; }
 
-		private ApiServices _api;
-		public ApiServices Api => _api ?? (_api = new ApiServices(this));
+		private BeamContext()
+		{
 
-		private AccessTokenStorage _tokenStorage;
-		private EnvironmentData _environment;
-		private PlatformRequester _requester;
-
-		private IAuthService _authService;
-		private IConnectivityService _connectivityService;
-		private NotificationService _notification;
-		private IPubnubSubscriptionManager _pubnubSubscriptionManager;
-		private IPubnubNotificationService _pubnubNotificationService;
-		private ISessionService _sessionService;
-		private IHeartbeatService _heartbeatService;
-		private BeamableBehaviour _behaviour;
-
-		private Promise _initPromise;
-
-		private bool _isDisposed;
-
-		public bool IsInitialized => _initPromise != null;
-
-		private BeamContext(){}
+		}
 
 		private void Init(string cid,
 		                  string pid,
@@ -152,30 +187,66 @@ namespace Beamable
 				behaviour = nextBehaviour;
 			}
 
-			GameObject = behaviour.gameObject;
-
+			_gob = behaviour.gameObject;
 			builder = builder.Fork();
-			builder.AddScoped<PlatformRequester, PlatformRequester>(
+
+			RegisterServices(builder);
+
+			_serviceScope = builder.Build();
+
+			InitServices(cid, pid);
+
+			_initPromise = InitializeUser();
+			// _initPromise.Then(_ => PlayerId = AuthorizedUser.Value.id);
+		}
+
+		public BeamContext ObservePlayer(long otherPlayerId)
+		{
+			return Fork(builder => {
+				builder
+					.RemoveIfExists<IUserContext>()
+					.AddScoped<IUserContext>(new SimpleUserContext(otherPlayerId))
+					;
+			});
+		}
+
+		public BeamContext Fork(Action<IDependencyBuilder> configure)
+		{
+			var ctx = new BeamContext();
+			ctx._parent = this;
+			ctx.AuthorizedUser = AuthorizedUser;
+			_children.Add(ctx);
+
+			var subScope = _serviceScope.Fork(configure);
+			ctx._serviceScope = subScope;
+			ctx.InitServices(Cid, Pid);
+			return ctx;
+		}
+
+		private void RegisterServices(IDependencyBuilder builder)
+		{
+			builder.AddSingleton<PlatformRequester, PlatformRequester>(
 				provider => new PlatformRequester(
 					_environment.ApiUrl,
 					provider.GetService<AccessTokenStorage>(),
 					provider.GetService<IConnectivityService>()
 				)
 			);
-			builder.AddScoped<BeamableApiRequester>(
+			builder.AddSingleton<BeamableApiRequester>(
 				provider => new BeamableApiRequester(
 					_environment.ApiUrl,
 					provider.GetService<AccessTokenStorage>(),
 					provider.GetService<IConnectivityService>())
 			);
 
-			builder.AddScoped<BeamContext>(this);
-			builder.AddScoped<IPlatformService>(this);
-			builder.AddScoped<IGameObjectContext>(this);
-			builder.AddScoped(new AccessTokenStorage(playerCode));
-			_serviceScope = builder.Build();
-			behaviour.Initialize(this);
+			builder.AddSingleton<BeamContext>(this);
+			builder.AddSingleton<IPlatformService>(this);
+			builder.AddSingleton<IGameObjectContext>(this);
+			builder.AddSingleton(new AccessTokenStorage(PlayerCode));
+		}
 
+		private void InitServices(string cid, string pid)
+		{
 			_tokenStorage = ServiceProvider.GetService<AccessTokenStorage>();
 			_environment = ServiceProvider.GetService<EnvironmentData>();
 			_authService = ServiceProvider.GetService<IAuthService>();
@@ -192,10 +263,6 @@ namespace Beamable
 			_sessionService = ServiceProvider.GetService<ISessionService>();
 			_heartbeatService = ServiceProvider.GetService<IHeartbeatService>();
 			_behaviour = ServiceProvider.GetService<BeamableBehaviour>();
-
-			UserData.OnUpdated += () => PlayerId.Value = UserData.Value.id;
-
-			_initPromise = InitializeUser();
 		}
 
 
@@ -208,7 +275,6 @@ namespace Beamable
 			                                   rsp.access_token,
 			                                   rsp.refresh_token,
 			                                   rsp.expires_in);
-			AccessToken.Value = _requester.Token;
 
 			// TODO: Where was this being used in the past?
 			// _beamableApiRequester.Token = _requester.Token;
@@ -219,24 +285,22 @@ namespace Beamable
 		private void ClearToken()
 		{
 			_requester.DeleteToken();
-			AccessToken.Value = null;
 		}
 
 		private async Promise StartNewSession()
 		{
 			var adId = await AdvertisingIdentifier.GetIdentifier();
-			await _sessionService.StartSession(UserData.Value, adId, _requester.Language);
+			await _sessionService.StartSession(AuthorizedUser.Value, adId, _requester.Language);
 		}
 
 		private async Promise InitializeUser()
 		{
 			// Create a new account
-			AccessToken.Value = _tokenStorage.LoadTokenForRealmImmediate(Cid, Pid);
-			_requester.Token = AccessToken.Value;
+			_requester.Token = _tokenStorage.LoadTokenForRealmImmediate(Cid, Pid);
 			_requester.Language = "en"; // TODO: Put somewhere
 
 
-			if (AccessToken.IsNullOrUnassigned)
+			if (AccessToken == null)
 			{
 				var rsp = await _authService.CreateUser();
 				await SaveToken(rsp);
@@ -244,11 +308,11 @@ namespace Beamable
 			}
 
 			// Refresh token
-			if (AccessToken.Value.IsExpired)
+			if (AccessToken.IsExpired)
 			{
 				try
 				{
-					var rsp = await _authService.LoginRefreshToken(AccessToken.Value.RefreshToken);
+					var rsp = await _authService.LoginRefreshToken(AccessToken.RefreshToken);
 					await SaveToken(rsp);
 				}
 				catch (NoConnectivityException)
@@ -258,13 +322,13 @@ namespace Beamable
 			}
 
 			// Fetch User
-			UserData.Value = await _authService.GetUser();
+			AuthorizedUser.Value = await _authService.GetUser();
 
 			// Subscribe pubnub stuff
 			_pubnubSubscriptionManager.UnsubscribeAll();
 			_pubnubSubscriptionManager.SubscribeToProvider();
 			OnReloadUser?.Invoke();
-			Debug.Log("Got User " + UserData.Value.id, GameObject);
+			Debug.Log("Got User " + AuthorizedUser.Value.id, GameObject);
 
 			// Start Session
 			await StartNewSession();
@@ -307,6 +371,7 @@ namespace Beamable
 				if (existingContext.IsDisposed)
 				{
 					existingContext.Init(cid, pid, playerCode, beamable, Beam.DependencyBuilder);
+					existingContext._behaviour.Initialize(existingContext);
 				}
 
 				return existingContext;
@@ -316,6 +381,7 @@ namespace Beamable
 			// var ctx = new BeamContext(cid, pid, playerCode, beamable, Beam.DependencyBuilder);
 			var ctx = new BeamContext();
 			ctx.Init(cid, pid, playerCode, beamable, Beam.DependencyBuilder);
+			ctx._behaviour.Initialize(ctx);
 			_playerCodeToContext[playerCode] = ctx;
 			return ctx;
 		}
@@ -374,10 +440,8 @@ namespace Beamable
 
 		}
 
-		public void View(long otherPlayerId)
-		{
-			
-		}
+
+
 
 		/// <summary>
 		/// Clear the authorization token for the <see cref="PlayerCode"/>, then internally calls <see cref="Dispose"/>, and finally re-initializes the context.
@@ -396,15 +460,15 @@ namespace Beamable
 			TimeOverrideChanged?.Invoke();
 		}
 
-		long IUserContext.UserId => PlayerId.Value;
+		long IUserContext.UserId => PlayerId;
 
 		public event Action OnShutdown;
 		public event Action OnShutdownComplete;
 		public event Action OnReloadUser;
 		public event Action TimeOverrideChanged;
 
-		User IPlatformService.User => UserData.Value;
-		Promise<Unit> IPlatformService.OnReady => _initPromise;
+		User IPlatformService.User => AuthorizedUser.Value;
+		public Promise<Unit> OnReady => _initPromise;
 		INotificationService IPlatformService.Notification => _notification;
 		IPubnubNotificationService IPlatformService.PubnubNotificationService => _pubnubNotificationService;
 		IConnectivityService IPlatformService.ConnectivityService => _connectivityService;

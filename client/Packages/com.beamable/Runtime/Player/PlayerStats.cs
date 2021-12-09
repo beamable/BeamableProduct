@@ -3,6 +3,7 @@
 using Beamable.Api;
 using Beamable.Api.Stats;
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Player;
@@ -82,6 +83,7 @@ namespace Beamable.Player
 	public class PlayerStats : AbsObservableReadonlyDictionary<PlayerStat, SerializableDictionaryStringToPlayerStat>, IBeamableDisposable
 	{
 		private readonly IPlatformService _platform;
+		private readonly IUserContext _userContext;
 		private readonly StatsService _statService;
 		private readonly ISdkEventService _eventService;
 		private readonly CoroutineService _coroutineService;
@@ -93,9 +95,10 @@ namespace Beamable.Player
 		private Dictionary<string, string> _pendingUpdates = new Dictionary<string, string>();
 
 
-		public PlayerStats(IPlatformService platform, StatsService statService, ISdkEventService eventService, CoroutineService coroutineService)
+		public PlayerStats(IPlatformService platform, IUserContext userContext, StatsService statService, ISdkEventService eventService, CoroutineService coroutineService)
 		{
 			_platform = platform;
+			_userContext = userContext;
 			_statService = statService;
 			_eventService = eventService;
 			_coroutineService = coroutineService;
@@ -129,11 +132,15 @@ namespace Beamable.Player
 					break;
 
 				case "commit":
-					await _statService.SetStats("public", _pendingUpdates);
-					await Refresh();
+					if (_pendingUpdates.Count == 0) return;
+
+					var network = _statService.SetStats("public", _pendingUpdates);
 					_pendingUpdates.Clear();
+					await network;
+					await Refresh();
 					_commitSync?.CompleteSuccess();
 					_commitSync = new Promise();
+
 					break;
 			}
 		}
@@ -142,7 +149,7 @@ namespace Beamable.Player
 		{
 			await _platform.OnReady;
 
-			var stats = await _statService.GetStats("client", "public", "player", _platform.UserId);
+			var stats = await _statService.GetStats("client", "public", "player", _userContext.UserId);
 
 			var nextData = new SerializableDictionaryStringToPlayerStat();
 			foreach (var kvp in stats)
