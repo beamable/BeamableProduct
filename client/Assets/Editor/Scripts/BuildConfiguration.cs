@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using UnityEditor;
 
-public static class BuildSampleProject
+public class BuildSampleProject
 {
    public readonly static string teamId = "A6C4565DLF";
    private static string[] GetActiveScenes()
@@ -12,7 +12,7 @@ public static class BuildSampleProject
 
    private static void BuildActiveTarget()
    {
-      BuildPipeline.BuildPlayer(GetActiveScenes(), "dist/iOS/", BuildTarget.iOS, BuildOptions.None);
+      BuildPipeline.BuildPlayer(GetActiveScenes(), "dist/iOS/iOS", BuildTarget.iOS, BuildOptions.None);
    }
    [MenuItem("Beamable/SampleBuild/Development")]
    public static void Development()
