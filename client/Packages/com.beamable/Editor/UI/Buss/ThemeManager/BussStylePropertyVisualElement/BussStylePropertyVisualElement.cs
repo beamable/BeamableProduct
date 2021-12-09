@@ -51,6 +51,7 @@ namespace Beamable.Editor.UI.Components
 			if (propertyType is SingleColorBussProperty singleColorBussProperty)
 			{
 				ColorField field = new ColorField();
+				// field.AddToClassList("equalWidth");
 				field.value = singleColorBussProperty.Color;
 				_valueParent.Add(field);
 

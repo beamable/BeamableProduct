@@ -5,22 +5,34 @@
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
-    <engine:VisualElement name="styleContainer">
-        <engine:VisualElement name="header">
+    <engine:VisualElement name="cardContainer">
+        <engine:VisualElement name="cardHeader">
             <engine:VisualElement name="colorBlock"/>
             <engine:VisualElement name="styleIdParent"/>
-            <engine:VisualElement name="button01" class="button largeButton">
-                <engine:TextElement text="Add new rule"/>
-            </engine:VisualElement>
-            <engine:VisualElement name="button02" class="button mediumButton">
-                <engine:TextElement text="Show all"/>
-            </engine:VisualElement>
-            <engine:VisualElement name="button03" class="button smallButton"/>
-            <engine:VisualElement name="button04" class="button smallButton"/>
-            <engine:VisualElement name="button05" class="button smallButton"/>
-            <engine:VisualElement name="button06" class="button smallButton"/>
+            <engine:VisualElement name="editButton" class="button edit"/>
+            <engine:VisualElement name="wizardButton" class="button wizard"/>
+            <engine:VisualElement name="undoButton" class="button undo"/>
+            <engine:VisualElement name="cleanAllButton" class="button cleanAll"/>
         </engine:VisualElement>
-        <engine:VisualElement name="properties"/>
+
+        <engine:VisualElement name="variables">
+            <engine:VisualElement name="sectionHeader">
+                <engine:Label name="sectionLabel" text="Applied variables"/>
+                <engine:VisualElement name="divider"/>
+                <engine:VisualElement name="addVariableButton" class="add"/>
+            </engine:VisualElement>
+        </engine:VisualElement>
+        
+        <engine:VisualElement name="properties">
+            <engine:VisualElement name="sectionHeader">
+                <engine:Label name="sectionLabel" text="Rules"/>
+                <engine:VisualElement name="divider"/>
+                <engine:VisualElement name="showAllButton" class="button mediumButton">
+                    <engine:TextElement text="Show All" class="headerButton"/>
+                </engine:VisualElement>
+                <engine:VisualElement name="addRuleButton" class="add"/>
+            </engine:VisualElement>
+        </engine:VisualElement>
     </engine:VisualElement>
 
 </UXML>
