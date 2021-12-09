@@ -12,7 +12,7 @@ public class BuildSampleProject
 
    private static void BuildActiveTarget()
    {
-      BuildPipeline.BuildPlayer(GetActiveScenes(), "dist/iOS/iOS", BuildTarget.iOS, BuildOptions.None);
+      BuildPipeline.BuildPlayer(GetActiveScenes(), "/github/workspace/dist/iOS/iOS", BuildTarget.iOS, BuildOptions.None);
    }
    [MenuItem("Beamable/SampleBuild/Development")]
    public static void Development()
