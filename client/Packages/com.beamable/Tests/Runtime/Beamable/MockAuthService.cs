@@ -131,7 +131,7 @@ namespace Packages.Beamable.Runtime.Tests.Beamable
            throw new NotImplementedException();
         }
         
-        public Promise<User> RemoveSpecificDeviceIds(string[] deviceIds)
+        public Promise<User> RemoveDeviceIds(string[] deviceIds)
         {
 	        throw new NotImplementedException();
         }

@@ -23,7 +23,7 @@ namespace Beamable.Api.Auth
         Promise<bool> IsThisDeviceIdAvailable();
         Promise<User> RegisterDeviceId();
         Promise<User> RemoveDeviceId();
-        Promise<User> RemoveSpecificDeviceIds(string[] deviceIds);
+        Promise<User> RemoveDeviceIds(string[] deviceIds);
         Promise<User> RemoveAllDeviceIds();
         Promise<TokenResponse> LoginDeviceId();
     }
@@ -88,18 +88,13 @@ namespace Beamable.Api.Auth
 	        var ids = new string[] {SystemInfo.deviceUniqueIdentifier};
             return RemoveDeviceIds(ids);
         }
-        
-        public Promise<User> RemoveSpecificDeviceIds(string[] deviceIds)
-        {
-	        return RemoveDeviceIds(deviceIds);
-        }
-        
+
         public Promise<User> RemoveAllDeviceIds()
         {
 	        return RemoveDeviceIds(null);
         }
 
-        private Promise<User> RemoveDeviceIds(string[] deviceIds)
+        public Promise<User> RemoveDeviceIds(string[] deviceIds)
         {
 	        return Requester.Request<User>(Method.DELETE, DEVICE_DELETE_URI, DeleteDevicesRequest.Create(deviceIds));
         }
