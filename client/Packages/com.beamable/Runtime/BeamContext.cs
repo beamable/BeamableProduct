@@ -23,6 +23,45 @@ using UnityEngine;
 namespace Beamable
 {
 
+	public interface IObservedPlayer : IUserContext
+	{
+		PlayerStats Stats { get; }
+	}
+
+	public class AuthorizedPlayer : IObservedPlayer
+	{
+		private readonly IDependencyProvider _provider;
+
+		[SerializeField]
+		private PlayerAnnouncements _announcements;
+		[SerializeField]
+		private PlayerCurrencyGroup _currency;
+		[SerializeField]
+		private PlayerStats _playerStats;
+
+		public AuthorizedPlayer(IDependencyProvider provider)
+		{
+			_provider = provider;
+		}
+		public PlayerAnnouncements Announcements =>
+			_announcements?.IsInitialized ?? false
+				? _announcements
+				: (_announcements = _provider.GetService<PlayerAnnouncements>());
+
+		public PlayerCurrencyGroup Currencies =>
+			_currency?.IsInitialized ?? false
+				? _currency
+				: (_currency = _provider.GetService<PlayerCurrencyGroup>());
+
+		public PlayerStats Stats =>
+			_playerStats?.IsInitialized ?? false
+				? _playerStats
+				: (_playerStats = _provider.GetService<PlayerStats>());
+
+		public long UserId => _provider.GetService<IUserContext>().UserId;
+	}
+
+
 	/// <summary>
 	/// <para>
 	/// The <see cref="BeamContext"/> represents a player's session and is equipped with all required services.
@@ -49,6 +88,9 @@ namespace Beamable
 	[Serializable]
 	public class BeamContext : IPlatformService, IGameObjectContext
 	{
+
+		public AuthorizedPlayer Me => new AuthorizedPlayer(ServiceProvider);
+
 
 		#region Internal State
 		/// <summary>
@@ -128,28 +170,29 @@ namespace Beamable
 
 
 		// Lazy initialization of services.
-		[SerializeField]
-		private PlayerAnnouncements _announcements;
-		[SerializeField]
-		private PlayerCurrencyGroup _currency;
-		[SerializeField]
-		private PlayerStats _playerStats;
+		// [SerializeField]
+		// private PlayerAnnouncements _announcements;
+		// [SerializeField]
+		// private PlayerCurrencyGroup _currency;
+		// [SerializeField]
+		// private PlayerStats _playerStats;
+		//
+		// public PlayerAnnouncements Announcements =>
+		// 	_announcements?.IsInitialized ?? false
+		// 		? _announcements
+		// 		: (_announcements = ServiceProvider.GetService<PlayerAnnouncements>());
+		//
+		// public PlayerCurrencyGroup Currencies =>
+		// 	_currency?.IsInitialized ?? false
+		// 		? _currency
+		// 		: (_currency = ServiceProvider.GetService<PlayerCurrencyGroup>());
+		//
+		// public PlayerStats Stats =>
+		// 	_playerStats?.IsInitialized ?? false
+		// 		? _playerStats
+		// 		: (_playerStats = ServiceProvider.GetService<PlayerStats>());
 
-		public PlayerAnnouncements Announcements =>
-			_announcements?.IsInitialized ?? false
-				? _announcements
-				: (_announcements = ServiceProvider.GetService<PlayerAnnouncements>());
-
-		public PlayerCurrencyGroup Currencies =>
-			_currency?.IsInitialized ?? false
-				? _currency
-				: (_currency = ServiceProvider.GetService<PlayerCurrencyGroup>());
-
-		public PlayerStats Stats =>
-			_playerStats?.IsInitialized ?? false
-				? _playerStats
-				: (_playerStats = ServiceProvider.GetService<PlayerStats>());
-
+		// public IObservedPlayer Me => this;
 		#endregion
 
 
@@ -200,17 +243,17 @@ namespace Beamable
 			// _initPromise.Then(_ => PlayerId = AuthorizedUser.Value.id);
 		}
 
-		public BeamContext ObservePlayer(long otherPlayerId)
+		public IObservedPlayer ObservePlayer(long otherPlayerId)
 		{
 			return Fork(builder => {
 				builder
 					.RemoveIfExists<IUserContext>()
 					.AddScoped<IUserContext>(new SimpleUserContext(otherPlayerId))
 					;
-			});
+			}).Me;
 		}
 
-		public BeamContext Fork(Action<IDependencyBuilder> configure)
+		private BeamContext Fork(Action<IDependencyBuilder> configure)
 		{
 			var ctx = new BeamContext();
 			ctx._parent = this;
@@ -402,6 +445,7 @@ namespace Beamable
 
 		public static BeamContext ForContext(string playerCode="") => Instantiate(playerCode: playerCode);
 
+		public static BeamContext EditorContext => ForContext("editor");
 		/// <summary>
 		/// This method will tear down a <see cref="BeamContext"/> and notify all internal services that the context should be destroyed.
 		/// All coroutines associated with the context will stop.
