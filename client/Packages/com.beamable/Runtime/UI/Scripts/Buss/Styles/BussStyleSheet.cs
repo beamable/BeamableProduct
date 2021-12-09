@@ -22,7 +22,7 @@ namespace Beamable.UI.Buss
 
 		private void OnValidate()
 		{
-			BussConfiguration.Instance.UpdateStyleSheet(this);
+			BussConfiguration.UseConfig(conf => conf.UpdateStyleSheet(this));
 			OnChange?.Invoke();
 		}
 
@@ -64,7 +64,7 @@ namespace Beamable.UI.Buss
 
 		public BussSelector Selector => BussSelectorParser.Parse(_selector);
 		public string SelectorString => _selector;
-		
+
 	    public static BussStyleRule Create(string selector, List<BussPropertyProvider> properties)
 	    {
 		    return new BussStyleRule() {_selector = selector, _properties = properties};
