@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using UnityEditor;
 
-public static class BuildSampleProject
+public class BuildSampleProject
 {
    public readonly static string teamId = "A6C4565DLF";
    private static string[] GetActiveScenes()
