@@ -4,8 +4,6 @@ using System.Linq;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using Beamable.Coroutines;
-using Beamable.Platform.SDK;
-using Beamable.Platform.SDK.Auth;
 using Beamable.UI.Scripts;
 using TMPro;
 using UnityEngine;
@@ -36,7 +34,6 @@ namespace Beamable.AccountManagement
       public AccountCustomizationBehaviour CustomizationBehaviour;
       public bool ShowMoreAccounts;
       private bool _wereOtherAccountsHidden;
-      private bool _shouldHidePromo;
       private bool _isAccountEditorOpen;
       private User _user;
       private Promise<User> _mainAccountPromise;

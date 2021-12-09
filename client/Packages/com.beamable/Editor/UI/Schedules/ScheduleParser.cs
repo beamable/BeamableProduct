@@ -146,7 +146,7 @@ namespace Beamable.Editor.Schedules
 	                new List<string>{"*"}, 
 	                selectedDays);
                 definitions.Add(startDefinition);
-
+              
                 if (toMinute == 0)
                 {
 	                var middleDefinition = new ScheduleDefinition(
@@ -190,8 +190,7 @@ namespace Beamable.Editor.Schedules
 		                new List<string>{"*"}, 
 		                selectedDays);
 	                definitions.Add(endDefinition);
-                }
-                
+                }       
             }
 
             return definitions;

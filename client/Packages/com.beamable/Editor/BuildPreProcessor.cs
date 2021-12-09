@@ -1,7 +1,7 @@
 using System.IO;
 using Beamable.Common.Content;
+using Beamable.Content;
 using Beamable.Editor.Content;
-using Modules.Content;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 
