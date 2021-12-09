@@ -1,4 +1,4 @@
-namespace Modules.Inventory.Prototype.LanguageLocalization
+namespace Beamable.Modules.Inventory.LanguageLocalization
 {
     public class LocalizationHelper
     {
