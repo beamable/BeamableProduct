@@ -78,7 +78,7 @@ namespace Beamable.Api.Auth
             return UpdateDeviceId(RegisterDeviceIdRequest.Create());
         }
         
-        private Promise<User> UpdateDeviceId(object requestBody)
+        private Promise<User> UpdateDeviceId(RegisterDeviceIdRequest requestBody)
         {
 	        return Requester.Request<User>(Method.PUT, DEVICE_ID_URI, requestBody);
         }
