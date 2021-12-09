@@ -19,7 +19,7 @@
             <engine:VisualElement name="sectionHeader">
                 <engine:Label name="sectionLabel" text="Applied variables"/>
                 <engine:VisualElement name="divider"/>
-                <engine:VisualElement name="addVariableButton" class="add"/>
+                <engine:VisualElement name="addVariableButton"/>
             </engine:VisualElement>
         </engine:VisualElement>
         
@@ -27,10 +27,10 @@
             <engine:VisualElement name="sectionHeader">
                 <engine:Label name="sectionLabel" text="Rules"/>
                 <engine:VisualElement name="divider"/>
-                <engine:VisualElement name="showAllButton" class="button mediumButton">
-                    <engine:TextElement text="Show All" class="headerButton"/>
+                <engine:VisualElement name="showAllButton" class="button mediumButton headerButton">
+                    <engine:TextElement text="Show All"/>
                 </engine:VisualElement>
-                <engine:VisualElement name="addRuleButton" class="add"/>
+                <engine:VisualElement name="addRuleButton"/>
             </engine:VisualElement>
         </engine:VisualElement>
     </engine:VisualElement>
