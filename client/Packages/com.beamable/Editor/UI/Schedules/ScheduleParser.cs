@@ -102,7 +102,7 @@ namespace Beamable.Editor.Schedules
             {
                 var definition = new ScheduleDefinition(
 	                new List<string>{"*"}, 
-	                ConvertIntoRangeList(fromMinute, toMinute),
+	                ConvertIntoRangeList(fromMinute, toMinute - 1),
 	                new List<string> {$"{fromHour}"}, 
 	                new List<string> {"*"}, 
 	                new List<string> {"*"}, 
@@ -112,35 +112,28 @@ namespace Beamable.Editor.Schedules
             }
             else if (hoursDelta == 1)
             {
-	            var definition = new ScheduleDefinition(
-		            new List<string>{"*"}, 
-		            ConvertIntoRangeList(fromMinute, toMinute), 
-		            new List<string> {$"{fromHour}"}, 
-		            new List<string> {"*"}, 
-		            new List<string> {"*"}, 
-		            new List<string> {"*"}, 
+	            var startDefinition = new ScheduleDefinition(
+		            new List<string> {"*"},
+		            ConvertIntoRangeList(fromMinute, 59),
+		            new List<string> {$"{fromHour}"},
+		            new List<string> {"*"},
+		            new List<string> {"*"},
+		            new List<string> {"*"},
 		            selectedDays);
-	            definitions.Add(definition);
-	            
-                var startDefinition = new ScheduleDefinition(
-	                new List<string>{"*"},  
-	                ConvertIntoRangeList(fromMinute, 59),
-	                new List<string> {$"{fromHour}"},  
-	                new List<string> {"*"}, 
-	                new List<string>{"*"}, 
-	                new List<string>{"*"}, 
-	                selectedDays);
-                definitions.Add(startDefinition);
+	            definitions.Add(startDefinition);
 
-                var endDefinition = new ScheduleDefinition(
-	                new List<string>{"*"}, 
-	                ConvertIntoRangeList(0, toMinute),
-	                new List<string> {$"{toHour}"}, 
-	                new List<string> {"*"}, 
-	                new List<string>{"*"}, 
-	                new List<string>{"*"}, 
-	                selectedDays);
-                definitions.Add(endDefinition);
+	            if (fromMinute != 0 || toMinute != 0)
+	            {
+		            var endDefinition = new ScheduleDefinition(
+			            new List<string> {"*"},
+			            ConvertIntoRangeList(0, toMinute-1),
+			            new List<string> {$"{toHour}"},
+			            new List<string> {"*"},
+			            new List<string> {"*"},
+			            new List<string> {"*"},
+			            selectedDays);
+		            definitions.Add(endDefinition);
+	            }
             }
             else
             {
@@ -153,25 +146,51 @@ namespace Beamable.Editor.Schedules
 	                new List<string>{"*"}, 
 	                selectedDays);
                 definitions.Add(startDefinition);
-
-                var middleDefinition = new ScheduleDefinition(
-	                new List<string> {"*"},
-	                new List<string> {"*"},
-	                hoursDelta == 2 ? new List<string> {$"{fromHour+1}"} : ConvertIntoRangeList(fromHour + 1, toHour - 1),
-					new List<string> {"*"}, 
-					new List<string>{"*"},
-					new List<string>{"*"}, 
-					selectedDays);
-
-                var endDefinition = new ScheduleDefinition(
-	                new List<string>{"*"}, 
-	                ConvertIntoRangeList(0, toMinute),
-	                new List<string> {$"{toHour}"}, 
-	                new List<string> {"*"}, 
-	                new List<string>{"*"}, 
-	                new List<string>{"*"}, 
-	                selectedDays);
-                definitions.Add(endDefinition);
+              
+                if (toMinute == 0)
+                {
+	                var middleDefinition = new ScheduleDefinition(
+		                new List<string> {"*"},
+		                new List<string> {"*"},
+		                hoursDelta == 2 ? new List<string> {$"{fromHour+1}"} : ConvertIntoRangeList(fromHour + 1, toHour - 2),
+		                new List<string> {"*"}, 
+		                new List<string>{"*"},
+		                new List<string>{"*"}, 
+		                selectedDays);
+	                definitions.Add(middleDefinition);
+                
+	                var endDefinition = new ScheduleDefinition(
+		                new List<string>{"*"}, 
+		                ConvertIntoRangeList(0, 59),
+		                new List<string> {$"{toHour - 1}"}, 
+		                new List<string> {"*"}, 
+		                new List<string>{"*"}, 
+		                new List<string>{"*"}, 
+		                selectedDays);
+	                definitions.Add(endDefinition);
+                }
+                else
+                {
+	                var middleDefinition = new ScheduleDefinition(
+		                new List<string> {"*"},
+		                new List<string> {"*"},
+		                hoursDelta == 2 ? new List<string> {$"{fromHour+1}"} : ConvertIntoRangeList(fromHour + 1, toHour - 1),
+		                new List<string> {"*"}, 
+		                new List<string>{"*"},
+		                new List<string>{"*"}, 
+		                selectedDays);
+	                definitions.Add(middleDefinition);
+                
+	                var endDefinition = new ScheduleDefinition(
+		                new List<string>{"*"}, 
+		                ConvertIntoRangeList(0, toMinute-1),
+		                new List<string> {$"{toHour}"}, 
+		                new List<string> {"*"}, 
+		                new List<string>{"*"}, 
+		                new List<string>{"*"}, 
+		                selectedDays);
+	                definitions.Add(endDefinition);
+                }       
             }
 
             return definitions;

@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using Beamable.Common;
+using Beamable.Content;
 using Beamable.Editor.Content;
-using Modules.Content;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
