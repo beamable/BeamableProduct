@@ -246,7 +246,7 @@ namespace Beamable.Api
 			}
 
 			Push = new PushService(_requester);
-			Session = new SessionService(_requester);
+			Session = new SessionService(_requester, ServiceManager.ResolveIfAvailable<SessionParameterProvider>(), ServiceManager.ResolveIfAvailable<SessionDeviceOptions>());
 			Social = new SocialService(this, _requester);
 			Stats = new StatsService(this, _requester, UnityUserDataCache<Dictionary<string, string>>.CreateInstance);
 			Tournaments = new TournamentService(Stats, _requester, this);

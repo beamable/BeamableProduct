@@ -1,9 +1,11 @@
 // unset
 
+using Beamable.AccountManagement;
 using Beamable.Api;
 using Beamable.Api.Analytics;
 using Beamable.Api.Announcements;
 using Beamable.Api.Auth;
+using Beamable.Api.Caches;
 using Beamable.Api.CloudSaving;
 using Beamable.Api.Commerce;
 using Beamable.Api.Connectivity;
@@ -26,6 +28,7 @@ using Beamable.Common.Api.Notifications;
 using Beamable.Common.Api.Tournaments;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Player;
+using Beamable.Config;
 using Beamable.Content;
 using Beamable.Coroutines;
 using Beamable.Experimental.Api.Calendars;
@@ -34,13 +37,13 @@ using Beamable.Experimental.Api.Matchmaking;
 using Beamable.Experimental.Api.Sim;
 using Beamable.Experimental.Api.Social;
 using Beamable.Player;
-using Beamable.Service;
+using Beamable.Sessions;
 using Core.Platform.SDK;
+using Modules.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using UnityEngine;
 
 namespace Beamable
 {
@@ -49,8 +52,16 @@ namespace Beamable
 		public static IDependencyBuilder DependencyBuilder;
 		static Beam()
 		{
-			// set the default promise error handlers
+			// Set the default promise error handlers
 			PromiseExtensions.SetupDefaultHandler();
+
+			// The config-database is what sits inside of config-defaults
+			ConfigDatabase.Init();
+
+			// Flush cache that wasn't created with this version of the game.
+
+			OfflineCache.FlushInvalidCache();
+
 
 			// register all services that are not context specific.
 			DependencyBuilder = new DependencyBuilder()
@@ -61,7 +72,6 @@ namespace Beamable
 				                    (manager, provider) => manager.Initialize(provider.GetService<IPlatformService>()))
 			                    .AddSingleton<IBeamableRequester, PlatformRequester>(
 				                    provider => provider.GetService<PlatformRequester>())
-			                    .AddSingleton(ServiceManager.ResolveIfAvailable<IAuthSettings>())
 			                    .AddSingleton(BeamableEnvironment.Data)
 			                    .AddSingleton<IUserContext>(provider => provider.GetService<IPlatformService>())
 			                    .AddSingleton<IConnectivityService, ConnectivityService>()
@@ -112,10 +122,18 @@ namespace Beamable
 				                    provider => provider.GetService<NotificationService>())
 				;
 
+
+
 			DependencyBuilder.AddSingleton<Promise<IBeamablePurchaser>>(provider => new Promise<IBeamablePurchaser>());
 			DependencyBuilder.AddSingleton<PlayerAnnouncements>();
 			DependencyBuilder.AddScoped<PlayerCurrencyGroup>();
 			DependencyBuilder.AddScoped<PlayerStats>();
+
+			// register module configurations. XXX: move these registrations into their own modules?
+			DependencyBuilder.AddSingleton(SessionConfiguration.Instance.DeviceOptions);
+			DependencyBuilder.AddSingleton(SessionConfiguration.Instance.CustomParameterProvider);
+			DependencyBuilder.AddSingleton(ContentConfiguration.Instance.ParameterProvider);
+			DependencyBuilder.AddSingleton<IAuthSettings>(AccountManagementConfiguration.Instance);
 
 			LoadCustomDependencies();
 		}

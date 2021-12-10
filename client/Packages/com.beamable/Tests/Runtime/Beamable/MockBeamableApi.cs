@@ -110,6 +110,11 @@ namespace Packages.Beamable.Runtime.Tests.Beamable
             throw new NotImplementedException();
         }
 
+        public void ClearDeviceUsers()
+        {
+	        throw new NotImplementedException();
+        }
+
         public Promise<Unit> ApplyToken(TokenResponse response)
         {
             var promise = ApplyTokenDelegate(response);

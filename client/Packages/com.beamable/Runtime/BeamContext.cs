@@ -310,6 +310,7 @@ namespace Beamable
 					provider.GetService<IConnectivityService>())
 			);
 
+			builder.AddSingleton<IBeamableAPI>(provider => Api);
 			builder.AddSingleton<BeamContext>(this);
 			builder.AddSingleton<IPlatformService>(this);
 			builder.AddSingleton<IGameObjectContext>(this);

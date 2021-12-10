@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using Beamable.Common.Dependencies;
+
 using Object = UnityEngine.Object;
 
 #if UNITY_EDITOR
@@ -95,6 +97,12 @@ namespace Beamable.Service
 			Provide(new ServiceContainer<T>(service), overrideExisting);
 		}
 
+		public static void Provide<T>(IDependencyProvider provider, bool overrideExisting = true)
+			where T : class
+		{
+			Provide(new ServiceContainer<T>(provider.GetService<T>()));
+		}
+
 		public static void Remove<T>(IServiceResolver<T> resolver = null)
 			where T : class
 		{
@@ -151,6 +159,19 @@ namespace Beamable.Service
 				return resolver.Resolve();
 			}
 			throw new InvalidOperationException("No service found of type " + typeof(T).Name);
+		}
+
+		public static T ResolveWithProvider<T>(IDependencyProvider provider)
+			where T : class
+		{
+			try
+			{
+				return provider.GetService<T>();
+			}
+			catch
+			{
+				throw new InvalidOperationException("No service found of type " + typeof(T).Name);
+			}
 		}
 
 

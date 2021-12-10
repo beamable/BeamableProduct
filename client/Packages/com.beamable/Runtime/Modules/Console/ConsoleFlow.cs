@@ -113,9 +113,11 @@ namespace Beamable.Console
             _textAutoCompleter = new TextAutoCompleter(ref txtInput, ref txtAutoCompleteSuggestion);
             _consoleHistory = new ConsoleHistory();
 
-            ServiceManager.ProvideWithDefaultContainer(new BeamableConsole());
+            var ctx = BeamContext.ForContext(this);
+            var console = ctx.ServiceProvider.GetService<BeamableConsole>();
 
-            var console = ServiceManager.Resolve<BeamableConsole>();
+            ServiceManager.Provide<BeamableConsole>(ctx.ServiceProvider); // this exists for legacy purposes, for anyone who might be using the service manager to the console...
+
             console.OnLog += Log;
             console.OnExecute += ExecuteCommand;
             console.OnCommandRegistered += RegisterCommand;
@@ -219,7 +221,8 @@ namespace Beamable.Console
             var args = new string[parts.Length - 1];
             for (var i = 1; i < parts.Length; i++) args[i - 1] = parts[i];
 
-            Log(ServiceManager.Resolve<BeamableConsole>().Execute(parts[0], args));
+
+            Log(BeamContext.ForContext(this).ServiceProvider.GetService<BeamableConsole>().Execute(parts[0], args));
         }
 
         private static void RegisterCommand(BeamableConsoleCommandAttribute command, ConsoleCommandCallback callback)

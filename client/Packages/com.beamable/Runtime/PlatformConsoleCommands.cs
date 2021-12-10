@@ -6,6 +6,7 @@ using Beamable.Coroutines;
 using Beamable.Api.Analytics;
 using Beamable.Common.Api.Groups;
 using Beamable.Common.Api.Mail;
+using Beamable.Common.Dependencies;
 using Beamable.Service;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -16,12 +17,16 @@ namespace Beamable.Api
     [BeamableConsoleCommandProvider]
     public class PlatformConsoleCommands
     {
-        private BeamableConsole Console => ServiceManager.Resolve<BeamableConsole>();
-        private CoroutineService CoroutineService => ServiceManager.Resolve<CoroutineService>();
+	    private readonly IDependencyProvider _provider;
+
+	    private BeamableConsole Console => _provider.GetService<BeamableConsole>();
+	    private CoroutineService CoroutineService => _provider.GetService<CoroutineService>();
+	    private IPlatformService PlatformService => _provider.GetService<IPlatformService>();
 
         [Preserve]
-        public PlatformConsoleCommands()
+        public PlatformConsoleCommands(IDependencyProvider provider)
         {
+	        _provider = provider;
         }
 
         [BeamableConsoleCommand("IDFA", "print advertising identifier", "IDFA")]
@@ -36,16 +41,20 @@ namespace Beamable.Api
         [BeamableConsoleCommand("RESET", "Clear the access token and start with a fresh account", "RESET")]
         protected string ResetAccount(params string[] args)
         {
-            var platform = ServiceManager.Resolve<PlatformService>();
-            platform.ClearDeviceUsers();
+            _provider.GetService<IBeamableAPI>().ClearDeviceUsers();
             Console.Log(ForceRestart());
             return "Attempting access token reset...";
         }
 
         [BeamableConsoleCommand(new [] { "FORCE-RESTART", "FR"}, "Restart the game as if it had just been launched", "FORCE-RESTART")]
-        public static string ForceRestart(params string[] args)
+        public string ForceRestart(params string[] args)
         {
-            ServiceManager.OnTeardown();
+
+            // ServiceManager.OnTeardown();
+            var ctx = _provider.GetService<BeamContext>();
+            ctx.Reset().Then(_ => {
+	            Console.Log("Reset complete");
+            });
             return "Game Restarted.";
         }
 
@@ -152,9 +161,7 @@ namespace Beamable.Api
         [BeamableConsoleCommand("DBID", "Show current player DBID", "DBID")]
         private string ShowDBID(params string[] args)
         {
-	        return BeamContext.Default.AuthorizedUser.Value.id.ToString();
-	        // return BeamContext
-            // return ServiceManager.Resolve<PlatformService>().User.id.ToString();
+	        return PlatformService.User.id.ToString();
         }
 
         [BeamableConsoleCommand("HEARTBEAT", "Get heartbeat of a user", "HEARTBEAT <dbid>")]
