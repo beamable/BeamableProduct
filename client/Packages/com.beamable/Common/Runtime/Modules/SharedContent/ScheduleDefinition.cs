@@ -63,12 +63,19 @@ namespace Beamable.Common.Content
        [IgnoreContentField]
        public string cronRawFormat;
 
+      [HideInInspector]
       public List<string> second;
+      [HideInInspector]
       public List<string> minute;
+      [HideInInspector]
       public List<string> hour;
+      [HideInInspector]
       public List<string> dayOfMonth;
+      [HideInInspector]
       public List<string> month;
+      [HideInInspector]
       public List<string> year;
+      [HideInInspector]
       public List<string> dayOfWeek;
 
       public ScheduleDefinition() { }
