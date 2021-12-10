@@ -39,6 +39,7 @@ ResetContentVisualElement > TemplateContainer > #mainVisualElement {
 #buttonStrip {
     flex-direction: row;
     justify-content: flex-end;
+    flex-shrink: 0;
     margin-top: 5px;
     margin-bottom: 5px;
 }
