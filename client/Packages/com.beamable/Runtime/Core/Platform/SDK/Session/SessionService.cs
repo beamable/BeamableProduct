@@ -38,7 +38,7 @@ namespace Beamable.Api.Sessions
       private static long TTL_MS = 60 * 1000;
 
       private UnityUserDataCache<Session> cache;
-      private PlatformRequester _requester;
+      private IBeamableRequester _requester;
 
       private readonly SessionParameterProvider _parameterProvider;
       private readonly SessionDeviceOptions _deviceOptions;
@@ -46,11 +46,13 @@ namespace Beamable.Api.Sessions
       public float SessionStartedAt { get; private set; }
       public float TimeSinceLastSessionStart => Time.realtimeSinceStartup - SessionStartedAt;
 
-      public SessionService (PlatformRequester requester)
+      public SessionService (IBeamableRequester requester, SessionParameterProvider parameterProvider, SessionDeviceOptions deviceOptions)
       {
          _requester = requester;
-         _parameterProvider = ServiceManager.ResolveIfAvailable<SessionParameterProvider>();
-         _deviceOptions = ServiceManager.ResolveIfAvailable<SessionDeviceOptions>();
+         // _parameterProvider = ServiceManager.ResolveIfAvailable<SessionParameterProvider>();
+         // _deviceOptions = ServiceManager.ResolveIfAvailable<SessionDeviceOptions>();
+         _parameterProvider = parameterProvider;
+         _deviceOptions = deviceOptions;
          cache = new UnityUserDataCache<Session>("Session", TTL_MS, resolve);
       }
 

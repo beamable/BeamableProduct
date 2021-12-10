@@ -99,6 +99,7 @@ namespace Beamable
         void UpdateUserData(User user);
         Promise<ISet<UserBundle>> GetDeviceUsers();
         void RemoveDeviceUser(TokenResponse token);
+        void ClearDeviceUsers();
         Promise<Unit> ApplyToken(TokenResponse response);
     }
 
@@ -445,6 +446,8 @@ namespace Beamable
             yield return Yielders.EndOfFrame;
             action();
         }
+
+        public void ClearDeviceUsers() => _platform.ClearDeviceUsers();
 
         public Promise<Unit> ApplyToken(TokenResponse tokenResponse)
         {

@@ -12,12 +12,13 @@ namespace Beamable.Common.Dependencies
 		object GetService(Type t);
 		T GetService<T>();
 		bool CanBuildService<T>();
+		IDependencyProviderScope Fork(Action<IDependencyBuilder> configure = null);
 	}
 
 	public interface IDependencyProviderScope : IDependencyProvider
 	{
 		Promise Dispose();
-		IDependencyProviderScope Fork(Action<IDependencyBuilder> configure=null);
+		// IDependencyProviderScope Fork(Action<IDependencyBuilder> configure=null);
 
 		IDependencyProviderScope Parent { get; }
 		IEnumerable<IDependencyProviderScope> Children { get; }
@@ -237,6 +238,7 @@ namespace Beamable.Common.Dependencies
 		IDependencyBuilder AddSingleton<T>(Func<IDependencyProvider, T> factory);
 		IDependencyBuilder AddSingleton<T>(Func<T> factory);
 		IDependencyBuilder AddSingleton<T>(T service);
+		IDependencyBuilder AddSingleton(Type t);
 		IDependencyBuilder AddSingleton<T>();
 
 		IDependencyProviderScope Build();
@@ -322,6 +324,16 @@ namespace Beamable.Common.Dependencies
 			return this;
 		}
 
+		public IDependencyBuilder AddSingleton(Type type)
+		{
+			SingletonServices.Add(new ServiceDescriptor {
+				Interface = type,
+				Implementation = type,
+				Factory = provider => Instantiate(type, provider)
+			});
+			return this;
+		}
+
 		public IDependencyBuilder AddSingleton<TInterface, TImpl>(Func<TInterface> factory) where TImpl : TInterface =>
 			AddSingleton<TInterface, TImpl>(_ => factory());
 
@@ -342,8 +354,16 @@ namespace Beamable.Common.Dependencies
 
 		private TImpl Instantiate<TImpl>(IDependencyProvider provider)
 		{
+			return (TImpl)Instantiate(typeof(TImpl), provider);
+		}
+
+		private object Instantiate(Type type, IDependencyProvider provider)
+		{
 			// TODO: XXX: This only works for the first constructor; really it should scan for the first constructor it can match
-			var cons = typeof(TImpl).GetConstructors().FirstOrDefault();
+			var cons = type.GetConstructors().FirstOrDefault();
+			if (cons == null)
+				throw new Exception(
+					$"Cannot create {type.Name} via automatic reflection with Dependency Injection. There isn't a single constructor found.");
 			var parameters = cons.GetParameters();
 			var values = new object[parameters.Length];
 			for (var i = 0; i < parameters.Length; i++)
@@ -351,7 +371,7 @@ namespace Beamable.Common.Dependencies
 				values[i] = provider.GetService(parameters[i].ParameterType);
 			}
 
-			var instance = (TImpl)cons?.Invoke(values);
+			var instance = cons?.Invoke(values);
 			return instance;
 		}
 

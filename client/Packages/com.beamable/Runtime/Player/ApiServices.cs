@@ -120,6 +120,12 @@ namespace Beamable.Player
 			_ctx.ServiceProvider.GetService<AccessTokenStorage>().RemoveDeviceRefreshToken(Cid, Pid, token);
 		}
 
+		public void ClearDeviceUsers()
+		{
+			_ctx.ServiceProvider.GetService<PlatformRequester>().DeleteToken();
+			_ctx.ServiceProvider.GetService<AccessTokenStorage>().ClearDeviceRefreshTokens(Cid, Pid);
+		}
+
 		public async Promise<Unit> ApplyToken(TokenResponse response)
 		{
 			await _ctx.ChangeAuthorizedPlayer(response);
