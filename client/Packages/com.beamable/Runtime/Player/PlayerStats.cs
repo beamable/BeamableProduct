@@ -106,7 +106,7 @@ namespace Beamable.Player
 			_updateRoutine = _coroutineService.StartNew("playerStatLoop", Update());
 			_consumer = _eventService.Register(nameof(PlayerStats), HandleEvent);
 
-			// var _ = Refresh(); // automatically start.
+			var _ = Refresh(); // automatically start.
 			IsInitialized = true;
 		}
 

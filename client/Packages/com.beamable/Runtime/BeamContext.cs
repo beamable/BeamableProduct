@@ -19,6 +19,7 @@ using Core.Platform.SDK;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace Beamable
 {
@@ -27,40 +28,6 @@ namespace Beamable
 	{
 		PlayerStats Stats { get; }
 	}
-
-	public class AuthorizedPlayer : IObservedPlayer
-	{
-		private readonly IDependencyProvider _provider;
-
-		[SerializeField]
-		private PlayerAnnouncements _announcements;
-		[SerializeField]
-		private PlayerCurrencyGroup _currency;
-		[SerializeField]
-		private PlayerStats _playerStats;
-
-		public AuthorizedPlayer(IDependencyProvider provider)
-		{
-			_provider = provider;
-		}
-		public PlayerAnnouncements Announcements =>
-			_announcements?.IsInitialized ?? false
-				? _announcements
-				: (_announcements = _provider.GetService<PlayerAnnouncements>());
-
-		public PlayerCurrencyGroup Currencies =>
-			_currency?.IsInitialized ?? false
-				? _currency
-				: (_currency = _provider.GetService<PlayerCurrencyGroup>());
-
-		public PlayerStats Stats =>
-			_playerStats?.IsInitialized ?? false
-				? _playerStats
-				: (_playerStats = _provider.GetService<PlayerStats>());
-
-		public long UserId => _provider.GetService<IUserContext>().UserId;
-	}
-
 
 	/// <summary>
 	/// <para>
@@ -86,11 +53,8 @@ namespace Beamable
 	/// </para>
 	/// </summary>
 	[Serializable]
-	public class BeamContext : IPlatformService, IGameObjectContext
+	public class BeamContext : IPlatformService, IGameObjectContext, IObservedPlayer
 	{
-
-		public AuthorizedPlayer Me => new AuthorizedPlayer(ServiceProvider);
-
 
 		#region Internal State
 		/// <summary>
@@ -152,6 +116,29 @@ namespace Beamable
 		public IBeamableRequester Requester => ServiceProvider.GetService<IBeamableRequester>();
 
 
+		[SerializeField]
+		private PlayerAnnouncements _announcements;
+		[SerializeField]
+		private PlayerCurrencyGroup _currency;
+		[SerializeField]
+		private PlayerStats _playerStats;
+
+		public PlayerAnnouncements Announcements =>
+			_announcements?.IsInitialized ?? false
+				? _announcements
+				: (_announcements = _serviceScope.GetService<PlayerAnnouncements>());
+
+		public PlayerCurrencyGroup Currencies =>
+			_currency?.IsInitialized ?? false
+				? _currency
+				: (_currency = _serviceScope.GetService<PlayerCurrencyGroup>());
+
+		public PlayerStats Stats =>
+			_playerStats?.IsInitialized ?? false
+				? _playerStats
+				: (_playerStats = _serviceScope.GetService<PlayerStats>());
+
+
 		private ApiServices _api;
 		public ApiServices Api => _api ?? (_api = new ApiServices(this));
 
@@ -195,10 +182,73 @@ namespace Beamable
 		// public IObservedPlayer Me => this;
 		#endregion
 
+		#region events
+
+		public event Action OnShutdown;
+		public event Action OnShutdownComplete;
+		public event Action OnReloadUser;
+		public event Action TimeOverrideChanged; // TODO: What to do with the time override?
+
+		public event Action<User> OnUserLoggingOut;
+		public event Action<User> OnUserLoggedIn;
+
+		#endregion
+
 
 		private BeamContext()
 		{
+			AuthorizedUser.OnDataUpdated += user => OnUserLoggedIn?.Invoke(user);
+		}
 
+		/// <summary>
+		/// A <see cref="BeamContext"/> is configured for one authorized user. If wish to change the user, you need to give it a new token.
+		/// You can get <see cref="TokenResponse"/> values from the <see cref="IAuthService"/> by calling various log in methods.
+		///
+		/// This method will <i>mutate</i> the current <see cref="BeamContext"/> instance itself, and returned the mutated object.
+		/// </summary>
+		/// <param name="token"></param>
+		/// <returns>The same instance, but now mutated for the new authorized user</returns>
+		public async Promise<BeamContext> ChangeAuthorizedPlayer(TokenResponse token)
+		{
+			if (AuthorizedUser != null)
+			{
+				OnUserLoggingOut?.Invoke(AuthorizedUser);
+			}
+
+			await Dispose(); // tear down all the services, and do a total reboot with the new user.
+			await SaveToken(token); // set the token so that it gets picked up on the next initialization
+			var ctx = Instantiate(null, PlayerCode);
+
+			Assert.AreEqual(ctx, this);
+			return ctx;
+		}
+
+
+		/// <summary>
+		/// Using the authorization associated with the current context, observe the public data of another player
+		/// </summary>
+		/// <param name="otherPlayerId"></param>
+		public IObservedPlayer ObservePlayer(long otherPlayerId)
+		{
+			return Fork(builder => {
+				builder
+					.RemoveIfExists<IUserContext>()
+					.AddScoped<IUserContext>(new SimpleUserContext(otherPlayerId))
+					;
+			});
+		}
+
+		private BeamContext Fork(Action<IDependencyBuilder> configure)
+		{
+			var ctx = new BeamContext();
+			ctx._parent = this;
+			ctx.AuthorizedUser = AuthorizedUser;
+			_children.Add(ctx);
+
+			var subScope = _serviceScope.Fork(configure);
+			ctx._serviceScope = subScope;
+			ctx.InitServices(Cid, Pid);
+			return ctx;
 		}
 
 		private void Init(string cid,
@@ -238,32 +288,10 @@ namespace Beamable
 			_serviceScope = builder.Build();
 
 			InitServices(cid, pid);
+			_behaviour.Initialize(this);
+
 
 			_initPromise = InitializeUser();
-			// _initPromise.Then(_ => PlayerId = AuthorizedUser.Value.id);
-		}
-
-		public IObservedPlayer ObservePlayer(long otherPlayerId)
-		{
-			return Fork(builder => {
-				builder
-					.RemoveIfExists<IUserContext>()
-					.AddScoped<IUserContext>(new SimpleUserContext(otherPlayerId))
-					;
-			}).Me;
-		}
-
-		private BeamContext Fork(Action<IDependencyBuilder> configure)
-		{
-			var ctx = new BeamContext();
-			ctx._parent = this;
-			ctx.AuthorizedUser = AuthorizedUser;
-			_children.Add(ctx);
-
-			var subScope = _serviceScope.Fork(configure);
-			ctx._serviceScope = subScope;
-			ctx.InitServices(Cid, Pid);
-			return ctx;
 		}
 
 		private void RegisterServices(IDependencyBuilder builder)
@@ -342,16 +370,11 @@ namespace Beamable
 			_requester.Token = _tokenStorage.LoadTokenForRealmImmediate(Cid, Pid);
 			_requester.Language = "en"; // TODO: Put somewhere
 
-
 			if (AccessToken == null)
 			{
 				var rsp = await _authService.CreateUser();
 				await SaveToken(rsp);
-				return;
-			}
-
-			// Refresh token
-			if (AccessToken.IsExpired)
+			} else if (AccessToken.IsExpired)
 			{
 				try
 				{
@@ -371,7 +394,6 @@ namespace Beamable
 			_pubnubSubscriptionManager.UnsubscribeAll();
 			_pubnubSubscriptionManager.SubscribeToProvider();
 			OnReloadUser?.Invoke();
-			Debug.Log("Got User " + AuthorizedUser.Value.id, GameObject);
 
 			// Start Session
 			await StartNewSession();
@@ -383,8 +405,12 @@ namespace Beamable
 			// Check if we should initialize the
 			if (ServiceProvider.CanBuildService<IBeamablePurchaser>())
 			{
-				await ServiceProvider.GetService<IBeamablePurchaser>().Initialize(ServiceProvider);
+				var purchaser = ServiceProvider.GetService<IBeamablePurchaser>();
+				await purchaser.Initialize(ServiceProvider);
+				ServiceProvider.GetService<Promise<IBeamablePurchaser>>().CompleteSuccess(purchaser);
 			}
+
+			OnReloadUser?.Invoke();
 
 		}
 
@@ -414,7 +440,6 @@ namespace Beamable
 				if (existingContext.IsDisposed)
 				{
 					existingContext.Init(cid, pid, playerCode, beamable, Beam.DependencyBuilder);
-					existingContext._behaviour.Initialize(existingContext);
 				}
 
 				return existingContext;
@@ -424,7 +449,6 @@ namespace Beamable
 			// var ctx = new BeamContext(cid, pid, playerCode, beamable, Beam.DependencyBuilder);
 			var ctx = new BeamContext();
 			ctx.Init(cid, pid, playerCode, beamable, Beam.DependencyBuilder);
-			ctx._behaviour.Initialize(ctx);
 			_playerCodeToContext[playerCode] = ctx;
 			return ctx;
 		}
@@ -465,23 +489,8 @@ namespace Beamable
 
 			_isDisposed = true;
 			OnShutdown?.Invoke();
-			try
-			{
-				await _serviceScope.Dispose();
-			}
-			catch (NullReferenceException nullEx)
-			{
-				Debug.Log("I FOUND THE NULL REFERENCE EXCEPTION!!!!!" + nullEx.Message);
-				throw;
-			}
-			catch (PromiseException promiseEx)
-			{
-				Debug.Log("I FOUND THE PROMISE REFERENCE EXCEPTION!!!!!" + promiseEx.Message);
-				throw;
-			}
-
+			await _serviceScope.Dispose();
 			OnShutdownComplete?.Invoke();
-
 		}
 
 
@@ -505,11 +514,6 @@ namespace Beamable
 		}
 
 		long IUserContext.UserId => PlayerId;
-
-		public event Action OnShutdown;
-		public event Action OnShutdownComplete;
-		public event Action OnReloadUser;
-		public event Action TimeOverrideChanged;
 
 		User IPlatformService.User => AuthorizedUser.Value;
 		public Promise<Unit> OnReady => _initPromise;
