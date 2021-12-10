@@ -237,9 +237,11 @@ namespace Beamable.Editor.Microservice.UI
 
         private void OnEnable()
         {
-            SetMinSize();
-            CreateModel();
-            SetForContent();
+	        EditorAPI.Instance.Then(_ => {
+		        SetMinSize();
+		        CreateModel();
+		        SetForContent();
+	        });
         }
 
         private void OnBeforeDeploy(ManifestModel manifestModel, int totalSteps) {

@@ -42,17 +42,17 @@ namespace Beamable.Editor.BeamableAssistant
 		private VisualElement _assistantContainer;
 
 		// Beam Hints Mode
-		private SplitterVisualElement _beamHintsSplitter;
 		private VisualElement _domainTreeContainer;
 		private VisualElement _hintsContainer;
 		private IMGUIContainer _imguiContainer;
 		private TreeViewIMGUI _treeViewIMGUI;
-
-		[SerializeField]
-		private TreeViewState _treeViewState;
-
-		[SerializeField]
-		private BeamHintsDataModel _beamHintsDataModel;
+		[SerializeField] private TreeViewState _treeViewState;
+		private SearchBarVisualElement _hintsSearchBar;
+		
+		
+		
+		// References to data 
+		[SerializeField] private BeamHintsDataModel _beamHintsDataModel;
 		private BeamHintDetailsReflectionCache.Registry _hintDetailsReflectionCache;
 
 		private EditorAPI _editorAPI;
@@ -68,11 +68,10 @@ namespace Beamable.Editor.BeamableAssistant
 			minSize = MIN_SIZE;
 			_editorAPI = editorAPI;
 			_hintDetailsReflectionCache = editorAPI.EditorReflectionCache.GetFirstRegisteredUserSystemOfType<BeamHintDetailsReflectionCache.Registry>();
-			
+
 			var beamHintsDataModel = _beamHintsDataModel = _beamHintsDataModel ?? new BeamHintsDataModel();
 			beamHintsDataModel.SetGlobalStorage(editorAPI.HintGlobalStorage);
 			beamHintsDataModel.SetPreferencesManager(editorAPI.HintPreferencesManager);
-			
 
 			var root = this.GetRootVisualContainer();
 			root.Clear();
@@ -86,10 +85,10 @@ namespace Beamable.Editor.BeamableAssistant
 
 			// Setup Action Bar Visuals
 			{
-				_actionBarVisualElement = root.Q<ActionBarVisualElement>("beamable-assistant-action-bar");
-
-				_actionBarVisualElement.Model = beamHintsDataModel;
-				_actionBarVisualElement.Refresh();
+				// _actionBarVisualElement = root.Q<ActionBarVisualElement>("beamable-assistant-action-bar");
+				//
+				// _actionBarVisualElement.Model = beamHintsDataModel;
+				// _actionBarVisualElement.Refresh();
 			}
 
 			// Setup Assistant Visuals
@@ -100,14 +99,24 @@ namespace Beamable.Editor.BeamableAssistant
 			// Setup Beam Hints Mode Visuals
 			{
 				// Get a reference to the splitter
-				_beamHintsSplitter = root.Q<SplitterVisualElement>("beam-hints-splitter");
+				root.Q<SplitterVisualElement>("beam-hints-splitter");
 
 				//Create IMGUI, The VisualElement Wrapper, and add to the parent
 				_domainTreeContainer = root.Q<VisualElement>("domain-tree-container");
+				_domainTreeContainer.RegisterCallback(new EventCallback<MouseUpEvent>(evt => {
+					// Clears tree selection
+					_treeViewState.selectedIDs.Clear();
+					_treeViewIMGUI.Repaint();
+
+					// Select all domains.
+					_beamHintsDataModel.SelectDomains(new List<string>());
+					FillDisplayingBeamHints(_hintsContainer, beamHintsDataModel.DisplayingHints);
+				}));
+
 				_treeViewState = _treeViewState ?? new TreeViewState();
 				_treeViewIMGUI = new TreeViewIMGUI(_treeViewState) {SelectionType = SelectionType.Multiple, TreeViewItemRoot = new TreeViewItem {id = 0, depth = -1, displayName = "Root"}};
-				_imguiContainer = new IMGUIContainer(() =>
-				{
+				_treeViewIMGUI.RowHeight = 30f;
+				_imguiContainer = new IMGUIContainer(() => {
 					// Tree view - Re-render every frame
 					Rect rect = GUILayoutUtility.GetRect(200,
 					                                     200,
@@ -121,14 +130,19 @@ namespace Beamable.Editor.BeamableAssistant
 				// Get Hints View
 				_hintsContainer = root.Q<VisualElement>("hints-container");
 
+				// Setup Search Bar to filter Displaying Hints
+				_hintsSearchBar = root.Q<SearchBarVisualElement>("hintsSearchBar");
+				_hintsSearchBar.OnSearchChanged += delegate(string searchText) {
+					_beamHintsDataModel.FilterDisplayedBy(searchText);
+					FillDisplayingBeamHints(_hintsContainer, beamHintsDataModel.DisplayingHints);
+				};
+				
 				SetupTreeViewCallbacks(
 					_treeViewIMGUI,
-					() =>
-					{
+					() => {
 						BeamableLogger.Log("Context Clicked");
 					},
-					list =>
-					{
+					list => {
 						BeamableLogger.Log($"Selection Change: {string.Join(", ", list.Select(a => a.ToString()))}");
 						var allDomains = list
 						                 .SelectMany(a => a.children != null ? a.children.Cast<BeamHintDomainTreeViewItem>() : new List<BeamHintDomainTreeViewItem>())
@@ -138,8 +152,7 @@ namespace Beamable.Editor.BeamableAssistant
 						beamHintsDataModel.SelectDomains(allDomains);
 						FillDisplayingBeamHints(_hintsContainer, beamHintsDataModel.DisplayingHints);
 					},
-					list =>
-					{
+					list => {
 						BeamableLogger.Log($"Selection Branch Change: {string.Join(", ", list.Select(a => a.ToString()))}");
 					}
 				);
@@ -160,6 +173,7 @@ namespace Beamable.Editor.BeamableAssistant
 			{
 				var beamHintHeader = hintHeaders[headerIdx];
 				var hintVisualElement = new BeamHintHeaderVisualElement(_beamHintsDataModel, _hintDetailsReflectionCache, beamHintHeader, headerIdx);
+
 				hintVisualElement.Refresh();
 				hintVisualElement.UpdateFromBeamHintHeader(in beamHintHeader, headerIdx);
 

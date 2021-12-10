@@ -8,8 +8,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using UnityEditor;
+using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Experimental.UIElements;
+using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace Beamable.Editor.BeamableAssistant.Components
 {
@@ -44,7 +46,7 @@ namespace Beamable.Editor.BeamableAssistant.Components
 
 		private int _indexIntoDisplayingHints;
 		private Label _hintDisplayName;
-		private Button _moreDetailsButton;
+		private Toggle _moreDetailsButton;
 		private VisualElement _detailsContainer;
 
 		private readonly BeamHintDetailsReflectionCache.Registry _hintDetailsReflectionCache;
@@ -53,6 +55,8 @@ namespace Beamable.Editor.BeamableAssistant.Components
 
 		private readonly BeamHintsDataModel _hintDataModel;
 		private BeamHintHeader _displayingHintHeader;
+		private Image _hintTypeIcon;
+		private VisualElement _headerContainer;
 
 		public BeamHintHeaderVisualElement(BeamHintsDataModel dataModel, 
 		                                   BeamHintDetailsReflectionCache.Registry library,
@@ -70,16 +74,25 @@ namespace Beamable.Editor.BeamableAssistant.Components
 			_indexIntoDisplayingHints = headerIdx;
 		}
 
-		public override void Refresh()
+		public sealed override void Refresh()
 		{
 			base.Refresh();
-
-			_hintDisplayName = Root.Q<Label>("hintDisplayName");
-			_moreDetailsButton = Root.Q<Button>("moreDetailsButton");
-			_detailsContainer = Root.Q<VisualElement>("hintDetailsContainer");
 			
+			
+			_hintTypeIcon = Root.Q<Image>("hintTypeIcon");
+			_hintDisplayName = Root.Q<Label>("hintDisplayName");
+			_moreDetailsButton = Root.Q<Toggle>("moreDetailsButton");
+
+			// Setup header container
+			_headerContainer = Root.Q<VisualElement>("hintHeaderContainer");
+			if(_indexIntoDisplayingHints % 2 == 1) _headerContainer.AddToClassList("oddRow");
+
 			// Update the hint's label
 			_hintDisplayName.text = _displayingHintHeader.Id;
+
+			// Update Hint Type Icon
+			var hintTypeClass = _displayingHintHeader.Type.ToString().ToLower();
+			_hintTypeIcon.AddToClassList(hintTypeClass);
 
 			// If there are no mapped converters, we don't display a more button since there would be no details to show.
 			var detailsUxmlPath = _hintDetailsConfig.UxmlFile;
@@ -90,11 +103,25 @@ namespace Beamable.Editor.BeamableAssistant.Components
 				_moreDetailsButton.visible = false;
 			else
 			{
-				_moreDetailsButton.clickable.clicked += () =>
+				// Setup details container and more button to not be visible
+				_detailsContainer = Root.Q<VisualElement>("hintDetailsContainer");
+				if(!_hintDataModel.SelectedHints.Contains(_displayingHintHeader))
+					_detailsContainer.AddToClassList("--positionHidden");
+				
+				// Configure more button to display hint details container when pressed. 
+				_moreDetailsButton.RegisterValueChangedCallback((changeEvt) =>
 				{
-					_detailsContainer.visible = !_detailsContainer.visible;
-				};
-				_detailsContainer.visible = false;
+					if (_hintDataModel.SelectedHints.Contains(_displayingHintHeader))
+					{
+						_detailsContainer.AddToClassList("--positionHidden");
+						_hintDataModel.SelectedHints.Remove(_displayingHintHeader);
+					}
+					else
+					{
+						_detailsContainer.RemoveFromClassList("--positionHidden");
+						_hintDataModel.SelectedHints.Add(_displayingHintHeader);
+					}
+				});
 				
 				// Ensure no null or empty paths exist in the configured USS files.
 				detailsUssPaths.RemoveAll(string.IsNullOrEmpty);
@@ -230,18 +257,6 @@ namespace Beamable.Editor.BeamableAssistant.Components
 		}
 	}
 
-	public readonly struct LocalizationInstance
-	{
-		public readonly string LocalizationId;
-		public readonly object[] LocalizationParams;
-		
-		public LocalizationInstance(string localizationId, object[] localizationParams)
-		{
-			LocalizationId = localizationId;
-			LocalizationParams = localizationParams;
-		}
-	}
-
 	public class BeamHintVisualsInjectionBag
 	{
 		public readonly IEnumerable<Injection<string>> TextInjections;
@@ -313,11 +328,6 @@ namespace Beamable.Editor.BeamableAssistant.Components
 		public void SetButtonLabel(string buttonLabel, string name, params string[] classes)
 		{
 			_textInjections.Add(new Injection<string>(new VisualElementsQuery(typeof(Button), name, classes), buttonLabel));
-		}
-		
-		public void SetButtonLabel(LocalizationInstance buttonLabel, string name, params string[] classes)
-		{
-			//_textInjections.Add(new Injection<string>(new VisualElementsQuery(typeof(Button), name, classes), buttonLabel));
 		}
 
 		public void SetButtonClicked(Action buttonAction, string name, params string[] classes)

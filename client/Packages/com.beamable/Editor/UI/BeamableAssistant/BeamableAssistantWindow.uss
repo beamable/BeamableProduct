@@ -15,7 +15,7 @@
 #assistant-container {
     position: absolute;
     top: 35px;
-    bottom: 30px;
+    bottom: 0px;
     left: 0px;
     right: 0px;
 }
@@ -45,6 +45,14 @@
 }
 
 #domain-tree-container {
+    flex-direction: row;
+    flex-grow: 1;
+    border-right-width: 2px;
+    border-color: #adadad;
+    padding-top: 10px;
+}
+
+#hints-container{
     flex-grow: 1;
 }
 
@@ -53,20 +61,67 @@
     flex-grow: 1;
 }
 
+.splitPadding {
+    width: 20px;    
+}
+
 .splitWrapper.leftSplit {
-    flex-grow: .1;
-    border-right-width: 5px;
-    border-right-color: #FF0000;
+    flex-grow: 1;    
 }
 
 .splitWrapper.rightSplit {
-    flex-grow: .9;
+    flex-grow: 10;
 }
 
 .splitWrapper {
     flex-grow: 1;
     min-width: 100px;
 }
+
+.beamableAssistantHeader {
+    height: 30px;
+    background-color: #8D8D8D;    
+    flex-direction: row;
+    align-items: center;
+    align-content: center;
+}
+
+.beamableAssistantHeader > .title{
+    font-size: 17;
+    align-self: flex-start;
+    -unity-text-align: middle-left;
+    flex-grow: 1;
+}
+
+#hintTypeBlank{
+    width: 30px;
+    height: 20px;
+}
+
+#hintTypeBlank VisualElement{
+    flex-grow: 1;
+    margin-top: 1px;
+    margin-bottom: 2px;    
+    border-right-width: 2px;
+    border-color: #a7a7a7;
+}
+
+
+.assistantSearchField > TemplateContainer > #searchTextField {    
+    width: 180px;
+    height: 20px;
+    align-self: flex-end;
+    flex-grow: 1;  
+    
+    border-radius: 8px;
+}
+
+.assistantSearchField > TemplateContainer > #searchTextField > #searchImg {
+    top: 3px;
+    bottom: 2px;
+    left: 4px;
+}
+
 
 
 

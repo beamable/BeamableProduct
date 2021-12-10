@@ -1,44 +1,27 @@
-#actionBarVisualElement {
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarLight.png");
+#hintTypeIcon.validation{
+    background-image: resource("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/validation.png");
 }
-.boundedButton {
-    border-color: #b4b4b4;
+
+#hintTypeIcon.hint{
+    background-image: resource("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/hint.png");    
 }
-.unboundedButton {
-    border-color: #b4b4b4;
-}
-#tagButtonImg {
-    width: 30px;
-    height: 30px;
-    margin-top: -3px;
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Tag-dark.png")
+
+#hintDisplayName{
+    color: #000;
 }
 
 
-#typeButtonImg {
-    width: 30px;
-    height: 30px;
-    margin-top: -3px;
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Type-dark.png")
+#moreDetailsButton{    
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarlight.png");    
+    border-color: #a2a2a2;
 }
 
-
-#statusButtonImg {
-    width: 30px;
-    height: 30px;
-    margin-top: -3px;
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Statuses-dark.png")
+#moreDetailsButton > Label{    
+    color: #000;
 }
 
-
-#refreshButtonImg {
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Refresh-dark.png")
-}
-
-#docIcon{
-    background-image: resource("Packages/com.beamable/Editor/UI/Toolbox/Icons/Info_dark.png");
-}
-
-#dropDownImg{
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown_Line_dark.png")
+#moreDetailsButton:checked{
+    flex-shrink: 1;
+    color: #f00;
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
 }

@@ -100,12 +100,13 @@ namespace Beamable.Editor
       public bool HasRealm => !string.IsNullOrEmpty(Pid);
 
       private Promise<EditorAPI> Initialize()
-      {
+      { 
 	      EditorReflectionCache = new ReflectionCache();
 
 	      HintGlobalStorage = new BeamHintEditorStorage();
 	      HintLogManager = new BeamHintLogManager();
 	      HintPreferencesManager = new BeamHintPreferencesManager();
+
 	      
 	      // Load up all Asset-based IReflectionCacheUserSystem (injected via ReflectionCacheUserSystemObject instances).
 	      // This was made to solve a cross-package injection problem. It doubles as a no-code way for users to inject their own
@@ -131,17 +132,13 @@ namespace Beamable.Editor
 		      EditorReflectionCache.SetStorage(HintGlobalStorage);
 		      EditorReflectionCache.GenerateReflectionCache();
 	      }
-
-	      {
-		      // TODO: Initialize BeamHintMicroserviceManager, BeamHintGlobalWindow
-	      }
 	      
-
 	      HintLogManager.SetStorage(HintGlobalStorage);
 	      HintLogManager.SetPreferencesManager(HintPreferencesManager);
+	      
 	      EditorApplication.update -= HintLogManager.Update;
 	      EditorApplication.update += HintLogManager.Update;
-
+	      
 	      if (!Application.isPlaying) 
          {
             var promiseHandlerConfig = CoreConfiguration.Instance.DefaultUncaughtPromiseHandlerConfiguration;

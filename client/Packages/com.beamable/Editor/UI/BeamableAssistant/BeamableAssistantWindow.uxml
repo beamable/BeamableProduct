@@ -2,28 +2,54 @@
 <engine:UXML
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns:beamable="Beamable.Editor.UI.Components"
-        xmlns:beamableAssistant="Beamable.Editor.BeamableAssistant.Components"
         xmlns:engine="UnityEngine.Experimental.UIElements"
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
-  <engine:VisualElement name="window-main">
+    <engine:VisualElement name="window-main">
 
-    <!-- TODO: Remove this comment. This is embedded the new way (Recommended) - srivello -->
-    <beamableAssistant:ActionBarVisualElement name="beamable-assistant-action-bar"/>
+        <!-- TODO: Remove this comment. This is embedded the new way (Recommended) - srivello -->
+        <!--    <beamableAssistant:ActionBarVisualElement name="beamable-assistant-action-bar"/>-->
 
-    <engine:VisualElement name="assistant-container">      
-      <engine:VisualElement name="beam-hints-container">
-        <beamable:SplitterVisualElement name="beam-hints-splitter">
-          <engine:VisualElement name="domain-tree-container" class="splitWrapper leftSplit"/>            
-          <engine:VisualElement name="hints-container" class="splitWrapper rightSplit"/>
-        </beamable:SplitterVisualElement> 
-      </engine:VisualElement>      
+        <engine:VisualElement name="assistant-container">
+            <engine:VisualElement name="beam-hints-container">
+
+                <beamable:SplitterVisualElement name="beam-hints-splitter">
+                    <engine:VisualElement class="splitWrapper leftSplit">
+                        <engine:VisualElement class="beamableAssistantHeader">
+
+                            <engine:VisualElement class="splitPadding"/>
+                            <engine:Label class="title" text="Hint Domain"/>
+                        </engine:VisualElement>
+                        
+                        <engine:VisualElement name="domain-tree-container">
+                            <engine:VisualElement class="splitPadding"/>                            
+                        </engine:VisualElement>
+                    </engine:VisualElement>
+                    
+                    <engine:VisualElement class="splitWrapper rightSplit">
+                        <engine:VisualElement class="beamableAssistantHeader">
+
+                            <engine:VisualElement name="hintTypeBlank">
+                                <engine:VisualElement/>
+                            </engine:VisualElement>
+
+                            <engine:Label class="title" text="Hint ID"/>
+
+                            <beamable:SearchBarVisualElement name="hintsSearchBar" class="assistantSearchField"/>                           
+
+                            <engine:VisualElement class="splitPadding"/>
+
+
+                        </engine:VisualElement>
+                        
+                        <engine:VisualElement name="hints-container"/>
+                    </engine:VisualElement>
+                </beamable:SplitterVisualElement>
+            </engine:VisualElement>
+        </engine:VisualElement>
+
+
     </engine:VisualElement>
-    
-    
-    
-
-  </engine:VisualElement>
 
 </engine:UXML>

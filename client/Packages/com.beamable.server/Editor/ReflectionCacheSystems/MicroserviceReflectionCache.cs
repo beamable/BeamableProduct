@@ -120,12 +120,9 @@ namespace Editor.ReflectionCacheSystems
 					_hintStorage.AddOrReplaceHint(hint, uniqueNameValidationResults.PerNameCollisions);
 				}
 
-				// Gets all properly configured microservices
-				uniqueNameValidationResults.PerAttributeNameValidations.SplitValidationResults(out var microserviceAttrValid, out _, out _);
-
 				// Get all ClientCallables
 				var clientCallableValidationResults = cachedMicroserviceAttributes
-				                                      .SelectMany(pair => ((Type)pair.Info).GetMethods(BindingFlags.Public | BindingFlags.Instance))
+				                                      .SelectMany(pair => pair.InfoAs<Type>().GetMethods(BindingFlags.Public | BindingFlags.Instance))
 				                                      .GetOptionalAttributeInMembers<ClientCallableAttribute>();
 
 				// Handle invalid signatures and warnings
@@ -147,20 +144,29 @@ namespace Editor.ReflectionCacheSystems
 				// Builds a lookup of DeclaringType => MemberAttributePair.
 				var validClientCallablesLookup = clientCallablesValid
 				                                 .Concat(clientCallableWarnings)
+				                                 .Concat(clientCallableErrors)
 				                                 .Select(result => result.Pair)
 				                                 .CreateMemberAttributePairOwnerLookupTable();
 
-				// Register all configured microservices  
-				foreach (var memberAttributePair in microserviceAttrValid.Select(result => result.Pair))
+				// Register all configured microservices
+				foreach (var msAttrValidationResult in uniqueNameValidationResults.PerAttributeNameValidations)
 				{
-					var serviceAttribute = (MicroserviceAttribute)memberAttributePair.Attribute;
-					var type = (Type)memberAttributePair.Info;
+					var serviceAttribute = msAttrValidationResult.Pair.AttrAs<MicroserviceAttribute>();
+					var type = msAttrValidationResult.Pair.InfoAs<Type>();
 
 					// TODO: XXX this is a hacky way to ignore the default microservice...
 					if (serviceAttribute.MicroserviceName.ToLower().Equals("xxxx")) continue;
 
 					// Create descriptor
-					var descriptor = new MicroserviceDescriptor {Name = serviceAttribute.MicroserviceName, Type = type, AttributePath = serviceAttribute.GetSourcePath()};
+					var hasWarning = msAttrValidationResult.Type == ReflectionCache.ValidationResultType.Warning;
+					var hasError = msAttrValidationResult.Type == ReflectionCache.ValidationResultType.Error;
+					var descriptor = new MicroserviceDescriptor {
+						Name = serviceAttribute.MicroserviceName, 
+						Type = type,
+						AttributePath = serviceAttribute.GetSourcePath(),
+						HasValidationError = hasError,
+						HasValidationWarning = hasWarning,
+					};
 
 					// Add client callables for this microservice type
 					var clientCallables = validClientCallablesLookup[type].ToList();
@@ -195,10 +201,13 @@ namespace Editor.ReflectionCacheSystems
 						};
 						
 					}).ToList();
-
+					
 					Descriptors.Add(descriptor);
 					AllDescriptors.Add(descriptor);
 				}
+				
+				
+				
 			}
 		}
 	}

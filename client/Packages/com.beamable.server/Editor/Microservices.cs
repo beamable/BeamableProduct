@@ -141,43 +141,6 @@ namespace Beamable.Server.Editor
          return _descriptors;
       }
 
-      private static List<ClientCallableDescriptor> GetClientCallables(Type serviceType)
-      {
-         var methods = serviceType.GetMethods(BindingFlags.Instance | BindingFlags.Public);
-         var output = new List<ClientCallableDescriptor>();
-         foreach (var method in methods)
-         {
-            var attr = method.GetCustomAttribute<ClientCallableAttribute>();
-            if (attr == null) continue;
-
-            var parameters = new List<ClientCallableParameterDescriptor>();
-            var methodParameters = method.GetParameters();
-            for (var i = 0; i < methodParameters.Length; i++)
-            {
-               var param = methodParameters[i];
-               var paramAttr = param.GetCustomAttribute<ParameterAttribute>();
-               var paramName = string.IsNullOrEmpty(paramAttr?.ParameterNameOverride)
-                  ? param.Name
-                  : paramAttr.ParameterNameOverride;
-               parameters.Add(new ClientCallableParameterDescriptor
-               {
-                  Name = paramName,
-                  Index = i,
-                  Type = param.ParameterType
-               });
-            }
-
-            output.Add(new ClientCallableDescriptor
-            {
-               Path = string.IsNullOrEmpty(attr.PathName) ? method.Name : attr.PathName,
-               Scopes = attr.RequiredScopes,
-               Parameters = parameters.ToArray(),
-            });
-         }
-
-         return output;
-      }
-
       [DidReloadScripts]
       static void WatchMicroserviceFiles()
       {
