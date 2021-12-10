@@ -104,7 +104,14 @@ namespace Beamable.Editor.Content
 
       protected void OpenWindow(SerializedProperty property, Schedule schedule)
       {
-         var element = new TWindow();
+	      var oldWindow =
+		      BeamablePopupWindow.GetWindow<BeamablePopupWindow>(true, BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER);
+	      if (oldWindow != null)
+	      {
+		      oldWindow.Close();
+	      }
+	      
+	      var element = new TWindow();
          var window = BeamablePopupWindow.ShowUtility(BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER,
             element, null, BeamableComponentsConstants.SchedulesWindowSize);
 
