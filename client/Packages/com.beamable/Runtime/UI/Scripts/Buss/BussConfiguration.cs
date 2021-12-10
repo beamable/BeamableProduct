@@ -40,8 +40,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 
 		[SerializeField] private BussStyleSheet globalStyleSheet = null;
 
-		// TODO: serialized only for debug purposes. Remove before final push
-		[SerializeField] private List<BussElement> _rootBussElements = new List<BussElement>();
+		private List<BussElement> _rootBussElements = new List<BussElement>();
 
 #if UNITY_EDITOR
 		static BussConfiguration()
