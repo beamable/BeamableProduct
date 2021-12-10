@@ -12,8 +12,10 @@ namespace Beamable.Common.Content
 
 		public FilePathSelectorAttribute(bool absolutePath = false)
 		{
+#if UNITY_EDITOR
 			RootFolder = Application.dataPath;
 			PathRelativeTo = absolutePath ? null : RootFolder;
+#endif
 		}
 	}
 }
