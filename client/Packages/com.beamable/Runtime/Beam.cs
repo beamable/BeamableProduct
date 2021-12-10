@@ -16,6 +16,7 @@ using Beamable.Api.Payments;
 using Beamable.Api.Sessions;
 using Beamable.Api.Stats;
 using Beamable.Api.Tournaments;
+using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Announcements;
 using Beamable.Common.Api.Auth;
@@ -111,6 +112,7 @@ namespace Beamable
 				                    provider => provider.GetService<NotificationService>())
 				;
 
+			DependencyBuilder.AddSingleton<Promise<IBeamablePurchaser>>(provider => new Promise<IBeamablePurchaser>());
 			DependencyBuilder.AddSingleton<PlayerAnnouncements>();
 			DependencyBuilder.AddScoped<PlayerCurrencyGroup>();
 			DependencyBuilder.AddScoped<PlayerStats>();

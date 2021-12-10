@@ -7,15 +7,15 @@ namespace Beamable.Api
 {
    /// <summary>
    /// This type defines the %Client main entry point for the %AccessToken feature.
-   /// 
+   ///
    /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-   /// 
+   ///
    /// #### Related Links
    /// - See the <a target="_blank" href="https://docs.beamable.com/docs/accounts-feature">Accounts</a> feature documentation
    /// - See Beamable.API script reference
-   /// 
+   ///
    /// ![img beamable-logo]
-   /// 
+   ///
    /// </summary>
    public class AccessToken : IAccessToken
    {
@@ -76,14 +76,14 @@ namespace Beamable.Api
          return _storage.DeleteTokenForCustomer(Cid);
       }
 
-      internal void CorruptAccessToken()
+      public void CorruptAccessToken()
       {
          // Set as a garbage (but plausible) token
          Token = "ffffffff-ffff-ffff-ffff-ffffffffffff";
          Save();
       }
 
-      internal void ExpireAccessToken()
+      public void ExpireAccessToken()
       {
          ExpiresAt = DateTime.UtcNow.AddDays(-2);
          Save();

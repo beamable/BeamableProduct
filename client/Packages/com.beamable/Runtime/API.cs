@@ -182,15 +182,15 @@ namespace Beamable
 
         public static Promise<IBeamableAPI> Instance
         {
-            get
-            {
-                if (_instance != null)
-                {
-                    return _instance;
-                }
-
-                _instance = ApiFactory();
-                return _instance;
+            get {
+	            return Promise<IBeamableAPI>.Successful(BeamContext.Default.Api);
+                // if (_instance != null)
+                // {
+                //     return _instance;
+                // }
+                //
+                // _instance = ApiFactory();
+                // return _instance;
             }
 
             // SHOULD ONLY BE USED BY LOCAL TEST CODE.

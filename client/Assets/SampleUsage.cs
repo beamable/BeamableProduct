@@ -1,7 +1,6 @@
 using UnityEngine;
 using Beamable;
 using Beamable.Api.Sessions;
-using Beamable.Server.Clients;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -18,7 +17,28 @@ namespace DefaultNamespace
 
       void Start()
       {
+
+
+	      /*
+	       * TODO list
+	       * -. test offline mode for start-up, and for resourceful sdks
+	       * -. implement inventory items resourceful sdk
+	       * -. content with multi context?
+	       * -. fully make api interface work (events, and device users)
+	       * -.
+	       * -. handle resourceful configuration
+	       * -. implement C#-stack requester
+	       * -. think about how the game-relay stuff can improve based on this
+	       * -. events
+	       * -. leaderboards
+	       * -. tournaments
+	       * -. groups
+	       * -.
+	       */
+
 	      beamable = BeamContext.ForContext(this);
+
+	      var api = beamable.Api;
 
 	      beamable.Announcements.OnLoadingFinished += () => Debug.Log("Loading announcements finished");
 	      beamable.Announcements.OnLoadingStarted += () => Debug.Log("Loading announcements started");
@@ -102,30 +122,13 @@ namespace DefaultNamespace
 	      await beamable.Stats.Set("tuna2", nextTunavalue);
 	      // var service = beamable.CacheDependentMS();
 	      // beamable.Microservices().GetClient<CacheDependentMSClient>()
-
-	      var client = new CacheDependentMSClient(beamable);
+	      //
+	      // var client = new CacheDependentMSClient(beamable);
 	      // beamable.Microservices().CacheDependentMS().GetCachedView();
 	      Debug.Log("The stat has been updated");
       }
 
-      [ContextMenu("Call Microservice")]
-      async void CallMicroservice()
-      {
+      public long otherDbid;
 
-	      // use the old way to use the BeamContext.Default
-	      var client0 = new CacheDependentMSClient();
-	      var res0 = client0.GetCachedView();
-
-	      // use a beam context to have the request use the authorization stored in a context
-	      var client1 = new CacheDependentMSClient(beamable);
-	      var res1 = await client1.GetCachedView();
-
-	      // use extension methods form the context to get a single client
-	      var client2 = beamable.Microservices().CacheDependentMS();
-	      var res2 = await client2.GetCachedView();
-
-
-	      Debug.Log($"res1=[{res1}] res2=[{res2}]");
-      }
    }
 }

@@ -84,7 +84,7 @@ namespace Beamable.Player
 		public PaymentService PaymentService => _ctx.ServiceProvider.GetService<PaymentService>();
 		public GroupsService GroupsService => _ctx.ServiceProvider.GetService<GroupsService>();
 		public EventsService EventsService => _ctx.ServiceProvider.GetService<EventsService>();
-		public Promise<IBeamablePurchaser> BeamableIAP => null;
+		public Promise<IBeamablePurchaser> BeamableIAP => _ctx.ServiceProvider.GetService<Promise<IBeamablePurchaser>>();
 		public IConnectivityService ConnectivityService => _ctx.ServiceProvider.GetService<IConnectivityService>();
 		public INotificationService NotificationService => _ctx.ServiceProvider.GetService<INotificationService>();
 		public ITournamentApi TournamentsService => _ctx.ServiceProvider.GetService<ITournamentApi>();
@@ -92,24 +92,38 @@ namespace Beamable.Player
 		public ITournamentApi Tournaments => _ctx.ServiceProvider.GetService<ITournamentApi>();
 		public ISdkEventService SdkEventService => _ctx.ServiceProvider.GetService<ISdkEventService>();
 
+		private string Cid => _ctx.Cid;
+		private string Pid => _ctx.Pid;
+
 		public void UpdateUserData(User user)
 		{
-			throw new NotImplementedException();
+			_ctx.AuthorizedUser.Value = user; // TODO: Is this a valid thing to do??
+			OnUserChanged?.Invoke(user);
 		}
 
 		public Promise<ISet<UserBundle>> GetDeviceUsers()
 		{
-			throw new NotImplementedException();
+			var storage = _ctx.ServiceProvider.GetService<AccessTokenStorage>();
+			var promises = Array.ConvertAll(storage.RetrieveDeviceRefreshTokens(Cid, Pid),
+			                                token => AuthService.GetUser(token).Map(user => new UserBundle
+			                                {
+				                                User = user,
+				                                Token = token
+			                                }));
+
+			return Promise.Sequence(promises)
+			              .Map(userBundles => (new HashSet<UserBundle>(userBundles) as ISet<UserBundle>));
 		}
 
 		public void RemoveDeviceUser(TokenResponse token)
 		{
-			throw new NotImplementedException();
+			_ctx.ServiceProvider.GetService<AccessTokenStorage>().RemoveDeviceRefreshToken(Cid, Pid, token);
 		}
 
-		public Promise<Unit> ApplyToken(TokenResponse response)
+		public async Promise<Unit> ApplyToken(TokenResponse response)
 		{
-			throw new NotImplementedException();
+			await _ctx.ChangeAuthorizedPlayer(response);
+			return PromiseBase.Unit;
 		}
 
 		public ApiServices(BeamContext ctx)
@@ -117,7 +131,8 @@ namespace Beamable.Player
 			_ctx = ctx;
 			_experimentalApiServices = new ExperimentalApiServices(ctx);
 
-			// TODO: Implement missing methods and events
+			_ctx.OnUserLoggingOut += user => OnUserLoggingOut?.Invoke(user);
+			_ctx.OnUserLoggedIn += user => OnUserChanged?.Invoke(user);
 		}
 	}
 }

@@ -137,6 +137,7 @@ namespace Beamable.Service
 			return resolver != null && resolver.Exists();
 		}
 
+		// [Obsolete("The service manager will be replaced by the BeamContext.Default.ServiceProvider")]
 		public static T Resolve<T>()
 			where T : class
 		{
