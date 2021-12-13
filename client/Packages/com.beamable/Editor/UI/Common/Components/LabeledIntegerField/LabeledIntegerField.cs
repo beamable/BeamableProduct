@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Validation;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -56,7 +57,8 @@ namespace Beamable.Editor.UI.Components
 	        get => _value;
             set
             {
-                _value = value;
+	            int tempValue = Mathf.Clamp(value, _minValue, _maxValue);
+                _value = tempValue;
                 _integerFieldComponent?.SetValueWithoutNotify(_value);
                 _onValueChanged?.Invoke();
             }
