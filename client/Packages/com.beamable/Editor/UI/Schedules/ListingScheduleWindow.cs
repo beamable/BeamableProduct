@@ -244,7 +244,14 @@ namespace Beamable.Editor.Schedules
                 int endHour = Convert.ToInt32(schedule.definitions[schedule.definitions.Count - 1].hour[0]);
                 int startMinute = Convert.ToInt32(schedule.definitions[0].minute[0]);
                 int endMinute = Convert.ToInt32(schedule.definitions[schedule.definitions.Count - 1].minute[schedule.definitions[schedule.definitions.Count - 1].minute.Count - 1]);
-
+                
+                endMinute++;
+                if (endMinute == 60)
+                {
+	                endMinute = 0;
+	                endHour += 1;
+                }
+                
                 _periodFromHourComponent.Set(new DateTime(2000, 1, 1, startHour, startMinute, 0));
                 _periodToHourComponent.Set(new DateTime(2000, 1, 1, endHour, endMinute, 0));
             }
