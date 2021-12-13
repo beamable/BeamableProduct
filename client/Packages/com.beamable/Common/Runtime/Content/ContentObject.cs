@@ -235,7 +235,8 @@ namespace Beamable.Common.Content
             typeName = ContentRegistry.GetTypeNameFromId(id);
          }
 
-         _contentTypeName = typeName;
+			if (!string.Equals(_contentTypeName, typeName))
+				_contentTypeName = typeName;
 
          if (!id.StartsWith(typeName))
          {
@@ -243,7 +244,9 @@ namespace Beamable.Common.Content
          }
 
          SetContentName(id.Substring(typeName.Length + 1)); // +1 for the dot.
-         Version = version;
+
+		 if (!string.Equals(Version, version))
+			Version = version;
       }
 
       /// <summary>
@@ -262,10 +265,13 @@ namespace Beamable.Common.Content
       /// <returns></returns>
       public ContentObject SetContentName(string newContentName)
       {
-         ContentName = newContentName;
+		 if (!string.Equals(ContentName, newContentName))
+			 ContentName = newContentName;
+
          if (Application.isPlaying)
          {
-            name = newContentName; // only set the SO name if we are in-game. Internally, Beamable does not depend on the SO name, but a gameMaker may want to use it.
+			if (!string.Equals(name, newContentName))
+				name = newContentName; // only set the SO name if we are in-game. Internally, Beamable does not depend on the SO name, but a gameMaker may want to use it.
          }
 
          return this;
