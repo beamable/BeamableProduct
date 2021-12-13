@@ -27,6 +27,12 @@ namespace Beamable.Editor.UI.Components
 		
 		private BussStyleRule _styleRule;
 		private VisualElement _properties;
+		private VisualElement _editButton;
+		private VisualElement _wizardButton;
+		private VisualElement _undoButton;
+		private VisualElement _cleanAllButton;
+		private VisualElement _addVariableButton;
+		private VisualElement _addRuleButton;
 
 		public override void Refresh()
 		{
@@ -35,8 +41,74 @@ namespace Beamable.Editor.UI.Components
 			_styleIdParent = Root.Q<VisualElement>("styleIdParent");
 			_properties = Root.Q<VisualElement>("properties");
 
+			_editButton = Root.Q<VisualElement>("editButton");
+			_wizardButton = Root.Q<VisualElement>("wizardButton");
+			_undoButton = Root.Q<VisualElement>("undoButton");
+			_cleanAllButton = Root.Q<VisualElement>("cleanAllButton");
+			_addVariableButton = Root.Q<VisualElement>("addVariableButton");
+			_addRuleButton = Root.Q<VisualElement>("addRuleButton");
+			
+			RegisterButtonActions();
+
 			CreateStyleIdLabel();
 			CreateProperties();
+		}
+
+		protected override void OnDestroy()
+		{
+			ClearButtonActions();
+		}
+
+		private void RegisterButtonActions()
+		{
+			ClearButtonActions();
+			
+			_editButton.RegisterCallback<MouseDownEvent>(EditButtonClicked);
+			_wizardButton.RegisterCallback<MouseDownEvent>(WizardButtonClicked);
+			_undoButton.RegisterCallback<MouseDownEvent>(UndoButtonClicked);
+			_cleanAllButton.RegisterCallback<MouseDownEvent>(CleanAllButtonClicked);
+			_addVariableButton.RegisterCallback<MouseDownEvent>(AddVariableButtonClicked);
+			_addRuleButton.RegisterCallback<MouseDownEvent>(AddRuleButtonClicked);
+		}
+		
+		private void ClearButtonActions()
+		{
+			_editButton.UnregisterCallback<MouseDownEvent>(EditButtonClicked);
+			_wizardButton.UnregisterCallback<MouseDownEvent>(WizardButtonClicked);
+			_undoButton.UnregisterCallback<MouseDownEvent>(UndoButtonClicked);
+			_cleanAllButton.UnregisterCallback<MouseDownEvent>(CleanAllButtonClicked);
+			_addVariableButton.UnregisterCallback<MouseDownEvent>(AddVariableButtonClicked);
+			_addRuleButton.UnregisterCallback<MouseDownEvent>(AddRuleButtonClicked);
+		}
+
+		private void AddRuleButtonClicked(MouseDownEvent evt)
+		{
+			throw new NotImplementedException();
+		}
+
+		private void AddVariableButtonClicked(MouseDownEvent evt)
+		{
+			throw new NotImplementedException();
+		}
+
+		private void CleanAllButtonClicked(MouseDownEvent evt)
+		{
+			throw new NotImplementedException();
+		}
+
+		private void UndoButtonClicked(MouseDownEvent evt)
+		{
+			throw new NotImplementedException();
+		}
+
+		private void WizardButtonClicked(MouseDownEvent evt)
+		{
+			throw new NotImplementedException();
+		}
+
+		private void EditButtonClicked(MouseDownEvent evt)
+		{
+			throw new NotImplementedException();
 		}
 
 		private void CreateStyleIdLabel()
