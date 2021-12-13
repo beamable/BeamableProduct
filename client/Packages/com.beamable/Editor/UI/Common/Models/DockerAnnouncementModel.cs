@@ -9,22 +9,26 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+
 namespace Beamable.Editor.Toolbox.Models
 {
-    public class DockerAnnouncementModel : AnnouncementModelBase
-    {
-        public string TitleLabelText => "DOCKER IS NOT INSTALLED";
-        public string DescriptionLabelText => "You need to install Docker to use the Beamable C# Microservices Feature";
-        public string InstallButtonText => "Install";
-        
-        public Action OnInstall;
-        
-        public override BeamableVisualElement CreateVisualElement()
-        {
-            return new DockerAnnouncementVisualElement()
-            {
-                DockerAnnouncementModel = this
-            };
-        }
-    }
+	public class DockerAnnouncementModel : AnnouncementModelBase
+	{
+		public bool IsDockerInstalled = false;
+		public string TitleLabelText => IsDockerInstalled ? "DOCKER HUB IS NOT RUNNING" : "DOCKER IS NOT INSTALLED";
+
+		public string DescriptionLabelText =>
+			IsDockerInstalled
+				? "Start Docker Hub first and try again"
+				: "You need to install Docker to use the Beamable C# Microservices Feature";
+
+		public string InstallButtonText => IsDockerInstalled ? "Check now" : "Install";
+
+		public Action OnInstall;
+
+		public override BeamableVisualElement CreateVisualElement()
+		{
+			return new DockerAnnouncementVisualElement() {DockerAnnouncementModel = this};
+		}
+	}
 }
