@@ -272,17 +272,20 @@ namespace Beamable.Editor.Tests.Content
             bool isHourParsed = int.TryParse(definition.hour[0], out int parsedHour);
             bool isMinuteParsed = int.TryParse(definition.minute[0], out int parsedMinute);
             bool isSecondParsed = int.TryParse(definition.second[0], out int parsedSecond);
+            
+            if (definition.hour[0] != "*")
+	            Assert.IsTrue(isHourParsed, $"{warningHeader} problem with parsing hour");
+            if (definition.minute[0] != "*")
+				Assert.IsTrue(isMinuteParsed, $"{warningHeader} problem with parsing minute");
+            if (definition.second[0] != "*")
+				Assert.IsTrue(isSecondParsed, $"{warningHeader} problem with parsing second");
 
-            Assert.IsTrue(isHourParsed, $"{warningHeader} problem with parsing hour");
-            Assert.IsTrue(isMinuteParsed, $"{warningHeader} problem with parsing minute");
-            Assert.IsTrue(isSecondParsed, $"{warningHeader} problem with parsing second");
-
-            Assert.IsTrue(parsedHour >= 0 && parsedHour < 24,
-                $"{warningHeader} hour should be greater or equal 0 and less than 24");
-            Assert.IsTrue(parsedMinute >= 0 && parsedMinute < 60,
-                $"{warningHeader} minute should be greater or equal 0 and less than 60");
-            Assert.IsTrue(parsedSecond >= 0 && parsedSecond < 60,
-                $"{warningHeader} second should be greater or equal 0 and less than 60");
+            Assert.IsTrue(definition.hour[0] == "*" || parsedHour >= 0 && parsedHour < 24,
+                          $"{warningHeader} hour should be greater or equal 0 and less than 24 or marked as *");
+            Assert.IsTrue(definition.minute[0] == "*" || parsedMinute >= 0 && parsedMinute < 60,
+                          $"{warningHeader} minute should be greater or equal 0 and less than 60 or marked as *");
+            Assert.IsTrue(definition.second[0] == "*" || parsedSecond >= 0 && parsedSecond < 60,
+                          $"{warningHeader} second should be greater or equal 0 and less than 60 or marked as *");
         }
 
         private static void TestPeriod(Schedule schedule, string warningHeader)
