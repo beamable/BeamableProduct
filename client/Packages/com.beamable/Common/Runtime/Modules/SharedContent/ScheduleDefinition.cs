@@ -55,14 +55,14 @@ namespace Beamable.Common.Content
        [IgnoreContentField]
        public int index = -1;
 
-       [ShowOnly]
-       [IgnoreContentField]
-       public string cronHumanFormat;
-
-       [ShowOnly]
+       [TextArea(2,5)]
        [IgnoreContentField]
        public string cronRawFormat;
-
+       
+       [TextArea]
+       [IgnoreContentField]
+       public string cronHumanFormat;
+       
       public List<string> second;
       public List<string> minute;
       public List<string> hour;
