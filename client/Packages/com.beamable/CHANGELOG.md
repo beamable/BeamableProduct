@@ -7,6 +7,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [TBD]
+### Added
+- Device ID Deletion APIs (bulk and selective)
+
 ## [0.18.0]
 ### Added
 - Content can be prebaked with game-builds to speed up content initialization
@@ -23,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Renamed Beamable's iOS plugin for Google Sign-In from `GoogleSignIn` to `BeamableGoogleSignIn` to prevent name collisions with public plugins.
 - `InventoryService.GetCurrent` is no longer limited by URI length
+- only use `InitializeOnEnterPlayMode` in Unity 2019.3 or higher
 
 ## [0.17.4]
 - no changes

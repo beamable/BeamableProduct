@@ -3,7 +3,7 @@ using Beamable.Modules.Generics;
 using UnityEngine;
 using UnityEngine.Events;
 
-namespace Beamable.UI.Leaderboards
+namespace Beamable.Modules.Leaderboards
 {
 	public class LeaderboardsPresenter : ModelPresenter<LeaderboardsModel>
 	{
@@ -28,7 +28,7 @@ namespace Beamable.UI.Leaderboards
 
 			if (_testMode)
 			{
-				Debug.LogWarning($"Use are using {name} in test mode");
+				Debug.LogWarning($"You are using a Leaderboard in test mode", this);
 			}
 			
 			Model.Initialize(_leaderboardRef, _entriesAmount, _testMode, _backButtonAction);
