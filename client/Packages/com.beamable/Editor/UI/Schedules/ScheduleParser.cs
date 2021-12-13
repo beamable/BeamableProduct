@@ -27,14 +27,9 @@ namespace Beamable.Editor.Schedules
         public void PrepareDaysModeData(Schedule newSchedule, string hour, string minute, string second,
             List<string> selectedDays)
         {
-            var definition = new ScheduleDefinition(
-	            new List<string> {"*"},
-	            new List<string> {"*"}, 
-	            new List<string> {"*"}, 
-	            new List<string> {"*"}, 
-	            new List<string> {"*"}, 
-	            new List<string> {"*"},
-	            selectedDays);
+            ScheduleDefinition definition = new ScheduleDefinition(second,
+                minute, hour, new List<string> {"*"}, "*", "*",
+                selectedDays);
             newSchedule.AddDefinition(definition);
         }
 
