@@ -4,7 +4,7 @@ using Beamable;
 using Beamable.Console;
 using Beamable.ConsoleCommands;
 
-namespace Modules.Content
+namespace Beamable.Modules.Content
 {
     [BeamableConsoleCommandProvider]
     public class ContentCommands

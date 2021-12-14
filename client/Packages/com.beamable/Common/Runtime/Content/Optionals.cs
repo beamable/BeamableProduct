@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
-using UnityEngine;
 
 namespace Beamable.Common.Content
 {
@@ -57,6 +56,11 @@ namespace Beamable.Common.Content
            return typeof(T);
         }
 
+        public Optional<T> DoIfExists(Action<T> callback)
+        {
+	        if (HasValue) callback(Value);
+	        return this;
+        }
     }
 
     [Agnostic]

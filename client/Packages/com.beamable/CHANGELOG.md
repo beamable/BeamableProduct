@@ -1,34 +1,34 @@
 
 
+
 # Changelog
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [TBD]
 ### Added
-- `InitializeServicesAttribute` can now be used over static methods to declare initialization hooks in microservices. Supported signatures are async/regular `
-  Task(IServiceInitializer)`, async/regular `Promise<Unit>(IServiceInitializer)` and synchronous `void(IServiceInitializer)`. 
-  `void` methods must be fully synchronous --- it is not possible to guarantee that any promises started within a `void` initialization 
-  method will have completed by the time the C#MS is receiving traffic.  
-- Can have multiple `ConfigureServicesAttribute` and `InitializeServicesAttribute` explicitly ordered via `ExecutionOrder` property of the attributes.
-- `SearchStats()` admin method is usable from client and microservice code now.
-- `CoreConfiguration` to project settings to tweak how our Promise library handles uncaught promises by default
-- Exposed `CreateLeaderboard` methods in `IMicroserviceLeaderboardsApi` to enable the dynamic creation of leaderboards in C#MS (can take a `LeaderboardRef` as a template or explicit parameters). 
-- Limit amount of elements displayed by `list_content` command in Admin console, allow to specify start index for `list_content` command
-- Added `RemoveDeviceId` method in `AuthService`
+- Device ID Deletion APIs (bulk and selective)
+
+## [0.18.0]
+### Added
+- Content can be prebaked with game-builds to speed up content initialization
 - `ScheduleDefinition` now supports CRON expression
-- Added minutes support in scheduled listings
-- Added clearer unsupported message for C# Microservice's implementation of `IAuthService.GetUser(TokenResponse)`
-- Added automatic content baking feature to speed-up first launch of an app.
+- Minute support for scheduled listings
+- Announcement content includes gifts in addition to attachments. Gifts support webhook calls.
+- `scheduleInstancePurchaseLimit` field to the `ListingContent` to enable setting a purchase limit scoped to the schedule instance
+- `SearchStats()` admin method is usable from client and microservice code.
 
 ### Changed
 - `BeamableEnvironment` has moved to the Runtime to enable sdk version checking at runtime
+- `list_content` Admin Command displays limited results. You can specify start index for `list_content` command
 
 ### Fixed
 - Renamed Beamable's iOS plugin for Google Sign-In from `GoogleSignIn` to `BeamableGoogleSignIn` to prevent name collisions with public plugins.
 - `InventoryService.GetCurrent` is no longer limited by URI length
+- only use `InitializeOnEnterPlayMode` in Unity 2019.3 or higher
+- Removed unnecessary Unity asset reimport for identical content data.
 
 ## [0.17.4]
 - no changes
