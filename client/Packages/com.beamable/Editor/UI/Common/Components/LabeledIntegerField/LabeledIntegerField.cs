@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Validation;
 using UnityEngine;
@@ -14,9 +13,9 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-    public class LabeledTextField : ValidableVisualElement<string>
+    public class LabeledIntegerField : ValidableVisualElement<int>
     {
-        public new class UxmlFactory : UxmlFactory<LabeledTextField, UxmlTraits>
+        public new class UxmlFactory : UxmlFactory<LabeledIntegerField, UxmlTraits>
         {
         }
 
@@ -25,7 +24,7 @@ namespace Beamable.Editor.UI.Components
             readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
                 {name = "label", defaultValue = "Label"};
 
-            readonly UxmlStringAttributeDescription _value = new UxmlStringAttributeDescription
+            readonly UxmlIntAttributeDescription _value = new UxmlIntAttributeDescription
                 {name = "value"};
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -36,7 +35,7 @@ namespace Beamable.Editor.UI.Components
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
-                if (ve is LabeledTextField component)
+                if (ve is LabeledIntegerField component)
                 {
                     component.Label = _label.GetValueFromBag(bag, cc);
                     component.Value = _value.GetValueFromBag(bag, cc);
@@ -47,24 +46,28 @@ namespace Beamable.Editor.UI.Components
 
         private Action _onValueChanged;
         private Label _labelComponent;
-        private TextField _textFieldComponent;
-        private string _value;
+        private IntegerField _integerFieldComponent;
+        private int _value;
+        private int _minValue;
+        private int _maxValue;
+        private VisualElement _mainElement;
 
-        public string Value
+        public int Value
         {
 	        get => _value;
             set
             {
-                _value = value;
-                _textFieldComponent?.SetValueWithoutNotify(_value);
+	            int tempValue = Mathf.Clamp(value, _minValue, _maxValue);
+                _value = tempValue;
+                _integerFieldComponent?.SetValueWithoutNotify(_value);
                 _onValueChanged?.Invoke();
             }
         }
 
         private string Label { get; set; }
 
-        public LabeledTextField() : base(
-            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledTextField)}/{nameof(LabeledTextField)}")
+        public LabeledIntegerField() : base(
+            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledIntegerField)}/{nameof(LabeledIntegerField)}")
         {
         }
 
@@ -72,29 +75,38 @@ namespace Beamable.Editor.UI.Components
         {
             base.Refresh();
 
-            _labelComponent = Root.Q<Label>("label");
-            _labelComponent.text = Label;
+            _mainElement = Root.Q<VisualElement>("mainVisualElement");
 
-            _textFieldComponent = Root.Q<TextField>("textField");
-            _textFieldComponent.value = Value;
-            _textFieldComponent.RegisterValueChangedCallback(ValueChanged);
+            _labelComponent = new Label(Label);
+            _labelComponent.name = "label";
+            _mainElement.Add(_labelComponent);
+
+            _integerFieldComponent = new IntegerField(); 
+            _integerFieldComponent.name = "integerField";
+            _integerFieldComponent.value = Value;
+            _integerFieldComponent.RegisterValueChangedCallback(ValueChanged);
+            _mainElement.Add(_integerFieldComponent);
         }
 
-        public void Setup(string label, string value, Action onValueChanged)
+        public void Setup(string label, int value, Action onValueChanged, int minValue, int maxValue)
         {
             Label = label;
             Value = value;
             _onValueChanged = onValueChanged;
+            _minValue = minValue;
+            _maxValue = maxValue;
+            
+            Refresh();
         }
 
         protected override void OnDestroy()
         {
-            _textFieldComponent.UnregisterValueChangedCallback(ValueChanged);
+            _integerFieldComponent.UnregisterValueChangedCallback(ValueChanged);
         }
 
-        private void ValueChanged(ChangeEvent<string> evt)
+        private void ValueChanged(ChangeEvent<int> evt)
         {
-            Value = evt.newValue;
+	        Value = evt.newValue;
             InvokeValidationCheck(Value);
         }
     }

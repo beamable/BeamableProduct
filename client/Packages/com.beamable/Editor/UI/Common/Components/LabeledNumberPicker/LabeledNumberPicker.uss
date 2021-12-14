@@ -3,16 +3,16 @@
     margin-left: 5px;
 }
 
-LabeledTextField #label {
+LabeledIntegerField #label {
     width: 15px;
     -unity-text-align: middle-center;
 }
 
-LabeledTextField #textField {
+LabeledIntegerField #integerField {
     width: 25px;
 }
 
-LabeledTextField #textField > TextInput {
+LabeledIntegerField #integerField > IntegerInput {
     -unity-text-align: middle-center;
 }
 

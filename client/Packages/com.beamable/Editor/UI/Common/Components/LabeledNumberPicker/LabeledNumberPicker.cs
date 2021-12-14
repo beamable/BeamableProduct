@@ -44,20 +44,15 @@ namespace Beamable.Editor.UI.Components
             }
         }
 
-        private LabeledTextField _labeledTextFieldComponent;
+        private LabeledIntegerField _labeledIntegerFieldComponent;
         private Button _button;
         private List<string> _options;
         private Action _onValueChanged;
 
-        public string Value
-        {
-            get => _labeledTextFieldComponent.Value;
-            set => _labeledTextFieldComponent.Value = value;
-        }
-
+        public string Value => _labeledIntegerFieldComponent.Value.ToString();
         private int MinValue { get; set; }
         private int MaxValue { get; set; }
-        public string Label { get; set; }
+        private string Label { get; set; }
 
         public LabeledNumberPicker() : base($"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledNumberPicker)}/{nameof(LabeledNumberPicker)}")
         {
@@ -68,9 +63,8 @@ namespace Beamable.Editor.UI.Components
         {
             base.Refresh();
 
-            _labeledTextFieldComponent = Root.Q<LabeledTextField>("labelAndValue");
-            _labeledTextFieldComponent.Setup(Label, Value, _onValueChanged, MinValue, MaxValue);
-            _labeledTextFieldComponent.Refresh();
+            _labeledIntegerFieldComponent = Root.Q<LabeledIntegerField>("labelAndValue");
+            _labeledIntegerFieldComponent.Setup(Label, Int32.Parse(Value), _onValueChanged, MinValue, MaxValue);
 
             _button = Root.Q<Button>("button");
 
@@ -116,8 +110,8 @@ namespace Beamable.Editor.UI.Components
 
         private void SetOption(string value)
         {
-            _labeledTextFieldComponent.Value = value;
-            _labeledTextFieldComponent.Refresh();
+            _labeledIntegerFieldComponent.Value = Int32.Parse(value);
+            _labeledIntegerFieldComponent.Refresh();
         }
 
         public void Set(string option) => SetOption(option);
