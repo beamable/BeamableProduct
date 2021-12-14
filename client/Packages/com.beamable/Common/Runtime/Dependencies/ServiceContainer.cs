@@ -18,10 +18,14 @@ namespace Beamable.Common.Dependencies
 	public interface IDependencyProviderScope : IDependencyProvider
 	{
 		Promise Dispose();
-		// IDependencyProviderScope Fork(Action<IDependencyBuilder> configure=null);
-
 		IDependencyProviderScope Parent { get; }
 		IEnumerable<IDependencyProviderScope> Children { get; }
+		void Hydrate(IDependencyProviderScope serviceScope);
+
+		bool IsDestroyed { get; }
+		IEnumerable<ServiceDescriptor> TransientServices { get; }
+		IEnumerable<ServiceDescriptor> ScopedServices{ get; }
+		IEnumerable<ServiceDescriptor> SingletonServices{ get; }
 	}
 
 	public interface IBeamableDisposable
@@ -43,9 +47,20 @@ namespace Beamable.Common.Dependencies
 
 		private List<object> _createdTransientServices = new List<object>();
 
+
+		public bool IsDestroyed => _destroyed;
+		public IEnumerable<ServiceDescriptor> TransientServices => Transients.Values;
+		public IEnumerable<ServiceDescriptor> ScopedServices => Scoped.Values;
+		public IEnumerable<ServiceDescriptor> SingletonServices => Singletons.Values;
+
 		public IDependencyProviderScope Parent { get; protected set; }
 		private HashSet<IDependencyProviderScope> _children = new HashSet<IDependencyProviderScope>();
+
+		private Dictionary<IDependencyProviderScope, Action<IDependencyBuilder>> _childToConfigurator =
+			new Dictionary<IDependencyProviderScope, Action<IDependencyBuilder>>();
 		public IEnumerable<IDependencyProviderScope> Children => _children;
+
+		public Guid Id = Guid.NewGuid();
 
 		public DependencyProvider(DependencyBuilder builder)
 		{
@@ -175,6 +190,32 @@ namespace Beamable.Common.Dependencies
 			ScopeCache.Clear();
 		}
 
+		public void Hydrate(IDependencyProviderScope other)
+		{
+			_destroyed = other.IsDestroyed;
+			Transients = other.TransientServices.ToDictionary(desc => desc.Interface);
+			Scoped = other.ScopedServices.ToDictionary(desc => desc.Interface);
+			Singletons = other.SingletonServices.ToDictionary(desc => desc.Interface);
+			SingletonCache.Clear();
+			ScopeCache.Clear();
+
+			var oldChildren = new HashSet<IDependencyProviderScope>(_children);
+			var newChildren = new HashSet<IDependencyProviderScope>();
+			foreach (var child in oldChildren)
+			{
+				var configurator = _childToConfigurator[child];
+				var newChild = Fork(configurator);
+				newChildren.Add(newChild);
+				child.Hydrate(newChild);
+			}
+
+			foreach (var child in newChildren)
+			{
+				_children.Remove(child);
+			}
+		}
+
+
 		public IDependencyProviderScope Fork(Action<IDependencyBuilder> configure=null)
 		{
 			var builder = new DependencyBuilder();
@@ -208,6 +249,7 @@ namespace Beamable.Common.Dependencies
 
 			var provider = new DependencyProvider(builder) {Parent = this};
 			_children.Add(provider);
+			_childToConfigurator[provider] = configure;
 
 			return provider;
 		}

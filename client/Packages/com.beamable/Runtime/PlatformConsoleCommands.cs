@@ -8,8 +8,10 @@ using Beamable.Common.Api.Groups;
 using Beamable.Common.Api.Mail;
 using Beamable.Common.Dependencies;
 using Beamable.Service;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Profiling;
+using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
 
 namespace Beamable.Api
@@ -38,24 +40,22 @@ namespace Beamable.Api
             return String.Empty;
         }
 
-        [BeamableConsoleCommand("RESET", "Clear the access token and start with a fresh account", "RESET")]
-        protected string ResetAccount(params string[] args)
+        [BeamableConsoleCommand("RESET", "Dispose the context, clear the access token, and reload the scene given as an argument, OR the current scene", "RESET <scene index or name>")]
+        protected string Reset(params string[] args)
         {
-            _provider.GetService<IBeamableAPI>().ClearDeviceUsers();
-            Console.Log(ForceRestart());
-            return "Attempting access token reset...";
+	        Beam.ResetToScene(args.Length == 1 ? args[0] : null).Then(_ => {
+		        Console.Log("Reset complete");
+	        });
+	        return "Resetting...";
         }
 
-        [BeamableConsoleCommand(new [] { "FORCE-RESTART", "FR"}, "Restart the game as if it had just been launched", "FORCE-RESTART")]
-        public string ForceRestart(params string[] args)
+        [BeamableConsoleCommand(new [] { "RESTART", "FR"}, "Clear access tokens, then Restart the game as if it had just been launched", "FORCE-RESTART")]
+        public string Restart(params string[] args)
         {
-
-            // ServiceManager.OnTeardown();
-            var ctx = _provider.GetService<BeamContext>();
-            ctx.Reset().Then(_ => {
-	            Console.Log("Reset complete");
-            });
-            return "Game Restarted.";
+	        Beam.ResetToScene("0").Then(_ => {
+		        Debug.Log("restart complete");
+	        });
+	        return "Restarting to scene 0...";
         }
 
         /// <summary>

@@ -285,7 +285,9 @@ namespace Beamable
 
 			RegisterServices(builder);
 
+			var oldScope = _serviceScope;
 			_serviceScope = builder.Build();
+			oldScope?.Hydrate(_serviceScope);
 
 			InitServices(cid, pid);
 			_behaviour.Initialize(this);
@@ -471,6 +473,8 @@ namespace Beamable
 		public static BeamContext ForContext(string playerCode="") => Instantiate(playerCode: playerCode);
 
 		public static BeamContext EditorContext => ForContext("editor");
+
+		public static IEnumerable<BeamContext> All => _playerCodeToContext.Values;
 		/// <summary>
 		/// This method will tear down a <see cref="BeamContext"/> and notify all internal services that the context should be destroyed.
 		/// All coroutines associated with the context will stop.
@@ -501,12 +505,12 @@ namespace Beamable
 		/// Clear the authorization token for the <see cref="PlayerCode"/>, then internally calls <see cref="Dispose"/>, and finally re-initializes the context.
 		/// After this method completes, there will be a new PlayerId associated with the player code.
 		/// </summary>
-		public async Promise Reset()
+		public async Promise ClearAndDispose()
 		{
 			ClearToken();
 			await Dispose();
-			Instantiate(_behaviour, PlayerCode);
-			await _initPromise;
+			// Instantiate(null, PlayerCode);
+			// await _initPromise;
 		}
 
 		public void ChangeTime()

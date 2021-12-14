@@ -44,6 +44,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Beamable
 {
@@ -182,6 +184,83 @@ namespace Beamable
 			{
 				registration.Item2.Invoke(null, new[] {Beam.DependencyBuilder});
 			}
+		}
+
+		private static Action GetLoadSceneFunction(string sceneQualifier = null)
+		{
+			Action loadAction = () => { Debug.LogWarning("No scene could be identified to reload."); };
+			if (sceneQualifier == null)
+			{
+				// load the activeScene, or if in Unity Editor, load
+#if UNITY_EDITOR
+				loadAction = () => {
+					UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode(
+						"Temp/__Backupscenes/0.backup", new LoadSceneParameters(LoadSceneMode.Single));
+				};
+#else
+				var activeScene = SceneManager.GetActiveScene();
+				loadAction = () => {
+					SceneManager.LoadScene(activeScene.name, LoadSceneMode.Single);
+				};
+#endif
+			}
+			else if (int.TryParse(sceneQualifier, out var buildIndex))
+			{
+				loadAction = () => {
+					SceneManager.LoadScene(buildIndex, LoadSceneMode.Single);
+				};
+			}
+			else
+			{
+				loadAction = () => {
+					SceneManager.LoadScene(sceneQualifier, LoadSceneMode.Single);
+				};
+			}
+
+			return loadAction;
+		}
+
+		public static async Promise ResetToScene(string sceneQualifier=null)
+		{
+			// step 1, identify _which_ scene to reload.
+			var loadAction = GetLoadSceneFunction(sceneQualifier);
+
+			// step 2. dispose the contexts
+			foreach (var ctx in BeamContext.All)
+			{
+				await ctx.ClearAndDispose();
+			}
+
+			// step 3. take down all other scenes.
+			var totalScenesRequired = 0;
+			var scenesDestroyed = 0;
+			var allScenesUnloaded = new Promise();
+			Action<AsyncOperation> Check(Scene unloadedScene)
+			{
+				return (_) => {
+					scenesDestroyed++;
+					if (scenesDestroyed != totalScenesRequired) return;
+
+					allScenesUnloaded.CompleteSuccess();
+				};
+			}
+
+			var autoScene = SceneManager.CreateScene("_autogeneratored_" + Guid.NewGuid().ToString());
+			totalScenesRequired = SceneManager.sceneCount - 1;
+			for (var i = 0; i < totalScenesRequired; i++)
+			{
+				var toDestroy = SceneManager.GetSceneAt(i);
+				if (autoScene == toDestroy) continue;
+				var op = SceneManager.UnloadSceneAsync(toDestroy);
+				if (op == null)
+				{
+					Check(toDestroy)(null);
+				}
+				else op.completed += Check(toDestroy);
+			}
+
+			await allScenesUnloaded;
+			loadAction();
 		}
 	}
 }
