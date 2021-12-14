@@ -3,15 +3,18 @@ using System.Collections.Generic;
 using System;
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Dependencies;
 using Beamable.Coroutines;
 using Beamable.Service;
 
 namespace Beamable.Api {
    public class UnityUserDataCache<T> : UserDataCache<T>
    {
-      public static UnityUserDataCache<T> CreateInstance(string name, long ttlMs, CacheResolver resolver)
+	   private readonly IDependencyProvider _provider;
+
+	   public static UnityUserDataCache<T> CreateInstance(string name, long ttlMs, CacheResolver resolver, IDependencyProvider provider)
       {
-         return new UnityUserDataCache<T>(name, ttlMs, resolver);
+         return new UnityUserDataCache<T>(name, ttlMs, resolver, provider);
       }
 
       private string coroutineContext;
@@ -28,8 +31,9 @@ namespace Beamable.Api {
 
 
       // If TTL is 0, then never expire anything
-      public UnityUserDataCache(string name, long ttlMs, CacheResolver resolver) {
-         coroutineContext = $"userdatacache_{name}";
+      public UnityUserDataCache(string name, long ttlMs, CacheResolver resolver, IDependencyProvider provider) {
+	      _provider = provider ?? ServiceManager.LegacyDependencyProvider;
+	      coroutineContext = $"userdatacache_{name}";
          Name = name;
          TtlMs = ttlMs;
          Resolver = resolver;
@@ -148,7 +152,9 @@ namespace Beamable.Api {
 
       protected void PerformScheduleResolve()
       {
-         ServiceManager.Resolve<CoroutineService>().StartNew(coroutineContext, ScheduleResolve());
+
+	      _provider.GetService<CoroutineService>().StartNew(coroutineContext, ScheduleResolve());
+
       }
 
 

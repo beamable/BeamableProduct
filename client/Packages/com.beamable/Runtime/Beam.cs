@@ -6,6 +6,7 @@ using Beamable.Api.Analytics;
 using Beamable.Api.Announcements;
 using Beamable.Api.Auth;
 using Beamable.Api.Caches;
+using Beamable.Api.CloudData;
 using Beamable.Api.CloudSaving;
 using Beamable.Api.Commerce;
 using Beamable.Api.Connectivity;
@@ -89,21 +90,26 @@ namespace Beamable
 				                                             new StatsService(
 					                                             provider.GetService<IPlatformService>(),
 					                                             provider.GetService<PlatformRequester>(),
+					                                             provider,
 					                                             UnityUserDataCache<Dictionary<string, string>>
 						                                             .CreateInstance))
-			                    .AddSingleton<IAnalyticsTracker, AnalyticsTracker>(provider =>
+			                    .AddSingleton<AnalyticsTracker>(provider =>
 				                    new AnalyticsTracker(provider.GetService<IPlatformService>(),
 				                                         provider.GetService<PlatformRequester>(),
 				                                         provider.GetService<CoroutineService>(), 30, 10)
 			                    )
+			                    .AddSingleton<IAnalyticsTracker>(provider => provider.GetService<AnalyticsTracker>())
 			                    .AddSingleton<MailService>()
 			                    .AddSingleton<PushService>()
 			                    .AddSingleton<CommerceService>()
+			                    .AddSingleton<CloudDataService>()
+			                    .AddSingleton<ICloudDataApi>(provider => provider.GetService<CloudDataService>())
+			                    .AddSingleton<CloudDataApi>(provider => provider.GetService<CloudDataService>())
 			                    .AddSingleton<PaymentService>()
 			                    .AddSingleton<GroupsService>()
 			                    .AddSingleton<EventsService>()
-			                    .AddSingleton<ITournamentApi, TournamentService>()
-			                    .AddSingleton<ICloudDataApi, CloudDataApi>()
+			                    .AddSingleton<ITournamentApi>(p => p.GetService<TournamentService>())
+			                    .AddSingleton<TournamentService>()
 			                    .AddSingleton<ChatService>()
 			                    .AddSingleton<GameRelayService>()
 			                    .AddSingleton<MatchmakingService>(provider => new MatchmakingService(
@@ -220,18 +226,17 @@ namespace Beamable
 			return loadAction;
 		}
 
-		public static async Promise ResetToScene(string sceneQualifier=null)
+		public static async Promise ClearAndDisposeAllContexts()
 		{
-			// step 1, identify _which_ scene to reload.
-			var loadAction = GetLoadSceneFunction(sceneQualifier);
-
-			// step 2. dispose the contexts
 			foreach (var ctx in BeamContext.All)
 			{
 				await ctx.ClearAndDispose();
 			}
+		}
+		public static async Promise ResetToScene(string sceneQualifier=null)
+		{
+			var loadAction = GetLoadSceneFunction(sceneQualifier);
 
-			// step 3. take down all other scenes.
 			var totalScenesRequired = 0;
 			var scenesDestroyed = 0;
 			var allScenesUnloaded = new Promise();

@@ -55,7 +55,7 @@ namespace Beamable
             promise.Then(x => result.CompleteSuccess(x));
          };
 
-         ServiceManager.Resolve<CoroutineService>().StartCoroutine(Wait());
+         BeamContext.Default.CoroutineService.StartCoroutine(Wait());
 
          return result;
       }

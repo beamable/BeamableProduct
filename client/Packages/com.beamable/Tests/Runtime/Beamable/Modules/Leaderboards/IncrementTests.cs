@@ -83,7 +83,7 @@ namespace Beamable.Tests.Modules.Leaderboards
       {
          base.OnSetupBeamable();
          MockApi.LeaderboardService =
-            new LeaderboardService(MockPlatform, MockRequester, UnityUserDataCache<RankEntry>.CreateInstance);
+            new LeaderboardService(MockPlatform, MockRequester, null, UnityUserDataCache<RankEntry>.CreateInstance);
       }
    }
 }

@@ -6,6 +6,7 @@ using Beamable.Api.Sessions;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Notifications;
+using Beamable.Coroutines;
 using Beamable.Platform.Tests.Connectivity;
 
 namespace Beamable.Platform.Tests
@@ -21,6 +22,7 @@ namespace Beamable.Platform.Tests
       public IHeartbeatService Heartbeat { get; }
       public string Cid { get; }
       public string Pid { get; }
+      public string TimeOverride { get; set; }
       // These events only exist to satisfy the interface, so we suppress CS0067. ~ACM 2021-03-23
 #pragma warning disable 0067
       public event Action OnShutdown;
@@ -29,6 +31,7 @@ namespace Beamable.Platform.Tests
 #pragma warning restore 0067
       public NotificationService Notification { get; }
       public IConnectivityService ConnectivityService { get; set; }
+      public CoroutineService CoroutineService { get; }
 
       public MockPlatformService()
       {

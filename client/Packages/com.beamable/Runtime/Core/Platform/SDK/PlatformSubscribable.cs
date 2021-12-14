@@ -84,6 +84,7 @@ namespace Beamable.Api
       protected IBeamableRequester requester;
       protected IConnectivityService connectivityService;
       protected INotificationService notificationService;
+      protected CoroutineService coroutineService;
       protected IUserContext userContext;
 
       protected BeamableGetApiResource<ScopedRsp> getter;
@@ -109,6 +110,7 @@ namespace Beamable.Api
 	      this.connectivityService = provider.GetService<IConnectivityService>();
 	      this.notificationService = provider.GetService<INotificationService>();
 	      this.userContext = provider.GetService<IUserContext>();
+	      this.coroutineService = provider.GetService<CoroutineService>();
 	      if (getter == null)
 	      {
 		      getter = new BeamableGetApiResource<ScopedRsp>();
@@ -144,6 +146,7 @@ namespace Beamable.Api
          this.service = service;
          notificationService = platform.Notification;
          connectivityService = platform.ConnectivityService;
+         coroutineService = platform.CoroutineService;
          userContext = platform;
          platform.Notification.Subscribe(String.Format("{0}.refresh", service), OnRefreshNtf);
 
@@ -260,7 +263,7 @@ namespace Beamable.Api
          if (nextRefreshPromise == null)
          {
             nextRefreshPromise = new Promise<Unit>();
-            ServiceManager.Resolve<CoroutineService>().StartCoroutine(ExecuteRefresh());
+            coroutineService.StartCoroutine(ExecuteRefresh());
          }
 
          return nextRefreshPromise;
@@ -460,7 +463,6 @@ namespace Beamable.Api
       protected void ScheduleRefresh(long seconds, string scope)
       {
          DateTime refreshTime = DateTime.UtcNow.AddSeconds(seconds);
-         var coroutineService = ServiceManager.Resolve<CoroutineService>();
          ScheduledRefresh current;
          if (scheduledRefreshes.TryGetValue(scope, out current))
          {

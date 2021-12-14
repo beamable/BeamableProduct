@@ -14,6 +14,7 @@ using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Player;
 using Beamable.Config;
+using Beamable.Coroutines;
 using Beamable.Player;
 using Core.Platform.SDK;
 using System;
@@ -114,6 +115,7 @@ namespace Beamable
 		public AccessToken AccessToken => _requester.Token;
 
 		public IBeamableRequester Requester => ServiceProvider.GetService<IBeamableRequester>();
+		public CoroutineService CoroutineService => ServiceProvider.GetService<CoroutineService>();
 
 
 		[SerializeField]
@@ -142,6 +144,25 @@ namespace Beamable
 		private ApiServices _api;
 		public ApiServices Api => _api ?? (_api = new ApiServices(this));
 
+		public string TimeOverride
+		{
+			get => _requester.TimeOverride;
+			set
+			{
+				if (value == null)
+				{
+					_requester.TimeOverride = null;
+					TimeOverrideChanged?.Invoke();
+					return;
+				}
+
+				var date = DateTime.Parse(value, null, System.Globalization.DateTimeStyles.RoundtripKind);
+				var str = date.ToString("yyyy-MM-ddTHH:mm:ssZ");
+				_requester.TimeOverride = str;
+				TimeOverrideChanged?.Invoke();
+			}
+		}
+
 		private AccessTokenStorage _tokenStorage;
 		private EnvironmentData _environment;
 		private PlatformRequester _requester;
@@ -155,31 +176,6 @@ namespace Beamable
 		private IHeartbeatService _heartbeatService;
 		private BeamableBehaviour _behaviour;
 
-
-		// Lazy initialization of services.
-		// [SerializeField]
-		// private PlayerAnnouncements _announcements;
-		// [SerializeField]
-		// private PlayerCurrencyGroup _currency;
-		// [SerializeField]
-		// private PlayerStats _playerStats;
-		//
-		// public PlayerAnnouncements Announcements =>
-		// 	_announcements?.IsInitialized ?? false
-		// 		? _announcements
-		// 		: (_announcements = ServiceProvider.GetService<PlayerAnnouncements>());
-		//
-		// public PlayerCurrencyGroup Currencies =>
-		// 	_currency?.IsInitialized ?? false
-		// 		? _currency
-		// 		: (_currency = ServiceProvider.GetService<PlayerCurrencyGroup>());
-		//
-		// public PlayerStats Stats =>
-		// 	_playerStats?.IsInitialized ?? false
-		// 		? _playerStats
-		// 		: (_playerStats = ServiceProvider.GetService<PlayerStats>());
-
-		// public IObservedPlayer Me => this;
 		#endregion
 
 		#region events
@@ -495,6 +491,9 @@ namespace Beamable
 			_isDisposed = true;
 			OnShutdown?.Invoke();
 			await _serviceScope.Dispose();
+			_currency = null;
+			_announcements = null;
+			_playerStats = null;
 			OnShutdownComplete?.Invoke();
 		}
 

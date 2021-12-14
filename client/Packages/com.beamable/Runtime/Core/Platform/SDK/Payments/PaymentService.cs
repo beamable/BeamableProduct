@@ -419,11 +419,6 @@ namespace Beamable.Api.Payments
         public int amount;
         public int step;
 
-        public string GetLocalizedText()
-        {
-            return ServiceManager.Resolve<PlatformService>().BeamablePurchaser?.GetLocalizedPrice(symbol) ?? "";
-        }
-
         public bool IsFree => amount == 0;
     }
 

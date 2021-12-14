@@ -1,5 +1,6 @@
 ﻿using Beamable.Common.Api;
 using Beamable.Common.Api.Leaderboards;
+using Beamable.Common.Dependencies;
 
 namespace Beamable.Api.Leaderboard
 {
@@ -17,9 +18,9 @@ namespace Beamable.Api.Leaderboard
    /// </summary>
    public class LeaderboardService : LeaderboardApi
    {
-      public LeaderboardService(IPlatformService platform, IBeamableRequester requester,
+      public LeaderboardService(IPlatformService platform, IBeamableRequester requester, IDependencyProvider provider,
          UserDataCache<RankEntry>.FactoryFunction cacheFactory)
-         : base(requester, platform, cacheFactory)
+         : base(requester, platform, provider, cacheFactory)
       {
       }
 

@@ -37,7 +37,7 @@ namespace Beamable.Purchasing
         /// </summary>
         public Promise<Unit> Initialize(IDependencyProvider provider=null)
         {
-	        _serviceProvider = provider;
+	        _serviceProvider = provider ?? ServiceManager.LegacyDependencyProvider;
 	        GetPaymentService().GetSKUs().Then(rsp =>
 	        {
 		        var noSkusAvailable = rsp.skus.definitions.Count == 0;
@@ -50,7 +50,7 @@ namespace Beamable.Purchasing
 		        }
 
 #if USE_STEAMWORKS && !UNITY_EDITOR
-                var builder = ConfigurationBuilder.Instance(new Steam.SteamPurchasingModule());
+                var builder = ConfigurationBuilder.Instance(new Steam.SteamPurchasingModule(_serviceProvider));
                 foreach (var sku in rsp.skus.definitions)
                 {
                     builder.AddProduct(sku.name, ProductType.Consumable, new IDs
@@ -92,9 +92,12 @@ namespace Beamable.Purchasing
 
         private PaymentService GetPaymentService()
         {
-	        return _serviceProvider == null
-		        ? ServiceManager.Resolve<PlatformService>().Payments
-		        : _serviceProvider.GetService<PaymentService>();
+	        return _serviceProvider.GetService<PaymentService>();
+        }
+
+        private CoroutineService GetCoroutineService()
+        {
+	        return _serviceProvider.GetService<CoroutineService>();
         }
 
         #region "IBeamablePurchaser"
@@ -274,7 +277,7 @@ namespace Beamable.Purchasing
         /// <param name="purchasedProduct">The product being purchased</param>
         private void FulfillTransaction(CompletedTransaction transaction, Product purchasedProduct)
         {
-            ServiceManager.Resolve<PlatformService>().Payments.CompletePurchase(transaction).Then(_ =>
+            GetPaymentService().CompletePurchase(transaction).Then(_ =>
             {
                 _storeController.ConfirmPendingPurchase(purchasedProduct);
                 _success?.Invoke(transaction);
@@ -292,7 +295,7 @@ namespace Beamable.Purchasing
                 var retryable = err.Code >= 500 || err.Code == 429 || err.Code == 0;   // Server error or rate limiting or network error
                 if (retryable)
                 {
-                    ServiceManager.Resolve<CoroutineService>().StartCoroutine(RetryTransaction(transaction, purchasedProduct));
+                    GetCoroutineService().StartCoroutine(RetryTransaction(transaction, purchasedProduct));
                 }
                 else
                 {

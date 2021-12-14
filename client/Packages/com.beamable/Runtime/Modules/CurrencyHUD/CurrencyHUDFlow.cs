@@ -36,7 +36,7 @@ namespace Beamable.CurrencyHUD
             de.InventoryService.Subscribe(content.Id, view =>
             {
                 view.currencies.TryGetValue(content.Id, out targetAmount);
-                ServiceManager.Resolve<CoroutineService>().StartCoroutine(DisplayCurrency());
+                BeamContext.ForContext(this).CoroutineService.StartCoroutine(DisplayCurrency());
             });
             var currency = await content.Resolve();
             var currencyAddress = currency.icon;
