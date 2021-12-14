@@ -5,10 +5,6 @@ on:
   branches:
     - 'main'
     - 'iOS'
- pull_request:
-  branches:
-    - 'main'
-    - 'iOS'
 jobs:
   build:
     name: Build for ${{ matrix.targetPlatform }}
@@ -31,6 +27,8 @@ jobs:
         with:
           fetch-depth: 0
           lfs: true
+      - name: What are my env's?
+        run:  printenv && echo ${{ github.run_number }}
       - name: Login to Docker Hub
         uses: docker/login-action@v1
         with:
