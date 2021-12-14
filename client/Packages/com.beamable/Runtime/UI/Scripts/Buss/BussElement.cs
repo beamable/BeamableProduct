@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Beamable.UI.Buss
 {
 	[ExecuteAlways, DisallowMultipleComponent]
-	public class BussElement : MonoBehaviour
+	public class BussElement : MonoBehaviour, ISerializationCallbackReceiver
 	{
 #pragma warning disable CS0649
 		[SerializeField] private string _id;
@@ -12,6 +12,7 @@ namespace Beamable.UI.Buss
 		[SerializeField] private BussStyleDescription _inlineStyle;
 		[SerializeField] private BussStyleSheet _styleSheet;
 		private List<string> _pseudoClasses = new List<string>();
+		[SerializeField, HideInInspector] private List<Object> _assetReferences = new List<Object>();
 
 		[SerializeField, HideInInspector] private BussElement _parent;
 		[SerializeField, HideInInspector] private List<BussElement> _children = new List<BussElement>();
@@ -110,7 +111,7 @@ namespace Beamable.UI.Buss
 			}
 			else
 			{
-				BussConfiguration.Instance.UnregisterObserver(this);
+				BussConfiguration.UseConfig(c => c.UnregisterObserver(this));
 			}
 		}
 
@@ -206,7 +207,7 @@ namespace Beamable.UI.Buss
 		/// </summary>
 		public void RecalculateStyle()
 		{
-			BussConfiguration.Instance.RecalculateStyle(this);
+			BussConfiguration.UseConfig(c => c.RecalculateStyle(this));
 			ApplyStyle();
 
 			foreach (BussElement child in Children)
@@ -229,13 +230,13 @@ namespace Beamable.UI.Buss
 			}
 			else
 			{
-				BussConfiguration.Instance.UnregisterObserver(this);
+				BussConfiguration.UseConfig(c => c.UnregisterObserver(this));
 			}
 
 			_parent = foundParent;
 			if (Parent == null)
 			{
-				BussConfiguration.Instance.RegisterObserver(this);
+				BussConfiguration.UseConfig(c => c.RegisterObserver(this));
 			}
 			else
 			{
@@ -244,6 +245,17 @@ namespace Beamable.UI.Buss
 					Parent._children.Add(this);
 				}
 			}
+		}
+
+		public void OnBeforeSerialize()
+		{
+			_assetReferences.Clear();
+			_inlineStyle.PutAssetReferencesInReferenceList(_assetReferences);
+		}
+
+		public void OnAfterDeserialize()
+		{
+			_inlineStyle.AssignAssetReferencesFromReferenceList(_assetReferences);
 		}
 	}
 }

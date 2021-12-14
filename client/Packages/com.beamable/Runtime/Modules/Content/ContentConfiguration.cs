@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Linq;
-using Beamable;
 using Beamable.Common.Content;
-using Beamable.Content;
 using UnityEngine;
 
-namespace Modules.Content
+namespace Beamable.Content
 {
     [CreateAssetMenu(
         fileName="Content Configuration",
@@ -35,8 +33,10 @@ namespace Modules.Content
         [Tooltip("Create zip archive of content upon baking. Makes first content resolve call longer due to decompression.")]
         public bool EnableBakedContentCompression = true;
 
-        [Tooltip("Re-bake content on each build.")]
+#if UNITY_STANDALONE
+        [Tooltip("Re-bake content on each build. This option is available only on Standalone build target.")]
         public bool BakeContentOnBuild = true;
+#endif
 
         public ContentParameterProvider ParameterProvider {
             get {

@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using Beamable;
+﻿using System.Collections.Generic;
 using Beamable.Announcements;
-using Modules.Inventory.Prototype;
-using Modules.Inventory.Prototype.GenericComponents;
+using Beamable.Modules.Generics;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UI;
 
-namespace Modules.Content
+namespace Beamable.Modules.Content
 {
     public class AnnouncementsPresenter : CollectionPresenter<AnnouncementsCollection>
     {

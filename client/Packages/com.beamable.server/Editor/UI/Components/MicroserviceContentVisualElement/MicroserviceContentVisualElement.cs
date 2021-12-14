@@ -8,6 +8,7 @@ using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI.Components;
+using System.Diagnostics;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -73,7 +74,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             _servicesListElement = Root.Q<VisualElement>("listRoot");
             _servicesCreateElements = new Dictionary<ServiceType, CreateServiceBaseVisualElement>();
 
-            if (DockerCommand.DockerNotInstalled)
+            if (DockerCommand.DockerNotInstalled || !IsDockerAppRunning())
             {
 	            ShowDockerNotInstalledAnnouncement();
 	            return;
@@ -254,7 +255,15 @@ namespace Beamable.Editor.Microservice.UI.Components
         private void ShowDockerNotInstalledAnnouncement()
         {
 	        var dockerAnnouncement = new DockerAnnouncementModel();
-	        dockerAnnouncement.OnInstall = () => Application.OpenURL("https://docs.docker.com/get-docker/");
+	        dockerAnnouncement.IsDockerInstalled = !DockerCommand.DockerNotInstalled;
+	        if (DockerCommand.DockerNotInstalled)
+	        {
+		        dockerAnnouncement.OnInstall = () => Application.OpenURL("https://docs.docker.com/get-docker/");
+	        }
+	        else
+	        {
+		        dockerAnnouncement.OnInstall = Refresh;
+	        }
 	        var element = new DockerAnnouncementVisualElement() { DockerAnnouncementModel = dockerAnnouncement };
 	        Root.Q<VisualElement>("announcementList").Add(element);
 	        element.Refresh();
@@ -318,6 +327,24 @@ namespace Beamable.Editor.Microservice.UI.Components
 	        var previewElement = new StorageDepencencyWarningVisualElement() { StorageDepencencyWarningModel = storagePreviewWarning };
 	        Root.Q<VisualElement>("announcementList").Add(previewElement);
 	        previewElement.Refresh();
+        }
+
+        static bool IsDockerAppRunning()
+        {
+	        var procList = Process.GetProcesses();
+	        for (int i = 0; i < procList.Length; i++)
+	        {
+		        try
+		        {
+			        if (procList[i].ProcessName.ToLower().Contains("docker desktop"))
+			        {
+				        return true;
+			        }
+		        }
+		        catch { }
+	        }
+
+	        return false;
         }
     }
 }

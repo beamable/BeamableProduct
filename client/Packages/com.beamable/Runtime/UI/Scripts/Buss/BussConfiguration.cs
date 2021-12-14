@@ -1,3 +1,5 @@
+using Beamable.Common.Content;
+using System;
 using System.Collections.Generic;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -15,19 +17,38 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 {
 	public class BussConfiguration : ModuleConfigurationObject
 	{
-		// New system
-		public static BussConfiguration Instance => Get<BussConfiguration>();
+
+		private static BussConfiguration Instance => Get<BussConfiguration>();
+		public static Optional<BussConfiguration> OptionalInstance
+		{
+			get
+			{
+				try
+				{
+					return new Optional<BussConfiguration> {Value = Instance, HasValue = true};
+				}
+				catch (ModuleConfigurationNotReadyException)
+				{
+					return new Optional<BussConfiguration>();
+				}
+			}
+		}
+
+		public static void UseConfig(Action<BussConfiguration> callback)
+		{
+			OptionalInstance.DoIfExists(callback);
+		}
+
 		[SerializeField] private BussStyleSheet globalStyleSheet = null;
 
-		// TODO: serialized only for debug purposes. Remove before final push
-		[SerializeField] private List<BussElement> _rootBussElements = new List<BussElement>();
+		private List<BussElement> _rootBussElements = new List<BussElement>();
 
 #if UNITY_EDITOR
 		static BussConfiguration()
 		{
 			// temporary solution to refresh the list of BussElements on scene change
-			EditorSceneManager.sceneOpened += (scene, mode) => Instance.RefreshBussElements();
-			EditorSceneManager.sceneClosed += scene => Instance.RefreshBussElements();
+			EditorSceneManager.sceneOpened += (scene, mode) => UseConfig(config => config.RefreshBussElements());
+			EditorSceneManager.sceneClosed += scene =>  UseConfig(config => config.RefreshBussElements());
 		}
 
 		void RefreshBussElements()
@@ -45,7 +66,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 		public void RegisterObserver(BussElement bussElement)
 		{
 			// TODO: serve case when user adds (by Add Component opiton, not by changing hierarchy) BUSSStyleProvider
-			// component somewhere "above" currently topmost BUSSStyleProvider(s) causing to change whole hierarchy 
+			// component somewhere "above" currently topmost BUSSStyleProvider(s) causing to change whole hierarchy
 
 			if (!_rootBussElements.Contains(bussElement))
 			{
