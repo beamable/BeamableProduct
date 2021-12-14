@@ -76,6 +76,7 @@ namespace Beamable.Console
 
         private void Update()
         {
+	        var _ = Beamable.API.Instance;
             if (!_isInitialized) return;
 
             if (_showNextTick)
@@ -222,7 +223,17 @@ namespace Beamable.Console
             for (var i = 1; i < parts.Length; i++) args[i - 1] = parts[i];
 
 
-            Log(BeamContext.ForContext(this).ServiceProvider.GetService<BeamableConsole>().Execute(parts[0], args));
+            var ctx = BeamContext.ForContext(this);
+            var console = ctx.ServiceProvider.GetService<BeamableConsole>();
+            // need to re-register commands because they might have been lost in a reset or restart
+            console.OnLog -= Log;
+            console.OnExecute -= ExecuteCommand;
+            console.OnCommandRegistered -= RegisterCommand;
+            console.OnLog += Log;
+            console.OnExecute += ExecuteCommand;
+            console.OnCommandRegistered += RegisterCommand;
+
+            Log(console.Execute(parts[0], args));
         }
 
         private static void RegisterCommand(BeamableConsoleCommandAttribute command, ConsoleCommandCallback callback)
