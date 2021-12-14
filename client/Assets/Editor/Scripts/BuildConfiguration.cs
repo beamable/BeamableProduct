@@ -43,7 +43,7 @@ public class BuildSampleProject
    {
       PlayerSettings.iOS.appleDeveloperTeamID = teamId;
       PlayerSettings.applicationIdentifier = "com.beamable.dev";
-      PlayerSettings.iOS.buildNumber = Environment.GetEnvironmentVariable("ANDROID_VERSION_CODE") ?? "1";
+      PlayerSettings.iOS.buildNumber = "2000000";
       BuildActiveTarget();
    }
    [MenuItem("Beamable/SampleBuild/Staging")]
@@ -51,7 +51,7 @@ public class BuildSampleProject
    {
       PlayerSettings.iOS.appleDeveloperTeamID = teamId;
       PlayerSettings.applicationIdentifier = "com.beamable.staging";
-      PlayerSettings.iOS.buildNumber = Environment.GetEnvironmentVariable("ANDROID_VERSION_CODE") ?? "1";
+      PlayerSettings.iOS.buildNumber = Environment.GetEnvironmentVariable("ANDROID_VERSION_CODE") ?? "2";
       BuildActiveTarget();
    }
    [MenuItem("Beamable/SampleBuild/Production")]
