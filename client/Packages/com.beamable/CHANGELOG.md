@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Renamed Beamable's iOS plugin for Google Sign-In from `GoogleSignIn` to `BeamableGoogleSignIn` to prevent name collisions with public plugins.
 - `InventoryService.GetCurrent` is no longer limited by URI length
 - only use `InitializeOnEnterPlayMode` in Unity 2019.3 or higher
+- Removed unnecessary Unity asset reimport for identical content data.
 
 ## [0.17.4]
 - no changes
