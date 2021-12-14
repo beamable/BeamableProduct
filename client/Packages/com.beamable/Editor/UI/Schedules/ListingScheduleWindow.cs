@@ -231,29 +231,36 @@ namespace Beamable.Editor.Schedules
             }
 
             _neverExpiresComponent.Value = neverExpires;
-            
-            bool isPeriod = schedule.definitions.Any(def => def.hour.Count > 1) ||
-                            schedule.definitions.Any(def => def.minute.Count > 1) ||
-                            schedule.definitions.Any(def => def.second.Count > 1);
+            _allDayComponent.Value = !schedule.IsPeriod;
 
-            _allDayComponent.Value = !isPeriod;
-
-            if (isPeriod)
+            if (schedule.IsPeriod)
             {
-                int startHour = Convert.ToInt32(schedule.definitions[0].hour[0]);
-                int endHour = Convert.ToInt32(schedule.definitions[schedule.definitions.Count - 1].hour[0]);
-                int startMinute = Convert.ToInt32(schedule.definitions[0].minute[0]);
-                int endMinute = Convert.ToInt32(schedule.definitions[schedule.definitions.Count - 1].minute[schedule.definitions[schedule.definitions.Count - 1].minute.Count - 1]);
-                
+	            var startHour = schedule.definitions[0].hour[0].Contains("*") 
+		            ? 0 
+		            : Convert.ToInt32(schedule.definitions[0].hour[0]);
+	            
+	            var endHour = schedule.definitions[schedule.definitions.Count - 1].hour[schedule.definitions[schedule.definitions.Count - 1].hour.Count - 1].Contains("*") 
+		            ? 23 
+		            : Convert.ToInt32(schedule.definitions[schedule.definitions.Count - 1].hour[schedule.definitions[schedule.definitions.Count - 1].hour.Count - 1]);
+				
+				var startMinute = schedule.definitions[0].minute[0].Contains("*") 
+					? 0 
+					: Convert.ToInt32(schedule.definitions[0].minute[0]);
+
+				var endMinute = schedule.definitions[schedule.definitions.Count - 1].minute[schedule.definitions[schedule.definitions.Count - 1].minute.Count - 1].Contains("*") 
+					? 59 
+					: Convert.ToInt32(schedule.definitions[schedule.definitions.Count - 1].minute[schedule.definitions[schedule.definitions.Count - 1].minute.Count - 1]);
+				
                 endMinute++;
                 if (endMinute == 60)
                 {
+	                endHour += endHour + 1 == 24 ? 0 : 1;
 	                endMinute = 0;
-	                endHour += 1;
                 }
                 
                 _periodFromHourComponent.Set(new DateTime(2000, 1, 1, startHour, startMinute, 0));
                 _periodToHourComponent.Set(new DateTime(2000, 1, 1, endHour, endMinute, 0));
+
             }
 
             var explicitDates = schedule.definitions.Any(definition => definition.dayOfMonth.Any(day => day != "*"));

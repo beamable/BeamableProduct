@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace Beamable.Editor.Tests.Content
 {
-    public class SchedulesTests
+	public class SchedulesTests
     {
         [Test]
         public void Event_Schedule_Daily_Mode_Test()
@@ -290,16 +290,32 @@ namespace Beamable.Editor.Tests.Content
 
         private static void TestPeriod(Schedule schedule, string warningHeader)
         {
-            bool isPeriod = schedule.definitions.Count > 1 && schedule.definitions.Any(def => def.hour[0] != "*");
-
-            if (schedule.definitions.Count > 0)
+	        if (schedule.definitions.Count > 0)
             {
-                if (isPeriod)
+                if (schedule.IsPeriod)
                 {
-	                int startHour = Convert.ToInt32(schedule.definitions[0].hour[0]);
-	                int endHour = Convert.ToInt32(schedule.definitions[schedule.definitions.Count - 1].hour[0]);
-	                int startMinute = Convert.ToInt32(schedule.definitions[0].minute[0]);
-	                int endMinute = Convert.ToInt32(schedule.definitions[schedule.definitions.Count - 1].minute[schedule.definitions[schedule.definitions.Count - 1].minute.Count - 1]);
+	                var startHour = schedule.definitions[0].hour[0].Contains("*") 
+		                ? 0 
+		                : Convert.ToInt32(schedule.definitions[0].hour[0]);
+	            
+	                var endHour = schedule.definitions[schedule.definitions.Count - 1].hour[schedule.definitions[schedule.definitions.Count - 1].hour.Count - 1].Contains("*") 
+		                ? 23 
+		                : Convert.ToInt32(schedule.definitions[schedule.definitions.Count - 1].hour[schedule.definitions[schedule.definitions.Count - 1].hour.Count - 1]);
+				
+	                var startMinute = schedule.definitions[0].minute[0].Contains("*") 
+		                ? 0 
+		                : Convert.ToInt32(schedule.definitions[0].minute[0]);
+
+	                var endMinute = schedule.definitions[schedule.definitions.Count - 1].minute[schedule.definitions[schedule.definitions.Count - 1].minute.Count - 1].Contains("*") 
+		                ? 59 
+		                : Convert.ToInt32(schedule.definitions[schedule.definitions.Count - 1].minute[schedule.definitions[schedule.definitions.Count - 1].minute.Count - 1]);
+				
+	                endMinute++;
+	                if (endMinute == 60)
+	                {
+		                endMinute = 0;
+		                endHour += 1;
+	                }
 
 	                bool valid = endHour > startHour || (endHour == startHour && endMinute > startMinute);
                     Assert.IsTrue(valid, $"{warningHeader} active period to should be later than active period from");
