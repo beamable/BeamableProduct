@@ -20,7 +20,7 @@ public class BuildSampleProject
    {
       PlayerSettings.iOS.appleDeveloperTeamID = teamId;
       PlayerSettings.applicationIdentifier = "com.beamable.dev";
-      PlayerSettings.iOS.buildNumber = Environment.GetEnvironmentVariable("GITHUB_RUN_NUMBER") ?? "0";
+      PlayerSettings.iOS.buildNumber = Environment.GetEnvironmentVariable("ANDROID_VERSION_CODE") ?? "1";
       BuildActiveTarget();
    }
    [MenuItem("Beamable/SampleBuild/Staging")]
