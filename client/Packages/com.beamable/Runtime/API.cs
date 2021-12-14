@@ -34,10 +34,7 @@ using Beamable.Common.Api.Notifications;
 using Beamable.Common.Api.Tournaments;
 using Beamable.Common.Player;
 using Beamable.Experimental;
-using Beamable.Player;
 using Beamable.Sessions;
-using Modules.Content;
-
 #if BEAMABLE_PURCHASING
 using Beamable.Purchasing;
 #endif
