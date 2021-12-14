@@ -87,7 +87,8 @@ jobs:
           unityVersion: ${{ matrix.unityVersion }}
           projectPath: ${{ matrix.projectPath }}
           githubToken: ${{ secrets.GITHUB_TOKEN }}
-          versioning: Semantic
+          versioning: Custom
+          version: 1.0.0
           allowDirtyBuild: true
           buildsPath: dist
           buildMethod: BuildSampleProject.Development
