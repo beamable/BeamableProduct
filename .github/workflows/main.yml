@@ -98,7 +98,7 @@ jobs:
           UNITY_VERSION=${{ matrix.unityVersion }} TARGET_PLATFORM=${{matrix.targetPlatform}} ./build/save_base_image.sh
         shell: bash
       - name: Where the crap are my artifacts?
-        run: pwd && ls -lrt && cd /dist/iOS/iOS && ls -lrt
+        run: pwd && ls -lrt && cd /github/workspace/dist/iOS/iOS && ls -lrt
       - uses: actions/upload-artifact@v2
         if: ${{ matrix.targetPlatform != 'WebGL' }}
         with:
