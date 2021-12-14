@@ -1,6 +1,6 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using UnityEditor;
-using Editor.Scripts.Versioning;
 
 public class BuildSampleProject
 {
@@ -20,7 +20,7 @@ public class BuildSampleProject
    {
       PlayerSettings.iOS.appleDeveloperTeamID = teamId;
       PlayerSettings.applicationIdentifier = "com.beamable.dev";
-      VersionApplicator.SetVersion("buildVersion");
+      PlayerSettings.bundleVersion = Environment.GetEnvironmentVariable("GITHUB_RUN_NUMBER") ?? "0.0.0";
       BuildActiveTarget();
    }
    [MenuItem("Beamable/SampleBuild/Staging")]
@@ -28,7 +28,6 @@ public class BuildSampleProject
    {
       PlayerSettings.iOS.appleDeveloperTeamID = teamId;
       PlayerSettings.applicationIdentifier = "com.beamable.staging";
-      VersionApplicator.SetVersion("buildVersion");
       BuildActiveTarget();
    }
    [MenuItem("Beamable/SampleBuild/Production")]
@@ -36,7 +35,6 @@ public class BuildSampleProject
    {
       PlayerSettings.iOS.appleDeveloperTeamID = teamId;
       PlayerSettings.applicationIdentifier = "com.beamable.production";
-      VersionApplicator.SetVersion("buildVersion");
       BuildActiveTarget();
    }
 }

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace  Editor.Scripts.Versioning
+namespace UnityBuilderAction.Versioning
 {
   public class GitException : InvalidOperationException
   {

@@ -1,4 +1,4 @@
-﻿namespace Editor.Scripts.Versioning
+﻿namespace UnityBuilderAction.Versioning
 {
   public static class VersionGenerator
   {

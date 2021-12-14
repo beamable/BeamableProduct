@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace Editor.Scripts.Versioning
+namespace UnityBuilderAction.Versioning
 {
   public static class Git
   {

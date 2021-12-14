@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEditor;
 
-namespace Editor.Scripts.Versioning
+namespace UnityBuilderAction.Versioning
 {
   public class VersionApplicator
   {
