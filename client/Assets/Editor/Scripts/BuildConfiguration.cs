@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
+using UnityEngine;
 
 public class BuildSampleProject
 {
@@ -13,7 +16,27 @@ public class BuildSampleProject
 
    private static void BuildActiveTarget()
    {
-      BuildPipeline.BuildPlayer(GetActiveScenes(), "/github/workspace/dist/iOS/iOS", BuildTarget.iOS, BuildOptions.None);
+      try
+      {
+         //Build
+         var results = BuildPipeline.BuildPlayer(GetActiveScenes(), "/github/workspace/dist/iOS/iOS", BuildTarget.iOS, BuildOptions.None);
+
+         if (results.summary.result != BuildResult.Succeeded)
+         {
+            throw new BuildFailedException("Build failed.");
+         }
+
+      }
+      catch (BuildFailedException e)
+      {
+         Debug.LogError(e.StackTrace);
+         Debug.LogError(e.Message);
+         Debug.LogError(e.Data);
+      }
+      finally
+      {
+         Debug.Log("The build has finished.");
+      }
    }
    [MenuItem("Beamable/SampleBuild/Development")]
    public static void Development()
@@ -28,6 +51,7 @@ public class BuildSampleProject
    {
       PlayerSettings.iOS.appleDeveloperTeamID = teamId;
       PlayerSettings.applicationIdentifier = "com.beamable.staging";
+      PlayerSettings.iOS.buildNumber = Environment.GetEnvironmentVariable("ANDROID_VERSION_CODE") ?? "1";
       BuildActiveTarget();
    }
    [MenuItem("Beamable/SampleBuild/Production")]
@@ -35,6 +59,7 @@ public class BuildSampleProject
    {
       PlayerSettings.iOS.appleDeveloperTeamID = teamId;
       PlayerSettings.applicationIdentifier = "com.beamable.production";
+      PlayerSettings.iOS.buildNumber = Environment.GetEnvironmentVariable("ANDROID_VERSION_CODE") ?? "1";
       BuildActiveTarget();
    }
 }
