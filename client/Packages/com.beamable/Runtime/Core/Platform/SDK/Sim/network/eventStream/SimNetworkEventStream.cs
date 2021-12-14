@@ -1,22 +1,23 @@
 using System;
 using System.Collections.Generic;
 using Beamable.Api;
+using Beamable.Common.Dependencies;
 using Beamable.Service;
 
-namespace Beamable.Experimental.Api.Sim 
+namespace Beamable.Experimental.Api.Sim
 {
    /// <summary>
    /// This type defines the %SimNetworkEventStream for the %Multiplayer feature.
-   /// 
+   ///
    /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-   /// 
+   ///
    /// #### Related Links
    /// - See Beamable.Experimental.Api.Sim.SimClient script reference
-   /// 
+   ///
    /// ![img beamable-logo]
-   /// 
+   ///
    /// </summary>
-   public class SimNetworkEventStream : SimNetworkInterface 
+   public class SimNetworkEventStream : SimNetworkInterface
    {
       private static long REQ_FREQ_MS = 1000;
 
@@ -30,10 +31,17 @@ namespace Beamable.Experimental.Api.Sim
       private bool hasData = false;
       private string roomName;
 
-      public SimNetworkEventStream(string roomName)
+      private readonly IDependencyProvider _provider;
+      private GameRelayService GameRelay => _provider.GetService<GameRelayService>();
+
+      [Obsolete("You should pass in the beamContext's provider as the second parameter.")]
+      public SimNetworkEventStream(string roomname) : this(roomname, ServiceManager.LegacyDependencyProvider){}
+
+      public SimNetworkEventStream(string roomName, IDependencyProvider provider)
       {
          this.roomName = roomName;
-         ClientId = ServiceManager.Resolve<PlatformService>().User.id.ToString();
+         _provider = provider;
+         ClientId = provider.GetService<IPlatformService>().User.id.ToString();
          _syncFrames.Add(_nextFrame);
          Ready = true;
       }
@@ -44,7 +52,6 @@ namespace Beamable.Experimental.Api.Sim
          if ((now -_lastReqTime) >= REQ_FREQ_MS)
          {
             _lastReqTime = now;
-            var platform = ServiceManager.Resolve<PlatformService>();
             var req = new GameRelaySyncMsg();
             req.t = _nextFrame.Frame;
             for (int i=0; i < _eventQueue.Count; i++) {
@@ -54,7 +61,7 @@ namespace Beamable.Experimental.Api.Sim
             }
             _eventQueue.Clear();
 
-            platform.GameRelay.Sync(roomName, req).Then(rsp =>
+            GameRelay.Sync(roomName, req).Then(rsp =>
             {
                if (rsp.t == -1)
                {

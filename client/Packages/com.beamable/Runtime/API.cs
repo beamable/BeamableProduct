@@ -184,7 +184,8 @@ namespace Beamable
         public static Promise<IBeamableAPI> Instance
         {
             get {
-	            return Promise<IBeamableAPI>.Successful(BeamContext.Default.Api);
+	            return BeamContext.Default.OnReady.Map<IBeamableAPI>(_ => BeamContext.Default.Api);
+
                 // if (_instance != null)
                 // {
                 //     return _instance;
@@ -399,7 +400,7 @@ namespace Beamable
         /// Invoked after the active User has logged out
         /// </summary>
         public event Action<User> OnUserLoggingOut;
-
+//
         private Promise<IBeamableAPI> Initialize()
         {
 	        PromiseExtensions.SetupDefaultHandler();

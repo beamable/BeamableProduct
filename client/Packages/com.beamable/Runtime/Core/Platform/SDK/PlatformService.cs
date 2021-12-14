@@ -58,7 +58,10 @@ namespace Beamable.Api
 		string Cid { get; }
 		string Pid { get; }
 
+		string TimeOverride { get; set; }
+
 		IConnectivityService ConnectivityService { get; }
+		CoroutineService CoroutineService { get; }
 	}
 
 	[EditorServiceResolver(typeof(PlatformEditorServiceResolver))]
@@ -66,7 +69,10 @@ namespace Beamable.Api
 	{
 		public readonly ChatService Chat;
 		public IPubnubNotificationService PubnubNotificationService { get; }
+
+#pragma warning disable 618
 		public readonly ChatProvider ChatProvider;
+#pragma warning restore 618
 
 		// API Services
 		public AnnouncementsService Announcements;
@@ -137,6 +143,7 @@ namespace Beamable.Api
 		public INotificationService Notification { get; set; }
 		public IBeamablePurchaser BeamablePurchaser => ServiceManager.ResolveIfAvailable<IBeamablePurchaser>();
 
+		public CoroutineService CoroutineService => ServiceManager.Resolve<CoroutineService>();
 		public string Cid
 		{
 			get => _requester.Cid;
@@ -190,10 +197,13 @@ namespace Beamable.Api
 
 		public PlatformService()
 		{
+			Debug.LogError("PLATFORM SERVICE SHOULD NOT BE CALLED IN BEAMABLE 0.19.0");
 		}
 
 		public PlatformService(bool debugMode, bool withLocalNote = true)
 		{
+			Debug.LogError("PLATFORM SERVICE SHOULD NOT BE CALLED IN BEAMABLE 0.19.0");
+
 			DebugMode = debugMode;
 			_withLocalNote = withLocalNote;
 
@@ -221,16 +231,18 @@ namespace Beamable.Api
 			Announcements = new AnnouncementsService(this, _requester);
 			Auth = new AuthService(_requester, ServiceManager.ResolveIfAvailable<IAuthSettings>());
 			_requester.AuthService = Auth;
-			Chat = new ChatService(this, _requester);
+			Chat = new ChatService(this, _requester, ServiceManager.LegacyDependencyProvider);
 			if (_gameObject != null)
+#pragma warning disable 618
 				ChatProvider = _gameObject.AddComponent<PubNubChatProvider>();
+#pragma warning restore 618
 			CloudSaving = new CloudSavingService(this, _requester, ServiceManager.Resolve<CoroutineService>());
 			Commerce = new CommerceService(this, _requester);
 			Events = new EventsService(this, _requester);
 			GameRelay = new GameRelayService(this, _requester);
 			Groups = new GroupsService(this, _requester);
 			Inventory = new InventoryService(this, _requester);
-			Leaderboard = new LeaderboardService(this, _requester, UnityUserDataCache<RankEntry>.CreateInstance);
+			Leaderboard = new LeaderboardService(this, _requester, null, UnityUserDataCache<RankEntry>.CreateInstance);
 			Mail = new MailService(this, _requester);
 
 			// This will be talking to the new C# services.
@@ -246,12 +258,12 @@ namespace Beamable.Api
 			}
 
 			Push = new PushService(_requester);
-			Session = new SessionService(_requester, ServiceManager.ResolveIfAvailable<SessionParameterProvider>(), ServiceManager.ResolveIfAvailable<SessionDeviceOptions>());
+			Session = new SessionService(_requester, null, ServiceManager.ResolveIfAvailable<SessionParameterProvider>(), ServiceManager.ResolveIfAvailable<SessionDeviceOptions>());
 			Social = new SocialService(this, _requester);
-			Stats = new StatsService(this, _requester, UnityUserDataCache<Dictionary<string, string>>.CreateInstance);
+			Stats = new StatsService(this, _requester, null, UnityUserDataCache<Dictionary<string, string>>.CreateInstance);
 			Tournaments = new TournamentService(Stats, _requester, this);
 			_filesystemAccessor = new PlatformFilesystemAccessor();
-			ContentService = new ContentService(this, _requester, _filesystemAccessor);
+			ContentService = new ContentService(this, _requester, _filesystemAccessor, ServiceManager.Resolve<ContentParameterProvider>());
 			ContentApi.Instance
 				.CompleteSuccess(ContentService); // TODO: This is hacky until we can get the serviceManager into common.
 			CloudDataService = new CloudDataService(this, _requester);

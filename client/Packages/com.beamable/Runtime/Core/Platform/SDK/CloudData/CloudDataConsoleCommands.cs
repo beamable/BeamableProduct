@@ -6,25 +6,28 @@ using UnityEngine.Scripting;
 using UnityEngine.Networking;
 using System.Collections.Generic;
 using Beamable.Common.Api.CloudData;
+using Beamable.Common.Dependencies;
 
 namespace Beamable.Api.CloudData
 {
     [BeamableConsoleCommandProvider]
     public class CloudDataConsoleCommands
     {
-        private BeamableConsole Console => ServiceManager.Resolve<BeamableConsole>();
+	    private readonly IDependencyProvider _provider;
+	    private BeamableConsole Console => _provider.GetService<BeamableConsole>();
+	    private CloudDataService CloudDataService => _provider.GetService<CloudDataService>();
 
         [Preserve]
-        public CloudDataConsoleCommands()
+        public CloudDataConsoleCommands(IDependencyProvider provider)
         {
+	        _provider = provider;
         }
 
 
         [BeamableConsoleCommand("CLOUD-MANIFEST", "Fetch the game cloud manifest", "CLOUD-MANIFEST")]
         protected string GetManifest(params string[] args)
         {
-            var platform = ServiceManager.Resolve<PlatformService>();
-            platform.CloudDataService.GetGameManifest().Then(response =>
+            CloudDataService.GetGameManifest().Then(response =>
             {
                 string json = JsonUtility.ToJson(response);
                 Debug.Log($"Game Cloud Manifest: {json}");
@@ -36,8 +39,7 @@ namespace Beamable.Api.CloudData
         [BeamableConsoleCommand("CLOUD-PLAYER", "Fetch the player cloud manifest", "CLOUD-PLAYER")]
         protected string GetPlayerManifest(params string[] args)
         {
-            var platform = ServiceManager.Resolve<PlatformService>();
-            platform.CloudDataService.GetPlayerManifest().Then(response =>
+            CloudDataService.GetPlayerManifest().Then(response =>
             {
                 string json = JsonUtility.ToJson(response);
                 Debug.Log($"Player Cloud Manifest for current player: {json}");

@@ -3,19 +3,22 @@ using System.Collections.Generic;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Dependencies;
 
 namespace Beamable.Experimental.Api.Chat
 {
     public class ChatSubscription : PlatformSubscribable<GetMyRoomsResponse, ChatView>
     {
-        private const string SERVICE = "chatV2";
+	    private readonly IDependencyProvider _provider;
+	    private const string SERVICE = "chatV2";
         private readonly ChatView view = new ChatView();
 
         private const string GroupMembershipEvent = "GROUP.MEMBERSHIP";
         private bool _group_subscribed = false;
 
-        public ChatSubscription(IPlatformService platform, IBeamableRequester requester) : base(platform, requester, SERVICE)
+        public ChatSubscription(IPlatformService platform, IBeamableRequester requester, IDependencyProvider provider) : base(platform, requester, SERVICE)
         {
+	        _provider = provider;
         }
 
         protected override void OnRefresh(GetMyRoomsResponse data)
@@ -27,7 +30,7 @@ namespace Beamable.Experimental.Api.Chat
                 notificationService.Subscribe(GroupMembershipEvent, _ => { Refresh(); });
             }
 
-            view.Update(data.rooms);
+            view.Update(data.rooms, _provider);
             Notify(view);
         }
     }
@@ -52,9 +55,9 @@ namespace Beamable.Experimental.Api.Chat
 
         public ChatSubscription Subscribable { get; }
 
-        public ChatService(IPlatformService platform, IBeamableRequester requester)
+        public ChatService(IPlatformService platform, IBeamableRequester requester, IDependencyProvider provider)
         {
-            Subscribable = new ChatSubscription(platform, requester);
+            Subscribable = new ChatSubscription(platform, requester, provider);
             _platform = platform;
             _requester = requester;
         }

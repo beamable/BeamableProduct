@@ -55,7 +55,9 @@ namespace Beamable.Editor.Tests.Content.Caching
 
 			var fsa = new TestFilesystemAccessor();
 			fsa.ClearPersistentDataFolder();
-			var cs = new ContentService(MockPlatform, MockRequester, fsa);
+			var cs = new ContentService(MockPlatform, MockRequester, fsa, new ContentParameterProvider {
+				manifestID = "global"
+			});
 			MockApi.ContentService = cs;
 		}
 	}

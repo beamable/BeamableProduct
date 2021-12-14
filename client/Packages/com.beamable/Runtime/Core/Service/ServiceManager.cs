@@ -25,6 +25,11 @@ namespace Beamable.Service
 		private const bool RegisterEditorResolversByDefault = true;
 		private static bool _registerEditorResolvers = RegisterEditorResolversByDefault;
 
+		private static IDependencyProvider _legacyProvider;
+
+		public static IDependencyProvider LegacyDependencyProvider =>
+			_legacyProvider ?? (_legacyProvider = new LegacyProvider());
+
 #if UNITY_2019_1_OR_NEWER
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
 #endif
@@ -159,6 +164,11 @@ namespace Beamable.Service
 				return resolver.Resolve();
 			}
 			throw new InvalidOperationException("No service found of type " + typeof(T).Name);
+		}
+
+		public static T Resolve<T>(IDependencyProvider provider) where T : class
+		{
+			return provider.GetService<T>();
 		}
 
 		public static T ResolveWithProvider<T>(IDependencyProvider provider)
@@ -298,5 +308,23 @@ namespace Beamable.Service
 		}
 
 #endif
+
+		private class LegacyProvider : IDependencyProvider
+		{
+			public bool CanBuildService(Type t) =>
+				(bool)typeof(ServiceManager).GetMethod(nameof(CanResolve)).MakeGenericMethod(t)
+				                      .Invoke(null, new object[] { });
+
+			public object GetService(Type t) =>
+				typeof(ServiceManager).GetMethod(nameof(Resolve)).MakeGenericMethod(t).Invoke(null, new object[] { });
+
+			public T GetService<T>() => (T)GetService(typeof(T));
+			public bool CanBuildService<T>() => CanBuildService(typeof(T));
+
+			public IDependencyProviderScope Fork(Action<IDependencyBuilder> configure = null)
+			{
+				throw new NotImplementedException("Sorry, this method isn't supported in the legacy dependency provider.");
+			}
+		}
 	}
 }

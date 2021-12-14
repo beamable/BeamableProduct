@@ -6,6 +6,7 @@ using System.Text;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Dependencies;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Service;
 
@@ -46,14 +47,14 @@ namespace Beamable.Api.Sessions
       public float SessionStartedAt { get; private set; }
       public float TimeSinceLastSessionStart => Time.realtimeSinceStartup - SessionStartedAt;
 
-      public SessionService (IBeamableRequester requester, SessionParameterProvider parameterProvider, SessionDeviceOptions deviceOptions)
+      public SessionService (IBeamableRequester requester, IDependencyProvider provider, SessionParameterProvider parameterProvider, SessionDeviceOptions deviceOptions)
       {
          _requester = requester;
          // _parameterProvider = ServiceManager.ResolveIfAvailable<SessionParameterProvider>();
          // _deviceOptions = ServiceManager.ResolveIfAvailable<SessionDeviceOptions>();
          _parameterProvider = parameterProvider;
          _deviceOptions = deviceOptions;
-         cache = new UnityUserDataCache<Session>("Session", TTL_MS, resolve);
+         cache = new UnityUserDataCache<Session>("Session", TTL_MS, resolve, provider);
       }
 
       private Promise<Dictionary<long, Session>> resolve(List<long> gamerTags)
