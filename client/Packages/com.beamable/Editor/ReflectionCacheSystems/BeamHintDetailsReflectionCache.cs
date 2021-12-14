@@ -80,8 +80,7 @@ namespace Editor.BeamableAssistant.BeamHints
 			}
 
 			public void ParseFullCachedData(PerBaseTypeCache perBaseTypeCache,
-			                                PerAttributeCache perAttributeCache,
-			                                IReadOnlyList<IgnoredFromAssemblySweepStrictErrorData> identifiedStrictErrors)
+			                                PerAttributeCache perAttributeCache)
 			{
 				// Do nothing here for now --- these errors should be impossible in this case as all converter methods (beamable and user)
 				// are defined in the same partial class. This means that if the type is ignored, we ignore it from all assemblies.

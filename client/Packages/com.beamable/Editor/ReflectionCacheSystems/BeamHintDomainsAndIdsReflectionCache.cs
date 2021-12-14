@@ -62,8 +62,7 @@ namespace Editor.BeamableAssistant.BeamHints
 			}
 
 			public void ParseFullCachedData(PerBaseTypeCache perBaseTypeCache,
-			                                PerAttributeCache perAttributeCache,
-			                                IReadOnlyList<IgnoredFromAssemblySweepStrictErrorData> identifiedStrictErrors)
+			                                PerAttributeCache perAttributeCache)
 			{
 				// Do nothing here for now.
 			}

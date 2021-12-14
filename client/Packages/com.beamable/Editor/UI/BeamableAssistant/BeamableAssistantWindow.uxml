@@ -7,10 +7,6 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:VisualElement name="window-main">
-
-        <!-- TODO: Remove this comment. This is embedded the new way (Recommended) - srivello -->
-        <!--    <beamableAssistant:ActionBarVisualElement name="beamable-assistant-action-bar"/>-->
-
         <engine:VisualElement name="assistant-container">
             <engine:VisualElement name="beam-hints-container">
 

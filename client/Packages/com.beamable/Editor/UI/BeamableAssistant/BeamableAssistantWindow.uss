@@ -14,21 +14,15 @@
 
 #assistant-container {
     position: absolute;
-    top: 35px;
+    top: 0px;
     bottom: 0px;
     left: 0px;
     right: 0px;
 }
 
-
-/*VisualElement > TemplateContainer,*/
-/*VisualElement {*/
-/*    flex-grow: 1;*/
+/*#beamable-assistant-action-bar{*/
+/*    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");*/
 /*}*/
-
-#beamable-assistant-action-bar{
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
-}
 
 #beam-hints-container {
     display: flex;

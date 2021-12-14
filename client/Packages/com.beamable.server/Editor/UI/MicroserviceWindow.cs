@@ -11,6 +11,7 @@ using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using UnityEditor;
 using Beamable.Server.Editor.UI.Components;
+using Editor.ReflectionCacheSystems;
 using UnityEngine;
 // using ActionBarVisualElement = Beamable.Editor.Microservice.UI.Components.ActionBarVisualElement;
 // using MicroserviceBreadcrumbsVisualElement = Beamable.Editor.Microservice.UI.Components.MicroserviceBreadcrumbsVisualElement;
@@ -237,7 +238,7 @@ namespace Beamable.Editor.Microservice.UI
 
         private void OnEnable()
         {
-	        EditorAPI.Instance.Then(_ => {
+	        EditorAPI.Instance.Then(api => {
 		        SetMinSize();
 		        CreateModel();
 		        SetForContent();

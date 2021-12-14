@@ -29,10 +29,7 @@ namespace Beamable.Common
 		/// <param name="perAttributeCache">
 		/// Currently cached Per-Attribute information.
 		/// </param>
-		/// <param name="identifiedStrictErrors">
-		/// Any errors coming from <see cref="IgnoreFromBeamableAssemblySweepAttribute.IsStrict"/> checks.
-		/// </param>
-		void ParseFullCachedData(PerBaseTypeCache perBaseTypeCache, PerAttributeCache perAttributeCache, IReadOnlyList<IgnoredFromAssemblySweepStrictErrorData> identifiedStrictErrors);
+		void ParseFullCachedData(PerBaseTypeCache perBaseTypeCache, PerAttributeCache perAttributeCache);
 
 		/// <summary>
 		/// Called once per declared <see cref="IReflectionCacheTypeProvider.BaseTypesOfInterest"/> with each base type and
@@ -74,21 +71,6 @@ namespace Beamable.Common
 		}
 	}
 
-	public struct AllowedOnTypeErrorData
-	{
-		public Type NotAllowedType;
-		public ReflectionCache.ValidationResultType ResultType;
-		public string NotAllowedReason;
-	}
-
-	public struct IgnoredFromAssemblySweepStrictErrorData
-	{
-		public Type Type;
-		public Assembly FoundInAssembly;
-		public BaseTypeOfInterest FailedStrictCheckBaseTypeOfInterest;
-		public Dictionary<AttributeOfInterest, List<MemberAttributePair>> FailedStrictCheckAttributesOfInterest;
-	}
-
 	/// <summary>
 	/// Cached List of Types stored by a specific type. Currently only supports Cache-ing by BaseType/Interface.
 	///
@@ -111,7 +93,7 @@ namespace Beamable.Common
 
 		private readonly List<IReflectionCacheTypeProvider> _registeredProvider;
 		private readonly List<IReflectionCacheUserSystem> _registeredCacheUserSystems;
-		private List<IgnoredFromAssemblySweepStrictErrorData> _invalidTypesInAssembliesErrorData;
+		
 		private readonly PerBaseTypeCache _perBaseTypeCache;
 		private readonly PerAttributeCache _perAttributeCache;
 		private IBeamHintGlobalStorage _hintGlobalStorage;
@@ -160,6 +142,9 @@ namespace Beamable.Common
 			_registeredCacheUserSystems.Clear();
 		}
 
+		/// <summary>
+		/// Returns the first instance of the <see cref="IReflectionCacheUserSystem"/> of type <typeparamref name="T"/> that was previously registered.
+		/// </summary>
 		public T GetFirstRegisteredUserSystemOfType<T>() where T : IReflectionCacheUserSystem
 		{
 			return (T) _registeredCacheUserSystems.First(system => system.GetType() == typeof(T));
@@ -230,12 +215,12 @@ namespace Beamable.Common
 		/// <param name="excludedReflectionUserCaches">
 		/// Excludes types implementing <see cref="IReflectionCacheUserSystem"/> from having their callbacks called.
 		/// </param>
-		public void GenerateReflectionCache(List<Type> excludedReflectionUserCaches = null)
+		public void GenerateReflectionCache(List<Type> excludedReflectionUserCaches = null, IReadOnlyList<string> assembliesToSweep = null)
 		{
 			System.Diagnostics.Debug.Assert(_hintGlobalStorage != null, 
 			                                $"A Reflection Cache must have a {nameof(IBeamHintGlobalStorage)} instance! Please call {nameof(SetStorage)} before calling this method!");
 			
-			RebuildReflectionCache();
+			RebuildReflectionCache(assembliesToSweep);
 			RebuildReflectionUserSystems(excludedReflectionUserCaches);
 		}
 
@@ -243,19 +228,29 @@ namespace Beamable.Common
 		/// This is a very slow function call. It triggers a full sweep of all assemblies in the project and regenerate <see cref="_perBaseTypeCache"/> and <see cref="_perAttributeCache"/>.
 		/// Strive to call this once at initialization or editor reload.
 		/// </summary>
-		private void RebuildReflectionCache()
+		private void RebuildReflectionCache(IReadOnlyList<string> sortedAssembliesToSweep = null)
 		{
-			var baseTypesOfInterest = _registeredProvider.SelectMany(provider => provider.BaseTypesOfInterest).ToList();
-			var attributesOfInterest = _registeredProvider.SelectMany(provider => provider.AttributesOfInterest).ToList();
-
+			// Clear existing cache
 			_perBaseTypeCache.BaseTypes.Clear();
 			_perBaseTypeCache.MappedSubtypes.Clear();
 
 			_perAttributeCache.AttributeTypes.Clear();
 			_perAttributeCache.MemberAttributeTypes.Clear();
 			_perAttributeCache.AttributeMappings.Clear();
+			
+			
+			// Prepare lists of base types and attributes that we care about.
+			var baseTypesOfInterest = (IReadOnlyList<BaseTypeOfInterest>) _registeredProvider.SelectMany(provider => provider.BaseTypesOfInterest).ToList();
+			var attributesOfInterest = (IReadOnlyList<AttributeOfInterest>) _registeredProvider.SelectMany(provider => provider.AttributesOfInterest).ToList();
 
-			BuildTypeCaches(in _perBaseTypeCache, in _perAttributeCache, in baseTypesOfInterest, in attributesOfInterest, out _invalidTypesInAssembliesErrorData);
+			// Prepare lists of assemblies we don't care about or care about preventing people from defining types/attributes of interest in them.
+			sortedAssembliesToSweep = sortedAssembliesToSweep ?? new List<string>();
+
+			BuildTypeCaches(in _perBaseTypeCache, 
+			                in _perAttributeCache,
+			                in baseTypesOfInterest,
+			                in attributesOfInterest,
+			                in sortedAssembliesToSweep);
 
 			// TODO: Decide what to do for results of validation for strict IgnoreFromAssemblySweepAttributes (InvalidTypesInAssembliesErrorData).  
 		}
@@ -279,7 +274,7 @@ namespace Beamable.Common
 					continue;
 				}
 
-				reflectionBasedSystem.ParseFullCachedData(_perBaseTypeCache, _perAttributeCache, _invalidTypesInAssembliesErrorData);
+				reflectionBasedSystem.ParseFullCachedData(_perBaseTypeCache, _perAttributeCache);
 				foreach (var type in reflectionBasedSystem.BaseTypesOfInterest)
 				{
 					reflectionBasedSystem.ParseBaseTypeOfInterestData(type, _perBaseTypeCache.MappedSubtypes[type]);
@@ -297,9 +292,9 @@ namespace Beamable.Common
 		/// </summary>
 		private void BuildTypeCaches(in PerBaseTypeCache perBaseTypeLists,
 		                             in PerAttributeCache perAttributeLists,
-		                             in List<BaseTypeOfInterest> baseTypesOfInterest,
-		                             in List<AttributeOfInterest> attributesOfInterest,
-		                             out List<IgnoredFromAssemblySweepStrictErrorData> ignoredFromAssemblySweepStrictErrorData)
+		                             in IReadOnlyList<BaseTypeOfInterest> baseTypesOfInterest,
+		                             in IReadOnlyList<AttributeOfInterest> attributesOfInterest,
+		                             in IReadOnlyList<string> sortedAssembliesToSweep)
 		{
 			// Initialize Per-Base Cache
 			{
@@ -333,19 +328,21 @@ namespace Beamable.Common
 			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
 			// Groups by whether or not the assembly has the IgnoreFromBeamableAssemblySweepAttribute.
+			var assembliesToSweepStr = "₢"+string.Join("₢", sortedAssembliesToSweep)+"₢";
 			var checkedOrIgnoredAssemblySplit = assemblies
-			                                    .GroupBy(asm => asm.GetCustomAttributes(typeof(IgnoreFromBeamableAssemblySweepAttribute)).FirstOrDefault())
+			                                    .GroupBy(asm => assembliesToSweepStr.Contains("₢"+asm.GetName().Name+"₢"))
 			                                    .ToList();
-
+			
 			// Gets all groups that don't have the IgnoreFromBeamableAssemblySweepAttribute and parse them
 			{
 				var validAssemblies = checkedOrIgnoredAssemblySplit
-				                      .Where(group => group.Key == null)
+				                      .Where(group => group.Key == true)
 				                      .SelectMany(group => group.ToList())
 				                      .ToList();
 
 				foreach (var assembly in validAssemblies)
 				{
+					BeamableLogger.Log($"Assembly [{assembly.GetName().Name}].");
 					var types = assembly.GetTypes();
 					foreach (var type in types)
 					{
@@ -363,55 +360,6 @@ namespace Beamable.Common
 						}
 					}
 				}
-			}
-
-			// Gets all groups that do have the IgnoreFromBeamableAssemblySweepAttribute and parse them when in editor
-			{
-				// If we are in the editor, sweep the invalid assemblies to enforce that
-				ignoredFromAssemblySweepStrictErrorData = new List<IgnoredFromAssemblySweepStrictErrorData>();
-#if UNITY_EDITOR
-				var invalidAssemblies = checkedOrIgnoredAssemblySplit
-				                        .Where(group => group.Key != null)
-				                        .SelectMany(group => group.Select(asm => ((IgnoreFromBeamableAssemblySweepAttribute)group.Key, asm)))
-				                        .ToList();
-
-				// Preallocate buffer so we don't keep allocating stuff over and over inside the sweep --- just clearing. This is a large performance boost since allocations are heavy.            
-				var matchingAttributesMapping = new Dictionary<AttributeOfInterest, List<MemberAttributePair>>(perAttributeLists.TotalAttributesOfInterestCount);
-				for (var i = 0; i < perAttributeLists.AttributeTypes.Count; i++) matchingAttributesMapping.Add(perAttributeLists.AttributeTypes[i], new List<MemberAttributePair>(128));
-				for (var i = 0; i < perAttributeLists.MemberAttributeTypes.Count; i++) matchingAttributesMapping.Add(perAttributeLists.MemberAttributeTypes[i], new List<MemberAttributePair>(128));
-
-				foreach (var (assemblySweepAttribute, asm) in invalidAssemblies)
-				{
-					if (!assemblySweepAttribute.IsStrict)
-					{
-						_hintGlobalStorage.AddOrReplaceHint(BeamHintType.Hint, BeamHintDomains.BEAM_REFLECTION_CACHE, $"Skip_Strict_{asm.GetName().Name}", asm);
-						BeamableLogger.Log($"Ignoring Assembly [{asm.FullName}] from Reflection Cache Sweep. There may be relevant types in this assembly that you are missing.\n" +
-						                   $"Use IgnoreFromAssemblySweepAttribute to get a list of all types if you want to know for sure.");
-						continue;
-					}
-
-					var types = asm.GetTypes();
-					foreach (var type in types)
-					{
-						var isOfBaseTypeOfInterest = TryFindBaseTypesOfInterest(type, baseTypesOfInterest, out var foundType);
-
-						matchingAttributesMapping.Clear();
-						GatherMemberAttributePairsFromAttributesOfInterest(type, perAttributeLists.AttributeTypes, perAttributeLists.MemberAttributeTypes, matchingAttributesMapping);
-						var hasOfAttributeOfInterest = matchingAttributesMapping.Any();
-
-						if (isOfBaseTypeOfInterest || hasOfAttributeOfInterest)
-						{
-							ignoredFromAssemblySweepStrictErrorData.Add(new IgnoredFromAssemblySweepStrictErrorData
-							{
-								Type = type,
-								FoundInAssembly = asm,
-								FailedStrictCheckBaseTypeOfInterest = foundType,
-								FailedStrictCheckAttributesOfInterest = matchingAttributesMapping
-							});
-						}
-					}
-				}
-#endif
 			}
 		}
 	}

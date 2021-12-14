@@ -70,8 +70,7 @@ namespace Editor.ReflectionCacheSystems
 			}
 
 			public void ParseFullCachedData(PerBaseTypeCache perBaseTypeCache,
-			                                PerAttributeCache perAttributeCache,
-			                                IReadOnlyList<IgnoredFromAssemblySweepStrictErrorData> identifiedStrictErrors)
+			                                PerAttributeCache perAttributeCache)
 			{
 				// TODO: Display BeamHint of validation type for microservices declared in ignored assemblies.
 			}
@@ -112,7 +111,7 @@ namespace Editor.ReflectionCacheSystems
 			{
 				// Searches for all unique name collisions.
 				var uniqueNameValidationResults = cachedMicroserviceAttributes.GetAndValidateUniqueNamingAttributes<MicroserviceAttribute>();
-
+				 
 				// Registers a hint with all name collisions found.
 				if (uniqueNameValidationResults.PerNameCollisions.Count > 0)
 				{

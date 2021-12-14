@@ -25,7 +25,7 @@ namespace Beamable.Editor.BeamableAssistant
 		          BeamableConstants.OPEN + " " +
 		          BeamableConstants.BEAMABLE_ASSISTANT,
 		          priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
-		private static void ShowWindow()
+		public static void ShowWindow()
 		{
 			var window = GetWindow<BeamableAssistantWindow>(BeamableConstants.BEAMABLE_ASSISTANT, true, typeof(SceneView));
 			window.Show();
@@ -63,6 +63,11 @@ namespace Beamable.Editor.BeamableAssistant
 			EditorAPI.Instance.Then(Refresh);
 		}
 
+		private void OnFocus()
+		{
+			EditorAPI.Instance.Then(Refresh);
+		}
+
 		void Refresh(EditorAPI editorAPI)
 		{
 			minSize = MIN_SIZE;
@@ -82,15 +87,7 @@ namespace Beamable.Editor.BeamableAssistant
 			_windowRoot.name = nameof(_windowRoot);
 
 			root.Add(_windowRoot);
-
-			// Setup Action Bar Visuals
-			{
-				// _actionBarVisualElement = root.Q<ActionBarVisualElement>("beamable-assistant-action-bar");
-				//
-				// _actionBarVisualElement.Model = beamHintsDataModel;
-				// _actionBarVisualElement.Refresh();
-			}
-
+			
 			// Setup Assistant Visuals
 			{
 				_assistantContainer = root.Q<VisualElement>("assistant-container");
@@ -98,9 +95,6 @@ namespace Beamable.Editor.BeamableAssistant
 
 			// Setup Beam Hints Mode Visuals
 			{
-				// Get a reference to the splitter
-				root.Q<SplitterVisualElement>("beam-hints-splitter");
-
 				//Create IMGUI, The VisualElement Wrapper, and add to the parent
 				_domainTreeContainer = root.Q<VisualElement>("domain-tree-container");
 				_domainTreeContainer.RegisterCallback(new EventCallback<MouseUpEvent>(evt => {

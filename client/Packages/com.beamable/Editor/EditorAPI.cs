@@ -100,7 +100,18 @@ namespace Beamable.Editor
       public bool HasRealm => !string.IsNullOrEmpty(Pid);
 
       private Promise<EditorAPI> Initialize()
-      { 
+      {
+	      CoreConfiguration coreConfiguration;
+	      try
+	      {
+		      coreConfiguration = CoreConfiguration.Instance;
+	      }
+	      catch (ModuleConfigurationNotReadyException)
+	      {
+		      coreConfiguration = AssetDatabase.LoadAssetAtPath<CoreConfiguration>("Packages/com.beamable/Editor/Config/CoreConfiguration.asset");
+	      }
+	      
+	      
 	      EditorReflectionCache = new ReflectionCache();
 
 	      HintGlobalStorage = new BeamHintEditorStorage();
@@ -114,12 +125,7 @@ namespace Beamable.Editor
 	      // Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance
 	      // (that gets propagated down to any IReflectionCacheUserSystem that also implements IBeamHintProvider).
 	      {
-		      var reflectionCacheSystemGuids = AssetDatabase.FindAssets("t:ReflectionCacheUserSystemObject",
-		                                                                new string[]
-		                                                                {
-			                                                                "Assets/ReflectionCacheSystems", "Packages/com.beamable/Editor/ReflectionCacheSystems",
-			                                                                "Packages/com.beamable.server/Editor/ReflectionCacheSystems"
-		                                                                });
+		      var reflectionCacheSystemGuids = AssetDatabase.FindAssets("t:ReflectionCacheUserSystemObject", coreConfiguration.ReflectionCacheUserSystemPaths.ToArray());
 
 		      foreach (string reflectionCacheSystemGuid in reflectionCacheSystemGuids)
 		      {
@@ -128,9 +134,9 @@ namespace Beamable.Editor
 			      EditorReflectionCache.RegisterTypeProvider(userSystemObject.UserTypeProvider);
 			      EditorReflectionCache.RegisterCacheUserSystem(userSystemObject.UserSystem);
 		      }
-		      
+		       
 		      EditorReflectionCache.SetStorage(HintGlobalStorage);
-		      EditorReflectionCache.GenerateReflectionCache();
+		      EditorReflectionCache.GenerateReflectionCache(assembliesToSweep:coreConfiguration.AssembliesToSweep); 
 	      }
 	      
 	      HintLogManager.SetStorage(HintGlobalStorage);
@@ -138,10 +144,31 @@ namespace Beamable.Editor
 	      
 	      EditorApplication.update -= HintLogManager.Update;
 	      EditorApplication.update += HintLogManager.Update;
+		
+	      EditorApplication.playModeStateChanged += delegate(PlayModeStateChange change) {
+		      if (!coreConfiguration.EnablePlayModeWarning) 
+			      return;
+		      
+		      // TODO: Look through existing BeamHints and verify none of the hints setup to warn-on-play-mode are present.
+		      // TODO: By default, warn-on-play-mode is off in all hints. Toggle-able via the HintHeader in the BeamableAssistantWindow.
+		      if (change == PlayModeStateChange.ExitingEditMode)
+		      {
+			      var res = EditorUtility.DisplayDialog("Beamable Assistant", "There are pending Beamable Validations.\n" +
+			                                                                  "This may cause problems during runtime.\n\n" +
+			                                                                  "Do you wish to stop entering playmode and see these validations?", 
+			                                            "Yes, I want to stop and go see validations.",
+			                                            "No, I'll take my chances.");
+			      if (res)
+			      {
+				      EditorApplication.isPlaying = false;
+				      BeamableAssistant.BeamableAssistantWindow.ShowWindow();
+			      } 
+		      }
+	      };
 	      
-	      if (!Application.isPlaying) 
+	     if (!Application.isPlaying) 
          {
-            var promiseHandlerConfig = CoreConfiguration.Instance.DefaultUncaughtPromiseHandlerConfiguration;
+            var promiseHandlerConfig = coreConfiguration.DefaultUncaughtPromiseHandlerConfiguration;
             switch (promiseHandlerConfig)
             {
                case CoreConfiguration.EventHandlerConfig.Guarantee:

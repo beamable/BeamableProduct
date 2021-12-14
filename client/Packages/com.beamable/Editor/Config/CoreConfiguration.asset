@@ -13,3 +13,9 @@ MonoBehaviour:
   m_Name: CoreConfiguration
   m_EditorClassIdentifier: 
   DefaultUncaughtPromiseHandlerConfiguration: 0
+  ReflectionCacheUserSystemPaths:
+  - Assets/ReflectionCacheSystems
+  - Packages/com.beamable/Editor/ReflectionCacheSystems
+  - Packages/com.beamable.server/Editor/ReflectionCacheSystems
+  AssembliesIgnoredFromSweep:
+  - System.Threading
