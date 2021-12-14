@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Beamable.Common.Content.Validation;
 using Beamable.Content;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Common.Content
@@ -24,7 +25,12 @@ namespace Beamable.Common.Content
    [Serializable]
    public class Schedule
    {
-      public string description;
+	   public bool IsPeriod => definitions.Any(def => 
+		                                           (def.hour.Contains("*") && !def.minute.Contains("*")) || 
+		                                           (!def.hour.Contains("*") && def.minute.Contains("*")) || 
+		                                           (!def.hour.Contains("*") && !def.minute.Contains("*")));
+		  
+	   public string description;
 
       [MustBeDateString]
       public string activeFrom;
@@ -33,6 +39,7 @@ namespace Beamable.Common.Content
       public OptionalString activeTo = new OptionalString();
 
       public List<ScheduleDefinition> definitions = new List<ScheduleDefinition>();
+      
 
       public void AddDefinition(ScheduleDefinition definition)
       {
