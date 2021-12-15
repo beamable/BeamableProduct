@@ -64,7 +64,7 @@ namespace Beamable.Editor.UI.Validation
             DateTime bTime = ParseHourString(bValue, out bool bParsed);
 
             Satisfied = aParsed && bParsed && (aTime.CompareTo(bTime) < 0 || 
-				(bTime.Hour == 0 && bTime.Minute == 0 && (aTime.Hour != 0 || aTime.Minute != 0)));
+				(bTime.Hour == 0 && bTime.Minute == 0) );
         }
 
         public bool Satisfied { get; set; }
