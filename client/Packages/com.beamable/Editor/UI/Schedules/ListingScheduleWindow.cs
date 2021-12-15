@@ -273,8 +273,8 @@ namespace Beamable.Editor.Schedules
                 
                 _periodFromHourComponent.Set(new DateTime(2000, 1, 1, startHour, startMinute, 0));
 
-				bool isMidnight = schedule.definitions[schedule.definitions.Count - 1].hour[schedule.definitions[schedule.definitions.Count - 1].hour.Count - 1].Contains("23");
-				if (isMidnight)
+				bool isEndInMidnight = schedule.definitions[schedule.definitions.Count - 1].hour[schedule.definitions[schedule.definitions.Count - 1].hour.Count - 1].Contains("23");
+				if (isEndInMidnight)
 				{
 					_periodToHourComponent.Set(new DateTime(2000, 1, 1, 0, 0, 0));
 				}
