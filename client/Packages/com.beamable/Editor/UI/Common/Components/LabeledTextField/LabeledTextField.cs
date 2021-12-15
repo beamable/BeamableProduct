@@ -16,12 +16,6 @@ namespace Beamable.Editor.UI.Components
 {
     public class LabeledTextField : ValidableVisualElement<string>
     {
-        private enum Mode
-        {
-            Default,
-            DigitsOnly,
-        }
-
         public new class UxmlFactory : UxmlFactory<LabeledTextField, UxmlTraits>
         {
         }
@@ -33,9 +27,6 @@ namespace Beamable.Editor.UI.Components
 
             readonly UxmlStringAttributeDescription _value = new UxmlStringAttributeDescription
                 {name = "value"};
-
-            readonly UxmlStringAttributeDescription _mode = new UxmlStringAttributeDescription
-                {name = "mode", defaultValue = "default"};
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -49,9 +40,6 @@ namespace Beamable.Editor.UI.Components
                 {
                     component.Label = _label.GetValueFromBag(bag, cc);
                     component.Value = _value.GetValueFromBag(bag, cc);
-
-                    bool parse = Enum.TryParse(_mode.GetValueFromBag(bag, cc), true, out Mode parsedMode);
-                    component.WorkingMode = parse ? parsedMode : Mode.Default;
                 }
             }
         }
@@ -61,12 +49,10 @@ namespace Beamable.Editor.UI.Components
         private Label _labelComponent;
         private TextField _textFieldComponent;
         private string _value;
-        private int _minValue;
-        private int _maxValue;
 
         public string Value
         {
-            get => ValidateOutputValue(_value);
+	        get => _value;
             set
             {
                 _value = value;
@@ -75,7 +61,6 @@ namespace Beamable.Editor.UI.Components
             }
         }
 
-        private Mode WorkingMode { get; set; }
         private string Label { get; set; }
 
         public LabeledTextField() : base(
@@ -95,13 +80,11 @@ namespace Beamable.Editor.UI.Components
             _textFieldComponent.RegisterValueChangedCallback(ValueChanged);
         }
 
-        public void Setup(string label, string value, Action onValueChanged, int minValue, int maxValue)
+        public void Setup(string label, string value, Action onValueChanged)
         {
             Label = label;
             Value = value;
             _onValueChanged = onValueChanged;
-            _minValue = minValue;
-            _maxValue = maxValue;
         }
 
         protected override void OnDestroy()
@@ -111,47 +94,8 @@ namespace Beamable.Editor.UI.Components
 
         private void ValueChanged(ChangeEvent<string> evt)
         {
-            Value = ValidateInputValue(evt.newValue);
+            Value = evt.newValue;
             InvokeValidationCheck(Value);
-        }
-
-        private string ValidateInputValue(string value)
-        {
-            switch (WorkingMode)
-            {
-                case Mode.Default:
-                    return value;
-                case Mode.DigitsOnly:
-                    return new string(value.Where(Char.IsDigit).ToArray());
-            }
-
-            return value;
-        }
-
-        private string ValidateOutputValue(string value)
-        {
-            string finalValue = value;
-            
-            switch (WorkingMode)
-            {
-                case Mode.DigitsOnly:
-                    if (string.IsNullOrEmpty(value))
-                    {
-                        finalValue = _minValue.ToString();
-                    }
-                    else
-                    {
-                        if (int.TryParse(value, out int result))
-                        {
-                            result = Mathf.Clamp(result, _minValue, _maxValue);
-                            finalValue = result.ToString();
-                        }
-                    }
-
-                    break;
-            }
-
-            return finalValue;
         }
     }
 }
