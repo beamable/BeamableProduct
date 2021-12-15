@@ -18,26 +18,9 @@ namespace Beamable.Editor
         {
             if (ContentConfiguration.Instance.BakeContentOnBuild)
             {
-                RemoveOldBakedContent();
                 await ContentIO.BakeContent();    
             }
         }
 #endif
-
-        private void RemoveOldBakedContent()
-        {
-            if (Directory.Exists(ContentConstants.DecompressedContentPath))
-            {
-                var directoryInfo = new DirectoryInfo(ContentConstants.DecompressedContentPath);
-                foreach (var file in directoryInfo.GetFiles())
-                {
-                    file.Delete();
-                }
-            }
-            if (File.Exists(ContentConstants.CompressedContentPath))
-            {
-                File.Delete(ContentConstants.CompressedContentPath);
-            }
-        }
     }
 }

@@ -985,18 +985,9 @@ namespace Beamable.Editor.Content
 
             string assetsPath = Path.Combine(Application.streamingAssetsPath, "bakedContent.zip");
 
-            bool succeeded;
-            int objectsBaked;
-            if (ContentConfiguration.Instance.EnableBakedContentCompression)
-            {
-                succeeded = BakeWithCompression(contentList, serverManifest, out objectsBaked);
-            }
-            else
-            {
-                succeeded = BakeWithoutCompression(contentList, serverManifest, out objectsBaked);
-            }
+            bool compress = ContentConfiguration.Instance.EnableBakedContentCompression;
 
-            if (succeeded)
+            if (Bake(contentList, serverManifest, compress, out int objectsBaked))
             {
                 BakeLog($"Baked {objectsBaked} content objects to '{assetsPath}'");
             }
@@ -1006,9 +997,9 @@ namespace Beamable.Editor.Content
             }
         }
 
-        private static bool BakeWithCompression(List<ContentObject> contentList, Manifest serverManifest, out int objectsBaked)
+        private static bool Bake(List<ContentObject> contentList, Manifest serverManifest, bool compress, out int objectsBaked)
         {
-            Directory.CreateDirectory(ContentConstants.BeamableStreamingAssetsPath);
+            Directory.CreateDirectory(ContentConstants.BeamableResourcesPath);
 
             objectsBaked = contentList.Count;
             ContentDataInfo[] contentData = new ContentDataInfo[contentList.Count];
@@ -1029,48 +1020,23 @@ namespace Beamable.Editor.Content
 
             ContentDataInfoWrapper fileData = new ContentDataInfoWrapper { content = contentData.ToList() };
 
-            var compressed = Gzip.Compress(JsonUtility.ToJson(fileData));
-
             try
             {
-                File.WriteAllBytes(ContentConstants.CompressedContentPath, compressed);
-            }
-            catch (Exception e)
-            {
-                Debug.LogError(
-                    $"Failed to write baked file to '{ContentConstants.CompressedContentPath}': {e.Message}");
-                return false;
-            }
-
-            return true;
-        }
-
-        private static bool BakeWithoutCompression(List<ContentObject> contentList, Manifest serverManifest, out int objectsBaked)
-        {
-            Directory.CreateDirectory(ContentConstants.DecompressedContentPath);
-            objectsBaked = contentList.Count;
-            
-            try
-            {
-                foreach (var content in contentList)
+                string json = JsonUtility.ToJson(fileData);
+                if (compress)
                 {
-                    var serverReference = serverManifest.References.Find(reference => reference.Id == content.Id);
-                    if (serverReference == null)
-                    {
-                        // this content object exists only locally
-                        objectsBaked--;
-                        continue;
-                    }
-                    var version = serverReference.Version;
-                    content.SetIdAndVersion(content.Id, version);
-                    string path = Path.Combine(ContentConstants.DecompressedContentPath, content.Id);
-                    File.WriteAllText(path, content.ToJson());
+                    var compressed = Gzip.Compress(json);
+                    File.WriteAllBytes(ContentConstants.BakedContentFilePath, compressed);
+                }
+                else
+                {
+                    File.WriteAllText(ContentConstants.BakedContentFilePath, json);
                 }
             }
             catch (Exception e)
             {
                 Debug.LogError(
-                    $"Failed to write baked files to '{ContentConstants.DecompressedContentPath}': {e.Message}");
+                    $"Failed to write baked file to '{ContentConstants.BakedContentFilePath}': {e.Message}");
                 return false;
             }
 
