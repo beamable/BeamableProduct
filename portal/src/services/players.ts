@@ -125,7 +125,9 @@ export class PlayersService extends BaseService {
         const { http, router } = this.app;
         const query = encodeURIComponent(term);
         const searchReq = http.request(`/basic/accounts/search?query=${query}&page=1&pagesize=30`, void 0, 'get');  
-        const deviceReq = http.request(`/basic/accounts?deviceId=${encodeURIComponent(term)}`, void 0, 'get'); 
+        const deviceReq = http.request(`/basic/accounts?deviceId=${encodeURIComponent(term)}`, void 0, 'get').catch(err => {
+            // don't do anything on a failure- it doesn't matter.
+        }); 
 
         const response = await searchReq;
         let result: PlayerData[] = [];
@@ -138,9 +140,7 @@ export class PlayersService extends BaseService {
             const deviceResponse = await deviceReq;
             result.push(this.convertToPlayer(deviceResponse.data));
         } catch (err){
-            if (err.status != 404){
-                throw err;
-            }
+            // swallow the error, its totally fine.
         }
         
         return result;
