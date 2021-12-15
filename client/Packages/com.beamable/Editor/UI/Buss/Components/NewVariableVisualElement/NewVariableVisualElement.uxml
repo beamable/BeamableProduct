@@ -12,12 +12,12 @@
             <beamable:LabeledTextField name="variableName" label="Variable Name"/>
             <beamable:LabeledDropdownVisualElement name="selectType" label="Select Type"/>
             
-            <beamable:LabeledTextField name="colorType" label="Color" class="hide"/>
-            <beamable:LabeledTextField name="vertexColorType" label="Vertex Color" class="hide"/>
+            <beamable:LabeledColorPickerVisualElement name="colorType" label="Color" class="hide"/>
+            <beamable:LabeledColorPickerVisualElement name="vertexColorType" label="Vertex Color" class="hide"/>
             <beamable:LabeledTextField name="floatType" label="Float" class="hide"/>
             <beamable:LabeledTextField name="floatFromFloatType" label="Float From Float" class="hide"/>
             <beamable:LabeledDropdownVisualElement name="enumType" label="Enum" class="hide"/>
-            <beamable:LabeledTextField name="spriteType" label="Sprite" class="hide"/>
+            <beamable:LabeledSpritePickerVisualElement name="spriteType" label="Sprite" class="hide"/>
             <beamable:LabeledTextField name="fontType" label="Font" class="hide"/>
             
         </engine:VisualElement>

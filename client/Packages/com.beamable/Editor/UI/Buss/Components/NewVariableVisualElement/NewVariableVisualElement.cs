@@ -21,12 +21,12 @@ namespace Beamable.Editor.Toolbox.Components
 		{
 		}
 		
-		private LabeledTextField _colorType;
-		private LabeledTextField _vertexColorType;
+		private LabeledColorPickerVisualElement _colorType;
+		private LabeledColorPickerVisualElement _vertexColorType;
 		private LabeledTextField _floatType;
 		private LabeledTextField _floatFromFloatType;
 		private LabeledDropdownVisualElement _enumType;
-		private LabeledTextField _spriteType;
+		private LabeledSpritePickerVisualElement _spriteType;
 		private LabeledTextField _fontType;
 
 		private readonly Dictionary<string, BeamableVisualElement> _typesDict = new Dictionary<string, BeamableVisualElement>();
@@ -38,11 +38,11 @@ namespace Beamable.Editor.Toolbox.Components
 			
 			Root.Q<LabeledTextField>("variableName").Refresh();
 			
-			_colorType = Root.Q<LabeledTextField>("colorType");
+			_colorType = Root.Q<LabeledColorPickerVisualElement>("colorType");
 			_typesDict.Add("Color", _colorType);
 			_colorType.Refresh();
 
-			_vertexColorType = Root.Q<LabeledTextField>("vertexColorType");
+			_vertexColorType = Root.Q<LabeledColorPickerVisualElement>("vertexColorType");
 			_typesDict.Add("VertexColor", _vertexColorType);
 			_vertexColorType.Refresh();
 			
@@ -60,7 +60,7 @@ namespace Beamable.Editor.Toolbox.Components
 			_enumType.Setup(enumProperties, i => Debug.LogWarning(""));
 			_enumType.Refresh();
 			
-			_spriteType = Root.Q<LabeledTextField>("spriteType");
+			_spriteType = Root.Q<LabeledSpritePickerVisualElement>("spriteType");
 			_typesDict.Add("Sprite", _spriteType);
 			_spriteType.Refresh();
 			
