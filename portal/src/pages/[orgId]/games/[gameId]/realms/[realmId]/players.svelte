@@ -292,14 +292,18 @@
         <form on:submit|preventDefault={queryPlayer} class="search-box">
           <div class="field">
             <div class="control has-icon {(isLoading) ? 'is-loading': ''} {queryError ? 'has-error': ''}  ">
-              <input type="text" class="input" placeholder="Search for player with email, or dbid, or third party association" bind:value={playerIdOrEmail} >
+              <input type="text" class="input" placeholder="Search for player with email, dbid, third party association, or deviceId" bind:value={playerIdOrEmail} >
               {#if foundPlayers}
               <div id="accountLookup">
                 <ul>
                 {#each foundPlayers as foundPlayer}
                   <li>
                     <a data-tooltip={foundPlayer.getNonExistingGamerTagForRealmMessage()}
-                       on:click={setPlayer(foundPlayer)}>dbid: {foundPlayer.id} email: {foundPlayer.email}</a>
+                       on:click={setPlayer(foundPlayer)}>
+                       dbid: {foundPlayer.id},
+                       email: {foundPlayer.email ? foundPlayer.email : 'none'},
+                       deviceIds: {foundPlayer.deviceIds.length ? `${foundPlayer.deviceIds.join(', ')}` : 'none'}
+                       </a>
                   </li>
                 {/each}
                </ul>
