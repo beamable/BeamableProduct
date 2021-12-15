@@ -145,11 +145,11 @@ namespace Beamable.Editor.Schedules
 
             ListingDaysScheduleModel daysModel = new ListingDaysScheduleModel(_descriptionComponent,
                 _daysPickerComponent, _neverExpiresComponent, _activeToDateComponent, _activeToHourComponent,
-                _allDayComponent, _periodFromHourComponent, _periodToHourComponent, RefreshConfirmButton);
+                _allDayComponent, _periodFromHourComponent, _periodToHourComponent, RefreshConfirmButtonForDaysOrDates);
 
             ListingDatesScheduleModel datesModel = new ListingDatesScheduleModel(_descriptionComponent,
                 _calendarComponent, _neverExpiresComponent, _activeToDateComponent, _activeToHourComponent,
-                _allDayComponent, _periodFromHourComponent, _periodToHourComponent, RefreshConfirmButton);
+                _allDayComponent, _periodFromHourComponent, _periodToHourComponent, RefreshConfirmButtonForDaysOrDates);
 
             _models.Clear();
             _models.Add(dailyModel);
@@ -167,10 +167,18 @@ namespace Beamable.Editor.Schedules
 
             if (_allDayComponent.Value)
             {
-                _isPeriodValid = _currentModel.Mode != ScheduleWindowModel.WindowMode.Daily;
-                _invalidPeriodMessage = _currentModel.Mode == ScheduleWindowModel.WindowMode.Daily
-                    ? "Daily mode can't have All day option selected"
-                    : string.Empty;
+				if (!_neverExpiresComponent.Value && _currentModel.Mode == ScheduleWindowModel.WindowMode.Daily)
+				{
+					_isPeriodValid = true;
+					_invalidPeriodMessage = string.Empty;
+				}
+				else
+				{
+					_isPeriodValid = _currentModel.Mode != ScheduleWindowModel.WindowMode.Daily;
+					_invalidPeriodMessage = _currentModel.Mode == ScheduleWindowModel.WindowMode.Daily
+						? "Daily mode can't have All day option selected"
+						: string.Empty;
+				}
             }
             else
             {
@@ -208,7 +216,13 @@ namespace Beamable.Editor.Schedules
             }
         }
 
-        protected override void OnDestroy()
+		private void RefreshConfirmButtonForDaysOrDates(bool value, string message)
+		{
+			if (_currentModel.Mode != ScheduleWindowModel.WindowMode.Daily)
+				RefreshConfirmButton(value, message);
+		}
+
+		protected override void OnDestroy()
         {
             if (_neverExpiresComponent != null) _neverExpiresComponent.OnValueChanged -= OnExpirationChanged;
             if (_allDayComponent != null) _allDayComponent.OnValueChanged -= OnAllDayChanged;
@@ -293,7 +307,8 @@ namespace Beamable.Editor.Schedules
         {
             _activeToDateComponent.SetEnabled(!value);
             _activeToHourComponent.SetEnabled(!value);
-        }
+			PerformPeriodValidation();
+		}
 
         private void ConfirmClicked()
         {
