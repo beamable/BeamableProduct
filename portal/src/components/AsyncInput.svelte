@@ -15,6 +15,7 @@
 
 <script>
     import FeatherIcon from './FeatherIcon';
+    import WarningPopup from './WarningPopup';
     import { onMount, onDestroy } from 'svelte';
 
     export let value;
@@ -27,6 +28,11 @@
     export let buttonTitle = undefined;
     export let onValidate = (val) => null;
     export let floatError=false;
+    export let deletable=false;
+    export let onDelete = (data) => true;
+    export let deleteTitle='Delete';
+    export let deleteWarning='Are you sure?';
+
     export let buttonTopPadding=12; // TODO: eventually, we should factor this out and support alignment through classes, or just have a generalized css solution
 
     let isNetworking = false;
@@ -55,6 +61,26 @@
 
     function endEdit(){
         nextValue = undefined;
+    }
+
+    async function startDelete(){
+        isNetworking = true;
+
+        try {
+            errorMessage = undefined;
+            await onDelete(value);
+        } catch (err){
+            if (err && err.message){
+                errorMessage = err.message;
+            }
+            else if (err){
+                errorMessage = err;
+            } else {
+                errorMessage = 'unknown error';
+            }
+        } finally {
+            isNetworking = false;
+        }
     }
 
     async function saveEdit(){
@@ -176,6 +202,21 @@
         <button class="button network-button" title={buttonTitle} disabled={disabled} on:click={evt => !disabled && startEdit()}>
             <FeatherIcon icon="edit-2"/>
         </button>
+        {#if deletable}
+            <WarningPopup 
+                left={88}
+                top={-95} 
+                headerClass="light-header" 
+                header={deleteTitle}
+                message={deleteWarning}
+                onConfirmFunction={() => startDelete() }>
+                <div slot="trigger" let:toggle style="display: inline;">
+                    <button class="button" on:click|preventDefault|stopPropagation={toggle}>
+                        <FeatherIcon icon="trash"/>
+                    </button>
+                </div>
+            </WarningPopup>
+        {/if}
     {/if}
 
 </div>
