@@ -44,7 +44,7 @@ namespace Beamable.Api.Auth
     {
         const string DEVICE_ID_URI = ACCOUNT_URL + "/me";
         const string DEVICE_DELETE_URI = ACCOUNT_URL + "/me/device";
-        
+
         public AuthService(IBeamableRequester requester, IAuthSettings settings = null) : base(requester, settings)
         {
         }
@@ -77,7 +77,7 @@ namespace Beamable.Api.Auth
         {
             return UpdateDeviceId(RegisterDeviceIdRequest.Create());
         }
-        
+
         private Promise<User> UpdateDeviceId(RegisterDeviceIdRequest requestBody)
         {
 	        return Requester.Request<User>(Method.PUT, DEVICE_ID_URI, requestBody);
@@ -96,7 +96,12 @@ namespace Beamable.Api.Auth
 
         public Promise<User> RemoveDeviceIds(string[] deviceIds)
         {
-	        return Requester.Request<User>(Method.DELETE, DEVICE_DELETE_URI, DeleteDevicesRequest.Create(deviceIds));
+	        object body = new EmptyResponse();
+	        if (deviceIds != null)
+	        {
+		        body = DeleteDevicesRequest.Create(deviceIds);
+	        }
+	        return Requester.Request<User>(Method.DELETE, DEVICE_DELETE_URI, body);
         }
 
         [Serializable]
@@ -113,7 +118,7 @@ namespace Beamable.Api.Auth
                 return req;
             }
         }
-        
+
         [Serializable]
         private class DeleteDevicesRequest
         {
@@ -125,7 +130,7 @@ namespace Beamable.Api.Auth
 		        {
 			        deviceIds = ids
 		        };
-		        
+
 		        return req;
 	        }
         }
