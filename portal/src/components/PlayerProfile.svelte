@@ -78,8 +78,9 @@
         }
 
         await players.addDeviceId(player, next);
-        player = await players.removeDeviceId(player, old);
-
+        const nextPlayer = await players.removeDeviceId(player, old);
+        // setTimeout()
+        // player.deviceIds = [...nextPlayer.deviceIds];
         return next;
     }
     
@@ -310,7 +311,7 @@
                 </label>
 
                 <AsyncInput
-                    value={deviceId}
+                    value={player.deviceIds[index]}
                     inputType="text"
                     placeholder="No Device Id Provided"
                     onWrite={handleDeviceIdWrite}
