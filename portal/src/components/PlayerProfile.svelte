@@ -77,8 +77,9 @@
             return;
         }
 
-        await players.removeDeviceId(player, old);
         player = await players.addDeviceId(player, next);
+        await players.removeDeviceId(player, old);
+
         return next;
     }
     
