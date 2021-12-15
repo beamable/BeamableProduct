@@ -3,6 +3,7 @@
     import StatCollection from '../services/players';
     import FeatherIcon from './FeatherIcon';
     import WarningPopup from './WarningPopup';
+    import ModalCard from './ModalCard';
     import AsyncInput from './AsyncInput';
     import ComponentButtons from './ComponentButtons';
 
@@ -21,6 +22,7 @@
     let playerInstallDate = '?';
 
     let isNetworking;
+    let addDeviceIdValue = '';
 
 
     $: hasStats = stats && stats.length;
@@ -43,6 +45,20 @@
         player.email = player.email || '';
     }
 
+    async function handlePersonallyIdentifiableInformation() {
+        let pii = await players.getPersonallyIdentifiableInformation(player.id)
+        var element = document.createElement('a');
+        element.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(pii)));
+        element.setAttribute('download', 'Profile');
+
+        element.style.display = 'none';
+        document.body.appendChild(element);
+
+        element.click();
+
+        document.body.removeChild(element);
+    }
+
     function isEmailValid(email) {
         const isValid = email.indexOf('@') > 2 && email.indexOf('.') > 3;
         if (!isValid) {
@@ -56,8 +72,31 @@
     }
 
     async function handleDeviceIdWrite(next, old){
-        await players.updateDeviceId(player, next);
+        // there is no longer an "edit" capability, so instead we need to (1) remove, and (2) add. 
+        if (!next || next.length == 0){
+            return;
+        }
+
+        await players.addDeviceId(player, next);
+        const nextPlayer = await players.removeDeviceId(player, old);
+        // setTimeout()
+        // player.deviceIds = [...nextPlayer.deviceIds];
         return next;
+    }
+    
+    async function addDeviceId(toggle){
+        if (!addDeviceIdValue || addDeviceIdValue.length == 0){
+            return;
+        }
+        try {
+            player = await players.addDeviceId(player, addDeviceIdValue);
+        } finally {
+            toggle();
+        }
+    }
+
+    async function handleDeviceIdDelete(deviceId) {
+        player = await players.removeDeviceId(player, deviceId);
     }
 
 </script>
@@ -149,6 +188,11 @@
         left: calc(66% + 2px);
     }
 
+    #download-pii {
+        width: auto;
+        padding:15px;
+    }
+
 </style>
 
 
@@ -172,12 +216,58 @@
                             Forget User
                         </span>
                     </button>
-
                 </span>
                 <span slot="primary-button">
                     Forget
                 </span>
             </WarningPopup>
+        </p>
+        <p class="control">
+            <button id="download-pii" class="button trigger-button" on:click={handlePersonallyIdentifiableInformation}>
+                <span class="icon is-small">
+                    <FeatherIcon icon="archive"/>
+                </span>
+                <span>
+                   Download Personally Identifiable Information 
+                </span>
+            </button>
+        </p>
+        <p class="control">
+            <ModalCard class="is-xsmall has-light-bg add-deviceId">
+              <div slot="trigger-evt" let:toggle let:active>
+                <button class="button trigger-button" on:click|preventDefault|stopPropagation={toggle}>
+                    <span class="icon is-small">
+                        <FeatherIcon icon="smartphone"/>
+                    </span>
+                    <span>
+                        Add Device Id
+                    </span>
+                </button>
+              </div>
+              <h3 slot="title">
+                Add Device Id
+              </h3>
+              <span slot="body">
+                <div class="field" style="flex-grow: 1">
+                    <div class="control" style="flex-grow: 1;">
+                        <input class="input is-primary" type="text" placeholder="DeviceId" bind:value={addDeviceIdValue}>
+                    </div>
+                </div>
+              </span>
+            
+              <span slot="buttons" let:toggle>
+                <button class="button is-success" on:click|preventDefault|stopPropagation={evt => addDeviceId(toggle)} class:is-loading={isNetworking}>
+                    <span>
+                        <slot name="primary-button">
+                            Add Device Id
+                        </slot>
+                    </span>
+                </button>
+                <button class="button cancel" on:click|preventDefault={toggle}>
+                    <span>Cancel</span>
+                </button>
+              </span>
+            </ModalCard>
         </p>
     </ComponentButtons>
 
@@ -210,19 +300,31 @@
             </div>
         </div>
 
-        <div class="field">
-            <label class="label">Device Id</label>
-            <AsyncInput
-                value={player.deviceId}
-                inputType="text"
-                placeholder="No Device Id Provided"
-                onWrite={handleDeviceIdWrite}
-                editable={true}
-                floatError={true}
-                buttonTopPadding={4}
-            />
-       
-        </div>
+
+        {#each player.deviceIds as deviceId, index}
+            <div class="field">
+
+                <label class="label">
+                {#if index == 0}
+                    Device Ids
+                {/if}
+                </label>
+
+                <AsyncInput
+                    value={player.deviceIds[index]}
+                    inputType="text"
+                    placeholder="No Device Id Provided"
+                    onWrite={handleDeviceIdWrite}
+                    editable={true}
+                    floatError={false}
+                    deletable={true}
+                    deleteTitle={'Remove Device Id?'}
+                    deleteWarning={'Are you sure you want to remove this device Id from the player\'s account?'}
+                    onDelete={handleDeviceIdDelete}
+                    buttonTopPadding={4}
+                />
+            </div>
+        {/each}
 
         <div class="field">
             <label class="label"> Associations</label>
