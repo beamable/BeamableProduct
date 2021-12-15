@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace Beamable.Editor.Tests.Content
 {
-    public class SchedulesTests
+	public class SchedulesTests
     {
         [Test]
         public void Event_Schedule_Daily_Mode_Test()
@@ -117,7 +117,7 @@ namespace Beamable.Editor.Tests.Content
             window.StartTimeComponent.Set(DateTime.Now);
             window.CalendarComponent.Calendar.SetInitialValues(new List<string>
             {
-                "05-10-2021",
+                "5-10-2021",
                 "10-11-2021",
                 "12-12-2022"
             });
@@ -272,39 +272,52 @@ namespace Beamable.Editor.Tests.Content
             bool isHourParsed = int.TryParse(definition.hour[0], out int parsedHour);
             bool isMinuteParsed = int.TryParse(definition.minute[0], out int parsedMinute);
             bool isSecondParsed = int.TryParse(definition.second[0], out int parsedSecond);
+            
+            if (definition.hour[0] != "*")
+	            Assert.IsTrue(isHourParsed, $"{warningHeader} problem with parsing hour");
+            if (definition.minute[0] != "*")
+				Assert.IsTrue(isMinuteParsed, $"{warningHeader} problem with parsing minute");
+            if (definition.second[0] != "*")
+				Assert.IsTrue(isSecondParsed, $"{warningHeader} problem with parsing second");
 
-            Assert.IsTrue(isHourParsed, $"{warningHeader} problem with parsing hour");
-            Assert.IsTrue(isMinuteParsed, $"{warningHeader} problem with parsing minute");
-            Assert.IsTrue(isSecondParsed, $"{warningHeader} problem with parsing second");
-
-            Assert.IsTrue(parsedHour >= 0 && parsedHour < 24,
-                $"{warningHeader} hour should be greater or equal 0 and less than 24");
-            Assert.IsTrue(parsedMinute >= 0 && parsedMinute < 60,
-                $"{warningHeader} minute should be greater or equal 0 and less than 60");
-            Assert.IsTrue(parsedSecond >= 0 && parsedSecond < 60,
-                $"{warningHeader} second should be greater or equal 0 and less than 60");
+            Assert.IsTrue(definition.hour[0] == "*" || parsedHour >= 0 && parsedHour < 24,
+                          $"{warningHeader} hour should be greater or equal 0 and less than 24 or marked as *");
+            Assert.IsTrue(definition.minute[0] == "*" || parsedMinute >= 0 && parsedMinute < 60,
+                          $"{warningHeader} minute should be greater or equal 0 and less than 60 or marked as *");
+            Assert.IsTrue(definition.second[0] == "*" || parsedSecond >= 0 && parsedSecond < 60,
+                          $"{warningHeader} second should be greater or equal 0 and less than 60 or marked as *");
         }
 
         private static void TestPeriod(Schedule schedule, string warningHeader)
         {
-            bool isPeriod = schedule.definitions.Count > 1 && schedule.definitions.Any(def => def.hour[0] != "*");
-
-            if (schedule.definitions.Count > 0)
+	        if (schedule.definitions.Count > 0)
             {
-                if (isPeriod)
+                if (schedule.IsPeriod)
                 {
-                    int startHour = Convert.ToInt32(schedule.definitions[0].hour[0]);
-                    int endHour = Convert.ToInt32(schedule.definitions[schedule.definitions.Count - 1].hour[0]);
+	                var startHour = schedule.definitions[0].hour[0].Contains("*") 
+		                ? 0 
+		                : Convert.ToInt32(schedule.definitions[0].hour[0]);
+	            
+	                var endHour = schedule.definitions[schedule.definitions.Count - 1].hour[schedule.definitions[schedule.definitions.Count - 1].hour.Count - 1].Contains("*") 
+		                ? 23 
+		                : Convert.ToInt32(schedule.definitions[schedule.definitions.Count - 1].hour[schedule.definitions[schedule.definitions.Count - 1].hour.Count - 1]);
+				
+	                var startMinute = schedule.definitions[0].minute[0].Contains("*") 
+		                ? 0 
+		                : Convert.ToInt32(schedule.definitions[0].minute[0]);
 
-                    string startMinutesRange = schedule.definitions[0].minute[0];
-                    string[] startSplitRange = startMinutesRange.Split('-');
-                    int startMinute = Convert.ToInt32(startSplitRange[0]);
+	                var endMinute = schedule.definitions[schedule.definitions.Count - 1].minute[schedule.definitions[schedule.definitions.Count - 1].minute.Count - 1].Contains("*") 
+		                ? 59 
+		                : Convert.ToInt32(schedule.definitions[schedule.definitions.Count - 1].minute[schedule.definitions[schedule.definitions.Count - 1].minute.Count - 1]);
+				
+	                endMinute++;
+	                if (endMinute == 60)
+	                {
+		                endMinute = 0;
+		                endHour += 1;
+	                }
 
-                    string endMinutesRange = schedule.definitions[schedule.definitions.Count - 1].minute[0];
-                    string[] endSplitRange = endMinutesRange.Split('-');
-                    int endMinute = Convert.ToInt32(endSplitRange[1]);
-
-                    bool valid = endHour > startHour || (endHour == startHour && endMinute > startMinute);
+	                bool valid = endHour > startHour || (endHour == startHour && endMinute > startMinute);
                     Assert.IsTrue(valid, $"{warningHeader} active period to should be later than active period from");
                 }
             }

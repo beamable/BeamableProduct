@@ -138,7 +138,10 @@ namespace Beamable.Editor.UI.Components
         {
             if (toggleSelected)
             {
-                _selectedDays.Add(toggleValue);
+	            if (!_selectedDays.Contains(toggleValue))
+	            {
+		            _selectedDays.Add(toggleValue);
+	            }
             }
             else
             {
@@ -231,7 +234,8 @@ namespace Beamable.Editor.UI.Components
 				foreach (string year in scheduleDefinition.year)
 					foreach (string month in scheduleDefinition.month)
 						foreach (string day in scheduleDefinition.dayOfMonth)
-							_selectedDays.Add($"{day}-{month}-{year}");
+							if (!_selectedDays.Contains($"{day}-{month}-{year}"))
+								_selectedDays.Add($"{day}-{month}-{year}");
 			}
 
             OnDateChanged();

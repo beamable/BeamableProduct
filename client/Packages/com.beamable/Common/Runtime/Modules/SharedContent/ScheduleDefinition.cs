@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using Beamable.Common.Content.Validation;
+using Beamable.Content;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Common.Content
@@ -23,7 +25,12 @@ namespace Beamable.Common.Content
    [Serializable]
    public class Schedule
    {
-      public string description;
+	   public bool IsPeriod => definitions.Any(def => 
+		                                           (def.hour.Contains("*") && !def.minute.Contains("*")) || 
+		                                           (!def.hour.Contains("*") && def.minute.Contains("*")) || 
+		                                           (!def.hour.Contains("*") && !def.minute.Contains("*")));
+		  
+	   public string description;
 
       [MustBeDateString]
       public string activeFrom;
@@ -32,6 +39,7 @@ namespace Beamable.Common.Content
       public OptionalString activeTo = new OptionalString();
 
       public List<ScheduleDefinition> definitions = new List<ScheduleDefinition>();
+      
 
       public void AddDefinition(ScheduleDefinition definition)
       {
@@ -47,25 +55,39 @@ namespace Beamable.Common.Content
    [Serializable]
    public class ScheduleDefinition
    {
-       public Action<ScheduleDefinition> OnCronRawSaveButtonPressed;
+	   [IgnoreContentField]
+	   public Action<ScheduleDefinition> OnCronRawSaveButtonPressed;
+	   
        [HideInInspector]
+       [IgnoreContentField]
        public int index = -1;
+
+       [TextArea(2,5)]
+       [IgnoreContentField]
+       public string cronRawFormat;
+
+       [TextArea]
+       [IgnoreContentField]
+       public string cronHumanFormat;
        
-       [ShowOnly] public string cronHumanFormat;
-       [ShowOnly] public string cronRawFormat;
-       
+      [HideInInspector]
       public List<string> second;
+      [HideInInspector]
       public List<string> minute;
+      [HideInInspector]
       public List<string> hour;
+      [HideInInspector]
       public List<string> dayOfMonth;
+      [HideInInspector]
       public List<string> month;
+      [HideInInspector]
       public List<string> year;
+      [HideInInspector]
       public List<string> dayOfWeek;
 
       public ScheduleDefinition() { }
 
-      public ScheduleDefinition(string second, string minute, string hour, List<string> dayOfMonth, string month,
-         string year, List<string> dayOfWeek)
+      public ScheduleDefinition(string second, string minute, string hour, List<string> dayOfMonth, string month, string year, List<string> dayOfWeek)
       {
          this.second = new List<string> {second};
          this.minute = new List<string> {minute};
@@ -75,7 +97,17 @@ namespace Beamable.Common.Content
          this.year = new List<string> {year};
          this.dayOfWeek = new List<string>(dayOfWeek);
       }
+      public ScheduleDefinition(List<string> second, List<string> minute, List<string> hour, List<string> dayOfMonth, List<string> month, List<string> year, List<string> dayOfWeek)
+      {
+	      this.second = new List<string>(second);
+	      this.minute = new List<string>(minute);
+	      this.hour = new List<string>(hour);
+	      this.dayOfMonth = new List<string>(dayOfMonth);
+	      this.month = new List<string>(month);
+	      this.year = new List<string>(year);
+	      this.dayOfWeek = new List<string>(dayOfWeek);
+      }
    }
 
-   
+
 }

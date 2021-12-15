@@ -3,9 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Api.Content;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Spew;
+using Core.Platform.SDK;
+using UnityEngine;
+using UnityEngine.Networking;
 
 namespace Beamable.Content
 {
@@ -29,10 +33,11 @@ namespace Beamable.Content
     public class ContentCache<TContent> : ContentCache where TContent : ContentObject, new()
     {
         private static readonly ClientContentSerializer _serializer = new ClientContentSerializer();
+        private static readonly string _bakedDataExtractedKey = "beamable_baked_data_extracted";
 
         private readonly Dictionary<string, ContentCacheEntry<TContent>> _cache =
             new Dictionary<string, ContentCacheEntry<TContent>>();
-
+        
         private readonly IHttpRequester _requester;
         private readonly IBeamableFilesystemAccessor _filesystemAccessor;
 
@@ -65,7 +70,7 @@ namespace Beamable.Content
             PlatformLogger.Log(
                 $"ContentCache: Fetching content from cache for {requestedInfo.contentId}: version: {requestedInfo.version}");
             if (_cache.TryGetValue(cacheId, out var cacheEntry)) return cacheEntry.Content;
-
+            
             // Then, try the on disk cache
             PlatformLogger.Log(
                 $"ContentCache: Loading content from disk for {requestedInfo.contentId}: version: {requestedInfo.version}");
@@ -75,7 +80,17 @@ namespace Beamable.Content
                 SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
                 return promise;
             }
-
+            
+            // Check baked file for requested content
+            PlatformLogger.Log(
+                $"ContentCache: Loading content from baked file for {requestedInfo.contentId}: version: {requestedInfo.version}");
+            if (TryGetValueFromBaked(requestedInfo, out var bakedContent))
+            {
+                var promise = Promise<TContent>.Successful(bakedContent);
+                SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
+                return promise;
+            }
+            
             // Finally, if not found, fetch the content from the CDN
             PlatformLogger.Log(
                 $"ContentCache: Fetching content from CDN for {requestedInfo.contentId}: version: {requestedInfo.version}");
@@ -125,6 +140,128 @@ namespace Beamable.Content
             }
         }
 
+        private bool TryGetValueFromBaked(ClientContentInfo info, out TContent contentObject)
+        {
+            contentObject = null;
+            
+            bool dataExtracted = PlayerPrefs.GetInt(_bakedDataExtractedKey) == 1;
+            if (!dataExtracted)
+            {
+	            if (ExtractContent())
+	            {
+		            PlayerPrefs.SetInt(_bakedDataExtractedKey, 1);
+		            return TryGetValueFromDisk(info, out contentObject, _filesystemAccessor);    
+	            }
+
+	            return ReadDecompressedData(info, out contentObject);
+            }
+            
+            return false;
+        }
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+	    private bool ExtractContent()
+        {
+	        UnityWebRequest www = UnityWebRequest.Get(ContentConstants.CompressedContentPath);
+	        www.SendWebRequest();
+	        while (!www.isDone) { }
+
+	        var compressed = www.downloadHandler.data;
+	        if (compressed == null || compressed.Length == 0)
+	        {
+		        return false;
+	        }
+	        
+            string content = Gzip.Decompress(compressed);
+            var list = JsonUtility.FromJson<ContentDataInfoWrapper>(content);
+
+            try
+            {
+                foreach (var contentInfo in list.content)
+                {
+                    string path = ContentPath(contentInfo.contentId, _filesystemAccessor);
+                    Directory.CreateDirectory(Path.GetDirectoryName(path));
+                    File.WriteAllText(path, contentInfo.data);
+                }
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[EXTRACT] ERROR: {e.Message}");
+                return false;
+            }
+        }
+	    
+	    private bool ReadDecompressedData(ClientContentInfo info, out TContent contentObject)
+		{
+			contentObject = null;
+			string resourcePath = Path.Combine(ContentConstants.DecompressedContentPath, info.contentId);
+            
+			UnityWebRequest www = UnityWebRequest.Get(resourcePath);
+			www.SendWebRequest();
+			while (!www.isDone) { }
+			var json = www.downloadHandler.text;
+
+			contentObject = _serializer.Deserialize<TContent>(json);
+			if (contentObject == null || contentObject.Version != info.version)
+			{
+				return false;
+			}
+
+			return true;
+		}
+#else
+	    private bool ExtractContent()
+	    {
+		    if (!File.Exists(ContentConstants.CompressedContentPath))
+		    {
+			    return false;
+		    }
+	        
+		    var compressed = File.ReadAllBytes(ContentConstants.CompressedContentPath);
+		    string content = Gzip.Decompress(compressed);
+		    var list = JsonUtility.FromJson<ContentDataInfoWrapper>(content);
+
+		    try
+		    {
+			    foreach (var contentInfo in list.content)
+			    {
+				    string path = ContentPath(contentInfo.contentId, _filesystemAccessor);
+				    File.WriteAllText(path, contentInfo.data);
+			    }
+
+			    return true;
+		    }
+		    catch (Exception e)
+		    {
+			    Debug.LogError($"[EXTRACT] ERROR: {e.Message}");
+			    return false;
+		    }
+	    }
+
+		private bool ReadDecompressedData(ClientContentInfo info, out TContent contentObject)
+		{
+			contentObject = null;
+			string resourcePath = Path.Combine(ContentConstants.DecompressedContentPath, info.contentId);
+            
+			if (File.Exists(resourcePath))
+			{
+				var json = File.ReadAllText(resourcePath);
+
+				contentObject = _serializer.Deserialize<TContent>(json);
+				if (contentObject == null || contentObject.Version != info.version)
+				{
+					return false;
+				}
+
+				return true;
+			}
+
+			return false;
+		}
+#endif
+
         private static void SaveToDisk(ClientContentInfo info, string raw, IBeamableFilesystemAccessor fsa)
         {
             try
@@ -142,7 +279,12 @@ namespace Beamable.Content
 
         private static string ContentPath(ClientContentInfo info, IBeamableFilesystemAccessor fsa)
         {
-            return fsa.GetPersistentDataPathWithoutTrailingSlash() + $"/content/{info.contentId}.json";
+	        return ContentPath(info.contentId, fsa);
+        }
+
+        private static string ContentPath(string contentId, IBeamableFilesystemAccessor fsa)
+        {
+	        return fsa.GetPersistentDataPathWithoutTrailingSlash() + $"/content/{contentId}.json";
         }
 
         private static TContent DeserializeContent(ClientContentInfo info, string raw)

@@ -193,9 +193,10 @@ namespace Beamable.Editor.Microservice.UI
             _actionBarVisualElement.OnBuildAllClicked += () =>
                 _microserviceContentVisualElement.BuildAllMicroservices(_loadingBar);
 
-            Microservices.onBeforeDeploy -= OnBeforeDeploy;
-            Microservices.onBeforeDeploy += OnBeforeDeploy;
-
+            Microservices.onBeforeDeploy -= HandleBeforeDeploy;
+            Microservices.onBeforeDeploy += HandleBeforeDeploy;
+            Microservices.onAfterDeploy -= HandleAfterDeploy;
+            Microservices.onAfterDeploy += HandleAfterDeploy;
         }
 
         private void HandleDisplayFilterSelected(ServicesDisplayFilter filter)
@@ -242,9 +243,12 @@ namespace Beamable.Editor.Microservice.UI
             SetForContent();
         }
 
-        private void OnBeforeDeploy(ManifestModel manifestModel, int totalSteps) {
-            new DeployLogParser(_loadingBar, manifestModel, totalSteps);
+        private void HandleBeforeDeploy(ManifestModel manifestModel, int totalSteps)
+        {
+	        new DeployLogParser(_loadingBar, manifestModel, totalSteps);
         }
+
+        private void HandleAfterDeploy(ManifestModel _model, int _totalSteps) => RefreshWindow(true);
 
         public void SortMicroservices() {
             if (_windowRoot != null)
@@ -272,5 +276,4 @@ namespace Beamable.Editor.Microservice.UI
             _instance = this;
         }
     }
-
 }

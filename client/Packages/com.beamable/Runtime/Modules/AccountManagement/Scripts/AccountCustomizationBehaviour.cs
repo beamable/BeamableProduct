@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Beamable.Api;
 using Beamable.Common;
@@ -9,8 +8,6 @@ using Beamable.Theme;
 using Beamable.Theme.Palettes;
 using Beamable.Stats;
 using Beamable.UI.Scripts;
-using Beamable.Platform.SDK;
-using Beamable.Platform.SDK.Auth;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -42,8 +39,6 @@ namespace Beamable.AccountManagement
 
         public ColorBinding PlaceholderDefaultColor, PlaceholderErrorColor;
         public string PlaceholderMessage="Enter Alias...", PlaceholderErrorMessage = "Enter a valid Alias...";
-
-        private User _lastOpenedUser;
 
         // Start is called before the first frame update
         void Start()
@@ -170,7 +165,7 @@ namespace Beamable.AccountManagement
                     return GoogleContainer;
                 default:
                     return null;
-            };
+            }
         }
 
         void SetUserInfo(List<IconEnableData> data)
