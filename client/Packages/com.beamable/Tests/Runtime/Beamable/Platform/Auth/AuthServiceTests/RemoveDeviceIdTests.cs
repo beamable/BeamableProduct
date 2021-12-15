@@ -4,6 +4,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using NUnit.Framework;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine.TestTools;
 
 namespace Beamable.Platform.Tests.Auth.AuthServiceTests
@@ -29,10 +30,11 @@ namespace Beamable.Platform.Tests.Auth.AuthServiceTests
 			var mockReq = _requester.MockRequest<User>(Method.DELETE, $"{ROUTE}/me/device")
 			                        .WithJsonFieldMatch("deviceIds", x =>
 			                        {
-				                        if (x is object[] strArr)
+				                        if (x is List<object> strArr)
 				                        {
-					                        return strArr.Length == 0;
+					                        return strArr.Count == 0;
 				                        }
+
 
 				                        return false;
 			                        })
@@ -50,9 +52,9 @@ namespace Beamable.Platform.Tests.Auth.AuthServiceTests
 			var mockReq = _requester.MockRequest<User>(Method.DELETE, $"{ROUTE}/me/device")
 			                        .WithJsonFieldMatch("deviceIds", x =>
 			                        {
-				                        if (x is object[] strArr)
+				                        if (x is List<object> strArr)
 				                        {
-					                        return strArr.Length == 2;
+					                        return strArr.Count == 2;
 				                        }
 
 				                        return false;
