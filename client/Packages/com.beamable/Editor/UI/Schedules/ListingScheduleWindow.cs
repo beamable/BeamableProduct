@@ -252,8 +252,10 @@ namespace Beamable.Editor.Schedules
 	            var startHour = schedule.definitions[0].hour[0].Contains("*") 
 		            ? 0 
 		            : Convert.ToInt32(schedule.definitions[0].hour[0]);
-	            
-	            var endHour = schedule.definitions[schedule.definitions.Count - 1].hour[schedule.definitions[schedule.definitions.Count - 1].hour.Count - 1].Contains("*") 
+
+				bool isMidnight = schedule.definitions[schedule.definitions.Count - 1].hour[schedule.definitions[schedule.definitions.Count - 1].hour.Count - 1].Contains("23");
+
+				var endHour = schedule.definitions[schedule.definitions.Count - 1].hour[schedule.definitions[schedule.definitions.Count - 1].hour.Count - 1].Contains("*") 
 		            ? 23 
 		            : Convert.ToInt32(schedule.definitions[schedule.definitions.Count - 1].hour[schedule.definitions[schedule.definitions.Count - 1].hour.Count - 1]);
 				
@@ -273,7 +275,15 @@ namespace Beamable.Editor.Schedules
                 }
                 
                 _periodFromHourComponent.Set(new DateTime(2000, 1, 1, startHour, startMinute, 0));
-                _periodToHourComponent.Set(new DateTime(2000, 1, 1, endHour, endMinute, 0));
+
+				if (isMidnight)
+				{
+					_periodToHourComponent.Set(new DateTime(2000, 1, 1, 0, 0, 0));
+				}
+				else
+				{
+					_periodToHourComponent.Set(new DateTime(2000, 1, 1, endHour, endMinute, 0));
+				}
 
             }
 
