@@ -13,7 +13,8 @@ namespace Beamable.Common.Content
       public const string MISSING_SUFFIX = " (missing)";
 
       public static readonly string BeamableResourcesPath = Path.Combine(Application.dataPath, "Beamable/Resources");
-      public static readonly string BakedContentFilePath = Path.Combine(BeamableResourcesPath, "bakedContent.bytes");
+      public static readonly string BakedFileResourcePath = "bakedContent";
+      public static readonly string BakedContentFilePath = Path.Combine(BeamableResourcesPath, BakedFileResourcePath);
       public static readonly string DecompressedContentResourcesPath = Path.Combine(BeamableResourcesPath, "bakedContent.json");
    }
 }

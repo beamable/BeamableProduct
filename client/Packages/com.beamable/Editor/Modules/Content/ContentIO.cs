@@ -1023,14 +1023,15 @@ namespace Beamable.Editor.Content
             try
             {
                 string json = JsonUtility.ToJson(fileData);
+                string path = ContentConstants.BakedContentFilePath + ".bytes";
                 if (compress)
                 {
                     var compressed = Gzip.Compress(json);
-                    File.WriteAllBytes(ContentConstants.BakedContentFilePath, compressed);
+                    File.WriteAllBytes(path, compressed);
                 }
                 else
                 {
-                    File.WriteAllText(ContentConstants.BakedContentFilePath, json);
+                    File.WriteAllText(path, json);
                 }
             }
             catch (Exception e)
