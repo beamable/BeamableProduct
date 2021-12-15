@@ -336,7 +336,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 	        {
 		        try
 		        {
-			        if (procList[i].ProcessName.ToLower().Contains("docker desktop"))
+			        if (procList[i].ProcessName.ToLower().Contains("docker"))
 			        {
 				        return true;
 			        }
