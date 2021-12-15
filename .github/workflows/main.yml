@@ -121,9 +121,8 @@ jobs:
       - name: Make build scripts executeable and change directory to the location of the xcode project
         run: chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/process_symbols.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/MapFileParser.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/usymtool && cd iOS/
       - name: what is the head ref?
-        run:  echo ${{ github.head_ref }}
+        run:  echo ${{ github.ref }}
       - uses: yukiarrr/ios-build-action@v1.4.0
-        if: ${{ github.head_ref == '/refs/heads/iOS' }}
         with:
           update-targets: Unity-iPhone
           project-path: ${{ secrets.XCODEPROJ_PATH }}
