@@ -27,8 +27,6 @@ jobs:
         with:
           fetch-depth: 0
           lfs: true
-      - name: What are my env's?
-        run:  printenv && echo ${{ github.run_number }}
       - name: Login to Docker Hub
         uses: docker/login-action@v1
         with:
@@ -80,7 +78,6 @@ jobs:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
-          ANDROID_VERSION_CODE: ${{ github.run_number }}
         with:
           targetPlatform: ${{ matrix.targetPlatform }}
           unityVersion: ${{ matrix.unityVersion }}
@@ -88,6 +85,7 @@ jobs:
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           versioning: Custom
           version: 1.0.0
+          androidVersionCode: ${{ github.run_number }}
           allowDirtyBuild: true
           buildsPath: dist
           buildMethod: BuildSampleProject.Development
@@ -114,12 +112,8 @@ jobs:
     env:
       # The USYM_UPLOAD_AUTH_TOKEN environment variable is set to bypass Unity cloud checks
       USYM_UPLOAD_AUTH_TOKEN: foo
-      HEAD_REF: ${{ github.head_ref }}
-      PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
 
     steps:
-      - name: Whats my head ref?
-        run: echo $HEAD_REF && echo $USYM_UPLOAD_AUTH_TOKEN
       - uses: actions/checkout@v2
       - uses: actions/download-artifact@v2
         with:
@@ -127,6 +121,7 @@ jobs:
       - name: Make build scripts executeable and change directory to the location of the xcode project
         run: chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/process_symbols.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/MapFileParser.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/usymtool && cd iOS/
       - uses: yukiarrr/ios-build-action@v1.4.0
+        if: ${{ github.head_ref == '/refs/heads/iOS' }}
         with:
           update-targets: Unity-iPhone
           project-path: ${{ secrets.XCODEPROJ_PATH }}
@@ -137,7 +132,7 @@ jobs:
           code-signing-identity: 'iPhone Distribution: Beamable, Inc (A6C4565DLF)'
           team-id: A6C4565DLF
       - uses: yukiarrr/ios-build-action@v1.4.0
-        if: ${{ github.head_ref == 'staging' }}
+        if: ${{ github.head_ref == '/refs/heads/staging' }}
         with:
           update-targets: Unity-iPhone
           project-path: ${{ secrets.XCODEPROJ_PATH }}
@@ -148,7 +143,7 @@ jobs:
           code-signing-identity: 'iPhone Distribution: Beamable, Inc (A6C4565DLF)'
           team-id: A6C4565DLF
       - uses: yukiarrr/ios-build-action@v1.4.0
-        if: ${{ github.head_ref == 'main' }}
+        if: ${{ github.head_ref == '/refs/heads/production' }}
         with:
           update-targets: Unity-iPhone
           project-path: ${{ secrets.XCODEPROJ_PATH }}
