@@ -7,10 +7,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [TBD]
-### Added
-- Device ID Deletion APIs (bulk and selective)
-
 ## [0.18.0]
 ### Added
 - Content can be prebaked with game-builds to speed up content initialization
@@ -19,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Announcement content includes gifts in addition to attachments. Gifts support webhook calls.
 - `scheduleInstancePurchaseLimit` field to the `ListingContent` to enable setting a purchase limit scoped to the schedule instance
 - `SearchStats()` admin method is usable from client and microservice code.
+- Device ID Deletion APIs (bulk and selective)
 
 ### Changed
 - `BeamableEnvironment` has moved to the Runtime to enable sdk version checking at runtime
