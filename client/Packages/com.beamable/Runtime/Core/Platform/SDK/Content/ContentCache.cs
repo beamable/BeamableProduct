@@ -40,6 +40,9 @@ namespace Beamable.Content
         
         private readonly IHttpRequester _requester;
         private readonly IBeamableFilesystemAccessor _filesystemAccessor;
+        
+        private static Dictionary<string, string> bakedData;
+        private static bool diskFileUpdated = false;
 
         public ContentCache(IHttpRequester requester, IBeamableFilesystemAccessor filesystemAccessor)
         {
@@ -111,33 +114,42 @@ namespace Beamable.Content
             return fetchedContent;
         }
 
-
         private static bool TryGetValueFromDisk(ClientContentInfo info, out TContent content,
             IBeamableFilesystemAccessor fsa)
         {
-            var filePath = ContentPath(info, fsa);
+	        var filePath = ContentPath(fsa);
+	        if (File.Exists(filePath) && (diskFileUpdated || bakedData == null))
+	        {
+		        var fileContent = File.ReadAllText(filePath);
+		        var data = JsonUtility.FromJson<ContentDataInfoWrapper>(fileContent);
+	        
+		        if (data == null)
+		        {
+			        content = null;
+			        return false;
+		        }
 
-            // Ensure the directory is created
-            Directory.CreateDirectory(Path.GetDirectoryName(filePath));
-            try
-            {
-                var raw = File.ReadAllText(filePath);
-                var deserialized = DeserializeContent(info, raw);
-                if (deserialized.Version == info.version)
-                {
-                    content = deserialized;
-                    return true;
-                }
+		        bakedData = new Dictionary<string, string>(data.content.Count);
+		        foreach (var obj in data.content)
+		        {
+			        bakedData.Add(obj.contentId, obj.data);
+		        }
 
-                content = null;
-                return false;
-            }
-            catch (Exception e)
-            {
-                PlatformLogger.Log($"ContentCache: Error fetching content from disk: {e}");
-                content = null;
-                return false;
-            }
+		        diskFileUpdated = false;
+	        }
+
+	        if (bakedData != null && bakedData.TryGetValue(info.contentId, out string json))
+	        {
+		        var deserialized = DeserializeContent(info, json);
+		        if (deserialized.Version == info.version)
+		        {
+		            content = deserialized;
+		            return true;
+		        }
+	        }
+
+	        content = null;
+	        return false;
         }
 
         private bool TryGetValueFromBaked(ClientContentInfo info, out TContent contentObject)
@@ -149,11 +161,9 @@ namespace Beamable.Content
             {
 	            if (ExtractContent())
 	            {
-		            PlayerPrefs.SetInt(_bakedDataExtractedKey, 1);
 		            return TryGetValueFromDisk(info, out contentObject, _filesystemAccessor);    
 	            }
-
-	            return ReadDecompressedData(info, out contentObject);
+	            PlayerPrefs.SetInt(_bakedDataExtractedKey, 1);
             }
             
             return false;
@@ -196,27 +206,6 @@ namespace Beamable.Content
 		    return true;
 	    }
 
-		private bool ReadDecompressedData(ClientContentInfo info, out TContent contentObject)
-		{
-			contentObject = null;
-			string resourcePath = Path.Combine(ContentConstants.DecompressedContentResourcesPath, info.contentId);
-            
-			if (File.Exists(resourcePath))
-			{
-				var json = File.ReadAllText(resourcePath);
-
-				contentObject = _serializer.Deserialize<TContent>(json);
-				if (contentObject == null || contentObject.Version != info.version)
-				{
-					return false;
-				}
-
-				return true;
-			}
-
-			return false;
-		}
-
         private static void UpdateDiskFile(ClientContentInfo info, string raw, IBeamableFilesystemAccessor fsa)
         {
             try
@@ -251,6 +240,8 @@ namespace Beamable.Content
 	                
 	                File.WriteAllText(filePath, JsonUtility.ToJson(data));
                 }
+
+                diskFileUpdated = true;
             }
             catch (Exception e)
             {
