@@ -1,21 +1,15 @@
 using Beamable.Editor.Content.Models;
-using Beamable.Editor.Content;
-using Beamable.Editor.UI.Buss.Components;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Beamable.Common;
-using Beamable.Common.Content;
+using Beamable.Content;
 using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Common.Models;
-using Beamable.Platform.SDK;
 using Beamable.Editor.UI.Components;
-using Modules.Content;
 using UnityEditor;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -30,7 +24,6 @@ namespace Beamable.Editor.Content.Components
     {
         private LoadingBarElement _loadingBar;
         private Label _messageLabel;
-        private Button _detailButton;
         public event Action OnCancelled;
         public event Action OnCompleted;
         public event Action<ContentPublishSet, HandleContentProgress, HandleDownloadFinished> OnPublishRequested;
@@ -97,7 +90,7 @@ namespace Beamable.Editor.Content.Components
                 if (_manifestModel == null)
                 {
                     _manifestModel = new ManifestModel();
-                    _manifestModel.OnAvailableManifestsChanged += _ => _isManifestNameValid.Check();
+                    _manifestModel.OnAvailableElementsChanged += _ => _isManifestNameValid.Check();
                     _manifestModel.Initialize();
                 }
                 
@@ -167,8 +160,8 @@ namespace Beamable.Editor.Content.Components
              };
              deleteFoldoutElem.contentContainer.Add(deleteList);
 
-             var cancelBtn = Root.Q<Button>("cancelBtn");
-             cancelBtn.clickable.clicked += CancelButton_OnClicked;
+             var cancelBtn = Root.Q<GenericButtonVisualElement>("cancelBtn");
+             cancelBtn.OnClick += CancelButton_OnClicked;
 
             var promise = PublishSet.Then(publishSet =>
             {
@@ -393,13 +386,13 @@ namespace Beamable.Editor.Content.Components
                 return false;
             }
 
-            if (_manifestModel?.ManifestModels == null)
+            if (_manifestModel?.Elements == null)
             {
                 message = "Checking existing namespaces...";
                 return false;
             }
 
-            if (_manifestModel.ManifestModels.Any(m => m.id == name))
+            if (_manifestModel.Elements.Any(m => m.DisplayName == name))
             {
                 message = "This namespace already exists.";
                 return false;

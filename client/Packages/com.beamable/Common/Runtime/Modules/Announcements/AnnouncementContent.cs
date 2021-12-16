@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
@@ -7,7 +8,7 @@ using UnityEngine.Serialization;
 
 namespace Beamable.Common.Announcements
 {
-   
+
    /// <summary>
    /// This type defines a %Beamable %ContentObject subclass for the %AnnouncementsService.
    ///
@@ -16,7 +17,7 @@ namespace Beamable.Common.Announcements
    /// #### Related Links
    /// - See Beamable.Common.Content.ContentObject script reference
    /// - See Beamable.Api.Announcements.AnnouncementsService script reference
-   /// 
+   ///
    /// ![img beamable-logo]
    ///
    /// </summary>
@@ -57,11 +58,19 @@ namespace Beamable.Common.Announcements
       [Tooltip(ContentObject.TooltipAttachment1)]
       public List<AnnouncementAttachment> attachments;
 
+      [Tooltip("Players who claim the announcement can receive the rewards listed below")]
+      [ContentField("gift")]
+      public AnnouncementPlayerRewards gift;
+
       [Tooltip(ContentObject.TooltipOptional0 +"If specified, stat requirements will limit the audience of this announcement based on player stats")]
       [ContentField("stat_requirements")]
       public OptionalStats statRequirements;
-      
+
       [Tooltip(ContentObject.TooltipOptional0 + "If specified, the client data")]
       public OptionalSerializableDictionaryStringToString clientData;
    }
+
+   [Serializable]
+   public class AnnouncementPlayerRewards : PlayerReward<OptionalListOfAnnouncementRewards>{}
+
 }

@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
-using UnityEngine;
 
 namespace Beamable.Common.Content
 {
@@ -16,7 +15,7 @@ namespace Beamable.Common.Content
 
         static Optional()
         {
-           TypeDescriptor.AddAttributes(typeof(Optional), new TypeConverterAttribute(typeof(OptionalTypeConverter)));
+            TypeDescriptor.AddAttributes(typeof(Optional), new TypeConverterAttribute(typeof(OptionalTypeConverter)));
         }
 
         public abstract void SetValue(object value);
@@ -56,6 +55,12 @@ namespace Beamable.Common.Content
         {
            return typeof(T);
         }
+
+        public Optional<T> DoIfExists(Action<T> callback)
+        {
+	        if (HasValue) callback(Value);
+	        return this;
+        }
     }
 
     [Agnostic]
@@ -89,11 +94,19 @@ namespace Beamable.Common.Content
 
     [System.Serializable]
     [Agnostic]
+    public class OptionalLong : Optional<long> { }
+
+    [System.Serializable]
+    [Agnostic]
     public class OptionalDouble : Optional<double> { }
 
     [System.Serializable]
     [Agnostic]
-    public class OptionalList : Optional<List<int>> { }
+    public class OptionalListInt : Optional<List<int>> { }
+
+    [System.Serializable]
+    [Agnostic]
+    public class OptionalListString : Optional<List<string>> { }
 
     [System.Serializable]
     [Agnostic]

@@ -15,7 +15,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
     public class PublishWindow : CommandRunnerWindow
     {
-        private bool isSet = false;
+        private static readonly Vector2 MIN_SIZE = new Vector2(860, 550);
+        
+    	private bool isSet = false;
 
         public static PublishWindow ShowPublishWindow()
         {
@@ -23,7 +25,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             wnd.titleContent = new GUIContent(Constants.Publish);
 
             ((PublishWindow) wnd).ShowUtility();
-            wnd.minSize = new Vector2(620, 400);
+            wnd.minSize = MIN_SIZE;
             wnd.position = new Rect(wnd.position.x, wnd.position.y + 40, wnd.minSize.x, wnd.minSize.y);
 
             Microservices.GenerateUploadModel().Then(model =>
@@ -59,7 +61,8 @@ namespace Beamable.Editor.Microservice.UI.Components
             container.Clear();
 
 
-            var e = new PublishPopup {Model = _model};
+            var e = new PublishPopup { Model = _model };
+            
             e.OnCloseRequested += Close;
             e.OnSubmit += async (model) =>
             {
@@ -70,7 +73,7 @@ namespace Beamable.Editor.Microservice.UI.Components
                  */
                 e.PrepareForPublish();
 
-                await Microservices.Deploy(model, this);
+                await Microservices.Deploy(model, this, e.ServiceDeployed);
                 Close();
             };
 

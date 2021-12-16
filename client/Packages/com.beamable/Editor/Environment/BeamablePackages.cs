@@ -17,11 +17,11 @@ namespace Beamable.Editor.Environment
    public static class BeamablePackageUpdateMeta
    {
       public static event Action OnPackageUpdated;
-      
+
       public static bool IsInstallationIgnored { get; set; }
       public static bool IsBlogSiteAvailable { get; set; }
       public static bool IsBlogVisited { get; set; }
-     
+
       public static string CurrentVersionNumber { get; set; }
       public static string CurrentServerVersionNumber { get; set; }
 
@@ -53,6 +53,16 @@ namespace Beamable.Editor.Environment
       public const string ServerPackageName = "com.beamable.server";
 
       private static Dictionary<string, Action> _packageToWindowInitialization = new Dictionary<string, Action>();
+
+      private static Promise<BeamablePackageMeta> _serverPackageMetaPromise;
+
+      public static Promise<BeamablePackageMeta> ServerPackageMeta =>
+	      _serverPackageMetaPromise ?? (_serverPackageMetaPromise = GetServerPackage());
+
+      static BeamablePackages()
+      {
+	      var _ = ServerPackageMeta;
+      }
 
       public static void ShowServerWindow()
       {
@@ -287,9 +297,9 @@ namespace Beamable.Editor.Environment
               promise.CompleteSuccess(false);
               return promise;
           }
-          
+
           var listReq = Client.List(false);
-          
+
           void Check()
          {
              if (!listReq.IsCompleted)
@@ -304,7 +314,7 @@ namespace Beamable.Editor.Environment
                promise.CompleteError(new Exception($"Unable to list local packages: {listReq.Error.message}"));
                return;
             }
-            
+
             var package = listReq.Result.FirstOrDefault(p => p.name.Equals(BeamablePackageName));
             if (package == null)
             {
@@ -316,7 +326,7 @@ namespace Beamable.Editor.Environment
                 }
                 if (_isDownloading)
                     return;
-                
+
                 EditorApplication.delayCall -= Check;
                 _isDownloading = true;
                 DownloadMissingPackage(serverPackage.version).Then(_ => EditorApplication.delayCall += Check);
@@ -349,7 +359,7 @@ namespace Beamable.Editor.Environment
                   EditorPrefs.SetBool(BeamableEditorPrefsConstants.IS_PACKAGE_UPDATE_IGNORED, false);
                }
             }
-            
+
             var latestCompatibleVersion = package.versions.latestCompatible;
             if (BeamablePackageUpdateMeta.NewestVersionNumber != latestCompatibleVersion)
             {
@@ -403,7 +413,7 @@ namespace Beamable.Editor.Environment
          EditorApplication.update += Check;
          return promise;
       }
-      
+
       private static Promise<Unit> DownloadMissingPackage(string version)
       {
           var req = Client.Add($"{BeamablePackageName}@{version}");
@@ -411,7 +421,7 @@ namespace Beamable.Editor.Environment
 
           void Callback()
           {
-              if (!req.IsCompleted) 
+              if (!req.IsCompleted)
                   return;
 
               EditorApplication.update -= Callback;

@@ -1,0 +1,156 @@
+﻿using System;
+using System.Collections.Generic;
+using Beamable.UI.Tweening;
+using UnityEngine;
+
+namespace Beamable.UI.Buss
+{
+	public partial class BussStyle
+	{
+		private Action _styleAnimatedAction;
+		private Dictionary<string, BussPseudoStyle> PseudoStyles { get; set; }
+
+		public IBussProperty this[string key] {
+			get {
+				if (_properties.TryGetValue(key, out var property))
+				{
+					return property;
+				}
+
+				return null;
+			}
+
+			set {
+				_properties[key] = value;
+			}
+		}
+
+		public IBussProperty this[string pseudoClass, string key] {
+			get {
+				if (PseudoStyles != null && PseudoStyles.TryGetValue(pseudoClass, out var pseudoStyle))
+				{
+					return pseudoStyle[key];
+				}
+
+				return null;
+			}
+
+			set {
+				if (PseudoStyles == null)
+				{
+					PseudoStyles = new Dictionary<string, BussPseudoStyle>();
+				}
+
+				if (!PseudoStyles.TryGetValue(pseudoClass, out var pseudoStyle))
+				{
+					pseudoStyle = PseudoStyles[pseudoClass] = new BussPseudoStyle();
+				}
+
+				pseudoStyle[key] = value;
+			}
+		}
+
+		public static IEnumerable<string> Keys => _bindings.Keys;
+
+        public static bool IsKeyValid(string key) => _bindings.ContainsKey(key);
+
+		public static Type GetBaseType(string key)
+		{
+			if (_bindings.TryGetValue(key, out var binding))
+			{
+				return binding.PropertyType;
+			}
+
+			return typeof(IBussProperty);
+		}
+
+		public static IBussProperty GetDefaultValue(string key)
+		{
+			if (_bindings.TryGetValue(key, out var binding))
+			{
+				return binding.GetDefaultValue();
+			}
+
+			return null;
+		}
+
+		public void Clear()
+		{
+			_properties.Clear();
+			PseudoStyles?.Clear();
+		}
+
+		public BussStyle GetCombinedStyle()
+		{
+			var style = this;
+			if (PseudoStyles != null)
+			{
+				foreach (BussPseudoStyle pseudoStyle in PseudoStyles.Values)
+				{
+					style = pseudoStyle.MergeWithBaseStyle(style);
+				}
+			}
+
+			return style;
+		}
+
+		public void SetPseudoStyle(string pseudoClass, bool enabled, bool withTransition = true)
+		{
+			if (PseudoStyles != null && PseudoStyles.TryGetValue(pseudoClass, out var style))
+			{
+				var transitionDuration = TransitionDuration.Get(this).FloatValue;
+				if (withTransition && transitionDuration > 0f)
+				{
+					style.Enabled = true;
+					var easing = TransitionEasing.Get(this).Enum;
+					if (style.Tween == null)
+					{
+						style.Tween = new FloatTween(t => {
+							style.BlendValue = t;
+							OnStyleAnimated();
+						});
+						style.Tween.CompleteEvent += () => {
+							style.Enabled = style.BlendValue > .5f;
+							OnStyleAnimated();
+						};
+					}
+					else
+					{
+						style.Tween.Stop();
+					}
+
+					var tween = style.Tween;
+					tween.SetDuration(transitionDuration);
+					tween.StartValue = style.BlendValue;
+					tween.EndValue = enabled ? 1f : 0f;
+					tween.SetEasing(easing);
+					tween.Run();
+				}
+				else
+				{
+					style.Enabled = enabled;
+					style.BlendValue = enabled ? 1f : 0f;
+					OnStyleAnimated();
+				}
+			}
+		}
+
+		public void SetStyleAnimatedListener(Action listener)
+		{
+			_styleAnimatedAction = listener;
+		}
+
+		private void OnStyleAnimated()
+		{
+			try
+			{
+				_styleAnimatedAction?.Invoke();
+			}
+			catch (Exception e)
+			{
+				Debug.LogException(e);
+				_styleAnimatedAction = null;
+			}
+		}
+	}
+}

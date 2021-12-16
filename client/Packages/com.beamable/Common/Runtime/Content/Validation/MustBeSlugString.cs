@@ -64,7 +64,7 @@ namespace Beamable.Common.Content.Validation
 
             if (!IsSlug(strValue))
             {
-                throw new ContentValidationException(obj, validationField, "value can contain alphanumeric, underscore, and hyphen characters.");
+                throw new ContentValidationException(obj, validationField, "value can contain alphanumeric, lowercase, underscore, and hyphen characters.");
             }
         }
 

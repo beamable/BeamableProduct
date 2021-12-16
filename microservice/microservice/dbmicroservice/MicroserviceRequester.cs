@@ -440,7 +440,12 @@ namespace Beamable.Server
             body = body,
             path = uri,
          };
-         if (_requestContext != null && includeAuthHeader)
+         
+         
+         if (_requestContext != null &&
+             !_requestContext.IsInvalidUser && // Check to see if the requester has an invalid user --- if it does, the request is being made during
+                                               // the initialization process without an Microservice.AssumeUser call being made before.
+             includeAuthHeader)
          {
             req.from = _requestContext.UserId;
          }

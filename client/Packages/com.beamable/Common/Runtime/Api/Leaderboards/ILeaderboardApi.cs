@@ -174,17 +174,22 @@ namespace Beamable.Common.Api.Leaderboards
 
       public string GetStat(string name)
       {
-         int length = stats.Length;
-         for(int i = 0; i < length; ++i)
-         {
-            ref var stat = ref stats[i];
-            if (stat.name == name)
-            {
-               return stat.value;
-            }
-         }
+	      if (stats == null)
+	      {
+		      return null;
+	      }
 
-         return null;
+	      int length = stats.Length;
+	      for(int i = 0; i < length; ++i)
+	      {
+		      ref var stat = ref stats[i];
+		      if (stat.name == name)
+		      {
+			      return stat.value;
+		      }
+	      }
+
+	      return null;
       }
 
       public double GetDoubleStat(string name, double fallback = 0)
@@ -235,6 +240,18 @@ namespace Beamable.Common.Api.Leaderboards
          {
             var next = rankings[i];
             result.Add(next.gt, next);
+         }
+
+         return result;
+      }
+
+      public List<RankEntry> ToList()
+      {
+         List<RankEntry> result = new List<RankEntry>();
+         
+         foreach (RankEntry rankEntry in rankings)
+         {
+            result.Add(rankEntry);
          }
 
          return result;

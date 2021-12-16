@@ -1,3 +1,4 @@
+using Beamable.Api.Auth;
 using System.Collections.Generic;
 using System.Reflection;
 using Beamable.Common.Api.Auth;
@@ -13,7 +14,7 @@ namespace Beamable.Platform.Tests.Auth.AuthServiceTests
       public const string TOKEN_URL = "/basic/auth/token";
 
       protected MockPlatformAPI _requester;
-      protected AuthApi _service;
+      protected AuthService _service;
       protected User _sampleUser;
 
       [SetUp]
@@ -21,7 +22,7 @@ namespace Beamable.Platform.Tests.Auth.AuthServiceTests
       {
          _requester = new MockPlatformAPI();
          _sampleUser = new User();
-         _service = new AuthApi(_requester);
+         _service = new AuthService(_requester);
       }
 
       [TearDown]

@@ -11,7 +11,7 @@ namespace Beamable.Editor.Microservice.UI.Components {
 
         public DeployLogParser(ILoadingBar loadingBar, ManifestModel model, int totalSteps) : base(loadingBar) {
             _records = model.Services.Values
-                .Select(m => new MicroserviceRecord(m.ServiceName))
+                .Select(m => new MicroserviceRecord(m.Name))
                 .ToArray();
             TotalSteps = totalSteps;
 

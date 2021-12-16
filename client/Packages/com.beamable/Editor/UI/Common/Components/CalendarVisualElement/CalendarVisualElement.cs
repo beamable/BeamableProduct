@@ -138,7 +138,10 @@ namespace Beamable.Editor.UI.Components
         {
             if (toggleSelected)
             {
-                _selectedDays.Add(toggleValue);
+	            if (!_selectedDays.Contains(toggleValue))
+	            {
+		            _selectedDays.Add(toggleValue);
+	            }
             }
             else
             {
@@ -153,7 +156,7 @@ namespace Beamable.Editor.UI.Components
 
         private string FormatDate(int year, int month, int day)
         {
-            return $"{day:00}-{month:00}-{year}";
+            return $"{day}-{month}-{year}";
         }
 
         private int DetermineFirstDayOffset(int year, int month)
@@ -200,27 +203,57 @@ namespace Beamable.Editor.UI.Components
             return options;
         }
 
+		public void SetDefaultValues()
+		{
+			if (_selectedDays.Count == 0)
+			{
+				_monthSelector.SetCurrentOption(DateTime.Now.Month - 1);
+				_selectedDays.Add($"{DateTime.Now.Day}-{DateTime.Now.Month}-{DateTime.Now.Year}");
+
+				OnDateChanged();
+				OnValueChanged?.Invoke(_selectedDays);
+			}
+		}
+
         public void SetInitialValues(List<ScheduleDefinition> definitions)
         {
             _selectedDays.Clear();
 
-            if (definitions.Count == 0)
+			if (definitions.Count == 0)
+			{
+				OnDateChanged();
+				return;
+			}
+			else if (int.TryParse(definitions[0]?.month[0], out int month))
+			{
+				_monthSelector.SetCurrentOption(month - 1);
+			}
+
+            foreach (ScheduleDefinition scheduleDefinition in definitions)
+            {
+				foreach (string year in scheduleDefinition.year)
+					foreach (string month in scheduleDefinition.month)
+						foreach (string day in scheduleDefinition.dayOfMonth)
+							if (!_selectedDays.Contains($"{day}-{month}-{year}"))
+								_selectedDays.Add($"{day}-{month}-{year}");
+			}
+
+            OnDateChanged();
+            
+            // Forcing to ensure validation check
+            OnValueChanged?.Invoke(_selectedDays);
+        }
+
+        public void SetInitialValues(List<string> dates)
+        {
+            if (dates.Count == 0)
             {
                 OnDateChanged();
                 return;
             }
 
-            foreach (ScheduleDefinition scheduleDefinition in definitions)
-            {
-                foreach (string day in scheduleDefinition.dayOfMonth)
-                {
-                    _selectedDays.Add($"{day}-{scheduleDefinition.month[0]}-{scheduleDefinition.year[0]}");    
-                }
-            }
-            
+            _selectedDays = new List<string>(dates);
             OnDateChanged();
-            
-            // Forcing to ensure validation check
             OnValueChanged?.Invoke(_selectedDays);
         }
     }
