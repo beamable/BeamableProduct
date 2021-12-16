@@ -74,8 +74,8 @@ namespace Beamable.Editor.Microservice.UI.Components
             _scrollView = Root.Q<ScrollView>();
             _servicesListElement = Root.Q<VisualElement>("listRoot");
             _servicesCreateElements = new Dictionary<ServiceType, CreateServiceBaseVisualElement>();
-            _dockerHubIsRunning = MicroserviceConfiguration.Instance.DockerAppCheckInMicroservicesWindow
-                                  && IsDockerAppRunning();
+            _dockerHubIsRunning = !MicroserviceConfiguration.Instance.DockerAppCheckInMicroservicesWindow
+                                  || IsDockerAppRunning();
 
             if (DockerCommand.DockerNotInstalled || !_dockerHubIsRunning)
             {

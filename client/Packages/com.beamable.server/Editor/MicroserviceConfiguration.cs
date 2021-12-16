@@ -60,6 +60,7 @@ namespace Beamable.Server.Editor
 
       public string DockerCommand = DOCKER_LOCATION;
       private string _dockerCommandCached = DOCKER_LOCATION;
+      private bool _dockerCheckCached = true;
       
       public string ValidatedDockerCommand => string.IsNullOrWhiteSpace(DockerCommand) ? 
          DOCKER_LOCATION :
@@ -100,6 +101,7 @@ namespace Beamable.Server.Editor
             LogStandardErrColor = new Color(1, .44f, .4f);
          }
          _dockerCommandCached = DockerCommand = DOCKER_LOCATION;
+         _dockerCheckCached = DockerAppCheckInMicroservicesWindow;
          _enableStoragePreviewCached = EnableStoragePreview = false;
       }
       #endif
@@ -155,9 +157,11 @@ namespace Beamable.Server.Editor
                   api.CidOrAlias, api.Pid, api.Host, api.Cid, CustomContainerPrefix));
          }
 
-         if (_dockerCommandCached != DockerCommand || _enableStoragePreviewCached != EnableStoragePreview) {
+         if (_dockerCommandCached != DockerCommand || _enableStoragePreviewCached != EnableStoragePreview 
+                                                   || _dockerCheckCached != DockerAppCheckInMicroservicesWindow) {
             _dockerCommandCached = DockerCommand;
             _enableStoragePreviewCached = EnableStoragePreview;
+            _dockerCheckCached = DockerAppCheckInMicroservicesWindow;
             if (MicroserviceWindow.IsInstantiated) {
                MicroserviceWindow.Instance.RefreshWindow(true);
             }
