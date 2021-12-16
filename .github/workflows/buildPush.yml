@@ -290,7 +290,7 @@ jobs:
       - name: Edit the plist to automatically manage encryption notice in Testflight.
         run:  /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" /Users/runner/work/BeamableProduct/BeamableProduct/iOS/Info.plist || echo "Could not set encryption exception, this means it already exists"
       - uses: yukiarrr/ios-build-action@v1.4.0
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ github.ref == 'refs/heads/ios' }}
         with:
           update-targets: Unity-iPhone
           project-path: ${{ secrets.XCODEPROJ_PATH }}
