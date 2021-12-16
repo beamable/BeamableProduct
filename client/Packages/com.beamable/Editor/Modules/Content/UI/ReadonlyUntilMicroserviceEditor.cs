@@ -9,20 +9,11 @@ using UnityEngine;
 namespace Beamable.Editor.Content.UI
 {
 	[CustomEditor(typeof(ApiContent), true)]
-	public class ReadonlyUntilMicroserviceEditor : UnityEditor.Editor
+	public class ReadonlyUntilMicroserviceEditor : ContentObjectEditor
 	{
-		private Promise<BeamablePackageMeta> _packagePromise;
-
-		private BeamablePackageMeta Package =>  (_packagePromise ?? (_packagePromise = BeamablePackages.GetServerPackage())).GetResult();
-
-		private void OnEnable()
-		{
-			var _ = Package;
-		}
-
 		public override void OnInspectorGUI()
 		{
-			var package = Package;
+			var package = BeamablePackages.ServerPackageMeta.GetResult();
 			if (package?.IsPackageAvailable ?? false)
 			{
 				base.OnInspectorGUI();
