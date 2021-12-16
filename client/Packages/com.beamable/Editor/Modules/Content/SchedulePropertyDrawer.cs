@@ -1,11 +1,20 @@
 using System;
+using System.Linq;
 using Beamable.Common.Content;
 using Beamable.Common.Shop;
+using Beamable.CronExpression;
 using Beamable.Editor.Schedules;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using UnityEditor;
 using UnityEngine;
+#if UNITY_2018
+using UnityEngine.Experimental.UIElements;
+using UnityEditor.Experimental.UIElements;
+#elif UNITY_2019_1_OR_NEWER
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
+#endif
 
 namespace Beamable.Editor.Content
 {
@@ -43,15 +52,15 @@ namespace Beamable.Editor.Content
       where TWindow : BeamableVisualElement, IScheduleWindow<TData>, new()
    {
       public bool allowRawEdit;
+      private Schedule _schedule;
 
       public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
       {
-         return EditorGUIUtility.singleLineHeight * 4
-                + EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.description))) + 2
-                + EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.definitions))) + 2
-                + EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.activeTo))) + 2
-                + EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.activeFrom)));
-
+          return EditorGUIUtility.singleLineHeight * 4 +
+                 EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.description))) + 2 +
+                 EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.definitions))) + 2 +
+                 EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.activeTo))) + 2 +
+                 EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.activeFrom)));
       }
       public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
       {
@@ -62,7 +71,7 @@ namespace Beamable.Editor.Content
 
          var buttonRect = new Rect(position.x + indent, position.y + 20, position.width - indent*2, 20);
 
-         var schedule = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property) as Schedule;
+         _schedule = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property) as Schedule;
 
          var requestEdit = GUI.Button(buttonRect, "Edit Schedule");
 
@@ -72,15 +81,22 @@ namespace Beamable.Editor.Content
          if (toggleRaw) allowRawEdit = !allowRawEdit;
          nextY = buttonRect.y + 20;
 
+         for (var index = 0; index < _schedule.definitions.Count; index++)
+         {
+             var scheduleDefinition = _schedule.definitions[index];
+             scheduleDefinition.index = index;
+             scheduleDefinition.OnCronRawSaveButtonPressed -= HandleCronRawUpdate;
+             scheduleDefinition.OnCronRawSaveButtonPressed += HandleCronRawUpdate;
+         }
 
          void RenderProperty(SerializedProperty prop)
          {
-            var height = EditorGUI.GetPropertyHeight(prop);
-            var rect = new Rect(buttonRect.x, nextY, buttonRect.width, height);
-            nextY += height + 2;
-            EditorGUI.PropertyField(rect, prop, true);
+             var height = EditorGUI.GetPropertyHeight(prop);
+             var rect = new Rect(buttonRect.x, nextY, buttonRect.width, height);
+             nextY += height + 2;
+             EditorGUI.PropertyField(rect, prop, true);
          }
-
+         
          GUI.enabled = allowRawEdit;
          RenderProperty(property.FindPropertyRelative(nameof(Schedule.description)));
          RenderProperty(property.FindPropertyRelative(nameof(Schedule.activeFrom)));
@@ -90,22 +106,36 @@ namespace Beamable.Editor.Content
 
          if (requestEdit)
          {
-           OpenWindow(property, schedule);
+           OpenWindow(property, _schedule);
          }
       }
 
       protected void OpenWindow(SerializedProperty property, Schedule schedule)
       {
-         var element = new TWindow();
-         var window = BeamablePopupWindow.ShowUtility(BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER,
-            element, null, BeamableComponentsConstants.SchedulesWindowSize);
-
-
-         var data = GetDataObject(property);
-         if (data == null)
-         {
-            Debug.LogWarning("No data object exists for " + property);
-         }
+	      var data = GetDataObject(property);
+	      if (data == null)
+	      {
+		      Debug.LogWarning("No data object exists for " + property);
+	      }
+	      
+	      var element = new TWindow();
+	      BeamablePopupWindow window =
+		      (Resources.FindObjectsOfTypeAll(typeof(BeamablePopupWindow)) as BeamablePopupWindow[]).FirstOrDefault(
+			      w => w.titleContent.text == BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER);
+	      if (window != null)
+	      {
+		      var oldElement = window.GetRootVisualContainer().Q<TWindow>();
+		      if (oldElement != null)
+		      {
+			      oldElement.Destroy();
+		      }
+		      window.SwapContent(element);
+	      }
+	      else
+	      {
+		      window = BeamablePopupWindow.ShowUtility(BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER,
+		                                               element, null, BeamableComponentsConstants.SchedulesWindowSize);
+	      }
 
          element.Set(schedule, data);
          element.OnScheduleUpdated += nextSchedule =>
@@ -118,14 +148,32 @@ namespace Beamable.Editor.Content
 
       }
 
-      protected abstract TData GetDataObject(SerializedProperty property);
+      private void HandleCronRawUpdate(ScheduleDefinition scheduleDefinition)
+      {
+          var newDefinition = ExpressionDescriptor.CronToScheduleDefinition(scheduleDefinition.cronRawFormat);
+          newDefinition.cronRawFormat = scheduleDefinition.cronRawFormat;
+          newDefinition.cronHumanFormat = ExpressionDescriptor.GetDescription(newDefinition.cronRawFormat, out _);
+          _schedule.definitions[scheduleDefinition.index] = newDefinition;
+      }
 
+      protected abstract TData GetDataObject(SerializedProperty property);
+      
       protected virtual void UpdateSchedule(SerializedProperty property, TData data, Schedule schedule, Schedule nextSchedule)
       {
          schedule.description = nextSchedule.description;
-         schedule.definitions = nextSchedule.definitions;
          schedule.activeFrom = nextSchedule.activeFrom;
          schedule.activeTo = nextSchedule.activeTo;
+         schedule.definitions = nextSchedule.definitions;
+         SetDefinitions(schedule);
+      }
+
+      private void SetDefinitions(Schedule schedule)
+      {
+          foreach (var definition in schedule.definitions)
+          {
+              definition.cronRawFormat = ExpressionDescriptor.ScheduleDefinitionToCron(definition);
+              definition.cronHumanFormat = ExpressionDescriptor.GetDescription(definition.cronRawFormat, out _);
+          }
       }
    }
 }

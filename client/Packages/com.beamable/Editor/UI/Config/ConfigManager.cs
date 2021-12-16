@@ -79,7 +79,8 @@ namespace Beamable.Editor.Config
                   if (!isConfigurationType) continue;
 
                   var staticInstanceProperty = type.GetProperty(nameof(AvatarConfiguration.Instance),
-                     BindingFlags.Static | BindingFlags.Public);
+                     BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+
 
                   var hasInstanceProperty = staticInstanceProperty != null && staticInstanceProperty.CanRead;
                   if (!hasInstanceProperty) continue;

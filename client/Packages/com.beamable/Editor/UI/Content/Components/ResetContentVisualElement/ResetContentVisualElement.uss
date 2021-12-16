@@ -10,7 +10,8 @@ ResetContentVisualElement > TemplateContainer
     flex-grow: 1;
 }
 
-#mainVisualElement {
+
+ResetContentVisualElement > TemplateContainer > #mainVisualElement {
     flex-grow: 1;
     margin-left: 26px;
     margin-right: 26px;
@@ -33,7 +34,6 @@ ResetContentVisualElement > TemplateContainer
 #downloadPreviewContainer {
     flex-grow: 1;
 }
-
 
 
 #buttonStrip {
