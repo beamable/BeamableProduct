@@ -33,6 +33,8 @@ namespace Beamable.UI.Buss
 			else
 				return;
 
+			if (_text.fontSharedMaterial == null) return;
+
 			// OUTLINE
 			float borderWidth = BussStyle.BorderWidth.Get(Style).FloatValue;
 
