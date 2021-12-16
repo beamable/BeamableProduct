@@ -5,6 +5,7 @@ using Beamable.UI.Sdf;
 using Beamable.UI.Sdf.MaterialManagement;
 using Beamable.UI.Tweening;
 using System;
+using Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -46,6 +47,14 @@ namespace Beamable.Editor.UI.Components
 
 		private void SetupEditableField(BussPropertyProvider property)
 		{
+			var visualElement = property.GetVisualElement();
+			if (visualElement != null)
+			{
+				_valueParent.Add(visualElement);
+				visualElement.Refresh();
+				return;
+			}
+			
 			IBussProperty propertyType = property.GetProperty();
 
 			if (propertyType is SingleColorBussProperty singleColorBussProperty)
