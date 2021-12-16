@@ -137,15 +137,15 @@ namespace Beamable.UI.Buss
 			{
 				if (style is BussPseudoStyle pseudoStyle)
 				{
-					return GetFromPseudoStyle(pseudoStyle);
+					return GetFromPseudoStyle(pseudoStyle) ?? DefaultValue;
 				}
 
-				return GetFromStyle(style);
+				return GetFromStyle(style) ?? DefaultValue;
 			}
 
 			private T GetFromStyle(BussStyle style)
 			{
-				if (style._properties.TryGetValue(Key, out var property))
+				if (style._properties.TryGetValue(Key, out var property) && property != null)
 				{
 					if (property is VariableProperty variable)
 					{
