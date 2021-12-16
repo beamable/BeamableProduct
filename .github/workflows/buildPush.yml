@@ -1,14 +1,15 @@
 name: Push Build
 
 on:
-  pull_request:
+  push:
     branches:
+      - 'iOS'
       - 'main'
       - 'staging'
       - 'production'
-    paths:
-      - 'client/**'
-      - 'microservice/**'
+    #paths:
+     # - 'client/**'
+     # - 'microservice/**'
 
 jobs:
   testMicroserviceBaseImage:
@@ -198,7 +199,7 @@ jobs:
           restore-keys: |
             Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
       - uses: game-ci/unity-builder@v2
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ github.ref == 'refs/heads/iOS' }}
         timeout-minutes: 30
         env:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
