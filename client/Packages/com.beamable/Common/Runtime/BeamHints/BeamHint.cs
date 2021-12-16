@@ -23,22 +23,22 @@ namespace Common.Runtime.BeamHints
 	}
 
 	[System.Serializable]
-	public readonly struct BeamHintHeader : IEquatable<BeamHintHeader>
+	public struct BeamHintHeader : IEquatable<BeamHintHeader>
 	{
 		public const string AS_KEY_SEPARATOR = "¬¬";
 
-		public readonly BeamHintType Type;
+		public BeamHintType Type;
 
 		/// <summary>
 		/// Domain this hint belongs to. See <see cref="BeamHintDomains"/> for more details.
 		/// </summary>
-		public readonly string Domain;
+		public string Domain;
 
 		/// <summary>
 		/// Unique Id, within <see cref="Domain"/> and <see cref="Type"/>, that represents these hints.
 		/// Cannot have "₢" character as it is reserved by the system. 
 		/// </summary>
-		public readonly string Id;
+		public string Id;
 
 		public BeamHintHeader(BeamHintType type, string domain, string id = "")
 		{
@@ -68,7 +68,23 @@ namespace Common.Runtime.BeamHints
 			}
 		}
 
+		/// <summary>
+		/// Returns the header in it's "key" string format. This is used to interface with EditorPrefs/SessionState in multiple places.
+		/// </summary>
 		public string AsKey() => $"{Type}{AS_KEY_SEPARATOR}{Domain}{AS_KEY_SEPARATOR}{Id}";
+
+		/// <summary>
+		/// Deserializes a single <see cref="BeamHintHeader"/> in the format provided by <see cref="BeamHintHeader.AsKey"/>.
+		/// </summary>
+		public static BeamHintHeader DeserializeBeamHintHeader(string serializedHint)
+		{
+			var typeDomainId = serializedHint.Split(new[] {BeamHintHeader.AS_KEY_SEPARATOR}, StringSplitOptions.None);
+			var type = (BeamHintType)Enum.Parse(typeof(BeamHintType), typeDomainId[0]);
+			var domain = typeDomainId[1];
+			var id = typeDomainId[2];
+
+			return new BeamHintHeader(type, domain, id);
+		}
 
 		public override string ToString() => $"{nameof(Type)}: {Type}, {nameof(Domain)}: {Domain}, {nameof(Id)}: {Id}";
 	}
@@ -100,7 +116,16 @@ namespace Common.Runtime.BeamHints
 	public enum VisibilityState
 	{
 		Display,
-		Ignore,
+		Hidden,
+	}
+
+	/// <summary>
+	/// Current State of the play mode warning tied to any specific <see cref="BeamHintHeader"/>.
+	/// </summary>
+	public enum PlayModeWarningState
+	{
+		Enabled,
+		Disabled,
 	}
 
 	/// <summary>
@@ -117,11 +142,39 @@ namespace Common.Runtime.BeamHints
 	{
 		void RebuildPerHintPreferences();
 
-		void SetHintPreferences(BeamHint hint, VisibilityState newVisibilityState, PersistenceLevel persistenceLevel);
+		void SetHintVisibilityPreferences(BeamHint hint, VisibilityState newVisibilityState, PersistenceLevel persistenceLevel);
+		void SetHintPlayModeWarningPreferences(BeamHint hint, PlayModeWarningState newPlayModeWarningState, PersistenceLevel persistenceLevel);
+		void SetHintNotificationPreferences(BeamHint hint, BeamHintNotificationState newNotificationState);
+		
+		
+		void SplitHintsByVisibilityPreferences(IEnumerable<BeamHint> hints, out IEnumerable<BeamHint> outToDisplayHints, out IEnumerable<BeamHint> outToIgnoreHints);
+		void SplitHintsByPlayModeWarningPreferences(IEnumerable<BeamHint> hints, out IEnumerable<BeamHint> outToWarnHints, out IEnumerable<BeamHint> outToIgnoreHints);
 
-		void SplitHintsByVisibilityState(IEnumerable<BeamHint> hints, out IEnumerable<BeamHint> outToDisplayHints, out IEnumerable<BeamHint> outToIgnoreHints);
+		void SplitHintsByNotificationPreferences(IEnumerable<BeamHint> hints,
+		                                         out IEnumerable<BeamHint> outToNotifyAlways,
+		                                         out IEnumerable<BeamHint> outToNotifyNever,
+		                                         out IEnumerable<BeamHint> outToNotifyOncePerSession,
+		                                         out IEnumerable<BeamHint> outToNotifyOnContextObjectChange);
 
 		void ClearAllPreferences();
+	}
+
+	public enum BeamHintNotificationState
+	{
+		// These can only be set permanently (PersistenceLevel == Permanent)
+
+		NotifyOncePerSession, // Default for hints ----------------> Stores which hints were already notified in SessionState
+		NotifyOnContextObjectChanged, // Default for validations --> Stores ContextObject of each hint in internal state, compares when bumps into a hint --- if not same reference, notify. Assumes that validations will change the Hint's context object when they run again and therefore should be notified again.
+		NotifyNever, // Only if user explicitly asks for these ----> Never notifies the user
+		NotifyAlways, // Only if user explicitly asks for these ---> Always notifies 
+	}
+
+	public interface IBeamHintNotificationManager
+	{
+		int HintsCount { get; }
+		int ValidationHintsCount { get; }
+
+		void ChangeNotificationUpdateRate(float newUpdateRate);
 	}
 
 	public interface IBeamHintManager
@@ -132,8 +185,7 @@ namespace Common.Runtime.BeamHints
 
 	public class BaseBeamableAssistantController
 	{
-		public IBeamHintGlobalStorage GlobalHintStorage
-		{
+		public IBeamHintGlobalStorage GlobalHintStorage {
 			get;
 			set;
 		}

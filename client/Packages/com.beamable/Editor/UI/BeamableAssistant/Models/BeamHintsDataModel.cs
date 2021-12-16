@@ -19,7 +19,7 @@ namespace Beamable.Editor.BeamableAssistant.Models
 		private IBeamHintGlobalStorage _hintGlobalStorage;
 		private IBeamHintPreferencesManager _hintPreferencesManager;
 		
-		[SerializeField] public List<BeamHintHeader> SelectedHints;
+		[SerializeField] public List<BeamHintHeader> DetailsOpenedHints;
 		[SerializeField] public List<string> SelectedDomains;
 		[SerializeField] public List<BeamHintHeader> DisplayingHints;
 		[SerializeField] public List<string> SortedDomainsInStorage;
@@ -27,7 +27,7 @@ namespace Beamable.Editor.BeamableAssistant.Models
 
 		public BeamHintsDataModel()
 		{
-			SelectedHints = new List<BeamHintHeader>();
+			DetailsOpenedHints = new List<BeamHintHeader>();
 			SelectedDomains = new List<string>();
 			SortedDomainsInStorage = new List<string>();
 			DisplayingHints = new List<BeamHintHeader>();
@@ -56,7 +56,7 @@ namespace Beamable.Editor.BeamableAssistant.Models
 			
 			// Handle Display/Ignored hints based on stored preferences inside this editor.
 			_hintPreferencesManager.RebuildPerHintPreferences();
-			_hintPreferencesManager.SplitHintsByVisibilityState(perDomainHints, out var toDisplayHints, out _);
+			_hintPreferencesManager.SplitHintsByVisibilityPreferences(perDomainHints, out var toDisplayHints, out _);
 			
 			// Apply text based filter
 			var filteredHints = toDisplayHints.Where(hint => {

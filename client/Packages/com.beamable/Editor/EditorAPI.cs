@@ -52,8 +52,8 @@ namespace Beamable.Editor
       /// Global <see cref="BeamHint"/> storage that is used to manage hints that are detected.
       /// </summary>
       public IBeamHintGlobalStorage HintGlobalStorage;
-      public BeamHintLogManager HintLogManager;
-      public BeamHintPreferencesManager HintPreferencesManager;
+      public BeamHintNotificationManager HintNotificationsManager;
+      public IBeamHintPreferencesManager HintPreferencesManager;
       public ReflectionCache EditorReflectionCache;
 
       // Services
@@ -98,24 +98,25 @@ namespace Beamable.Editor
       public bool HasToken => Token != null;
       public bool HasCustomer => !string.IsNullOrEmpty(CidOrAlias);
       public bool HasRealm => !string.IsNullOrEmpty(Pid);
+      public CoreConfiguration CoreConfiguration { get; private set; }
 
       private Promise<EditorAPI> Initialize()
       {
 	      CoreConfiguration coreConfiguration;
 	      try
 	      {
-		      coreConfiguration = CoreConfiguration.Instance;
+		      coreConfiguration = CoreConfiguration = CoreConfiguration.Instance;
 	      }
 	      catch (ModuleConfigurationNotReadyException)
 	      {
-		      coreConfiguration = AssetDatabase.LoadAssetAtPath<CoreConfiguration>("Packages/com.beamable/Editor/Config/CoreConfiguration.asset");
+		      coreConfiguration = CoreConfiguration = AssetDatabase.LoadAssetAtPath<CoreConfiguration>("Packages/com.beamable/Editor/Config/CoreConfiguration.asset");
 	      }
 	      
 	      
 	      EditorReflectionCache = new ReflectionCache();
 
 	      HintGlobalStorage = new BeamHintEditorStorage();
-	      HintLogManager = new BeamHintLogManager();
+	      HintNotificationsManager = new BeamHintNotificationManager();
 	      HintPreferencesManager = new BeamHintPreferencesManager();
 
 	      
@@ -136,14 +137,15 @@ namespace Beamable.Editor
 		      }
 		       
 		      EditorReflectionCache.SetStorage(HintGlobalStorage);
-		      EditorReflectionCache.GenerateReflectionCache(assembliesToSweep:coreConfiguration.AssembliesToSweep); 
+		      EditorReflectionCache.GenerateReflectionCache(assembliesToSweep: coreConfiguration.AssembliesToSweep); 
 	      }
 	      
-	      HintLogManager.SetStorage(HintGlobalStorage);
-	      HintLogManager.SetPreferencesManager(HintPreferencesManager);
+	      HintNotificationsManager.SetStorage(HintGlobalStorage);
+	      HintNotificationsManager.SetPreferencesManager(HintPreferencesManager);
 	      
-	      EditorApplication.update -= HintLogManager.Update;
-	      EditorApplication.update += HintLogManager.Update;
+	      
+	      EditorApplication.delayCall -= HintNotificationsManager.DelayedVerifyNotifications;
+	      EditorApplication.delayCall += HintNotificationsManager.DelayedVerifyNotifications;
 		
 	      EditorApplication.playModeStateChanged += delegate(PlayModeStateChange change) {
 		      if (!coreConfiguration.EnablePlayModeWarning) 
@@ -153,16 +155,34 @@ namespace Beamable.Editor
 		      // TODO: By default, warn-on-play-mode is off in all hints. Toggle-able via the HintHeader in the BeamableAssistantWindow.
 		      if (change == PlayModeStateChange.ExitingEditMode)
 		      {
-			      var res = EditorUtility.DisplayDialog("Beamable Assistant", "There are pending Beamable Validations.\n" +
-			                                                                  "This may cause problems during runtime.\n\n" +
-			                                                                  "Do you wish to stop entering playmode and see these validations?", 
-			                                            "Yes, I want to stop and go see validations.",
-			                                            "No, I'll take my chances.");
-			      if (res)
+			      HintPreferencesManager.SplitHintsByPlayModeWarningPreferences(HintGlobalStorage.All, out var toWarnHints, out _);
+			      var hintsToWarnAbout = toWarnHints.ToList();
+			      if (hintsToWarnAbout.Count > 0)
 			      {
-				      EditorApplication.isPlaying = false;
-				      BeamableAssistant.BeamableAssistantWindow.ShowWindow();
-			      } 
+				      var msg = string.Join("\n", hintsToWarnAbout.Select(hint => $"- {hint.Header.Id}"));
+				      
+				      var res = EditorUtility.DisplayDialogComplex("Beamable Assistant", "There are pending Beamable Validations.\n" +
+				                                                                  "These Hints may cause problems during runtime:\n\n" + 
+				                                                                  $"{msg}\n\n" +
+				                                                                  "Do you wish to stop entering playmode and see these validations?", 
+				                                            "Yes, I want to stop and go see validations.",
+				                                            "No, I'll take my chances.",
+					      "No, I'll take my chances and don't bother me again.");
+				      
+				      if (res == 0)
+				      {
+					      EditorApplication.isPlaying = false;
+					      BeamableAssistant.BeamableAssistantWindow.ShowWindow();
+				      }
+				      else if (res == 1)
+				      {
+					      // Do nothing and enter play mode normally
+				      }
+				      else if (res == 2)
+				      {
+					      coreConfiguration.EnablePlayModeWarning = false;
+				      }
+			      }
 		      }
 	      };
 	      

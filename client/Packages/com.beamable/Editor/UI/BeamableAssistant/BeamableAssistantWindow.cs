@@ -95,9 +95,8 @@ namespace Beamable.Editor.BeamableAssistant
 
 			// Setup Beam Hints Mode Visuals
 			{
-				//Create IMGUI, The VisualElement Wrapper, and add to the parent
-				_domainTreeContainer = root.Q<VisualElement>("domain-tree-container");
-				_domainTreeContainer.RegisterCallback(new EventCallback<MouseUpEvent>(evt => {
+				// Setup callback for clearing domain tree selection.
+				_windowRoot.Q("domain-tree-scroll").Q("ContentViewport").RegisterCallback(new EventCallback<MouseUpEvent>(evt => {
 					// Clears tree selection
 					_treeViewState.selectedIDs.Clear();
 					_treeViewIMGUI.Repaint();
@@ -107,9 +106,9 @@ namespace Beamable.Editor.BeamableAssistant
 					FillDisplayingBeamHints(_hintsContainer, beamHintsDataModel.DisplayingHints);
 				}));
 
+				//Create IMGUI, The VisualElement Wrapper, and add to the parent
 				_treeViewState = _treeViewState ?? new TreeViewState();
 				_treeViewIMGUI = new TreeViewIMGUI(_treeViewState) {SelectionType = SelectionType.Multiple, TreeViewItemRoot = new TreeViewItem {id = 0, depth = -1, displayName = "Root"}};
-				_treeViewIMGUI.RowHeight = 30f;
 				_imguiContainer = new IMGUIContainer(() => {
 					// Tree view - Re-render every frame
 					Rect rect = GUILayoutUtility.GetRect(200,
@@ -119,6 +118,7 @@ namespace Beamable.Editor.BeamableAssistant
 
 					_treeViewIMGUI.OnGUI(rect);
 				}) {name = "domain-tree-imgui"};
+				_domainTreeContainer = root.Q<VisualElement>("domain-tree-container");
 				_domainTreeContainer.Add(_imguiContainer);
 
 				// Get Hints View
@@ -179,7 +179,6 @@ namespace Beamable.Editor.BeamableAssistant
 		{
 			var treeViewItems = new List<BeamHintDomainTreeViewItem>();
 			var parentCache = new Dictionary<string, BeamHintDomainTreeViewItem>();
-
 			var id = 1;
 			foreach (string domain in sortedDomains)
 			{

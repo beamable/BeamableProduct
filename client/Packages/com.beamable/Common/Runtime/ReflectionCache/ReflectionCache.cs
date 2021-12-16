@@ -134,12 +134,11 @@ namespace Beamable.Common
 		}
 
 		/// <summary>
-		/// Call to reset all <see cref="_registeredCacheUserSystems"/> to a blank slate and then unregister them from the <see cref="ReflectionCache"/>.
+		/// Call to reset all <see cref="_registeredCacheUserSystems"/> to a blank slate.
 		/// </summary>
 		public void ClearUserSystems()
 		{
 			_registeredCacheUserSystems.ForEach(sys => sys.ClearUserCache());
-			_registeredCacheUserSystems.Clear();
 		}
 
 		/// <summary>
@@ -212,14 +211,16 @@ namespace Beamable.Common
 		/// This is a very slow function call. It triggers a full sweep of all assemblies in the project and regenerate <see cref="_perBaseTypeCache"/> and <see cref="_perAttributeCache"/>.
 		/// Then, it invokes all callbacks of all <see cref="IReflectionCacheUserSystem"/> registered via <see cref="RegisterCacheUserSystem"/>.
 		/// </summary>
+		/// <param name="assembliesToSweep"></param>
 		/// <param name="excludedReflectionUserCaches">
-		/// Excludes types implementing <see cref="IReflectionCacheUserSystem"/> from having their callbacks called.
+		///     Excludes types implementing <see cref="IReflectionCacheUserSystem"/> from having their callbacks called.
 		/// </param>
-		public void GenerateReflectionCache(List<Type> excludedReflectionUserCaches = null, IReadOnlyList<string> assembliesToSweep = null)
+		public void GenerateReflectionCache(IReadOnlyList<string> assembliesToSweep, List<Type> excludedReflectionUserCaches = null)
 		{
 			System.Diagnostics.Debug.Assert(_hintGlobalStorage != null, 
 			                                $"A Reflection Cache must have a {nameof(IBeamHintGlobalStorage)} instance! Please call {nameof(SetStorage)} before calling this method!");
 			
+			ClearUserSystems();
 			RebuildReflectionCache(assembliesToSweep);
 			RebuildReflectionUserSystems(excludedReflectionUserCaches);
 		}
@@ -342,7 +343,6 @@ namespace Beamable.Common
 
 				foreach (var assembly in validAssemblies)
 				{
-					BeamableLogger.Log($"Assembly [{assembly.GetName().Name}].");
 					var types = assembly.GetTypes();
 					foreach (var type in types)
 					{

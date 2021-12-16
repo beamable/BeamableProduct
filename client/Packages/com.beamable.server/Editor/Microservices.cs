@@ -33,11 +33,11 @@ namespace Beamable.Server.Editor
       private static List<MicroserviceDescriptor> _descriptors = null;
       private static List<IDescriptor> _allDescriptors = null;
 
-      private static MicroserviceReflectionCache obj;
+      private static MicroserviceReflectionCache _MicroserviceReflectionCacheObj;
 
       static Microservices()
       {
-	      obj = AssetDatabase.LoadAssetAtPath<MicroserviceReflectionCache>("Packages/com.beamable.server/Editor/ReflectionCacheSystems/MicroserviceReflectionCache.asset");
+	      _MicroserviceReflectionCacheObj = AssetDatabase.LoadAssetAtPath<MicroserviceReflectionCache>("Packages/com.beamable.server/Editor/ReflectionCache/UserSystems/MicroserviceReflectionCache.asset");
       }
       
       public static List<IDescriptor> AllDescriptors
@@ -130,7 +130,7 @@ namespace Beamable.Server.Editor
             }
          }
 
-         _descriptors = obj.Cache.Descriptors;
+         _descriptors = _MicroserviceReflectionCacheObj.Cache.Descriptors;
          _allDescriptors.AddRange(_descriptors);
 
       }

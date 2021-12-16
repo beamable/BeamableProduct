@@ -15,12 +15,14 @@
                         <engine:VisualElement class="beamableAssistantHeader">
 
                             <engine:VisualElement class="splitPadding"/>
-                            <engine:Label class="title" text="Hint Domain"/>
+                            <engine:Label class="title noMarginNoPaddingNoBorder" text="Hint Domain"/>
                         </engine:VisualElement>
                         
-                        <engine:VisualElement name="domain-tree-container">
-                            <engine:VisualElement class="splitPadding"/>                            
-                        </engine:VisualElement>
+                        <engine:ScrollView name="domain-tree-scroll">
+                            <engine:VisualElement name="domain-tree-container">
+                                <engine:VisualElement class="splitPadding"/>
+                            </engine:VisualElement>
+                        </engine:ScrollView>
                     </engine:VisualElement>
                     
                     <engine:VisualElement class="splitWrapper rightSplit">
@@ -38,8 +40,10 @@
 
 
                         </engine:VisualElement>
-                        
-                        <engine:VisualElement name="hints-container"/>
+
+                        <engine:ScrollView name="hints-container-scroll">
+                            <engine:VisualElement name="hints-container"/>
+                        </engine:ScrollView>
                     </engine:VisualElement>
                 </beamable:SplitterVisualElement>
             </engine:VisualElement>

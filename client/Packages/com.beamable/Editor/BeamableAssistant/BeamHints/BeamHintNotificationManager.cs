@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Editor.BeamableAssistant
 {
-	public class BeamHintLogManager : IBeamHintManager
+	public class BeamHintNotificationManager : IBeamHintManager
 	{
 		private IBeamHintGlobalStorage _hintStorage;
 		private IBeamHintPreferencesManager _hintPreferences;
@@ -22,17 +22,9 @@ namespace Editor.BeamableAssistant
 			_hintStorage = hintGlobalStorage;
 		}
 
-		private float accumulator = 0.0f;
-		
-		public void Update()
+		public void DelayedVerifyNotifications()
 		{
-			accumulator += Time.deltaTime;
-			if (accumulator > 1.0f)
-			{
-				accumulator = 0f;
-				DumpHints();
-			}
-
+			DumpHints();
 		}
 		
 		private void DumpHints()

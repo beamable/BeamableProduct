@@ -38,22 +38,16 @@
     flex-grow: 1;
 }
 
-#domain-tree-container {
-    flex-direction: row;
-    flex-grow: 1;
-    border-right-width: 2px;
-    border-color: #adadad;
-    padding-top: 10px;
-}
 
-#hints-container{
-    flex-grow: 1;
-}
 
 #beam-hints-splitter {
     flex-direction: row;
     flex-grow: 1;
 }
+
+
+
+
 
 .splitPadding {
     width: 20px;    
@@ -67,9 +61,34 @@
     flex-grow: 10;
 }
 
-.splitWrapper {
-    flex-grow: 1;
+.splitWrapper {    
     min-width: 100px;
+}
+
+ScrollView {
+    flex-grow: 1;
+    min-width: 230px;
+    border-right-width: 2px;
+    border-color: #adadad;
+}
+
+ScrollView > #ContentViewport > #ContentView {
+    left: 0;
+    right: 0;
+}
+
+#domain-tree-container {
+    flex-direction: row;
+    flex-grow: 1;    
+}
+
+#domain-tree-imgui{
+    flex-grow: 1;
+}
+
+
+#hints-container{
+    flex-grow: 1;
 }
 
 .beamableAssistantHeader {
@@ -82,7 +101,7 @@
 
 .beamableAssistantHeader > .title{
     font-size: 17;
-    align-self: flex-start;
+    align-self: center;
     -unity-text-align: middle-left;
     flex-grow: 1;
 }

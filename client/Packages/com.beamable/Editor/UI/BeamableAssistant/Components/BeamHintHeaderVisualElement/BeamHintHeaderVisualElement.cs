@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEditor;
 using UnityEngine;
@@ -105,21 +106,23 @@ namespace Beamable.Editor.BeamableAssistant.Components
 			{
 				// Setup details container and more button to not be visible
 				_detailsContainer = Root.Q<VisualElement>("hintDetailsContainer");
-				if(!_hintDataModel.SelectedHints.Contains(_displayingHintHeader))
+				if(!_hintDataModel.DetailsOpenedHints.Contains(_displayingHintHeader))
 					_detailsContainer.AddToClassList("--positionHidden");
 				
 				// Configure more button to display hint details container when pressed. 
+				_moreDetailsButton.value = _hintDataModel.DetailsOpenedHints.Contains(_displayingHintHeader); 
 				_moreDetailsButton.RegisterValueChangedCallback((changeEvt) =>
 				{
-					if (_hintDataModel.SelectedHints.Contains(_displayingHintHeader))
+					if (_hintDataModel.DetailsOpenedHints.Contains(_displayingHintHeader))
 					{
 						_detailsContainer.AddToClassList("--positionHidden");
-						_hintDataModel.SelectedHints.Remove(_displayingHintHeader);
+						_hintDataModel.DetailsOpenedHints.Remove(_displayingHintHeader);
 					}
-					else
+					else 
 					{
 						_detailsContainer.RemoveFromClassList("--positionHidden");
-						_hintDataModel.SelectedHints.Add(_displayingHintHeader);
+						_hintDataModel.DetailsOpenedHints.Add(_displayingHintHeader);
+						_hintDataModel.DetailsOpenedHints = _hintDataModel.DetailsOpenedHints.Where(h => h.Type != BeamHintType.Invalid).Distinct().ToList();
 					}
 				});
 				
