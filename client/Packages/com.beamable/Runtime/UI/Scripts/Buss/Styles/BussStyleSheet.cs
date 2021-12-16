@@ -75,5 +75,10 @@ namespace Beamable.UI.Buss
 		{
 			return property.Get<IBussProperty>();
 		}
+
+		public T GetProperty<T>() where T : IBussProperty
+		{
+			return property.Get<T>();
+		}
 	}
 }
