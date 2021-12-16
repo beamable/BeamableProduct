@@ -55,6 +55,9 @@ namespace Beamable.Server.Editor
       [Header("Warning- remember that for now it is not possible to upload storages to cloud.")]
       public bool EnableStoragePreview = false;
 
+      [Tooltip("It will enable checking if docker app is running before you can start microservices.")]
+      public bool DockerAppCheckInMicroservicesWindow = true;
+
       public string DockerCommand = DOCKER_LOCATION;
       private string _dockerCommandCached = DOCKER_LOCATION;
       
