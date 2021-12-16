@@ -124,7 +124,7 @@ namespace Beamable.Editor.Content
 			      w => w.titleContent.text == BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER);
 	      if (window != null)
 	      {
-		      var oldElement = window.rootVisualElement.Q<TWindow>();
+		      var oldElement = window.GetRootVisualContainer().Q<TWindow>();
 		      if (oldElement != null)
 		      {
 			      oldElement.Destroy();
