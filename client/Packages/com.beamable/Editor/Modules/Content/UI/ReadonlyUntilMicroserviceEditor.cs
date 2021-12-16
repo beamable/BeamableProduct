@@ -2,6 +2,7 @@
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Editor.Environment;
+using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -14,9 +15,9 @@ namespace Beamable.Editor.Content.UI
 
 		private BeamablePackageMeta Package =>  (_packagePromise ?? (_packagePromise = BeamablePackages.GetServerPackage())).GetResult();
 
-		public ReadonlyUntilMicroserviceEditor()
+		private void OnEnable()
 		{
-			_packagePromise = BeamablePackages.GetServerPackage();
+			var _ = Package;
 		}
 
 		public override void OnInspectorGUI()
