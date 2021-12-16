@@ -50,7 +50,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
 
          _signaler.UpdateLoginEmail("abc");
 
-         yield return _pendingPromise.AsYield();
+         yield return _pendingPromise.AsYield(5);
 
          Assert.AreEqual(true, _pendingPromise.IsCompleted);
       }
