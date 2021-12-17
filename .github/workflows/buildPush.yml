@@ -3,12 +3,13 @@ name: Push Build
 on:
   push:
     branches:
+      - 'iOS'
       - 'main'
       - 'staging'
       - 'production'
-    paths:
-      - 'client/**'
-      - 'microservice/**'
+    #paths:
+      #- 'client/**'
+      #- 'microservice/**'
 
 jobs:
   testMicroserviceBaseImage:
@@ -296,8 +297,8 @@ jobs:
         with:
           update-targets: Unity-iPhone
           project-path: ${{ secrets.XCODEPROJ_PATH }}
-          p12-key-path: ${{ secrets.P12_KEY_PATH }}
-          p12-cer-path: ${{ secrets.P12_CER_PATH }}
+          p12-key-path: ${{ secrets.P12_KEY_BASE64 }}
+          p12-cer-path: ${{ secrets.P12_CER_BASE64 }}
           certificate-password: ${{ secrets.P12_PASSWORD }}
           mobileprovision-path: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/BeamableProductDev.mobileprovision
           code-signing-identity: 'iPhone Distribution: Beamable, Inc (A6C4565DLF)'
@@ -307,8 +308,8 @@ jobs:
         with:
           update-targets: Unity-iPhone
           project-path: ${{ secrets.XCODEPROJ_PATH }}
-          p12-key-path: ${{ secrets.P12_KEY_PATH }}
-          p12-cer-path: ${{ secrets.P12_CER_PATH }}
+          p12-key-path: ${{ secrets.P12_KEY_BASE64 }}
+          p12-cer-path: ${{ secrets.P12_CER_BASE64 }}
           certificate-password: ${{ secrets.P12_PASSWORD }}
           mobileprovision-path: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/BeamableProductStaging.mobileprovision
           code-signing-identity: 'iPhone Distribution: Beamable, Inc (A6C4565DLF)'
@@ -318,8 +319,8 @@ jobs:
         with:
           update-targets: Unity-iPhone
           project-path: ${{ secrets.XCODEPROJ_PATH }}
-          p12-key-path: ${{ secrets.P12_KEY_PATH }}
-          p12-cer-path: ${{ secrets.P12_CER_PATH }}
+          p12-key-path: ${{ secrets.P12_KEY_BASE64 }}
+          p12-cer-path: ${{ secrets.P12_CER_BASE64 }}
           certificate-password: ${{ secrets.P12_PASSWORD }}
           mobileprovision-path: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/BeamableProductProd.mobileprovision
           code-signing-identity: 'iPhone Distribution: Beamable, Inc (A6C4565DLF)'
