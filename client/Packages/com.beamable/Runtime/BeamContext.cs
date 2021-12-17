@@ -5,7 +5,6 @@ using Beamable.Api.Connectivity;
 using Beamable.Api.Notification;
 using Beamable.Api.Payments;
 using Beamable.Api.Sessions;
-using Beamable.Api.Stats;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
@@ -25,6 +24,9 @@ using UnityEngine.Assertions;
 namespace Beamable
 {
 
+	/// <summary>
+	/// The observed player has a limited subset of functionality from the larger <see cref="BeamContext"/>.
+	/// </summary>
 	public interface IObservedPlayer : IUserContext
 	{
 		PlayerStats Stats { get; }
@@ -466,11 +468,16 @@ namespace Beamable
 		/// </summary>
 		public static BeamContext ForContext(Component c) => c.GetBeamable();
 
+		/// <summary>
+		/// Finds or creates the first <see cref="BeamContext"/> that matches the given <see cref="BeamContext.PlayerCode"/> value
+		/// </summary>
 		public static BeamContext ForContext(string playerCode="") => Instantiate(playerCode: playerCode);
 
-		public static BeamContext EditorContext => ForContext("editor");
-
+		/// <summary>
+		/// Finds all <see cref="BeamContext"/>s that have been created. This may include disposed contexts.
+		/// </summary>
 		public static IEnumerable<BeamContext> All => _playerCodeToContext.Values;
+
 		/// <summary>
 		/// This method will tear down a <see cref="BeamContext"/> and notify all internal services that the context should be destroyed.
 		/// All coroutines associated with the context will stop.
@@ -479,9 +486,6 @@ namespace Beamable
 		/// <para>
 		/// After a context has been disposed, if a call is made to <see cref="Instantiate"/> with the disposed context's <see cref="PlayerCode"/>,
 		/// then the disposed instance will be reinitialized and rehydrated and returned to the <see cref="Instantiate"/>'s callsite.
-		/// </para>
-		/// <para>
-		/// If you want to create a new player, see <see cref="Reset"/>
 		/// </para>
 		/// </summary>
 		public async Promise Dispose()
@@ -498,11 +502,8 @@ namespace Beamable
 		}
 
 
-
-
 		/// <summary>
-		/// Clear the authorization token for the <see cref="PlayerCode"/>, then internally calls <see cref="Dispose"/>, and finally re-initializes the context.
-		/// After this method completes, there will be a new PlayerId associated with the player code.
+		/// Clear the authorization token for the <see cref="PlayerCode"/>, then internally calls <see cref="Dispose"/>
 		/// </summary>
 		public async Promise ClearAndDispose()
 		{

@@ -24,7 +24,7 @@ namespace Beamable.Common.Player
       public event Action OnLoadingStarted;
       public event Action OnLoadingFinished;
 
-      private int _lastBroadcastHashcode;
+      private int _lastBroadcastChecksum;
       private Promise _pendingRefresh;
 
       public abstract object GetData();
@@ -45,6 +45,7 @@ namespace Beamable.Common.Player
             await _pendingRefresh;
             TriggerUpdate();
          }
+         // TODO: error case?
          finally
          {
             _pendingRefresh = null;
@@ -57,9 +58,9 @@ namespace Beamable.Common.Player
       {
          // is the data the same as it was before?
          // we make that decision based on the hash code of the element...
-         var hash = GetBroadcastHashCode();
-         var isDifferent = hash != _lastBroadcastHashcode;
-         _lastBroadcastHashcode = hash;
+         var hash = GetBroadcastChecksum();
+         var isDifferent = hash != _lastBroadcastChecksum;
+         _lastBroadcastChecksum = hash;
 
          if (isDifferent)
          {
@@ -67,7 +68,7 @@ namespace Beamable.Common.Player
          }
       }
 
-      protected virtual int GetBroadcastHashCode()
+      protected virtual int GetBroadcastChecksum()
       {
          return GetHashCode();
       }
@@ -139,7 +140,7 @@ namespace Beamable.Common.Player
 
 	   public override object GetData() => Value;
 
-	   protected override int GetBroadcastHashCode()
+	   protected override int GetBroadcastChecksum()
 	   {
 		   return _assigned ? _data?.GetHashCode() ?? 0 : -1;
 	   }
@@ -174,7 +175,7 @@ namespace Beamable.Common.Player
 	      OnUpdated += () => { OnDataUpdated?.Invoke(_data.ToList()); };
       }
 
-      protected override int GetBroadcastHashCode()
+      protected override int GetBroadcastChecksum()
       {
          /*
           * We want to use a hash code based on the elements of the list at the given moment.
@@ -235,7 +236,7 @@ namespace Beamable.Common.Player
 		   _data = nextData;
 	   }
 
-	   protected override int GetBroadcastHashCode()
+	   protected override int GetBroadcastChecksum()
 	   {
 		   /*
 			 * We want to use a hash code based on the elements of the list at the given moment.
