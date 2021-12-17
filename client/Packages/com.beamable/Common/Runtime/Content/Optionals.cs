@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
-using UnityEngine;
 
 namespace Beamable.Common.Content
 {
@@ -57,6 +56,11 @@ namespace Beamable.Common.Content
            return typeof(T);
         }
 
+        public Optional<T> DoIfExists(Action<T> callback)
+        {
+	        if (HasValue) callback(Value);
+	        return this;
+        }
     }
 
     [Agnostic]
@@ -69,7 +73,7 @@ namespace Beamable.Common.Content
           }
           return base.CanConvertTo(context, destinationType);
        }
-    
+
        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
        {
           if (value is long number)
@@ -87,7 +91,7 @@ namespace Beamable.Common.Content
     [System.Serializable]
     [Agnostic]
     public class OptionalInt : Optional<int> { }
-    
+
     [System.Serializable]
     [Agnostic]
     public class OptionalLong : Optional<long> { }
@@ -99,7 +103,7 @@ namespace Beamable.Common.Content
     [System.Serializable]
     [Agnostic]
     public class OptionalListInt : Optional<List<int>> { }
-    
+
     [System.Serializable]
     [Agnostic]
     public class OptionalListString : Optional<List<string>> { }

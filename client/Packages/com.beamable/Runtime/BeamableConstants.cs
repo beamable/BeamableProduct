@@ -1,6 +1,6 @@
 public static class BeamableConstants
 { 
-    public const string DATA_DIR = "Assets/Beamable/Editor/content";
+   public const string DATA_DIR = "Assets/Beamable/Editor/content";
    public const string ASSET_DIR = "Assets/Beamable/DefaultAssets";
    public const string DEFAULT_DATA_DIR = "Packages/com.beamable/Editor/Modules/Content/DefaultContent";
    public const string DEFAULT_ASSET_DIR = "Packages/com.beamable/Editor/Modules/Content/DefaultAssets~";
@@ -30,7 +30,7 @@ public static class BeamableConstants
    //Help Urls
    public const string URL_BEAMABLE_MAIN_WEBSITE = "http://www.beamable.com";
    public const string URL_BEAMABLE_DOCS_WEBSITE = "http://docs.beamable.com";
-   public const string URL_BEAMABLE_BLOG_RELEASES_UNITY_SDK = "https://www.beamable.com/blog/beamable-releases-unity-sdk";
+   public const string URL_BEAMABLE_BLOG_RELEASES_UNITY_SDK = "https://www.beamable.com/blog/beamable-release-unity-sdk";
 
    //
    public const string URL_FEATURE_ACCOUNT_HUD = "https://docs.beamable.com/docs/account-hud";

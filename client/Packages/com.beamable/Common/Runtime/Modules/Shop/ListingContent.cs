@@ -70,6 +70,9 @@ namespace Beamable.Common.Shop
       [Tooltip(ContentObject.TooltipOptional0 + "schedule for when the listing will be active")]
       public OptionalListingSchedule schedule;
 
+      [Tooltip(ContentObject.TooltipOptional0 + ContentObject.TooltipScheduleInstancePurchaseLimit)]
+      [MustBePositive]
+      public OptionalInt scheduleInstancePurchaseLimit;
    }
 
    [System.Serializable]

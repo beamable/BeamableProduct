@@ -14,7 +14,7 @@ namespace Beamable.Samples.SampleProjectBase
    /// </summary>
    [CustomEditor(typeof(Readme))]
    [InitializeOnLoad]
-   public class AutoOpenReadme : ReadmeEditor
+   public class AutoOpenReadme : BeamableReadmeEditor
    {
       private const string SessionStateKeyWasAlreadyShown = "Beamable.Samples.SampleProjectBase.AutoOpenReadme.wasAlreadyShown";
       private const string FindAssetsFilter = "Readme t:Readme";
@@ -39,7 +39,7 @@ namespace Beamable.Samples.SampleProjectBase
          priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_4)]
       private static Readme SelectSpecificReadmeMenuItem()
       {
-         return ReadmeEditor.SelectReadme(FindAssetsFilter, FindAssetsFolders);
+         return BeamableReadmeEditor.SelectReadme(FindAssetsFilter, FindAssetsFolders);
       }
    }
 }

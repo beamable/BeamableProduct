@@ -40,7 +40,7 @@ export interface PlayerDataInterface {
     readonly email: string;
     readonly createdTimeMillis: number;
     readonly id: number;
-    readonly deviceId: string;
+    readonly deviceIds: Array<string>;
     readonly updatedTimeMillis: number;
     readonly gamerTags: Array<GamerTag>;
     readonly thirdParties: Array<ThirdPartyAssociation>;
@@ -50,20 +50,20 @@ export class PlayerData {
     readonly email: string;
     readonly createdTimeMillis: number;
     readonly id: number;
-    readonly deviceId: string;
+    readonly deviceIds: Array<string>;
     readonly updatedTimeMillis: number;
     readonly gamerTags: Array<GamerTag>;
     readonly thirdParties: Array<ThirdPartyAssociation>;
     private defaultRealmId: string;
 
     constructor(
-        {email, createdTimeMillis, id, deviceId, updatedTimeMillis, gamerTags, thirdParties}: PlayerDataInterface,
+        {email, createdTimeMillis, id, deviceIds, updatedTimeMillis, gamerTags, thirdParties}: PlayerDataInterface,
         realmId: string
     ) {
         this.email = email;
         this.createdTimeMillis = createdTimeMillis;
         this.id = id;
-        this.deviceId = deviceId ?? '';
+        this.deviceIds = deviceIds ?? [];
         this.updatedTimeMillis = updatedTimeMillis;
         this.gamerTags = gamerTags;
         this.thirdParties = thirdParties;
@@ -124,12 +124,24 @@ export class PlayersService extends BaseService {
     public async searchPlayers(term: string): Promise<PlayerData[]> {
         const { http, router } = this.app;
         const query = encodeURIComponent(term);
-        const response = await http.request(`/basic/accounts/search?query=${query}&page=1&pagesize=30`, void 0, 'get');   
+        const searchReq = http.request(`/basic/accounts/search?query=${query}&page=1&pagesize=30`, void 0, 'get');  
+        const deviceReq = http.request(`/basic/accounts?deviceId=${encodeURIComponent(term)}`, void 0, 'get')
+        deviceReq.catch(_ => /* doesn't matter */{});
+
+        const response = await searchReq;
         let result: PlayerData[] = [];
         for(let n = 0; n < response.data.accounts.length; n++) {
-            let playerData = response.data.accounts[n] as PlayerDataInterface;
-            result.push(new PlayerData(playerData, router.getRealmId()));
+            const playerData = this.convertToPlayer(response.data.accounts[n]);
+            result.push(playerData);
         }
+
+        try {
+            const deviceResponse = await deviceReq;
+            result.push(this.convertToPlayer(deviceResponse.data));
+        } catch (err){
+            // swallow the error, its totally fine.
+        }
+        
         return result;
     }
 
@@ -155,13 +167,25 @@ export class PlayersService extends BaseService {
         const { http, router } = this.app;
         const query = encodeURIComponent(emailOrDbid);
         const response = await http.request(`/basic/accounts/find?query=${query}`, void 0, 'get');
-        const player = response.data as PlayerDataInterface;
-        const playerData = new PlayerData(player, router.getRealmId());
+        var playerData = this.convertToPlayer(response.data);
 
         if (!playerData.gamerTagForRealm()) throw {
             error: 'No gamertag',
             message: 'The player does not have a gamertag in the current realm. The player exists, but has never logged into this realm.'
         };
+        return playerData;
+    }
+
+    convertToPlayer(response: any): PlayerData {
+        const { router } = this.app;
+        const player: PlayerDataInterface = {
+            ...response,
+            // we need to roll the old device id field into the new deviceIds array if it exists.
+            deviceIds: (response.deviceId && response.deviceId.length
+                ? [...response.deviceIds, response.deviceId]
+                : [...response.deviceIds]).filter(d => d)
+        };
+        const playerData = new PlayerData(player, router.getRealmId());
         return playerData;
     }
 
@@ -172,6 +196,14 @@ export class PlayersService extends BaseService {
         const response = await http.request(url, null, 'delete');
 
         return new PlayerData(response.data as PlayerDataInterface, router.getRealmId());
+    }
+
+    async getPersonallyIdentifiableInformation(emailOrDbid: string): Promise<any> {
+        const { http, router } = this.app;
+
+        const query = encodeURIComponent(emailOrDbid);
+        const response = await http.request(`/basic/accounts/get-personally-identifiable-information?query=${query}`, void 0, 'get');
+        return response.data
     }
 
     async updateEmail(player: PlayerData, newEmail: string): Promise<PlayerData> {
@@ -186,17 +218,26 @@ export class PlayersService extends BaseService {
         return new PlayerData(response.data as PlayerDataInterface, router.getRealmId());
     }
 
-    async updateDeviceId(player: PlayerData, newDeviceId: string): Promise<PlayerData> {
-        const { http, router } = this.app;
-
-        const request = newDeviceId && newDeviceId.length > 0 
-            ? { deviceId: newDeviceId }
-            : null;
-        
+    public async addDeviceId(player: PlayerData, deviceId: string): Promise<PlayerData> {
+        const { http } = this.app;
+        if (!deviceId || !deviceId.length) throw 'Cannot save an empty device id';
         const url = `/object/accounts/${player.id}`;
+        const request = {
+            deviceId: deviceId
+        };
         const response = await http.request(url, request, 'put');
+        return this.convertToPlayer(response.data);
+    }
 
-        return new PlayerData(response.data as PlayerDataInterface, router.getRealmId());
+    public async removeDeviceId(player: PlayerData, deviceId: string): Promise<PlayerData> {
+        const { http, router } = this.app;
+        const url = `/object/accounts/${player.id}/me/devices`;
+        const request = {
+            deviceIds: [deviceId]
+        };
+
+        await http.request(url, request, 'delete'); // delete returns an empty response
+        return await this.getPlayer(player.id.toString());
     }
 
     async removeThirdParty(player: PlayerData, thirdParty: ThirdPartyAssociation): Promise<PlayerData> {

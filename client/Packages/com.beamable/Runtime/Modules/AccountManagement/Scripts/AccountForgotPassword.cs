@@ -20,7 +20,6 @@ namespace Beamable.AccountManagement
         void Start()
         {
             ErrorText.Value = "";
-            SetForSendEmail();
         }
 
         // Update is called once per frame
@@ -33,6 +32,7 @@ namespace Beamable.AccountManagement
         {
             Arguments.Password.Value = "";
             Arguments.Code.Value = "";
+            SetForSendEmail();
         }
 
         public void SetEmail(string email)

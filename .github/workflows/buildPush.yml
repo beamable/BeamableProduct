@@ -3,7 +3,6 @@ name: Push Build
 on:
   push:
     branches:
-      - 'iOS'
       - 'main'
       - 'staging'
       - 'production'

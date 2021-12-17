@@ -19,12 +19,11 @@ namespace Beamable.Editor.Login.UI.Components
       private TextField _passwordTextField;
       private TextField _passwordConfirmTextField;
       private PrimaryButtonVisualElement _continueButton;
-      private Button _legalButton;
+      private GenericButtonVisualElement _legalButton;
       private Toggle _legalCheckbox;
       private Label _errorText;
-      private Button _existingAccountButton;
-      private Button _cancelButton;
-      private Button _switchOrgButton;
+      private GenericButtonVisualElement _existingAccountButton;
+      private GenericButtonVisualElement _switchOrgButton;
 
       public NewUserVisualElement() : base(nameof(NewUserVisualElement))
       {
@@ -71,11 +70,11 @@ namespace Beamable.Editor.Login.UI.Components
          _continueButton.Button.clickable.clicked += Continue_OnClicked;
          _continueButton.AddGateKeeper(isAlias, isEmail, isLegal, isPasswordValid, doPasswordsMatch);
 
-         _legalButton = Root.Q<Button>("legalButton");
-         _legalButton.clickable.clicked +=() => { Application.OpenURL(BeamableConstants.BEAMABLE_LEGAL_WEBSITE); };
+         _legalButton = Root.Q<GenericButtonVisualElement>("legalButton");
+         _legalButton.OnClick +=() => { Application.OpenURL(BeamableConstants.BEAMABLE_LEGAL_WEBSITE); };
 
-         _existingAccountButton = Root.Q<Button>("existingAccount");
-         _existingAccountButton.clickable.clicked += Manager.GotoExistingCustomer;
+         _existingAccountButton = Root.Q<GenericButtonVisualElement>("existingAccount");
+         _existingAccountButton.OnClick += Manager.GotoExistingCustomer;
 
 //         _switchOrgButton = Root.Q<Button>("newOrganization");
 //         _switchOrgButton.clickable.clicked += Manager.GotoCustomerSelection;

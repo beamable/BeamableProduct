@@ -72,13 +72,13 @@ namespace Beamable.Editor.Microservice.UI.Components
         public override void Refresh()
         {
             base.Refresh();
-            
+            bool storagePreviewEnabled = MicroserviceConfiguration.Instance.EnableStoragePreview;
             
             _refreshButton = Root.Q<Button>("refreshButton");
             _refreshButton.clickable.clicked += () => { OnRefreshButtonClicked?.Invoke(); };
             _refreshButton.tooltip = "Refresh Window";
             _createNew = Root.Q<Button>("createNew");
-            if (MicroserviceConfiguration.Instance.EnableStoragePreview)
+            if (storagePreviewEnabled)
             {
                 var manipulator = new ContextualMenuManipulator(PopulateCreateMenu);
                 manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
@@ -104,7 +104,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             
             _publish = Root.Q<Button>("publish");
             _publish.clickable.clicked += () => { OnPublishClicked?.Invoke(); };
-            _publish.SetEnabled(!DockerCommand.DockerNotInstalled);
+            _publish.SetEnabled(!(DockerCommand.DockerNotInstalled || storagePreviewEnabled));
             
             _infoButton = Root.Q<Button>("infoButton");
             _infoButton.clickable.clicked += () => { OnInfoButtonClicked?.Invoke(); };
@@ -121,7 +121,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         public void UpdateTextButtonTexts(bool allServicesSelected)
         {
             var startLabel = _startAll.Q<Label>();
-            startLabel.text = allServicesSelected ? "Start all" : "Start selected";
+            startLabel.text = allServicesSelected ? "Play all" : "Play selected";
             var buildLabel = _buildAll.Q<Label>();
             buildLabel.text = allServicesSelected ? "Build all" : "Build selected";
         }

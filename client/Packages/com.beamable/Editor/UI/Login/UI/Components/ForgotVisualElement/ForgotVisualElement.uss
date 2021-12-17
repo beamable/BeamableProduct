@@ -14,17 +14,6 @@
 .btnText{
     min-width:100px;
 }
-.linkText{
-    align-self: flex-end;
-    background-image: none;
-    max-height: 16px;
-    border-bottom-width: 1px;
-    border-right-width: 0px;
-    border-left-width: 0px;
-    border-top-width: 0px;
-    padding-left: 0px;
-    padding-right: 0px;
-}
 
 #getCode {
     flex-grow: 1;

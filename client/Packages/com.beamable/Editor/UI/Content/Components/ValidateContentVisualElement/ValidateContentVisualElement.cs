@@ -39,7 +39,7 @@ namespace Beamable.Editor.Content.Components
       private IList _listSource = new List<ContentExceptionCollection>();
       private VisualElement _errorContainer;
       private PrimaryButtonVisualElement _okayButton;
-      private Button _cancelButton;
+      private GenericButtonVisualElement _cancelButton;
 
       private Label _emptyMessageLabel;
       private Promise<Unit> _completePromise = new Promise<Unit>();
@@ -71,8 +71,8 @@ namespace Beamable.Editor.Content.Components
          _okayButton.Disable();
          _okayButton.Load(_completePromise);
 
-         _cancelButton = Root.Q<Button>("cancelBtn");
-         _cancelButton.clickable.clicked += CancelButton_OnClicked;
+         _cancelButton = Root.Q<GenericButtonVisualElement>("cancelBtn");
+         _cancelButton.OnClick += CancelButton_OnClicked;
 
          _errorContainer = Root.Q<VisualElement>("errorContainer");
          _listView = new ListView(_listSource, 24, CreateListItem, BindListItem);
