@@ -6,9 +6,9 @@ on:
       - 'main'
       - 'staging'
       - 'production'
-    #paths:
-     # - 'client/**'
-      #- 'microservice/**'
+    paths:
+      - 'client/**'
+      - 'microservice/**'
 
 jobs:
   testMicroserviceBaseImage:

@@ -6,9 +6,9 @@ on:
       - 'main'
       - 'staging'
       - 'production'
-    #paths:
-     # - 'client/**'
-     # - 'microservice/**'
+    paths:
+      - 'client/**'
+      - 'microservice/**'
 
 jobs:
   testMicroserviceBaseImage:
@@ -287,7 +287,7 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: Build-iOS
-      - name: Make build scripts executeable and change directory to the location of the xcode project
+      - name: Make build scripts executable and change directory to the location of the xcode project
         run: chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/process_symbols.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/MapFileParser.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/usymtool && cd iOS/
       - name: Edit the plist to automatically manage encryption notice in Testflight.
         run:  /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" /Users/runner/work/BeamableProduct/BeamableProduct/iOS/Info.plist || echo "Could not set encryption exception, this means it already exists"
