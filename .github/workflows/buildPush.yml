@@ -292,13 +292,27 @@ jobs:
         run: chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/process_symbols.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/MapFileParser.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/usymtool && cd iOS/
       - name: Edit the plist to automatically manage encryption notice in Testflight.
         run:  /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" /Users/runner/work/BeamableProduct/BeamableProduct/iOS/Info.plist || echo "Could not set encryption exception, this means it already exists"
+      - uses: keithweaver/aws-s3-github-action@master
+        with:
+          command: cp
+          source: s3://beamable-certificates/beamable.p12
+          destination: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/beamable.p12
+          aws_access_key_id: ${{ secrets.AWS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - uses: keithweaver/aws-s3-github-action@master
+        with:
+          command: cp
+          source: s3://beamable-certificates/ios_distribution.cer
+          destination: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/ios_distribution.cer
+          aws_access_key_id: ${{ secrets.AWS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       - uses: yukiarrr/ios-build-action@v1.4.0
         if: ${{ github.ref == 'refs/heads/iOS' }}
         with:
           update-targets: Unity-iPhone
           project-path: ${{ secrets.XCODEPROJ_PATH }}
-          p12-key-path: ${{ secrets.P12_KEY_BASE64 }}
-          p12-cer-path: ${{ secrets.P12_CER_BASE64 }}
+          p12-key-path: ${{ secrets.P12_KEY_PATH }}
+          p12-cer-path: ${{ secrets.P12_CER_PATH }}
           certificate-password: ${{ secrets.P12_PASSWORD }}
           mobileprovision-path: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/BeamableProductDev.mobileprovision
           code-signing-identity: 'iPhone Distribution: Beamable, Inc (A6C4565DLF)'
@@ -308,8 +322,8 @@ jobs:
         with:
           update-targets: Unity-iPhone
           project-path: ${{ secrets.XCODEPROJ_PATH }}
-          p12-key-path: ${{ secrets.P12_KEY_BASE64 }}
-          p12-cer-path: ${{ secrets.P12_CER_BASE64 }}
+          p12-key-path: ${{ secrets.P12_KEY_PATH }}
+          p12-cer-path: ${{ secrets.P12_CER_PATH }}
           certificate-password: ${{ secrets.P12_PASSWORD }}
           mobileprovision-path: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/BeamableProductStaging.mobileprovision
           code-signing-identity: 'iPhone Distribution: Beamable, Inc (A6C4565DLF)'
@@ -319,8 +333,8 @@ jobs:
         with:
           update-targets: Unity-iPhone
           project-path: ${{ secrets.XCODEPROJ_PATH }}
-          p12-key-path: ${{ secrets.P12_KEY_BASE64 }}
-          p12-cer-path: ${{ secrets.P12_CER_BASE64 }}
+          p12-key-path: ${{ secrets.P12_KEY_PATH }}
+          p12-cer-path: ${{ secrets.P12_CER_PATH }}
           certificate-password: ${{ secrets.P12_PASSWORD }}
           mobileprovision-path: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/BeamableProductProd.mobileprovision
           code-signing-identity: 'iPhone Distribution: Beamable, Inc (A6C4565DLF)'
