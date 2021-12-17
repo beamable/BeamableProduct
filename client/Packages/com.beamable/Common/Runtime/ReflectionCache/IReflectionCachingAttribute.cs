@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 
-namespace Beamable.Common
+namespace Beamable.Common.Reflection
 {
 	/// <summary>
 	/// Declare this interface over attributes to use our validation utilities declared in <see cref="ReflectionCache"/>.

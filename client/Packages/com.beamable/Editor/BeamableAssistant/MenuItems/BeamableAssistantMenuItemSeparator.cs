@@ -1,7 +1,7 @@
 using Beamable.Editor;
 using UnityEngine;
 
-namespace Editor.Beamable.ToolbarExtender
+namespace Beamable.Editor.ToolbarExtender
 {
 	[CreateAssetMenu(menuName = "Beamable/Assistant/MenuItems", fileName = "BeamableAssistantMenuItemSeparator", order = 0)]
 	public sealed class BeamableAssistantMenuItemSeparator : BeamableAssistantMenuItem

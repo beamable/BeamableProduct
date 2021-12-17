@@ -1,9 +1,8 @@
-using Beamable.Editor;
+using Beamable.Common;
 using System.Linq;
 using UnityEditor;
-using UnityEngine;
 
-namespace Beamable.Common
+namespace Beamable.Editor.Reflection
 {
 	public class ReflectionCacheAssetPostProcessor : AssetPostprocessor
 	{

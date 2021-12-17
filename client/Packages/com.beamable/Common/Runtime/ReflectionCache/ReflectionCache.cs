@@ -1,16 +1,14 @@
+using Beamable.Common.Assistant;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using Beamable.Common.Content;
-using Common.Runtime.BeamHints;
-using UnityEngine;
+using static System.Diagnostics.Debug;
 
-namespace Beamable.Common
+namespace Beamable.Common.Reflection
 {
 	/// <summary>
-	/// TODO: Implement on systems that require access to cached type information.
+	/// Implement on systems that require access to cached type information.
 	/// </summary>
 	public interface IReflectionCacheUserSystem : IReflectionCacheTypeProvider
 	{
@@ -77,6 +75,7 @@ namespace Beamable.Common
 	/// Used to initialize all reflection based systems with consistent validation and to ensure we are only doing the parsing once.
 	/// We can also use this to setup up compile-time validation of our Attribute-based systems such as Content and Microservices.
 	/// </summary>
+	// ReSharper disable once ClassNeverInstantiated.Global
 	public partial class ReflectionCache : IBeamHintProvider
 	{
 		public enum ValidationResultType
@@ -158,9 +157,9 @@ namespace Beamable.Common
 		/// </summary>        
 		public void RegisterTypeProvider(IReflectionCacheTypeProvider provider)
 		{
-			Debug.Assert(provider != null, "Provider cannot be null. Please ensure the provider instance exists when passing it in here.");
-			Debug.Assert(!_registeredProvider.Contains(provider), "Already registered this provider --- Please ensure providers are registered a single time. " +
-			                                                     "This is makes the Assembly Sweep more efficient.");
+			Assert(provider != null, "Provider cannot be null. Please ensure the provider instance exists when passing it in here.");
+			Assert(!_registeredProvider.Contains(provider), "Already registered this provider --- Please ensure providers are registered a single time. " +
+			                                                                    "This is makes the Assembly Sweep more efficient.");
 			
 			// Guard so people don't accidentally shoot themselves in the foot when defining their attributes of interest.
 			foreach (var attributeOfInterest in provider.AttributesOfInterest)
@@ -200,8 +199,8 @@ namespace Beamable.Common
 		/// </summary>        
 		public void RegisterCacheUserSystem(IReflectionCacheUserSystem system)
 		{
-			Debug.Assert(system != null, "System cannot be null. Please ensure the system instance exists when passing it in here.");
-			Debug.Assert(!_registeredCacheUserSystems.Contains(system), "Already registered this system --- Please ensure systems are registered a single time. " +
+			Assert(system != null, "System cannot be null. Please ensure the system instance exists when passing it in here.");
+			Assert(!_registeredCacheUserSystems.Contains(system), "Already registered this system --- Please ensure systems are registered a single time. " +
 			                                                           "This is makes the Assembly Sweep more efficient and makes it so that you run the system callbacks run only once.");
 
 			_registeredCacheUserSystems.Add(system);
@@ -217,7 +216,7 @@ namespace Beamable.Common
 		/// </param>
 		public void GenerateReflectionCache(IReadOnlyList<string> assembliesToSweep, List<Type> excludedReflectionUserCaches = null)
 		{
-			System.Diagnostics.Debug.Assert(_hintGlobalStorage != null, 
+			Assert(_hintGlobalStorage != null, 
 			                                $"A Reflection Cache must have a {nameof(IBeamHintGlobalStorage)} instance! Please call {nameof(SetStorage)} before calling this method!");
 			
 			ClearUserSystems();

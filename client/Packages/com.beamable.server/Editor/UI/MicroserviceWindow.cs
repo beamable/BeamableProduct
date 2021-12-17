@@ -1,21 +1,16 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Beamable.Editor;
+// using ActionBarVisualElement = Beamable.Editor.Microservice.UI.Components.ActionBarVisualElement;
+// using MicroserviceBreadcrumbsVisualElement = Beamable.Editor.Microservice.UI.Components.MicroserviceBreadcrumbsVisualElement;
 using Beamable.Editor.Login.UI;
 using Beamable.Editor.Microservice.UI.Components;
-using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
-using UnityEditor;
 using Beamable.Server.Editor.UI.Components;
-using Editor.ReflectionCacheSystems;
+using System;
+using System.Linq;
+using UnityEditor;
 using UnityEngine;
-// using ActionBarVisualElement = Beamable.Editor.Microservice.UI.Components.ActionBarVisualElement;
-// using MicroserviceBreadcrumbsVisualElement = Beamable.Editor.Microservice.UI.Components.MicroserviceBreadcrumbsVisualElement;
-using Debug = UnityEngine.Debug;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -215,7 +210,7 @@ namespace Beamable.Editor.Microservice.UI
         {
             if (isHardRefresh)
             {
-                MicroserviceWindow.Instance.Refresh();
+                Instance.Refresh();
             }
             else
             {

@@ -1,10 +1,10 @@
-using Common.Runtime.BeamHints;
+using Beamable.Common.Assistant;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 
-namespace Editor.BeamableAssistant
+namespace Beamable.Editor.Assistant
 {
 	/// <summary>
 	/// Manages and persists <see cref="BeamHint"/> preferences. Can decide to display/ignore hints and persist this configuration this session or permanently. 
@@ -115,11 +115,12 @@ namespace Editor.BeamableAssistant
 		/// </summary>
 		private readonly List<BeamHintHeader> _neverNotifyHints;
 
+		private readonly List<string> _hintsToPlayModeWarningByDefault;
 
 		/// <summary>
 		/// Creates a new <see cref="BeamHintPreferencesManager"/> instance you can use to manage <see cref="BeamHint"/> display/ignore preferences.
 		/// </summary>
-		public BeamHintPreferencesManager()
+		public BeamHintPreferencesManager(List<string> playModeWarningByDefaultHints = null)
 		{
 			var sessionVisibilityPrefsCount = SessionState.GetInt(VISIBILITY_HIDDEN_SAVED_COUNT, 0);
 			var hintVisibilityPrefsCount = EditorPrefs.GetInt(VISIBILITY_HIDDEN_SAVED_COUNT, 0);
@@ -143,6 +144,9 @@ namespace Editor.BeamableAssistant
 
 			_alwaysNotifyHints = new List<BeamHintHeader>(alwaysNotifyCount);
 			_neverNotifyHints = new List<BeamHintHeader>(neverNotifyCount);
+
+			_hintsToPlayModeWarningByDefault = new List<string>();
+			_hintsToPlayModeWarningByDefault.AddRange(playModeWarningByDefaultHints ?? new List<string>());
 		}
 
 		/// <summary>
@@ -265,10 +269,9 @@ namespace Editor.BeamableAssistant
 			var groups = hints.GroupBy(h => {
 
 				if (!_perHintPlayModeWarningStates.TryGetValue(h.Header, out var state))
-					state = PlayModeWarningState.Enabled;
-				
-				if (h.Header.Type != BeamHintType.Validation)
-					state = PlayModeWarningState.Disabled;
+				{
+					state = _hintsToPlayModeWarningByDefault.Contains(h.Header.Id) ? PlayModeWarningState.Enabled : PlayModeWarningState.Disabled;
+				}
 
 				return state;
 			}).ToList();

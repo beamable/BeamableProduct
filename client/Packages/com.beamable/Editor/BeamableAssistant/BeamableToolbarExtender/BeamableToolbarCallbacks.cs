@@ -10,7 +10,7 @@ using UnityEngine.UIElements;
 using UnityEngine.Experimental.UIElements;
 #endif
 
-namespace Editor.Beamable.ToolbarExtender
+namespace Beamable.Editor.ToolbarExtender
 {
 	public static class BeamableToolbarCallbacks
 	{

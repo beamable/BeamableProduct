@@ -2,7 +2,7 @@ using Beamable.Editor;
 using System;
 using UnityEngine;
 
-namespace Editor.Beamable.ToolbarExtender
+namespace Beamable.Editor.ToolbarExtender
 {
 	public abstract class BeamableAssistantMenuItem : ScriptableObject
 	{

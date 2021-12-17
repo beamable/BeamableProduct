@@ -1,12 +1,8 @@
 using Beamable.Common;
-using Beamable.CronExpression;
-using Beamable.Editor.BeamableAssistant.Components;
-using Beamable.Editor.BeamableAssistant.Models;
-using Beamable.Editor.Content;
+using Beamable.Common.Assistant;
 using Beamable.Editor.Content.Components;
+using Beamable.Editor.Reflection;
 using Beamable.Editor.UI.Components;
-using Common.Runtime.BeamHints;
-using Editor.BeamableAssistant.BeamHints;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,9 +11,8 @@ using UnityEditor.Experimental.UIElements;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
-using ActionBarVisualElement = Beamable.Editor.BeamableAssistant.Components.ActionBarVisualElement;
 
-namespace Beamable.Editor.BeamableAssistant
+namespace Beamable.Editor.Assistant
 {
 	public class BeamableAssistantWindow : EditorWindow, ISerializationCallbackReceiver
 	{
@@ -59,13 +54,23 @@ namespace Beamable.Editor.BeamableAssistant
 
 		private void OnEnable()
 		{
-			// TODO: Poll for changes in BeamHintGlobalStorage (add a per-domain dirty flag --- only care about the selected domains).
 			EditorAPI.Instance.Then(Refresh);
 		}
 
 		private void OnFocus()
 		{
 			EditorAPI.Instance.Then(Refresh);
+			
+			// TODO: Display NEW icon and clear notifications on hover on a per hint header basis.
+			// For now, just clear notifications whenever the window is focused
+			if(_editorAPI != null)
+				_editorAPI.HintNotificationsManager.ClearPendingNotifications();
+		}
+
+		private void Update()
+		{
+			if(_editorAPI != null && _editorAPI.HintNotificationsManager.AllPendingNotifications.Any())
+				Refresh(_editorAPI);
 		}
 
 		void Refresh(EditorAPI editorAPI)

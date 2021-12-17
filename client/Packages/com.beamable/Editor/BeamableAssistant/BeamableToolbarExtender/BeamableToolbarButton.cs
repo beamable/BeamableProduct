@@ -2,7 +2,7 @@ using Beamable.Editor;
 using UnityEditor;
 using UnityEngine;
 
-namespace Editor.Beamable.ToolbarExtender
+namespace Beamable.Editor.ToolbarExtender
 {
 	public abstract class BeamableToolbarButton : ScriptableObject
 	{

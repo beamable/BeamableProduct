@@ -1,13 +1,12 @@
-using Beamable.Common;
-using Common.Runtime.BeamHints;
-using Editor.BeamableAssistant.BeamHints;
+using Beamable.Common.Assistant;
+using Beamable.Common.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
-namespace Editor.BeamableAssistant.BeamHints
+namespace Beamable.Editor.Reflection
 {
 	[CreateAssetMenu(fileName = "BeamHintDomainAndIdsCache", menuName = "MENUNAME4", order = 0)]
 	public class BeamHintDomainsAndIdsReflectionCache : ReflectionCacheUserSystemObject
@@ -36,8 +35,8 @@ namespace Editor.BeamableAssistant.BeamHints
 
 			static Registry()
 			{
-				BEAM_HINT_DOMAIN_PROVIDER_ATTRIBUTE = new AttributeOfInterest(typeof(BeamHintDomainAttribute), new Type[] { }, new [] { typeof(BeamHintDomainProvider) });
-				BEAM_HINT_ID_PROVIDER_ATTRIBUTE = new AttributeOfInterest(typeof(BeamHintIdAttribute), new Type[] { }, new Type[] { typeof(BeamHintIdProvider)  });
+				BEAM_HINT_DOMAIN_PROVIDER_ATTRIBUTE = new AttributeOfInterest(typeof(BeamHintDomainAttribute), new Type[] { }, new[] {typeof(BeamHintDomainProvider)});
+				BEAM_HINT_ID_PROVIDER_ATTRIBUTE = new AttributeOfInterest(typeof(BeamHintIdAttribute), new Type[] { }, new Type[] {typeof(BeamHintIdProvider)});
 
 				BASE_TYPES_OF_INTEREST = new List<BaseTypeOfInterest>() { };
 				ATTRIBUTES_OF_INTEREST = new List<AttributeOfInterest>() {BEAM_HINT_ID_PROVIDER_ATTRIBUTE, BEAM_HINT_DOMAIN_PROVIDER_ATTRIBUTE};
@@ -80,10 +79,11 @@ namespace Editor.BeamableAssistant.BeamHints
 					// TODO: Store domains in whatever way makes it easier for users to get the list of domains they are interested in. 
 					foreach (var domainFields in cachedMemberAttributePairs.Select(result => result.Info).Cast<FieldInfo>())
 					{
-						if (!PerProviderDomains.TryGetValue("", out var domainList))
+						var providerName = domainFields.DeclaringType?.FullName ?? string.Empty;
+						if (!PerProviderDomains.TryGetValue(providerName, out var domainList))
 						{
 							domainList = new List<string>();
-							PerProviderDomains.Add("", domainList);
+							PerProviderDomains.Add(providerName, domainList);
 						}
 
 						domainList.Add((string)domainFields.GetValue(null));
@@ -96,10 +96,11 @@ namespace Editor.BeamableAssistant.BeamHints
 					// TODO: Store domains in whatever way makes it easier for users to get the list of domains they are interested in. 
 					foreach (var idField in cachedMemberAttributePairs.Select(result => result.Info).Cast<FieldInfo>())
 					{
-						if (!PerProviderIds.TryGetValue("", out var idsList))
+						var providerName = idField.DeclaringType?.FullName ?? string.Empty;
+						if (!PerProviderIds.TryGetValue(providerName, out var idsList))
 						{
 							idsList = new List<string>();
-							PerProviderIds.Add("", idsList);
+							PerProviderIds.Add(providerName, idsList);
 						}
 
 						idsList.Add((string)idField.GetValue(null));

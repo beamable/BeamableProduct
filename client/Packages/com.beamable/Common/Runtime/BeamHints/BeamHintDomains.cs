@@ -1,10 +1,11 @@
-namespace Common.Runtime.BeamHints
+namespace Beamable.Common.Assistant
 {
 	/// <summary>
 	/// <see cref="BeamHint"/> domains are a large-scale contextual grouping for hints. We use these to organize and display them in a logical and easy to navigate way.
 	/// <para/>
 	/// Domains cannot have "¬" or "₢" they are reserved characters (see <see cref="SUB_DOMAIN_SEPARATOR"/>). 
 	/// </summary>
+	// ReSharper disable once ClassNeverInstantiated.Global
 	public class BeamHintDomains : BeamHintDomainProvider
 	{
 		/// <summary>
@@ -46,8 +47,10 @@ namespace Common.Runtime.BeamHints
 		/// <returns>A string defining the path to the sub-domain.</returns>
 		public static string GenerateSubDomain(string ownerDomain, string subDomainName) => $"{ownerDomain}{SUB_DOMAIN_SEPARATOR}{subDomainName}";
 
+		/// <summary>
+		/// Character used to textually split domains. 
+		/// </summary>
 		public const string SUB_DOMAIN_SEPARATOR = "¬";
-		public const char SUB_DOMAIN_SEPARATOR_CHAR = '¬';
 
 		[BeamHintDomain] public static readonly string BEAM_REFLECTION_CACHE = GenerateBeamableDomain("REFLECTION_CACHE");
 		public static bool IsReflectionCacheDomain(string domain) => IsBeamableDomain(domain) && domain.Contains(BEAM_REFLECTION_CACHE);
@@ -57,7 +60,7 @@ namespace Common.Runtime.BeamHints
 		[BeamHintDomain] public static readonly string BEAM_CSHARP_MICROSERVICES_DOCKER = GenerateSubDomain(BEAM_CSHARP_MICROSERVICES, "DOCKER");
 		public static bool IsCSharpMSDomain(string domain) => IsBeamableDomain(domain) && domain.Contains(BEAM_CSHARP_MICROSERVICES);
 
-		[BeamHintDomain] public static readonly string BEAM_CONTENT = GenerateBeamableDomain("Content");
+		[BeamHintDomain] public static readonly string BEAM_CONTENT = GenerateBeamableDomain("CONTENT");
 		[BeamHintDomain] public static readonly string BEAM_CONTENT_CODE_MISUSE = GenerateSubDomain(BEAM_CONTENT, "CODE_MISUSE");
 		public static bool IsContentDomain(string domain) => IsBeamableDomain(domain) && domain.Contains(BEAM_CONTENT);
 		
@@ -78,7 +81,7 @@ namespace Common.Runtime.BeamHints
 		/// </summary>
 		public static bool TryGetDomainAtDepth(string domain, int currDepth, out string subDomain)
 		{
-			var splitDomain = domain.Split(SUB_DOMAIN_SEPARATOR_CHAR);
+			var splitDomain = domain.Split(SUB_DOMAIN_SEPARATOR[0]);
 			if (currDepth >= domain.Length || currDepth < 0)
 			{
 				subDomain = "";
@@ -89,6 +92,6 @@ namespace Common.Runtime.BeamHints
 			return true;
 		}
 
-		public static int GetDomainDepth(string domain) => domain.Split(SUB_DOMAIN_SEPARATOR_CHAR).Length - 1;
+		public static int GetDomainDepth(string domain) => domain.Split(SUB_DOMAIN_SEPARATOR[0]).Length - 1;
 	}
 }

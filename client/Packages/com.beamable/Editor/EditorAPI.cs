@@ -1,24 +1,24 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
-using Beamable.Editor.Content;
-using Beamable.Editor.Environment;
+using Beamable.Common.Assistant;
+using Beamable.Common.Reflection;
 using Beamable.Config;
+using Beamable.Editor.Assistant;
 using Beamable.Editor.Config;
+using Beamable.Editor.Content;
 using Beamable.Editor.Modules.Account;
 using Beamable.Editor.Realms;
-using Common.Runtime.BeamHints;
-using Editor.BeamableAssistant;
+using Beamable.Editor.Reflection;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.VersionControl;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
 using Task = System.Threading.Tasks.Task;
 
 namespace Beamable.Editor
@@ -126,7 +126,9 @@ namespace Beamable.Editor
 	      // Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance
 	      // (that gets propagated down to any IReflectionCacheUserSystem that also implements IBeamHintProvider).
 	      {
-		      var reflectionCacheSystemGuids = AssetDatabase.FindAssets("t:ReflectionCacheUserSystemObject", coreConfiguration.ReflectionCacheUserSystemPaths.ToArray());
+		      var reflectionCacheSystemGuids = AssetDatabase.FindAssets("t:ReflectionCacheUserSystemObject", coreConfiguration.ReflectionCacheUserSystemPaths
+		                                                                                                                      .Where(Directory.Exists)
+		                                                                                                                      .ToArray());
 
 		      foreach (string reflectionCacheSystemGuid in reflectionCacheSystemGuids)
 		      {
@@ -144,8 +146,8 @@ namespace Beamable.Editor
 	      HintNotificationsManager.SetPreferencesManager(HintPreferencesManager);
 	      
 	      
-	      EditorApplication.delayCall -= HintNotificationsManager.DelayedVerifyNotifications;
-	      EditorApplication.delayCall += HintNotificationsManager.DelayedVerifyNotifications;
+	      EditorApplication.update -= HintNotificationsManager.Update;
+	      EditorApplication.update += HintNotificationsManager.Update;
 		
 	      EditorApplication.playModeStateChanged += delegate(PlayModeStateChange change) {
 		      if (!coreConfiguration.EnablePlayModeWarning) 
@@ -166,17 +168,18 @@ namespace Beamable.Editor
 				                                                                  $"{msg}\n\n" +
 				                                                                  "Do you wish to stop entering playmode and see these validations?", 
 				                                            "Yes, I want to stop and go see validations.",
-				                                            "No, I'll take my chances.",
-					      "No, I'll take my chances and don't bother me again.");
+				                                            "No, I'll take my chances and don't bother me until I open Unity again.",
+					      "No, I'll take my chances and don't bother me ever again.");
 				      
 				      if (res == 0)
 				      {
 					      EditorApplication.isPlaying = false;
-					      BeamableAssistant.BeamableAssistantWindow.ShowWindow();
+					      BeamableAssistantWindow.ShowWindow();
 				      }
 				      else if (res == 1)
 				      {
-					      // Do nothing and enter play mode normally
+					      foreach (var hint in hintsToWarnAbout) 
+						      HintPreferencesManager.SetHintPlayModeWarningPreferences(hint, PlayModeWarningState.Disabled, PersistenceLevel.Session);
 				      }
 				      else if (res == 2)
 				      {
@@ -259,7 +262,7 @@ namespace Beamable.Editor
       {
          if (File.Exists(path))
          {
-            var fileInfo = new System.IO.FileInfo(path);
+            var fileInfo = new FileInfo(path);
             fileInfo.IsReadOnly = false;
          }
 
@@ -631,7 +634,7 @@ namespace Beamable.Editor
 
    }
 
-   [System.Serializable]
+   [Serializable]
    public class ConfigData
    {
       public string cid;
@@ -642,19 +645,19 @@ namespace Beamable.Editor
       public string containerPrefix;
    }
 
-   [System.Serializable]
+   [Serializable]
    public class CustomerResponse
    {
       public CustomerDTO customer;
    }
 
-   [System.Serializable]
+   [Serializable]
    public class CustomerDTO
    {
       public List<ProjectDTO> projects;
    }
 
-   [System.Serializable]
+   [Serializable]
    public class ProjectDTO
    {
       public string name;

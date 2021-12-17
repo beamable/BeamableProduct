@@ -1,6 +1,6 @@
-using Beamable.Common;
-using Beamable.Editor.BeamableAssistant.Components;
-using Common.Runtime.BeamHints;
+using Beamable.Common.Assistant;
+using Beamable.Common.Reflection;
+using Beamable.Editor.Assistant;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +8,7 @@ using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
-namespace Editor.BeamableAssistant.BeamHints
+namespace Beamable.Editor.Reflection
 {
 	[CreateAssetMenu(fileName = "BeamHintDetailsReflectionCache", menuName = "MENUNAME3", order = 0)]
 	public class BeamHintDetailsReflectionCache : ReflectionCacheUserSystemObject
@@ -25,9 +25,7 @@ namespace Editor.BeamableAssistant.BeamHints
 		{
 			_cache = new Registry();
 		}
-		
-		
-		
+
 		public class Registry : IReflectionCacheUserSystem, IBeamHintProvider
 		{
 			private static readonly BaseTypeOfInterest BEAM_HINT_DETAIL_CONVERTER_PROVIDER_TYPE;
@@ -48,7 +46,6 @@ namespace Editor.BeamableAssistant.BeamHints
 			public List<BaseTypeOfInterest> BaseTypesOfInterest => BASE_TYPES_OF_INTEREST;
 			public List<AttributeOfInterest> AttributesOfInterest => ATTRIBUTES_OF_INTEREST;
 
-
 			public List<BeamHintDetailsConfig> LoadedConfigs;
 			public List<Delegate> ConverterDelegates;
 
@@ -64,14 +61,14 @@ namespace Editor.BeamableAssistant.BeamHints
 			{
 				var idx = LoadedConfigs.FindIndex(config => config.MatchesHint(hint));
 				foundConfig = idx == -1 ? null : LoadedConfigs[idx];
-				return idx; 
+				return idx;
 			}
-		
+
 			public BeamHintDetailConverterProvider.DefaultConverterSignature GetConverterAtIdx(int idx)
 			{
-				return (BeamHintDetailConverterProvider.DefaultConverterSignature) ConverterDelegates[idx];
+				return (BeamHintDetailConverterProvider.DefaultConverterSignature)ConverterDelegates[idx];
 			}
-			
+
 			public void SetStorage(IBeamHintGlobalStorage hintGlobalStorage) => _hintStorage = hintGlobalStorage;
 
 			public void ClearUserCache()
@@ -97,15 +94,15 @@ namespace Editor.BeamableAssistant.BeamHints
 				validationResults.SplitValidationResults(out var valid, out _, out var invalid);
 
 				if (invalid.Count > 0)
-				{ 
-					_hintStorage.AddOrReplaceHint(BeamHintType.Validation, BeamHintDomains.BEAM_ASSISTANT_CODE_MISUSE, "MisconfiguredHintDetailsProvider", invalid);
+				{
+					_hintStorage.AddOrReplaceHint(BeamHintType.Validation, BeamHintDomains.BEAM_ASSISTANT_CODE_MISUSE, BeamHintIds.ID_MISCONFIGURED_HINT_DETAILS_PROVIDER, invalid);
 				}
-				
+
 				var validConverters = valid.Select(result => result.Pair);
 				foreach (var cachedMemberAttributePair in validConverters)
 				{
 					var attribute = (BeamHintDetailConverterAttribute)cachedMemberAttributePair.Attribute;
-					var methodInfo = (MethodInfo) cachedMemberAttributePair.Info;
+					var methodInfo = (MethodInfo)cachedMemberAttributePair.Info;
 
 					// Load Config Scriptable Objects
 					BeamHintDetailsConfig config = null;
@@ -116,13 +113,12 @@ namespace Editor.BeamableAssistant.BeamHints
 						config = AssetDatabase.LoadAssetAtPath<BeamHintDetailsConfig>(attribute.PathToBeamHintDetailConfig);
 
 					LoadedConfigs.Add(config);
-					
+
 					// Cache a built delegate to be called as a converter. 
 					var cachedDelegate = Delegate.CreateDelegate(attribute.DelegateType, methodInfo);
 					ConverterDelegates.Add(cachedDelegate);
 				}
 			}
-
 		}
 	}
 }

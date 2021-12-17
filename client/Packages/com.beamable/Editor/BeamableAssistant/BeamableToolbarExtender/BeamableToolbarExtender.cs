@@ -1,16 +1,14 @@
 #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 
-using Beamable.Editor;
-using Beamable.Editor.BeamableAssistant;
-using Beamable.Editor.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Windows;
 
-namespace Editor.Beamable.ToolbarExtender
+namespace Beamable.Editor.ToolbarExtender
 {
 	[InitializeOnLoad]
 	public static class BeamableToolbarExtender
@@ -25,7 +23,10 @@ namespace Editor.Beamable.ToolbarExtender
 		private static List<BeamableAssistantMenuItem> _assistantMenuItems;
 		private static List<BeamableToolbarButton> _leftButtons;
 		private static List<BeamableToolbarButton> _rightButtons;
-		
+
+		private static Texture _noHintsTexture;
+		private static Texture _hintsTexture;
+		private static Texture _validationTexture;
 
 		static BeamableToolbarExtender()
 		{
@@ -50,7 +51,7 @@ namespace Editor.Beamable.ToolbarExtender
 #elif UNITY_2019_1_OR_NEWER
 			_toolCount = toolIcons != null ? ((int) toolIcons.GetValue(null)) : 7;
 #elif UNITY_2018_1_OR_NEWER
-			_toolCount = toolIcons != null ? ((Array) toolIcons.GetValue(null)).Length : 6;
+			_toolCount = toolIcons != null ? ((Array)toolIcons.GetValue(null)).Length : 6;
 #else
 			_toolCount = toolIcons != null ? ((Array) toolIcons.GetValue(null)).Length : 5;
 #endif
@@ -59,23 +60,21 @@ namespace Editor.Beamable.ToolbarExtender
 			BeamableToolbarCallbacks.OnToolbarGUILeft = GUILeft;
 			BeamableToolbarCallbacks.OnToolbarGUIRight = GUIRight;
 
-			EditorAPI.Instance.Then(api =>
-			{
+			EditorAPI.Instance.Then(api => {
 				_editorAPI = api;
 
 				// Load and inject Beamable Menu Items (necessary due to multiple package split of SDK) --- sort them by specified order, and alphabetically when tied.
-				var menuItemsSearchInFolders = _editorAPI.CoreConfiguration.BeamableAssistantMenuItemsPath.ToArray();
+				var menuItemsSearchInFolders = _editorAPI.CoreConfiguration.BeamableAssistantMenuItemsPath.Where(Directory.Exists).ToArray();
 				var menuItemsGuids = AssetDatabase.FindAssets("t:BeamableAssistantMenuItem", menuItemsSearchInFolders);
 				_assistantMenuItems = menuItemsGuids.Select(guid => AssetDatabase.LoadAssetAtPath<BeamableAssistantMenuItem>(AssetDatabase.GUIDToAssetPath(guid))).ToList();
-				_assistantMenuItems.Sort((mi1, mi2) =>
-				{
+				_assistantMenuItems.Sort((mi1, mi2) => {
 					var orderComp = mi1.Order.CompareTo(mi2.Order);
 					var labelComp = string.Compare(mi1.RenderLabel(_editorAPI).text, mi2.RenderLabel(_editorAPI).text, StringComparison.Ordinal);
 
 					return orderComp == 0 ? labelComp : orderComp;
 				});
 
-				var toolbarButtonsSearchInFolders = _editorAPI.CoreConfiguration.BeamableAssistantToolbarButtonsPaths.ToArray();
+				var toolbarButtonsSearchInFolders = _editorAPI.CoreConfiguration.BeamableAssistantToolbarButtonsPaths.Where(Directory.Exists).ToArray();
 				var toolbarButtonsGuids = AssetDatabase.FindAssets("t:BeamableToolbarButton", toolbarButtonsSearchInFolders);
 				var toolbarButtons = toolbarButtonsGuids.Select(guid => AssetDatabase.LoadAssetAtPath<BeamableToolbarButton>(AssetDatabase.GUIDToAssetPath(guid))).ToList();
 
@@ -88,8 +87,7 @@ namespace Editor.Beamable.ToolbarExtender
 				                             .SelectMany(g => g)
 				                             .ToList();
 
-				_leftButtons.Sort((b1, b2) =>
-				{
+				_leftButtons.Sort((b1, b2) => {
 					var orderComp = b1.GetButtonOrder(_editorAPI).CompareTo(b2.GetButtonOrder(_editorAPI));
 					var labelComp = string.Compare(b1.GetButtonText(_editorAPI), b2.GetButtonText(_editorAPI), StringComparison.Ordinal);
 					var textureComp = string.Compare(b1.GetButtonTexture(_editorAPI).name, b2.GetButtonTexture(_editorAPI).name, StringComparison.Ordinal);
@@ -97,14 +95,17 @@ namespace Editor.Beamable.ToolbarExtender
 					return orderComp == 0 ? (labelComp == 0 ? textureComp : labelComp) : orderComp;
 				});
 
-				_rightButtons.Sort((b1, b2) =>
-				{
+				_rightButtons.Sort((b1, b2) => {
 					var orderComp = b1.GetButtonOrder(_editorAPI).CompareTo(b2.GetButtonOrder(_editorAPI));
 					var labelComp = string.Compare(b1.GetButtonText(_editorAPI), b2.GetButtonText(_editorAPI), StringComparison.Ordinal);
 					var textureComp = string.Compare(b1.GetButtonTexture(_editorAPI).name, b2.GetButtonTexture(_editorAPI).name, StringComparison.Ordinal);
 
 					return orderComp == 0 ? (labelComp == 0 ? textureComp : labelComp) : orderComp;
 				});
+
+				_noHintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info.png");
+				_hintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info hit.png");
+				_validationTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info valu.png");
 
 				AssetDatabase.Refresh();
 			});
@@ -118,7 +119,8 @@ namespace Editor.Beamable.ToolbarExtender
 		public const float largeSpace = 20;
 		public const float buttonWidth = 32;
 		public const float dropdownWidth = 80;
-		public const float beamableAssistantWidth = 160;
+		public const float dropdownHeight = 18;
+		public const float beamableAssistantWidth = 145;
 #if UNITY_2019_1_OR_NEWER
 		public const float playPauseStopWidth = 140;
 #else
@@ -192,9 +194,16 @@ namespace Editor.Beamable.ToolbarExtender
 			rightRect.height = 24;
 #endif
 
-			var beamableAssistantButtonRect = new Rect(beamableAssistantStart, rightRect.y + 2, beamableAssistantEnd - beamableAssistantStart, rightRect.height - 1);
+			var beamableAssistantButtonRect = new Rect(beamableAssistantStart, rightRect.y + 2, beamableAssistantEnd - beamableAssistantStart, dropdownHeight);
+			var btnTexture = _noHintsTexture;
+			if (_editorAPI.HintNotificationsManager.PendingHintNotifications.Any())
+				btnTexture = _hintsTexture;
+
+			if (_editorAPI.HintNotificationsManager.PendingValidationNotifications.Any())
+				btnTexture = _validationTexture;
+
 			GUILayout.BeginArea(beamableAssistantButtonRect);
-			if (GUILayout.Button("Beamable"))
+			if (GUILayout.Button(new GUIContent("  Assistant Window", btnTexture), GUILayout.Width(beamableAssistantEnd - beamableAssistantStart), GUILayout.Height(dropdownHeight)))
 			{
 				// create the menu and add items to it
 				var menu = new GenericMenu();
@@ -213,12 +222,11 @@ namespace Editor.Beamable.ToolbarExtender
 			{
 				GUILayout.BeginArea(leftRect);
 				GUILayout.BeginHorizontal();
-				
+
 				RenderBeamableToolbarButtons(_leftButtons, _editorAPI);
-				
+
 				foreach (var handler in LeftToolbarGUI)
 				{
-					
 					handler();
 				}
 
@@ -230,12 +238,12 @@ namespace Editor.Beamable.ToolbarExtender
 			{
 				GUILayout.BeginArea(rightRect);
 				GUILayout.BeginHorizontal();
-				
+
 				foreach (var handler in RightToolbarGUI)
 				{
 					handler();
 				}
-				
+
 				RenderBeamableToolbarButtons(_rightButtons, _editorAPI);
 
 				GUILayout.EndHorizontal();

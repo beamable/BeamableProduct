@@ -1,26 +1,22 @@
-using Beamable.Common;
-using Beamable.Editor.BeamableAssistant.Components;
-using Common.Runtime.BeamHints;
+using Beamable.Common.Assistant;
+using Beamable.Common.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using UnityEngine;
 
-namespace Editor.BeamableAssistant.BeamHints
+namespace Beamable.Editor.Assistant
 {
 	[AttributeUsage(AttributeTargets.Method)]
 	public class BeamHintDetailConverterAttribute : Attribute, IReflectionCachingAttribute<BeamHintDetailConverterAttribute>
 	{
-		private static readonly List<SignatureOfInterest> AcceptedSignatures = new List<SignatureOfInterest>()
-		{
+		private static readonly List<SignatureOfInterest> AcceptedSignatures = new List<SignatureOfInterest>() {
 			new SignatureOfInterest(
 				true,
 				typeof(void),
-				new[]
-				{
-					new ParameterOfInterest(typeof(BeamHint).MakeByRefType(), true, false, false), 
+				new[] {
+					new ParameterOfInterest(typeof(BeamHint).MakeByRefType(), true, false, false),
 					new ParameterOfInterest(typeof(BeamHintDetailsConfig).MakeByRefType(), true, false, false),
 					new ParameterOfInterest(typeof(BeamHintVisualsInjectionBag), false, false, false)
 				})

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 
-namespace Beamable.Common
+namespace Beamable.Common.Reflection
 {
     /// <summary>
     /// Implement this interface over any <see cref="Attribute"/> to be able to use the existing <see cref="ReflectionCache"/> utilities to validate things with respect to attributes that name members.

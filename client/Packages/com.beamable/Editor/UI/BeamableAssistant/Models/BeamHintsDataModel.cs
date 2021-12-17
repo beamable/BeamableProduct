@@ -1,24 +1,18 @@
-using Beamable.Editor.BeamableAssistant.Components;
-using Beamable.Editor.Content.Components;
-using Common.Runtime.BeamHints;
-using Editor.BeamableAssistant;
-using Editor.BeamableAssistant.BeamHints;
+using Beamable.Common.Assistant;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements;
 
-namespace Beamable.Editor.BeamableAssistant.Models
+namespace Beamable.Editor.Assistant
 {
-	[System.Serializable]
+	[Serializable]
 	public class BeamHintsDataModel
 	{
 		private IBeamHintGlobalStorage _hintGlobalStorage;
 		private IBeamHintPreferencesManager _hintPreferencesManager;
-		
+
 		[SerializeField] public List<BeamHintHeader> DetailsOpenedHints;
 		[SerializeField] public List<string> SelectedDomains;
 		[SerializeField] public List<BeamHintHeader> DisplayingHints;
@@ -37,12 +31,12 @@ namespace Beamable.Editor.BeamableAssistant.Models
 		{
 			_hintGlobalStorage = beamHintGlobalStorage;
 		}
-		
+
 		public void SetPreferencesManager(IBeamHintPreferencesManager beamHintPreferencesManager)
 		{
 			_hintPreferencesManager = beamHintPreferencesManager;
 		}
-		
+
 		public void RefreshDomainsFromHints(IEnumerable<BeamHint> storage)
 		{
 			// Gets all domains in the current storage
@@ -53,37 +47,33 @@ namespace Beamable.Editor.BeamableAssistant.Models
 		public void RefreshDisplayingHints(IEnumerable<BeamHint> storage, List<string> domains)
 		{
 			var perDomainHints = storage.Where(hint => domains.Contains(hint.Header.Domain)).ToList();
-			
+
 			// Handle Display/Ignored hints based on stored preferences inside this editor.
 			_hintPreferencesManager.RebuildPerHintPreferences();
 			_hintPreferencesManager.SplitHintsByVisibilityPreferences(perDomainHints, out var toDisplayHints, out _);
-			
+
 			// Apply text based filter
 			var filteredHints = toDisplayHints.Where(hint => {
-
 				var isEmptyFilter = string.IsNullOrEmpty(CurrentFilter);
 				var matchId = !isEmptyFilter && hint.Header.Id.ToLower().Contains(CurrentFilter.ToLower());
 
 				return matchId || isEmptyFilter;
 			});
-			
+
 			// Display only hints that pass through the preferences filter.
-			DisplayingHints = filteredHints.Select(hint=> hint.Header).ToList();
+			DisplayingHints = filteredHints.Select(hint => hint.Header).ToList();
 		}
 
 		public void SelectDomains(List<string> domainsToSelect)
 		{
 			RefreshDomainsFromHints(_hintGlobalStorage);
-			
+
 			var selectedDomains = domainsToSelect.Count == 0 ? SortedDomainsInStorage : domainsToSelect;
 			RefreshDisplayingHints(_hintGlobalStorage, selectedDomains);
 			SelectedDomains = selectedDomains;
 		}
-		
-		public BeamHint GetHint(BeamHintHeader header)
-		{
-			return _hintGlobalStorage.All.First(hint => hint.Header.Equals(header));
-		}
+
+		public BeamHint GetHint(BeamHintHeader header) => _hintGlobalStorage.GetHint(header);
 
 		public void FilterDisplayedBy(string searchText)
 		{
@@ -91,14 +81,12 @@ namespace Beamable.Editor.BeamableAssistant.Models
 			RefreshDisplayingHints(_hintGlobalStorage, SelectedDomains);
 		}
 	}
-	
-	
 
 	[Serializable]
 	public sealed class BeamHintDomainTreeViewItem : TreeViewItem
 	{
 		public readonly string FullDomain;
-		
+
 		public BeamHintDomainTreeViewItem(int id, int depth, string fullDomain, string displayName) : base(id, depth, displayName)
 		{
 			FullDomain = fullDomain;

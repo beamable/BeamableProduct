@@ -1,8 +1,8 @@
-using Beamable.Common;
+using Beamable.Common.Reflection;
 using System;
 using System.Reflection;
 
-namespace Common.Runtime.BeamHints
+namespace Beamable.Common.Assistant
 {
 	public abstract class BeamHintIdProvider{}
 

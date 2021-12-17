@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace Beamable.Common
+namespace Beamable.Common.Reflection
 {
     /// <summary>
     /// Struct that holds data for all Attribute-related reflection data caches.

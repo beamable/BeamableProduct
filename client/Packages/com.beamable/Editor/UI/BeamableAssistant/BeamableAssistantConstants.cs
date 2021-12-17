@@ -1,4 +1,4 @@
-namespace Beamable.Editor.BeamableAssistant
+namespace Beamable.Editor.Assistant
 {
 	public static class BeamableAssistantConstants
 	{

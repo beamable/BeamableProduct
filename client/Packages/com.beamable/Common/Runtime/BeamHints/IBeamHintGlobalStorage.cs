@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Common.Runtime.BeamHints
+namespace Beamable.Common.Assistant
 {
 	/// <summary>
 	/// Interface for the Global Storage --- only exists to enable mocking for automated testing purposes so it'll acknowledge implementation details of the
@@ -83,7 +83,14 @@ namespace Common.Runtime.BeamHints
 			get;
 		}
 
-		
+		/// <summary>
+		/// Contains the <see cref="BeamHint"/>s for the entire <see cref="BeamHintDomains.BEAM_ASSISTANT"/> domain.
+		/// </summary>
+		IEnumerable<BeamHint> AssistantHints 
+		{
+			get;
+		}
+
 
 		#endregion
 	}
@@ -108,8 +115,8 @@ namespace Common.Runtime.BeamHints
 
 		public IEnumerable<BeamHint> ReflectionCacheHints => BeamableStorage.Where(hint => BeamHintDomains.IsReflectionCacheDomain(hint.Header.Domain));
 		public IEnumerable<BeamHint> CSharpMSHints => BeamableStorage.Where(hint => BeamHintDomains.IsCSharpMSDomain(hint.Header.Domain));
-
 		public IEnumerable<BeamHint> ContentHints => BeamableStorage.Where(hint => BeamHintDomains.IsContentDomain(hint.Header.Domain));
+		public IEnumerable<BeamHint> AssistantHints => BeamableStorage.Where(hint => BeamHintDomains.IsAssistantDomain(hint.Header.Domain));
 
 		#endregion
 
@@ -220,6 +227,16 @@ namespace Common.Runtime.BeamHints
 			return removedFromBeamableCount + removedFromUserCount;
 		}
 
+		public BeamHint GetHint(BeamHintHeader header)
+		{
+			if (BeamHintDomains.IsBeamableDomain(header.Domain))
+				return BeamableStorage.GetHint(header);
+
+			if (BeamHintDomains.IsUserDomain(header.Domain))
+				return BeamableStorage.GetHint(header);
+
+			return default;
+		}
 
 		public void BatchAddBeamHints(string domainOwner, IEnumerable<BeamHintHeader> headers, IEnumerable<object> hintContextObj)
 		{
@@ -246,8 +263,6 @@ namespace Common.Runtime.BeamHints
 				}
 			}
 		}
-		
-
 		
 	}
 }

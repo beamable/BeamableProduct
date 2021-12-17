@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Beamable.Common
+namespace Beamable.Common.Reflection
 {
     /// <summary>
     /// Struct that holds data for all BaseType-related reflection data caches.

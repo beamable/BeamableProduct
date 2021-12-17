@@ -1,13 +1,11 @@
-using Beamable.Common.Content;
-using Common.Runtime.BeamHints;
+using Beamable.Common.Assistant;
 using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
-namespace Editor.BeamableAssistant.BeamHints
+namespace Beamable.Editor.Assistant
 {
 	[CreateAssetMenu(fileName = "BeamHintDetailsConfig", menuName = "MENUNAME2", order = 0)]
 	public class BeamHintDetailsConfig : ScriptableObject

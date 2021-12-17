@@ -1,26 +1,21 @@
+using Beamable.Common;
+using Beamable.Editor;
+using Beamable.Editor.UI.Model;
+using Beamable.Server.Editor.CodeGen;
+using Beamable.Server.Editor.DockerCommands;
+using Beamable.Server.Editor.ManagerClient;
+using Beamable.Server.Editor.UI.Components;
+using Beamable.Server.Editor.Uploader;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
-using Beamable.Server;
 using System.Threading.Tasks;
-using Beamable.Common;
-using Beamable.Server.Editor.CodeGen;
-using Beamable.Server.Editor.ManagerClient;
-using Beamable.Server.Editor.DockerCommands;
-using Beamable.Server.Editor.UI.Components;
-using Beamable.Server.Editor.Uploader;
-using Beamable.Platform.SDK;
-using Beamable.Editor;
-using Beamable.Editor.UI.Model;
-using Editor.ReflectionCacheSystems;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
-using Task = UnityEditor.VersionControl.Task;
 
 namespace Beamable.Server.Editor
 {
@@ -147,25 +142,25 @@ namespace Beamable.Server.Editor
          foreach (var service in ListMicroservices())
          {
             GenerateClientSourceCode(service);
-            System.Threading.Tasks.Task.Factory.StartNew(() =>
+            Task.Factory.StartNew(() =>
             {
-               using (var fsw = new FileSystemWatcher(service.SourcePath))
-               {
-                  fsw.IncludeSubdirectories = false;
-                  fsw.NotifyFilter = NotifyFilters.LastWrite;
-                  fsw.Filter = "*.cs";
+	            using (var fsw = new FileSystemWatcher(service.SourcePath))
+	            {
+		            fsw.IncludeSubdirectories = false;
+		            fsw.NotifyFilter = NotifyFilters.LastWrite;
+		            fsw.Filter = "*.cs";
 
-                  fsw.Changed += (sender, args) =>
-                  {
-                     GenerateClientSourceCode(service);
-                  };
-                  fsw.Deleted += (sender, args) =>
-                  {
-                     /* TODO: Delete the generated client? */
-                  };
+		            fsw.Changed += (sender, args) =>
+		            {
+			            GenerateClientSourceCode(service);
+		            };
+		            fsw.Deleted += (sender, args) =>
+		            {
+			            /* TODO: Delete the generated client? */
+		            };
 
-                  fsw.EnableRaisingEvents = true;
-               }
+		            fsw.EnableRaisingEvents = true;
+	            }
             });
          }
       }
@@ -464,7 +459,7 @@ namespace Beamable.Server.Editor
       public static event Action<ManifestModel, int> onBeforeDeploy;
       public static event Action<ManifestModel, int> onAfterDeploy;
 
-      public static async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context, Action<IDescriptor> onServiceDeployed = null)
+      public static async Task Deploy(ManifestModel model, CommandRunnerWindow context, Action<IDescriptor> onServiceDeployed = null)
       {
          if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
 

@@ -1,6 +1,7 @@
-using Beamable.Common;
+using Beamable.Common.Reflection;
 using System;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace Beamable.Server
 {
@@ -14,7 +15,7 @@ namespace Beamable.Server
          "Any new client build of your game won't require the payload string. Unless you've deployed a client build using Beamable before version 0.11.0, you shouldn't set this")]
       public bool UseLegacySerialization { get; set; } = false;
 
-      public MicroserviceAttribute(string microserviceName, [System.Runtime.CompilerServices.CallerFilePath] string sourcePath="")
+      public MicroserviceAttribute(string microserviceName, [CallerFilePath] string sourcePath="")
       {
          MicroserviceName = microserviceName;
          SourcePath = sourcePath;

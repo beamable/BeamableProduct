@@ -1,15 +1,14 @@
-using Beamable.Common;
+using Beamable.Common.Assistant;
+using Beamable.Common.Reflection;
+using Beamable.Editor.Reflection;
 using Beamable.Editor.UI.Model;
-using Beamable.Server;
-using Beamable.Server.Editor;
-using Common.Runtime.BeamHints;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
-namespace Editor.ReflectionCacheSystems
+namespace Beamable.Server.Editor
 {
 	[CreateAssetMenu(fileName = "MicroserviceReflectionCache", menuName = "MENUNAME", order = 0)]
 	public class MicroserviceReflectionCache : ReflectionCacheUserSystemObject
@@ -102,7 +101,7 @@ namespace Editor.ReflectionCacheSystems
 				// Register a hint with all its validation errors as the context object
 				if (microserviceAttrErrors.Count > 0)
 				{
-					var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, "MicroserviceAttributeMisuse");
+					var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, BeamHintIds.ID_MICROSERVICE_ATTRIBUTE_MISUSE);
 					_hintStorage.AddOrReplaceHint(hint, microserviceAttrErrors);
 				}
 			}
@@ -111,11 +110,11 @@ namespace Editor.ReflectionCacheSystems
 			{
 				// Searches for all unique name collisions.
 				var uniqueNameValidationResults = cachedMicroserviceAttributes.GetAndValidateUniqueNamingAttributes<MicroserviceAttribute>();
-				 
+
 				// Registers a hint with all name collisions found.
 				if (uniqueNameValidationResults.PerNameCollisions.Count > 0)
 				{
-					var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, "MicroserviceNameCollision");
+					var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, BeamHintIds.ID_MICROSERVICE_NAME_COLLISION);
 					_hintStorage.AddOrReplaceHint(hint, uniqueNameValidationResults.PerNameCollisions);
 				}
 
@@ -130,13 +129,13 @@ namespace Editor.ReflectionCacheSystems
 				                                                       out var clientCallableErrors);
 				if (clientCallableWarnings.Count > 0)
 				{
-					var hint = new BeamHintHeader(BeamHintType.Hint, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, "ClientCallableAsyncVoid");
+					var hint = new BeamHintHeader(BeamHintType.Hint, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, BeamHintIds.ID_CLIENT_CALLABLE_ASYNC_VOID);
 					_hintStorage.AddOrReplaceHint(hint, clientCallableWarnings);
 				}
 
 				if (clientCallableErrors.Count > 0)
 				{
-					var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, "ClientCallableUnsupportedParameters");
+					var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, BeamHintIds.ID_CLIENT_CALLABLE_UNSUPPORTED_PARAMETERS);
 					_hintStorage.AddOrReplaceHint(hint, clientCallableWarnings);
 				}
 
@@ -160,7 +159,7 @@ namespace Editor.ReflectionCacheSystems
 					var hasWarning = msAttrValidationResult.Type == ReflectionCache.ValidationResultType.Warning;
 					var hasError = msAttrValidationResult.Type == ReflectionCache.ValidationResultType.Error;
 					var descriptor = new MicroserviceDescriptor {
-						Name = serviceAttribute.MicroserviceName, 
+						Name = serviceAttribute.MicroserviceName,
 						Type = type,
 						AttributePath = serviceAttribute.GetSourcePath(),
 						HasValidationError = hasError,
@@ -172,7 +171,6 @@ namespace Editor.ReflectionCacheSystems
 
 					// Generates descriptors for each of the individual client callables.
 					descriptor.Methods = clientCallables.Select(delegate(MemberAttributePair pair) {
-						
 						var clientCallableAttribute = pair.AttrAs<ClientCallableAttribute>();
 						var clientCallableMethod = pair.InfoAs<MethodInfo>();
 
@@ -198,15 +196,11 @@ namespace Editor.ReflectionCacheSystems
 							Scopes = callableScopes,
 							Parameters = parameters,
 						};
-						
 					}).ToList();
-					
+
 					Descriptors.Add(descriptor);
 					AllDescriptors.Add(descriptor);
 				}
-				
-				
-				
 			}
 		}
 	}

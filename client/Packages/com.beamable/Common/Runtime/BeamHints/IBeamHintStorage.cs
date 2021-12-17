@@ -1,9 +1,11 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace Common.Runtime.BeamHints
+
+namespace Beamable.Common.Assistant
 {
 	/// <summary>
 	/// Defines a storage for <see cref="BeamHint"/>s. It is a query-able in-memory database of <see cref="BeamHint"/>s.
@@ -74,6 +76,11 @@ namespace Common.Runtime.BeamHints
 		/// Removes all hints that <see cref="Regex.Match(string)"/> of the given <paramref name="hintDomainRegex"/> and <paramref name="idRegex"/>.
 		/// </summary>
 		int RemoveAllHints(string hintDomainRegex = ".*", string idRegex = ".*");
+
+		/// <summary>
+		/// Given a <paramref name="header"/>, returns a <see cref="BeamHint"/> containing it's associated <see cref="BeamHint.ContextObject"/>.
+		/// </summary>
+		BeamHint GetHint(BeamHintHeader header);
 	}
 
 	/// <summary>
@@ -211,6 +218,14 @@ namespace Common.Runtime.BeamHints
 
 			var removedCount = _headers.RemoveWhere(header => (domainReg.Match(header.Domain).Success && idReg.Match(header.Id).Success));
 			return removedCount;
+		}
+
+		public BeamHint GetHint(BeamHintHeader header)
+		{
+			if (_hintContextObjects.TryGetValue(header, out var obj))
+				return new BeamHint(header, obj);
+
+			throw new ArgumentException($"The given {header} was not found!");
 		}
 	}
 }

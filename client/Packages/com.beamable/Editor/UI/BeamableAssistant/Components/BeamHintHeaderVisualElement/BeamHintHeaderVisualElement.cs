@@ -1,20 +1,17 @@
-using Beamable.Editor.BeamableAssistant.Models;
-using Beamable.Editor.UI.Components;
-using Common.Runtime.BeamHints;
-using Editor.BeamableAssistant.BeamHints;
+using Beamable.Common.Assistant;
+using Beamable.Editor.Reflection;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEditor;
-using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleSheets;
 
-namespace Beamable.Editor.BeamableAssistant.Components
+namespace Beamable.Editor.Assistant
 {
 	public class BeamHintHeaderVisualElement : BeamableAssistantComponent
 	{
@@ -24,10 +21,8 @@ namespace Beamable.Editor.BeamableAssistant.Components
 		{
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription {name = "custom-text", defaultValue = "nada"};
 
-			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-			{
-				get
-				{
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription {
+				get {
 					yield break;
 				}
 			}
@@ -39,8 +34,7 @@ namespace Beamable.Editor.BeamableAssistant.Components
 			}
 		}
 
-		public BeamHintsDataModel Model
-		{
+		public BeamHintsDataModel Model {
 			get;
 			internal set;
 		}
@@ -59,9 +53,10 @@ namespace Beamable.Editor.BeamableAssistant.Components
 		private Image _hintTypeIcon;
 		private VisualElement _headerContainer;
 
-		public BeamHintHeaderVisualElement(BeamHintsDataModel dataModel, 
+		public BeamHintHeaderVisualElement(BeamHintsDataModel dataModel,
 		                                   BeamHintDetailsReflectionCache.Registry library,
-		                                   in BeamHintHeader hint, int headerIdx) : base(nameof(BeamHintHeaderVisualElement))
+		                                   in BeamHintHeader hint,
+		                                   int headerIdx) : base(nameof(BeamHintHeaderVisualElement))
 		{
 			_hintDataModel = dataModel;
 			_hintDetailsReflectionCache = library;
@@ -78,15 +73,14 @@ namespace Beamable.Editor.BeamableAssistant.Components
 		public sealed override void Refresh()
 		{
 			base.Refresh();
-			
-			
+
 			_hintTypeIcon = Root.Q<Image>("hintTypeIcon");
 			_hintDisplayName = Root.Q<Label>("hintDisplayName");
 			_moreDetailsButton = Root.Q<Toggle>("moreDetailsButton");
 
 			// Setup header container
 			_headerContainer = Root.Q<VisualElement>("hintHeaderContainer");
-			if(_indexIntoDisplayingHints % 2 == 1) _headerContainer.AddToClassList("oddRow");
+			if (_indexIntoDisplayingHints % 2 == 1) _headerContainer.AddToClassList("oddRow");
 
 			// Update the hint's label
 			_hintDisplayName.text = _displayingHintHeader.Id;
@@ -98,7 +92,7 @@ namespace Beamable.Editor.BeamableAssistant.Components
 			// If there are no mapped converters, we don't display a more button since there would be no details to show.
 			var detailsUxmlPath = _hintDetailsConfig.UxmlFile;
 			var detailsUssPaths = _hintDetailsConfig.StylesheetsToAdd;
-			
+
 			// If there are no configured UXML Path or a Converter tied to the matching HintDetailsVisualConfig, simply disable the button.
 			if (_indexIntoLoadedConverters == -1 || string.IsNullOrEmpty(detailsUxmlPath))
 				_moreDetailsButton.visible = false;
@@ -106,26 +100,25 @@ namespace Beamable.Editor.BeamableAssistant.Components
 			{
 				// Setup details container and more button to not be visible
 				_detailsContainer = Root.Q<VisualElement>("hintDetailsContainer");
-				if(!_hintDataModel.DetailsOpenedHints.Contains(_displayingHintHeader))
+				if (!_hintDataModel.DetailsOpenedHints.Contains(_displayingHintHeader))
 					_detailsContainer.AddToClassList("--positionHidden");
-				
+
 				// Configure more button to display hint details container when pressed. 
-				_moreDetailsButton.value = _hintDataModel.DetailsOpenedHints.Contains(_displayingHintHeader); 
-				_moreDetailsButton.RegisterValueChangedCallback((changeEvt) =>
-				{
+				_moreDetailsButton.value = _hintDataModel.DetailsOpenedHints.Contains(_displayingHintHeader);
+				_moreDetailsButton.RegisterValueChangedCallback((changeEvt) => {
 					if (_hintDataModel.DetailsOpenedHints.Contains(_displayingHintHeader))
 					{
 						_detailsContainer.AddToClassList("--positionHidden");
 						_hintDataModel.DetailsOpenedHints.Remove(_displayingHintHeader);
 					}
-					else 
+					else
 					{
 						_detailsContainer.RemoveFromClassList("--positionHidden");
 						_hintDataModel.DetailsOpenedHints.Add(_displayingHintHeader);
 						_hintDataModel.DetailsOpenedHints = _hintDataModel.DetailsOpenedHints.Where(h => h.Type != BeamHintType.Invalid).Distinct().ToList();
 					}
 				});
-				
+
 				// Ensure no null or empty paths exist in the configured USS files.
 				detailsUssPaths.RemoveAll(string.IsNullOrEmpty);
 
@@ -144,15 +137,12 @@ namespace Beamable.Editor.BeamableAssistant.Components
 				var converter = _hintDetailsReflectionCache.GetConverterAtIdx(_indexIntoLoadedConverters);
 				var beamHint = _hintDataModel.GetHint(_displayingHintHeader);
 				converter.Invoke(in beamHint, in _hintDetailsConfig, injectionBag);
- 
+
 				// Resolve all supported injections.
-				ResolveInjections(injectionBag.TextInjections, _detailsContainer); 
+				ResolveInjections(injectionBag.TextInjections, _detailsContainer);
 				ResolveInjections(injectionBag.ParameterlessActionInjections, _detailsContainer);
 			}
-
 		}
-
-		
 
 		public void ResolveInjections<T>(IEnumerable<BeamHintVisualsInjectionBag.Injection<T>> injections, VisualElement container)
 		{
@@ -162,21 +152,19 @@ namespace Beamable.Editor.BeamableAssistant.Components
 				var query = injection.Query;
 				var queryExpectedType = query.ExpectedType;
 				var queriedElements = container
-				                     .Query(query.Name, query.Classes)
-				                     .Where(element => element.GetType() == queryExpectedType)
-				                     .Build()
-				                     .ToList();
+				                      .Query(query.Name, query.Classes)
+				                      .Where(element => element.GetType() == queryExpectedType)
+				                      .Build()
+				                      .ToList();
 
-				System.Diagnostics.Debug.Assert(queriedElements.Count != 0,
-				                                $"Query [{query}] found no matches when searching in the {nameof(VisualElement)} [{container.name}]");
+				Debug.Assert(queriedElements.Count != 0,
+				             $"Query [{query}] found no matches when searching in the {nameof(VisualElement)} [{container.name}]");
 
-				System.Diagnostics.Debug.Assert(queriedElements.TrueForAll(element => element.GetType() == queryExpectedType),
-				                                $"Query [{query}] does not match its expected type when searching in the {nameof(VisualElement)} [{container.name}]");
+				Debug.Assert(queriedElements.TrueForAll(element => element.GetType() == queryExpectedType),
+				             $"Query [{query}] does not match its expected type when searching in the {nameof(VisualElement)} [{container.name}]");
 
-				
-				
 				// For each found element, inject based on the type of element and the type of the injection
-				foreach (var queriedElement in queriedElements) 
+				foreach (var queriedElement in queriedElements)
 					Inject(queriedElement, injection);
 			}
 		}
@@ -275,7 +263,7 @@ namespace Beamable.Editor.BeamableAssistant.Components
 			TextInjections = new TextIterator(this);
 			ParameterlessActionInjections = new ParameterlessActionIterator(this);
 		}
-		
+
 		public readonly struct Injection<T>
 		{
 			public readonly VisualElementsQuery Query;
@@ -347,7 +335,5 @@ namespace Beamable.Editor.BeamableAssistant.Components
 		{
 			_parameterlessActionInjections.Add(new Injection<Action>(new VisualElementsQuery(typeof(Label), name, classes), buttonAction));
 		}
-
-		
 	}
 }

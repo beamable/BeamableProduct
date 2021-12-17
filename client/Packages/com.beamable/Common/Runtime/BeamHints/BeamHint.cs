@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Common.Runtime.BeamHints
+namespace Beamable.Common.Assistant
 {
 	[Flags]
 	public enum BeamHintType
@@ -181,41 +181,5 @@ namespace Common.Runtime.BeamHints
 	{
 		void SetPreferencesManager(IBeamHintPreferencesManager preferencesManager);
 		void SetStorage(IBeamHintGlobalStorage hintGlobalStorage);
-	}
-
-	public class BaseBeamableAssistantController
-	{
-		public IBeamHintGlobalStorage GlobalHintStorage {
-			get;
-			set;
-		}
-
-		public List<BeamHintBaseVisualElement> AliveElements;
-
-		// Updates UI on a Repeating timer of X seconds --- Polling can be our best friend here if we do it right...
-
-		//  
-	}
-
-	public class BeamHintBaseVisualElement
-	{
-		public virtual void SetBeamHint(BeamHint hint)
-		{
-			// Tries to fill stuff out automagically
-			// Handles every primitive type here and tries to inject into correct parameter
-		}
-	}
-
-	public interface IBeamHintContextObject { } // Type constrain only
-
-	public abstract class BeamHintBaseVisualElement<T> : BeamHintBaseVisualElement where T : IBeamHintContextObject
-	{
-		public sealed override void SetBeamHint(BeamHint hint)
-		{
-			base.SetBeamHint(hint);
-			OnBeamHintChange(hint.Header, (T)hint.ContextObject);
-		}
-
-		public abstract void OnBeamHintChange(BeamHintHeader header, T type);
 	}
 }

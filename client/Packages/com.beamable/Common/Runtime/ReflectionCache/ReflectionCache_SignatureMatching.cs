@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace Beamable.Common
+namespace Beamable.Common.Reflection
 {
 	/// <summary>
 	/// Defines a method signature of interest so that we can validate that game-makers

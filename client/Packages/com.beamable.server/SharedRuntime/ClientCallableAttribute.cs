@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Common.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -34,8 +35,8 @@ namespace Beamable.Server
    /// ![img beamable-logo]
    /// 
    /// </summary>
-   [System.AttributeUsage(System.AttributeTargets.Method)]
-   public class ClientCallableAttribute : System.Attribute, INamingAttribute<ClientCallableAttribute>
+   [AttributeUsage(AttributeTargets.Method)]
+   public class ClientCallableAttribute : Attribute, INamingAttribute<ClientCallableAttribute>
    { 
 	   
 	   private static readonly SignatureOfInterest ASYNC_VOID_RETURN_TYPE_SIGNATURE = new SignatureOfInterest(false, typeof(void), null);
@@ -125,7 +126,7 @@ namespace Beamable.Server
    /// ![img beamable-logo]
    /// 
    /// </summary>
-   [System.AttributeUsage(System.AttributeTargets.Method)]
+   [AttributeUsage(AttributeTargets.Method)]
    public class AdminOnlyCallableAttribute : ClientCallableAttribute
    {
       public AdminOnlyCallableAttribute(string pathnameOverride = "") : base(pathnameOverride,
@@ -135,7 +136,7 @@ namespace Beamable.Server
       }
    }
 
-   [System.AttributeUsage(System.AttributeTargets.Method)]
+   [AttributeUsage(AttributeTargets.Method)]
    public class CustomResponseSerializationAttribute : Attribute
    {
       public virtual string SerializeResponse(object raw)
