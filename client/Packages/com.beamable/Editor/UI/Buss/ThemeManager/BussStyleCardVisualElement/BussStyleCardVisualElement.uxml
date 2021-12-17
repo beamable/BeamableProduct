@@ -9,17 +9,17 @@
         <engine:VisualElement name="cardHeader">
             <engine:VisualElement name="colorBlock"/>
             <engine:VisualElement name="styleIdParent"/>
-            <engine:VisualElement name="editButton" class="button edit"/>
-            <engine:VisualElement name="wizardButton" class="button wizard"/>
-            <engine:VisualElement name="undoButton" class="button undo"/>
-            <engine:VisualElement name="cleanAllButton" class="button cleanAll"/>
+            <engine:VisualElement name="editButton" class="button smallButton edit"/>
+            <engine:VisualElement name="wizardButton" class="button smallButton wizard"/>
+            <engine:VisualElement name="undoButton" class="button smallButton undo"/>
+            <engine:VisualElement name="cleanAllButton" class="button smallButton cleanAll"/>
         </engine:VisualElement>
 
         <engine:VisualElement name="variables">
             <engine:VisualElement name="sectionHeader">
                 <engine:Label name="sectionLabel" text="Applied variables"/>
                 <engine:VisualElement name="divider"/>
-                <engine:VisualElement name="addVariableButton"/>
+                <engine:VisualElement name="addVariableButton" class="button smallButton add"/>
             </engine:VisualElement>
         </engine:VisualElement>
         
@@ -30,7 +30,7 @@
                 <engine:VisualElement name="showAllButton" class="button mediumButton headerButton">
                     <engine:TextElement text="Show All"/>
                 </engine:VisualElement>
-                <engine:VisualElement name="addRuleButton"/>
+                <engine:VisualElement name="addRuleButton" class="button smallButton add"/>
             </engine:VisualElement>
         </engine:VisualElement>
     </engine:VisualElement>
