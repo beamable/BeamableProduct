@@ -250,7 +250,7 @@ namespace Beamable.Server.Editor
 
                var allStorages = new HashSet<string>();
 
-               foreach (var serverSideStorage in manifest.storages.Select(s => s.storageName))
+               foreach (var serverSideStorage in manifest.storages.Select(s => s.id))
                {
                    allStorages.Add(serverSideStorage);
                }
@@ -553,7 +553,7 @@ namespace Beamable.Server.Editor
                 serviceDependencies.Add(new ServiceDependency
                 {
                     id = storage.Name,
-                    type = "storage"
+                    storageType = "storage"
                 });
             }
             entryModel.Dependencies = serviceDependencies;
@@ -591,7 +591,7 @@ namespace Beamable.Server.Editor
          {
              return new ServiceStorageReference
              {
-                 storageName = kvp.Value.Name,
+                 id = kvp.Value.Name,
                  storageType = kvp.Value.Type,
                  templateId = kvp.Value.TemplateId,
                  enabled = kvp.Value.Enabled,

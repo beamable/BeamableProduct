@@ -50,7 +50,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             }
         }
-        
+
         public ActionBarVisualElement() : base(nameof(ActionBarVisualElement))
         {
         }
@@ -66,14 +66,14 @@ namespace Beamable.Editor.Microservice.UI.Components
         private Button _infoButton;
         private Button _publish;
         private Button _buildAll;
-        
+
         public event Action OnInfoButtonClicked;
 
         public override void Refresh()
         {
             base.Refresh();
             bool storagePreviewEnabled = MicroserviceConfiguration.Instance.EnableStoragePreview;
-            
+
             _refreshButton = Root.Q<Button>("refreshButton");
             _refreshButton.clickable.clicked += () => { OnRefreshButtonClicked?.Invoke(); };
             _refreshButton.tooltip = "Refresh Window";
@@ -91,21 +91,21 @@ namespace Beamable.Editor.Microservice.UI.Components
                 _createNew.clickable.clicked += () => OnCreateNewClicked?.Invoke(ServiceType.MicroService);
             }
             _createNew.SetEnabled(!DockerCommand.DockerNotInstalled);
-            
+
             _startAll = Root.Q<Button>("startAll");
             _startAll.clickable.clicked += () => { OnStartAllClicked?.Invoke(); };
             _startAll.SetEnabled(!DockerCommand.DockerNotInstalled);
-            
+
             _buildAll = Root.Q<Button>("buildAll");
             _buildAll.tooltip =
                 "Build services, if service is already running, it will rebuild it and run again";
             _buildAll.clickable.clicked += () => { OnBuildAllClicked?.Invoke(); };
             _buildAll.SetEnabled(!DockerCommand.DockerNotInstalled);
-            
+
             _publish = Root.Q<Button>("publish");
             _publish.clickable.clicked += () => { OnPublishClicked?.Invoke(); };
-            _publish.SetEnabled(!(DockerCommand.DockerNotInstalled || storagePreviewEnabled));
-            
+            // _publish.SetEnabled(!(DockerCommand.DockerNotInstalled || storagePreviewEnabled));
+
             _infoButton = Root.Q<Button>("infoButton");
             _infoButton.clickable.clicked += () => { OnInfoButtonClicked?.Invoke(); };
             _infoButton.tooltip = "Open Documentation";
@@ -130,14 +130,14 @@ namespace Beamable.Editor.Microservice.UI.Components
         {
             _startAll.SetEnabled(false);
             _buildAll.SetEnabled(false);
-            _publish.SetEnabled(false);
+            // _publish.SetEnabled(false);
         }
 
         public void SetPublishButtonState(bool isEnabled)
         {
-            _publish.SetEnabled(isEnabled);
+            // _publish.SetEnabled(isEnabled);
         }
     }
 
-    
+
 }

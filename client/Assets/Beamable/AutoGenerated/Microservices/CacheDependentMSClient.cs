@@ -20,13 +20,34 @@ namespace Beamable.Server.Clients
     {
         
         /// <summary>
-        /// Call the GetCachedView method on the CacheDependentMS microservice
-        /// <see cref="Beamable.Server.CacheDependentMS.GetCachedView"/>
+        /// Call the Add method on the CacheDependentMS microservice
+        /// <see cref="Beamable.Server.CacheDependentMS.Add"/>
         /// </summary>
-        public Beamable.Common.Promise<Beamable.Common.Api.Leaderboards.LeaderBoardView> GetCachedView()
+        public Beamable.Common.Promise<System.Threading.Tasks.Task> Add(int a)
+        {
+            string serialized_a = this.SerializeArgument<int>(a);
+            string[] serializedFields = new string[] {
+                    serialized_a};
+            return this.Request<System.Threading.Tasks.Task>("CacheDependentMS", "Add", serializedFields);
+        }
+        
+        /// <summary>
+        /// Call the ReadAll method on the CacheDependentMS microservice
+        /// <see cref="Beamable.Server.CacheDependentMS.ReadAll"/>
+        /// </summary>
+        public Beamable.Common.Promise<System.Collections.Generic.List<int>> ReadAll()
         {
             string[] serializedFields = new string[0];
-            return this.Request<Beamable.Common.Api.Leaderboards.LeaderBoardView>("CacheDependentMS", "GetCachedView", serializedFields);
+            return this.Request<System.Collections.Generic.List<int>>("CacheDependentMS", "ReadAll", serializedFields);
+        }
+    }
+    
+    internal sealed class MicroserviceParametersCacheDependentMSClient
+    {
+        
+        [System.SerializableAttribute()]
+        internal sealed class ParameterSystem_Int32 : Beamable.Server.MicroserviceClientDataWrapper<int>
+        {
         }
     }
 }

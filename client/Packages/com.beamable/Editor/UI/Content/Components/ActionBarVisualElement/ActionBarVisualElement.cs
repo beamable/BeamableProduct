@@ -127,8 +127,8 @@ namespace Beamable.Editor.Content.Components
          if (_publishDropdownButton?.parent == null) return;
 
 
-         _publishDropdownButton.parent.EnableInClassList("hidden",
-            !ContentConfiguration.Instance.EnableMultipleContentNamespaces);
+         // _publishDropdownButton.parent.EnableInClassList("hidden",
+         //    !ContentConfiguration.Instance.EnableMultipleContentNamespaces);
       }
 
       private void SearchBar_OnSearchChanged(string obj)
