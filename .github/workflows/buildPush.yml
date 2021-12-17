@@ -7,9 +7,9 @@ on:
       - 'main'
       - 'staging'
       - 'production'
-    #paths:
-      #- 'client/**'
-      #- 'microservice/**'
+    paths:
+      - 'client/**'
+      - 'microservice/**'
 
 jobs:
   testMicroserviceBaseImage:
@@ -199,7 +199,7 @@ jobs:
           restore-keys: |
             Library-${{ matrix.projectPath }}-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}
       - uses: game-ci/unity-builder@v2
-        if: ${{ github.ref == 'refs/heads/iOS' }}
+        if: ${{ github.ref == 'refs/heads/main' }}
         timeout-minutes: 30
         env:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
@@ -297,7 +297,7 @@ jobs:
       - name: Download cer
         run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp s3://beamable-certificates/ios_distribution.cer /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/ios_distribution.cer
       - uses: yukiarrr/ios-build-action@v1.4.0
-        if: ${{ github.ref == 'refs/heads/iOS' }}
+        if: ${{ github.ref == 'refs/heads/main' }}
         with:
           update-targets: Unity-iPhone
           project-path: ${{ secrets.XCODEPROJ_PATH }}
