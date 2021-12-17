@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Beamable.Editor.Assistant
 {
-	[CreateAssetMenu(fileName = "BeamHintDetailsConfig", menuName = "MENUNAME2", order = 0)]
+	[CreateAssetMenu(fileName = "BeamHintDetailsConfig", menuName = "Beamable/Assistant/Hints/Hint Details Configuration", order = 0)]
 	public class BeamHintDetailsConfig : ScriptableObject
 	{
 		[Serializable]

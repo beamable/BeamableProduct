@@ -266,7 +266,8 @@ namespace Beamable.Editor.UI.Model
 		               case MicroserviceModel microserviceModel:
 			               if(!string.IsNullOrEmpty(microserviceModel.AssemblyQualifiedMicroserviceTypeName))
 							microserviceModel.Descriptor.Type = Type.GetType(microserviceModel.AssemblyQualifiedMicroserviceTypeName);
-			               ((MicroserviceBuilder)microserviceModel.Builder).Descriptor = microserviceModel.Descriptor;
+			               if(microserviceModel.Builder != null)
+				               ((MicroserviceBuilder)microserviceModel.Builder).Descriptor = microserviceModel.Descriptor;
 			               break;
 		               case MongoStorageModel mongoModel:
 			               _localStorageModels.Add(mongoModel);

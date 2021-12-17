@@ -8,13 +8,13 @@ using UnityEngine;
 
 namespace Beamable.Editor.Reflection
 {
-	[CreateAssetMenu(fileName = "BeamHintDomainAndIdsCache", menuName = "MENUNAME4", order = 0)]
-	public class BeamHintDomainsAndIdsReflectionCache : ReflectionCacheUserSystemObject
+	[CreateAssetMenu(fileName = "BeamHintDomainAndIdsCache", menuName = "Beamable/Reflection/Assistant/Hint and Domains Reflection Cache", order = 0)]
+	public class BeamHintDomainsAndIdsCache : ReflectionCacheUserSystemObject
 	{
 		[NonSerialized]
 		public Registry Cache;
 
-		public BeamHintDomainsAndIdsReflectionCache()
+		public BeamHintDomainsAndIdsCache()
 		{
 			Cache = new Registry();
 		}

@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace Beamable.Editor.Reflection
 {
-	[CreateAssetMenu(fileName = "BeamHintDetailsReflectionCache", menuName = "MENUNAME3", order = 0)]
+	[CreateAssetMenu(fileName = "BeamHintDetailsReflectionCache", menuName = "Beamable/Reflection/Assistant/Hint Details Cache", order = 0)]
 	public class BeamHintDetailsReflectionCache : ReflectionCacheUserSystemObject
 	{
 		[NonSerialized] private Registry _cache;
