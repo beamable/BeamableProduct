@@ -195,11 +195,12 @@ namespace Beamable.Content
 		    
 		    try
 		    {
+			    Directory.CreateDirectory(Path.GetDirectoryName(path));
 			    File.WriteAllText(path, json);
 		    }
 		    catch (Exception e)
 		    {
-			    Debug.LogError($"Failed to write baked data to disk: {e.Message}");
+			    Debug.LogError($"[EXTRACT] Failed to write baked data to disk: {e.Message}");
 			    return false;
 		    }
 		    
