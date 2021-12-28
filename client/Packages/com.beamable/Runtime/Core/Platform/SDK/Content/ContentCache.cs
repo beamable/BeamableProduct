@@ -41,8 +41,7 @@ namespace Beamable.Content
         private readonly IHttpRequester _requester;
         private readonly IBeamableFilesystemAccessor _filesystemAccessor;
         
-        private static Dictionary<string, string> bakedData;
-        private static bool diskFileUpdated = false;
+        private static ContentDataInfoWrapper _contentFileData;
 
         public ContentCache(IHttpRequester requester, IBeamableFilesystemAccessor filesystemAccessor)
         {
@@ -118,33 +117,23 @@ namespace Beamable.Content
             IBeamableFilesystemAccessor fsa)
         {
 	        var filePath = ContentPath(fsa);
-	        if (File.Exists(filePath) && (diskFileUpdated || bakedData == null))
+	        if (File.Exists(filePath) && _contentFileData == null)
 	        {
 		        var fileContent = File.ReadAllText(filePath);
-		        var data = JsonUtility.FromJson<ContentDataInfoWrapper>(fileContent);
-	        
-		        if (data == null)
-		        {
-			        content = null;
-			        return false;
-		        }
-
-		        bakedData = new Dictionary<string, string>(data.content.Count);
-		        foreach (var obj in data.content)
-		        {
-			        bakedData.Add(obj.contentId, obj.data);
-		        }
-
-		        diskFileUpdated = false;
+		        _contentFileData = JsonUtility.FromJson<ContentDataInfoWrapper>(fileContent);
 	        }
 
-	        if (bakedData != null && bakedData.TryGetValue(info.contentId, out string json))
+	        if (_contentFileData != null)
 	        {
-		        var deserialized = DeserializeContent(info, json);
-		        if (deserialized.Version == info.version)
+		        var contentInfo = _contentFileData.content.Find(item => item.contentId == info.contentId);
+		        if (contentInfo != null)
 		        {
-		            content = deserialized;
-		            return true;
+			        var deserialized = DeserializeContent(info, contentInfo.data);
+			        if (deserialized.Version == info.version)
+			        {
+				        content = deserialized;
+				        return true;
+			        }    
 		        }
 	        }
 
@@ -241,8 +230,6 @@ namespace Beamable.Content
 	                
 	                File.WriteAllText(filePath, JsonUtility.ToJson(data));
                 }
-
-                diskFileUpdated = true;
             }
             catch (Exception e)
             {
