@@ -67,6 +67,30 @@ namespace Beamable.Editor.Tests.PromiseTests
          Assert.IsTrue(eventRan);
       }
 
+      [Test]
+      public void UncaughtPromise_FromFailedRaisesOnThen()
+      {
+	      var knownEx = new Exception();
+	      var p = Promise<int>.Failed(knownEx);
+
+	      var eventRan = false;
+	      PromiseBase.SetPotentialUncaughtErrorHandler((promise, err) => {
+		      Assert.AreEqual(err, knownEx);
+
+		      // err.Throw();
+
+		      eventRan = true;
+	      });
+
+	      p.Then(n =>
+	      {
+		      Assert.Fail("This should never run");
+	      });
+
+	      Assert.IsTrue(eventRan);
+      }
+
+
       [Test, TestCase(1), TestCase(2), TestCase(4)]
       public void UncaughtPromise_MultipleHandlers_RaisesEvent(int handlerCount)
       {

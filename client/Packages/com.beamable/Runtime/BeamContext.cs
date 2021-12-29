@@ -199,7 +199,7 @@ namespace Beamable
 		}
 
 		/// <summary>
-		/// A <see cref="BeamContext"/> is configured for one authorized user. If wish to change the user, you need to give it a new token.
+		/// A <see cref="BeamContext"/> is configured for one authorized user. If you wish to change the user, you need to give it a new token.
 		/// You can get <see cref="TokenResponse"/> values from the <see cref="IAuthService"/> by calling various log in methods.
 		///
 		/// This method will <i>mutate</i> the current <see cref="BeamContext"/> instance itself, and returned the mutated object.
@@ -359,22 +359,48 @@ namespace Beamable
 			_requester.DeleteToken();
 		}
 
-		private async Promise StartNewSession()
+		private async Promise InitStep_StartNewSession()
 		{
-			var adId = await AdvertisingIdentifier.GetIdentifier();
-			await _sessionService.StartSession(AuthorizedUser.Value, adId, _requester.Language);
+			try
+			{
+				var adId = await AdvertisingIdentifier.GetIdentifier();
+				var promise = _sessionService.StartSession(AuthorizedUser.Value, adId, _requester.Language);
+				await promise.RecoverFromNoConnectivity(_ => new EmptyResponse());
+			}
+			catch (NoConnectivityException)
+			{
+				/*
+				 * TODO: We could record that a session started at a certain time, and report that later. But the API doesn't support custom startTimes
+				 * For now, we'll ignore any offline sessions.
+				 */
+			}
 		}
 
-		private async Promise InitializeUser()
-		{
-			// Create a new account
-			_requester.Token = _tokenStorage.LoadTokenForRealmImmediate(Cid, Pid);
-			_requester.Language = "en"; // TODO: Put somewhere
 
+		private async Promise InitStep_SaveToken()
+		{
 			if (AccessToken == null)
 			{
-				var rsp = await _authService.CreateUser();
-				await SaveToken(rsp);
+				try
+				{
+					var rsp = await _authService.CreateUser();
+					await SaveToken(rsp);
+				}
+				catch (NoConnectivityException)
+				{
+					/*
+					 * in this case, we can't create a user with no internet, so lets make a random one.
+					 * When the user comes back online, we need to _FIRST_ create them a valid token,
+					 * and _THEN_ perform the replay operations from any resourceful SDK layers
+					 */
+					await SaveToken(new TokenResponse
+					{
+						token_type = "offline_fake",
+						access_token = "fake",
+						refresh_token = "fake",
+						expires_in = 1
+					});
+				}
 			} else if (AccessToken.IsExpired)
 			{
 				try
@@ -384,35 +410,94 @@ namespace Beamable
 				}
 				catch (NoConnectivityException)
 				{
-					// this exception is valid.
+					/*
+					 * in this event, the token is expired, but it doesn't matter because we are offline anyway.
+					 * When the user comes back online, we need to use this token to refresh ourselves,
+					 * so we don't want to erase it.
+					 */
 				}
 			}
+		}
 
-			// Fetch User
-			AuthorizedUser.Value = await _authService.GetUser();
+		private async Promise InitStep_GetUser()
+		{
+			var user = new User
+			{
+				id = -100, scopes = new List<string>(), thirdPartyAppAssociations = new List<string>()
+			};
+			try
+			{
+				user = await _authService.GetUser();
+			}
+			catch (NoConnectivityException)
+			{
+				/*
+				 * If we are offline, then use a fake user.
+				 */
+			}
+			AuthorizedUser.Value = user;
+		}
 
-			// Subscribe pubnub stuff
-			_pubnubSubscriptionManager.UnsubscribeAll();
-			_pubnubSubscriptionManager.SubscribeToProvider();
+		private void InitStep_StartPubnub()
+		{
+			try
+			{
+				_pubnubSubscriptionManager.UnsubscribeAll();
+				_pubnubSubscriptionManager.SubscribeToProvider();
+			}
+			catch (NoConnectivityException)
+			{
+				/*
+				 * We will need to re-connect to pubnub when we come back online.
+				 */
+			}
+		}
+
+		private async Promise InitStep_StartPurchaser()
+		{
+			try
+			{
+				if (ServiceProvider.CanBuildService<IBeamablePurchaser>())
+				{
+					var purchaser = ServiceProvider.GetService<IBeamablePurchaser>();
+					var promise = purchaser.Initialize(ServiceProvider);
+					await promise.Recover(err => PromiseBase.Unit);
+					ServiceProvider.GetService<Promise<IBeamablePurchaser>>().CompleteSuccess(purchaser);
+				}
+			}
+			catch (Exception)
+			{
+
+			}
+			// catch (NoConnectivityException)
+			// {
+			// 	// don't do anything.
+			// }
+		}
+
+		private async Promise InitializeUser()
+		{
+			// Create a new account
+			_requester.Token = _tokenStorage.LoadTokenForRealmImmediate(Cid, Pid);
+			_requester.Language = "en"; // TODO: Put somewhere, like in configuration
+
+			await InitStep_SaveToken();
+			await InitStep_GetUser();
+			InitStep_StartPubnub();
+
 			OnReloadUser?.Invoke();
 
 			// Start Session
-			await StartNewSession();
+			await InitStep_StartNewSession();
 
 			// Register for notifications
 			_notification.RegisterForNotifications();
 			_heartbeatService.Start();
 
-			// Check if we should initialize the
-			if (ServiceProvider.CanBuildService<IBeamablePurchaser>())
-			{
-				var purchaser = ServiceProvider.GetService<IBeamablePurchaser>();
-				await purchaser.Initialize(ServiceProvider);
-				ServiceProvider.GetService<Promise<IBeamablePurchaser>>().CompleteSuccess(purchaser);
-			}
+			// Check if we should initialize the purchaser
+			await InitStep_StartPurchaser();
 
 			OnReloadUser?.Invoke();
-
 		}
 
 

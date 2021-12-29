@@ -165,6 +165,7 @@ namespace Beamable.Api.Notification
             DoSubscribeToPubnub();
          }).Error(err =>
          {
+	         if (err is NoConnectivityException) return; // we don't care about a no-connectivity exception.
             Debug.LogError("ERROR - Subscriber Details Failure: " + err.ToString());
          });
       }

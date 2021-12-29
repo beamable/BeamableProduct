@@ -7,6 +7,7 @@ using Beamable.Common;
 using Beamable.Coroutines;
 using Beamable.Platform.SDK;
 using Beamable.Service;
+using System.Runtime.ExceptionServices;
 using UnityEngine;
 
 namespace Beamable
@@ -38,7 +39,7 @@ namespace Beamable
             // execute check.
             if (!promise.HadAnyErrbacks)
             {
-               Beamable.Common.BeamableLogger.LogException(new UncaughtPromiseException(promise, ex));
+	            Beamable.Common.BeamableLogger.LogException(new UncaughtPromiseException(promise, ex));
             }
          }
          var t = DelayedCheck(); // we don't want to await this call.
