@@ -38,7 +38,10 @@ namespace Beamable.Purchasing
         public Promise<Unit> Initialize(IDependencyProvider provider=null)
         {
 	        _serviceProvider = provider ?? ServiceManager.LegacyDependencyProvider;
-	        GetPaymentService().GetSKUs().Then(rsp =>
+	        var paymentService = GetPaymentService();
+
+	        var skuPromise = paymentService.GetSKUs(); // XXX: This is failing, but nothing is listening for it.
+	        return skuPromise.FlatMap(rsp =>
 	        {
 		        var noSkusAvailable = rsp.skus.definitions.Count == 0;
 		        if (noSkusAvailable)
@@ -46,7 +49,7 @@ namespace Beamable.Purchasing
 			        // If there are no SKUs available, we will short-circuit the rest of the init-flow.
 			        // Most importantly, we don't call `UnityPurchasing.Initialize`, so that we don't receive the Purchase Finished callbacks.
 			        _initPromise.CompleteSuccess(PromiseBase.Unit);
-			        return;
+			        return _initPromise;
 		        }
 
 #if USE_STEAMWORKS && !UNITY_EDITOR
@@ -74,9 +77,9 @@ namespace Beamable.Purchasing
 		        // passing the configuration and this class's instance. Expect a
 		        // response either in OnInitialized or OnInitializeFailed.
 		        UnityPurchasing.Initialize(this, builder);
+		        return _initPromise;
 	        });
 
-            return _initPromise;
         }
 
         /// <summary>
