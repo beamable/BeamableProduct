@@ -1,15 +1,20 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
+using Beamable.Coroutines;
+using Beamable.Service;
 using Beamable.Spew;
 using Core.Platform.SDK;
 using UnityEngine;
 using UnityEngine.Networking;
+using Debug = UnityEngine.Debug;
 
 namespace Beamable.Content
 {
@@ -40,13 +45,17 @@ namespace Beamable.Content
         
         private readonly IHttpRequester _requester;
         private readonly IBeamableFilesystemAccessor _filesystemAccessor;
+        private readonly CoroutineService _coroutineService;
+        private readonly ContentService _contentService;
         
-        private static ContentDataInfoWrapper _contentFileData;
+        private const float WriteToFileDelay = 5;
 
-        public ContentCache(IHttpRequester requester, IBeamableFilesystemAccessor filesystemAccessor)
+        public ContentCache(IHttpRequester requester, IBeamableFilesystemAccessor filesystemAccessor, ContentService contentService)
         {
             _requester = requester;
             _filesystemAccessor = filesystemAccessor;
+            _coroutineService = ServiceManager.Resolve<CoroutineService>();
+            _contentService = contentService;
         }
 
         public override Promise<IContentObject> GetContentObject(ClientContentInfo requestedInfo)
@@ -100,7 +109,7 @@ namespace Beamable.Content
                 .Map(raw =>
                 {
                     // Write the content to disk
-                    UpdateDiskFile(requestedInfo, raw, _filesystemAccessor);
+                    UpdateDiskFile(requestedInfo, raw);
                     return DeserializeContent(requestedInfo, raw);
                 })
                 .Error(err =>
@@ -113,19 +122,19 @@ namespace Beamable.Content
             return fetchedContent;
         }
 
-        private static bool TryGetValueFromDisk(ClientContentInfo info, out TContent content,
+        private bool TryGetValueFromDisk(ClientContentInfo info, out TContent content,
             IBeamableFilesystemAccessor fsa)
         {
 	        var filePath = ContentPath(fsa);
-	        if (File.Exists(filePath) && _contentFileData == null)
+	        if (File.Exists(filePath) && _contentService.ContentDataInfo == null)
 	        {
 		        var fileContent = File.ReadAllText(filePath);
-		        _contentFileData = JsonUtility.FromJson<ContentDataInfoWrapper>(fileContent);
+		        _contentService.ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(fileContent);
 	        }
 
-	        if (_contentFileData != null)
+	        if (_contentService.ContentDataInfo != null)
 	        {
-		        var contentInfo = _contentFileData.content.Find(item => item.contentId == info.contentId);
+		        var contentInfo = _contentService.ContentDataInfo.content.Find(item => item.contentId == info.contentId);
 		        if (contentInfo != null)
 		        {
 			        var deserialized = DeserializeContent(info, contentInfo.data);
@@ -162,6 +171,11 @@ namespace Beamable.Content
 	    {
 		    var bakedFile = Resources.Load<TextAsset>(ContentConstants.BakedFileResourcePath);
 
+		    if (bakedFile == null)
+		    {
+			    return false;
+		    }
+
 		    string json = bakedFile.text;
 		    ContentDataInfoWrapper data;
 		    try
@@ -196,19 +210,23 @@ namespace Beamable.Content
 		    return true;
 	    }
 
-        private static void UpdateDiskFile(ClientContentInfo info, string raw, IBeamableFilesystemAccessor fsa)
+	    private Coroutine _updateDiskFileCoroutine;
+	    private IEnumerator WriteToDisk()
+	    {
+		    yield return new WaitForSeconds(WriteToFileDelay);
+		    var filePath = ContentPath(_filesystemAccessor);
+		    // Ensure the directory is created
+		    Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+		    File.WriteAllText(filePath, JsonUtility.ToJson(_contentService.ContentDataInfo));
+	    }
+	    
+        private void UpdateDiskFile(ClientContentInfo info, string raw)
         {
             try
             {
-                var filePath = ContentPath(fsa);
-                // Ensure the directory is created
-                Directory.CreateDirectory(Path.GetDirectoryName(filePath));
-
-                if (File.Exists(filePath))
+                if (_contentService.ContentDataInfo != null)
                 {
-	                var fileContent = File.ReadAllText(filePath);
-	                var data = JsonUtility.FromJson<ContentDataInfoWrapper>(fileContent);
-	                var existingContent = data.content.Find(obj => obj.contentId == info.contentId);
+	                var existingContent = _contentService.ContentDataInfo.content.Find(obj => obj.contentId == info.contentId);
 	                if (existingContent != null)
 	                {
 		                existingContent.data = raw;
@@ -216,35 +234,28 @@ namespace Beamable.Content
 	                else
 	                {
 		                var newObject = new ContentDataInfo { contentId = info.contentId, data = raw };
-		                data.content.Add(newObject);
+		                _contentService.ContentDataInfo.content.Add(newObject);
 	                }
-	                
-	                File.WriteAllText(filePath, JsonUtility.ToJson(data));
                 }
                 else
                 {
-	                var data = new ContentDataInfoWrapper
+	                _contentService.ContentDataInfo = new ContentDataInfoWrapper
 	                {
 		                content = { new ContentDataInfo { contentId = info.contentId, data = raw } }
 	                };
-	                
-	                File.WriteAllText(filePath, JsonUtility.ToJson(data));
                 }
+
+                if (_updateDiskFileCoroutine != null)
+                {
+	                _coroutineService.StopCoroutine(_updateDiskFileCoroutine);
+                }
+
+                _updateDiskFileCoroutine = _coroutineService.StartNew("ContentFileUpdate", WriteToDisk());
             }
             catch (Exception e)
             {
                 PlatformLogger.Log($"ContentCache: Error saving content to disk: {e}");
             }
-        }
-
-        private static string ContentPath(ClientContentInfo info, IBeamableFilesystemAccessor fsa)
-        {
-	        return ContentPath(info.contentId, fsa);
-        }
-
-        private static string ContentPath(string contentId, IBeamableFilesystemAccessor fsa)
-        {
-	        return fsa.GetPersistentDataPathWithoutTrailingSlash() + $"/content/{contentId}.json";
         }
         
         private static string ContentPath(IBeamableFilesystemAccessor fsa)

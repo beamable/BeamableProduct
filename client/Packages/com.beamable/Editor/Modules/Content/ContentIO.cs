@@ -983,13 +983,11 @@ namespace Beamable.Editor.Content
 
             var serverManifest = await api.ContentIO.FetchManifest();
 
-            string assetsPath = Path.Combine(Application.streamingAssetsPath, "bakedContent.zip");
-
             bool compress = ContentConfiguration.Instance.EnableBakedContentCompression;
 
             if (Bake(contentList, serverManifest, compress, out int objectsBaked))
             {
-                BakeLog($"Baked {objectsBaked} content objects to '{assetsPath}'");
+                BakeLog($"Baked {objectsBaked} content objects to '{ContentConstants.BakedContentFilePath + ".bytes"}'");
             }
             else
             {
