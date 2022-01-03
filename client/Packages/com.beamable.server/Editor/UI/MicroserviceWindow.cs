@@ -28,14 +28,12 @@ namespace Beamable.Editor.Microservice.UI
 {
     public class MicroserviceWindow : CommandRunnerWindow, ISerializationCallbackReceiver
     {
-#if !BEAMABLE_LEGACY_MSW
         [MenuItem(
             BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
             BeamableConstants.OPEN + " " +
             BeamableConstants.MICROSERVICES_MANAGER,
             priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_2
         )]
-#endif
         public static async void Init()
         {
             var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
@@ -193,10 +191,12 @@ namespace Beamable.Editor.Microservice.UI
             _actionBarVisualElement.OnBuildAllClicked += () =>
                 _microserviceContentVisualElement.BuildAllMicroservices(_loadingBar);
 
-            Microservices.onBeforeDeploy -= HandleBeforeDeploy;
-            Microservices.onBeforeDeploy += HandleBeforeDeploy;
-            Microservices.onAfterDeploy -= HandleAfterDeploy;
-            Microservices.onAfterDeploy += HandleAfterDeploy;
+            Microservices.OnBeforeDeploy -= HandleBeforeDeploy;
+            Microservices.OnBeforeDeploy += HandleBeforeDeploy;
+            Microservices.OnDeploySuccess -= HandleDeploySuccess;
+            Microservices.OnDeploySuccess += HandleDeploySuccess;
+            Microservices.OnDeployFailed -= HandleDeployFailed;
+            Microservices.OnDeployFailed += HandleDeployFailed;
         }
 
         private void HandleDisplayFilterSelected(ServicesDisplayFilter filter)
@@ -229,7 +229,9 @@ namespace Beamable.Editor.Microservice.UI
         }
 
         private void Refresh() {
+	        _windowRoot?.SetEnabled(false);
             new CheckDockerCommand().Start(null).Then(_ => {
+	            _windowRoot?.SetEnabled(true);
                 _microserviceBreadcrumbsVisualElement?.Refresh();
                 _actionBarVisualElement?.Refresh();
                 _microserviceContentVisualElement?.Refresh();
@@ -245,10 +247,18 @@ namespace Beamable.Editor.Microservice.UI
 
         private void HandleBeforeDeploy(ManifestModel manifestModel, int totalSteps)
         {
+	        _windowRoot?.SetEnabled(false);
 	        new DeployLogParser(_loadingBar, manifestModel, totalSteps);
         }
 
-        private void HandleAfterDeploy(ManifestModel _model, int _totalSteps) => RefreshWindow(true);
+        private void HandleDeploySuccess(ManifestModel _model, int _totalSteps) => RefreshWindow(true);
+        
+        private void HandleDeployFailed(ManifestModel _model, string reason)
+        {
+	        Debug.Log(reason);
+	        _microserviceContentVisualElement?.Refresh();
+	        _windowRoot?.SetEnabled(true);
+        }
 
         public void SortMicroservices() {
             if (_windowRoot != null)

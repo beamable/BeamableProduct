@@ -1,6 +1,8 @@
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI.Components;
+using System;
+using System.Threading;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -18,6 +20,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         private static readonly Vector2 MIN_SIZE = new Vector2(860, 550);
         
     	private bool isSet = false;
+        CancellationTokenSource _tokenSource;
 
         public static PublishWindow ShowPublishWindow()
         {
@@ -60,10 +63,13 @@ namespace Beamable.Editor.Microservice.UI.Components
             var container = this.GetRootVisualContainer();
             container.Clear();
 
-
             var e = new PublishPopup { Model = _model };
-            
-            e.OnCloseRequested += Close;
+            _tokenSource = new CancellationTokenSource();
+            e.OnCloseRequested += () =>
+            {
+	            _tokenSource.Cancel();
+	            Close();
+            };
             e.OnSubmit += async (model) =>
             {
                 /*
@@ -73,7 +79,7 @@ namespace Beamable.Editor.Microservice.UI.Components
                  */
                 e.PrepareForPublish();
 
-                await Microservices.Deploy(model, this, e.ServiceDeployed);
+                await Microservices.Deploy(model, this, _tokenSource.Token, e.ServiceDeployed);
                 Close();
             };
 
@@ -83,6 +89,11 @@ namespace Beamable.Editor.Microservice.UI.Components
             Repaint();
 
             isSet = true;
+        }
+
+        private void OnDestroy()
+        {
+	        _tokenSource.Cancel();
         }
     }
 }
