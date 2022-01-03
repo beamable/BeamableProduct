@@ -259,8 +259,6 @@ namespace Beamable.Editor.Microservice.UI
 	        _windowRoot.SetEnabled(true);
         }
 
-        private void HandleAfterDeploy(ManifestModel _model, int _totalSteps) => RefreshWindow(true);
-
         public void SortMicroservices() {
             if (_windowRoot != null)
             {
