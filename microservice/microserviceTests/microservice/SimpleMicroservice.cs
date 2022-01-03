@@ -67,7 +67,7 @@ namespace microserviceTests.microservice
       public Promise PromiseTypelessTestMethod()
       {
          var pr = new Promise();
-         pr.CompleteSuccess();
+         pr.CompleteSuccess(PromiseBase.Unit);
          return pr;
       }
       

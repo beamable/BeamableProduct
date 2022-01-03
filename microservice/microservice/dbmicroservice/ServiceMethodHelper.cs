@@ -131,7 +131,7 @@ namespace Beamable.Server
                   var promiseMethod = typeof(BeamableTaskExtensions).GetMethod(
                      nameof(BeamableTaskExtensions.TaskFromPromise), BindingFlags.Static | BindingFlags.Public);
                   
-                  return (Task)promiseMethod.Invoke(null, new[] {promiseObject});
+                  return (Task)promiseMethod.Invoke(resultType, new[] {promiseObject});
                };
             }
             else
