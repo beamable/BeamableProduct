@@ -72,13 +72,14 @@ namespace Beamable.UI.Buss
 
 		public static readonly PropertyBinding<IFloatBussProperty> FontSize =
 			new PropertyBinding<IFloatBussProperty>("fontSize", new FloatBussProperty(18f));
-			
-        public static readonly PropertyBinding<IColorBussProperty> FontColor = 
-	        new PropertyBinding<IColorBussProperty>("fontColor", new SingleColorBussProperty(Color.white));
-	        
-        public static readonly PropertyBinding<TextAlignmentOptionsBussProperty> TextAlignment =
-	        new PropertyBinding<TextAlignmentOptionsBussProperty>("textAlignment", new TextAlignmentOptionsBussProperty(TextAlignmentOptions.TopLeft));
 
+		public static readonly PropertyBinding<IColorBussProperty> FontColor =
+			new PropertyBinding<IColorBussProperty>("fontColor", new SingleColorBussProperty(Color.white));
+
+		public static readonly PropertyBinding<TextAlignmentOptionsBussProperty> TextAlignment =
+			new PropertyBinding<TextAlignmentOptionsBussProperty>("textAlignment",
+			                                                      new TextAlignmentOptionsBussProperty(
+				                                                      TextAlignmentOptions.TopLeft));
 
 		// Transitions
 		public static readonly PropertyBinding<IFloatBussProperty> TransitionDuration =
@@ -91,8 +92,16 @@ namespace Beamable.UI.Buss
 
 		internal interface IPropertyBinding
 		{
-			string Key { get; }
-			Type PropertyType { get; }
+			string Key
+			{
+				get;
+			}
+
+			Type PropertyType
+			{
+				get;
+			}
+
 			IBussProperty GetProperty(BussStyle style);
 			void SetProperty(BussStyle style, IBussProperty property);
 			IBussProperty GetDefaultValue();
@@ -100,9 +109,16 @@ namespace Beamable.UI.Buss
 
 		public sealed class PropertyBinding<T> : IPropertyBinding where T : class, IBussProperty
 		{
-			public string Key { get; }
+			public string Key
+			{
+				get;
+			}
 
-			public T DefaultValue { get; }
+			public T DefaultValue
+			{
+				get;
+			}
+
 			public Type PropertyType => typeof(T);
 
 			private static HashSet<string> _keyControler = new HashSet<string>();
@@ -137,15 +153,15 @@ namespace Beamable.UI.Buss
 			{
 				if (style is BussPseudoStyle pseudoStyle)
 				{
-					return GetFromPseudoStyle(pseudoStyle);
+					return GetFromPseudoStyle(pseudoStyle) ?? DefaultValue;
 				}
 
-				return GetFromStyle(style);
+				return GetFromStyle(style) ?? DefaultValue;
 			}
 
 			private T GetFromStyle(BussStyle style)
 			{
-				if (style._properties.TryGetValue(Key, out var property))
+				if (style._properties.TryGetValue(Key, out var property) && property != null)
 				{
 					if (property is VariableProperty variable)
 					{

@@ -24,7 +24,7 @@
 #arrowImage {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown Close.png");
     width: 14px;
-    height: 7;
+    height: 7px;
     margin-right: 8px;
     flex-direction: column;
     align-self: flex-start;

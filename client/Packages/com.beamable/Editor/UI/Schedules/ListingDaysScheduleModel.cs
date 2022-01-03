@@ -36,8 +36,6 @@ namespace Beamable.Editor.Schedules
                 _daysPickerComponent);
             Validator.RegisterRule(new NotAllDaysSelectedRule(_daysPickerComponent.Label),
                 _daysPickerComponent);
-            Validator.RegisterRule(new IsProperDate(_activeToDateComponent.Label),
-                _activeToDateComponent.DatePicker);
         }
 
         public override WindowMode Mode => WindowMode.Days;

@@ -23,6 +23,8 @@ namespace Beamable.Api.Auth
         Promise<bool> IsThisDeviceIdAvailable();
         Promise<User> RegisterDeviceId();
         Promise<User> RemoveDeviceId();
+        Promise<User> RemoveDeviceIds(string[] deviceIds);
+        Promise<User> RemoveAllDeviceIds();
         Promise<TokenResponse> LoginDeviceId();
     }
 
@@ -41,6 +43,7 @@ namespace Beamable.Api.Auth
     public class AuthService : AuthApi, IAuthService
     {
         const string DEVICE_ID_URI = ACCOUNT_URL + "/me";
+        const string DEVICE_DELETE_URI = ACCOUNT_URL + "/me/device";
 
         public AuthService(IBeamableRequester requester, IAuthSettings settings = null) : base(requester, settings)
         {
@@ -75,14 +78,30 @@ namespace Beamable.Api.Auth
             return UpdateDeviceId(RegisterDeviceIdRequest.Create());
         }
 
-        public Promise<User> RemoveDeviceId()
+        private Promise<User> UpdateDeviceId(RegisterDeviceIdRequest requestBody)
         {
-            return UpdateDeviceId(null);
+	        return Requester.Request<User>(Method.PUT, DEVICE_ID_URI, requestBody);
         }
 
-        private Promise<User> UpdateDeviceId(object requestBody)
+        public Promise<User> RemoveDeviceId()
         {
-            return Requester.Request<User>(Method.PUT, DEVICE_ID_URI, requestBody);
+	        var ids = new string[] {SystemInfo.deviceUniqueIdentifier};
+            return RemoveDeviceIds(ids);
+        }
+
+        public Promise<User> RemoveAllDeviceIds()
+        {
+	        return RemoveDeviceIds(null);
+        }
+
+        public Promise<User> RemoveDeviceIds(string[] deviceIds)
+        {
+	        object body = new EmptyResponse();
+	        if (deviceIds != null)
+	        {
+		        body = DeleteDevicesRequest.Create(deviceIds);
+	        }
+	        return Requester.Request<User>(Method.DELETE, DEVICE_DELETE_URI, body);
         }
 
         [Serializable]
@@ -98,6 +117,22 @@ namespace Beamable.Api.Auth
                 };
                 return req;
             }
+        }
+
+        [Serializable]
+        private class DeleteDevicesRequest
+        {
+	        public string[] deviceIds;
+
+	        public static DeleteDevicesRequest Create(string[] ids)
+	        {
+		        var req = new DeleteDevicesRequest
+		        {
+			        deviceIds = ids
+		        };
+
+		        return req;
+	        }
         }
     }
 }

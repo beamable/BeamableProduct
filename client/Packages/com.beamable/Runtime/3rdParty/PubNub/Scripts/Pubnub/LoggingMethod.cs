@@ -18,7 +18,7 @@ namespace PubNubMessaging.Core
     #endif
     {
         private static int logLevel = 0;
-        
+
 #if UNITY_EDITOR && UNITY_2019_1_OR_NEWER
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
 #endif
@@ -272,8 +272,8 @@ namespace PubNubMessaging.Core
     public class PubnubErrorFilter
     {
         private static int errorLevel = 0;
-        
-#if UNITY_2019_1_OR_NEWER && UNITY_EDITOR
+
+#if UNITY_2019_3_OR_NEWER && UNITY_EDITOR
         [UnityEditor.InitializeOnEnterPlayMode]
 #endif
         static void Init()
