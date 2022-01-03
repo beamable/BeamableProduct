@@ -1,6 +1,7 @@
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI.Components;
+using System;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -33,7 +34,7 @@ namespace Beamable.Editor.Microservice.UI.Components
                 wnd._model = model;
                 wnd.Refresh();
             });
-
+            
             return wnd;
         }
 
@@ -41,8 +42,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         private void OnEnable()
         {
-            VisualElement root = this.GetRootVisualContainer();
-
+	        VisualElement root = this.GetRootVisualContainer();
+	        
             if (isSet)
             {
                 this.Refresh();
@@ -54,26 +55,19 @@ namespace Beamable.Editor.Microservice.UI.Components
                 });
             }
         }
-
+        
         void Refresh()
         {
             var container = this.GetRootVisualContainer();
             container.Clear();
-
-
             var e = new PublishPopup { Model = _model };
             
             e.OnCloseRequested += Close;
             e.OnSubmit += async (model) =>
             {
-                /*
-                 * We need to build each image...
-                 * upload each image that is different than whats in the manifest...
-                 * upload the manifest file...
-                 */
-                e.PrepareForPublish();
+	            e.PrepareForPublish();
 
-                await Microservices.Deploy(model, this, e.ServiceDeployed);
+                await Microservices.Deploy(model, this, e.ServiceDeployed, false);
                 Close();
             };
 
@@ -81,6 +75,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             e.PrepareParent();
             e.Refresh();
             Repaint();
+            
 
             isSet = true;
         }

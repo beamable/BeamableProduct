@@ -243,12 +243,21 @@ namespace Beamable.Editor.Microservice.UI
             SetForContent();
         }
 
-        private void HandleBeforeDeploy(ManifestModel manifestModel, int totalSteps)
+        private void HandleBeforeDeploy(ManifestModel manifestModel, int totalSteps, bool showProgressBar)
         {
+	        _windowRoot.SetEnabled(false);
+	        
+	        if (!showProgressBar)
+		        return;
+	        
 	        new DeployLogParser(_loadingBar, manifestModel, totalSteps);
         }
 
-        private void HandleAfterDeploy(ManifestModel _model, int _totalSteps) => RefreshWindow(true);
+        private void HandleAfterDeploy(ManifestModel _model, int _totalSteps)
+        {
+	        RefreshWindow(true);
+	        _windowRoot.SetEnabled(true);
+        }
 
         public void SortMicroservices() {
             if (_windowRoot != null)

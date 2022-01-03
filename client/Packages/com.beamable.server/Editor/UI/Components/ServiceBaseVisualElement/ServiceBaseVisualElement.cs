@@ -269,8 +269,11 @@ namespace Beamable.Editor.Microservice.UI.Components
         {
             OnServiceStopFailed?.Invoke();
         }
-        private void SetupProgressBarForDeployment(ManifestModel _, int __)
+        private void SetupProgressBarForDeployment(ManifestModel _, int __, bool showProgressBar)
         {
+	        if (!showProgressBar)
+		        return;
+	        
             new GroupLoadingBarUpdater("Build and Deploy", _loadingBar, false,
                 new StepLogParser(new VirtualLoadingBar(), Model, null),
                 new DeployMSLogParser(new VirtualLoadingBar(), Model)

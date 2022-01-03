@@ -503,15 +503,15 @@ namespace Beamable.Server.Editor
          }
       }
 
-      public static event Action<ManifestModel, int> onBeforeDeploy;
+      public static event Action<ManifestModel, int, bool> onBeforeDeploy;
       public static event Action<ManifestModel, int> onAfterDeploy;
 
-      public static async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context, Action<IDescriptor> onServiceDeployed = null)
+      public static async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context, Action<IDescriptor> onServiceDeployed = null, bool showProgressBar = true)
       {
          if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
 
          var descriptorsCount = Descriptors.Count;
-         onBeforeDeploy?.Invoke(model, descriptorsCount);
+         onBeforeDeploy?.Invoke(model, descriptorsCount, showProgressBar);
 
          // TODO perform sort of diff, and only do what is required. Because this is a lot of work.
          var de = await EditorAPI.Instance;
