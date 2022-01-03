@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Beamable.Common.Content;
 using Beamable.Common.Shop;
 using Beamable.CronExpression;
@@ -7,6 +8,13 @@ using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using UnityEditor;
 using UnityEngine;
+#if UNITY_2018
+using UnityEngine.Experimental.UIElements;
+using UnityEditor.Experimental.UIElements;
+#elif UNITY_2019_1_OR_NEWER
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
+#endif
 
 namespace Beamable.Editor.Content
 {
@@ -104,16 +112,30 @@ namespace Beamable.Editor.Content
 
       protected void OpenWindow(SerializedProperty property, Schedule schedule)
       {
-         var element = new TWindow();
-         var window = BeamablePopupWindow.ShowUtility(BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER,
-            element, null, BeamableComponentsConstants.SchedulesWindowSize);
-
-
-         var data = GetDataObject(property);
-         if (data == null)
-         {
-            Debug.LogWarning("No data object exists for " + property);
-         }
+	      var data = GetDataObject(property);
+	      if (data == null)
+	      {
+		      Debug.LogWarning("No data object exists for " + property);
+	      }
+	      
+	      var element = new TWindow();
+	      BeamablePopupWindow window =
+		      (Resources.FindObjectsOfTypeAll(typeof(BeamablePopupWindow)) as BeamablePopupWindow[]).FirstOrDefault(
+			      w => w.titleContent.text == BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER);
+	      if (window != null)
+	      {
+		      var oldElement = window.GetRootVisualContainer().Q<TWindow>();
+		      if (oldElement != null)
+		      {
+			      oldElement.Destroy();
+		      }
+		      window.SwapContent(element);
+	      }
+	      else
+	      {
+		      window = BeamablePopupWindow.ShowUtility(BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER,
+		                                               element, null, BeamableComponentsConstants.SchedulesWindowSize);
+	      }
 
          element.Set(schedule, data);
          element.OnScheduleUpdated += nextSchedule =>

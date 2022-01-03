@@ -8,6 +8,7 @@ using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI.Components;
+using System.Diagnostics;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -32,6 +33,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         private readonly Dictionary<ServiceModelBase, ServiceBaseVisualElement> _modelToVisual = new Dictionary<ServiceModelBase, ServiceBaseVisualElement>();
         private Dictionary<ServiceType, CreateServiceBaseVisualElement> _servicesCreateElements;
         private MicroserviceActionPrompt _actionPrompt;
+        private bool _dockerHubIsRunning;
 
         public IEnumerable<ServiceBaseVisualElement> ServiceVisualElements =>
             _servicesListElement.Children().Where(ve => ve is ServiceBaseVisualElement)
@@ -72,12 +74,15 @@ namespace Beamable.Editor.Microservice.UI.Components
             _scrollView = Root.Q<ScrollView>();
             _servicesListElement = Root.Q<VisualElement>("listRoot");
             _servicesCreateElements = new Dictionary<ServiceType, CreateServiceBaseVisualElement>();
+            _dockerHubIsRunning = !MicroserviceConfiguration.Instance.DockerAppCheckInMicroservicesWindow
+                                  || IsDockerAppRunning();
 
-            if (DockerCommand.DockerNotInstalled)
+            if (DockerCommand.DockerNotInstalled || !_dockerHubIsRunning)
             {
 	            ShowDockerNotInstalledAnnouncement();
-	            return;
             }
+            if(DockerCommand.DockerNotInstalled)
+	            return;
 
             CreateNewServiceElement(ServiceType.MicroService, new CreateMicroserviceVisualElement());
             CreateNewServiceElement(ServiceType.StorageObject, new CreateStorageObjectVisualElement());
@@ -254,7 +259,15 @@ namespace Beamable.Editor.Microservice.UI.Components
         private void ShowDockerNotInstalledAnnouncement()
         {
 	        var dockerAnnouncement = new DockerAnnouncementModel();
-	        dockerAnnouncement.OnInstall = () => Application.OpenURL("https://docs.docker.com/get-docker/");
+	        dockerAnnouncement.IsDockerInstalled = !DockerCommand.DockerNotInstalled;
+	        if (DockerCommand.DockerNotInstalled)
+	        {
+		        dockerAnnouncement.OnInstall = () => Application.OpenURL("https://docs.docker.com/get-docker/");
+	        }
+	        else
+	        {
+		        dockerAnnouncement.OnInstall = Refresh;
+	        }
 	        var element = new DockerAnnouncementVisualElement() { DockerAnnouncementModel = dockerAnnouncement };
 	        Root.Q<VisualElement>("announcementList").Add(element);
 	        element.Refresh();
@@ -305,7 +318,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 		        }
 		        
 		        if (serviceElement != null)
+		        {
+			        serviceElement.SetEnabled(_dockerHubIsRunning);
 			        _servicesListElement.Add(serviceElement);
+		        }
 	        }
 	        
 	        if (hasStorageDependency)
@@ -318,6 +334,29 @@ namespace Beamable.Editor.Microservice.UI.Components
 	        var previewElement = new StorageDepencencyWarningVisualElement() { StorageDepencencyWarningModel = storagePreviewWarning };
 	        Root.Q<VisualElement>("announcementList").Add(previewElement);
 	        previewElement.Refresh();
+        }
+
+        static bool IsDockerAppRunning()
+        {
+	        var procList = Process.GetProcesses();
+	        for (int i = 0; i < procList.Length; i++)
+	        {
+		        try
+		        {
+#if UNITY_EDITOR_WIN
+			        const string procName = "docker desktop";
+#else
+			        const string procName = "docker";
+#endif
+			        if (procList[i].ProcessName.ToLower().Contains(procName))
+			        {
+				        return true;
+			        }
+		        }
+		        catch { }
+	        }
+
+	        return false;
         }
     }
 }

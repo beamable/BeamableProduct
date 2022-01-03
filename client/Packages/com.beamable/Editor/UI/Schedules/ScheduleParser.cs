@@ -2,7 +2,6 @@
 using Beamable.Common.Content;
 using System;
 using System.Linq;
-using UnityEngine;
 
 namespace Beamable.Editor.Schedules
 {
@@ -27,9 +26,14 @@ namespace Beamable.Editor.Schedules
         public void PrepareDaysModeData(Schedule newSchedule, string hour, string minute, string second,
             List<string> selectedDays)
         {
-            ScheduleDefinition definition = new ScheduleDefinition(second,
-                minute, hour, new List<string> {"*"}, "*", "*",
-                selectedDays);
+	        var definition = new ScheduleDefinition(
+		        new List<string> {"*"},
+		        new List<string> {"*"},
+		        new List<string> {"*"},
+		        new List<string> {"*"},
+		        new List<string> {"*"},
+		        new List<string> {"*"},
+		        selectedDays);
             newSchedule.AddDefinition(definition);
         }
 
@@ -92,97 +96,186 @@ namespace Beamable.Editor.Schedules
             }
         }
 
-        private List<ScheduleDefinition> GetPeriodsSchedulesDefinitions(int fromHour, int toHour, int fromMinute,
+        protected List<ScheduleDefinition> GetPeriodsSchedulesDefinitions(int fromHour, int toHour, int fromMinute,
             int toMinute, List<string> selectedDays)
         {
-            int hoursDelta = toHour - fromHour;
+	        List<string> ConvertIntoRangeList(int from, int to)
+	        {
+		        var tempList = new List<string>();
+		        for (int i = from; i <= to; i++)
+			        tempList.Add($"{i}");
+		        return tempList;
+	        }
+	        
             var definitions = new List<ScheduleDefinition>();
+
+			if (toHour == 0 && toMinute == 0)
+				toHour = 24;
+
+			var hoursDelta = toHour - fromHour;
+            var allRange = new List<string> {"*"};
 
             if (hoursDelta == 0)
             {
-                var definition = new ScheduleDefinition(
-	                new List<string>{"*"}, 
-	                ConvertIntoRangeList(fromMinute, toMinute),
-	                new List<string> {$"{fromHour}"}, 
-	                new List<string> {"*"}, 
-	                new List<string> {"*"}, 
-	                new List<string> {"*"}, 
-	                selectedDays);
-                definitions.Add(definition);
+	            if (toHour != fromHour)
+	            {
+		            var definition = new ScheduleDefinition(
+			            allRange, 
+			            ConvertIntoRangeList(fromMinute, toMinute - 1),
+			            new List<string> {$"{fromHour}"}, 
+			            allRange, 
+			            allRange, 
+			            allRange, 
+			            selectedDays);
+		            definitions.Add(definition);
+	            }
+	            else
+	            {
+		            var definition = new ScheduleDefinition(
+			            allRange,
+			            ConvertIntoRangeList(fromMinute, toMinute - 1),
+			            new List<string> {$"{fromHour}"},
+			            allRange,
+			            allRange,
+			            allRange,
+			            selectedDays);
+		            definitions.Add(definition);
+	            }
             }
             else if (hoursDelta == 1)
             {
-	            var definition = new ScheduleDefinition(
-		            new List<string>{"*"}, 
-		            ConvertIntoRangeList(fromMinute, toMinute), 
-		            new List<string> {$"{fromHour}"}, 
-		            new List<string> {"*"}, 
-		            new List<string> {"*"}, 
-		            new List<string> {"*"}, 
+	            var startDefinition = new ScheduleDefinition(
+		            allRange,
+		            fromMinute == 0 ? allRange : ConvertIntoRangeList(fromMinute, 59),
+		            new List<string> {$"{fromHour}"},
+		            allRange,
+		            allRange,
+		            allRange,
 		            selectedDays);
-	            definitions.Add(definition);
-	            
-                var startDefinition = new ScheduleDefinition(
-	                new List<string>{"*"},  
-	                ConvertIntoRangeList(fromMinute, 59),
-	                new List<string> {$"{fromHour}"},  
-	                new List<string> {"*"}, 
-	                new List<string>{"*"}, 
-	                new List<string>{"*"}, 
-	                selectedDays);
-                definitions.Add(startDefinition);
+	            definitions.Add(startDefinition);
 
-                var endDefinition = new ScheduleDefinition(
-	                new List<string>{"*"}, 
-	                ConvertIntoRangeList(0, toMinute),
-	                new List<string> {$"{toHour}"}, 
-	                new List<string> {"*"}, 
-	                new List<string>{"*"}, 
-	                new List<string>{"*"}, 
-	                selectedDays);
-                definitions.Add(endDefinition);
+	            if (toMinute != 0)
+	            {
+		            var endDefinition = new ScheduleDefinition(
+			            allRange,
+			            ConvertIntoRangeList(0, toMinute - 1),
+			            new List<string> {$"{toHour}"},
+			            allRange,
+			            allRange,
+			            allRange,
+			            selectedDays);
+		            definitions.Add(endDefinition);
+	            }
+            }
+            else if (hoursDelta == 2 && toMinute == 0)
+            {
+	            var startDefinition = new ScheduleDefinition(
+		            allRange,
+		            fromMinute == 0 ? allRange : ConvertIntoRangeList(fromMinute, 59),
+		            ConvertIntoRangeList(fromHour, toHour - 1),
+		            allRange,
+		            allRange,
+		            allRange,
+		            selectedDays);
+	            definitions.Add(startDefinition);
             }
             else
             {
-                var startDefinition = new ScheduleDefinition(
-	                new List<string>{"*"}, 
-	                ConvertIntoRangeList(fromMinute, 59),
-	                new List<string> {$"{fromHour}"}, 
-	                new List<string> {"*"}, 
-	                new List<string>{"*"}, 
-	                new List<string>{"*"}, 
-	                selectedDays);
-                definitions.Add(startDefinition);
-
-                var middleDefinition = new ScheduleDefinition(
-	                new List<string> {"*"},
-	                new List<string> {"*"},
-	                hoursDelta == 2 ? new List<string> {$"{fromHour+1}"} : ConvertIntoRangeList(fromHour + 1, toHour - 1),
-					new List<string> {"*"}, 
-					new List<string>{"*"},
-					new List<string>{"*"}, 
-					selectedDays);
-
-                var endDefinition = new ScheduleDefinition(
-	                new List<string>{"*"}, 
-	                ConvertIntoRangeList(0, toMinute),
-	                new List<string> {$"{toHour}"}, 
-	                new List<string> {"*"}, 
-	                new List<string>{"*"}, 
-	                new List<string>{"*"}, 
-	                selectedDays);
-                definitions.Add(endDefinition);
+	            if (fromMinute == 0 && toMinute == 0)
+	            {
+		            var definition = new ScheduleDefinition(
+			            allRange, 
+			            allRange,
+			            ConvertIntoRangeList(fromHour, toHour - 1), 
+			            allRange, 
+			            allRange, 
+			            allRange, 
+			            selectedDays);
+		            definitions.Add(definition);
+	            }
+	            else
+	            {
+		            if (fromMinute != 0 && toMinute != 0)
+		            {
+			            var startDefinition = new ScheduleDefinition(
+				            allRange, 
+				            ConvertIntoRangeList(fromMinute, 59),
+				            new List<string> {$"{fromHour}"}, 
+				            allRange, 
+				            allRange, 
+				            allRange, 
+				            selectedDays);
+			            definitions.Add(startDefinition);
+			            
+			            var middleDefinition = new ScheduleDefinition(
+				            allRange, 
+				            allRange,
+				            hoursDelta == 2 ? new List<string> {$"{fromHour+1}"} : ConvertIntoRangeList(fromHour + 1, toHour - 1), 
+				            allRange, 
+				            allRange, 
+				            allRange, 
+				            selectedDays);
+			            definitions.Add(middleDefinition);
+			            
+			            var endDefinition = new ScheduleDefinition(
+				            allRange, 
+				            ConvertIntoRangeList(0, toMinute-1),
+				            new List<string> {$"{toHour}"}, 
+				            allRange, 
+				            allRange, 
+				            allRange, 
+				            selectedDays);
+			            definitions.Add(endDefinition);
+			            return definitions;
+		            }
+		            
+		            if (toMinute == 0)
+		            {
+			            var startDefinition = new ScheduleDefinition(
+				            allRange, 
+				            fromMinute == 0 ? allRange : ConvertIntoRangeList(fromMinute, 59),
+				            new List<string> {$"{fromHour}"}, 
+				            allRange, 
+				            allRange, 
+				            allRange, 
+				            selectedDays);
+			            definitions.Add(startDefinition);
+	                
+			            var endDefinition = new ScheduleDefinition(
+				            allRange,
+				            allRange,
+				            hoursDelta == 2 ? new List<string> {$"{fromHour+1}"} : ConvertIntoRangeList(fromHour + 1, toHour - 1),
+				            allRange, 
+				            allRange,
+				            allRange, 
+				            selectedDays);
+			            definitions.Add(endDefinition);
+		            }
+		            else
+		            {
+			            var startDefinition = new ScheduleDefinition(
+				            allRange,
+				            allRange,
+				            ConvertIntoRangeList(fromHour, toHour - 1),
+				            allRange, 
+				            allRange,
+				            allRange, 
+				            selectedDays);
+			            definitions.Add(startDefinition);
+                
+			            var endDefinition = new ScheduleDefinition(
+				            allRange, 
+				            ConvertIntoRangeList(0, toMinute-1),
+				            new List<string> {$"{toHour}"}, 
+				            allRange, 
+				            allRange, 
+				            allRange, 
+				            selectedDays);
+			            definitions.Add(endDefinition);
+		            }       
+	            }
             }
-
             return definitions;
-            
-            List<string> ConvertIntoRangeList(int from, int to)
-            {
-	            var tempList = new List<string>();
-	            for (int i = from; i <= to; i++)
-		            tempList.Add($"{i}");
-	            return tempList;
-            }
         }
 
         private List<ScheduleDateModeModel> ParseDates(List<string> dates)
@@ -245,6 +338,11 @@ namespace Beamable.Editor.Schedules
 			            dict.Add(kvp.Value, new Dictionary<string, string> {{year, month}});
 		            }
 	            }
+	            
+	            foreach (var kvp in dict)
+		            foreach (var kvp2 in kvp.Value.ToList())
+			            dict[kvp.Key][kvp2.Key] = String.Join(",", kvp2.Value.Split(',').OrderBy(q => q).ToArray());
+	            
 	            return dict;
             }
             Dictionary<string, List<string>> CreateGroupsBasedOnDaysAndMonthsAndMergeYears()
