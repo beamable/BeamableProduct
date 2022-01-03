@@ -50,9 +50,6 @@
 
 /microservice/microservice/.idea/
 
-# Unity installed packages.
-/client/Assets/TextMesh Pro/
-/client/Assets/TextMesh Pro.meta
 
 # Server generated files.
 /server/tmp/

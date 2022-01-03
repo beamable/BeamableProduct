@@ -9,7 +9,6 @@ namespace Beamable.Editor.Content
    [CustomPropertyDrawer(typeof(HideUnlessServerPackageInstalled))]
    public class HideServerPropertyDrawer : PropertyDrawer
    {
-      private static Promise<BeamablePackageMeta> _serverPackagePromise;
       private static Promise<bool> _check;
 
       public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
@@ -70,16 +69,10 @@ namespace Beamable.Editor.Content
 
       private async Promise<bool> HasMicroservicePackage()
       {
-         if (_serverPackagePromise == null)
-         {
-            _serverPackagePromise = BeamablePackages.GetServerPackage();
-            return await HasMicroservicePackage();
-         }
-
          var hasPackage = false;
          try
          {
-            var result = await _serverPackagePromise;
+            var result = await BeamablePackages.ServerPackageMeta;
             hasPackage = result.IsPackageAvailable;
          }
          catch

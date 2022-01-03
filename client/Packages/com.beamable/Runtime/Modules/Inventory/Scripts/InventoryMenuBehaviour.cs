@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using Beamable.Api;
+﻿using Beamable.Api;
 using Beamable.Common;
 using Beamable.UI.Scripts;
-using Beamable.Platform.SDK;
-using Beamable.Api.Inventory;
 using Beamable.Common.Api.Inventory;
 using UnityEngine;
 

@@ -1,12 +1,11 @@
+using Beamable.Content;
 using Beamable.Editor.Content.Models;
-using Beamable.Editor.Content;
 using UnityEngine;
 using Beamable.Editor.UI.Buss.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Beamable.Editor.UI.Components;
-using Modules.Content;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;

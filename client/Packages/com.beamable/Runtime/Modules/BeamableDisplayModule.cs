@@ -9,13 +9,16 @@ using UnityEngine.UI;
 
 namespace Beamable
 {
+
     [ExecuteAlways]
     public class BeamableDisplayModule : BeamableModule
     {
-        [HideInInspector] [SerializeField] private bool useThisCanvas;
+#pragma warning disable CS0649
+		[HideInInspector] [SerializeField] private bool useThisCanvas;
         [HideInInspector] [SerializeField] private Canvas canvas;
+#pragma warning restore CS0649
 
-        public void SetVisible(bool visible = true)
+		public void SetVisible(bool visible = true)
         {
             if (useThisCanvas)
             {

@@ -578,13 +578,19 @@ namespace Beamable.Common.Content
       public TContent Deserialize<TContent>(string json)
          where TContent : TContentBase, IContentObject, new()
       {
-         var instance = CreateInstance<TContent>();
-
-         var fields = GetFieldInfos(typeof(TContent));
          var deserializedResult = Json.Deserialize(json);
          var root = deserializedResult as ArrayDict;
-
          if (root == null) throw new ContentDeserializationException(json);
+
+         return ConvertItem<TContent>(root);
+      }
+      
+      public TContent ConvertItem<TContent>(ArrayDict root)
+         where TContent : TContentBase, IContentObject, new()
+      {
+         var instance = CreateInstance<TContent>();
+         var fields = GetFieldInfos(typeof(TContent));
+         
          var id = root["id"].ToString();
 
          // the id may be a former name. We should always prefer to use the latest name based on the actual type of data being deserialized.
