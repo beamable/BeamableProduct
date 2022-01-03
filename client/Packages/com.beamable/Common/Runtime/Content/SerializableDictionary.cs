@@ -13,7 +13,18 @@ namespace Beamable.Common.Content
    public class OptionalSerializableDictionaryStringToString : Optional<SerializableDictionaryStringToString> {}
 
    [Serializable]
-   public class SerializableDictionaryStringToString : SerializableDictionaryStringToSomething<string> {}
+   public class SerializableDictionaryStringToString : SerializableDictionaryStringToSomething<string>
+   {
+	   public SerializableDictionaryStringToString() { }
+
+	   public SerializableDictionaryStringToString(IDictionary<string, string> existing)
+	   {
+		   foreach (var kvp in existing)
+		   {
+			   Add(kvp.Key, kvp.Value);
+		   }
+	   }
+   }
 
    [Serializable]
    public class SerializableDictionaryStringToSomething<T> : SerializableDictionary<string, T>, IDictionaryWithValue

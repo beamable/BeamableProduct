@@ -18,5 +18,10 @@ namespace Beamable.Platform.Tests.Connectivity
       {
          SetHasInternet(false);
       }
+
+      public void OnReconnectOnce(Action onReconnection)
+      {
+
+      }
    }
 }

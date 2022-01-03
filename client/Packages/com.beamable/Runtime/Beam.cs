@@ -25,6 +25,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Announcements;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.CloudData;
+using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Api.Leaderboards;
 using Beamable.Common.Api.Notifications;
@@ -46,6 +47,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -80,7 +82,6 @@ namespace Beamable
 			// Flush cache that wasn't created with this version of the game.
 			OfflineCache.FlushInvalidCache();
 
-
 			// register all services that are not context specific.
 			DependencyBuilder = new DependencyBuilder()
 			                    .AddComponentSingleton<CoroutineService>()
@@ -100,6 +101,7 @@ namespace Beamable
 			                    .AddSingleton<CloudSavingService>()
 			                    .AddSingleton<IBeamableFilesystemAccessor, PlatformFilesystemAccessor>()
 			                    .AddSingleton<ContentService>()
+			                    .AddSingleton<IContentApi>( provider => provider.GetService<ContentService>())
 			                    .AddScoped<InventoryService>()
 			                    .AddScoped<StatsService>(provider =>
 				                                             new StatsService(
@@ -156,13 +158,15 @@ namespace Beamable
 
 			DependencyBuilder.AddSingleton<Promise<IBeamablePurchaser>>(provider => new Promise<IBeamablePurchaser>());
 			DependencyBuilder.AddSingleton<PlayerAnnouncements>();
-			DependencyBuilder.AddScoped<PlayerCurrencyGroup>();
+			// DependencyBuilder.AddScoped<PlayerCurrencyGroup>();
 			DependencyBuilder.AddScoped<PlayerStats>();
+			DependencyBuilder.AddScoped<PlayerInventory>();
 
 			// register module configurations. XXX: move these registrations into their own modules?
 			DependencyBuilder.AddSingleton(SessionConfiguration.Instance.DeviceOptions);
 			DependencyBuilder.AddSingleton(SessionConfiguration.Instance.CustomParameterProvider);
 			DependencyBuilder.AddSingleton(ContentConfiguration.Instance.ParameterProvider);
+			DependencyBuilder.AddSingleton(CoreConfiguration.Instance);
 			DependencyBuilder.AddSingleton<IAuthSettings>(AccountManagementConfiguration.Instance);
 
 			LoadCustomDependencies();

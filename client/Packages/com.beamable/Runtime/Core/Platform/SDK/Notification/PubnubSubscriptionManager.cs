@@ -16,7 +16,7 @@ namespace Beamable.Api.Notification
 	{
 		void Initialize(IPlatformService platform);
 		void UnsubscribeAll();
-		void SubscribeToProvider();
+		Promise SubscribeToProvider();
 
 		void LoadChannelHistory(string channel,
 		                        int msgLimit,
@@ -145,28 +145,29 @@ namespace Beamable.Api.Notification
 
       #endregion
 
-      public void SubscribeToProvider()
+      public async Promise SubscribeToProvider()
       {
          // First we need to get the keys from the server
          PubnubSubscriptionLogger.Log("Requesting Subscriber Details");
-         _platform.PubnubNotificationService.GetSubscriberDetails().Then(rsp =>
+         await _platform.PubnubNotificationService.GetSubscriberDetails().Then(rsp =>
          {
-            subscriberDetails = rsp;
+	         subscriberDetails = rsp;
 
-            pendingOps.Enqueue(new PubNubOp(PubNubOp.PNO.OpSubscribe, rsp.playerForRealmChannel));
-            pendingOps.Enqueue(new PubNubOp(PubNubOp.PNO.OpSubscribe, rsp.playerChannel));
-            pendingOps.Enqueue(new PubNubOp(PubNubOp.PNO.OpSubscribe, rsp.gameNotificationChannel));
-            if (rsp.gameGlobalNotificationChannel != null)
-            {
-               pendingOps.Enqueue(new PubNubOp(PubNubOp.PNO.OpSubscribe, rsp.gameGlobalNotificationChannel));
-            }
+	         pendingOps.Enqueue(new PubNubOp(PubNubOp.PNO.OpSubscribe, rsp.playerForRealmChannel));
+	         pendingOps.Enqueue(new PubNubOp(PubNubOp.PNO.OpSubscribe, rsp.playerChannel));
+	         pendingOps.Enqueue(new PubNubOp(PubNubOp.PNO.OpSubscribe, rsp.gameNotificationChannel));
+	         if (rsp.gameGlobalNotificationChannel != null)
+	         {
+		         pendingOps.Enqueue(new PubNubOp(PubNubOp.PNO.OpSubscribe, rsp.gameGlobalNotificationChannel));
+	         }
 
-            PubnubSubscriptionLogger.Log("Subscriber Details Success");
-            DoSubscribeToPubnub();
+	         PubnubSubscriptionLogger.Log("Subscriber Details Success");
+	         DoSubscribeToPubnub();
          }).Error(err =>
          {
 	         if (err is NoConnectivityException) return; // we don't care about a no-connectivity exception.
-            Debug.LogError("ERROR - Subscriber Details Failure: " + err.ToString());
+
+	         Debug.LogError("ERROR - Subscriber Details Failure: " + err.ToString());
          });
       }
 

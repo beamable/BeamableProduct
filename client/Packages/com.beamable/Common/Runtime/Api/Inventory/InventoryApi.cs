@@ -11,12 +11,12 @@ namespace Beamable.Common.Api.Inventory
 {
     /// <summary>
     /// This type defines the %Client main entry point for the %Inventory feature.
-    /// 
+    ///
     /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-    /// 
+    ///
     /// #### Related Links
     /// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature">Inventory</a> feature documentation
-    /// - See Beamable.Api.Inventory.InventoryService script reference 
+    /// - See Beamable.Api.Inventory.InventoryService script reference
     ///
     /// ![img beamable-logo]
     ///
@@ -226,91 +226,11 @@ namespace Beamable.Common.Api.Inventory
                 return Promise<Unit>.Successful(PromiseBase.Unit);
             }
 
-            using (var pooledBuilder = StringBuilderPool.StaticPool.Spawn())
-            {
-                var dict = new ArrayDict();
-                if(!string.IsNullOrEmpty(transaction))
-                {
-                    dict.Add("transaction", transaction);
-                }
-
-                if(builder.applyVipBonus.HasValue)
-                {
-                    dict.Add("applyVipBonus", builder.applyVipBonus.Value);
-                }
-
-                if (builder.currencies != null && builder.currencies.Count > 0)
-                {
-                    dict.Add("currencies", builder.currencies);
-                }
-
-                if (builder.currencyProperties != null && builder.currencyProperties.Count > 0)
-                {
-                    var currencyDict = new ArrayDict();
-                    foreach(var kvp in builder.currencyProperties)
-                    {
-                        var newProperties = kvp.Value.Select(newProperty => new ArrayDict
-                        {
-                            {"name", newProperty.name},
-                            {"value", newProperty.value}
-                        }).ToArray();
-                        currencyDict.Add(kvp.Key, newProperties);
-                    }
-                    dict.Add("currencyProperties", currencyDict);
-                }
-
-                if (builder.newItems != null && builder.newItems.Count > 0)
-                {
-                    var newItems = builder.newItems.Select(newItem => new ArrayDict
-                    {
-                        {"contentId", newItem.contentId},
-                        {
-                            "properties", newItem.properties?.Select(kvp => new ArrayDict
-                            {
-                                {"name", kvp.Key},
-                                {"value", kvp.Value}
-                            }).ToArray() ?? new object[]{}
-                        }
-                    }).ToArray();
-
-                    dict.Add("newItems", newItems);
-                }
-
-                if (builder.deleteItems != null && builder.deleteItems.Count > 0)
-                {
-                    var deleteItems = builder.deleteItems.Select(deleteItem => new ArrayDict
-                    {
-                        {"contentId", deleteItem.contentId},
-                        {"id", deleteItem.itemId}
-                    }).ToArray();
-
-                    dict.Add("deleteItems", deleteItems);
-                }
-
-                if (builder.updateItems != null && builder.updateItems.Count > 0)
-                {
-                    var updateItems = builder.updateItems.Select(updateItem => new ArrayDict
-                    {
-                        {"contentId", updateItem.contentId},
-                        {"id", updateItem.itemId},
-                        {
-                            "properties", updateItem.properties.Select(kvp => new ArrayDict
-                            {
-                                {"name", kvp.Key},
-                                {"value", kvp.Value}
-                            }).ToArray()
-                        }
-                    }).ToArray();
-
-                    dict.Add("updateItems", updateItems);
-                }
-
-                var json = Json.Serialize(dict, pooledBuilder.Builder);
-                return Requester.Request<EmptyResponse>(Method.PUT, CreateRefreshUrl(null), json).ToUnit();
-            }
+            var json = InventoryUpdateBuilderSerializer.ToJson(builder, transaction);
+	        return Requester.Request<EmptyResponse>(Method.PUT, CreateRefreshUrl(null), json).ToUnit();
         }
 
-        private Promise<List<InventoryObject<TContent>>> ViewToItems<TContent>(InventoryView view, IEnumerable<string> filter=null) where TContent : ItemContent, new()
+        public Promise<List<InventoryObject<TContent>>> ViewToItems<TContent>(InventoryView view, IEnumerable<string> filter=null) where TContent : ItemContent, new()
         {
             var filterSet = filter?.ToList();
             var typeName = ContentRegistry.GetContentTypeName(typeof(TContent));
@@ -352,6 +272,11 @@ namespace Beamable.Common.Api.Inventory
             var idFilter = itemReferences.Select(r => r.Id).ToList();
             var scope = string.Join(",", idFilter);
             return GetCurrent(scope).FlatMap(view => ViewToItems<TContent>(view, idFilter));
+        }
+
+        public void GetLatestItems(ItemRef itemRef)
+        {
+
         }
 
         /// <summary>

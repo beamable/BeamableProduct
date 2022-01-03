@@ -34,6 +34,7 @@ using Beamable.Common.Api.Notifications;
 using Beamable.Common.Api.Tournaments;
 using Beamable.Common.Player;
 using Beamable.Experimental;
+using Beamable.Player;
 using Beamable.Sessions;
 #if BEAMABLE_PURCHASING
 using Beamable.Purchasing;
@@ -264,7 +265,7 @@ namespace Beamable
         /// </summary>
         public ContentService ContentService => _platform.ContentService;
 
-        public ISdkEventService SdkEventService { get; } = new SdkEventService();
+        public ISdkEventService SdkEventService => new SdkEventService(ConnectivityService);
 
         /// <summary>
         /// Entry point for the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature">Inventory</a> feature.

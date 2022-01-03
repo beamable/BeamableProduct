@@ -25,14 +25,16 @@ namespace Beamable.Api.Inventory
 
       private readonly InventoryView view = new InventoryView();
 
+      private bool _everReceivedData;
+
       public InventorySubscription(IDependencyProvider provider)
-	      : base(provider, SERVICE, new BeamableGetApiResourceViaPost<InventoryResponse>())
+	      : base(provider, SERVICE, new BeamableGetApiResourceViaPost<InventoryResponse>(true))
       {
 	      UsesHierarchyScopes = true;
       }
 
       public InventorySubscription(IPlatformService platform, IBeamableRequester requester)
-	      : base(platform, requester, SERVICE, new BeamableGetApiResourceViaPost<InventoryResponse>())
+	      : base(platform, requester, SERVICE, new BeamableGetApiResourceViaPost<InventoryResponse>(true))
       {
 	      UsesHierarchyScopes = true;
       }
@@ -42,14 +44,29 @@ namespace Beamable.Api.Inventory
          view.Clear();
       }
 
-      protected override void OnRefresh(InventoryResponse data)
+      protected override Promise OnRefresh(InventoryResponse data, string[] scopes)
       {
-         data.MergeView(view);
-         foreach (var scope in data.GetNotifyScopes())
-         {
-            Notify(scope, view);
-         }
+	      if (!connectivityService.HasConnectivity && _everReceivedData)
+	      {
+		      foreach (var scope in data.GetNotifyScopes(scopes))
+		      {
+			      Notify(scope, view);
+		      }
+		      return Promise.Success;
+	      }
+
+	      _everReceivedData = true;
+	      data.MergeView(view, scopes);
+	      foreach (var scope in data.GetNotifyScopes(scopes))
+	      {
+		      Notify(scope, view);
+	      }
+
+	      return Promise.Success;
       }
+
+      public InventoryView GetCurrentView() => view;
+
    }
 
    /// <summary>

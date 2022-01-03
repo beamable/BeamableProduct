@@ -1,5 +1,4 @@
 // unset
-
 using Beamable.Api;
 using Beamable.Api.Stats;
 using Beamable.Common;
@@ -11,7 +10,6 @@ using Beamable.Coroutines;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Player

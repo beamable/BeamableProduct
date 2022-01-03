@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Platform.SDK;
+using Beamable.Platform.Tests;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -49,6 +50,50 @@ namespace Beamable.Editor.Tests.PromiseTests
 		   Assert.IsTrue(p.GetResult());
 	   }
 
+
+
+	   [UnityTest]
+	   public IEnumerator AsyncAwait_AFailedPromiseShould()
+	   {
+		   var knownEx = new Exception();
+
+		   var caught = false;
+		   var mockLogger = new MockLogProvider();
+		   BeamableLogProvider.Provider = mockLogger;
+
+		   mockLogger.onException += exception =>
+		   {
+			   Assert.Fail("error log should not be called");
+		   };
+		   PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
+
+
+		   Promise<Unit> SubMethod()
+		   {
+			   var promise = new Promise<Unit>();
+			   promise.CompleteError(knownEx);
+			   return promise;
+		   }
+
+		   async Promise Test()
+		   {
+			   try
+			   {
+				   var promise = SubMethod();
+				   await promise;
+			   }
+			   catch (Exception ex)
+			   {
+				   Assert.AreEqual(knownEx, ex);
+				   caught = true;
+			   }
+		   }
+
+		   yield return Test().AsYield();
+		   yield return PromiseExtensions.WaitForAllUncaughtHandlers().ToPromise().AsYield();
+
+		   Assert.IsTrue(caught, "The try/catch didn't catch");
+	   }
 
       [Test]
       public void UncaughtPromise_RaisesEvent()

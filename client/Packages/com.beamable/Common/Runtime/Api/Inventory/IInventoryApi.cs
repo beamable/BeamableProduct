@@ -224,7 +224,7 @@ namespace Beamable.Common.Api.Inventory
             }
         }
 
-        public HashSet<string> GetNotifyScopes()
+        public HashSet<string> GetNotifyScopes(string[] givenScopes=null)
         {
             var notifyScopes = new HashSet<string>();
             notifyScopes.UnionWith(currencies.Select(currency => currency.id));
@@ -232,7 +232,10 @@ namespace Beamable.Common.Api.Inventory
             notifyScopes.UnionWith(Scopes);
             notifyScopes.Add(""); // always notify the root scope
             // TODO: if a scope is in notifySCopes, 'a.b.c', we should also make sure 'a.b', and 'a' are also in the set, so that item parent/child relationships are respected.
-
+            if (givenScopes != null)
+            {
+	            notifyScopes.UnionWith(givenScopes);
+            }
             return ResolveAllScopes(notifyScopes);
         }
 
@@ -270,7 +273,7 @@ namespace Beamable.Common.Api.Inventory
             return result;
         }
 
-        private HashSet<string> ResolveMergeScopes(InventoryView view)
+        private HashSet<string> ResolveMergeScopes(InventoryView view, string[] givenScopes=null)
         {
             var resolved = new HashSet<string>();
             var scopes = Scopes;
@@ -280,6 +283,12 @@ namespace Beamable.Common.Api.Inventory
 
             // add the current scopes
             resolved.UnionWith(scopes);
+
+
+            if (givenScopes != null)
+            {
+	            resolved.UnionWith(givenScopes);
+            }
 
             // the view may have data that is a child of a scope modified in the response.
             resolved.UnionWith(view.currencies.Keys.Where(currencyType => SetContainsPrefixOf(scopesLookup, currencyType)));
@@ -295,9 +304,11 @@ namespace Beamable.Common.Api.Inventory
             return set.Any(element.StartsWith);
         }
 
-        public void MergeView(InventoryView view)
+        public void MergeView(InventoryView view, string[] givenScopes=null)
         {
-            var relevantScopes = ResolveMergeScopes(view);
+            var relevantScopes = ResolveMergeScopes(view, givenScopes);
+
+
             foreach(var contentId in view.currencies.Keys.ToList().Where(relevantScopes.Contains))
             {
                 view.currencies.Remove(contentId);
@@ -307,6 +318,10 @@ namespace Beamable.Common.Api.Inventory
             {
                 view.items.Remove(contentId);
             }
+
+            // handle entire item deletions. If an item's scope isn't in the view, its been deleted.
+
+
 
             foreach (var currency in currencies)
             {
@@ -424,12 +439,12 @@ namespace Beamable.Common.Api.Inventory
 
     /// <summary>
     /// This type defines the %Beamable %currency feature's property structure
-    /// 
+    ///
     /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-    /// 
+    ///
     /// #### Related Links
     /// - See the <a target="_blank" href="https://docs.beamable.com/docs/inventory-feature">Inventory</a> feature documentation
-    /// - See Beamable.Api.Inventory.InventoryService script reference 
+    /// - See Beamable.Api.Inventory.InventoryService script reference
     ///
     /// ![img beamable-logo]
     ///

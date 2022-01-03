@@ -8,6 +8,7 @@ using Beamable.Api.Sessions;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
@@ -17,9 +18,9 @@ using Beamable.Coroutines;
 using Beamable.Player;
 using Core.Platform.SDK;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Assertions;
 
 namespace Beamable
 {
@@ -90,6 +91,8 @@ namespace Beamable
 
 		public bool IsInitialized => _initPromise != null;
 
+		public bool IsDefault => string.IsNullOrEmpty(PlayerCode);
+
 		private IDependencyProviderScope _serviceScope;
 		private bool _isDisposed;
 		private GameObject _gob;
@@ -122,8 +125,8 @@ namespace Beamable
 
 		[SerializeField]
 		private PlayerAnnouncements _announcements;
-		[SerializeField]
-		private PlayerCurrencyGroup _currency;
+		// [SerializeField]
+		// private PlayerCurrencyGroup _currency;
 		[SerializeField]
 		private PlayerStats _playerStats;
 
@@ -132,16 +135,20 @@ namespace Beamable
 				? _announcements
 				: (_announcements = _serviceScope.GetService<PlayerAnnouncements>());
 
-		public PlayerCurrencyGroup Currencies =>
-			_currency?.IsInitialized ?? false
-				? _currency
-				: (_currency = _serviceScope.GetService<PlayerCurrencyGroup>());
+		// public PlayerCurrencyGroup Currencies =>
+		// 	_currency?.IsInitialized ?? false
+		// 		? _currency
+		// 		: (_currency = _serviceScope.GetService<PlayerCurrencyGroup>());
 
 		public PlayerStats Stats =>
 			_playerStats?.IsInitialized ?? false
 				? _playerStats
 				: (_playerStats = _serviceScope.GetService<PlayerStats>());
 
+		public PlayerInventory Inventory => ServiceProvider.GetService<PlayerInventory>();
+
+		public IContentApi Content =>
+			_contentService ?? (_contentService = _serviceScope.GetService<IContentApi>());
 
 		private ApiServices _api;
 		public ApiServices Api => _api ?? (_api = new ApiServices(this));
@@ -170,6 +177,7 @@ namespace Beamable
 		private PlatformRequester _requester;
 
 		private IAuthService _authService;
+		private IContentApi _contentService;
 		private IConnectivityService _connectivityService;
 		private NotificationService _notification;
 		private IPubnubSubscriptionManager _pubnubSubscriptionManager;
@@ -217,7 +225,6 @@ namespace Beamable
 			await SaveToken(token); // set the token so that it gets picked up on the next initialization
 			var ctx = Instantiate(null, PlayerCode);
 
-			Assert.AreEqual(ctx, this);
 			return ctx;
 		}
 
@@ -290,8 +297,31 @@ namespace Beamable
 			InitServices(cid, pid);
 			_behaviour.Initialize(this);
 
+			_initPromise = new Promise();
+			IEnumerator Try()
+			{
+				var success = false;
+				var attempt = 0;
+				var attemptDurations = new int[] {2, 2, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10};
+				while (!success)
+				{
+					yield return InitializeUser()
+						.Error(Debug.LogException)
+						.Then(__ =>
+						{
+							success = true;
+							_initPromise.CompleteSuccess();
+						}).ToYielder();
 
-			_initPromise = InitializeUser();
+					if (success) break;
+					var duration =
+						attemptDurations[attempt >= attemptDurations.Length ? attemptDurations.Length - 1 : attempt];
+					Debug.LogWarning($"Beamable couldn't start. playerCode=[{playerCode}] Will try again in {duration} seconds...");
+					yield return new WaitForSecondsRealtime(duration);
+					attempt++;
+				}
+			}
+			CoroutineService.StartNew("context_init", Try());
 		}
 
 		private void RegisterServices(IDependencyBuilder builder)
@@ -335,6 +365,8 @@ namespace Beamable
 			_sessionService = ServiceProvider.GetService<ISessionService>();
 			_heartbeatService = ServiceProvider.GetService<IHeartbeatService>();
 			_behaviour = ServiceProvider.GetService<BeamableBehaviour>();
+
+
 		}
 
 
@@ -373,6 +405,7 @@ namespace Beamable
 				 * TODO: We could record that a session started at a certain time, and report that later. But the API doesn't support custom startTimes
 				 * For now, we'll ignore any offline sessions.
 				 */
+				_connectivityService.OnReconnectOnce(async () => await InitStep_StartNewSession());
 			}
 		}
 
@@ -399,6 +432,14 @@ namespace Beamable
 						access_token = "fake",
 						refresh_token = "fake",
 						expires_in = 1
+					});
+					_connectivityService.OnReconnectOnce(async () =>
+					{
+						// disable the old token, because its bad
+						ClearToken();
+
+						// re-create the user
+						await InitStep_SaveToken();
 					});
 				}
 			} else if (AccessToken.IsExpired)
@@ -431,25 +472,21 @@ namespace Beamable
 			}
 			catch (NoConnectivityException)
 			{
-				/*
-				 * If we are offline, then use a fake user.
-				 */
+				_connectivityService.OnReconnectOnce( async () => await InitStep_GetUser());
 			}
 			AuthorizedUser.Value = user;
 		}
 
-		private void InitStep_StartPubnub()
+		private async Promise InitStep_StartPubnub()
 		{
 			try
 			{
 				_pubnubSubscriptionManager.UnsubscribeAll();
-				_pubnubSubscriptionManager.SubscribeToProvider();
+				await _pubnubSubscriptionManager.SubscribeToProvider();
 			}
 			catch (NoConnectivityException)
 			{
-				/*
-				 * We will need to re-connect to pubnub when we come back online.
-				 */
+				_connectivityService.OnReconnectOnce(async () => await InitStep_StartPubnub());
 			}
 		}
 
@@ -465,14 +502,10 @@ namespace Beamable
 					ServiceProvider.GetService<Promise<IBeamablePurchaser>>().CompleteSuccess(purchaser);
 				}
 			}
-			catch (Exception)
+			catch (NoConnectivityException)
 			{
-
+				_connectivityService.OnReconnectOnce(async () => await InitStep_StartPurchaser());
 			}
-			// catch (NoConnectivityException)
-			// {
-			// 	// don't do anything.
-			// }
 		}
 
 		private async Promise InitializeUser()
@@ -483,7 +516,7 @@ namespace Beamable
 
 			await InitStep_SaveToken();
 			await InitStep_GetUser();
-			InitStep_StartPubnub();
+			await InitStep_StartPubnub();
 
 			OnReloadUser?.Invoke();
 
@@ -498,6 +531,11 @@ namespace Beamable
 			await InitStep_StartPurchaser();
 
 			OnReloadUser?.Invoke();
+
+			if (IsDefault)
+			{
+				ContentApi.Instance.CompleteSuccess(Content); // TODO XXX: This is a bad hack. And we really shouldn't do it. But we need to because the regular contentRef can't access a BeamContext, unless we move the entire BeamContext to C#MS land
+			}
 		}
 
 
@@ -580,7 +618,7 @@ namespace Beamable
 			_isDisposed = true;
 			OnShutdown?.Invoke();
 			await _serviceScope.Dispose();
-			_currency = null;
+			// _currency = null;
 			_announcements = null;
 			_playerStats = null;
 			OnShutdownComplete?.Invoke();
