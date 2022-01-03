@@ -23,10 +23,10 @@ namespace Beamable.Common
         
         public static Task TaskFromPromise(Promise promise)
         {
-	        var tcs = new System.Threading.Tasks.TaskCompletionSource();
+	        var tcs = new System.Threading.Tasks.TaskCompletionSource<bool>();
 	        promise.Then(obj =>
 	        {
-		        tcs.SetResult();
+		        tcs.SetResult(promise.IsCompleted);
             
 	        }).Error((Exception e) =>
 	        {
