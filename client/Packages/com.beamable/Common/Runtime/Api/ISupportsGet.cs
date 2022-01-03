@@ -5,9 +5,9 @@ namespace Beamable.Common.Api
 {
    /// <summary>
    /// This type defines getting fresh data from an %Api data source (e.g. %Service).
-   /// 
+   ///
    /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-   /// 
+   ///
    /// #### Related Links
    /// - See Beamable.Api script reference
    ///
@@ -21,9 +21,9 @@ namespace Beamable.Common.Api
 
    /// <summary>
    /// This type defines getting fresh data from an %Api data source (e.g. %Service).
-   /// 
+   ///
    /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-   /// 
+   ///
    /// #### Related Links
    /// - See Beamable.Api script reference
    ///
@@ -37,9 +37,9 @@ namespace Beamable.Common.Api
 
    /// <summary>
    /// This type defines getting %Api data source.
-   /// 
+   ///
    /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-   /// 
+   ///
    /// #### Related Links
    /// - See Beamable.Api script reference
    ///
@@ -48,6 +48,12 @@ namespace Beamable.Common.Api
    /// </summary>
    public class BeamableGetApiResource<ScopedRsp>
    {
+	   private readonly bool _useCache;
+
+	   public BeamableGetApiResource(bool useCache = false)
+	   {
+		   _useCache = useCache;
+	   }
       public Promise<ScopedRsp> RequestData(IBeamableRequester requester, IUserContext ctx, string serviceName, string scope)
       {
          return RequestData(requester, CreateRefreshUrl(ctx, serviceName, scope));
@@ -55,7 +61,7 @@ namespace Beamable.Common.Api
 
       public virtual Promise<ScopedRsp> RequestData(IBeamableRequester requester, string url)
       {
-         return requester.Request<ScopedRsp>(Method.GET, url);
+         return requester.Request<ScopedRsp>(Method.GET, url, useCache:_useCache);
       }
 
       public virtual string CreateRefreshUrl(IUserContext ctx, string serviceName, string scope)
@@ -69,13 +75,15 @@ namespace Beamable.Common.Api
          return $"/object/{serviceName}/{ctx.UserId}{queryArgs}";
       }
    }
-   
+
    /// <summary>
    /// Helper class that can be used to make continuous <see cref="Method.POST"/> requests in order to keep some cached data somewhere.
    /// </summary>
    /// <typeparam name="ScopedRsp">The response type of the Post Request.</typeparam>
    public class BeamableGetApiResourceViaPost<ScopedRsp> : BeamableGetApiResource<ScopedRsp>
    {
+	   private readonly bool _useCache;
+
 	   /// <summary>
 	   /// Mapping of each requested scope to the body generated for it.
 	   /// </summary>
@@ -87,20 +95,21 @@ namespace Beamable.Common.Api
 	   /// </summary>
 	   private ArrayDict OutgoingBody;
 
-	   public BeamableGetApiResourceViaPost()
+	   public BeamableGetApiResourceViaPost(bool useCache=false)
 	   {
+		   _useCache = useCache;
 		   ScopesToBodyMap = new Dictionary<string, ArrayDict>();
 	   }
 
 	   public override Promise<ScopedRsp> RequestData(IBeamableRequester requester, string url)
 	   {
-		   return requester.Request<ScopedRsp>(Method.POST, url, OutgoingBody);
+		   return requester.Request<ScopedRsp>(Method.POST, url, OutgoingBody, useCache:_useCache);
 	   }
-	   
+
 	   /// <summary>
 	   /// Builds a <see cref="Method.POST"/> request's body for the given scope and caches it in <see cref="ScopesToBodyMap"/>.
 	   /// </summary>
-	   /// <param name="scope">A ","-separated string with all item types or ids that we want to get OR an empty string. Null is not supported.</param>      
+	   /// <param name="scope">A ","-separated string with all item types or ids that we want to get OR an empty string. Null is not supported.</param>
 	   public override string CreateRefreshUrl(IUserContext ctx, string serviceName, string scope)
 	   {
 		   if (!ScopesToBodyMap.TryGetValue(scope, out var body))
@@ -109,11 +118,11 @@ namespace Beamable.Common.Api
 			   {
 				   { "scopes", scope.Split(',')}
 			   };
-			   ScopesToBodyMap.Add(scope, body);		      
+			   ScopesToBodyMap.Add(scope, body);
 		   }
 
 		   OutgoingBody = body;
-	      
+
 		   return $"/object/{serviceName}/{ctx.UserId}";
 	   }
 

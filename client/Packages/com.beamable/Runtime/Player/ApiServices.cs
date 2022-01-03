@@ -1,6 +1,5 @@
 // unset
 
-using Beamable;
 using Beamable.Api;
 using Beamable.Api.Analytics;
 using Beamable.Api.Announcements;
@@ -23,7 +22,6 @@ using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.CloudData;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Api.Tournaments;
-using Beamable.Common.Player;
 using Beamable.Content;
 using Beamable.Experimental;
 using Beamable.Experimental.Api.Calendars;

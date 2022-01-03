@@ -229,6 +229,7 @@ namespace Beamable.Common.Content
       public override Promise<TContent> Resolve(string manifestID = "")
       {
          var api = ContentApi.Instance;
+
          if (api.IsCompleted)
          {
             return api.GetResult().GetContent(this, manifestID);

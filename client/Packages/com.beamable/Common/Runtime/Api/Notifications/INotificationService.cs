@@ -26,7 +26,7 @@ namespace Beamable.Common.Api.Notifications
 
    public static class NotificationServiceExtensions
    {
-      public static string GetRefreshTokenForService(this INotificationService _, string service) =>
+      public static string GetRefreshEventNameForService(this INotificationService _, string service) =>
          $"{service}.refresh";
    }
 }

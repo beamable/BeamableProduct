@@ -89,7 +89,7 @@ namespace Beamable.Api
 
       protected BeamableGetApiResource<ScopedRsp> getter;
 
-      private string service;
+      protected readonly string service;
       private Dictionary<string, Data> scopedData = new Dictionary<string, Data>();
 
       private Dictionary<string, List<PlatformSubscription<Data>>> scopedSubscriptions =
@@ -233,6 +233,12 @@ namespace Beamable.Api
          return !scopedSubscriptions.Any(kvp => scope.StartsWith(kvp.Key));
       }
 
+      protected virtual Promise OnRefreshScope(string scope)
+      {
+	      // do nothing.
+	      return Promise.Success;
+      }
+
       /// <summary>
       /// Manually refresh the available data.
       /// </summary>
@@ -266,7 +272,8 @@ namespace Beamable.Api
             coroutineService.StartCoroutine(ExecuteRefresh());
          }
 
-         return nextRefreshPromise;
+
+         return OnRefreshScope(scope).FlatMap(_ => nextRefreshPromise);
       }
 
       private IEnumerator ExecuteRefresh()
@@ -274,6 +281,7 @@ namespace Beamable.Api
          yield return Yielders.EndOfFrame;
          var promise = nextRefreshPromise;
          nextRefreshPromise = null;
+         var sentScopes = nextRefreshScopes.ToArray();
          var scope = string.Join(",", nextRefreshScopes);
          nextRefreshScopes.Clear();
 
@@ -306,10 +314,10 @@ namespace Beamable.Api
             {
                retry += 1;
             }
-         }).Then(OnRefresh).Then(_ =>
+         }).FlatMap(x => OnRefresh(x, sentScopes)).Then(_ =>
          {
-            retry = 0;
-            promise.CompleteSuccess(PromiseBase.Unit);
+	         retry = 0;
+	         promise.CompleteSuccess(PromiseBase.Unit);
          });
       }
 
@@ -402,7 +410,13 @@ namespace Beamable.Api
          }
       }
 
-      protected abstract void OnRefresh(ScopedRsp data);
+      protected virtual void OnRefresh(ScopedRsp data) {}
+
+      protected virtual Promise OnRefresh(ScopedRsp data, string[] scopes)
+      {
+	      OnRefresh(data);
+	      return Promise.Success;
+      }
 
       private void OnRefreshNtf(object payloadRaw)
       {
@@ -527,8 +541,8 @@ namespace Beamable.Api
 
       public string Scope => scope;
 
-      internal PlatformSubscription(string scope, Action<T> callback,
-         Action<string, PlatformSubscription<T>> onUnsubscribe)
+      public PlatformSubscription(string scope, Action<T> callback,
+                                  Action<string, PlatformSubscription<T>> onUnsubscribe)
       {
          this.scope = scope;
          this.callback = callback;

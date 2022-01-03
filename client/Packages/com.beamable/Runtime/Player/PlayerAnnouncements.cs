@@ -95,7 +95,7 @@ namespace Beamable.Player
 			// TODO: How do we handle user sign out?
 
 			_sdkEventService.Register(nameof(Announcements), HandleEvent);
-			_notifications.Subscribe(_notifications.GetRefreshTokenForService("announcements"),
+			_notifications.Subscribe(_notifications.GetRefreshEventNameForService("announcements"),
 			                         HandleSubscriptionUpdate);
 
 

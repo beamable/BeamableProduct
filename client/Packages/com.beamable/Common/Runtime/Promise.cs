@@ -301,19 +301,22 @@ namespace Beamable.Common
       public Promise<TU> Map<TU>(Func<T, TU> callback)
       {
          var result = new Promise<TU>();
+         // need to forward the error handles of this one, to the next one.x
+         // result.Error(err => errbacks?.Invoke(err));
          Then(value =>
-            {
-               try
-               {
-                  var nextResult = callback(value);
-                  result.CompleteSuccess(nextResult);
-               }
-               catch (Exception ex)
-               {
-                  result.CompleteError(ex);
-               }
-            })
-            .Error(ex => result.CompleteError(ex));
+	         {
+		         try
+		         {
+			         var nextResult = callback(value);
+			         result.CompleteSuccess(nextResult);
+		         }
+		         catch (Exception ex)
+		         {
+			         result.CompleteError(ex);
+		         }
+	         })
+	         .Error(ex => result.CompleteError(ex))
+	         ;
          return result;
       }
 
@@ -383,9 +386,9 @@ namespace Beamable.Common
       /// <returns></returns>
       public static Promise<T> Failed(Exception err)
       {
-	      if (err.StackTrace == null)
+	      if (err?.StackTrace == null)
 	      {
-		      err.SetStackTrace(new StackTrace());
+		      err?.SetStackTrace(new StackTrace());
 	      }
 	      ExceptionDispatchInfo errInfo = ExceptionDispatchInfo.Capture(err);
 	      return new Promise<T>
@@ -398,8 +401,8 @@ namespace Beamable.Common
 
       void ICriticalNotifyCompletion.UnsafeOnCompleted(Action continuation)
       {
-         Then(_ => continuation());
-         Error(_ => continuation());
+	      Error(_ => continuation());
+	      Then(_ => continuation());
       }
 
       void INotifyCompletion.OnCompleted(Action continuation)
@@ -427,12 +430,17 @@ namespace Beamable.Common
 
       /// <summary>
       /// Get the awaiter of the <see cref="Promise"/>.
+      /// Once an awaiter is established, this promise will never raise an uncaught exception.
       /// </summary>
       /// <returns></returns>
       /// <exception cref="Exception"></exception>
       public Promise<T> GetAwaiter()
       {
-         return this;
+	      Error((ex) =>
+	      {
+		      // remove the ability for an uncaught exception to raise. As an awaiter, the .GetResult() method will trigger, which will THROW an error if one exists.
+	      });
+	      return this;
       }
 
    }
@@ -1038,6 +1046,8 @@ namespace Beamable.Common
       public void SetException(Exception ex)
       {
 	      _promise.RaiseInnerException = true;
+	      // TODO: there is a bug here, where an "uncaught" exception can still happen even if someone try/catches it.
+	      _promise.Error(err => { });
 	      _promise.CompleteError(ex);
       }
 
@@ -1068,7 +1078,7 @@ namespace Beamable.Common
          where TAwaiter : ICriticalNotifyCompletion
          where TStateMachine : IAsyncStateMachine
       {
-         AwaitOnCompleted(ref awaiter, ref stateMachine);
+	      AwaitOnCompleted(ref awaiter, ref stateMachine);
       }
 
       public void Start<TStateMachine>(ref TStateMachine stateMachine)

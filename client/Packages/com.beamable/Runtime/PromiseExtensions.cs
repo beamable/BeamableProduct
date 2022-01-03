@@ -18,7 +18,7 @@ namespace Beamable
       private static HashSet<Task> _uncaughtTasks = new HashSet<Task>();
       public static async Task WaitForAllUncaughtHandlers()
       {
-         var tasks = _uncaughtTasks.ToArray();
+         var tasks = _uncaughtTasks.Where(t => t != null).ToArray();
          await Task.WhenAll(tasks);
       }
 
@@ -36,6 +36,7 @@ namespace Beamable
          async Task DelayedCheck()
          {
             await Task.Yield();
+            // await Task.Delay(10);
             // execute check.
             if (!promise.HadAnyErrbacks)
             {

@@ -12,15 +12,15 @@ namespace Beamable.Api.Connectivity
 {
     /// <summary>
     /// This type defines the %Client main entry point for the %Connectivity feature.
-    /// 
+    ///
     /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-    /// 
+    ///
     /// #### Related Links
     /// - See the <a target="_blank" href="https://docs.beamable.com/docs/connectivity-feature">Connectivity</a> feature documentation
     /// - See Beamable.API script reference
-    /// 
+    ///
     /// ![img beamable-logo]
-    /// 
+    ///
     /// </summary>
     public interface IConnectivityService
     {
@@ -28,19 +28,21 @@ namespace Beamable.Api.Connectivity
         event Action<bool> OnConnectivityChanged;
         void SetHasInternet(bool hasInternet);
         void ReportInternetLoss();
+
+        void OnReconnectOnce(Action onReconnection);
     }
-    
+
     /// <summary>
     /// This type defines the %Client main entry point for the %Connectivity feature.
-    /// 
+    ///
     /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-    /// 
+    ///
     /// #### Related Links
     /// - See the <a target="_blank" href="https://docs.beamable.com/docs/connectivity-feature">Connectivity</a> feature documentation
     /// - See Beamable.API script reference
-    /// 
+    ///
     /// ![img beamable-logo]
-    /// 
+    ///
     /// </summary>
     public class ConnectivityService : IConnectivityService
     {
@@ -62,6 +64,8 @@ namespace Beamable.Api.Connectivity
         private bool _first = true;
 
         public event Action<bool> OnConnectivityChanged;
+
+        private event Action OnReconnection;
 
         public ConnectivityService( CoroutineService coroutineService)
         {
@@ -125,6 +129,9 @@ namespace Beamable.Api.Connectivity
 
         public void SetHasInternet(bool hasInternet)
         {
+
+	        var isReconnection = (hasInternet && !HasConnectivity);
+
             if (hasInternet != HasConnectivity || _first)
             {
                 _first = false;
@@ -132,6 +139,12 @@ namespace Beamable.Api.Connectivity
             }
 
             HasConnectivity = hasInternet;
+            if (isReconnection)
+            {
+	            // we have the tubes! Invoke any pending actions and reset it.
+	            OnReconnection?.Invoke();
+	            OnReconnection = null;
+            }
         }
 
         public void ReportInternetLoss()
@@ -139,6 +152,19 @@ namespace Beamable.Api.Connectivity
             // TODO: This could expand into a loss-tolerance system where the connectivity service could allow a few failed messages before declaring internet is entirely gone.
             // but for now, just report no internet...
             SetHasInternet(false);
+        }
+
+        public void OnReconnectOnce(Action onReconnection)
+        {
+	        // if the state is already in a connected sense, then run this immediately.
+	        if (HasConnectivity)
+	        {
+		        onReconnection?.Invoke();
+		        return;
+	        }
+
+	        // queue the action to be run when the connectivity comes back.
+	        OnReconnection += onReconnection;
         }
     }
 }

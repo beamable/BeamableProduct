@@ -7,7 +7,7 @@ namespace Beamable.Editor.Player
 {
    // [CustomPropertyDrawer(typeof(PlayerAnnouncements))]
    // [CustomPropertyDrawer(typeof(PlayerCurrencyGroup))]
-   [CustomPropertyDrawer(typeof(AbsObservable), true)]
+   [CustomPropertyDrawer(typeof(AbsRefreshableObservable), true)]
    public class ObservableReadonlyListPropertyDrawer : PropertyDrawer
    {
       public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
