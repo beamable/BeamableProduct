@@ -6,7 +6,7 @@ namespace Beamable.Common
 {
     public class BeamableTaskExtensions
     {
-        public static Task TaskFromPromise<T>(Promise<T> promise)
+        public static Task TaskFromGenericPromise<T>(Promise<T> promise)
         {
             var tcs = new System.Threading.Tasks.TaskCompletionSource<T>();
             promise.Then(obj =>
@@ -19,6 +19,21 @@ namespace Beamable.Common
             });
 
             return tcs.Task;
+        }
+        
+        public static Task TaskFromPromise(Promise promise)
+        {
+	        var tcs = new System.Threading.Tasks.TaskCompletionSource();
+	        promise.Then(obj =>
+	        {
+		        tcs.SetResult();
+            
+	        }).Error((Exception e) =>
+	        {
+		        tcs.SetException(e);
+	        });
+
+	        return tcs.Task;
         }
     }
 }
