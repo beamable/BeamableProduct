@@ -1,5 +1,6 @@
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
+using Beamable.Server.Editor.UI;
 using Beamable.Server.Editor.UI.Components;
 using System;
 using UnityEditor;
@@ -23,6 +24,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         public static PublishWindow ShowPublishWindow()
         {
             var wnd = CreateInstance<PublishWindow>();
+            wnd.name = Constants.Publish;
             wnd.titleContent = new GUIContent(Constants.Publish);
 
             ((PublishWindow) wnd).ShowUtility();
@@ -65,9 +67,9 @@ namespace Beamable.Editor.Microservice.UI.Components
             e.OnCloseRequested += Close;
             e.OnSubmit += async (model) =>
             {
+	            WindowStateUtility.DisableAllWindows();
 	            e.PrepareForPublish();
-
-                await Microservices.Deploy(model, this, e.ServiceDeployed, false);
+	            await Microservices.Deploy(model, this, e.ServiceDeployed, false);
                 Close();
             };
 
