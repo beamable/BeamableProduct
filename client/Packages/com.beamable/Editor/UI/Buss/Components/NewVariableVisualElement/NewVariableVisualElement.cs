@@ -94,11 +94,11 @@ namespace Beamable.Editor.Toolbox.Components
 				index++;
 			}
 		}
-
-		// TODO: IT'S NOT WORKING YET
+		
 		private void HandleEnumSwitch(int index)
 		{
-			_currentBussProperty = _allEnumTypes[index] as IBussProperty;
+			var type = _allEnumTypes[index];
+			_currentBussProperty = Activator.CreateInstance(type) as IBussProperty;
 			_typesDict["Enum"] = new Tuple<BeamableVisualElement, IBussProperty>(_enumType, _currentBussProperty);
 		}
 
@@ -113,8 +113,8 @@ namespace Beamable.Editor.Toolbox.Components
 				case VertexColorBussProperty _: result = new VertexColorBussProperty(_vertexColorType.SelectedColor); break;
 				case FloatBussProperty _: result = new FloatBussProperty(); break;
 				case FractionFloatBussProperty _: result = new FractionFloatBussProperty(); break;
-				case SpriteBussProperty _: result = new SpriteBussProperty(); break;
-				case FontBussAssetProperty _: result = new FontBussAssetProperty(); break;
+				case SpriteBussProperty _: result = new SpriteBussProperty(_spriteType.SelectedSprite); break;
+				case FontBussAssetProperty _: result = new FontBussAssetProperty(new TMP_FontAsset()); break;
 			}
 			
 			BussStyleSheetUtility.TryAddProperty(new BussStyleDescription(), _variableName.Value, result, out var _);
