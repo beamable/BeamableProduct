@@ -110,7 +110,10 @@ namespace Beamable.Server
             var resultType = method.ReturnType;
             
             Log.Debug("resultType {rType}", resultType);
-            
+
+            if (resultType.IsSubclassOf(typeof(Promise<Unit>)))
+               resultType = typeof(Promise<Unit>);
+
             if ((resultType.IsGenericType && resultType.GetGenericTypeDefinition() == typeof(Promise<>)))
             {
                executor = (target, args) =>
@@ -121,17 +124,6 @@ namespace Beamable.Server
                   
                   return (Task)promiseMethod.MakeGenericMethod(resultType.GetGenericArguments()[0])
                      .Invoke(null, new[] {promiseObject});
-               };
-            }
-            else if (resultType == typeof(Promise))
-            {
-               executor = (target, args) =>
-               {
-                  var promiseObject = closureMethod.Invoke(target, args);
-                  var promiseMethod = typeof(BeamableTaskExtensions).GetMethod(
-                     nameof(BeamableTaskExtensions.TaskFromPromise), BindingFlags.Static | BindingFlags.Public);
-                  
-                  return (Task)promiseMethod.Invoke(resultType, new[] {promiseObject});
                };
             }
             else

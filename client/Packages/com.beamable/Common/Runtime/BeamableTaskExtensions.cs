@@ -20,21 +20,6 @@ namespace Beamable.Common
 
             return tcs.Task;
         }
-        
-        public static Task TaskFromPromise(Promise promise)
-        {
-	        var tcs = new System.Threading.Tasks.TaskCompletionSource<Unit>();
-	        promise.Then(obj =>
-	        {
-		        tcs.SetResult(obj);
-            
-	        }).Error((Exception e) =>
-	        {
-		        tcs.SetException(e);
-	        });
-
-	        return tcs.Task;
-        }
     }
 }
 #endif
