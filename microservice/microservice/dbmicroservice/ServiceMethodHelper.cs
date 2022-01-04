@@ -109,8 +109,6 @@ namespace Beamable.Server
 
             var resultType = method.ReturnType;
             
-            Log.Debug("resultType {rType}", resultType);
-
             if (resultType.IsSubclassOf(typeof(Promise<Unit>)))
                resultType = typeof(Promise<Unit>);
 
