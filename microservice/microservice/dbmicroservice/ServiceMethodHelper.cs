@@ -109,8 +109,6 @@ namespace Beamable.Server
 
             var resultType = method.ReturnType;
             
-            Log.Debug("resultType {rType}", resultType);
-
             if (resultType.IsSubclassOf(typeof(Promise<Unit>)))
                resultType = typeof(Promise<Unit>);
 
@@ -120,7 +118,7 @@ namespace Beamable.Server
                {
                   var promiseObject = closureMethod.Invoke(target, args);
                   var promiseMethod = typeof(BeamableTaskExtensions).GetMethod(
-                     nameof(BeamableTaskExtensions.TaskFromGenericPromise), BindingFlags.Static | BindingFlags.Public);
+                     nameof(BeamableTaskExtensions.TaskFromPromise), BindingFlags.Static | BindingFlags.Public);
                   
                   return (Task)promiseMethod.MakeGenericMethod(resultType.GetGenericArguments()[0])
                      .Invoke(null, new[] {promiseObject});
