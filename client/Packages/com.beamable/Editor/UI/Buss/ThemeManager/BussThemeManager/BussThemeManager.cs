@@ -30,7 +30,7 @@ namespace Beamable.UI.BUSS
 		{
 			BussThemeManager window = new BussThemeManager();
 			BeamablePopupWindow.ShowUtility(BeamableConstants.THEME_MANAGER, window, null,
-				BUSSConstants.ThemeManagerWindowSize);
+			                                BUSSConstants.ThemeManagerWindowSize);
 		}
 
 		private VisualElement _navigationGroup;
@@ -39,8 +39,7 @@ namespace Beamable.UI.BUSS
 		private BussStyleSheet _currentStyleSheet;
 
 		private BussThemeManager() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussThemeManager)}/{nameof(BussThemeManager)}")
-		{ }
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussThemeManager)}/{nameof(BussThemeManager)}") { }
 
 		public override void Refresh()
 		{
@@ -52,8 +51,9 @@ namespace Beamable.UI.BUSS
 			_styleSheetSource.objectType = typeof(BussStyleSheet);
 			_styleSheetSource.UnregisterValueChangedCallback(StyleSheetChanged);
 			_styleSheetSource.RegisterValueChangedCallback(StyleSheetChanged);
-			
-			ComponentBasedHierarchyVisualElement<Text> hierarchyComponent = new ComponentBasedHierarchyVisualElement<Text>();
+
+			BussElementHierarchyVisualElement hierarchyComponent = new BussElementHierarchyVisualElement();
+
 			hierarchyComponent.Refresh();
 			_navigationGroup.Add(hierarchyComponent);
 		}
