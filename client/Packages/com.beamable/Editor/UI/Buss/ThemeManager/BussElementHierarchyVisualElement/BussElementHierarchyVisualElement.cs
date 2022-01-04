@@ -17,7 +17,7 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public BussElementHierarchyVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussElementHierarchyVisualElement)}/{nameof(BussElementHierarchyVisualElement)}") { }
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement") { }
 
 		protected override string GetLabel(BussElement component)
 		{
