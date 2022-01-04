@@ -275,8 +275,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                .AddMessageHandler(
                   MessageMatcher
                      .WithReqId(1)
-                     .WithStatus(200)
-                     .WithPayload<Promise>(n => n.IsCompleted),
+                     .WithStatus(200),
                   MessageResponder.NoResponse(),
                   MessageFrequency.OnlyOnce()
                );
