@@ -42,9 +42,22 @@ namespace Beamable.Server.Editor.CodeGen
       public static string GetTargetParameterClassName(MicroserviceDescriptor descriptor) =>
           $"MicroserviceParameters{descriptor.Name}Client";
 
-      public static string GetParameterClassName(Type parameterType) =>
-			$"Parameter{(string.IsNullOrEmpty(parameterType.Namespace) ? string.Empty : string.Join("_", parameterType.Namespace.Split('.')))}_{parameterType.Name}";
+      public static string GetParameterClassName(Type parameterType, bool withPrefix = true)
+      {
+          var namespaceStr = string.Empty;
+          var name = string.Empty;
 
+          if (!string.IsNullOrEmpty(parameterType.Namespace))
+              namespaceStr = string.Join("_", parameterType.Namespace.Split('.'));
+
+          if (parameterType.IsGenericType && parameterType.GetGenericTypeDefinition() == typeof(List<>))
+              name = GetParameterClassName(parameterType.GetGenericArguments()[0], false);
+          else
+              name = parameterType.Name;
+
+          return $"{(withPrefix ? PARAMETER_STRING : string.Empty)}{namespaceStr}_{name}";
+		}
+			
       public static Type GetDataWrapperTypeForParameter(MicroserviceDescriptor descriptor, Type parameterType)
       {
           var name =
