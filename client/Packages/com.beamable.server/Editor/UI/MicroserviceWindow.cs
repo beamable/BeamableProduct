@@ -191,7 +191,7 @@ namespace Beamable.Editor.Microservice.UI
                 _microserviceContentVisualElement.BuildAndStartAllMicroservices(_loadingBar);
             _actionBarVisualElement.OnBuildAllClicked += () =>
                 _microserviceContentVisualElement.BuildAllMicroservices(_loadingBar);
-            
+
             Microservices.OnDeploySuccess -= HandleDeploySuccess;
             Microservices.OnDeploySuccess += HandleDeploySuccess;
             Microservices.OnDeployFailed -= HandleDeployFailed;

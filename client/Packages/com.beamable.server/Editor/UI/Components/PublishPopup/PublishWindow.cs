@@ -80,6 +80,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 	             */
 	            WindowStateUtility.DisableAllWindows();
 	            e.PrepareForPublish();
+
                 await Microservices.Deploy(model, this, _tokenSource.Token, e.ServiceDeployed);
                 Close();
             };

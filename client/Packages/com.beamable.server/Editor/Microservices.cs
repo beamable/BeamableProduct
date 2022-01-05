@@ -508,15 +508,14 @@ namespace Beamable.Server.Editor
       public static event Action<ManifestModel, int> OnBeforeDeploy;
       public static event Action<ManifestModel, int> OnDeploySuccess;
       public static event Action<ManifestModel, string> OnDeployFailed;
-
+     
       public static async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context, CancellationToken token, Action<IDescriptor> onServiceDeployed = null)
       {
          if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
          
          var descriptorsCount = Descriptors.Count;
-         
-         OnBeforeDeploy?.Invoke(model, descriptorsCount);
 
+         OnBeforeDeploy?.Invoke(model, descriptorsCount);
          
          OnDeploySuccess -= HandleDeploySuccess;
          OnDeploySuccess += HandleDeploySuccess;
