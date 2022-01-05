@@ -145,6 +145,14 @@ namespace Beamable
 				? _playerStats
 				: (_playerStats = _serviceScope.GetService<PlayerStats>());
 
+		/// <summary>
+		/// <para>
+		/// Access the player's inventory
+		/// </para>
+		/// <para>
+		/// <inheritdoc cref="PlayerInventory"/>
+		/// </para>
+		/// </summary>
 		public PlayerInventory Inventory => ServiceProvider.GetService<PlayerInventory>();
 
 		public IContentApi Content =>
@@ -617,11 +625,20 @@ namespace Beamable
 
 			_isDisposed = true;
 			OnShutdown?.Invoke();
+
+			// clear all events...
+			OnReloadUser = null;
+			OnShutdown = null;
+			TimeOverrideChanged = null;
+			OnUserLoggedIn = null;
+			OnUserLoggingOut = null;
+
 			await _serviceScope.Dispose();
 			// _currency = null;
 			_announcements = null;
 			_playerStats = null;
 			OnShutdownComplete?.Invoke();
+			OnShutdownComplete = null;
 		}
 
 

@@ -44,7 +44,6 @@ namespace Beamable.ConsoleCommands
         public static void RegisterServices(IDependencyBuilder builder)
         {
 	        builder.AddSingleton<BeamableConsole>();
-	        // builder.AddSingleton(p => new BeamableConsole(p));
         }
 
         public BeamableConsole(IDependencyProvider provider)
@@ -94,47 +93,8 @@ namespace Beamable.ConsoleCommands
 	            ProcessMethods(staticMethods, (method) => (ConsoleCommandCallback) Delegate.CreateDelegate(typeof(ConsoleCommandCallback), method, false));
             }
 
-            // var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            // foreach (var assembly in assemblies)
-            // {
-            //     foreach (var type in assembly.GetTypes())
-            //     {
-            //         if (!type.IsClass || type.GetCustomAttribute<BeamableConsoleCommandProviderAttribute>(false) == null)
-            //         {
-            //             continue;
-            //         }
-            //
-            //         var instance = ResolveInstance(type);
-            //         if (instance == null)
-            //         {
-            //             continue;
-            //         }
-            //
-            //         var instanceMethods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-            //         var staticMethods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
-            //         ProcessMethods(instanceMethods, (method) => (ConsoleCommandCallback) Delegate.CreateDelegate(typeof(ConsoleCommandCallback), instance, method, false));
-            //         ProcessMethods(staticMethods, (method) => (ConsoleCommandCallback) Delegate.CreateDelegate(typeof(ConsoleCommandCallback), method, false));
-            //     }
-            // }
-
-            // object ResolveInstance(Type type)
-            // {
-            //     if (type == null)
-            //     {
-            //         Debug.LogError($"Cannot resolve null type");
-            //         return null;
-            //     }
-            //     var emptyConstructor = type.GetConstructor(emptyTypeArray);
-            //     if (emptyConstructor == null)
-            //     {
-            //         Debug.LogError($"Console Command Provider must have an empty constructor. type=[{type.Name}]");
-            //         return null;
-            //     }
-            //     return emptyConstructor.Invoke(emptyObjectArray);
-            // }
-
             void ProcessMethods(IEnumerable<MethodInfo> methods,
-                Func<MethodInfo, ConsoleCommandCallback> callbackCreator)
+                                Func<MethodInfo, ConsoleCommandCallback> callbackCreator)
             {
                 foreach (var method in methods)
                 {

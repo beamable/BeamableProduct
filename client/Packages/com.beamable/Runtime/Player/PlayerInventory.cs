@@ -23,6 +23,11 @@ namespace Beamable.Player
 
 	}
 
+	/// <summary>
+	/// <para>
+	/// The player's inventory can have <see cref="Currencies"/>, and items, which can be accessed via <see cref="GetItems"/>
+	/// </para>
+	/// </summary>
 	[Serializable]
 	public class PlayerInventory
 	{
@@ -74,8 +79,21 @@ namespace Beamable.Player
 			_consumer = _sdkEventService.Register(nameof(PlayerInventory), HandleEvent);
 		}
 
+		/// <summary>
+		/// Get a player's currency data for a given type.
+		/// </summary>
+		/// <param name="currencyRef">A <see cref="CurrencyRef"/> for the type of currency to get. </param>
+		/// <returns>A <see cref="PlayerCurrency"/> object for the given currencyRef</returns>
 		public PlayerCurrency GetCurrency(CurrencyRef currencyRef) => Currencies.GetCurrency(currencyRef);
 
+		/// <summary>
+		/// Get a category of player items for a given type.
+		/// If you have subtypes of <see cref="ItemContent"/>,
+		/// and you get an item group for a basetype of <see cref="ItemContent"/>,
+		/// the resultant <see cref="PlayerItemGroup"/> will have all instances from all subclasses of the given type.
+		/// </summary>
+		/// <param name="itemRef">An <see cref="ItemRef"/> for the type of item to get. </param>
+		/// <returns>a <see cref="PlayerItemGroup"/> object for the given itemRef</returns>
 		public PlayerItemGroup GetItems(ItemRef itemRef=null)
 		{
 			itemRef = itemRef ?? "items";
@@ -87,6 +105,12 @@ namespace Beamable.Player
 			return itemGroup;
 		}
 
+		/// <summary>
+		/// <inheritdoc cref="Update(Beamable.Common.Api.Inventory.InventoryUpdateBuilder,string)"/>
+		/// </summary>
+		/// <param name="updateBuilder">An action that gives you a <see cref="InventoryUpdateBuilder"/> to configure with actions to apply to the player's inventory</param>
+		/// <param name="transaction">An optional transaction id for the operation. </param>
+		/// <returns>A promise representing the success of the operation.</returns>
 		public Promise Update(Action<InventoryUpdateBuilder> updateBuilder, string transaction=null)
 		{
 			var builder = new InventoryUpdateBuilder();
@@ -96,6 +120,22 @@ namespace Beamable.Player
 			return Update(builder, transaction);
 		}
 
+		/// <summary>
+		/// Make an atomic update to the player's inventory state.
+		/// If you are offline, then this function changes based on your <see cref="CoreConfiguration.InventoryOfflineMode"/> setting.
+		///
+		/// <para>
+		/// Configure the <see cref="InventoryUpdateBuilder"/> with the modifications you'd like to make to the player's inventory.
+		/// </para>
+		/// <para>
+		/// Note that by default, you cannot update currency or items, because they can only be set from Beamable Microservices, or
+		/// the Beamable Platform itself. However, you can mark individual <see cref="CurrencyContent"/> and <see cref="ItemContent"/>
+		/// objects as editable by setting their <see cref="CurrencyContent.clientPermission"/> writeSelf property.
+		/// </para>
+		/// </summary>
+		/// <param name="updateBuilder">A <see cref="InventoryUpdateBuilder"/> containing actions to apply to the player's inventory</param>
+		/// <param name="transaction">An optional transaction id for the operation. </param>
+		/// <returns>A promise representing the success of the operation.</returns>
 		public Promise Update(InventoryUpdateBuilder updateBuilder, string transaction = null)
 		{
 			var json = InventoryUpdateBuilderSerializer.ToNetworkJson(updateBuilder, transaction);
@@ -217,7 +257,7 @@ namespace Beamable.Player
 		}
 
 
-		private string OfflineIdKey(string contentId, long itemId) => $"{contentId}-{itemId}";
+		private string OfflineIdKey(string contentId, long itemId) => $"{contentId}-{itemId}"; // TODO: Maybe don't need content id?
 
 		private bool TryGetOfflineId(string contentId, long itemId, out string reqId)
 		{
@@ -311,21 +351,17 @@ namespace Beamable.Player
 			switch (evt.Event)
 			{
 				case "update":
-					Debug.Log("Ran update!");
 					await HandleUpdate(evt);
 					break;
 
-				case "commit":
+				case "commit": // TODO: turn into const strings.
 					if (_offlineUpdate.IsEmpty)
 					{
-						Debug.Log("offline builder is empty, skipping commit");
 						break;
 					}
-					Debug.Log("Ran commit!");
-
 					var nextBuilder = _offlineUpdate;
 					_offlineUpdate = new InventoryUpdateBuilder();
-					await Update(nextBuilder);
+					await Update(nextBuilder); // TODO: this might fail, and we'd lose accrued data.
 					_itemIdToReqId.Clear();
 					break;
 			}

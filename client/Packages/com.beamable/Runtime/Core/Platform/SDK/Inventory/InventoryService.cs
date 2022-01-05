@@ -18,6 +18,8 @@ namespace Beamable.Api.Inventory
    ///
    /// ![img beamable-logo]
    ///
+   /// Scopes are content ids!!
+   ///
    /// </summary>
    public class InventorySubscription : PlatformSubscribable<InventoryResponse, InventoryView>
    {
@@ -43,6 +45,7 @@ namespace Beamable.Api.Inventory
       {
          view.Clear();
       }
+
 
       protected override Promise OnRefresh(InventoryResponse data, string[] scopes)
       {
@@ -124,6 +127,7 @@ namespace Beamable.Api.Inventory
       }
 
       public override Promise<InventoryView> GetCurrent(string scope = "") => Subscribable.GetCurrent(scope);
+
    }
 }
 

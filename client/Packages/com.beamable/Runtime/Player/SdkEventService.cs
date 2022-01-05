@@ -154,10 +154,10 @@ namespace Beamable.Player
    public class SdkEvent
    {
       [SerializeField]
-      private string _source;
+      private string _source; // TODO: Can this be an enum?
 
       [SerializeField]
-      private string _event;
+      private string _event; // TODO: Can this be an enum?
 
       [SerializeField]
       private string[] _args;
