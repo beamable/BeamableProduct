@@ -15,7 +15,7 @@ namespace Beamable.Server.Editor.UI
 		/// <summary>
 		/// Checks if disabling process is still in use.
 		/// </summary>
-		public static bool InUse { get; private set; } 
+		private static bool InUse { get; set; } 
 		
 		private static EditorApplication.CallbackFunction _changeWindowEnableStateCallback;
 		

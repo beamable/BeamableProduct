@@ -89,8 +89,6 @@ namespace Beamable.Editor.Microservice.UI.Components
             e.PrepareParent();
             e.Refresh();
             Repaint();
-            
-
             isSet = true;
         }
 
