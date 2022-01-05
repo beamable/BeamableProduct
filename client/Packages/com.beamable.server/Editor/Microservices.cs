@@ -15,6 +15,7 @@ using Beamable.Server.Editor.Uploader;
 using Beamable.Platform.SDK;
 using Beamable.Editor;
 using Beamable.Editor.UI.Model;
+using Beamable.Server.Editor.UI;
 using System.Threading;
 using UnityEditor;
 using UnityEditor.Callbacks;
@@ -503,17 +504,23 @@ namespace Beamable.Server.Editor
             return BitConverter.ToString(checksum).Replace("-", String.Empty);
          }
       }
-
+      
       public static event Action<ManifestModel, int> OnBeforeDeploy;
       public static event Action<ManifestModel, int> OnDeploySuccess;
       public static event Action<ManifestModel, string> OnDeployFailed;
-
+     
       public static async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context, CancellationToken token, Action<IDescriptor> onServiceDeployed = null)
       {
          if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
          
          var descriptorsCount = Descriptors.Count;
+
          OnBeforeDeploy?.Invoke(model, descriptorsCount);
+         
+         OnDeploySuccess -= HandleDeploySuccess;
+         OnDeploySuccess += HandleDeploySuccess;
+         OnDeployFailed -= HandleDeployFailed;
+         OnDeployFailed += HandleDeployFailed;
 
          // TODO perform sort of diff, and only do what is required. Because this is a lot of work.
          var de = await EditorAPI.Instance;
@@ -632,11 +639,19 @@ namespace Beamable.Server.Editor
          OnDeploySuccess?.Invoke(model, descriptorsCount);
          Debug.Log("Service Deploy Complete");
       }
-
       public static void MicroserviceCreated(string serviceName)
       {
          var key = string.Format(SERVICE_PUBLISHED_KEY, serviceName);
          EditorPrefs.SetBool(key, false);
+      }
+
+      private static void HandleDeploySuccess(ManifestModel _, int __)
+      {
+	      WindowStateUtility.EnableAllWindows();
+      }
+      private static void HandleDeployFailed(ManifestModel _, string __)
+      {
+	      WindowStateUtility.EnableAllWindows();
       }
    }
 }

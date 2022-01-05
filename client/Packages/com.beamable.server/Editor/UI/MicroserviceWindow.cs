@@ -9,6 +9,7 @@ using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
+using Beamable.Server.Editor.UI;
 using UnityEditor;
 using Beamable.Server.Editor.UI.Components;
 using UnityEngine;
@@ -191,8 +192,6 @@ namespace Beamable.Editor.Microservice.UI
             _actionBarVisualElement.OnBuildAllClicked += () =>
                 _microserviceContentVisualElement.BuildAllMicroservices(_loadingBar);
 
-            Microservices.OnBeforeDeploy -= HandleBeforeDeploy;
-            Microservices.OnBeforeDeploy += HandleBeforeDeploy;
             Microservices.OnDeploySuccess -= HandleDeploySuccess;
             Microservices.OnDeploySuccess += HandleDeploySuccess;
             Microservices.OnDeployFailed -= HandleDeployFailed;
@@ -242,14 +241,12 @@ namespace Beamable.Editor.Microservice.UI
             CreateModel();
             SetForContent();
         }
-
-        private void HandleBeforeDeploy(ManifestModel manifestModel, int totalSteps)
+        
+        private void HandleDeploySuccess(ManifestModel _model, int _totalSteps)
         {
-	        new DeployLogParser(_loadingBar, manifestModel, totalSteps);
+	        RefreshWindow(true);
         }
 
-        private void HandleDeploySuccess(ManifestModel _model, int _totalSteps) => RefreshWindow(true);
-        
         private void HandleDeployFailed(ManifestModel _model, string reason)
         {
 	        Debug.Log(reason);
