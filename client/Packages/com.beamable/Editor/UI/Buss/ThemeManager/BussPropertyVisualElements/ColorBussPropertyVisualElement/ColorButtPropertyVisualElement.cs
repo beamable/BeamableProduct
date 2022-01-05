@@ -1,5 +1,6 @@
 ﻿using Beamable.UI.Buss;
 using Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -10,32 +11,32 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class FloatBussPropertyVisualElement : BussPropertyVisualElement<FloatBussProperty>
+	public class ColorButtPropertyVisualElement : BussPropertyVisualElement<SingleColorBussProperty>
 	{
-		private FloatField _field;
+		private ColorField _field;
 		
-		public FloatBussPropertyVisualElement(FloatBussProperty property) : base(property) { }
+		public ColorButtPropertyVisualElement(SingleColorBussProperty property) : base(property) { }
 
 		public override void Refresh()
 		{
 			base.Refresh();
 			
-			_field = new FloatField();
+			_field = new ColorField();
 			AddBussPropertyFieldClass(_field);
-			_field.value = Property.FloatValue;
+			_field.value = Property.Color;
 			_mainElement.Add(_field);
 
 			_field.RegisterValueChangedCallback(OnValueChange);
 		}
 
-		private void OnValueChange(ChangeEvent<float> evt)
+		private void OnValueChange(ChangeEvent<Color> evt)
 		{
-			Property.FloatValue = evt.newValue;
+			Property.Color = evt.newValue;
 		}
 
 		public override void OnPropertyChangedExternally()
 		{
-			_field.value = Property.FloatValue;
+			_field.value = Property.Color;
 		}
 	}
 }

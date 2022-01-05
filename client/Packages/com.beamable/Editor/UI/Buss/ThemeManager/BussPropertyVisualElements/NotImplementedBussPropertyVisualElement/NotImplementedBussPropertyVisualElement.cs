@@ -9,16 +9,22 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class NotImplementedBussPropertyVisualElement : BussPropertyVisualElement
+	public class NotImplementedBussPropertyVisualElement : BussPropertyVisualElement<IBussProperty>
 	{
-		public NotImplementedBussPropertyVisualElement(BussPropertyProvider propertyProvider) : base(propertyProvider) { }
+		public NotImplementedBussPropertyVisualElement(IBussProperty property) : base(property) { }
 
 		public override void Refresh()
 		{
 			base.Refresh();
-			var label = new Label($"No visual element implemented for drawing a property of type {PropertyProvider?.GetProperty()?.GetType().Name}.");
+			var label = new Label($"No visual element implemented for drawing a property of type {Property?.GetType().Name}.");
+			AddBussPropertyFieldClass(label);
 			label.style.SetFontSize(8f);
 			_mainElement.Add(label);
+		}
+
+		public override void OnPropertyChangedExternally()
+		{
+			
 		}
 	}
 }

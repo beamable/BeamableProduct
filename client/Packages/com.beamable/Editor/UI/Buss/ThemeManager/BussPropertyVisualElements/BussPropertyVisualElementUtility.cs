@@ -8,12 +8,32 @@ namespace Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements
 		public static BussPropertyVisualElement GetVisualElement(this BussPropertyProvider propertyProvider)
 		{
 			var property = propertyProvider.GetProperty();
-			if (property is FloatBussProperty)
+			if (property is FloatBussProperty floatProperty)
 			{
-				return new FloatBussPropertyVisualElement(propertyProvider);
+				return new FloatBussPropertyVisualElement(floatProperty);
 			}
 
-			return new NotImplementedBussPropertyVisualElement(propertyProvider);
+			if (property is SingleColorBussProperty colorProperty)
+			{
+				return new ColorButtPropertyVisualElement(colorProperty);
+			}
+
+			if (property is VertexColorBussProperty vertexColorProperty)
+			{
+				return new VertexColorBussPropertyVisualElement(vertexColorProperty);
+			}
+
+			if (property is EnumBussProperty enumBussProperty)
+			{
+				return new EnumBussPropertyVisualElement(enumBussProperty);
+			}
+
+			if (property is BaseAssetProperty assetProperty)
+			{
+				return new AssetBussPropertyVisualElement(assetProperty);
+			}
+
+			return new NotImplementedBussPropertyVisualElement(property);
 		}
 	}
 }

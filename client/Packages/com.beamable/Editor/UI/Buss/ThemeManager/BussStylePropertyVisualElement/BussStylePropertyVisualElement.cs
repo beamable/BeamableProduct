@@ -24,6 +24,7 @@ namespace Beamable.Editor.UI.Components
 		public BussStylePropertyVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStylePropertyVisualElement)}/{nameof(BussStylePropertyVisualElement)}") { }
 
+		private BussStyleRule _styleRule;
 		private BussPropertyProvider _property;
 		private VisualElement _valueParent;
 		private VisualElement _variableParent;
@@ -41,8 +42,9 @@ namespace Beamable.Editor.UI.Components
 			SetupEditableField(_property);
 		}
 
-		public void Setup(BussPropertyProvider property)
+		public void Setup(BussStyleRule styleRule, BussPropertyProvider property)
 		{
+			_styleRule = styleRule;
 			_property = property;
 			Refresh();
 		}
