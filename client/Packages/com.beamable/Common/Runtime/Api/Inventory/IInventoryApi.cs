@@ -1,7 +1,9 @@
+using Beamable.Common.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Beamable.Common.Inventory;
+using System.Collections;
 
 namespace Beamable.Common.Api.Inventory
 {
@@ -454,6 +456,44 @@ namespace Beamable.Common.Api.Inventory
     {
         public string name;
         public string value;
+    }
+
+    [Serializable]
+    public class CurrencyPropertyList : DisplayableList<CurrencyProperty>
+    {
+	    public List<CurrencyProperty> Properties = new List<CurrencyProperty>();
+	    public CurrencyPropertyList(List<CurrencyProperty> existing)
+	    {
+		    foreach (var elem in existing)
+		    {
+			    Add(elem);
+		    }
+	    }
+
+	    protected override IList InternalList => Properties;
+
+	    public override string GetListPropertyPath() => nameof(Properties);
+
+	    public new CurrencyProperty this[int index]
+	    {
+		    get => Properties[index];
+		    set => Properties[index] = value;
+	    }
+    }
+
+    [Serializable]
+    public class
+	    SerializedDictionaryStringToCurrencyPropertyList : SerializableDictionaryStringToSomething<CurrencyPropertyList>
+    {
+	    public SerializedDictionaryStringToCurrencyPropertyList() { }
+
+	    public SerializedDictionaryStringToCurrencyPropertyList(IDictionary<string, List<CurrencyProperty>> existing)
+	    {
+		    foreach (var kvp in existing)
+		    {
+			    Add(kvp.Key, new CurrencyPropertyList(kvp.Value));
+		    }
+	    }
     }
 
     /// <summary>

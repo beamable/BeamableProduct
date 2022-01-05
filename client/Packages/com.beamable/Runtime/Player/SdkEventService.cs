@@ -13,6 +13,7 @@ namespace Beamable.Player
       void Process();
       SdkEventConsumer Register(string source, SdkEventHandler handler);
       void Unregister(SdkEventConsumer consumer);
+
    }
 
    [System.Serializable]
@@ -20,12 +21,15 @@ namespace Beamable.Player
    {
 	   private readonly IConnectivityService _connectivityService;
 	   private List<SdkEvent> _events = new List<SdkEvent>();
+	   private List<SdkEvent> _phaseSpawnedEvents = new List<SdkEvent>();
 
       private Dictionary<string, List<SdkEventConsumer>> _sourceToConsumers =
          new Dictionary<string, List<SdkEventConsumer>>();
 
       private Dictionary<SdkEvent, Promise> _eventToCompletion =
          new Dictionary<SdkEvent, Promise>();
+
+      private bool _isProcessing;
 
       public SdkEventService(IConnectivityService connectivityService)
       {
@@ -35,13 +39,23 @@ namespace Beamable.Player
       public Promise Add(SdkEvent evt)
       {
          _eventToCompletion[evt] = new Promise();
-         _events.Add(evt);
-         Process();
+         if (!_isProcessing)
+         {
+	         _events.Add(evt);
+	         Process();
+         }
+         else
+         {
+	         _phaseSpawnedEvents.Add(evt);
+         }
+
          return _eventToCompletion[evt];
       }
-
       public void Process()
       {
+	      if (_isProcessing) return;
+	      _isProcessing = true;
+
          foreach (var evt in _events)
          {
             if (_sourceToConsumers.TryGetValue(evt.Source, out var consumers))
@@ -61,7 +75,16 @@ namespace Beamable.Player
                }
             }
          }
+
+         _isProcessing = false;
          _events.Clear();
+
+         if (_phaseSpawnedEvents.Count > 0)
+         {
+	         _events.AddRange(_phaseSpawnedEvents);
+	         _phaseSpawnedEvents.Clear();
+	         Process();
+         }
       }
 
       public SdkEventConsumer Register(string source, SdkEventHandler handler)
