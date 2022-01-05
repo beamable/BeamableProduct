@@ -61,7 +61,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         protected override void OnDestroy()
         {
             base.OnDestroy();
-            Microservices.onBeforeDeploy -= SetupProgressBarForDeployment;
+            Microservices.OnBeforeDeploy -= SetupProgressBarForDeployment;
 
             if (Model == null) return;
 
@@ -118,8 +118,8 @@ namespace Beamable.Editor.Microservice.UI.Components
             Model.OnStop -= SetupProgressBarForStop;
             Model.OnStop += SetupProgressBarForStop;
 
-            Microservices.onBeforeDeploy -= SetupProgressBarForDeployment;
-            Microservices.onBeforeDeploy += SetupProgressBarForDeployment;
+            Microservices.OnBeforeDeploy -= SetupProgressBarForDeployment;
+            Microservices.OnBeforeDeploy += SetupProgressBarForDeployment;
 
             _stopButton.clickable.clicked += HandleStopButtonClicked;
             var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
