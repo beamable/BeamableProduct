@@ -1,4 +1,5 @@
-﻿using Beamable.Editor.UI.Buss;
+﻿using System;
+using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using Editor.UI.BUSS;
@@ -81,6 +82,8 @@ namespace Beamable.UI.BUSS
 				return;
 			}
 
+			_currentStyleSheet.OnChange += OnStyleSheetExternallyChanged;
+
 			foreach (BussStyleRule styleRule in _currentStyleSheet.Styles)
 			{
 				BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
@@ -92,6 +95,23 @@ namespace Beamable.UI.BUSS
 		private void ClearCurrentStyleSheet()
 		{
 			_stylesGroup.Clear();
+			if (_currentStyleSheet != null)
+			{
+				_currentStyleSheet.OnChange -= OnStyleSheetExternallyChanged;
+			}
+		}
+
+		private void OnStyleSheetExternallyChanged()
+		{
+			foreach (BussPropertyVisualElement propertyVisualElement in _root.Query<BussPropertyVisualElement>().Build().ToList())
+			{
+				propertyVisualElement.OnPropertyChangedExternally();
+			}
+		}
+
+		private void OnDestroy()
+		{
+			ClearCurrentStyleSheet();
 		}
 	}
 }
