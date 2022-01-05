@@ -550,6 +550,11 @@ namespace Beamable.Server.Editor
 
             Debug.Log($"Getting Id service=[{descriptor.Name}]");
             var imageId = await uploader.GetImageId(descriptor);
+            if (string.IsNullOrEmpty(imageId))
+            {
+	            OnDeployFailed?.Invoke(model, $"Failed due to failed Docker {nameof(GetImageIdCommand)} for {descriptor.Name}.");
+	            return;
+            }
             nameToImageId.Add(descriptor.Name, imageId);
 
             if (existingServiceToState.TryGetValue(descriptor.Name, out var existingReference))
