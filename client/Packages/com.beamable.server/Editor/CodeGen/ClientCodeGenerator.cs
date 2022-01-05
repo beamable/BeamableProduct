@@ -51,7 +51,7 @@ namespace Beamable.Server.Editor.CodeGen
               namespaceStr = string.Join("_", parameterType.Namespace.Split('.'));
 
           if (parameterType.IsGenericType && parameterType.GetGenericTypeDefinition() == typeof(List<>))
-              name = GetParameterClassName(parameterType.GetGenericArguments()[0], false);
+              name = $"{parameterType.Name.Substring(0, parameterType.Name.IndexOf('`'))}_{ GetParameterClassName(parameterType.GetGenericArguments()[0], false)}";
           else
               name = parameterType.Name;
 
