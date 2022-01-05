@@ -15,6 +15,7 @@ using Beamable.Server.Editor.Uploader;
 using Beamable.Platform.SDK;
 using Beamable.Editor;
 using Beamable.Editor.UI.Model;
+using System.Threading;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
@@ -502,16 +503,21 @@ namespace Beamable.Server.Editor
             return BitConverter.ToString(checksum).Replace("-", String.Empty);
          }
       }
+      
+      //public static event Action<ManifestModel, int, bool> onBeforeDeploy;
 
-      public static event Action<ManifestModel, int, bool> onBeforeDeploy;
-      public static event Action<ManifestModel, int> onAfterDeploy;
+      public static event Action<ManifestModel, int> OnBeforeDeploy;
+      public static event Action<ManifestModel, int> OnDeploySuccess;
+      public static event Action<ManifestModel, string> OnDeployFailed;
 
-      public static async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context, Action<IDescriptor> onServiceDeployed = null, bool showProgressBar = true)
+      public static async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context, CancellationToken token, Action<IDescriptor> onServiceDeployed = null)
       {
          if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
-
+         
          var descriptorsCount = Descriptors.Count;
-         onBeforeDeploy?.Invoke(model, descriptorsCount, showProgressBar);
+
+         //onBeforeDeploy?.Invoke(model, descriptorsCount, showProgressBar);
+         OnBeforeDeploy?.Invoke(model, descriptorsCount);
 
          // TODO perform sort of diff, and only do what is required. Because this is a lot of work.
          var de = await EditorAPI.Instance;
@@ -526,7 +532,21 @@ namespace Beamable.Server.Editor
          {
             Debug.Log($"Building service=[{descriptor.Name}]");
             var buildCommand = new BuildImageCommand(descriptor, false);
-            await buildCommand.Start(context);
+            try
+            {
+	            await buildCommand.Start(context);
+            }
+            catch (Exception e)
+            {
+	            OnDeployFailed?.Invoke(model, $"Deploy failed due to failed build of {descriptor.Name}: {e}.");
+	            return;
+            }
+
+            if(token.IsCancellationRequested)
+            {
+	            OnDeployFailed?.Invoke(model, $"Cancellation requested after build of {descriptor.Name}.");
+	            return;
+            }
 
             var uploader = new ContainerUploadHarness(context);
             var msModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(descriptor);
@@ -534,6 +554,11 @@ namespace Beamable.Server.Editor
 
             Debug.Log($"Getting Id service=[{descriptor.Name}]");
             var imageId = await uploader.GetImageId(descriptor);
+            if (string.IsNullOrEmpty(imageId))
+            {
+	            OnDeployFailed?.Invoke(model, $"Failed due to failed Docker {nameof(GetImageIdCommand)} for {descriptor.Name}.");
+	            return;
+            }
             nameToImageId.Add(descriptor.Name, imageId);
 
             if (existingServiceToState.TryGetValue(descriptor.Name, out var existingReference))
@@ -560,7 +585,7 @@ namespace Beamable.Server.Editor
 
             Debug.Log($"Uploading container service=[{descriptor.Name}]");
 
-            await uploader.UploadContainer(descriptor, () =>
+            await uploader.UploadContainer(descriptor, token, () =>
             {
                 Debug.Log(string.Format(BeamableLogConstants.UploadedContainerMessage, descriptor.Name));
                 onServiceDeployed?.Invoke(descriptor);
@@ -568,6 +593,10 @@ namespace Beamable.Server.Editor
             () =>
             {
                 Debug.LogError(string.Format(BeamableLogConstants.CantUploadContainerMessage, descriptor.Name));
+                if(token.IsCancellationRequested)
+                {
+	                OnDeployFailed?.Invoke(model, $"Cancellation requested during upload of {descriptor.Name}.");
+                }
             }, imageId);
          }
 
@@ -604,10 +633,7 @@ namespace Beamable.Server.Editor
             manifest = manifest,
             storages = storages
          });
-
-
-         onAfterDeploy?.Invoke(model, descriptorsCount);
-
+         OnDeploySuccess?.Invoke(model, descriptorsCount);
          Debug.Log("Service Deploy Complete");
       }
 

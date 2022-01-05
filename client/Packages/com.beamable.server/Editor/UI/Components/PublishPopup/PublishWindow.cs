@@ -3,6 +3,7 @@ using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI;
 using Beamable.Server.Editor.UI.Components;
 using System;
+using System.Threading;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -20,6 +21,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         private static readonly Vector2 MIN_SIZE = new Vector2(860, 550);
         
     	private bool isSet = false;
+        CancellationTokenSource _tokenSource;
 
         public static PublishWindow ShowPublishWindow()
         {
@@ -63,13 +65,23 @@ namespace Beamable.Editor.Microservice.UI.Components
             var container = this.GetRootVisualContainer();
             container.Clear();
             var e = new PublishPopup { Model = _model };
-            
-            e.OnCloseRequested += Close;
+            _tokenSource = new CancellationTokenSource();
+            e.OnCloseRequested += () =>
+            {
+	            _tokenSource.Cancel();
+	            Close();
+            };
             e.OnSubmit += async (model) =>
             {
 	            WindowStateUtility.DisableAllWindows();
-	            e.PrepareForPublish();
-	            await Microservices.Deploy(model, this, e.ServiceDeployed, false);
+	            /*
+	             * We need to build each image...
+	             * upload each image that is different than whats in the manifest...
+	             * upload the manifest file...
+	             */
+                e.PrepareForPublish();
+
+                await Microservices.Deploy(model, this, _tokenSource.Token, e.ServiceDeployed);
                 Close();
             };
 
@@ -80,6 +92,11 @@ namespace Beamable.Editor.Microservice.UI.Components
             
 
             isSet = true;
+        }
+
+        private void OnDestroy()
+        {
+	        _tokenSource.Cancel();
         }
     }
 }
