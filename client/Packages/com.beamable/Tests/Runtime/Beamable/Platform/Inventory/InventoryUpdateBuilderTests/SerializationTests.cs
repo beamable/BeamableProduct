@@ -14,8 +14,8 @@ namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 			var builder = new InventoryUpdateBuilder();
 			var trans = "abc";
 
-			var json = InventoryUpdateBuilderSerializer.ToJson(builder, trans);
-			var deserialized = InventoryUpdateBuilderSerializer.FromJson(json);
+			var json = InventoryUpdateBuilderSerializer.ToNetworkJson(builder, trans);
+			var deserialized = InventoryUpdateBuilderSerializer.FromNetworkJson(json);
 
 			Assert.AreEqual(trans, deserialized.Item2);
 		}
@@ -26,8 +26,8 @@ namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 			var builder = new InventoryUpdateBuilder();
 			builder.applyVipBonus = true;
 
-			var json = InventoryUpdateBuilderSerializer.ToJson(builder);
-			var deserialized = InventoryUpdateBuilderSerializer.FromJson(json);
+			var json = InventoryUpdateBuilderSerializer.ToNetworkJson(builder);
+			var deserialized = InventoryUpdateBuilderSerializer.FromNetworkJson(json);
 
 			Assert.AreEqual(true, deserialized.Item1.applyVipBonus);
 		}
@@ -38,8 +38,8 @@ namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 			var builder = new InventoryUpdateBuilder();
 			builder.applyVipBonus = false;
 
-			var json = InventoryUpdateBuilderSerializer.ToJson(builder);
-			var deserialized = InventoryUpdateBuilderSerializer.FromJson(json);
+			var json = InventoryUpdateBuilderSerializer.ToNetworkJson(builder);
+			var deserialized = InventoryUpdateBuilderSerializer.FromNetworkJson(json);
 
 			Assert.AreEqual(false, deserialized.Item1.applyVipBonus);
 		}
@@ -49,8 +49,8 @@ namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 		{
 			var builder = new InventoryUpdateBuilder();
 
-			var json = InventoryUpdateBuilderSerializer.ToJson(builder);
-			var deserialized = InventoryUpdateBuilderSerializer.FromJson(json);
+			var json = InventoryUpdateBuilderSerializer.ToNetworkJson(builder);
+			var deserialized = InventoryUpdateBuilderSerializer.FromNetworkJson(json);
 
 			Assert.AreEqual(null, deserialized.Item1.applyVipBonus);
 		}
@@ -61,8 +61,8 @@ namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 		{
 			var builder = new InventoryUpdateBuilder();
 
-			var json = InventoryUpdateBuilderSerializer.ToJson(builder);
-			var deserialized = InventoryUpdateBuilderSerializer.FromJson(json);
+			var json = InventoryUpdateBuilderSerializer.ToNetworkJson(builder);
+			var deserialized = InventoryUpdateBuilderSerializer.FromNetworkJson(json);
 
 			Assert.AreEqual(0, deserialized.Item1.currencies.Count);
 		}
@@ -73,8 +73,8 @@ namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 			var builder = new InventoryUpdateBuilder();
 			builder = builder.CurrencyChange("currency.gems", 3);
 
-			var json = InventoryUpdateBuilderSerializer.ToJson(builder);
-			var deserialized = InventoryUpdateBuilderSerializer.FromJson(json);
+			var json = InventoryUpdateBuilderSerializer.ToNetworkJson(builder);
+			var deserialized = InventoryUpdateBuilderSerializer.FromNetworkJson(json);
 
 			Assert.AreEqual(3, deserialized.Item1.currencies["currency.gems"]);
 		}
@@ -84,8 +84,8 @@ namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 		{
 			var builder = new InventoryUpdateBuilder();
 
-			var json = InventoryUpdateBuilderSerializer.ToJson(builder);
-			var deserialized = InventoryUpdateBuilderSerializer.FromJson(json);
+			var json = InventoryUpdateBuilderSerializer.ToNetworkJson(builder);
+			var deserialized = InventoryUpdateBuilderSerializer.FromNetworkJson(json);
 
 			Assert.AreEqual(0, deserialized.Item1.currencyProperties.Count);
 		}
@@ -102,8 +102,8 @@ namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 					value = "b"
 				}
 			});
-			var json = InventoryUpdateBuilderSerializer.ToJson(builder);
-			var deserialized = InventoryUpdateBuilderSerializer.FromJson(json);
+			var json = InventoryUpdateBuilderSerializer.ToNetworkJson(builder);
+			var deserialized = InventoryUpdateBuilderSerializer.FromNetworkJson(json);
 
 			Assert.AreEqual(1, deserialized.Item1.currencyProperties["currency.gems"].Count);
 			Assert.AreEqual("a", deserialized.Item1.currencyProperties["currency.gems"][0].name);
@@ -115,8 +115,8 @@ namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 		{
 			var builder = new InventoryUpdateBuilder();
 
-			var json = InventoryUpdateBuilderSerializer.ToJson(builder);
-			var deserialized = InventoryUpdateBuilderSerializer.FromJson(json);
+			var json = InventoryUpdateBuilderSerializer.ToNetworkJson(builder);
+			var deserialized = InventoryUpdateBuilderSerializer.FromNetworkJson(json);
 
 			Assert.AreEqual(0, deserialized.Item1.newItems.Count);
 		}
@@ -127,12 +127,49 @@ namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 			var builder = new InventoryUpdateBuilder();
 			builder = builder.AddItem("item.tuna", new Dictionary<string, string> {["a"] = "b"});
 
-			var json = InventoryUpdateBuilderSerializer.ToJson(builder);
-			var deserialized = InventoryUpdateBuilderSerializer.FromJson(json);
+			var json = InventoryUpdateBuilderSerializer.ToNetworkJson(builder);
+			var deserialized = InventoryUpdateBuilderSerializer.FromNetworkJson(json);
 
 			Assert.AreEqual(1, deserialized.Item1.newItems.Count);
 			Assert.AreEqual("item.tuna", deserialized.Item1.newItems[0].contentId);
 			Assert.AreEqual("b", deserialized.Item1.newItems[0].properties["a"]);
+		}
+
+		[Test]
+		public void NewItems_WithStuff_RequestIdUnset()
+		{
+			var builder = new InventoryUpdateBuilder();
+			builder = builder.AddItem("item.tuna", new Dictionary<string, string> {["a"] = "b"});
+
+			var startReqId = builder.newItems[0].requestId;
+
+			var json = InventoryUpdateBuilderSerializer.ToNetworkJson(builder);
+			var deserialized = InventoryUpdateBuilderSerializer.FromNetworkJson(json);
+
+			Assert.AreEqual(1, deserialized.Item1.newItems.Count);
+			Assert.AreEqual("item.tuna", deserialized.Item1.newItems[0].contentId);
+			Assert.AreEqual("b", deserialized.Item1.newItems[0].properties["a"]);
+			Assert.IsNotNull(deserialized.Item1.newItems[0].requestId);
+			Assert.AreEqual(startReqId, deserialized.Item1.newItems[0].requestId);
+		}
+
+		[Test]
+		public void NewItems_WithStuff_RequestIdSet()
+		{
+			var builder = new InventoryUpdateBuilder();
+			builder = builder.AddItem("item.tuna", new Dictionary<string, string> {["a"] = "b"});
+			builder.newItems[0].requestId = "abc";
+			var startReqId = builder.newItems[0].requestId;
+
+			var json = InventoryUpdateBuilderSerializer.ToNetworkJson(builder);
+			var deserialized = InventoryUpdateBuilderSerializer.FromNetworkJson(json);
+
+			Assert.AreEqual(1, deserialized.Item1.newItems.Count);
+			Assert.AreEqual("item.tuna", deserialized.Item1.newItems[0].contentId);
+			Assert.AreEqual("b", deserialized.Item1.newItems[0].properties["a"]);
+			Assert.IsNotNull(deserialized.Item1.newItems[0].requestId);
+			Assert.AreEqual(startReqId, deserialized.Item1.newItems[0].requestId);
+
 		}
 
 
@@ -141,8 +178,8 @@ namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 		{
 			var builder = new InventoryUpdateBuilder();
 
-			var json = InventoryUpdateBuilderSerializer.ToJson(builder);
-			var deserialized = InventoryUpdateBuilderSerializer.FromJson(json);
+			var json = InventoryUpdateBuilderSerializer.ToNetworkJson(builder);
+			var deserialized = InventoryUpdateBuilderSerializer.FromNetworkJson(json);
 
 			Assert.AreEqual(0, deserialized.Item1.deleteItems.Count);
 		}
@@ -153,8 +190,8 @@ namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 			var builder = new InventoryUpdateBuilder();
 			builder = builder.DeleteItem("item.tuna", 3);
 
-			var json = InventoryUpdateBuilderSerializer.ToJson(builder);
-			var deserialized = InventoryUpdateBuilderSerializer.FromJson(json);
+			var json = InventoryUpdateBuilderSerializer.ToNetworkJson(builder);
+			var deserialized = InventoryUpdateBuilderSerializer.FromNetworkJson(json);
 
 			Assert.AreEqual(1, deserialized.Item1.deleteItems.Count);
 			Assert.AreEqual("item.tuna", deserialized.Item1.deleteItems[0].contentId);
@@ -167,8 +204,8 @@ namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 		{
 			var builder = new InventoryUpdateBuilder();
 
-			var json = InventoryUpdateBuilderSerializer.ToJson(builder);
-			var deserialized = InventoryUpdateBuilderSerializer.FromJson(json);
+			var json = InventoryUpdateBuilderSerializer.ToNetworkJson(builder);
+			var deserialized = InventoryUpdateBuilderSerializer.FromNetworkJson(json);
 
 			Assert.AreEqual(0, deserialized.Item1.updateItems.Count);
 		}
@@ -179,8 +216,8 @@ namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 			var builder = new InventoryUpdateBuilder();
 			builder = builder.UpdateItem("item.tuna", 3, new Dictionary<string, string> {["a"] = "b"});
 
-			var json = InventoryUpdateBuilderSerializer.ToJson(builder);
-			var deserialized = InventoryUpdateBuilderSerializer.FromJson(json);
+			var json = InventoryUpdateBuilderSerializer.ToNetworkJson(builder);
+			var deserialized = InventoryUpdateBuilderSerializer.FromNetworkJson(json);
 
 			Assert.AreEqual(1, deserialized.Item1.updateItems.Count);
 			Assert.AreEqual("item.tuna", deserialized.Item1.updateItems[0].contentId);

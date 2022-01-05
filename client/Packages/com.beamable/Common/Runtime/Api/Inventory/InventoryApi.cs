@@ -226,7 +226,7 @@ namespace Beamable.Common.Api.Inventory
                 return Promise<Unit>.Successful(PromiseBase.Unit);
             }
 
-            var json = InventoryUpdateBuilderSerializer.ToJson(builder, transaction);
+            var json = InventoryUpdateBuilderSerializer.ToNetworkJson(builder, transaction);
 	        return Requester.Request<EmptyResponse>(Method.PUT, CreateRefreshUrl(null), json).ToUnit();
         }
 

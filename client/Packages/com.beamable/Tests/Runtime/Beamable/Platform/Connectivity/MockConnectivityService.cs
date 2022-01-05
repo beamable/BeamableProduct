@@ -7,6 +7,12 @@ namespace Beamable.Platform.Tests.Connectivity
    {
       private bool _connectivity = true;
       public bool HasConnectivity => _connectivity;
+      public bool ForceDisabled
+      {
+	      get;
+	      set;
+      }
+
       public event Action<bool> OnConnectivityChanged;
       public void SetHasInternet(bool hasInternet)
       {

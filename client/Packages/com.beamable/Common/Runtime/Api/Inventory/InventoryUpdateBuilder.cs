@@ -25,7 +25,8 @@ namespace Beamable.Common.Api.Inventory
     public class ItemCreateRequest
     {
         public string contentId;
-        public Dictionary<string, string> properties;
+        public SerializableDictionaryStringToString properties;
+        public string requestId = Guid.NewGuid().ToString();
     }
 
     /// <summary>
@@ -59,11 +60,12 @@ namespace Beamable.Common.Api.Inventory
     /// ![img beamable-logo]
     ///
     /// </summary>
+    [Serializable]
     public class ItemUpdateRequest
     {
         public string contentId;
         public long itemId;
-        public Dictionary<string, string> properties;
+        public SerializableDictionaryStringToString properties;
     }
 
     /// <summary>
@@ -79,14 +81,30 @@ namespace Beamable.Common.Api.Inventory
     ///
     /// </summary>
     [Serializable]
-    public class InventoryUpdateBuilder
+    public class InventoryUpdateBuilder : ISerializationCallbackReceiver
     {
-        public readonly Dictionary<string, long> currencies;
-        public readonly Dictionary<string, List<CurrencyProperty>> currencyProperties;
+        public readonly SerializableDictionaryStringToLong currencies;
+        public readonly SerializedDictionaryStringToCurrencyPropertyList currencyProperties;
         public readonly List<ItemCreateRequest> newItems;
         public readonly List<ItemDeleteRequest> deleteItems;
         public readonly List<ItemUpdateRequest> updateItems;
         public bool? applyVipBonus;
+
+        private enum SerializableNullableBool { NULL, TRUE, FALSE }
+        [SerializeField]
+        private SerializableNullableBool _serializedApplyVipBonus;
+
+        [SerializeField]
+        private SerializableDictionaryStringToLong _serializedCurrencies;
+        [SerializeField]
+        private SerializedDictionaryStringToCurrencyPropertyList _serializedCurrencyProperties;
+        [SerializeField]
+        private List<ItemCreateRequest> _serializedNewItems;
+        [SerializeField]
+        private List<ItemDeleteRequest> _serializedDeleteItems;
+        [SerializeField]
+        private List<ItemUpdateRequest> _serializedUpdateItems;
+
 
         public bool IsEmpty
         {
@@ -102,8 +120,8 @@ namespace Beamable.Common.Api.Inventory
 
         public InventoryUpdateBuilder()
         {
-            currencies = new Dictionary<string, long>();
-            currencyProperties = new Dictionary<string, List<CurrencyProperty>>();
+	        currencies = new SerializableDictionaryStringToLong();
+            currencyProperties = new SerializedDictionaryStringToCurrencyPropertyList();
             newItems = new List<ItemCreateRequest>();
             deleteItems = new List<ItemDeleteRequest>();
             updateItems = new List<ItemUpdateRequest>();
@@ -117,8 +135,8 @@ namespace Beamable.Common.Api.Inventory
 	        List<ItemUpdateRequest> updateItems
 	        ) : this()
         {
-	        this.currencies = currencies;
-	        this.currencyProperties = currencyProperties;
+	        this.currencies = new SerializableDictionaryStringToLong(currencies);
+	        this.currencyProperties = new SerializedDictionaryStringToCurrencyPropertyList(currencyProperties);
 	        this.newItems = newItems;
 	        this.deleteItems = deleteItems;
 	        this.updateItems = updateItems;
@@ -147,17 +165,18 @@ namespace Beamable.Common.Api.Inventory
 
         public InventoryUpdateBuilder SetCurrencyProperties(string contentId, List<CurrencyProperty> properties)
         {
-            currencyProperties[contentId] = properties;
+            currencyProperties[contentId] = new CurrencyPropertyList(properties);
 
             return this;
         }
 
-        public InventoryUpdateBuilder AddItem(string contentId, Dictionary<string, string> properties=null)
+        public InventoryUpdateBuilder AddItem(string contentId, Dictionary<string, string> properties=null, string requestId=null)
         {
             newItems.Add(new ItemCreateRequest
             {
                 contentId = contentId,
-                properties = properties ?? new Dictionary<string, string>()
+                properties = new SerializableDictionaryStringToString(properties),
+                requestId = requestId ?? Guid.NewGuid().ToString()
             });
 
             return this;
@@ -196,7 +215,7 @@ namespace Beamable.Common.Api.Inventory
             {
                 contentId = contentId,
                 itemId = itemId,
-                properties = properties
+                properties = new SerializableDictionaryStringToString(properties)
             });
 
             return this;
@@ -215,6 +234,51 @@ namespace Beamable.Common.Api.Inventory
             return UpdateItem(item.ItemContent.Id, item.Id, item.Properties);
         }
 
+        public void OnBeforeSerialize()
+        {
+	        _serializedApplyVipBonus = applyVipBonus == null
+		        ? SerializableNullableBool.NULL
+		        : (applyVipBonus == true ? SerializableNullableBool.TRUE : SerializableNullableBool.FALSE);
+
+	        _serializedCurrencies = currencies;
+	        _serializedCurrencyProperties = currencyProperties;
+	        _serializedDeleteItems = deleteItems;
+	        _serializedNewItems = newItems;
+	        _serializedUpdateItems = updateItems;
+        }
+
+        public void OnAfterDeserialize()
+        {
+	        switch (_serializedApplyVipBonus)
+	        {
+		        case SerializableNullableBool.NULL:
+			        applyVipBonus = null;
+			        break;
+		        case SerializableNullableBool.TRUE:
+			        applyVipBonus = true;
+			        break;
+		        case SerializableNullableBool.FALSE:
+			        applyVipBonus = false;
+			        break;
+	        }
+
+	        currencies.Clear();
+	        foreach (var curr in _serializedCurrencies)
+	        {
+		        currencies.Add(curr.Key, curr.Value);
+	        }
+	        currencyProperties.Clear();
+	        foreach (var curr in _serializedCurrencyProperties)
+	        {
+		        currencyProperties.Add(curr.Key, curr.Value);
+	        }
+	        deleteItems.Clear();
+	        deleteItems.AddRange(_serializedDeleteItems);
+	        newItems.Clear();
+	        newItems.AddRange(_serializedNewItems);
+	        updateItems.Clear();
+	        updateItems.AddRange(_serializedUpdateItems);
+        }
     }
 
     public static class InventoryUpdateBuilderSerializer
@@ -230,6 +294,7 @@ namespace Beamable.Common.Api.Inventory
 	    private const string NEW_ITEM_PROPERTIES = "properties";
 	    private const string NEW_ITEM_PROPERTY_NAME = "name";
 	    private const string NEW_ITEM_PROPERTY_VALUE = "value";
+	    private const string NEW_ITEM_REQ_ID = "reqId";
 	    private const string DELETE_ITEMS = "deleteItems";
 	    private const string DELETE_ITEMS_CONTENT_ID = "contentId";
 	    private const string DELETE_ITEMS_ITEM_ID = "id";
@@ -239,7 +304,9 @@ namespace Beamable.Common.Api.Inventory
 	    private const string UPDATE_ITEMS_PROPERTIES = "properties";
 
 
-	    public static (InventoryUpdateBuilder, string) FromJson(string json)
+
+
+	    public static (InventoryUpdateBuilder, string) FromNetworkJson(string json)
 	    {
 		    string transaction = null;
 		    bool? applyVipBonus = null;
@@ -296,7 +363,8 @@ namespace Beamable.Common.Api.Inventory
 				    return new ItemCreateRequest
 				    {
 					    contentId = x[NEW_ITEM_CONTENT_ID]?.ToString(),
-					    properties = propsDict
+					    requestId = x[NEW_ITEM_REQ_ID]?.ToString(),
+					    properties = new SerializableDictionaryStringToString(propsDict)
 				    };
 			    }).ToList();
 		    }
@@ -326,7 +394,7 @@ namespace Beamable.Common.Api.Inventory
 				    {
 					    contentId = x[UPDATE_ITEMS_CONTENT_ID]?.ToString(),
 					    itemId = long.Parse(x[UPDATE_ITEMS_ITEM_ID]?.ToString()),
-					    properties = propsDict
+					    properties = new SerializableDictionaryStringToString(propsDict)
 				    };
 			    }).ToList();
 		    }
@@ -337,7 +405,15 @@ namespace Beamable.Common.Api.Inventory
 		    return (builder, transaction);
 	    }
 
-	    public static string ToJson(InventoryUpdateBuilder builder, string transaction=null)
+
+	    public static string ToUnityJson(InventoryUpdateBuilder builder) =>
+		    JsonUtility.ToJson(builder);
+
+	    public static InventoryUpdateBuilder FromUnityJson(string json) =>
+		    JsonUtility.FromJson<InventoryUpdateBuilder>(json);
+
+
+	    public static string ToNetworkJson(InventoryUpdateBuilder builder, string transaction=null)
 	    {
 		    using (var pooledBuilder = StringBuilderPool.StaticPool.Spawn())
 		    {
@@ -362,7 +438,7 @@ namespace Beamable.Common.Api.Inventory
 				    var currencyDict = new ArrayDict();
 				    foreach (var kvp in builder.currencyProperties)
 				    {
-					    var newProperties = kvp.Value.Select(newProperty => new ArrayDict
+					    var newProperties = kvp.Value.Properties.Select(newProperty => new ArrayDict
 					    {
 						    {CURRENCY_PROPERTY_NAME, newProperty.name},
 						    {CURRENCY_PROPERTY_VALUE, newProperty.value}
@@ -377,6 +453,7 @@ namespace Beamable.Common.Api.Inventory
 			    {
 				    var newItems = builder.newItems.Select(newItem => new ArrayDict
 				    {
+					    {NEW_ITEM_REQ_ID, newItem.requestId},
 					    {NEW_ITEM_CONTENT_ID, newItem.contentId},
 					    {
 						    NEW_ITEM_PROPERTIES, newItem.properties

@@ -10,6 +10,20 @@ namespace Beamable.Common.Content
    public class SerializableDictionaryStringToInt : SerializableDictionaryStringToSomething<int> {}
 
    [Serializable]
+   public class SerializableDictionaryStringToLong : SerializableDictionaryStringToSomething<long>
+   {
+	   public SerializableDictionaryStringToLong() { }
+
+	   public SerializableDictionaryStringToLong(IDictionary<string, long> existing)
+	   {
+		   foreach (var kvp in existing)
+		   {
+			   Add(kvp.Key, kvp.Value);
+		   }
+	   }
+   }
+
+   [Serializable]
    public class OptionalSerializableDictionaryStringToString : Optional<SerializableDictionaryStringToString> {}
 
    [Serializable]
@@ -19,11 +33,18 @@ namespace Beamable.Common.Content
 
 	   public SerializableDictionaryStringToString(IDictionary<string, string> existing)
 	   {
+		   if (existing == null) return;
 		   foreach (var kvp in existing)
 		   {
 			   Add(kvp.Key, kvp.Value);
 		   }
 	   }
+   }
+
+   public static class SerializableDictionaryStringToStringExtensions
+   {
+	   public static SerializableDictionaryStringToString ToSerializable(this IDictionary<string, string> data) =>
+		   new SerializableDictionaryStringToString(data);
    }
 
    [Serializable]

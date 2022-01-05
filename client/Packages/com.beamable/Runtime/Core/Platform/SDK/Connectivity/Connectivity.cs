@@ -25,10 +25,14 @@ namespace Beamable.Api.Connectivity
     public interface IConnectivityService
     {
         bool HasConnectivity { get; }
+        bool ForceDisabled
+        {
+	        get;
+	        set;
+        }
         event Action<bool> OnConnectivityChanged;
         void SetHasInternet(bool hasInternet);
         void ReportInternetLoss();
-
         void OnReconnectOnce(Action onReconnection);
     }
 
@@ -60,6 +64,18 @@ namespace Beamable.Api.Connectivity
         private CoroutineService _coroutineService;
 
         public bool HasConnectivity { get; private set; } = true;
+
+        private bool _forceDisabled;
+        public bool ForceDisabled
+        {
+	        get => _forceDisabled;
+	        set
+	        {
+		        _forceDisabled = value;
+		        SetHasInternet(HasConnectivity);
+	        }
+        }
+
         public string ConnectivityRoute { get; private set; }
         private bool _first = true;
 
@@ -129,6 +145,10 @@ namespace Beamable.Api.Connectivity
 
         public void SetHasInternet(bool hasInternet)
         {
+	        if (_forceDisabled)
+	        {
+		        hasInternet = false;
+	        }
 
 	        var isReconnection = (hasInternet && !HasConnectivity);
 
