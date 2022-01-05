@@ -3,24 +3,40 @@ using Beamable.Api.Inventory;
 using Beamable.Common;
 using System;
 using System.Linq;
-using Beamable.Common.Api.Inventory;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Inventory;
 using Beamable.Common.Player;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Beamable.Player
 {
+	/// <summary>
+	/// The <see cref="PlayerCurrency"/> represents one currency of a player. The <see cref="Amount"/> shows the current value of the currency.
+	/// </summary>
 	[Serializable]
 	public class PlayerCurrency : DefaultObservable
 	{
+		/// <summary>
+		/// An event that happens whenever the <see cref="Amount"/> changes
+		/// this event happens after <see cref="DefaultObservable.OnUpdated"/>
+		/// </summary>
 		public event Action<long> OnAmountUpdated;
 
+		/// <summary>
+		/// The id of the <see cref="CurrencyContent"/> that this currency is for.
+		/// </summary>
 		public string CurrencyId;
 
 		private long _amount;
+
+		/// <summary>
+		/// The current amount of the currency. This value can change over time, and will get realtime updates from the server.
+		/// Use the <see cref="OnAmountUpdated"/> event to be notified when that happens.
+		/// <para>
+		/// You can set this currency locally, but isn't recommended.
+		/// </para>
+		/// </summary>
 		public long Amount
 		{
 			get => _amount;
@@ -63,6 +79,11 @@ namespace Beamable.Player
 
 	}
 
+
+	/// <summary>
+	/// The <see cref="PlayerCurrencyGroup"/> is a readonly observable list of currencies for a player.
+	/// It represents <b>all</b> currencies for a player.
+	/// </summary>
 	[Serializable]
 	public class PlayerCurrencyGroup : AbsObservableReadonlyList<PlayerCurrency>
 	{
@@ -85,12 +106,8 @@ namespace Beamable.Player
 			_sdkEventService = sdkEventService;
 			_provider = provider;
 
-			// _sdkEventService.Register(nameof(PlayerCurrencyGroup), HandleEvent);
 			notificationService.Subscribe(notificationService.GetRefreshEventNameForService("inventory"),
 			                              HandleSubscriptionUpdate);
-
-			// _inventoryApi.Subscribe(rootRef, HandleSubscriptionUpdate);
-
 			var _ = Refresh(); // automatically start.
 			IsInitialized = true;
 		}
@@ -190,14 +207,18 @@ namespace Beamable.Player
 			return existing;
 		}
 
+		/// <summary>
+		/// Update the currency's <see cref="PlayerCurrency.Amount"/> by the given amount.
+		/// Internally, this will trigger an <see cref="PlayerInventory.Update(Beamable.Common.Api.Inventory.InventoryUpdateBuilder,string)"/>
+		/// </summary>
+		/// <param name="currencyId">The currency to modify</param>
+		/// <param name="amount">The amount the currency will change by. This is incremental. A negative number will decrement the currency.</param>
+		/// <returns>A promise representing when the add operation has completed</returns>
 		public Promise Add(CurrencyRef currencyId, long amount)
 		{
 			// any writes should go through the inventory service itself to optimize performance and code-single-use.
 			// we can't pre-fetch the PlayerInventory service because it would cause a cyclic reference in the dependency graph.
 			return _provider.GetService<PlayerInventory>().Update(b => b.CurrencyChange(currencyId, amount));
 		}
-
-		// public Promise Add(CurrencyRef currencyId, long amount) =>
-		// 	_sdkEventService.Add(new SdkEvent(nameof(PlayerCurrencyGroup), "add", currencyId.Id, amount.ToString()));
 	}
 }

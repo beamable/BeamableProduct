@@ -87,7 +87,7 @@ namespace Beamable.Player
 		public PlayerCurrency GetCurrency(CurrencyRef currencyRef) => Currencies.GetCurrency(currencyRef);
 
 		/// <summary>
-		/// Get a category of player items for a given type.
+		/// Get a category of <see cref="PlayerItem"/> for a given type.
 		/// If you have subtypes of <see cref="ItemContent"/>,
 		/// and you get an item group for a basetype of <see cref="ItemContent"/>,
 		/// the resultant <see cref="PlayerItemGroup"/> will have all instances from all subclasses of the given type.
