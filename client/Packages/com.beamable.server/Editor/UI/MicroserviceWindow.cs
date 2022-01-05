@@ -229,9 +229,7 @@ namespace Beamable.Editor.Microservice.UI
         }
 
         private void Refresh() {
-	        _windowRoot?.SetEnabled(false);
             new CheckDockerCommand().Start(null).Then(_ => {
-	            _windowRoot?.SetEnabled(true);
                 _microserviceBreadcrumbsVisualElement?.Refresh();
                 _actionBarVisualElement?.Refresh();
                 _microserviceContentVisualElement?.Refresh();
@@ -247,7 +245,6 @@ namespace Beamable.Editor.Microservice.UI
 
         private void HandleBeforeDeploy(ManifestModel manifestModel, int totalSteps)
         {
-	        _windowRoot?.SetEnabled(false);
 	        new DeployLogParser(_loadingBar, manifestModel, totalSteps);
         }
 
@@ -257,7 +254,6 @@ namespace Beamable.Editor.Microservice.UI
         {
 	        Debug.Log(reason);
 	        _microserviceContentVisualElement?.Refresh();
-	        _windowRoot?.SetEnabled(true);
         }
 
         public void SortMicroservices() {
