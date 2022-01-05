@@ -10,6 +10,9 @@ namespace Beamable.Common.Player
 {
 	public interface IObservable
 	{
+		/// <summary>
+		/// An event that happens whenever the object has changed.
+		/// </summary>
 		event Action OnUpdated;
 	}
 
@@ -20,6 +23,10 @@ namespace Beamable.Common.Player
 
 	public class DefaultObservable : IObservable
 	{
+		/// <summary>
+		/// <inheritdoc cref="IObservable.OnUpdated"/>
+		/// A "change" only happens when the value of the <see cref="GetBroadcastChecksum"/> changes.
+		/// </summary>
 		public event Action OnUpdated;
 
 		private int _lastBroadcastChecksum;
@@ -39,6 +46,18 @@ namespace Beamable.Common.Player
 			}
 		}
 
+		/// <summary>
+		/// The broadcast checksum is a concept for change-detection.
+		/// <para>
+		/// An observable may have a complex data structure, and detecting changes can be very context specific.
+		/// This method provides a way to compute some "hash" or "checksum" of the data.
+		/// The "same" internal values should always produce the same output integer.
+		/// </para>
+		/// <para>
+		/// By default, the broadcast checksum will use the object's <see cref="GetHashCode()"/> implementation.
+		/// </para>
+		/// </summary>
+		/// <returns>an checksum of the object state</returns>
 		public virtual int GetBroadcastChecksum()
 		{
 			return GetHashCode();
@@ -47,20 +66,51 @@ namespace Beamable.Common.Player
 
 	public abstract class AbsRefreshableObservable : DefaultObservable, IRefreshable
 	{
-
+		/// <summary>
+		/// An event that happens when the <see cref="Refresh"/> method starts.
+		/// This event will always be accompanied by a <see cref="OnLoadingFinished"/> event.
+		/// <para>
+		/// Between the two loading events, the <see cref="DefaultObservable.OnUpdated"/> might happen.
+		/// However, if the refresh operation doesn't produce any meaningful changes as per the <see cref="DefaultObservable.GetBroadcastChecksum"/>
+		/// Then the <see cref="DefaultObservable.OnUpdated"/> event <i>won't</i> happen.
+		/// </para>
+		/// </summary>
 		public event Action OnLoadingStarted;
+
+		/// <summary>
+		/// An event that happens after the <see cref="Refresh"/> method finishes.
+		/// This event will always be after a <see cref="OnLoadingStarted"/> event.
+		/// <para>
+		/// Between the two loading events, the <see cref="DefaultObservable.OnUpdated"/> might happen.
+		/// However, if the refresh operation doesn't produce any meaningful changes as per the <see cref="DefaultObservable.GetBroadcastChecksum"/>
+		/// Then the <see cref="DefaultObservable.OnUpdated"/> event <i>won't</i> happen.
+		/// </para>
+		/// </summary>
 		public event Action OnLoadingFinished;
+
+
 		private Promise _pendingRefresh;
 
+		/// <summary>
+		/// Represents if the object is between <see cref="OnLoadingStarted"/> and <see cref="OnLoadingFinished"/> events.
+		/// </summary>
 		public bool IsLoading
 		{
 			get;
 			private set;
 		}
 
-
-		public abstract object GetData();
-
+		/// <summary>
+		/// Forces a check of the data to make sure its up to date.
+		/// <para>
+		/// If a refresh is already running, then this resulting <see cref="Promise"/> will represent the existing refresh call.
+		/// This means you can't have multiple refreshes happening at once.
+		/// </para>
+		/// <para>
+		/// If there is not already a refresh happening, then this will always trigger a <see cref="OnLoadingStarted"/> and a <see cref="OnLoadingFinished"/>.
+		/// If the data actually changes, then a <see cref="IObservable.OnUpdated"/> will trigger.
+		/// </para>
+		/// </summary>
 		public async Promise Refresh()
 		{
 			if (IsLoading)
@@ -156,7 +206,7 @@ namespace Beamable.Common.Player
 			return Promise.Success;
 		}
 
-		public override object GetData() => Value;
+		// public override object GetData() => Value;
 
 		public override int GetBroadcastChecksum()
 		{
@@ -195,9 +245,23 @@ namespace Beamable.Common.Player
 
 		public int Count => _data.Count;
 		public T this[int index] => _data[index];
+
+
+		/// <summary>
+		/// An event that happens right after <see cref="IObservable.OnUpdated"/>, but this one contains the list of internal data.
+		/// </summary>
 		public event Action<List<T>> OnDataUpdated;
 
+		/// <summary>
+		/// An event that happens when new items are added to the list from a <see cref="AbsRefreshableObservable.Refresh"/> call.
+		/// This event happens after the <see cref="IObservable.OnUpdated"/> event
+		/// </summary>
 		public event Action<IEnumerable<T>> OnElementsAdded;
+
+		/// <summary>
+		/// An event that happens when new items are removed to the list from a <see cref="AbsRefreshableObservable.Refresh"/> call.
+		/// This event happens after the <see cref="IObservable.OnUpdated"/> event
+		/// </summary>
 		public event Action<IEnumerable<T>> OnElementRemoved;
 
 		public bool IsInitialized
@@ -268,7 +332,7 @@ namespace Beamable.Common.Player
 			_data = nextData;
 		}
 
-		public override object GetData() => _data;
+		// public override object GetData() => _data;
 		List<T> IGetProtectedDataList<T>.Data => _data;
 		void IGetProtectedDataList<T>.CheckForUpdate() => TriggerUpdate();
 	}
@@ -282,6 +346,9 @@ namespace Beamable.Common.Player
 		private TDict _data =
 			new TDict();
 
+		/// <summary>
+		/// An event that happens right after <see cref="IObservable.OnUpdated"/>, but this one contains the dictionary of internal data.
+		/// </summary>
 		public event Action<SerializableDictionaryStringToSomething<TValue>> OnDataUpdated;
 
 
@@ -299,7 +366,7 @@ namespace Beamable.Common.Player
 		public IEnumerable<string> Keys => _data.Keys;
 		public IEnumerable<TValue> Values => _data.Values;
 
-		public override object GetData() => _data;
+		// public override object GetData() => _data;
 
 		public bool IsInitialized
 		{

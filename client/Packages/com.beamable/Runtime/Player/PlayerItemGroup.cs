@@ -100,6 +100,9 @@ namespace Beamable.Player
 		}
 	}
 
+	/// <summary>
+	/// A list of <see cref="PlayerItem"/>s grouped by a common type.
+	/// </summary>
 	[Serializable]
 	public class PlayerItemGroup : AbsObservableReadonlyList<PlayerItem>
 	{
