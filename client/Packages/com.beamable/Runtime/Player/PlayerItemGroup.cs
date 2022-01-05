@@ -14,6 +14,12 @@ using System.Linq;
 
 namespace Beamable.Player
 {
+	/// <summary>
+	/// An item in the player's inventory. The item is uniquely identified by the <see cref="ContentId"/> and <see cref="ItemId"/> as a pair.
+	/// <para>
+	/// Use the <see cref="Properties"/> dictionary to store runtime instance data about a particular item.
+	/// </para>
+	/// </summary>
 	[Serializable]
 	public class PlayerItem : DefaultObservable
 	{
@@ -55,6 +61,9 @@ namespace Beamable.Player
 			}
 		}
 
+		/// <summary>
+		/// The id of <see cref="ItemContent"/> that this item is an instance of.
+		/// </summary>
 		public string ContentId;
 		public long ItemId;
 		public long CreatedAt;
@@ -114,8 +123,6 @@ namespace Beamable.Player
 			// ignore the view, and do a refresh on our own. Yes, this produces more network traffic.
 			var _ = Refresh();
 		}
-
-		// TODO: the offline-add has to happen to the "view" itself, otherwise it will get lost if anyone requests the latest from the cache.
 
 		protected override async Promise PerformRefresh()
 		{

@@ -14,16 +14,27 @@ using UnityEngine;
 namespace Beamable.Player
 {
 	[Serializable]
-	public class PlayerCurrency : ObservableLong
+	public class PlayerCurrency : DefaultObservable
 	{
+		public event Action<long> OnAmountUpdated;
+
 		public string CurrencyId;
 
+		private long _amount;
 		public long Amount
 		{
-			get => Value;
-			set => Value = value;
+			get => _amount;
+			set
+			{
+				_amount = value;
+				TriggerUpdate();
+			}
 		}
-		// TODO: add the currencyRef? As a computed property of CurrencyId probably.
+
+		public PlayerCurrency()
+		{
+			OnUpdated += () => OnAmountUpdated?.Invoke(Amount);
+		}
 
 		#region Auto Generated Equality Members
 

@@ -29,7 +29,7 @@ namespace Beamable.Console
         private int _fingerCount;
         private bool _waitForRelease;
         private Vector2 _averagePositionStart;
-        private IBeamableAPI _beamable;
+        // private IBeamableAPI _beamable;
         private TextAutoCompleter _textAutoCompleter;
         private ConsoleHistory _consoleHistory;
         private string consoleText;
@@ -110,11 +110,12 @@ namespace Beamable.Console
 
             // We want to ensure that we create the instance of the Beamable API if the console is the only thing
             // in the scene.
-            _beamable = await API.Instance;
+            // _beamable = await API.Instance;
             _textAutoCompleter = new TextAutoCompleter(ref txtInput, ref txtAutoCompleteSuggestion);
             _consoleHistory = new ConsoleHistory();
 
             var ctx = BeamContext.ForContext(this);
+            await ctx.OnReady;
             var console = ctx.ServiceProvider.GetService<BeamableConsole>();
 
             ServiceManager.Provide<BeamableConsole>(ctx.ServiceProvider); // this exists for legacy purposes, for anyone who might be using the service manager to the console...

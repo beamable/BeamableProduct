@@ -29,7 +29,7 @@ namespace Beamable.CurrencyHUD
         {
 	        var ctx = BeamContext.ForContext(this);
 
-	        ctx.Inventory.GetCurrency(content).OnDataUpdated += amount =>
+	        ctx.Inventory.GetCurrency(content).OnAmountUpdated += amount =>
 	        {
 		        targetAmount = amount;
 		        Debug.Log("Got currency change event. " + amount);
