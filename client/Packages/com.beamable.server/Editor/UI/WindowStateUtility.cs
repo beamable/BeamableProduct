@@ -41,19 +41,22 @@ namespace Beamable.Server.Editor.UI
 		{
 			if (!InUse)
 				return;
+			InUse = false;
 			
 			EditorApplication.update -= _changeWindowEnableStateCallback;
 			Resources.FindObjectsOfTypeAll<EditorWindow>().ToList().ForEach(window =>
 			{
 				window.GetRootVisualContainer()?.SetEnabled(true);
 			});
-			InUse = false;
 		}
 		
 		private static EditorApplication.CallbackFunction ChangeWindowEnableStates(IEnumerable<string> ignoredWindowNames)
 		{
 			return () => Resources.FindObjectsOfTypeAll<EditorWindow>().ToList().ForEach(window =>
 			{
+				if (!InUse)
+					return;
+
 				if (!IsWindowInIgnoreList(window.name, ignoredWindowNames))
 				{
 					window.GetRootVisualContainer()?.SetEnabled(false);
