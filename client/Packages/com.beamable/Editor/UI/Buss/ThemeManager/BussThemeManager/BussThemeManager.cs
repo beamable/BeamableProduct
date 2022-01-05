@@ -47,7 +47,7 @@ namespace Beamable.UI.BUSS
 				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(
 					$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussThemeManager/BussThemeManager.uxml");
 
-			TemplateContainer tree = uiAsset.CloneTree();
+			VisualElement tree = uiAsset.CloneTree();
 			tree.AddStyleSheet(
 				$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussThemeManager/BussThemeManager.uss");
 			tree.name = nameof(_root);

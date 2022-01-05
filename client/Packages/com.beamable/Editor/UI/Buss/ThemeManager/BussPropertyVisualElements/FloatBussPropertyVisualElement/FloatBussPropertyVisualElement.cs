@@ -1,7 +1,11 @@
 ﻿using Beamable.UI.Buss;
-using Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements;
-using UnityEditor.UIElements;
+#if UNITY_2018
+using UnityEngine.Experimental.UIElements;
+using UnityEditor.Experimental.UIElements;
+#elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
+using UnityEditor.UIElements;
+#endif
 
 namespace Beamable.Editor.UI.Components
 {
@@ -14,7 +18,7 @@ namespace Beamable.Editor.UI.Components
 			base.Refresh();
 			
 			FloatField field = new FloatField();
-			field.value = PropertyProvider.GetProperty<FloatBussProperty>().FloatValue;
+			//field.value = PropertyProvider.GetProperty<FloatBussProperty>().FloatValue;
 			_mainElement.Add(field);
 
 			field.RegisterValueChangedCallback(OnValueChange);
@@ -22,7 +26,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void OnValueChange(ChangeEvent<float> evt)
 		{
-			PropertyProvider.GetProperty<FloatBussProperty>().FloatValue = evt.newValue;
+			//PropertyProvider.GetProperty<FloatBussProperty>().FloatValue = evt.newValue;
 		}
 	}
 }
