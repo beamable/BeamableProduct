@@ -1,11 +1,9 @@
 ﻿using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using Editor.UI.BUSS;
 using UnityEditor;
-using UnityEngine;
-using UnityEngine.UI;
+using Object = UnityEngine.Object;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -16,7 +14,7 @@ using UnityEditor.UIElements;
 
 namespace Beamable.UI.BUSS
 {
-	public class BussThemeManager : BeamableVisualElement
+	public class BussThemeManager : EditorWindow
 	{
 #if BEAMABLE_DEVELOPER
 		// [MenuItem(
@@ -28,26 +26,41 @@ namespace Beamable.UI.BUSS
 #endif
 		public static void Init()
 		{
-			BussThemeManager window = new BussThemeManager();
-			BeamablePopupWindow.ShowUtility(BeamableConstants.THEME_MANAGER, window, null,
-			                                BUSSConstants.ThemeManagerWindowSize);
+			BussThemeManager themeManagerWindow = GetWindow<BussThemeManager>(BeamableConstants.THEME_MANAGER, true);
+			themeManagerWindow.Show(true);
 		}
 
 		private VisualElement _navigationGroup;
 		private VisualElement _stylesGroup;
 		private ObjectField _styleSheetSource;
 		private BussStyleSheet _currentStyleSheet;
+		private VisualElement _root;
 
-		private BussThemeManager() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussThemeManager)}/{nameof(BussThemeManager)}") { }
-
-		public override void Refresh()
+		private void OnEnable()
 		{
-			base.Refresh();
+			minSize = BUSSConstants.ThemeManagerWindowSize;
+			
+			_root = this.GetRootVisualContainer();
+			_root.Clear();
 
-			_navigationGroup = Root.Q<VisualElement>("navigation");
-			_stylesGroup = Root.Q<VisualElement>("styles");
-			_styleSheetSource = Root.Q<ObjectField>("styleSheetSource");
+			VisualTreeAsset uiAsset =
+				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(
+					$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussThemeManager/BussThemeManager.uxml");
+
+			TemplateContainer tree = uiAsset.CloneTree();
+			tree.AddStyleSheet(
+				$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussThemeManager/BussThemeManager.uss");
+			tree.name = nameof(_root);
+			_root.Add(tree);
+			
+			Refresh();
+		}
+
+		private void Refresh()
+		{
+			_navigationGroup = _root.Q<VisualElement>("navigation");
+			_stylesGroup = _root.Q<VisualElement>("styles");
+			_styleSheetSource = _root.Q<ObjectField>("styleSheetSource");
 			_styleSheetSource.objectType = typeof(BussStyleSheet);
 			_styleSheetSource.UnregisterValueChangedCallback(StyleSheetChanged);
 			_styleSheetSource.RegisterValueChangedCallback(StyleSheetChanged);
