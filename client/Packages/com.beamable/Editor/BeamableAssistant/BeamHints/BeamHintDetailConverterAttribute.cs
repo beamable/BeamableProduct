@@ -9,7 +9,7 @@ using System.Text;
 namespace Beamable.Editor.Assistant
 {
 	[AttributeUsage(AttributeTargets.Method)]
-	public class BeamHintDetailConverterAttribute : Attribute, IReflectionCachingAttribute<BeamHintDetailConverterAttribute>
+	public class BeamHintDetailConverterAttribute : Attribute, IReflectionCachingAttribute
 	{
 		private static readonly List<SignatureOfInterest> AcceptedSignatures = new List<SignatureOfInterest>() {
 			new SignatureOfInterest(
@@ -33,7 +33,7 @@ namespace Beamable.Editor.Assistant
 			UserOverridePathToHintDetailConfig = userOverridePathToHintDetailConfig;
 		}
 
-		public AttributeValidationResult<BeamHintDetailConverterAttribute> IsAllowedOnMember(MemberInfo member)
+		public AttributeValidationResult IsAllowedOnMember(MemberInfo member)
 		{
 			var methodInfo = (MethodInfo)member;
 			var signatureOfInterests = AcceptedSignatures;
@@ -47,13 +47,13 @@ namespace Beamable.Editor.Assistant
 				message.AppendLine($"Signatures must match one of the following:");
 				message.Append(string.Join("\n", signatureOfInterests.Select(acceptedSignature => acceptedSignature.ToHumanReadableSignature())));
 
-				return new AttributeValidationResult<BeamHintDetailConverterAttribute>(this,
+				return new AttributeValidationResult(this,
 				                                                                       member,
 				                                                                       ReflectionCache.ValidationResultType.Error,
 				                                                                       message.ToString());
 			}
 
-			return new AttributeValidationResult<BeamHintDetailConverterAttribute>(this, member, ReflectionCache.ValidationResultType.Valid, $"");
+			return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Valid, $"");
 		}
 	}
 }

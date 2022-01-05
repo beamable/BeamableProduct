@@ -7,10 +7,20 @@ using UnityEditor;
 namespace Beamable.Editor.Assistant
 {
 	/// <summary>
-	/// Manages and persists <see cref="BeamHint"/> preferences. Can decide to display/ignore hints and persist this configuration this session or permanently. 
+	/// Manages and persists <see cref="BeamHint"/> preferences. Can decide to display/ignore hints, play mode warnings and/or notifications.
+	/// It persists this configuration in a per-session or permanent level. 
 	/// </summary>
 	public class BeamHintPreferencesManager : IBeamHintPreferencesManager
 	{
+		/// <summary>
+		/// Different levels of persistence of any single <see cref="BeamHint"/>'s <see cref="BeamHintVisibilityPreference"/> that the <see cref="BeamHintPreferencesManager"/> supports.
+		/// </summary>
+		private enum PersistenceLevel
+		{
+			Permanent,
+			Session,
+		}
+		
 		/// <summary>
 		/// Key into both <see cref="SessionState"/> and <see cref="EditorPrefs"/> to store number of <see cref="BeamHint"/> states persisted in each of these.
 		/// Used to allocate once at startup and avoid continuous resize allocations mid-loop.
@@ -27,13 +37,25 @@ namespace Beamable.Editor.Assistant
 		/// Key into both <see cref="SessionState"/> and <see cref="EditorPrefs"/> to store number of <see cref="BeamHint"/> states persisted in each of these.
 		/// Used to allocate once at startup and avoid continuous resize allocations mid-loop.
 		/// </summary>
-		private const string PLAY_MODE_WARNING_DISABLED_SAVED_COUNT = "BEAM_HINT_"+nameof(PLAY_MODE_WARNING_DISABLED_SAVED_COUNT);
+		private const string PLAY_MODE_WARNING_ENABLED_SAVED_COUNT = "BEAM_HINT_"+nameof(PLAY_MODE_WARNING_ENABLED_SAVED_COUNT);
 
 		/// <summary>
 		/// Key into both <see cref="SessionState"/> and <see cref="EditorPrefs"/> to store the <see cref="BEAM_HINT_PREFERENCES_SEPARATOR"/>-separated list
 		/// of <see cref="BeamHintHeaders"/> states persisted in each prefs.
 		/// </summary>
-		private const string PLAY_MODE_WARNING_DISABLED_SAVED = "BEAM_HINT_"+nameof(PLAY_MODE_WARNING_DISABLED_SAVED);
+		private const string PLAY_MODE_WARNING_ENABLED_SAVED = "BEAM_HINT_"+nameof(PLAY_MODE_WARNING_ENABLED_SAVED);
+		
+		/// <summary>
+		/// Key into both <see cref="SessionState"/> and <see cref="EditorPrefs"/> to store number of <see cref="BeamHint"/> states persisted in each of these.
+		/// Used to allocate once at startup and avoid continuous resize allocations mid-loop.
+		/// </summary>
+		private const string PLAY_MODE_WARNING_MANUALLY_DISABLED_SAVED_COUNT = "BEAM_HINT_"+nameof(PLAY_MODE_WARNING_MANUALLY_DISABLED_SAVED_COUNT);
+
+		/// <summary>
+		/// Key into both <see cref="SessionState"/> and <see cref="EditorPrefs"/> to store the <see cref="BEAM_HINT_PREFERENCES_SEPARATOR"/>-separated list
+		/// of <see cref="BeamHintHeaders"/> states persisted in each prefs.
+		/// </summary>
+		private const string PLAY_MODE_WARNING_MANUALLY_DISABLED_SAVED = "BEAM_HINT_"+nameof(PLAY_MODE_WARNING_MANUALLY_DISABLED_SAVED);
 		
 		/// <summary>
 		/// Key into <see cref="EditorPrefs"/> to store number of <see cref="BeamHint"/> states persisted to always notify.
@@ -60,9 +82,9 @@ namespace Beamable.Editor.Assistant
 
 		/// <summary>
 		/// Current state of each <see cref="BeamHint"/>. Mapped by the <see cref="BeamHintHeader"/>.
-		/// Any not found <see cref="BeamHintHeader"/> is presumed to be with the following state: <see cref="VisibilityState.Display"/>.
+		/// Any not found <see cref="BeamHintHeader"/> is presumed to be with the following state: <see cref="VisibBeamHintVisibilityPreferencelay"/>.
 		/// </summary>
-		private readonly Dictionary<BeamHintHeader, VisibilityState> _perHintVisibilityStates;
+		private readonly Dictionary<BeamHintHeader, BeamHintVisibilityPreference> _perHintVisibilityStates;
 
 		/// <summary>
 		/// List of all header's currently ignored in this <see cref="SessionState"/>. Helper list to make the code for managing this easier.
@@ -77,81 +99,89 @@ namespace Beamable.Editor.Assistant
 		
 		/// <summary>
 		/// Current state of each <see cref="BeamHint"/>. Mapped by the <see cref="BeamHintHeader"/>.
-		/// Any not found <see cref="BeamHintHeader"/> is presumed to be with the following state: <see cref="PlayModeWarningState.Enabled"/>.
+		/// Any not found <see cref="BeamHintHeader"/> is presumed to be with the following state: <see cref="PlayMBeamHintPlayModeWarningPreferenceled"/>.
 		/// </summary>
-		private readonly Dictionary<BeamHintHeader, PlayModeWarningState> _perHintPlayModeWarningStates;
+		private readonly Dictionary<BeamHintHeader, BeamHintPlayModeWarningPreference> _perHintPlayModeWarningStates;
 
 		/// <summary>
-		/// List of all header's currently disabled <see cref="PlayModeWarningState"/> in this <see cref="SessionState"/>. Helper list to make the code for managing this easier.
+		/// List of all header's currently disabled <see cref="BeamHintPlayModeWarningPreference"/> in this <see cref="SessionState"/>. Helper list to make the code for managing this easier.
 		/// </summary>
-		private readonly List<BeamHintHeader> _sessionPlayModeWarningDisabledHints;
+		private readonly List<BeamHintHeader> _sessionPlayModeWarningEnabledHints;
 
 		/// <summary>
-		/// List of all header's currently disabled <see cref="PlayModeWarningState"/> in this <see cref="EditorPrefs"/>. Helper list to make the code for managing this easier.
+		/// List of all header's currently disabled <see cref="BeamHintPlayModeWarningPreference"/> in this <see cref="EditorPrefs"/>. Helper list to make the code for managing this easier.
 		/// </summary>
-		private readonly List<BeamHintHeader> _permanentlyPlayModeWarningDisabledHints;
+		private readonly List<BeamHintHeader> _permanentlyPlayModeWarningEnabledHints;
+		
+		/// <summary>
+		/// List of all header's currently disabled <see cref="BeamHintPlayModeWarningPreference"/> in this <see cref="EditorPrefs"/>. Helper list to make the code for managing this easier.
+		/// </summary>
+		private readonly List<BeamHintHeader> _permanentlyPlayModeWarningManuallyDisabledHints;
 		
 		
 		/// <summary>
 		/// Current state of each <see cref="BeamHint"/>. Mapped by the <see cref="BeamHintHeader"/>.
 		/// Any not found <see cref="BeamHintHeader"/> is presumed to be with the following states:
 		/// <para>
-		///  - If <see cref="BeamHintType.Hint"/>, the default is <see cref="BeamHintNotificationState.NotifyOncePerSession"/>.
+		///  - If <see cref="BeamHintType.Hint"/>, the default is <see cref="BeamHintNotificationPreference.NotifyOncePerSession"/>.
 		/// </para>
 		/// <para>
-		///  - If <see cref="BeamHintType.Validation"/>, the default is <see cref="BeamHintNotificationState.NotifyOnContextObjectChanged"/>. This assumes that validation hints
+		///  - If <see cref="BeamHintType.Validation"/>, the default is <see cref="BeamHintNotificationPreference.NotifyOnContextObjectChanged"/>. This assumes that validation hints
 		/// change their context objects if they ever update a hint. 
 		/// </para>
 		/// </summary>
-		private readonly Dictionary<BeamHintHeader, BeamHintNotificationState> _perHintNotificationStates;
+		private readonly Dictionary<BeamHintHeader, BeamHintNotificationPreference> _perHintNotificationStates;
 		
 		/// <summary>
-		/// List of all header's currently set to <see cref="BeamHintNotificationState.NotifyAlways"/>. Helper list to make the code for managing this easier.
+		/// List of all header's currently set to <see cref="BeamHintNotificationPreference.NotifyAlways"/>. Helper list to make the code for managing this easier.
 		/// </summary>
 		private readonly List<BeamHintHeader> _alwaysNotifyHints;
 		
 		/// <summary>
-		/// List of all header's currently set to <see cref="BeamHintNotificationState.NotifyNever"/>. Helper list to make the code for managing this easier.
+		/// List of all headers currently set to <see cref="BeamHintNotificationPreference.NotifyNever"/>. Helper list to make the code for managing this easier.
 		/// </summary>
 		private readonly List<BeamHintHeader> _neverNotifyHints;
 
-		private readonly List<string> _hintsToPlayModeWarningByDefault;
+		/// <summary>
+		/// List of all <see cref="BeamHintHeader"/>s for hint types that should have their play-mode-warnings Enabled-by-default. 
+		/// </summary>
+		private readonly List<BeamHintHeader> _hintsToPlayModeWarningByDefault;
 
 		/// <summary>
 		/// Creates a new <see cref="BeamHintPreferencesManager"/> instance you can use to manage <see cref="BeamHint"/> display/ignore preferences.
 		/// </summary>
-		public BeamHintPreferencesManager(List<string> playModeWarningByDefaultHints = null)
+		public BeamHintPreferencesManager(List<BeamHintHeader> playModeWarningByDefaultHints = null)
 		{
 			var sessionVisibilityPrefsCount = SessionState.GetInt(VISIBILITY_HIDDEN_SAVED_COUNT, 0);
 			var hintVisibilityPrefsCount = EditorPrefs.GetInt(VISIBILITY_HIDDEN_SAVED_COUNT, 0);
-			_perHintVisibilityStates = new Dictionary<BeamHintHeader, VisibilityState>(sessionVisibilityPrefsCount + hintVisibilityPrefsCount);
+			_perHintVisibilityStates = new Dictionary<BeamHintHeader, BeamHintVisibilityPreference>(sessionVisibilityPrefsCount + hintVisibilityPrefsCount);
 
 			_sessionVisibilityIgnoredHints = new List<BeamHintHeader>(sessionVisibilityPrefsCount);
 			_permanentlyVisibilityIgnoredHints = new List<BeamHintHeader>(hintVisibilityPrefsCount);
 			
 			
-			var sessionPlayModeWarningPrefsCount = SessionState.GetInt(PLAY_MODE_WARNING_DISABLED_SAVED_COUNT, 0);
-			var hintPlayModeWarningPrefsCount = EditorPrefs.GetInt(PLAY_MODE_WARNING_DISABLED_SAVED_COUNT, 0);
-			_perHintPlayModeWarningStates = new Dictionary<BeamHintHeader, PlayModeWarningState>(sessionPlayModeWarningPrefsCount + hintPlayModeWarningPrefsCount);
+			var sessionPlayModeWarningPrefsCount = SessionState.GetInt(PLAY_MODE_WARNING_ENABLED_SAVED_COUNT, 0);
+			var hintPlayModeWarningPrefsCount = EditorPrefs.GetInt(PLAY_MODE_WARNING_ENABLED_SAVED_COUNT, 0);
+			var hintPlayModeWarningManuallyDisabledPrefsCount = EditorPrefs.GetInt(PLAY_MODE_WARNING_MANUALLY_DISABLED_SAVED_COUNT, 0);
+			_perHintPlayModeWarningStates = new Dictionary<BeamHintHeader, BeamHintPlayModeWarningPreference>(sessionPlayModeWarningPrefsCount + hintPlayModeWarningPrefsCount + hintPlayModeWarningManuallyDisabledPrefsCount);
 
-			_sessionPlayModeWarningDisabledHints = new List<BeamHintHeader>(sessionPlayModeWarningPrefsCount);
-			_permanentlyPlayModeWarningDisabledHints = new List<BeamHintHeader>(hintPlayModeWarningPrefsCount);
+			_sessionPlayModeWarningEnabledHints = new List<BeamHintHeader>(sessionPlayModeWarningPrefsCount);
+			_permanentlyPlayModeWarningEnabledHints = new List<BeamHintHeader>(hintPlayModeWarningPrefsCount);
+			_permanentlyPlayModeWarningManuallyDisabledHints = new List<BeamHintHeader>(hintPlayModeWarningManuallyDisabledPrefsCount);
 			
 			
 			var alwaysNotifyCount = EditorPrefs.GetInt(NOTIFICATION_ALWAYS_SAVED_COUNT, 0);
 			var neverNotifyCount = EditorPrefs.GetInt(NOTIFICATION_NEVER_SAVED_COUNT, 0);
-			_perHintNotificationStates = new Dictionary<BeamHintHeader, BeamHintNotificationState>(alwaysNotifyCount + neverNotifyCount);
+			_perHintNotificationStates = new Dictionary<BeamHintHeader, BeamHintNotificationPreference>(alwaysNotifyCount + neverNotifyCount);
 
 			_alwaysNotifyHints = new List<BeamHintHeader>(alwaysNotifyCount);
 			_neverNotifyHints = new List<BeamHintHeader>(neverNotifyCount);
 
-			_hintsToPlayModeWarningByDefault = new List<string>();
-			_hintsToPlayModeWarningByDefault.AddRange(playModeWarningByDefaultHints ?? new List<string>());
+			_hintsToPlayModeWarningByDefault = new List<BeamHintHeader>();
+			_hintsToPlayModeWarningByDefault.AddRange(playModeWarningByDefaultHints ?? new List<BeamHintHeader>());
 		}
 
-		/// <summary>
-		/// Restores the current in-memory state of the <see cref="BeamHintPreferencesManager"/> to match what is stored in its persistent storages.
-		/// </summary>
+		
 		public void RebuildPerHintPreferences()
 		{
 			// Rebuild Visibility preferences
@@ -161,25 +191,39 @@ namespace Beamable.Editor.Assistant
 
 			// Go through editor prefs to get all permanently silenced hints
 			var permanentSilencedHints = EditorPrefs.GetString(VISIBILITY_HIDDEN_SAVED, "");
-			ApplyStoredHintPreferences(permanentSilencedHints, VisibilityState.Hidden, _perHintVisibilityStates, _permanentlyVisibilityIgnoredHints);
+			ApplyStoredHintPreferences(permanentSilencedHints, BeamHintVisibilityPreference.Hidden, _perHintVisibilityStates, _permanentlyVisibilityIgnoredHints);
 
 			// Go through session state to get all silenced hints for this session
 			var sessionSilencedHints = SessionState.GetString(VISIBILITY_HIDDEN_SAVED, "");
-			ApplyStoredHintPreferences(sessionSilencedHints, VisibilityState.Hidden, _perHintVisibilityStates, _sessionVisibilityIgnoredHints);
+			ApplyStoredHintPreferences(sessionSilencedHints, BeamHintVisibilityPreference.Hidden, _perHintVisibilityStates, _sessionVisibilityIgnoredHints);
 			
 			
 			// Rebuild Play-Mode-Warning preferences
 			_perHintPlayModeWarningStates.Clear();
-			_sessionPlayModeWarningDisabledHints.Clear();
-			_permanentlyPlayModeWarningDisabledHints.Clear();
+			_sessionPlayModeWarningEnabledHints.Clear();
+			_permanentlyPlayModeWarningEnabledHints.Clear();
+			_permanentlyPlayModeWarningManuallyDisabledHints.Clear();
 
-			// Go through editor prefs to get all permanently play-mode-warning disabled hints
-			var permanentDisabledPlayModeWarningHints = EditorPrefs.GetString(PLAY_MODE_WARNING_DISABLED_SAVED, "");
-			ApplyStoredHintPreferences(permanentDisabledPlayModeWarningHints, PlayModeWarningState.Disabled, _perHintPlayModeWarningStates, _permanentlyPlayModeWarningDisabledHints);
+			// Go through editor prefs to get all permanently play-mode-warning enabled hints
+			var permanentEnabledPlayModeWarningHints = EditorPrefs.GetString(PLAY_MODE_WARNING_ENABLED_SAVED, "");
+			ApplyStoredHintPreferences(permanentEnabledPlayModeWarningHints, BeamHintPlayModeWarningPreference.Enabled, _perHintPlayModeWarningStates, _permanentlyPlayModeWarningEnabledHints);
 
-			// Go through session state to get all play-mode-warning disabled hints for this session
-			var sessionDisabledPlayModeWarningHints = SessionState.GetString(PLAY_MODE_WARNING_DISABLED_SAVED, "");
-			ApplyStoredHintPreferences(sessionDisabledPlayModeWarningHints, PlayModeWarningState.Disabled, _perHintPlayModeWarningStates, _sessionPlayModeWarningDisabledHints);
+			// Go through session state to get all play-mode-warning enabled hints for this session
+			var sessionEnabledPlayModeWarningHints = SessionState.GetString(PLAY_MODE_WARNING_ENABLED_SAVED, "");
+			ApplyStoredHintPreferences(sessionEnabledPlayModeWarningHints, BeamHintPlayModeWarningPreference.EnabledDuringSession, _perHintPlayModeWarningStates, _sessionPlayModeWarningEnabledHints);
+			
+			// Go through manually disabled play-mode-warning hints
+			var manuallyDisabledPlayModeWarningHints = EditorPrefs.GetString(PLAY_MODE_WARNING_MANUALLY_DISABLED_SAVED, "");
+			ApplyStoredHintPreferences(manuallyDisabledPlayModeWarningHints, BeamHintPlayModeWarningPreference.Disabled, _perHintPlayModeWarningStates, _permanentlyPlayModeWarningManuallyDisabledHints);
+			
+			// Goes through list of enabled-by-default beam hint headers and, if they were not manually disabled, add them to the dictionary as enabled.
+			foreach (var header in _hintsToPlayModeWarningByDefault)
+			{
+				// Don't add to the helper list as we don't need this value to be serialized and persisted since this always sets up the default value as Enabled for these hints.
+				// Only happens, when the game maker hasn't explicitly chosen a setup -- if they did, that would've been serialized and therefore, the header would already be in the dictionary.
+				if (!_perHintPlayModeWarningStates.TryGetValue(header, out _)) 
+					_perHintPlayModeWarningStates.Add(header, BeamHintPlayModeWarningPreference.Enabled);
+			}
 			
 			// Rebuild Notification preferences
 			_perHintNotificationStates.Clear();
@@ -188,11 +232,11 @@ namespace Beamable.Editor.Assistant
 			
 			// Go through stored notification preferences set as NotifyAlways. 
 			var alwaysNotificationHints = EditorPrefs.GetString(NOTIFICATION_ALWAYS_SAVED, "");
-			ApplyStoredHintPreferences(alwaysNotificationHints, BeamHintNotificationState.NotifyAlways, _perHintNotificationStates, _alwaysNotifyHints);
+			ApplyStoredHintPreferences(alwaysNotificationHints, BeamHintNotificationPreference.NotifyAlways, _perHintNotificationStates, _alwaysNotifyHints);
 			
 			// Go through stored notification preferences set as NotifyNever. 
 			var neverNotificationHints = EditorPrefs.GetString(NOTIFICATION_NEVER_SAVED, "");
-			ApplyStoredHintPreferences(neverNotificationHints, BeamHintNotificationState.NotifyNever, _perHintNotificationStates, _neverNotifyHints);
+			ApplyStoredHintPreferences(neverNotificationHints, BeamHintNotificationPreference.NotifyNever, _perHintNotificationStates, _neverNotifyHints);
 			
 			
 		}
@@ -229,73 +273,255 @@ namespace Beamable.Editor.Assistant
 			foreach (string serializedHeader in savedSerializedHeadersArray)
 			{
 				var header = BeamHintHeader.DeserializeBeamHintHeader(serializedHeader);
-				outHintStateStore.Add(header, stateToRestore);
+
+				// Skip existing values when deserializing --- this means that the order in which we deserialize can be used to create behaviour.
+				// Ex: For Play-Mode-Warnings, we load Enabled in Session hints before manually disabled hints. This means that if you manually disable a hint or set it up as in this session only,
+				// it'll be loaded as EnabledInSession for the duration of this session and then revert to a Manually disabled hint.
+				if (!outHintStateStore.TryGetValue(header, out _)) outHintStateStore.Add(header, stateToRestore);
+
 				outPerStateList.Add(header);
 			}
 		}
+		
+		
+		public BeamHintVisibilityPreference GetHintVisibilityPreferences(BeamHint hint)
+		{
+			if (_perHintVisibilityStates.TryGetValue(hint.Header, out var visibilityState))
+				return visibilityState;
 
+			return BeamHintVisibilityPreference.Display;
+		}
 
-		/// <summary>
-		/// Splits all given hints by their <see cref="VisibilityState"/>s.
-		/// </summary>
-		/// <param name="hints">The hints to split by.</param>
-		/// <param name="outToDisplayHints">The resulting list of <see cref="BeamHint"/>s that should be displayed.</param>
-		/// <param name="outToIgnoreHints">The resulting list of <see cref="BeamHint"/>s that should be ignored.</param>
+		public void SetHintVisibilityPreferences(BeamHint hint, BeamHintVisibilityPreference newBeamHintVisibilityPreference)
+		{
+			if (_perHintVisibilityStates.TryGetValue(hint.Header, out var currState)) 
+				currState = _perHintVisibilityStates[hint.Header] = newBeamHintVisibilityPreference;
+			else
+			{
+				_perHintVisibilityStates.Add(hint.Header, newBeamHintVisibilityPreference);
+				currState = newBeamHintVisibilityPreference;
+			}
+
+			if (currState == BeamHintVisibilityPreference.Display)
+			{
+				RemoveHintPreferenceState(hint,
+				                          VISIBILITY_HIDDEN_SAVED,
+				                          VISIBILITY_HIDDEN_SAVED_COUNT,
+				                          PersistenceLevel.Permanent,
+				                          _permanentlyVisibilityIgnoredHints);
+				
+				RemoveHintPreferenceState(hint,
+				                          VISIBILITY_HIDDEN_SAVED,
+				                          VISIBILITY_HIDDEN_SAVED_COUNT,
+				                          PersistenceLevel.Session,
+				                          _sessionVisibilityIgnoredHints);
+			}
+			
+			if (currState == BeamHintVisibilityPreference.HiddenDuringSession)
+			{
+				RemoveHintPreferenceState(hint,
+				                          VISIBILITY_HIDDEN_SAVED,
+				                          VISIBILITY_HIDDEN_SAVED_COUNT,
+				                          PersistenceLevel.Permanent,
+				                          _permanentlyVisibilityIgnoredHints);
+				
+				SetSerializedHintPreference(hint,
+				                            VISIBILITY_HIDDEN_SAVED,
+				                            VISIBILITY_HIDDEN_SAVED_COUNT,
+				                            PersistenceLevel.Session,
+				                            _sessionVisibilityIgnoredHints);
+			}
+			
+			if (currState == BeamHintVisibilityPreference.Hidden)
+			{
+				RemoveHintPreferenceState(hint,
+				                          VISIBILITY_HIDDEN_SAVED,
+				                          VISIBILITY_HIDDEN_SAVED_COUNT,
+				                          PersistenceLevel.Session,
+				                          _sessionVisibilityIgnoredHints);
+				
+				SetSerializedHintPreference(hint,
+				                            VISIBILITY_HIDDEN_SAVED,
+				                            VISIBILITY_HIDDEN_SAVED_COUNT,
+				                            PersistenceLevel.Permanent,
+				                            _permanentlyVisibilityIgnoredHints);
+				
+			}
+		}
+
 		public void SplitHintsByVisibilityPreferences(IEnumerable<BeamHint> hints, out IEnumerable<BeamHint> outToDisplayHints, out IEnumerable<BeamHint> outToIgnoreHints)
 		{
 			var groups = hints.GroupBy(h =>
 			{
 				if (!_perHintVisibilityStates.TryGetValue(h.Header, out var state))
-					state = VisibilityState.Display;
+					state = BeamHintVisibilityPreference.Display;
 
 				return state;
 			}).ToList();
 
-			outToDisplayHints = groups.Where(h => h.Key == VisibilityState.Display)
+			outToDisplayHints = groups.Where(h => h.Key == BeamHintVisibilityPreference.Display)
 			                          .SelectMany(h => h);
 			
-			outToIgnoreHints = groups.Where(h => h.Key == VisibilityState.Hidden)
-			                          .SelectMany(h => h);
+			outToIgnoreHints = groups.Where(h => h.Key == BeamHintVisibilityPreference.Hidden || h.Key == BeamHintVisibilityPreference.HiddenDuringSession)
+			                         .SelectMany(h => h);
+		}
+
+		
+		
+		public BeamHintPlayModeWarningPreference GetHintPlayModeWarningPreferences(BeamHint hint)
+		{
+			if (_perHintPlayModeWarningStates.TryGetValue(hint.Header, out var playModeWarningState))
+				return playModeWarningState;
+
+			return BeamHintPlayModeWarningPreference.Disabled;
 		}
 		
-		/// <summary>
-		/// Splits all given hints by their <see cref="PlayModeWarningState"/>s.
-		/// </summary>
-		/// <param name="hints">The hints to split by.</param>
-		/// <param name="outToWarnHints">The resulting list of <see cref="BeamHint"/>s that should cause a play-mode-warning.</param>
-		/// <param name="outToIgnoreHints">The resulting list of <see cref="BeamHint"/>s that should cause a play-mode-warning.</param>
+		public void SetHintPlayModeWarningPreferences(BeamHint hint, BeamHintPlayModeWarningPreference newBeamHintPlayModeWarningPreference)
+		{
+			if (_perHintPlayModeWarningStates.TryGetValue(hint.Header, out var currState)) 
+				currState = _perHintPlayModeWarningStates[hint.Header] = newBeamHintPlayModeWarningPreference;
+			else
+			{
+				_perHintPlayModeWarningStates.Add(hint.Header, newBeamHintPlayModeWarningPreference);
+				currState = newBeamHintPlayModeWarningPreference;
+			}
+
+			if (currState == BeamHintPlayModeWarningPreference.Disabled)
+			{
+				RemoveHintPreferenceState(hint,
+				                          PLAY_MODE_WARNING_ENABLED_SAVED,
+				                          PLAY_MODE_WARNING_ENABLED_SAVED_COUNT,
+				                          PersistenceLevel.Permanent,
+				                          _permanentlyPlayModeWarningEnabledHints);
+				
+				RemoveHintPreferenceState(hint,
+				                          PLAY_MODE_WARNING_ENABLED_SAVED,
+				                          PLAY_MODE_WARNING_ENABLED_SAVED_COUNT,
+				                          PersistenceLevel.Session,
+				                          _sessionPlayModeWarningEnabledHints);
+				
+				SetSerializedHintPreference(hint,
+				                          PLAY_MODE_WARNING_MANUALLY_DISABLED_SAVED,
+				                          PLAY_MODE_WARNING_MANUALLY_DISABLED_SAVED_COUNT,
+				                          PersistenceLevel.Permanent,
+				                          _permanentlyPlayModeWarningManuallyDisabledHints);
+			}
+			
+			if (currState == BeamHintPlayModeWarningPreference.EnabledDuringSession)
+			{
+				RemoveHintPreferenceState(hint,
+				                          PLAY_MODE_WARNING_ENABLED_SAVED,
+				                          PLAY_MODE_WARNING_ENABLED_SAVED_COUNT,
+				                          PersistenceLevel.Permanent,
+				                          _permanentlyPlayModeWarningEnabledHints);
+				
+				// Sets this as manually disabled, so it correctly reverts to disabled after this session ends.
+				// See ApplyStoredHintPreferences() for more details on how this behaviour is enforced via this.
+				SetSerializedHintPreference(hint,
+				                            PLAY_MODE_WARNING_MANUALLY_DISABLED_SAVED,
+				                            PLAY_MODE_WARNING_MANUALLY_DISABLED_SAVED_COUNT,
+				                            PersistenceLevel.Permanent,
+				                            _permanentlyPlayModeWarningManuallyDisabledHints);
+				
+				SetSerializedHintPreference(hint,
+				                            PLAY_MODE_WARNING_ENABLED_SAVED,
+				                            PLAY_MODE_WARNING_ENABLED_SAVED_COUNT,
+				                            PersistenceLevel.Session,
+				                            _sessionPlayModeWarningEnabledHints);
+			}
+			
+			if (currState == BeamHintPlayModeWarningPreference.Enabled)
+			{
+				RemoveHintPreferenceState(hint,
+				                          PLAY_MODE_WARNING_MANUALLY_DISABLED_SAVED,
+				                          PLAY_MODE_WARNING_MANUALLY_DISABLED_SAVED_COUNT,
+				                          PersistenceLevel.Permanent,
+				                          _permanentlyPlayModeWarningManuallyDisabledHints);
+				
+				RemoveHintPreferenceState(hint,
+				                          PLAY_MODE_WARNING_ENABLED_SAVED,
+				                          PLAY_MODE_WARNING_ENABLED_SAVED_COUNT,
+				                          PersistenceLevel.Session,
+				                          _sessionPlayModeWarningEnabledHints);
+				
+				SetSerializedHintPreference(hint,
+				                            PLAY_MODE_WARNING_ENABLED_SAVED,
+				                            PLAY_MODE_WARNING_ENABLED_SAVED_COUNT,
+				                            PersistenceLevel.Permanent,
+				                            _permanentlyPlayModeWarningEnabledHints);
+				
+			}
+		}
+		
 		public void SplitHintsByPlayModeWarningPreferences(IEnumerable<BeamHint> hints, out IEnumerable<BeamHint> outToWarnHints, out IEnumerable<BeamHint> outToIgnoreHints)
 		{
 			var groups = hints.GroupBy(h => {
 
 				if (!_perHintPlayModeWarningStates.TryGetValue(h.Header, out var state))
 				{
-					state = _hintsToPlayModeWarningByDefault.Contains(h.Header.Id) ? PlayModeWarningState.Enabled : PlayModeWarningState.Disabled;
+					state = BeamHintPlayModeWarningPreference.Disabled;
 				}
 
 				return state;
 			}).ToList();
 
-			outToWarnHints = groups.Where(h => h.Key == PlayModeWarningState.Enabled)
-			                          .SelectMany(h => h);
+			outToWarnHints = groups.Where(h => h.Key == BeamHintPlayModeWarningPreference.Enabled || h.Key == BeamHintPlayModeWarningPreference.EnabledDuringSession)
+			                       .SelectMany(h => h);
 			
-			outToIgnoreHints = groups.Where(h => h.Key == PlayModeWarningState.Disabled)
+			outToIgnoreHints = groups.Where(h => h.Key == BeamHintPlayModeWarningPreference.Disabled)
 			                         .SelectMany(h => h);
 		}
 
-		/// <summary>
-		/// Splits all given hints by their <see cref="PlayModeWarningState"/>s.
-		/// </summary>
-		/// <param name="hints">The hints to split by.</param>
-		/// <param name="outToNotifyAlways">The resulting list of <see cref="BeamHint"/>s that should always notify.</param>
-		/// <param name="outToNotifyNever">The resulting list of <see cref="BeamHint"/>s that should never notify.</param>
-		/// <param name="outToNotifyOncePerSession">The resulting list of <see cref="BeamHint"/>s that should notify only once per session.</param>
-		/// <param name="outToNotifyOnContextObjectChange">The resulting list of <see cref="BeamHint"/>s that should notify whenever the context object changed.</param>
+		
+		
+		
+		public BeamHintNotificationPreference GetHintNotificationPreferences(BeamHint hint)
+		{
+			if (_perHintNotificationStates.TryGetValue(hint.Header, out var state)) return state;
+			return hint.Header.Type == BeamHintType.Validation ? BeamHintNotificationPreference.NotifyOnContextObjectChanged : BeamHintNotificationPreference.NotifyOncePerSession;
+		}
+
+		public void SetHintNotificationPreferences(BeamHint hint, BeamHintNotificationPreference newBeamHintNotificationPreference)
+		{
+			if (_perHintNotificationStates.TryGetValue(hint.Header, out var currState)) 
+				currState = _perHintNotificationStates[hint.Header] = newBeamHintNotificationPreference;
+			else
+			{
+				_perHintNotificationStates.Add(hint.Header, newBeamHintNotificationPreference);
+				currState = newBeamHintNotificationPreference;
+			}
+
+			switch (currState)
+			{
+				case BeamHintNotificationPreference.NotifyOncePerSession:
+				case BeamHintNotificationPreference.NotifyOnContextObjectChanged:
+				{
+					RemoveHintPreferenceState(hint, NOTIFICATION_ALWAYS_SAVED, NOTIFICATION_ALWAYS_SAVED_COUNT, PersistenceLevel.Permanent, _alwaysNotifyHints);
+					RemoveHintPreferenceState(hint, NOTIFICATION_NEVER_SAVED, NOTIFICATION_NEVER_SAVED_COUNT, PersistenceLevel.Permanent, _neverNotifyHints);
+					break;
+				}
+				case BeamHintNotificationPreference.NotifyAlways:
+				{
+					RemoveHintPreferenceState(hint, NOTIFICATION_NEVER_SAVED, NOTIFICATION_NEVER_SAVED_COUNT, PersistenceLevel.Permanent, _neverNotifyHints);
+					SetSerializedHintPreference(hint, NOTIFICATION_ALWAYS_SAVED, NOTIFICATION_ALWAYS_SAVED_COUNT, PersistenceLevel.Permanent, _alwaysNotifyHints);
+					break;
+				}
+				case BeamHintNotificationPreference.NotifyNever:
+				{
+					RemoveHintPreferenceState(hint, NOTIFICATION_ALWAYS_SAVED, NOTIFICATION_ALWAYS_SAVED_COUNT, PersistenceLevel.Permanent, _alwaysNotifyHints);
+					SetSerializedHintPreference(hint, NOTIFICATION_NEVER_SAVED, NOTIFICATION_NEVER_SAVED_COUNT, PersistenceLevel.Permanent, _neverNotifyHints);
+					break;
+				}
+				default:
+					throw new ArgumentOutOfRangeException();
+			}
+		}
+		
 		public void SplitHintsByNotificationPreferences(IEnumerable<BeamHint> hints,
-		                                                out IEnumerable<BeamHint> outToNotifyAlways,
-		                                                out IEnumerable<BeamHint> outToNotifyNever,
-		                                                out IEnumerable<BeamHint> outToNotifyOncePerSession,
-		                                                out IEnumerable<BeamHint> outToNotifyOnContextObjectChange)
+		                                                out List<BeamHint> outToNotifyAlways,
+		                                                out List<BeamHint> outToNotifyNever,
+		                                                out List<BeamHint> outToNotifyOncePerSession,
+		                                                out List<BeamHint> outToNotifyOnContextObjectChange)
 		{
 			var groups = hints.GroupBy(h => {
 
@@ -305,12 +531,12 @@ namespace Beamable.Editor.Assistant
 					{
 						case BeamHintType.Hint:
 						{
-							state = BeamHintNotificationState.NotifyOncePerSession;
+							state = BeamHintNotificationPreference.NotifyOncePerSession;
 							break;
 						}
 						case BeamHintType.Validation:
 						{
-							state = BeamHintNotificationState.NotifyOnContextObjectChanged;
+							state = BeamHintNotificationPreference.NotifyOnContextObjectChanged;
 							break;
 						}
 						default:
@@ -321,144 +547,19 @@ namespace Beamable.Editor.Assistant
 				return state;
 			}).ToList();
 
-			outToNotifyAlways = groups.Where(h => h.Key == BeamHintNotificationState.NotifyAlways)
-			                          .SelectMany(h => h);
+			outToNotifyAlways = groups.Where(h => h.Key == BeamHintNotificationPreference.NotifyAlways)
+			                          .SelectMany(h => h).ToList();
 			
-			outToNotifyNever = groups.Where(h => h.Key == BeamHintNotificationState.NotifyNever)
-			                         .SelectMany(h => h);
+			outToNotifyNever = groups.Where(h => h.Key == BeamHintNotificationPreference.NotifyNever)
+			                         .SelectMany(h => h).ToList();
 			
-			outToNotifyOncePerSession = groups.Where(h => h.Key == BeamHintNotificationState.NotifyOncePerSession)
-			                                  .SelectMany(h => h);
+			outToNotifyOncePerSession = groups.Where(h => h.Key == BeamHintNotificationPreference.NotifyOncePerSession)
+			                                  .SelectMany(h => h).ToList();
 			
-			outToNotifyOnContextObjectChange = groups.Where(h => h.Key == BeamHintNotificationState.NotifyOnContextObjectChanged)
-			                                         .SelectMany(h => h);
+			outToNotifyOnContextObjectChange = groups.Where(h => h.Key == BeamHintNotificationPreference.NotifyOnContextObjectChanged)
+			                                         .SelectMany(h => h).ToList();
 		}
-
-		/// <summary>
-		/// Sets, for the given <paramref name="hint"/>, the given <paramref name="newVisibilityState"/> at the specified <paramref name="persistenceLevel"/>.
-		/// Persistence levels are 100% independent, it is up to the caller to add/remove from both independently.
-		/// </summary>
-		public void SetHintVisibilityPreferences(BeamHint hint, VisibilityState newVisibilityState, PersistenceLevel persistenceLevel)
-		{
-			if (!_perHintVisibilityStates.TryGetValue(hint.Header, out var currState))
-			{
-				_perHintVisibilityStates.Add(hint.Header, newVisibilityState);
-				currState = newVisibilityState;
-			}
-
-			if (persistenceLevel == PersistenceLevel.Instance)
-				return;
-
-			List<BeamHintHeader> persistenceHintHelperList;
-			switch (persistenceLevel)
-			{
-				case PersistenceLevel.Session:
-					persistenceHintHelperList = _sessionVisibilityIgnoredHints;
-					break;
-				case PersistenceLevel.Permanent:
-					persistenceHintHelperList = _permanentlyVisibilityIgnoredHints;
-					break;
-				default:
-					throw new ArgumentOutOfRangeException(nameof(persistenceLevel));
-			}
-			
-			if (currState == VisibilityState.Hidden)
-				SetSerializedHintPreference(hint,
-				                            VISIBILITY_HIDDEN_SAVED,
-				                            VISIBILITY_HIDDEN_SAVED_COUNT,
-				                            persistenceLevel,
-				                            persistenceHintHelperList);
-
-			if (currState == VisibilityState.Display)
-				RemoveHintPreferenceState(hint,
-				                            VISIBILITY_HIDDEN_SAVED,
-				                            VISIBILITY_HIDDEN_SAVED_COUNT,
-				                            persistenceLevel,
-				                            persistenceHintHelperList);
-		}
-
-
-		/// <summary>
-		/// Sets, for the given <paramref name="hint"/>, the given <paramref name="newPlayModeWarningState"/> at the specified <paramref name="persistenceLevel"/>.
-		/// Persistence levels are 100% independent, it is up to the caller to add/remove from both independently.
-		/// </summary>
-		public void SetHintPlayModeWarningPreferences(BeamHint hint, PlayModeWarningState newPlayModeWarningState, PersistenceLevel persistenceLevel)
-		{
-			if (!_perHintPlayModeWarningStates.TryGetValue(hint.Header, out var currState))
-			{
-				_perHintPlayModeWarningStates.Add(hint.Header, newPlayModeWarningState);
-				currState = newPlayModeWarningState;
-			}
-
-			if (persistenceLevel == PersistenceLevel.Instance)
-				return;
-
-			List<BeamHintHeader> persistenceHintHelperList;
-			switch (persistenceLevel)
-			{
-				case PersistenceLevel.Session:
-					persistenceHintHelperList = _sessionPlayModeWarningDisabledHints;
-					break;
-				case PersistenceLevel.Permanent:
-					persistenceHintHelperList = _permanentlyPlayModeWarningDisabledHints;
-					break;
-				default:
-					throw new ArgumentOutOfRangeException(nameof(persistenceLevel));
-			}
-			
-			if (currState == PlayModeWarningState.Disabled)
-				SetSerializedHintPreference(hint,
-				                            PLAY_MODE_WARNING_DISABLED_SAVED,
-				                            PLAY_MODE_WARNING_DISABLED_SAVED_COUNT,
-				                            persistenceLevel, 
-				                            persistenceHintHelperList);
-
-			if (currState == PlayModeWarningState.Enabled)
-				RemoveHintPreferenceState(hint,
-				                          PLAY_MODE_WARNING_DISABLED_SAVED,
-				                          PLAY_MODE_WARNING_DISABLED_SAVED_COUNT,
-				                          persistenceLevel, 
-				                          persistenceHintHelperList);
-		}
-
-		/// <summary>
-		/// Update the <see cref="BeamHintNotificationState"/> for a given hint. These are always set permanently (you can't disable them for just this session). 
-		/// </summary>
-		/// <param name="hint">The hint whose <see cref="BeamHintNotificationState"/> you want to set.</param>
-		/// <param name="newNotificationState">The <see cref="BeamHintNotificationState"/> to set.</param>
-		public void SetHintNotificationPreferences(BeamHint hint, BeamHintNotificationState newNotificationState)
-		{
-			if (!_perHintNotificationStates.TryGetValue(hint.Header, out var currState))
-			{
-				_perHintNotificationStates.Add(hint.Header, newNotificationState);
-				currState = newNotificationState;
-			}
-
-			switch (currState)
-			{
-				case BeamHintNotificationState.NotifyOncePerSession:
-				case BeamHintNotificationState.NotifyOnContextObjectChanged:
-				{
-					RemoveHintPreferenceState(hint, NOTIFICATION_ALWAYS_SAVED, NOTIFICATION_ALWAYS_SAVED_COUNT, PersistenceLevel.Permanent, _alwaysNotifyHints);
-					RemoveHintPreferenceState(hint, NOTIFICATION_NEVER_SAVED, NOTIFICATION_NEVER_SAVED_COUNT, PersistenceLevel.Permanent, _neverNotifyHints);
-					break;
-				}
-				case BeamHintNotificationState.NotifyAlways:
-				{
-					RemoveHintPreferenceState(hint, NOTIFICATION_NEVER_SAVED, NOTIFICATION_NEVER_SAVED_COUNT, PersistenceLevel.Permanent, _neverNotifyHints);
-					SetSerializedHintPreference(hint, NOTIFICATION_ALWAYS_SAVED, NOTIFICATION_ALWAYS_SAVED_COUNT, PersistenceLevel.Permanent, _alwaysNotifyHints);
-					break;
-				}
-				case BeamHintNotificationState.NotifyNever:
-				{
-					RemoveHintPreferenceState(hint, NOTIFICATION_ALWAYS_SAVED, NOTIFICATION_ALWAYS_SAVED_COUNT, PersistenceLevel.Permanent, _alwaysNotifyHints);
-					SetSerializedHintPreference(hint, NOTIFICATION_NEVER_SAVED, NOTIFICATION_NEVER_SAVED_COUNT, PersistenceLevel.Permanent, _neverNotifyHints);
-					break;
-				}
-				default:
-					throw new ArgumentOutOfRangeException();
-			}
-		}
+		
 		
 		
 		/// <summary>
@@ -491,7 +592,7 @@ namespace Beamable.Editor.Assistant
 				}
 				case PersistenceLevel.Session:
 				{
-					SessionState.SetString(preferencesKey, string.Join(BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR, outHints));
+					SessionState.SetString(preferencesKey, serializedPreferences);
 					SessionState.SetInt(preferencesCountKey, outHints.Count);
 					break;
 				}
@@ -543,7 +644,7 @@ namespace Beamable.Editor.Assistant
 		
 
 		/// <summary>
-		/// Discards all persisted <see cref="VisibilityState"/>s and <see cref="PlayModeWarningState"/>s of all hints.
+		/// Discards all persisted <see cref="BeamHintVisibilityPreference"/>s, <see cref="BeamHintPlayModeWarningPreference"/>s and <see cref="BeamHintNotificationPreference"/>s of all hints.
 		/// </summary>
 		public void ClearAllPreferences()
 		{
@@ -553,11 +654,11 @@ namespace Beamable.Editor.Assistant
 			EditorPrefs.SetInt(VISIBILITY_HIDDEN_SAVED_COUNT, 0);
 			SessionState.SetInt(VISIBILITY_HIDDEN_SAVED_COUNT, 0);
 			
-			EditorPrefs.SetString(PLAY_MODE_WARNING_DISABLED_SAVED, "");
-			SessionState.SetString(PLAY_MODE_WARNING_DISABLED_SAVED, "");
+			EditorPrefs.SetString(PLAY_MODE_WARNING_ENABLED_SAVED, "");
+			SessionState.SetString(PLAY_MODE_WARNING_ENABLED_SAVED, "");
 
-			EditorPrefs.SetInt(PLAY_MODE_WARNING_DISABLED_SAVED_COUNT, 0);
-			SessionState.SetInt(PLAY_MODE_WARNING_DISABLED_SAVED_COUNT, 0);
+			EditorPrefs.SetInt(PLAY_MODE_WARNING_ENABLED_SAVED_COUNT, 0);
+			SessionState.SetInt(PLAY_MODE_WARNING_ENABLED_SAVED_COUNT, 0);
 			
 			EditorPrefs.SetInt(NOTIFICATION_ALWAYS_SAVED_COUNT, 0);
 			EditorPrefs.SetString(NOTIFICATION_ALWAYS_SAVED, "");

@@ -8,13 +8,34 @@
 
     <engine:VisualElement name="hintHeaderContainer" class="hintHeader">
         <engine:Image name="hintTypeIcon"/>
-        <engine:Label name="hintDisplayName" class="createButtonLabel"/>
+        <engine:Label name="hintDisplayName" class="createButtonLabel hintTitle"/>
         <engine:VisualElement class="splitPadding"/>
         <engine:Toggle name="moreDetailsButton">
-            <engine:Label text="More"/>            
+            <engine:Label text="More"/>
         </engine:Toggle>
         <engine:VisualElement class="splitPadding"/>
     </engine:VisualElement>
-    <engine:VisualElement name="hintDetailsContainer" class="hintDetails"/>
-
+    <engine:VisualElement name="hintDetailsContainer" class="hintDetails">
+        <engine:VisualElement name="hintDetailsBox">
+            <engine:VisualElement name="hintDetailsIdAndNotification">
+                <engine:Label text="ID Name" name="hintDetailsBoxHintDisplayName" class="createButtonLabel hintTitle"/>
+                <engine:Toggle name="hintDetailsBoxNotificationToggle">
+                    <engine:Label text="Notification"/>
+                </engine:Toggle>
+            </engine:VisualElement>
+            <engine:VisualElement name="hintDetailsBoxPlayModeWarning">
+                <engine:Label text="Play-Mode Warning" name="playModeWarningSettings" class="hintSubtitle"/>                
+                <engine:Toggle name="playModeWarningDisableToggle">
+                    <engine:Label text="Never warn me about this before entering play mode."/>
+                </engine:Toggle>
+                <engine:Toggle name="playModeWarningSessionToggle">
+                    <engine:Label text="Warn me about this before entering play mode during this work session."/>
+                </engine:Toggle>
+                <engine:Toggle name="playModeWarningAlwaysToggle">
+                    <engine:Label text="Always warn me about this before entering play mode."/>
+                </engine:Toggle>
+            </engine:VisualElement>
+            <engine:Label text="Hint Details" name="playModeWarningSettings" class="hintSubtitle"/>
+        </engine:VisualElement>
+    </engine:VisualElement>
 </engine:UXML>

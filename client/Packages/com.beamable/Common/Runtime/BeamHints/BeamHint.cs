@@ -105,78 +105,134 @@ namespace Beamable.Common.Assistant
 		public override string ToString() => $"{nameof(Header)}: {Header}, {nameof(ContextObject)}: {ContextObject}";
 	}
 
+	/// <summary>
+	/// <see cref="IBeamHintProvider"/> detect the existence of <see cref="BeamHint"/>s and should add them to the storage with the correct domain.
+	/// TODO: Support Scriptable Object-based injection of BeamHintProviders similar to what we do with <see cref="Reflection.IReflectionCacheUserSystem"/>s at EditorAPI initialization.
+	/// </summary>
 	public interface IBeamHintProvider
 	{
 		void SetStorage(IBeamHintGlobalStorage hintGlobalStorage);
 	}
+	
 
+	/// <summary>
+	/// Manages and persists <see cref="BeamHint"/> preferences. Can decide to display/ignore hints, play mode warnings and/or notifications.
+	/// It persists this configuration in a per-session or permanent level. 
+	/// </summary>
+	public interface IBeamHintPreferencesManager
+	{
+		/// <summary>
+		/// Restores the current in-memory state of the <see cref="BeamHintPreferencesManager"/> to match what is stored in its persistent storages.
+		/// </summary>
+		void RebuildPerHintPreferences();
+
+		/// <summary>
+		/// Gets the current <see cref="BeamHintVisibilityPreference"/> for the given hint.  
+		/// </summary>
+		BeamHintVisibilityPreference GetHintVisibilityPreferences(BeamHint hint);
+		
+		/// <summary>
+		/// Sets, for the given <paramref name="hint"/>, the given <paramref name="newBeamHintVisibilityPreference"/>.
+		/// </summary>
+		void SetHintVisibilityPreferences(BeamHint hint, BeamHintVisibilityPreference newBeamHintVisibilityPreference);
+		
+		/// <summary>
+		/// Splits all given hints by their <see cref="BeamHintVisibilityPreference"/>s.
+		/// </summary>
+		/// <param name="hints">The hints to split by.</param>
+		/// <param name="outToDisplayHints">The resulting list of <see cref="BeamHint"/>s that should be displayed.</param>
+		/// <param name="outToIgnoreHints">The resulting list of <see cref="BeamHint"/>s that should be ignored.</param>
+		void SplitHintsByVisibilityPreferences(IEnumerable<BeamHint> hints, out IEnumerable<BeamHint> outToDisplayHints, out IEnumerable<BeamHint> outToIgnoreHints);
+		
+		
+		
+		/// <summary>
+		/// Gets the current <see cref="BeamHintPlayModeWarningPreference"/> for the given hint.  
+		/// </summary>
+		BeamHintPlayModeWarningPreference GetHintPlayModeWarningPreferences(BeamHint hint);
+
+		/// <summary>
+		/// Sets, for the given <paramref name="hint"/>, the given <paramref name="newBeamHintPlayModeWarningPreference"/>.
+		/// </summary>
+		void SetHintPlayModeWarningPreferences(BeamHint hint, BeamHintPlayModeWarningPreference newBeamHintPlayModeWarningPreference);
+		
+		/// <summary>
+		/// Splits all given hints by their <see cref="BeamHintPlayModeWarningPreference"/>s.
+		/// </summary>
+		/// <param name="hints">The hints to split by.</param>
+		/// <param name="outToWarnHints">The resulting list of <see cref="BeamHint"/>s that should cause a play-mode-warning.</param>
+		/// <param name="outToIgnoreHints">The resulting list of <see cref="BeamHint"/>s that should cause a play-mode-warning.</param>
+		void SplitHintsByPlayModeWarningPreferences(IEnumerable<BeamHint> hints, out IEnumerable<BeamHint> outToWarnHints, out IEnumerable<BeamHint> outToIgnoreHints);
+		
+
+		
+		/// <summary>
+		/// Gets the current <see cref="BeamHintNotificationPreference"/> for the given hint.
+		/// </summary>
+		BeamHintNotificationPreference GetHintNotificationPreferences(BeamHint hint);
+		
+		/// <summary>
+		/// Update the <see cref="BeamHintNotificationPreference"/> for a given hint. 
+		/// </summary>
+		void SetHintNotificationPreferences(BeamHint hint, BeamHintNotificationPreference newBeamHintNotificationPreference);
+
+
+		/// <summary>
+		/// Splits all given hints by their <see cref="BeamHintPlayModeWarningPreference"/>s.
+		/// </summary>
+		/// <param name="hints">The hints to split by.</param>
+		/// <param name="outToNotifyAlways">The resulting list of <see cref="BeamHint"/>s that should always notify.</param>
+		/// <param name="outToNotifyNever">The resulting list of <see cref="BeamHint"/>s that should never notify.</param>
+		/// <param name="outToNotifyOncePerSession">The resulting list of <see cref="BeamHint"/>s that should notify only once per session.</param>
+		/// <param name="outToNotifyOnContextObjectChange">The resulting list of <see cref="BeamHint"/>s that should notify whenever the context object changed.</param>
+		void SplitHintsByNotificationPreferences(IEnumerable<BeamHint> hints,
+		                                         out List<BeamHint> outToNotifyAlways,
+		                                         out List<BeamHint> outToNotifyNever,
+		                                         out List<BeamHint> outToNotifyOncePerSession,
+		                                         out List<BeamHint> outToNotifyOnContextObjectChange);
+
+		/// <summary>
+		/// Discards all persisted <see cref="BeamHintVisibilityPreference"/>s, <see cref="BeamHintPlayModeWarningPreference"/>s and <see cref="BeamHintNotificationPreference"/>s of all hints.
+		/// </summary>
+		void ClearAllPreferences();
+	}
+	
 	/// <summary>
 	/// Current State of display tied to any specific <see cref="BeamHintHeader"/>.
 	/// </summary>
-	public enum VisibilityState
+	public enum BeamHintVisibilityPreference
 	{
 		Display,
+		HiddenDuringSession,
 		Hidden,
 	}
 
 	/// <summary>
 	/// Current State of the play mode warning tied to any specific <see cref="BeamHintHeader"/>.
 	/// </summary>
-	public enum PlayModeWarningState
+	public enum BeamHintPlayModeWarningPreference
 	{
 		Enabled,
+		EnabledDuringSession,
 		Disabled,
 	}
 
+
 	/// <summary>
-	/// Different levels of persistence of any single <see cref="BeamHint"/>'s <see cref="VisibilityState"/> that the <see cref="BeamHintPreferencesManager"/> supports.
+	/// Current state of the Notification preference setting tied to any specific <see cref="BeamHintHeader"/>s.
 	/// </summary>
-	public enum PersistenceLevel
+	public enum BeamHintNotificationPreference
 	{
-		Instance,
-		Session,
-		Permanent
-	}
-
-	public interface IBeamHintPreferencesManager
-	{
-		void RebuildPerHintPreferences();
-
-		void SetHintVisibilityPreferences(BeamHint hint, VisibilityState newVisibilityState, PersistenceLevel persistenceLevel);
-		void SetHintPlayModeWarningPreferences(BeamHint hint, PlayModeWarningState newPlayModeWarningState, PersistenceLevel persistenceLevel);
-		void SetHintNotificationPreferences(BeamHint hint, BeamHintNotificationState newNotificationState);
-		
-		
-		void SplitHintsByVisibilityPreferences(IEnumerable<BeamHint> hints, out IEnumerable<BeamHint> outToDisplayHints, out IEnumerable<BeamHint> outToIgnoreHints);
-		void SplitHintsByPlayModeWarningPreferences(IEnumerable<BeamHint> hints, out IEnumerable<BeamHint> outToWarnHints, out IEnumerable<BeamHint> outToIgnoreHints);
-
-		void SplitHintsByNotificationPreferences(IEnumerable<BeamHint> hints,
-		                                         out IEnumerable<BeamHint> outToNotifyAlways,
-		                                         out IEnumerable<BeamHint> outToNotifyNever,
-		                                         out IEnumerable<BeamHint> outToNotifyOncePerSession,
-		                                         out IEnumerable<BeamHint> outToNotifyOnContextObjectChange);
-
-		void ClearAllPreferences();
-	}
-
-	public enum BeamHintNotificationState
-	{
-		// These can only be set permanently (PersistenceLevel == Permanent)
-
 		NotifyOncePerSession, // Default for hints ----------------> Stores which hints were already notified in SessionState
 		NotifyOnContextObjectChanged, // Default for validations --> Stores ContextObject of each hint in internal state, compares when bumps into a hint --- if not same reference, notify. Assumes that validations will change the Hint's context object when they run again and therefore should be notified again.
 		NotifyNever, // Only if user explicitly asks for these ----> Never notifies the user
 		NotifyAlways, // Only if user explicitly asks for these ---> Always notifies 
 	}
 
-	public interface IBeamHintNotificationManager
-	{
-		int HintsCount { get; }
-		int ValidationHintsCount { get; }
-
-		void ChangeNotificationUpdateRate(float newUpdateRate);
-	}
-
+	/// <summary>
+	/// <see cref="IBeamHintManager"/>s read, filter, clear and arrange data logically in relation to <see cref="BeamHintHeader"/>s to be read by UI and other systems.
+	/// TODO: Support Scriptable Object-based injection of BeamHintManagers similar to what we do with <see cref="Reflection.IReflectionCacheUserSystem"/>s at EditorAPI initialization.
+	/// </summary>
 	public interface IBeamHintManager
 	{
 		void SetPreferencesManager(IBeamHintPreferencesManager preferencesManager);

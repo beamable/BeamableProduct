@@ -59,6 +59,8 @@ namespace Beamable.Editor.Reflection
 
 			public int GetFirstMatchingDetailsConfig(BeamHintHeader hint, out BeamHintDetailsConfig foundConfig)
 			{
+				LoadedConfigs.RemoveAll(config => config == null);
+				
 				var idx = LoadedConfigs.FindIndex(config => config.MatchesHint(hint));
 				foundConfig = idx == -1 ? null : LoadedConfigs[idx];
 				return idx;
@@ -90,7 +92,7 @@ namespace Beamable.Editor.Reflection
 
 			public void ParseAttributeOfInterestData(AttributeOfInterest attributeType, IReadOnlyList<MemberAttributePair> cachedMemberAttributePairs)
 			{
-				var validationResults = cachedMemberAttributePairs.Validate<BeamHintDetailConverterAttribute>();
+				var validationResults = cachedMemberAttributePairs.Validate();
 				validationResults.SplitValidationResults(out var valid, out _, out var invalid);
 
 				if (invalid.Count > 0)

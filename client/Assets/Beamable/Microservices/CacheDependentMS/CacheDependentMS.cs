@@ -167,7 +167,17 @@ namespace Beamable.Server
       /// </summary>
       /// <returns></returns>
       [ClientCallable]
-      public void TestUnsupportedParamters(Action testAction)
+      public void TestUnsupportedParameters(Action testAction)
+      {
+	      
+      }
+      
+      /// <summary>
+      /// Just a trivial example of a ClientCallable that access the cached data. 
+      /// </summary>
+      /// <returns></returns>
+      [ClientCallable]
+      public void TestUnsupportedParameters2(Task testTask, Promise testPromise)
       {
 	      
       }

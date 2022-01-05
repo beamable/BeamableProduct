@@ -153,8 +153,6 @@ namespace Beamable.Editor
 		      if (!coreConfiguration.EnablePlayModeWarning) 
 			      return;
 		      
-		      // TODO: Look through existing BeamHints and verify none of the hints setup to warn-on-play-mode are present.
-		      // TODO: By default, warn-on-play-mode is off in all hints. Toggle-able via the HintHeader in the BeamableAssistantWindow.
 		      if (change == PlayModeStateChange.ExitingEditMode)
 		      {
 			      HintPreferencesManager.SplitHintsByPlayModeWarningPreferences(HintGlobalStorage.All, out var toWarnHints, out _);
@@ -168,8 +166,8 @@ namespace Beamable.Editor
 				                                                                  $"{msg}\n\n" +
 				                                                                  "Do you wish to stop entering playmode and see these validations?", 
 				                                            "Yes, I want to stop and go see validations.",
-				                                            "No, I'll take my chances and don't bother me until I open Unity again.",
-					      "No, I'll take my chances and don't bother me ever again.");
+				                                            "No, I'll take my chances and don't bother me about these hints anymore.",
+					      "No, I'll take my chances and don't bother me ever again about any hints.");
 				      
 				      if (res == 0)
 				      {
@@ -179,7 +177,7 @@ namespace Beamable.Editor
 				      else if (res == 1)
 				      {
 					      foreach (var hint in hintsToWarnAbout) 
-						      HintPreferencesManager.SetHintPlayModeWarningPreferences(hint, PlayModeWarningState.Disabled, PersistenceLevel.Session);
+						      HintPreferencesManager.SetHintPlayModeWarningPreferences(hint, BeamHintPlayModeWarningPreference.Disabled);
 				      }
 				      else if (res == 2)
 				      {

@@ -6,7 +6,7 @@
     background-image: resource("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/hint.png");    
 }
 
-#hintDisplayName{
+.hintTitle{
     color: #000;
 }
 
@@ -24,4 +24,8 @@
     flex-shrink: 1;
     color: #f00;
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
+}
+
+.hintSubtitle {
+    color: #000;    
 }

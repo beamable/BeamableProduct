@@ -154,8 +154,12 @@ namespace Beamable.Common.Reflection
             Attribute = attribute;
         }
 
-        public T InfoAs<T>() where T : MemberInfo => (T) Info;
-        public T AttrAs<T>() where T : Attribute => (T) Attribute;
+        public T InfoAs<T>() where T : MemberInfo => (T)Info;
+
+        public T AttrAs<T>() where T : Attribute, IReflectionCachingAttribute
+        {
+	        return (T)Attribute;
+        }
     }
     
     

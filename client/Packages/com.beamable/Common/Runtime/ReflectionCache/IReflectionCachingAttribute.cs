@@ -9,27 +9,27 @@ namespace Beamable.Common.Reflection
 	/// <summary>
 	/// Declare this interface over attributes to use our validation utilities declared in <see cref="ReflectionCache"/>.
 	/// </summary>
-	/// <typeparam name="T">The type of the attribute implementing this interface.</typeparam>
-	public interface IReflectionCachingAttribute<T> where T : Attribute, IReflectionCachingAttribute<T>
+	public interface IReflectionCachingAttribute
 	{
 		/// <summary>
 		/// Takes in the <see cref="MemberInfo"/> associated with this attribute and returns a <see cref="AttributeValidationResult{T}"/>.
 		/// </summary>
-		AttributeValidationResult<T> IsAllowedOnMember(MemberInfo member);
+		AttributeValidationResult IsAllowedOnMember(MemberInfo member);
 	}
 
 	/// <summary>
 	/// Result of a data structure that holds the result of a validation performed by <see cref="IReflectionCachingAttribute{T}"/>. 
 	/// </summary>
 	/// <typeparam name="T">The type of the attribute implementing the <see cref="IReflectionCachingAttribute{T}"/> interface.</typeparam>
-	public readonly struct AttributeValidationResult<T> where T : Attribute, IReflectionCachingAttribute<T>
+	public readonly struct AttributeValidationResult
 	{
 		public readonly MemberAttributePair Pair;
 		public readonly ReflectionCache.ValidationResultType Type;
 		public readonly string Message;
 
-		public AttributeValidationResult(T attribute, MemberInfo ownerMember, ReflectionCache.ValidationResultType type, string message)
+		public AttributeValidationResult(Attribute attribute, MemberInfo ownerMember, ReflectionCache.ValidationResultType type, string message)
 		{
+			System.Diagnostics.Debug.Assert(attribute is IReflectionCachingAttribute, "Attribute must implement the IReflectionCacheAttribute");
 			Pair = new MemberAttributePair(ownerMember, attribute);
 			Type = type;
 			Message = message;
@@ -41,11 +41,10 @@ namespace Beamable.Common.Reflection
 		/// <summary>
 		/// Helper that invokes the validation defined by <see cref="IReflectionCachingAttribute{T}"/> over a list of <see cref="MemberAttributePair"/>
 		/// </summary>
-		public static List<AttributeValidationResult<T>> Validate<T>(this IReadOnlyList<MemberAttributePair> cachedMemberAttributePairs)
-			where T : Attribute, IReflectionCachingAttribute<T>
+		public static List<AttributeValidationResult> Validate(this IReadOnlyList<MemberAttributePair> cachedMemberAttributePairs)
 		{
 			return cachedMemberAttributePairs
-			       .Select(pair => ((T)pair.Attribute).IsAllowedOnMember(pair.Info))
+			       .Select(pair => ((IReflectionCachingAttribute)pair.Attribute).IsAllowedOnMember(pair.Info))
 			       .ToList();
 		}
 
@@ -59,23 +58,19 @@ namespace Beamable.Common.Reflection
 		/// <param name="attributeOfInterest">The <see cref="AttributeOfInterest"/> that we'll look for over the given <paramref name="membersToCheck"/>.</param>
 		/// <param name="validateOnMissing">Defines how the caller wants <paramref name="membersToCheck"/> to be validated when the attribute isn't found over a member.</param>
 		/// <param name="foundAttributes">The list containing all found <see cref="MemberAttributePair"/>. Built this way so caller can reuse same list allocation multiple times if they wish to.</param>
-		/// <typeparam name="T">Any <see cref="Attribute"/> implementing <see cref="IReflectionCachingAttribute{T}"/> so that we can validate its existence and correct usage.</typeparam>
 		/// <returns>A list of <see cref="AttributeValidationResult{T}"/> that can be used to display error/warnings or parse valid results.</returns>
-		public static List<AttributeValidationResult<T>> GetAndValidateAttributeExistence<T>(this IEnumerable<MemberInfo> membersToCheck,
+		public static List<AttributeValidationResult> GetAndValidateAttributeExistence(this IEnumerable<MemberInfo> membersToCheck,
 		                                                                                     AttributeOfInterest attributeOfInterest,
-		                                                                                     Func<MemberInfo, AttributeValidationResult<T>> validateOnMissing)
-			where T : Attribute, IReflectionCachingAttribute<T>
+		                                                                                     Func<MemberInfo, AttributeValidationResult> validateOnMissing)
 		{
-			System.Diagnostics.Debug.Assert(attributeOfInterest.AttributeType == typeof(T), "This function's generic type must match the attribute of interest you are passing in.");
-
 			var members = membersToCheck;
-			var validationResults = new List<AttributeValidationResult<T>>();
+			var validationResults = new List<AttributeValidationResult>();
 			foreach (var checkMember in members)
 			{
 				var attribute = checkMember.GetCustomAttribute(attributeOfInterest.AttributeType, false);
 				if (attribute != null)
 				{
-					var cast = (T)attribute;
+					var cast = (IReflectionCachingAttribute)attribute;
 					var result = cast.IsAllowedOnMember(checkMember);
 
 					validationResults.Add(result);
@@ -96,23 +91,21 @@ namespace Beamable.Common.Reflection
 		/// <param name="membersToCheck">List of members to check.</param>
 		/// <typeparam name="TAttribute">The <see cref="IReflectionCachingAttribute{T}"/> to look for in the given members.</typeparam>
 		/// <returns>A list of <see cref="AttributeValidationResult{T}"/> with the resulting validations and members.</returns>
-		public static List<AttributeValidationResult<TAttribute>> GetOptionalAttributeInMembers<TAttribute>(this IEnumerable<MemberInfo> membersToCheck)
-			where TAttribute : Attribute, IReflectionCachingAttribute<TAttribute>
+		public static List<AttributeValidationResult> GetOptionalAttributeInMembers<TAttribute>(this IEnumerable<MemberInfo> membersToCheck)
 		{
 			return membersToCheck.GetAndValidateAttributeExistence(
 				new AttributeOfInterest(typeof(TAttribute)),
-				info => new AttributeValidationResult<TAttribute>(null, info, ReflectionCache.ValidationResultType.Discarded, ""));
+				info => new AttributeValidationResult(null, info, ReflectionCache.ValidationResultType.Discarded, ""));
 		}
 
 		/// <summary>
 		/// Helper that splits a list of <see cref="AttributeValidationResult{T}"/> into it's three lists (for each possible <see cref="ReflectionCache.ValidationResultType"/>).
 		/// Caller can use the resulting lists can be used to process valid attributes or display context-sensitive error/warning messages. 
 		/// </summary>        
-		public static void SplitValidationResults<T>(this IReadOnlyList<AttributeValidationResult<T>> mainList,
-		                                             out List<AttributeValidationResult<T>> valid,
-		                                             out List<AttributeValidationResult<T>> warning,
-		                                             out List<AttributeValidationResult<T>> error)
-			where T : Attribute, IReflectionCachingAttribute<T>
+		public static void SplitValidationResults(this IReadOnlyList<AttributeValidationResult> mainList,
+		                                             out List<AttributeValidationResult> valid,
+		                                             out List<AttributeValidationResult> warning,
+		                                             out List<AttributeValidationResult> error)
 		{
 			var splitByType = mainList.GroupBy(res => res.Type).ToList();
 
@@ -141,36 +134,6 @@ namespace Beamable.Common.Reflection
 		{
 			return attributePairs.GroupBy(memberAttributePair => (MemberInfo)memberAttributePair.Info.DeclaringType)
 			                     .ToDictionary(groups => groups.Key);
-		}
-
-		/// <summary>
-		/// Helper that standardizes how we log <see cref="AttributeValidationResult{T}"/>.
-		/// </summary>        
-		/// <param name="messageIntro">A context-sensitive intro message to make the string easier to understand for a reader.</param>
-		/// <param name="messageOutro">A context-sensitive outro message to make the string easier to understand for a reader.</param>
-		/// <returns>A formatted string ready to be displayed containing each validation result's relevant information.</returns>
-		public static string GeneratePerAttributeValidationMessage<T>(this IReadOnlyList<AttributeValidationResult<T>> listOfErrors,
-		                                                              string messageIntro = "",
-		                                                              string messageOutro = "")
-			where T : Attribute, IReflectionCachingAttribute<T>
-		{
-			var validationResultsMessage = new StringBuilder();
-			validationResultsMessage.Append(messageIntro);
-			validationResultsMessage.AppendLine($"The following [{typeof(T).Name}]s are not valid:");
-			foreach (var failedAllowedValidationType in listOfErrors)
-			{
-				var type = failedAllowedValidationType.Pair.Info;
-				var validationResult = failedAllowedValidationType.Type;
-				var message = failedAllowedValidationType.Message;
-
-				if (type.MemberType == MemberTypes.TypeInfo || type.MemberType == MemberTypes.NestedType)
-					validationResultsMessage.AppendLine($"{type.Name} | {validationResult} => {message}");
-				else
-					validationResultsMessage.AppendLine($"{type.ReflectedType?.Name}.{type.Name} | {validationResult} => {message}");
-			}
-
-			validationResultsMessage.AppendLine(messageOutro);
-			return validationResultsMessage.ToString();
 		}
 	}
 }

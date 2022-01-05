@@ -54,15 +54,29 @@ namespace Beamable.Server.Clients
         }
         
         /// <summary>
-        /// Call the TestUnsupportedParamters method on the CacheDependentMS microservice
-        /// <see cref="Beamable.Server.CacheDependentMS.TestUnsupportedParamters"/>
+        /// Call the TestUnsupportedParameters method on the CacheDependentMS microservice
+        /// <see cref="Beamable.Server.CacheDependentMS.TestUnsupportedParameters"/>
         /// </summary>
-        public Beamable.Common.Promise<Beamable.Common.Unit> TestUnsupportedParamters(System.Action testAction)
+        public Beamable.Common.Promise<Beamable.Common.Unit> TestUnsupportedParameters(System.Action testAction)
         {
             string serialized_testAction = this.SerializeArgument<System.Action>(testAction);
             string[] serializedFields = new string[] {
                     serialized_testAction};
-            return this.Request<Beamable.Common.Unit>("CacheDependentMS", "TestUnsupportedParamters", serializedFields);
+            return this.Request<Beamable.Common.Unit>("CacheDependentMS", "TestUnsupportedParameters", serializedFields);
+        }
+        
+        /// <summary>
+        /// Call the TestUnsupportedParameters2 method on the CacheDependentMS microservice
+        /// <see cref="Beamable.Server.CacheDependentMS.TestUnsupportedParameters2"/>
+        /// </summary>
+        public Beamable.Common.Promise<Beamable.Common.Unit> TestUnsupportedParameters2(System.Threading.Tasks.Task testTask, Beamable.Common.Promise testPromise)
+        {
+            string serialized_testTask = this.SerializeArgument<System.Threading.Tasks.Task>(testTask);
+            string serialized_testPromise = this.SerializeArgument<Beamable.Common.Promise>(testPromise);
+            string[] serializedFields = new string[] {
+                    serialized_testTask,
+                    serialized_testPromise};
+            return this.Request<Beamable.Common.Unit>("CacheDependentMS", "TestUnsupportedParameters2", serializedFields);
         }
     }
     
@@ -76,6 +90,16 @@ namespace Beamable.Server.Clients
         
         [System.SerializableAttribute()]
         internal sealed class ParameterSystem_Action : Beamable.Server.MicroserviceClientDataWrapper<System.Action>
+        {
+        }
+        
+        [System.SerializableAttribute()]
+        internal sealed class ParameterSystem_Threading_Tasks_Task : Beamable.Server.MicroserviceClientDataWrapper<System.Threading.Tasks.Task>
+        {
+        }
+        
+        [System.SerializableAttribute()]
+        internal sealed class ParameterBeamable_Common_Promise : Beamable.Server.MicroserviceClientDataWrapper<Beamable.Common.Promise>
         {
         }
     }

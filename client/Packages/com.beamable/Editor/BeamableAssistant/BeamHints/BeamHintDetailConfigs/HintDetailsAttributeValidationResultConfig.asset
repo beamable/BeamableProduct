@@ -10,11 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 52aa509361b64072872359417262fcd2, type: 3}
-  m_Name: HintDetailsSingleTextConfig
+  m_Name: HintDetailsAttributeValidationResultConfig
   m_EditorClassIdentifier: 
   Matcher:
     MatchType: 3
-    Domain: 
+    Domain: CODE_MISUSE
     IdRegex: 
   UxmlFile: Packages/com.beamable/Editor/BeamableAssistant/BeamHints/BeamHintDetailConfigs/HintUxmls/HintDetail_SingleText.uxml
-  StylesheetsToAdd: []
+  StylesheetsToAdd:
+  - Packages/com.beamable/Editor/BeamableAssistant/BeamHints/BeamHintDetailConfigs/HintUxmls/HintDetails_Common.uss

@@ -78,6 +78,8 @@ namespace Beamable.Common.Reflection
 			IsOut = isOut;
 			IsByRef = isIn || isOut || isByRef;
 		}
+
+		public string ToTypeString() => ParameterType.Name;
 	}
 
 	public static partial class ReflectionCacheExtensions
@@ -143,7 +145,7 @@ namespace Beamable.Common.Reflection
 		}
 		
 		/// <summary>
-		/// Checks if the given method info is an async method with the return type of <typeparamref name="T"/>>.
+		/// Checks if the given method info is an async method with the given return type.
 		/// </summary>
 		public static bool IsAsyncMethodOfType(this MethodInfo methodInfo, Type returnType) => 
 			methodInfo.GetCustomAttribute<AsyncStateMachineAttribute>() != null && methodInfo.ReturnType == returnType;
@@ -155,13 +157,18 @@ namespace Beamable.Common.Reflection
 		/// <param name="parametersOfInterest">List of parameters types we care about. Currently, this only matches the type. It doesn't care about in/ref/out modifiers.</param>
 		/// <param name="methodInfo">The method whose parameters we want to look at.</param>
 		/// <returns>True, if any of the <paramref name="parametersOfInterest"/> match any of the parameters of <paramref name="methodInfo"/>.</returns>
-		public static bool MatchAnyParametersOfMethod(this IReadOnlyList<ParameterOfInterest> parametersOfInterest, MethodInfo methodInfo)
+		public static bool MatchAnyParametersOfMethod(this IReadOnlyList<ParameterOfInterest> parametersOfInterest, MethodInfo methodInfo, out List<ParameterInfo> invalidParamTypes)
 		{
+			invalidParamTypes = new List<ParameterInfo>();
 			var parameters = methodInfo.GetParameters();
 			var result = false;
 			for (var i = 0; i < parameters.Length; i++)
 			{
-				result |= parametersOfInterest.Any(interest => MatchParameterTypeOnly(interest, parameters[i]));
+				if (parametersOfInterest.Any(interest => MatchParameterTypeOnly(interest, parameters[i])))
+				{
+					invalidParamTypes.Add(parameters[i]);
+				}
+				result = invalidParamTypes.Count > 0;
 			}
 			return result;
 		}

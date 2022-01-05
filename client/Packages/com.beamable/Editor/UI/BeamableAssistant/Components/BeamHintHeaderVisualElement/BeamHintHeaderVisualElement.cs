@@ -9,7 +9,9 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEditor;
 using UnityEngine.Assertions;
+#if UNITY_2018
 using UnityEngine.Experimental.UIElements;
+#endif
 
 namespace Beamable.Editor.Assistant
 {
@@ -43,6 +45,7 @@ namespace Beamable.Editor.Assistant
 		private Label _hintDisplayName;
 		private Toggle _moreDetailsButton;
 		private VisualElement _detailsContainer;
+		private VisualElement _detailsBox;
 
 		private readonly BeamHintDetailsReflectionCache.Registry _hintDetailsReflectionCache;
 		private BeamHintDetailsConfig _hintDetailsConfig;
@@ -90,18 +93,25 @@ namespace Beamable.Editor.Assistant
 			_hintTypeIcon.AddToClassList(hintTypeClass);
 
 			// If there are no mapped converters, we don't display a more button since there would be no details to show.
-			var detailsUxmlPath = _hintDetailsConfig.UxmlFile;
-			var detailsUssPaths = _hintDetailsConfig.StylesheetsToAdd;
+			var detailsUxmlPath = _hintDetailsConfig == null ? "" : _hintDetailsConfig.UxmlFile;
+			var detailsUssPaths = _hintDetailsConfig == null ? new List<string>() : _hintDetailsConfig.StylesheetsToAdd;
+
+			// Setup details container and more button to not be visible
+			_detailsContainer = Root.Q<VisualElement>("hintDetailsContainer");
 
 			// If there are no configured UXML Path or a Converter tied to the matching HintDetailsVisualConfig, simply disable the button.
 			if (_indexIntoLoadedConverters == -1 || string.IsNullOrEmpty(detailsUxmlPath))
+			{
 				_moreDetailsButton.visible = false;
+				_detailsContainer.AddToClassList("--positionHidden");
+				_hintDataModel.DetailsOpenedHints.Remove(_displayingHintHeader);
+			}
 			else
 			{
-				// Setup details container and more button to not be visible
-				_detailsContainer = Root.Q<VisualElement>("hintDetailsContainer");
 				if (!_hintDataModel.DetailsOpenedHints.Contains(_displayingHintHeader))
 					_detailsContainer.AddToClassList("--positionHidden");
+
+				_detailsBox = Root.Q<VisualElement>("hintDetailsBox");
 
 				// Configure more button to display hint details container when pressed. 
 				_moreDetailsButton.value = _hintDataModel.DetailsOpenedHints.Contains(_displayingHintHeader);
@@ -120,15 +130,84 @@ namespace Beamable.Editor.Assistant
 				});
 
 				// Ensure no null or empty paths exist in the configured USS files.
-				detailsUssPaths.RemoveAll(string.IsNullOrEmpty);
+				var nonNullUssPaths = detailsUssPaths.Where(uss => !string.IsNullOrEmpty(uss)).ToList();
 
 				// Ensure paths exist.
 				Assert.IsTrue(File.Exists(detailsUxmlPath), $"Cannot find {detailsUxmlPath}");
-				Assert.IsTrue(detailsUssPaths.TrueForAll(File.Exists), $"Cannot find one of {string.Join(",", detailsUssPaths)}");
+				Assert.IsTrue(nonNullUssPaths.TrueForAll(File.Exists), $"Cannot find one of {string.Join(",", nonNullUssPaths)}");
 
 				// Load UXML for details and add it to the details container.
 				var detailsTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(detailsUxmlPath);
-				_detailsContainer.Add(detailsTreeAsset.CloneTree());
+				_detailsBox.Add(detailsTreeAsset.CloneTree());
+				foreach (var nonNullUssPath in nonNullUssPaths) _detailsBox.AddStyleSheetPath(nonNullUssPath);
+
+				// Update Name and Notification Preferences
+				_detailsBox.Q<Label>("hintDetailsBoxHintDisplayName").text = _displayingHintHeader.Id;
+				var notificationToggle = _detailsBox.Q<Toggle>("hintDetailsBoxNotificationToggle");
+				switch (_hintDataModel.GetHintNotificationValue(_displayingHintHeader))
+				{
+					case BeamHintNotificationPreference.NotifyOncePerSession:
+					case BeamHintNotificationPreference.NotifyOnContextObjectChanged:
+					case BeamHintNotificationPreference.NotifyAlways:
+						notificationToggle.SetValueWithoutNotify(true);
+						break;
+					case BeamHintNotificationPreference.NotifyNever:
+						notificationToggle.SetValueWithoutNotify(false);
+						break;
+					default:
+						throw new ArgumentOutOfRangeException();
+				}
+
+				notificationToggle.RegisterValueChangedCallback(evt => _hintDataModel.SetHintNotificationValue(_displayingHintHeader, evt.newValue));
+
+				// Update Play-Mode Preferences
+				var playModeNever = _detailsBox.Q<Toggle>("playModeWarningDisableToggle");
+				var playModeSession = _detailsBox.Q<Toggle>("playModeWarningSessionToggle");
+				var playModeAlways = _detailsBox.Q<Toggle>("playModeWarningAlwaysToggle");
+				var playModeState = _hintDataModel.GetHintPlayModeWarningState(_displayingHintHeader);
+				if (playModeState == BeamHintPlayModeWarningPreference.Enabled)
+				{
+					playModeAlways.SetValueWithoutNotify(true);
+
+					playModeSession.SetValueWithoutNotify(false);
+					playModeNever.SetValueWithoutNotify(false);
+				}
+				else if (playModeState == BeamHintPlayModeWarningPreference.EnabledDuringSession)
+				{
+					playModeSession.SetValueWithoutNotify(true);
+
+					playModeNever.SetValueWithoutNotify(false);
+					playModeAlways.SetValueWithoutNotify(false);
+				}
+				else if (playModeState == BeamHintPlayModeWarningPreference.Disabled)
+				{
+					playModeNever.SetValueWithoutNotify(true);
+
+					playModeSession.SetValueWithoutNotify(false);
+					playModeAlways.SetValueWithoutNotify(false);
+				}
+
+				playModeNever.RegisterValueChangedCallback(_ => {
+					if (!playModeAlways.value && !playModeSession.value) playModeNever.SetValueWithoutNotify(true);
+					_hintDataModel.SetHintPreferencesValue(_displayingHintHeader, BeamHintPlayModeWarningPreference.Disabled);
+
+					playModeAlways.SetValueWithoutNotify(false);
+					playModeSession.SetValueWithoutNotify(false);
+				});
+				playModeSession.RegisterValueChangedCallback(evt => {
+					if (!playModeAlways.value && !playModeNever.value) playModeSession.SetValueWithoutNotify(true);
+					_hintDataModel.SetHintPreferencesValue(_displayingHintHeader, BeamHintPlayModeWarningPreference.EnabledDuringSession);
+
+					playModeAlways.SetValueWithoutNotify(false);
+					playModeNever.SetValueWithoutNotify(false);
+				});
+				playModeAlways.RegisterValueChangedCallback(evt => {
+					if (!playModeSession.value && !playModeNever.value) playModeAlways.SetValueWithoutNotify(true);
+					_hintDataModel.SetHintPreferencesValue(_displayingHintHeader, BeamHintPlayModeWarningPreference.Enabled);
+
+					playModeSession.SetValueWithoutNotify(false);
+					playModeNever.SetValueWithoutNotify(false);
+				});
 
 				// Create an new injection bag
 				var injectionBag = new BeamHintVisualsInjectionBag();
@@ -139,8 +218,8 @@ namespace Beamable.Editor.Assistant
 				converter.Invoke(in beamHint, in _hintDetailsConfig, injectionBag);
 
 				// Resolve all supported injections.
-				ResolveInjections(injectionBag.TextInjections, _detailsContainer);
-				ResolveInjections(injectionBag.ParameterlessActionInjections, _detailsContainer);
+				ResolveInjections(injectionBag.TextInjections, _detailsBox);
+				ResolveInjections(injectionBag.ParameterlessActionInjections, _detailsBox);
 			}
 		}
 

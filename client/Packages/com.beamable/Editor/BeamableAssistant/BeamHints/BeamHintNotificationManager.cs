@@ -92,6 +92,7 @@ namespace Beamable.Editor.Assistant
 
 			// Update the last tick time and 
 			_lastTickTime = currTickTime;
+			_hintPreferences.RebuildPerHintPreferences();
 			CheckNotifications();
 		}
 
@@ -106,9 +107,9 @@ namespace Beamable.Editor.Assistant
 			                    _pendingNotificationHints,
 			                    _pendingNotificationValidations);
 
-			var reflectionCacheHints = AllPendingNotifications.Select(hint => hint.ToString()).ToList();
-			BeamableLogger.Log($"ReflectionCache Hints -- Count: {reflectionCacheHints.Count}\n" +
-			                   $"{string.Join("\n", reflectionCacheHints)}");
+			// var reflectionCacheHints = AllPendingNotifications.Select(hint => hint.ToString()).ToList();
+			// BeamableLogger.Log($"ReflectionCache Hints -- Count: {reflectionCacheHints.Count}\n" +
+			//                    $"{string.Join("\n", reflectionCacheHints)}");
 
 			UpdateNotifications(_hintPreferences,
 			                    _hintStorage.CSharpMSHints.ToList(),
@@ -117,9 +118,9 @@ namespace Beamable.Editor.Assistant
 			                    _pendingNotificationHints,
 			                    _pendingNotificationValidations);
 
-			var cSharpHints = AllPendingNotifications.Select(hint => hint.ToString()).ToList();
-			BeamableLogger.Log($"C# Microservice Hints -- Count: {cSharpHints.Count}\n" +
-			                   $"{string.Join("\n", cSharpHints)}");
+			// var cSharpHints = AllPendingNotifications.Select(hint => hint.ToString()).ToList();
+			// BeamableLogger.Log($"C# Microservice Hints -- Count: {cSharpHints.Count}\n" +
+			//                    $"{string.Join("\n", cSharpHints)}");
 
 			UpdateNotifications(_hintPreferences,
 			                    _hintStorage.ContentHints.ToList(),
@@ -128,9 +129,9 @@ namespace Beamable.Editor.Assistant
 			                    _pendingNotificationHints,
 			                    _pendingNotificationValidations);
 
-			var contentHints = AllPendingNotifications.Select(hint => hint.ToString()).ToList();
-			BeamableLogger.Log($"Beamable Content Hints -- Count: {contentHints.Count}\n" +
-			                   $"{string.Join("\n", contentHints)}");
+			// var contentHints = AllPendingNotifications.Select(hint => hint.ToString()).ToList();
+			// BeamableLogger.Log($"Beamable Content Hints -- Count: {contentHints.Count}\n" +
+			//                    $"{string.Join("\n", contentHints)}");
 
 			UpdateNotifications(_hintPreferences,
 			                    _hintStorage.UserDefinedStorage.ToList(),
@@ -139,9 +140,9 @@ namespace Beamable.Editor.Assistant
 			                    _pendingNotificationHints,
 			                    _pendingNotificationValidations);
 
-			var userDefinedHints = AllPendingNotifications.Select(hint => hint.ToString()).ToList();
-			BeamableLogger.Log($"User Defined Hints -- Count: {userDefinedHints.Count}\n" +
-			                   $"{string.Join("\n", userDefinedHints)}");
+			// var userDefinedHints = AllPendingNotifications.Select(hint => hint.ToString()).ToList();
+			// BeamableLogger.Log($"User Defined Hints -- Count: {userDefinedHints.Count}\n" +
+			//                    $"{string.Join("\n", userDefinedHints)}");
 
 			UpdateNotifications(_hintPreferences,
 			                    _hintStorage.AssistantHints.ToList(),
@@ -150,9 +151,9 @@ namespace Beamable.Editor.Assistant
 			                    _pendingNotificationHints,
 			                    _pendingNotificationValidations);
 
-			var assistant = AllPendingNotifications.Select(hint => hint.ToString()).ToList();
-			BeamableLogger.Log($"Beamable Assistant Hints -- Count: {assistant.Count}\n" +
-			                   $"{string.Join("\n", assistant)}");
+			// var assistant = AllPendingNotifications.Select(hint => hint.ToString()).ToList();
+			// BeamableLogger.Log($"Beamable Assistant Hints -- Count: {assistant.Count}\n" +
+			//                    $"{string.Join("\n", assistant)}");
 		}
 
 		private static void UpdateNotifications(IBeamHintPreferencesManager beamHintPreferencesManager,
@@ -172,12 +173,13 @@ namespace Beamable.Editor.Assistant
 			var notYetNotifiedWithCurrentContextObj = contextObjectChangeNotify.Where(hint => {
 				if (lastDetectedContextObjects.TryGetValue(hint.Header, out var ctxObject)) return ctxObject != hint.ContextObject;
 				return true;
-			}).ToList();
+			}).ToList(); 
 
 			var toNotify = toNotifyAlways
 			               .Union(notYetNotifiedThisSession)
 			               .Union(notYetNotifiedWithCurrentContextObj)
-			               .ToList();
+			               .Except(toNotifyNever)
+			               .ToList(); 
 
 			outPendingNotificationHints.AddRange(toNotify.Where(h => (h.Header.Type & BeamHintType.Hint) != 0).Select(h => h.Header));
 			outPendingNotificationValidations.AddRange(toNotify.Where(h => (h.Header.Type & BeamHintType.Validation) != 0).Select(h => h.Header));

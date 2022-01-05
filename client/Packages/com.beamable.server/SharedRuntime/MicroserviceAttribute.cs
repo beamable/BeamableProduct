@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 namespace Beamable.Server
 {
    [AttributeUsage(AttributeTargets.Class)]
-   public class MicroserviceAttribute : Attribute, INamingAttribute<MicroserviceAttribute>
+   public class MicroserviceAttribute : Attribute, INamingAttribute
    {
       public string MicroserviceName { get; }
       public string SourcePath { get; }
@@ -26,27 +26,27 @@ namespace Beamable.Server
          return SourcePath;
       }
 
-      public AttributeValidationResult<MicroserviceAttribute> IsAllowedOnMember(MemberInfo member)
+      public AttributeValidationResult IsAllowedOnMember(MemberInfo member)
       {
 	      // Guaranteed to be a type, due to AttributeUsage attribute being set to Class.
 
 	      if (!typeof(Microservice).IsAssignableFrom((Type)member))
 	      {
-		      return new AttributeValidationResult<MicroserviceAttribute>(this,
+		      return new AttributeValidationResult(this,
 		                                                                  member,
 		                                                                  ReflectionCache.ValidationResultType.Error,
 		                                                                  $"Microservice Attribute [{MicroserviceName}] cannot be over type [{member.Name}] " +
 		                                                                  $"since [{member.Name}] does not inherit from [{nameof(Microservice)}].");
 	      }
 
-	      return new AttributeValidationResult<MicroserviceAttribute>(this, member, ReflectionCache.ValidationResultType.Valid, "");
+	      return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Valid, "");
       }
 
       public string[] Names => new[] {MicroserviceName};
 
-      public AttributeValidationResult<MicroserviceAttribute> AreValidNameForType(MemberInfo member, string[] potentialNames)
+      public AttributeValidationResult AreValidNameForType(MemberInfo member, string[] potentialNames)
       {
-	      return new AttributeValidationResult<MicroserviceAttribute>(this, member, ReflectionCache.ValidationResultType.Valid, "");
+	      return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Valid, "");
       }
    }
 }

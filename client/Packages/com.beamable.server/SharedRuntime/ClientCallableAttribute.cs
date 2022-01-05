@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Reflection;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -36,12 +37,9 @@ namespace Beamable.Server
    /// 
    /// </summary>
    [AttributeUsage(AttributeTargets.Method)]
-   public class ClientCallableAttribute : Attribute, INamingAttribute<ClientCallableAttribute>
-   { 
-	   
-	   private static readonly SignatureOfInterest ASYNC_VOID_RETURN_TYPE_SIGNATURE = new SignatureOfInterest(false, typeof(void), null);
-
-	   private static readonly List<ParameterOfInterest> UNSUPPORTED_PARAMETER_TYPES = new List<ParameterOfInterest>() {
+   public class ClientCallableAttribute : Attribute, INamingAttribute
+   {
+	   public static readonly List<ParameterOfInterest> UNSUPPORTED_PARAMETER_TYPES = new List<ParameterOfInterest>() {
 		   new ParameterOfInterest(typeof(Delegate), false, false, false),
 		   new ParameterOfInterest(typeof(Task), false, false, false),
 		   new ParameterOfInterest(typeof(Promise), false, false, false),
@@ -71,30 +69,30 @@ namespace Beamable.Server
 
       public string[] Names => new[] {pathName};
       
-      public AttributeValidationResult<ClientCallableAttribute> IsAllowedOnMember(MemberInfo member)
+      public AttributeValidationResult IsAllowedOnMember(MemberInfo member)
       {
 	      var methodInfo = (MethodInfo)member;
 
 	      // Check for void signatures to send out warning.
 	      if (methodInfo.IsAsyncMethodOfType(typeof(void)))
 	      {
-		      var message = $"AsyncVoidDeclaration";
-		      return new AttributeValidationResult<ClientCallableAttribute>(this, member, ReflectionCache.ValidationResultType.Warning, message);
+		      var message = $"";
+		      return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Warning, message);
 	      }
 
 	      // Check for any unsupported parameter types.
-	      if (UNSUPPORTED_PARAMETER_TYPES.MatchAnyParametersOfMethod(methodInfo))
+	      if (UNSUPPORTED_PARAMETER_TYPES.MatchAnyParametersOfMethod(methodInfo, out var detectedUnsupportedTypes))
 	      {
-		      var message = $"UnsupportedParameterType";
-		      return new AttributeValidationResult<ClientCallableAttribute>(this, member, ReflectionCache.ValidationResultType.Error, message);
+		      var message = $"The unsupported parameters are: {string.Join(", ", detectedUnsupportedTypes.Select(p => $"{p.ParameterType.Name} {p.Name}"))}";
+		      return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Error, message);
 	      }
 	      
-	      return new AttributeValidationResult<ClientCallableAttribute>(this, member, ReflectionCache.ValidationResultType.Valid, $"");
+	      return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Valid, $"");
       }
 
-      public AttributeValidationResult<ClientCallableAttribute> AreValidNameForType(MemberInfo member, string[] potentialNames)
+      public AttributeValidationResult AreValidNameForType(MemberInfo member, string[] potentialNames)
       {
-	      return new AttributeValidationResult<ClientCallableAttribute>(this, member, ReflectionCache.ValidationResultType.Valid, $"");
+	      return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Valid, $"");
       }
    }
 

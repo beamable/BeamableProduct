@@ -92,7 +92,7 @@ namespace Beamable.Server.Editor
 					.GetAndValidateAttributeExistence(MICROSERVICE_ATTRIBUTE,
 					                                  info => {
 						                                  var message = $"Microservice sub-class [{info.Name}] does not have the [{nameof(MicroserviceAttribute)}].";
-						                                  return new AttributeValidationResult<MicroserviceAttribute>(null, info, ReflectionCache.ValidationResultType.Error, message);
+						                                  return new AttributeValidationResult(null, info, ReflectionCache.ValidationResultType.Error, message);
 					                                  });
 
 				// Get all Microservice Attribute usage errors found
@@ -101,7 +101,7 @@ namespace Beamable.Server.Editor
 				// Register a hint with all its validation errors as the context object
 				if (microserviceAttrErrors.Count > 0)
 				{
-					var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, BeamHintIds.ID_MICROSERVICE_ATTRIBUTE_MISUSE);
+					var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, BeamHintIds.ID_MICROSERVICE_ATTRIBUTE_MISSING);
 					_hintStorage.AddOrReplaceHint(hint, microserviceAttrErrors);
 				}
 			}
@@ -136,7 +136,7 @@ namespace Beamable.Server.Editor
 				if (clientCallableErrors.Count > 0)
 				{
 					var hint = new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, BeamHintIds.ID_CLIENT_CALLABLE_UNSUPPORTED_PARAMETERS);
-					_hintStorage.AddOrReplaceHint(hint, clientCallableWarnings);
+					_hintStorage.AddOrReplaceHint(hint, clientCallableErrors);
 				}
 
 				// Builds a lookup of DeclaringType => MemberAttributePair.

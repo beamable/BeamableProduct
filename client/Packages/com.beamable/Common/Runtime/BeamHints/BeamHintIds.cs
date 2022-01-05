@@ -74,7 +74,7 @@ namespace Beamable.Common.Assistant
 		[BeamHintId] public static readonly string ID_MISCONFIGURED_HINT_DETAILS_PROVIDER = GenerateHintId("MisconfiguredHintDetailsProvider");
 		
 		// Microservices IDs
-		[BeamHintId] public static readonly string ID_MICROSERVICE_ATTRIBUTE_MISUSE = GenerateHintId("MicroserviceAttributeMisuse");
+		[BeamHintId] public static readonly string ID_MICROSERVICE_ATTRIBUTE_MISSING = GenerateHintId("MicroserviceAttributeMissing");
 		[BeamHintId] public static readonly string ID_MICROSERVICE_NAME_COLLISION = GenerateHintId("MicroserviceNameCollision");
 		[BeamHintId] public static readonly string ID_CLIENT_CALLABLE_ASYNC_VOID = GenerateHintId("ClientCallableAsyncVoid");
 		[BeamHintId] public static readonly string ID_CLIENT_CALLABLE_UNSUPPORTED_PARAMETERS = GenerateHintId("ClientCallableUnsupportedParameters");

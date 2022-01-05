@@ -80,6 +80,32 @@ namespace Beamable.Editor.Assistant
 			CurrentFilter = searchText;
 			RefreshDisplayingHints(_hintGlobalStorage, SelectedDomains);
 		}
+
+		public BeamHintNotificationPreference GetHintNotificationValue(BeamHintHeader header)
+		{
+			var hint = GetHint(header);
+			return _hintPreferencesManager.GetHintNotificationPreferences(hint);
+		}
+
+		public void SetHintNotificationValue(BeamHintHeader header, bool evtNewValue)
+		{
+			var hint = GetHint(header);
+			var state = evtNewValue ? BeamHintNotificationPreference.NotifyAlways : BeamHintNotificationPreference.NotifyNever;
+			_hintPreferencesManager.SetHintNotificationPreferences(hint, state);
+		}
+
+		public BeamHintPlayModeWarningPreference GetHintPlayModeWarningState(BeamHintHeader header)
+		{
+			var hint = GetHint(header);
+			var playModeWarningState = _hintPreferencesManager.GetHintPlayModeWarningPreferences(hint);
+			return playModeWarningState;
+		}
+
+		public void SetHintPreferencesValue(BeamHintHeader header, BeamHintPlayModeWarningPreference newPreference)
+		{
+			var hint = GetHint(header);
+			_hintPreferencesManager.SetHintPlayModeWarningPreferences(hint, newPreference);
+		}
 	}
 
 	[Serializable]
