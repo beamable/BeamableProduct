@@ -25,6 +25,10 @@ namespace Beamable
 		public const string PROJECT_ASSISTANT_TOOLBAR_BUTTON_PATH = "Assets/Beamable/Assistant/ToolbarButtons";
 		public const string BEAMABLE_ASSISTANT_TOOLBAR_BUTTON_PATH = "Packages/com.beamable/Editor/BeamableAssistant/ToolbarButtons";
 		public const string BEAMABLE_SERVER_ASSISTANT_TOOLBAR_BUTTON_PATH = "Packages/com.beamable.server/Editor/BeamableAssistant/ToolbarButtons";
+		
+		public const string PROJECT_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH = "Assets/Beamable/Assistant/Hint/HintDetails";
+		public const string BEAMABLE_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH = "Packages/com.beamable/Editor/BeamableAssistant/BeamHints/BeamHintDetailConfigs";
+		public const string BEAMABLE_SERVER_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH = "Packages/com.beamable.server/Editor/BeamableAssistant/BeamHints/BeamHintDetailConfigs";
 
 		public static CoreConfiguration Instance => Get<CoreConfiguration>();
 
@@ -49,6 +53,9 @@ namespace Beamable
 		[Tooltip("Register all paths in which we'll need to look for BeamableToolbarButton assets.\n" +
 		         "We don't look everywhere as that could impact editor experience on larger projects.")]
 		public List<string> BeamableAssistantToolbarButtonsPaths = new List<string>();
+		[Tooltip("Register all paths in which we'll need to look for BeamableToolbarButton assets.\n" +
+		         "We don't look everywhere as that could impact editor experience on larger projects.")]
+		public List<string> BeamableAssistantHintDetailConfigPaths = new List<string>();
 
 		
 		[Header("Reflection Cache Systems")]
@@ -92,10 +99,20 @@ namespace Beamable
 			if (!BeamableAssistantToolbarButtonsPaths.Contains(BEAMABLE_SERVER_ASSISTANT_TOOLBAR_BUTTON_PATH))
 				BeamableAssistantToolbarButtonsPaths.Add(BEAMABLE_SERVER_ASSISTANT_TOOLBAR_BUTTON_PATH);
 			
+			// Ensure default paths exist for Beamable Assistant HintDetails Configs
+			if(!BeamableAssistantHintDetailConfigPaths.Contains(PROJECT_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH))
+				BeamableAssistantHintDetailConfigPaths.Add(PROJECT_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH);
+			
+			if(!BeamableAssistantHintDetailConfigPaths.Contains(BEAMABLE_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH))
+				BeamableAssistantHintDetailConfigPaths.Add(BEAMABLE_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH);
+
+			if(!BeamableAssistantHintDetailConfigPaths.Contains(BEAMABLE_SERVER_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH))
+				BeamableAssistantHintDetailConfigPaths.Add(BEAMABLE_SERVER_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH);
 
 			ReflectionCacheUserSystemPaths = ReflectionCacheUserSystemPaths.Distinct().ToList();
 			BeamableAssistantMenuItemsPath = BeamableAssistantMenuItemsPath.Distinct().ToList();
 			BeamableAssistantToolbarButtonsPaths = BeamableAssistantToolbarButtonsPaths.Distinct().ToList();
+			BeamableAssistantHintDetailConfigPaths = BeamableAssistantHintDetailConfigPaths.Distinct().ToList();
 
 #if UNITY_EDITOR
 			Assembly[] playerAssemblies = CompilationPipeline.GetAssemblies();

@@ -22,15 +22,22 @@ namespace Beamable.Editor.Assistant
 				})
 		};
 
-		public readonly string PathToBeamHintDetailConfig;
-		public readonly string UserOverridePathToHintDetailConfig;
+		public readonly BeamHintType MatchType;
+		public readonly string Domain;
+		public readonly string IdRegex;
+		
+		public readonly string HintDetailConfigId;
+		public readonly string UserOverrideToHintDetailConfigId;
 		public readonly Type DelegateType;
 
-		public BeamHintDetailConverterAttribute(string pathToBeamHintDetailConfig, Type delegateType, string userOverridePathToHintDetailConfig = null)
+		public BeamHintDetailConverterAttribute(Type delegateType, BeamHintType matchType, string domain, string idRegex, string hintDetailConfigId, string userOverrideToHintDetailConfigId = null)
 		{
-			PathToBeamHintDetailConfig = pathToBeamHintDetailConfig;
+			HintDetailConfigId = hintDetailConfigId;
 			DelegateType = delegateType;
-			UserOverridePathToHintDetailConfig = userOverridePathToHintDetailConfig;
+			MatchType = matchType;
+			Domain = domain;
+			IdRegex = idRegex;
+			UserOverrideToHintDetailConfigId = userOverrideToHintDetailConfigId;
 		}
 
 		public AttributeValidationResult IsAllowedOnMember(MemberInfo member)

@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
+using Beamable.Editor.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,8 +11,6 @@ namespace Beamable.Editor.Assistant
 {
 	public static class BeamHintDetailConverterProvider
 	{
-		public delegate void DefaultConverterSignature(in BeamHint hint, in BeamHintDetailsConfig config, BeamHintVisualsInjectionBag injectionBag);
-
 		// TODO: Replace with localization library so we can edit this without the recompile and support multiple languages.
 		private static Dictionary<string, string> IdToHintDetailIntro =  new Dictionary<string, string> {
 			{
@@ -61,7 +60,9 @@ namespace Beamable.Editor.Assistant
 			},
 		};
 
-		[BeamHintDetailConverter("Packages/com.beamable/Editor/BeamableAssistant/BeamHints/BeamHintDetailConfigs/HintDetailsAttributeValidationResultConfig.asset", typeof(DefaultConverterSignature))]
+		[BeamHintDetailConverter(typeof(BeamHintDetailsReflectionCache.DefaultConverter),
+		                         BeamHintType.Validation | BeamHintType.Hint, "", BeamHintIds.ATTRIBUTE_VALIDATION_ID_PREFIX,
+		                         "HintDetailsAttributeValidationResultConfig")]
 		public static void AttributeValidationConverter(in BeamHint hint, in BeamHintDetailsConfig config, BeamHintVisualsInjectionBag injectionBag)
 		{
 			var hintId = hint.Header.Id;
@@ -76,8 +77,6 @@ namespace Beamable.Editor.Assistant
 			}
 
 			injectionBag.SetLabel(validationIntro + validationMsg, "hintText");
-			//injectionBag.SetLabel(validationMsg.ToString(), "hintText");
-			injectionBag.SetLabelClicked(() => BeamableLogger.Log("THE ASSISTANT IIISSS ALLIVEEEE!!!!!"), "hintText");
 		}
 	} 
 }

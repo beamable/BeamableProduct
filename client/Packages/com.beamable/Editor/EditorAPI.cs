@@ -120,12 +120,10 @@ namespace Beamable.Editor
 	      HintPreferencesManager = new BeamHintPreferencesManager();
 
 	      
-	      // Load up all Asset-based IReflectionCacheUserSystem (injected via ReflectionCacheUserSystemObject instances).
-	      // This was made to solve a cross-package injection problem. It doubles as a no-code way for users to inject their own
-	      // IReflectionCacheUserSystem into our pipeline. 
-	      // Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance
-	      // (that gets propagated down to any IReflectionCacheUserSystem that also implements IBeamHintProvider).
+	      // This was made to solve a cross-package injection problem. It doubles as a no-code way for users to inject their own IReflectionCacheUserSystem into our pipeline.
 	      {
+		      
+		      // Load up all Asset-based IReflectionCacheUserSystem (injected via ReflectionCacheUserSystemObject instances).
 		      var reflectionCacheSystemGuids = AssetDatabase.FindAssets("t:ReflectionCacheUserSystemObject", coreConfiguration.ReflectionCacheUserSystemPaths
 		                                                                                                                      .Where(Directory.Exists)
 		                                                                                                                      .ToArray());
@@ -137,9 +135,20 @@ namespace Beamable.Editor
 			      EditorReflectionCache.RegisterTypeProvider(userSystemObject.UserTypeProvider);
 			      EditorReflectionCache.RegisterCacheUserSystem(userSystemObject.UserSystem);
 		      }
-		       
+		  
+		      // After loading each reflection cache, make initialization calls to any specific system we need to make.
+		      // A current limitation is that we can't actually do this for any system out of this package.
+		      // TODO: Maybe we should add a callback to the IReflectionCacheUserSystem's API that gets invoked here 🤔...
+		      // Load all beam hint scriptable objects 
+		      EditorReflectionCache.GetFirstRegisteredUserSystemOfType<BeamHintDetailsReflectionCache.Registry>()
+		                           .ReloadHintDetailConfigScriptableObjects(coreConfiguration.BeamableAssistantHintDetailConfigPaths);
+		  
+		      
+		      // Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance
+		      // (that gets propagated down to any IReflectionCacheUserSystem that also implements IBeamHintProvider).
+		      // Finally, calls the Generate Reflection cache 
 		      EditorReflectionCache.SetStorage(HintGlobalStorage);
-		      EditorReflectionCache.GenerateReflectionCache(assembliesToSweep: coreConfiguration.AssembliesToSweep); 
+		      EditorReflectionCache.GenerateReflectionCache(assembliesToSweep: coreConfiguration.AssembliesToSweep);
 	      }
 	      
 	      HintNotificationsManager.SetStorage(HintGlobalStorage);

@@ -8,12 +8,12 @@ namespace Beamable.Editor.Reflection
 	{
 		public static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
 		{
-			var assistantRelatedAssets = importedAssets.Union(movedAssets)
+			var reflectionCacheRelatedAssets = importedAssets.Union(movedAssets)
 			                                           .Select(path => (path, type: AssetDatabase.GetMainAssetTypeAtPath(path)))
 			                                           .Where(t => typeof(ReflectionCacheUserSystemObject).IsAssignableFrom(t.type))
 			                                           .ToList();
 
-			if (assistantRelatedAssets.Count > 0 || deletedAssets.Length > 0)
+			if (reflectionCacheRelatedAssets.Count > 0 || deletedAssets.Length > 0)
 			{
 				EditorAPI.Instance.Then(api => {
 					BeamableLogger.Log("Re-building the Reflection Cache!");

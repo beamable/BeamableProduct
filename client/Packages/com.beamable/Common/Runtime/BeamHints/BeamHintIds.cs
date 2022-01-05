@@ -32,13 +32,13 @@ namespace Beamable.Common.Assistant
 		/// <summary>
 		/// Generates a given <paramref name="id"/>. Asserts it is a valid id as per system assumptions.
 		/// </summary>
-		public static string GenerateHintId(string id)
+		public static string GenerateHintId(string id, string prefix = null)
 		{
 			Assert(!id.Contains(BeamHintDomains.SUB_DOMAIN_SEPARATOR) &&
 			       !id.Contains(BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR),
 				$"Failed to generate hint id {id}! The Id cannot contain {BeamHintDomains.SUB_DOMAIN_SEPARATOR} or {BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR}");
 
-			return id;
+			return prefix != null ? $"{prefix}-{id}" : id;
 		}
 
 		/// <summary>
@@ -69,15 +69,25 @@ namespace Beamable.Common.Assistant
 
 			return idBuilder.ToString();
 		}
+
+		/// <summary>
+		/// Prefix added to all hints whose context objects are lists of <see cref="Reflection.AttributeValidationResult"/>.
+		/// </summary>
+		public const string ATTRIBUTE_VALIDATION_ID_PREFIX = "AttributeValidation";
 		
+		/// <summary>
+		/// Prefix added to all hints whose context objects are lists of <see cref="Reflection.AttributeValidationResult"/>.
+		/// </summary>
+		public const string ATTRIBUTE_NAME_COLLISION_ID_PREFIX = "AttributeNameCollision";
+
 		// Beamable Assistant IDs
-		[BeamHintId] public static readonly string ID_MISCONFIGURED_HINT_DETAILS_PROVIDER = GenerateHintId("MisconfiguredHintDetailsProvider");
+		[BeamHintId] public static readonly string ID_MISCONFIGURED_HINT_DETAILS_PROVIDER = GenerateHintId("MisconfiguredHintDetailsProvider", ATTRIBUTE_VALIDATION_ID_PREFIX);
 		
 		// Microservices IDs
-		[BeamHintId] public static readonly string ID_MICROSERVICE_ATTRIBUTE_MISSING = GenerateHintId("MicroserviceAttributeMissing");
-		[BeamHintId] public static readonly string ID_MICROSERVICE_NAME_COLLISION = GenerateHintId("MicroserviceNameCollision");
-		[BeamHintId] public static readonly string ID_CLIENT_CALLABLE_ASYNC_VOID = GenerateHintId("ClientCallableAsyncVoid");
-		[BeamHintId] public static readonly string ID_CLIENT_CALLABLE_UNSUPPORTED_PARAMETERS = GenerateHintId("ClientCallableUnsupportedParameters");
+		[BeamHintId] public static readonly string ID_MICROSERVICE_ATTRIBUTE_MISSING = GenerateHintId("MicroserviceAttributeMissing", ATTRIBUTE_VALIDATION_ID_PREFIX);
+		[BeamHintId] public static readonly string ID_MICROSERVICE_NAME_COLLISION = GenerateHintId("MicroserviceNameCollision", ATTRIBUTE_NAME_COLLISION_ID_PREFIX);
+		[BeamHintId] public static readonly string ID_CLIENT_CALLABLE_ASYNC_VOID = GenerateHintId("ClientCallableAsyncVoid", ATTRIBUTE_VALIDATION_ID_PREFIX);
+		[BeamHintId] public static readonly string ID_CLIENT_CALLABLE_UNSUPPORTED_PARAMETERS = GenerateHintId("ClientCallableUnsupportedParameters", ATTRIBUTE_VALIDATION_ID_PREFIX);
 
 			
 		

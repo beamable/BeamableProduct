@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.Assistant;
 using Beamable.Editor.Reflection;
 using System;
@@ -48,8 +49,6 @@ namespace Beamable.Editor.Assistant
 		private VisualElement _detailsBox;
 
 		private readonly BeamHintDetailsReflectionCache.Registry _hintDetailsReflectionCache;
-		private BeamHintDetailsConfig _hintDetailsConfig;
-		private int _indexIntoLoadedConverters;
 
 		private readonly BeamHintsDataModel _hintDataModel;
 		private BeamHintHeader _displayingHintHeader;
@@ -69,7 +68,6 @@ namespace Beamable.Editor.Assistant
 		public void UpdateFromBeamHintHeader(in BeamHintHeader hint, int headerIdx)
 		{
 			_displayingHintHeader = hint;
-			_indexIntoLoadedConverters = _hintDetailsReflectionCache.GetFirstMatchingDetailsConfig(hint, out _hintDetailsConfig);
 			_indexIntoDisplayingHints = headerIdx;
 		}
 
@@ -92,15 +90,24 @@ namespace Beamable.Editor.Assistant
 			var hintTypeClass = _displayingHintHeader.Type.ToString().ToLower();
 			_hintTypeIcon.AddToClassList(hintTypeClass);
 
+			// Find the ConverterData that is tied to the hint we are displaying from the HintDetails Reflection Cache system.
+			if (!_hintDetailsReflectionCache.TryGetConverterDataForHint(_displayingHintHeader, out var converter))
+			{
+				BeamableLogger.LogError($"[Assistant] No BeamableHintDetails Found for Hint Header {_displayingHintHeader}! " +
+				                        $"See BeamHintDetailConverterProvider and BeamHintDetailsConfig to see how to configure BeamHintConverter functions and visuals.");
+			}
+
+			var hintDetailsConfig = converter.HintConfigDetailsConfig;
+			
 			// If there are no mapped converters, we don't display a more button since there would be no details to show.
-			var detailsUxmlPath = _hintDetailsConfig == null ? "" : _hintDetailsConfig.UxmlFile;
-			var detailsUssPaths = _hintDetailsConfig == null ? new List<string>() : _hintDetailsConfig.StylesheetsToAdd;
+			var detailsUxmlPath = hintDetailsConfig == null ? "" : hintDetailsConfig.UxmlFile;
+			var detailsUssPaths = hintDetailsConfig == null ? new List<string>() : hintDetailsConfig.StylesheetsToAdd;
 
 			// Setup details container and more button to not be visible
 			_detailsContainer = Root.Q<VisualElement>("hintDetailsContainer");
 
 			// If there are no configured UXML Path or a Converter tied to the matching HintDetailsVisualConfig, simply disable the button.
-			if (_indexIntoLoadedConverters == -1 || string.IsNullOrEmpty(detailsUxmlPath))
+			if (hintDetailsConfig == null || string.IsNullOrEmpty(detailsUxmlPath))
 			{
 				_moreDetailsButton.visible = false;
 				_detailsContainer.AddToClassList("--positionHidden");
@@ -213,9 +220,8 @@ namespace Beamable.Editor.Assistant
 				var injectionBag = new BeamHintVisualsInjectionBag();
 
 				// Call the converter to fill up this injection bag.
-				var converter = _hintDetailsReflectionCache.GetConverterAtIdx(_indexIntoLoadedConverters);
 				var beamHint = _hintDataModel.GetHint(_displayingHintHeader);
-				converter.Invoke(in beamHint, in _hintDetailsConfig, injectionBag);
+				converter.ConverterCall.Invoke(in beamHint, in converter.HintConfigDetailsConfig, injectionBag);
 
 				// Resolve all supported injections.
 				ResolveInjections(injectionBag.TextInjections, _detailsBox);
