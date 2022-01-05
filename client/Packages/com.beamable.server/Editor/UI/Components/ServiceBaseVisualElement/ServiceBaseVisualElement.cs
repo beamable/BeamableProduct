@@ -61,7 +61,6 @@ namespace Beamable.Editor.Microservice.UI.Components
         protected override void OnDestroy()
         {
             base.OnDestroy();
-            Microservices.OnBeforeDeploy -= SetupProgressBarForDeployment;
 
             if (Model == null) return;
 
@@ -117,9 +116,6 @@ namespace Beamable.Editor.Microservice.UI.Components
             Model.OnStart += SetupProgressBarForStart;
             Model.OnStop -= SetupProgressBarForStop;
             Model.OnStop += SetupProgressBarForStop;
-
-            Microservices.OnBeforeDeploy -= SetupProgressBarForDeployment;
-            Microservices.OnBeforeDeploy += SetupProgressBarForDeployment;
 
             _stopButton.clickable.clicked += HandleStopButtonClicked;
             var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
@@ -268,13 +264,6 @@ namespace Beamable.Editor.Microservice.UI.Components
         private void OnStopFailed()
         {
             OnServiceStopFailed?.Invoke();
-        }
-        private void SetupProgressBarForDeployment(ManifestModel _, int __)
-        {
-            new GroupLoadingBarUpdater("Build and Deploy", _loadingBar, false,
-                new StepLogParser(new VirtualLoadingBar(), Model, null),
-                new DeployMSLogParser(new VirtualLoadingBar(), Model)
-            );
         }
         private void HandleCollapseButton()
         {
