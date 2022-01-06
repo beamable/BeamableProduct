@@ -1,4 +1,5 @@
-﻿using Beamable.Server;
+﻿using Beamable.Common;
+using Beamable.Server;
 using MongoDB.Driver;
 
 namespace Beamable.Server
@@ -10,10 +11,10 @@ namespace Beamable.Server
 
     public static class XXXXExtension
     {
-        public static IMongoDatabase GetXXXX(this IStorageObjectConnectionProvider provider)
+        public static Promise<IMongoDatabase> GetXXXX(this IStorageObjectConnectionProvider provider)
             => provider.GetDatabase<XXXX>();
 
-        public static IMongoCollection<TCollection> CollectionFromXXXX<TCollection>(
+        public static Promise<IMongoCollection<TCollection>> CollectionFromXXXX<TCollection>(
             this IStorageObjectConnectionProvider provider, string name)
             => provider.GetCollection<XXXX, TCollection>(name);
     }

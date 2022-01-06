@@ -6,6 +6,7 @@ using Beamable.Common.Leaderboards;
 using Beamable.Server;
 using Beamable.Server.Api.Groups;
 using Beamable.Server.Api.Leaderboards;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using System.Collections.Generic;
 using System.Linq;
@@ -67,7 +68,7 @@ namespace Beamable.Server
       public async Task Add(int a)
       {
 	      if (Context.UserId <= 0) return;
-	      var collection = Storage.CollectionFromAliveStorage<Data>("data");
+	      var collection = await Storage.CollectionFromAliveStorage<Data>("data");
 
 	      await collection.InsertOneAsync(new Data{a = a});
       }
@@ -75,9 +76,36 @@ namespace Beamable.Server
       [ClientCallable]
       public async Task<List<int>> ReadAll()
       {
-	      var collection = Storage.CollectionFromAliveStorage<Data>("data");
+	      var collection = await Storage.CollectionFromAliveStorage<Data>("data");
 	      var raw= await collection.Find(d => true).ToListAsync();
 	      return raw.Select(d => d.a).ToList();
+      }
+
+      [ClientCallable]
+      public async Task Write(int a, int b, string c)
+      {
+	      var collection = await Storage.CollectionFromAliveStorage<Doodad>("doodads");
+	      await collection.InsertOneAsync(new Doodad
+	      {
+		      a = a, b = b, c = c
+	      });
+      }
+
+      [ClientCallable]
+      public async Promise<List<string>> GetAll()
+      {
+	      var collection = await Storage.CollectionFromAliveStorage<Doodad>("doodads");
+
+	      var res = await collection.FindAsync(x => true);
+	      var all = await res.ToListAsync();
+	      return all.Select(x => $"{x.a},{x.b},{x.c}").ToList();
+      }
+
+      public class Doodad
+      {
+	      public ObjectId id;
+	      public int a, b;
+	      public string c;
       }
 
       /// <summary>

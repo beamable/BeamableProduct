@@ -40,6 +40,32 @@ namespace Beamable.Server.Clients
             string[] serializedFields = new string[0];
             return this.Request<System.Collections.Generic.List<int>>("CacheDependentMS", "ReadAll", serializedFields);
         }
+        
+        /// <summary>
+        /// Call the Write method on the CacheDependentMS microservice
+        /// <see cref="Beamable.Server.CacheDependentMS.Write"/>
+        /// </summary>
+        public Beamable.Common.Promise<System.Threading.Tasks.Task> Write(int a, int b, string c)
+        {
+            string serialized_a = this.SerializeArgument<int>(a);
+            string serialized_b = this.SerializeArgument<int>(b);
+            string serialized_c = this.SerializeArgument<string>(c);
+            string[] serializedFields = new string[] {
+                    serialized_a,
+                    serialized_b,
+                    serialized_c};
+            return this.Request<System.Threading.Tasks.Task>("CacheDependentMS", "Write", serializedFields);
+        }
+        
+        /// <summary>
+        /// Call the GetAll method on the CacheDependentMS microservice
+        /// <see cref="Beamable.Server.CacheDependentMS.GetAll"/>
+        /// </summary>
+        public Beamable.Common.Promise<System.Collections.Generic.List<string>> GetAll()
+        {
+            string[] serializedFields = new string[0];
+            return this.Request<System.Collections.Generic.List<string>>("CacheDependentMS", "GetAll", serializedFields);
+        }
     }
     
     internal sealed class MicroserviceParametersCacheDependentMSClient
@@ -47,6 +73,11 @@ namespace Beamable.Server.Clients
         
         [System.SerializableAttribute()]
         internal sealed class ParameterSystem_Int32 : Beamable.Server.MicroserviceClientDataWrapper<int>
+        {
+        }
+        
+        [System.SerializableAttribute()]
+        internal sealed class ParameterSystem_String : Beamable.Server.MicroserviceClientDataWrapper<string>
         {
         }
     }

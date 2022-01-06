@@ -90,7 +90,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             _modelToVisual.Clear();
 
             SetupServicesStatus();
-            
+
             _actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
             _actionPrompt.Refresh();
         }
@@ -228,11 +228,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             var _ = new GroupLoadingBarUpdater("Starting Microservices", loadingBar, false, children.ToArray());
         }
-        
-        public void SortMicroservices() 
+
+        public void SortMicroservices()
         {
             var config = MicroserviceConfiguration.Instance;
-            int Comparer(VisualElement a, VisualElement b) 
+            int Comparer(VisualElement a, VisualElement b)
             {
                 if (a is CreateServiceBaseVisualElement) return -1;
                 if (b is CreateServiceBaseVisualElement) return 1;
@@ -240,7 +240,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             }
             _servicesListElement.Sort(Comparer);
         }
-        
+
         private bool ShouldDisplayService(ServiceType type)
         {
 	        switch (Model.Filter)
@@ -255,7 +255,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			        return false;
 	        }
         }
-	    
+
         private void ShowDockerNotInstalledAnnouncement()
         {
 	        var dockerAnnouncement = new DockerAnnouncementModel();
@@ -272,7 +272,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 	        Root.Q<VisualElement>("announcementList").Add(element);
 	        element.Refresh();
         }
-                
+
         private void CreateNewServiceElement(ServiceType serviceType, CreateServiceBaseVisualElement service)
         {
 	        service.OnCreateServiceClicked += () => Root.SetEnabled(false);
@@ -316,24 +316,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 			        default:
 				        throw new ArgumentOutOfRangeException();
 		        }
-		        
+
 		        if (serviceElement != null)
 		        {
 			        serviceElement.SetEnabled(_dockerHubIsRunning);
 			        _servicesListElement.Add(serviceElement);
 		        }
 	        }
-	        
-	        if (hasStorageDependency)
-		        ShowStorageObjectPreviewWarning();
-        }
-
-        private void ShowStorageObjectPreviewWarning()
-        {
-	        var storagePreviewWarning = new StorageDepencencyWarningModel();
-	        var previewElement = new StorageDepencencyWarningVisualElement() { StorageDepencencyWarningModel = storagePreviewWarning };
-	        Root.Q<VisualElement>("announcementList").Add(previewElement);
-	        previewElement.Refresh();
         }
 
         static bool IsDockerAppRunning()

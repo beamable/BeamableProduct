@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Server;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -11,10 +12,10 @@ namespace Beamable.Server
 
     public static class AliveStorageExtension
     {
-        public static IMongoDatabase GetAliveStorage(this IStorageObjectConnectionProvider provider)
+        public static Promise<IMongoDatabase> GetAliveStorage(this IStorageObjectConnectionProvider provider)
             => provider.GetDatabase<AliveStorage>();
 
-        public static IMongoCollection<TCollection> CollectionFromAliveStorage<TCollection>(
+        public static Promise<IMongoCollection<TCollection>> CollectionFromAliveStorage<TCollection>(
             this IStorageObjectConnectionProvider provider, string name)
             => provider.GetCollection<AliveStorage, TCollection>(name);
     }
