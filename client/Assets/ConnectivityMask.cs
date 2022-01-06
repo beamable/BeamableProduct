@@ -10,6 +10,8 @@ public class ConnectivityMask : MonoBehaviour
 	private IConnectivityService _connectivityService;
 
 	public TextMeshProUGUI MaskText;
+
+	public bool Global;
 	// Start is called before the first frame update
     void Start()
     {
@@ -19,15 +21,21 @@ public class ConnectivityMask : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-	    MaskText.text = _connectivityService.ForceDisabled
+	    MaskText.text = _connectivityService.Disabled
 		    ? "Force Disconnected"
 		    : "Searching...";
     }
 
     public void ToggleMask()
     {
-	    _connectivityService.ForceDisabled = !_connectivityService.ForceDisabled;
-
+	    if (Global)
+	    {
+			_connectivityService.SetGlobalEnabled( !_connectivityService.GetGlobalEnabled());
+	    }
+	    else
+	    {
+		    _connectivityService.ForceDisabled = !_connectivityService.ForceDisabled;
+	    }
     }
 
 }

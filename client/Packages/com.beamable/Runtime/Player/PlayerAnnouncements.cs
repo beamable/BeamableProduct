@@ -76,19 +76,19 @@ namespace Beamable.Player
 	{
 		private IPlatformService _platform;
 		private IAnnouncementsApi _announcementsApi;
-		private PlayerCurrencyGroup _playerCurrencyGroup;
+		private PlayerInventory _playerInventory;
 		private INotificationService _notifications;
 		private ISdkEventService _sdkEventService;
 
 		public PlayerAnnouncements(IPlatformService platform,
 		                           IAnnouncementsApi announcementsApi,
-		                           PlayerCurrencyGroup playerCurrencyGroup,
+		                           PlayerInventory playerInventory,
 		                           INotificationService notifications,
 		                           ISdkEventService sdkEventService)
 		{
 			_platform = platform;
 			_announcementsApi = announcementsApi;
-			_playerCurrencyGroup = playerCurrencyGroup;
+			_playerInventory = playerInventory;
 			_notifications = notifications;
 			_sdkEventService = sdkEventService;
 
@@ -118,7 +118,7 @@ namespace Beamable.Player
 					break;
 				case "claim":
 					await _announcementsApi.Claim(evt.Args[0]);
-					await _playerCurrencyGroup.Refresh();
+					await _playerInventory.Refresh();
 					await Refresh();
 					break;
 				default:
@@ -164,7 +164,7 @@ namespace Beamable.Player
 			Debug.Log("Shutting down announcements");
 			_platform = null;
 			_announcementsApi = null;
-			_playerCurrencyGroup = null;
+			_playerInventory = null;
 			_notifications = null;
 			_sdkEventService = null;
 			return Promise.Success;

@@ -227,7 +227,7 @@ namespace Beamable.Api
 
                  if (useCache && httpNoInternet && Application.isPlaying)
                  {
-                    return OfflineCache.Get<T>(uri, Token);
+                    return OfflineCache.Get<T>(uri, Token, includeAuthHeader);
                  }
 
                  switch (error)
@@ -260,13 +260,13 @@ namespace Beamable.Api
               {
                  if (useCache && Token != null && Application.isPlaying)
                  {
-                    OfflineCache.Set<T>(uri, _response, Token);
+                    OfflineCache.Set<T>(uri, _response, Token, includeAuthHeader);
                  }
               });
         }
         else if (!internetConnectivity && useCache && Application.isPlaying)
         {
-            return OfflineCache.Get<T>(uri, Token);
+            return OfflineCache.Get<T>(uri, Token, includeAuthHeader);
         }
         else
         {
@@ -411,10 +411,7 @@ namespace Beamable.Api
          Request = request;
       }
    }
-    public class NoConnectivityException : Exception
-    {
-        public NoConnectivityException(string message) : base(message) { }
-    }
+
 
     public static class ConnectivityExceptionExtensions
     {

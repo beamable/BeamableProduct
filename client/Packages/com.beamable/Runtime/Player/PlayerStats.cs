@@ -1,4 +1,4 @@
-// unset
+
 using Beamable.Api;
 using Beamable.Api.Stats;
 using Beamable.Common;
@@ -14,6 +14,9 @@ using UnityEngine;
 
 namespace Beamable.Player
 {
+	/// <summary>
+	/// A <see cref="PlayerStat"/> is a named value associated with a player.
+	/// </summary>
 	[Serializable]
 	public class PlayerStat
 	{
@@ -158,6 +161,12 @@ namespace Beamable.Player
 			SetData(nextData);
 		}
 
+		/// <summary>
+		/// Set the value of a <see cref="PlayerStat"/>
+		/// </summary>
+		/// <param name="key"></param>
+		/// <param name="value"></param>
+		/// <returns></returns>
 		public Promise Set(string key, string value)
 		{
 			return _eventService.Add(new SdkEvent(nameof(PlayerStats), "set", key, value));

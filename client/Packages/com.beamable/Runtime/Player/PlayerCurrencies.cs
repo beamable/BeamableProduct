@@ -1,6 +1,8 @@
 using Beamable.Api;
+using Beamable.Api.Connectivity;
 using Beamable.Api.Inventory;
 using Beamable.Common;
+using Beamable.Common.Api;
 using System;
 using System.Linq;
 using Beamable.Common.Api.Notifications;
@@ -91,23 +93,34 @@ namespace Beamable.Player
 		private readonly InventoryService _inventoryApi;
 		private readonly INotificationService _notificationService;
 		private readonly ISdkEventService _sdkEventService;
+		private readonly IConnectivityService _connectivityService;
 		private readonly IDependencyProvider _provider;
 
-		public PlayerCurrencyGroup(
-			IPlatformService platformService,
+		public PlayerCurrencyGroup(IPlatformService platformService,
 		                           InventoryService inventoryApi,
 		                           INotificationService notificationService,
 		                           ISdkEventService sdkEventService,
+		                           IConnectivityService connectivityService,
 		                           IDependencyProvider provider)
 		{
 			_platformService = platformService;
 			_inventoryApi = inventoryApi;
 			_notificationService = notificationService;
 			_sdkEventService = sdkEventService;
+			_connectivityService = connectivityService;
 			_provider = provider;
 
 			notificationService.Subscribe(notificationService.GetRefreshEventNameForService("inventory"),
 			                              HandleSubscriptionUpdate);
+			_connectivityService.OnConnectivityChanged += connection =>
+			{
+				if (connection)
+				{
+					inventoryApi.Subscribable.Refresh();
+					Refresh();
+				}
+			};
+
 			var _ = Refresh(); // automatically start.
 			IsInitialized = true;
 		}
@@ -211,14 +224,14 @@ namespace Beamable.Player
 		/// Update the currency's <see cref="PlayerCurrency.Amount"/> by the given amount.
 		/// Internally, this will trigger an <see cref="PlayerInventory.Update(Beamable.Common.Api.Inventory.InventoryUpdateBuilder,string)"/>
 		/// </summary>
-		/// <param name="currencyId">The currency to modify</param>
+		/// <param name="currency">The currency to modify</param>
 		/// <param name="amount">The amount the currency will change by. This is incremental. A negative number will decrement the currency.</param>
 		/// <returns>A promise representing when the add operation has completed</returns>
-		public Promise Add(CurrencyRef currencyId, long amount)
+		public Promise Add(CurrencyRef currency, long amount)
 		{
 			// any writes should go through the inventory service itself to optimize performance and code-single-use.
 			// we can't pre-fetch the PlayerInventory service because it would cause a cyclic reference in the dependency graph.
-			return _provider.GetService<PlayerInventory>().Update(b => b.CurrencyChange(currencyId, amount));
+			return _provider.GetService<PlayerInventory>().Update(b => b.CurrencyChange(currency, amount));
 		}
 	}
 }

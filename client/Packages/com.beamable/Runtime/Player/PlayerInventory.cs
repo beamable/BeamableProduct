@@ -1,8 +1,10 @@
 // unset
 
 using Beamable.Api;
+using Beamable.Api.Connectivity;
 using Beamable.Api.Inventory;
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Api.Notifications;
@@ -13,6 +15,7 @@ using Beamable.Coroutines;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Beamable.Player
@@ -60,6 +63,7 @@ namespace Beamable.Player
 			IDependencyProvider provider,
 			CoreConfiguration config,
 			IContentApi contentService,
+			IConnectivityService connectivityService,
 			ISdkEventService sdkEventService)
 		{
 			_inventoryApi = inventoryApi;
@@ -72,7 +76,7 @@ namespace Beamable.Player
 			_sdkEventService = sdkEventService;
 
 			Currencies  = new PlayerCurrencyGroup(
-				_platformService, _inventoryApi, _notificationService, _sdkEventService, _provider
+				_platformService, _inventoryApi, _notificationService, _sdkEventService, connectivityService, _provider
 			);
 
 			// var updateRoutine = _coroutineService.StartNew("playerInvOfflineLoop", Update());
@@ -365,6 +369,16 @@ namespace Beamable.Player
 					_itemIdToReqId.Clear();
 					break;
 			}
+		}
+
+		/// <summary>
+		/// Refreshes all <see cref="PlayerItemGroup"/>s that have been established using <see cref="GetItems"/>,
+		/// and refreshes currencies <see cref="Currencies"/>
+		/// </summary>
+		/// <exception cref="NotImplementedException"></exception>
+		public async Promise Refresh()
+		{
+			await _inventoryApi.Subscribable.Refresh();
 		}
 	}
 }

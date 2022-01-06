@@ -1,5 +1,6 @@
 using System;
 using Beamable.Api.Connectivity;
+using Beamable.Common;
 
 namespace Beamable.Platform.Tests.Connectivity
 {
@@ -13,19 +14,30 @@ namespace Beamable.Platform.Tests.Connectivity
 	      set;
       }
 
+      public bool Disabled
+      {
+	      get;
+      }
+
       public event Action<bool> OnConnectivityChanged;
-      public void SetHasInternet(bool hasInternet)
+      public Promise SetHasInternet(bool hasInternet)
       {
          _connectivity = hasInternet;
          OnConnectivityChanged?.Invoke(_connectivity);
+         return Promise.Success;
       }
 
-      public void ReportInternetLoss()
+      public Promise ReportInternetLoss()
       {
-         SetHasInternet(false);
+         return SetHasInternet(false);
       }
 
       public void OnReconnectOnce(Action onReconnection)
+      {
+
+      }
+
+      public void OnReconnectOnce(ConnectionCallback promise, int order = 0)
       {
 
       }
