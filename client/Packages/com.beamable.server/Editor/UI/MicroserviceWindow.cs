@@ -90,10 +90,10 @@ namespace Beamable.Editor.Microservice.UI
         }
 
 
-#if UNITY_2018
-        public static bool IsInstantiated => _instance != null;
+#if UNITY_2019_3_OR_NEWER
+		public static bool IsInstantiated => _instance != null || HasOpenInstances<MicroserviceWindow>();
 #else
-        public static bool IsInstantiated => _instance != null || HasOpenInstances<MicroserviceWindow>();
+		public static bool IsInstantiated => _instance != null;
 #endif
 
         void CreateModel()
