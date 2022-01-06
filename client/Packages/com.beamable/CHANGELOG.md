@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The "Whats New" banner links to blog post if available
 - Reference to Unity 2019.3 specific `HasOpenInstances` function removed in Unity 2018
 
+
 ## [0.18.0]
 ### Added
 - Content can be prebaked with game-builds to speed up content initialization

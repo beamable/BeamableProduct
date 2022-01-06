@@ -9,6 +9,7 @@ using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
+using Beamable.Server.Editor.UI;
 using UnityEditor;
 using Beamable.Server.Editor.UI.Components;
 using UnityEngine;
@@ -28,14 +29,12 @@ namespace Beamable.Editor.Microservice.UI
 {
     public class MicroserviceWindow : CommandRunnerWindow, ISerializationCallbackReceiver
     {
-#if !BEAMABLE_LEGACY_MSW
         [MenuItem(
             BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
             BeamableConstants.OPEN + " " +
             BeamableConstants.MICROSERVICES_MANAGER,
             priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_2
         )]
-#endif
         public static async void Init()
         {
             var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
@@ -193,10 +192,10 @@ namespace Beamable.Editor.Microservice.UI
             _actionBarVisualElement.OnBuildAllClicked += () =>
                 _microserviceContentVisualElement.BuildAllMicroservices(_loadingBar);
 
-            Microservices.onBeforeDeploy -= HandleBeforeDeploy;
-            Microservices.onBeforeDeploy += HandleBeforeDeploy;
-            Microservices.onAfterDeploy -= HandleAfterDeploy;
-            Microservices.onAfterDeploy += HandleAfterDeploy;
+            Microservices.OnDeploySuccess -= HandleDeploySuccess;
+            Microservices.OnDeploySuccess += HandleDeploySuccess;
+            Microservices.OnDeployFailed -= HandleDeployFailed;
+            Microservices.OnDeployFailed += HandleDeployFailed;
         }
 
         private void HandleDisplayFilterSelected(ServicesDisplayFilter filter)
@@ -242,13 +241,17 @@ namespace Beamable.Editor.Microservice.UI
             CreateModel();
             SetForContent();
         }
-
-        private void HandleBeforeDeploy(ManifestModel manifestModel, int totalSteps)
+        
+        private void HandleDeploySuccess(ManifestModel _model, int _totalSteps)
         {
-	        new DeployLogParser(_loadingBar, manifestModel, totalSteps);
+	        RefreshWindow(true);
         }
 
-        private void HandleAfterDeploy(ManifestModel _model, int _totalSteps) => RefreshWindow(true);
+        private void HandleDeployFailed(ManifestModel _model, string reason)
+        {
+	        Debug.Log(reason);
+	        _microserviceContentVisualElement?.Refresh();
+        }
 
         public void SortMicroservices() {
             if (_windowRoot != null)
