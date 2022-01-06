@@ -84,7 +84,7 @@ namespace Beamable.Server
       [ClientCallable]
       public async Task Write(int a, int b, string c)
       {
-	      var collection = await Storage.CollectionFromAliveStorage<Doodad>("doodads");
+	      var collection = await Storage.AliveStorage<Doodad>("doodads");
 	      await collection.InsertOneAsync(new Doodad
 	      {
 		      a = a, b = b, c = c
@@ -94,7 +94,7 @@ namespace Beamable.Server
       [ClientCallable]
       public async Promise<List<string>> GetAll()
       {
-	      var collection = await Storage.CollectionFromAliveStorage<Doodad>("doodads");
+	      var collection = await Storage.AliveStorage<Doodad>("doodads");
 
 	      var res = await collection.FindAsync(x => true);
 	      var all = await res.ToListAsync();
