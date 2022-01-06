@@ -213,19 +213,19 @@ namespace Beamable.Editor.UI.Model
 
       private void OnEnable()
       {
-         Microservices.onAfterDeploy += MicroservicesOnonAfterDeploy;
+         Microservices.OnDeploySuccess += HandleMicroservicesDeploySuccess;
          RefreshLocal();
          RefreshServerManifest();
       }
 
-      private void MicroservicesOnonAfterDeploy(ManifestModel oldManifest, int serviceCount)
+      private void HandleMicroservicesDeploySuccess(ManifestModel oldManifest, int serviceCount)
       {
          RefreshServerManifest();
       }
 
       public void Destroy()
       {
-         Microservices.onAfterDeploy -= MicroservicesOnonAfterDeploy;
+         Microservices.OnDeploySuccess -= HandleMicroservicesDeploySuccess;
 
          _instance = null;
          _hasEnabledYet = false;
