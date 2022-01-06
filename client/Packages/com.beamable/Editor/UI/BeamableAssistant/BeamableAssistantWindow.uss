@@ -107,7 +107,7 @@ ScrollView > #ContentViewport > #ContentView {
 }
 
 #hintTypeBlank{
-    width: 30px;
+    width: 80px;
     height: 20px;
 }
 

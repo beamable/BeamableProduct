@@ -175,7 +175,8 @@ namespace Beamable.Common.Reflection
 		
 		private static bool MatchParameter(ParameterOfInterest acceptableParameter, ParameterInfo parameter)
 		{
-			var matchType = acceptableParameter.ParameterType.IsAssignableFrom(parameter.ParameterType);
+			var matchType = acceptableParameter.ParameterType.IsInterface ? acceptableParameter.ParameterType.IsAssignableFrom(parameter.ParameterType) : 
+				acceptableParameter.ParameterType == parameter.ParameterType || parameter.ParameterType.IsSubclassOf(acceptableParameter.ParameterType);
 			var matchIn = acceptableParameter.IsIn == parameter.IsIn;
 			var matchOut = acceptableParameter.IsOut == parameter.IsOut;
 			var matchRef = acceptableParameter.IsByRef == parameter.ParameterType.IsByRef;

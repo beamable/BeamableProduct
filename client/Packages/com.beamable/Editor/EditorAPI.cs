@@ -140,8 +140,9 @@ namespace Beamable.Editor
 		      // A current limitation is that we can't actually do this for any system out of this package.
 		      // TODO: Maybe we should add a callback to the IReflectionCacheUserSystem's API that gets invoked here 🤔...
 		      // Load all beam hint scriptable objects 
-		      EditorReflectionCache.GetFirstRegisteredUserSystemOfType<BeamHintDetailsReflectionCache.Registry>()
-		                           .ReloadHintDetailConfigScriptableObjects(coreConfiguration.BeamableAssistantHintDetailConfigPaths);
+		      var beamHintReflectionCache = EditorReflectionCache.GetFirstRegisteredUserSystemOfType<BeamHintReflectionCache.Registry>();
+		      beamHintReflectionCache.ReloadHintTextMapScriptableObjects(coreConfiguration.BeamableAssistantHintDetailConfigPaths);
+		      beamHintReflectionCache.ReloadHintDetailConfigScriptableObjects(coreConfiguration.BeamableAssistantHintDetailConfigPaths);
 		  
 		      
 		      // Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance

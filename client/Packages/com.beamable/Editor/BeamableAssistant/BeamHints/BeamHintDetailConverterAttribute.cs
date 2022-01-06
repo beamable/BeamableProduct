@@ -17,7 +17,7 @@ namespace Beamable.Editor.Assistant
 				typeof(void),
 				new[] {
 					new ParameterOfInterest(typeof(BeamHint).MakeByRefType(), true, false, false),
-					new ParameterOfInterest(typeof(BeamHintDetailsConfig).MakeByRefType(), true, false, false),
+					new ParameterOfInterest(typeof(BeamHintTextMap).MakeByRefType(), true, false, false),
 					new ParameterOfInterest(typeof(BeamHintVisualsInjectionBag), false, false, false)
 				})
 		};

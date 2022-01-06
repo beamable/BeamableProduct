@@ -1,3 +1,12 @@
+
+.hintHeader{    
+    background-color: #a7a7a7;   
+}
+
+.hintHeader.oddRow{
+    background-color: #B4B4B4;
+}
+
 #hintTypeIcon.validation{
     background-image: resource("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/validation.png");
 }
@@ -20,12 +29,10 @@
     color: #000;
 }
 
-#moreDetailsButton:checked{
-    flex-shrink: 1;
-    color: #f00;
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
-}
-
 .hintSubtitle {
     color: #000;    
+}
+
+#hintDetailsBox{
+    background-color: #d1d1d1;    
 }

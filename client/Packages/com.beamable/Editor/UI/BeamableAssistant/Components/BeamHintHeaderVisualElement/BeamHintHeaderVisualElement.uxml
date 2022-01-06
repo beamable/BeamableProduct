@@ -7,12 +7,13 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd Beamable.Editor.Content.Components ">
 
     <engine:VisualElement name="hintHeaderContainer" class="hintHeader">
-        <engine:Image name="hintTypeIcon"/>
+        <engine:VisualElement name="hintType">
+            <engine:Image name="hintTypeIcon"/>
+            <engine:Label name="hintPrimaryDomainLabel" class="hintSubtitle"/>
+        </engine:VisualElement>
         <engine:Label name="hintDisplayName" class="createButtonLabel hintTitle"/>
         <engine:VisualElement class="splitPadding"/>
-        <engine:Toggle name="moreDetailsButton">
-            <engine:Label text="More"/>
-        </engine:Toggle>
+        <engine:Toggle name="moreDetailsButton"/>
         <engine:VisualElement class="splitPadding"/>
     </engine:VisualElement>
     <engine:VisualElement name="hintDetailsContainer" class="hintDetails">

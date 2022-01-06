@@ -48,7 +48,7 @@ namespace Beamable.Editor.Assistant
 		
 		// References to data 
 		[SerializeField] private BeamHintsDataModel _beamHintsDataModel;
-		private BeamHintDetailsReflectionCache.Registry _hintDetailsReflectionCache;
+		private BeamHintReflectionCache.Registry _hintDetailsReflectionCache;
 
 		private EditorAPI _editorAPI;
 
@@ -77,7 +77,7 @@ namespace Beamable.Editor.Assistant
 		{
 			minSize = MIN_SIZE;
 			_editorAPI = editorAPI;
-			_hintDetailsReflectionCache = editorAPI.EditorReflectionCache.GetFirstRegisteredUserSystemOfType<BeamHintDetailsReflectionCache.Registry>();
+			_hintDetailsReflectionCache = editorAPI.EditorReflectionCache.GetFirstRegisteredUserSystemOfType<BeamHintReflectionCache.Registry>();
 
 			var beamHintsDataModel = _beamHintsDataModel = _beamHintsDataModel ?? new BeamHintsDataModel();
 			beamHintsDataModel.SetGlobalStorage(editorAPI.HintGlobalStorage);
@@ -199,7 +199,8 @@ namespace Beamable.Editor.Assistant
 					// Guarantee uniqueness within first layer of domains
 					if (!parentCache.TryGetValue(domainSubstring, out var item))
 					{
-						item = new BeamHintDomainTreeViewItem(id, parentDepth, domainSubstring, parentDomain);
+						_ = _hintDetailsReflectionCache.TryGetDomainTitleText(parentDomain, out var domainTitle);
+						item = new BeamHintDomainTreeViewItem(id, parentDepth, domainSubstring, domainTitle);
 						parentCache.Add(domainSubstring, item);
 						treeViewItems.Add(item);
 						id += 1;

@@ -23,13 +23,13 @@ namespace Beamable.Editor.Assistant
 #endif
 			var beamHintDetailsRelatedAssets = importedAssets.Union(movedAssets)
 			                                                 .Select(path => (path, type: AssetDatabase.GetMainAssetTypeAtPath(path)))
-			                                                 .Where(t => typeof(BeamHintDetailsConfig).IsAssignableFrom(t.type) || typeof(BeamHintDetailsConfig).IsAssignableFrom(t.type))
+			                                                 .Where(t => typeof(BeamHintDetailsConfig).IsAssignableFrom(t.type) || typeof(BeamHintTextMap).IsAssignableFrom(t.type))
 			                                                 .ToList();
 
 			if (beamHintDetailsRelatedAssets.Count > 0 || deletedAssets.Length > 0)
 			{
 				EditorAPI.Instance.Then(editorApi => {
-					editorApi.EditorReflectionCache.GetFirstRegisteredUserSystemOfType<BeamHintDetailsReflectionCache.Registry>()
+					editorApi.EditorReflectionCache.GetFirstRegisteredUserSystemOfType<BeamHintReflectionCache.Registry>()
 					         .ReloadHintDetailConfigScriptableObjects(editorApi.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
 				});
 			}

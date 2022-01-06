@@ -8,11 +8,7 @@
 
     <engine:VisualElement name="mainVisualElement">
         <engine:Label text="" name="hintText"/>
-        <engine:Label text="" name="hintText"/>
-        <engine:Label text="" name="hintText"/>
-        <engine:Label text="" name="hintText"/>
-        <engine:Label text="" name="hintText"/>
-        <engine:Label text="" name="hintText"/>
+        <engine:Button text="button" name="hintButton" />
     </engine:VisualElement>
 
 

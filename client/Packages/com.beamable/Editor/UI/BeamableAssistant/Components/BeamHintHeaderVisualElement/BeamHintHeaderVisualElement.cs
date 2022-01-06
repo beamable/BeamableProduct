@@ -48,7 +48,7 @@ namespace Beamable.Editor.Assistant
 		private VisualElement _detailsContainer;
 		private VisualElement _detailsBox;
 
-		private readonly BeamHintDetailsReflectionCache.Registry _hintDetailsReflectionCache;
+		private readonly BeamHintReflectionCache.Registry _hintDetailsReflectionCache;
 
 		private readonly BeamHintsDataModel _hintDataModel;
 		private BeamHintHeader _displayingHintHeader;
@@ -56,7 +56,7 @@ namespace Beamable.Editor.Assistant
 		private VisualElement _headerContainer;
 
 		public BeamHintHeaderVisualElement(BeamHintsDataModel dataModel,
-		                                   BeamHintDetailsReflectionCache.Registry library,
+		                                   BeamHintReflectionCache.Registry library,
 		                                   in BeamHintHeader hint,
 		                                   int headerIdx) : base(nameof(BeamHintHeaderVisualElement))
 		{
@@ -75,6 +75,7 @@ namespace Beamable.Editor.Assistant
 		{
 			base.Refresh();
 
+			var hintPrimaryDomain = Root.Q<Label>("hintPrimaryDomainLabel");
 			_hintTypeIcon = Root.Q<Image>("hintTypeIcon");
 			_hintDisplayName = Root.Q<Label>("hintDisplayName");
 			_moreDetailsButton = Root.Q<Toggle>("moreDetailsButton");
@@ -84,16 +85,22 @@ namespace Beamable.Editor.Assistant
 			if (_indexIntoDisplayingHints % 2 == 1) _headerContainer.AddToClassList("oddRow");
 
 			// Update the hint's label
-			_hintDisplayName.text = _displayingHintHeader.Id;
+			var hintTitle = _hintDetailsReflectionCache.TryGetHintTitleText(_displayingHintHeader, out var titleText) ? titleText : _displayingHintHeader.Id;
+			_hintDisplayName.text = hintTitle;
 
-			// Update Hint Type Icon
+			// Update Hint Type Icon and Primary Domain
 			var hintTypeClass = _displayingHintHeader.Type.ToString().ToLower();
 			_hintTypeIcon.AddToClassList(hintTypeClass);
+
+			_ = BeamHintDomains.TryGetDomainAtDepth(_displayingHintHeader.Domain, 0, out var primaryDomain);
+			_ = _hintDetailsReflectionCache.TryGetDomainTitleText(primaryDomain, out var hintPrimaryDomainText);
+			hintPrimaryDomain.text = hintPrimaryDomainText;
+				
 
 			// Find the ConverterData that is tied to the hint we are displaying from the HintDetails Reflection Cache system.
 			if (!_hintDetailsReflectionCache.TryGetConverterDataForHint(_displayingHintHeader, out var converter))
 			{
-				BeamableLogger.LogError($"[Assistant] No BeamableHintDetails Found for Hint Header {_displayingHintHeader}! " +
+				BeamableLogger.Log($"[Assistant] No BeamableHintDetails Found for Hint Header {_displayingHintHeader}! Skipping rendering of this hint." +
 				                        $"See BeamHintDetailConverterProvider and BeamHintDetailsConfig to see how to configure BeamHintConverter functions and visuals.");
 			}
 
@@ -122,6 +129,7 @@ namespace Beamable.Editor.Assistant
 
 				// Configure more button to display hint details container when pressed. 
 				_moreDetailsButton.value = _hintDataModel.DetailsOpenedHints.Contains(_displayingHintHeader);
+				_moreDetailsButton.text = _moreDetailsButton.value ? "Less" : "More";
 				_moreDetailsButton.RegisterValueChangedCallback((changeEvt) => {
 					if (_hintDataModel.DetailsOpenedHints.Contains(_displayingHintHeader))
 					{
@@ -134,6 +142,8 @@ namespace Beamable.Editor.Assistant
 						_hintDataModel.DetailsOpenedHints.Add(_displayingHintHeader);
 						_hintDataModel.DetailsOpenedHints = _hintDataModel.DetailsOpenedHints.Where(h => h.Type != BeamHintType.Invalid).Distinct().ToList();
 					}
+					
+					_moreDetailsButton.text = changeEvt.newValue ? "Less" : "More";
 				});
 
 				// Ensure no null or empty paths exist in the configured USS files.
@@ -149,7 +159,7 @@ namespace Beamable.Editor.Assistant
 				foreach (var nonNullUssPath in nonNullUssPaths) _detailsBox.AddStyleSheetPath(nonNullUssPath);
 
 				// Update Name and Notification Preferences
-				_detailsBox.Q<Label>("hintDetailsBoxHintDisplayName").text = _displayingHintHeader.Id;
+				_detailsBox.Q<Label>("hintDetailsBoxHintDisplayName").text = hintTitle;
 				var notificationToggle = _detailsBox.Q<Toggle>("hintDetailsBoxNotificationToggle");
 				switch (_hintDataModel.GetHintNotificationValue(_displayingHintHeader))
 				{
@@ -221,7 +231,7 @@ namespace Beamable.Editor.Assistant
 
 				// Call the converter to fill up this injection bag.
 				var beamHint = _hintDataModel.GetHint(_displayingHintHeader);
-				converter.ConverterCall.Invoke(in beamHint, in converter.HintConfigDetailsConfig, injectionBag);
+				converter.ConverterCall.Invoke(in beamHint, in converter.HintTextMap, injectionBag);
 
 				// Resolve all supported injections.
 				ResolveInjections(injectionBag.TextInjections, _detailsBox);
