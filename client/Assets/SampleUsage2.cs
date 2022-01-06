@@ -14,8 +14,14 @@ namespace DefaultNamespace
 
 		public ItemRef ItemRef;
 
+		public int updateIndex;
+
+		public string propertyKey = "b", propertyValue = "okay";
 		// public PlayerItemGroup AllItems;
 		public PlayerItemGroup Items;
+
+		public PlayerInventory Inv;
+
 
 		async void Start()
 		{
@@ -31,6 +37,7 @@ namespace DefaultNamespace
 			// 	}
 			// };
 
+			Inv = ctx.Inventory;
 			Items = ctx.Inventory.GetItems(ItemRef);
 
 			Items.OnElementsAdded += items =>
@@ -85,7 +92,7 @@ namespace DefaultNamespace
 		{
 			var ctx = BeamContext.ForContext(this);
 
-			await ctx.Inventory.Update(b => b.AddItem(ItemRef, new Dictionary<string, string> {["owner"] = "unity"}));
+			await ctx.Inventory.Update(b => b.AddItem(ItemRef, new Dictionary<string, string> {["owner"] = "demo"}));
 
 			Debug.Log("items added to " + ctx.Inventory.GetItems(ItemRef).Count);
 		}
@@ -95,11 +102,17 @@ namespace DefaultNamespace
 		{
 			var ctx = BeamContext.ForContext(this);
 
+
 			await ctx.Inventory.Update(b =>
 			{
-				var item = ctx.Inventory.GetItems(ItemRef)[0];
+				var item = ctx.Inventory.GetItems(ItemRef)[updateIndex];
+				// b.UpdateItem(ItemRef, item.ItemId, item.Properties);
 				b.UpdateItem(ItemRef, item.ItemId,
-				             new Dictionary<string, string>() {["a"] = Time.realtimeSinceStartup.ToString("00000")});
+				             new Dictionary<string, string>()
+				             {
+					             ["a"] = Time.realtimeSinceStartup.ToString("00000"),
+					             [propertyKey] = propertyValue
+				             });
 			});
 
 			Debug.Log("items updated to " + ctx.Inventory.GetItems(ItemRef).Count);
@@ -112,7 +125,7 @@ namespace DefaultNamespace
 
 			await ctx.Inventory.Update(b =>
 			{
-				var item = ctx.Inventory.GetItems(ItemRef)[0];
+				var item = ctx.Inventory.GetItems(ItemRef)[updateIndex];
 				b.DeleteItem(item.ContentId, item.ItemId);
 			});
 
