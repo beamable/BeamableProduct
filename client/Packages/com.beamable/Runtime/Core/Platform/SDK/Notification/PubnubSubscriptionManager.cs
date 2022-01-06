@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Beamable.Api.Notification.Internal;
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Spew;

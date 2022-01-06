@@ -1,6 +1,7 @@
 using Beamable.Api;
 using Beamable.Api.AdvertisingIdentifier;
 using Beamable.Api.Auth;
+using Beamable.Api.Caches;
 using Beamable.Api.Connectivity;
 using Beamable.Api.Notification;
 using Beamable.Api.Payments;
@@ -21,6 +22,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace Beamable
 {
@@ -183,6 +185,7 @@ namespace Beamable
 		private AccessTokenStorage _tokenStorage;
 		private EnvironmentData _environment;
 		private PlatformRequester _requester;
+		private BeamableApiRequester _beamableApiRequester;
 
 		private IAuthService _authService;
 		private IContentApi _contentService;
@@ -362,6 +365,7 @@ namespace Beamable
 			_authService = ServiceProvider.GetService<IAuthService>();
 
 			_requester = ServiceProvider.GetService<PlatformRequester>();
+			_beamableApiRequester = ServiceProvider.GetService<BeamableApiRequester>();
 			_requester.AuthService = _authService;
 			_requester.Cid = cid;
 			_requester.Pid = pid;
@@ -381,16 +385,15 @@ namespace Beamable
 		private async Promise SaveToken(TokenResponse rsp)
 		{
 			ClearToken();
-			_requester.Token = new AccessToken(_tokenStorage,
-			                                   Cid,
-			                                   Pid,
-			                                   rsp.access_token,
-			                                   rsp.refresh_token,
-			                                   rsp.expires_in);
+			var token = new AccessToken(_tokenStorage,
+			                            Cid,
+			                            Pid,
+			                            rsp.access_token,
+			                            rsp.refresh_token,
+			                            rsp.expires_in);
 
-			// TODO: Where was this being used in the past?
-			// _beamableApiRequester.Token = _requester.Token;
-
+			_requester.Token = token;
+			_beamableApiRequester.Token = token;
 			await _requester.Token.Save();
 		}
 
@@ -420,10 +423,11 @@ namespace Beamable
 
 		private async Promise InitStep_SaveToken()
 		{
-			if (AccessToken == null)
+			if (AccessToken == null || AccessToken.Token == "offline")
 			{
 				try
 				{
+					Debug.Log("Creating new user!");
 					var rsp = await _authService.CreateUser();
 					await SaveToken(rsp);
 				}
@@ -434,21 +438,31 @@ namespace Beamable
 					 * When the user comes back online, we need to _FIRST_ create them a valid token,
 					 * and _THEN_ perform the replay operations from any resourceful SDK layers
 					 */
+
 					await SaveToken(new TokenResponse
 					{
-						token_type = "offline_fake",
-						access_token = "fake",
-						refresh_token = "fake",
-						expires_in = 1
+						token_type = "offline",
+						access_token = "offline",
+						refresh_token = "offline",
+						expires_in = long.MaxValue - 1
 					});
+					OfflineCache.Set<User>(AuthApi.ACCOUNT_URL + "/me", new User
+					{
+						id= Random.Range(int.MinValue, 0),
+						scopes = new List<string>(),
+						thirdPartyAppAssociations = new List<string>()
+					}, Requester.AccessToken, true);
 					_connectivityService.OnReconnectOnce(async () =>
 					{
 						// disable the old token, because its bad
 						ClearToken();
 
 						// re-create the user
+						Debug.Log("Save the token!");
 						await InitStep_SaveToken();
-					});
+						await InitStep_GetUser();
+						await InitStep_StartPubnub();
+					}, -100);
 				}
 			} else if (AccessToken.IsExpired)
 			{
@@ -470,18 +484,23 @@ namespace Beamable
 
 		private async Promise InitStep_GetUser()
 		{
+			Debug.Log("Getting user!");
 			var user = new User
 			{
-				id = -100, scopes = new List<string>(), thirdPartyAppAssociations = new List<string>()
+				id = 0, scopes = new List<string>(), thirdPartyAppAssociations = new List<string>()
 			};
 			try
 			{
 				user = await _authService.GetUser();
+
 			}
 			catch (NoConnectivityException)
 			{
-				_connectivityService.OnReconnectOnce( async () => await InitStep_GetUser());
+				// Debug.Log("Will get user when reconnect...");
+				// _connectivityService.OnReconnectOnce( async () => await InitStep_GetUser());
 			}
+			Debug.Log("got user " + user.id);
+
 			AuthorizedUser.Value = user;
 		}
 
@@ -489,12 +508,14 @@ namespace Beamable
 		{
 			try
 			{
+				Debug.Log("Connecting to pubnub");
 				_pubnubSubscriptionManager.UnsubscribeAll();
 				await _pubnubSubscriptionManager.SubscribeToProvider();
 			}
 			catch (NoConnectivityException)
 			{
-				_connectivityService.OnReconnectOnce(async () => await InitStep_StartPubnub());
+				// let it go..
+				// _connectivityService.OnReconnectOnce(async () => await InitStep_StartPubnub());
 			}
 		}
 

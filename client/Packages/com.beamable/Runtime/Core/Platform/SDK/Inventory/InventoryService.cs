@@ -30,15 +30,23 @@ namespace Beamable.Api.Inventory
       private bool _everReceivedData;
 
       public InventorySubscription(IDependencyProvider provider)
-	      : base(provider, SERVICE, new BeamableGetApiResourceViaPost<InventoryResponse>(true))
+	      : base(provider, SERVICE, new BeamableGetApiResourceViaPost<InventoryResponse>(true, OfflineResponse))
       {
 	      UsesHierarchyScopes = true;
       }
 
       public InventorySubscription(IPlatformService platform, IBeamableRequester requester)
-	      : base(platform, requester, SERVICE, new BeamableGetApiResourceViaPost<InventoryResponse>(true))
+	      : base(platform, requester, SERVICE, new BeamableGetApiResourceViaPost<InventoryResponse>(true, OfflineResponse))
       {
 	      UsesHierarchyScopes = true;
+      }
+
+      private static InventoryResponse OfflineResponse(string url)
+      {
+	      return new InventoryResponse
+	      {
+		      scope = ""
+	      };
       }
 
       protected override void Reset()

@@ -1,4 +1,5 @@
 using Beamable.Serialization.SmallerJSON;
+using System;
 using System.Collections.Generic;
 
 namespace Beamable.Common.Api
@@ -83,6 +84,7 @@ namespace Beamable.Common.Api
    public class BeamableGetApiResourceViaPost<ScopedRsp> : BeamableGetApiResource<ScopedRsp>
    {
 	   private readonly bool _useCache;
+	   private readonly Func<string,ScopedRsp> _offlineResponseGenerator;
 
 	   /// <summary>
 	   /// Mapping of each requested scope to the body generated for it.
@@ -95,15 +97,28 @@ namespace Beamable.Common.Api
 	   /// </summary>
 	   private ArrayDict OutgoingBody;
 
-	   public BeamableGetApiResourceViaPost(bool useCache=false)
+	   public BeamableGetApiResourceViaPost(bool useCache=false, Func<string, ScopedRsp> offlineResponseGenerator=null)
 	   {
 		   _useCache = useCache;
+		   _offlineResponseGenerator = offlineResponseGenerator;
 		   ScopesToBodyMap = new Dictionary<string, ArrayDict>();
 	   }
 
-	   public override Promise<ScopedRsp> RequestData(IBeamableRequester requester, string url)
+	   public override async Promise<ScopedRsp> RequestData(IBeamableRequester requester, string url)
 	   {
-		   return requester.Request<ScopedRsp>(Method.POST, url, OutgoingBody, useCache:_useCache);
+		   try
+		   {
+			   return await requester.Request<ScopedRsp>(Method.POST, url, OutgoingBody, useCache: _useCache);
+		   }
+		   catch (NoConnectivityException)
+		   {
+			   if (_offlineResponseGenerator != null)
+			   {
+				   return _offlineResponseGenerator.Invoke(url);
+			   }
+
+			   throw;
+		   }
 	   }
 
 	   /// <summary>

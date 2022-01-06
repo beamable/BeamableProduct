@@ -331,6 +331,7 @@ namespace Beamable.Api
 
 				// Ensure that we reset the pubnub subscription when we reload the user.
 				PubnubSubscriptionManager.UnsubscribeAll();
+				Debug.Log("PLATFORM SERVICE!?!?!??!!?");
 				PubnubSubscriptionManager.SubscribeToProvider();
 
 				OnReloadUser?.Invoke();

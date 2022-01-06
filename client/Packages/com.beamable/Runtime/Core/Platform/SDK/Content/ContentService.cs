@@ -68,7 +68,7 @@ namespace Beamable.Content
 
 		protected override Promise<ClientManifest> ExecuteRequest(IBeamableRequester requester, string url)
 		{
-			return requester.Request(Method.GET, url, null, true, ClientManifest.ParseCSV, true).Recover(ex =>
+			return requester.Request(Method.GET, url, null, false, ClientManifest.ParseCSV, true).Recover(ex =>
 			{
 				// TODO: Put "global" as a constant value somewhere. Currently it lives in a different asm, and its too much trouble.
 				if (ex is PlatformRequesterException err && err.Status == 404 && ManifestID.Equals("global") )
@@ -80,7 +80,11 @@ namespace Beamable.Content
 				}
 
 				throw ex;
-			});
+			}).RecoverFromNoConnectivity(_ => new ClientManifest
+				{
+					entries = new List<ClientContentInfo>()
+				})
+			                ;
 		}
 
 		protected override void OnRefresh(ClientManifest data)

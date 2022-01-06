@@ -26,9 +26,10 @@ namespace Beamable.Api
       public string Cid { get; }
       public string Pid { get; }
 
+      private bool _neverExpires;
       //Consider the token expired if we're within 1 Day of true expiration
       //This is to avoid the token expiring during a play session
-      public bool IsExpired => DateTime.UtcNow.AddDays(1) > ExpiresAt;
+      public bool IsExpired => !_neverExpires && DateTime.UtcNow.AddDays(1) > ExpiresAt;
 
       public AccessToken(AccessTokenStorage storage, string cid, string pid, string token, string refreshToken, long expiresAt)
       {
@@ -37,7 +38,14 @@ namespace Beamable.Api
          Pid = pid;
          Token = token;
          RefreshToken = refreshToken;
-         ExpiresAt = DateTime.UtcNow.AddMilliseconds(expiresAt);
+         if (expiresAt >= long.MaxValue - 1)
+         {
+	         _neverExpires = true;
+         }
+         else
+         {
+	         ExpiresAt = DateTime.UtcNow.AddMilliseconds(expiresAt);
+         }
       }
 
       public AccessToken(AccessTokenStorage storage, string cid, string pid, string token, string refreshToken, string expiresAtISO)
