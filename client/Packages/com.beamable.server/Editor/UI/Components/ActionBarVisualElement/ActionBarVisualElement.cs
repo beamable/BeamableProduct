@@ -102,10 +102,21 @@ namespace Beamable.Editor.Microservice.UI.Components
             _buildAll.clickable.clicked += () => { OnBuildAllClicked?.Invoke(); };
             _buildAll.SetEnabled(!DockerCommand.DockerNotInstalled);
 
+            const string cannotPublishText = "Cannot open Publish Window, fix compilation errors first!";
             _publish = Root.Q<Button>("publish");
-            _publish.clickable.clicked += () => { OnPublishClicked?.Invoke(); };
-            // _publish.SetEnabled(!(DockerCommand.DockerNotInstalled || storagePreviewEnabled));
-
+            _publish.clickable.clicked += () =>
+            {
+	            if (!NoErrorsValidator.LastCompilationSucceded)
+	            {
+		            Debug.LogError(cannotPublishText);
+		            return;
+	            }
+	            OnPublishClicked?.Invoke();
+            };
+			if (!NoErrorsValidator.LastCompilationSucceded)
+				_publish.tooltip = cannotPublishText;
+            _publish.SetEnabled(!(DockerCommand.DockerNotInstalled));
+            
             _infoButton = Root.Q<Button>("infoButton");
             _infoButton.clickable.clicked += () => { OnInfoButtonClicked?.Invoke(); };
             _infoButton.tooltip = "Open Documentation";
