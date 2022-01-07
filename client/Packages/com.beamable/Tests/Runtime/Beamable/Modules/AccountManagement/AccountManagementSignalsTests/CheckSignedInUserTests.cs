@@ -101,6 +101,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
 				_pendingPromise.CompleteSuccess(PromiseBase.Unit);
 			});
 
+      yield return null;
 			_signaler.CheckSignedInUser();
 
 			yield return _pendingPromise.AsYield(TIMEOUT);
