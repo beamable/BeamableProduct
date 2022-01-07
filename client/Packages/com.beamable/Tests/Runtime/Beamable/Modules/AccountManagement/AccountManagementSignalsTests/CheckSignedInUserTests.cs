@@ -52,6 +52,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
          _signaler.UserAnonymous = new UserEvent();
          _signaler.UserAvailable = new UserEvent();
          _signaler.Loading.AddListener(arg => _pendingPromise.CompleteSuccess(PromiseBase.Unit));
+         yield return null;
 
          _signaler.CheckSignedInUser();
 
@@ -75,6 +76,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
             listenerCalled = true;
             _pendingPromise.CompleteSuccess(PromiseBase.Unit);
          });
+         yield return null;
 
          _signaler.CheckSignedInUser();
 
@@ -99,6 +101,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
             listenerCalled = true;
             _pendingPromise.CompleteSuccess(PromiseBase.Unit);
          });
+         yield return null;
 
          _signaler.CheckSignedInUser();
 
@@ -120,6 +123,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
             listenerCalled = true;
             _pendingPromise.CompleteSuccess(PromiseBase.Unit);
          });
+         yield return null;
 
          _signaler.CheckSignedInUser();
 
