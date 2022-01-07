@@ -69,8 +69,9 @@ public class ContainerUploader
       /// Upload a Docker image that has been expanded into a folder.
       /// </summary>
       /// <param name="folder">The filesystem path to the expanded image.</param>
-      public async Task Upload(string folder)
+      public async Task Upload(string folder, CancellationToken token)
       {
+	      token.ThrowIfCancellationRequested();
          var manifest = DockerManifest.FromBytes(File.ReadAllBytes($"{folder}/manifest.json"));
          var uploadManifest = new Dictionary<string, object>
          {
@@ -88,7 +89,8 @@ public class ContainerUploader
          _harness.ReportUploadProgress(_descriptor.Name,0,_partsAmount);
 
          _partsCompleted = 0;
-         var configResult = (await UploadFileBlob($"{folder}/{manifest.config}"));
+         var configResult = (await UploadFileBlob($"{folder}/{manifest.config}", token));
+         token.ThrowIfCancellationRequested();
          _harness.ReportUploadProgress(_descriptor.Name, ++_partsCompleted, _partsAmount);
          config["digest"] = configResult.Digest;
          config["size"] = configResult.Size;
@@ -98,10 +100,11 @@ public class ContainerUploader
          for (var i = 0; i < manifest.layers.Length; i++)
          {
             var layer = manifest.layers[i];
-            uploadIndexToJob.Add(i, UploadLayer($"{folder}/{layer}"));
+            uploadIndexToJob.Add(i, UploadLayer($"{folder}/{layer}", token));
          }
 
-         await Task.WhenAll(uploadIndexToJob.Values);
+         await Task.Run(()=> Task.WhenAll(uploadIndexToJob.Values), token);
+         token.ThrowIfCancellationRequested();
          foreach (var kvp in uploadIndexToJob)
          {
             layers.Add(kvp.Value.Result);
@@ -130,9 +133,9 @@ public class ContainerUploader
       /// manifest when complete.
       /// </summary>
       /// <param name="layerPath">Filesystem path to the layer archive.</param>
-      private async Task<Dictionary<string, object>> UploadLayer(string layerPath)
+      private async Task<Dictionary<string, object>> UploadLayer(string layerPath, CancellationToken token)
       {
-         var layerDigest = await UploadFileBlob(layerPath);
+         var layerDigest = await UploadFileBlob(layerPath, token);
          Interlocked.Increment(ref _partsCompleted);
          _harness.ReportUploadProgress(_descriptor.Name,Interlocked.Read(ref _partsCompleted),_partsAmount);
          return new Dictionary<string, object>
@@ -148,8 +151,9 @@ public class ContainerUploader
       /// </summary>
       /// <param name="filename">File to upload.</param>
       /// <returns>Hash digest of the blob.</returns>
-      private async Task<FileBlobResult> UploadFileBlob(string filename)
-      {
+      private async Task<FileBlobResult> UploadFileBlob(string filename, CancellationToken token)
+      { 
+	     token.ThrowIfCancellationRequested();
          using (var fileStream = File.OpenRead(filename))
          {
             var digest = HashDigest(fileStream);
@@ -165,8 +169,9 @@ public class ContainerUploader
             var location = NormalizeWithDigest(await PrepareUploadLocation(), digest);
             while (fileStream.Position < fileStream.Length)
             {
+	           token.ThrowIfCancellationRequested();
                var chunk = await FileChunk.FromParent(fileStream, ChunkSize);
-               var response = await UploadChunk(chunk, location);
+               var response = await UploadChunk(chunk, location, token);
                response.EnsureSuccessStatusCode();
                location = NormalizeWithDigest(response.Headers.Location, digest);
             }
@@ -191,14 +196,14 @@ public class ContainerUploader
       /// <param name="chunk">File chunk including range information.</param>
       /// <param name="location">URI for upload.</param>
       /// <returns>HTTP response.</returns>
-      private async Task<HttpResponseMessage> UploadChunk(FileChunk chunk, Uri location)
+      private async Task<HttpResponseMessage> UploadChunk(FileChunk chunk, Uri location, CancellationToken token)
       {
          var uri = location;
          var method = chunk.IsLast ? HttpMethod.Put : new HttpMethod("PATCH");
          var request = new HttpRequestMessage(method, uri) {Content = new StreamContent(chunk.Stream)};
          request.Content.Headers.ContentLength = chunk.Length;
          request.Content.Headers.ContentRange = new ContentRangeHeaderValue(chunk.Start, chunk.End, chunk.FullLength);
-         var response = await _client.SendAsync(request);
+         var response = await _client.SendAsync(request,token);
          try
          {
             response.EnsureSuccessStatusCode();
