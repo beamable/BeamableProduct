@@ -76,7 +76,6 @@ namespace Beamable.Editor.Microservice.UI.Components
             entryModels.AddRange(Model.Storages.Values);
 
             bool isOddRow = true;
-            // _isPublishDisabled = false;
             foreach (var model in entryModels)
             {
 	            bool wasPublished = EditorPrefs.GetBool(GetPublishedKey(model.Name), false);
