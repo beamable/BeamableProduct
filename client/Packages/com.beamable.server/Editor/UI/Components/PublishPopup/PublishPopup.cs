@@ -51,7 +51,6 @@ namespace Beamable.Editor.Microservice.UI.Components
         private PrimaryButtonVisualElement _continueButton;
         private ScrollView _scrollContainer;
         private Dictionary<string, PublishManifestEntryVisualElement> _publishManifestElements;
-        // private bool _isPublishDisabled;
 
         public PublishPopup() : base(nameof(PublishPopup))
         {
@@ -80,26 +79,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             // _isPublishDisabled = false;
             foreach (var model in entryModels)
             {
-                if (!MicroserviceConfiguration.Instance.EnableStoragePreview && model is StorageEntryModel)
-                {
-                    continue;
-                }
-
-                if (MicroserviceConfiguration.Instance.EnableStoragePreview)
-                {
-                    DisablePublishFeature("Warning! In order to publish services you must disable Storage Preview first.");
-                }
-
-                if (model is ManifestEntryModel)
-                {
-                    var serviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(model.Name);
-                    if (serviceModel != null && !(serviceModel is RemoteMicroserviceModel) && serviceModel.Descriptor.IsPublishFeatureDisabled())
-                    {
-                        DisablePublishFeature("Warning! Publish feature is disabled due to Microservices dependent on Storage Objects.");
-                    }
-                }
-
-                bool wasPublished = EditorPrefs.GetBool(GetPublishedKey(model.Name), false);
+	            bool wasPublished = EditorPrefs.GetBool(GetPublishedKey(model.Name), false);
                 var newElement = new PublishManifestEntryVisualElement(model, wasPublished, isOddRow);
                 newElement.Refresh();
                 _publishManifestElements.Add(model.Name, newElement);
@@ -116,7 +96,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             _continueButton = Root.Q<PrimaryButtonVisualElement>("continueBtn");
             _continueButton.Button.clickable.clicked += () => OnSubmit?.Invoke(Model);
-            // _continueButton.SetEnabled(!_isPublishDisabled);
         }
 
         public void PrepareForPublish()
@@ -128,7 +107,6 @@ namespace Beamable.Editor.Microservice.UI.Components
             foreach (var kvp in _publishManifestElements)
                 kvp.Value.RemoveFromHierarchy();
             _publishManifestElements.Clear();
-
 
             foreach (var kvp in Model.Services)
             {
@@ -153,11 +131,5 @@ namespace Beamable.Editor.Microservice.UI.Components
         }
 
         private string GetPublishedKey(string serviceName) => string.Format(Microservices.SERVICE_PUBLISHED_KEY, serviceName);
-
-        private void DisablePublishFeature(string message)
-        {
-            Root.Q<Label>("warningMessage").text = message;
-            // _isPublishDisabled = true;
-        }
     }
 }

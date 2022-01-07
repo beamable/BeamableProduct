@@ -95,31 +95,28 @@ namespace Beamable.Editor.Microservice.UI.Components
             _actionPrompt.Refresh();
         }
 
-        private MicroserviceVisualElement GetMicroserviceVisualElement(string serviceName, out bool isPublishFeatureDisabled)
+        private MicroserviceVisualElement GetMicroserviceVisualElement(string serviceName)
         {
             var service = Model.GetModel<MicroserviceModel>(serviceName);
-
-            if (service != null)
+            if (service == null)
             {
-                var serviceElement = new MicroserviceVisualElement { Model = service };
-                _modelToVisual[service] = serviceElement;
-                service.OnLogsDetached += () => { ServiceLogWindow.ShowService(service); };
-
-                serviceElement.Refresh();
-                service.OnSelectionChanged += b =>
-                    OnAllServiceSelectedStatusChanged?.Invoke(Model.Services.All(m => m.IsSelected));
-
-                service.OnSortChanged -= SortMicroservices;
-                service.OnSortChanged += SortMicroservices;
-                serviceElement.OnServiceStartFailed = MicroserviceStartFailed;
-                serviceElement.OnServiceStopFailed = MicroserviceStopFailed;
-
-                isPublishFeatureDisabled = service.Descriptor.IsPublishFeatureDisabled();
-                return serviceElement;
+	            return null;
             }
 
-            isPublishFeatureDisabled = false;
-            return null;
+            var serviceElement = new MicroserviceVisualElement { Model = service };
+            _modelToVisual[service] = serviceElement;
+            service.OnLogsDetached += () => { ServiceLogWindow.ShowService(service); };
+
+            serviceElement.Refresh();
+            service.OnSelectionChanged += b =>
+	            OnAllServiceSelectedStatusChanged?.Invoke(Model.Services.All(m => m.IsSelected));
+
+            service.OnSortChanged -= SortMicroservices;
+            service.OnSortChanged += SortMicroservices;
+            serviceElement.OnServiceStartFailed = MicroserviceStartFailed;
+            serviceElement.OnServiceStopFailed = MicroserviceStopFailed;
+
+            return serviceElement;
         }
 
         private RemoteMicroserviceVisualElement GetRemoteMicroserviceVisualElement(string serviceName)
@@ -300,17 +297,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 				        var val = false;
 				        if (serviceStatus.Value != ServiceAvailability.RemoteOnly)
-					        serviceElement = GetMicroserviceVisualElement(serviceStatus.Key, out val);
+					        serviceElement = GetMicroserviceVisualElement(serviceStatus.Key);
 				        else
 					        serviceElement = GetRemoteMicroserviceVisualElement(serviceStatus.Key);
 
 				        hasStorageDependency |= val;
 				        break;
 			        case ServiceType.StorageObject:
-
-				        if (!MicroserviceConfiguration.Instance.EnableStoragePreview)
-					        continue;
-
 				        serviceElement = GetStorageObjectVisualElement(serviceStatus.Key);
 				        break;
 			        default:

@@ -68,7 +68,7 @@ namespace Beamable.Server
       public async Task Add(int a)
       {
 	      if (Context.UserId <= 0) return;
-	      var collection = await Storage.CollectionFromAliveStorage<Data>("data");
+	      var collection = await Storage.AliveStorage<Data>("data");
 
 	      await collection.InsertOneAsync(new Data{a = a});
       }
@@ -76,7 +76,7 @@ namespace Beamable.Server
       [ClientCallable]
       public async Task<List<int>> ReadAll()
       {
-	      var collection = await Storage.CollectionFromAliveStorage<Data>("data");
+	      var collection = await Storage.AliveStorage<Data>("data");
 	      var raw= await collection.Find(d => true).ToListAsync();
 	      return raw.Select(d => d.a).ToList();
       }
