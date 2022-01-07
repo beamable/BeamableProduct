@@ -1,4 +1,4 @@
-#mainVisualElement {
+MicroserviceBreadcrumbsVisualElement {
     background-color: #131313;
 }
 .boundedButton {

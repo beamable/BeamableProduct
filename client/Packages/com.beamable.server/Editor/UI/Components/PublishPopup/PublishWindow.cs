@@ -1,11 +1,13 @@
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
+using Beamable.Server.Editor.UI;
 using Beamable.Server.Editor.UI.Components;
-using UnityEditor;
+using System.Threading;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
+
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -13,76 +15,85 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
-    public class PublishWindow : CommandRunnerWindow
-    {
-        private static readonly Vector2 MIN_SIZE = new Vector2(860, 550);
-        
-    	private bool isSet = false;
+	public class PublishWindow : CommandRunnerWindow
+	{
+		private static readonly Vector2 MIN_SIZE = new Vector2(860, 550);
 
-        public static PublishWindow ShowPublishWindow()
-        {
-            var wnd = CreateInstance<PublishWindow>();
-            wnd.titleContent = new GUIContent(Constants.Publish);
+		private bool isSet;
+		private CancellationTokenSource _tokenSource;
 
-            ((PublishWindow) wnd).ShowUtility();
-            wnd.minSize = MIN_SIZE;
-            wnd.position = new Rect(wnd.position.x, wnd.position.y + 40, wnd.minSize.x, wnd.minSize.y);
+		public static PublishWindow ShowPublishWindow()
+		{
+			var wnd = CreateInstance<PublishWindow>();
+			wnd.name = Constants.Publish;
+			wnd.titleContent = new GUIContent(Constants.Publish);
 
-            Microservices.GenerateUploadModel().Then(model =>
-            {
-                wnd._model = model;
-                wnd.Refresh();
-            });
+			wnd.ShowUtility();
+			wnd.minSize = MIN_SIZE;
+			wnd.position = new Rect(wnd.position.x, wnd.position.y + 40, wnd.minSize.x, wnd.minSize.y);
 
-            return wnd;
-        }
+			Microservices.GenerateUploadModel().Then(model =>
+			{
+				wnd._model = model;
+				wnd.Refresh();
+			});
 
-        private ManifestModel _model;
+			return wnd;
+		}
 
-        private void OnEnable()
-        {
-            VisualElement root = this.GetRootVisualContainer();
+		private ManifestModel _model;
 
-            if (isSet)
-            {
-                this.Refresh();
+		private void OnEnable()
+		{
+			VisualElement root = this.GetRootVisualContainer();
 
-                Microservices.GenerateUploadModel().Then(model =>
-                {
-                    this._model = model;
-                    this.Refresh();
-                });
-            }
-        }
+			if (isSet)
+			{
+				Refresh();
 
-        void Refresh()
-        {
-            var container = this.GetRootVisualContainer();
-            container.Clear();
+				Microservices.GenerateUploadModel().Then(model =>
+				{
+					_model = model;
+					Refresh();
+				});
+			}
+		}
 
+		private void Refresh()
+		{
+			VisualElement container = this.GetRootVisualContainer();
+			container.Clear();
+			var e = new PublishPopup {Model = _model};
+			_tokenSource = new CancellationTokenSource();
+			e.OnCloseRequested += () =>
+			{
+				_tokenSource.Cancel();
+				Close();
+			};
+			e.OnSubmit += async model =>
+			{
+				/*
+				 * We need to build each image...
+				 * upload each image that is different than whats in the manifest...
+				 * upload the manifest file...
+				 */
+				WindowStateUtility.DisableAllWindows();
+				e.PrepareForPublish();
 
-            var e = new PublishPopup { Model = _model };
-            
-            e.OnCloseRequested += Close;
-            e.OnSubmit += async (model) =>
-            {
-                /*
-                 * We need to build each image...
-                 * upload each image that is different than whats in the manifest...
-                 * upload the manifest file...
-                 */
-                e.PrepareForPublish();
+				await Microservices.Deploy(model, this, _tokenSource.Token, e.ServiceDeployed);
+				Close();
+			};
 
-                await Microservices.Deploy(model, this, e.ServiceDeployed);
-                Close();
-            };
+			container.Add(e);
+			e.PrepareParent();
+			e.Refresh();
+			Repaint();
+			isSet = true;
+		}
 
-            container.Add(e);
-            e.PrepareParent();
-            e.Refresh();
-            Repaint();
-
-            isSet = true;
-        }
-    }
+		private void OnDestroy()
+		{
+			_tokenSource?.Cancel();
+		}
+	}
 }
