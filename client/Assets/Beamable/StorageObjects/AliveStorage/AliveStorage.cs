@@ -15,7 +15,7 @@ namespace Beamable.Server
         public static Promise<IMongoDatabase> GetAliveStorage(this IStorageObjectConnectionProvider provider)
             => provider.GetDatabase<AliveStorage>();
 
-        public static Promise<IMongoCollection<TCollection>> CollectionFromAliveStorage<TCollection>(
+        public static Promise<IMongoCollection<TCollection>> AliveStorage<TCollection>(
             this IStorageObjectConnectionProvider provider, string name)
             => provider.GetCollection<AliveStorage, TCollection>(name);
     }
