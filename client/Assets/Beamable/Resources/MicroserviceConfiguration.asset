@@ -63,8 +63,7 @@ MonoBehaviour:
   AutoReferenceContent: 0
   ColorLogs: 0
   EnableDockerBuildkit: 0
-  EnableStoragePreview: 1
-  DockerAppCheckInMicroservicesWindow: 1
+  EnableStoragePreview: 0
   DockerCommand: 
   ForwardContainerLogsToUnityConsole: 1
   LogProcessLabelColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
