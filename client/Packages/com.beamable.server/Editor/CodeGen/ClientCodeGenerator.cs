@@ -187,7 +187,7 @@ namespace Beamable.Server.Editor.CodeGen
           // the return type needs to be wrapped up inside a Promise.
           var promiseType = typeof(Promise<>);
           var resultType = info.MethodInfo.ReturnType;
-          if (resultType == typeof(void))
+          if (resultType == typeof(void) || resultType == typeof(Promise))
           {
               resultType = typeof(Unit);
           }
