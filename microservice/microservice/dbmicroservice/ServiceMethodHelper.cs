@@ -108,7 +108,11 @@ namespace Beamable.Server
             MethodInvocation executor;
 
             var resultType = method.ReturnType;
-            if (resultType.IsGenericType && resultType.GetGenericTypeDefinition() == typeof(Promise<>))
+            
+            if (resultType.IsSubclassOf(typeof(Promise<Unit>)))
+               resultType = typeof(Promise<Unit>);
+
+            if ((resultType.IsGenericType && resultType.GetGenericTypeDefinition() == typeof(Promise<>)))
             {
                executor = (target, args) =>
                {
