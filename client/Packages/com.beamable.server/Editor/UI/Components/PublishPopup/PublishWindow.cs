@@ -3,8 +3,8 @@ using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI;
 using Beamable.Server.Editor.UI.Components;
 using System.Threading;
-using UnityEngine;
 using UnityEditor;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;

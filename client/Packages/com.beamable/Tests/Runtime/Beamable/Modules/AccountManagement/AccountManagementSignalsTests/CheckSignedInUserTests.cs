@@ -54,6 +54,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
 			_signaler.UserAvailable = new UserEvent();
 			_signaler.Loading.AddListener(arg => _pendingPromise.CompleteSuccess(PromiseBase.Unit));
 
+			yield return null;
 			_signaler.CheckSignedInUser();
 
 			yield return _pendingPromise.AsYield(TIMEOUT);
@@ -77,6 +78,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
 				_pendingPromise.CompleteSuccess(PromiseBase.Unit);
 			});
 
+			yield return null;
 			_signaler.CheckSignedInUser();
 
 			yield return _pendingPromise.AsYield(TIMEOUT);
@@ -101,7 +103,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
 				_pendingPromise.CompleteSuccess(PromiseBase.Unit);
 			});
 
-      yield return null;
+			yield return null;
 			_signaler.CheckSignedInUser();
 
 			yield return _pendingPromise.AsYield(TIMEOUT);
@@ -123,6 +125,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
 				_pendingPromise.CompleteSuccess(PromiseBase.Unit);
 			});
 
+			yield return null;
 			_signaler.CheckSignedInUser();
 
 			yield return _pendingPromise.AsYield(TIMEOUT);
