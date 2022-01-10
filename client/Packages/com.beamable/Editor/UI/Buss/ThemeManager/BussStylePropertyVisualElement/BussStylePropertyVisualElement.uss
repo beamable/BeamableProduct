@@ -9,7 +9,8 @@
     color: rgb(255,255,255);
     min-height: 30px;
     padding-left: 10px;
-    -unity-text-align: middle-left;
+    -unity-text-align: upper-left;
+    margin-top: 12px;
 }
 
 #value {
