@@ -130,6 +130,11 @@ namespace UnityEngine.Experimental.UIElements
 			return self.maxHeight;
 		}
 
+		public static void SetFlexDirection(this IStyle self, FlexDirection direction)
+		{
+			self.flexDirection = direction;
+		}
+
 		public static void SetImage(this Image self, Texture texture)
 		{
 			self.image = StyleValue<Texture>.Create(texture);
