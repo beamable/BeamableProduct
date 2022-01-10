@@ -1,8 +1,14 @@
 ﻿using Beamable.UI.Buss;
 using Beamable.UI.Sdf.Styles;
-using UnityEditor.UIElements;
 using UnityEngine;
+#if UNITY_2018
+using UnityEngine.Experimental.UIElements;
+using UnityEditor.Experimental.UIElements;
+using UnityEngine.Experimental.UIElements.StyleEnums;
+#elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
+using UnityEditor.UIElements;
+#endif
 
 namespace Beamable.Editor.UI.Components
 {
@@ -37,7 +43,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			var ve = new VisualElement();
 			AddBussPropertyFieldClass(ve);
-			ve.style.flexDirection = new StyleEnum<FlexDirection>(FlexDirection.Row);
+			ve.style.SetFlexDirection(FlexDirection.Row);
 			_mainElement.Add(ve);
 			return ve;
 		}

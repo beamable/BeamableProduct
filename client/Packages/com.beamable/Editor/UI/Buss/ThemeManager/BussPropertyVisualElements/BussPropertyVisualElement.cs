@@ -24,7 +24,6 @@ namespace Beamable.Editor.UI.Components
 		{
 			base.Refresh();
 			_mainElement = Root.Q("mainVisualElement");
-			_mainElement.style.width = new StyleLength(StyleKeyword.Auto);
 		}
 
 		protected void AddBussPropertyFieldClass(VisualElement ve)
