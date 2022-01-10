@@ -1,7 +1,6 @@
 Button.unity-button,
 Button {
     background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/primaryButton_normal.png");
-    background-color: #0090FD;
     -unity-text-align: middle-center;
     color: #f4f4f4;
     margin-bottom: -1px;
@@ -16,7 +15,6 @@ Button:hover {
 
 Button.unity-button:hover:active,
 Button:hover:active {
-    background-color: #419fe5;
     background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/primaryButton_pressed.png");
     color: #f4f4f4;
 }
@@ -39,12 +37,10 @@ LoadingSpinnerVisualElement {
 .disabled Button.unity-button,
 .disabled Button {
     background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/primaryButton_disabled.png");
-    background-color: #898989;
 }
 .disabled Button.unity-button:hover:active,
 .disabled Button:hover:active {
     background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/primaryButton_disabled_pressed.png");
-    background-color: #a0a0a0;
 }
 
 .loading LoadingSpinnerVisualElement {
