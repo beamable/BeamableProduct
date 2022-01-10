@@ -47,7 +47,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         public ManifestModel Model { get; set; }
         
         private TextField _generalComments;
-        private Button _cancelButton;
+        private GenericButtonVisualElement _cancelButton;
         private PrimaryButtonVisualElement _continueButton;
         private ScrollView _scrollContainer;
         private Dictionary<string, PublishManifestEntryVisualElement> _publishManifestElements;
@@ -111,8 +111,8 @@ namespace Beamable.Editor.Microservice.UI.Components
             _generalComments = Root.Q<TextField>("largeCommentsArea");
             _generalComments.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
 
-            _cancelButton = Root.Q<Button>("cancelBtn");
-            _cancelButton.clickable.clicked += () => OnCloseRequested?.Invoke();
+            _cancelButton = Root.Q<GenericButtonVisualElement>("cancelBtn");
+            _cancelButton.OnClick += () => OnCloseRequested?.Invoke();
 
             _continueButton = Root.Q<PrimaryButtonVisualElement>("continueBtn");
             _continueButton.Button.clickable.clicked += () => OnSubmit?.Invoke(Model);
