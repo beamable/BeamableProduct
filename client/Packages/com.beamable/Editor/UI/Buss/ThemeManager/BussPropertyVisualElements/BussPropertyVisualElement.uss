@@ -1,3 +1,6 @@
+#mainVisualElement{
+    width: auto;
+}
 
 .bussPropertyField {
     flex-shrink: 1;

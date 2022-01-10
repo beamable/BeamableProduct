@@ -1,8 +1,14 @@
 ﻿using Beamable.UI.Buss;
 using TMPro;
-using UnityEditor.UIElements;
 using UnityEngine;
+#if UNITY_2018
+using UnityEngine.Experimental.UIElements;
+using UnityEditor.Experimental.UIElements;
+using UnityEngine.Experimental.UIElements.StyleEnums;
+#elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
+using UnityEditor.UIElements;
+#endif
 
 namespace Beamable.Editor.UI.Components
 {
@@ -16,12 +22,12 @@ namespace Beamable.Editor.UI.Components
 		public override void Refresh()
 		{
 			base.Refresh();
-			
+
 			_horizontalContainer = new VisualElement();
-			_horizontalContainer.style.flexDirection = new StyleEnum<FlexDirection>(FlexDirection.Row);
+			_horizontalContainer.style.SetFlexDirection(FlexDirection.Row);
 			_mainElement.Add(_horizontalContainer);
 			_verticalContainer = new VisualElement();
-			_verticalContainer.style.flexDirection = new StyleEnum<FlexDirection>(FlexDirection.Row);
+			_verticalContainer.style.SetFlexDirection(FlexDirection.Row);
 			_mainElement.Add(_verticalContainer);
 			for (int i = 0; i < 6; i++)
 			{
@@ -35,6 +41,7 @@ namespace Beamable.Editor.UI.Components
 				button.Add(image);
 				_horizontalContainer.Add(button);
 			}
+
 			for (int i = 0; i < 6; i++)
 			{
 				var boxedI = i;
@@ -48,7 +55,7 @@ namespace Beamable.Editor.UI.Components
 				button.Add(image);
 				_verticalContainer.Add(button);
 			}
-			
+
 			UpdateHorizontalToggle();
 			UpdateVerticalToggle();
 		}
@@ -71,17 +78,20 @@ namespace Beamable.Editor.UI.Components
 		{
 			var value = GetHorizontalAlignmentGridValue((int)Property.Enum);
 			int i = 0;
-			foreach (VisualElement element in _horizontalContainer.Children()) {
-				var tb = (ToolbarButton) element;
+			foreach (VisualElement element in _horizontalContainer.Children())
+			{
+				var tb = (ToolbarButton)element;
 				tb.SetSelected(value == i++);
 			}
 		}
 
-		private void UpdateVerticalToggle() {
+		private void UpdateVerticalToggle()
+		{
 			var value = GetVerticalAlignmentGridValue((int)Property.Enum);
 			int i = 0;
-			foreach (VisualElement element in _verticalContainer.Children()) {
-				var tb = (ToolbarButton) element;
+			foreach (VisualElement element in _verticalContainer.Children())
+			{
+				var tb = (ToolbarButton)element;
 				tb.SetSelected(value == i++);
 			}
 		}

@@ -9,6 +9,7 @@ using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
+using UnityEngine.Experimental.UIElements.StyleEnums;
 using UnityEngine.Experimental.UIElements.StyleSheets;
 
 #elif UNITY_2019_1_OR_NEWER
@@ -125,6 +126,11 @@ namespace UnityEngine.Experimental.UIElements
         {
             return self.maxHeight;
         }
+
+	    public static void SetFlexDirection(this IStyle self, FlexDirection direction)
+	    {
+		    self.flexDirection = direction;
+	    }
 
         public static void SetImage(this Image self, Texture texture)
         {
@@ -309,6 +315,11 @@ namespace UnityEngine.UIElements
     public static float GetMaxHeight(this IStyle self)
     {
       return self.maxHeight.value.value;
+    }
+
+    public static void SetFlexDirection(this IStyle self, FlexDirection direction)
+    {
+	    self.flexDirection = direction;
     }
 
     public static void SetImage(this Image self, Texture texture)
