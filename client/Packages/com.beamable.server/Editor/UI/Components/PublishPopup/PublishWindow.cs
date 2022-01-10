@@ -78,7 +78,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 				 * upload each image that is different than whats in the manifest...
 				 * upload the manifest file...
 				 */
-				
 				WindowStateUtility.DisableAllWindows(new []{Constants.Publish});
 				e.PrepareForPublish();
 				await Microservices.Deploy(model, this, _tokenSource.Token, e.HandleServiceDeployed);
@@ -94,6 +93,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void OnDestroy()
 		{
 			_tokenSource?.Cancel();
+			WindowStateUtility.EnableAllWindows();
 		}
 	}
 }
