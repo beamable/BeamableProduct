@@ -52,7 +52,11 @@ namespace Beamable.Server.Editor.CodeGen
 
           if (parameterType.IsGenericType && parameterType.GetGenericTypeDefinition() == typeof(List<>))
               name = $"{parameterType.Name.Substring(0, parameterType.Name.IndexOf('`'))}_{ GetParameterClassName(parameterType.GetGenericArguments()[0], false)}";
-          else
+		  else if (parameterType.IsGenericType && parameterType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
+              name = $"{parameterType.Name.Substring(0, parameterType.Name.IndexOf('`'))}_" 
+					+ $"{ GetParameterClassName(parameterType.GetGenericArguments()[0], false)}_" 
+					+ $"{GetParameterClassName(parameterType.GetGenericArguments()[1], false)}";
+		  else 
               name = parameterType.Name;
 
           return $"{(withPrefix ? PARAMETER_STRING : string.Empty)}{namespaceStr}_{name}";
