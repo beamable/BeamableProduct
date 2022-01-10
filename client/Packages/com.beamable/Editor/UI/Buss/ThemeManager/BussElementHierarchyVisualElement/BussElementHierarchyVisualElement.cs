@@ -1,6 +1,5 @@
 ﻿using Beamable.Editor.UI.Buss;
 using Beamable.UI.Buss;
-using UnityEngine.UI;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -18,7 +17,7 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public BussElementHierarchyVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussElementHierarchyVisualElement)}/{nameof(BussElementHierarchyVisualElement)}") { }
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement") { }
 
 		protected override string GetLabel(BussElement component)
 		{

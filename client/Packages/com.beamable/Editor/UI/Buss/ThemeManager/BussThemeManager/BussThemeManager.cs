@@ -1,10 +1,10 @@
-﻿using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Buss.Components;
+﻿using System;
+using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
+using Beamable.UI.Buss;
 using Editor.UI.BUSS;
 using UnityEditor;
-using UnityEngine;
-using UnityEngine.UI;
+using Object = UnityEngine.Object;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -15,41 +15,103 @@ using UnityEditor.UIElements;
 
 namespace Beamable.UI.BUSS
 {
-	public class BussThemeManager : BeamableVisualElement
+	public class BussThemeManager : EditorWindow
 	{
 #if BEAMABLE_DEVELOPER
-		[MenuItem(
-			BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_THEME_MANAGER + "/" +
-			BeamableConstants.OPEN + " " +
-			BeamableConstants.THEME_MANAGER,
-			priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
+		// [MenuItem(
+		// 	BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_THEME_MANAGER + "/" +
+		// 	BeamableConstants.OPEN + " " +
+		// 	BeamableConstants.THEME_MANAGER,
+		// 	priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
+		[MenuItem("Private/Theme Manager")]
 #endif
 		public static void Init()
 		{
-			BussThemeManager window = new BussThemeManager();
-			BeamablePopupWindow.ShowUtility(BeamableConstants.THEME_MANAGER, window, null,
-				BUSSConstants.ThemeManagerWindowSize);
+			BussThemeManager themeManagerWindow = GetWindow<BussThemeManager>(BeamableConstants.THEME_MANAGER, true);
+			themeManagerWindow.Show(true);
 		}
 
-		private BussElementHierarchyVisualElement _hierarchy;
+		private VisualElement _navigationGroup;
+		private VisualElement _stylesGroup;
+		private ObjectField _styleSheetSource;
+		private BussStyleSheet _currentStyleSheet;
+		private VisualElement _root;
 
-		private BussThemeManager() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussThemeManager)}/{nameof(BussThemeManager)}")
-		{ }
-
-		public override void Refresh()
+		private void OnEnable()
 		{
-			base.Refresh();
+			minSize = BUSSConstants.ThemeManagerWindowSize;
+			
+			_root = this.GetRootVisualContainer();
+			_root.Clear();
 
-			_hierarchy = Root.Q<BussElementHierarchyVisualElement>("hierarchy");
-			_hierarchy.Refresh();
+			VisualTreeAsset uiAsset =
+				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(
+					$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussThemeManager/BussThemeManager.uxml");
 
-			// Just for testing
-			LabeledColorPickerVisualElement pickerVisualElement = Root.Q<LabeledColorPickerVisualElement>("colorPicker");
-			pickerVisualElement.Refresh();
+			VisualElement tree = uiAsset.CloneTree();
+			tree.AddStyleSheet(
+				$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussThemeManager/BussThemeManager.uss");
+			tree.name = nameof(_root);
+			_root.Add(tree);
+			
+			Refresh();
+		}
 
-			LabeledSpritePickerVisualElement spritePickerVisualElement = Root.Q<LabeledSpritePickerVisualElement>("imagePicker");
-			spritePickerVisualElement.Refresh();
+		private void Refresh()
+		{
+			_navigationGroup = _root.Q<VisualElement>("navigation");
+			_stylesGroup = _root.Q<VisualElement>("styles");
+			_styleSheetSource = _root.Q<ObjectField>("styleSheetSource");
+			_styleSheetSource.objectType = typeof(BussStyleSheet);
+			_styleSheetSource.UnregisterValueChangedCallback(StyleSheetChanged);
+			_styleSheetSource.RegisterValueChangedCallback(StyleSheetChanged);
+
+			BussElementHierarchyVisualElement hierarchyComponent = new BussElementHierarchyVisualElement();
+
+			hierarchyComponent.Refresh();
+			_navigationGroup.Add(hierarchyComponent);
+		}
+
+		private void StyleSheetChanged(ChangeEvent<Object> evt)
+		{
+			ClearCurrentStyleSheet();
+			_currentStyleSheet = (BussStyleSheet)evt.newValue;
+
+			if (_currentStyleSheet == null)
+			{
+				return;
+			}
+
+			_currentStyleSheet.OnChange += OnStyleSheetExternallyChanged;
+
+			foreach (BussStyleRule styleRule in _currentStyleSheet.Styles)
+			{
+				BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
+				styleCard.Setup(styleRule);
+				_stylesGroup.Add(styleCard);
+			}
+		}
+
+		private void ClearCurrentStyleSheet()
+		{
+			_stylesGroup.Clear();
+			if (_currentStyleSheet != null)
+			{
+				_currentStyleSheet.OnChange -= OnStyleSheetExternallyChanged;
+			}
+		}
+
+		private void OnStyleSheetExternallyChanged()
+		{
+			foreach (BussPropertyVisualElement propertyVisualElement in _root.Query<BussPropertyVisualElement>().Build().ToList())
+			{
+				propertyVisualElement.OnPropertyChangedExternally();
+			}
+		}
+
+		private void OnDestroy()
+		{
+			ClearCurrentStyleSheet();
 		}
 	}
 }

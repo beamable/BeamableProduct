@@ -108,7 +108,11 @@ namespace Beamable.Editor.Schedules
 	        }
 	        
             var definitions = new List<ScheduleDefinition>();
-            var hoursDelta = toHour - fromHour;
+
+			if (toHour == 0 && toMinute == 0)
+				toHour = 24;
+
+			var hoursDelta = toHour - fromHour;
             var allRange = new List<string> {"*"};
 
             if (hoursDelta == 0)

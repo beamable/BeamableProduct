@@ -1,0 +1,42 @@
+﻿using Beamable.UI.Buss;
+using Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements;
+using UnityEngine;
+#if UNITY_2018
+using UnityEngine.Experimental.UIElements;
+using UnityEditor.Experimental.UIElements;
+#elif UNITY_2019_1_OR_NEWER
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
+#endif
+
+namespace Beamable.Editor.UI.Components
+{
+	public class ColorButtPropertyVisualElement : BussPropertyVisualElement<SingleColorBussProperty>
+	{
+		private ColorField _field;
+		
+		public ColorButtPropertyVisualElement(SingleColorBussProperty property) : base(property) { }
+
+		public override void Refresh()
+		{
+			base.Refresh();
+			
+			_field = new ColorField();
+			AddBussPropertyFieldClass(_field);
+			_field.value = Property.Color;
+			_mainElement.Add(_field);
+
+			_field.RegisterValueChangedCallback(OnValueChange);
+		}
+
+		private void OnValueChange(ChangeEvent<Color> evt)
+		{
+			Property.Color = evt.newValue;
+		}
+
+		public override void OnPropertyChangedExternally()
+		{
+			_field.value = Property.Color;
+		}
+	}
+}

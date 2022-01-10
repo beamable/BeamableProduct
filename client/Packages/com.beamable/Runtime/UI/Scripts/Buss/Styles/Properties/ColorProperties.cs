@@ -43,7 +43,7 @@ namespace Beamable.UI.Buss {
     [Serializable]
     public class VertexColorBussProperty : IVertexColorBussProperty {
         [SerializeField]
-        public ColorRect _colorRect;
+        private ColorRect _colorRect;
 
         public ColorRect ColorRect {
             get => _colorRect;
