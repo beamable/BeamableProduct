@@ -14,6 +14,7 @@ using Beamable.Server.Editor.UI.Components;
 using Beamable.Server.Editor.Uploader;
 using Beamable.Platform.SDK;
 using Beamable.Editor;
+using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.UI;
 using System.Threading;
@@ -508,7 +509,9 @@ namespace Beamable.Server.Editor
       public static event Action<ManifestModel, int> OnBeforeDeploy;
       public static event Action<ManifestModel, int> OnDeploySuccess;
       public static event Action<ManifestModel, string> OnDeployFailed;
-     
+      public static event Action<IDescriptor, ServicePublishState> OnServiceDeployStatusChanged;
+      public static event Action<IDescriptor> OnServiceDeployProgress;
+
       public static async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context, CancellationToken token, Action<IDescriptor> onServiceDeployed = null)
       {
          if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
@@ -533,7 +536,9 @@ namespace Beamable.Server.Editor
 
          foreach (var descriptor in Descriptors)
          {
-            Debug.Log($"Building service=[{descriptor.Name}]");
+	         OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.InProgress);
+	         
+	         Debug.Log($"Building service=[{descriptor.Name}]");
             var buildCommand = new BuildImageCommand(descriptor, false);
             try
             {
@@ -542,24 +547,28 @@ namespace Beamable.Server.Editor
             catch (Exception e)
             {
 	            OnDeployFailed?.Invoke(model, $"Deploy failed due to failed build of {descriptor.Name}: {e}.");
+	            OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
 	            return;
             }
 
             if(token.IsCancellationRequested)
             {
 	            OnDeployFailed?.Invoke(model, $"Cancellation requested after build of {descriptor.Name}.");
+	            OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
 	            return;
             }
 
             var uploader = new ContainerUploadHarness(context);
             var msModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(descriptor);
             uploader.onProgress += msModel.OnDeployProgress;
+            uploader.onProgress +=(_, __, ___) => OnServiceDeployProgress?.Invoke(descriptor); 
 
             Debug.Log($"Getting Id service=[{descriptor.Name}]");
             var imageId = await uploader.GetImageId(descriptor);
             if (string.IsNullOrEmpty(imageId))
             {
 	            OnDeployFailed?.Invoke(model, $"Failed due to failed Docker {nameof(GetImageIdCommand)} for {descriptor.Name}.");
+	            OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
 	            return;
             }
             nameToImageId.Add(descriptor.Name, imageId);
@@ -570,6 +579,7 @@ namespace Beamable.Server.Editor
                {
                   Debug.Log(string.Format(BeamableLogConstants.ContainerAlreadyUploadedMessage, descriptor.Name));
                   onServiceDeployed?.Invoke(descriptor);
+                  OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Published);
                   continue;
                }
             }
@@ -592,6 +602,7 @@ namespace Beamable.Server.Editor
             {
                 Debug.Log(string.Format(BeamableLogConstants.UploadedContainerMessage, descriptor.Name));
                 onServiceDeployed?.Invoke(descriptor);
+                OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Published);
             },
             () =>
             {
@@ -599,6 +610,7 @@ namespace Beamable.Server.Editor
                 if(token.IsCancellationRequested)
                 {
 	                OnDeployFailed?.Invoke(model, $"Cancellation requested during upload of {descriptor.Name}.");
+	                OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
                 }
             }, imageId);
          }

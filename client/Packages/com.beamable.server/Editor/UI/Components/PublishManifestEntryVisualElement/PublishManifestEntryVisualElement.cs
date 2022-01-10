@@ -17,19 +17,46 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
-   public class PublishManifestEntryVisualElement : MicroserviceComponent
+	public enum ServicePublishState
+	{
+		Unpublished,
+		InProgress,
+		Failed,
+		Published,
+	}
+	
+	public class PublishManifestEntryVisualElement : MicroserviceComponent
    {
       private static readonly string[] TemplateSizes = {"small", "medium", "large"};
 
       private const string MICROSERVICE_IMAGE_CLASS = "microserviceImage";
       private const string STORAGE_IMAGE_CLASS = "storageImage";
-      private const string UNPUBLISHED_IMAGE_CLASS = "unpublished";
-      private const string PUBLISHED_IMAGE_CLASS = "published";
-      
+
+      private Dictionary<ServicePublishState, string> _checkImageClasses = new Dictionary<ServicePublishState, string>() 
+      {
+		{ServicePublishState.Unpublished, "unpublished"},
+		{ServicePublishState.Published, "published"},
+		{ServicePublishState.InProgress, "publish-inProgress"},
+		{ServicePublishState.Failed, "publish-failed"},
+      };
+
       public IEntryModel Model { get; }
 
+      public ILoadingBar LoadingBar
+      {
+	      get
+	      {
+		      _loadingBar.Hidden = false;
+		      return _loadingBar;
+	      }
+      }
+      
       private bool wasPublished;
       private bool oddRow;
+
+      private Image _checkImage;
+      private LoadingBarElement _loadingBar;
+      private string _currentPublishState;
 
       public PublishManifestEntryVisualElement(IEntryModel model, bool argWasPublished, bool isOddRow) : base(nameof(PublishManifestEntryVisualElement))
       {
@@ -41,6 +68,11 @@ namespace Beamable.Editor.Microservice.UI.Components
       public override void Refresh()
       {
          base.Refresh();
+
+         _loadingBar = Root.Q<LoadingBarElement>();
+         _loadingBar.SmallBar = true;
+         _loadingBar.Hidden = true;
+         _loadingBar.Refresh();
 
          var checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
          checkbox.Refresh();
@@ -59,6 +91,7 @@ namespace Beamable.Editor.Microservice.UI.Components
          commentField.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
          
          var icon = Root.Q<Image>("typeImage");
+         _checkImage = Root.Q<Image>("checkImage");
 
          if (Model is ManifestEntryModel serviceModel)
          {
@@ -86,18 +119,25 @@ namespace Beamable.Editor.Microservice.UI.Components
             icon.AddToClassList(STORAGE_IMAGE_CLASS);
          }
 
-         SetPublishedIcon();
+         UpdateStatus(wasPublished ? ServicePublishState.Published : ServicePublishState.Unpublished);
 
          if (oddRow)
          {
-            Root.Q<VisualElement>("row").AddToClassList("oddRow");
+            Root.Q<VisualElement>("mainContainer").AddToClassList("oddRow");
          }
       }
-
-      private void SetPublishedIcon()
+      
+      public void UpdateStatus(ServicePublishState state)
       {
-         string ussClass = wasPublished ? PUBLISHED_IMAGE_CLASS : UNPUBLISHED_IMAGE_CLASS;
-         Root.Q<Image>("checkImage").AddToClassList(ussClass);
+	      if (state == ServicePublishState.Failed)
+	      {
+		      _loadingBar.UpdateProgress(0, failed: true);
+		      return;
+	      }
+	      
+	      _checkImage.RemoveFromClassList(_currentPublishState);
+	      _currentPublishState = _checkImageClasses[state];
+	      _checkImage.AddToClassList(_currentPublishState);
       }
    }
 }
