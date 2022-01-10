@@ -20,7 +20,7 @@ namespace Beamable.Editor.UI.Components
 		public override void Refresh()
 		{
 			base.Refresh();
-
+			
 			_topRow = CreateRowContainer();
 			_bottomRow = CreateRowContainer();
 

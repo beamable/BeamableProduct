@@ -23,6 +23,11 @@ namespace Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements
 				return new VertexColorBussPropertyVisualElement(vertexColorProperty);
 			}
 
+			if (property is TextAlignmentOptionsBussProperty textAlignmentProperty)
+			{
+				return new TextAlignmentBussPropertyVisualElement(textAlignmentProperty);
+			}
+
 			if (property is EnumBussProperty enumBussProperty)
 			{
 				return new EnumBussPropertyVisualElement(enumBussProperty);
