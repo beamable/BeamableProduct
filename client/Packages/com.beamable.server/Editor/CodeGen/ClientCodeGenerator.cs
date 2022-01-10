@@ -42,7 +42,22 @@ namespace Beamable.Server.Editor.CodeGen
       public static string GetTargetParameterClassName(MicroserviceDescriptor descriptor) =>
           $"MicroserviceParameters{descriptor.Name}Client";
 
-      public static string GetParameterClassName(Type parameterType) => $"Parameter{string.Join("_", parameterType.Namespace.Split('.'))}_{parameterType.Name}";
+      public static string GetParameterClassName(Type parameterType, bool withPrefix = true)
+      {
+          var namespaceStr = string.Empty;
+          var name = string.Empty;
+
+          if (!string.IsNullOrEmpty(parameterType.Namespace))
+              namespaceStr = string.Join("_", parameterType.Namespace.Split('.'));
+
+          if (parameterType.IsGenericType && parameterType.GetGenericTypeDefinition() == typeof(List<>))
+              name = $"{parameterType.Name.Substring(0, parameterType.Name.IndexOf('`'))}_{ GetParameterClassName(parameterType.GetGenericArguments()[0], false)}";
+          else
+              name = parameterType.Name;
+
+          return $"{(withPrefix ? PARAMETER_STRING : string.Empty)}{namespaceStr}_{name}";
+		}
+			
       public static Type GetDataWrapperTypeForParameter(MicroserviceDescriptor descriptor, Type parameterType)
       {
           var name =
@@ -172,7 +187,7 @@ namespace Beamable.Server.Editor.CodeGen
           // the return type needs to be wrapped up inside a Promise.
           var promiseType = typeof(Promise<>);
           var resultType = info.MethodInfo.ReturnType;
-          if (resultType == typeof(void))
+          if (resultType == typeof(void) || resultType == typeof(Promise))
           {
               resultType = typeof(Unit);
           }
