@@ -70,7 +70,8 @@ namespace Beamable.Editor.UI.Common
 			this.AddStyleSheet(BeamableComponentsConstants.COMMON_USS_PATH);
 			this.AddStyleSheet(USSPath);
 
-			Root = new VisualElement().WithName("root");
+			Root = new VisualElement();
+			Root.name = "root";
 			Add(Root);
 
 			this?.Query<VisualElement>(className: "--image-scale-to-fit").ForEach(elem =>

@@ -29,20 +29,21 @@ namespace Beamable.Editor.UI.Components
 		{
 			base.Refresh();
 			// Root = new VisualElement().WithName("mainContainer");
-			VisualElement header = new VisualElement().WithName("header");
-			TextElement label = new TextElement().WithName("headerLabel");
+			VisualElement header = new VisualElement();
+			header.name = "header";
+			TextElement label = new TextElement();
+			label.name = "headerLabel";
 			label.text = "Navigation window";
 			header.Add(label);
 			Root.Add(header);
 
-			_hierarchyContainer = new ScrollView().WithName("elementsContainer");
+			_hierarchyContainer = new ScrollView();
+			_hierarchyContainer.name = "elementsContainer";
 			Root.Add(_hierarchyContainer);
-			
+
 			EditorApplication.hierarchyChanged -= OnHierarchyChanged;
 			EditorApplication.hierarchyChanged += OnHierarchyChanged;
-			
 
-			
 			OnHierarchyChanged();
 		}
 

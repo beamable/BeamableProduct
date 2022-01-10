@@ -57,13 +57,21 @@ namespace Beamable.Editor.UI.Components
 		{
 			base.Refresh();
 
-			_container = new VisualElement().WithName("indentedLabelContainer");
+			_container = new VisualElement();
+			_container.name = "indentedLabelContainer";
 			
-			_labelComponent = new TextElement().WithName("indentedLabel");
+			_labelComponent = new TextElement();
+			_labelComponent.name = "indentedLabel";
 			_labelComponent.text = _label;
 
 			float width = (_singleIndentWidth * _level) + _singleIndentWidth;
-			_labelComponent.SetLeft(width);
+
+#if UNITY_2018
+	_labelComponent.SetLeft(width);
+#elif UNITY_2019_1_OR_NEWER
+			_labelComponent.style.paddingLeft = new StyleLength(width);
+#endif
+			
 
 			_container.Add(_labelComponent);
 

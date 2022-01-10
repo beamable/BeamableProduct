@@ -1,18 +1,31 @@
-#hierarchyContainer {
-    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+#root {
     flex-grow: 1;
 }
 
 #header {
-    -unity-font-style: bold;
     padding-left: 20px;
-    color: rgba(255, 255, 255, 1);
-    background-color: rgba(0, 0, 0, 1);
+    padding-right: 20px;
     height: 30px;
     justify-content: center;
 }
 
-#scrollView {
-    flex-grow: 1;
-    background-color: rgb(77,77,77);
+#headerLabel {
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    -unity-font-style: bold;
+    font-size: 12px;
 }
+
+#elementsContainer {
+    flex-grow: 1;
+}
+
+IndentedLabelVisualElement {
+    flex-grow: 1;
+}
+
+/*#root > ScrollView > #ContentViewport > #ContentView.content-view{*/
+/*    flex-grow: 1;*/
+/*    position: absolute;*/
+/*    left: 0px;*/
+/*    right: 0px;*/
+/*}*/
