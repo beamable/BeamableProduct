@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Editor `'namespace' but is used like a 'type'` error 
 
+### Changed
+- Improved baked content performance by keeping data in a single file and limiting number of IO operations.
+
 ## [0.18.0]
 ### Added
 - Content can be prebaked with game-builds to speed up content initialization
