@@ -131,7 +131,7 @@ namespace Beamable.Editor.UI.Model
         // TODO === BEGIN
         public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
         {
-            var existsOnRemote = RemoteReference?.enabled ?? false || RemoteStatus?.serviceName?.Length > 0;
+            var existsOnRemote = RemoteReference?.enabled ?? false;
             var hasImageSuffix = ServiceBuilder.HasBuildDirectory ? string.Empty : " (Build first)";
             var localCategory = IsRunning ? "Local" : "Local (not running)";
             var remoteCategory = existsOnRemote ? "Cloud" : "Cloud (not deployed)";
