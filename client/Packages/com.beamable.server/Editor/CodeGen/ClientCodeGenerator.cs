@@ -1,3 +1,6 @@
+
+using Beamable.Common;
+using Beamable.Common.Dependencies;
 using System;
 using System.CodeDom;
 using System.CodeDom.Compiler;
@@ -6,13 +9,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using Beamable.Common;
-using Beamable.Common.Dependencies;
-using Beamable.Server;
-using Beamable.Platform.SDK;
 using System.Text;
-using UnityEngine;
+using System.Threading.Tasks;
 
 namespace Beamable.Server.Editor.CodeGen
 {
@@ -55,13 +53,32 @@ namespace Beamable.Server.Editor.CodeGen
       public static string GetTargetParameterClassName(MicroserviceDescriptor descriptor) =>
           $"MicroserviceParameters{descriptor.Name}Client";
 
-      public static string GetParameterClassName(Type parameterType) => $"Parameter{string.Join("_", parameterType.Namespace.Split('.'))}_{parameterType.Name}";
+      public static string GetParameterClassName(Type parameterType, bool withPrefix = true)
+      {
+	      var namespaceStr = string.Empty;
+	      var name = string.Empty;
+
+	      if (!string.IsNullOrEmpty(parameterType.Namespace))
+		      namespaceStr = string.Join("_", parameterType.Namespace.Split('.'));
+
+	      if (parameterType.IsGenericType && parameterType.GetGenericTypeDefinition() == typeof(List<>))
+		      name = $"{parameterType.Name.Substring(0, parameterType.Name.IndexOf('`'))}_{ GetParameterClassName(parameterType.GetGenericArguments()[0], false)}";
+	      else if (parameterType.IsGenericType && parameterType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
+		      name = $"{parameterType.Name.Substring(0, parameterType.Name.IndexOf('`'))}_"
+		             + $"{GetParameterClassName(parameterType.GetGenericArguments()[0], false)}_"
+		             + $"{GetParameterClassName(parameterType.GetGenericArguments()[1], false)}";
+	      else
+		      name = parameterType.Name;
+
+	      return $"{(withPrefix ? PARAMETER_STRING : string.Empty)}{namespaceStr}_{name}";
+      }
+
       public static Type GetDataWrapperTypeForParameter(MicroserviceDescriptor descriptor, Type parameterType)
       {
-          var name =
-              $"{CLIENT_NAMESPACE}.{GetTargetParameterClassName(descriptor)}+{GetParameterClassName(parameterType)}, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
-          var t = Type.GetType(name, true, true);
-          return t;
+	      var name =
+		      $"{CLIENT_NAMESPACE}.{GetTargetParameterClassName(descriptor)}+{GetParameterClassName(parameterType)}, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
+	      var t = Type.GetType(name, true, true);
+	      return t;
       }
 
       /// <summary>
@@ -232,7 +249,7 @@ namespace Beamable.Server.Editor.CodeGen
           // the return type needs to be wrapped up inside a Promise.
           var promiseType = typeof(Promise<>);
           var resultType = info.MethodInfo.ReturnType;
-          if (resultType == typeof(void))
+          if (resultType == typeof(void) || resultType == typeof(Promise))
           {
               resultType = typeof(Unit);
           }

@@ -68,7 +68,7 @@ namespace Beamable.Content
 
 		protected override Promise<ClientManifest> ExecuteRequest(IBeamableRequester requester, string url)
 		{
-			return requester.Request(Method.GET, url, null, false, ClientManifest.ParseCSV, true).Recover(ex =>
+			return requester.Request(Method.GET, url, null, true, ClientManifest.ParseCSV, true).Recover(ex =>
 			{
 				// TODO: Put "global" as a constant value somewhere. Currently it lives in a different asm, and its too much trouble.
 				if (ex is PlatformRequesterException err && err.Status == 404 && ManifestID.Equals("global") )
@@ -80,11 +80,7 @@ namespace Beamable.Content
 				}
 
 				throw ex;
-			}).RecoverFromNoConnectivity(_ => new ClientManifest
-				{
-					entries = new List<ClientContentInfo>()
-				})
-			                ;
+			});
 		}
 
 		protected override void OnRefresh(ClientManifest data)
@@ -125,6 +121,8 @@ namespace Beamable.Content
 		private readonly Dictionary<Type, ContentCache> _contentCaches = new Dictionary<Type, ContentCache>();
 		private static bool _testScopeEnabled;
 
+		public ContentDataInfoWrapper ContentDataInfo;
+
 #if UNITY_EDITOR
 
 		public class ContentServiceTestScope : IDisposable
@@ -143,8 +141,8 @@ namespace Beamable.Content
 #endif
 
 		public ContentService(IPlatformService platform, IBeamableRequester requester,
-			IBeamableFilesystemAccessor filesystemAccessor, ContentParameterProvider parameterProvider) {
-			CurrentDefaultManifestID = parameterProvider.manifestID;
+			IBeamableFilesystemAccessor filesystemAccessor) {
+			CurrentDefaultManifestID = ServiceManager.Resolve<ContentParameterProvider>().manifestID;
 			Requester = requester;
 			FilesystemAccessor = filesystemAccessor;
 			_platform = platform;
@@ -209,8 +207,8 @@ namespace Beamable.Content
 			{
 				var cacheType = typeof(ContentCache<>).MakeGenericType(contentType);
 				var constructor = cacheType.GetConstructor(new[]
-					{typeof(IHttpRequester), typeof(IBeamableFilesystemAccessor)});
-				rawCache = (ContentCache) constructor.Invoke(new[] {Requester, (object) FilesystemAccessor});
+					{typeof(IHttpRequester), typeof(IBeamableFilesystemAccessor), typeof(ContentService)});
+				rawCache = (ContentCache) constructor.Invoke(new[] {Requester, (object) FilesystemAccessor, this});
 
 				_contentCaches.Add(contentType, rawCache);
 			}
