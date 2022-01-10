@@ -141,8 +141,8 @@ namespace Beamable.Content
 #endif
 
 		public ContentService(IPlatformService platform, IBeamableRequester requester,
-			IBeamableFilesystemAccessor filesystemAccessor) {
-			CurrentDefaultManifestID = ServiceManager.Resolve<ContentParameterProvider>().manifestID;
+			IBeamableFilesystemAccessor filesystemAccessor, ContentParameterProvider config) {
+			CurrentDefaultManifestID = config.manifestID;
 			Requester = requester;
 			FilesystemAccessor = filesystemAccessor;
 			_platform = platform;
