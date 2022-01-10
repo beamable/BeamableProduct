@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Beamable.Server.Editor.ManagerClient;
@@ -17,7 +17,7 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
-	public enum ServicePublishState
+	public enum ServicePublishState	
 	{
 		Unpublished,
 		InProgress,
@@ -25,24 +25,24 @@ namespace Beamable.Editor.Microservice.UI.Components
 		Published,
 	}
 	
-	public class PublishManifestEntryVisualElement : MicroserviceComponent
+   public class PublishManifestEntryVisualElement : MicroserviceComponent
    {
       private static readonly string[] TemplateSizes = {"small", "medium", "large"};
 
       private const string MICROSERVICE_IMAGE_CLASS = "microserviceImage";
       private const string STORAGE_IMAGE_CLASS = "storageImage";
-
-      private Dictionary<ServicePublishState, string> _checkImageClasses = new Dictionary<ServicePublishState, string>() 
+      
+      private Dictionary<ServicePublishState, string> _checkImageClasses = new Dictionary<ServicePublishState, string>()
       {
-		{ServicePublishState.Unpublished, "unpublished"},
-		{ServicePublishState.Published, "published"},
-		{ServicePublishState.InProgress, "publish-inProgress"},
-		{ServicePublishState.Failed, "publish-failed"},
+	      {ServicePublishState.Unpublished, "unpublished"},
+	      {ServicePublishState.Published, "published"},
+	      {ServicePublishState.InProgress, "publish-inProgress"},
+	      {ServicePublishState.Failed, "publish-failed"},
       };
 
       public IEntryModel Model { get; }
-
-      public ILoadingBar LoadingBar
+      
+      public ILoadingBar LoadingBar	
       {
 	      get
 	      {
@@ -50,10 +50,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 		      return _loadingBar;
 	      }
       }
-      
+
       private bool wasPublished;
       private bool oddRow;
-
+      
       private Image _checkImage;
       private LoadingBarElement _loadingBar;
       private string _currentPublishState;
@@ -68,7 +68,7 @@ namespace Beamable.Editor.Microservice.UI.Components
       public override void Refresh()
       {
          base.Refresh();
-
+         
          _loadingBar = Root.Q<LoadingBarElement>();
          _loadingBar.SmallBar = true;
          _loadingBar.Hidden = true;
@@ -89,7 +89,7 @@ namespace Beamable.Editor.Microservice.UI.Components
          var commentField = Root.Q<TextField>("commentsText");
          commentField.value = Model.Comment;
          commentField.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
-         
+
          var icon = Root.Q<Image>("typeImage");
          _checkImage = Root.Q<Image>("checkImage");
 
@@ -97,21 +97,18 @@ namespace Beamable.Editor.Microservice.UI.Components
          {
             icon.AddToClassList(MICROSERVICE_IMAGE_CLASS);
 
-            if (MicroserviceConfiguration.Instance.EnableStoragePreview)
-            {
-               var microserviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(serviceModel.Name);
+            var microserviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(serviceModel.Name);
 
-               if (microserviceModel != null && microserviceModel.Dependencies != null)
-               {
-                  List<string> dependencies = new List<string>();
-                  foreach (var dep in microserviceModel.Dependencies)
-                  {
-                     dependencies.Add(dep.Name);
-                  }
-               
-                  var depsList = Root.Q<ExpandableListVisualElement>("depsList");
-                  depsList.Setup(dependencies);
-               }  
+            if (microserviceModel != null && microserviceModel.Dependencies != null)
+            {
+	            List<string> dependencies = new List<string>();
+	            foreach (var dep in microserviceModel.Dependencies)
+	            {
+		            dependencies.Add(dep.Name);
+	            }
+
+	            var depsList = Root.Q<ExpandableListVisualElement>("depsList");
+	            depsList.Setup(dependencies);
             }
          }
          else
@@ -123,7 +120,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
          if (oddRow)
          {
-            Root.Q<VisualElement>("mainContainer").AddToClassList("oddRow");
+	         Root.Q<VisualElement>("mainContainer").AddToClassList("oddRow");
          }
       }
       

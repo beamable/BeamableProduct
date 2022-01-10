@@ -80,6 +80,7 @@
     height: 7px;
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown Close.png")
 }
+
 .boundedButton {
     height: 20px;
     position: relative;
@@ -95,7 +96,6 @@
     border-top-width: 1px;
     border-bottom-width: 1px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
-    cursor: pan;
     background-image: none;
 }
 #selectionArea{
@@ -110,12 +110,12 @@
 }
 #largeCommentsArea{
     padding-top: 10px;
-    padding-right: 10px;
+    padding-right: 0px;
     padding-bottom: 10px;
-    padding-left: 10px;
-    margin-bottom: 40px;
-    margin-left: 20px;
-    margin-right: 40px;
+    padding-left: 0px;
+    margin-bottom: 15px;
+    margin-left: 0px;
+    margin-right: 0px;
     margin-top: 15px;
     min-height: 140px; 
 }
@@ -123,36 +123,15 @@
     flex-direction: row;
     justify-content: flex-end;
     flex-shrink: 0;
-    margin-right: 40px;
-    padding-bottom: 10px;
-    margin-top: 5px;
-    margin-bottom: 5px;
+    margin-bottom: 15px;
 }
-
-#cancelBtn{
-    margin-top: 2px;
-    border-radius: 5px;
-    border-left-width: 1px;
-    border-right-width: 1px;
-    border-top-width: 1px;
-    border-bottom-width: 1px;
-    width: 140px;
-    height: 35px;
-    border-color: #DCDCDC;
-    cursor: pan;
-    background-image: none;
-    background-color: #383838;
+#buttonStrip Button {
+    width: 100px;
 }
 
 .SubTitleText{
     font-size: 14px;
     -unity-font-style: bold;
-}
-
-#continueBtn{
-    margin-right: 25px;
-    width: 152px;
-    height: 38px;
 }
 
 #manifestsContainer{
@@ -166,4 +145,8 @@
 LoadingBarElement {
     align-self: stretch;
     margin-bottom: 5px;
+}
+#header, #warningMessage, #manifestsContainer, #largeCommentsArea, #buttonStrip{
+    margin-left: 15px;
+    margin-right: 15px;
 }

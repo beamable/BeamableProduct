@@ -34,15 +34,15 @@ namespace Beamable.Editor.UI.Model
             }
         }
         private string _lastImageId;
-        
+
         public bool HasImage => IsRunning || LastBuildImageId?.Length > 0;
         public bool HasBuildDirectory => Directory.Exists(Path.GetFullPath(_buildPath));
 
         public Action<bool> OnIsBuildingChanged;
         public Action<string> OnLastImageIdChanged;
-        
+
         private string _buildPath;
-        
+
         public void ForwardEventsTo(MicroserviceBuilder oldBuilder)
         {
             if (oldBuilder == null) return;
@@ -62,6 +62,7 @@ namespace Beamable.Editor.UI.Model
             var beamable = await EditorAPI.Instance;
             var secret = await beamable.GetRealmSecret();
             var cid = beamable.CustomerView.Cid;
+            // check to see if the storage descriptor is running.
             var connectionStrings = await Microservices.GetConnectionStringEnvironmentVariables((MicroserviceDescriptor) Descriptor);
             return new RunServiceCommand((MicroserviceDescriptor) Descriptor, cid, secret, connectionStrings);
         }
