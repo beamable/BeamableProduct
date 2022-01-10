@@ -126,10 +126,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             var dependentServicesBtnState = MicroserviceConfiguration.Instance.Microservices.Count > 0 &&
                                            MicroserviceConfiguration.Instance.StorageObjects.Count > 0;
-            
+
             _dependentServicesBtn.clickable.clicked += () => DependentServicesWindow.ShowWindow();
             _dependentServicesBtn.SetEnabled(dependentServicesBtnState);
-            
+
             _checkbox.Refresh();
             _checkbox.SetText(Model.Name);
             _checkbox.SetWithoutNotify(Model.IsSelected);
@@ -142,15 +142,13 @@ namespace Beamable.Editor.Microservice.UI.Components
             Model.Builder.OnIsRunningChanged -= HandleIsRunningChanged;
             Model.Builder.OnIsRunningChanged += HandleIsRunningChanged;
 
-            _dependentServicesContainer.visible = MicroserviceConfiguration.Instance.EnableStoragePreview;
-            
             _separator.Setup(OnDrag);
             _separator.Refresh();
 
             _collapseButton.clickable.clicked += HandleCollapseButton;
             _mainParent.AddToClassList("collapsedMain");
             _rootVisualElement.AddToClassList("collapsedMain");
-            
+
             UpdateButtons();
             CreateLogSection(Model.AreLogsAttached);
             UpdateStatusIcon();

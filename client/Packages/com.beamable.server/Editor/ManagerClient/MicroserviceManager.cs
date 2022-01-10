@@ -56,7 +56,7 @@ namespace Beamable.Server.Editor.ManagerClient
       {
 	      var post = new PostManifestRequest
 	      {
-		      comments = manifest.comments, manifest = manifest.manifest, storages = manifest.storages
+		      comments = manifest.comments, manifest = manifest.manifest, storageReferences = manifest.storages
 	      };
          return Requester.Request<EmptyResponse>(Method.POST, $"{SERVICE}/manifest", post).ToUnit();
       }
@@ -88,7 +88,7 @@ namespace Beamable.Server.Editor.ManagerClient
    {
       public string comments;
       public List<ServiceReference> manifest;
-      public List<ServiceStorageReference> storages;
+      public List<ServiceStorageReference> storageReferences;
    }
 
    [System.Serializable]
@@ -119,7 +119,7 @@ namespace Beamable.Server.Editor.ManagerClient
    [System.Serializable]
    public class ServiceStorageReference
    {
-       public string storageName;
+       public string id;
        public string storageType;
        public bool enabled;
        public string templateId;
@@ -128,7 +128,7 @@ namespace Beamable.Server.Editor.ManagerClient
    [System.Serializable]
    public class ServiceDependency
    {
-       public string type;
+       public string storageType;
        public string id;
    }
 

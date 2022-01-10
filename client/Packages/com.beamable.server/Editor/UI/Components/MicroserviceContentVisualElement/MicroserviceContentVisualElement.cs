@@ -90,36 +90,33 @@ namespace Beamable.Editor.Microservice.UI.Components
             _modelToVisual.Clear();
 
             SetupServicesStatus();
-            
+
             _actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
             _actionPrompt.Refresh();
         }
 
-        private MicroserviceVisualElement GetMicroserviceVisualElement(string serviceName, out bool isPublishFeatureDisabled)
+        private MicroserviceVisualElement GetMicroserviceVisualElement(string serviceName)
         {
             var service = Model.GetModel<MicroserviceModel>(serviceName);
-
-            if (service != null)
+            if (service == null)
             {
-                var serviceElement = new MicroserviceVisualElement { Model = service };
-                _modelToVisual[service] = serviceElement;
-                service.OnLogsDetached += () => { ServiceLogWindow.ShowService(service); };
-
-                serviceElement.Refresh();
-                service.OnSelectionChanged += b =>
-                    OnAllServiceSelectedStatusChanged?.Invoke(Model.Services.All(m => m.IsSelected));
-
-                service.OnSortChanged -= SortMicroservices;
-                service.OnSortChanged += SortMicroservices;
-                serviceElement.OnServiceStartFailed = MicroserviceStartFailed;
-                serviceElement.OnServiceStopFailed = MicroserviceStopFailed;
-
-                isPublishFeatureDisabled = service.Descriptor.IsPublishFeatureDisabled();
-                return serviceElement;
+	            return null;
             }
 
-            isPublishFeatureDisabled = false;
-            return null;
+            var serviceElement = new MicroserviceVisualElement { Model = service };
+            _modelToVisual[service] = serviceElement;
+            service.OnLogsDetached += () => { ServiceLogWindow.ShowService(service); };
+
+            serviceElement.Refresh();
+            service.OnSelectionChanged += b =>
+	            OnAllServiceSelectedStatusChanged?.Invoke(Model.Services.All(m => m.IsSelected));
+
+            service.OnSortChanged -= SortMicroservices;
+            service.OnSortChanged += SortMicroservices;
+            serviceElement.OnServiceStartFailed = MicroserviceStartFailed;
+            serviceElement.OnServiceStopFailed = MicroserviceStopFailed;
+
+            return serviceElement;
         }
 
         private RemoteMicroserviceVisualElement GetRemoteMicroserviceVisualElement(string serviceName)
@@ -228,11 +225,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             var _ = new GroupLoadingBarUpdater("Starting Microservices", loadingBar, false, children.ToArray());
         }
-        
-        public void SortMicroservices() 
+
+        public void SortMicroservices()
         {
             var config = MicroserviceConfiguration.Instance;
-            int Comparer(VisualElement a, VisualElement b) 
+            int Comparer(VisualElement a, VisualElement b)
             {
                 if (a is CreateServiceBaseVisualElement) return -1;
                 if (b is CreateServiceBaseVisualElement) return 1;
@@ -240,7 +237,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             }
             _servicesListElement.Sort(Comparer);
         }
-        
+
         private bool ShouldDisplayService(ServiceType type)
         {
 	        switch (Model.Filter)
@@ -255,7 +252,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			        return false;
 	        }
         }
-	    
+
         private void ShowDockerNotInstalledAnnouncement()
         {
 	        var dockerAnnouncement = new DockerAnnouncementModel();
@@ -272,7 +269,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 	        Root.Q<VisualElement>("announcementList").Add(element);
 	        element.Refresh();
         }
-                
+
         private void CreateNewServiceElement(ServiceType serviceType, CreateServiceBaseVisualElement service)
         {
 	        service.OnCreateServiceClicked += () => Root.SetEnabled(false);
@@ -300,40 +297,25 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 				        var val = false;
 				        if (serviceStatus.Value != ServiceAvailability.RemoteOnly)
-					        serviceElement = GetMicroserviceVisualElement(serviceStatus.Key, out val);
+					        serviceElement = GetMicroserviceVisualElement(serviceStatus.Key);
 				        else
 					        serviceElement = GetRemoteMicroserviceVisualElement(serviceStatus.Key);
 
 				        hasStorageDependency |= val;
 				        break;
 			        case ServiceType.StorageObject:
-
-				        if (!MicroserviceConfiguration.Instance.EnableStoragePreview)
-					        continue;
-
 				        serviceElement = GetStorageObjectVisualElement(serviceStatus.Key);
 				        break;
 			        default:
 				        throw new ArgumentOutOfRangeException();
 		        }
-		        
+
 		        if (serviceElement != null)
 		        {
 			        serviceElement.SetEnabled(_dockerHubIsRunning);
 			        _servicesListElement.Add(serviceElement);
 		        }
 	        }
-	        
-	        if (hasStorageDependency)
-		        ShowStorageObjectPreviewWarning();
-        }
-
-        private void ShowStorageObjectPreviewWarning()
-        {
-	        var storagePreviewWarning = new StorageDepencencyWarningModel();
-	        var previewElement = new StorageDepencencyWarningVisualElement() { StorageDepencencyWarningModel = storagePreviewWarning };
-	        Root.Q<VisualElement>("announcementList").Add(previewElement);
-	        previewElement.Refresh();
         }
 
         static bool IsDockerAppRunning()
