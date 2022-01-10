@@ -39,8 +39,8 @@
         <engine:ScrollView name="manifestsContainer"/>
         <engine:TextField name="largeCommentsArea" multiline="true"/>
         <engine:VisualElement name="buttonStrip">
+            <beamable:GenericButtonVisualElement name="cancelBtn" text="Cancel"/>
             <beamable:PrimaryButtonVisualElement name="continueBtn" text="Publish"/>
-            <engine:Button name="cancelBtn" text="Cancel"/>
         </engine:VisualElement>
     </engine:VisualElement>
 

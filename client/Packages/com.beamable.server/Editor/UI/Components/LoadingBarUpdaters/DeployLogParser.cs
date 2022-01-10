@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Beamable.Editor.UI.Components;
+using Beamable.Server.Editor;
 using Beamable.Server.Editor.UI.Components;
 using UnityEngine;
 
@@ -16,9 +17,12 @@ namespace Beamable.Editor.Microservice.UI.Components {
             TotalSteps = totalSteps;
 
             Application.logMessageReceived += HandleLog;
+            Microservices.OnDeployFailed += HandleDeployFailed;
             Update();
         }
-        
+
+        private void HandleDeployFailed(ManifestModel _model, string reason) => EndWithError(reason);
+
         void HandleLog(string logString, string stackTrace, LogType type)
         {
             foreach (var record in _records) {
@@ -41,9 +45,7 @@ namespace Beamable.Editor.Microservice.UI.Components {
                 switch (_records[i].state)
                 {
                     case MicroserviceRecord.MicroserviceRecordState.Failure:
-                        Succeeded = false;
-                        LoadingBar.UpdateProgress(0f, $"(Deploy Error: {_records[i].name})", true);
-                        Kill();
+	                    EndWithError(_records[i].name);
                         return;
                     case MicroserviceRecord.MicroserviceRecordState.Deployed:
                         Step++;
@@ -64,7 +66,14 @@ namespace Beamable.Editor.Microservice.UI.Components {
                 LoadingBar.UpdateProgress(Step / (float)TotalSteps, $"({ProcessName} {StepText})");
             }
         }
-        
+
+        private void EndWithError(string error)
+        {
+	        Succeeded = false;
+	        LoadingBar.UpdateProgress(0f, $"(Deploy Error: {error})", true);
+	        Kill();
+        }
+
         protected override void OnKill() {
             Application.logMessageReceived -= HandleLog;
         }

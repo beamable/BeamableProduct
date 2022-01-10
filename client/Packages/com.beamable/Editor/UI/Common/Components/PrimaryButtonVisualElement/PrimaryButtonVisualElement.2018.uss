@@ -1,0 +1,26 @@
+Button.unity-button,
+Button, Button.unity-button:hover:active,
+Button:hover:active {
+    background-image: none;
+    border-radius: 3px;
+    margin-bottom: 0px;
+    font-size: 12px;
+}
+
+Button.unity-button,
+Button {
+    background-color: #0090FD;
+}
+
+Button.unity-button:hover:active,
+Button:hover:active {
+    background-color: #419fe5;
+}
+.disabled Button.unity-button,
+.disabled Button {
+    background-color: #898989;
+}
+.disabled Button.unity-button:hover:active,
+.disabled Button:hover:active {
+    background-color: #a0a0a0;
+}
