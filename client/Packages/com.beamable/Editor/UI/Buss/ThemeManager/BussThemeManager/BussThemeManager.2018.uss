@@ -1,0 +1,27 @@
+#themeManagerContainer {
+    /*-unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");*/
+    padding-top: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-bottom: 10px;
+    flex-grow: 1;
+}
+
+#scrollView {
+    flex-grow: 1;
+}
+
+#navigationGroup {
+    height: 210px;
+    background-color: rgb(77,77,77);
+    margin-bottom: 10px;
+}
+
+#styleSheetSource {
+    margin-bottom: 10px;
+}
+
+#stylesGroup {
+    align-items: flex-start;
+    flex-grow: 1;
+}

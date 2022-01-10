@@ -30,45 +30,58 @@ namespace Beamable.UI.BUSS
 			themeManagerWindow.Show(true);
 		}
 
-		private VisualElement _navigationGroup;
 		private VisualElement _stylesGroup;
 		private ObjectField _styleSheetSource;
 		private BussStyleSheet _currentStyleSheet;
-		private VisualElement _root;
 
 		private void OnEnable()
 		{
 			minSize = BUSSConstants.ThemeManagerWindowSize;
-			
-			_root = this.GetRootVisualContainer();
-			_root.Clear();
-
-			VisualTreeAsset uiAsset =
-				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(
-					$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussThemeManager/BussThemeManager.uxml");
-
-			VisualElement tree = uiAsset.CloneTree();
-			tree.AddStyleSheet(
-				$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussThemeManager/BussThemeManager.uss");
-			tree.name = nameof(_root);
-			_root.Add(tree);
-			
 			Refresh();
 		}
 
 		private void Refresh()
 		{
-			_navigationGroup = _root.Q<VisualElement>("navigation");
-			_stylesGroup = _root.Q<VisualElement>("styles");
-			_styleSheetSource = _root.Q<ObjectField>("styleSheetSource");
+			VisualElement root = this.GetRootVisualContainer();
+			root.Clear();
+
+			VisualElement mainVisualElement = new VisualElement();
+			mainVisualElement.name = "themeManagerContainer";
+
+#if UNITY_2018			
+			mainVisualElement.AddStyleSheet(
+				$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussThemeManager/BussThemeManager.2018.uss");
+#elif UNITY_2019_1_OR_NEWER
+			mainVisualElement.AddStyleSheet(
+				$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussThemeManager/BussThemeManager.uss");
+#endif
+			
+			// ScrollView scrollView = new ScrollView();
+			// scrollView.name = "scrollView";
+
+			VisualElement navigationGroup = new VisualElement();
+			navigationGroup.name = "navigationGroup";
+			mainVisualElement.Add(navigationGroup);
+			
+			BussElementHierarchyVisualElement hierarchyComponent = new BussElementHierarchyVisualElement();
+			navigationGroup.Add(hierarchyComponent);
+			hierarchyComponent.Refresh();
+
+			_styleSheetSource = new ObjectField();
+			_styleSheetSource.allowSceneObjects = false;
+			_styleSheetSource.name = "styleSheetSource";
 			_styleSheetSource.objectType = typeof(BussStyleSheet);
 			_styleSheetSource.UnregisterValueChangedCallback(StyleSheetChanged);
 			_styleSheetSource.RegisterValueChangedCallback(StyleSheetChanged);
+			mainVisualElement.Add(_styleSheetSource);
 
-			BussElementHierarchyVisualElement hierarchyComponent = new BussElementHierarchyVisualElement();
+			_stylesGroup = new VisualElement();
+			_stylesGroup.name = "stylesGroup";
+			mainVisualElement.Add(_stylesGroup);
 
-			hierarchyComponent.Refresh();
-			_navigationGroup.Add(hierarchyComponent);
+			// mainVisualElement.Add(scrollView);
+			
+			root.Add(mainVisualElement);
 		}
 
 		private void StyleSheetChanged(ChangeEvent<Object> evt)

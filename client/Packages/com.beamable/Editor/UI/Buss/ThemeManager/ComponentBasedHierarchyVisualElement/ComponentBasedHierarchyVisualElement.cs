@@ -16,9 +16,6 @@ namespace Beamable.Editor.UI.Components
 		private IndentedLabelVisualElement _selectedComponent;
 		private ScrollView _container;
 
-		public ComponentBasedHierarchyVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement") { }
-
 		protected ComponentBasedHierarchyVisualElement(string commonPath) : base(commonPath) { }
 
 		public override void Refresh()

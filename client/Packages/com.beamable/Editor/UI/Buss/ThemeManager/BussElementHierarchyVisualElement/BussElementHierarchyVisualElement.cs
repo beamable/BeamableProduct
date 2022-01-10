@@ -12,10 +12,6 @@ namespace Beamable.Editor.UI.Components
 {
 	public class BussElementHierarchyVisualElement : ComponentBasedHierarchyVisualElement<BussElement>	
 	{
-		public new class UxmlFactory : UxmlFactory<BussElementHierarchyVisualElement, UxmlTraits>
-		{
-		}
-
 		public BussElementHierarchyVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement") { }
 
