@@ -1,5 +1,4 @@
-﻿
-#mainContainer {
+﻿#mainContainer {
     min-width: 100px;
     min-height: 26px;
     border-color: #6C6C6C;

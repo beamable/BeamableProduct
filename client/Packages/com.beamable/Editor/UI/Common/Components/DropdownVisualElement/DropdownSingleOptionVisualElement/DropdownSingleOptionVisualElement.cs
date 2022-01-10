@@ -37,7 +37,14 @@ namespace Beamable.Editor.UI.Components
             _label = Root.Q<Label>("value");
             _label.style.SetHeight(_height);
             _label.style.SetWidth(_width);
-            _label.style.SetFontSize(_height / 2.0f);
+#if UNITY_2019_3_OR_NEWER
+	        if(_label.style.fontSize.value.value > _height / 2.0f)
+#elif UNITY_2018_3_OR_NEWER
+            if(_label.style.fontSize.value > _height / 2.0f)
+#endif
+            {
+	            _label.style.SetFontSize(_height / 2.0f);
+            }
             _label.text = _labelText;
 
             _label.RegisterCallback<MouseDownEvent>(Clicked);
