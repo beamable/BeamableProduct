@@ -36,7 +36,7 @@
                     <engine:Label text="Always warn me about this before entering play mode."/>
                 </engine:Toggle>
             </engine:VisualElement>
-            <engine:Label text="Hint Details" name="playModeWarningSettings" class="hintSubtitle"/>
+            <engine:Label text="Hint Details" name="hintDetailsLabel" class="hintSubtitle"/>
         </engine:VisualElement>
     </engine:VisualElement>
 </engine:UXML>

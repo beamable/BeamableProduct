@@ -10,8 +10,14 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEditor;
 using UnityEngine.Assertions;
+
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
+using UnityEditor.Experimental.UIElements;
+
+#elif UNITY_2019_1_OR_NEWER
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
 #endif
 
 namespace Beamable.Editor.Assistant
@@ -55,6 +61,10 @@ namespace Beamable.Editor.Assistant
 		private Image _hintTypeIcon;
 		private VisualElement _headerContainer;
 
+		public BeamHintHeaderVisualElement() : base(nameof(BeamHintHeaderVisualElement))
+		{
+		}
+		
 		public BeamHintHeaderVisualElement(BeamHintsDataModel dataModel,
 		                                   BeamHintReflectionCache.Registry library,
 		                                   in BeamHintHeader hint,
@@ -156,7 +166,7 @@ namespace Beamable.Editor.Assistant
 				// Load UXML for details and add it to the details container.
 				var detailsTreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(detailsUxmlPath);
 				_detailsBox.Add(detailsTreeAsset.CloneTree());
-				foreach (var nonNullUssPath in nonNullUssPaths) _detailsBox.AddStyleSheetPath(nonNullUssPath);
+				foreach (var nonNullUssPath in nonNullUssPaths) _detailsBox.AddStyleSheet(nonNullUssPath);
 
 				// Update Name and Notification Preferences
 				_detailsBox.Q<Label>("hintDetailsBoxHintDisplayName").text = hintTitle;

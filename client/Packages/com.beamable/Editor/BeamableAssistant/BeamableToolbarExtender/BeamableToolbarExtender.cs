@@ -119,12 +119,26 @@ namespace Beamable.Editor.ToolbarExtender
 		public const float largeSpace = 20;
 		public const float buttonWidth = 32;
 		public const float dropdownWidth = 80;
+		
+#if UNITY_2019_1_OR_NEWER
+		public const float dropdownHeight = 21;
+#else
 		public const float dropdownHeight = 18;
+#endif
+
 		public const float beamableAssistantWidth = 145;
 #if UNITY_2019_1_OR_NEWER
 		public const float playPauseStopWidth = 140;
 #else
 		public const float playPauseStopWidth = 100;
+#endif
+	
+#if UNITY_2020_1_OR_NEWER
+		public const float versionControlWidth = 60;
+#elif UNITY_2019_1_OR_NEWER
+		public const float versionControlWidth = 100;
+#else
+		public const float versionControlWidth = 78;
 #endif
 
 		static void OnGUI()
@@ -171,7 +185,7 @@ namespace Beamable.Editor.ToolbarExtender
 			rightRect.xMax -= space; // Spacing between account and cloud
 			rightRect.xMax -= buttonWidth; // Cloud
 			rightRect.xMax -= space; // Spacing between cloud and collab
-			rightRect.xMax -= 78; // Colab
+			rightRect.xMax -= versionControlWidth; // Colab/PlasticSCM button
 			var beamableAssistantEnd = rightRect.xMax -= space; // Space between collab and Beamable Assistant
 			var beamableAssistantStart = rightRect.xMax -= beamableAssistantWidth; // Beamable Assistant Button
 
@@ -183,9 +197,9 @@ namespace Beamable.Editor.ToolbarExtender
 
 			// Add top and bottom margins
 #if UNITY_2019_3_OR_NEWER
-			leftRect.y = 4;
+			leftRect.y = 2;
 			leftRect.height = 22;
-			rightRect.y = 4;
+			rightRect.y = 2;
 			rightRect.height = 22;
 #else
 			leftRect.y = 5;

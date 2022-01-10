@@ -7,10 +7,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
-using UnityEditor.Experimental.UIElements;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
+
+#if UNITY_2018
 using UnityEngine.Experimental.UIElements;
+using UnityEditor.Experimental.UIElements;
+
+#elif UNITY_2019_1_OR_NEWER
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
+#endif
 
 namespace Beamable.Editor.Assistant
 {
@@ -101,7 +108,7 @@ namespace Beamable.Editor.Assistant
 			// Setup Beam Hints Mode Visuals
 			{
 				// Setup callback for clearing domain tree selection.
-				_windowRoot.Q("domain-tree-scroll").Q("ContentViewport").RegisterCallback(new EventCallback<MouseUpEvent>(evt => {
+				_windowRoot.Q("domain-tree-scroll").RegisterCallback(new EventCallback<MouseUpEvent>(evt => {
 					// Clears tree selection
 					_treeViewState.selectedIDs.Clear();
 					_treeViewIMGUI.Repaint();

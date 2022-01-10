@@ -53,26 +53,29 @@
     width: 20px;    
 }
 
-.splitWrapper.leftSplit {
-    flex-grow: 1;    
-}
-
-.splitWrapper.rightSplit {
-    flex-grow: 10;
-}
-
-.splitWrapper {    
+.splitWrapper {
     min-width: 100px;
 }
 
-ScrollView {
+.splitWrapper.leftSplit {
     flex-grow: 1;
     min-width: 230px;
+}
+
+.splitWrapper.rightSplit {
+    flex-grow: 5;
+}
+
+
+
+ScrollView {
+    flex-grow: 1;
     border-right-width: 2px;
     border-color: #adadad;
 }
 
-ScrollView > #ContentViewport > #ContentView {
+ScrollView > #ContentViewport > #ContentView,
+ScrollView > #unity-content-viewport > #unity-content-container {
     left: 0;
     right: 0;
 }

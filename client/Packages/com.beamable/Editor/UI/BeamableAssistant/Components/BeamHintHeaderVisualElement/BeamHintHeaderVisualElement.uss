@@ -71,15 +71,18 @@
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
 }
 
-#moreDetailsButton > Label{
+#moreDetailsButton > Label,
+#moreDetailsButton > VisualElement > Label{
     -unity-text-align: middle-center;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     font-size: 12px;
     color: #a7a7a7;    
     align-self: center;
+    flex-grow: 1;
 }
 
-Toggle#moreDetailsButton > #Checkmark{    
+Toggle#moreDetailsButton > #Checkmark,
+Toggle#moreDetailsButton > VisualElement >  #unity-checkmark{    
     position: absolute;
     left: 100000;
     visibility: hidden;
@@ -114,14 +117,15 @@ Button {
 #hintDetailsIdAndNotification{
     flex-direction: row;
     align-content: stretch;
-    justify-content: space-between;    
+    justify-content: flex-start;    
 }
 
 Toggle#hintDetailsBoxNotificationToggle { 
     flex-direction: row-reverse;    
 }
 
-Toggle#hintDetailsBoxNotificationToggle > #Checkmark {
+Toggle#hintDetailsBoxNotificationToggle > #Checkmark,
+Toggle#hintDetailsBoxNotificationToggle > VisualElement > #unity-checkmark {
     margin-left: 5px;    
 }
 
@@ -132,4 +136,14 @@ Toggle#hintDetailsBoxNotificationToggle > #Checkmark {
     font-size: 12px;
     color: #eeeeee;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+}
+
+#hintDetailsBoxPlayModeWarning > Toggle {
+    flex-direction: row;
+    align-content: stretch;
+    justify-content: flex-start;
+}
+
+#hintDetailsBoxPlayModeWarning > Toggle > VisualElement {
+    flex-grow: 0;
 }
