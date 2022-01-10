@@ -18,6 +18,20 @@ namespace Beamable.Server.Common
       private UnitySerializationSettings(){}
    }
 
+   public class JsonUtilityConverter : JsonUtility.IConverter
+   {
+      public static void Init()
+      {
+         JsonUtility.Converter = new JsonUtilityConverter();
+      }
+
+      private JsonUtilityConverter(){}
+
+      public string ToJson(object data) => JsonConvert.SerializeObject(data, UnitySerializationSettings.Instance);
+
+      public T FromJson<T>(string json) => JsonConvert.DeserializeObject<T>(json, UnitySerializationSettings.Instance);
+   }
+
    public class UnitySerializationCallbackConverter : JsonConverter
    {
       public readonly JsonConverter BaseConverter;

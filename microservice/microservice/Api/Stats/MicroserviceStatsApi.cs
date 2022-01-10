@@ -3,6 +3,7 @@ using System.Linq;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Stats;
+using Beamable.Common.Dependencies;
 using Beamable.Server.Api.Stats;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -18,8 +19,8 @@ namespace Beamable.Server.Api.Stats
 
       public RequestContext Context { get; }
 
-      public MicroserviceStatsApi(IBeamableRequester requester, RequestContext context, UserDataCache<Dictionary<string, string>>.FactoryFunction factoryFunction)
-         : base(requester, context, factoryFunction)
+      public MicroserviceStatsApi(IBeamableRequester requester, RequestContext context, IDependencyProvider provider, UserDataCache<Dictionary<string, string>>.FactoryFunction factoryFunction)
+         : base(requester, context, provider, factoryFunction)
       {
          Requester = requester;
          Context = context;
