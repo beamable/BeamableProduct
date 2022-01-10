@@ -1,9 +1,9 @@
-﻿#container {
+﻿#label {
     height: 20px;
     justify-content: center;
 }
 
-#label {
+#elementLabel {
     -unity-font-style: bold;
     font-size: 12px;
 }

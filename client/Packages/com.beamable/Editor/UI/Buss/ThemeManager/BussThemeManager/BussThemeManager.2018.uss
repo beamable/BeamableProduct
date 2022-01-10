@@ -25,3 +25,7 @@
     align-items: flex-start;
     flex-grow: 1;
 }
+
+BussElementHierarchyVisualElement {
+    flex-grow: 1;
+}

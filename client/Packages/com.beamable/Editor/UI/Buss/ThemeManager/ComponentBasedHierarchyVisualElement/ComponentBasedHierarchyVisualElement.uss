@@ -1,5 +1,6 @@
 #hierarchyContainer {
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    flex-grow: 1;
 }
 
 #header {

@@ -1,4 +1,5 @@
 ﻿using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Common;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -11,28 +12,42 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class ComponentBasedHierarchyVisualElement<T> : BeamableVisualElement where T : MonoBehaviour
+	public class ComponentBasedHierarchyVisualElement<T> : BeamableBasicVisualElement where T : MonoBehaviour
 	{
-		private IndentedLabelVisualElement _selectedComponent;
-		private ScrollView _container;
+#if UNITY_2018
+		protected ComponentBasedHierarchyVisualElement() : base(
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement.2018.uss") { }
+#elif UNITY_2019_1_OR_NEWER
+		public ComponentBasedHierarchyVisualElement() : base(
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement.uss") { }
+#endif
 
-		protected ComponentBasedHierarchyVisualElement(string commonPath) : base(commonPath) { }
+		private ScrollView _hierarchyContainer;
+		private IndentedLabelVisualElement _selectedComponent;
 
 		public override void Refresh()
 		{
 			base.Refresh();
+			// Root = new VisualElement().WithName("mainContainer");
+			VisualElement header = new VisualElement().WithName("header");
+			TextElement label = new TextElement().WithName("headerLabel");
+			label.text = "Navigation window";
+			header.Add(label);
+			Root.Add(header);
 
-			_container = Root.Q<ScrollView>("scrollView");
-
+			_hierarchyContainer = new ScrollView().WithName("elementsContainer");
+			Root.Add(_hierarchyContainer);
+			
 			EditorApplication.hierarchyChanged -= OnHierarchyChanged;
 			EditorApplication.hierarchyChanged += OnHierarchyChanged;
+			
 
+			
 			OnHierarchyChanged();
 		}
 
 		protected override void OnDestroy()
 		{
-			base.OnDestroy();
 			EditorApplication.hierarchyChanged -= OnHierarchyChanged;
 		}
 
@@ -43,7 +58,14 @@ namespace Beamable.Editor.UI.Components
 
 		private void OnHierarchyChanged()
 		{
-			_container.Clear();
+			foreach (VisualElement visualElement in _hierarchyContainer.Children())
+			{
+				// TODO: check this!!!
+				BeamableBasicVisualElement element = visualElement as BeamableBasicVisualElement;
+				element?.Destroy();
+			}
+
+			_hierarchyContainer.Clear();
 
 			foreach (Object foundObject in Object.FindObjectsOfType(typeof(GameObject)))
 			{
@@ -71,11 +93,10 @@ namespace Beamable.Editor.UI.Components
 			if (foundComponent != null)
 			{
 				IndentedLabelVisualElement label = new IndentedLabelVisualElement();
-				_container.Add(label);
-
 				label.Setup(foundComponent.gameObject, GetLabel(foundComponent), OnMouseClicked,
 				            currentLevel, IndentedLabelVisualElement.DEFAULT_SINGLE_INDENT_WIDTH);
 				label.Refresh();
+				_hierarchyContainer.Add(label);
 
 				foreach (Transform child in gameObject.transform)
 				{

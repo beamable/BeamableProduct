@@ -2,6 +2,7 @@
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using Editor.UI.BUSS;
+using System;
 using UnityEditor;
 using Object = UnityEngine.Object;
 #if UNITY_2018
@@ -33,6 +34,7 @@ namespace Beamable.UI.BUSS
 		private VisualElement _stylesGroup;
 		private ObjectField _styleSheetSource;
 		private BussStyleSheet _currentStyleSheet;
+		private BussElementHierarchyVisualElement _hierarchyComponent;
 
 		private void OnEnable()
 		{
@@ -63,9 +65,9 @@ namespace Beamable.UI.BUSS
 			navigationGroup.name = "navigationGroup";
 			mainVisualElement.Add(navigationGroup);
 			
-			BussElementHierarchyVisualElement hierarchyComponent = new BussElementHierarchyVisualElement();
-			navigationGroup.Add(hierarchyComponent);
-			hierarchyComponent.Refresh();
+			_hierarchyComponent = new BussElementHierarchyVisualElement();
+			_hierarchyComponent.Refresh();
+			navigationGroup.Add(_hierarchyComponent);
 
 			_styleSheetSource = new ObjectField();
 			_styleSheetSource.allowSceneObjects = false;
@@ -105,6 +107,11 @@ namespace Beamable.UI.BUSS
 		private void ClearCurrentStyleSheet()
 		{
 			_stylesGroup.Clear();
+		}
+
+		private void OnDestroy()
+		{
+			_hierarchyComponent.Destroy();
 		}
 	}
 }
