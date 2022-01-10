@@ -1,5 +1,3 @@
-using System.IO;
-using Beamable.Common.Content;
 using Beamable.Content;
 using Beamable.Editor.Content;
 using UnityEditor.Build;
@@ -11,9 +9,6 @@ namespace Beamable.Editor
     {
         public int callbackOrder { get; }
 
-#if !UNITY_STANDALONE
-		public void OnPreprocessBuild(BuildReport report) { } 
-#else
         public async void OnPreprocessBuild(BuildReport report)
         {
             if (ContentConfiguration.Instance.BakeContentOnBuild)
@@ -21,6 +16,5 @@ namespace Beamable.Editor
                 await ContentIO.BakeContent();    
             }
         }
-#endif
     }
 }
