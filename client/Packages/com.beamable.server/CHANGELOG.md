@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Microstorage is out of Preview. Storage Objects can now be published and used in a remote environment.
 
+### Added
+- Added support for typless `Promise` in `ClientCallable` methods
+
+
 ## [0.18.0]
 ### Added
 - `ApiContent` classes and execution methods allow you to invoke microservices with data

@@ -13,6 +13,6 @@ namespace Beamable.Common.Content
     [Serializable]
     public class ContentDataInfoWrapper
     {
-        public List<ContentDataInfo> content;
+        public List<ContentDataInfo> content = new List<ContentDataInfo>();
     }
 }
