@@ -1,7 +1,9 @@
 ﻿Label {
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    -unity-text-align: middle-left;
+    padding-left: 15px;
 }
 
-#mainVisualElement:hover {
+Label:hover {
    background-color: #828292;
 }

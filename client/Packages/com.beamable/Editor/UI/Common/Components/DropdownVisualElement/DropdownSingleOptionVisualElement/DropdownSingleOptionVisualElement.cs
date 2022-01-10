@@ -15,7 +15,6 @@ namespace Beamable.Editor.UI.Components
     {
         private Label _label;
         private string _labelText;
-        private VisualElement _root;
         private float _width;
         private float _height;
         private Action<string> _onClick;
@@ -35,15 +34,13 @@ namespace Beamable.Editor.UI.Components
         public override void Refresh()
         {
             base.Refresh();
-            _root = Root.Q<VisualElement>("mainVisualElement");
-            _root.style.SetHeight(_height);
-            _root.style.SetWidth(_width);
-            _root.style.SetFontSize(_height / 2.0f);
-
             _label = Root.Q<Label>("value");
+            _label.style.SetHeight(_height);
+            _label.style.SetWidth(_width);
+            _label.style.SetFontSize(_height / 2.0f);
             _label.text = _labelText;
 
-            _root.RegisterCallback<MouseDownEvent>(Clicked);
+            _label.RegisterCallback<MouseDownEvent>(Clicked);
         }
 
         private void Clicked(MouseDownEvent evt)
