@@ -25,7 +25,7 @@ namespace Beamable.Editor.Microservice.UI.Components
       private const string STORAGE_IMAGE_CLASS = "storageImage";
       private const string UNPUBLISHED_IMAGE_CLASS = "unpublished";
       private const string PUBLISHED_IMAGE_CLASS = "published";
-      
+
       public IEntryModel Model { get; }
 
       private bool wasPublished;
@@ -57,28 +57,25 @@ namespace Beamable.Editor.Microservice.UI.Components
          var commentField = Root.Q<TextField>("commentsText");
          commentField.value = Model.Comment;
          commentField.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
-         
+
          var icon = Root.Q<Image>("typeImage");
 
          if (Model is ManifestEntryModel serviceModel)
          {
             icon.AddToClassList(MICROSERVICE_IMAGE_CLASS);
 
-            if (MicroserviceConfiguration.Instance.EnableStoragePreview)
-            {
-               var microserviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(serviceModel.Name);
+            var microserviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(serviceModel.Name);
 
-               if (microserviceModel != null && microserviceModel.Dependencies != null)
-               {
-                  List<string> dependencies = new List<string>();
-                  foreach (var dep in microserviceModel.Dependencies)
-                  {
-                     dependencies.Add(dep.Name);
-                  }
-               
-                  var depsList = Root.Q<ExpandableListVisualElement>("depsList");
-                  depsList.Setup(dependencies);
-               }  
+            if (microserviceModel != null && microserviceModel.Dependencies != null)
+            {
+	            List<string> dependencies = new List<string>();
+	            foreach (var dep in microserviceModel.Dependencies)
+	            {
+		            dependencies.Add(dep.Name);
+	            }
+
+	            var depsList = Root.Q<ExpandableListVisualElement>("depsList");
+	            depsList.Setup(dependencies);
             }
          }
          else
