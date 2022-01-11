@@ -17,7 +17,7 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class BussStylePropertyVisualElement : ValidableVisualElement<string>
+	public class BussStylePropertyVisualElement : BeamableVisualElement
 	{
 		public new class UxmlFactory : UxmlFactory<BussStylePropertyVisualElement, UxmlTraits> { }
 
