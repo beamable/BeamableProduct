@@ -40,7 +40,7 @@ namespace Beamable.Server
 
    public class MicroserviceClient
    {
-	   private IBeamableRequester _requester;
+	   protected IBeamableRequester _requester;
 	   protected MicroserviceClient(IBeamableRequester requester=null)
 	   {
 		   _requester = requester;

@@ -30,6 +30,7 @@ namespace Beamable.Tests.Runtime
          MockApi.User = MockPlatform.User;
          MockApi.Token = new AccessToken(null, "testcid", "testpid", "testtoken", "refresh", 0);
          MockRequester = new MockPlatformAPI();
+         MockRequester.AccessToken = MockApi.Token;
          MockApi.Requester = MockRequester;
          API.Instance = Promise<IBeamableAPI>.Successful(MockApi);
          OnSetupBeamable();
