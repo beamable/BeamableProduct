@@ -1,4 +1,5 @@
 ﻿using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Validation;
 using Beamable.UI.Buss;
 using Beamable.UI.Sdf;
@@ -17,14 +18,16 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class BussStylePropertyVisualElement : BeamableVisualElement
+	public class BussStylePropertyVisualElement : BeamableBasicVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<BussStylePropertyVisualElement, UxmlTraits> { }
-
+#if UNITY_2018
 		public BussStylePropertyVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStylePropertyVisualElement)}/{nameof(BussStylePropertyVisualElement)}") { }
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.2018.uss") { }
+#elif UNITY_2019_1_OR_NEWER
+		public BussStylePropertyVisualElement() : base(
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.uss") { }
+#endif
 
-		private BussStyleRule _styleRule;
 		private BussPropertyProvider _property;
 		private VisualElement _valueParent;
 		private VisualElement _variableParent;
@@ -33,18 +36,24 @@ namespace Beamable.Editor.UI.Components
 		{
 			base.Refresh();
 
-			_valueParent = Root.Q<VisualElement>("value");
-			_variableParent = Root.Q<VisualElement>("globalVariable");
-
-			Label labelComponent = Root.Q<Label>("label");
+			TextElement labelComponent = new TextElement();
+			labelComponent.name = "propertyLabel";
 			labelComponent.text = _property.Key;
+			Root.Add(labelComponent);
+			
+			_valueParent = new VisualElement();
+			_valueParent.name = "value";
+			Root.Add(_valueParent);
+
+			_variableParent = new VisualElement();
+			_variableParent.name = "globalVariable";
+			Root.Add(_variableParent);
 
 			SetupEditableField(_property);
 		}
 
-		public void Setup(BussStyleRule styleRule, BussPropertyProvider property)
+		public void Setup(BussPropertyProvider property)
 		{
-			_styleRule = styleRule;
 			_property = property;
 			Refresh();
 		}

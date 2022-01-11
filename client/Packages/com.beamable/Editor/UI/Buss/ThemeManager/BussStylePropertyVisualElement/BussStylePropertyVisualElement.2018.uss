@@ -1,10 +1,10 @@
-#propertyContainer {
+#root {
     flex-direction: row;
     justify-content: flex-start;
     align-self: stretch;
 }
 
-#label {
+#propertyLabel {
     width: 140px;
     color: rgb(255,255,255);
     min-height: 30px;
