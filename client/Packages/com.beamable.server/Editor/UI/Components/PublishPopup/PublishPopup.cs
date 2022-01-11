@@ -43,8 +43,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 		}
 
-		private const int MILISECOND_PER_UPDATE = 250;
-
 		public Action OnCloseRequested;
 		public Action<ManifestModel> OnSubmit;
 
@@ -56,17 +54,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private TextField _generalComments;
 		private GenericButtonVisualElement  _cancelButton;
-		private PrimaryButtonVisualElement _continueButton;
+		private PrimaryButtonVisualElement _primarySubmitButton;
 		private ScrollView _scrollContainer;
 		private Dictionary<string, PublishManifestEntryVisualElement> _publishManifestElements;
 		private LoadingBarElement _mainLoadingBar;
-		private Label _topMessage;
-		int _topMessageCounter = 0;
-		private DateTime _lastUpdateTime;
-		private bool _topMessageUpdating = false;
-
-		private readonly string[] topMessageUpdateTexts =
-			{"Deploying   ", "Deploying.  ", "Deploying.. ", "Deploying..."};
+		private PublishStatusVisualElement _topMessage;
 
 		public PublishPopup() : base(nameof(PublishPopup)) { }
 
@@ -89,8 +81,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Microservices.OnServiceDeployStatusChanged += HandleServiceServiceDeployStatusChange;
 			Microservices.OnServiceDeployProgress -= HandleServiceDeployProgress;
 			Microservices.OnServiceDeployProgress += HandleServiceDeployProgress;
-			Microservices.OnDeploySuccess -= HandleDeploySuccess;
-			Microservices.OnDeploySuccess += HandleDeploySuccess;
+			OnSubmit -= SubmitClicked;
+			OnSubmit += SubmitClicked;
 
 			_mainLoadingBar = Root.Q<LoadingBarElement>("mainLoadingBar");
 			_mainLoadingBar.SmallBar = true;
@@ -121,21 +113,17 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_cancelButton = Root.Q<GenericButtonVisualElement >("cancelBtn");
 			_cancelButton.OnClick += () => OnCloseRequested?.Invoke();
 
-			_continueButton = Root.Q<PrimaryButtonVisualElement>("continueBtn");
-			_continueButton.Button.clickable.clicked += () => OnSubmit?.Invoke(Model);
-			_topMessage = Root.Q<Label>("topMessage");
-			_lastUpdateTime = DateTime.Now;
+			_primarySubmitButton = Root.Q<PrimaryButtonVisualElement>("continueBtn");
+			_primarySubmitButton.Button.clickable.clicked += () => OnSubmit?.Invoke(Model);
+			_topMessage = Root.Q<PublishStatusVisualElement>("topMessage");
+			_topMessage.Refresh();
+			OnSubmit -= _topMessage.HandleSubmitClicked;
+			OnSubmit += _topMessage.HandleSubmitClicked;
 			
 			HandleServiceServiceDeployStatusChange(null, ServicePublishState.Unpublished);
 		}
 
-		private void HandleDeploySuccess(ManifestModel manifest, int servicesAmount)
-		{
-			_topMessageUpdating = false;
-			const string oneService = "service";
-			const string multipleServices = "services";
-			_topMessage.text = $"Congratulations! You have successfully published {servicesAmount} {(servicesAmount == 1 ? oneService : multipleServices)}!";
-		}
+		private void SubmitClicked(ManifestModel _) => _primarySubmitButton.Disable();
 
 		public void PrepareForPublish()
 		{
@@ -172,45 +160,23 @@ namespace Beamable.Editor.Microservice.UI.Components
 			switch (state)
 			{
 				case ServicePublishState.Unpublished:
-					_topMessage.text = "Are you sure you want to deploy your microservices?";
-					return;
 				case ServicePublishState.InProgress:
-					if(!_topMessageUpdating)
-					{
-						EditorApplication.update += UpdateTopMessageText;
-						_topMessageUpdating = true;
-					}
 					return;
 				case ServicePublishState.Failed:
+					_primarySubmitButton.Enable();
 					_mainLoadingBar.UpdateProgress(0, failed: true);
 					foreach (KeyValuePair<string, PublishManifestEntryVisualElement> kvp in _publishManifestElements)
 					{
 						kvp.Value.LoadingBar.SetUpdater(null);
 					}
-					_topMessage.text = $"Oh no! Errors appears during publishing of {descriptor.Name}. Please check the log for detailed information.";
 					break;
 				case ServicePublishState.Published:
+					_primarySubmitButton.Enable();
 					break;
 				default:
 					throw new ArgumentOutOfRangeException(nameof(state), state, null);
 			}
-			EditorApplication.update -= UpdateTopMessageText;
-			_topMessageUpdating = false;
 			_publishManifestElements[descriptor.Name].UpdateStatus(state);
-		}
-
-		private void UpdateTopMessageText()
-		{
-			if (!_topMessageUpdating) 
-				return;
-			var currentTime = DateTime.Now;
-			if(_lastUpdateTime.AddMilliseconds(MILISECOND_PER_UPDATE) > currentTime)
-				return;
-			_lastUpdateTime = currentTime;
-			_topMessageCounter++;
-			var currentTextValue =
-				topMessageUpdateTexts[_topMessageCounter % topMessageUpdateTexts.Length];
-			_topMessage.text = currentTextValue;
 		}
 
 		private void HandleServiceDeployProgress(IDescriptor descriptor)

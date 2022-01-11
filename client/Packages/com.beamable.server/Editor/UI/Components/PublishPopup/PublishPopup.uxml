@@ -10,7 +10,7 @@
     <beamable:LoadingBarElement name="mainLoadingBar"/>
 
     <engine:VisualElement name="mainVisualElement">
-        <engine:Label name="topMessage"/>
+        <beamable:PublishStatusVisualElement name="topMessage"/>
         
         <engine:VisualElement name="header">
             <engine:VisualElement name="enabledC" class="column">

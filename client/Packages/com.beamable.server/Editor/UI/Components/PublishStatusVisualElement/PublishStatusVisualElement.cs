@@ -1,0 +1,98 @@
+﻿using Beamable.Editor.Microservice.UI.Components;
+using System;
+using Beamable.Editor.UI.Buss;
+using Beamable.Server.Editor;
+using Beamable.Server.Editor.UI.Components;
+using UnityEditor;
+using UnityEngine;
+#if UNITY_2018
+using UnityEngine.Experimental.UIElements;
+using UnityEditor.Experimental.UIElements;
+#elif UNITY_2019_1_OR_NEWER
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
+#endif
+
+namespace Beamable.Editor.UI.Components
+{
+	public class PublishStatusVisualElement : MicroserviceComponent
+	{
+		public new class UxmlFactory : UxmlFactory<PublishStatusVisualElement, UxmlTraits>
+		{}
+
+		public PublishStatusVisualElement() : base(nameof(PublishStatusVisualElement))
+		{}
+
+		private const int MILISECOND_PER_UPDATE = 250;
+		private readonly string[] topMessageUpdateTexts =
+			{"Deploying   ", "Deploying.  ", "Deploying.. ", "Deploying..."};
+		
+		Label _label;
+		int _topMessageCounter = 0;
+		private DateTime _lastUpdateTime;
+		private bool _topMessageUpdating = false;
+
+		public override void Refresh()
+		{
+			base.Refresh();
+			_lastUpdateTime = DateTime.Now;
+			_label = Root.Q<Label>("value");
+			Microservices.OnDeploySuccess -= HandleDeploySuccess;
+			Microservices.OnDeploySuccess += HandleDeploySuccess;
+			Microservices.OnServiceDeployStatusChanged -= HandleServiceServiceDeployStatusChange;
+			Microservices.OnServiceDeployStatusChanged += HandleServiceServiceDeployStatusChange;
+			HandleServiceServiceDeployStatusChange(null, ServicePublishState.Unpublished);
+		}
+		
+		public void HandleSubmitClicked(ManifestModel _) => 
+			_label.text = topMessageUpdateTexts[0];
+
+		private void HandleServiceServiceDeployStatusChange(IDescriptor descriptor, ServicePublishState state)
+		{
+			switch (state)
+			{
+				case ServicePublishState.Unpublished:
+					_label.text = "Are you sure you want to deploy your microservices?";
+					return;
+				case ServicePublishState.InProgress:
+					if(!_topMessageUpdating)
+					{
+						EditorApplication.update += UpdateTopMessageText;
+						_topMessageUpdating = true;
+					}
+					return;
+				case ServicePublishState.Failed:
+					_label.text = $"Oh no! Errors appears during publishing of {descriptor.Name}. Please check the log for detailed information.";
+					break;
+				case ServicePublishState.Published:
+					break;
+				default:
+					throw new ArgumentOutOfRangeException(nameof(state), state, null);
+			}
+			EditorApplication.update -= UpdateTopMessageText;
+			_topMessageUpdating = false;
+		}
+
+		private void UpdateTopMessageText()
+		{
+			if (!_topMessageUpdating) 
+				return;
+			var currentTime = DateTime.Now;
+			if(_lastUpdateTime.AddMilliseconds(MILISECOND_PER_UPDATE) > currentTime)
+				return;
+			_lastUpdateTime = currentTime;
+			_topMessageCounter++;
+			var currentTextValue =
+				topMessageUpdateTexts[_topMessageCounter % topMessageUpdateTexts.Length];
+			_label.text = currentTextValue;
+		}
+
+		private void HandleDeploySuccess(ManifestModel manifest, int servicesAmount)
+		{
+			_topMessageUpdating = false;
+			const string oneService = "service";
+			const string multipleServices = "services";
+			_label.text = $"Congratulations! You have successfully published {servicesAmount} {(servicesAmount == 1 ? oneService : multipleServices)}!";
+		}
+	}
+}
