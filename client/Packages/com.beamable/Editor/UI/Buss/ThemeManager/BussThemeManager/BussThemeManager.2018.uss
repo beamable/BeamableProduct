@@ -22,7 +22,7 @@
 }
 
 #stylesGroup {
-    align-items: flex-start;
+    align-items: stretch;
     flex-grow: 1;
 }
 
