@@ -83,82 +83,83 @@ namespace Beamable
 			OfflineCache.FlushInvalidCache();
 
 			// register all services that are not context specific.
-			DependencyBuilder = new DependencyBuilder()
-			                    .AddComponentSingleton<CoroutineService>()
-			                    .AddComponentSingleton<NotificationService>()
-			                    .AddComponentSingleton<BeamableBehaviour>()
-			                    .AddComponentSingleton<PubnubSubscriptionManager>(
-				                    (manager, provider) => manager.Initialize(provider.GetService<IPlatformService>()))
-			                    .AddSingleton<IBeamableRequester, PlatformRequester>(
-				                    provider => provider.GetService<PlatformRequester>())
-			                    .AddSingleton(BeamableEnvironment.Data)
-			                    .AddSingleton<IUserContext>(provider => provider.GetService<IPlatformService>())
-			                    .AddSingleton<IConnectivityService, ConnectivityService>()
-			                    .AddSingleton<IAuthService, AuthService>()
-			                    .AddScoped<IInventoryApi, InventoryService>( provider => provider.GetService<InventoryService>())
-			                    .AddSingleton<IAnnouncementsApi, AnnouncementsService>()
-			                    .AddSingleton<ISessionService, SessionService>()
-			                    .AddSingleton<CloudSavingService>()
-			                    .AddSingleton<IBeamableFilesystemAccessor, PlatformFilesystemAccessor>()
-			                    .AddSingleton<ContentService>()
-			                    .AddSingleton<IContentApi>( provider => provider.GetService<ContentService>())
-			                    .AddScoped<InventoryService>()
-			                    .AddScoped<StatsService>(provider =>
-				                                             new StatsService(
-					                                             provider.GetService<IPlatformService>(),
-					                                             provider.GetService<PlatformRequester>(),
-					                                             provider,
-					                                             UnityUserDataCache<Dictionary<string, string>>
-						                                             .CreateInstance))
-			                    .AddSingleton<AnalyticsTracker>(provider =>
-				                    new AnalyticsTracker(provider.GetService<IPlatformService>(),
-				                                         provider.GetService<PlatformRequester>(),
-				                                         provider.GetService<CoroutineService>(), 30, 10)
-			                    )
-			                    .AddSingleton<IAnalyticsTracker>(provider => provider.GetService<AnalyticsTracker>())
-			                    .AddSingleton<MailService>()
-			                    .AddSingleton<PushService>()
-			                    .AddSingleton<CommerceService>()
-			                    .AddSingleton<CloudDataService>()
-			                    .AddSingleton<ICloudDataApi>(provider => provider.GetService<CloudDataService>())
-			                    .AddSingleton<CloudDataApi>(provider => provider.GetService<CloudDataService>())
-			                    .AddSingleton<PaymentService>()
-			                    .AddSingleton<GroupsService>()
-			                    .AddSingleton<EventsService>()
-			                    .AddSingleton<ITournamentApi>(p => p.GetService<TournamentService>())
-			                    .AddSingleton<TournamentService>()
-			                    .AddSingleton<ChatService>()
-			                    .AddSingleton<LeaderboardService>(provider =>
-				                                                      new LeaderboardService(
-					                                                      provider.GetService<IPlatformService>(),
-					                                                      provider.GetService<IBeamableRequester>(),
-					                                                      provider,
-					                                                      UnityUserDataCache<RankEntry>.CreateInstance
-					                                                      ))
-			                    .AddSingleton<GameRelayService>()
-			                    .AddSingleton<MatchmakingService>(provider => new MatchmakingService(
-				                                                      provider.GetService<IPlatformService>(),
-				                                                      // the matchmaking service needs a special instance of the beamable api requester
-				                                                      provider.GetService<BeamableApiRequester>())
-				                    )
-			                    .AddSingleton<SocialService>()
-			                    .AddSingleton<CalendarsService>()
-			                    .AddSingleton<AnnouncementsService>()
-			                    .AddSingleton<IHeartbeatService, Heartbeat>()
-			                    .AddSingleton<ISdkEventService, SdkEventService>()
-			                    .AddSingleton<PubnubNotificationService>()
-			                    .AddSingleton<IPubnubNotificationService, PubnubNotificationService>()
-			                    .AddSingleton<IPubnubSubscriptionManager>(
-				                    provider => provider.GetService<PubnubSubscriptionManager>())
-			                    .AddSingleton<INotificationService>(
-				                    provider => provider.GetService<NotificationService>())
-				;
+			DependencyBuilder = new DependencyBuilder();
+			DependencyBuilder.AddComponentSingleton<CoroutineService>();
+			DependencyBuilder.AddComponentSingleton<NotificationService>();
+			DependencyBuilder.AddComponentSingleton<BeamableBehaviour>();
+			DependencyBuilder.AddComponentSingleton<PubnubSubscriptionManager>(
+				(manager, provider) => manager.Initialize(provider.GetService<IPlatformService>()));
+			DependencyBuilder.AddSingleton<IBeamableRequester, PlatformRequester>(
+				provider => provider.GetService<PlatformRequester>());
+			DependencyBuilder.AddSingleton(BeamableEnvironment.Data);
+			DependencyBuilder.AddSingleton<IUserContext>(provider => provider.GetService<IPlatformService>());
+			DependencyBuilder.AddSingleton<IConnectivityService, ConnectivityService>();
+			DependencyBuilder.AddSingleton<IAuthService, AuthService>();
+			DependencyBuilder.AddScoped<IInventoryApi, InventoryService>(
+				provider => provider.GetService<InventoryService>());
+			DependencyBuilder.AddSingleton<IAnnouncementsApi, AnnouncementsService>();
+			DependencyBuilder.AddSingleton<ISessionService, SessionService>();
+			DependencyBuilder.AddSingleton<CloudSavingService>();
+			DependencyBuilder.AddSingleton<IBeamableFilesystemAccessor, PlatformFilesystemAccessor>();
+			DependencyBuilder.AddSingleton<ContentService>();
+			DependencyBuilder.AddSingleton<IContentApi>(provider => provider.GetService<ContentService>());
+			DependencyBuilder.AddScoped<InventoryService>();
+			DependencyBuilder.AddScoped<StatsService>(provider =>
+				                                          new StatsService(
+					                                          provider.GetService<IPlatformService>(),
+					                                          provider.GetService<PlatformRequester>(),
+					                                          provider,
+					                                          UnityUserDataCache<Dictionary<string, string>>
+						                                          .CreateInstance));
+			DependencyBuilder.AddSingleton<AnalyticsTracker>(provider =>
+				                                                 new AnalyticsTracker(
+					                                                 provider.GetService<IPlatformService>(),
+					                                                 provider.GetService<PlatformRequester>(),
+					                                                 provider.GetService<CoroutineService>(), 30, 10)
+			);
+			DependencyBuilder.AddSingleton<IAnalyticsTracker>(provider => provider.GetService<AnalyticsTracker>());
+			DependencyBuilder.AddSingleton<MailService>();
+			DependencyBuilder.AddSingleton<PushService>();
+			DependencyBuilder.AddSingleton<CommerceService>();
+			DependencyBuilder.AddSingleton<CloudDataService>();
+			DependencyBuilder.AddSingleton<ICloudDataApi>(provider => provider.GetService<CloudDataService>());
+			DependencyBuilder.AddSingleton<CloudDataApi>(provider => provider.GetService<CloudDataService>());
+			DependencyBuilder.AddSingleton<PaymentService>();
+			DependencyBuilder.AddSingleton<GroupsService>();
+			DependencyBuilder.AddSingleton<EventsService>();
+			DependencyBuilder.AddSingleton<ITournamentApi>(p => p.GetService<TournamentService>());
+			DependencyBuilder.AddSingleton<TournamentService>();
+			DependencyBuilder.AddSingleton<ChatService>();
+			DependencyBuilder.AddSingleton<LeaderboardService>(provider =>
+				                                                   new LeaderboardService(
+					                                                   provider.GetService<IPlatformService>(),
+					                                                   provider.GetService<IBeamableRequester>(),
+					                                                   provider,
+					                                                   UnityUserDataCache<RankEntry>.CreateInstance
+				                                                   ));
+			DependencyBuilder.AddSingleton<GameRelayService>();
+			DependencyBuilder.AddSingleton<MatchmakingService>(provider => new MatchmakingService(
+				                                                   provider.GetService<IPlatformService>(),
+				                                                   // the matchmaking service needs a special instance of the beamable api requester
+				                                                   provider.GetService<BeamableApiRequester>())
+			);
+			DependencyBuilder.AddSingleton<SocialService>();
+			DependencyBuilder.AddSingleton<CalendarsService>();
+			DependencyBuilder.AddSingleton<AnnouncementsService>();
+			DependencyBuilder.AddSingleton<IHeartbeatService, Heartbeat>();
+			DependencyBuilder.AddSingleton<ISdkEventService, SdkEventService>();
+			DependencyBuilder.AddSingleton<PubnubNotificationService>();
+			DependencyBuilder.AddSingleton<IPubnubNotificationService, PubnubNotificationService>();
+			DependencyBuilder.AddSingleton<IPubnubSubscriptionManager>(
+				provider => provider.GetService<PubnubSubscriptionManager>());
+			DependencyBuilder.AddSingleton<INotificationService>(
+				provider => provider.GetService<NotificationService>());
+
 
 
 
 			DependencyBuilder.AddSingleton<Promise<IBeamablePurchaser>>(provider => new Promise<IBeamablePurchaser>());
 			DependencyBuilder.AddSingleton<PlayerAnnouncements>();
-			// DependencyBuilder.AddScoped<PlayerCurrencyGroup>();
 			DependencyBuilder.AddScoped<PlayerStats>();
 			DependencyBuilder.AddScoped<PlayerInventory>();
 
@@ -173,13 +174,13 @@ namespace Beamable
 		}
 
 		/// <summary>
-		/// Runs the <see cref="BeamContext.ClearAndDispose"/> method on every <see cref="BeamContext"/> in memory.
+		/// Runs the <see cref="BeamContext.ClearPlayerAndStop"/> method on every <see cref="BeamContext"/> in memory.
 		/// </summary>
 		public static async Promise ClearAndDisposeAllContexts()
 		{
 			foreach (var ctx in BeamContext.All)
 			{
-				await ctx.ClearAndDispose();
+				await ctx.ClearPlayerAndStop();
 			}
 		}
 
@@ -230,10 +231,8 @@ namespace Beamable
 
 		private static void LoadCustomDependencies()
 		{
-
 			var registrations = new List<(RegisterBeamableDependenciesAttribute, MethodInfo)>();
 			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
 
 			foreach (var assembly in assemblies)
 			{
@@ -270,7 +269,7 @@ namespace Beamable
 			registrations.Sort( (a, b) => a.Item1.Order.CompareTo(b.Item1.Order));
 			foreach (var registration in registrations)
 			{
-				registration.Item2.Invoke(null, new[] {Beam.DependencyBuilder});
+				registration.Item2.Invoke(null, new object[] {Beam.DependencyBuilder});
 			}
 		}
 

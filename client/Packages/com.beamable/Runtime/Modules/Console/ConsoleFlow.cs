@@ -114,7 +114,7 @@ namespace Beamable.Console
             _textAutoCompleter = new TextAutoCompleter(ref txtInput, ref txtAutoCompleteSuggestion);
             _consoleHistory = new ConsoleHistory();
 
-            var ctx = BeamContext.ForContext(this);
+            var ctx = BeamContext.InParent(this);
             await ctx.OnReady;
             var console = ctx.ServiceProvider.GetService<BeamableConsole>();
 
@@ -224,7 +224,7 @@ namespace Beamable.Console
             for (var i = 1; i < parts.Length; i++) args[i - 1] = parts[i];
 
 
-            var ctx = BeamContext.ForContext(this);
+            var ctx = BeamContext.InParent(this);
             var console = ctx.ServiceProvider.GetService<BeamableConsole>();
             // need to re-register commands because they might have been lost in a reset or restart
             console.OnLog -= Log;

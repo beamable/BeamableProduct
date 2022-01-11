@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Announcements;
+using Beamable.Common.Dependencies;
 
 namespace Beamable.Api.Announcements
 {
    public class AnnouncementsSubscription : PlatformSubscribable<AnnouncementQueryResponse, AnnouncementQueryResponse>
    {
-      public AnnouncementsSubscription(IPlatformService platform, IBeamableRequester requester, string service) : base(platform, requester, service)
+      public AnnouncementsSubscription(IDependencyProvider provider, string service) : base(provider, service)
       {
       }
 
@@ -38,9 +39,9 @@ namespace Beamable.Api.Announcements
    {
       public AnnouncementsSubscription Subscribable { get; }
 
-      public AnnouncementsService(IPlatformService platform, IBeamableRequester requester) : base(requester, platform)
+      public AnnouncementsService(IPlatformService platform, IBeamableRequester requester, IDependencyProvider provider) : base(requester, platform)
       {
-         Subscribable = new AnnouncementsSubscription(platform, requester, "announcements");
+         Subscribable = new AnnouncementsSubscription(provider, "announcements");
       }
 
       public override Promise<EmptyResponse> Claim(List<string> ids)

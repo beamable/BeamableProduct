@@ -40,29 +40,24 @@ namespace Beamable.Server
 
    public class MicroserviceClient
    {
-	   protected Promise<IBeamableRequester> RequesterPromise { get; }
-
-	   public MicroserviceClient(IBeamableRequester requester=null)
+	   private IBeamableRequester _requester;
+	   protected MicroserviceClient(IBeamableRequester requester=null)
 	   {
-		   if (requester != null)
-		   {
-			   RequesterPromise = Promise<IBeamableRequester>.Successful(requester);
-		   }
-		   else
-		   {
-			   RequesterPromise = Beamable.API.Instance.Map(b => b.Requester);
-		   }
+		   _requester = requester;
 	   }
 
-	   public MicroserviceClient(BeamContext ctx) : this(ctx?.Requester)
+	   protected MicroserviceClient(BeamContext ctx) : this(ctx?.Requester)
 	   {
 
 	   }
 
 	   protected async Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
 	   {
-		   var requester = await RequesterPromise;
-		   return await MicroserviceClientHelper.Request<T>(requester, serviceName, endpoint, serializedFields);
+		   if (_requester == null)
+		   {
+			   _requester = await API.Instance.Map(b => b.Requester);
+		   }
+		   return await MicroserviceClientHelper.Request<T>(_requester, serviceName, endpoint, serializedFields);
 	   }
 
 	   protected string SerializeArgument<T>(T arg) => MicroserviceClientHelper.SerializeArgument(arg);

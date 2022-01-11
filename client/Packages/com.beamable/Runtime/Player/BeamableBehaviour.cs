@@ -119,11 +119,11 @@ namespace Beamable
 		[ContextMenu(CONTEXT_MENU_DISPOSE, false, CONTEXT_MENU_ORDER)]
 		void Dispose()
 		{
-			_context?.Dispose();
+			_context?.Stop();
 		}
 
 		[ContextMenu(CONTEXT_MENU_DISPOSE, true, CONTEXT_MENU_ORDER)]
-		bool DisposeValidate() => _context != null && !_context.IsDisposed && _context.IsInitialized;
+		bool DisposeValidate() => _context != null && !_context.IsStopped && _context.IsInitialized;
 
 		[ContextMenu(CONTEXT_MENU_TOUCH, false, CONTEXT_MENU_ORDER)]
 		void Touch()
@@ -133,7 +133,7 @@ namespace Beamable
 		}
 
 		[ContextMenu(CONTEXT_MENU_TOUCH, true, CONTEXT_MENU_ORDER)]
-		bool TouchValidate() => _context == null || _context.IsDisposed || !_context.IsInitialized;
+		bool TouchValidate() => _context == null || _context.IsStopped || !_context.IsInitialized;
 
 		private const string CONTEXT_MENU_TOUCH = "Touch Beam Context";
 		private const string CONTEXT_MENU_DISPOSE = "Dispose Beam Context";

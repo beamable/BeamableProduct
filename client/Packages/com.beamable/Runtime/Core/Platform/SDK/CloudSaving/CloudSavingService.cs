@@ -10,6 +10,7 @@ using Beamable.Coroutines;
 using Beamable.Api.Connectivity;
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Dependencies;
 using Beamable.Common.Runtime.Collections;
 
 namespace Beamable.Api.CloudSaving
@@ -49,7 +50,7 @@ namespace Beamable.Api.CloudSaving
 
       public bool isInitializing = false;
       public CloudSavingService(IPlatformService platform, PlatformRequester requester,
-         CoroutineService coroutineService) : base(platform, requester, ServiceName)
+         CoroutineService coroutineService, IDependencyProvider provider) : base(provider, ServiceName)
       {
          _platform = platform;
          _requester = requester;

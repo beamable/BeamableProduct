@@ -1,13 +1,14 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Mail;
+using Beamable.Common.Dependencies;
 
 namespace Beamable.Api.Mail
 {
 
    public class MailSubscription : PlatformSubscribable<MailQueryResponse, MailQueryResponse>
    {
-      public MailSubscription(IPlatformService platform, IBeamableRequester requester) : base(platform, requester, AbsMailApi.SERVICE_NAME)
+      public MailSubscription(IDependencyProvider provider) : base(provider, AbsMailApi.SERVICE_NAME)
       {
       }
 
@@ -33,9 +34,9 @@ namespace Beamable.Api.Mail
    {
       public MailSubscription Subscribable { get; }
 
-      public MailService (IPlatformService platform, IBeamableRequester requester) : base(requester, platform)
+      public MailService (IPlatformService platform, IBeamableRequester requester, IDependencyProvider provider) : base(requester, platform)
       {
-         Subscribable = new MailSubscription(platform, requester);
+         Subscribable = new MailSubscription(provider);
       }
 
       public override Promise<MailQueryResponse> GetCurrent(string scope = "") => Subscribable.GetCurrent(scope);

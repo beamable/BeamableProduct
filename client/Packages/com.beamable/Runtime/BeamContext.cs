@@ -45,8 +45,8 @@ namespace Beamable
 	/// </para>
 	///
 	/// <para>
-	/// From Monobehaviours or Unity components, you should use the <see cref="ForContext(UnityEngine.Component)"/> method to access a <see cref="BeamContext"/>.
-	/// The <see cref="ForContext(UnityEngine.Component)"/> will give you the closest context in the Unity object heirarchy from your script's location, or give you
+	/// From Monobehaviours or Unity components, you should use the <see cref="InParent"/> method to access a <see cref="BeamContext"/>.
+	/// The <see cref="InParent"/> will give you the closest context in the Unity object heirarchy from your script's location, or give you
 	/// <see cref="Default"/> if no context exists. You can add <see cref="BeamableBehaviour"/> components to add a context to a GameObject.
 	///
 	/// If you want to access an instance without using a context sensitive approach, you should use the <see cref="Instantiate"/> method.
@@ -59,7 +59,7 @@ namespace Beamable
 	/// </para>
 	/// </summary>
 	[Serializable]
-	public class BeamContext : IPlatformService, IGameObjectContext, IObservedPlayer
+	public class BeamContext : IPlatformService, IGameObjectContext, IObservedPlayer, IBeamableDisposable
 	{
 
 		#region Internal State
@@ -80,11 +80,11 @@ namespace Beamable
 		public IDependencyProvider ServiceProvider => _serviceScope;
 
 		/// <summary>
-		/// If the <see cref="Dispose"/> method has been run, this property will return true. Once a context is disposed, you shouldn't use
+		/// If the <see cref="Stop"/> method has been run, this property will return true. Once a context is disposed, you shouldn't use
 		/// it anymore, and the <see cref="ServiceProvider"/> will throw exceptions if you do.
-		/// You can re-initialize the context by using <see cref="ForContext(UnityEngine.Component)"/>
+		/// You can re-initialize the context by using <see cref="InParent"/>
 		/// </summary>
-		public bool IsDisposed => _isDisposed;
+		public bool IsStopped => _isStopped;
 
 		/// <summary>
 		/// Each <see cref="BeamContext"/> has a set of components that need to live on a gameObject in the scene.
@@ -96,7 +96,7 @@ namespace Beamable
 		public bool IsDefault => string.IsNullOrEmpty(PlayerCode);
 
 		private IDependencyProviderScope _serviceScope;
-		private bool _isDisposed;
+		private bool _isStopped;
 		private GameObject _gob;
 		private Promise _initPromise;
 		private BeamContext _parent;
@@ -187,6 +187,7 @@ namespace Beamable
 		private PlatformRequester _requester;
 		private BeamableApiRequester _beamableApiRequester;
 
+		// TODO: Assess each of these as "do we need this as hard field state"
 		private IAuthService _authService;
 		private IContentApi _contentService;
 		private IConnectivityService _connectivityService;
@@ -232,9 +233,14 @@ namespace Beamable
 				OnUserLoggingOut?.Invoke(AuthorizedUser);
 			}
 
-			await Dispose(); // tear down all the services, and do a total reboot with the new user.
 			await SaveToken(token); // set the token so that it gets picked up on the next initialization
 			var ctx = Instantiate(null, PlayerCode);
+
+			// await InitStep_SaveToken();
+			await InitStep_GetUser();
+			await InitStep_StartNewSession();
+
+			OnReloadUser?.Invoke();
 
 			return ctx;
 		}
@@ -274,7 +280,7 @@ namespace Beamable
 		                  IDependencyBuilder builder)
 		{
 			PlayerCode = playerCode;
-			_isDisposed = false;
+			_isStopped = false;
 
 			var shouldCreateGob = behaviour == null; // if there is no behaviour, then we definately need one
 			if (!shouldCreateGob) // but also, if the object needs to be preserved, then it also needs to be at root level
@@ -297,7 +303,7 @@ namespace Beamable
 			}
 
 			_gob = behaviour.gameObject;
-			builder = builder.Fork();
+			builder = builder.Clone();
 
 			RegisterServices(builder);
 
@@ -547,8 +553,6 @@ namespace Beamable
 			await InitStep_GetUser();
 			await InitStep_StartPubnub();
 
-			OnReloadUser?.Invoke();
-
 			// Start Session
 			await InitStep_StartNewSession();
 
@@ -586,11 +590,10 @@ namespace Beamable
 			var cid = ConfigDatabase.GetString("cid");
 			var pid = ConfigDatabase.GetString("pid");
 
-
 			// there should only be one context per playerCode.
 			if (_playerCodeToContext.TryGetValue(playerCode, out var existingContext))
 			{
-				if (existingContext.IsDisposed)
+				if (existingContext.IsStopped)
 				{
 					existingContext.Init(cid, pid, playerCode, beamable, Beam.DependencyBuilder);
 				}
@@ -598,8 +601,6 @@ namespace Beamable
 				return existingContext;
 			}
 
-
-			// var ctx = new BeamContext(cid, pid, playerCode, beamable, Beam.DependencyBuilder);
 			var ctx = new BeamContext();
 			ctx.Init(cid, pid, playerCode, beamable, Beam.DependencyBuilder);
 			_playerCodeToContext[playerCode] = ctx;
@@ -611,19 +612,20 @@ namespace Beamable
 		/// <summary>
 		/// A static <see cref="BeamContext"/> that uses a <see cref="PlayerCode"/> of an empty string.
 		/// By default, the default context will persist between scene reloads. If you need to dispose it, you'll
-		/// need to manually invoke <see cref="Dispose"/>
+		/// need to manually invoke <see cref="Stop"/>
 		/// </summary>
 		public static BeamContext Default => Instantiate();
+
 
 		/// <summary>
 		/// Find the first <see cref="BeamableBehaviour.Context"/> in the parent lineage of the current component, or <see cref="BeamContext.Default"/> if no <see cref="BeamableBehaviour"/> components exist
 		/// </summary>
-		public static BeamContext ForContext(Component c) => c.GetBeamable();
+		public static BeamContext InParent(Component c) => c.GetBeamable();
 
 		/// <summary>
 		/// Finds or creates the first <see cref="BeamContext"/> that matches the given <see cref="BeamContext.PlayerCode"/> value
 		/// </summary>
-		public static BeamContext ForContext(string playerCode="") => Instantiate(playerCode: playerCode);
+		public static BeamContext ForPlayer(string playerCode="") => Instantiate(playerCode: playerCode);
 
 		/// <summary>
 		/// Finds all <see cref="BeamContext"/>s that have been created. This may include disposed contexts.
@@ -631,23 +633,33 @@ namespace Beamable
 		public static IEnumerable<BeamContext> All => _playerCodeToContext.Values;
 
 		/// <summary>
+		/// After a context has been Stopped with the <see cref="Stop"/> method, this method can restart the instance.
+		/// <para>
+		/// If the context hasn't been stopped, this method won't do anything meaningful.
+		/// </para>
+		/// </summary>
+		/// <returns>The same context instance</returns>
+		public BeamContext Start() => Instantiate(playerCode: PlayerCode);
+
+		/// <summary>
 		/// This method will tear down a <see cref="BeamContext"/> and notify all internal services that the context should be destroyed.
 		/// All coroutines associated with the context will stop.
 		/// No notifications will be received internal to the context.
-		/// No services will be accessible from the <see cref="ServiceProvider"/> after <see cref="Dispose"/> has been called.
+		/// No services will be accessible from the <see cref="ServiceProvider"/> after <see cref="Stop"/> has been called.
 		/// <para>
-		/// After a context has been disposed, if a call is made to <see cref="Instantiate"/> with the disposed context's <see cref="PlayerCode"/>,
+		/// After a context has been disposed, if a call is made to <see cref="Start"/> or <see cref="Instantiate"/> with the disposed context's <see cref="PlayerCode"/>,
 		/// then the disposed instance will be reinitialized and rehydrated and returned to the <see cref="Instantiate"/>'s callsite.
 		/// </para>
 		/// </summary>
-		public async Promise Dispose()
+		public async Promise Stop()
 		{
-			if (_isDisposed) return;
+			if (_isStopped) return;
 
-			_isDisposed = true;
-			OnShutdown?.Invoke();
+			_isStopped = true;
 
 			// clear all events...
+			OnShutdown?.Invoke();
+
 			OnReloadUser = null;
 			OnShutdown = null;
 			TimeOverrideChanged = null;
@@ -655,23 +667,22 @@ namespace Beamable
 			OnUserLoggingOut = null;
 
 			await _serviceScope.Dispose();
-			// _currency = null;
+
 			_announcements = null;
 			_playerStats = null;
+
 			OnShutdownComplete?.Invoke();
 			OnShutdownComplete = null;
 		}
 
 
 		/// <summary>
-		/// Clear the authorization token for the <see cref="PlayerCode"/>, then internally calls <see cref="Dispose"/>
+		/// Clear the authorization token for the <see cref="PlayerCode"/>, then internally calls <see cref="Stop"/>
 		/// </summary>
-		public async Promise ClearAndDispose()
+		public async Promise ClearPlayerAndStop()
 		{
 			ClearToken();
-			await Dispose();
-			// Instantiate(null, PlayerCode);
-			// await _initPromise;
+			await Stop();
 		}
 
 		public void ChangeTime()
@@ -687,5 +698,13 @@ namespace Beamable
 		IPubnubNotificationService IPlatformService.PubnubNotificationService => _pubnubNotificationService;
 		IConnectivityService IPlatformService.ConnectivityService => _connectivityService;
 		IHeartbeatService IPlatformService.Heartbeat => _heartbeatService;
+
+
+		public Promise OnDispose()
+		{
+			// delete the gameObject.
+			UnityEngine.Object.Destroy(GameObject);
+			return Promise.Success;
+		}
 	}
 }

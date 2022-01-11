@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Events;
+using Beamable.Common.Dependencies;
 
 namespace Beamable.Api.Events
 {
 
    public class EventSubscription : PlatformSubscribable<EventsGetResponse, EventsGetResponse>
    {
-      public EventSubscription(IPlatformService platform, IBeamableRequester requester) : base(platform, requester, AbsEventsApi.SERVICE_NAME)
+      public EventSubscription(IDependencyProvider provider) : base(provider, AbsEventsApi.SERVICE_NAME)
       {
       }
 
@@ -41,9 +42,9 @@ namespace Beamable.Api.Events
    {
       public EventSubscription Subscribable { get; }
 
-      public EventsService(IPlatformService platform, IBeamableRequester requester) : base(requester, platform)
+      public EventsService(IPlatformService platform, IBeamableRequester requester, IDependencyProvider provider) : base(requester, platform)
       {
-         Subscribable = new EventSubscription(platform, requester);
+         Subscribable = new EventSubscription(provider);
       }
 
       public override Promise<EventClaimResponse> Claim(string eventId)

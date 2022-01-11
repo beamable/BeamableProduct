@@ -84,7 +84,7 @@ namespace Beamable.Common.Dependencies
 		/// Add a scoped service to the <see cref="IDependencyBuilder"/>.
 		/// <para>
 		/// A scoped service will be instantiated once, and the same instance will be requested from <see cref="IDependencyProvider.GetService"/>.
-		/// However, if you use <see cref="Fork"/>, then all calls to <see cref="IDependencyProvider.GetService"/> on the resultant <see cref="IDependencyProvider"/>
+		/// However, if you use <see cref="Clone"/>, then all calls to <see cref="IDependencyProvider.GetService"/> on the resultant <see cref="IDependencyProvider"/>
 		/// will generate a new scope instance.
 		/// </para>
 		/// </summary>
@@ -98,7 +98,7 @@ namespace Beamable.Common.Dependencies
 		/// Add a transient service to the <see cref="IDependencyBuilder"/>.
 		/// <para>
 		/// A scoped service will be instantiated once, and the same instance will be requested from <see cref="IDependencyProvider.GetService"/>.
-		/// However, if you use <see cref="Fork"/>, then all calls to <see cref="IDependencyProvider.GetService"/> on the resultant <see cref="IDependencyProvider"/>
+		/// However, if you use <see cref="Clone"/>, then all calls to <see cref="IDependencyProvider.GetService"/> on the resultant <see cref="IDependencyProvider"/>
 		/// will generate a new scope instance.
 		/// </para>
 		/// </summary>
@@ -112,7 +112,7 @@ namespace Beamable.Common.Dependencies
 		/// Add a transient service to the <see cref="IDependencyBuilder"/>.
 		/// <para>
 		/// A scoped service will be instantiated once, and the same instance will be requested from <see cref="IDependencyProvider.GetService"/>.
-		/// However, if you use <see cref="Fork"/>, then all calls to <see cref="IDependencyProvider.GetService"/> on the resultant <see cref="IDependencyProvider"/>
+		/// However, if you use <see cref="Clone"/>, then all calls to <see cref="IDependencyProvider.GetService"/> on the resultant <see cref="IDependencyProvider"/>
 		/// will generate a new scope instance.
 		/// </para>
 		/// </summary>
@@ -126,7 +126,7 @@ namespace Beamable.Common.Dependencies
 		/// Add a transient service to the <see cref="IDependencyBuilder"/>.
 		/// <para>
 		/// A scoped service will be instantiated once, and the same instance will be requested from <see cref="IDependencyProvider.GetService"/>.
-		/// However, if you use <see cref="Fork"/>, then all calls to <see cref="IDependencyProvider.GetService"/> on the resultant <see cref="IDependencyProvider"/>
+		/// However, if you use <see cref="Clone"/>, then all calls to <see cref="IDependencyProvider.GetService"/> on the resultant <see cref="IDependencyProvider"/>
 		/// will generate a new scope instance.
 		/// </para>
 		/// <para>
@@ -143,7 +143,7 @@ namespace Beamable.Common.Dependencies
 		/// Add a transient service to the <see cref="IDependencyBuilder"/>.
 		/// <para>
 		/// A scoped service will be instantiated once, and the same instance will be requested from <see cref="IDependencyProvider.GetService"/>.
-		/// However, if you use <see cref="Fork"/>, then all calls to <see cref="IDependencyProvider.GetService"/> on the resultant <see cref="IDependencyProvider"/>
+		/// However, if you use <see cref="Clone"/>, then all calls to <see cref="IDependencyProvider.GetService"/> on the resultant <see cref="IDependencyProvider"/>
 		/// will generate a new scope instance.
 		/// </para>
 		/// </summary>
@@ -156,7 +156,7 @@ namespace Beamable.Common.Dependencies
 		/// Add a transient service to the <see cref="IDependencyBuilder"/>.
 		/// <para>
 		/// A scoped service will be instantiated once, and the same instance will be requested from <see cref="IDependencyProvider.GetService"/>.
-		/// However, if you use <see cref="Fork"/>, then all calls to <see cref="IDependencyProvider.GetService"/> on the resultant <see cref="IDependencyProvider"/>
+		/// However, if you use <see cref="Clone"/>, then all calls to <see cref="IDependencyProvider.GetService"/> on the resultant <see cref="IDependencyProvider"/>
 		/// will generate a new scope instance.
 		/// </para>
 		/// </summary>
@@ -169,7 +169,7 @@ namespace Beamable.Common.Dependencies
 		/// Add a transient service to the <see cref="IDependencyBuilder"/>.
 		/// <para>
 		/// A scoped service will be instantiated once, and the same instance will be requested from <see cref="IDependencyProvider.GetService"/>.
-		/// However, if you use <see cref="Fork"/>, then all calls to <see cref="IDependencyProvider.GetService"/> on the resultant <see cref="IDependencyProvider"/>
+		/// However, if you use <see cref="Clone"/>, then all calls to <see cref="IDependencyProvider.GetService"/> on the resultant <see cref="IDependencyProvider"/>
 		/// will generate a new scope instance.
 		/// </para>
 		/// </summary>
@@ -182,7 +182,7 @@ namespace Beamable.Common.Dependencies
 		/// Add a transient service to the <see cref="IDependencyBuilder"/>.
 		/// <para>
 		/// A scoped service will be instantiated once, and the same instance will be requested from <see cref="IDependencyProvider.GetService"/>.
-		/// However, if you use <see cref="Fork"/>, then all calls to <see cref="IDependencyProvider.GetService"/> on the resultant <see cref="IDependencyProvider"/>
+		/// However, if you use <see cref="Clone"/>, then all calls to <see cref="IDependencyProvider.GetService"/> on the resultant <see cref="IDependencyProvider"/>
 		/// will generate a new scope instance.
 		/// </para>
 		/// <para>
@@ -198,7 +198,7 @@ namespace Beamable.Common.Dependencies
 		/// Add a singleton service to the <see cref="IDependencyBuilder"/>.
 		/// <para>
 		/// A singleton service will be instantiated once, and the same instance will be requested from <see cref="IDependencyProvider.GetService"/>.
-		/// Even if you use <see cref="Fork"/>, the one instance will be returned for all children providers.
+		/// Even if you use <see cref="Clone"/>, the one instance will be returned for all children providers.
 		/// </para>
 		/// </summary>
 		/// <param name="factory">A function that takes a <see cref="IDependencyProvider"/> and produces an instance of <typeparamref name="TInterface"/></param>
@@ -211,7 +211,7 @@ namespace Beamable.Common.Dependencies
 		/// Add a singleton service to the <see cref="IDependencyBuilder"/>.
 		/// <para>
 		/// A singleton service will be instantiated once, and the same instance will be requested from <see cref="IDependencyProvider.GetService"/>.
-		/// Even if you use <see cref="Fork"/>, the one instance will be returned for all children providers.
+		/// Even if you use <see cref="Clone"/>, the one instance will be returned for all children providers.
 		/// </para>
 		/// </summary>
 		/// <param name="factory">A function that produces an instance of <typeparamref name="TInterface"/></param>
@@ -224,7 +224,7 @@ namespace Beamable.Common.Dependencies
 		/// Add a singleton service to the <see cref="IDependencyBuilder"/>.
 		/// <para>
 		/// A singleton service will be instantiated once, and the same instance will be requested from <see cref="IDependencyProvider.GetService"/>.
-		/// Even if you use <see cref="Fork"/>, the one instance will be returned for all children providers.
+		/// Even if you use <see cref="Clone"/>, the one instance will be returned for all children providers.
 		/// </para>
 		/// </summary>
 		/// <param name="service">A value instance of <typeparamref name="TInterface"/></param>
@@ -237,7 +237,7 @@ namespace Beamable.Common.Dependencies
 		/// Add a singleton service to the <see cref="IDependencyBuilder"/>.
 		/// <para>
 		/// A singleton service will be instantiated once, and the same instance will be requested from <see cref="IDependencyProvider.GetService"/>.
-		/// Even if you use <see cref="Fork"/>, the one instance will be returned for all children providers.
+		/// Even if you use <see cref="Clone"/>, the one instance will be returned for all children providers.
 		/// </para>
 		/// <para>
 		/// The instance will automatically be created by using the first available constructor of the <typeparamref name="TImpl"/> type,
@@ -253,7 +253,7 @@ namespace Beamable.Common.Dependencies
 		/// Add a singleton service to the <see cref="IDependencyBuilder"/>.
 		/// <para>
 		/// A singleton service will be instantiated once, and the same instance will be requested from <see cref="IDependencyProvider.GetService"/>.
-		/// Even if you use <see cref="Fork"/>, the one instance will be returned for all children providers.
+		/// Even if you use <see cref="Clone"/>, the one instance will be returned for all children providers.
 		/// </para>
 		/// </summary>
 		/// <param name="factory">A function that takes a <see cref="IDependencyProvider"/> and produces an instance of <typeparamref name="T"/></param>
@@ -265,7 +265,7 @@ namespace Beamable.Common.Dependencies
 		/// Add a singleton service to the <see cref="IDependencyBuilder"/>.
 		/// <para>
 		/// A singleton service will be instantiated once, and the same instance will be requested from <see cref="IDependencyProvider.GetService"/>.
-		/// Even if you use <see cref="Fork"/>, the one instance will be returned for all children providers.
+		/// Even if you use <see cref="Clone"/>, the one instance will be returned for all children providers.
 		/// </para>
 		/// </summary>
 		/// <param name="factory">A function that produces an instance of <typeparamref name="T"/></param>
@@ -277,7 +277,7 @@ namespace Beamable.Common.Dependencies
 		/// Add a singleton service to the <see cref="IDependencyBuilder"/>.
 		/// <para>
 		/// A singleton service will be instantiated once, and the same instance will be requested from <see cref="IDependencyProvider.GetService"/>.
-		/// Even if you use <see cref="Fork"/>, the one instance will be returned for all children providers.
+		/// Even if you use <see cref="Clone"/>, the one instance will be returned for all children providers.
 		/// </para>
 		/// </summary>
 		/// <param name="service">A value instance of <typeparamref name="TInterface"/></param>
@@ -289,7 +289,7 @@ namespace Beamable.Common.Dependencies
 		/// Add a singleton service to the <see cref="IDependencyBuilder"/>.
 		/// <para>
 		/// A singleton service will be instantiated once, and the same instance will be requested from <see cref="IDependencyProvider.GetService"/>.
-		/// Even if you use <see cref="Fork"/>, the one instance will be returned for all children providers.
+		/// Even if you use <see cref="Clone"/>, the one instance will be returned for all children providers.
 		/// </para>
 		/// <para>
 		/// The instance will automatically be created by using the first available constructor of the <typeparamref name="TImpl"/> type,
@@ -304,7 +304,7 @@ namespace Beamable.Common.Dependencies
 		/// Add a singleton service to the <see cref="IDependencyBuilder"/>.
 		/// <para>
 		/// A singleton service will be instantiated once, and the same instance will be requested from <see cref="IDependencyProvider.GetService"/>.
-		/// Even if you use <see cref="Fork"/>, the one instance will be returned for all children providers.
+		/// Even if you use <see cref="Clone"/>, the one instance will be returned for all children providers.
 		/// </para>
 		/// <para>
 		/// The instance will automatically be created by using the first available constructor of the <typeparamref name="TImpl"/> type,
@@ -354,7 +354,7 @@ namespace Beamable.Common.Dependencies
 		/// returned instance, the addition won't affect the service registration state of the builder.
 		/// </summary>
 		/// <returns>A new <see cref="IDependencyBuilder"/></returns>
-		IDependencyBuilder Fork();
+		IDependencyBuilder Clone();
 	}
 
 	/// <summary>
@@ -417,8 +417,6 @@ namespace Beamable.Common.Dependencies
 
 		public IDependencyBuilder AddScoped<T>() => AddScoped<T, T>();
 
-
-		//
 
 		public IDependencyBuilder AddSingleton<TInterface, TImpl>(Func<IDependencyProvider, TInterface> factory) where TImpl : TInterface
 		{
@@ -534,7 +532,7 @@ namespace Beamable.Common.Dependencies
 		}
 
 
-		public IDependencyBuilder Fork()
+		public IDependencyBuilder Clone()
 		{
 			return new DependencyBuilder {
 				ScopedServices = ScopedServices.ToList(),
