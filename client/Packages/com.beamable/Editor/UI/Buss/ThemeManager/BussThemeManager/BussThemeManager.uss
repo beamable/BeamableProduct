@@ -1,5 +1,5 @@
 #themeManagerContainer {
-    /*-unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");*/
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     padding-top: 10px;
     padding-left: 10px;
     padding-right: 10px;
@@ -22,10 +22,10 @@
 }
 
 #stylesGroup {
-    align-items: flex-start;
+    align-items: stretch;
     flex-grow: 1;
 }
 
-BussElementHierarchyVisualElement {
-    flex-grow: 1;
-}
+/*BussElementHierarchyVisualElement {*/
+/*    flex-grow: 1;*/
+/*}*/
