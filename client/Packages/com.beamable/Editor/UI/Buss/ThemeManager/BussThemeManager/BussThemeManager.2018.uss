@@ -1,5 +1,5 @@
 #themeManagerContainer {
-    /*-unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");*/
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     padding-top: 10px;
     padding-left: 10px;
     padding-right: 10px;
@@ -7,7 +7,7 @@
     flex-grow: 1;
 }
 
-#scrollView {
+#themeManagerContainerScrollView {
     flex-grow: 1;
 }
 
@@ -28,4 +28,11 @@
 
 BussElementHierarchyVisualElement {
     flex-grow: 1;
+}
+
+#themeManagerContainer > ScrollView > #ContentViewport > #ContentView.content-view{
+    flex-grow: 1;
+    position: absolute;
+    left: 0px;
+    right: 0px;
 }
