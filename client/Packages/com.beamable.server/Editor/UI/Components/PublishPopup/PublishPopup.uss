@@ -8,7 +8,7 @@
     right: 0;
 }
 
-#warningMessage{
+#topMessage{
     margin-top: 15px;
     flex-direction: row;
     align-self: center;
@@ -135,9 +135,8 @@
 }
 
 #manifestsContainer{
-    border-color: #000000;
+    border-color: rgba(0,0,0,0);
     border-width: 1px;
-    padding: 10px;
     min-height: 100px;
     flex-grow: 1;
 }
@@ -146,7 +145,7 @@ LoadingBarElement {
     align-self: stretch;
     margin-bottom: 5px;
 }
-#header, #warningMessage, #manifestsContainer, #largeCommentsArea, #buttonStrip{
+#header, #topMessage, #manifestsContainer, #largeCommentsArea, #buttonStrip{
     margin-left: 15px;
     margin-right: 15px;
 }
