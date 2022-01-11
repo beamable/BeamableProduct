@@ -72,7 +72,6 @@ namespace Beamable.Editor.UI.Components
 			_labelComponent.style.paddingLeft = new StyleLength(width);
 #endif
 			
-
 			_container.Add(_labelComponent);
 
 			Root.Add(_container);
