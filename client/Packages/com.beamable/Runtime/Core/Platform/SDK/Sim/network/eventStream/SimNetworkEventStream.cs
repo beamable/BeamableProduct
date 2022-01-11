@@ -34,9 +34,6 @@ namespace Beamable.Experimental.Api.Sim
       private readonly IDependencyProvider _provider;
       private GameRelayService GameRelay => _provider.GetService<GameRelayService>();
 
-      [Obsolete("You should pass in the beamContext's provider as the second parameter.")]
-      public SimNetworkEventStream(string roomname) : this(roomname, ServiceManager.LegacyDependencyProvider){}
-
       public SimNetworkEventStream(string roomName, IDependencyProvider provider)
       {
          this.roomName = roomName;

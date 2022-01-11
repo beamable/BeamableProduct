@@ -42,19 +42,19 @@ namespace Beamable.Content
 
         private readonly Dictionary<string, ContentCacheEntry<TContent>> _cache =
             new Dictionary<string, ContentCacheEntry<TContent>>();
-        
+
         private readonly IHttpRequester _requester;
         private readonly IBeamableFilesystemAccessor _filesystemAccessor;
         private readonly CoroutineService _coroutineService;
         private readonly ContentService _contentService;
-        
+
         private const float WriteToFileDelay = 5;
 
-        public ContentCache(IHttpRequester requester, IBeamableFilesystemAccessor filesystemAccessor, ContentService contentService)
+        public ContentCache(IHttpRequester requester, IBeamableFilesystemAccessor filesystemAccessor, ContentService contentService, CoroutineService coroutineService)
         {
             _requester = requester;
             _filesystemAccessor = filesystemAccessor;
-            _coroutineService = ServiceManager.Resolve<CoroutineService>();
+            _coroutineService = coroutineService;
             _contentService = contentService;
         }
 
@@ -81,7 +81,7 @@ namespace Beamable.Content
             PlatformLogger.Log(
                 $"ContentCache: Fetching content from cache for {requestedInfo.contentId}: version: {requestedInfo.version}");
             if (_cache.TryGetValue(cacheId, out var cacheEntry)) return cacheEntry.Content;
-            
+
             // Then, try the on disk cache
             PlatformLogger.Log(
                 $"ContentCache: Loading content from disk for {requestedInfo.contentId}: version: {requestedInfo.version}");
@@ -91,7 +91,7 @@ namespace Beamable.Content
                 SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
                 return promise;
             }
-            
+
             // Check baked file for requested content
             PlatformLogger.Log(
                 $"ContentCache: Loading content from baked file for {requestedInfo.contentId}: version: {requestedInfo.version}");
@@ -101,7 +101,7 @@ namespace Beamable.Content
                 SetCacheEntry(cacheId, new ContentCacheEntry<TContent>(requestedInfo.version, promise));
                 return promise;
             }
-            
+
             // Finally, if not found, fetch the content from the CDN
             PlatformLogger.Log(
                 $"ContentCache: Fetching content from CDN for {requestedInfo.contentId}: version: {requestedInfo.version}");
@@ -142,7 +142,7 @@ namespace Beamable.Content
 			        {
 				        content = deserialized;
 				        return true;
-			        }    
+			        }
 		        }
 	        }
 
@@ -153,17 +153,17 @@ namespace Beamable.Content
         private bool TryGetValueFromBaked(ClientContentInfo info, out TContent contentObject)
         {
             contentObject = null;
-            
+
             bool dataExtracted = PlayerPrefs.GetInt(_bakedDataExtractedKey) == 1;
             if (!dataExtracted)
             {
 	            if (ExtractContent())
 	            {
-		            return TryGetValueFromDisk(info, out contentObject, _filesystemAccessor);    
+		            return TryGetValueFromDisk(info, out contentObject, _filesystemAccessor);
 	            }
 	            PlayerPrefs.SetInt(_bakedDataExtractedKey, 1);
             }
-            
+
             return false;
         }
 
@@ -192,10 +192,10 @@ namespace Beamable.Content
 		    {
 			    return false;
 		    }
-		    
+
 		    // save baked data to disk
 		    string path = ContentPath(_filesystemAccessor);
-		    
+
 		    try
 		    {
 			    Directory.CreateDirectory(Path.GetDirectoryName(path));
@@ -206,7 +206,7 @@ namespace Beamable.Content
 			    Debug.LogError($"[EXTRACT] Failed to write baked data to disk: {e.Message}");
 			    return false;
 		    }
-		    
+
 		    return true;
 	    }
 
@@ -219,7 +219,7 @@ namespace Beamable.Content
 		    Directory.CreateDirectory(Path.GetDirectoryName(filePath));
 		    File.WriteAllText(filePath, JsonUtility.ToJson(_contentService.ContentDataInfo));
 	    }
-	    
+
         private void UpdateDiskFile(ClientContentInfo info, string raw)
         {
             try
@@ -257,7 +257,7 @@ namespace Beamable.Content
                 PlatformLogger.Log($"ContentCache: Error saving content to disk: {e}");
             }
         }
-        
+
         private static string ContentPath(IBeamableFilesystemAccessor fsa)
         {
 	        return fsa.GetPersistentDataPathWithoutTrailingSlash() + "/content/content.json";

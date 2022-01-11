@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Dependencies;
 using Beamable.Experimental.Common.Api.Calendars;
 
 namespace Beamable.Experimental.Api.Calendars
@@ -20,7 +21,7 @@ namespace Beamable.Experimental.Api.Calendars
    /// </summary>
    public class CalendarsSubscription : PlatformSubscribable<CalendarQueryResponse, CalendarView>
    {
-      public CalendarsSubscription(IPlatformService platform, IBeamableRequester requester, string service) : base(platform, requester, service)
+      public CalendarsSubscription(IDependencyProvider provider, string service) : base(provider, service)
       {
       }
 
@@ -74,9 +75,9 @@ namespace Beamable.Experimental.Api.Calendars
 
       public CalendarsSubscription Subscribable { get; }
 
-      public CalendarsService (IPlatformService platform, IBeamableRequester requester) : base(requester, platform)
+      public CalendarsService (IPlatformService platform, IBeamableRequester requester, IDependencyProvider provider) : base(requester, platform)
       {
-         Subscribable = new CalendarsSubscription(platform, requester, SERVICE_NAME);
+         Subscribable = new CalendarsSubscription(provider, SERVICE_NAME);
       }
 
       public override Promise<EmptyResponse> Claim(string calendarId)

@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Api.Payments;
 using Beamable.Common.Api;
+using Beamable.Common.Dependencies;
 
 namespace Beamable.Api.Commerce
 {
@@ -18,7 +19,7 @@ namespace Beamable.Api.Commerce
    /// </summary>
    public class CommerceService : PlatformSubscribable<GetOffersResponse, PlayerStoreView>
    {
-      public CommerceService (IPlatformService platform, PlatformRequester requester) : base(platform, requester,  "commerce")
+      public CommerceService (IDependencyProvider provider, IBeamableRequester requester) : base(provider, "commerce")
       {
       }
 

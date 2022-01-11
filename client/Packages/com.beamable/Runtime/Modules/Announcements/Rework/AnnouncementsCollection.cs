@@ -17,9 +17,10 @@ namespace Beamable.Modules.Content
 
         protected sealed override async void Subscribe()
         {
-            if (await API.Instance is API api)
+	        var beamable = await API.Instance;
+            if (beamable != null)
             {
-                AnnouncementsSubscription announcementsSubscription = api.AnnouncementService.Subscribable;
+                AnnouncementsSubscription announcementsSubscription = beamable.AnnouncementService.Subscribable;
                 _subscription = announcementsSubscription.Subscribe(HandleSubscription);
             }
         }
@@ -30,7 +31,7 @@ namespace Beamable.Modules.Content
             {
                 Update(view);
             }
-            
+
             CollectionUpdated?.Invoke();
         }
 

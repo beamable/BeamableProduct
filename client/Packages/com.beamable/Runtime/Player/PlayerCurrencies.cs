@@ -110,8 +110,10 @@ namespace Beamable.Player
 			_connectivityService = connectivityService;
 			_provider = provider;
 
-			notificationService.Subscribe(notificationService.GetRefreshEventNameForService("inventory"),
-			                              HandleSubscriptionUpdate);
+			platformService.OnReady.Then(__ =>
+			{
+				_inventoryApi.Subscribe("currency", HandleSubscriptionUpdate);
+			});
 			_connectivityService.OnConnectivityChanged += connection =>
 			{
 				if (connection)

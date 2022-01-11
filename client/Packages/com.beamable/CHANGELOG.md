@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Deleting all items from an inventory subscription notifies client
 - Immediately failed promises throw uncaught errors on access
 
+### Changed
+- `ServiceManager` no longer provides Beamable types. Use `BeamContext` instead.
 
 ## [0.18.1]
 ### Fixed

@@ -35,9 +35,9 @@ namespace Beamable.Purchasing
         /// <summary>
         /// Begin initialization of Beamable purchasing.
         /// </summary>
-        public Promise<Unit> Initialize(IDependencyProvider provider=null)
+        public Promise<Unit> Initialize(IDependencyProvider provider)
         {
-	        _serviceProvider = provider ?? ServiceManager.LegacyDependencyProvider;
+	        _serviceProvider = provider;
 	        var paymentService = GetPaymentService();
 
 	        var skuPromise = paymentService.GetSKUs(); // XXX: This is failing, but nothing is listening for it.

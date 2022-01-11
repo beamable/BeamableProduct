@@ -111,13 +111,14 @@ namespace Beamable.Api
 	      this.notificationService = provider.GetService<INotificationService>();
 	      this.userContext = provider.GetService<IUserContext>();
 	      this.coroutineService = provider.GetService<CoroutineService>();
+	      this.requester = provider.GetService<IBeamableRequester>();
+
 	      if (getter == null)
 	      {
 		      getter = new BeamableGetApiResource<ScopedRsp>();
 	      }
 
 	      this.getter = getter;
-	      this.requester = provider.GetService<IBeamableRequester>();
 	      this.service = service;
 	      notificationService.Subscribe(String.Format("{0}.refresh", service), OnRefreshNtf);
 
@@ -128,37 +129,16 @@ namespace Beamable.Api
 
 	      platform.OnReloadUser += () =>
 	      {
+		      this.connectivityService = provider.GetService<IConnectivityService>();
+		      this.notificationService = provider.GetService<INotificationService>();
+		      this.userContext = provider.GetService<IUserContext>();
+		      this.coroutineService = provider.GetService<CoroutineService>();
+		      this.requester = provider.GetService<IBeamableRequester>();
+
+		      Debug.Log("GOT ONRELOAD USER FOR " + this.GetType().Name);
 		      Reset();
 		      Refresh();
 	      };
-      }
-
-      protected PlatformSubscribable(IPlatformService platform, IBeamableRequester requester, string service, BeamableGetApiResource<ScopedRsp> getter=null)
-      {
-         if (getter == null)
-         {
-            getter = new BeamableGetApiResource<ScopedRsp>();
-         }
-
-         this.getter = getter;
-         // this.platform = platform;
-         this.requester = requester;
-         this.service = service;
-         notificationService = platform.Notification;
-         connectivityService = platform.ConnectivityService;
-         coroutineService = platform.CoroutineService;
-         userContext = platform;
-         platform.Notification.Subscribe(String.Format("{0}.refresh", service), OnRefreshNtf);
-
-         platform.OnReady.Then(_ => { platform.TimeOverrideChanged += OnTimeOverride; });
-
-         platform.OnShutdown += () => { platform.TimeOverrideChanged -= OnTimeOverride; };
-
-         platform.OnReloadUser += () =>
-         {
-            Reset();
-            Refresh();
-         };
       }
 
       private void OnTimeOverride()

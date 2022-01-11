@@ -27,8 +27,8 @@ namespace Beamable.Service
 
 		private static IDependencyProvider _legacyProvider;
 
-		public static IDependencyProvider LegacyDependencyProvider =>
-			_legacyProvider ?? (_legacyProvider = new LegacyProvider());
+		// public static IDependencyProvider LegacyDependencyProvider =>
+		// 	_legacyProvider ?? (_legacyProvider = new LegacyProvider());
 
 #if UNITY_2019_1_OR_NEWER
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -308,23 +308,5 @@ namespace Beamable.Service
 		}
 
 #endif
-
-		private class LegacyProvider : IDependencyProvider
-		{
-			public bool CanBuildService(Type t) =>
-				(bool)typeof(ServiceManager).GetMethod(nameof(CanResolve)).MakeGenericMethod(t)
-				                      .Invoke(null, new object[] { });
-
-			public object GetService(Type t) =>
-				typeof(ServiceManager).GetMethod(nameof(Resolve)).MakeGenericMethod(t).Invoke(null, new object[] { });
-
-			public T GetService<T>() => (T)GetService(typeof(T));
-			public bool CanBuildService<T>() => CanBuildService(typeof(T));
-
-			public IDependencyProviderScope Fork(Action<IDependencyBuilder> configure = null)
-			{
-				throw new NotImplementedException("Sorry, this method isn't supported in the legacy dependency provider.");
-			}
-		}
 	}
 }

@@ -28,12 +28,12 @@ namespace Beamable.Editor
 					Close();
 					return;
 				}
-
 				if (GUILayout.Button("Clear Token"))
 				{
 					EditorAPI.Instance.Then(api =>
 					{
 						var storage = new AccessTokenStorage(Prefix);
+						storage.ClearDeviceRefreshTokens(api.Cid, api.Pid);
 						storage.DeleteTokenForRealm(api.Cid, api.Pid).Then(_ =>
 						{
 							Debug.Log("Success!");

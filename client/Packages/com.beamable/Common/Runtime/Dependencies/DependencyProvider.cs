@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace Beamable.Common.Dependencies
 {
@@ -75,7 +74,7 @@ namespace Beamable.Common.Dependencies
 		/// Disposing a <see cref="IDependencyProviderScope"/> will call <see cref="IBeamableDisposable.OnDispose"/>
 		/// on all inner services that implement <see cref="IBeamableDisposable"/>.
 		/// Also, after the dispose method has been called, any call to <see cref="IDependencyProvider.GetService"/> will fail.
-		/// After this method, the <see cref="IsDestroyed"/> will be true.
+		/// After this method, the <see cref="IsDisposed"/> will be true.
 		/// However, if you re-hydrate a scope using the <see cref="Hydrate"/> method, then the scope is no longer in a disposed state.
 		/// </summary>
 		/// <returns>A promise capturing when the disposal will complete.</returns>
@@ -97,7 +96,7 @@ namespace Beamable.Common.Dependencies
 		/// It is possible to "un-dispose" a scope. Hydrating a scope from another scope copies all of the services
 		/// from the other scope, and uses the other scope's service descriptors to create new services.
 		/// Any children will be re-hydrated and their original configuration methods will be re-fire.
-		/// After this method, the <see cref="IsDestroyed"/> will be false.
+		/// After this method, the <see cref="IsDisposed"/> will be false.
 		///
 		/// This method can be useful to re-use an instance of a <see cref="IDependencyProviderScope"/> that had been disposed.
 		/// </summary>
@@ -109,7 +108,7 @@ namespace Beamable.Common.Dependencies
 		/// Returns true after <see cref="Dispose"/> completed.
 		/// If <see cref="Hydrate"/> is run, then this returns false again.
 		/// </summary>
-		bool IsDestroyed { get; }
+		bool IsDisposed { get; }
 
 		/// <summary>
 		/// An enumerable set of the <see cref="ServiceDescriptor"/>s that are attached to this provider as transient
@@ -129,25 +128,21 @@ namespace Beamable.Common.Dependencies
 
 	public class DependencyProvider : IDependencyProviderScope
 	{
-		public Dictionary<Type, ServiceDescriptor> Transients { get; set; }
-
-		public Dictionary<Type, ServiceDescriptor> Scoped { get; set; }
-		public Dictionary<Type, ServiceDescriptor> Singletons { get; set; }
+		private Dictionary<Type, ServiceDescriptor> Transients { get; set; }
+		private Dictionary<Type, ServiceDescriptor> Scoped { get; set; }
+		private Dictionary<Type, ServiceDescriptor> Singletons { get; set; }
 
 		private Dictionary<Type, object> SingletonCache { get; set; } = new Dictionary<Type, object>();
 		private Dictionary<Type, object> ScopeCache { get; set; } = new Dictionary<Type, object>();
 
 		private bool _destroyed;
 
-		private List<object> _createdTransientServices = new List<object>();
-
-
-		public bool IsDestroyed => _destroyed;
+		public bool IsDisposed => _destroyed;
 		public IEnumerable<ServiceDescriptor> TransientServices => Transients.Values;
 		public IEnumerable<ServiceDescriptor> ScopedServices => Scoped.Values;
 		public IEnumerable<ServiceDescriptor> SingletonServices => Singletons.Values;
 
-		public IDependencyProviderScope Parent { get; protected set; }
+		public IDependencyProviderScope Parent { get; private set; }
 		private HashSet<IDependencyProviderScope> _children = new HashSet<IDependencyProviderScope>();
 
 		private Dictionary<IDependencyProviderScope, Action<IDependencyBuilder>> _childToConfigurator =
@@ -189,7 +184,6 @@ namespace Beamable.Common.Dependencies
 			if (Transients.TryGetValue(t, out var descriptor))
 			{
 				var service = descriptor.Factory(this);
-				_createdTransientServices.Add(service);
 				return service;
 			}
 
@@ -223,20 +217,29 @@ namespace Beamable.Common.Dependencies
 			throw new Exception($"Service not found {t.Name}");
 		}
 
+		// ReSharper disable Unity.PerformanceAnalysis
 		public async Promise Dispose()
 		{
 			if (_destroyed) return; // don't dispose twice!
 
 			_destroyed = true;
 			var disposalPromises = new List<Promise<Unit>>();
-			var gameObjectsForDeletion = new HashSet<GameObject>();
 
 			// remove from parent.
 
+			var childRemovalPromises = new List<Promise<Unit>>();
 			foreach (var child in _children)
 			{
-				child?.Dispose();
+				if (child != null)
+				{
+					var removePromise = child.Dispose();
+					if (removePromise != null)
+					{
+						childRemovalPromises.Add(removePromise);
+					}
+				}
 			}
+			await Promise.Sequence(childRemovalPromises);
 
 			void DisposeServices(IEnumerable<object> services)
 			{
@@ -251,42 +254,22 @@ namespace Beamable.Common.Dependencies
 						{
 							disposalPromises.Add(promise);
 						}
-
-						if (disposable is Component disposableComponent)
-						{
-							gameObjectsForDeletion.Add(disposableComponent.gameObject);
-						}
-					}
-					else if (service is Component component)
-					{
-						// automatic behaviour for components that don't have the IBeamableDisposable interface is to destroy them
-						UnityEngine.Object.Destroy(component);
-						gameObjectsForDeletion.Add(component.gameObject);
 					}
 				}
 			}
 
-			DisposeServices(_createdTransientServices);
 			DisposeServices(SingletonCache.Values);
 			DisposeServices(ScopeCache.Values);
 
-			foreach (var gob in gameObjectsForDeletion)
-			{
-				if (gob.GetComponents<Component>().Length <= 1) // allow for a transform component
-				{
-					UnityEngine.Object.Destroy(gob);
-				}
-			}
 			await Promise.Sequence(disposalPromises);
 
-			_createdTransientServices.Clear();
 			SingletonCache.Clear();
 			ScopeCache.Clear();
 		}
 
 		public void Hydrate(IDependencyProviderScope other)
 		{
-			_destroyed = other.IsDestroyed;
+			_destroyed = other.IsDisposed;
 			Transients = other.TransientServices.ToDictionary(desc => desc.Interface);
 			Scoped = other.ScopedServices.ToDictionary(desc => desc.Interface);
 			Singletons = other.SingletonServices.ToDictionary(desc => desc.Interface);
@@ -315,7 +298,9 @@ namespace Beamable.Common.Dependencies
 			var builder = new DependencyBuilder();
 			// populate all of the existing services we have in this scope.
 
-			void AddDescriptors(List<ServiceDescriptor> target, Dictionary<Type, ServiceDescriptor> source, Func<IDependencyProvider, ServiceDescriptor, object> factory)
+			void AddDescriptors(List<ServiceDescriptor> target,
+			                    Dictionary<Type, ServiceDescriptor> source,
+			                    Func<IDependencyProvider, ServiceDescriptor, object> factory)
 			{
 				foreach (var kvp in source)
 				{
@@ -330,11 +315,9 @@ namespace Beamable.Common.Dependencies
 			// transients are stupid, and I should probably delete them.
 			AddDescriptors(builder.TransientServices, Transients,(nextProvider, desc) => desc.Factory(nextProvider));
 
-
 			// all scoped descriptors
 			AddDescriptors(builder.ScopedServices, Scoped,(nextProvider, desc) => desc.Factory(nextProvider));
 			// scopes services build brand new instances per provider
-
 
 			// singletons use their parent singleton cache.
 			AddDescriptors(builder.SingletonServices, Scoped, (_, desc) => GetService(desc.Interface));

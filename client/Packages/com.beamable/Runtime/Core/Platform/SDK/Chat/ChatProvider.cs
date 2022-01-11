@@ -66,9 +66,9 @@ namespace Beamable.Experimental.Api.Chat
       /// Initializes the ChatProvider. This should connect to the service and populate the list of rooms accessible
       /// to the user.
       /// </summary>
-      public void Initialize(IDependencyProvider provider=null)
+      public void Initialize(IDependencyProvider provider)
       {
-         Provider = provider ?? ServiceManager.LegacyDependencyProvider;
+         Provider = provider;
 
          Connect()
             .FlatMap(_ => FetchAndUpdateRooms())

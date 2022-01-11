@@ -32,7 +32,7 @@ namespace Beamable.Api {
 
       // If TTL is 0, then never expire anything
       public UnityUserDataCache(string name, long ttlMs, CacheResolver resolver, IDependencyProvider provider) {
-	      _provider = provider ?? ServiceManager.LegacyDependencyProvider;
+	      _provider = provider;
 	      coroutineContext = $"userdatacache_{name}";
          Name = name;
          TtlMs = ttlMs;

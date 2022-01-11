@@ -35,12 +35,6 @@ namespace Beamable.Api.Inventory
 	      UsesHierarchyScopes = true;
       }
 
-      public InventorySubscription(IPlatformService platform, IBeamableRequester requester)
-	      : base(platform, requester, SERVICE, new BeamableGetApiResourceViaPost<InventoryResponse>(true, OfflineResponse))
-      {
-	      UsesHierarchyScopes = true;
-      }
-
       private static InventoryResponse OfflineResponse(string url)
       {
 	      return new InventoryResponse
@@ -128,9 +122,9 @@ namespace Beamable.Api.Inventory
          Subscribable = new InventorySubscription(provider);
       }
 
-      public InventoryService(IPlatformService platform, IBeamableRequester requester) : base(requester, platform)
+      public InventoryService(IPlatformService platform, IBeamableRequester requester, IDependencyProvider provider) : base(requester, platform)
       {
-	      Subscribable = new InventorySubscription(platform, requester);
+	      Subscribable = new InventorySubscription(provider);
 
       }
 

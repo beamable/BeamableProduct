@@ -16,7 +16,7 @@ namespace Beamable.Experimental.Api.Chat
         private const string GroupMembershipEvent = "GROUP.MEMBERSHIP";
         private bool _group_subscribed = false;
 
-        public ChatSubscription(IPlatformService platform, IBeamableRequester requester, IDependencyProvider provider) : base(platform, requester, SERVICE)
+        public ChatSubscription(IDependencyProvider provider) : base(provider, SERVICE)
         {
 	        _provider = provider;
         }
@@ -57,7 +57,7 @@ namespace Beamable.Experimental.Api.Chat
 
         public ChatService(IPlatformService platform, IBeamableRequester requester, IDependencyProvider provider)
         {
-            Subscribable = new ChatSubscription(platform, requester, provider);
+            Subscribable = new ChatSubscription(provider);
             _platform = platform;
             _requester = requester;
         }
