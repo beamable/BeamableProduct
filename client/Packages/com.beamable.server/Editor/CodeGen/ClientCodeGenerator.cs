@@ -43,10 +43,7 @@ namespace Beamable.Server.Editor.CodeGen
       public static string GetTargetParameterClassName(MicroserviceDescriptor descriptor) =>
           $"MicroserviceParameters{descriptor.Name}Client";
 
-      public static string GetParameterClassName(Type parameterType)
-      {
-		  return $"{PARAMETER_STRING}{GetTypeStr(parameterType).Replace(".","_")}";
-      }
+      public static string GetParameterClassName(Type parameterType) => $"{PARAMETER_STRING}{GetTypeStr(parameterType).Replace(".","_")}";
 
       public static Type GetDataWrapperTypeForParameter(MicroserviceDescriptor descriptor, Type parameterType)
       {
