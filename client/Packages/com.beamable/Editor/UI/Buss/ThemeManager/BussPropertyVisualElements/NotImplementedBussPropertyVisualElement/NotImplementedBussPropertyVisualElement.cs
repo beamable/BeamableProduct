@@ -19,7 +19,7 @@ namespace Beamable.Editor.UI.Components
 			var label = new Label($"No visual element implemented for drawing a property of type {Property?.GetType().Name}.");
 			AddBussPropertyFieldClass(label);
 			label.style.SetFontSize(8f);
-			_mainElement.Add(label);
+			Root.Add(label);
 		}
 
 		public override void OnPropertyChangedExternally()
