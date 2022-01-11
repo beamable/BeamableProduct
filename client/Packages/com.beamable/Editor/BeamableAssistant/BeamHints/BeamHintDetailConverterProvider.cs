@@ -9,7 +9,14 @@ using System.Text;
 
 namespace Beamable.Editor.Assistant
 {
-	public static class BeamHintDetailConverterProvider
+	
+	/// <summary>
+	/// The base class defining all <see cref="BeamHintReflectionCache.DefaultConverter"/> (and other similar delegates).
+	/// <para/>
+	/// Users must inherit from this class to declare their own conversion functions (<see cref="BeamHintDetailConverterAttribute"/>). They will be automatically detected by the
+	/// <see cref="BeamHintReflectionCache"/> and have their mapping cached for rendering hint details when needed.
+	/// </summary>
+	public abstract class BeamHintDetailConverterProvider
 	{
 		
 		/// <summary>
@@ -21,7 +28,6 @@ namespace Beamable.Editor.Assistant
 		                         "HintDetailsAttributeValidationResultConfig")]
 		public static void MisconfiguredHintDetailsAttributeConverter(in BeamHint hint, in BeamHintTextMap textMap, BeamHintVisualsInjectionBag injectionBag)
 		{
-			var hintId = hint.Header.Id;
 			var ctx = hint.ContextObject as IEnumerable<AttributeValidationResult>;
 
 			var validationIntro = textMap != null && textMap.TryGetHintIntroText(hint.Header, out var intro) ? intro : hint.Header.Id;
@@ -51,15 +57,16 @@ namespace Beamable.Editor.Assistant
 			var validationIntro = textMap != null && textMap.TryGetHintIntroText(hint.Header, out var intro) ? intro : hint.Header.Id;
 
 			var validationMsg = new StringBuilder();
-			foreach (var attr in ctx)
+			foreach (var attrValidation in ctx)
 			{
 				string line;
 
-				if (hintId == BeamHintIds.ID_CLIENT_CALLABLE_UNSUPPORTED_PARAMETERS) { line = $"{attr.Pair.Info.DeclaringType.Name}.{attr.Pair.Info.Name} => {attr.Message}"; }
-				else if (hintId == BeamHintIds.ID_CLIENT_CALLABLE_ASYNC_VOID) { line = $"{attr.Pair.Info.DeclaringType.FullName}.{attr.Pair.Info.Name}"; }
-				else if (hintId == BeamHintIds.ID_MICROSERVICE_ATTRIBUTE_MISSING) { line = $"{attr.Pair.Info.Name}"; }
-				else if (hintId == BeamHintIds.ID_MISCONFIGURED_HINT_DETAILS_PROVIDER) { line = $"{attr.Pair.Info.DeclaringType.FullName}.{attr.Pair.Info.Name}"; }
-				else { line = $"{attr.Pair.Info.ReflectedType.FullName}"; }
+				// Format the data depending on the hint we are rendering
+				if (hintId == BeamHintIds.ID_CLIENT_CALLABLE_UNSUPPORTED_PARAMETERS) { line = $"{attrValidation.Pair.Info.DeclaringType.Name}.{attrValidation.Pair.Info.Name} => {attrValidation.Message}"; }
+				else if (hintId == BeamHintIds.ID_CLIENT_CALLABLE_ASYNC_VOID) { line = $"{attrValidation.Pair.Info.DeclaringType.FullName}.{attrValidation.Pair.Info.Name}"; }
+				else if (hintId == BeamHintIds.ID_MICROSERVICE_ATTRIBUTE_MISSING) { line = $"{attrValidation.Pair.Info.Name}"; }
+				else if (hintId == BeamHintIds.ID_MISCONFIGURED_HINT_DETAILS_PROVIDER) { line = $"{attrValidation.Pair.Info.DeclaringType.FullName}.{attrValidation.Pair.Info.Name}"; }
+				else { line = $"{attrValidation.Pair.Info.ReflectedType.FullName}"; }
 
 				validationMsg.AppendLine(line);
 			}

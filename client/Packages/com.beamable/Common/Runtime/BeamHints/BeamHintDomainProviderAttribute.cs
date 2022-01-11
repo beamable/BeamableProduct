@@ -4,10 +4,17 @@ using System.Reflection;
 
 namespace Beamable.Common.Assistant
 {
+	/// <summary>
+	/// Abstract class that should be implemented in any class that will contain declarations of <see cref="BeamHintDomainAttribute"/> on their "readonly static string" fields.
+	/// <see cref="BeamHintDomains"/> for a better understanding of this.
+	/// </summary>
 	public abstract class BeamHintDomainProvider { }
 
+	/// <summary>
+	/// Used to declare that certain "static readonly string" fields are BeamHintDomains --- this information is cached by the BeamHintReflectionCache system.
+	/// </summary>
 	[AttributeUsage(AttributeTargets.Field)]
-	public class BeamHintDomainAttribute : Attribute, IReflectionCachingAttribute
+	public class BeamHintDomainAttribute : Attribute, IReflectionAttribute
 	{
 		public AttributeValidationResult IsAllowedOnMember(MemberInfo member)
 		{

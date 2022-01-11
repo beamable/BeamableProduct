@@ -102,63 +102,67 @@ namespace Beamable.Editor
 
       private Promise<EditorAPI> Initialize()
       {
+	      // Load up core configuration
 	      CoreConfiguration coreConfiguration;
 	      try
 	      {
 		      coreConfiguration = CoreConfiguration = CoreConfiguration.Instance;
 	      }
+	      // Solves a specific issue on first installation of package ---
 	      catch (ModuleConfigurationNotReadyException)
 	      {
 		      coreConfiguration = CoreConfiguration = AssetDatabase.LoadAssetAtPath<CoreConfiguration>("Packages/com.beamable/Editor/Config/CoreConfiguration.asset");
 	      }
 	      
-	      
+	      // Initialize Editor instances of Reflection and Assistant services
 	      EditorReflectionCache = new ReflectionCache();
-
 	      HintGlobalStorage = new BeamHintEditorStorage();
 	      HintNotificationsManager = new BeamHintNotificationManager();
 	      HintPreferencesManager = new BeamHintPreferencesManager();
 
 	      
-	      // This was made to solve a cross-package injection problem. It doubles as a no-code way for users to inject their own IReflectionCacheUserSystem into our pipeline.
+	      // This was made to solve a cross-package injection problem. It doubles as a no-code way for users to inject their own IReflectionSystem into our pipeline.
+	      // TODO: Refactor/Expand this to allow users to inject any "BeamableEditor" systems to have a guarantee these systems will run only after the Beamable Editor environment has
+	      // TODO: been initialized.
 	      {
-		      
-		      // Load up all Asset-based IReflectionCacheUserSystem (injected via ReflectionCacheUserSystemObject instances).
-		      var reflectionCacheSystemGuids = AssetDatabase.FindAssets("t:ReflectionCacheUserSystemObject", coreConfiguration.ReflectionCacheUserSystemPaths
+		      // Load up all Asset-based IReflectionSystem (injected via ReflectionSystemObject instances).
+		      var reflectionCacheSystemGuids = AssetDatabase.FindAssets($"t:{nameof(ReflectionSystemObject)}", coreConfiguration.ReflectionSystemPaths
 		                                                                                                                      .Where(Directory.Exists)
 		                                                                                                                      .ToArray());
 
 		      foreach (string reflectionCacheSystemGuid in reflectionCacheSystemGuids)
 		      {
 			      var assetPath = AssetDatabase.GUIDToAssetPath(reflectionCacheSystemGuid);
-			      var userSystemObject = AssetDatabase.LoadAssetAtPath<ReflectionCacheUserSystemObject>(assetPath);
-			      EditorReflectionCache.RegisterTypeProvider(userSystemObject.UserTypeProvider);
-			      EditorReflectionCache.RegisterCacheUserSystem(userSystemObject.UserSystem);
+			      var userSystemObject = AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(assetPath);
+			      EditorReflectionCache.RegisterTypeProvider(userSystemObject.TypeProvider);
+			      EditorReflectionCache.RegisterReflectionSystem(userSystemObject.System);
 		      }
 		  
 		      // After loading each reflection cache, make initialization calls to any specific system we need to make.
 		      // A current limitation is that we can't actually do this for any system out of this package.
-		      // TODO: Maybe we should add a callback to the IReflectionCacheUserSystem's API that gets invoked here 🤔...
+		      // TODO: Maybe we should add a callback to the IReflectionSystem's API that gets invoked here 🤔...
 		      // Load all beam hint scriptable objects 
-		      var beamHintReflectionCache = EditorReflectionCache.GetFirstRegisteredUserSystemOfType<BeamHintReflectionCache.Registry>();
+		      var beamHintReflectionCache = EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>();
 		      beamHintReflectionCache.ReloadHintTextMapScriptableObjects(coreConfiguration.BeamableAssistantHintDetailConfigPaths);
 		      beamHintReflectionCache.ReloadHintDetailConfigScriptableObjects(coreConfiguration.BeamableAssistantHintDetailConfigPaths);
 		  
 		      
 		      // Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance
-		      // (that gets propagated down to any IReflectionCacheUserSystem that also implements IBeamHintProvider).
+		      // (that gets propagated down to any IReflectionSystem that also implements IBeamHintProvider).
 		      // Finally, calls the Generate Reflection cache 
 		      EditorReflectionCache.SetStorage(HintGlobalStorage);
 		      EditorReflectionCache.GenerateReflectionCache(assembliesToSweep: coreConfiguration.AssembliesToSweep);
 	      }
 	      
+	      // Sets up hint storage and preferences managers
 	      HintNotificationsManager.SetStorage(HintGlobalStorage);
 	      HintNotificationsManager.SetPreferencesManager(HintPreferencesManager);
 	      
-	      
+	      // Hook up editor callbacks
 	      EditorApplication.update -= HintNotificationsManager.Update;
 	      EditorApplication.update += HintNotificationsManager.Update;
 		
+	      // Hook up editor play-mode-warning feature.
 	      EditorApplication.playModeStateChanged += delegate(PlayModeStateChange change) {
 		      if (!coreConfiguration.EnablePlayModeWarning) 
 			      return;
@@ -197,6 +201,7 @@ namespace Beamable.Editor
 		      }
 	      };
 	      
+	      // Apply the defined configuration for how users want to uncaught promises (with no .Error callback attached) in Beamable promises. 
 	     if (!Application.isPlaying) 
          {
             var promiseHandlerConfig = coreConfiguration.DefaultUncaughtPromiseHandlerConfiguration;

@@ -14,9 +14,9 @@ namespace Beamable
 		           "Core Configuration")]
 	public class CoreConfiguration : ModuleConfigurationObject
 	{
-		public const string PROJECT_REFLECTION_CACHE_SYSTEM_PATH = "Assets/Beamable/ReflectionCache/UserSystems";	
-		public const string BEAMABLE_REFLECTION_CACHE_SYSTEM_PATH = "Packages/com.beamable/Editor/ReflectionCache/UserSystems";
-		public const string BEAMABLE_SERVER_REFLECTION_CACHE_SYSTEM_PATH = "Packages/com.beamable.server/Editor/ReflectionCache/UserSystems";
+		public const string PROJECT_REFLECTION_SYSTEM_PATH = "Assets/Beamable/ReflectionCache/UserSystems";	
+		public const string BEAMABLE_REFLECTION_SYSTEM_PATH = "Packages/com.beamable/Editor/ReflectionCache/UserSystems";
+		public const string BEAMABLE_SERVER_REFLECTION_SYSTEM_PATH = "Packages/com.beamable.server/Editor/ReflectionCache/UserSystems";
 		
 		public const string PROJECT_ASSISTANT_MENU_ITEM_PATH = "Assets/Beamable/Assistant/MenuItems";
 		public const string BEAMABLE_ASSISTANT_MENU_ITEM_PATH = "Packages/com.beamable/Editor/BeamableAssistant/MenuItems";
@@ -58,10 +58,10 @@ namespace Beamable
 		public List<string> BeamableAssistantHintDetailConfigPaths = new List<string>();
 
 		
-		[Header("Reflection Cache Systems")]
-		[Tooltip("Register all paths in which we'll need to look for ReflectionCacheUserSystemObjects.\n" +
+		[Header("Reflection Systems")]
+		[Tooltip("Register all paths in which we'll need to look for ReflectionSystemObjects.\n" +
 		         "We don't look everywhere as that could impact editor experience on larger projects.")]
-		public List<string> ReflectionCacheUserSystemPaths = new List<string>();
+		public List<string> ReflectionSystemPaths = new List<string>();
 
 		[Tooltip("Register any assemblies you wish to ignore from the assembly sweep.")]
 		public List<string> AssembliesToSweep = new List<string>();
@@ -69,14 +69,14 @@ namespace Beamable
 		private void OnValidate()
 		{
 			// Ensure default paths exist for Reflection Cache User System Objects
-			if (!ReflectionCacheUserSystemPaths.Contains(PROJECT_REFLECTION_CACHE_SYSTEM_PATH))
-				ReflectionCacheUserSystemPaths.Add(PROJECT_REFLECTION_CACHE_SYSTEM_PATH);
+			if (!ReflectionSystemPaths.Contains(PROJECT_REFLECTION_SYSTEM_PATH))
+				ReflectionSystemPaths.Add(PROJECT_REFLECTION_SYSTEM_PATH);
 
-			if (!ReflectionCacheUserSystemPaths.Contains(BEAMABLE_REFLECTION_CACHE_SYSTEM_PATH))
-				ReflectionCacheUserSystemPaths.Add(BEAMABLE_REFLECTION_CACHE_SYSTEM_PATH);
+			if (!ReflectionSystemPaths.Contains(BEAMABLE_REFLECTION_SYSTEM_PATH))
+				ReflectionSystemPaths.Add(BEAMABLE_REFLECTION_SYSTEM_PATH);
 
-			if (!ReflectionCacheUserSystemPaths.Contains(BEAMABLE_SERVER_REFLECTION_CACHE_SYSTEM_PATH))
-				ReflectionCacheUserSystemPaths.Add(BEAMABLE_SERVER_REFLECTION_CACHE_SYSTEM_PATH);
+			if (!ReflectionSystemPaths.Contains(BEAMABLE_SERVER_REFLECTION_SYSTEM_PATH))
+				ReflectionSystemPaths.Add(BEAMABLE_SERVER_REFLECTION_SYSTEM_PATH);
 			
 			
 			// Ensure default paths exist for Beamable Assistant Menu Items
@@ -109,7 +109,7 @@ namespace Beamable
 			if(!BeamableAssistantHintDetailConfigPaths.Contains(BEAMABLE_SERVER_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH))
 				BeamableAssistantHintDetailConfigPaths.Add(BEAMABLE_SERVER_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH);
 
-			ReflectionCacheUserSystemPaths = ReflectionCacheUserSystemPaths.Distinct().ToList();
+			ReflectionSystemPaths = ReflectionSystemPaths.Distinct().ToList();
 			BeamableAssistantMenuItemsPath = BeamableAssistantMenuItemsPath.Distinct().ToList();
 			BeamableAssistantToolbarButtonsPaths = BeamableAssistantToolbarButtonsPaths.Distinct().ToList();
 			BeamableAssistantHintDetailConfigPaths = BeamableAssistantHintDetailConfigPaths.Distinct().ToList();

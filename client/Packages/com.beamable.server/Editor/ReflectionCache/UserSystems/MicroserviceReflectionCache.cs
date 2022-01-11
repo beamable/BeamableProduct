@@ -11,23 +11,23 @@ using UnityEngine;
 namespace Beamable.Server.Editor
 {
 	[CreateAssetMenu(fileName = "MicroserviceReflectionCache", menuName = "Beamable/Reflection/Server/Microservices Cache", order = 0)]
-	public class MicroserviceReflectionCache : ReflectionCacheUserSystemObject
+	public class MicroserviceReflectionCache : ReflectionSystemObject
 	{
 		[NonSerialized]
 		public Registry Cache;
 
-		public override IReflectionCacheUserSystem UserSystem => Cache;
+		public override IReflectionSystem System => Cache;
 
-		public override IReflectionCacheTypeProvider UserTypeProvider => Cache;
+		public override IReflectionTypeProvider TypeProvider => Cache;
 
-		public override Type UserSystemType => typeof(Registry);
+		public override Type SystemType => typeof(Registry);
 
 		private MicroserviceReflectionCache()
 		{
 			Cache = new Registry();
 		}
 
-		public class Registry : IReflectionCacheUserSystem, IBeamHintProvider
+		public class Registry : IReflectionSystem, IBeamHintProvider
 		{
 			private static readonly BaseTypeOfInterest MICROSERVICE_BASE_TYPE;
 			private static readonly List<BaseTypeOfInterest> BASE_TYPES_OF_INTEREST;
@@ -58,7 +58,7 @@ namespace Beamable.Server.Editor
 
 			public void SetStorage(IBeamHintGlobalStorage hintGlobalStorage) => _hintStorage = hintGlobalStorage;
 
-			public void ClearUserCache()
+			public void ClearCachedReflectionData()
 			{
 				_serviceToStateMachine.Clear();
 				_serviceToBuilder.Clear();
@@ -68,22 +68,22 @@ namespace Beamable.Server.Editor
 				AllDescriptors.Clear();
 			}
 
-			public void ParseFullCachedData(PerBaseTypeCache perBaseTypeCache,
+			public void OnReflectionCacheBuilt(PerBaseTypeCache perBaseTypeCache,
 			                                PerAttributeCache perAttributeCache)
 			{
 				// TODO: Display BeamHint of validation type for microservices declared in ignored assemblies.
 			}
 
-			public void ParseBaseTypeOfInterestData(BaseTypeOfInterest baseType, IReadOnlyList<MemberInfo> cachedSubTypes)
+			public void OnBaseTypeOfInterestFound(BaseTypeOfInterest baseType, IReadOnlyList<MemberInfo> cachedSubTypes)
 			{
 				if (baseType.Equals(MICROSERVICE_BASE_TYPE))
 					ParseMicroserviceSubTypes(cachedSubTypes);
 			}
 
-			public void ParseAttributeOfInterestData(AttributeOfInterest attributeType, IReadOnlyList<MemberAttributePair> cachedMemberAttributePairs)
+			public void OnAttributeOfInterestFound(AttributeOfInterest attributeType, IReadOnlyList<MemberAttribute> cachedMemberAttributes)
 			{
 				if (attributeType.Equals(MICROSERVICE_ATTRIBUTE))
-					ParseMicroserviceAttributes(cachedMemberAttributePairs);
+					ParseMicroserviceAttributes(cachedMemberAttributes);
 			}
 
 			private void ParseMicroserviceSubTypes(IReadOnlyList<MemberInfo> cachedMicroserviceSubtypes)
@@ -106,7 +106,7 @@ namespace Beamable.Server.Editor
 				}
 			}
 
-			private void ParseMicroserviceAttributes(IReadOnlyList<MemberAttributePair> cachedMicroserviceAttributes)
+			private void ParseMicroserviceAttributes(IReadOnlyList<MemberAttribute> cachedMicroserviceAttributes)
 			{
 				// Searches for all unique name collisions.
 				var uniqueNameValidationResults = cachedMicroserviceAttributes.GetAndValidateUniqueNamingAttributes<MicroserviceAttribute>();
@@ -139,12 +139,12 @@ namespace Beamable.Server.Editor
 					_hintStorage.AddOrReplaceHint(hint, clientCallableErrors);
 				}
 
-				// Builds a lookup of DeclaringType => MemberAttributePair.
+				// Builds a lookup of DeclaringType => MemberAttribute.
 				var validClientCallablesLookup = clientCallablesValid
 				                                 .Concat(clientCallableWarnings)
 				                                 .Concat(clientCallableErrors)
 				                                 .Select(result => result.Pair)
-				                                 .CreateMemberAttributePairOwnerLookupTable();
+				                                 .CreateMemberAttributeOwnerLookupTable();
 
 				// Register all configured microservices
 				foreach (var msAttrValidationResult in uniqueNameValidationResults.PerAttributeNameValidations)
@@ -167,10 +167,10 @@ namespace Beamable.Server.Editor
 					};
 
 					// Add client callables for this microservice type
-					var clientCallables = validClientCallablesLookup[type].ToList();
+					var clientCallables = validClientCallablesLookup[type];
 
 					// Generates descriptors for each of the individual client callables.
-					descriptor.Methods = clientCallables.Select(delegate(MemberAttributePair pair) {
+					descriptor.Methods = clientCallables.Select(delegate(MemberAttribute pair) {
 						var clientCallableAttribute = pair.AttrAs<ClientCallableAttribute>();
 						var clientCallableMethod = pair.InfoAs<MethodInfo>();
 

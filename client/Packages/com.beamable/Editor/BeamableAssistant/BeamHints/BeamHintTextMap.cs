@@ -6,7 +6,11 @@ using UnityEngine;
 
 namespace Beamable.Editor.Assistant
 {
-	// TODO: Replace with in-editor localization system
+	
+	/// <summary>
+	/// A quick and dirty way of mapping Domains, Sub-Domains and HintIds to specific blobs of text.
+	/// TODO: Replace with in-editor localization system 
+	/// </summary>
 	[CreateAssetMenu(fileName = "BeamHintTextMap", menuName = "Beamable/Assistant/Hints/Hint Text Map", order = 0)]
 	public class BeamHintTextMap : ScriptableObject
 	{

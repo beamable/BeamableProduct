@@ -1,23 +1,44 @@
 using Beamable.Common;
+using Beamable.Common.Reflection;
 using System.Linq;
 using UnityEditor;
 
 namespace Beamable.Editor.Reflection
 {
+	/// <summary>
+	/// An asset post-processor that reloads and rebuilds all (or the re-imported) <see cref="IReflectionSystem"/> defined via <see cref="ReflectionSystemObject"/> whenever
+	/// one gets re-imported, deleted or moved.
+	///
+	/// This makes it so that a recompile isn't necessary to update the <see cref="ReflectionCache"/> for cases where you might not want that.
+	/// </summary>
 	public class ReflectionCacheAssetPostProcessor : AssetPostprocessor
 	{
 		public static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
 		{
 			var reflectionCacheRelatedAssets = importedAssets.Union(movedAssets)
-			                                           .Select(path => (path, type: AssetDatabase.GetMainAssetTypeAtPath(path)))
-			                                           .Where(t => typeof(ReflectionCacheUserSystemObject).IsAssignableFrom(t.type))
-			                                           .ToList();
+			                                                 .Select(path => (path, type: AssetDatabase.GetMainAssetTypeAtPath(path)))
+			                                                 .Where(t => typeof(ReflectionSystemObject).IsAssignableFrom(t.type))
+			                                                 .ToList();
 
-			if (reflectionCacheRelatedAssets.Count > 0 || deletedAssets.Length > 0)
+			if (reflectionCacheRelatedAssets.Count > 0)
 			{
-				EditorAPI.Instance.Then(api => {
-					BeamableLogger.Log("Re-building the Reflection Cache!");
-					api.EditorReflectionCache.GenerateReflectionCache(assembliesToSweep: api.CoreConfiguration.AssembliesToSweep);
+				var reimportedReflectionTypes = reflectionCacheRelatedAssets.Select(tuple => AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(tuple.path).SystemType).ToList();
+
+				EditorAPI.Instance.Then(api =>
+				{
+					BeamableLogger.Log("Re-building the Reflection Systems from Cached Data!");
+					api.EditorReflectionCache.RebuildReflectionUserSystems(reimportedReflectionTypes);
+					BeamableLogger.Log("Finished Rebuilding Reflection Cache Systems");
+					AssetDatabase.Refresh();
+				});
+			}
+
+			if (deletedAssets.Length > 0)
+			{
+				EditorAPI.Instance.Then(api =>
+				{
+					BeamableLogger.Log("Re-building the Reflection Systems from Cached Data!");
+					api.EditorReflectionCache.RebuildReflectionUserSystems();
 					BeamableLogger.Log("Finished Rebuilding Reflection Cache Systems");
 					AssetDatabase.Refresh();
 				});

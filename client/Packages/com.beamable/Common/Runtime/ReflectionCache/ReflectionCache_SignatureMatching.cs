@@ -9,7 +9,7 @@ namespace Beamable.Common.Reflection
 {
 	/// <summary>
 	/// Defines a method signature of interest so that we can validate that game-makers
-	/// are placing <see cref="IReflectionCachingAttribute{T}"/> that match expected signatures.
+	/// are placing <see cref="IReflectionAttribute"/> on methods that match expected signatures.
 	/// </summary>
 	public readonly struct SignatureOfInterest
 	{
@@ -29,9 +29,12 @@ namespace Beamable.Common.Reflection
 		public readonly ParameterOfInterest[] Parameters;
 
 		/// <summary>
-		/// <see cref="SignatureOfInterest"/> default constructor. Passing in a null value for <paramref name="parameters"/> will cause the signature to match using
-		/// only <paramref name="returnType"/> and <paramref name="isStatic"/>. 
+		/// <see cref="SignatureOfInterest"/> default constructor.  
 		/// </summary>
+		/// <param name="parameters">
+		/// If no parameters were passed, we assume the user does not care about it and we don't validate parameters.
+		/// If has length 0, it will be enforced that the method has 0 parameters.
+		/// </param> 
 		public SignatureOfInterest(bool isStatic, Type returnType, ParameterOfInterest[] parameters)
 		{
 			IsStatic = isStatic;
@@ -70,8 +73,6 @@ namespace Beamable.Common.Reflection
 		/// </summary>
 		public ParameterOfInterest(Type parameterType, bool isIn, bool isOut, bool isByRef)
 		{
-			System.Diagnostics.Debug.Assert(!(isIn && isOut && isByRef) || (isIn ^ isOut ^ isByRef), "All In/Ref/Out must be false or only one of them can be true.");
-
 			ParameterType = parameterType;
 
 			IsIn = isIn;
@@ -107,8 +108,10 @@ namespace Beamable.Common.Reflection
 		/// </summary>
 		/// <param name="acceptedSignatures">A list of <see cref="SignatureOfInterest"/> that the method is allowed to have.</param>
 		/// <param name="methodInfo">The <see cref="MethodInfo"/> to match against the <paramref name="acceptedSignatures"/>.</param>
-		/// <returns>A list, parallel to <paramref name="acceptedSignatures"/>, containing the index or -1 for each of the given <paramref name="acceptedSignatures
-		/// "/>.</returns>
+		///
+		/// <returns>
+		/// A list, parallel to <paramref name="acceptedSignatures"/>, containing the index or -1 for each of the given <paramref name="acceptedSignatures"/>.
+		/// </returns>
 		public static List<int> FindMatchingMethodSignatures(this IReadOnlyList<SignatureOfInterest> acceptedSignatures, MethodInfo methodInfo)
 		{
 			var parameters = methodInfo.GetParameters();
@@ -145,7 +148,7 @@ namespace Beamable.Common.Reflection
 		}
 		
 		/// <summary>
-		/// Checks if the given method info is an async method with the given return type.
+		/// Utility to checks if the given method info is an async method with the given return type.
 		/// </summary>
 		public static bool IsAsyncMethodOfType(this MethodInfo methodInfo, Type returnType) => 
 			methodInfo.GetCustomAttribute<AsyncStateMachineAttribute>() != null && methodInfo.ReturnType == returnType;
@@ -154,9 +157,15 @@ namespace Beamable.Common.Reflection
 		/// Checks all parameters of <paramref name="methodInfo"/> and returns true if any of its parameters match any of <paramref name="parametersOfInterest"/>.
 		/// Used mostly to detect forbidden types in method signatures. 
 		/// </summary>
-		/// <param name="parametersOfInterest">List of parameters types we care about. Currently, this only matches the type. It doesn't care about in/ref/out modifiers.</param>
-		/// <param name="methodInfo">The method whose parameters we want to look at.</param>
-		/// <returns>True, if any of the <paramref name="parametersOfInterest"/> match any of the parameters of <paramref name="methodInfo"/>.</returns>
+		/// <param name="parametersOfInterest">
+		/// List of parameters declarations we care about. Currently, this only matches the type. It doesn't care about in/ref/out modifiers.
+		/// </param>
+		/// <param name="methodInfo">
+		/// The method whose parameters we want to look at.
+		/// </param>
+		/// <returns>
+		/// True, if any of the <paramref name="parametersOfInterest"/> match any of the parameters of <paramref name="methodInfo"/>.
+		/// </returns>
 		public static bool MatchAnyParametersOfMethod(this IReadOnlyList<ParameterOfInterest> parametersOfInterest, MethodInfo methodInfo, out List<ParameterInfo> invalidParamTypes)
 		{
 			invalidParamTypes = new List<ParameterInfo>();
@@ -187,7 +196,8 @@ namespace Beamable.Common.Reflection
 		
 		private static bool MatchParameterTypeOnly(ParameterOfInterest acceptableParameter, ParameterInfo parameter)
 		{
-			var matchType = acceptableParameter.ParameterType.IsAssignableFrom(parameter.ParameterType);
+			var matchType = acceptableParameter.ParameterType.IsInterface ? acceptableParameter.ParameterType.IsAssignableFrom(parameter.ParameterType) : 
+				acceptableParameter.ParameterType == parameter.ParameterType || parameter.ParameterType.IsSubclassOf(acceptableParameter.ParameterType);
 			return matchType;
 		}
 

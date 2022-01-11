@@ -8,6 +8,9 @@ using Beamable.Editor.ToolbarExtender;
 
 namespace Beamable.Editor.Assistant
 {
+	/// <summary>
+	/// An asset post-processor that reloads and re-builds Beamable Assistant-related data defined in relevant scriptable objects.
+	/// </summary>
 	public class BeamableAssistantAssetPostProcessor : AssetPostprocessor
 	{
 		public static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
@@ -29,8 +32,12 @@ namespace Beamable.Editor.Assistant
 			if (beamHintDetailsRelatedAssets.Count > 0 || deletedAssets.Length > 0)
 			{
 				EditorAPI.Instance.Then(editorApi => {
-					editorApi.EditorReflectionCache.GetFirstRegisteredUserSystemOfType<BeamHintReflectionCache.Registry>()
+					editorApi.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>()
 					         .ReloadHintDetailConfigScriptableObjects(editorApi.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
+					
+					editorApi.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>()
+					         .ReloadHintTextMapScriptableObjects(editorApi.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
+					
 				});
 			}
 		}

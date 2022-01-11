@@ -4,9 +4,16 @@ using System.Reflection;
 
 namespace Beamable.Common.Assistant
 {
+	/// <summary>
+	/// Abstract class that should be implemented in any class that will contain declarations of <see cref="BeamHintIdAttribute"/> on their "readonly static string" fields.
+	/// <see cref="BeamHintIds"/> for a better understanding of this.
+	/// </summary>
 	public abstract class BeamHintIdProvider { }
 
-	public class BeamHintIdAttribute : Attribute, IReflectionCachingAttribute
+	/// <summary>
+	/// Used to declare that certain "static readonly string" fields are BeamHintIds --- this information is cached by the BeamHintReflectionCache system.
+	/// </summary>
+	public class BeamHintIdAttribute : Attribute, IReflectionAttribute
 	{
 		public AttributeValidationResult IsAllowedOnMember(MemberInfo member)
 		{

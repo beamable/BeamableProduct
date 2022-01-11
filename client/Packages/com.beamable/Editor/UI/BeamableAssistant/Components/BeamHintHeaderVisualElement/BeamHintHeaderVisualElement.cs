@@ -22,6 +22,9 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Assistant
 {
+	/// <summary>
+	/// This visual element handles the rendering of <see cref="BeamHint"/>s in the <see cref="BeamableAssistantWindow"/>.
+	/// </summary>
 	public class BeamHintHeaderVisualElement : BeamableAssistantComponent
 	{
 		public new class UxmlFactory : UxmlFactory<BeamHintHeaderVisualElement, UxmlTraits> { }
@@ -30,8 +33,10 @@ namespace Beamable.Editor.Assistant
 		{
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription {name = "custom-text", defaultValue = "nada"};
 
-			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription {
-				get {
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
+				get
+				{
 					yield break;
 				}
 			}
@@ -43,28 +48,40 @@ namespace Beamable.Editor.Assistant
 			}
 		}
 
-		public BeamHintsDataModel Model {
-			get;
-			internal set;
-		}
-
+		/// <summary>
+		/// The index into <see cref="BeamHintsDataModel.DisplayingHints"/> for the hint this element is currently rendering.
+		/// </summary>
 		private int _indexIntoDisplayingHints;
+
+		/// <summary>
+		/// Reference to a <see cref="BeamHintReflectionCache.Registry"/> that is used to access <see cref="BeamHintReflectionCache.ConverterData{T}"/> and correctly
+		/// render the <see cref="BeamHintDetailsConfig"/>. 
+		/// </summary>
+		private readonly BeamHintReflectionCache.Registry _hintDetailsReflectionCache;
+
+		/// <summary>
+		/// Reference to the current existing <see cref="BeamHintsDataModel"/> that is feeding the <see cref="BeamableAssistantWindow"/>. 
+		/// </summary>
+		private readonly BeamHintsDataModel _hintDataModel;
+
+		/// <summary>
+		/// Cached copy of the <see cref="BeamHintHeader"/> for the hint we are displaying.
+		/// </summary>
+		private BeamHintHeader _displayingHintHeader;
+
+		#region Visual Element References
+
 		private Label _hintDisplayName;
 		private Toggle _moreDetailsButton;
 		private VisualElement _detailsContainer;
 		private VisualElement _detailsBox;
-
-		private readonly BeamHintReflectionCache.Registry _hintDetailsReflectionCache;
-
-		private readonly BeamHintsDataModel _hintDataModel;
-		private BeamHintHeader _displayingHintHeader;
 		private Image _hintTypeIcon;
 		private VisualElement _headerContainer;
 
-		public BeamHintHeaderVisualElement() : base(nameof(BeamHintHeaderVisualElement))
-		{
-		}
-		
+		#endregion
+
+		public BeamHintHeaderVisualElement() : base(nameof(BeamHintHeaderVisualElement)) { }
+
 		public BeamHintHeaderVisualElement(BeamHintsDataModel dataModel,
 		                                   BeamHintReflectionCache.Registry library,
 		                                   in BeamHintHeader hint,
@@ -105,17 +122,16 @@ namespace Beamable.Editor.Assistant
 			_ = BeamHintDomains.TryGetDomainAtDepth(_displayingHintHeader.Domain, 0, out var primaryDomain);
 			_ = _hintDetailsReflectionCache.TryGetDomainTitleText(primaryDomain, out var hintPrimaryDomainText);
 			hintPrimaryDomain.text = hintPrimaryDomainText;
-				
 
 			// Find the ConverterData that is tied to the hint we are displaying from the HintDetails Reflection Cache system.
 			if (!_hintDetailsReflectionCache.TryGetConverterDataForHint(_displayingHintHeader, out var converter))
 			{
 				BeamableLogger.Log($"[Assistant] No BeamableHintDetails Found for Hint Header {_displayingHintHeader}! Skipping rendering of this hint." +
-				                        $"See BeamHintDetailConverterProvider and BeamHintDetailsConfig to see how to configure BeamHintConverter functions and visuals.");
+				                   $"See BeamHintDetailConverterProvider and BeamHintDetailsConfig to see how to configure BeamHintConverter functions and visuals.");
 			}
 
 			var hintDetailsConfig = converter.HintConfigDetailsConfig;
-			
+
 			// If there are no mapped converters, we don't display a more button since there would be no details to show.
 			var detailsUxmlPath = hintDetailsConfig == null ? "" : hintDetailsConfig.UxmlFile;
 			var detailsUssPaths = hintDetailsConfig == null ? new List<string>() : hintDetailsConfig.StylesheetsToAdd;
@@ -140,7 +156,8 @@ namespace Beamable.Editor.Assistant
 				// Configure more button to display hint details container when pressed. 
 				_moreDetailsButton.value = _hintDataModel.DetailsOpenedHints.Contains(_displayingHintHeader);
 				_moreDetailsButton.text = _moreDetailsButton.value ? "Less" : "More";
-				_moreDetailsButton.RegisterValueChangedCallback((changeEvt) => {
+				_moreDetailsButton.RegisterValueChangedCallback((changeEvt) =>
+				{
 					if (_hintDataModel.DetailsOpenedHints.Contains(_displayingHintHeader))
 					{
 						_detailsContainer.AddToClassList("--positionHidden");
@@ -152,7 +169,7 @@ namespace Beamable.Editor.Assistant
 						_hintDataModel.DetailsOpenedHints.Add(_displayingHintHeader);
 						_hintDataModel.DetailsOpenedHints = _hintDataModel.DetailsOpenedHints.Where(h => h.Type != BeamHintType.Invalid).Distinct().ToList();
 					}
-					
+
 					_moreDetailsButton.text = changeEvt.newValue ? "Less" : "More";
 				});
 
@@ -169,72 +186,79 @@ namespace Beamable.Editor.Assistant
 				foreach (var nonNullUssPath in nonNullUssPaths) _detailsBox.AddStyleSheet(nonNullUssPath);
 
 				// Update Name and Notification Preferences
-				_detailsBox.Q<Label>("hintDetailsBoxHintDisplayName").text = hintTitle;
-				var notificationToggle = _detailsBox.Q<Toggle>("hintDetailsBoxNotificationToggle");
-				switch (_hintDataModel.GetHintNotificationValue(_displayingHintHeader))
 				{
-					case BeamHintNotificationPreference.NotifyOncePerSession:
-					case BeamHintNotificationPreference.NotifyOnContextObjectChanged:
-					case BeamHintNotificationPreference.NotifyAlways:
-						notificationToggle.SetValueWithoutNotify(true);
-						break;
-					case BeamHintNotificationPreference.NotifyNever:
-						notificationToggle.SetValueWithoutNotify(false);
-						break;
-					default:
-						throw new ArgumentOutOfRangeException();
-				}
+					_detailsBox.Q<Label>("hintDetailsBoxHintDisplayName").text = hintTitle;
+					var notificationToggle = _detailsBox.Q<Toggle>("hintDetailsBoxNotificationToggle");
+					switch (_hintDataModel.GetHintNotificationValue(_displayingHintHeader))
+					{
+						case BeamHintNotificationPreference.NotifyOncePerSession:
+						case BeamHintNotificationPreference.NotifyOnContextObjectChanged:
+						case BeamHintNotificationPreference.NotifyAlways:
+							notificationToggle.SetValueWithoutNotify(true);
+							break;
+						case BeamHintNotificationPreference.NotifyNever:
+							notificationToggle.SetValueWithoutNotify(false);
+							break;
+						default:
+							throw new ArgumentOutOfRangeException();
+					}
 
-				notificationToggle.RegisterValueChangedCallback(evt => _hintDataModel.SetHintNotificationValue(_displayingHintHeader, evt.newValue));
+					notificationToggle.RegisterValueChangedCallback(evt => _hintDataModel.SetHintNotificationValue(_displayingHintHeader, evt.newValue));
+				}
 
 				// Update Play-Mode Preferences
-				var playModeNever = _detailsBox.Q<Toggle>("playModeWarningDisableToggle");
-				var playModeSession = _detailsBox.Q<Toggle>("playModeWarningSessionToggle");
-				var playModeAlways = _detailsBox.Q<Toggle>("playModeWarningAlwaysToggle");
-				var playModeState = _hintDataModel.GetHintPlayModeWarningState(_displayingHintHeader);
-				if (playModeState == BeamHintPlayModeWarningPreference.Enabled)
 				{
-					playModeAlways.SetValueWithoutNotify(true);
+					var playModeNever = _detailsBox.Q<Toggle>("playModeWarningDisableToggle");
+					var playModeSession = _detailsBox.Q<Toggle>("playModeWarningSessionToggle");
+					var playModeAlways = _detailsBox.Q<Toggle>("playModeWarningAlwaysToggle");
+					var playModeState = _hintDataModel.GetHintPlayModeWarningState(_displayingHintHeader);
+					if (playModeState == BeamHintPlayModeWarningPreference.Enabled)
+					{
+						playModeAlways.SetValueWithoutNotify(true);
 
-					playModeSession.SetValueWithoutNotify(false);
-					playModeNever.SetValueWithoutNotify(false);
+						playModeSession.SetValueWithoutNotify(false);
+						playModeNever.SetValueWithoutNotify(false);
+					}
+					else if (playModeState == BeamHintPlayModeWarningPreference.EnabledDuringSession)
+					{
+						playModeSession.SetValueWithoutNotify(true);
+
+						playModeNever.SetValueWithoutNotify(false);
+						playModeAlways.SetValueWithoutNotify(false);
+					}
+					else if (playModeState == BeamHintPlayModeWarningPreference.Disabled)
+					{
+						playModeNever.SetValueWithoutNotify(true);
+
+						playModeSession.SetValueWithoutNotify(false);
+						playModeAlways.SetValueWithoutNotify(false);
+					}
+
+					playModeNever.RegisterValueChangedCallback(_ =>
+					{
+						if (!playModeAlways.value && !playModeSession.value) playModeNever.SetValueWithoutNotify(true);
+						_hintDataModel.SetHintPreferencesValue(_displayingHintHeader, BeamHintPlayModeWarningPreference.Disabled);
+
+						playModeAlways.SetValueWithoutNotify(false);
+						playModeSession.SetValueWithoutNotify(false);
+					});
+					playModeSession.RegisterValueChangedCallback(evt =>
+					{
+						if (!playModeAlways.value && !playModeNever.value) playModeSession.SetValueWithoutNotify(true);
+						_hintDataModel.SetHintPreferencesValue(_displayingHintHeader, BeamHintPlayModeWarningPreference.EnabledDuringSession);
+
+						playModeAlways.SetValueWithoutNotify(false);
+						playModeNever.SetValueWithoutNotify(false);
+					});
+					playModeAlways.RegisterValueChangedCallback(evt =>
+					{
+						if (!playModeSession.value && !playModeNever.value) playModeAlways.SetValueWithoutNotify(true);
+						_hintDataModel.SetHintPreferencesValue(_displayingHintHeader, BeamHintPlayModeWarningPreference.Enabled);
+
+						playModeSession.SetValueWithoutNotify(false);
+						playModeNever.SetValueWithoutNotify(false);
+					});
 				}
-				else if (playModeState == BeamHintPlayModeWarningPreference.EnabledDuringSession)
-				{
-					playModeSession.SetValueWithoutNotify(true);
-
-					playModeNever.SetValueWithoutNotify(false);
-					playModeAlways.SetValueWithoutNotify(false);
-				}
-				else if (playModeState == BeamHintPlayModeWarningPreference.Disabled)
-				{
-					playModeNever.SetValueWithoutNotify(true);
-
-					playModeSession.SetValueWithoutNotify(false);
-					playModeAlways.SetValueWithoutNotify(false);
-				}
-
-				playModeNever.RegisterValueChangedCallback(_ => {
-					if (!playModeAlways.value && !playModeSession.value) playModeNever.SetValueWithoutNotify(true);
-					_hintDataModel.SetHintPreferencesValue(_displayingHintHeader, BeamHintPlayModeWarningPreference.Disabled);
-
-					playModeAlways.SetValueWithoutNotify(false);
-					playModeSession.SetValueWithoutNotify(false);
-				});
-				playModeSession.RegisterValueChangedCallback(evt => {
-					if (!playModeAlways.value && !playModeNever.value) playModeSession.SetValueWithoutNotify(true);
-					_hintDataModel.SetHintPreferencesValue(_displayingHintHeader, BeamHintPlayModeWarningPreference.EnabledDuringSession);
-
-					playModeAlways.SetValueWithoutNotify(false);
-					playModeNever.SetValueWithoutNotify(false);
-				});
-				playModeAlways.RegisterValueChangedCallback(evt => {
-					if (!playModeSession.value && !playModeNever.value) playModeAlways.SetValueWithoutNotify(true);
-					_hintDataModel.SetHintPreferencesValue(_displayingHintHeader, BeamHintPlayModeWarningPreference.Enabled);
-
-					playModeSession.SetValueWithoutNotify(false);
-					playModeNever.SetValueWithoutNotify(false);
-				});
 
 				// Create an new injection bag
 				var injectionBag = new BeamHintVisualsInjectionBag();
@@ -249,11 +273,18 @@ namespace Beamable.Editor.Assistant
 			}
 		}
 
+		/// <summary>
+		/// Query the given <paramref name="container"/> for matching elements to each of the given <paramref name="injections"/>.
+		/// Matches by VisualElement type, name and class, then calls <see cref="Inject{T}"/> for all matching elements. 
+		/// </summary>
+		/// <param name="injections">A collection of <see cref="BeamHintVisualsInjectionBag.Injection{T}"/>s that were created in a <see cref="BeamHintDetailConverterAttribute"/> annotated function.</param>
+		/// <param name="container">The <see cref="VisualElement"/> for us to run the injections in.</param>
+		/// <typeparam name="T">Any type as defined in <see cref="BeamHintVisualsInjectionBag"/> fields.</typeparam>
 		public void ResolveInjections<T>(IEnumerable<BeamHintVisualsInjectionBag.Injection<T>> injections, VisualElement container)
 		{
 			foreach (var injection in injections)
 			{
-				// Finds all elements
+				// Finds all matching elements
 				var query = injection.Query;
 				var queryExpectedType = query.ExpectedType;
 				var queriedElements = container
@@ -274,6 +305,9 @@ namespace Beamable.Editor.Assistant
 			}
 		}
 
+		/// <summary>
+		/// Based on all supported <see cref="VisualElement"/> types, we call the appropriate injection function that'll configure the matched element appropriately.
+		/// </summary>
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void Inject<T>(VisualElement matchedElement, BeamHintVisualsInjectionBag.Injection<T> toInject)
 		{
@@ -290,10 +324,13 @@ namespace Beamable.Editor.Assistant
 					break;
 				}
 				default:
-					break;
+					throw new ArgumentException($"Unsupported Injection! The system doesn't know how inject into a VisualElement of type {matchedElement.GetType().Name}.");
 			}
 		}
 
+		/// <summary>
+		/// Resolve supported injections for <see cref="Label"/> <see cref="VisualElement"/>s.
+		/// </summary>
 		private static void ResolveLabelInjection<T>(BeamHintVisualsInjectionBag.Injection<T> toInject, Label label)
 		{
 			switch (toInject.ObjectToInject)
@@ -309,10 +346,13 @@ namespace Beamable.Editor.Assistant
 					break;
 				}
 				default:
-					throw new ArgumentException();
+					throw new ArgumentException($"Unsupported Injection! The system doesn't know how inject object of type {typeof(T).Name} into a {nameof(Label)}.");
 			}
 		}
 
+		/// <summary>
+		/// Resolve supported injections for <see cref="Button"/> <see cref="VisualElement"/>s.
+		/// </summary>
 		private static void ResolveButtonInjection<T>(BeamHintVisualsInjectionBag.Injection<T> toInject, Button button)
 		{
 			switch (toInject.ObjectToInject)
@@ -328,16 +368,30 @@ namespace Beamable.Editor.Assistant
 					break;
 				}
 				default:
-					throw new ArgumentException($"Unsupported Injection Type !!!!");
+					throw new ArgumentException($"Unsupported Injection! The system doesn't know how inject object of type {typeof(T).Name} into a {nameof(Button)}.");
 			}
 		}
 	}
 
+	/// <summary>
+	/// A struct defining the data we use to match against <see cref="VisualElement"/>s and select which of them we want to inject with the data
+	/// from <see cref="BeamHintVisualsInjectionBag"/>. 
+	/// </summary>
 	public readonly struct VisualElementsQuery
 	{
+		/// <summary>
+		/// A sub-class of <see cref="VisualElement"/> (or itself).
+		/// </summary>
 		public readonly Type ExpectedType;
 
+		/// <summary>
+		/// The name property of any <see cref="VisualElement"/> you wish to find.
+		/// </summary>
 		public readonly string Name;
+
+		/// <summary>
+		/// One or more classes that'll be matched against <see cref="VisualElement"/>s' classes. 
+		/// </summary>
 		public readonly string[] Classes;
 
 		public VisualElementsQuery(Type expectedType, string name, string[] classes)
@@ -353,6 +407,12 @@ namespace Beamable.Editor.Assistant
 		}
 	}
 
+	/// <summary>
+	/// A clear definition of all supported injection types. An instance of this is passed into every <see cref="BeamHintDetailConverterAttribute"/> function.
+	/// <para/>
+	/// It exposes clear helper functions such as <see cref="SetLabel"/> and <see cref="SetButtonClicked"/> to ensure the internal <see cref="Injection{T}"/> data is being configured
+	/// correctly. 
+	/// </summary>
 	public class BeamHintVisualsInjectionBag
 	{
 		public readonly IEnumerable<Injection<string>> TextInjections;

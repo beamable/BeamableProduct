@@ -1,3 +1,4 @@
+using Beamable.Common.Reflection;
 using System;
 using System.Collections.Generic;
 
@@ -13,6 +14,9 @@ namespace Beamable.Common.Assistant
 		All = Validation | Hint
 	}
 
+	/// <summary>
+	/// Constants that are used across all Beamable Packages by the BeamHint system.
+	/// </summary>
 	public static class BeamHintSharedConstants
 	{
 		/// <summary> 
@@ -22,11 +26,21 @@ namespace Beamable.Common.Assistant
 		public const string BEAM_HINT_PREFERENCES_SEPARATOR = "₢";
 	}
 
+	
+	/// <summary>
+	/// A compound-key identifying each hint.
+	/// It is a string-based compound key whose individual fields cannot have <see cref="AS_KEY_SEPARATOR"/> or <see cref="BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR"/>.
+	/// These are reserved by our internal systems that manage hints.
+	/// See <see cref="BeamHintDomains"/> and <see cref="BeamHintIds"/> for a better understanding of how to generate hint domains and ids.
+	/// </summary>
 	[System.Serializable]
 	public struct BeamHintHeader : IEquatable<BeamHintHeader>
 	{
 		public const string AS_KEY_SEPARATOR = "¬¬";
 
+		/// <summary>
+		/// Type of the <see cref="BeamHint"/>.
+		/// </summary>
 		public BeamHintType Type;
 
 		/// <summary>
@@ -40,6 +54,10 @@ namespace Beamable.Common.Assistant
 		/// </summary>
 		public string Id;
 
+		/// <summary>
+		/// Creates a new header with the given <paramref name="type"/>, <paramref name="domain"/> and <see cref="id"/>.
+		/// See <see cref="BeamHintDomains"/> and <see cref="BeamHintIds"/> for a better understanding of how these are generated.
+		/// </summary>
 		public BeamHintHeader(BeamHintType type, string domain, string id = "")
 		{
 			System.Diagnostics.Debug.Assert(!(domain.Contains(AS_KEY_SEPARATOR) || domain.Contains(BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR)),
@@ -89,9 +107,19 @@ namespace Beamable.Common.Assistant
 		public override string ToString() => $"{nameof(Type)}: {Type}, {nameof(Domain)}: {Domain}, {nameof(Id)}: {Id}";
 	}
 
+	/// <summary>
+	/// Helper struct to deal with an individual BeamHint. Contains it's <see cref="BeamHintHeader"/> (unique key identifying the BeamHint) and a read-only reference to the hint's object.  
+	/// </summary>
 	public readonly struct BeamHint : IEquatable<BeamHint>, IEquatable<BeamHintHeader>
 	{
+		/// <summary>
+		/// The unique <see cref="BeamHintHeader"/> identifying this hint.
+		/// </summary>
 		public readonly BeamHintHeader Header;
+		
+		/// <summary>
+		/// An object associated with this hint to provide some context to it (normally used to render hint details via HintDetailsProvider).
+		/// </summary>
 		public readonly object ContextObject;
 
 		public BeamHint(BeamHintHeader header, object contextObject)
@@ -107,10 +135,13 @@ namespace Beamable.Common.Assistant
 
 	/// <summary>
 	/// <see cref="IBeamHintProvider"/> detect the existence of <see cref="BeamHint"/>s and should add them to the storage with the correct domain.
-	/// TODO: Support Scriptable Object-based injection of BeamHintProviders similar to what we do with <see cref="Reflection.IReflectionCacheUserSystem"/>s at EditorAPI initialization.
+	/// TODO: Support Scriptable Object-based injection of BeamHintProviders similar to what we do with <see cref="IReflectionSystem"/>s at EditorAPI initialization.
 	/// </summary>
 	public interface IBeamHintProvider
 	{
+		/// <summary>
+		/// Called with the Editor's BeamHint storage instance on initialization.
+		/// </summary>
 		void SetStorage(IBeamHintGlobalStorage hintGlobalStorage);
 	}
 	
@@ -231,7 +262,7 @@ namespace Beamable.Common.Assistant
 
 	/// <summary>
 	/// <see cref="IBeamHintManager"/>s read, filter, clear and arrange data logically in relation to <see cref="BeamHintHeader"/>s to be read by UI and other systems.
-	/// TODO: Support Scriptable Object-based injection of BeamHintManagers similar to what we do with <see cref="Reflection.IReflectionCacheUserSystem"/>s at EditorAPI initialization.
+	/// TODO: Support Scriptable Object-based injection of BeamHintManagers similar to what we do with <see cref="IReflectionSystem"/>s at EditorAPI initialization.
 	/// </summary>
 	public interface IBeamHintManager
 	{

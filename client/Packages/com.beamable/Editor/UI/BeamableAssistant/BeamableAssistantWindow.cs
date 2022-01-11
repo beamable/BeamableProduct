@@ -21,6 +21,9 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Assistant
 {
+	/// <summary>
+	/// Handles the rendering and initialization of the <see cref="BeamHint"/>s system as well as any other future system tied to the Beamable Assistant.
+	/// </summary>
 	public class BeamableAssistantWindow : EditorWindow, ISerializationCallbackReceiver
 	{
 		[MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
@@ -37,26 +40,31 @@ namespace Beamable.Editor.Assistant
 
 		private VisualElement _windowRoot;
 
-		// Navigation
-		private ActionBarVisualElement _actionBarVisualElement;
-
 		// Assistant Work Area
 		private VisualElement _assistantContainer;
 
-		// Beam Hints Mode
+		// Beam Hints VisualElements
 		private VisualElement _domainTreeContainer;
 		private VisualElement _hintsContainer;
 		private IMGUIContainer _imguiContainer;
+		private SearchBarVisualElement _hintsSearchBar;
 		private TreeViewIMGUI _treeViewIMGUI;
 		[SerializeField] private TreeViewState _treeViewState;
-		private SearchBarVisualElement _hintsSearchBar;
-		
-		
-		
-		// References to data 
-		[SerializeField] private BeamHintsDataModel _beamHintsDataModel;
+
+		/// <summary>
+		/// <see cref="BeamHintsDataModel"/> managing the state that is being rendered by this window.
+		/// </summary>
+		[SerializeField]
+		private BeamHintsDataModel _beamHintsDataModel;
+
+		/// <summary>
+		/// <see cref="Beamable.Common.Reflection.IReflectionSystem"/> that holds all cached reflection data around the <see cref="BeamHint"/> feature. 
+		/// </summary>
 		private BeamHintReflectionCache.Registry _hintDetailsReflectionCache;
 
+		/// <summary>
+		/// Cached reference to the <see cref="EditorAPI"/> instance.
+		/// </summary>
 		private EditorAPI _editorAPI;
 
 		private void OnEnable()
@@ -67,25 +75,29 @@ namespace Beamable.Editor.Assistant
 		private void OnFocus()
 		{
 			EditorAPI.Instance.Then(Refresh);
-			
+
 			// TODO: Display NEW icon and clear notifications on hover on a per hint header basis.
 			// For now, just clear notifications whenever the window is focused
-			if(_editorAPI != null)
+			if (_editorAPI != null)
 				_editorAPI.HintNotificationsManager.ClearPendingNotifications();
 		}
 
 		private void Update()
 		{
-			if(_editorAPI != null && _editorAPI.HintNotificationsManager.AllPendingNotifications.Any())
+			// If there are any new notifications, we refresh to get the new data rendered.
+			if (_editorAPI != null && _editorAPI.HintNotificationsManager.AllPendingNotifications.Any())
 				Refresh(_editorAPI);
 		}
 
 		void Refresh(EditorAPI editorAPI)
 		{
 			minSize = MIN_SIZE;
-			_editorAPI = editorAPI;
-			_hintDetailsReflectionCache = editorAPI.EditorReflectionCache.GetFirstRegisteredUserSystemOfType<BeamHintReflectionCache.Registry>();
 
+			// Cache the newest EditorAPI instance and grab the reflection systems we need.
+			_editorAPI = editorAPI;
+			_hintDetailsReflectionCache = editorAPI.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>();
+
+			// Initialize a data model if we didn't deserialize one already.
 			var beamHintsDataModel = _beamHintsDataModel = _beamHintsDataModel ?? new BeamHintsDataModel();
 			beamHintsDataModel.SetGlobalStorage(editorAPI.HintGlobalStorage);
 			beamHintsDataModel.SetPreferencesManager(editorAPI.HintPreferencesManager);
@@ -99,7 +111,7 @@ namespace Beamable.Editor.Assistant
 			_windowRoot.name = nameof(_windowRoot);
 
 			root.Add(_windowRoot);
-			
+
 			// Setup Assistant Visuals
 			{
 				_assistantContainer = root.Q<VisualElement>("assistant-container");
@@ -108,7 +120,8 @@ namespace Beamable.Editor.Assistant
 			// Setup Beam Hints Mode Visuals
 			{
 				// Setup callback for clearing domain tree selection.
-				_windowRoot.Q("domain-tree-scroll").RegisterCallback(new EventCallback<MouseUpEvent>(evt => {
+				_windowRoot.Q("domain-tree-scroll").RegisterCallback(new EventCallback<MouseUpEvent>(evt =>
+				{
 					// Clears tree selection
 					_treeViewState.selectedIDs.Clear();
 					_treeViewIMGUI.Repaint();
@@ -121,7 +134,8 @@ namespace Beamable.Editor.Assistant
 				//Create IMGUI, The VisualElement Wrapper, and add to the parent
 				_treeViewState = _treeViewState ?? new TreeViewState();
 				_treeViewIMGUI = new TreeViewIMGUI(_treeViewState) {SelectionType = SelectionType.Multiple, TreeViewItemRoot = new TreeViewItem {id = 0, depth = -1, displayName = "Root"}};
-				_imguiContainer = new IMGUIContainer(() => {
+				_imguiContainer = new IMGUIContainer(() =>
+				{
 					// Tree view - Re-render every frame
 					Rect rect = GUILayoutUtility.GetRect(200,
 					                                     200,
@@ -138,17 +152,20 @@ namespace Beamable.Editor.Assistant
 
 				// Setup Search Bar to filter Displaying Hints
 				_hintsSearchBar = root.Q<SearchBarVisualElement>("hintsSearchBar");
-				_hintsSearchBar.OnSearchChanged += delegate(string searchText) {
+				_hintsSearchBar.OnSearchChanged += delegate(string searchText)
+				{
 					_beamHintsDataModel.FilterDisplayedBy(searchText);
 					FillDisplayingBeamHints(_hintsContainer, beamHintsDataModel.DisplayingHints);
 				};
-				
+
 				SetupTreeViewCallbacks(
 					_treeViewIMGUI,
-					() => {
+					() =>
+					{
 						BeamableLogger.Log("Context Clicked");
 					},
-					list => {
+					list =>
+					{
 						BeamableLogger.Log($"Selection Change: {string.Join(", ", list.Select(a => a.ToString()))}");
 						var allDomains = list
 						                 .SelectMany(a => a.children != null ? a.children.Cast<BeamHintDomainTreeViewItem>() : new List<BeamHintDomainTreeViewItem>())
@@ -158,7 +175,8 @@ namespace Beamable.Editor.Assistant
 						beamHintsDataModel.SelectDomains(allDomains);
 						FillDisplayingBeamHints(_hintsContainer, beamHintsDataModel.DisplayingHints);
 					},
-					list => {
+					list =>
+					{
 						BeamableLogger.Log($"Selection Branch Change: {string.Join(", ", list.Select(a => a.ToString()))}");
 					}
 				);
@@ -172,6 +190,9 @@ namespace Beamable.Editor.Assistant
 			root.MarkDirtyRepaint();
 		}
 
+		/// <summary>
+		/// Inject a <see cref="VisualElement"/> with new <see cref="BeamHintHeaderVisualElement"/>s for each given <see cref="hintHeaders"/>.
+		/// </summary>
 		public void FillDisplayingBeamHints(VisualElement container, List<BeamHintHeader> hintHeaders)
 		{
 			container.Clear();
@@ -187,6 +208,9 @@ namespace Beamable.Editor.Assistant
 			}
 		}
 
+		/// <summary>
+		/// Updates a <see cref="TreeViewGUI"/> to display the given list of <see cref="BeamHintDomains"/> strings. 
+		/// </summary>
 		public void FillTreeViewFromDomains(TreeViewIMGUI imgui, List<string> sortedDomains)
 		{
 			var treeViewItems = new List<BeamHintDomainTreeViewItem>();
@@ -226,13 +250,6 @@ namespace Beamable.Editor.Assistant
 			imgui.OnContextClicked += onContextClicked;
 			imgui.OnSelectionChanged += onSelectionChange;
 			imgui.OnSelectedBranchChanged += onSelectionBranchChange;
-		}
-
-		private void SetTreeViewItemsSafe(List<TreeViewItem> treeViewItem)
-		{
-			_treeViewIMGUI.TreeViewItems = treeViewItem;
-			_imguiContainer?.MarkDirtyLayout();
-			_imguiContainer?.MarkDirtyRepaint();
 		}
 
 		public void OnBeforeSerialize() { }

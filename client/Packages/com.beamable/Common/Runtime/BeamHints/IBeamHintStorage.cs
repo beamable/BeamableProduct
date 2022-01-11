@@ -92,10 +92,6 @@ namespace Beamable.Common.Assistant
 	/// - It contains a <see cref="Dictionary{TKey,TValue}"/>, indexed by <see cref="BeamHintHeader"/>, holding each hint's context object. The key exists even if the object is null.
 	/// <para/>
 	/// - Queries are made over the <see cref="HashSet{T}"/> of headers and returned in <see cref="BeamHint"/> format.
-	/// <para/>
-	/// On creation, this storage can take a <see cref="BeamHintType"/>, and <see cref="IReadOnlyList{T}"/> of <see cref="string"/>s representing <see cref="BeamHintDomains"/>.
-	/// These are used to assert that this <see cref="BeamHintStorage"/> instance only has the correct type of <see cref="BeamHint"/>s added to it.
-	/// This allows us to sub-divide the querying area as the system evolves and we bump into performance issues.
 	/// </summary>
 	public class BeamHintStorage : IBeamHintStorage
 	{
@@ -103,9 +99,7 @@ namespace Beamable.Common.Assistant
 		private Dictionary<BeamHintHeader, object> _hintContextObjects;
 
 		/// <summary>
-		/// The given <see cref="BeamHintType"/>, <see cref="BeamHintDomains"/> are used to assert that this
-		/// <see cref="BeamHintStorage"/> instance only has the correct type of <see cref="BeamHint"/>s added to it.
-		/// This allows us to sub-divide the querying area as the system evolves and we bump into performance issues.
+		/// Creates a new <see cref="BeamHintStorage"/> instance. Makes no assumptions with respect to what types of hints will be stored here.
 		/// </summary>
 		public BeamHintStorage()
 		{

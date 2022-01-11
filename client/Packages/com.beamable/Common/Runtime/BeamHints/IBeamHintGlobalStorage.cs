@@ -8,9 +8,11 @@ namespace Beamable.Common.Assistant
 	/// Interface for the Global Storage --- only exists to enable mocking for automated testing purposes so it'll acknowledge implementation details of the
 	/// <see cref="BeamHintEditorStorage"/> which is our implementation of this interface.
 	/// <para/>
-	/// Internally, we have one <see cref="IBeamHintStorage"/> for each domain we generate with <see cref="BeamHintDomains.GenerateBeamableDomain"/>.
-	/// As the number of generated hints a domain can produce grows, we split these macro-storages into one for each sub-domain generated with
-	/// <see cref="BeamHintDomains.GenerateSubDomain"/>. This approach allows us to ensure we can move our internal data around to avoid slow-editor performance.
+	/// Internally, we have one <see cref="IBeamHintStorage"/> for each User's hints and another one for Beamable's hints.
+	/// As the number of generated hints a domain can produce grows, we split these macro-storages into one for each domain generated with
+	/// <see cref="BeamHintDomains.GenerateSubDomain"/> and/or <see cref="BeamHintDomains.GenerateBeamableDomain"/>.
+	/// <para/>
+	/// This approach allows us to ensure we can move our internal data around to avoid slow-editor performance.
 	/// </summary>
 	public interface IBeamHintGlobalStorage : IBeamHintStorage
 	{
@@ -180,7 +182,7 @@ namespace Beamable.Common.Assistant
 				BeamableStorage.RemoveHint(header);
 
 			if (BeamHintDomains.IsUserDomain(header.Domain))
-				BeamableStorage.RemoveHint(header);
+				UserDefinedStorage.RemoveHint(header);
 		}
 
 		public void RemoveHint(BeamHint hint)
@@ -196,7 +198,7 @@ namespace Beamable.Common.Assistant
 					BeamableStorage.RemoveHint(header);
 
 				if (BeamHintDomains.IsUserDomain(header.Domain))
-					BeamableStorage.RemoveHint(header);
+					UserDefinedStorage.RemoveHint(header);
 			}
 		}
 
@@ -233,7 +235,7 @@ namespace Beamable.Common.Assistant
 				return BeamableStorage.GetHint(header);
 
 			if (BeamHintDomains.IsUserDomain(header.Domain))
-				return BeamableStorage.GetHint(header);
+				return UserDefinedStorage.GetHint(header);
 
 			return default;
 		}

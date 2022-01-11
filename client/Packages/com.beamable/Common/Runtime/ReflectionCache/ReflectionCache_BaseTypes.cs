@@ -15,13 +15,14 @@ namespace Beamable.Common.Reflection
         public readonly List<BaseTypeOfInterest> BaseTypes;
 
         /// <summary>
-        /// Cached list of <see cref="BaseTypeOfInterest"/> and all <see cref="Type"/>s that were found in the assembly sweep that matched.
+        /// Cached list of <see cref="BaseTypeOfInterest"/> and all matching <see cref="Type"/>s that were found in the assembly sweep.
         /// </summary>
         public readonly Dictionary<BaseTypeOfInterest, List<Type>> MappedSubtypes;
 
         /// <summary>
         /// Constructs a new <see cref="PerBaseTypeCache"/>.
-        /// If planning to build with <see cref="ReflectionCache.BuildTypeCaches"/>, call this with large pre-allocated lists since allocation is expensive and list's "expansion when full" re-allocates.  
+        /// If planning to build with <see cref="ReflectionCache.BuildTypeCaches"/>, call this with large pre-allocated lists
+        /// since allocation is expensive and list's "expansion when full" re-allocates.  
         /// </summary>
         public PerBaseTypeCache(List<BaseTypeOfInterest> baseTypes, Dictionary<BaseTypeOfInterest, List<Type>> mappedSubtypes)
         {
@@ -31,7 +32,7 @@ namespace Beamable.Common.Reflection
     }
 
     /// <summary>
-    /// Struct that defines an base type (class or interface) of interest and gives us information on where to look for it or what to cache in relation to it.
+    /// Struct that defines a base type (class or interface) of interest and gives us information on what to cache in relation to it.
     /// </summary>
     public readonly struct BaseTypeOfInterest : IEquatable<Type>
     {
@@ -75,7 +76,7 @@ namespace Beamable.Common.Reflection
             for (var i = 0; i < typesToSearchIn.Count; i++)
             {
                 // TODO: Can probably write this in a faster way... but don't really want to think about this right now --- will add profiler markers to system wrapped
-                // in BEAMABLE_DIAGNOSTICS directives for us to see if we need to do better.
+                // TODO: in BEAMABLE_DIAGNOSTICS directives for us to see if we need to do better.
                 var baseType = typesToSearchIn[i];
                 if (baseType.IncludesItself || baseType.BaseType.IsInterface)
                 {

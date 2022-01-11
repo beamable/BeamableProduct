@@ -65,7 +65,7 @@ namespace Beamable.Editor.ToolbarExtender
 
 				// Load and inject Beamable Menu Items (necessary due to multiple package split of SDK) --- sort them by specified order, and alphabetically when tied.
 				var menuItemsSearchInFolders = _editorAPI.CoreConfiguration.BeamableAssistantMenuItemsPath.Where(Directory.Exists).ToArray();
-				var menuItemsGuids = AssetDatabase.FindAssets("t:BeamableAssistantMenuItem", menuItemsSearchInFolders);
+				var menuItemsGuids = AssetDatabase.FindAssets($"t:{nameof(BeamableAssistantMenuItem)}", menuItemsSearchInFolders);
 				_assistantMenuItems = menuItemsGuids.Select(guid => AssetDatabase.LoadAssetAtPath<BeamableAssistantMenuItem>(AssetDatabase.GUIDToAssetPath(guid))).ToList();
 				_assistantMenuItems.Sort((mi1, mi2) => {
 					var orderComp = mi1.Order.CompareTo(mi2.Order);
@@ -75,7 +75,7 @@ namespace Beamable.Editor.ToolbarExtender
 				});
 
 				var toolbarButtonsSearchInFolders = _editorAPI.CoreConfiguration.BeamableAssistantToolbarButtonsPaths.Where(Directory.Exists).ToArray();
-				var toolbarButtonsGuids = AssetDatabase.FindAssets("t:BeamableToolbarButton", toolbarButtonsSearchInFolders);
+				var toolbarButtonsGuids = AssetDatabase.FindAssets($"t:{nameof(BeamableToolbarButton)}", toolbarButtonsSearchInFolders);
 				var toolbarButtons = toolbarButtonsGuids.Select(guid => AssetDatabase.LoadAssetAtPath<BeamableToolbarButton>(AssetDatabase.GUIDToAssetPath(guid))).ToList();
 
 				var groupedBySide = toolbarButtons.GroupBy(btn => btn.GetButtonSide(api)).ToList();
@@ -168,6 +168,10 @@ namespace Beamable.Editor.ToolbarExtender
 			leftRect.xMin += 64 * 2; // Pivot buttons
 			leftRect.xMax = playButtonsPosition;
 
+#if UNITY_2019_3_OR_NEWER
+			leftRect.xMin += buttonWidth; // Spacing grid snapping tool
+#endif
+			
 			Rect rightRect = new Rect(0, 0, screenWidth, Screen.height);
 			rightRect.xMin = playButtonsPosition;
 			rightRect.xMin += _commandStyle.fixedWidth * 3; // Play buttons
@@ -197,8 +201,8 @@ namespace Beamable.Editor.ToolbarExtender
 
 			// Add top and bottom margins
 #if UNITY_2019_3_OR_NEWER
-			leftRect.y = 2;
-			leftRect.height = 22;
+			leftRect.y = 4;
+			leftRect.height = 26;
 			rightRect.y = 2;
 			rightRect.height = 22;
 #else

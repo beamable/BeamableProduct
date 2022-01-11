@@ -181,7 +181,6 @@ namespace Beamable.Editor.Assistant
 			_hintsToPlayModeWarningByDefault.AddRange(playModeWarningByDefaultHints ?? new List<BeamHintHeader>());
 		}
 
-		
 		public void RebuildPerHintPreferences()
 		{
 			// Rebuild Visibility preferences

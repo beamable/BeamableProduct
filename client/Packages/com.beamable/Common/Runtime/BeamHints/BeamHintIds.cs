@@ -22,8 +22,10 @@ namespace Beamable.Common.Assistant
 	/// </description></item>
 	/// </list>
 	/// <para/>
-	/// Ids cannot have "¬" or "₢" they are reserved characters (see <see cref="BeamHintDomains.SUB_DOMAIN_SEPARATOR"/> and <see cref="BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR"/>).
+	/// Ids cannot have "¬" or "₢" they are reserved characters (see <see cref="BeamHintDomains.SUB_DOMAIN_SEPARATOR"/>, <see cref="BeamHintHeader.AS_KEY_SEPARATOR"/> and <see cref="BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR"/>).
+	/// <para/>
 	/// Use <see cref="GenerateHintId"/> to ensure the immutable part of the hint's id is valid when declaring it.
+	/// <para/>
 	/// Use <see cref="AppendHintIdParams"/> methods to ensure you are respecting the Id creation rules and you are embedding parameters into the id (for cases like the third item in the bullet point list). 
 	/// </summary>
 	// ReSharper disable once ClassNeverInstantiated.Global
@@ -42,7 +44,8 @@ namespace Beamable.Common.Assistant
 		}
 
 		/// <summary>
-		/// Given a hint generated with <see cref="GenerateHintId"/>, appends -- split by the given separator -- the given list of parameters (calling <see cref="object.ToString"/> to generate).
+		/// Given a hint generated with <see cref="GenerateHintId"/>, appends -- split by the given separator -- the given list of parameters
+		/// (calling <see cref="object.ToString"/> to generate them).
 		/// </summary>
 		public static string AppendHintIdParams(string id, string separator = "_", params object[] appendedParams)
 		{
@@ -71,12 +74,12 @@ namespace Beamable.Common.Assistant
 		}
 
 		/// <summary>
-		/// Prefix added to all hints whose context objects are lists of <see cref="Reflection.AttributeValidationResult"/>.
+		/// Prefix added to all hints whose context objects are known to be lists of <see cref="Reflection.AttributeValidationResult"/>.
 		/// </summary>
 		public const string ATTRIBUTE_VALIDATION_ID_PREFIX = "AttributeValidation";
 		
 		/// <summary>
-		/// Prefix added to all hints whose context objects are lists of <see cref="Reflection.AttributeValidationResult"/>.
+		/// Prefix added to all hints whose context objects are known to be lists of <see cref="Reflection.UniqueNameCollisionData"/>.
 		/// </summary>
 		public const string ATTRIBUTE_NAME_COLLISION_ID_PREFIX = "AttributeNameCollision";
 

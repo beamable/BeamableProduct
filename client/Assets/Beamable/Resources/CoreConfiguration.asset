@@ -22,7 +22,11 @@ MonoBehaviour:
   - Assets/Beamable/Assistant/ToolbarButtons
   - Packages/com.beamable/Editor/BeamableAssistant/ToolbarButtons
   - Packages/com.beamable.server/Editor/BeamableAssistant/ToolbarButtons
-  ReflectionCacheUserSystemPaths:
+  BeamableAssistantHintDetailConfigPaths:
+  - Assets/Beamable/Assistant/Hint/HintDetails
+  - Packages/com.beamable/Editor/BeamableAssistant/BeamHints/BeamHintDetailConfigs
+  - Packages/com.beamable.server/Editor/BeamableAssistant/BeamHints/BeamHintDetailConfigs
+  ReflectionSystemPaths:
   - Assets/Beamable/ReflectionCache/UserSystems
   - Packages/com.beamable/Editor/ReflectionCache/UserSystems
   - Packages/com.beamable.server/Editor/ReflectionCache/UserSystems

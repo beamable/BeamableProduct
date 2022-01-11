@@ -13,16 +13,30 @@ using UnityEngine;
 
 namespace Beamable.Editor.Reflection
 {
+	/// <summary>
+	/// <see cref="BeamHint"/> related <see cref="IReflectionSystem"/> and <see cref="ReflectionSystemObject"/> that handles:
+	/// <list type="bullet">
+	/// <item><description>
+	/// The parsing of <see cref="BeamHintDetailConverterAttribute"/> into cached converters that know how to render <see cref="BeamHintDetailsConfig"/> for matched <see cref="BeamHintHeader"/>s.
+	/// </description></item>
+	/// <item><description>
+	/// An updated list of all <see cref="BeamHintDetailsConfig"/>s that exist in directories configured at <see cref="CoreConfiguration.BeamableAssistantHintDetailConfigPaths"/>.
+	/// </description></item>
+	/// <item><description>
+	/// The parsing of <see cref="BeamHintIdAttribute"/>s and <see cref="BeamHintDomainAttribute"/>s TODO: to be used by UI systems to allow for better interaction with our system.
+	/// </description></item>
+	/// </list>
+	/// </summary>
 	[CreateAssetMenu(fileName = "BeamHintDetailsReflectionCache", menuName = "Beamable/Reflection/Assistant/Hint Details Cache", order = 0)]
-	public class BeamHintReflectionCache : ReflectionCacheUserSystemObject
+	public class BeamHintReflectionCache : ReflectionSystemObject
 	{
 		[NonSerialized] private Registry _cache;
 
-		public override IReflectionCacheUserSystem UserSystem => _cache;
+		public override IReflectionSystem System => _cache;
 
-		public override IReflectionCacheTypeProvider UserTypeProvider => _cache;
+		public override IReflectionTypeProvider TypeProvider => _cache;
 
-		public override Type UserSystemType => typeof(Registry);
+		public override Type SystemType => typeof(Registry);
 
 		private BeamHintReflectionCache()
 		{
@@ -30,8 +44,8 @@ namespace Beamable.Editor.Reflection
 		}
 
 		public delegate void DefaultConverter(in BeamHint hint, in BeamHintTextMap textMap, BeamHintVisualsInjectionBag injectionBag);
-		
-		public class Registry : IReflectionCacheUserSystem, IBeamHintProvider
+
+		public class Registry : IReflectionSystem, IBeamHintProvider
 		{
 			private static readonly BaseTypeOfInterest BEAM_HINT_DETAIL_CONVERTER_PROVIDER_TYPE;
 			private static readonly List<BaseTypeOfInterest> BASE_TYPES_OF_INTEREST;
@@ -48,7 +62,7 @@ namespace Beamable.Editor.Reflection
 
 				BEAM_HINT_DOMAIN_PROVIDER_ATTRIBUTE = new AttributeOfInterest(typeof(BeamHintDomainAttribute), new Type[] { }, new[] {typeof(BeamHintDomainProvider)});
 				BEAM_HINT_ID_PROVIDER_ATTRIBUTE = new AttributeOfInterest(typeof(BeamHintIdAttribute), new Type[] { }, new Type[] {typeof(BeamHintIdProvider)});
-				
+
 				BASE_TYPES_OF_INTEREST = new List<BaseTypeOfInterest>() {BEAM_HINT_DETAIL_CONVERTER_PROVIDER_TYPE,};
 				ATTRIBUTES_OF_INTEREST = new List<AttributeOfInterest>() {BEAM_HINT_DOMAIN_PROVIDER_ATTRIBUTE, BEAM_HINT_ID_PROVIDER_ATTRIBUTE, BEAM_HINT_DETAIL_CONVERTER_ATTRIBUTE,};
 			}
@@ -69,18 +83,22 @@ namespace Beamable.Editor.Reflection
 			{
 				_perProviderDomains = new Dictionary<string, List<string>>(16);
 				_perProviderIds = new Dictionary<string, List<string>>(16);
-				
+
 				_loadedConfigs = new List<BeamHintDetailsConfig>(16);
 				_loadedTextMaps = new List<BeamHintTextMap>(16);
 				_defaultConverterDelegates = new List<ConverterData<DefaultConverter>>(16);
 			}
 
+			/// <summary>
+			/// Called to load all <see cref="BeamHintTextMap"/>s in the given <paramref name="hintConfigPaths"/>.
+			/// It ensures the loaded <see cref="ConverterData{T}"/> instances are up-to-date with their references to <see cref="BeamHintTextMap"/>.
+			/// </summary>
 			public void ReloadHintTextMapScriptableObjects(List<string> hintConfigPaths)
 			{
-				var beamHintTextMapGuids = AssetDatabase.FindAssets("t:BeamHintTextMap", hintConfigPaths
-				                                                                                      .Where(Directory.Exists)
-				                                                                                      .ToArray());
-				
+				var beamHintTextMapGuids = AssetDatabase.FindAssets($"t:{nameof(BeamHintTextMap)}", hintConfigPaths
+				                                                                                    .Where(Directory.Exists)
+				                                                                                    .ToArray());
+
 				// Reload Detail Config Scriptable Objects
 				foreach (string beamHintTextMapGuid in beamHintTextMapGuids)
 				{
@@ -89,22 +107,25 @@ namespace Beamable.Editor.Reflection
 					_loadedTextMaps.Add(hintTextMap);
 				}
 
-				
 				// Update Configured Converters to ensure they point to the correct HintDetailsConfigs after the reload
 				for (var i = 0; i < _defaultConverterDelegates.Count; i++)
 				{
 					var converterData = _defaultConverterDelegates[i];
-					_defaultConverterDelegates[i] = BuildConverterData(converterData.Matcher.MatchType, converterData.Matcher.Domain, converterData.Matcher.IdRegex,
-					                                                   converterData.UserOverrideHintConfigDetailsConfigId,  converterData.HintConfigDetailsConfigId, converterData.ConverterCall);
+					_defaultConverterDelegates[i] = BuildConverterData(converterData.Matcher.MatchType, converterData.Matcher.DomainSubstring, converterData.Matcher.IdRegex,
+					                                                   converterData.UserOverrideHintConfigDetailsConfigId, converterData.HintConfigDetailsConfigId, converterData.ConverterCall);
 				}
 			}
-			
+
+			/// <summary>
+			/// Called to load all <see cref="BeamHintDetailsConfig"/>s in the given <paramref name="hintConfigPaths"/>.
+			/// It ensures the loaded <see cref="ConverterData{T}"/> instances are up-to-date with their references to <see cref="BeamHintDetailsConfig"/>.
+			/// </summary>
 			public void ReloadHintDetailConfigScriptableObjects(List<string> hintConfigPaths)
 			{
-				var beamHintDetailsConfigsGuids = AssetDatabase.FindAssets("t:BeamHintDetailsConfig", hintConfigPaths
-				                                                                                      .Where(Directory.Exists)
-				                                                                                      .ToArray());
-				
+				var beamHintDetailsConfigsGuids = AssetDatabase.FindAssets($"t:{nameof(BeamHintDetailsConfig)}", hintConfigPaths
+				                                                                                                 .Where(Directory.Exists)
+				                                                                                                 .ToArray());
+
 				// Reload Detail Config Scriptable Objects
 				foreach (string beamHintDetailConfigGuid in beamHintDetailsConfigsGuids)
 				{
@@ -113,30 +134,34 @@ namespace Beamable.Editor.Reflection
 					_loadedConfigs.Add(hintDetailsConfig);
 				}
 
-				
 				// Update Configured Converters to ensure they point to the correct HintDetailsConfigs after the reload
 				for (var i = 0; i < _defaultConverterDelegates.Count; i++)
 				{
 					var converterData = _defaultConverterDelegates[i];
-					_defaultConverterDelegates[i] = BuildConverterData(converterData.Matcher.MatchType, converterData.Matcher.Domain, converterData.Matcher.IdRegex,
-						converterData.UserOverrideHintConfigDetailsConfigId,  converterData.HintConfigDetailsConfigId, converterData.ConverterCall);
+					_defaultConverterDelegates[i] = BuildConverterData(converterData.Matcher.MatchType, converterData.Matcher.DomainSubstring, converterData.Matcher.IdRegex,
+					                                                   converterData.UserOverrideHintConfigDetailsConfigId, converterData.HintConfigDetailsConfigId, converterData.ConverterCall);
 				}
-				
 			}
 
+			/// <summary>
+			/// Tries to get a <see cref="ConverterData{T}"/> struct for a hint with the given <paramref name="header"/>.
+			/// </summary>
 			public bool TryGetConverterDataForHint(BeamHintHeader header, out ConverterData<DefaultConverter> converter)
 			{
 				var firstMatchingConverterIdx = _defaultConverterDelegates.FindIndex(cvt => cvt.Matcher.MatchAgainstHeader(header));
 				if (firstMatchingConverterIdx != -1)
 				{
 					converter = _defaultConverterDelegates[firstMatchingConverterIdx];
-					return true;	
+					return true;
 				}
-				
+
 				converter = default;
 				return false;
 			}
 
+			/// <summary>
+			/// Tries to get the title text defined in the <see cref="BeamHintTextMap"/> tied to the first matching hint id of the given <paramref name="header"/>.
+			/// </summary>
 			public bool TryGetHintTitleText(BeamHintHeader header, out string titleText)
 			{
 				for (var i = 0; i < _loadedTextMaps.Count; i++)
@@ -150,7 +175,10 @@ namespace Beamable.Editor.Reflection
 				titleText = header.Id;
 				return false;
 			}
-			
+
+			/// <summary>
+			/// Tries to get the title text defined in the <see cref="BeamHintTextMap"/> tied to the first matching domain of the given <paramref name="domainSubString"/>.
+			/// </summary>
 			public bool TryGetDomainTitleText(string domainSubString, out string titleText)
 			{
 				for (var i = 0; i < _loadedTextMaps.Count; i++)
@@ -164,35 +192,31 @@ namespace Beamable.Editor.Reflection
 				titleText = domainSubString;
 				return false;
 			}
-			
 
 			public void SetStorage(IBeamHintGlobalStorage hintGlobalStorage) => _hintStorage = hintGlobalStorage;
 
-			public void ClearUserCache()
+			public void ClearCachedReflectionData()
 			{
 				_perProviderDomains.Clear();
 				_perProviderIds.Clear();
 				_defaultConverterDelegates.Clear();
 			}
 
-			public void ParseFullCachedData(PerBaseTypeCache perBaseTypeCache,
-			                                PerAttributeCache perAttributeCache)
-			{
-				
-			}
+			public void OnReflectionCacheBuilt(PerBaseTypeCache perBaseTypeCache,
+			                                   PerAttributeCache perAttributeCache) { }
 
-			public void ParseBaseTypeOfInterestData(BaseTypeOfInterest baseType, IReadOnlyList<MemberInfo> cachedSubTypes)
+			public void OnBaseTypeOfInterestFound(BaseTypeOfInterest baseType, IReadOnlyList<MemberInfo> cachedSubTypes)
 			{
 				// We Don't actually care about this type --- we care about its members
 			}
 
-			public void ParseAttributeOfInterestData(AttributeOfInterest attributeType, IReadOnlyList<MemberAttributePair> cachedMemberAttributePairs)
+			public void OnAttributeOfInterestFound(AttributeOfInterest attributeType, IReadOnlyList<MemberAttribute> cachedMemberAttributes)
 			{
 				// Handle Beam Hint Domain providers
 				if (attributeType.Equals(BEAM_HINT_DOMAIN_PROVIDER_ATTRIBUTE))
 				{
 					// TODO: Store domains in whatever way makes it easier for users to get the list of domains they are interested in. 
-					foreach (var domainFields in cachedMemberAttributePairs.Select(result => result.Info).Cast<FieldInfo>())
+					foreach (var domainFields in cachedMemberAttributes.Select(result => result.Info).Cast<FieldInfo>())
 					{
 						var providerName = domainFields.DeclaringType?.FullName ?? string.Empty;
 						if (!_perProviderDomains.TryGetValue(providerName, out var domainList))
@@ -209,7 +233,7 @@ namespace Beamable.Editor.Reflection
 				if (attributeType.Equals(BEAM_HINT_ID_PROVIDER_ATTRIBUTE))
 				{
 					// TODO: Store domains in whatever way makes it easier for users to get the list of domains they are interested in. 
-					foreach (var idField in cachedMemberAttributePairs.Select(result => result.Info).Cast<FieldInfo>())
+					foreach (var idField in cachedMemberAttributes.Select(result => result.Info).Cast<FieldInfo>())
 					{
 						var providerName = idField.DeclaringType?.FullName ?? string.Empty;
 						if (!_perProviderIds.TryGetValue(providerName, out var idsList))
@@ -221,11 +245,11 @@ namespace Beamable.Editor.Reflection
 						idsList.Add((string)idField.GetValue(null));
 					}
 				}
-				
+
 				// Handle Beam Hint Id providers
 				if (attributeType.Equals(BEAM_HINT_DETAIL_CONVERTER_ATTRIBUTE))
 				{
-					var validationResults = cachedMemberAttributePairs.Validate();
+					var validationResults = cachedMemberAttributes.Validate();
 					validationResults.SplitValidationResults(out var valid, out _, out var invalid);
 
 					if (invalid.Count > 0)
@@ -234,47 +258,55 @@ namespace Beamable.Editor.Reflection
 					}
 
 					var validConverters = valid.Select(result => result.Pair);
-					foreach (var cachedMemberAttributePair in validConverters)
+					foreach (var cachedMemberAttribute in validConverters)
 					{
-						var attribute = (BeamHintDetailConverterAttribute)cachedMemberAttributePair.Attribute;
-						var methodInfo = (MethodInfo)cachedMemberAttributePair.Info;
+						var attribute = (BeamHintDetailConverterAttribute)cachedMemberAttribute.Attribute;
+						var methodInfo = (MethodInfo)cachedMemberAttribute.Info;
 
 						// Cache a built delegate to be called as a converter. 
 						if (attribute.DelegateType == typeof(DefaultConverter))
 						{
 							var cachedDelegate = Delegate.CreateDelegate(attribute.DelegateType, methodInfo) as DefaultConverter;
-							_defaultConverterDelegates.Add(BuildConverterData<DefaultConverter>(attribute.MatchType, attribute.Domain, attribute.IdRegex,
+							_defaultConverterDelegates.Add(BuildConverterData<DefaultConverter>(attribute.MatchType, attribute.DomainSubstring, attribute.IdRegex,
 							                                                                    attribute.UserOverrideToHintDetailConfigId, attribute.HintDetailConfigId, cachedDelegate));
 						}
 					}
 				}
 			}
 
-			private ConverterData<T> BuildConverterData<T>(BeamHintType type, string domain, string idRegex, string userOverrideHintDetailConfigId, string hintDetailConfigId, T cachedDelegate) where T : Delegate
+			/// <summary>
+			/// Generates a <see cref="ConverterData{T}"/> tying together all references mapped by a <see cref="BeamHintDetailConverterAttribute"/>. 
+			/// </summary>
+			private ConverterData<T> BuildConverterData<T>(BeamHintType type, string domain, string idRegex, string userOverrideHintDetailConfigId, string hintDetailConfigId, T cachedDelegate)
+				where T : Delegate
 			{
 				var userOverrideConfig = _loadedConfigs.FirstOrDefault(cfg => userOverrideHintDetailConfigId == cfg.Id);
 				var defaultConfig = _loadedConfigs.FirstOrDefault(cfg => hintDetailConfigId == cfg.Id);
 
 				var textMap = _loadedTextMaps.FirstOrDefault(txt => txt.HintIdToHintTitle.Keys.Any(k => new Regex(idRegex).IsMatch(k)));
-				
-				return new ConverterData<T> {
-					Matcher = new HeaderMatcher(type, domain, idRegex),
 
+				return new ConverterData<T>
+				{
+					Matcher = new HeaderMatcher(type, domain, idRegex),
 					HintConfigDetailsConfigId = hintDetailConfigId,
 					UserOverrideHintConfigDetailsConfigId = userOverrideHintDetailConfigId,
 					HintConfigDetailsConfig = userOverrideConfig == null ? defaultConfig : userOverrideConfig,
 					HintTextMap = textMap,
-
 					ConverterCall = cachedDelegate
 				};
 			}
 		}
 
+		/// <summary>
+		/// The result of the mapping configured via each <see cref="BeamHintDetailConverterAttribute"/>.
+		/// <para/>
+		/// This is used by <see cref="BeamHintHeaderVisualElement"/> to render the hint details as needed.
+		/// </summary>
 		[Serializable]
 		public struct ConverterData<T> where T : Delegate
 		{
 			public HeaderMatcher Matcher;
-			
+
 			public string HintConfigDetailsConfigId;
 			public string UserOverrideHintConfigDetailsConfigId;
 			public BeamHintDetailsConfig HintConfigDetailsConfig;
@@ -282,20 +314,23 @@ namespace Beamable.Editor.Reflection
 
 			public T ConverterCall;
 		}
-		
+
+		/// <summary>
+		/// A helper struct that defines how to match a Header to configured the configured <see cref="DomainSubstring"/> and <see cref="IdRegex"/>
+		/// </summary>
 		[Serializable]
 		public struct HeaderMatcher
 		{
 			public BeamHintType MatchType;
-			public string Domain;
+			public string DomainSubstring;
 			public string IdRegex;
 
 			private Regex _regex;
 
-			public HeaderMatcher(BeamHintType matchType, string domain, string idRegex) : this()
+			public HeaderMatcher(BeamHintType matchType, string domainSubstring, string idRegex) : this()
 			{
 				MatchType = matchType;
-				Domain = domain;
+				DomainSubstring = domainSubstring;
 				IdRegex = idRegex;
 				_regex = new Regex(idRegex);
 			}
@@ -303,7 +338,7 @@ namespace Beamable.Editor.Reflection
 			public bool MatchAgainstHeader([NotNull] BeamHintHeader other)
 			{
 				var matchType = MatchType.HasFlag(other.Type);
-				var matchDomain = string.IsNullOrEmpty(Domain) || other.Domain.Contains(Domain);
+				var matchDomain = string.IsNullOrEmpty(DomainSubstring) || other.Domain.Contains(DomainSubstring);
 				var idMatch = string.IsNullOrEmpty(IdRegex) || _regex.IsMatch(other.Id);
 
 				return matchType && matchDomain && idMatch;
