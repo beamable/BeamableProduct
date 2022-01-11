@@ -9,8 +9,12 @@
     color: rgb(255,255,255);
     min-height: 30px;
     padding-left: 10px;
-    -unity-text-align: upper-left;
     margin-top: 12px;
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    -unity-font-style: bold;
+    -unity-text-align: upper-left;
+    font-size: 12px;
+    height: 12px;
 }
 
 #value {
