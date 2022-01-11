@@ -44,7 +44,7 @@ namespace Beamable.Editor.UI.Components
 			var ve = new VisualElement();
 			AddBussPropertyFieldClass(ve);
 			ve.style.SetFlexDirection(FlexDirection.Row);
-			_mainElement.Add(ve);
+			Root.Add(ve);
 			return ve;
 		}
 
