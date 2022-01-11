@@ -15,6 +15,38 @@ using AuthService = Beamable.Api.Auth.AuthService;
 
 namespace Beamable.Platform.Tests
 {
+	public class MockAccessToken : IAccessToken
+	{
+		public string Token
+		{
+			get;
+			set;
+		} = "test";
+		public string RefreshToken
+		{
+			get;
+			set;
+		} = "test";
+		public DateTime ExpiresAt
+		{
+			get;
+			set;
+		} = DateTime.UtcNow + TimeSpan.FromMinutes(2);
+
+		public string Cid
+		{
+			get;
+			set;
+		} = "test";
+
+		public string Pid
+		{
+			get;
+			set;
+		} = "test";
+	}
+
+
 	public abstract class MockPlatformRouteBase
 	{
 		public Method Method;
@@ -207,7 +239,13 @@ namespace Beamable.Platform.Tests
 		private List<MockPlatformRouteBase> _routes = new List<MockPlatformRouteBase>();
 
 		public AuthService AuthService { get; set; }
-		public IAccessToken AccessToken { get; set; }
+
+		public IAccessToken AccessToken
+		{
+			get;
+			set;
+		} = new MockAccessToken();
+
 
 		public bool AllMocksCalled => _routes.All(mock => mock.Called);
 
@@ -232,6 +270,7 @@ namespace Beamable.Platform.Tests
 			{
 				Method = method,
 				Uri = uri,
+				Token = AccessToken.Token
 			};
 
 			_routes.Add(route);

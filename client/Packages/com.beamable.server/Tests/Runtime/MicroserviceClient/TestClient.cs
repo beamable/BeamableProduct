@@ -12,6 +12,7 @@ namespace Beamable.Server.Tests.Runtime
       {
          _serviceName = serviceName;
          MicroserviceClientHelper.SetPrefix("test");
+
       }
 
       public Promise<T> Request<T>(string endpoint, string[] serializedFields)
