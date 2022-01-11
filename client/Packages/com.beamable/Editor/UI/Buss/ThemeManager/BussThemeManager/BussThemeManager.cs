@@ -1,5 +1,4 @@
-﻿using System;
-using Beamable.Editor.UI.Buss;
+﻿using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using Editor.UI.BUSS;
@@ -58,12 +57,13 @@ namespace Beamable.UI.BUSS
 				$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussThemeManager/BussThemeManager.uss");
 #endif
 			
-			// ScrollView scrollView = new ScrollView();
-			// scrollView.name = "scrollView";
+			ScrollView scrollView = new ScrollView();
+			scrollView.name = "themeManagerContainerScrollView";
+			mainVisualElement.Add(scrollView);
 
 			VisualElement navigationGroup = new VisualElement();
 			navigationGroup.name = "navigationGroup";
-			mainVisualElement.Add(navigationGroup);
+			scrollView.Add(navigationGroup);
 			
 			_hierarchyComponent = new BussElementHierarchyVisualElement();
 			_hierarchyComponent.Refresh();
@@ -75,13 +75,11 @@ namespace Beamable.UI.BUSS
 			_styleSheetSource.objectType = typeof(BussStyleSheet);
 			_styleSheetSource.UnregisterValueChangedCallback(StyleSheetChanged);
 			_styleSheetSource.RegisterValueChangedCallback(StyleSheetChanged);
-			mainVisualElement.Add(_styleSheetSource);
+			scrollView.Add(_styleSheetSource);
 
 			_stylesGroup = new VisualElement();
 			_stylesGroup.name = "stylesGroup";
-			mainVisualElement.Add(_stylesGroup);
-
-			// mainVisualElement.Add(scrollView);
+			scrollView.Add(_stylesGroup);
 			
 			root.Add(mainVisualElement);
 		}
