@@ -23,9 +23,9 @@ IndentedLabelVisualElement {
     flex-grow: 1;
 }
 
-/*#root > ScrollView > #ContentViewport > #ContentView.content-view{*/
-/*    flex-grow: 1;*/
-/*    position: absolute;*/
-/*    left: 0px;*/
-/*    right: 0px;*/
-/*}*/
+#root > ScrollView > #ContentViewport > #ContentView.content-view{
+    flex-grow: 1;
+    position: absolute;
+    left: 0px;
+    right: 0px;
+}

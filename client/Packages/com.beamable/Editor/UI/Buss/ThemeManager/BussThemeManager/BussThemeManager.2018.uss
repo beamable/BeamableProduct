@@ -7,7 +7,7 @@
     flex-grow: 1;
 }
 
-#scrollView {
+#themeManagerContainerScrollView {
     flex-grow: 1;
 }
 
@@ -26,6 +26,13 @@
     flex-grow: 1;
 }
 
-/*BussElementHierarchyVisualElement {*/
-/*    flex-grow: 1;*/
-/*}*/
+BussElementHierarchyVisualElement {
+    flex-grow: 1;
+}
+
+#themeManagerContainer > ScrollView > #ContentViewport > #ContentView.content-view{
+    flex-grow: 1;
+    position: absolute;
+    left: 0px;
+    right: 0px;
+}
