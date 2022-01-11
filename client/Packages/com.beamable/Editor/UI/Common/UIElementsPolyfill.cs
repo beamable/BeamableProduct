@@ -182,30 +182,6 @@ namespace UnityEngine.Experimental.UIElements
 			callbackEventHandler.UnregisterCallback<ChangeEvent<T>>(callback, TrickleDown.NoTrickleDown);
 			return true;
 		}
-
-		public static VisualElement WithName(this VisualElement el, string name)
-		{
-			el.name = name;
-			return el;
-		}
-		
-		public static TextElement WithName(this TextElement el, string name)
-		{
-			el.name = name;
-			return el;
-		}
-		
-		public static ScrollView WithName(this ScrollView el, string name)
-		{
-			el.name = name;
-			return el;
-		}
-		
-		public static Label WithName(this Label el, string name)
-		{
-			el.name = name;
-			return el;
-		}
 	}
 }
 #endif
