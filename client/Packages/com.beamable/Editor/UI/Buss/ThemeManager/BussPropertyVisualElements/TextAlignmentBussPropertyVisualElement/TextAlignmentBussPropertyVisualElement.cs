@@ -25,10 +25,10 @@ namespace Beamable.Editor.UI.Components
 
 			_horizontalContainer = new VisualElement();
 			_horizontalContainer.style.SetFlexDirection(FlexDirection.Row);
-			_mainElement.Add(_horizontalContainer);
+			Root.Add(_horizontalContainer);
 			_verticalContainer = new VisualElement();
 			_verticalContainer.style.SetFlexDirection(FlexDirection.Row);
-			_mainElement.Add(_verticalContainer);
+			Root.Add(_verticalContainer);
 			for (int i = 0; i < 6; i++)
 			{
 				var boxedI = i;
