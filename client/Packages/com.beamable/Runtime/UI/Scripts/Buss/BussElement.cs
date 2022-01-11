@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Beamable.Editor.UI.Buss;
 using UnityEngine;
 
 namespace Beamable.UI.Buss
@@ -7,8 +8,8 @@ namespace Beamable.UI.Buss
 	public class BussElement : MonoBehaviour, ISerializationCallbackReceiver
 	{
 #pragma warning disable CS0649
-		[SerializeField] private string _id;
-        [SerializeField] private List<string> _classes = new List<string>();
+		[SerializeField, BussId] private string _id;
+        [SerializeField, BussClass] private List<string> _classes = new List<string>();
 		[SerializeField] private BussStyleDescription _inlineStyle;
 		[SerializeField] private BussStyleSheet _styleSheet;
 		private List<string> _pseudoClasses = new List<string>();
