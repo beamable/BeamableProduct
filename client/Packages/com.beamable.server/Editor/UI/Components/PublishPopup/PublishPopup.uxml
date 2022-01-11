@@ -6,6 +6,9 @@
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
+
+    <beamable:LoadingBarElement name="mainLoadingBar"/>
+
     <engine:VisualElement name="mainVisualElement">
         <engine:Label name = "warningMessage" text="Are you sure you want to deploy your microservices?"/>
         
