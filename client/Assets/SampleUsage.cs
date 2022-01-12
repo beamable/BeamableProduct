@@ -36,7 +36,7 @@ namespace DefaultNamespace
 	       * -.
 	       */
 
-	      beamable = BeamContext.ForContext(this);
+	      beamable = BeamContext.InParent(this);
 
 	      var api = beamable.Api;
 
