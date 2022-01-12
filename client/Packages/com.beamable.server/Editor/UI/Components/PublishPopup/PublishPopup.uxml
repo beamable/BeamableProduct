@@ -10,7 +10,7 @@
     <beamable:LoadingBarElement name="mainLoadingBar"/>
 
     <engine:VisualElement name="mainVisualElement">
-        <engine:Label name = "warningMessage" text="Are you sure you want to deploy your microservices?"/>
+        <beamable:PublishStatusVisualElement name="topMessage"/>
         
         <engine:VisualElement name="header">
             <engine:VisualElement name="enabledC" class="column">
