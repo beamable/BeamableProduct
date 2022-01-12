@@ -6,8 +6,11 @@
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
+
+    <beamable:LoadingBarElement name="mainLoadingBar"/>
+
     <engine:VisualElement name="mainVisualElement">
-        <engine:Label name = "warningMessage" text="Are you sure you want to deploy your microservices?"/>
+        <beamable:PublishStatusVisualElement name="topMessage"/>
         
         <engine:VisualElement name="header">
             <engine:VisualElement name="enabledC" class="column">
@@ -39,8 +42,8 @@
         <engine:ScrollView name="manifestsContainer"/>
         <engine:TextField name="largeCommentsArea" multiline="true"/>
         <engine:VisualElement name="buttonStrip">
+            <beamable:GenericButtonVisualElement name="cancelBtn" text="Cancel"/>
             <beamable:PrimaryButtonVisualElement name="continueBtn" text="Publish"/>
-            <engine:Button name="cancelBtn" text="Cancel"/>
         </engine:VisualElement>
     </engine:VisualElement>
 

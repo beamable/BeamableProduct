@@ -1,15 +1,15 @@
-using System.Collections.Generic;
-using System;
-using System.Linq;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.UI.Components;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
+
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -17,147 +17,176 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
-    public class PublishPopup : MicroserviceComponent
-    {
+	public class PublishPopup : MicroserviceComponent
+	{
+		public new class UxmlFactory : UxmlFactory<PublishPopup, UxmlTraits> { }
 
-        public new class UxmlFactory : UxmlFactory<PublishPopup, UxmlTraits>
-        {
-        }
+		public new class UxmlTraits : VisualElement.UxmlTraits
+		{
+			private UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
+			{
+				name = "custom-text", defaultValue = "nada"
+			};
 
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
-                {name = "custom-text", defaultValue = "nada"};
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
+				get
+				{
+					yield break;
+				}
+			}
 
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
+			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+			{
+				base.Init(ve, bag, cc);
+				var self = ve as PublishPopup;
+			}
+		}
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                var self = ve as PublishPopup;
-            }
-        }
+		public Action OnCloseRequested;
+		public Action<ManifestModel> OnSubmit;
 
-        public Action OnCloseRequested;
-        public Action<ManifestModel> OnSubmit;
+		public ManifestModel Model
+		{
+			get;
+			set;
+		}
 
-        public ManifestModel Model { get; set; }
-        
-        private TextField _generalComments;
-        private Button _cancelButton;
-        private PrimaryButtonVisualElement _continueButton;
-        private ScrollView _scrollContainer;
-        private Dictionary<string, PublishManifestEntryVisualElement> _publishManifestElements;
-        private bool _isPublishDisabled;
+		private TextField _generalComments;
+		private GenericButtonVisualElement  _cancelButton;
+		private PrimaryButtonVisualElement _primarySubmitButton;
+		private ScrollView _scrollContainer;
+		private Dictionary<string, PublishManifestEntryVisualElement> _publishManifestElements;
+		private LoadingBarElement _mainLoadingBar;
+		private PublishStatusVisualElement _topMessage;
 
-        public PublishPopup() : base(nameof(PublishPopup))
-        {
-        }
+		public PublishPopup() : base(nameof(PublishPopup)) { }
 
-        public void PrepareParent()
-        {
-            parent.name = "PublishWindowContainer";
-            parent.AddStyleSheet(USSPath);
-        }
+		public void PrepareParent()
+		{
+			parent.name = "PublishWindowContainer";
+			parent.AddStyleSheet(USSPath);
+		}
 
-        public override void Refresh()
-        {
-            base.Refresh();
+		public override void Refresh()
+		{
+			base.Refresh();
 
-            if (Model?.Services == null)
-                return;
-            
-            _scrollContainer = Root.Q<ScrollView>("manifestsContainer");
-            _publishManifestElements = new Dictionary<string, PublishManifestEntryVisualElement>(Model.Services.Count);
-            
-            List<IEntryModel> entryModels = new List<IEntryModel>(Model.Services.Values);
-            entryModels.AddRange(Model.Storages.Values);
+			if (Model?.Services == null)
+			{
+				return;
+			}
 
-            bool isOddRow = true;
-            _isPublishDisabled = false;
-            foreach (var model in entryModels)
-            {
-                if (!MicroserviceConfiguration.Instance.EnableStoragePreview && model is StorageEntryModel)
-                {
-                    continue;
-                }
-                
-                if (MicroserviceConfiguration.Instance.EnableStoragePreview)
-                {
-                    DisablePublishFeature("Warning! In order to publish services you must disable Storage Preview first.");
-                }
+			Microservices.OnServiceDeployStatusChanged -= HandleServiceDeployStatusChanged;
+			Microservices.OnServiceDeployStatusChanged += HandleServiceDeployStatusChanged;
+			Microservices.OnServiceDeployProgress -= HandleServiceDeployProgress;
+			Microservices.OnServiceDeployProgress += HandleServiceDeployProgress;
+			OnSubmit -= SubmitClicked;
+			OnSubmit += SubmitClicked;
 
-                if (model is ManifestEntryModel)
-                {
-                    var serviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(model.Name);
-                    if (serviceModel != null && !(serviceModel is RemoteMicroserviceModel) && serviceModel.Descriptor.IsPublishFeatureDisabled())
-                    {
-                        DisablePublishFeature("Warning! Publish feature is disabled due to Microservices dependent on Storage Objects.");
-                    }
-                }
-                
-                bool wasPublished = EditorPrefs.GetBool(GetPublishedKey(model.Name), false);
-                var newElement = new PublishManifestEntryVisualElement(model, wasPublished, isOddRow);
-                newElement.Refresh();
-                _publishManifestElements.Add(model.Name, newElement);
-                _scrollContainer.Add(newElement);
+			_mainLoadingBar = Root.Q<LoadingBarElement>("mainLoadingBar");
+			_mainLoadingBar.SmallBar = true;
+			_mainLoadingBar.Hidden = true;
+			_mainLoadingBar.Refresh();
 
-                isOddRow = !isOddRow;
-            }
+			_scrollContainer = Root.Q<ScrollView>("manifestsContainer");
+			_publishManifestElements = new Dictionary<string, PublishManifestEntryVisualElement>(Model.Services.Count);
 
-            _generalComments = Root.Q<TextField>("largeCommentsArea");
-            _generalComments.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
+			var entryModels = new List<IEntryModel>(Model.Services.Values);
+			entryModels.AddRange(Model.Storages.Values);
 
-            _cancelButton = Root.Q<Button>("cancelBtn");
-            _cancelButton.clickable.clicked += () => OnCloseRequested?.Invoke();
+			bool isOddRow = true;
+			foreach (IEntryModel model in entryModels)
+			{
+				bool wasPublished = EditorPrefs.GetBool(GetPublishedKey(model.Name), false);
+				var newElement = new PublishManifestEntryVisualElement(model, wasPublished, isOddRow);
+				newElement.Refresh();
+				_publishManifestElements.Add(model.Name, newElement);
+				_scrollContainer.Add(newElement);
 
-            _continueButton = Root.Q<PrimaryButtonVisualElement>("continueBtn");
-            _continueButton.Button.clickable.clicked += () => OnSubmit?.Invoke(Model);
-            _continueButton.SetEnabled(!_isPublishDisabled);
-        }
+				isOddRow = !isOddRow;
+			}
 
-        public void PrepareForPublish()
-        {
-            Root.Q<VisualElement>("header").RemoveFromHierarchy();
-            _generalComments.RemoveFromHierarchy();
-            _continueButton.RemoveFromHierarchy();
-            _cancelButton.RemoveFromHierarchy();
-            foreach (var kvp in _publishManifestElements)
-                kvp.Value.RemoveFromHierarchy();
-            _publishManifestElements.Clear();
+			_generalComments = Root.Q<TextField>("largeCommentsArea");
+			_generalComments.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
 
-            
-            foreach (var kvp in Model.Services)
-            {
-                var microserviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(kvp.Value.Name);
+			_cancelButton = Root.Q<GenericButtonVisualElement >("cancelBtn");
+			_cancelButton.OnClick += () => OnCloseRequested?.Invoke();
 
-                if (microserviceModel == null)
-                {
-                    Debug.LogError($"Cannot find model: {microserviceModel}");
-                    continue;
-                }
-                
-                var newElement = new LoadingBarElement();
-                newElement.Refresh();
-                _scrollContainer.Add(newElement);
-                new DeployMSLogParser(newElement, microserviceModel, true);
-            }
-        }
+			_primarySubmitButton = Root.Q<PrimaryButtonVisualElement>("continueBtn");
+			_primarySubmitButton.Button.clickable.clicked += () => OnSubmit?.Invoke(Model);
+			_topMessage = Root.Q<PublishStatusVisualElement>("topMessage");
+			_topMessage.Refresh();
+			OnSubmit -= _topMessage.HandleSubmitClicked;
+			OnSubmit += _topMessage.HandleSubmitClicked;
+			
+			HandleServiceDeployStatusChanged(null, ServicePublishState.Unpublished);
+		}
 
-        public void ServiceDeployed(IDescriptor descriptor)
-        {
-            EditorPrefs.SetBool(GetPublishedKey(descriptor.Name), true);
-        }
+		private void SubmitClicked(ManifestModel _) => _primarySubmitButton.Disable();
 
-        private string GetPublishedKey(string serviceName) => string.Format(Microservices.SERVICE_PUBLISHED_KEY, serviceName);
+		public void PrepareForPublish()
+		{
+			_mainLoadingBar.Hidden = false;
 
-        private void DisablePublishFeature(string message)
-        {
-            Root.Q<Label>("warningMessage").text = message;
-            _isPublishDisabled = true;
-        }
-    }
+			foreach (KeyValuePair<string, PublishManifestEntryVisualElement> kvp in _publishManifestElements)
+			{
+				var serviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(kvp.Key);
+
+				if (serviceModel == null)
+				{ 
+					Debug.LogError($"Cannot find model: {kvp.Key}");
+					continue;
+				}
+
+				kvp.Value.UpdateStatus(ServicePublishState.Unpublished);
+				new DeployMSLogParser(kvp.Value.LoadingBar, serviceModel);
+			}
+		}
+
+		public void HandleServiceDeployed(IDescriptor descriptor)
+		{
+			EditorPrefs.SetBool(GetPublishedKey(descriptor.Name), true);
+			HandleServiceDeployProgress(descriptor);
+		}
+
+		private string GetPublishedKey(string serviceName)
+		{
+			return string.Format(Microservices.SERVICE_PUBLISHED_KEY, serviceName);
+		}
+
+		private void HandleServiceDeployStatusChanged(IDescriptor descriptor, ServicePublishState state)
+		{
+			switch (state)
+			{
+				case ServicePublishState.Unpublished:
+				case ServicePublishState.InProgress:
+					return;
+				case ServicePublishState.Failed:
+					_primarySubmitButton.Enable();
+					_mainLoadingBar.UpdateProgress(0, failed: true);
+					foreach (KeyValuePair<string, PublishManifestEntryVisualElement> kvp in _publishManifestElements)
+					{
+						kvp.Value.LoadingBar.SetUpdater(null);
+					}
+					break;
+				case ServicePublishState.Published:
+					_primarySubmitButton.Enable();
+					break;
+				default:
+					throw new ArgumentOutOfRangeException(nameof(state), state, null);
+			}
+			_publishManifestElements[descriptor.Name].UpdateStatus(state);
+		}
+
+		private void HandleServiceDeployProgress(IDescriptor descriptor)
+		{
+			_mainLoadingBar.Progress = CalculateProgress();
+		}
+
+		private float CalculateProgress()
+		{
+			return _publishManifestElements.Values.Average(x => x.LoadingBar.Progress);
+		}
+	}
 }
