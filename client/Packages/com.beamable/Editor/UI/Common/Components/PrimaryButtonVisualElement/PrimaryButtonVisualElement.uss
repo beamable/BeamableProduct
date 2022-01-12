@@ -1,22 +1,31 @@
 Button.unity-button,
 Button {
-    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/primaryButton_normal.png");
+    background-image: none;
+    border-radius: 3px;
+    margin-bottom: 0px;
+    background-color: #0090FD;
     -unity-text-align: middle-center;
     color: #f4f4f4;
-    margin-bottom: -1px;
     flex-grow: 1;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
 }
 
+Button.unity-button.failure,
+Button.failure {
+    background-color: #E02020;
+}
+
 Button.unity-button:hover,
 Button:hover {
+    background-image: none;
     color: #f4f4f4;
+    background-color: #25A1FF;
 }
 
 Button.unity-button:hover:active,
 Button:hover:active {
-    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/primaryButton_pressed.png");
-    color: #f4f4f4;
+    background-image: none;
+    background-color: #4CB2FF;
 }
 TemplateContainer {
     flex-grow: 1;
@@ -36,11 +45,13 @@ LoadingSpinnerVisualElement {
 
 .disabled Button.unity-button,
 .disabled Button {
-    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/primaryButton_disabled.png");
+    background-image: none;
+    background-color: #838383;
 }
 .disabled Button.unity-button:hover:active,
 .disabled Button:hover:active {
-    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/primaryButton_disabled_pressed.png");
+    background-image: none;
+    background-color: #656565;
 }
 
 .loading LoadingSpinnerVisualElement {
@@ -49,5 +60,6 @@ LoadingSpinnerVisualElement {
 
 .loading Button.unity-button,
 .loading Button {
-    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/primaryButton_disabled_pressed.png");
+    background-image: none;
+    background-color: #838383;
 }
