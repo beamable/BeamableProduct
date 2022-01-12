@@ -7,6 +7,8 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Content;
 using Beamable.Service;
+using Core.Platform.SDK;
+using System.IO;
 using UnityEngine;
 
 namespace Beamable.Content
@@ -123,6 +125,8 @@ namespace Beamable.Content
 
 		public ContentDataInfoWrapper ContentDataInfo;
 
+		private ClientManifest bakedManifest;
+
 #if UNITY_EDITOR
 
 		public class ContentServiceTestScope : IDisposable
@@ -147,14 +151,67 @@ namespace Beamable.Content
 			FilesystemAccessor = filesystemAccessor;
 			_platform = platform;
 
-			Subscribable = new ManifestSubscription(_platform, Requester, CurrentDefaultManifestID);
-			Subscribable.Subscribe(cb =>
+			if (!InitializeBakedFile())
 			{
-				// pay attention, server...
-			});
+				Subscribables = new Dictionary<string, ManifestSubscription>();
+				AddSubscriber(CurrentDefaultManifestID);	
+			}
+		}
 
-			Subscribables = new Dictionary<string, ManifestSubscription>();
-			AddSubscriber(CurrentDefaultManifestID);
+		private bool InitializeBakedFile()
+		{
+			string path = FilesystemAccessor.GetPersistentDataPathWithoutTrailingSlash() + "/content/content.json";
+
+			if (File.Exists(path))
+			{
+				var json = File.ReadAllText(path);
+				ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
+				
+				// save baked data to disk
+				try
+				{
+					Directory.CreateDirectory(Path.GetDirectoryName(path));
+					File.WriteAllText(path, json);
+				}
+				catch (Exception e)
+				{
+					Debug.LogError($"[EXTRACT] Failed to write baked data to disk: {e.Message}");
+					return false;
+				}
+			}
+			else
+			{
+				var bakedFile = Resources.Load<TextAsset>(ContentConstants.BakedFileResourcePath);
+
+				if (bakedFile == null)
+				{
+					return false;
+				}
+
+				string json = bakedFile.text;
+				try
+				{
+					ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
+				}
+				catch
+				{
+					json = Gzip.Decompress(bakedFile.bytes);
+					ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
+				}
+			}
+			
+			if (ContentDataInfo == null)
+			{
+				return false;
+			}
+			
+			var manifestData = ContentDataInfo.contentManifestData;
+			if (!string.IsNullOrEmpty(manifestData))
+			{
+				bakedManifest = JsonUtility.FromJson<ClientManifest>(manifestData);
+			}
+		    
+			return bakedManifest != null;
 		}
 
 #if UNITY_EDITOR
