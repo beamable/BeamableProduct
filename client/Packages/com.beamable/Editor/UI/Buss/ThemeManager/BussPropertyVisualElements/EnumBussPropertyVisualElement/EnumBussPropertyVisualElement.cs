@@ -23,7 +23,7 @@ namespace Beamable.Editor.UI.Components
 			_field = new EnumField();
 			AddBussPropertyFieldClass(_field);
 			_field.Init(Property.EnumValue);
-			Root.Add(_field);
+			_mainElement.Add(_field);
 
 			_field.RegisterValueChangedCallback(OnValueChange);
 		}

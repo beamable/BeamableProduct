@@ -24,7 +24,7 @@ namespace Beamable.Editor.UI.Components
 			_field = new ColorField();
 			AddBussPropertyFieldClass(_field);
 			_field.value = Property.Color;
-			Root.Add(_field);
+			_mainElement.Add(_field);
 
 			_field.RegisterValueChangedCallback(OnValueChange);
 		}

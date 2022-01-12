@@ -25,7 +25,7 @@ namespace Beamable.Editor.UI.Components
 			AddBussPropertyFieldClass(_field);
 			_field.objectType = Property.GetAssetType();
 			_field.value = Property.GenericAsset;
-			Root.Add(_field);
+			_mainElement.Add(_field);
 
 			_field.RegisterValueChangedCallback(OnValueChange);
 		}

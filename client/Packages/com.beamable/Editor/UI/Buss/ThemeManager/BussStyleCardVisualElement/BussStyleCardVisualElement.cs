@@ -182,7 +182,7 @@ namespace Beamable.Editor.UI.Components
 			foreach (BussPropertyProvider property in _styleRule.Properties)
 			{
 				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
-				element.Setup(property);
+				element.Setup(_styleRule, property);
 				_properties.Add(element);
 			}
 		}
