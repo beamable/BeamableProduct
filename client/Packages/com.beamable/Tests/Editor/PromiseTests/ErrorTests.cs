@@ -51,7 +51,7 @@ namespace Beamable.Editor.Tests.PromiseTests
 	   }
 
 
-
+#if !UNITY_WEBGL
 	   [UnityTest]
 	   public IEnumerator AsyncAwait_AFailedPromiseShould()
 	   {
@@ -94,6 +94,7 @@ namespace Beamable.Editor.Tests.PromiseTests
 
 		   Assert.IsTrue(caught, "The try/catch didn't catch");
 	   }
+#endif
 
       [Test]
       public void UncaughtPromise_RaisesEvent()
