@@ -1,5 +1,6 @@
 ﻿using Beamable.Editor.UI.Buss;
 using Beamable.UI.Buss;
+using System.Linq;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -13,16 +14,14 @@ namespace Beamable.Editor.UI.Components
 {
 	public class BussStyleCardVisualElement : BeamableVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<BussStyleCardVisualElement, UxmlTraits> { }
+		public enum MODE
+		{
+			NORMAL,
+			EDIT
+		}
 
-		public BussStyleCardVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}") { }
-
-		private VisualElement _styleIdParent;
-		private TextElement _styleIdLabel;
-		private TextField _styleIdEditField;
-		
 		private BussStyleRule _styleRule;
+		private VisualElement _selectorLabelParent;
 		private VisualElement _properties;
 		private VisualElement _editButton;
 		private VisualElement _wizardButton;
@@ -31,12 +30,23 @@ namespace Beamable.Editor.UI.Components
 		private VisualElement _addVariableButton;
 		private VisualElement _addRuleButton;
 		private VisualElement _showAllButton;
+		private TextElement _styleIdLabel;
+		private TextField _styleIdEditField;
+		private BussSelectorLabelVisualElement _selectorLabelComponent;
+
+		private MODE _currentMode;
+
+		public BussStyleCardVisualElement() : base(
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}")
+		{
+			_currentMode = MODE.NORMAL;
+		}
 
 		public override void Refresh()
 		{
 			base.Refresh();
 
-			_styleIdParent = Root.Q<VisualElement>("styleIdParent");
+			_selectorLabelParent = Root.Q<VisualElement>("selectorLabelParent");
 			_properties = Root.Q<VisualElement>("properties");
 
 			_editButton = Root.Q<VisualElement>("editButton");
@@ -49,7 +59,7 @@ namespace Beamable.Editor.UI.Components
 			
 			RegisterButtonActions();
 
-			CreateStyleIdLabel();
+			CreateSelectorLabel();
 			CreateProperties();
 		}
 
@@ -109,7 +119,8 @@ namespace Beamable.Editor.UI.Components
 
 		private void EditButtonClicked(MouseDownEvent evt)
 		{
-			Debug.Log("EditButtonClicked");
+			_currentMode = _currentMode == MODE.NORMAL ? _currentMode = MODE.EDIT : _currentMode = MODE.NORMAL;
+			Refresh();
 		}
 		
 		private void ShowAllButtonClicked(MouseDownEvent evt)
@@ -117,58 +128,14 @@ namespace Beamable.Editor.UI.Components
 			Debug.Log("ShowAllButtonClicked");
 		}
 
-		private void CreateStyleIdLabel()
+		private void CreateSelectorLabel()
 		{
-			_styleIdLabel = new TextElement();
-			_styleIdLabel.name = "styleId";
-			_styleIdLabel.text = _styleRule.SelectorString;
-			_styleIdParent.Add(_styleIdLabel);
-			
-			_styleIdLabel.RegisterCallback<MouseDownEvent>(StyleIdClicked);
-		}
+			_selectorLabelComponent?.Destroy();
+			_selectorLabelParent.Clear();
 
-		private void RemoveStyleIdLabel()
-		{
-			if (_styleIdLabel == null)
-			{
-				return;
-			}
-
-			_styleIdLabel.UnregisterCallback<MouseDownEvent>(StyleIdClicked);
-			_styleIdParent.Remove(_styleIdLabel);
-			_styleIdLabel = null;
-		}
-
-		private void StyleIdClicked(MouseDownEvent evt)
-		{
-			RemoveStyleIdLabel();
-			CreateStyleIdEditField();
-		}
-
-		private void CreateStyleIdEditField()
-		{
-			_styleIdEditField = new TextField();
-			_styleIdEditField.name = "styleId";
-			_styleIdEditField.value = _styleRule.SelectorString;
-			_styleIdEditField.RegisterValueChangedCallback(StyleIdChanged);
-			_styleIdParent.Add(_styleIdEditField);
-		}
-
-		private void RemoveStyleIdEditField()
-		{
-			if (_styleIdEditField == null)
-			{
-				return;
-			}
-
-			_styleIdEditField.UnregisterValueChangedCallback(StyleIdChanged);
-			_styleIdParent.Remove(_styleIdEditField);
-			_styleIdEditField = null;
-		}
-
-		private void StyleIdChanged(ChangeEvent<string> evt)
-		{
-			// TODO: apply change to property
+			_selectorLabelComponent = new BussSelectorLabelVisualElement();
+			_selectorLabelComponent.Setup(_currentMode, _styleRule);
+			_selectorLabelParent.Add(_selectorLabelComponent);
 		}
 
 		public void Setup(BussStyleRule styleRule)

@@ -19,11 +19,6 @@
     justify-content: center;
 }
 
-#styleId {
-    margin-left: 10px;
-    min-width: 50px;
-}
-
 #colorBlock {
     margin-top: 5px;
     margin-bottom: 5px;
