@@ -29,6 +29,14 @@ namespace Beamable.Editor.UI.Buss.Components
 			wnd.Refresh();
 		}
 
+		public static void CloseWindow()
+		{
+			if (!IsAlreadyOpened)
+				return;
+			
+			Instance.Close();
+		}
+
 		private void OnEnable() => Instance = this;
 		private void OnDisable() => Instance = null;
 		private void Refresh()

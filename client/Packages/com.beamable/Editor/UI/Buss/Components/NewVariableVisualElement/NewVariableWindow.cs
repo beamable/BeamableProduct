@@ -8,7 +8,7 @@ namespace Beamable.Editor.UI.Buss.Components
 		protected override void Init(NewVariableWindow wnd)
 		{
 			wnd.titleContent = new GUIContent("New Variable Window");
-			wnd.minSize = new Vector2(620, 400);
+			wnd.minSize = new Vector2(720, 400);
 			wnd.maxSize = wnd.minSize;
 			wnd.position = new Rect((Screen.width + wnd.minSize.x) * 0.5f, Screen.width * 0.5f, wnd.minSize.x, wnd.minSize.y);
 		}

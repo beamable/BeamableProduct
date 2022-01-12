@@ -11,19 +11,16 @@
         <engine:VisualElement>
             <beamable:LabeledTextField name="variableName" label="Variable Name"/>
             <beamable:LabeledDropdownVisualElement name="selectType" label="Select Type"/>
-            
-            <beamable:LabeledColorPickerVisualElement name="colorType" label="Color" class="hide"/>
-            <beamable:LabeledColorPickerVisualElement name="vertexColorType" label="Vertex Color" class="hide"/>
-            <beamable:LabeledTextField name="floatType" label="Float" class="hide"/>
-            <beamable:LabeledTextField name="floatFromFloatType" label="Float From Float" class="hide"/>
-            <beamable:LabeledDropdownVisualElement name="enumType" label="Enum" class="hide"/>
-            <beamable:LabeledSpritePickerVisualElement name="spriteType" label="Sprite" class="hide"/>
-            <beamable:LabeledTextField name="fontType" label="Font" class="hide"/>
+            <beamable:LabeledDropdownVisualElement name="selectEnum" label="Select Enum" class="hide"/>
+            <engine:VisualElement name="propertyContainer">
+                <engine:Label name="propertyLabel" />
+                <engine:VisualElement name="propertyValue"/>
+            </engine:VisualElement>
             
         </engine:VisualElement>
         <engine:VisualElement name="buttonStrip">
-            <beamable:GenericButtonVisualElement name="cancelBtn" text="Cancel" type ="Cancel"/>
-            <beamable:PrimaryButtonVisualElement name="confirmBtn" text="Confirm"/>
+            <beamable:GenericButtonVisualElement name="cancelButton" text="Cancel" type ="Cancel"/>
+            <beamable:PrimaryButtonVisualElement name="confirmButton" text="Confirm"/>
         </engine:VisualElement>
     </engine:VisualElement>
 </engine:UXML>

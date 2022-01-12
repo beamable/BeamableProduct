@@ -1,5 +1,6 @@
 #mainVisualElement{
-    width: auto;
+    left: 0px;
+    right: 0px;
 }
 
 .bussPropertyField {

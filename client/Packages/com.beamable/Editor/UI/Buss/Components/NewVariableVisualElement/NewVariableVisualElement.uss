@@ -24,7 +24,7 @@ NewVariableVisualElement > TemplateContainer > #mainVisualElement {
     padding-right: 5px;    
 }
 
-#confirmBtn {
+#confirmButton {
     width: 100px;
     height: 28px;
     align-self: center;
@@ -77,4 +77,21 @@ DropdownVisualElement > TemplateContainer > #mainVisualElement > #mainContainer 
 .hide {
     position: absolute;
     left: 50000px;
+}
+
+#propertyContainer {
+    flex-direction: row;
+    align-items: center;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+#propertyLabel {
+    width: 150px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+#propertyValue {
+    flex-grow: 1;
 }

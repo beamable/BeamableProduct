@@ -1,15 +1,14 @@
 ﻿using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using Editor.UI.Buss;
-using System;
-using TMPro;
+using Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
+
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -24,100 +23,122 @@ namespace Beamable.Editor.Toolbox.Components
 		}
 
 		private LabeledTextField _variableName;
-		
-		private LabeledColorPickerVisualElement _colorType;
-		private LabeledColorPickerVisualElement _vertexColorType;
-		private LabeledTextField _floatType;
-		private LabeledTextField _floatFromFloatType;
-		private LabeledDropdownVisualElement _enumType;
-		private LabeledSpritePickerVisualElement _spriteType;
-		private LabeledTextField _fontType;
-		
-		private readonly Dictionary<string, Tuple<BeamableVisualElement, IBussProperty>> _typesDict = new Dictionary<string, Tuple<BeamableVisualElement, IBussProperty>>();
-		private IBussProperty _currentBussProperty;
+		private Label _propertyLabel;
+		private VisualElement _propertyValue;
+		private LabeledDropdownVisualElement _selectType;
+		private LabeledDropdownVisualElement _selectEnum;
 
-		private List<Type> _allEnumTypes = new List<Type>();
+		private BussPropertyVisualElement _currentPropertyElement;
+		private IBussProperty _selectedBussProperty;
+
+		private readonly Dictionary<string, IBussProperty> _typesDict = new Dictionary<string, IBussProperty>
+		{
+			{ "Color", new SingleColorBussProperty() },
+			{ "VertexColor", new VertexColorBussProperty() },
+			{ "Float", new FloatBussProperty() },
+			{ "FloatFromFloat", new FractionFloatBussProperty() },
+			{ "Enum", null },
+			{ "Sprite", new SpriteBussProperty() },
+			{ "Font", new FontBussAssetProperty() },
+		};
+		
+		private readonly Dictionary<string, IBussProperty> _enumsDict = new Dictionary<string, IBussProperty>
+		{
+			{ "ImageType", new ImageTypeBussProperty() },
+			{ "SdfMode", new SdfModeBussProperty() },
+			{ "BorderMode", new BorderModeBussProperty() },
+			{ "BackgroundMode", new BackgroundModeBussProperty() },
+			{ "ShadowMode", new ShadowModeBussProperty() },
+			{ "Easing", new EasingBussProperty() },
+			{ "TextAlignmentOptions", new TextAlignmentOptionsBussProperty() },
+		};
 
 		public override void Refresh()
 		{
 			base.Refresh();
 
+			_propertyValue = Root.Q<VisualElement>("propertyValue");
+			_propertyLabel = Root.Q<Label>("propertyLabel");
+			
 			_variableName = Root.Q<LabeledTextField>("variableName");
 			_variableName.Refresh();
+			_variableName.OverrideLabelWidth(150);
 			
-			_colorType = Root.Q<LabeledColorPickerVisualElement>("colorType");
-			_colorType.Refresh();
-			_typesDict.Add("Color", new Tuple<BeamableVisualElement, IBussProperty>(_colorType, new SingleColorBussProperty()));
+			_selectEnum = Root.Q<LabeledDropdownVisualElement>("selectEnum");
 
-			_vertexColorType = Root.Q<LabeledColorPickerVisualElement>("vertexColorType");
-			_vertexColorType.Refresh();
-			_typesDict.Add("VertexColor", new Tuple<BeamableVisualElement, IBussProperty>(_vertexColorType, new VertexColorBussProperty()));
+			_selectType = Root.Q<LabeledDropdownVisualElement>("selectType");
+			_selectType.Setup(_typesDict.Keys.ToList(), HandleTypeSwitchProperty);	
+			_selectType.Refresh();
+			_selectType.OverrideLabelWidth(150);
 			
-			_floatType = Root.Q<LabeledTextField>("floatType");
-			_floatType.Refresh();
-			_typesDict.Add("Float", new Tuple<BeamableVisualElement, IBussProperty>(_floatType, new FloatBussProperty()));
+			var confirmButton = Root.Q<PrimaryButtonVisualElement>("confirmButton");
+			confirmButton.Button.clickable.clicked += HandleConfirmButton;
 			
-			_floatFromFloatType = Root.Q<LabeledTextField>("floatFromFloatType");
-			_floatFromFloatType.Refresh();
-			_typesDict.Add("FloatFromFloat", new Tuple<BeamableVisualElement, IBussProperty>(_floatFromFloatType, new FractionFloatBussProperty()));
-
-			_allEnumTypes = Helper.GetAllClassesInheritedFrom(typeof(EnumBussProperty<>)).ToList();
-			_enumType = Root.Q<LabeledDropdownVisualElement>("enumType");
-			var enumProperties = Helper.GetAllClassesNamesInheritedFrom(typeof(EnumBussProperty<>));
-			_enumType.Setup(enumProperties, HandleEnumSwitch);
-			_enumType.Refresh();
-			//_typesDict.Add("Enum", new Tuple<BeamableVisualElement, IBussProperty>(_enumType, new SdfModeBussProperty()));
-			
-			_spriteType = Root.Q<LabeledSpritePickerVisualElement>("spriteType");
-			_spriteType.Refresh();
-			_typesDict.Add("Sprite", new Tuple<BeamableVisualElement, IBussProperty>(_spriteType, new SpriteBussProperty()));
-			
-			_fontType = Root.Q<LabeledTextField>("fontType");
-			_fontType.Refresh();
-			_typesDict.Add("Font", new Tuple<BeamableVisualElement, IBussProperty>(_fontType, new FontBussAssetProperty()));
-
-			var selectType = Root.Q<LabeledDropdownVisualElement>("selectType");
-			selectType.Setup(_typesDict.Keys.ToList(), HandleChangeTypeVisibility);	
-			selectType.Refresh();
-
-			Root.Q<PrimaryButtonVisualElement>("confirmBtn").Button.clickable.clicked += HandleConfirmButton;
-		}
-		private void HandleChangeTypeVisibility(int visibleIndex)
-		{
-			int index = 0;
-			foreach ((BeamableVisualElement item1, IBussProperty item2) in _typesDict.Values)
-			{
-				item1.EnableInClassList("hide",index != visibleIndex);
-				if (index == visibleIndex)
-					_currentBussProperty = item2;
-				
-				index++;
-			}
-		}
-		
-		private void HandleEnumSwitch(int index)
-		{
-			var type = _allEnumTypes[index];
-			_currentBussProperty = Activator.CreateInstance(type) as IBussProperty;
-			_typesDict["Enum"] = new Tuple<BeamableVisualElement, IBussProperty>(_enumType, _currentBussProperty);
+			var cancelButton = Root.Q<GenericButtonVisualElement>("cancelButton");
+			cancelButton.OnClick += NewVariableWindow.CloseWindow;
 		}
 
 		private void HandleConfirmButton()
 		{
-			Debug.LogWarning($"{_variableName.Value} : {_currentBussProperty.GetType().Name}");
-			
-			IBussProperty result = _currentBussProperty;
-			switch (_currentBussProperty)
+			if (string.IsNullOrWhiteSpace(_variableName.Value))
 			{
-				case SingleColorBussProperty _: result = new SingleColorBussProperty(_colorType.SelectedColor); break;
-				case VertexColorBussProperty _: result = new VertexColorBussProperty(_vertexColorType.SelectedColor); break;
-				case FloatBussProperty _: result = new FloatBussProperty(); break;
-				case FractionFloatBussProperty _: result = new FractionFloatBussProperty(); break;
-				case SpriteBussProperty _: result = new SpriteBussProperty(_spriteType.SelectedSprite); break;
-				case FontBussAssetProperty _: result = new FontBussAssetProperty(new TMP_FontAsset()); break;
+				Debug.LogError("Variable name cannot be empty!");
+				return;
 			}
+
+			new BussStyleDescription().TryAddProperty(_variableName.Value, _selectedBussProperty, out var _);
+			NewVariableWindow.CloseWindow();
+		}
+		
+		private void HandleTypeSwitchProperty(int selectedIndex)
+		{
+			RemoveProperty();
+			var kvp = _typesDict.ElementAt(selectedIndex);
 			
-			BussStyleSheetUtility.TryAddProperty(new BussStyleDescription(), _variableName.Value, result, out var _);
+			if (CanCreateSubDropdown(kvp.Key))
+				return;
+			PrepareProperty(kvp);
+		}
+		
+		private void HandleEnumSwitchProperty(int selectedIndex)
+		{
+			RemoveProperty();
+			var kvp = _enumsDict.ElementAt(selectedIndex);
+			PrepareProperty(kvp);
+		}
+
+		private void PrepareProperty(KeyValuePair<string, IBussProperty> kvp)
+		{
+			_selectedBussProperty = kvp.Value;
+			
+			var propertyProvider = BussPropertyProvider.Create(kvp.Key, kvp.Value);
+			_currentPropertyElement = propertyProvider.GetVisualElement();
+			_propertyValue.Add(_currentPropertyElement);
+			_propertyLabel.text = kvp.Key;
+			_currentPropertyElement.Refresh();
+		}
+
+		private void RemoveProperty()
+		{
+			if (_currentPropertyElement == null || !_propertyValue.Contains(_currentPropertyElement))
+				return;
+
+			_propertyValue.Remove(_currentPropertyElement);
+			_currentPropertyElement = null;
+		}
+
+		private bool CanCreateSubDropdown(string key)
+		{
+			if (key == "Enum")
+			{
+				_selectEnum.Setup(_enumsDict.Keys.ToList(), HandleEnumSwitchProperty);	
+				_selectEnum.Refresh();
+				_selectEnum.OverrideLabelWidth(150);
+				_selectEnum.EnableInClassList("hide", false);
+				return true;
+			}
+			_selectEnum.EnableInClassList("hide", true);
+			return false;
 		}
 	}
 }
