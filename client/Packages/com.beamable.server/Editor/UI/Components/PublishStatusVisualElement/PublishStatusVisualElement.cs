@@ -44,8 +44,16 @@ namespace Beamable.Editor.UI.Components
 			HandleServiceDeployStatusChanged(null, ServicePublishState.Unpublished);
 		}
 		
-		public void HandleSubmitClicked(ManifestModel _) => 
+		public void HandleSubmitClicked(ManifestModel _)
+		{
 			_label.text = topMessageUpdateTexts[0];
+			if(!_topMessageUpdating)
+			{
+				EditorApplication.update -= UpdateTopMessageText;
+				EditorApplication.update += UpdateTopMessageText;
+				_topMessageUpdating = true;
+			}
+		}
 
 		private void HandleServiceDeployStatusChanged(IDescriptor descriptor, ServicePublishState state)
 		{
@@ -54,23 +62,12 @@ namespace Beamable.Editor.UI.Components
 				case ServicePublishState.Unpublished:
 					_label.text = "Are you sure you want to deploy your microservices?";
 					return;
-				case ServicePublishState.InProgress:
-					if(!_topMessageUpdating)
-					{
-						EditorApplication.update += UpdateTopMessageText;
-						_topMessageUpdating = true;
-					}
-					return;
 				case ServicePublishState.Failed:
 					_label.text = $"Oh no! Errors appears during publishing of {descriptor.Name}. Please check the log for detailed information.";
+					EditorApplication.update -= UpdateTopMessageText;
+					_topMessageUpdating = false;
 					break;
-				case ServicePublishState.Published:
-					break;
-				default:
-					throw new ArgumentOutOfRangeException(nameof(state), state, null);
 			}
-			EditorApplication.update -= UpdateTopMessageText;
-			_topMessageUpdating = false;
 		}
 
 		private void UpdateTopMessageText()
