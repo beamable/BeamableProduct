@@ -135,14 +135,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 		}
 
-		public void SetOddRow(bool isOdd)
-		{
-			_mainElement.RemoveFromClassList("oddRow");
-			if (isOdd)
-			{
-				_mainElement.AddToClassList("oddRow");
-			}
-		}
+		public void SetOddRow(bool isOdd) => EnableInClassList("oddRow", isOdd);
 
 		public void UpdateStatus(ServicePublishState state)
 		{
