@@ -40,7 +40,7 @@ namespace Beamable.Editor.UI.Components
 			labelComponent.name = "propertyLabel";
 			labelComponent.text = _property.Key;
 			Root.Add(labelComponent);
-			
+
 			_valueParent = new VisualElement();
 			_valueParent.name = "value";
 			Root.Add(_valueParent);
@@ -61,13 +61,13 @@ namespace Beamable.Editor.UI.Components
 		private void SetupEditableField(BussPropertyProvider property)
 		{
 			BussPropertyVisualElement visualElement = property.GetVisualElement();
-			
+
 			if (visualElement != null)
 			{
 				_valueParent.Add(visualElement);
 				visualElement.Refresh();
 			}
-			
+
 			VariableConnectionVisualElement variableConnection = new VariableConnectionVisualElement();
 			variableConnection.Setup(false);
 			_variableParent.Add(variableConnection);
