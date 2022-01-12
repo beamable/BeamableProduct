@@ -36,7 +36,12 @@ namespace Beamable.Editor.UI.Buss.Components
 			Instance.Close();
 		}
 
-		private void OnEnable() => Instance = this;
+		private void OnEnable()
+		{
+			Instance = this;
+			Instance.Refresh();
+		}
+
 		private void OnDisable() => Instance = null;
 		protected void Refresh()
 		{

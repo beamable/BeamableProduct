@@ -34,6 +34,8 @@ namespace Beamable.Editor.Toolbox.Components
 		private BussPropertyVisualElement _currentPropertyElement;
 		private IBussProperty _selectedBussProperty;
 
+		private const int LABEL_WIDTH = 160;
+
 		private readonly Dictionary<string, IBussProperty> _typesDict = new Dictionary<string, IBussProperty>
 		{
 			{ "Color", new SingleColorBussProperty() },
@@ -65,14 +67,14 @@ namespace Beamable.Editor.Toolbox.Components
 			
 			_variableName = Root.Q<LabeledTextField>("variableName");
 			_variableName.Refresh();
-			_variableName.OverrideLabelWidth(150);
+			_variableName.OverrideLabelWidth(LABEL_WIDTH);
 			
 			_selectEnum = Root.Q<LabeledDropdownVisualElement>("selectEnum");
 
 			_selectType = Root.Q<LabeledDropdownVisualElement>("selectType");
 			_selectType.Setup(_typesDict.Keys.ToList(), HandleTypeSwitchProperty);	
 			_selectType.Refresh();
-			_selectType.OverrideLabelWidth(150);
+			_selectType.OverrideLabelWidth(LABEL_WIDTH);
 			
 			var confirmButton = Root.Q<PrimaryButtonVisualElement>("confirmButton");
 			confirmButton.Button.clickable.clicked += HandleConfirmButton;
@@ -136,7 +138,7 @@ namespace Beamable.Editor.Toolbox.Components
 			{
 				_selectEnum.Setup(_enumsDict.Keys.ToList(), HandleEnumSwitchProperty);	
 				_selectEnum.Refresh();
-				_selectEnum.OverrideLabelWidth(150);
+				_selectEnum.OverrideLabelWidth(LABEL_WIDTH);
 				_selectEnum.EnableInClassList("hide", false);
 				return true;
 			}
