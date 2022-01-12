@@ -81,7 +81,20 @@ namespace Beamable.Server.Common
 
       protected override List<MemberInfo> GetSerializableMembers(Type objectType)
       {
-         var fields = objectType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+         IEnumerable<FieldInfo> GetAllFields(Type t)
+         {
+            if (t == null)
+               return Enumerable.Empty<FieldInfo>();
+
+            BindingFlags flags = BindingFlags.Public |
+                                 BindingFlags.NonPublic |
+                                 BindingFlags.Instance |
+                                 BindingFlags.DeclaredOnly;
+            return t.GetFields(flags).Concat(GetAllFields(t.BaseType));
+         }
+
+         var fields = GetAllFields(objectType);
 
          bool IsPublicField(FieldInfo field) => field.IsPublic;
          bool IsMarkedSerializeAttribute(FieldInfo field) => field.GetCustomAttribute<SerializeField>() != null;
