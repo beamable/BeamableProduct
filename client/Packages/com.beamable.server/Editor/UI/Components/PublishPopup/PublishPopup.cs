@@ -77,8 +77,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 				return;
 			}
 
-			Microservices.OnServiceDeployStatusChanged -= HandleServiceServiceDeployStatusChange;
-			Microservices.OnServiceDeployStatusChanged += HandleServiceServiceDeployStatusChange;
+			Microservices.OnServiceDeployStatusChanged -= HandleServiceDeployStatusChanged;
+			Microservices.OnServiceDeployStatusChanged += HandleServiceDeployStatusChanged;
 			Microservices.OnServiceDeployProgress -= HandleServiceDeployProgress;
 			Microservices.OnServiceDeployProgress += HandleServiceDeployProgress;
 			OnSubmit -= SubmitClicked;
@@ -120,7 +120,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			OnSubmit -= _topMessage.HandleSubmitClicked;
 			OnSubmit += _topMessage.HandleSubmitClicked;
 			
-			HandleServiceServiceDeployStatusChange(null, ServicePublishState.Unpublished);
+			HandleServiceDeployStatusChanged(null, ServicePublishState.Unpublished);
 		}
 
 		private void SubmitClicked(ManifestModel _) => _primarySubmitButton.Disable();
@@ -155,7 +155,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			return string.Format(Microservices.SERVICE_PUBLISHED_KEY, serviceName);
 		}
 
-		private void HandleServiceServiceDeployStatusChange(IDescriptor descriptor, ServicePublishState state)
+		private void HandleServiceDeployStatusChanged(IDescriptor descriptor, ServicePublishState state)
 		{
 			switch (state)
 			{

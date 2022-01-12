@@ -39,15 +39,15 @@ namespace Beamable.Editor.UI.Components
 			_label = Root.Q<Label>("value");
 			Microservices.OnDeploySuccess -= HandleDeploySuccess;
 			Microservices.OnDeploySuccess += HandleDeploySuccess;
-			Microservices.OnServiceDeployStatusChanged -= HandleServiceServiceDeployStatusChange;
-			Microservices.OnServiceDeployStatusChanged += HandleServiceServiceDeployStatusChange;
-			HandleServiceServiceDeployStatusChange(null, ServicePublishState.Unpublished);
+			Microservices.OnServiceDeployStatusChanged -= HandleServiceDeployStatusChanged;
+			Microservices.OnServiceDeployStatusChanged += HandleServiceDeployStatusChanged;
+			HandleServiceDeployStatusChanged(null, ServicePublishState.Unpublished);
 		}
 		
 		public void HandleSubmitClicked(ManifestModel _) => 
 			_label.text = topMessageUpdateTexts[0];
 
-		private void HandleServiceServiceDeployStatusChange(IDescriptor descriptor, ServicePublishState state)
+		private void HandleServiceDeployStatusChanged(IDescriptor descriptor, ServicePublishState state)
 		{
 			switch (state)
 			{
