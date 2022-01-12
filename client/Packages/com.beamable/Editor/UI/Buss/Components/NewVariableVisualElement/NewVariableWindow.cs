@@ -1,17 +1,24 @@
 ﻿using Beamable.Editor.Toolbox.Components;
+using Beamable.UI.Buss;
 using UnityEngine;
 
 namespace Beamable.Editor.UI.Buss.Components
 {
 	public class NewVariableWindow : BUSSWindowBase<NewVariableWindow, NewVariableVisualElement>
 	{
-		protected override void Init(NewVariableWindow wnd)
+		private BussStyleDescription _description;
+
+		public void Init(BussStyleDescription description)
 		{
-			wnd.titleContent = new GUIContent("New Variable Window");
-			wnd.minSize = new Vector2(720, 400);
-			wnd.maxSize = wnd.minSize;
-			wnd.position = new Rect((Screen.width + wnd.minSize.x) * 0.5f, Screen.width * 0.5f, wnd.minSize.x, wnd.minSize.y);
+			_description = description;
+			
+			titleContent = new GUIContent("New Variable Window");
+			minSize = new Vector2(720, 400);
+			maxSize = minSize;
+			position = new Rect((Screen.width + minSize.x) * 0.5f, Screen.width * 0.5f, minSize.x, minSize.y);
+			
+			Refresh();
 		}
-		protected override NewVariableVisualElement GetVisualElement() => new NewVariableVisualElement();
+		protected override NewVariableVisualElement GetVisualElement() => new NewVariableVisualElement(_description);
 	}
 }

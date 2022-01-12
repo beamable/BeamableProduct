@@ -17,11 +17,14 @@ namespace Beamable.Editor.Toolbox.Components
 {
 	public class NewVariableVisualElement : BeamableVisualElement
 	{
-		public NewVariableVisualElement() : base(
+		public NewVariableVisualElement(BussStyleDescription description) : base(
 			$"{BeamableComponentsConstants.BUSS_COMPONENTS_PATH}/{nameof(NewVariableVisualElement)}/{nameof(NewVariableVisualElement)}")
 		{
+			_description = description;
 		}
 
+		private BussStyleDescription _description;
+		
 		private LabeledTextField _variableName;
 		private Label _propertyLabel;
 		private VisualElement _propertyValue;
@@ -86,7 +89,7 @@ namespace Beamable.Editor.Toolbox.Components
 				return;
 			}
 
-			new BussStyleDescription().TryAddProperty(_variableName.Value, _selectedBussProperty, out var _);
+			_description.TryAddProperty(_variableName.Value, _selectedBussProperty, out var _);
 			NewVariableWindow.CloseWindow();
 		}
 		

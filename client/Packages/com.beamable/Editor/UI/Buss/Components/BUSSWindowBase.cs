@@ -18,15 +18,14 @@ namespace Beamable.Editor.UI.Buss.Components
 
 		private static bool IsAlreadyOpened => Instance != null;
 
-		public static void ShowWindow()
+		public static TWindow ShowWindow()
 		{
 			if (IsAlreadyOpened)
-				return;
+				return null;
 			
 			var wnd = CreateInstance<TWindow>();
-			wnd.Init(wnd);
 			wnd.ShowUtility();
-			wnd.Refresh();
+			return wnd;
 		}
 
 		public static void CloseWindow()
@@ -39,7 +38,7 @@ namespace Beamable.Editor.UI.Buss.Components
 
 		private void OnEnable() => Instance = this;
 		private void OnDisable() => Instance = null;
-		private void Refresh()
+		protected void Refresh()
 		{
 			var rootContainer = this.GetRootVisualContainer();
 			rootContainer.Clear();
@@ -50,8 +49,7 @@ namespace Beamable.Editor.UI.Buss.Components
 
 			Repaint();
 		}
-
-		protected abstract void Init(TWindow wnd);
+		
 		protected abstract TVisualElement GetVisualElement();
 	}
 }
