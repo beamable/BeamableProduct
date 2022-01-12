@@ -16,13 +16,11 @@ namespace Beamable.Editor.UI.Components
 
 		public SpritePickerVisualElement() : base(
 			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(SpritePickerVisualElement)}/{nameof(SpritePickerVisualElement)}") { }
-
+		
 		public Sprite SelectedSprite { get; private set; }
-
 		public override void Refresh()
 		{
 			base.Refresh();
-			
 			VisualElement main = Root.Q<VisualElement>("mainVisualElement");
 			ObjectField imageField = new ObjectField();
 			imageField.objectType = typeof(Sprite);

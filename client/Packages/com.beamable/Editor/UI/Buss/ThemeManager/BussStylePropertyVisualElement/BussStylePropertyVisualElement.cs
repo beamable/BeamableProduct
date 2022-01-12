@@ -1,5 +1,4 @@
 ﻿using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Validation;
 using Beamable.UI.Buss;
 using Beamable.UI.Sdf;
@@ -18,16 +17,14 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class BussStylePropertyVisualElement : BeamableBasicVisualElement
+	public class BussStylePropertyVisualElement : ValidableVisualElement<string>
 	{
-#if UNITY_2018
-		public BussStylePropertyVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.2018.uss") { }
-#elif UNITY_2019_1_OR_NEWER
-		public BussStylePropertyVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.uss") { }
-#endif
+		public new class UxmlFactory : UxmlFactory<BussStylePropertyVisualElement, UxmlTraits> { }
 
+		public BussStylePropertyVisualElement() : base(
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStylePropertyVisualElement)}/{nameof(BussStylePropertyVisualElement)}") { }
+
+		private BussStyleRule _styleRule;
 		private BussPropertyProvider _property;
 		private VisualElement _valueParent;
 		private VisualElement _variableParent;
@@ -36,24 +33,18 @@ namespace Beamable.Editor.UI.Components
 		{
 			base.Refresh();
 
-			TextElement labelComponent = new TextElement();
-			labelComponent.name = "propertyLabel";
-			labelComponent.text = _property.Key;
-			Root.Add(labelComponent);
-			
-			_valueParent = new VisualElement();
-			_valueParent.name = "value";
-			Root.Add(_valueParent);
+			_valueParent = Root.Q<VisualElement>("value");
+			_variableParent = Root.Q<VisualElement>("globalVariable");
 
-			_variableParent = new VisualElement();
-			_variableParent.name = "globalVariable";
-			Root.Add(_variableParent);
+			Label labelComponent = Root.Q<Label>("label");
+			labelComponent.text = _property.Key;
 
 			SetupEditableField(_property);
 		}
 
-		public void Setup(BussPropertyProvider property)
+		public void Setup(BussStyleRule styleRule, BussPropertyProvider property)
 		{
+			_styleRule = styleRule;
 			_property = property;
 			Refresh();
 		}
