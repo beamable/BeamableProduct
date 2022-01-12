@@ -10,11 +10,6 @@ Button {
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
 }
 
-Button.unity-button.failure,
-Button.failure {
-    background-color: #E02020;
-}
-
 Button.unity-button:hover,
 Button:hover {
     background-image: none;
@@ -34,17 +29,12 @@ TemplateContainer {
 LoadingSpinnerVisualElement {
     position: absolute;
     opacity: 0;
-}
-
-.disabled.loading LoadingSpinnerVisualElement {
-    opacity: 1;
-}
-.disabled LoadingSpinnerVisualElement {
-    opacity: 0;
+    visibility: hidden;
 }
 
 .disabled Button.unity-button,
-.disabled Button {
+.disabled Button, Button.unity-button:disabled,
+Button:disabled {
     background-image: none;
     background-color: #838383;
 }
@@ -56,10 +46,21 @@ LoadingSpinnerVisualElement {
 
 .loading LoadingSpinnerVisualElement {
     opacity: 1;
+    visibility: visible;
 }
 
 .loading Button.unity-button,
 .loading Button {
     background-image: none;
     background-color: #838383;
+}
+
+.failure Button.unity-button,
+.failure Button {
+    background-color: #E02020;
+}
+
+.failure Button.unity-button:hover,
+.failure Button:hover {
+    background-color: #e53636;
 }
