@@ -15,7 +15,7 @@ public class ConnectivityMask : MonoBehaviour
 	// Start is called before the first frame update
     void Start()
     {
-	    _connectivityService = BeamContext.ForContext(this).ServiceProvider.GetService<IConnectivityService>();
+	    _connectivityService = BeamContext.InParent(this).ServiceProvider.GetService<IConnectivityService>();
     }
 
     // Update is called once per frame

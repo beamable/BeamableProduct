@@ -3,6 +3,7 @@
 using Beamable;
 using Beamable.Common.Inventory;
 using Beamable.Player;
+using Beamable.Server.Clients;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -22,10 +23,13 @@ namespace DefaultNamespace
 
 		public PlayerInventory Inv;
 
+		private BeamContext Demo = BeamContext.Default;
+
 
 		async void Start()
 		{
-			var ctx = BeamContext.ForContext(this);
+
+			var ctx = BeamContext.InParent(this);
 
 			// AllItems = ctx.Inventory.GetItems();
 			// AllItems.OnDataUpdated += (data) =>
@@ -76,7 +80,7 @@ namespace DefaultNamespace
 		[ContextMenu("Add Currency")]
 		public async void AddCurrency()
 		{
-			var ctx = BeamContext.ForContext(this);
+			var ctx = BeamContext.InParent(this);
 
 			await ctx.Inventory.Update(builder =>
 			{
@@ -90,7 +94,7 @@ namespace DefaultNamespace
 		[ContextMenu("Add Item")]
 		public async void AddBowItem()
 		{
-			var ctx = BeamContext.ForContext(this);
+			var ctx = BeamContext.InParent(this);
 
 			await ctx.Inventory.Update(b => b.AddItem(ItemRef, new Dictionary<string, string> {["owner"] = "demo"}));
 
@@ -100,7 +104,7 @@ namespace DefaultNamespace
 		[ContextMenu("Modify First Item")]
 		public async void UpdateBowItem()
 		{
-			var ctx = BeamContext.ForContext(this);
+			var ctx = BeamContext.InParent(this);
 
 
 			await ctx.Inventory.Update(b =>
@@ -121,7 +125,7 @@ namespace DefaultNamespace
 		[ContextMenu("Delete First Item")]
 		public async void DeleteFirstItem()
 		{
-			var ctx = BeamContext.ForContext(this);
+			var ctx = BeamContext.InParent(this);
 
 			await ctx.Inventory.Update(b =>
 			{
