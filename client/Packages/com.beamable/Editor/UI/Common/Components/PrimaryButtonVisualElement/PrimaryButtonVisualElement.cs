@@ -110,14 +110,7 @@ namespace Beamable.Editor.UI.Components
       public void SetAsFailure(bool failure = true)
       {
 	      const string failureClass = "failure";
-	      if (failure)
-	      {
-		      AddToClassList(failureClass);
-	      }
-	      else
-	      {
-		      RemoveFromClassList(failureClass);
-	      }
+	      EnableInClassList(failureClass, failure);
       }
 
       public void Load<T>(Promise<T> promise)
