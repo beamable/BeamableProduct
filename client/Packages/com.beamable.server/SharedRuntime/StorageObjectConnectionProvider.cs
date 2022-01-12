@@ -34,7 +34,8 @@ namespace Beamable.Server
         /// <typeparam name="TCollection">The type of the mapping class</typeparam>
         /// <returns>When the promise completes, you'll have an authorized collection</returns>
         Promise<IMongoCollection<TCollection>> GetCollection<TStorage, TCollection>(string name)
-            where TStorage : MongoStorageObject;
+            where TStorage : MongoStorageObject
+            where TCollection : StorageDocument;
 
         /// <summary>
         /// Gets a MongoDB collection for the mapping class given in TCollection. The collection will share the name of the mapping class.
@@ -44,7 +45,8 @@ namespace Beamable.Server
         /// <typeparam name="TCollection">The type of collection to fetch</typeparam>
         /// <returns>When the promise completes, you'll have an authorized collection</returns>
         Promise<IMongoCollection<TCollection>> GetCollection<TStorage, TCollection>()
-	        where TStorage : MongoStorageObject;
+	        where TStorage : MongoStorageObject
+	        where TCollection : StorageDocument;
     }
 
     public class StorageObjectConnectionProvider : IStorageObjectConnectionProvider
@@ -83,11 +85,13 @@ namespace Beamable.Server
 
         public Promise<IMongoCollection<TCollection>> GetCollection<TStorage, TCollection>()
 	        where TStorage : MongoStorageObject
+	        where TCollection : StorageDocument
         {
 	        return GetCollection<TStorage, TCollection>(typeof(TCollection).Name);
         }
         public async Promise<IMongoCollection<TCollection>> GetCollection<TStorage, TCollection>(string collectionName)
             where TStorage : MongoStorageObject
+            where TCollection : StorageDocument
         {
 	        var db = await GetDatabase<TStorage>();
             return db.GetCollection<TCollection>(collectionName);
