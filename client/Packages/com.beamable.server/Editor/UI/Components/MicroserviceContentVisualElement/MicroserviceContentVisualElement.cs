@@ -233,7 +233,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             {
                 if (a is CreateServiceBaseVisualElement) return -1;
                 if (b is CreateServiceBaseVisualElement) return 1;
-                return config.MicroserviceOrderComparer(a.name, b.name);
+                return config.OrderComparer(a.name, b.name, ServiceType.MicroService);
             }
             _servicesListElement.Sort(Comparer);
         }

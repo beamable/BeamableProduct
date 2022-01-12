@@ -25,12 +25,12 @@ namespace Beamable.Editor.UI.Model
     [System.Serializable]
     public class MongoStorageModel : ServiceModelBase, IBeamableStorageObject
     {
-        public StorageObjectDescriptor ServiceDescriptor { get; private set; }
-        public MongoStorageBuilder ServiceBuilder { get; private set; }
+        public StorageObjectDescriptor ServiceDescriptor { get; protected set; }
+        public MongoStorageBuilder ServiceBuilder { get; protected set; }
         public override IBeamableBuilder Builder => ServiceBuilder;
         public override IDescriptor Descriptor => ServiceDescriptor;
         public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
-        public StorageConfigurationEntry Config { get; private set; }
+        public StorageConfigurationEntry Config { get; protected set; }
 
         public override event Action<Task> OnStart;
         public override event Action<Task> OnStop;
@@ -68,7 +68,19 @@ namespace Beamable.Editor.UI.Model
             evt.menu.BeamableAppendAction($"Create a snapshot", _ => AssemblyDefinitionHelper.SnapshotMongo(ServiceDescriptor));
             evt.menu.BeamableAppendAction($"Download a snapshot", _ => AssemblyDefinitionHelper.RestoreMongo(ServiceDescriptor));
             evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());
-        }
+
+			if (MicroserviceConfiguration.Instance.Microservices.Count > 1)
+			{
+				evt.menu.BeamableAppendAction($"Order/Move Up", pos => {
+					MicroserviceConfiguration.Instance.MoveIndex(Name, -1, ServiceType.StorageObject);
+					OnSortChanged?.Invoke();
+				}, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.StorageObject) > 0);
+				evt.menu.BeamableAppendAction($"Order/Move Down", pos => {
+					MicroserviceConfiguration.Instance.MoveIndex(Name, 1, ServiceType.StorageObject);
+					OnSortChanged?.Invoke();
+				}, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.StorageObject) < MicroserviceConfiguration.Instance.StorageObjects.Count - 1);
+			}
+		}
         public override void Refresh(IDescriptor descriptor)
         {
             // reset the descriptor and statemachines; because they aren't system.serializable durable.
