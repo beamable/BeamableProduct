@@ -511,7 +511,7 @@ namespace Beamable.Common.Dependencies
 
 		public bool Has<T>()
 		{
-			return TryGetTransient(typeof(T), out _) || TryGetScoped(typeof(T), out _);
+			return TryGetTransient(typeof(T), out _) || TryGetScoped(typeof(T), out _) || TryGetSingleton(typeof(T), out _);
 		}
 
 		public bool TryGetTransient(Type type, out ServiceDescriptor descriptor)

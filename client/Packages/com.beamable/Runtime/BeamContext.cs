@@ -184,8 +184,8 @@ namespace Beamable
 
 		private AccessTokenStorage _tokenStorage;
 		private EnvironmentData _environment;
-		private PlatformRequester _requester;
-		private BeamableApiRequester _beamableApiRequester;
+		private IPlatformRequester _requester;
+		private IBeamableApiRequester _beamableApiRequester;
 
 		// TODO: Assess each of these as "do we need this as hard field state"
 		private IAuthService _authService;
@@ -212,8 +212,7 @@ namespace Beamable
 
 		#endregion
 
-
-		private BeamContext()
+		protected BeamContext()
 		{
 			AuthorizedUser.OnDataUpdated += user => OnUserLoggedIn?.Invoke(user);
 		}
@@ -273,11 +272,11 @@ namespace Beamable
 			return ctx;
 		}
 
-		private void Init(string cid,
-		                  string pid,
-		                  string playerCode,
-		                  BeamableBehaviour behaviour,
-		                  IDependencyBuilder builder)
+		protected void Init(string cid,
+		                    string pid,
+		                    string playerCode,
+		                    BeamableBehaviour behaviour,
+		                    IDependencyBuilder builder)
 		{
 			PlayerCode = playerCode;
 			_isStopped = false;
@@ -293,7 +292,7 @@ namespace Beamable
 				var gob = new GameObject($"Beamable {playerCode}");
 				var nextBehaviour = gob.AddComponent<BeamableBehaviour>();
 
-				if (string.IsNullOrEmpty(playerCode) || (behaviour.DontDestroyContext?.Value ?? false))
+				if (string.IsNullOrEmpty(playerCode) || (behaviour?.DontDestroyContext?.Value ?? false))
 				{
 					// the default context shouldn't destroy on load, unless again, it has already been specified.
 					nextBehaviour.DontDestroyContext = new OptionalBoolean {HasValue = true, Value = true};
@@ -341,7 +340,7 @@ namespace Beamable
 			CoroutineService.StartNew("context_init", Try());
 		}
 
-		private void RegisterServices(IDependencyBuilder builder)
+		protected virtual void RegisterServices(IDependencyBuilder builder)
 		{
 			builder.AddSingleton<PlatformRequester, PlatformRequester>(
 				provider => new PlatformRequester(
@@ -350,13 +349,14 @@ namespace Beamable
 					provider.GetService<IConnectivityService>()
 				)
 			);
-			builder.AddSingleton<BeamableApiRequester>(
+			builder.AddSingleton<IBeamableApiRequester>(
 				provider => new BeamableApiRequester(
 					_environment.ApiUrl,
 					provider.GetService<AccessTokenStorage>(),
 					provider.GetService<IConnectivityService>())
 			);
 
+			builder.AddSingleton<IPlatformRequester>(provider => provider.GetService<PlatformRequester>());
 			builder.AddSingleton<IBeamableAPI>(provider => Api);
 			builder.AddSingleton<BeamContext>(this);
 			builder.AddSingleton<IPlatformService>(this);
@@ -364,14 +364,14 @@ namespace Beamable
 			builder.AddSingleton(new AccessTokenStorage(PlayerCode));
 		}
 
-		private void InitServices(string cid, string pid)
+		protected virtual void InitServices(string cid, string pid)
 		{
 			_tokenStorage = ServiceProvider.GetService<AccessTokenStorage>();
 			_environment = ServiceProvider.GetService<EnvironmentData>();
 			_authService = ServiceProvider.GetService<IAuthService>();
 
-			_requester = ServiceProvider.GetService<PlatformRequester>();
-			_beamableApiRequester = ServiceProvider.GetService<BeamableApiRequester>();
+			_requester = ServiceProvider.GetService<IPlatformRequester>();
+			_beamableApiRequester = ServiceProvider.GetService<IBeamableApiRequester>();
 			_requester.AuthService = _authService;
 			_requester.Cid = cid;
 			_requester.Pid = pid;
@@ -582,7 +582,8 @@ namespace Beamable
 		/// <returns></returns>
 		public static BeamContext Instantiate(
 			BeamableBehaviour beamable=null,
-			string playerCode=null
+			string playerCode=null,
+			IDependencyBuilder dependencyBuilder=null
 			)
 		{
 			playerCode = playerCode ?? "";
@@ -590,19 +591,20 @@ namespace Beamable
 			var cid = ConfigDatabase.GetString("cid");
 			var pid = ConfigDatabase.GetString("pid");
 
+			dependencyBuilder = dependencyBuilder ?? Beam.DependencyBuilder;
 			// there should only be one context per playerCode.
 			if (_playerCodeToContext.TryGetValue(playerCode, out var existingContext))
 			{
 				if (existingContext.IsStopped)
 				{
-					existingContext.Init(cid, pid, playerCode, beamable, Beam.DependencyBuilder);
+					existingContext.Init(cid, pid, playerCode, beamable, dependencyBuilder);
 				}
 
 				return existingContext;
 			}
 
 			var ctx = new BeamContext();
-			ctx.Init(cid, pid, playerCode, beamable, Beam.DependencyBuilder);
+			ctx.Init(cid, pid, playerCode, beamable, dependencyBuilder);
 			_playerCodeToContext[playerCode] = ctx;
 			return ctx;
 		}

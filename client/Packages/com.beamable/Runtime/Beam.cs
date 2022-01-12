@@ -141,7 +141,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<MatchmakingService>(provider => new MatchmakingService(
 				                                                   provider.GetService<IPlatformService>(),
 				                                                   // the matchmaking service needs a special instance of the beamable api requester
-				                                                   provider.GetService<BeamableApiRequester>())
+				                                                   provider.GetService<IBeamableApiRequester>())
 			);
 			DependencyBuilder.AddSingleton<SocialService>();
 			DependencyBuilder.AddSingleton<CalendarsService>();

@@ -8,6 +8,7 @@ using Beamable.Api;
 using Beamable.Api.Auth;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
+using Core.Platform.SDK;
 using UnityEngine;
 using UnityEngine.Networking;
 using AccessToken = Beamable.Api.AccessToken;
@@ -232,20 +233,58 @@ namespace Beamable.Platform.Tests
 		}
 	}
 
-	public class MockPlatformAPI : IBeamableRequester
+	public class MockPlatformAPI : IPlatformRequester, IBeamableApiRequester
 	{
 		//private Dictionary<string, MockPlatformRouteBase> _routes = new Dictionary<string, MockPlatformRouteBase>();
 
 		private List<MockPlatformRouteBase> _routes = new List<MockPlatformRouteBase>();
 
-		public AuthService AuthService { get; set; }
-
-		public IAccessToken AccessToken
+		public AccessToken Token
 		{
 			get;
 			set;
-		} = new MockAccessToken();
+		} //= new AccessToken(new AccessTokenStorage("test"), "testcid", "testpid", "testtok", "testref", 1000000);
 
+		public string TimeOverride
+		{
+			get;
+			set;
+		}
+
+		public string Cid
+		{
+			get;
+			set;
+		}
+
+		public string Pid
+		{
+			get;
+			set;
+		}
+
+		public string Language
+		{
+			get;
+			set;
+		}
+
+		IAuthApi IPlatformRequester.AuthService
+		{
+			set
+			{
+				AuthService = value;
+			}
+		}
+
+		public void DeleteToken()
+		{
+			Token = null;
+		}
+
+		 public IAuthApi AuthService { get; set; }
+
+		public IAccessToken AccessToken => Token;
 
 		public bool AllMocksCalled => _routes.All(mock => mock.Called);
 
@@ -264,13 +303,13 @@ namespace Beamable.Platform.Tests
 			throw new NotImplementedException();
 		}
 
-		public MockPlatformRoute<T> MockRequest<T>(Method method, string uri)
+		public MockPlatformRoute<T> MockRequest<T>(Method method, string uri=null)
 		{
 			var route = new MockPlatformRoute<T>()
 			{
 				Method = method,
 				Uri = uri,
-				Token = AccessToken.Token
+				Token = AccessToken?.Token
 			};
 
 			_routes.Add(route);
@@ -309,7 +348,7 @@ namespace Beamable.Platform.Tests
 		public IBeamableRequester WithAccessToken(TokenResponse token)
 		{
 			var clone = new MockPlatformAPI(this);
-			clone.AccessToken = new AccessToken(null, null, null, token.access_token, token.refresh_token, token.expires_in);
+			clone.Token = new AccessToken(null, null, null, token.access_token, token.refresh_token, token.expires_in);
 			return clone;
 		}
 
