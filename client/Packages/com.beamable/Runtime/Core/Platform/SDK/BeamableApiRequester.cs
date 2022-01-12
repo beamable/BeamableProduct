@@ -11,9 +11,15 @@ using UnityEngine.Networking;
 
 namespace Core.Platform.SDK
 {
+	public interface IBeamableApiRequester : IBeamableRequester
+	{
+		AccessToken Token { get; set; }
+
+	}
+
   // Since the new access tokens are short lived, no need to store them. We can use the same refresh tokens
   // in AccessTokenStorage and store the JWT in memory until it expires and we need to fetch a new one.
-  public class BeamableApiRequester : IBeamableRequester, IDisposable
+  public class BeamableApiRequester : IBeamableApiRequester, IDisposable
   {
     public string Host { get; set; }
     public AccessToken Token { get; set; }

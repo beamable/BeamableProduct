@@ -2,7 +2,6 @@ using System;
 using System.Globalization;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
-using JetBrains.Annotations;
 using UnityEngine;
 
 namespace Beamable.Api
@@ -15,7 +14,7 @@ namespace Beamable.Api
       private const char DeviceTokenSeparator = '|';
       private const string DeviceTokenDelimiterStr = ",";
 
-      private string GetDeviceTokenKey(string cid, [CanBeNull] string pid) => $"{_prefix}device-tokens{cid}{pid ?? ""}";
+      private string GetDeviceTokenKey(string cid, string pid) => $"{_prefix}device-tokens{cid}{pid ?? ""}";
 
       public AccessTokenStorage(string prefix = "")
       {

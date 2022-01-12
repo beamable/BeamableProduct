@@ -16,6 +16,16 @@ using Core.Platform.SDK;
 namespace Beamable.Api
 {
 
+	public interface IPlatformRequester : IBeamableRequester
+	{
+		AccessToken Token { get; set; }
+		string TimeOverride { get; set; }
+		string Cid { get; set; }
+		string Pid { get; set; }
+		string Language { get; set; }
+		IAuthApi AuthService { set; }
+		void DeleteToken();
+	}
    /// <summary>
    /// This type defines the %PlatformRequester.
    ///
@@ -27,7 +37,7 @@ namespace Beamable.Api
    /// ![img beamable-logo]
    ///
    /// </summary>
-   public class PlatformRequester : IBeamableRequester, IHttpRequester
+   public class PlatformRequester : IPlatformRequester, IHttpRequester
    {
       private const string ACCEPT_HEADER = "application/json";
       private AccessTokenStorage _accessTokenStorage;

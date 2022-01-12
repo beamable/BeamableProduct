@@ -29,9 +29,9 @@ namespace Beamable.Api.Payments
     public class PaymentService
     {
         private IPlatformService _platform;
-        private PlatformRequester _requester;
+        private IPlatformRequester _requester;
 
-        public PaymentService(IPlatformService platform, PlatformRequester requester)
+        public PaymentService(IPlatformService platform, IPlatformRequester requester)
         {
             _platform = platform;
             _requester = requester;

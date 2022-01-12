@@ -47,7 +47,8 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
          };
 
          // stub out request.
-         _requester.MockRequest<EmptyResponse>(Method.PUT, $"{objectUrl}")
+         _requester.MockRequest<EmptyResponse>(Method.PUT, null)
+                   .WithURIPrefix("/object/inventory")
             .WithoutJsonField("transaction")
             .WithJsonFieldMatch("newItems[0].contentId", obj =>
             {
