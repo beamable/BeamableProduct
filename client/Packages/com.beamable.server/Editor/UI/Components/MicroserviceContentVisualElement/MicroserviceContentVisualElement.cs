@@ -160,7 +160,28 @@ namespace Beamable.Editor.Microservice.UI.Components
             return null;
         }
 
-        private void MicroserviceStartFailed()
+		private StorageObjectVisualElement GetRemoteStorageObjectVisualElement(string serviceName)
+		{
+			var mongoService = Model.GetModel<MongoStorageModel>(serviceName);
+
+			if (mongoService != null)
+			{
+				var mongoServiceElement = new RemoteStorageObjectVisualElement { Model = mongoService };
+				_modelToVisual[mongoService] = mongoServiceElement;
+				mongoService.OnLogsDetached += () => { ServiceLogWindow.ShowService(mongoService); };
+
+				mongoServiceElement.Refresh();
+				mongoService.OnSelectionChanged += b =>
+					OnAllServiceSelectedStatusChanged?.Invoke(Model.Storages.All(m => m.IsSelected));
+
+				return mongoServiceElement;
+
+			}
+
+			return null;
+		}
+
+		private void MicroserviceStartFailed()
         {
             _actionPrompt.SetVisible(Constants.PROMPT_STARTED_FAILURE, true, false);
         }
@@ -304,8 +325,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 				        hasStorageDependency |= val;
 				        break;
 			        case ServiceType.StorageObject:
-				        serviceElement = GetStorageObjectVisualElement(serviceStatus.Key);
-				        break;
+						if (serviceStatus.Value != ServiceAvailability.RemoteOnly)
+							serviceElement = GetStorageObjectVisualElement(serviceStatus.Key);
+						else
+							serviceElement = GetRemoteStorageObjectVisualElement(serviceStatus.Key);
+						break;
 			        default:
 				        throw new ArgumentOutOfRangeException();
 		        }
