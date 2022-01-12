@@ -54,10 +54,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private TextField _generalComments;
 		private GenericButtonVisualElement  _cancelButton;
-		private PrimaryButtonVisualElement _continueButton;
+		private PrimaryButtonVisualElement _primarySubmitButton;
 		private ScrollView _scrollContainer;
 		private Dictionary<string, PublishManifestEntryVisualElement> _publishManifestElements;
 		private LoadingBarElement _mainLoadingBar;
+		private PublishStatusVisualElement _topMessage;
 
 		public PublishPopup() : base(nameof(PublishPopup)) { }
 
@@ -76,10 +77,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 				return;
 			}
 
-			Microservices.OnServiceDeployStatusChanged -= HandleServiceServiceDeployStatusChange;
-			Microservices.OnServiceDeployStatusChanged += HandleServiceServiceDeployStatusChange;
+			Microservices.OnServiceDeployStatusChanged -= HandleServiceDeployStatusChanged;
+			Microservices.OnServiceDeployStatusChanged += HandleServiceDeployStatusChanged;
 			Microservices.OnServiceDeployProgress -= HandleServiceDeployProgress;
 			Microservices.OnServiceDeployProgress += HandleServiceDeployProgress;
+			OnSubmit -= SubmitClicked;
+			OnSubmit += SubmitClicked;
 
 			_mainLoadingBar = Root.Q<LoadingBarElement>("mainLoadingBar");
 			_mainLoadingBar.SmallBar = true;
@@ -110,10 +113,18 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_cancelButton = Root.Q<GenericButtonVisualElement >("cancelBtn");
 			_cancelButton.OnClick += () => OnCloseRequested?.Invoke();
 
-			_continueButton = Root.Q<PrimaryButtonVisualElement>("continueBtn");
-			_continueButton.Button.clickable.clicked += () => OnSubmit?.Invoke(Model);
+			_primarySubmitButton = Root.Q<PrimaryButtonVisualElement>("continueBtn");
+			_primarySubmitButton.Button.clickable.clicked += () => OnSubmit?.Invoke(Model);
+			_topMessage = Root.Q<PublishStatusVisualElement>("topMessage");
+			_topMessage.Refresh();
+			OnSubmit -= _topMessage.HandleSubmitClicked;
+			OnSubmit += _topMessage.HandleSubmitClicked;
+			
+			HandleServiceDeployStatusChanged(null, ServicePublishState.Unpublished);
 		}
-		
+
+		private void SubmitClicked(ManifestModel _) => _primarySubmitButton.Disable();
+
 		public void PrepareForPublish()
 		{
 			_mainLoadingBar.Hidden = false;
@@ -123,8 +134,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 				var serviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(kvp.Key);
 
 				if (serviceModel == null)
-				{
-					Debug.LogError($"Cannot find model: {serviceModel}");
+				{ 
+					Debug.LogError($"Cannot find model: {kvp.Key}");
 					continue;
 				}
 
@@ -144,22 +155,27 @@ namespace Beamable.Editor.Microservice.UI.Components
 			return string.Format(Microservices.SERVICE_PUBLISHED_KEY, serviceName);
 		}
 
-		private void HandleServiceServiceDeployStatusChange(IDescriptor descriptor, ServicePublishState state)
+		private void HandleServiceDeployStatusChanged(IDescriptor descriptor, ServicePublishState state)
 		{
-			if (state == ServicePublishState.InProgress)
+			switch (state)
 			{
-				return;
+				case ServicePublishState.Unpublished:
+				case ServicePublishState.InProgress:
+					return;
+				case ServicePublishState.Failed:
+					_primarySubmitButton.Enable();
+					_mainLoadingBar.UpdateProgress(0, failed: true);
+					foreach (KeyValuePair<string, PublishManifestEntryVisualElement> kvp in _publishManifestElements)
+					{
+						kvp.Value.LoadingBar.SetUpdater(null);
+					}
+					break;
+				case ServicePublishState.Published:
+					_primarySubmitButton.Enable();
+					break;
+				default:
+					throw new ArgumentOutOfRangeException(nameof(state), state, null);
 			}
-
-			if (state == ServicePublishState.Failed)
-			{
-				_mainLoadingBar.UpdateProgress(0, failed: true);
-				foreach (KeyValuePair<string, PublishManifestEntryVisualElement> kvp in _publishManifestElements)
-				{
-					kvp.Value.LoadingBar.SetUpdater(null);
-				}
-			}
-
 			_publishManifestElements[descriptor.Name].UpdateStatus(state);
 		}
 
