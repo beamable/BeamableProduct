@@ -109,8 +109,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 				elementNumber++;
 			}
 
-			_generalComments = Root.Q<TextField>("largeCommentsArea");
-			_generalComments.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
+			// _generalComments = Root.Q<TextField>("largeCommentsArea");
+			// _generalComments.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
+			Root.Q<PublishLoggerVisualElement>().Refresh();
 
 			_cancelButton = Root.Q<GenericButtonVisualElement>("cancelBtn");
 			_cancelButton.OnClick += () => OnCloseRequested?.Invoke();

@@ -99,7 +99,7 @@
     padding-right: 10px;
     width: 100px;
 }
-#largeCommentsArea{
+.bottomContainer{
     padding-top: 10px;
     padding-right: 0px;
     padding-bottom: 10px;
@@ -136,7 +136,7 @@ LoadingBarElement {
     align-self: stretch;
     margin-bottom: 5px;
 }
-#header, #topMessage, #manifestsContainer, #largeCommentsArea, #buttonStrip{
+#header, #topMessage, #manifestsContainer, #buttonStrip, .bottomContainer{
     margin-left: 15px;
     margin-right: 15px;
 }

@@ -10,7 +10,6 @@ LogVisualElement > TemplateContainer > #mainVisualElement {
     flex-grow: 1;
     padding-bottom: 5px;
     min-height: 20px;
-
 }
 
 .leftArea {
@@ -167,7 +166,6 @@ ScrollView #ContentView.content-view {
 
 #log {
     left: 5px;
-
 }
 
 #clear {
@@ -375,5 +373,4 @@ ListView ConsoleLogVisualElement:selected {
     font-size: 12px;
     -unity-text-align: middle-left;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
-
 }
