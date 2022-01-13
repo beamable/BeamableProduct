@@ -210,7 +210,8 @@ namespace Beamable.Editor.Content.Components
          {
             _messageLbl.text = ContentManagerConstants.ValidationFailureMessage;
             _messageLbl.AddToClassList("failed");
-            _okayButton.Button.text = ContentManagerConstants.ValidateButtonDoneWithErrorsText;
+            _okayButton.SetAsFailure();
+            _okayButton.SetText(ContentManagerConstants.ValidateButtonDoneWithErrorsText);
 
 
             foreach (var elem in _listSource)
