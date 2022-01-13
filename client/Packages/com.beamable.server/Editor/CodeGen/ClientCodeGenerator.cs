@@ -1,3 +1,6 @@
+
+using Beamable.Common;
+using Beamable.Common.Dependencies;
 using System;
 using System.CodeDom;
 using System.CodeDom.Compiler;
@@ -6,12 +9,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using Beamable.Common;
-using Beamable.Server;
-using Beamable.Platform.SDK;
-using UnityEngine;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Beamable.Server.Editor.CodeGen
 {
@@ -32,60 +31,71 @@ namespace Beamable.Server.Editor.CodeGen
 
       private CodeTypeDeclaration parameterClass;
 
+      private CodeTypeDeclaration extensionClass;
+
       private string TargetClassName => $"{Descriptor.Name}Client";
       private string TargetParameterClassName => GetTargetParameterClassName(Descriptor);
+      private string TargetExtensionClassName => $"ExtensionsFor{Descriptor.Name}Client";
 
       private List<CallableMethodInfo> _callableMethods = new List<CallableMethodInfo>();
 
       public const string PARAMETER_STRING = "Parameter";
       public const string CLIENT_NAMESPACE = "Beamable.Server.Clients";
 
+      private string ExtensionClassToFind => $"internal class {TargetExtensionClassName}";
+      private string ExtensionClassToReplace => $"internal static class {TargetExtensionClassName}";
+
+      private string ExtensionMethodToFind =>
+	      $"public static {TargetClassName} {Descriptor.Name}(Beamable.Server.{nameof(MicroserviceClients)}";
+      private string ExtensionMethodToReplace =>
+	      $"public static {TargetClassName} {Descriptor.Name}(this Beamable.Server.{nameof(MicroserviceClients)}";
+
       public static string GetTargetParameterClassName(MicroserviceDescriptor descriptor) =>
-          $"MicroserviceParameters{descriptor.Name}Client";
+	      $"MicroserviceParameters{descriptor.Name}Client";
 
       public static string GetParameterClassName(Type parameterType) => $"{PARAMETER_STRING}{GetTypeStr(parameterType).Replace(".","_")}";
 
       public static Type GetDataWrapperTypeForParameter(MicroserviceDescriptor descriptor, Type parameterType)
       {
-          var name =
-              $"{CLIENT_NAMESPACE}.{GetTargetParameterClassName(descriptor)}+{GetParameterClassName(parameterType)}, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
-          var t = Type.GetType(name, true, true);
-          return t;
+	      var name =
+		      $"{CLIENT_NAMESPACE}.{GetTargetParameterClassName(descriptor)}+{GetParameterClassName(parameterType)}, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
+	      var t = Type.GetType(name, true, true);
+	      return t;
       }
 
       private static string GetTypeStr(Type type)
       {
-          StringBuilder retType = new StringBuilder();
+	      StringBuilder retType = new StringBuilder();
 
-          if (type.IsGenericType)
-          {
-              string[] parentType = type.FullName.Split('`');
+	      if (type.IsGenericType)
+	      {
+		      string[] parentType = type.FullName.Split('`');
 
-              Type[] arguments = type.GetGenericArguments();
+		      Type[] arguments = type.GetGenericArguments();
 
-              StringBuilder argList = new StringBuilder();
-              foreach (Type t in arguments)
-              {
-                  string arg = GetTypeStr(t);
-                  if (argList.Length > 0)
-                      argList.AppendFormat("_{0}", arg);
-                  else
-                      argList.Append(arg);
-              }
+		      StringBuilder argList = new StringBuilder();
+		      foreach (Type t in arguments)
+		      {
+			      string arg = GetTypeStr(t);
+			      if (argList.Length > 0)
+				      argList.AppendFormat("_{0}", arg);
+			      else
+				      argList.Append(arg);
+		      }
 
-              if (argList.Length > 0)
-                  retType.AppendFormat("{0}_{1}", parentType[0], argList.ToString());
-          }
-          else if (type.IsArray)
-          {
-              retType.AppendFormat("{0}_{1}", type.BaseType, GetTypeStr(type.GetElementType()));
-          }
-          else
-          {
-              return type.ToString();
-          }
+		      if (argList.Length > 0)
+			      retType.AppendFormat("{0}_{1}", parentType[0], argList.ToString());
+	      }
+	      else if (type.IsArray)
+	      {
+		      retType.AppendFormat("{0}_{1}", type.BaseType, GetTypeStr(type.GetElementType()));
+	      }
+	      else
+	      {
+		      return type.ToString();
+	      }
 
-          return retType.ToString();
+	      return retType.ToString();
       }
 
       /// <summary>
@@ -108,6 +118,12 @@ namespace Beamable.Server.Editor.CodeGen
               TypeAttributes.Public | TypeAttributes.Sealed;
           targetClass.BaseTypes.Add(new CodeTypeReference(typeof(MicroserviceClient)));
 
+          targetClass.Members.Add(new CodeConstructor() {
+	          Attributes = MemberAttributes.Public,
+			Parameters = { new CodeParameterDeclarationExpression(new CodeTypeReference(typeof(BeamContext)), "context = null")},
+			BaseConstructorArgs = { new CodeArgumentReferenceExpression("context")}
+          });
+
           parameterClass = new CodeTypeDeclaration(TargetParameterClassName);
           parameterClass.IsClass = true;
           parameterClass.TypeAttributes = TypeAttributes.NotPublic | TypeAttributes.Sealed | TypeAttributes.Serializable;
@@ -115,8 +131,49 @@ namespace Beamable.Server.Editor.CodeGen
 
           targetClass.Comments.Add(new CodeCommentStatement($"<summary> A generated client for <see cref=\"{Descriptor.Type.FullName}\"/> </summary", true));
 
+          extensionClass = new CodeTypeDeclaration(TargetExtensionClassName);
+          extensionClass.IsClass = true;
+          extensionClass.TypeAttributes = TypeAttributes.NotPublic;
+
+
+          var registrationMethod = new CodeMemberMethod {
+	          Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static
+          };
+          registrationMethod.CustomAttributes.Add(
+	          new CodeAttributeDeclaration(new CodeTypeReference(typeof(RegisterBeamableDependenciesAttribute))));
+          registrationMethod.Name = "RegisterService";
+          registrationMethod.Parameters.Add(
+	          new CodeParameterDeclarationExpression(typeof(IDependencyBuilder), "builder"));
+          registrationMethod.Statements.Add(new CodeMethodInvokeExpression {
+	          Method = new CodeMethodReferenceExpression(
+		          new CodeArgumentReferenceExpression("builder"),
+		          nameof(IDependencyBuilder.AddScoped),
+		          new CodeTypeReference[] {
+			          new CodeTypeReference(TargetClassName) })
+          });
+
+          var extensionMethod = new CodeMemberMethod() {
+	          Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Static
+          };
+          extensionMethod.Name = Descriptor.Name;
+          extensionMethod.Parameters.Add(
+	          new CodeParameterDeclarationExpression(typeof(MicroserviceClients), "clients"));
+          extensionMethod.Statements.Add(new CodeMethodReturnStatement(new CodeMethodInvokeExpression {
+	          Method = new CodeMethodReferenceExpression(
+		          new CodeArgumentReferenceExpression("clients"),
+		          nameof(MicroserviceClients.GetClient),
+		          new CodeTypeReference[] {
+			          new CodeTypeReference(TargetClassName)
+		          })
+          }));
+          extensionMethod.ReturnType = new CodeTypeReference(TargetClassName);
+
+          extensionClass.Members.Add(registrationMethod);
+          extensionClass.Members.Add(extensionMethod);
+
           samples.Types.Add(targetClass);
           samples.Types.Add(parameterClass);
+          samples.Types.Add(extensionClass);
           targetUnit.Namespaces.Add(samples);
 
           // need to scan and get methods.
@@ -284,10 +341,19 @@ namespace Beamable.Server.Editor.CodeGen
           CodeDomProvider provider = CodeDomProvider.CreateProvider("CSharp");
           CodeGeneratorOptions options = new CodeGeneratorOptions();
           options.BracingStyle = "C";
-          using (StreamWriter sourceWriter = new StreamWriter(fileName))
+          var sb = new StringBuilder();
+          using (var sourceWriter = new StringWriter(sb))
+          // using (StreamWriter sourceWriter = new StreamWriter(fileName))
           {
               provider.GenerateCodeFromCompileUnit(
                   targetUnit, sourceWriter, options);
+              sourceWriter.Flush();
+              var source = sb.ToString();
+              source = source.Replace(ExtensionClassToFind, ExtensionClassToReplace);
+              source = source.Replace(ExtensionMethodToFind, ExtensionMethodToReplace);
+
+              File.WriteAllText(fileName, source)
+	              ;
           }
       }
 

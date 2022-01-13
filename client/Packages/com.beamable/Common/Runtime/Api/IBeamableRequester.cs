@@ -79,6 +79,10 @@ namespace Beamable.Common.Api
          return $"{prefix}. method=[{method}] uri=[{uri}] code=[{responseCode}] payload=[{responsePayload}]";
       }
    }
+   public class NoConnectivityException : Exception
+   {
+	   public NoConnectivityException(string message) : base(message) { }
+   }
 
    public interface IRequestErrorWithStatus
    {

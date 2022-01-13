@@ -5,8 +5,11 @@ using System;
 using System.Collections;
 using System.Linq;
 using Beamable.Api;
+using Beamable.Api.Connectivity;
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Api.Notifications;
+using Beamable.Common.Dependencies;
 using Beamable.Coroutines;
 using Beamable.Service;
 using Beamable.Spew;
@@ -15,7 +18,7 @@ using UnityEngine;
 namespace Beamable.Api
 {
    // put constants in a separate class so that they are shared across generic params
-   
+
    /// <summary>
    /// This type defines the constants of %Subscribables.
    ///
@@ -25,7 +28,7 @@ namespace Beamable.Api
    /// - See Beamable.API script reference
    ///
    /// ![img beamable-logo]
-   /// 
+   ///
    /// </summary>
    internal static class SubscribableConsts
    {
@@ -41,7 +44,7 @@ namespace Beamable.Api
    /// - See Beamable.API script reference
    ///
    /// ![img beamable-logo]
-   /// 
+   ///
    /// </summary>
    /// <typeparam name="TPlatformSubscriber"></typeparam>
    /// <typeparam name="ScopedRsp"></typeparam>
@@ -54,7 +57,7 @@ namespace Beamable.Api
       /// </summary>
       TPlatformSubscriber Subscribable { get; }
    }
-   
+
    public interface IHasPlatformSubscribers<TPlatformSubscriber, ScopedRsp, Data>
       where TPlatformSubscriber : PlatformSubscribable<ScopedRsp, Data>
    {
@@ -77,12 +80,16 @@ namespace Beamable.Api
    /// </summary>
    public abstract class PlatformSubscribable<ScopedRsp, Data> : ISupportsGet<Data>, ISupportGetLatest<Data>
    {
-      protected IPlatformService platform;
+      // protected IPlatformService platform;
       protected IBeamableRequester requester;
-      
+      protected IConnectivityService connectivityService;
+      protected INotificationService notificationService;
+      protected CoroutineService coroutineService;
+      protected IUserContext userContext;
+
       protected BeamableGetApiResource<ScopedRsp> getter;
 
-      private string service;
+      protected readonly string service;
       private Dictionary<string, Data> scopedData = new Dictionary<string, Data>();
 
       private Dictionary<string, List<PlatformSubscription<Data>>> scopedSubscriptions =
@@ -96,30 +103,44 @@ namespace Beamable.Api
 
       public bool UsesHierarchyScopes { get; protected set; }
 
-      protected PlatformSubscribable(IPlatformService platform, IBeamableRequester requester, string service, BeamableGetApiResource<ScopedRsp> getter=null)
+      protected PlatformSubscribable(IDependencyProvider provider,
+                                     string service,
+                                     BeamableGetApiResource<ScopedRsp> getter = null)
       {
-         if (getter == null)
-         {
-            getter = new BeamableGetApiResource<ScopedRsp>();
-         }
+	      this.connectivityService = provider.GetService<IConnectivityService>();
+	      this.notificationService = provider.GetService<INotificationService>();
+	      this.userContext = provider.GetService<IUserContext>();
+	      this.coroutineService = provider.GetService<CoroutineService>();
+	      this.requester = provider.GetService<IBeamableRequester>();
 
-         this.getter = getter;
-         this.platform = platform;
-         this.requester = requester;
-         this.service = service;
-         platform.Notification.Subscribe(String.Format("{0}.refresh", service), OnRefreshNtf);
+	      if (getter == null)
+	      {
+		      getter = new BeamableGetApiResource<ScopedRsp>();
+	      }
 
-         platform.OnReady.Then(_ => { platform.TimeOverrideChanged += OnTimeOverride; });
+	      this.getter = getter;
+	      this.service = service;
+	      notificationService.Subscribe(String.Format("{0}.refresh", service), OnRefreshNtf);
 
-         platform.OnShutdown += () => { platform.TimeOverrideChanged -= OnTimeOverride; };
+	      var platform = provider.GetService<IPlatformService>();
+	      platform.OnReady.Then(_ => { platform.TimeOverrideChanged += OnTimeOverride; });
 
-         platform.OnReloadUser += () =>
-         {
-            Reset();
-            Refresh();
-         };
+	      platform.OnShutdown += () => { platform.TimeOverrideChanged -= OnTimeOverride; };
+
+	      platform.OnReloadUser += () =>
+	      {
+		      this.connectivityService = provider.GetService<IConnectivityService>();
+		      this.notificationService = provider.GetService<INotificationService>();
+		      this.userContext = provider.GetService<IUserContext>();
+		      this.coroutineService = provider.GetService<CoroutineService>();
+		      this.requester = provider.GetService<IBeamableRequester>();
+
+		      Debug.Log("GOT ONRELOAD USER FOR " + this.GetType().Name);
+		      Reset();
+		      Refresh();
+	      };
       }
-      
+
       private void OnTimeOverride()
       {
          Refresh();
@@ -192,6 +213,12 @@ namespace Beamable.Api
          return !scopedSubscriptions.Any(kvp => scope.StartsWith(kvp.Key));
       }
 
+      protected virtual Promise OnRefreshScope(string scope)
+      {
+	      // do nothing.
+	      return Promise.Success;
+      }
+
       /// <summary>
       /// Manually refresh the available data.
       /// </summary>
@@ -222,10 +249,11 @@ namespace Beamable.Api
          if (nextRefreshPromise == null)
          {
             nextRefreshPromise = new Promise<Unit>();
-            ServiceManager.Resolve<CoroutineService>().StartCoroutine(ExecuteRefresh());
+            coroutineService.StartCoroutine(ExecuteRefresh());
          }
 
-         return nextRefreshPromise;
+
+         return OnRefreshScope(scope).FlatMap(_ => nextRefreshPromise);
       }
 
       private IEnumerator ExecuteRefresh()
@@ -233,6 +261,7 @@ namespace Beamable.Api
          yield return Yielders.EndOfFrame;
          var promise = nextRefreshPromise;
          nextRefreshPromise = null;
+         var sentScopes = nextRefreshScopes.ToArray();
          var scope = string.Join(",", nextRefreshScopes);
          nextRefreshScopes.Clear();
 
@@ -261,14 +290,14 @@ namespace Beamable.Api
 
             // Avoid incrementing the backoff if the device is definitely not connected to the network at all.
             // This is narrow, and would still increment if the device is connected, but the internet has other problems
-            if (platform.ConnectivityService.HasConnectivity)
+            if (connectivityService.HasConnectivity)
             {
                retry += 1;
             }
-         }).Then(OnRefresh).Then(_ =>
+         }).FlatMap(x => OnRefresh(x, sentScopes)).Then(_ =>
          {
-            retry = 0;
-            promise.CompleteSuccess(PromiseBase.Unit);
+	         retry = 0;
+	         promise.CompleteSuccess(PromiseBase.Unit);
          });
       }
 
@@ -279,7 +308,7 @@ namespace Beamable.Api
 
       protected virtual string CreateRefreshUrl(string scope)
       {
-	      return getter.CreateRefreshUrl(platform, service, scope);
+	      return getter.CreateRefreshUrl(userContext, service, scope);
       }
 
       /// <summary>
@@ -361,7 +390,13 @@ namespace Beamable.Api
          }
       }
 
-      protected abstract void OnRefresh(ScopedRsp data);
+      protected virtual void OnRefresh(ScopedRsp data) {}
+
+      protected virtual Promise OnRefresh(ScopedRsp data, string[] scopes)
+      {
+	      OnRefresh(data);
+	      return Promise.Success;
+      }
 
       private void OnRefreshNtf(object payloadRaw)
       {
@@ -422,7 +457,6 @@ namespace Beamable.Api
       protected void ScheduleRefresh(long seconds, string scope)
       {
          DateTime refreshTime = DateTime.UtcNow.AddSeconds(seconds);
-         var coroutineService = ServiceManager.Resolve<CoroutineService>();
          ScheduledRefresh current;
          if (scheduledRefreshes.TryGetValue(scope, out current))
          {
@@ -487,8 +521,8 @@ namespace Beamable.Api
 
       public string Scope => scope;
 
-      internal PlatformSubscription(string scope, Action<T> callback,
-         Action<string, PlatformSubscription<T>> onUnsubscribe)
+      public PlatformSubscription(string scope, Action<T> callback,
+                                  Action<string, PlatformSubscription<T>> onUnsubscribe)
       {
          this.scope = scope;
          this.callback = callback;

@@ -1,21 +1,30 @@
+using Beamable.Api.Connectivity;
 using UnityEngine;
 using System.Collections;
 using Beamable.Coroutines;
 
 namespace Beamable.Api.Sessions
 {
-   public class Heartbeat
+	public interface IHeartbeatService
+	{
+		void Start();
+		void ResetInterval();
+		void UpdateInterval(int seconds);
+	}
+   public class Heartbeat : IHeartbeatService
    {
       private const int HeartbeatInterval = 30;
 
-      private readonly PlatformService _platform;
+      private readonly ISessionService _sessionService;
       private readonly CoroutineService _coroutineService;
+      private readonly IConnectivityService _connectivityService;
       private IEnumerator _heartbeatRoutine;
 
-      public Heartbeat(PlatformService platform, CoroutineService coroutineService)
+      public Heartbeat(ISessionService sessionService, CoroutineService coroutineService, IConnectivityService connectivityService)
       {
-         _platform = platform;
+	      _sessionService = sessionService;
          _coroutineService = coroutineService;
+         _connectivityService = connectivityService;
          _heartbeatRoutine = SendHeartbeat(HeartbeatInterval);
       }
 
@@ -44,9 +53,9 @@ namespace Beamable.Api.Sessions
          var wait = new WaitForSeconds(intervalSeconds);
          while (true)
          {
-            if (_platform.ConnectivityService.HasConnectivity)
+            if (_connectivityService.HasConnectivity)
             {
-               _platform.Session.SendHeartbeat();
+               _sessionService.SendHeartbeat();
             }
             yield return wait;
          }

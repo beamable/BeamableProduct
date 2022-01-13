@@ -2,6 +2,7 @@
 using Beamable.Service;
 using Beamable.ConsoleCommands;
 using Beamable.Common.Api;
+using Beamable.Common.Dependencies;
 using UnityEngine.Scripting;
 using System.Collections.Generic;
 
@@ -9,12 +10,12 @@ namespace Beamable.Api.Tournaments
 {
     /// <summary>
     /// This type defines the %Tournament feature's console commands.
-    /// 
+    ///
     /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-    /// 
+    ///
     /// #### Related Links
     /// - See the <a target="_blank" href="https://docs.beamable.com/docs/tournaments-feature">Tournaments</a> feature documentation
-    /// - See Beamable.Api.Tournaments.TournamentService script reference 
+    /// - See Beamable.Api.Tournaments.TournamentService script reference
     ///
     /// ![img beamable-logo]
     ///
@@ -22,11 +23,15 @@ namespace Beamable.Api.Tournaments
     [BeamableConsoleCommandProvider]
     public class TournamentConsoleCommands
     {
-        private BeamableConsole Console => ServiceManager.Resolve<BeamableConsole>();
+	    private readonly IDependencyProvider _provider;
+	    private BeamableConsole Console => _provider.GetService<BeamableConsole>();
+	    private TournamentService Tournaments => _provider.GetService<TournamentService>();
+	    private IBeamableRequester Requester => _provider.GetService<IBeamableRequester>();
 
         [Preserve]
-        public TournamentConsoleCommands()
+        public TournamentConsoleCommands(IDependencyProvider provider)
         {
+	        _provider = provider;
         }
 
         [BeamableConsoleCommand("TOURNAMENT-JOIN", "Join a tournament cycle by id.", "TOURNAMENT-JOIN <tournament-id>")]
@@ -35,9 +40,8 @@ namespace Beamable.Api.Tournaments
             if (args.Length == 1)
             {
                 string tournamentId = args[0];
-                var platform = ServiceManager.Resolve<PlatformService>();
 
-                platform.Tournaments.JoinTournament(tournamentId).Then(response =>
+                Tournaments.JoinTournament(tournamentId).Then(response =>
                 {
                     Debug.Log($"Tournament {response.tournamentId} Joined.");
                 });
@@ -56,9 +60,7 @@ namespace Beamable.Api.Tournaments
             if(args.Length == 1)
             {
                 string tournamentId = args[0];
-                var platform = ServiceManager.Resolve<PlatformService>();
-
-                platform.Requester.Request<EmptyResponse>(
+                Requester.Request<EmptyResponse>(
                     Method.PUT, $"/object/tournaments/{tournamentId}/internal/cycle", new TournamentEndCycleRequest(tournamentId)
                 ).Then(response =>
                 {

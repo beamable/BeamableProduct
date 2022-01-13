@@ -1,6 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Inventory;
+using Beamable.Common.Dependencies;
 using Beamable.Serialization.SmallerJSON;
 using System.Collections.Generic;
 
@@ -17,6 +18,8 @@ namespace Beamable.Api.Inventory
    ///
    /// ![img beamable-logo]
    ///
+   /// Scopes are content ids!!
+   ///
    /// </summary>
    public class InventorySubscription : PlatformSubscribable<InventoryResponse, InventoryView>
    {
@@ -24,10 +27,20 @@ namespace Beamable.Api.Inventory
 
       private readonly InventoryView view = new InventoryView();
 
-      public InventorySubscription(IPlatformService platform, IBeamableRequester requester) 
-	      : base(platform, requester, SERVICE, new BeamableGetApiResourceViaPost<InventoryResponse>())
+      private bool _everReceivedData;
+
+      public InventorySubscription(IDependencyProvider provider)
+	      : base(provider, SERVICE, new BeamableGetApiResourceViaPost<InventoryResponse>(true, OfflineResponse))
       {
 	      UsesHierarchyScopes = true;
+      }
+
+      private static InventoryResponse OfflineResponse(string url)
+      {
+	      return new InventoryResponse
+	      {
+		      scope = ""
+	      };
       }
 
       protected override void Reset()
@@ -35,14 +48,30 @@ namespace Beamable.Api.Inventory
          view.Clear();
       }
 
-      protected override void OnRefresh(InventoryResponse data)
+
+      protected override Promise OnRefresh(InventoryResponse data, string[] scopes)
       {
-         data.MergeView(view);
-         foreach (var scope in data.GetNotifyScopes())
-         {
-            Notify(scope, view);
-         }
+	      if (!connectivityService.HasConnectivity && _everReceivedData)
+	      {
+		      foreach (var scope in data.GetNotifyScopes(scopes))
+		      {
+			      Notify(scope, view);
+		      }
+		      return Promise.Success;
+	      }
+
+	      _everReceivedData = true;
+	      data.MergeView(view, scopes);
+	      foreach (var scope in data.GetNotifyScopes(scopes))
+	      {
+		      Notify(scope, view);
+	      }
+
+	      return Promise.Success;
       }
+
+      public InventoryView GetCurrentView() => view;
+
    }
 
    /// <summary>
@@ -87,12 +116,20 @@ namespace Beamable.Api.Inventory
    {
       public InventorySubscription Subscribable { get; }
 
-      public InventoryService (IPlatformService platform, IBeamableRequester requester) : base(requester, platform)
+
+      public InventoryService (IDependencyProvider provider) : base(provider.GetService<IBeamableRequester>(), provider.GetService<IUserContext>())
       {
-         Subscribable = new InventorySubscription(platform, requester);
+         Subscribable = new InventorySubscription(provider);
+      }
+
+      public InventoryService(IPlatformService platform, IBeamableRequester requester, IDependencyProvider provider) : base(requester, platform)
+      {
+	      Subscribable = new InventorySubscription(provider);
+
       }
 
       public override Promise<InventoryView> GetCurrent(string scope = "") => Subscribable.GetCurrent(scope);
+
    }
 }
 

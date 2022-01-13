@@ -102,35 +102,4 @@ namespace Beamable.Pooling
       #endregion
    }
 
-#if UNITY_EDITOR
-   public class DisablePoolProfiler
-   {
-      [UnityEditor.MenuItem(PoolingConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES +
-         "/Show DisablePool Stats in Console",
-         priority = PoolingConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
-      public static void PrintStats()
-      {
-         if(!ServiceManager.CanResolve<DisablePool>())
-         {
-            Debug.Log("Could not resolve DisablePool");
-            return;
-         }
-
-         var disablePool = ServiceManager.Resolve<DisablePool>();
-
-         using (var pb = StringBuilderPool.StaticPool.Spawn())
-         {
-            var builder = pb.Builder;
-            foreach (var key in disablePool.pools.Keys)
-            {
-               int count = disablePool.pools[key].Count;
-               builder.AppendLine(string.Format("{0}    {1}", count, key));
-            }
-            Debug.Log(builder);
-         }
-      }
-
-   }
-#endif
-
 }

@@ -2,7 +2,6 @@ using System;
 using System.Globalization;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
-using JetBrains.Annotations;
 using UnityEngine;
 
 namespace Beamable.Api
@@ -15,7 +14,7 @@ namespace Beamable.Api
       private const char DeviceTokenSeparator = '|';
       private const string DeviceTokenDelimiterStr = ",";
 
-      private string GetDeviceTokenKey(string cid, [CanBeNull] string pid) => $"{_prefix}device-tokens{cid}{pid ?? ""}";
+      private string GetDeviceTokenKey(string cid, string pid) => $"{_prefix}device-tokens{cid}{pid ?? ""}";
 
       public AccessTokenStorage(string prefix = "")
       {
@@ -34,16 +33,21 @@ namespace Beamable.Api
          return Promise<AccessToken>.Successful(new AccessToken(this, cid, null, accessToken, refreshToken, expires));
       }
 
+      public AccessToken LoadTokenForRealmImmediate(string cid, string pid)
+      {
+	      string accessToken = PlayerPrefs.GetString($"{_prefix}{cid}.{pid}.access_token");
+	      string refreshToken = PlayerPrefs.GetString($"{_prefix}{cid}.{pid}.refresh_token");
+	      string expires = PlayerPrefs.GetString($"{_prefix}{cid}.{pid}.expires");
+
+	      if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken) || string.IsNullOrEmpty(expires))
+		      return null;
+
+	      return new AccessToken(this, cid, pid, accessToken, refreshToken, expires);
+      }
+
       public Promise<AccessToken> LoadTokenForRealm(string cid, string pid)
       {
-         string accessToken = PlayerPrefs.GetString($"{_prefix}{cid}.{pid}.access_token");
-         string refreshToken = PlayerPrefs.GetString($"{_prefix}{cid}.{pid}.refresh_token");
-         string expires = PlayerPrefs.GetString($"{_prefix}{cid}.{pid}.expires");
-
-         if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken) || string.IsNullOrEmpty(expires))
-            return Promise<AccessToken>.Successful(null);
-
-         return Promise<AccessToken>.Successful(new AccessToken(this, cid, pid, accessToken, refreshToken, expires));
+	      return Promise<AccessToken>.Successful(LoadTokenForRealmImmediate(cid, pid));
       }
 
       public Promise<Unit> SaveTokenForCustomer(string cid, AccessToken token)

@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Announcements;
+using Beamable.Common.Dependencies;
 
 namespace Beamable.Api.Announcements
 {
    public class AnnouncementsSubscription : PlatformSubscribable<AnnouncementQueryResponse, AnnouncementQueryResponse>
    {
-      public AnnouncementsSubscription(PlatformService platform, IBeamableRequester requester, string service) : base(platform, requester, service)
+      public AnnouncementsSubscription(IDependencyProvider provider, string service) : base(provider, service)
       {
       }
 
@@ -24,23 +25,23 @@ namespace Beamable.Api.Announcements
 
    /// <summary>
    /// This type defines the %Client main entry point for the %Announcements feature.
-   /// 
+   ///
    /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-   /// 
+   ///
    /// #### Related Links
    /// - See the <a target="_blank" href="https://docs.beamable.com/docs/announcements-feature">Announcements</a> feature documentation
    /// - See Beamable.API script reference
-   /// 
+   ///
    /// ![img beamable-logo]
-   /// 
+   ///
    /// </summary>
    public class AnnouncementsService : AbsAnnouncementsApi , IHasPlatformSubscriber<AnnouncementsSubscription, AnnouncementQueryResponse, AnnouncementQueryResponse>
    {
       public AnnouncementsSubscription Subscribable { get; }
 
-      public AnnouncementsService(PlatformService platform, IBeamableRequester requester) : base(requester, platform)
+      public AnnouncementsService(IPlatformService platform, IBeamableRequester requester, IDependencyProvider provider) : base(requester, platform)
       {
-         Subscribable = new AnnouncementsSubscription(platform, requester, "announcements");
+         Subscribable = new AnnouncementsSubscription(provider, "announcements");
       }
 
       public override Promise<EmptyResponse> Claim(List<string> ids)

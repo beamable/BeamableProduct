@@ -1,10 +1,7 @@
 using System;
 using System.Collections.Generic;
-using Beamable.Api;
 using Beamable.Common;
 using Beamable.Serialization;
-using Beamable.Service;
-using Beamable.Spew;
 
 namespace Beamable.Experimental.Api.Chat
 {

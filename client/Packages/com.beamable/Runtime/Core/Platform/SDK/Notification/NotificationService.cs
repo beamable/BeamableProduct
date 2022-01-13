@@ -3,6 +3,7 @@ using UnityEngine;
 using System;
 using System.Collections.Generic;
 using Beamable.Api.Notification.Internal;
+using Beamable.Common.Api.Notifications;
 using Beamable.Spew;
 
 #if UNITY_IOS
@@ -21,17 +22,17 @@ namespace Beamable.Api.Notification
 {
     /// <summary>
     /// This type defines the %Client main entry point for the %Notifications feature.
-    /// 
+    ///
     /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-    /// 
+    ///
     /// #### Related Links
     /// - See the <a target="_blank" href="https://docs.beamable.com/docs/notifications-feature">Mail</a> feature documentation
     /// - See Beamable.API script reference
-    /// 
+    ///
     /// ![img beamable-logo]
-    /// 
+    ///
     /// </summary>
-    public class NotificationService : MonoBehaviour
+    public class NotificationService : MonoBehaviour, INotificationService
     {
         DateTime timeOfLastUpdate = DateTime.MinValue;
         Dictionary<string, InGameNotification> inGameNotifications = new Dictionary<string, InGameNotification>();
@@ -44,9 +45,9 @@ namespace Beamable.Api.Notification
         // Scheduled notifications must fall between 10AM - 10PM
         const int MinHour = 10;
         const int MaxHour = 22;
-#if USE_FIREBASE
-        private PlatformService _platform;
-#endif
+// #if USE_FIREBASE
+        // private IPlatformService _platform;
+// #endif
 
         /* Relay to use for local notifications. */
        private ILocalNotificationRelay LocalRelay;
@@ -54,11 +55,11 @@ namespace Beamable.Api.Notification
       /// <summary>
       /// Register for remote and local notifications
       /// </summary>
-      public void RegisterForNotifications (PlatformService platform)
+      public void RegisterForNotifications ()
       {
-#if USE_FIREBASE
-         _platform = platform;
-#endif
+// #if USE_FIREBASE
+         // _platform = null; // TODO: Fix this by just using the push service directly.
+// #endif
          RegisterForLocalNotifications();
          ClearDeliveredLocalNotifications();
          RegisterForPushNotifications();

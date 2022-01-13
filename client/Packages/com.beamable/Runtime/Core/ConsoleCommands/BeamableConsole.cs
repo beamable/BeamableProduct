@@ -1,5 +1,7 @@
+using Beamable.Common.Dependencies;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -27,66 +29,72 @@ namespace Beamable.ConsoleCommands
         public string scriptCommandReturn = String.Empty;
 
         private Dictionary<string, string> _commandOrigin = new Dictionary<string, string>();
+        private IDependencyProviderScope _serviceScope;
 
+        private List<Type> _commandProviderTypes = new List<Type>();
+
+        [Obsolete("This field will be deleted.")]
         public static bool AsyncCommandInProcess
         {
             get => commandInstance.asyncCommandInProcess;
             set => commandInstance.asyncCommandInProcess = value;
         }
 
-        public BeamableConsole()
+        [RegisterBeamableDependencies]
+        public static void RegisterServices(IDependencyBuilder builder)
         {
-            commandInstance = this;
+	        builder.AddSingleton<BeamableConsole>();
         }
+
+        public BeamableConsole(IDependencyProvider provider)
+        {
+	        _commandProviderTypes = ScanTypes().ToList();
+	        _serviceScope = provider.Fork(builder => {
+		        foreach (var type in _commandProviderTypes)
+		        {
+			        builder.AddSingleton(type);
+		        }
+	        });
+
+            commandInstance = this;
+            _commandOrigin = new Dictionary<string, string>();
+        }
+
+        private IEnumerable<Type> ScanTypes()
+        {
+	        var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+	        foreach (var assembly in assemblies)
+	        {
+		        foreach (var type in assembly.GetTypes())
+		        {
+			        if (!type.IsClass ||
+			            type.GetCustomAttribute<BeamableConsoleCommandProviderAttribute>(false) == null)
+			        {
+				        continue;
+			        }
+
+			        yield return type;
+		        }
+	        }
+        }
+
 
         public void LoadCommands()
         {
             var emptyTypeArray = new Type[] { };
             var emptyObjectArray = new object[] { };
 
-            _commandOrigin = new Dictionary<string, string>();
-
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            foreach (var assembly in assemblies)
+            foreach (var type in _commandProviderTypes)
             {
-                foreach (var type in assembly.GetTypes())
-                {
-                    if (!type.IsClass || type.GetCustomAttribute<BeamableConsoleCommandProviderAttribute>(false) == null)
-                    {
-                        continue;
-                    }
-
-                    var instance = ResolveInstance(type);
-                    if (instance == null)
-                    {
-                        continue;
-                    }
-
-                    var instanceMethods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-                    var staticMethods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
-                    ProcessMethods(instanceMethods, (method) => (ConsoleCommandCallback) Delegate.CreateDelegate(typeof(ConsoleCommandCallback), instance, method, false));
-                    ProcessMethods(staticMethods, (method) => (ConsoleCommandCallback) Delegate.CreateDelegate(typeof(ConsoleCommandCallback), method, false));
-                }
-            }
-
-            object ResolveInstance(Type type)
-            {
-                if (type == null)
-                {
-                    Debug.LogError($"Cannot resolve null type");
-                    return null;
-                }
-                var emptyConstructor = type.GetConstructor(emptyTypeArray);
-                if (emptyConstructor == null)
-                {
-                    Debug.LogError($"Console Command Provider must have an empty constructor. type=[{type.Name}]");
-                    return null;
-                }
-                return emptyConstructor.Invoke(emptyObjectArray);
+	            var instance = _serviceScope.GetService(type);
+	            var instanceMethods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+	            var staticMethods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+	            ProcessMethods(instanceMethods, (method) => (ConsoleCommandCallback) Delegate.CreateDelegate(typeof(ConsoleCommandCallback), instance, method, false));
+	            ProcessMethods(staticMethods, (method) => (ConsoleCommandCallback) Delegate.CreateDelegate(typeof(ConsoleCommandCallback), method, false));
             }
 
             void ProcessMethods(IEnumerable<MethodInfo> methods,
-                Func<MethodInfo, ConsoleCommandCallback> callbackCreator)
+                                Func<MethodInfo, ConsoleCommandCallback> callbackCreator)
             {
                 foreach (var method in methods)
                 {

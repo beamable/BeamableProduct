@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Api.Notification;
+using Beamable.Common.Api.Notifications;
+using Beamable.Common.Dependencies;
 using Beamable.Serialization;
 using Beamable.Service;
 using Beamable.Spew;
@@ -13,20 +15,29 @@ namespace Beamable.Experimental.Api.Chat
 
     public class PubNubRoom : Room
     {
-        private const string ChatEvent = "CHAT.RECEIVED";
+	    private readonly IDependencyProvider _provider;
+	    private const string ChatEvent = "CHAT.RECEIVED";
         private bool _isSubscribed;
 
-        public PubNubRoom(RoomInfo roomInfo) : this(roomInfo.id, roomInfo.name, roomInfo.keepSubscribed) { }
+        private IPubnubSubscriptionManager PubnubSubscriptionManager =>
+	        _provider.GetService<IPubnubSubscriptionManager>();
 
-        private PubNubRoom(string id, string name, bool keepSubscribed) : base(id, name, keepSubscribed, true) { }
+        private ChatService ChatService => _provider.GetService<ChatService>();
+        private INotificationService NotificationService => _provider.GetService<INotificationService>();
+
+        public PubNubRoom(RoomInfo roomInfo, IDependencyProvider provider) : this(roomInfo.id, roomInfo.name, roomInfo.keepSubscribed, provider) { }
+
+        private PubNubRoom(string id, string name, bool keepSubscribed, IDependencyProvider provider) : base(id, name, keepSubscribed, true)
+        {
+	        _provider = provider;
+        }
 
         public override Promise Sync()
         {
             // XXX: This should be a bit smarter in when and/or how often it fetches the history.
             var promise = new Promise();
 
-            var pubnub = ServiceManager.Resolve<PlatformService>().PubnubSubscriptionManager;
-            pubnub.LoadChannelHistory(
+            PubnubSubscriptionManager.LoadChannelHistory(
                Id,
                50,
                pubnubMessages =>
@@ -50,8 +61,7 @@ namespace Beamable.Experimental.Api.Chat
 
         public override Promise<Message> SendMessage(string message)
         {
-            var platform = ServiceManager.Resolve<PlatformService>();
-            return platform.Chat.SendMessage(Id, message);
+            return ChatService.SendMessage(Id, message);
         }
 
         public override Promise<Room> Join(OnMessageReceivedDelegate callback = null)
@@ -67,11 +77,10 @@ namespace Beamable.Experimental.Api.Chat
 
             basePromise.Then(_ =>
             {
-                var pubnub = ServiceManager.Resolve<PlatformService>().PubnubSubscriptionManager;
-                pubnub.EnqueueOperation(new PubNubOp(PubNubOp.PNO.OpSubscribe, Id, () =>
+                PubnubSubscriptionManager.EnqueueOperation(new PubNubOp(PubNubOp.PNO.OpSubscribe, Id, () =>
                 {
                     _isSubscribed = true;
-                    ServiceManager.Resolve<PlatformService>().Notification.Subscribe(ChatEvent, OnChatEvent);
+                    NotificationService.Subscribe(ChatEvent, OnChatEvent);
                     promise.CompleteSuccess(this);
                 }), shouldRunNextOp: true);
             });
@@ -94,11 +103,10 @@ namespace Beamable.Experimental.Api.Chat
 
             basePromise.Then(_ =>
             {
-                var pubnub = ServiceManager.Resolve<PlatformService>().PubnubSubscriptionManager;
-                pubnub.EnqueueOperation(new PubNubOp(PubNubOp.PNO.OpUnsubscribe, Id, () =>
+                PubnubSubscriptionManager.EnqueueOperation(new PubNubOp(PubNubOp.PNO.OpUnsubscribe, Id, () =>
                 {
                     _isSubscribed = false;
-                    ServiceManager.Resolve<PlatformService>().Notification.Unsubscribe(ChatEvent, OnChatEvent);
+                    NotificationService.Unsubscribe(ChatEvent, OnChatEvent);
                     promise.CompleteSuccess(this);
                 }), shouldRunNextOp: true);
             }).Error(promise.CompleteError);
@@ -110,8 +118,7 @@ namespace Beamable.Experimental.Api.Chat
         {
             var basePromise = base.Forget();
 
-            var platform = ServiceManager.Resolve<PlatformService>();
-            return basePromise.FlatMap(baseRsp => platform.Chat.LeaveRoom(Id).Map<Room>(rsp => this));
+            return basePromise.FlatMap(baseRsp => ChatService.LeaveRoom(Id).Map<Room>(rsp => this));
         }
 
         private void OnChatEvent(object payload)

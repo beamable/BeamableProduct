@@ -1,16 +1,24 @@
 using System.Collections.Generic;
 using Beamable.Api;
 using Beamable.Common;
+using Beamable.Common.Api.Notifications;
+using Beamable.Common.Dependencies;
+using Beamable.Service;
 using Beamable.Spew;
+using System;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Experimental.Api.Chat
 {
 
+	[Obsolete("Use ChatService instead")]
    public abstract class ChatProvider : MonoBehaviour
    {
-      protected PlatformService Platform;
+      protected IDependencyProvider Provider;
+
+      protected INotificationService NotificationService => Provider.GetService<INotificationService>();
+
       private readonly List<Room> _rooms = new List<Room>();
       private OnRoomAddedDelegate _onRoomAdded;
 
@@ -58,10 +66,9 @@ namespace Beamable.Experimental.Api.Chat
       /// Initializes the ChatProvider. This should connect to the service and populate the list of rooms accessible
       /// to the user.
       /// </summary>
-      /// <param name="platform"></param>
-      public void Initialize(PlatformService platform)
+      public void Initialize(IDependencyProvider provider)
       {
-         Platform = platform;
+         Provider = provider;
 
          Connect()
             .FlatMap(_ => FetchAndUpdateRooms())
@@ -71,7 +78,7 @@ namespace Beamable.Experimental.Api.Chat
                ChatLogger.LogFormat("ChatManager: Player joined {0} private rooms.", joinedPrivateRooms.Count);
 
                // Subscribe for re-syncs
-               var ntfService = Platform.Notification;
+               var ntfService = NotificationService;
                ntfService.Subscribe(
                   "GROUP.MEMBERSHIP",
                   info => { FetchAndUpdateRooms(); }

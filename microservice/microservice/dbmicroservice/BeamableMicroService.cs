@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Leaderboards;
+using Beamable.Common.Dependencies;
 using Beamable.Server.Api;
 using Beamable.Server.Api.Announcements;
 using Beamable.Server.Api.Calendars;
@@ -28,6 +29,7 @@ using Core.Server.Common;
 using microservice;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using ContentService = Beamable.Server.Content.ContentService;
+using ServiceDescriptor = Microsoft.Extensions.DependencyInjection.ServiceDescriptor;
 #if DB_MICROSERVICE
 using System;
 using System.Collections.Concurrent;
@@ -760,14 +762,14 @@ namespace Beamable.Server
 
       private IBeamableServices GenerateSdks(IBeamableRequester requester, RequestContext ctx)
       {
-         var stats = new MicroserviceStatsApi(requester, ctx, StatsCacheFactory);
+         var stats = new MicroserviceStatsApi(requester, ctx, null, StatsCacheFactory);
          var services = new BeamableServices
          {
             Auth = new ServerAuthApi(requester, ctx),
             Stats = stats,
             Content = _contentService,
             Inventory = new MicroserviceInventoryApi(requester, ctx),
-            Leaderboards = new MicroserviceLeaderboardApi(requester, ctx, LeaderboardRankEntryFactory),
+            Leaderboards = new MicroserviceLeaderboardApi(requester, ctx, null, LeaderboardRankEntryFactory),
             Announcements = new MicroserviceAnnouncementsApi(requester, ctx),
             Calendars = new MicroserviceCalendarsApi(requester, ctx),
             Events = new MicroserviceEventsApi(requester, ctx),
@@ -784,7 +786,7 @@ namespace Beamable.Server
       }
 
       private UserDataCache<RankEntry> _singleRankyEntryCache;
-      private UserDataCache<RankEntry> LeaderboardRankEntryFactory(string name, long ttlms, UserDataCache<RankEntry>.CacheResolver resolver)
+      private UserDataCache<RankEntry> LeaderboardRankEntryFactory(string name, long ttlms, UserDataCache<RankEntry>.CacheResolver resolver, IDependencyProvider provider)
       {
          return new EphemeralUserDataCache<RankEntry>(name, resolver);
       }
@@ -792,7 +794,7 @@ namespace Beamable.Server
       private UserDataCache<Dictionary<string, string>> _singleStatsCache;
       private Type _microserviceType;
 
-      private UserDataCache<Dictionary<string, string>> StatsCacheFactory(string name, long ttlms, UserDataCache<Dictionary<string, string>>.CacheResolver resolver)
+      private UserDataCache<Dictionary<string, string>> StatsCacheFactory(string name, long ttlms, UserDataCache<Dictionary<string, string>>.CacheResolver resolver, IDependencyProvider provider)
       {
          return new EphemeralUserDataCache<Dictionary<string, string>>(name, resolver);
       }

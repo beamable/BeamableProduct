@@ -13,25 +13,25 @@ namespace Beamable.Api.Payments
     // Payments service.
     // This service provides an API to communicate with the Platform.
 
-    
+
     /// <summary>
     /// This type defines the %Client main entry point for the %Payments feature.
-    /// 
+    ///
     /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-    /// 
+    ///
     /// #### Related Links
     /// - See the <a target="_blank" href="https://docs.beamable.com/docs/payments-feature">Payments</a> feature documentation
     /// - See Beamable.API script reference
-    /// 
+    ///
     /// ![img beamable-logo]
-    /// 
+    ///
     /// </summary>
     public class PaymentService
     {
-        private PlatformService _platform;
-        private PlatformRequester _requester;
+        private IPlatformService _platform;
+        private IPlatformRequester _requester;
 
-        public PaymentService(PlatformService platform, PlatformRequester requester)
+        public PaymentService(IPlatformService platform, IPlatformRequester requester)
         {
             _platform = platform;
             _requester = requester;
@@ -418,11 +418,6 @@ namespace Beamable.Api.Payments
         public string symbol;
         public int amount;
         public int step;
-
-        public string GetLocalizedText()
-        {
-            return ServiceManager.Resolve<PlatformService>().BeamablePurchaser?.GetLocalizedPrice(symbol) ?? "";
-        }
 
         public bool IsFree => amount == 0;
     }

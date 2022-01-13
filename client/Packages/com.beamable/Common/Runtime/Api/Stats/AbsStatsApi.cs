@@ -1,3 +1,4 @@
+using Beamable.Common.Dependencies;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -11,14 +12,16 @@ namespace Beamable.Common.Api.Stats
       private readonly UserDataCache<Dictionary<string, string>>.FactoryFunction _cacheFactory;
       public IBeamableRequester Requester { get; }
       public IUserContext UserContext { get; }
+      protected IDependencyProvider Provider { get; }
       private static long TTL_MS = 15 * 60 * 1000;
       private Dictionary<string, UserDataCache<Dictionary<string, string>>> caches = new Dictionary<string, UserDataCache<Dictionary<string, string>>>();
 
-      public AbsStatsApi(IBeamableRequester requester, IUserContext userContext, UserDataCache<Dictionary<string, string>>.FactoryFunction cacheFactory)
+      public AbsStatsApi(IBeamableRequester requester, IUserContext userContext, IDependencyProvider provider, UserDataCache<Dictionary<string, string>>.FactoryFunction cacheFactory)
       {
          _cacheFactory = cacheFactory;
          Requester = requester;
          UserContext = userContext;
+         Provider = provider;
       }
 
       public UserDataCache<Dictionary<string, string>> GetCache(string prefix)
@@ -28,7 +31,7 @@ namespace Beamable.Common.Api.Stats
             cache = _cacheFactory(
                $"Stats.{prefix}",
                TTL_MS,
-               (gamerTags => Resolve(prefix, gamerTags))
+               (gamerTags => Resolve(prefix, gamerTags)), Provider
             );
             caches.Add(prefix, cache);
          }
@@ -51,7 +54,7 @@ namespace Beamable.Common.Api.Stats
          string prefix = $"{domain}.{access}.{type}.";
          return GetCache(prefix).Get(id);
       }
-      
+
       /// <summary>
       /// <para>Supports searching for DBIDs by stat query. This method is useful e.g for friend search</para>
       /// <para>IMPORTANT: This method only works for admin role</para>
@@ -104,7 +107,7 @@ namespace Beamable.Common.Api.Stats
                   {"value", criteria.Value}
               };
           }
-          
+
           IsValid(out var errorMessage);
           if (!string.IsNullOrWhiteSpace(errorMessage))
           {
@@ -123,13 +126,13 @@ namespace Beamable.Common.Api.Stats
               { "objectType", type },
               { "criteria", convertedCriteriaList }
           };
-          
+
           return Requester.Request<StatsSearchResponse>(
               Method.POST,
               "/basic/stats/search",
               Json.Serialize(payload, new StringBuilder()));
       }
-      
+
       protected abstract Promise<Dictionary<long, Dictionary<string, string>>> Resolve(string prefix,
          List<long> gamerTags);
    }
@@ -139,13 +142,13 @@ namespace Beamable.Common.Api.Stats
    {
        public int[] ids;
    }
-   
+
    public class Criteria
    {
        public string Stat { get; }
        public string Rel { get; }
        public string Value { get; }
-   
+
        public Criteria(string stat, string rel, string value)
        {
            Stat = stat;
