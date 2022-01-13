@@ -490,7 +490,6 @@ namespace Beamable
 
 		private async Promise InitStep_GetUser()
 		{
-			Debug.Log("Getting user!");
 			var user = new User
 			{
 				id = 0, scopes = new List<string>(), thirdPartyAppAssociations = new List<string>()
@@ -505,8 +504,6 @@ namespace Beamable
 				// Debug.Log("Will get user when reconnect...");
 				// _connectivityService.OnReconnectOnce( async () => await InitStep_GetUser());
 			}
-			Debug.Log("got user " + user.id);
-
 			AuthorizedUser.Value = user;
 		}
 
@@ -514,7 +511,6 @@ namespace Beamable
 		{
 			try
 			{
-				Debug.Log("Connecting to pubnub");
 				_pubnubSubscriptionManager.UnsubscribeAll();
 				await _pubnubSubscriptionManager.SubscribeToProvider();
 			}
