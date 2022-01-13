@@ -110,6 +110,15 @@
     margin-top: 15px;
     min-height: 140px; 
 }
+.bottomContainer > * {
+    flex-grow: 1;
+}
+.bottomContainer .unity-base-field {
+    flex-direction: column;
+}
+.bottomContainer .unity-base-field .unity-label {
+    padding-bottom: 5px;
+}
 #buttonStrip {
     flex-direction: row;
     justify-content: flex-end;

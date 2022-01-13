@@ -109,9 +109,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 				elementNumber++;
 			}
 
-			// _generalComments = Root.Q<TextField>("largeCommentsArea");
-			// _generalComments.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
-			Root.Q<PublishLoggerVisualElement>().Refresh();
+			_generalComments = Root.Q<TextField>("largeCommentsArea");
+			_generalComments.label = "General comment";
+			_generalComments.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
 
 			_cancelButton = Root.Q<GenericButtonVisualElement>("cancelBtn");
 			_cancelButton.OnClick += () => OnCloseRequested?.Invoke();
@@ -155,7 +155,17 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_topMessage.HandleSubmitClicked();
 			_primarySubmitButton.SetText("Publishing...");
 			_primarySubmitButton.Disable();
+			ReplaceCommentWithLogger();
 			OnSubmit?.Invoke(Model);
+		}
+
+		void ReplaceCommentWithLogger()
+		{
+			var parent = _generalComments.parent;
+			_generalComments.RemoveFromHierarchy();
+			var logger = new PublishLoggerVisualElement();
+			parent.Add(logger);
+			logger.Refresh();
 		}
 
 		private void HandleDeployFailed(ManifestModel _, string __) => HandleDeployEnded(false);

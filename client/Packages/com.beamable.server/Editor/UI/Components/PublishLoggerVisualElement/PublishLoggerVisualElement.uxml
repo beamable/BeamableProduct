@@ -5,19 +5,9 @@
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xmlns:beamable="Beamable.Editor.UI.Components"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
-
-    <engine:VisualElement name="mainVisualElement">
-        <engine:VisualElement name="logWindow">
+        <engine:VisualElement class="logContainer">
             <engine:VisualElement name="logWindowBody">
                 <engine:VisualElement name="logListRoot"/>
-<!--                <engine:VisualElement name ="detailWindow">-->
-<!--                    <engine:ScrollView>-->
-<!--                        <engine:TextField/>-->
-<!--                    </engine:ScrollView>-->
-<!--                </engine:VisualElement>-->
             </engine:VisualElement>
         </engine:VisualElement>
-
-    </engine:VisualElement>
-
 </engine:UXML>

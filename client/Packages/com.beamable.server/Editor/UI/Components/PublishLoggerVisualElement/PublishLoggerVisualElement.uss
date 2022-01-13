@@ -1,4 +1,4 @@
-﻿#mainVisualElement {
+﻿.logContainer {
     flex-grow: 1;
     align-content: center;
     border-width: 1px;
@@ -16,7 +16,7 @@ ScrollView #ContentView.content-view {
     right: 0px;
 }
 
-#logWindowBody, #logWindow {
+#logWindowBody, .logContainer {
     flex-grow: 1;
 }
 ListView {
