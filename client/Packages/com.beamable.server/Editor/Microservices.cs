@@ -14,7 +14,10 @@ using Beamable.Server.Editor.UI.Components;
 using Beamable.Server.Editor.Uploader;
 using Beamable.Platform.SDK;
 using Beamable.Editor;
+using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.UI.Model;
+using Beamable.Server.Editor.UI;
+using System.Threading;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
@@ -250,7 +253,7 @@ namespace Beamable.Server.Editor
 
                var allStorages = new HashSet<string>();
 
-               foreach (var serverSideStorage in manifest.storages.Select(s => s.storageName))
+               foreach (var serverSideStorage in manifest.storages.Select(s => s.id))
                {
                    allStorages.Add(serverSideStorage);
                }
@@ -312,11 +315,20 @@ namespace Beamable.Server.Editor
          return env;
       }
 
-      public static Promise<string> GetConnectionString(StorageObjectDescriptor storage, MicroserviceDescriptor user)
+      public static async Promise<string> GetConnectionString(StorageObjectDescriptor storage, MicroserviceDescriptor user)
       {
-         // TODO: Check if the container is actually running. If it isn't, we need to get a connection string to the remote database.
-         var config = MicroserviceConfiguration.Instance.GetStorageEntry(storage.Name);
-         return Promise<string>.Successful($"mongodb://{config.LocalInitUser}:{config.LocalInitPass}@gateway.docker.internal:{config.LocalDataPort}");
+	      var storageCheck = new CheckImageReturnableCommand(storage);
+	      var isStorageRunning = await storageCheck.Start(null);
+	      if (isStorageRunning)
+	      {
+		      var config = MicroserviceConfiguration.Instance.GetStorageEntry(storage.Name);
+		      return
+			      $"mongodb://{config.LocalInitUser}:{config.LocalInitPass}@gateway.docker.internal:{config.LocalDataPort}";
+	      }
+	      else
+	      {
+		      return "";
+	      }
       }
 
       public static async Promise<bool> OpenLocalMongoTool(StorageObjectDescriptor storage)
@@ -503,15 +515,24 @@ namespace Beamable.Server.Editor
          }
       }
 
-      public static event Action<ManifestModel, int> onBeforeDeploy;
-      public static event Action<ManifestModel, int> onAfterDeploy;
+      public static event Action<ManifestModel, int> OnBeforeDeploy;
+      public static event Action<ManifestModel, int> OnDeploySuccess;
+      public static event Action<ManifestModel, string> OnDeployFailed;
+      public static event Action<IDescriptor, ServicePublishState> OnServiceDeployStatusChanged;	
+      public static event Action<IDescriptor> OnServiceDeployProgress;
 
-      public static async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context, Action<IDescriptor> onServiceDeployed = null)
+      public static async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context, CancellationToken token, Action<IDescriptor> onServiceDeployed = null)
       {
          if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
 
          var descriptorsCount = Descriptors.Count;
-         onBeforeDeploy?.Invoke(model, descriptorsCount);
+
+         OnBeforeDeploy?.Invoke(model, descriptorsCount);
+
+         OnDeploySuccess -= HandleDeploySuccess;
+         OnDeploySuccess += HandleDeploySuccess;
+         OnDeployFailed -= HandleDeployFailed;
+         OnDeployFailed += HandleDeployFailed;
 
          // TODO perform sort of diff, and only do what is required. Because this is a lot of work.
          var de = await EditorAPI.Instance;
@@ -523,17 +544,41 @@ namespace Beamable.Server.Editor
          var nameToImageId = new Dictionary<string, string>();
 
          foreach (var descriptor in Descriptors)
-         {
+         { 
+	         OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.InProgress);
             Debug.Log($"Building service=[{descriptor.Name}]");
             var buildCommand = new BuildImageCommand(descriptor, false);
-            await buildCommand.Start(context);
+            try
+            {
+	            await buildCommand.Start(context);
+            }
+            catch (Exception e)
+            {
+	            OnDeployFailed?.Invoke(model, $"Deploy failed due to failed build of {descriptor.Name}: {e}.");
+	            OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
+	            return;
+            }
+
+            if(token.IsCancellationRequested)
+            {
+	            OnDeployFailed?.Invoke(model, $"Cancellation requested after build of {descriptor.Name}.");
+	            OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
+	            return;
+            }
 
             var uploader = new ContainerUploadHarness(context);
             var msModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(descriptor);
             uploader.onProgress += msModel.OnDeployProgress;
-
+            uploader.onProgress +=(_, __, ___) => OnServiceDeployProgress?.Invoke(descriptor);
+            
             Debug.Log($"Getting Id service=[{descriptor.Name}]");
             var imageId = await uploader.GetImageId(descriptor);
+            if (string.IsNullOrEmpty(imageId))
+            {
+	            OnDeployFailed?.Invoke(model, $"Failed due to failed Docker {nameof(GetImageIdCommand)} for {descriptor.Name}.");
+	            OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
+	            return;
+            }
             nameToImageId.Add(descriptor.Name, imageId);
 
             if (existingServiceToState.TryGetValue(descriptor.Name, out var existingReference))
@@ -542,6 +587,7 @@ namespace Beamable.Server.Editor
                {
                   Debug.Log(string.Format(BeamableLogConstants.ContainerAlreadyUploadedMessage, descriptor.Name));
                   onServiceDeployed?.Invoke(descriptor);
+                  OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Published);
                   continue;
                }
             }
@@ -553,21 +599,27 @@ namespace Beamable.Server.Editor
                 serviceDependencies.Add(new ServiceDependency
                 {
                     id = storage.Name,
-                    type = "storage"
+                    storageType = "storage"
                 });
             }
             entryModel.Dependencies = serviceDependencies;
 
             Debug.Log($"Uploading container service=[{descriptor.Name}]");
 
-            await uploader.UploadContainer(descriptor, () =>
+            await uploader.UploadContainer(descriptor, token, () =>
             {
                 Debug.Log(string.Format(BeamableLogConstants.UploadedContainerMessage, descriptor.Name));
                 onServiceDeployed?.Invoke(descriptor);
+                OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Published);
             },
             () =>
             {
                 Debug.LogError(string.Format(BeamableLogConstants.CantUploadContainerMessage, descriptor.Name));
+                if(token.IsCancellationRequested)
+                {
+	                OnDeployFailed?.Invoke(model, $"Cancellation requested during upload of {descriptor.Name}.");
+	                OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
+                }
             }, imageId);
          }
 
@@ -591,7 +643,7 @@ namespace Beamable.Server.Editor
          {
              return new ServiceStorageReference
              {
-                 storageName = kvp.Value.Name,
+                 id = kvp.Value.Name,
                  storageType = kvp.Value.Type,
                  templateId = kvp.Value.TemplateId,
                  enabled = kvp.Value.Enabled,
@@ -604,17 +656,22 @@ namespace Beamable.Server.Editor
             manifest = manifest,
             storages = storages
          });
-
-
-         onAfterDeploy?.Invoke(model, descriptorsCount);
-
+         OnDeploySuccess?.Invoke(model, descriptorsCount);
          Debug.Log("Service Deploy Complete");
       }
-
       public static void MicroserviceCreated(string serviceName)
       {
          var key = string.Format(SERVICE_PUBLISHED_KEY, serviceName);
          EditorPrefs.SetBool(key, false);
+      }
+
+      private static void HandleDeploySuccess(ManifestModel _, int __)
+      {
+	      WindowStateUtility.EnableAllWindows();
+      }
+      private static void HandleDeployFailed(ManifestModel _, string __)
+      {
+	      WindowStateUtility.EnableAllWindows();
       }
    }
 }

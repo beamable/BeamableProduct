@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Changed
+- Microstorage is out of Preview. Storage Objects can now be published and used in a remote environment.
+- Microstroage `GetCollection` method must now take subclass of `StorageDocument`
+- Return values from `ClientCallable` methods are serialized using Unity style serialization
+
+### Added
+- Added a `StorageDocument` base class for storage data classes that automatically handle document ID assignment.
+- Added automatic Mongo serialization for basic Unity structs like `Vector2`, `Color`, and `Quaternion`
+
 ## [0.18.2]
 ### Fixed
 - Typless `Promise` in `ClientCallable` methods
