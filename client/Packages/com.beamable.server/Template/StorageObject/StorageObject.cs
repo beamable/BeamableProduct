@@ -27,6 +27,7 @@ namespace Beamable.Server
         /// <returns>When the promise completes, you'll have an authorized collection</returns>
         public static Promise<IMongoCollection<TCollection>> XXXXCollection<TCollection>(
             this IStorageObjectConnectionProvider provider, string name)
+	        where TCollection : StorageDocument
             => provider.GetCollection<XXXX, TCollection>(name);
 
         /// <summary>
@@ -38,6 +39,7 @@ namespace Beamable.Server
         /// <returns>When the promise completes, you'll have an authorized collection</returns>
         public static Promise<IMongoCollection<TCollection>> XXXXCollection<TCollection>(
 	        this IStorageObjectConnectionProvider provider)
+	        where TCollection : StorageDocument
 	        => provider.GetCollection<XXXX, TCollection>();
     }
 }
