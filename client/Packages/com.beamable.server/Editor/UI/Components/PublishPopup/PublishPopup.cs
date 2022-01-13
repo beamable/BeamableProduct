@@ -152,6 +152,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void HandlePrimaryButtonClicked()
 		{
+			foreach (PublishManifestEntryVisualElement manifestEntryVisualElement in _publishManifestElements.Values)
+				manifestEntryVisualElement.HandlePublishStarted();
+
 			_topMessage.HandleSubmitClicked();
 			_primarySubmitButton.SetText("Publishing...");
 			_primarySubmitButton.Disable();
