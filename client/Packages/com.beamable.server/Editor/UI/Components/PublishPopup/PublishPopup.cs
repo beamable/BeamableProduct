@@ -9,7 +9,6 @@ using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
-
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -53,7 +52,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 
 		private TextField _generalComments;
-		private GenericButtonVisualElement  _cancelButton;
+		private GenericButtonVisualElement _cancelButton;
 		private PrimaryButtonVisualElement _primarySubmitButton;
 		private ScrollView _scrollContainer;
 		private Dictionary<string, PublishManifestEntryVisualElement> _publishManifestElements;
@@ -81,8 +80,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Microservices.OnServiceDeployStatusChanged += HandleServiceDeployStatusChanged;
 			Microservices.OnServiceDeployProgress -= HandleServiceDeployProgress;
 			Microservices.OnServiceDeployProgress += HandleServiceDeployProgress;
-			OnSubmit -= SubmitClicked;
-			OnSubmit += SubmitClicked;
+			Microservices.OnDeployFailed -= HandleDeployFailed;
+			Microservices.OnDeployFailed += HandleDeployFailed;
+			Microservices.OnDeploySuccess -= HandleDeploySuccess;
+			Microservices.OnDeploySuccess += HandleDeploySuccess;
 
 			_mainLoadingBar = Root.Q<LoadingBarElement>("mainLoadingBar");
 			_mainLoadingBar.SmallBar = true;
@@ -95,35 +96,78 @@ namespace Beamable.Editor.Microservice.UI.Components
 			var entryModels = new List<IEntryModel>(Model.Services.Values);
 			entryModels.AddRange(Model.Storages.Values);
 
-			bool isOddRow = true;
+			int elementNumber = 0;
 			foreach (IEntryModel model in entryModels)
 			{
 				bool wasPublished = EditorPrefs.GetBool(GetPublishedKey(model.Name), false);
-				var newElement = new PublishManifestEntryVisualElement(model, wasPublished, isOddRow);
+				var remoteOnly = !MicroservicesDataModel.Instance.ContainsModel(model.Name);
+				var newElement = new PublishManifestEntryVisualElement(model, wasPublished, elementNumber, remoteOnly);
 				newElement.Refresh();
 				_publishManifestElements.Add(model.Name, newElement);
 				_scrollContainer.Add(newElement);
 
-				isOddRow = !isOddRow;
+				elementNumber++;
 			}
 
 			_generalComments = Root.Q<TextField>("largeCommentsArea");
 			_generalComments.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
 
-			_cancelButton = Root.Q<GenericButtonVisualElement >("cancelBtn");
+			_cancelButton = Root.Q<GenericButtonVisualElement>("cancelBtn");
 			_cancelButton.OnClick += () => OnCloseRequested?.Invoke();
 
 			_primarySubmitButton = Root.Q<PrimaryButtonVisualElement>("continueBtn");
-			_primarySubmitButton.Button.clickable.clicked += () => OnSubmit?.Invoke(Model);
+			_primarySubmitButton.Button.clickable.clicked += HandlePrimaryButtonClicked;
 			_topMessage = Root.Q<PublishStatusVisualElement>("topMessage");
 			_topMessage.Refresh();
-			OnSubmit -= _topMessage.HandleSubmitClicked;
-			OnSubmit += _topMessage.HandleSubmitClicked;
-			
-			HandleServiceDeployStatusChanged(null, ServicePublishState.Unpublished);
+
+			SortServices();
 		}
 
-		private void SubmitClicked(ManifestModel _) => _primarySubmitButton.Disable();
+		private void SortServices()
+		{
+			int Comparer(VisualElement a, VisualElement b)
+			{
+				if (a is PublishManifestEntryVisualElement firstManifestElement &&
+				    b is PublishManifestEntryVisualElement secondManifestElement)
+				{
+					return firstManifestElement.CompareTo(secondManifestElement);
+				}
+
+				return 0;
+			}
+			_scrollContainer.Sort(Comparer);
+			
+			var publishElements = _scrollContainer.Children();
+			bool isOdd = false;
+			foreach (VisualElement child in publishElements)
+			{
+				if (!(child is PublishManifestEntryVisualElement manifestEntryVisualElement))
+					continue;
+
+				manifestEntryVisualElement.SetOddRow(isOdd);
+				isOdd = !isOdd;
+			}
+		}
+
+		private void HandlePrimaryButtonClicked()
+		{
+			_topMessage.HandleSubmitClicked();
+			_primarySubmitButton.SetText("Publishing...");
+			_primarySubmitButton.Disable();
+			OnSubmit?.Invoke(Model);
+		}
+
+		private void HandleDeployFailed(ManifestModel _, string __) => HandleDeployEnded(false);
+		private void HandleDeploySuccess(ManifestModel _, int __) => HandleDeployEnded(true);
+
+		private void HandleDeployEnded(bool success)
+		{
+			_primarySubmitButton.SetText("Close");
+			_primarySubmitButton.Enable();
+			_primarySubmitButton.SetAsFailure(!success);
+			_primarySubmitButton.Button.clickable.clicked -= HandlePrimaryButtonClicked;
+			_primarySubmitButton.Button.clickable.clicked += () => OnCloseRequested?.Invoke();
+		}
 
 		public void PrepareForPublish()
 		{
@@ -131,10 +175,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			foreach (KeyValuePair<string, PublishManifestEntryVisualElement> kvp in _publishManifestElements)
 			{
+				if (kvp.Value.IsRemoteOnly)
+					continue;
 				var serviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(kvp.Key);
 
 				if (serviceModel == null)
-				{ 
+				{
 					Debug.LogError($"Cannot find model: {kvp.Key}");
 					continue;
 				}
@@ -157,11 +203,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void HandleServiceDeployStatusChanged(IDescriptor descriptor, ServicePublishState state)
 		{
+			_publishManifestElements[descriptor.Name]?.UpdateStatus(state);
+			SortServices();
 			switch (state)
 			{
-				case ServicePublishState.Unpublished:
-				case ServicePublishState.InProgress:
-					return;
 				case ServicePublishState.Failed:
 					_primarySubmitButton.Enable();
 					_mainLoadingBar.UpdateProgress(0, failed: true);
@@ -170,13 +215,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 						kvp.Value.LoadingBar.SetUpdater(null);
 					}
 					break;
-				case ServicePublishState.Published:
-					_primarySubmitButton.Enable();
-					break;
-				default:
-					throw new ArgumentOutOfRangeException(nameof(state), state, null);
 			}
-			_publishManifestElements[descriptor.Name].UpdateStatus(state);
 		}
 
 		private void HandleServiceDeployProgress(IDescriptor descriptor)
@@ -186,7 +225,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private float CalculateProgress()
 		{
-			return _publishManifestElements.Values.Average(x => x.LoadingBar.Progress);
+			return _publishManifestElements.Values.Where(element => !element.IsRemoteOnly)
+			                               .Average(x => x.LoadingBar.Progress);
 		}
 	}
 }
