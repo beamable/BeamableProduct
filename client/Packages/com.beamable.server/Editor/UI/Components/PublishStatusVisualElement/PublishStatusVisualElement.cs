@@ -44,7 +44,7 @@ namespace Beamable.Editor.UI.Components
 			HandleServiceDeployStatusChanged(null, ServicePublishState.Unpublished);
 		}
 		
-		public void HandleSubmitClicked(ManifestModel _)
+		public void HandleSubmitClicked()
 		{
 			_label.text = topMessageUpdateTexts[0];
 			if(!_topMessageUpdating)
