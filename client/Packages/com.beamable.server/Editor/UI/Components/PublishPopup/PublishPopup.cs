@@ -9,7 +9,6 @@ using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
-
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -97,16 +96,17 @@ namespace Beamable.Editor.Microservice.UI.Components
 			var entryModels = new List<IEntryModel>(Model.Services.Values);
 			entryModels.AddRange(Model.Storages.Values);
 
-			bool isOddRow = true;
+			int elementNumber = 0;
 			foreach (IEntryModel model in entryModels)
 			{
 				bool wasPublished = EditorPrefs.GetBool(GetPublishedKey(model.Name), false);
-				var newElement = new PublishManifestEntryVisualElement(model, wasPublished, isOddRow);
+				var remoteOnly = !MicroservicesDataModel.Instance.ContainsModel(model.Name);
+				var newElement = new PublishManifestEntryVisualElement(model, wasPublished, elementNumber, remoteOnly);
 				newElement.Refresh();
 				_publishManifestElements.Add(model.Name, newElement);
 				_scrollContainer.Add(newElement);
 
-				isOddRow = !isOddRow;
+				elementNumber++;
 			}
 
 			_generalComments = Root.Q<TextField>("largeCommentsArea");
@@ -119,8 +119,36 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_primarySubmitButton.Button.clickable.clicked += HandlePrimaryButtonClicked;
 			_topMessage = Root.Q<PublishStatusVisualElement>("topMessage");
 			_topMessage.Refresh();
+			OnSubmit -= _topMessage.HandleSubmitClicked;
+			OnSubmit += _topMessage.HandleSubmitClicked;
 
-			HandleServiceDeployStatusChanged(null, ServicePublishState.Unpublished);
+			SortServices();
+		}
+
+		private void SortServices()
+		{
+			int Comparer(VisualElement a, VisualElement b)
+			{
+				if (a is PublishManifestEntryVisualElement firstManifestElement &&
+				    b is PublishManifestEntryVisualElement secondManifestElement)
+				{
+					return firstManifestElement.CompareTo(secondManifestElement);
+				}
+
+				return 0;
+			}
+			_scrollContainer.Sort(Comparer);
+			
+			var publishElements = _scrollContainer.Children();
+			bool isOdd = false;
+			foreach (VisualElement child in publishElements)
+			{
+				if (!(child is PublishManifestEntryVisualElement manifestEntryVisualElement))
+					continue;
+
+				manifestEntryVisualElement.SetOddRow(isOdd);
+				isOdd = !isOdd;
+			}
 		}
 
 		private void HandlePrimaryButtonClicked()
@@ -149,6 +177,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			foreach (KeyValuePair<string, PublishManifestEntryVisualElement> kvp in _publishManifestElements)
 			{
+				if (kvp.Value.IsRemoteOnly)
+					continue;
 				var serviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(kvp.Key);
 
 				if (serviceModel == null)
@@ -175,11 +205,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void HandleServiceDeployStatusChanged(IDescriptor descriptor, ServicePublishState state)
 		{
+			_publishManifestElements[descriptor.Name]?.UpdateStatus(state);
+			SortServices();
 			switch (state)
 			{
-				case ServicePublishState.Unpublished:
-				case ServicePublishState.InProgress:
-					return;
 				case ServicePublishState.Failed:
 					_primarySubmitButton.Enable();
 					_mainLoadingBar.UpdateProgress(0, failed: true);
@@ -189,8 +218,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 					}
 					break;
 			}
-
-			_publishManifestElements[descriptor.Name].UpdateStatus(state);
 		}
 
 		private void HandleServiceDeployProgress(IDescriptor descriptor)
@@ -200,7 +227,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private float CalculateProgress()
 		{
-			return _publishManifestElements.Values.Average(x => x.LoadingBar.Progress);
+			return _publishManifestElements.Values.Where(element => !element.IsRemoteOnly)
+			                               .Average(x => x.LoadingBar.Progress);
 		}
 	}
 }
