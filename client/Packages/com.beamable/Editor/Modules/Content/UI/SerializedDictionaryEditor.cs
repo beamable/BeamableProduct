@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Beamable.Common.Content;
+using Beamable.Player;
 using UnityEditor;
 using UnityEngine;
 
@@ -14,6 +15,18 @@ namespace Beamable.Editor.Content.UI
       {
          return EditorGUI.TextField(rect, kvp.Key, kvp.Value);
       }
+   }
+
+#if !BEAMABLE_NO_DICT_DRAWERS
+   [CustomPropertyDrawer(typeof(SerializableDictionaryStringToPlayerStat), true)]
+#endif
+   public class SerializableDictionaryStringToPlayerStatEditor : SerializedDictionaryStringToSomethingEditor<PlayerStat>
+   {
+	   protected override PlayerStat RenderNextValue(Rect rect, KeyValuePair<string, PlayerStat> kvp)
+	   {
+		   EditorGUI.TextField(rect, kvp.Key, kvp.Value.Value);
+		   return kvp.Value;
+	   }
    }
 
 #if !BEAMABLE_NO_DICT_DRAWERS

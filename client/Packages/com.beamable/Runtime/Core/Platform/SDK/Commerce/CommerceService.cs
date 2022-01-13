@@ -1,24 +1,25 @@
 using Beamable.Common;
 using Beamable.Api.Payments;
 using Beamable.Common.Api;
+using Beamable.Common.Dependencies;
 
 namespace Beamable.Api.Commerce
 {
    /// <summary>
    /// This type defines the %Client main entry point for the %Commerce feature.
-   /// 
+   ///
    /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-   /// 
+   ///
    /// #### Related Links
    /// - See the <a target="_blank" href="https://docs.beamable.com/docs/store-feature">Store</a> feature documentation
    /// - See Beamable.API script reference
-   /// 
+   ///
    /// ![img beamable-logo]
-   /// 
+   ///
    /// </summary>
    public class CommerceService : PlatformSubscribable<GetOffersResponse, PlayerStoreView>
    {
-      public CommerceService (PlatformService platform, PlatformRequester requester) : base(platform, requester,  "commerce")
+      public CommerceService (IDependencyProvider provider, IBeamableRequester requester) : base(provider, "commerce")
       {
       }
 
@@ -61,7 +62,7 @@ namespace Beamable.Api.Commerce
 
       public Promise<EmptyResponse> Purchase (string storeSymbol, string listingSymbol)
       {
-         long gamerTag = platform.User.id;
+         long gamerTag = userContext.UserId;
          string purchaseId = $"{listingSymbol}:{storeSymbol}";
          return requester.Request<EmptyResponse>(
             Method.POST,
