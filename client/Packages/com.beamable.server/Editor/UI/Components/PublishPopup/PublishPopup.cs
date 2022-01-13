@@ -119,8 +119,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_primarySubmitButton.Button.clickable.clicked += HandlePrimaryButtonClicked;
 			_topMessage = Root.Q<PublishStatusVisualElement>("topMessage");
 			_topMessage.Refresh();
-			OnSubmit -= _topMessage.HandleSubmitClicked;
-			OnSubmit += _topMessage.HandleSubmitClicked;
 
 			SortServices();
 		}
