@@ -80,8 +80,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Microservices.OnServiceDeployStatusChanged += HandleServiceDeployStatusChanged;
 			Microservices.OnServiceDeployProgress -= HandleServiceDeployProgress;
 			Microservices.OnServiceDeployProgress += HandleServiceDeployProgress;
-			OnSubmit -= SubmitClicked;
-			OnSubmit += SubmitClicked;
+			Microservices.OnDeployFailed -= HandleDeployFailed;
+			Microservices.OnDeployFailed += HandleDeployFailed;
+			Microservices.OnDeploySuccess -= HandleDeploySuccess;
+			Microservices.OnDeploySuccess += HandleDeploySuccess;
 
 			_mainLoadingBar = Root.Q<LoadingBarElement>("mainLoadingBar");
 			_mainLoadingBar.SmallBar = true;
@@ -114,7 +116,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_cancelButton.OnClick += () => OnCloseRequested?.Invoke();
 
 			_primarySubmitButton = Root.Q<PrimaryButtonVisualElement>("continueBtn");
-			_primarySubmitButton.Button.clickable.clicked += () => OnSubmit?.Invoke(Model);
+			_primarySubmitButton.Button.clickable.clicked += HandlePrimaryButtonClicked;
 			_topMessage = Root.Q<PublishStatusVisualElement>("topMessage");
 			_topMessage.Refresh();
 			OnSubmit -= _topMessage.HandleSubmitClicked;
@@ -149,7 +151,25 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 		}
 
-		private void SubmitClicked(ManifestModel _) => _primarySubmitButton.Disable();
+		private void HandlePrimaryButtonClicked()
+		{
+			_topMessage.HandleSubmitClicked();
+			_primarySubmitButton.SetText("Publishing...");
+			_primarySubmitButton.Disable();
+			OnSubmit?.Invoke(Model);
+		}
+
+		private void HandleDeployFailed(ManifestModel _, string __) => HandleDeployEnded(false);
+		private void HandleDeploySuccess(ManifestModel _, int __) => HandleDeployEnded(true);
+
+		private void HandleDeployEnded(bool success)
+		{
+			_primarySubmitButton.SetText("Close");
+			_primarySubmitButton.Enable();
+			_primarySubmitButton.SetAsFailure(!success);
+			_primarySubmitButton.Button.clickable.clicked -= HandlePrimaryButtonClicked;
+			_primarySubmitButton.Button.clickable.clicked += () => OnCloseRequested?.Invoke();
+		}
 
 		public void PrepareForPublish()
 		{
@@ -196,10 +216,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 					{
 						kvp.Value.LoadingBar.SetUpdater(null);
 					}
-
-					break;
-				case ServicePublishState.Published:
-					_primarySubmitButton.Enable();
 					break;
 			}
 		}
