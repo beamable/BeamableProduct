@@ -64,6 +64,14 @@ namespace microserviceTests.microservice
       }
       
       [ClientCallable]
+      public Promise PromiseTypelessTestMethod()
+      {
+         Promise pr = new Promise();
+         pr.CompleteSuccess();
+         return pr;
+      }
+      
+      [ClientCallable]
       public string MethodWithJSON_AsParameter(string jsonString)
       {
          return jsonString;

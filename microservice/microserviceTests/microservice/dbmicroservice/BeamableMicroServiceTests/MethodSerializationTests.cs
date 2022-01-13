@@ -264,6 +264,35 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
       
       [Test]
       [NonParallelizable]
+      public async Task Call_TypelessPromiseMethod()
+      {
+         LoggingUtil.Init();
+         TestSocket testSocket = null;
+         var ms = new BeamableMicroService(new TestSocketProvider(socket =>
+         {
+            testSocket = socket;
+            socket.AddStandardMessageHandlers()
+               .AddMessageHandler(
+                  MessageMatcher
+                     .WithReqId(1)
+                     .WithStatus(200),
+                  MessageResponder.NoResponse(),
+                  MessageFrequency.OnlyOnce()
+               );
+         }));
+
+         await ms.Start<SimpleMicroservice>(new TestArgs());
+         Assert.IsTrue(ms.HasInitialized);
+
+         testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "PromiseTypelessTestMethod", 1, 0));
+
+         // simulate shutdown event...
+         await ms.OnShutdown(this, null);
+         Assert.IsTrue(testSocket.AllMocksCalled());
+      }
+      
+      [Test]
+      [NonParallelizable]
       public async Task Call_MethodWithJSON_AsParameter()
       {
          LoggingUtil.Init();
