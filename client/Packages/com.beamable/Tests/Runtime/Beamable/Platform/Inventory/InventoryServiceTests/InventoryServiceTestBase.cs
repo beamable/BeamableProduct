@@ -21,34 +21,27 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
 {
    public class InventoryServiceTestBase
    {
-      public const string ROUTE = "/basic/accounts";
-      public const string SERVICE_URL = "/object/inventory";
-
       protected MockPlatformAPI _requester;
-      // protected MockPlatformService _platform;
       protected InventoryService _service;
       protected MockContentService _content;
 
-
-
-      protected string objectUrl;
+      private MockBeamContext _ctx;
 
       [SetUp]
       public void Init()
       {
 
 	      // create a beam context itself, and sub in a few things
-
 	      _content = new MockContentService();
 	      ContentApi.Instance = Promise<IContentApi>.Successful(_content);
 
 
-	      var ctx = MockBeamContext.Create(onInit: c =>
+	      _ctx = MockBeamContext.Create(onInit: c =>
 	      {
 		      c.AddStandardGuestLoginRequests()
 		       .AddPubnubRequests()
 		       .AddSessionRequests()
-		       ;
+			      ;
 	      }, mutateDependencies: b =>
 	      {
 		      b.RemoveIfExists<IBeamablePurchaser>();
@@ -56,41 +49,15 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
 		      b.AddSingleton<IContentApi>(_content);
 	      });
 
-	      _requester = ctx.Requester;
+	      _requester = _ctx.Requester;
 
-	      _service = ctx.ServiceProvider.GetService<InventoryService>();
-	      // _platform = ctx.ServiceProvider.GetService<IPlatformService>();
-	      // _platform = new MockPlatformService();
-
-         // var builder = new DependencyBuilder()
-         //               .AddSingleton<IPlatformService>(_platform)
-         //               .AddSingleton<IUserContext>(_platform)
-         //               .AddSingleton<IContentApi>(_content)
-         //               .AddSingleton<IConnectivityService>(_platform.ConnectivityService)
-         //               .AddSingleton<INotificationService>(_platform.Notification)
-         //               .AddSingleton<CoroutineService>(_platform.CoroutineService)
-         //               .AddSingleton<IPubnubNotificationService>(_platform.PubnubNotificationService)
-         //               .AddSingleton<IHeartbeatService>(_platform.Heartbeat)
-         //               .AddSingleton<IBeamableRequester>(_requester);
-
-         // var provider = builder.Build();
-         //
-         // _platform.User = new User
-         // {
-         //    id = 1234
-         // };
-
-         // _service = new InventoryService(provider);
-
-         objectUrl = $"{SERVICE_URL}/{ctx.AuthorizedUser.Value}";
+	      _service = _ctx.ServiceProvider.GetService<InventoryService>();
       }
 
       [TearDown]
       public void Cleanup()
       {
-
+	      _ctx.ClearPlayerAndStop();
       }
    }
-
-
 }

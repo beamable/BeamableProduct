@@ -194,6 +194,7 @@ namespace Beamable.Server.Editor
             GenerateClientSourceCode(service);
             System.Threading.Tasks.Task.Factory.StartNew(() =>
             {
+	            Directory.CreateDirectory(service.SourcePath);
                using (var fsw = new FileSystemWatcher(service.SourcePath))
                {
                   fsw.IncludeSubdirectories = false;
@@ -518,7 +519,7 @@ namespace Beamable.Server.Editor
       public static event Action<ManifestModel, int> OnBeforeDeploy;
       public static event Action<ManifestModel, int> OnDeploySuccess;
       public static event Action<ManifestModel, string> OnDeployFailed;
-      public static event Action<IDescriptor, ServicePublishState> OnServiceDeployStatusChanged;	
+      public static event Action<IDescriptor, ServicePublishState> OnServiceDeployStatusChanged;
       public static event Action<IDescriptor> OnServiceDeployProgress;
 
       public static async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context, CancellationToken token, Action<IDescriptor> onServiceDeployed = null)
@@ -544,7 +545,7 @@ namespace Beamable.Server.Editor
          var nameToImageId = new Dictionary<string, string>();
 
          foreach (var descriptor in Descriptors)
-         { 
+         {
 	         OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.InProgress);
             Debug.Log($"Building service=[{descriptor.Name}]");
             var buildCommand = new BuildImageCommand(descriptor, false);
@@ -570,7 +571,7 @@ namespace Beamable.Server.Editor
             var msModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(descriptor);
             uploader.onProgress += msModel.OnDeployProgress;
             uploader.onProgress +=(_, __, ___) => OnServiceDeployProgress?.Invoke(descriptor);
-            
+
             Debug.Log($"Getting Id service=[{descriptor.Name}]");
             var imageId = await uploader.GetImageId(descriptor);
             if (string.IsNullOrEmpty(imageId))

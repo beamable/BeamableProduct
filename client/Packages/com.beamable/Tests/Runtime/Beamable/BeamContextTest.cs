@@ -1,6 +1,4 @@
-// unset
 
-using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using NUnit.Framework;
 
@@ -17,6 +15,13 @@ namespace Beamable.Tests.Runtime
 				mutateDependencies:OnRegister,
 				onInit:OnInit
 				);
+		}
+
+
+		[TearDown]
+		public void Cleanup()
+		{
+			Context.ClearPlayerAndStop();
 		}
 
 		protected virtual void OnInit(MockBeamContext ctx)
