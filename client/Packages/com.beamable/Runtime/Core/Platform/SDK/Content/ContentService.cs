@@ -121,6 +121,8 @@ namespace Beamable.Content
 		private readonly Dictionary<Type, ContentCache> _contentCaches = new Dictionary<Type, ContentCache>();
 		private static bool _testScopeEnabled;
 
+		public ContentDataInfoWrapper ContentDataInfo;
+
 #if UNITY_EDITOR
 
 		public class ContentServiceTestScope : IDisposable
@@ -205,8 +207,8 @@ namespace Beamable.Content
 			{
 				var cacheType = typeof(ContentCache<>).MakeGenericType(contentType);
 				var constructor = cacheType.GetConstructor(new[]
-					{typeof(IHttpRequester), typeof(IBeamableFilesystemAccessor)});
-				rawCache = (ContentCache) constructor.Invoke(new[] {Requester, (object) FilesystemAccessor});
+					{typeof(IHttpRequester), typeof(IBeamableFilesystemAccessor), typeof(ContentService)});
+				rawCache = (ContentCache) constructor.Invoke(new[] {Requester, (object) FilesystemAccessor, this});
 
 				_contentCaches.Add(contentType, rawCache);
 			}

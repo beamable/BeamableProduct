@@ -67,7 +67,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_tokenSource = new CancellationTokenSource();
 			e.OnCloseRequested += () =>
 			{
-				_tokenSource.Cancel();
+				_tokenSource?.Cancel();
+				WindowStateUtility.EnableAllWindows();
 				Close();
 			};
 			e.OnSubmit += async model =>
@@ -77,11 +78,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 				 * upload each image that is different than whats in the manifest...
 				 * upload the manifest file...
 				 */
-				WindowStateUtility.DisableAllWindows();
+				WindowStateUtility.DisableAllWindows(new []{Constants.Publish});
 				e.PrepareForPublish();
-
-				await Microservices.Deploy(model, this, _tokenSource.Token, e.ServiceDeployed);
-				Close();
+				await Microservices.Deploy(model, this, _tokenSource.Token, e.HandleServiceDeployed);
 			};
 
 			container.Add(e);
@@ -94,6 +93,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void OnDestroy()
 		{
 			_tokenSource?.Cancel();
+			WindowStateUtility.EnableAllWindows();
 		}
 	}
 }
