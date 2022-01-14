@@ -6,7 +6,6 @@
 
 #cardHeader {
     -unity-font-style: bold;
-    padding-left: 10px;
     color: rgba(256, 256, 256, 1);
     height: 36px;
     flex-direction: row;
@@ -14,7 +13,7 @@
     align-self: stretch;
 }
 
-#styleIdParent {
+#selectorLabelParent {
     flex-grow: 1;
     justify-content: center;
 }
@@ -101,9 +100,31 @@
     background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/cleanAll.png");
 }
 
+.remove {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/remove.png"); 
+    margin-right: 10px;
+}
+
 .add {
     margin-left: 0;
     background-color: rgb(89,89,89);
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new L.png");
+}
+
+.hidden {
+    visibility: hidden;
+}
+
+#removeButtonContainer {
+    width: 26px;
+    height: 36px;
+    justify-content: center;
+}
+
+#removeButton {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/remove.png");
+    align-self: center;
+    width: 16px;
+    height: 16px;
 }
 

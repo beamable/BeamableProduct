@@ -1,6 +1,6 @@
 ﻿using Beamable.Editor.UI.Buss;
 using Beamable.UI.Buss;
-using System.Linq;
+using System.Collections.Generic;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -23,6 +23,7 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleRule _styleRule;
 		private VisualElement _selectorLabelParent;
 		private VisualElement _properties;
+		private VisualElement _removeButton;
 		private VisualElement _editButton;
 		private VisualElement _wizardButton;
 		private VisualElement _undoButton;
@@ -49,6 +50,7 @@ namespace Beamable.Editor.UI.Components
 			_selectorLabelParent = Root.Q<VisualElement>("selectorLabelParent");
 			_properties = Root.Q<VisualElement>("properties");
 
+			_removeButton = Root.Q<VisualElement>("removeButton");
 			_editButton = Root.Q<VisualElement>("editButton");
 			_wizardButton = Root.Q<VisualElement>("wizardButton");
 			_undoButton = Root.Q<VisualElement>("undoButton");
@@ -61,6 +63,14 @@ namespace Beamable.Editor.UI.Components
 
 			CreateSelectorLabel();
 			CreateProperties();
+			
+			_removeButton.SetVisibility(_currentMode == MODE.EDIT);
+		}
+
+		public void Setup(BussStyleRule styleRule)
+		{
+			_styleRule = styleRule;
+			Refresh();
 		}
 
 		protected override void OnDestroy()
@@ -72,6 +82,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			ClearButtonActions();
 			
+			_removeButton?.RegisterCallback<MouseDownEvent>(RemoveButtonClicked);
 			_editButton?.RegisterCallback<MouseDownEvent>(EditButtonClicked);
 			_wizardButton?.RegisterCallback<MouseDownEvent>(WizardButtonClicked);
 			_undoButton?.RegisterCallback<MouseDownEvent>(UndoButtonClicked);
@@ -80,9 +91,10 @@ namespace Beamable.Editor.UI.Components
 			_addRuleButton?.RegisterCallback<MouseDownEvent>(AddRuleButtonClicked);
 			_showAllButton?.RegisterCallback<MouseDownEvent>(ShowAllButtonClicked);
 		}
-		
+
 		private void ClearButtonActions()
 		{
+			_removeButton?.UnregisterCallback<MouseDownEvent>(RemoveButtonClicked);
 			_editButton?.UnregisterCallback<MouseDownEvent>(EditButtonClicked);
 			_wizardButton?.UnregisterCallback<MouseDownEvent>(WizardButtonClicked);
 			_undoButton?.UnregisterCallback<MouseDownEvent>(UndoButtonClicked);
@@ -90,6 +102,11 @@ namespace Beamable.Editor.UI.Components
 			_addVariableButton?.UnregisterCallback<MouseDownEvent>(AddVariableButtonClicked);
 			_addRuleButton?.UnregisterCallback<MouseDownEvent>(AddRuleButtonClicked);
 			_showAllButton?.UnregisterCallback<MouseDownEvent>(ShowAllButtonClicked);
+		}
+
+		private void RemoveButtonClicked(MouseDownEvent evt)
+		{
+			Debug.Log("RemoveButtonClicked");
 		}
 
 		private void AddRuleButtonClicked(MouseDownEvent evt)
@@ -122,7 +139,7 @@ namespace Beamable.Editor.UI.Components
 			_currentMode = _currentMode == MODE.NORMAL ? _currentMode = MODE.EDIT : _currentMode = MODE.NORMAL;
 			Refresh();
 		}
-		
+
 		private void ShowAllButtonClicked(MouseDownEvent evt)
 		{
 			Debug.Log("ShowAllButtonClicked");
@@ -138,18 +155,12 @@ namespace Beamable.Editor.UI.Components
 			_selectorLabelParent.Add(_selectorLabelComponent);
 		}
 
-		public void Setup(BussStyleRule styleRule)
-		{
-			_styleRule = styleRule;
-			Refresh();
-		}
-
 		private void CreateProperties()
 		{
 			foreach (BussPropertyProvider property in _styleRule.Properties)
 			{
 				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
-				element.Setup(property);
+				element.Setup(property, _currentMode);
 				_properties.Add(element);
 			}
 		}

@@ -1,13 +1,7 @@
 ﻿using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common;
-using Beamable.Editor.UI.Validation;
 using Beamable.UI.Buss;
-using Beamable.UI.Sdf;
-using Beamable.UI.Sdf.MaterialManagement;
-using Beamable.UI.Tweening;
-using System;
 using Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements;
-using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -31,10 +25,23 @@ namespace Beamable.Editor.UI.Components
 		private BussPropertyProvider _property;
 		private VisualElement _valueParent;
 		private VisualElement _variableParent;
+		private BussStyleCardVisualElement.MODE _currentMode;
+		private VisualElement _removeButton;
 
 		public override void Refresh()
 		{
 			base.Refresh();
+
+			VisualElement buttonContainer = new VisualElement();
+			buttonContainer.name = "removeButtonContainer";
+
+			_removeButton = new VisualElement();
+			_removeButton.name = "removeButton";
+			buttonContainer.Add(_removeButton);
+			Root.Add(buttonContainer);
+			
+			_removeButton.RegisterCallback<MouseDownEvent>(OnRemoveButtonClicked);
+			buttonContainer.SetVisibility(_currentMode == BussStyleCardVisualElement.MODE.EDIT);
 
 			TextElement labelComponent = new TextElement();
 			labelComponent.name = "propertyLabel";
@@ -52,11 +59,19 @@ namespace Beamable.Editor.UI.Components
 			SetupEditableField(_property);
 		}
 
-		public void Setup(BussPropertyProvider property)
+		public void Setup(BussPropertyProvider property, BussStyleCardVisualElement.MODE currentMode)
 		{
 			_property = property;
+			_currentMode = currentMode;
 			Refresh();
 		}
+
+		protected override void OnDestroy()
+		{
+			_removeButton?.UnregisterCallback<MouseDownEvent>(OnRemoveButtonClicked);
+		}
+
+		private void OnRemoveButtonClicked(MouseDownEvent evt) { }
 
 		private void SetupEditableField(BussPropertyProvider property)
 		{

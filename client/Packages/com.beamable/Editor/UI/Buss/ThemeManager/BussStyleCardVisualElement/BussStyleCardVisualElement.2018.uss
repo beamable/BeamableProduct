@@ -6,7 +6,6 @@
 
 #cardHeader {
     -unity-font-style: bold;
-    padding-left: 10px;
     color: rgba(256, 256, 256, 1);
     height: 36px;
     flex-direction: row;
@@ -119,9 +118,19 @@
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new L.png");
 }
 
-#stylesGroup > BussStyleCardVisualElement {
-    flex-grow: 1;
-    left: 0px;
-    right: 0px;
+.hidden {
+    visibility: hidden;
 }
 
+#removeButtonContainer {
+    width: 26px;
+    height: 36px;
+    justify-content: center;
+}
+
+#removeButton {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/remove.png");
+    align-self: center;
+    width: 16px;
+    height: 16px;
+}
