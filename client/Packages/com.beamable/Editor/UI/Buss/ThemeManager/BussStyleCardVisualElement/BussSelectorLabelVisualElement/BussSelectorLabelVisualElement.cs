@@ -20,7 +20,7 @@ namespace Beamable.Editor.UI.Components
 		public BussSelectorLabelVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStyleCardVisualElement/BussSelectorLabelVisualElement/BussSelectorLabelVisualElement.2018.uss") { }
 #elif UNITY_2019_1_OR_NEWER
-		public BussSelectorLabelVisualElement(string ussPath) : base(
+		public BussSelectorLabelVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStyleCardVisualElement/BussSelectorLabelVisualElement/BussSelectorLabelVisualElement.uss") { }
 #endif
 
