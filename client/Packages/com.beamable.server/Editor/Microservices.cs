@@ -244,7 +244,7 @@ namespace Beamable.Server.Editor
                    var configEntry = MicroserviceConfiguration.Instance.GetEntry(name);//config.FirstOrDefault(s => s.ServiceName == name);
                    return new ManifestEntryModel
                    {
-                     Comment = "",
+                     Comment = String.Empty,
                      Name = name,
                      Enabled = configEntry?.Enabled ?? true,
                      TemplateId = configEntry?.TemplateId ?? "small",
@@ -279,7 +279,7 @@ namespace Beamable.Server.Editor
                return new ManifestModel
                {
                   ServerManifest = manifest.manifest.ToDictionary(e => e.serviceName),
-                  Comment = "",
+                  Comment = String.Empty,
                   Services = entries.ToDictionary(e => e.Name),
                   Storages = storageEntries.ToDictionary(s => s.Name)
                };
@@ -328,7 +328,7 @@ namespace Beamable.Server.Editor
 	      }
 	      else
 	      {
-		      return "";
+		      return String.Empty;
 	      }
       }
 
@@ -506,7 +506,7 @@ namespace Beamable.Server.Editor
       {
          if (!File.Exists(filePath))
          {
-            return "";
+            return String.Empty;
          }
          using(var stream = new BufferedStream(File.OpenRead(filePath), 1200000))
          {
