@@ -127,8 +127,7 @@ namespace Beamable.Editor.UI.Model
             OnRemoteStatusEnriched?.Invoke(status);
         }
         
-        // TODO - When MongoStorageModel will be ready feel free to implement these methods
-        // TODO === BEGIN
+
         public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
         {
             var existsOnRemote = RemoteReference?.enabled ?? false;
