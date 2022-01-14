@@ -100,7 +100,7 @@
     height: 30px;
 }
 
-.published {
+.published #checkImage {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Checked.png");
 }
 
@@ -108,11 +108,11 @@
     
 }
 
-.publish-inProgress {
-    
+.publish-inProgress #checkImage, .publish-failed #checkImage  {
+     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Checked_Dark.png");
 }
 
-.publish-failed {
+{
     
 }
 
