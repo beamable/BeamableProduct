@@ -247,7 +247,7 @@ namespace Beamable.Server.Editor
 				 var entries = allServices.Select(name =>
 				 {
 					 var configEntry = MicroserviceConfiguration.Instance.GetEntry(name);//config.FirstOrDefault(s => s.ServiceName == name);
-					return new ManifestEntryModel
+					 return new ManifestEntryModel
 					 {
 						 Comment = String.Empty,
 						 Name = name,
