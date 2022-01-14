@@ -29,22 +29,24 @@ jobs:
         with:
           files: |
             .cs$
-      - name: Test all modified files
+      - name: Format changed cs files
         if: contains(steps.changed-files.outputs.all_modified_files, '.cs')
         id: format
         run: |
           dotnet-format -f --include ${{ steps.changed-files.outputs.all_modified_files }}
-      - name: Check if there are changes
-        id: changes
-        uses: UnicornGlobal/has-changes-action@v1.0.11
+      - name: git diff result
+        if: contains(steps.changed-files.outputs.all_modified_files, '.cs') 
+        run: |
+          echo "::set-output name=lines::$(git diff | wc -l)"
+        id: format-diff
       - name: Commit files
-        if: steps.changes.outputs.changed == 1
+        if: steps.format-diff.outputs.lines != 0
         run: |
           git config --local user.name "github-actions[bot]"
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -a -m 'Automated dotnet-format update by ${{ github.event.comment.user.login }} <${{ github.event.comment.user.id }}+${{ github.event.comment.user.login }}@users.noreply.github.com>'
       - name: Push changes
-        if: steps.changes.outputs.changed == 1
+        if: steps.format-diff.outputs.lines != 0
         uses: ad-m/github-push-action@v0.5.0
         with:
           branch: ${{ steps.branch-name.outputs.current_branch }}
