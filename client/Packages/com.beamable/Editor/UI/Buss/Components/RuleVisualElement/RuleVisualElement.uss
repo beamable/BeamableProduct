@@ -1,0 +1,8 @@
+﻿#rule {
+    flex-grow: 1;
+    flex-direction: row;
+}
+
+#propertyBodyContainer {
+    flex-grow: 1;
+}

@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:beamable="Beamable.Editor.UI.Components"
+        xmlns:engine="UnityEngine.Experimental.UIElements"
+        xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
+        xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
+    
+    <engine:VisualElement name="rule">
+        <engine:VisualElement name="propertyBodyContainer">
+            <engine:VisualElement>
+                <beamable:DropdownVisualElement name="propertyDropdown"/>
+            </engine:VisualElement>
+            <engine:VisualElement>
+                <engine:VisualElement name="propertyValue"/>
+            </engine:VisualElement>
+        </engine:VisualElement>
+        <engine:VisualElement name="propertyButtonsContainer">
+            <engine:Button name="propertyRemoveButton"/>
+        </engine:VisualElement>
+    </engine:VisualElement>
+
+</engine:UXML>
