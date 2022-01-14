@@ -5,6 +5,7 @@ using Beamable.Api.Caches;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Stats;
+using Beamable.Common.Dependencies;
 
 namespace Beamable.Api.Stats
 {
@@ -23,8 +24,8 @@ namespace Beamable.Api.Stats
    public class StatsService : AbsStatsApi
    {
 
-      public StatsService (IPlatformService platform, IBeamableRequester requester, UserDataCache<Dictionary<string, string>>.FactoryFunction factoryFunction)
-      : base(requester, platform, factoryFunction)
+      public StatsService (IUserContext platform, IBeamableRequester requester, IDependencyProvider provider, UserDataCache<Dictionary<string, string>>.FactoryFunction factoryFunction)
+      : base(requester, platform, provider, factoryFunction)
       {
       }
 

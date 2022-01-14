@@ -30,6 +30,8 @@ namespace Beamable
 		public const string BEAMABLE_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH = "Packages/com.beamable/Editor/BeamableAssistant/BeamHints/BeamHintDetailConfigs";
 		public const string BEAMABLE_SERVER_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH = "Packages/com.beamable.server/Editor/BeamableAssistant/BeamHints/BeamHintDetailConfigs";
 
+		public enum OfflineStrategy { Optimistic, Disable }
+
 		public static CoreConfiguration Instance => Get<CoreConfiguration>();
 
 		public enum EventHandlerConfig { Guarantee, Replace, Add, }
@@ -41,7 +43,12 @@ namespace Beamable
 		         "- Replace => Replaces any handler configured with Beamable's default handler.\n" +
 		         "- Add => Adds Beamable's default handler to the list of handlers, but keep existing handlers configured.\n")]
 		public EventHandlerConfig DefaultUncaughtPromiseHandlerConfiguration;
+        
 
+        [Tooltip("By default, when your player isn't connected to the internet, Beamable will accrue inventory writes " +
+                 "in a buffer and optimistically simulate the effects locally in memory. When your player comes back " +
+                 "online, the buffer will be replayed. If this isn't desirable, you should disable the feature.")]
+        public OfflineStrategy InventoryOfflineMode = OfflineStrategy.Optimistic;
 
 		[Header("Beamable Assistant")]
 		[Tooltip("Enable this to receive a warning (toggle-able per Beam Hint Validation) when entering playmode.\n\n" +

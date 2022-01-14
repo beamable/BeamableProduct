@@ -4,11 +4,16 @@ using Beamable.Common.Api;
 
 namespace Beamable.Api
 {
-   public class PubnubNotificationService
-   {
-      private PlatformRequester _requester;
+	public interface IPubnubNotificationService
+	{
+		Promise<SubscriberDetailsResponse> GetSubscriberDetails();
+	}
 
-      public PubnubNotificationService (PlatformRequester requester)
+   public class PubnubNotificationService : IPubnubNotificationService
+   {
+      private IBeamableRequester _requester;
+
+      public PubnubNotificationService (IBeamableRequester requester)
       {
          _requester = requester;
       }

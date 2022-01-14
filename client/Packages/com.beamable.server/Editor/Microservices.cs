@@ -149,6 +149,7 @@ namespace Beamable.Server.Editor
             GenerateClientSourceCode(service);
             Task.Factory.StartNew(() =>
             {
+            	Directory.CreateDirectory(service.SourcePath);
 	            using (var fsw = new FileSystemWatcher(service.SourcePath))
 	            {
 		            fsw.IncludeSubdirectories = false;

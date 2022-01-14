@@ -1,3 +1,4 @@
+using Beamable.Common.Dependencies;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -12,6 +13,7 @@ namespace Beamable.Common.Api.Leaderboards
       private readonly UserDataCache<RankEntry>.FactoryFunction _factoryFunction;
       public IBeamableRequester Requester { get; }
       public IUserContext UserContext { get; }
+      protected IDependencyProvider Provider { get; }
 
       private static long TTL_MS = 60 * 1000;
       private Dictionary<string, UserDataCache<RankEntry>> caches = new Dictionary<string, UserDataCache<RankEntry>>();
@@ -19,11 +21,12 @@ namespace Beamable.Common.Api.Leaderboards
       private Dictionary<string, LeaderboardAssignmentInfo> _assignmentCache =
          new Dictionary<string, LeaderboardAssignmentInfo>();
 
-      public LeaderboardApi(IBeamableRequester requester, IUserContext userContext, UserDataCache<RankEntry>.FactoryFunction factoryFunction)
+      public LeaderboardApi(IBeamableRequester requester, IUserContext userContext, IDependencyProvider provider, UserDataCache<RankEntry>.FactoryFunction factoryFunction)
       {
          _factoryFunction = factoryFunction;
          Requester = requester;
          UserContext = userContext;
+         Provider = provider;
       }
 
       public UserDataCache<RankEntry> GetCache(string boardId)
@@ -34,7 +37,7 @@ namespace Beamable.Common.Api.Leaderboards
             cache = _factoryFunction(
                $"Leaderboard.{boardId}",
                TTL_MS,
-               (gamerTags => Resolve(boardId, gamerTags))
+               (gamerTags => Resolve(boardId, gamerTags)), Provider
             );
             caches.Add(boardId, cache);
          }
@@ -76,7 +79,7 @@ namespace Beamable.Common.Api.Leaderboards
 
       public Promise<LeaderBoardView> GetBoard(LeaderboardRef leaderBoard, int @from, int max, long? focus = null, long? outlier = null)
          => GetBoard(leaderBoard.Id, from, max, focus, outlier);
-      
+
       public Promise<LeaderBoardView> GetBoard(string boardId, int @from, int max, long? focus = null, long? outlier = null)
       {
          if(string.IsNullOrEmpty(boardId))
@@ -93,18 +96,18 @@ namespace Beamable.Common.Api.Leaderboards
          {
             query += $"&outlier={outlier.Value}";
          }
-         
+
          string encodedBoardId = Requester.EscapeURL(boardId);
          return Requester.Request<LeaderBoardV2ViewResponse>(
             Method.GET,
             $"/object/leaderboards/{encodedBoardId}/view?{query}"
          ).Map(rsp => rsp.lb);
       }
-      
+
       /// <inheritdoc/>
       public Promise<LeaderBoardView> GetAssignedBoard(string boardId, int @from, int max, long? focus = null, long? outlier = null)
       {
-         return ResolveAssignment(boardId, UserContext.UserId).FlatMap(assignment => 
+         return ResolveAssignment(boardId, UserContext.UserId).FlatMap(assignment =>
             GetBoard(assignment.leaderboardId, @from, max, focus, outlier));
       }
 
@@ -144,7 +147,7 @@ namespace Beamable.Common.Api.Leaderboards
 
       public Promise<EmptyResponse> SetScore(LeaderboardRef leaderBoard, double score, IDictionary<string, object> stats=null)
             => SetScore(leaderBoard.Id, score, stats);
-      
+
       public Promise<EmptyResponse> SetScore(string boardId, double score, IDictionary<string, object> stats=null)
       {
          return Update(boardId, score, increment: false, stats);
