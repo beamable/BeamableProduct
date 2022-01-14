@@ -18,7 +18,7 @@ namespace Beamable.Editor.Assistant
 	/// </summary>
 	public class BeamHintNotificationManager : IBeamHintManager
 	{
-		private const string NOTIFICATION_SESSION_KEY = "BEAMABLE_NOTIFICATION_SESSION_KEY";
+		private const string NOTIFICATION_SESSION_KEY = "BEAM_HINT_NOTIFICATION_SESSION_KEY";
 
 		private IBeamHintGlobalStorage _hintStorage;
 		private IBeamHintPreferencesManager _hintPreferences;

@@ -163,10 +163,10 @@ namespace Beamable.Editor
 	      EditorApplication.update += HintNotificationsManager.Update;
 		
 	      // Hook up editor play-mode-warning feature.
-	      EditorApplication.playModeStateChanged += delegate(PlayModeStateChange change) {
-		      if (!coreConfiguration.EnablePlayModeWarning) 
-			      return;
-		      
+	      void OnPlayModeStateChanged(PlayModeStateChange change)
+	      {
+		      if (!coreConfiguration.EnablePlayModeWarning) return;
+
 		      if (change == PlayModeStateChange.ExitingEditMode)
 		      {
 			      HintPreferencesManager.SplitHintsByPlayModeWarningPreferences(HintGlobalStorage.All, out var toWarnHints, out _);
@@ -174,15 +174,9 @@ namespace Beamable.Editor
 			      if (hintsToWarnAbout.Count > 0)
 			      {
 				      var msg = string.Join("\n", hintsToWarnAbout.Select(hint => $"- {hint.Header.Id}"));
-				      
-				      var res = EditorUtility.DisplayDialogComplex("Beamable Assistant", "There are pending Beamable Validations.\n" +
-				                                                                  "These Hints may cause problems during runtime:\n\n" + 
-				                                                                  $"{msg}\n\n" +
-				                                                                  "Do you wish to stop entering playmode and see these validations?", 
-				                                            "Yes, I want to stop and go see validations.",
-				                                            "No, I'll take my chances and don't bother me about these hints anymore.",
-					      "No, I'll take my chances and don't bother me ever again about any hints.");
-				      
+
+				      var res = EditorUtility.DisplayDialogComplex("Beamable Assistant", "There are pending Beamable Validations.\n" + "These Hints may cause problems during runtime:\n\n" + $"{msg}\n\n" + "Do you wish to stop entering playmode and see these validations?", "Yes, I want to stop and go see validations.", "No, I'll take my chances and don't bother me about these hints anymore.", "No, I'll take my chances and don't bother me ever again about any hints.");
+
 				      if (res == 0)
 				      {
 					      EditorApplication.isPlaying = false;
@@ -190,8 +184,7 @@ namespace Beamable.Editor
 				      }
 				      else if (res == 1)
 				      {
-					      foreach (var hint in hintsToWarnAbout) 
-						      HintPreferencesManager.SetHintPlayModeWarningPreferences(hint, BeamHintPlayModeWarningPreference.Disabled);
+					      foreach (var hint in hintsToWarnAbout) HintPreferencesManager.SetHintPlayModeWarningPreferences(hint, BeamHintPlayModeWarningPreference.Disabled);
 				      }
 				      else if (res == 2)
 				      {
@@ -199,7 +192,10 @@ namespace Beamable.Editor
 				      }
 			      }
 		      }
-	      };
+	      }
+
+	      EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+	      EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 	      
 	      // Apply the defined configuration for how users want to uncaught promises (with no .Error callback attached) in Beamable promises. 
 	     if (!Application.isPlaying) 
