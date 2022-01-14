@@ -11,6 +11,46 @@ on:
       - 'microservice/**'
 
 jobs:
+  dotnet-format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # otherwise, there would be errors pushing refs to the destination repository.
+      - name: Get branch name
+        id: branch-name
+        uses: tj-actions/branch-names@v5.1
+      - name: "Install dotnet-format"
+        run: dotnet tool install -g dotnet-format
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v11.7
+        with:
+          files: |
+            .cs$
+      - name: Format changed cs files
+        if: contains(steps.changed-files.outputs.all_modified_files, '.cs')
+        id: format
+        run: |
+          dotnet-format -f --include ${{ steps.changed-files.outputs.all_modified_files }}
+      - name: git diff result
+        if: contains(steps.changed-files.outputs.all_modified_files, '.cs') 
+        run: |
+          echo "::set-output name=lines::$(git diff | wc -l)"
+        id: format-diff
+      - name: Commit files
+        if: steps.format-diff.outputs.lines != 0
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -a -m 'Automated dotnet-format update by ${{ github.event.comment.user.login }} <${{ github.event.comment.user.id }}+${{ github.event.comment.user.login }}@users.noreply.github.com>'
+      - name: Push changes
+        if: steps.format-diff.outputs.lines != 0
+        uses: ad-m/github-push-action@v0.5.0
+        with:
+          branch: ${{ steps.branch-name.outputs.current_branch }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
   testMicroserviceBaseImage:
     timeout-minutes: 10
     runs-on: ubuntu-latest
