@@ -247,6 +247,7 @@ namespace Beamable.Server.Editor
                      Name = name,
                      Enabled = configEntry?.Enabled ?? true,
                      TemplateId = configEntry?.TemplateId ?? "small",
+					 Dependencies = configEntry?.Dependencies
                    };
                }).ToList();
 

@@ -176,9 +176,14 @@ namespace Beamable.Editor.UI.Model
          return result;
       }
 
-      public ServiceReference GetReference(IDescriptor descriptor)
+      public ServiceReference GetReference(MicroserviceDescriptor descriptor)
       {
          return ServerManifest?.manifest?.FirstOrDefault(r => r.serviceName.Equals(descriptor.Name));
+      }
+
+	  public ServiceStorageReference GetStorageReference(StorageObjectDescriptor descriptor)
+      {
+         return ServerManifest?.storages?.FirstOrDefault(r => r.id.Equals(descriptor.Name));
       }
 
       public ServiceType GetModelServiceType(string name)

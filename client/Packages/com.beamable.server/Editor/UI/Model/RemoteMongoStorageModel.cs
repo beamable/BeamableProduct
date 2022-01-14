@@ -15,7 +15,7 @@ namespace Beamable.Editor.UI.Model
 		{
 			return new RemoteMongoStorageModel
 			{
-				RemoteReference = dataModel.GetReference(descriptor),
+				RemoteReference = dataModel.GetStorageReference(descriptor),
 				ServiceDescriptor = descriptor,
 				ServiceBuilder = Microservices.GetStorageBuilder(descriptor),
 				Config = MicroserviceConfiguration.Instance.GetStorageEntry(descriptor.Name)
