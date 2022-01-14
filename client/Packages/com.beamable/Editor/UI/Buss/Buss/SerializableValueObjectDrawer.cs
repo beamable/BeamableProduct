@@ -59,7 +59,10 @@ namespace Beamable.Editor.UI.Buss {
             var valueField =
 	            typeof(SerializableValueObject).GetField("value", BindingFlags.Instance | BindingFlags.NonPublic);
             var obj = property.GetFieldInfo().GetValue(property.GetParentObject());
-            value = valueField.GetValue(obj);
+            if (value == null)
+            {
+	            value = valueField.GetValue(obj);
+            }
             EditorGUI.BeginChangeCheck();
             value = GUIDrawerHelper.DrawObject(rc, label, value, _drawerData,
                 property.serializedObject.targetObject.GetInstanceID() + ":" + property.propertyPath);
