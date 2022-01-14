@@ -1,5 +1,6 @@
 ﻿using Beamable.Editor.UI.Buss;
 using Beamable.UI.Buss;
+using Editor.UI.BUSS.ThemeManager;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -22,7 +23,10 @@ namespace Beamable.Editor.UI.Components
 		private TextElement _styleIdLabel;
 		private TextField _styleIdEditField;
 		
+		private VariableDatabase _variableDatabase;
+		private BussStyleSheet _styleSheet;
 		private BussStyleRule _styleRule;
+		
 		private VisualElement _properties;
 		private VisualElement _editButton;
 		private VisualElement _wizardButton;
@@ -171,9 +175,11 @@ namespace Beamable.Editor.UI.Components
 			// TODO: apply change to property
 		}
 
-		public void Setup(BussStyleRule styleRule)
+		public void Setup(BussStyleSheet styleSheet, BussStyleRule styleRule, VariableDatabase variableDatabase)
 		{
+			_styleSheet = styleSheet;
 			_styleRule = styleRule;
+			_variableDatabase = variableDatabase;
 			Refresh();
 		}
 
@@ -181,8 +187,10 @@ namespace Beamable.Editor.UI.Components
 		{
 			foreach (BussPropertyProvider property in _styleRule.Properties)
 			{
+				if(property.IsVariable) continue;
+				
 				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
-				element.Setup(_styleRule, property);
+				element.Setup(_styleSheet, _styleRule, property, _variableDatabase);
 				_properties.Add(element);
 			}
 		}

@@ -1,9 +1,35 @@
-.button {
+#button {
     width: 30px;
     height: 30px;
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new L.png");
+    background-color: transparent;
+    border-color: transparent;
 }
 
-.add {
-    background-color: rgb(89,89,89);
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new L.png");
+#button:hover {
+    -unity-background-image-tint-color: grey;
+}
+
+
+#button.whenConnected {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remove L.png");
+}
+
+DropdownVisualElement{
+    margin: 5px;
+}
+
+DropdownVisualElement #mainContainer{
+    min-height: initial;
+    height: 24px;
+    background-color: grey;
+}
+
+DropdownVisualElement #button{
+    height: 20px;
+}
+
+#value{
+    min-width: initial;
+    max-width: initial;
 }
