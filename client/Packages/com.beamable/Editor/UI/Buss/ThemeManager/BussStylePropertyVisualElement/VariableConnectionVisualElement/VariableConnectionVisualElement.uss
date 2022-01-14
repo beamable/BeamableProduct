@@ -2,12 +2,12 @@
     width: 30px;
     height: 30px;
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new L.png");
-    background-color: transparent;
-    border-color: transparent;
+    background-color: rgba(0, 0, 0, 0);
+    border-color: rgba(0, 0, 0, 0);
 }
 
 #button:hover {
-    -unity-background-image-tint-color: grey;
+    -unity-background-image-tint-color: #808080;
 }
 
 
@@ -19,10 +19,14 @@ DropdownVisualElement{
     margin: 5px;
 }
 
+DropdownVisualElement #mainVisualElement{
+    width: 100px;
+}
+
 DropdownVisualElement #mainContainer{
-    min-height: initial;
+    min-height: 0px;
     height: 24px;
-    background-color: grey;
+    background-color: #808080;
 }
 
 DropdownVisualElement #button{
@@ -30,6 +34,6 @@ DropdownVisualElement #button{
 }
 
 #value{
-    min-width: initial;
-    max-width: initial;
+    min-width: 0px;
+    max-width: 10000px;
 }
