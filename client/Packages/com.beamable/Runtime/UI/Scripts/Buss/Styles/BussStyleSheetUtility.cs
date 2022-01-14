@@ -39,7 +39,7 @@ namespace Beamable.UI.Buss
 			return target.GetPropertyProvider(key)?.GetProperty();
 		}
 
-		public static bool IsValidVariableName(string name) => name.StartsWith("--");
+		public static bool IsValidVariableName(string name) => name?.StartsWith("--") ?? false;
 
 		public static IEnumerable<BussPropertyProvider> GetVariablePropertyProviders(this BussStyleDescription target)
 		{
