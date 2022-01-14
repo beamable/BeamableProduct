@@ -25,7 +25,7 @@ namespace Beamable.Editor.UI.Components
 			AddBussPropertyFieldClass(label);
 			label.style.SetFontSize(8f);
 			label.AddTextWrapStyle();
-			_mainElement.Add(label);
+			Root.Add(label);
 		}
 
 		public override void OnPropertyChangedExternally()
