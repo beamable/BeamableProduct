@@ -110,6 +110,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 
 			_generalComments = Root.Q<TextField>("largeCommentsArea");
+			_generalComments.AddPlaceholder("General comment");
 			_generalComments.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
 
 			_cancelButton = Root.Q<GenericButtonVisualElement>("cancelBtn");
@@ -151,10 +152,23 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void HandlePrimaryButtonClicked()
 		{
+			foreach (PublishManifestEntryVisualElement manifestEntryVisualElement in _publishManifestElements.Values)
+				manifestEntryVisualElement.HandlePublishStarted();
+
 			_topMessage.HandleSubmitClicked();
 			_primarySubmitButton.SetText("Publishing...");
 			_primarySubmitButton.Disable();
+			ReplaceCommentWithLogger();
 			OnSubmit?.Invoke(Model);
+		}
+
+		void ReplaceCommentWithLogger()
+		{
+			var parent = _generalComments.parent;
+			_generalComments.RemoveFromHierarchy();
+			var logger = new PublishLoggerVisualElement();
+			parent.Add(logger);
+			logger.Refresh();
 		}
 
 		private void HandleDeployFailed(ManifestModel _, string __) => HandleDeployEnded(false);
