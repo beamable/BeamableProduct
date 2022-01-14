@@ -588,7 +588,15 @@ namespace Beamable.Server.Editor
                   Debug.Log(string.Format(BeamableLogConstants.ContainerAlreadyUploadedMessage, descriptor.Name));
                   onServiceDeployed?.Invoke(descriptor);
                   OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Published);
-                  continue;
+
+                  foreach (var storage in descriptor.GetStorageReferences())
+                  {
+					 Debug.Log(string.Format(BeamableLogConstants.ContainerAlreadyUploadedMessage, storage.Name));
+					 onServiceDeployed?.Invoke(storage);
+                     OnServiceDeployStatusChanged?.Invoke(storage, ServicePublishState.Published);
+                  }
+
+				  continue;
                }
             }
 
@@ -611,7 +619,14 @@ namespace Beamable.Server.Editor
                 Debug.Log(string.Format(BeamableLogConstants.UploadedContainerMessage, descriptor.Name));
                 onServiceDeployed?.Invoke(descriptor);
                 OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Published);
-            },
+
+				foreach (var storage in descriptor.GetStorageReferences())
+				{
+					Debug.Log(string.Format(BeamableLogConstants.UploadedContainerMessage, storage.Name));
+					onServiceDeployed?.Invoke(storage);
+					OnServiceDeployStatusChanged?.Invoke(storage, ServicePublishState.Published);
+				}
+			},
             () =>
             {
                 Debug.LogError(string.Format(BeamableLogConstants.CantUploadContainerMessage, descriptor.Name));
