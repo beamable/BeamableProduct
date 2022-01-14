@@ -9,6 +9,7 @@ using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
+using UnityEngine.Experimental.UIElements.StyleEnums;
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -51,8 +52,8 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void Update() {
-			_button.clicked -= OnButtonClick;
-			_button.clicked += OnButtonClick;
+			_button.clickable.clicked -= OnButtonClick;
+			_button.clickable.clicked += OnButtonClick;
 			_button.EnableInClassList("whenConnected", IsConnected);
 
 			_dropdownOptions.Clear();
