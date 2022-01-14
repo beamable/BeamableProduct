@@ -99,6 +99,10 @@
     width: 30px;
     height: 30px;
 }
+.published #mainContainer> LoadingBarElement {
+    height: 0px;
+    visibility: hidden;
+}
 
 .published #checkImage {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Checked.png");
