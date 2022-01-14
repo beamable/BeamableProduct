@@ -11,6 +11,52 @@ on:
       - 'microservice/**'
 
 jobs:
+  dotnet-format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # otherwise, there would be errors pushing refs to the destination repository.
+      - name: Get branch name
+        id: branch-name
+        uses: tj-actions/branch-names@v5.1
+        
+      - name: Current branch name
+        run: |
+          echo "${{ steps.branch-name.outputs.current_branch }}"
+      - name: Add dotnet-format problem matcher
+        uses: xt0rted/dotnet-format-problem-matcher@v1
+
+      - name: Restore dotnet tools
+        uses: xt0rted/dotnet-tool-restore@v1
+      - run: dotnet tool install -g dotnet-format
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v11.7
+        with:
+          files: |
+            .cs$
+      - name: Test all modified files
+        if: contains(steps.changed-files.outputs.all_modified_files, '.cs') 
+        id: format
+        run: |
+          dotnet-format -f --include ${{ steps.changed-files.outputs.all_modified_files }}
+      - name: Check if there are changes
+        id: changes
+        uses: UnicornGlobal/has-changes-action@v1.0.11
+      - name: Commit files
+        if: steps.changes.outputs.changed == 1
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -a -m 'Automated dotnet-format update by ${{ github.event.comment.user.login }} <${{ github.event.comment.user.id }}+${{ github.event.comment.user.login }}@users.noreply.github.com>'
+      - name: Push changes
+        if: steps.changes.outputs.changed == 1
+        uses: ad-m/github-push-action@v0.5.0
+        with:
+          branch: ${{ steps.branch-name.outputs.current_branch }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
   testMicroserviceBaseImage:
     timeout-minutes: 10
     runs-on: ubuntu-latest
