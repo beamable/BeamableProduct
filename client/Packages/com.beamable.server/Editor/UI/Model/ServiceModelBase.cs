@@ -57,7 +57,7 @@ namespace Beamable.Editor.UI.Model
             }
         }
         private bool _isSelected;
-        
+
         public bool IsCollapsed
         {
             get => _isCollapsed;
