@@ -57,8 +57,23 @@ namespace Beamable.Editor.Microservice.UI.Components
         }
         protected override void UpdateRemoteStatusIcon()
         {
-            // TODO
-        }
+			_remoteStatusIcon.ClearClassList();
+			string statusClassName;
+
+			if (_mongoStorageModel.RemoteReference?.enabled ?? false)
+			{
+				statusClassName = "remoteEnabled";
+				_remoteStatusLabel.text = Constants.REMOTE_ENABLED;
+			}
+			else
+			{
+				statusClassName = "remoteDisabled";
+				_remoteStatusLabel.text = Constants.REMOTE_NOT_ENABLED;
+			}
+
+			_remoteStatusIcon.tooltip = _remoteStatusLabel.text;
+			_remoteStatusIcon.AddToClassList(statusClassName);
+		}
 
         protected override void SetupProgressBarForStart(Task _)
         {

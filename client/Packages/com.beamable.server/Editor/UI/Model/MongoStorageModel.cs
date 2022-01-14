@@ -25,7 +25,8 @@ namespace Beamable.Editor.UI.Model
     [System.Serializable]
     public class MongoStorageModel : ServiceModelBase, IBeamableStorageObject
     {
-        public StorageObjectDescriptor ServiceDescriptor { get; protected set; }
+		public ServiceReference RemoteReference { get; protected set; }
+		public StorageObjectDescriptor ServiceDescriptor { get; protected set; }
         public MongoStorageBuilder ServiceBuilder { get; protected set; }
         public override IBeamableBuilder Builder => ServiceBuilder;
         public override IDescriptor Descriptor => ServiceDescriptor;
@@ -35,11 +36,12 @@ namespace Beamable.Editor.UI.Model
         public override event Action<Task> OnStart;
         public override event Action<Task> OnStop;
         
-        public static MongoStorageModel CreateNew(StorageObjectDescriptor descriptor)
+        public static MongoStorageModel CreateNew(StorageObjectDescriptor descriptor, MicroservicesDataModel dataModel)
         {
             return new MongoStorageModel
             {
-                ServiceDescriptor = descriptor,
+				RemoteReference = dataModel.GetReference(descriptor),
+				ServiceDescriptor = descriptor,
                 ServiceBuilder = Microservices.GetStorageBuilder(descriptor),
                 Config = MicroserviceConfiguration.Instance.GetStorageEntry(descriptor.Name)
             };

@@ -81,7 +81,7 @@ namespace Beamable.Editor.UI.Model
             IBeamableService newService;
             if (descriptor.ServiceType == ServiceType.StorageObject)
             {
-               newService = MongoStorageModel.CreateNew(descriptor as StorageObjectDescriptor);
+               newService = MongoStorageModel.CreateNew(descriptor as StorageObjectDescriptor, this);
             }
             else
             {
@@ -176,7 +176,7 @@ namespace Beamable.Editor.UI.Model
          return result;
       }
 
-      public ServiceReference GetReference(MicroserviceDescriptor descriptor)
+      public ServiceReference GetReference(IDescriptor descriptor)
       {
          return ServerManifest?.manifest?.FirstOrDefault(r => r.serviceName.Equals(descriptor.Name));
       }
