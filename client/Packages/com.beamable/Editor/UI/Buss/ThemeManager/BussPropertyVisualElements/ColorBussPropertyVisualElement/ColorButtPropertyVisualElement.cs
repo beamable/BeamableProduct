@@ -32,6 +32,7 @@ namespace Beamable.Editor.UI.Components
 		private void OnValueChange(ChangeEvent<Color> evt)
 		{
 			Property.Color = evt.newValue;
+			TriggerStyleSheetChange();
 		}
 
 		public override void OnPropertyChangedExternally()

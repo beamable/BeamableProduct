@@ -22,6 +22,10 @@ namespace Beamable.UI.Buss
 
 		private void OnValidate()
 		{
+			TriggerChange();
+		}
+
+		public void TriggerChange() {
 			BussConfiguration.UseConfig(conf => conf.UpdateStyleSheet(this));
 			OnChange?.Invoke();
 		}
