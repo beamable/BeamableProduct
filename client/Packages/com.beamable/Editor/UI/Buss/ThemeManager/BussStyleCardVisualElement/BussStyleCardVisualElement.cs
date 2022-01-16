@@ -1,6 +1,8 @@
-﻿using Beamable.Editor.UI.Buss;
+﻿using System.Collections.Generic;
+using Beamable.Editor.UI.Buss;
 using Beamable.UI.Buss;
 using Editor.UI.BUSS.ThemeManager;
+using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -88,7 +90,23 @@ namespace Beamable.Editor.UI.Components
 
 		private void AddRuleButtonClicked(MouseDownEvent evt)
 		{
-			Debug.Log("AddRuleButtonClicked");
+			var keys = new HashSet<string>();
+			foreach (var propertyProvider in _styleRule.Properties)
+			{
+				keys.Add(propertyProvider.Key);
+			}
+			var context = new GenericMenu();
+
+			foreach (var key in BussStyle.Keys) {
+				if (keys.Contains(key)) continue;
+				context.AddItem(new GUIContent(key), false, () => {
+					_styleRule.Properties.Add(BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty()));
+					AssetDatabase.SaveAssets();
+					_styleSheet.TriggerChange();
+				});
+			}
+			
+			context.ShowAsContext();
 		}
 
 		private void AddVariableButtonClicked(MouseDownEvent evt)
