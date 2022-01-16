@@ -31,6 +31,7 @@ namespace Beamable.Editor.UI.Components
 		private void OnValueChange(ChangeEvent<float> evt)
 		{
 			Property.FloatValue = evt.newValue;
+			TriggerStyleSheetChange();
 		}
 
 		public override void OnPropertyChangedExternally()

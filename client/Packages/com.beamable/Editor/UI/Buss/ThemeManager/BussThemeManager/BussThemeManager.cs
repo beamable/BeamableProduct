@@ -119,12 +119,16 @@ namespace Beamable.UI.BUSS
 			_variableDatabase.RemoveAllStyleSheets();
 		}
 
+		private bool _inStyleSheetChangedLoop;
 		private void OnStyleSheetExternallyChanged()
 		{
+			if(_inStyleSheetChangedLoop) return;
+			_inStyleSheetChangedLoop = true;
 			foreach (BussPropertyVisualElement propertyVisualElement in this.GetRootVisualContainer().Query<BussPropertyVisualElement>().Build().ToList())
 			{
 				propertyVisualElement.OnPropertyChangedExternally();
 			}
+			_inStyleSheetChangedLoop = false;
 		}
 
 		private void OnDestroy()

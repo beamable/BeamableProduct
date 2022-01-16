@@ -82,6 +82,7 @@ namespace Beamable.Editor.UI.Components
 			
 			if (_propertyVisualElement != null)
 			{
+				_propertyVisualElement.UpdatedStyleSheet = _styleSheet;
 				_valueParent.Add(_propertyVisualElement);
 				_propertyVisualElement.Refresh();
 			}

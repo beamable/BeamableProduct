@@ -14,6 +14,7 @@ namespace Beamable.Editor.UI.Components
 	public abstract class BussPropertyVisualElement : BeamableBasicVisualElement
 	{
 		public abstract IBussProperty BaseProperty { get; }
+		public BussStyleSheet UpdatedStyleSheet;
 
 #if UNITY_2018
 		protected BussPropertyVisualElement() : base(
@@ -29,6 +30,14 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public abstract void OnPropertyChangedExternally();
+
+		protected void TriggerStyleSheetChange()
+		{
+			if (UpdatedStyleSheet != null)
+			{
+				UpdatedStyleSheet.TriggerChange();
+			}
+		}
 	}
 
 	public abstract class BussPropertyVisualElement<T> : BussPropertyVisualElement where T : IBussProperty
