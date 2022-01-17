@@ -2,15 +2,14 @@
     flex-direction: row;
     justify-content: flex-start;
     align-self: stretch;
+    align-items: center;
 }
 
 #label {
     width: 140px;
     color: rgb(255,255,255);
-    min-height: 30px;
-    padding-left: 10px;
-    -unity-text-align: upper-left;
-    margin-top: 12px;
+    -unity-text-align: middle-left;
+    height: 20px;
 }
 
 #value {
@@ -33,4 +32,17 @@
 
 .equalWidth {
     width: 0;
+}
+
+#removeButtonContainer {
+    min-width: 26px;
+    height: 36px;
+    justify-content: center;
+}
+
+#removeButton {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/remove.png");
+    align-self: center;
+    width: 16px;
+    height: 16px;
 }

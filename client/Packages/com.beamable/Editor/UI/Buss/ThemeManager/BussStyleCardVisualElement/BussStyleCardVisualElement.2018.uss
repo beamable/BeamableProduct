@@ -6,7 +6,6 @@
 
 #cardHeader {
     -unity-font-style: bold;
-    padding-left: 10px;
     color: rgba(256, 256, 256, 1);
     height: 36px;
     flex-direction: row;
@@ -14,19 +13,9 @@
     align-self: stretch;
 }
 
-#styleIdParent {
+#selectorLabelParent {
     flex-grow: 1;
     justify-content: center;
-}
-
-#styleId {
-    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
-    -unity-text-align: middle-left;
-    color: rgb(255,255,255);
-    margin-left: 10px;
-    min-width: 50px;
-    height: 14px;
-    font-size: 14px;
 }
 
 #colorBlock {
@@ -129,9 +118,19 @@
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new L.png");
 }
 
-#stylesGroup > BussStyleCardVisualElement {
-    flex-grow: 1;
-    left: 0px;
-    right: 0px;
+.hidden {
+    visibility: hidden;
 }
 
+#removeButtonContainer {
+    width: 26px;
+    height: 36px;
+    justify-content: center;
+}
+
+#removeButton {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/remove.png");
+    align-self: center;
+    width: 16px;
+    height: 16px;
+}
