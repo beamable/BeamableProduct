@@ -208,7 +208,7 @@ namespace Beamable.Editor.UI.Components
 				if(property.IsVariable) continue;
 				
 				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
-				element.Setup(_styleSheet, _styleRule, property, _variableDatabase);
+				element.Setup(_styleSheet, property, _variableDatabase);
 				_properties.Add(element);
 			}
 		}

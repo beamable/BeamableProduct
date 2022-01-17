@@ -1,13 +1,9 @@
 ﻿using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Validation;
 using Beamable.UI.Buss;
-using Beamable.UI.Sdf;
-using Beamable.UI.Sdf.MaterialManagement;
-using Beamable.UI.Tweening;
-using System;
 using Editor.UI.BUSS.ThemeManager;
 using Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements;
-using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -18,16 +14,20 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class BussStylePropertyVisualElement : ValidableVisualElement<string>
+	public class BussStylePropertyVisualElement : BeamableBasicVisualElement
 	{
 		public new class UxmlFactory : UxmlFactory<BussStylePropertyVisualElement, UxmlTraits> { }
 
+#if UNITY_2018
 		public BussStylePropertyVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStylePropertyVisualElement)}/{nameof(BussStylePropertyVisualElement)}") { }
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.2018.uss") { }
+#elif UNITY_2019_1_OR_NEWER
+		public BussStylePropertyVisualElement() : base(
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.uss") { }
+#endif
 
 		private VariableDatabase _variableDatabase;
 		private BussStyleSheet _styleSheet;
-		private BussStyleRule _styleRule;
 		private BussPropertyProvider _propertyProvider;
 		
 		private VisualElement _valueParent;
@@ -47,19 +47,19 @@ namespace Beamable.Editor.UI.Components
 			Update();
 		}
 
-		private void Update() {
+		private void Update() 
+		{
 			_labelComponent.text = _propertyProvider.Key;
 
 			SetupEditableField();
 			SetupVariableConnection();
 		}
 
-		public void Setup(BussStyleSheet styleSheet, BussStyleRule styleRule, BussPropertyProvider property, VariableDatabase variableDatabase)
+		public void Setup(BussStyleSheet styleSheet, BussPropertyProvider property, VariableDatabase variableDatabase)
 		{
 			RemoveStyleSheetListener();
 			_variableDatabase = variableDatabase;
 			_styleSheet = styleSheet;
-			_styleRule = styleRule;
 			_propertyProvider = property;
 			Refresh();
 			AddStyleSheetListener();
