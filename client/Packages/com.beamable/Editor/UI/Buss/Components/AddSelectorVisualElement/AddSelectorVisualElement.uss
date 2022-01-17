@@ -1,6 +1,8 @@
 AddSelectorVisualElement,
 AddSelectorVisualElement > TemplateContainer,
-AddSelectorVisualElement > TemplateContainer > #mainVisualElement {
+AddSelectorVisualElement > TemplateContainer > #mainVisualElement,
+#styleSheetContainer,
+#bodyContainer {
     flex-grow: 1;
 }
 
@@ -69,7 +71,6 @@ DropdownVisualElement > TemplateContainer > #mainVisualElement > #mainContainer 
 
 #rulesContainer {
     flex-grow: 1;
-    height: 180px;
     margin-left: 5px;
     margin-right: 5px;
 }

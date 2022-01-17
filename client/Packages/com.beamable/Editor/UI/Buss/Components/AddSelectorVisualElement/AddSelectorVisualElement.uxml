@@ -12,9 +12,7 @@
             <beamable:LabeledDropdownVisualElement name="selectStyleSheet" label="Select style sheet"/>
             <beamable:LabeledTextField name="selectorName" label="Selector name"/>
             <engine:VisualElement name="bodyContainer">
-                <engine:VisualElement name="bodyButtonSection">
-                    <engine:Label name="rulesLabel" text="Rules"/>
-                </engine:VisualElement>
+                <engine:Label name="rulesLabel" text="Rules"/>
                 <engine:ScrollView name="rulesContainer"/>
             </engine:VisualElement>
         </engine:VisualElement>
