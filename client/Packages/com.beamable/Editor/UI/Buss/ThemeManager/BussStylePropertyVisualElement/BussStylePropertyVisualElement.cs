@@ -1,12 +1,8 @@
 ﻿using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Validation;
+using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
-using Beamable.UI.Sdf;
-using Beamable.UI.Sdf.MaterialManagement;
-using Beamable.UI.Tweening;
-using System;
+using Editor.UI.BUSS.ThemeManager;
 using Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements;
-using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -17,51 +13,142 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class BussStylePropertyVisualElement : ValidableVisualElement<string>
+	public class BussStylePropertyVisualElement : BeamableBasicVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<BussStylePropertyVisualElement, UxmlTraits> { }
-
+#if UNITY_2018
 		public BussStylePropertyVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStylePropertyVisualElement)}/{nameof(BussStylePropertyVisualElement)}") { }
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.2018.uss") { }
+#elif UNITY_2019_1_OR_NEWER
+		public BussStylePropertyVisualElement() : base(
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.uss") { }
+#endif
 
-		private BussStyleRule _styleRule;
-		private BussPropertyProvider _property;
+		private BussPropertyVisualElement _propertyVisualElement;
+		private VariableConnectionVisualElement _variableConnection;
 		private VisualElement _valueParent;
 		private VisualElement _variableParent;
+		private VisualElement _removeButton;
+		private TextElement _labelComponent;
+
+		private VariableDatabase _variableDatabase;
+		private BussStyleSheet _styleSheet;
+		private BussPropertyProvider _propertyProvider;
+		private BussStyleCardVisualElement.MODE _currentMode;
 
 		public override void Refresh()
 		{
 			base.Refresh();
 
-			_valueParent = Root.Q<VisualElement>("value");
-			_variableParent = Root.Q<VisualElement>("globalVariable");
+			VisualElement buttonContainer = new VisualElement();
+			buttonContainer.name = "removeButtonContainer";
 
-			Label labelComponent = Root.Q<Label>("label");
-			labelComponent.text = _property.Key;
+			_removeButton = new VisualElement();
+			_removeButton.name = "removeButton";
+			buttonContainer.Add(_removeButton);
+			Root.Add(buttonContainer);
 
-			SetupEditableField(_property);
+			_removeButton.RegisterCallback<MouseDownEvent>(OnRemoveButtonClicked);
+			buttonContainer.SetVisibility(_currentMode == BussStyleCardVisualElement.MODE.EDIT);
+
+			_labelComponent = new TextElement();
+			_labelComponent.name = "propertyLabel";
+			Root.Add(_labelComponent);
+
+			_valueParent = new VisualElement();
+			_valueParent.name = "value";
+			Root.Add(_valueParent);
+
+			_variableParent = new VisualElement();
+			_variableParent.name = "globalVariable";
+			Root.Add(_variableParent);
+
+			Update();
 		}
 
-		public void Setup(BussStyleRule styleRule, BussPropertyProvider property)
+		private void Update()
 		{
-			_styleRule = styleRule;
-			_property = property;
+			_labelComponent.text = _propertyProvider.Key;
+
+			SetupEditableField();
+			SetupVariableConnection();
+		}
+
+		public void Setup(BussStyleSheet styleSheet,
+		                  BussPropertyProvider property,
+		                  VariableDatabase variableDatabase,
+		                  BussStyleCardVisualElement.MODE currentMode)
+		{
+			RemoveStyleSheetListener();
+			_variableDatabase = variableDatabase;
+			_styleSheet = styleSheet;
+			_propertyProvider = property;
+
+			_currentMode = currentMode;
 			Refresh();
+			AddStyleSheetListener();
 		}
 
-		private void SetupEditableField(BussPropertyProvider property)
+		private void SetupEditableField()
 		{
-			BussPropertyVisualElement visualElement = property.GetVisualElement();
-			
-			if (visualElement != null)
+			var baseType = BussStyle.GetBaseType(_propertyProvider.Key);
+			if (_propertyVisualElement != null)
 			{
-				_valueParent.Add(visualElement);
-				visualElement.Refresh();
+				if (_propertyVisualElement.BaseProperty ==
+				    _propertyProvider.GetProperty().GetEndProperty(_variableDatabase))
+				{
+					return;
+				}
+
+				_propertyVisualElement.RemoveFromHierarchy();
+				_propertyVisualElement.Destroy();
 			}
-			
-			VariableConnectionVisualElement variableConnection = new VariableConnectionVisualElement();
-			variableConnection.Setup(false);
-			_variableParent.Add(variableConnection);
+
+			_propertyVisualElement = _propertyProvider.GetVisualElement(_variableDatabase, baseType);
+
+			if (_propertyVisualElement != null)
+			{
+				_propertyVisualElement.UpdatedStyleSheet = _styleSheet;
+				_valueParent.Add(_propertyVisualElement);
+				_propertyVisualElement.Refresh();
+			}
+		}
+		
+		protected override void OnDestroy()
+		{
+			_removeButton?.UnregisterCallback<MouseDownEvent>(OnRemoveButtonClicked);
+			RemoveStyleSheetListener();
+		}
+
+		private void OnRemoveButtonClicked(MouseDownEvent evt) { }
+		
+		private void SetupVariableConnection()
+		{
+			if (_variableConnection == null)
+			{
+				_variableConnection = new VariableConnectionVisualElement();
+				_variableParent.Add(_variableConnection);
+				_variableConnection.Refresh();
+			}
+
+			_variableConnection.OnConnectionChange -= Update;
+			_variableConnection.OnConnectionChange += Update;
+			_variableConnection.Setup(_styleSheet, _propertyProvider, _variableDatabase);
+		}
+
+		private void AddStyleSheetListener()
+		{
+			if (_styleSheet != null)
+			{
+				_styleSheet.OnChange += Update;
+			}
+		}
+
+		private void RemoveStyleSheetListener()
+		{
+			if (_styleSheet != null)
+			{
+				_styleSheet.OnChange -= Update;
+			}
 		}
 	}
 }

@@ -22,6 +22,10 @@ namespace Beamable.UI.Buss
 
 		private void OnValidate()
 		{
+			TriggerChange();
+		}
+
+		public void TriggerChange() {
 			BussConfiguration.UseConfig(conf => conf.UpdateStyleSheet(this));
 			OnChange?.Invoke();
 		}
@@ -95,6 +99,8 @@ namespace Beamable.UI.Buss
 			get => key;
 		}
 
+		public bool IsVariable => BussStyleSheetUtility.IsValidVariableName(Key);
+
 	    public static BussPropertyProvider Create(string key, IBussProperty property)
 	    {
 		    var propertyProvider = new SerializableValueObject();
@@ -105,6 +111,11 @@ namespace Beamable.UI.Buss
 		public IBussProperty GetProperty()
 		{
 			return property.Get<IBussProperty>();
+		}
+
+		public void SetProperty(IBussProperty property)
+		{
+			this.property.Set(property);
 		}
 	}
 }

@@ -25,7 +25,7 @@ namespace Beamable.Editor.UI.Components
 			AddBussPropertyFieldClass(_field);
 			_field.objectType = Property.GetAssetType();
 			_field.value = Property.GenericAsset;
-			_mainElement.Add(_field);
+			Root.Add(_field);
 
 			_field.RegisterValueChangedCallback(OnValueChange);
 		}
@@ -33,6 +33,7 @@ namespace Beamable.Editor.UI.Components
 		private void OnValueChange(ChangeEvent<Object> evt)
 		{
 			Property.GenericAsset = evt.newValue;
+			TriggerStyleSheetChange();
 		}
 		
 		public override void OnPropertyChangedExternally()

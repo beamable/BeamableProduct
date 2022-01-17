@@ -1,14 +1,17 @@
-#propertyContainer {
+#root {
     flex-direction: row;
     justify-content: flex-start;
     align-self: stretch;
     align-items: center;
 }
 
-#label {
+#propertyLabel {
     width: 140px;
     color: rgb(255,255,255);
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    -unity-font-style: bold;
     -unity-text-align: middle-left;
+    font-size: 12px;
     height: 20px;
 }
 
@@ -35,7 +38,7 @@
 }
 
 #removeButtonContainer {
-    min-width: 26px;
+    width: 30px;
     height: 36px;
     justify-content: center;
 }

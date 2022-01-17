@@ -7,10 +7,13 @@
 
     <engine:VisualElement name="cardContainer">
         <engine:VisualElement name="cardHeader">
+            <engine:VisualElement name="removeButtonContainer">
+                <engine:VisualElement name="removeButton"/>
+            </engine:VisualElement>
             <engine:VisualElement name="colorBlock"/>
-            <engine:VisualElement name="styleIdParent"/>
+            <engine:VisualElement name="selectorLabelParent"/>
             <engine:VisualElement name="editButton" class="button smallButton edit"/>
-            <engine:VisualElement name="wizardButton" class="button smallButton wizard"/>
+<!--            <engine:VisualElement name="wizardButton" class="button smallButton wizard"/>-->
             <engine:VisualElement name="undoButton" class="button smallButton undo"/>
             <engine:VisualElement name="cleanAllButton" class="button smallButton cleanAll"/>
         </engine:VisualElement>

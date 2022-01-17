@@ -8,7 +8,7 @@ namespace Beamable.UI.Buss {
     [Serializable]
     public class VariableProperty : IBussProperty {
         [SerializeField]
-        private string _variableName;
+        private string _variableName = "";
         public string VariableName {
             get => _variableName;
             set => _variableName = value;

@@ -23,7 +23,7 @@ namespace Beamable.Editor.UI.Components
 			_field = new EnumField();
 			AddBussPropertyFieldClass(_field);
 			_field.Init(Property.EnumValue);
-			_mainElement.Add(_field);
+			Root.Add(_field);
 
 			_field.RegisterValueChangedCallback(OnValueChange);
 		}
@@ -31,6 +31,7 @@ namespace Beamable.Editor.UI.Components
 		private void OnValueChange(ChangeEvent<Enum> changeEvent)
 		{
 			Property.EnumValue = changeEvent.newValue;
+			TriggerStyleSheetChange();
 		}
 		
 		public override void OnPropertyChangedExternally()

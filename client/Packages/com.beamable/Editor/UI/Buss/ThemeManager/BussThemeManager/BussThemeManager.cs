@@ -2,6 +2,7 @@
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using Editor.UI.BUSS;
+using Editor.UI.BUSS.ThemeManager;
 using UnityEditor;
 using Object = UnityEngine.Object;
 #if UNITY_2018
@@ -34,6 +35,8 @@ namespace Beamable.UI.BUSS
 		private ObjectField _styleSheetSource;
 		private BussStyleSheet _currentStyleSheet;
 		private BussElementHierarchyVisualElement _hierarchyComponent;
+
+		private VariableDatabase _variableDatabase = new VariableDatabase();
 
 		private void OnEnable()
 		{
@@ -88,6 +91,7 @@ namespace Beamable.UI.BUSS
 		{
 			ClearCurrentStyleSheet();
 			_currentStyleSheet = (BussStyleSheet)evt.newValue;
+			_variableDatabase.AddStyleSheet(_currentStyleSheet);
 
 			if (_currentStyleSheet == null)
 			{
@@ -99,7 +103,7 @@ namespace Beamable.UI.BUSS
 			foreach (BussStyleRule styleRule in _currentStyleSheet.Styles)
 			{
 				BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-				styleCard.Setup(styleRule);
+				styleCard.Setup(_currentStyleSheet, styleRule, _variableDatabase);
 				_stylesGroup.Add(styleCard);
 			}
 		}
@@ -111,14 +115,20 @@ namespace Beamable.UI.BUSS
 			{
 				_currentStyleSheet.OnChange -= OnStyleSheetExternallyChanged;
 			}
+			
+			_variableDatabase.RemoveAllStyleSheets();
 		}
 
+		private bool _inStyleSheetChangedLoop;
 		private void OnStyleSheetExternallyChanged()
 		{
+			if(_inStyleSheetChangedLoop) return;
+			_inStyleSheetChangedLoop = true;
 			foreach (BussPropertyVisualElement propertyVisualElement in this.GetRootVisualContainer().Query<BussPropertyVisualElement>().Build().ToList())
 			{
 				propertyVisualElement.OnPropertyChangedExternally();
 			}
+			_inStyleSheetChangedLoop = false;
 		}
 
 		private void OnDestroy()

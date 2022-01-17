@@ -76,7 +76,7 @@ namespace Beamable.Editor.UI.Components
         
         public void OverrideLabelWidth(float width)
         {
-	        _label?.SetWidth(width);
+	        _label?.style.SetWidth(width);
         }
     }
 }

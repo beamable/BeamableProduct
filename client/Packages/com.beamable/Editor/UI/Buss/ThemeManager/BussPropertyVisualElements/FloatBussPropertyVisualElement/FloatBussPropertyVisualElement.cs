@@ -23,7 +23,7 @@ namespace Beamable.Editor.UI.Components
 			_field = new FloatField();
 			AddBussPropertyFieldClass(_field);
 			_field.value = Property.FloatValue;
-			_mainElement.Add(_field);
+			Root.Add(_field);
 
 			_field.RegisterValueChangedCallback(OnValueChange);
 		}
@@ -31,6 +31,7 @@ namespace Beamable.Editor.UI.Components
 		private void OnValueChange(ChangeEvent<float> evt)
 		{
 			Property.FloatValue = evt.newValue;
+			TriggerStyleSheetChange();
 		}
 
 		public override void OnPropertyChangedExternally()

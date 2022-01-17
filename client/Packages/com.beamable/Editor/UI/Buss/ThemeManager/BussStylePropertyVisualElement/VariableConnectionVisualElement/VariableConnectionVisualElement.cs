@@ -1,7 +1,15 @@
-﻿using Beamable.Editor.UI.Buss;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Beamable.Editor.UI.Buss;
+using Beamable.UI.Buss;
+using Editor.UI.BUSS.ThemeManager;
+using UnityEditor;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
+using UnityEngine.Experimental.UIElements.StyleEnums;
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -16,16 +24,105 @@ namespace Beamable.Editor.UI.Components
 			$"{nameof(VariableConnectionVisualElement)}/{nameof(VariableConnectionVisualElement)}") { }
 
 		private VisualElement _mainElement;
+		private Button _button;
+		private DropdownVisualElement _dropdown;
+
+		private VariableDatabase _variableDatabase;
+		private BussStyleSheet _styleSheet;
+		private BussPropertyProvider _propertyProvider;
+		private IBussProperty _cachedProperty;
+
+		private List<string> _dropdownOptions = new List<string>();
+
+		private const string _noneOption = "None";
+		private const string _addNewOption = "Add New Variable";
+
+		public event Action OnConnectionChange;
+
+		public bool IsConnected => _propertyProvider.GetProperty() is VariableProperty;
 
 		public override void Refresh()
 		{
 			base.Refresh();
+
 			_mainElement = Root.Q("variableConnectionElement");
+			_button = _mainElement.Q<Button>("button");
+			_dropdown = _mainElement.Q<DropdownVisualElement>("dropdown");
+			_mainElement.style.SetFlexDirection(FlexDirection.Row);
 		}
 
-		public void Setup(bool hasVariable)	// temporary parameter
+		public void Update() {
+			_button.clickable.clicked -= OnButtonClick;
+			_button.clickable.clicked += OnButtonClick;
+			_button.EnableInClassList("whenConnected", IsConnected);
+
+			_dropdownOptions.Clear();
+			_dropdownOptions.Add(_noneOption);
+			_dropdownOptions.Add(_addNewOption);
+			_dropdownOptions.AddRange(_variableDatabase.GetVariableNames());
+
+			_dropdown.visible = IsConnected;
+			_dropdown.Setup(_dropdownOptions, OnVariableSelected, false);
+
+			if (_propertyProvider.GetProperty() is VariableProperty property) {
+				var index = _dropdownOptions.IndexOf(property.VariableName);
+				if (index < 0) {
+					index = 0;
+				}
+
+				_dropdown.Set(index);
+			}
+			else {
+				_dropdown.Set(0);
+			}
+
+			_dropdown.Refresh();
+		}
+
+		public void Setup(BussStyleSheet styleSheet, BussPropertyProvider propertyProvider, VariableDatabase variableDatabase)	// temporary parameter
 		{
-			Refresh();
+			_variableDatabase = variableDatabase;
+			_styleSheet = styleSheet;
+			_propertyProvider = propertyProvider;
+			Update();
+		}
+
+		private void OnButtonClick()
+		{
+			if (_cachedProperty == null)
+			{
+				_cachedProperty = IsConnected
+					? BussStyle.GetDefaultValue(_propertyProvider.Key).CopyProperty()
+					: new VariableProperty();
+			}
+
+			var temp = _cachedProperty;
+			_cachedProperty = _propertyProvider.GetProperty();
+			_propertyProvider.SetProperty(temp);
+			AssetDatabase.SaveAssets();
+			OnConnectionChange?.Invoke();
+		}
+
+		private void OnVariableSelected(int index)
+		{
+			if (_propertyProvider.GetProperty() is VariableProperty variableProperty)
+			{
+				var option = _dropdownOptions[index];
+
+				if (option == _noneOption)
+				{
+					variableProperty.VariableName = "";
+				}
+				else if (option == _addNewOption)
+				{
+					//TODO: Open new variable window here.
+				}
+				else
+				{
+					variableProperty.VariableName = option;
+				}
+				OnConnectionChange?.Invoke();
+			}
 		}
 	}
 }
