@@ -119,7 +119,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 		{
 			if (globalStyleSheet != null)
 			{
-				globalStyleSheet.OnChange -= OnGlobalStyleChanged;
+				globalStyleSheet.Change -= OnGlobalStyleChanged;
 			}
 		}
 
@@ -127,7 +127,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 		{
 			if (globalStyleSheet != null)
 			{
-				globalStyleSheet.OnChange -= OnGlobalStyleChanged;
+				globalStyleSheet.Change -= OnGlobalStyleChanged;
 			}
 		}
 

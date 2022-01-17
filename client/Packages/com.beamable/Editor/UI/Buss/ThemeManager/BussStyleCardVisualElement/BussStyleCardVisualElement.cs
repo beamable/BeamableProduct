@@ -77,12 +77,15 @@ namespace Beamable.Editor.UI.Components
 			_styleSheet = styleSheet;
 			_styleRule = styleRule;
 			_variableDatabase = variableDatabase;
-			
+			_styleSheet.LocalChange += Refresh;
+
 			Refresh();
 		}
 
 		protected override void OnDestroy()
 		{
+			// TODO: commented temporarily, check why it's called during setup
+			// _styleSheet.LocalChange -= Refresh;
 			ClearButtonActions();
 		}
 
@@ -114,7 +117,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void RemoveButtonClicked(MouseDownEvent evt)
 		{
-			Debug.Log("RemoveButtonClicked");
+			_styleSheet.RemoveStyle(_styleRule);
 		}
 
 		private void AddRuleButtonClicked(MouseDownEvent evt)
@@ -186,7 +189,7 @@ namespace Beamable.Editor.UI.Components
 				if(property.IsVariable) continue;
 				
 				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
-				element.Setup(_styleSheet, property, _variableDatabase, _currentMode);
+				element.Setup(_styleSheet, _styleRule, property, _variableDatabase, _currentMode);
 				_properties.Add(element);
 			}
 		}
