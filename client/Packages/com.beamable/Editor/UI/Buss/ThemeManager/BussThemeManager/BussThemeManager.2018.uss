@@ -36,3 +36,30 @@ BussElementHierarchyVisualElement {
     left: 0px;
     right: 0px;
 }
+
+#addSelectorButton {
+    margin-top: 15px;
+    padding-top: 3px;
+    align-self: center;
+    background-color: rgb(100,100,100);
+    justify-content: center;
+    width: 200px;
+    height: 26px;
+    border-radius: 2px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-color: #000000;
+}
+
+#addSelectorButton:hover {
+    background-color: rgb(120,120,120);
+}
+
+#addSelectorButton > Label {
+    color: #FFFFFF;
+    -unity-font-style: bold;
+    align-self: center;
+}
+

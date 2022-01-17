@@ -1,4 +1,5 @@
 ﻿using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using Editor.UI.BUSS;
@@ -83,7 +84,7 @@ namespace Beamable.UI.BUSS
 			_stylesGroup = new VisualElement();
 			_stylesGroup.name = "stylesGroup";
 			scrollView.Add(_stylesGroup);
-			
+
 			root.Add(mainVisualElement);
 		}
 
@@ -106,6 +107,17 @@ namespace Beamable.UI.BUSS
 				styleCard.Setup(_currentStyleSheet, styleRule, _variableDatabase);
 				_stylesGroup.Add(styleCard);
 			}
+
+			var addSelectorButton = new VisualElement {name = "addSelectorButton"};
+			addSelectorButton.AddToClassList("button");
+			addSelectorButton.Add(new Label("Add Selector"));
+			addSelectorButton.RegisterCallback<MouseDownEvent>(_ =>
+			{
+				var window = AddSelectorWindow.ShowWindow();
+				window?.Init();
+			});
+			
+			_stylesGroup.Add(addSelectorButton);
 		}
 
 		private void ClearCurrentStyleSheet()
