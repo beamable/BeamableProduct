@@ -1,6 +1,5 @@
 ﻿using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common;
-using Beamable.Editor.UI.Validation;
 using Beamable.UI.Buss;
 using Editor.UI.BUSS.ThemeManager;
 using Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements;
@@ -16,8 +15,6 @@ namespace Beamable.Editor.UI.Components
 {
 	public class BussStylePropertyVisualElement : BeamableBasicVisualElement
 	{
-		public new class UxmlFactory : UxmlFactory<BussStylePropertyVisualElement, UxmlTraits> { }
-
 #if UNITY_2018
 		public BussStylePropertyVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.2018.uss") { }
@@ -26,28 +23,49 @@ namespace Beamable.Editor.UI.Components
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.uss") { }
 #endif
 
+		private BussPropertyVisualElement _propertyVisualElement;
+		private VariableConnectionVisualElement _variableConnection;
+		private VisualElement _valueParent;
+		private VisualElement _variableParent;
+		private VisualElement _removeButton;
+		private TextElement _labelComponent;
+
 		private VariableDatabase _variableDatabase;
 		private BussStyleSheet _styleSheet;
 		private BussPropertyProvider _propertyProvider;
-		
-		private VisualElement _valueParent;
-		private VisualElement _variableParent;
-		private BussPropertyVisualElement _propertyVisualElement;
-		private VariableConnectionVisualElement _variableConnection;
-		private Label _labelComponent;
+		private BussStyleCardVisualElement.MODE _currentMode;
 
 		public override void Refresh()
 		{
 			base.Refresh();
 
-			_valueParent = Root.Q<VisualElement>("value");
-			_variableParent = Root.Q<VisualElement>("globalVariable");
+			VisualElement buttonContainer = new VisualElement();
+			buttonContainer.name = "removeButtonContainer";
 
-			_labelComponent = Root.Q<Label>("label");
+			_removeButton = new VisualElement();
+			_removeButton.name = "removeButton";
+			buttonContainer.Add(_removeButton);
+			Root.Add(buttonContainer);
+
+			_removeButton.RegisterCallback<MouseDownEvent>(OnRemoveButtonClicked);
+			buttonContainer.SetVisibility(_currentMode == BussStyleCardVisualElement.MODE.EDIT);
+
+			_labelComponent = new TextElement();
+			_labelComponent.name = "propertyLabel";
+			Root.Add(_labelComponent);
+
+			_valueParent = new VisualElement();
+			_valueParent.name = "value";
+			Root.Add(_valueParent);
+
+			_variableParent = new VisualElement();
+			_variableParent.name = "globalVariable";
+			Root.Add(_variableParent);
+
 			Update();
 		}
 
-		private void Update() 
+		private void Update()
 		{
 			_labelComponent.text = _propertyProvider.Key;
 
@@ -55,12 +73,17 @@ namespace Beamable.Editor.UI.Components
 			SetupVariableConnection();
 		}
 
-		public void Setup(BussStyleSheet styleSheet, BussPropertyProvider property, VariableDatabase variableDatabase)
+		public void Setup(BussStyleSheet styleSheet,
+		                  BussPropertyProvider property,
+		                  VariableDatabase variableDatabase,
+		                  BussStyleCardVisualElement.MODE currentMode)
 		{
 			RemoveStyleSheetListener();
 			_variableDatabase = variableDatabase;
 			_styleSheet = styleSheet;
 			_propertyProvider = property;
+
+			_currentMode = currentMode;
 			Refresh();
 			AddStyleSheetListener();
 		}
@@ -70,16 +93,18 @@ namespace Beamable.Editor.UI.Components
 			var baseType = BussStyle.GetBaseType(_propertyProvider.Key);
 			if (_propertyVisualElement != null)
 			{
-				if (_propertyVisualElement.BaseProperty == _propertyProvider.GetProperty().GetEndProperty(_variableDatabase))
+				if (_propertyVisualElement.BaseProperty ==
+				    _propertyProvider.GetProperty().GetEndProperty(_variableDatabase))
 				{
 					return;
 				}
-				
+
 				_propertyVisualElement.RemoveFromHierarchy();
 				_propertyVisualElement.Destroy();
 			}
+
 			_propertyVisualElement = _propertyProvider.GetVisualElement(_variableDatabase, baseType);
-			
+
 			if (_propertyVisualElement != null)
 			{
 				_propertyVisualElement.UpdatedStyleSheet = _styleSheet;
@@ -87,7 +112,15 @@ namespace Beamable.Editor.UI.Components
 				_propertyVisualElement.Refresh();
 			}
 		}
+		
+		protected override void OnDestroy()
+		{
+			_removeButton?.UnregisterCallback<MouseDownEvent>(OnRemoveButtonClicked);
+			RemoveStyleSheetListener();
+		}
 
+		private void OnRemoveButtonClicked(MouseDownEvent evt) { }
+		
 		private void SetupVariableConnection()
 		{
 			if (_variableConnection == null)
@@ -96,11 +129,10 @@ namespace Beamable.Editor.UI.Components
 				_variableParent.Add(_variableConnection);
 				_variableConnection.Refresh();
 			}
-			_variableConnection.OnConnectionChange -= Update;
-			
-			_variableConnection.Setup(_styleSheet, _propertyProvider, _variableDatabase);
 
+			_variableConnection.OnConnectionChange -= Update;
 			_variableConnection.OnConnectionChange += Update;
+			_variableConnection.Setup(_styleSheet, _propertyProvider, _variableDatabase);
 		}
 
 		private void AddStyleSheetListener()
@@ -117,12 +149,6 @@ namespace Beamable.Editor.UI.Components
 			{
 				_styleSheet.OnChange -= Update;
 			}
-		}
-
-		protected override void OnDestroy()
-		{
-			base.OnDestroy();
-			RemoveStyleSheetListener();
 		}
 	}
 }
