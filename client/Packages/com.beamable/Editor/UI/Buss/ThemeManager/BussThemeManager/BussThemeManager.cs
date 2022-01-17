@@ -3,6 +3,7 @@ using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using Editor.UI.BUSS;
 using Editor.UI.BUSS.ThemeManager;
+using System.Collections.Generic;
 using UnityEditor;
 using Object = UnityEngine.Object;
 #if UNITY_2018
@@ -36,7 +37,9 @@ namespace Beamable.UI.BUSS
 		private BussStyleSheet _currentStyleSheet;
 		private BussElementHierarchyVisualElement _hierarchyComponent;
 
-		private VariableDatabase _variableDatabase = new VariableDatabase();
+		private bool _inStyleSheetChangedLoop;
+		private readonly VariableDatabase _variableDatabase = new VariableDatabase();
+		private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements = new List<BussStyleCardVisualElement>();
 
 		private void OnEnable()
 		{
@@ -91,44 +94,65 @@ namespace Beamable.UI.BUSS
 		{
 			ClearCurrentStyleSheet();
 			_currentStyleSheet = (BussStyleSheet)evt.newValue;
+
+			if (_currentStyleSheet == null) return;
+			
 			_variableDatabase.AddStyleSheet(_currentStyleSheet);
 
-			if (_currentStyleSheet == null)
-			{
-				return;
-			}
+			_currentStyleSheet.Change += OnStyleSheetExternallyChanged;
 
-			_currentStyleSheet.OnChange += OnStyleSheetExternallyChanged;
+			RefreshStyleCards();
+		}
 
-			foreach (BussStyleRule styleRule in _currentStyleSheet.Styles)
-			{
-				BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-				styleCard.Setup(_currentStyleSheet, styleRule, _variableDatabase);
-				_stylesGroup.Add(styleCard);
-			}
+		private void RefreshStyleCards()
+		{
+			ClearStyleCards();
+			CreateStyleCards();
 		}
 
 		private void ClearCurrentStyleSheet()
 		{
-			_stylesGroup.Clear();
 			if (_currentStyleSheet != null)
 			{
-				_currentStyleSheet.OnChange -= OnStyleSheetExternallyChanged;
+				_currentStyleSheet.Change -= OnStyleSheetExternallyChanged;
 			}
 			
 			_variableDatabase.RemoveAllStyleSheets();
 		}
 
-		private bool _inStyleSheetChangedLoop;
+		private void ClearStyleCards()
+		{
+			foreach (BussStyleCardVisualElement styleCard in _styleCardsVisualElements)
+			{
+				styleCard.Destroy();
+			}
+			_styleCardsVisualElements.Clear();
+			_stylesGroup.Clear();
+		}
+
+		private void CreateStyleCards()
+		{
+			foreach (BussStyleRule styleRule in _currentStyleSheet.Styles)
+			{
+				BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
+				styleCard.Setup(_currentStyleSheet, styleRule, _variableDatabase);
+				_styleCardsVisualElements.Add(styleCard);
+				_stylesGroup.Add(styleCard);
+			}
+		}
+
 		private void OnStyleSheetExternallyChanged()
 		{
 			if(_inStyleSheetChangedLoop) return;
+			
 			_inStyleSheetChangedLoop = true;
 			foreach (BussPropertyVisualElement propertyVisualElement in this.GetRootVisualContainer().Query<BussPropertyVisualElement>().Build().ToList())
 			{
 				propertyVisualElement.OnPropertyChangedExternally();
 			}
 			_inStyleSheetChangedLoop = false;
+			
+			RefreshStyleCards();
 		}
 
 		private void OnDestroy()
