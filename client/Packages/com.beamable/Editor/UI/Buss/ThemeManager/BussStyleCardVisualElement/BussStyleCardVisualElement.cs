@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Buss.Components;
 using Beamable.UI.Buss;
 using Editor.UI.BUSS.ThemeManager;
 using UnityEditor;
@@ -25,7 +26,9 @@ namespace Beamable.Editor.UI.Components
 		private BussSelectorLabelVisualElement _selectorLabelComponent;
 		private VisualElement _styleIdParent;
 		private VisualElement _selectorLabelParent;
+		private VisualElement _variables;
 		private VisualElement _properties;
+		private VisualElement _colorBlock;
 		private VisualElement _removeButton;
 		private VisualElement _editButton;
 		private VisualElement _wizardButton;
@@ -53,7 +56,10 @@ namespace Beamable.Editor.UI.Components
 			base.Refresh();
 
 			_selectorLabelParent = Root.Q<VisualElement>("selectorLabelParent");
+			_variables = Root.Q<VisualElement>("variables");
 			_properties = Root.Q<VisualElement>("properties");
+			_colorBlock = Root.Q<VisualElement>("colorBlock");
+			_colorBlock.EnableInClassList("active", false); // TODO: change this when we change selected BussElement
 
 			_removeButton = Root.Q<VisualElement>("removeButton");
 			_editButton = Root.Q<VisualElement>("editButton");
@@ -119,6 +125,7 @@ namespace Beamable.Editor.UI.Components
 		private void RemoveButtonClicked(MouseDownEvent evt)
 		{
 			_styleSheet.RemoveStyle(_styleRule);
+			AssetDatabase.SaveAssets();
 		}
 
 		private void AddRuleButtonClicked(MouseDownEvent evt)
@@ -144,7 +151,13 @@ namespace Beamable.Editor.UI.Components
 
 		private void AddVariableButtonClicked(MouseDownEvent evt)
 		{
-			Debug.Log("AddVariableButtonClicked");
+			var window = NewVariableWindow.ShowWindow();
+			window?.Init((key, property) =>
+			{
+				_styleRule.TryAddProperty(key, property, out _);
+				AssetDatabase.SaveAssets();
+				_styleSheet.TriggerChange();
+			});
 		}
 
 		private void CleanAllButtonClicked(MouseDownEvent evt)
@@ -187,11 +200,9 @@ namespace Beamable.Editor.UI.Components
 		{
 			foreach (BussPropertyProvider property in _styleRule.Properties)
 			{
-				if(property.IsVariable) continue;
-				
 				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
 				element.Setup(_styleSheet, _styleRule, property, _variableDatabase, _currentMode);
-				_properties.Add(element);
+				(property.IsVariable ? _variables : _properties).Add(element);
 			}
 		}
 	}
