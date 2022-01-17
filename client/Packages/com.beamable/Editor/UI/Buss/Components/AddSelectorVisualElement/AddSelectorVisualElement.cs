@@ -36,7 +36,9 @@ namespace Beamable.Editor.Toolbox.Components
 		public override void Refresh()
 		{
 			base.Refresh();
-			
+
+			Root.parent.parent.style.flexGrow = 1;
+
 			var styleSheets = Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[] {"Assets"}).ToList();
 
 			var selectStyleSheet = Root.Q<LabeledDropdownVisualElement>("selectStyleSheet");
