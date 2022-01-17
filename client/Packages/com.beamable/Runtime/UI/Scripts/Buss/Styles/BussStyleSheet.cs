@@ -11,7 +11,8 @@ namespace Beamable.UI.Buss
 	[CreateAssetMenu(fileName = "BUSSStyleConfig", menuName = "Beamable/Buss/Create BUSS Style", order = 0)]
 	public class BussStyleSheet : ScriptableObject, ISerializationCallbackReceiver
 	{
-		public event Action OnChange;
+		public event Action Change;
+		public event Action LocalChange;
 
 #pragma warning disable CS0649
 		[SerializeField] private List<BussStyleRule> _styles = new List<BussStyleRule>();
@@ -19,34 +20,46 @@ namespace Beamable.UI.Buss
 #pragma warning restore CS0649
 
 		public List<BussStyleRule> Styles => _styles;
-
+		
 		private void OnValidate()
 		{
 			TriggerChange();
 		}
 
-		public void TriggerChange() {
+		public void TriggerChange()
+		{
 			BussConfiguration.UseConfig(conf => conf.UpdateStyleSheet(this));
-			OnChange?.Invoke();
+			Change?.Invoke();
 		}
 
-		public void AssignAssetReferencesFromReferenceList()
+		private void TriggerLocalChange()
 		{
-			foreach (BussStyleRule style in Styles)
+			BussConfiguration.UseConfig(conf => conf.UpdateStyleSheet(this));
+			LocalChange?.Invoke();
+		}
+
+		public void RemoveStyle(BussStyleRule styleRule)
+		{
+			BussStyleRule styleToDelete = _styles.Find(style => style.SelectorString == styleRule.SelectorString);
+			
+			if (styleToDelete != null)
 			{
-				style.AssignAssetReferencesFromReferenceList(_assetReferences);
+				_styles.Remove(styleToDelete);
+				TriggerChange();
 			}
 		}
 
-		public void PutAssetReferencesInReferenceList()
+		public void RemoveStyleProperty(IBussProperty property, string selectorString)
 		{
-			_assetReferences.Clear();
-			foreach (BussStyleRule style in Styles)
+			BussStyleRule bussStyleRule = _styles.Find(style => style.SelectorString == selectorString);
+			bool removed = bussStyleRule.RemoveProperty(property);
+
+			if (removed)
 			{
-				style.PutAssetReferencesInReferenceList(_assetReferences);
+				TriggerLocalChange();
 			}
 		}
-
+		
 		public void OnBeforeSerialize()
 		{
 			PutAssetReferencesInReferenceList();
@@ -56,23 +69,62 @@ namespace Beamable.UI.Buss
 		{
 			AssignAssetReferencesFromReferenceList();
 		}
+
+
+		private void AssignAssetReferencesFromReferenceList()
+		{
+			foreach (BussStyleRule style in Styles)
+			{
+				style.AssignAssetReferencesFromReferenceList(_assetReferences);
+			}
+		}
+
+		private void PutAssetReferencesInReferenceList()
+		{
+			_assetReferences.Clear();
+			foreach (BussStyleRule style in Styles)
+			{
+				style.PutAssetReferencesInReferenceList(_assetReferences);
+			}
+		}
+
+
 	}
 
 	[Serializable]
 	public class BussStyleRule : BussStyleDescription
 	{
 #pragma warning disable CS0649
+		// TODO: can we remove that FormerlySerializedAs attribute before release??
 		[FormerlySerializedAs("_name")] [SerializeField]
 		private string _selector;
 #pragma warning restore CS0649
 
 		public BussSelector Selector => BussSelectorParser.Parse(_selector);
-		public string SelectorString => _selector;
 
-	    public static BussStyleRule Create(string selector, List<BussPropertyProvider> properties)
-	    {
-		    return new BussStyleRule() {_selector = selector, _properties = properties};
-	    }
+		public string SelectorString
+		{
+			get => _selector;
+			set => _selector = value;
+		}
+
+		public static BussStyleRule Create(string selector, List<BussPropertyProvider> properties)
+		{
+			return new BussStyleRule {_selector = selector, _properties = properties};
+		}
+
+		public bool RemoveProperty(IBussProperty bussProperty)
+		{
+			BussPropertyProvider provider = _properties.Find(property => property.GetProperty() == bussProperty);
+			
+			if (provider != null)
+			{
+				_properties.Remove(provider);
+				return true;
+			}
+
+			return false;
+		}
 	}
 
 	[Serializable]
@@ -88,34 +140,31 @@ namespace Beamable.UI.Buss
 	public class BussPropertyProvider
 	{
 #pragma warning disable CS0649
-		[SerializeField]
-		private string key;
+		[SerializeField] private string key;
 
 		[SerializeField, SerializableValueImplements(typeof(IBussProperty))]
 		private SerializableValueObject property;
 #pragma warning restore CS0649
 
-		public string Key {
-			get => key;
-		}
+		public string Key => key;
 
 		public bool IsVariable => BussStyleSheetUtility.IsValidVariableName(Key);
 
-	    public static BussPropertyProvider Create(string key, IBussProperty property)
-	    {
-		    var propertyProvider = new SerializableValueObject();
-		    propertyProvider.Set(property);
-		    return new BussPropertyProvider() {key = key, property = propertyProvider};
-	    }
+		public static BussPropertyProvider Create(string key, IBussProperty property)
+		{
+			var propertyProvider = new SerializableValueObject();
+			propertyProvider.Set(property);
+			return new BussPropertyProvider() {key = key, property = propertyProvider};
+		}
 
 		public IBussProperty GetProperty()
 		{
 			return property.Get<IBussProperty>();
 		}
 
-		public void SetProperty(IBussProperty property)
+		public void SetProperty(IBussProperty bussProperty)
 		{
-			this.property.Set(property);
+			property.Set(bussProperty);
 		}
 	}
 }
