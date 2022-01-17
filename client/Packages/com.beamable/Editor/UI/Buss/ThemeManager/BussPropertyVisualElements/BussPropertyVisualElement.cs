@@ -13,13 +13,9 @@ namespace Beamable.Editor.UI.Components
 {
 	public abstract class BussPropertyVisualElement : BeamableBasicVisualElement
 	{
+		public abstract IBussProperty BaseProperty { get; }
 		public BussStyleSheet UpdatedStyleSheet;
 
-		public abstract IBussProperty BaseProperty
-		{
-			get;
-		}
-		
 #if UNITY_2018
 		protected BussPropertyVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussPropertyVisualElements/BussPropertyVisualElement.2018.uss") { }
@@ -27,6 +23,7 @@ namespace Beamable.Editor.UI.Components
 		protected BussPropertyVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussPropertyVisualElements/BussPropertyVisualElement.uss") { }
 #endif
+		
 		protected void AddBussPropertyFieldClass(VisualElement ve)
 		{
 			ve.AddToClassList("bussPropertyField");
@@ -47,7 +44,7 @@ namespace Beamable.Editor.UI.Components
 	{
 		public override IBussProperty BaseProperty => Property;
 
-		protected T Property
+		public T Property
 		{
 			get;
 		}

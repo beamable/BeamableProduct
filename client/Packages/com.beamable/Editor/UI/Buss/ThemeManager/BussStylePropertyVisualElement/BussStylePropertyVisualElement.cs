@@ -32,7 +32,6 @@ namespace Beamable.Editor.UI.Components
 
 		private VariableDatabase _variableDatabase;
 		private BussStyleSheet _styleSheet;
-		private BussStyleRule _styleRule;
 		private BussPropertyProvider _propertyProvider;
 		private BussStyleCardVisualElement.MODE _currentMode;
 
@@ -66,7 +65,6 @@ namespace Beamable.Editor.UI.Components
 			Update();
 		}
 
-		// TODO: should be a part of base class and overriden here, TBD later
 		private void Update()
 		{
 			_labelComponent.text = _propertyProvider.Key;
@@ -76,19 +74,16 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void Setup(BussStyleSheet styleSheet,
-		                  BussStyleRule styleRule,
 		                  BussPropertyProvider property,
 		                  VariableDatabase variableDatabase,
 		                  BussStyleCardVisualElement.MODE currentMode)
 		{
 			RemoveStyleSheetListener();
-			
 			_variableDatabase = variableDatabase;
 			_styleSheet = styleSheet;
-			_styleRule = styleRule;
 			_propertyProvider = property;
+
 			_currentMode = currentMode;
-			
 			Refresh();
 			AddStyleSheetListener();
 		}
@@ -117,17 +112,14 @@ namespace Beamable.Editor.UI.Components
 				_propertyVisualElement.Refresh();
 			}
 		}
+		
 		protected override void OnDestroy()
 		{
 			_removeButton?.UnregisterCallback<MouseDownEvent>(OnRemoveButtonClicked);
 			RemoveStyleSheetListener();
 		}
-		
-		private void OnRemoveButtonClicked(MouseDownEvent evt)
-		{
-			IBussProperty bussProperty = _propertyProvider.GetProperty();
-			_styleSheet.RemoveStyleProperty(bussProperty, _styleRule.SelectorString);
-		}
+
+		private void OnRemoveButtonClicked(MouseDownEvent evt) { }
 		
 		private void SetupVariableConnection()
 		{
@@ -139,15 +131,15 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			_variableConnection.OnConnectionChange -= Update;
-			_variableConnection.Setup(_styleSheet, _propertyProvider, _variableDatabase);
 			_variableConnection.OnConnectionChange += Update;
+			_variableConnection.Setup(_styleSheet, _propertyProvider, _variableDatabase);
 		}
 
 		private void AddStyleSheetListener()
 		{
 			if (_styleSheet != null)
 			{
-				_styleSheet.Change += Update;
+				_styleSheet.OnChange += Update;
 			}
 		}
 
@@ -155,7 +147,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			if (_styleSheet != null)
 			{
-				_styleSheet.Change -= Update;
+				_styleSheet.OnChange -= Update;
 			}
 		}
 	}

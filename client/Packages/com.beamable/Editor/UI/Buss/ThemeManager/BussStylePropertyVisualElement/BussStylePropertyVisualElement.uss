@@ -1,11 +1,11 @@
-#root {
+#propertyContainer {
     flex-direction: row;
     justify-content: flex-start;
     align-self: stretch;
     align-items: center;
 }
 
-#propertyLabel {
+#label {
     width: 140px;
     color: rgb(255,255,255);
     -unity-text-align: middle-left;

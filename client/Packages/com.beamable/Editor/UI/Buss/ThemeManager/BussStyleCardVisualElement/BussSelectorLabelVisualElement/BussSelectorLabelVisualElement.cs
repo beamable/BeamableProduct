@@ -1,6 +1,7 @@
 ﻿using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
+using System;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -14,7 +15,7 @@ namespace Beamable.Editor.UI.Components
 	public class BussSelectorLabelVisualElement : BeamableBasicVisualElement
 	{
 		private TextField _editableLabel;
-		private BussStyleRule _styleRule;
+		
 #if UNITY_2018
 		public BussSelectorLabelVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStyleCardVisualElement/BussSelectorLabelVisualElement/BussSelectorLabelVisualElement.2018.uss") { }
@@ -26,8 +27,7 @@ namespace Beamable.Editor.UI.Components
 		public void Setup(BussStyleCardVisualElement.MODE currentMode, BussStyleRule styleRule)
 		{
 			base.Refresh();
-			_styleRule = styleRule;
-
+			
 			switch (currentMode)
 			{
 				case BussStyleCardVisualElement.MODE.NORMAL:
@@ -53,7 +53,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void StyleIdChanged(ChangeEvent<string> evt)
 		{
-			_styleRule.SelectorString = evt.newValue;
+			
 		}
 	}
 }
