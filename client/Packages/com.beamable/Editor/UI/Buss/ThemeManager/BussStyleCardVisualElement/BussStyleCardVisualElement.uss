@@ -127,4 +127,10 @@
     width: 16px;
     height: 16px;
 }
+BussStylePropertyVisualElement.doesntExists {
+    display: none;
+}
 
+.showAllProperties BussStylePropertyVisualElement.doesntExists {
+    display: flex;
+}

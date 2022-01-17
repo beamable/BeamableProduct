@@ -2,6 +2,7 @@
 using Beamable.Editor.UI.Buss;
 using Beamable.UI.Buss;
 using Editor.UI.BUSS.ThemeManager;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -63,12 +64,12 @@ namespace Beamable.Editor.UI.Components
 			_addVariableButton = Root.Q<VisualElement>("addVariableButton");
 			_addRuleButton = Root.Q<VisualElement>("addRuleButton");
 			_showAllButton = Root.Q<VisualElement>("showAllButton");
-			
+
 			RegisterButtonActions();
 
 			CreateSelectorLabel();
 			CreateProperties();
-			
+
 			_removeButton.SetVisibility(_currentMode == MODE.EDIT);
 		}
 
@@ -79,7 +80,7 @@ namespace Beamable.Editor.UI.Components
 			_variableDatabase = variableDatabase;
 
 			_styleSheet.LocalChange += Refresh;
-			
+
 			Refresh();
 		}
 
@@ -93,7 +94,7 @@ namespace Beamable.Editor.UI.Components
 		private void RegisterButtonActions()
 		{
 			ClearButtonActions();
-			
+
 			_removeButton?.RegisterCallback<MouseDownEvent>(RemoveButtonClicked);
 			_editButton?.RegisterCallback<MouseDownEvent>(EditButtonClicked);
 			_wizardButton?.RegisterCallback<MouseDownEvent>(WizardButtonClicked);
@@ -128,17 +129,21 @@ namespace Beamable.Editor.UI.Components
 			{
 				keys.Add(propertyProvider.Key);
 			}
+
 			var context = new GenericMenu();
 
-			foreach (var key in BussStyle.Keys) {
+			foreach (var key in BussStyle.Keys)
+			{
 				if (keys.Contains(key)) continue;
-				context.AddItem(new GUIContent(key), false, () => {
-					_styleRule.Properties.Add(BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty()));
+				context.AddItem(new GUIContent(key), false, () =>
+				{
+					_styleRule.Properties.Add(
+						BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty()));
 					AssetDatabase.SaveAssets();
 					_styleSheet.TriggerChange();
 				});
 			}
-			
+
 			context.ShowAsContext();
 		}
 
@@ -170,14 +175,14 @@ namespace Beamable.Editor.UI.Components
 
 		private void ShowAllButtonClicked(MouseDownEvent evt)
 		{
-			Debug.Log("ShowAllButtonClicked");
+			ToggleInClassList("showAllProperties");
 		}
 
 		private void CreateSelectorLabel()
 		{
 			_selectorLabelComponent?.Destroy();
 			_selectorLabelParent.Clear();
-			
+
 			_selectorLabelComponent = new BussSelectorLabelVisualElement();
 			_selectorLabelComponent.Setup(_currentMode, _styleRule);
 			_selectorLabelParent.Add(_selectorLabelComponent);
@@ -187,10 +192,23 @@ namespace Beamable.Editor.UI.Components
 		{
 			foreach (BussPropertyProvider property in _styleRule.Properties)
 			{
-				if(property.IsVariable) continue;
-				
+				if (property.IsVariable)
+					continue;
+
 				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
 				element.Setup(_styleSheet, _styleRule, property, _variableDatabase, _currentMode);
+				element.AddToClassList("exists");
+				_properties.Add(element);
+			}
+
+			var restPropertyKeys = BussStyle.Keys.Where(s => _styleRule.Properties.All(provider => provider.Key != s));
+			foreach (var key in restPropertyKeys)
+			{
+				var propertyProvider = BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key));
+
+				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
+				element.Setup(_styleSheet, _styleRule, propertyProvider, _variableDatabase, _currentMode);
+				element.AddToClassList("doesntExists");
 				_properties.Add(element);
 			}
 		}
