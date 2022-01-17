@@ -146,13 +146,14 @@ namespace Beamable.UI.BUSS
 			if(_inStyleSheetChangedLoop) return;
 			
 			_inStyleSheetChangedLoop = true;
-			foreach (BussPropertyVisualElement propertyVisualElement in this.GetRootVisualContainer().Query<BussPropertyVisualElement>().Build().ToList())
-			{
-				propertyVisualElement.OnPropertyChangedExternally();
-			}
-			_inStyleSheetChangedLoop = false;
+			// TODO: We will use it in order to update only visual elements affected by change.
+			// foreach (BussPropertyVisualElement propertyVisualElement in this.GetRootVisualContainer().Query<BussPropertyVisualElement>().Build().ToList())
+			// {
+			// 	propertyVisualElement.OnPropertyChangedExternally();
+			// }
 			
 			RefreshStyleCards();
+			_inStyleSheetChangedLoop = false;
 		}
 
 		private void OnDestroy()

@@ -140,8 +140,8 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			_variableConnection.OnConnectionChange -= Update;
-			_variableConnection.OnConnectionChange += Update;
 			_variableConnection.Setup(_styleSheet, _propertyProvider, _variableDatabase);
+			_variableConnection.OnConnectionChange += Update;
 		}
 
 		private void AddStyleSheetListener()
