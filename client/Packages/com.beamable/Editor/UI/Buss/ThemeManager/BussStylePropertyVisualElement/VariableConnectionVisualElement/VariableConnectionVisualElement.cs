@@ -13,6 +13,7 @@ using UnityEngine.Experimental.UIElements.StyleEnums;
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
+
 #endif
 
 namespace Beamable.Editor.UI.Components
@@ -51,40 +52,51 @@ namespace Beamable.Editor.UI.Components
 			_mainElement.style.SetFlexDirection(FlexDirection.Row);
 		}
 
-		public void Update() {
+		public void Update()
+		{
 			_button.clickable.clicked -= OnButtonClick;
 			_button.clickable.clicked += OnButtonClick;
 			_button.EnableInClassList("whenConnected", IsConnected);
 
+			var baseType = BussStyle.GetBaseType(_propertyProvider.Key);
 			_dropdownOptions.Clear();
 			_dropdownOptions.Add(_noneOption);
-			_dropdownOptions.Add(_addNewOption);
-			_dropdownOptions.AddRange(_variableDatabase.GetVariableNames());
+			// _dropdownOptions.Add(_addNewOption);
+			_dropdownOptions.AddRange(_variableDatabase
+			                          .GetVariableNames()
+			                          .Where(key => _variableDatabase.GetVariableData(key).HasTypeDeclared(baseType)));
 
 			_dropdown.visible = IsConnected;
 			_dropdown.Setup(_dropdownOptions, OnVariableSelected, false);
 
-			if (_propertyProvider.GetProperty() is VariableProperty property) {
+			if (_propertyProvider.GetProperty() is VariableProperty property)
+			{
 				var index = _dropdownOptions.IndexOf(property.VariableName);
-				if (index < 0) {
+				if (index < 0)
+				{
 					index = 0;
 				}
 
 				_dropdown.Set(index);
 			}
-			else {
+			else
+			{
 				_dropdown.Set(0);
 			}
 
 			_dropdown.Refresh();
 		}
 
-		public void Setup(BussStyleSheet styleSheet, BussPropertyProvider propertyProvider, VariableDatabase variableDatabase)	// temporary parameter
+		public void Setup(BussStyleSheet styleSheet,
+		                  BussPropertyProvider propertyProvider,
+		                  VariableDatabase variableDatabase) // temporary parameter
 		{
+			RemoveOnChangeUpdate();
 			_variableDatabase = variableDatabase;
 			_styleSheet = styleSheet;
 			_propertyProvider = propertyProvider;
 			Update();
+			AddOnChangeUpdate();
 		}
 
 		private void OnButtonClick()
@@ -95,12 +107,16 @@ namespace Beamable.Editor.UI.Components
 					? BussStyle.GetDefaultValue(_propertyProvider.Key).CopyProperty()
 					: new VariableProperty();
 			}
+			
+			RemoveOnChangeUpdate();
 
 			var temp = _cachedProperty;
 			_cachedProperty = _propertyProvider.GetProperty();
 			_propertyProvider.SetProperty(temp);
 			AssetDatabase.SaveAssets();
 			OnConnectionChange?.Invoke();
+			
+			AddOnChangeUpdate();
 		}
 
 		private void OnVariableSelected(int index)
@@ -121,7 +137,24 @@ namespace Beamable.Editor.UI.Components
 				{
 					variableProperty.VariableName = option;
 				}
+
 				OnConnectionChange?.Invoke();
+			}
+		}
+
+		private void RemoveOnChangeUpdate()
+		{
+			if (_styleSheet != null)
+			{
+				// _styleSheet.Change -= Update;
+			}
+		}
+
+		private void AddOnChangeUpdate()
+		{
+			if (_styleSheet != null)
+			{
+				// _styleSheet.Change += Update;
 			}
 		}
 	}

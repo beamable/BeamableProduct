@@ -132,6 +132,9 @@ namespace Beamable.Editor.UI.Components
 
 		private void SetupVariableConnection()
 		{
+			if (_propertyProvider.IsVariable)
+				return;
+			
 			if (_variableConnection == null)
 			{
 				_variableConnection = new VariableConnectionVisualElement();

@@ -146,6 +146,9 @@ namespace Beamable.UI.BUSS
 			if(_inStyleSheetChangedLoop) return;
 			
 			_inStyleSheetChangedLoop = true;
+			
+			_variableDatabase.ReconsiderAllStyleSheets();
+			
 			// TODO: We will use it in order to update only visual elements affected by change.
 			// foreach (BussPropertyVisualElement propertyVisualElement in this.GetRootVisualContainer().Query<BussPropertyVisualElement>().Build().ToList())
 			// {

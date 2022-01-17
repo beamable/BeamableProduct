@@ -22,5 +22,11 @@ namespace Beamable.Editor.UI.Buss
 			if (string.IsNullOrWhiteSpace(input)) return "";
 			return "." + CleanString(input);
 		}
+
+		public static string AsVariableName(string input)
+		{
+			if (string.IsNullOrWhiteSpace(input)) return "";
+			return "--" + CleanString(input);
+		}
 	}
 }

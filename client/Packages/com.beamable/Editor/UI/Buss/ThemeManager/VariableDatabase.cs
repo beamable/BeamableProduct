@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Beamable.UI.Buss;
 
@@ -117,6 +118,11 @@ namespace Editor.UI.BUSS.ThemeManager
 			public PropertyReference GetUsageFrom(BussStyleRule rule)
 			{
 				return Usages.FirstOrDefault(pr => pr.styleRule == rule);
+			}
+
+			public bool HasTypeDeclared(Type type)
+			{
+				return Declarations.Any(pr => type.IsInstanceOfType(pr.propertyProvider.GetProperty()));
 			}
 		}
 
