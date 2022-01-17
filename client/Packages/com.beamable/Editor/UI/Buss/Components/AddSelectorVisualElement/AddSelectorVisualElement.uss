@@ -1,12 +1,11 @@
-NewRuleVisualElement,
-NewRuleVisualElement > TemplateContainer,
-NewRuleVisualElement > TemplateContainer > #mainVisualElement {
+AddSelectorVisualElement,
+AddSelectorVisualElement > TemplateContainer,
+AddSelectorVisualElement > TemplateContainer > #mainVisualElement {
     flex-grow: 1;
 }
 
-NewRuleVisualElement > TemplateContainer > #mainVisualElement {
-    padding-top: 50px;
-    padding-bottom: 50px;
+AddSelectorVisualElement > TemplateContainer > #mainVisualElement {
+    padding-top: 20px;
     padding-left: 50px;
     padding-right: 50px;
 }
@@ -15,12 +14,14 @@ NewRuleVisualElement > TemplateContainer > #mainVisualElement {
     flex-direction: row;
     justify-content: flex-end;
     padding-right: 5px;
+    padding-top: 10px;
+    height: 60;
 }
 
 #confirmButton {
     width: 100px;
     height: 28px;
-    align-self: center;
+    align-self: flex-start;
 }
 
 Label {
@@ -62,23 +63,22 @@ DropdownVisualElement > TemplateContainer > #mainVisualElement > #mainContainer 
     padding-left: 5px;
 }
 
-#styleSheetDropdownContainer {
-    margin-bottom: 20px;
-}
-
 #bodyContainer {
     flex-direction: row;
 }
 
-#addNewRuleButton {
-    background-image: none;
-}
-
 #rulesContainer {
     flex-grow: 1;
-    height: 200px;
+    height: 180px;
+    margin-left: 5px;
+    margin-right: 5px;
 }
 
-RuleVisualElement {
-    margin-bottom: 10px;
+#selectStyleSheet, #selectorName, #bodyContainer {
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+#rulesLabel {
+    width: 120px;
 }

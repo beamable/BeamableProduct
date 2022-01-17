@@ -61,10 +61,11 @@ namespace Beamable.Editor.UI.Components
                 }
             }
         }
-
+        
         private Label _label;
         private Image _icon;
         private BeamableCheckboxVisualElement _checkbox;
+        private string _labelText;
 
         private bool Flip { get; set; }
         private string Label { get; set; }
@@ -74,6 +75,12 @@ namespace Beamable.Editor.UI.Components
 
         public LabeledCheckboxVisualElement() : base(ComponentPath)
         {
+        }
+        
+        public LabeledCheckboxVisualElement(string labelText = "", bool isFlipped = false) : base(ComponentPath)
+        {
+	        _labelText = labelText;
+	        Flip = isFlipped;
         }
 
         public LabeledCheckboxVisualElement(string uxmlPath, string ussPath) : base(uxmlPath, ussPath)
@@ -85,7 +92,7 @@ namespace Beamable.Editor.UI.Components
             base.Refresh();
 
             _label = Root.Q<Label>("label");
-            _label.text = Label;
+            _label.text = string.IsNullOrWhiteSpace(_labelText) ? Label : _labelText;
 
             _icon = Root.Q<Image>("icon");
             _icon.image = !string.IsNullOrEmpty(Icon) ? (Texture)EditorGUIUtility.Load(Icon): null;

@@ -9,14 +9,13 @@
 
     <engine:VisualElement name="mainVisualElement">
         <engine:VisualElement name="styleSheetContainer">
-            <engine:VisualElement name="styleSheetDropdownContainer">
-                <beamable:LabeledDropdownVisualElement name="selectStyleSheet" label="Select style sheet"/>
-            </engine:VisualElement>
+            <beamable:LabeledDropdownVisualElement name="selectStyleSheet" label="Select style sheet"/>
+            <beamable:LabeledTextField name="selectorName" label="Selector name"/>
             <engine:VisualElement name="bodyContainer">
                 <engine:VisualElement name="bodyButtonSection">
-                    <engine:Button name="addNewRuleButton" text="+ Add New Rule"/>
+                    <engine:Label name="rulesLabel" text="Rules"/>
                 </engine:VisualElement>
-                <engine:VisualElement name="rulesContainer"/>
+                <engine:ScrollView name="rulesContainer"/>
             </engine:VisualElement>
         </engine:VisualElement>
         <engine:VisualElement name="buttonStrip">
