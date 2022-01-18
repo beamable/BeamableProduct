@@ -127,10 +127,11 @@
     width: 16px;
     height: 16px;
 }
-BussStylePropertyVisualElement.doesntExists {
+BussStylePropertyVisualElement.doesntExists, BussStylePropertyVisualElement.doesntExists #globalVariable {
     display: none;
+    visibility: hidden;
 }
 
-.showAllProperties BussStylePropertyVisualElement.doesntExists {
+.showAllProperties BussStylePropertyVisualElement.doesntExists, BussStylePropertyVisualElement.exists {
     display: flex;
 }
