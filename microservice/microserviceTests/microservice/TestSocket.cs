@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Server;
@@ -289,6 +290,18 @@ namespace Beamable.Microservice.Tests.Socket
          return async res =>
          {
             await Task.Delay(ms);
+            return res.Succeed(body);
+         };
+      }
+
+      public static TestSocketResponseGeneratorAsync SuccessAfterCondition<T>(Func<bool> condition, T body)
+      {
+         return async res =>
+         {
+            while (!condition())
+            {
+               await Task.Delay(1);
+            }
             return res.Succeed(body);
          };
       }
