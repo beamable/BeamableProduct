@@ -24,27 +24,26 @@ namespace Beamable.Editor.UI.Components
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStyleCardVisualElement/BussSelectorLabelVisualElement/BussSelectorLabelVisualElement.uss") { }
 #endif
 
-		public void Setup(BussStyleCardVisualElement.MODE currentMode, BussStyleRule styleRule)
+		public void Setup(BussStyleRule styleRule)
 		{
 			base.Refresh();
 
 			_styleRule = styleRule;
-			
-			switch (currentMode)
+
+			if (!_styleRule.EditMode)
 			{
-				case BussStyleCardVisualElement.MODE.NORMAL:
-					TextElement textLabel = new TextElement();
-					textLabel.name = "styleId";
-					textLabel.text = styleRule.SelectorString;
-					Root.Add(textLabel);
-					break;
-				case BussStyleCardVisualElement.MODE.EDIT:
-					_editableLabel = new TextField();
-					_editableLabel.name = "styleId";
-					_editableLabel.value = styleRule.SelectorString;
-					_editableLabel.RegisterValueChangedCallback(StyleIdChanged);
-					Root.Add(_editableLabel);
-					break;
+				TextElement textLabel = new TextElement();
+				textLabel.name = "styleId";
+				textLabel.text = styleRule.SelectorString;
+				Root.Add(textLabel);
+			}
+			else
+			{
+				_editableLabel = new TextField();
+				_editableLabel.name = "styleId";
+				_editableLabel.value = styleRule.SelectorString;
+				_editableLabel.RegisterValueChangedCallback(StyleIdChanged);
+				Root.Add(_editableLabel);
 			}
 		}
 
