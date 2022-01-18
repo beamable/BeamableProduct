@@ -2,10 +2,13 @@
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
+using Editor.UI.Buss;
 using Editor.UI.BUSS;
 using Editor.UI.BUSS.ThemeManager;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
+using UnityEngine;
 using Object = UnityEngine.Object;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -112,13 +115,32 @@ namespace Beamable.UI.BUSS
 			var addSelectorButton = new VisualElement {name = "addSelectorButton"};
 			addSelectorButton.AddToClassList("button");
 			addSelectorButton.Add(new Label("Add Selector"));
-			addSelectorButton.RegisterCallback<MouseDownEvent>(_ =>
-			{
-				var window = AddSelectorWindow.ShowWindow();
-				window?.Init();
-			});
+			addSelectorButton.UnregisterCallback<MouseDownEvent>(_ => OpenAddSelectorWindow());
+			addSelectorButton.RegisterCallback<MouseDownEvent>(_ => OpenAddSelectorWindow());
+
+			EditorApplication.update -= CheckEnableState;
+			EditorApplication.update += CheckEnableState;
 			
 			_stylesGroup.Add(addSelectorButton);
+
+			void OpenAddSelectorWindow()
+			{
+				var window = AddSelectorWindow.ShowWindow();
+				window?.Init(_ => RefreshStyleSheets());
+			}
+			
+			void CheckEnableState()
+			{
+				addSelectorButton.tooltip = string.Empty;
+				var styleSheets = Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[] {"Assets"});
+				if (styleSheets.Count == 0)
+				{
+					addSelectorButton.tooltip = "There should be created at least one BUSS Style Config!";
+					addSelectorButton.SetEnabled(false);
+				}
+				else 
+					addSelectorButton.SetEnabled(true);
+			}
 		}
 
 		private void ClearCurrentStyleSheet()
