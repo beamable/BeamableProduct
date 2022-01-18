@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a `StorageDocument` base class for storage data classes that automatically handle document ID assignment.
 - Added automatic Mongo serialization for basic Unity structs like `Vector2`, `Color`, and `Quaternion`
 
+### Fixed
+- Swagger docs handle generic types instead of failing to load
+
 ## [0.18.2]
 ### Fixed
 - Typless `Promise` in `ClientCallable` methods
