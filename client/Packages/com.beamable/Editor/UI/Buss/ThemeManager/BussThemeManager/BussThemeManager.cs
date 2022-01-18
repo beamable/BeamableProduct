@@ -35,7 +35,7 @@ namespace Beamable.UI.BUSS
 		private VisualElement _stylesGroup;
 		private ObjectField _styleSheetSource;
 		private BussStyleSheet _currentStyleSheet;
-		private BussElementHierarchyVisualElement _hierarchyComponent;
+		private BussElementHierarchyVisualElement _navigationWindow;
 
 		private bool _inStyleSheetChangedLoop;
 		private readonly VariableDatabase _variableDatabase = new VariableDatabase();
@@ -71,9 +71,9 @@ namespace Beamable.UI.BUSS
 			navigationGroup.name = "navigationGroup";
 			scrollView.Add(navigationGroup);
 			
-			_hierarchyComponent = new BussElementHierarchyVisualElement();
-			_hierarchyComponent.Refresh();
-			navigationGroup.Add(_hierarchyComponent);
+			_navigationWindow = new BussElementHierarchyVisualElement();
+			_navigationWindow.Refresh();
+			navigationGroup.Add(_navigationWindow);
 
 			_styleSheetSource = new ObjectField();
 			_styleSheetSource.allowSceneObjects = false;
@@ -135,7 +135,7 @@ namespace Beamable.UI.BUSS
 			foreach (BussStyleRule styleRule in _currentStyleSheet.Styles)
 			{
 				BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-				styleCard.Setup(_currentStyleSheet, styleRule, _variableDatabase);
+				styleCard.Setup(_currentStyleSheet, styleRule, _variableDatabase, _navigationWindow);
 				_styleCardsVisualElements.Add(styleCard);
 				_stylesGroup.Add(styleCard);
 			}
@@ -162,7 +162,7 @@ namespace Beamable.UI.BUSS
 		private void OnDestroy()
 		{
 			ClearCurrentStyleSheet();
-			_hierarchyComponent.Destroy();
+			_navigationWindow.Destroy();
 		}
 	}
 }

@@ -1,8 +1,10 @@
 ﻿using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common;
+using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -15,22 +17,42 @@ namespace Beamable.Editor.UI.Components
 {
 	public abstract class ComponentBasedHierarchyVisualElement<T> : BeamableBasicVisualElement where T : MonoBehaviour
 	{
+		public event Action<GameObject> SelectionChanged;
+		
+		protected readonly List<IndentedLabelVisualElement> SpawnedLabels = new List<IndentedLabelVisualElement>();
+
+		private ScrollView _hierarchyContainer;
+
+		private IndentedLabelVisualElement SelectedLabel
+		{
+			get => _selectedLabel;
+			set
+			{
+				_selectedLabel = value;
+				
+				if (_selectedLabel == null)
+				{
+					return;
+				}
+
+				if (_selectedLabel.RelatedGameObject != null)
+				{
+					SelectionChanged?.Invoke(_selectedLabel.RelatedGameObject);
+				}
+			}
+		}
+
+		private IndentedLabelVisualElement _selectedLabel;
+		
+		
 #if UNITY_2018
 		protected ComponentBasedHierarchyVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement.2018.uss") { }
+
 #elif UNITY_2019_1_OR_NEWER
 		public ComponentBasedHierarchyVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement.uss") { }
 #endif
-
-		protected readonly List<IndentedLabelVisualElement> SpawnedLabels = new List<IndentedLabelVisualElement>();
-		protected IndentedLabelVisualElement SelectedLabel
-		{
-			get;
-			set;
-		}
-		
-		private ScrollView _hierarchyContainer;
 
 		public override void Refresh()
 		{
@@ -55,6 +77,8 @@ namespace Beamable.Editor.UI.Components
 
 			OnHierarchyChanged();
 		}
+
+
 
 		protected abstract void OnSelectionChanged();
 
