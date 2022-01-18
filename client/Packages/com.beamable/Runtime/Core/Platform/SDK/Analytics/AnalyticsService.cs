@@ -15,9 +15,9 @@ namespace Beamable.Api.Analytics
 	public class AnalyticsService
 	{
 		private PlatformRequester _requester;
-		private PlatformService _platform;
+		private IPlatformService _platform;
 
-		public AnalyticsService(PlatformService platform, PlatformRequester requester)
+		public AnalyticsService(IPlatformService platform, PlatformRequester requester)
 		{
 			_platform = platform;
 			_requester = requester;

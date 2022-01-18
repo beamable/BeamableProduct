@@ -194,6 +194,7 @@ namespace Beamable.Server.Editor
             GenerateClientSourceCode(service);
             System.Threading.Tasks.Task.Factory.StartNew(() =>
             {
+	            Directory.CreateDirectory(service.SourcePath);
                using (var fsw = new FileSystemWatcher(service.SourcePath))
                {
                   fsw.IncludeSubdirectories = false;
@@ -247,7 +248,6 @@ namespace Beamable.Server.Editor
                      Name = name,
                      Enabled = configEntry?.Enabled ?? true,
                      TemplateId = configEntry?.TemplateId ?? "small",
-					 Dependencies = configEntry?.Dependencies
                    };
                }).ToList();
 
@@ -519,7 +519,7 @@ namespace Beamable.Server.Editor
       public static event Action<ManifestModel, int> OnBeforeDeploy;
       public static event Action<ManifestModel, int> OnDeploySuccess;
       public static event Action<ManifestModel, string> OnDeployFailed;
-      public static event Action<IDescriptor, ServicePublishState> OnServiceDeployStatusChanged;	
+      public static event Action<IDescriptor, ServicePublishState> OnServiceDeployStatusChanged;
       public static event Action<IDescriptor> OnServiceDeployProgress;
 
       public static async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context, CancellationToken token, Action<IDescriptor> onServiceDeployed = null)
@@ -545,7 +545,7 @@ namespace Beamable.Server.Editor
          var nameToImageId = new Dictionary<string, string>();
 
          foreach (var descriptor in Descriptors)
-         { 
+         {
 	         OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.InProgress);
             Debug.Log($"Building service=[{descriptor.Name}]");
             var buildCommand = new BuildImageCommand(descriptor, false);
@@ -556,15 +556,14 @@ namespace Beamable.Server.Editor
             catch (Exception e)
             {
 	            OnDeployFailed?.Invoke(model, $"Deploy failed due to failed build of {descriptor.Name}: {e}.");
-				UpdateServiceDeploymentStatus(descriptor, ServicePublishState.Failed);
-
+	            OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
 	            return;
             }
 
             if(token.IsCancellationRequested)
             {
 	            OnDeployFailed?.Invoke(model, $"Cancellation requested after build of {descriptor.Name}.");
-				UpdateServiceDeploymentStatus(descriptor, ServicePublishState.Failed);
+	            OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
 	            return;
             }
 
@@ -572,13 +571,13 @@ namespace Beamable.Server.Editor
             var msModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(descriptor);
             uploader.onProgress += msModel.OnDeployProgress;
             uploader.onProgress +=(_, __, ___) => OnServiceDeployProgress?.Invoke(descriptor);
-            
+
             Debug.Log($"Getting Id service=[{descriptor.Name}]");
             var imageId = await uploader.GetImageId(descriptor);
             if (string.IsNullOrEmpty(imageId))
             {
 	            OnDeployFailed?.Invoke(model, $"Failed due to failed Docker {nameof(GetImageIdCommand)} for {descriptor.Name}.");
-				UpdateServiceDeploymentStatus(descriptor, ServicePublishState.Failed);
+	            OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
 	            return;
             }
             nameToImageId.Add(descriptor.Name, imageId);
@@ -590,15 +589,7 @@ namespace Beamable.Server.Editor
                   Debug.Log(string.Format(BeamableLogConstants.ContainerAlreadyUploadedMessage, descriptor.Name));
                   onServiceDeployed?.Invoke(descriptor);
                   OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Published);
-
-                  foreach (var storage in descriptor.GetStorageReferences())
-                  {
-					 Debug.Log(string.Format(BeamableLogConstants.UploadedStorageMessage, storage.Name));
-					 onServiceDeployed?.Invoke(storage);
-                     OnServiceDeployStatusChanged?.Invoke(storage, ServicePublishState.Published);
-                  }
-
-				  continue;
+                  continue;
                }
             }
 
@@ -621,22 +612,15 @@ namespace Beamable.Server.Editor
                 Debug.Log(string.Format(BeamableLogConstants.UploadedContainerMessage, descriptor.Name));
                 onServiceDeployed?.Invoke(descriptor);
                 OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Published);
-
-				foreach (var storage in descriptor.GetStorageReferences())
-				{
-					Debug.Log(string.Format(BeamableLogConstants.UploadedStorageMessage, storage.Name));
-					onServiceDeployed?.Invoke(storage);
-					OnServiceDeployStatusChanged?.Invoke(storage, ServicePublishState.Published);
-				}
-			},
+            },
             () =>
             {
                 Debug.LogError(string.Format(BeamableLogConstants.CantUploadContainerMessage, descriptor.Name));
                 if(token.IsCancellationRequested)
                 {
 	                OnDeployFailed?.Invoke(model, $"Cancellation requested during upload of {descriptor.Name}.");
-					UpdateServiceDeploymentStatus(descriptor, ServicePublishState.Failed);
-				}
+	                OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
+                }
             }, imageId);
          }
 
@@ -680,14 +664,6 @@ namespace Beamable.Server.Editor
       {
          var key = string.Format(SERVICE_PUBLISHED_KEY, serviceName);
          EditorPrefs.SetBool(key, false);
-      }
-
-      private static void UpdateServiceDeploymentStatus(MicroserviceDescriptor desc, ServicePublishState servicePublishState)
-      {
-	      OnServiceDeployStatusChanged?.Invoke(desc, servicePublishState);
-
-	      foreach (var storage in desc.GetStorageReferences())
-            OnServiceDeployStatusChanged?.Invoke(storage, servicePublishState);
       }
 
       private static void HandleDeploySuccess(ManifestModel _, int __)
