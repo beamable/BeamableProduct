@@ -96,7 +96,7 @@ namespace Beamable.Editor.UI.Components
 			if (_propertyVisualElement != null)
 			{
 				if (_propertyVisualElement.BaseProperty ==
-				    _propertyProvider.GetProperty().GetEndProperty(_variableDatabase))
+				    _propertyProvider.GetProperty().GetEndProperty(_variableDatabase, _styleRule))
 				{
 					return;
 				}
@@ -105,7 +105,7 @@ namespace Beamable.Editor.UI.Components
 				_propertyVisualElement.Destroy();
 			}
 
-			_propertyVisualElement = _propertyProvider.GetVisualElement(_variableDatabase, baseType);
+			_propertyVisualElement = _propertyProvider.GetVisualElement(_variableDatabase, _styleRule, baseType);
 
 			if (_propertyVisualElement != null)
 			{
