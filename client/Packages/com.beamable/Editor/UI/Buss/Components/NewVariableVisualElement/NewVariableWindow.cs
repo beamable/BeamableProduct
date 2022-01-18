@@ -1,4 +1,5 @@
-﻿using Beamable.Editor.Toolbox.Components;
+﻿using System;
+using Beamable.Editor.Toolbox.Components;
 using Beamable.UI.Buss;
 using UnityEngine;
 
@@ -6,11 +7,11 @@ namespace Beamable.Editor.UI.Buss.Components
 {
 	public class NewVariableWindow : BUSSWindowBase<NewVariableWindow, NewVariableVisualElement>
 	{
-		private BussStyleDescription _description;
+		private Action<string, IBussProperty> _onPropertyCreated;
 
-		public void Init(BussStyleDescription description)
+		public void Init(Action<string, IBussProperty> onPropertyCreated)
 		{
-			_description = description;
+			_onPropertyCreated = onPropertyCreated;
 			
 			titleContent = new GUIContent("New Variable Window");
 			minSize = new Vector2(720, 400);
@@ -19,6 +20,6 @@ namespace Beamable.Editor.UI.Buss.Components
 			
 			Refresh();
 		}
-		protected override NewVariableVisualElement GetVisualElement() => new NewVariableVisualElement(_description);
+		protected override NewVariableVisualElement GetVisualElement() => new NewVariableVisualElement(_onPropertyCreated);
 	}
 }

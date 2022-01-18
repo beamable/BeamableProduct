@@ -28,7 +28,7 @@ namespace Beamable.Editor.UI.Components
 		public GameObject RelatedGameObject
 		{
 			get;
-			set;
+			private set;
 		}
 
 #if UNITY_2018

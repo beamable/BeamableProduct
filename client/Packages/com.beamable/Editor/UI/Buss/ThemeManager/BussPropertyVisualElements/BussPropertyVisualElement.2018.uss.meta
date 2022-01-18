@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<< HEAD:client/Packages/com.beamable/Editor/UI/Buss/Components/AddSelectorVisualElement/AddSelectorVisualElement.uxml.meta
+guid: 254713e88d574750ae235c51c8ad9975
+=======
 guid: 78ab1ee644d74ea2bc5d17b8ab8ebd40
+>>>>>>> feature/BEAM-1838:client/Packages/com.beamable/Editor/UI/Buss/ThemeManager/BussPropertyVisualElements/BussPropertyVisualElement.2018.uss.meta
 ScriptedImporter:
   fileIDToRecycleName:
     11400000: stylesheet

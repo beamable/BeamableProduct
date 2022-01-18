@@ -1,9 +1,9 @@
 ﻿using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using Editor.UI.BUSS;
 using Editor.UI.BUSS.ThemeManager;
+using System.Collections.Generic;
 using UnityEditor;
 using Object = UnityEngine.Object;
 #if UNITY_2018
@@ -35,9 +35,11 @@ namespace Beamable.UI.BUSS
 		private VisualElement _stylesGroup;
 		private ObjectField _styleSheetSource;
 		private BussStyleSheet _currentStyleSheet;
-		private BussElementHierarchyVisualElement _hierarchyComponent;
+		private BussElementHierarchyVisualElement _navigationWindow;
 
-		private VariableDatabase _variableDatabase = new VariableDatabase();
+		private bool _inStyleSheetChangedLoop;
+		private readonly VariableDatabase _variableDatabase = new VariableDatabase();
+		private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements = new List<BussStyleCardVisualElement>();
 
 		private void OnEnable()
 		{
@@ -69,9 +71,9 @@ namespace Beamable.UI.BUSS
 			navigationGroup.name = "navigationGroup";
 			scrollView.Add(navigationGroup);
 			
-			_hierarchyComponent = new BussElementHierarchyVisualElement();
-			_hierarchyComponent.Refresh();
-			navigationGroup.Add(_hierarchyComponent);
+			_navigationWindow = new BussElementHierarchyVisualElement();
+			_navigationWindow.Refresh();
+			navigationGroup.Add(_navigationWindow);
 
 			_styleSheetSource = new ObjectField();
 			_styleSheetSource.allowSceneObjects = false;
@@ -84,7 +86,7 @@ namespace Beamable.UI.BUSS
 			_stylesGroup = new VisualElement();
 			_stylesGroup.name = "stylesGroup";
 			scrollView.Add(_stylesGroup);
-
+			
 			root.Add(mainVisualElement);
 		}
 
@@ -92,61 +94,75 @@ namespace Beamable.UI.BUSS
 		{
 			ClearCurrentStyleSheet();
 			_currentStyleSheet = (BussStyleSheet)evt.newValue;
+
+			if (_currentStyleSheet == null) return;
+			
 			_variableDatabase.AddStyleSheet(_currentStyleSheet);
 
-			if (_currentStyleSheet == null)
-			{
-				return;
-			}
+			_currentStyleSheet.Change += OnStyleSheetExternallyChanged;
 
-			_currentStyleSheet.OnChange += OnStyleSheetExternallyChanged;
+			RefreshStyleCards();
+		}
 
-			foreach (BussStyleRule styleRule in _currentStyleSheet.Styles)
-			{
-				BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-				styleCard.Setup(_currentStyleSheet, styleRule, _variableDatabase);
-				_stylesGroup.Add(styleCard);
-			}
-
-			var addSelectorButton = new VisualElement {name = "addSelectorButton"};
-			addSelectorButton.AddToClassList("button");
-			addSelectorButton.Add(new Label("Add Selector"));
-			addSelectorButton.RegisterCallback<MouseDownEvent>(_ =>
-			{
-				var window = AddSelectorWindow.ShowWindow();
-				window?.Init();
-			});
-			
-			_stylesGroup.Add(addSelectorButton);
+		private void RefreshStyleCards()
+		{
+			ClearStyleCards();
+			CreateStyleCards();
 		}
 
 		private void ClearCurrentStyleSheet()
 		{
-			_stylesGroup.Clear();
 			if (_currentStyleSheet != null)
 			{
-				_currentStyleSheet.OnChange -= OnStyleSheetExternallyChanged;
+				_currentStyleSheet.Change -= OnStyleSheetExternallyChanged;
 			}
 			
 			_variableDatabase.RemoveAllStyleSheets();
 		}
 
-		private bool _inStyleSheetChangedLoop;
+		private void ClearStyleCards()
+		{
+			foreach (BussStyleCardVisualElement styleCard in _styleCardsVisualElements)
+			{
+				styleCard.Destroy();
+			}
+			_styleCardsVisualElements.Clear();
+			_stylesGroup.Clear();
+		}
+
+		private void CreateStyleCards()
+		{
+			foreach (BussStyleRule styleRule in _currentStyleSheet.Styles)
+			{
+				BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
+				styleCard.Setup(_currentStyleSheet, styleRule, _variableDatabase, _navigationWindow);
+				_styleCardsVisualElements.Add(styleCard);
+				_stylesGroup.Add(styleCard);
+			}
+		}
+
 		private void OnStyleSheetExternallyChanged()
 		{
 			if(_inStyleSheetChangedLoop) return;
+			
 			_inStyleSheetChangedLoop = true;
-			foreach (BussPropertyVisualElement propertyVisualElement in this.GetRootVisualContainer().Query<BussPropertyVisualElement>().Build().ToList())
-			{
-				propertyVisualElement.OnPropertyChangedExternally();
-			}
+			
+			_variableDatabase.ReconsiderAllStyleSheets();
+			
+			// TODO: We will use it in order to update only visual elements affected by change.
+			// foreach (BussPropertyVisualElement propertyVisualElement in this.GetRootVisualContainer().Query<BussPropertyVisualElement>().Build().ToList())
+			// {
+			// 	propertyVisualElement.OnPropertyChangedExternally();
+			// }
+			
+			RefreshStyleCards();
 			_inStyleSheetChangedLoop = false;
 		}
 
 		private void OnDestroy()
 		{
 			ClearCurrentStyleSheet();
-			_hierarchyComponent.Destroy();
+			_navigationWindow.Destroy();
 		}
 	}
 }

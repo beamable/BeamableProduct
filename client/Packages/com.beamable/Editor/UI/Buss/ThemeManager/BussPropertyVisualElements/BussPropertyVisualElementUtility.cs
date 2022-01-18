@@ -53,10 +53,38 @@ namespace Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements
 
 		public static BussPropertyVisualElement GetVisualElement(this BussPropertyProvider propertyProvider,
 		                                                         VariableDatabase variableDatabase,
+		                                                         BussStyleRule context,
+		                                                         Type baseType = null)
+		{
+			return propertyProvider.GetProperty().GetEndProperty(variableDatabase, context, baseType)?.GetVisualElement() ??
+			       new NoValidVariableBussPropertyVisualElement(propertyProvider.GetProperty());
+		}
+		
+		public static BussPropertyVisualElement GetVisualElement(this BussPropertyProvider propertyProvider,
+		                                                         VariableDatabase variableDatabase,
 		                                                         Type baseType = null)
 		{
 			return propertyProvider.GetProperty().GetEndProperty(variableDatabase, baseType)?.GetVisualElement() ??
 			       new NoValidVariableBussPropertyVisualElement(propertyProvider.GetProperty());
+		}
+
+		public static IBussProperty GetEndProperty(this IBussProperty property,
+		                                           VariableDatabase variableDatabase,
+		                                           BussStyleRule context,
+		                                           Type baseType = null)
+		{
+			if (property is VariableProperty variableProperty && 
+			    context != null &&
+			    BussStyleSheetUtility.IsValidVariableName(variableProperty.VariableName))
+			{
+				var propertyInContext = context.Properties.FirstOrDefault(p => p.Key == variableProperty.VariableName);
+				if (propertyInContext != null)
+				{
+					return propertyInContext.GetProperty();
+				}
+			}
+
+			return property.GetEndProperty(variableDatabase, baseType);
 		}
 
 		public static IBussProperty GetEndProperty(this IBussProperty property,
