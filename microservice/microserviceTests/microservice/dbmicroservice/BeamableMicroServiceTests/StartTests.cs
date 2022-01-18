@@ -1208,6 +1208,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
       [Test]
       [NonParallelizable]
+      [Timeout(120000)]
       public async Task HandleAuthDrop_WithMultipleRequestsInFlight_WithoutHardcodedRequestIds()
       {
           LoggingUtil.Init();
@@ -1215,7 +1216,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          var contentResolver = new TestContentResolver();
          var dbid = 123;
          var fakeEmail = "fake@example.com";
-         var nonceDelay = 1500; // needs to be well above how long it takes to issue failureCount requests
+         var nonceDelay = 2500; // needs to be well above how long it takes to issue failureCount requests
          var authDelay = 100;
          const int failureCount = 2000;
          var sent = false;
