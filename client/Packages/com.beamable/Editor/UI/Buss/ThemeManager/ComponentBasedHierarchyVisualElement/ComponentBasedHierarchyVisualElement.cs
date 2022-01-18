@@ -17,6 +17,7 @@ namespace Beamable.Editor.UI.Components
 {
 	public abstract class ComponentBasedHierarchyVisualElement<T> : BeamableBasicVisualElement where T : MonoBehaviour
 	{
+		public event Action HierarchyChanged;
 		public event Action<GameObject> SelectionChanged;
 		
 		protected readonly List<IndentedLabelVisualElement> SpawnedLabels = new List<IndentedLabelVisualElement>();
@@ -78,9 +79,8 @@ namespace Beamable.Editor.UI.Components
 			OnHierarchyChanged();
 		}
 
-
-
 		protected abstract void OnSelectionChanged();
+		protected abstract void OnObjectRegistered(T registeredObject);
 
 		protected virtual string GetLabel(T component)
 		{
@@ -104,7 +104,7 @@ namespace Beamable.Editor.UI.Components
 			                                     SelectedLabel?.RelatedGameObject);
 		}
 
-		private void OnHierarchyChanged()
+		protected virtual void OnHierarchyChanged()
 		{
 			foreach (IndentedLabelVisualElement child in SpawnedLabels)
 			{
@@ -122,6 +122,8 @@ namespace Beamable.Editor.UI.Components
 					Traverse(gameObject, 0);
 				}
 			}
+			
+			HierarchyChanged?.Invoke();
 		}
 
 		private void OnMouseClicked(IndentedLabelVisualElement newLabel)
@@ -141,6 +143,8 @@ namespace Beamable.Editor.UI.Components
 				label.Refresh();
 				SpawnedLabels.Add(label);
 				_hierarchyContainer.Add(label);
+				
+				OnObjectRegistered(foundComponent);
 
 				foreach (Transform child in gameObject.transform)
 				{
