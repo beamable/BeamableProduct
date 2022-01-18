@@ -53,7 +53,7 @@ namespace Beamable.Server.Editor.CodeGen
       public static string GetTargetParameterClassName(MicroserviceDescriptor descriptor) =>
 	      $"MicroserviceParameters{descriptor.Name}Client";
 
-      public static string GetParameterClassName(Type parameterType) => $"{PARAMETER_STRING}{GetTypeStr(parameterType).Replace(".","_")}";
+      public static string GetParameterClassName(Type parameterType) => $"{PARAMETER_STRING}{parameterType.GetTypeString().Replace(".","_")}";
 
       public static Type GetDataWrapperTypeForParameter(MicroserviceDescriptor descriptor, Type parameterType)
       {
@@ -61,41 +61,6 @@ namespace Beamable.Server.Editor.CodeGen
 		      $"{CLIENT_NAMESPACE}.{GetTargetParameterClassName(descriptor)}+{GetParameterClassName(parameterType)}, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
 	      var t = Type.GetType(name, true, true);
 	      return t;
-      }
-
-      private static string GetTypeStr(Type type)
-      {
-	      StringBuilder retType = new StringBuilder();
-
-	      if (type.IsGenericType)
-	      {
-		      string[] parentType = type.FullName.Split('`');
-
-		      Type[] arguments = type.GetGenericArguments();
-
-		      StringBuilder argList = new StringBuilder();
-		      foreach (Type t in arguments)
-		      {
-			      string arg = GetTypeStr(t);
-			      if (argList.Length > 0)
-				      argList.AppendFormat("_{0}", arg);
-			      else
-				      argList.Append(arg);
-		      }
-
-		      if (argList.Length > 0)
-			      retType.AppendFormat("{0}_{1}", parentType[0], argList.ToString());
-	      }
-	      else if (type.IsArray)
-	      {
-		      retType.AppendFormat("{0}_{1}", type.BaseType, GetTypeStr(type.GetElementType()));
-	      }
-	      else
-	      {
-		      return type.ToString();
-	      }
-
-	      return retType.ToString();
       }
 
       /// <summary>
