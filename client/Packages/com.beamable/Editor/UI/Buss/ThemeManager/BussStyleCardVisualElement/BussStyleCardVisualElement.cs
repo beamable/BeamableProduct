@@ -17,12 +17,6 @@ namespace Beamable.Editor.UI.Components
 {
 	public class BussStyleCardVisualElement : BeamableVisualElement
 	{
-		public enum MODE
-		{
-			NORMAL,
-			EDIT
-		}
-
 		private BussSelectorLabelVisualElement _selectorLabelComponent;
 		private VisualElement _styleIdParent;
 		private VisualElement _selectorLabelParent;
@@ -43,12 +37,10 @@ namespace Beamable.Editor.UI.Components
 		private VariableDatabase _variableDatabase;
 		private BussStyleSheet _styleSheet;
 		private BussStyleRule _styleRule;
-		private MODE _currentMode;
 
 		public BussStyleCardVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}")
 		{
-			_currentMode = MODE.NORMAL;
 		}
 
 		public override void Refresh()
@@ -74,8 +66,11 @@ namespace Beamable.Editor.UI.Components
 
 			CreateSelectorLabel();
 			CreateProperties();
+
+			_styleSheet.Change -= Refresh;
+			_styleSheet.Change += Refresh;
 			
-			_removeButton.SetVisibility(_currentMode == MODE.EDIT);
+			_removeButton.SetVisibility(_styleRule.EditMode);
 		}
 
 		public void Setup(BussStyleSheet styleSheet, BussStyleRule styleRule, VariableDatabase variableDatabase)
@@ -84,15 +79,14 @@ namespace Beamable.Editor.UI.Components
 			_styleRule = styleRule;
 			_variableDatabase = variableDatabase;
 
-			_styleSheet.LocalChange += Refresh;
+			_styleSheet.Change += Refresh;
 			
 			Refresh();
 		}
 
 		protected override void OnDestroy()
 		{
-			// TODO: commented temporarily, check why it's called during setup
-			// _styleSheet.LocalChange -= Refresh;
+			_styleSheet.Change -= Refresh;
 			ClearButtonActions();
 		}
 
@@ -177,7 +171,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void EditButtonClicked(MouseDownEvent evt)
 		{
-			_currentMode = _currentMode == MODE.NORMAL ? _currentMode = MODE.EDIT : _currentMode = MODE.NORMAL;
+			_styleRule.EditMode = !_styleRule.EditMode;
 			Refresh();
 		}
 
@@ -192,7 +186,7 @@ namespace Beamable.Editor.UI.Components
 			_selectorLabelParent.Clear();
 			
 			_selectorLabelComponent = new BussSelectorLabelVisualElement();
-			_selectorLabelComponent.Setup(_currentMode, _styleRule);
+			_selectorLabelComponent.Setup(_styleRule);
 			_selectorLabelParent.Add(_selectorLabelComponent);
 		}
 
@@ -201,7 +195,7 @@ namespace Beamable.Editor.UI.Components
 			foreach (BussPropertyProvider property in _styleRule.Properties)
 			{
 				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
-				element.Setup(_styleSheet, _styleRule, property, _variableDatabase, _currentMode);
+				element.Setup(_styleSheet, _styleRule, property, _variableDatabase);
 				(property.IsVariable ? _variables : _properties).Add(element);
 			}
 		}

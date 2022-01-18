@@ -34,7 +34,6 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleSheet _styleSheet;
 		private BussStyleRule _styleRule;
 		private BussPropertyProvider _propertyProvider;
-		private BussStyleCardVisualElement.MODE _currentMode;
 
 		public override void Refresh()
 		{
@@ -49,7 +48,7 @@ namespace Beamable.Editor.UI.Components
 			Root.Add(buttonContainer);
 
 			_removeButton.RegisterCallback<MouseDownEvent>(OnRemoveButtonClicked);
-			buttonContainer.SetVisibility(_currentMode == BussStyleCardVisualElement.MODE.EDIT);
+			buttonContainer.SetVisibility(_styleRule.EditMode);
 
 			_labelComponent = new TextElement();
 			_labelComponent.name = "propertyLabel";
@@ -78,8 +77,7 @@ namespace Beamable.Editor.UI.Components
 		public void Setup(BussStyleSheet styleSheet,
 		                  BussStyleRule styleRule,
 		                  BussPropertyProvider property,
-		                  VariableDatabase variableDatabase,
-		                  BussStyleCardVisualElement.MODE currentMode)
+		                  VariableDatabase variableDatabase)
 		{
 			RemoveStyleSheetListener();
 
@@ -87,7 +85,6 @@ namespace Beamable.Editor.UI.Components
 			_styleSheet = styleSheet;
 			_styleRule = styleRule;
 			_propertyProvider = property;
-			_currentMode = currentMode;
 
 			Refresh();
 			AddStyleSheetListener();
