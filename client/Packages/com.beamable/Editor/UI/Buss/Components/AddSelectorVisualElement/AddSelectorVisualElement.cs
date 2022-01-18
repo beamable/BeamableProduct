@@ -39,12 +39,6 @@ namespace Beamable.Editor.Toolbox.Components
 
 			Root.parent.parent.style.flexGrow = 1;
 
-			var styleSheets = Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[] {"Assets"}).ToList();
-
-			var selectStyleSheet = Root.Q<LabeledDropdownVisualElement>("selectStyleSheet");
-			selectStyleSheet.Setup(styleSheets.Select(x => x.name).ToList(), index => _currentSelectedStyleSheet = styleSheets[index]);
-			selectStyleSheet.Refresh();
-
 			_selectorName = Root.Q<LabeledTextField>("selectorName");
 			_selectorName.Setup("Selector name", string.Empty, OnValidate);
 			_selectorName.Refresh();
@@ -57,6 +51,16 @@ namespace Beamable.Editor.Toolbox.Components
 			
 			var cancelButton = Root.Q<GenericButtonVisualElement>("cancelButton");
 			cancelButton.OnClick += AddSelectorWindow.CloseWindow;
+			
+			var styleSheets = Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[] {"Assets"}).ToList();
+			var selectStyleSheet = Root.Q<LabeledDropdownVisualElement>("selectStyleSheet");
+			selectStyleSheet.Setup(styleSheets.Select(x => x.name).ToList(), index =>
+			{
+				_currentSelectedStyleSheet = styleSheets[index];
+				OnValidate();
+			});
+
+			selectStyleSheet.Refresh();
 			
 			ListAllRules();
 			OnValidate();

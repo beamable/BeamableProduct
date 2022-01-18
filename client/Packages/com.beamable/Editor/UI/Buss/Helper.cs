@@ -23,13 +23,10 @@ namespace Editor.UI.Buss
 		/// <typeparam name="T">Asset type</typeparam>
 		/// <returns>Collection of loaded assets</returns>
 		/// <footer><a href="file:///C:/Program%20Files/Unity/Hub/Editor/2018.4.36f1/Editor/Data/Documentation/en/ScriptReference/AssetDatabase.html">External documentation for `AssetDatabase`</a></footer>
-		public static IEnumerable<T> FindAssets<T>(string filter, string[] searchInFolders) 
+		public static List<T> FindAssets<T>(string filter, string[] searchInFolders) 
 			where T : UnityEngine.Object
 		{
 			var GUIDs = AssetDatabase.FindAssets(filter, searchInFolders);
-			if (GUIDs == null || GUIDs.Length == 0)
-				return null;
-			
 			var assets = new List<T>(); 
 			foreach (var GUID in GUIDs)
 			{
