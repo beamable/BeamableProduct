@@ -1,4 +1,5 @@
 ﻿using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using Editor.UI.BUSS;
@@ -34,8 +35,7 @@ namespace Beamable.UI.BUSS
 
 		private VisualElement _stylesGroup;
 		private ObjectField _styleSheetSource;
-		private BussStyleSheet _currentStyleSheet;
-		private BussElementHierarchyVisualElement _hierarchyComponent;
+		private BussElementHierarchyVisualElement _navigationWindow;
 
 		private bool _inStyleSheetChangedLoop;
 		private readonly VariableDatabase _variableDatabase = new VariableDatabase();
@@ -71,35 +71,31 @@ namespace Beamable.UI.BUSS
 			navigationGroup.name = "navigationGroup";
 			scrollView.Add(navigationGroup);
 			
-			_hierarchyComponent = new BussElementHierarchyVisualElement();
-			_hierarchyComponent.Refresh();
-			navigationGroup.Add(_hierarchyComponent);
-
-			_styleSheetSource = new ObjectField();
-			_styleSheetSource.allowSceneObjects = false;
-			_styleSheetSource.name = "styleSheetSource";
-			_styleSheetSource.objectType = typeof(BussStyleSheet);
-			_styleSheetSource.UnregisterValueChangedCallback(StyleSheetChanged);
-			_styleSheetSource.RegisterValueChangedCallback(StyleSheetChanged);
-			scrollView.Add(_styleSheetSource);
+			_navigationWindow = new BussElementHierarchyVisualElement();
+			_navigationWindow.Refresh();
+			navigationGroup.Add(_navigationWindow);
 
 			_stylesGroup = new VisualElement();
 			_stylesGroup.name = "stylesGroup";
 			scrollView.Add(_stylesGroup);
-			
+
 			root.Add(mainVisualElement);
+
+			_navigationWindow.HierarchyChanged -= RefreshStyleSheets;
+			_navigationWindow.HierarchyChanged += RefreshStyleSheets;
+			
+			RefreshStyleSheets();
 		}
 
-		private void StyleSheetChanged(ChangeEvent<Object> evt)
+		private void RefreshStyleSheets()
 		{
 			ClearCurrentStyleSheet();
-			_currentStyleSheet = (BussStyleSheet)evt.newValue;
-
-			if (_currentStyleSheet == null) return;
 			
-			_variableDatabase.AddStyleSheet(_currentStyleSheet);
-
-			_currentStyleSheet.Change += OnStyleSheetExternallyChanged;
+			foreach (BussStyleSheet styleSheet in _navigationWindow.StyleSheets)
+			{
+				_variableDatabase.AddStyleSheet(styleSheet);
+				styleSheet.Change += OnStyleSheetExternallyChanged;
+			}
 
 			RefreshStyleCards();
 		}
@@ -108,15 +104,30 @@ namespace Beamable.UI.BUSS
 		{
 			ClearStyleCards();
 			CreateStyleCards();
+			AddSelectorButton();
+		}
+		
+		private void AddSelectorButton()
+		{
+			var addSelectorButton = new VisualElement {name = "addSelectorButton"};
+			addSelectorButton.AddToClassList("button");
+			addSelectorButton.Add(new Label("Add Selector"));
+			addSelectorButton.RegisterCallback<MouseDownEvent>(_ =>
+			{
+				var window = AddSelectorWindow.ShowWindow();
+				window?.Init();
+			});
+			
+			_stylesGroup.Add(addSelectorButton);
 		}
 
 		private void ClearCurrentStyleSheet()
 		{
-			if (_currentStyleSheet != null)
+			foreach (BussStyleSheet styleSheet in _navigationWindow.StyleSheets)
 			{
-				_currentStyleSheet.Change -= OnStyleSheetExternallyChanged;
+				styleSheet.Change -= OnStyleSheetExternallyChanged;
 			}
-			
+
 			_variableDatabase.RemoveAllStyleSheets();
 		}
 
@@ -126,18 +137,22 @@ namespace Beamable.UI.BUSS
 			{
 				styleCard.Destroy();
 			}
+			
 			_styleCardsVisualElements.Clear();
 			_stylesGroup.Clear();
 		}
 
 		private void CreateStyleCards()
 		{
-			foreach (BussStyleRule styleRule in _currentStyleSheet.Styles)
+			foreach (BussStyleSheet styleSheet in _navigationWindow.StyleSheets)
 			{
-				BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-				styleCard.Setup(_currentStyleSheet, styleRule, _variableDatabase);
-				_styleCardsVisualElements.Add(styleCard);
-				_stylesGroup.Add(styleCard);
+				foreach (BussStyleRule styleRule in styleSheet.Styles)
+				{
+					BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
+					styleCard.Setup(styleSheet, styleRule, _variableDatabase, _navigationWindow);
+					_styleCardsVisualElements.Add(styleCard);
+					_stylesGroup.Add(styleCard);
+				}
 			}
 		}
 
@@ -146,6 +161,9 @@ namespace Beamable.UI.BUSS
 			if(_inStyleSheetChangedLoop) return;
 			
 			_inStyleSheetChangedLoop = true;
+			
+			_variableDatabase.ReconsiderAllStyleSheets();
+			
 			// TODO: We will use it in order to update only visual elements affected by change.
 			// foreach (BussPropertyVisualElement propertyVisualElement in this.GetRootVisualContainer().Query<BussPropertyVisualElement>().Build().ToList())
 			// {
@@ -159,7 +177,8 @@ namespace Beamable.UI.BUSS
 		private void OnDestroy()
 		{
 			ClearCurrentStyleSheet();
-			_hierarchyComponent.Destroy();
+			_navigationWindow.HierarchyChanged -= RefreshStyleSheets;
+			_navigationWindow.Destroy();
 		}
 	}
 }

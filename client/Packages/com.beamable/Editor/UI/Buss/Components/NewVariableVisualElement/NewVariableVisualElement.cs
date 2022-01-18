@@ -1,4 +1,5 @@
-﻿using Beamable.Editor.UI.Buss;
+﻿using System;
+using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
@@ -17,13 +18,13 @@ namespace Beamable.Editor.Toolbox.Components
 {
 	public class NewVariableVisualElement : BeamableVisualElement
 	{
-		public NewVariableVisualElement(BussStyleDescription description) : base(
+		public NewVariableVisualElement(Action<string, IBussProperty> onPropertyCreated) : base(
 			$"{BeamableComponentsConstants.BUSS_COMPONENTS_PATH}/{nameof(NewVariableVisualElement)}/{nameof(NewVariableVisualElement)}")
 		{
-			_description = description;
+			_onPropertyCreated = onPropertyCreated;
 		}
 
-		private BussStyleDescription _description;
+		private Action<string, IBussProperty> _onPropertyCreated;
 		
 		private LabeledTextField _variableName;
 		private Label _propertyLabel;
@@ -91,7 +92,8 @@ namespace Beamable.Editor.Toolbox.Components
 				return;
 			}
 
-			_description.TryAddProperty(_variableName.Value, _selectedBussProperty, out var _);
+			_onPropertyCreated?.Invoke(BussNameUtility.AsVariableName(_variableName.Value), _selectedBussProperty);
+			
 			NewVariableWindow.CloseWindow();
 		}
 		
