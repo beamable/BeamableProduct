@@ -37,11 +37,10 @@ namespace Beamable.Editor.UI.Components
 		private VariableDatabase _variableDatabase;
 		private BussStyleSheet _styleSheet;
 		private BussStyleRule _styleRule;
+		private BussElementHierarchyVisualElement _navigationWindow;
 
 		public BussStyleCardVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}")
-		{
-		}
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}") { }
 
 		public override void Refresh()
 		{
@@ -61,8 +60,9 @@ namespace Beamable.Editor.UI.Components
 			_addRuleButton = Root.Q<VisualElement>("addRuleButton");
 			_showAllButton = Root.Q<VisualElement>("showAllButton");
 
-			Selection.selectionChanged += OnSelectionChanged;
-			
+			_navigationWindow.SelectionChanged -= OnSelectionChanged;
+			_navigationWindow.SelectionChanged += OnSelectionChanged;
+
 			RegisterButtonActions();
 
 			CreateSelectorLabel();
@@ -70,18 +70,22 @@ namespace Beamable.Editor.UI.Components
 
 			_styleSheet.Change -= Refresh;
 			_styleSheet.Change += Refresh;
-			
+
 			_removeButton.SetVisibility(_styleRule.EditMode);
 		}
 
-		public void Setup(BussStyleSheet styleSheet, BussStyleRule styleRule, VariableDatabase variableDatabase)
+		public void Setup(BussStyleSheet styleSheet,
+		                  BussStyleRule styleRule,
+		                  VariableDatabase variableDatabase,
+		                  BussElementHierarchyVisualElement navigationWindow)
 		{
 			_styleSheet = styleSheet;
 			_styleRule = styleRule;
 			_variableDatabase = variableDatabase;
+			_navigationWindow = navigationWindow;
 
 			_styleSheet.Change += Refresh;
-			
+
 			Refresh();
 		}
 
@@ -89,13 +93,17 @@ namespace Beamable.Editor.UI.Components
 		{
 			_styleSheet.Change -= Refresh;
 			ClearButtonActions();
-			Selection.selectionChanged -= OnSelectionChanged;
+
+			if (_navigationWindow != null)
+			{
+				_navigationWindow.SelectionChanged -= OnSelectionChanged;
+			}
 		}
 
 		private void RegisterButtonActions()
 		{
 			ClearButtonActions();
-			
+
 			_removeButton?.RegisterCallback<MouseDownEvent>(RemoveButtonClicked);
 			_editButton?.RegisterCallback<MouseDownEvent>(EditButtonClicked);
 			_wizardButton?.RegisterCallback<MouseDownEvent>(WizardButtonClicked);
@@ -131,17 +139,21 @@ namespace Beamable.Editor.UI.Components
 			{
 				keys.Add(propertyProvider.Key);
 			}
+
 			var context = new GenericMenu();
 
-			foreach (var key in BussStyle.Keys) {
+			foreach (var key in BussStyle.Keys)
+			{
 				if (keys.Contains(key)) continue;
-				context.AddItem(new GUIContent(key), false, () => {
-					_styleRule.Properties.Add(BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty()));
+				context.AddItem(new GUIContent(key), false, () =>
+				{
+					_styleRule.Properties.Add(
+						BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty()));
 					AssetDatabase.SaveAssets();
 					_styleSheet.TriggerChange();
 				});
 			}
-			
+
 			context.ShowAsContext();
 		}
 
@@ -186,7 +198,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			_selectorLabelComponent?.Destroy();
 			_selectorLabelParent.Clear();
-			
+
 			_selectorLabelComponent = new BussSelectorLabelVisualElement();
 			_selectorLabelComponent.Setup(_styleRule);
 			_selectorLabelParent.Add(_selectorLabelComponent);
@@ -203,17 +215,17 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		// TODO: change this, card should be setup/refreshed by it's parent
-		private void OnSelectionChanged()
+		private void OnSelectionChanged(GameObject gameObject)
 		{
-			if (_colorBlock == null || Selection.activeGameObject == null) return;
-			
+			if (_colorBlock == null || gameObject == null) return;
+
 			var active = false;
-			var bussElement = Selection.activeGameObject.GetComponent<BussElement>();
+			var bussElement = gameObject.GetComponent<BussElement>();
 			if (bussElement != null && _styleRule.Selector != null)
 			{
 				active = _styleRule.Selector.CheckMatch(bussElement);
 			}
-			
+
 			_colorBlock.EnableInClassList("active", active);
 		}
 	}
