@@ -522,6 +522,7 @@ namespace Beamable.Server
             ServiceCollection = new ServiceCollection();
             ServiceCollection
                .AddScoped(_microserviceType)
+               .AddSingleton<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
                .AddSingleton(_args)
                .AddSingleton<IRealmInfo>(_args)
                .AddSingleton<SocketRequesterContext>(_ => _socketRequesterContext)

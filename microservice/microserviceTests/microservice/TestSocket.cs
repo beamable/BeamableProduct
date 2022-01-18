@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Server;
@@ -85,7 +86,7 @@ namespace Beamable.Microservice.Tests.Socket
       {
          return And(matcher, MessageMatcher.WithPayload(payload));
       }
-      
+
       public static TestSocketMessageMatcher WithPayload(this TestSocketMessageMatcher matcher, JObject payload)
       {
          return And(matcher, MessageMatcher.WithPayload(payload));
@@ -147,7 +148,7 @@ namespace Beamable.Microservice.Tests.Socket
             return req.body.ToString().Equals(raw);
          };
       }
-      
+
       public static TestSocketMessageMatcher WithPayload(JObject raw)
       {
          return req =>
@@ -162,7 +163,7 @@ namespace Beamable.Microservice.Tests.Socket
             return false;
          };
       }
-      
+
       public static TestSocketMessageMatcher WithPayload<T>(Func<T, bool> matcher)
       {
          bool Check(object req)
@@ -196,7 +197,7 @@ namespace Beamable.Microservice.Tests.Socket
                         },
                         MissingMemberHandling = MissingMemberHandling.Error
                      };
-                     
+
                      // validate that object could be deserializabled if not check again (json string etc.)
                      var payload = JsonConvert.DeserializeObject<T>(payloadToken.ToString(), settings);
                      return success ? matcher(payload) : Check(payloadToken.ToObject<T>());
@@ -289,6 +290,18 @@ namespace Beamable.Microservice.Tests.Socket
          return async res =>
          {
             await Task.Delay(ms);
+            return res.Succeed(body);
+         };
+      }
+
+      public static TestSocketResponseGeneratorAsync SuccessAfterCondition<T>(Func<bool> condition, T body)
+      {
+         return async res =>
+         {
+            while (!condition())
+            {
+               await Task.Delay(1);
+            }
             return res.Succeed(body);
          };
       }
@@ -559,7 +572,6 @@ namespace Beamable.Microservice.Tests.Socket
 
       public async Task HandleRequestWithResponders(string message)
       {
-         Console.WriteLine("Handling Socket Request: " + message);
          var req = JsonConvert.DeserializeObject<WebsocketResponse>(message);
          var handler = _handlers.FirstOrDefault(h => h.Matcher(req)
          && h.Frequency.CanCall());
@@ -737,7 +749,6 @@ namespace Beamable.Microservice.Tests.Socket
 
       public void SendToClient(string msg)
       {
-         Console.WriteLine($"Sending message to client ({_onMessageCallbacks.GetInvocationList().Length}): " + msg);
          _onMessageCallbacks(this, msg, id++);
       }
 
