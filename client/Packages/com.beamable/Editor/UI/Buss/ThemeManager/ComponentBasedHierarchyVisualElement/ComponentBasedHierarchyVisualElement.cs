@@ -1,5 +1,6 @@
 ﻿using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -12,7 +13,7 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class ComponentBasedHierarchyVisualElement<T> : BeamableBasicVisualElement where T : MonoBehaviour
+	public abstract class ComponentBasedHierarchyVisualElement<T> : BeamableBasicVisualElement where T : MonoBehaviour
 	{
 #if UNITY_2018
 		protected ComponentBasedHierarchyVisualElement() : base(
@@ -22,13 +23,18 @@ namespace Beamable.Editor.UI.Components
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement.uss") { }
 #endif
 
+		protected readonly List<IndentedLabelVisualElement> SpawnedLabels = new List<IndentedLabelVisualElement>();
+		protected IndentedLabelVisualElement SelectedLabel
+		{
+			get;
+			set;
+		}
+		
 		private ScrollView _hierarchyContainer;
-		private IndentedLabelVisualElement _selectedComponent;
 
 		public override void Refresh()
 		{
 			base.Refresh();
-			// Root = new VisualElement().WithName("mainContainer");
 			VisualElement header = new VisualElement();
 			header.name = "header";
 			TextElement label = new TextElement();
@@ -44,7 +50,17 @@ namespace Beamable.Editor.UI.Components
 			EditorApplication.hierarchyChanged -= OnHierarchyChanged;
 			EditorApplication.hierarchyChanged += OnHierarchyChanged;
 
+			Selection.selectionChanged -= OnSelectionChanged;
+			Selection.selectionChanged += OnSelectionChanged;
+
 			OnHierarchyChanged();
+		}
+
+		protected abstract void OnSelectionChanged();
+
+		protected virtual string GetLabel(T component)
+		{
+			return component.name;
 		}
 
 		protected override void OnDestroy()
@@ -52,20 +68,26 @@ namespace Beamable.Editor.UI.Components
 			EditorApplication.hierarchyChanged -= OnHierarchyChanged;
 		}
 
-		protected virtual string GetLabel(T component)
+		protected void ChangeSelectedLabel(IndentedLabelVisualElement newLabel, bool setInHierarchy = true)
 		{
-			return component.name;
+			SelectedLabel?.Deselect();
+			SelectedLabel = newLabel;
+			SelectedLabel?.Select();
+			
+			if (!setInHierarchy) return;
+			
+			Selection.SetActiveObjectWithContext(SelectedLabel?.RelatedGameObject,
+			                                     SelectedLabel?.RelatedGameObject);
 		}
 
 		private void OnHierarchyChanged()
 		{
-			foreach (VisualElement visualElement in _hierarchyContainer.Children())
+			foreach (IndentedLabelVisualElement child in SpawnedLabels)
 			{
-				// TODO: check this!!!
-				BeamableBasicVisualElement element = visualElement as BeamableBasicVisualElement;
-				element?.Destroy();
+				child.Destroy();
 			}
 
+			SpawnedLabels.Clear();
 			_hierarchyContainer.Clear();
 
 			foreach (Object foundObject in Object.FindObjectsOfType(typeof(GameObject)))
@@ -78,13 +100,9 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
-		private void OnMouseClicked(IndentedLabelVisualElement clickedComponent)
+		private void OnMouseClicked(IndentedLabelVisualElement newLabel)
 		{
-			_selectedComponent?.Deselect();
-			_selectedComponent = clickedComponent;
-			_selectedComponent?.Select();
-			Selection.SetActiveObjectWithContext(_selectedComponent?.RelatedGameObject,
-			                                     _selectedComponent?.RelatedGameObject);
+			ChangeSelectedLabel(newLabel);
 		}
 
 		private void Traverse(GameObject gameObject, int currentLevel)
@@ -97,6 +115,7 @@ namespace Beamable.Editor.UI.Components
 				label.Setup(foundComponent.gameObject, GetLabel(foundComponent), OnMouseClicked,
 				            currentLevel, IndentedLabelVisualElement.DEFAULT_SINGLE_INDENT_WIDTH);
 				label.Refresh();
+				SpawnedLabels.Add(label);
 				_hierarchyContainer.Add(label);
 
 				foreach (Transform child in gameObject.transform)
