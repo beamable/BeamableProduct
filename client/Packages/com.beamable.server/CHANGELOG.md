@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+- Upgraded Microservices to dotnet 6.0 instead of 5.0
 - Microstorage is out of Preview. Storage Objects can now be published and used in a remote environment.
 - Microstroage `GetCollection` method must now take subclass of `StorageDocument`
 - Return values from `ClientCallable` methods are serialized using Unity style serialization

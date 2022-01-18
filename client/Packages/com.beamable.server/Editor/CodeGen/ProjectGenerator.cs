@@ -65,7 +65,7 @@ namespace Beamable.Server.Editor.CodeGen
                <DefineConstants>DB_MICROSERVICE</DefineConstants>
                <DefineConstants>BEAMABLE_MICROSERVICE</DefineConstants>
                <OutputType>Exe</OutputType>
-               <TargetFramework>net5.0</TargetFramework>
+               <TargetFramework>net6.0</TargetFramework>
             </PropertyGroup>
 
             <PropertyGroup>

@@ -1,5 +1,5 @@
 # BUILD AND REPACKAGE DOTNET SDK.
-FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
 
 # commit the built sdk version to the base image...
 ARG BEAMABLE_SDK_VERSION="0.0.0"
