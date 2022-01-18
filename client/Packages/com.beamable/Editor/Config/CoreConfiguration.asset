@@ -13,20 +13,23 @@ MonoBehaviour:
   m_Name: CoreConfiguration
   m_EditorClassIdentifier: 
   DefaultUncaughtPromiseHandlerConfiguration: 0
+  InventoryOfflineMode: 0
   EnablePlayModeWarning: 1
   BeamableAssistantMenuItemsPath:
-  - Assets/Beamable/Assistant/MenuItems
+  - Assets/Beamable/Editor/Assistant/MenuItems
   - Packages/com.beamable/Editor/BeamableAssistant/MenuItems
   - Packages/com.beamable.server/Editor/BeamableAssistant/MenuItems
   BeamableAssistantToolbarButtonsPaths:
-  - Assets/Beamable/Assistant/ToolbarButtons
+  - Assets/Beamable/Editor/Assistant/ToolbarButtons
   - Packages/com.beamable/Editor/BeamableAssistant/ToolbarButtons
   - Packages/com.beamable.server/Editor/BeamableAssistant/ToolbarButtons
-  ReflectionCacheUserSystemPaths:
-  - Assets/ReflectionCacheSystems
-  - Packages/com.beamable/Editor/ReflectionCacheSystems
-  - Packages/com.beamable.server/Editor/ReflectionCacheSystems
-  - Assets/Beamable/ReflectionCache/UserSystems
+  BeamableAssistantHintDetailConfigPaths:
+  - Assets/Beamable/Assistant/Hint/HintDetails
+  - Packages/com.beamable/Editor/BeamableAssistant/BeamHints/BeamHintDetailConfigs
+  - Packages/com.beamable.server/Editor/BeamableAssistant/BeamHints/BeamHintDetailConfigs
+  - Assets/Beamable/Editor/Assistant/Hint/HintDetails
+  ReflectionSystemPaths:
+  - Assets/Beamable/Editor/ReflectionCache/UserSystems
   - Packages/com.beamable/Editor/ReflectionCache/UserSystems
   - Packages/com.beamable.server/Editor/ReflectionCache/UserSystems
   AssembliesToSweep:

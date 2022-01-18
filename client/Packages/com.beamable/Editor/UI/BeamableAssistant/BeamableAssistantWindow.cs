@@ -62,6 +62,8 @@ namespace Beamable.Editor.Assistant
 		/// </summary>
 		private BeamHintReflectionCache.Registry _hintDetailsReflectionCache;
 
+		private BeamHintNotificationManager _hintNotificationManager;
+
 		/// <summary>
 		/// Cached reference to the <see cref="EditorAPI"/> instance.
 		/// </summary>
@@ -69,38 +71,40 @@ namespace Beamable.Editor.Assistant
 
 		private void OnEnable()
 		{
-			EditorAPI.Instance.Then(Refresh);
+			EditorAPI.Instance.Then(_ => Refresh());
 		}
 
 		private void OnFocus()
 		{
-			EditorAPI.Instance.Then(Refresh);
-
-			// TODO: Display NEW icon and clear notifications on hover on a per hint header basis.
-			// For now, just clear notifications whenever the window is focused
-			if (_editorAPI != null)
-				_editorAPI.HintNotificationsManager.ClearPendingNotifications();
+			EditorAPI.Instance.Then(_ =>
+			{
+				Refresh();
+				
+				// TODO: Display NEW icon and clear notifications on hover on a per hint header basis.
+				// For now, just clear notifications whenever the window is focused
+				_hintNotificationManager.ClearPendingNotifications();
+			});
 		}
 
 		private void Update()
 		{
 			// If there are any new notifications, we refresh to get the new data rendered.
-			if (_editorAPI != null && _editorAPI.HintNotificationsManager.AllPendingNotifications.Any())
-				Refresh(_editorAPI);
+			if (_hintNotificationManager != null && _hintNotificationManager.AllPendingNotifications.ToList().Count > 0)
+				Refresh();
 		}
 
-		void Refresh(EditorAPI editorAPI)
+		void Refresh()
 		{
 			minSize = MIN_SIZE;
 
-			// Cache the newest EditorAPI instance and grab the reflection systems we need.
-			_editorAPI = editorAPI;
-			_hintDetailsReflectionCache = editorAPI.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>();
+			// Cache the newest instances of relevant reflection and hint systems
+			_hintDetailsReflectionCache = BeamEditor.GetReflectionSystem<BeamHintReflectionCache.Registry>();
+			BeamEditor.GetBeamHintSystem(ref _hintNotificationManager);
 
 			// Initialize a data model if we didn't deserialize one already.
 			var beamHintsDataModel = _beamHintsDataModel = _beamHintsDataModel ?? new BeamHintsDataModel();
-			beamHintsDataModel.SetGlobalStorage(editorAPI.HintGlobalStorage);
-			beamHintsDataModel.SetPreferencesManager(editorAPI.HintPreferencesManager);
+			beamHintsDataModel.AppendGlobalStorage(BeamEditor.HintGlobalStorage);
+			beamHintsDataModel.SetPreferencesManager(BeamEditor.HintPreferencesManager);
 
 			var root = this.GetRootVisualContainer();
 			root.Clear();
@@ -152,21 +156,19 @@ namespace Beamable.Editor.Assistant
 
 				// Setup Search Bar to filter Displaying Hints
 				_hintsSearchBar = root.Q<SearchBarVisualElement>("hintsSearchBar");
-				_hintsSearchBar.OnSearchChanged += delegate(string searchText)
+				void OnSearchTextUpdated(string searchText)
 				{
 					_beamHintsDataModel.FilterDisplayedBy(searchText);
 					FillDisplayingBeamHints(_hintsContainer, beamHintsDataModel.DisplayingHints);
-				};
+				}
+				_hintsSearchBar.OnSearchChanged -= OnSearchTextUpdated;
+				_hintsSearchBar.OnSearchChanged += OnSearchTextUpdated;
 
 				SetupTreeViewCallbacks(
 					_treeViewIMGUI,
-					() =>
-					{
-						BeamableLogger.Log("Context Clicked");
-					},
+					() => { },
 					list =>
 					{
-						BeamableLogger.Log($"Selection Change: {string.Join(", ", list.Select(a => a.ToString()))}");
 						var allDomains = list
 						                 .SelectMany(a => a.children != null ? a.children.Cast<BeamHintDomainTreeViewItem>() : new List<BeamHintDomainTreeViewItem>())
 						                 .Concat(list.Cast<BeamHintDomainTreeViewItem>())
@@ -175,11 +177,7 @@ namespace Beamable.Editor.Assistant
 						beamHintsDataModel.SelectDomains(allDomains);
 						FillDisplayingBeamHints(_hintsContainer, beamHintsDataModel.DisplayingHints);
 					},
-					list =>
-					{
-						BeamableLogger.Log($"Selection Branch Change: {string.Join(", ", list.Select(a => a.ToString()))}");
-					}
-				);
+					list => { });
 
 				beamHintsDataModel.SelectDomains(beamHintsDataModel.SelectedDomains);
 				FillTreeViewFromDomains(_treeViewIMGUI, beamHintsDataModel.SortedDomainsInStorage);

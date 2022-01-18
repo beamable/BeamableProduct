@@ -85,6 +85,7 @@ namespace Beamable.Common.Assistant
 
 		// Beamable Assistant IDs
 		[BeamHintId] public static readonly string ID_MISCONFIGURED_HINT_DETAILS_PROVIDER = GenerateHintId("MisconfiguredHintDetailsProvider", ATTRIBUTE_VALIDATION_ID_PREFIX);
+		[BeamHintId] public static readonly string ID_MISCONFIGURED_HINT_SYSTEM_ATTRIBUTE = GenerateHintId("MisconfiguredHintSystemAttribute", ATTRIBUTE_VALIDATION_ID_PREFIX);
 		
 		// Microservices IDs
 		[BeamHintId] public static readonly string ID_MICROSERVICE_ATTRIBUTE_MISSING = GenerateHintId("MicroserviceAttributeMissing", ATTRIBUTE_VALIDATION_ID_PREFIX);

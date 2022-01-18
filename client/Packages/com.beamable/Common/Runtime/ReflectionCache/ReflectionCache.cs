@@ -19,6 +19,11 @@ namespace Beamable.Common.Reflection
 		void ClearCachedReflectionData();
 
 		/// <summary>
+		/// Called once on each <see cref="IReflectionSystem"/> before building the reflection cache.
+		/// </summary>
+		void OnSetupForCacheGeneration();
+		
+		/// <summary>
 		/// Called once per <see cref="ReflectionCache.GenerateReflectionCache"/> invocation after the assembly sweep <see cref="ReflectionCache.RebuildReflectionCache"/> is completed.
 		/// </summary>
 		/// <param name="perBaseTypeCache">
@@ -45,6 +50,13 @@ namespace Beamable.Common.Reflection
 		/// The list of all <see cref="MemberInfo"/> and <see cref="Attribute"/> instances matching <paramref name="attributeType"/> that were found in the assembly sweep.
 		/// </param>
 		void OnAttributeOfInterestFound(AttributeOfInterest attributeType, IReadOnlyList<MemberAttribute> cachedMemberAttributes);
+
+		/// <summary>
+		/// Injection point for reflections systems that wish to generate hints. Leave without implementation if no hints are generated.
+		/// <para/>
+		/// Remember to wrap hint code in "#if UNITY_EDITOR" directives as this storage instance is null during non-editor builds. 
+		/// </summary>
+		void SetStorage(IBeamHintGlobalStorage hintGlobalStorage);
 	}
 
 	/// <summary>
@@ -70,11 +82,28 @@ namespace Beamable.Common.Reflection
 	}
 
 	/// <summary>
+	/// We use this class to control the resolution order of our <see cref="IReflectionSystem"/>s. 
+	/// </summary>
+	public static class BeamableReflectionSystemPriorities
+	{
+		/// <summary>
+		/// Priority for the <see cref="BeamHint"/>-related Reflection system.
+		/// Since we need to gather some data before we resolve any BeamContexts when we are in the editor, this must happen before.
+		/// </summary>
+		public const int BEAM_HINT_REFLECTION_SYSTEM_PRIORITY = 0;
+		
+		/// <summary>
+		/// Priority for the BeamContext user-dependency reflection system.
+		/// </summary>
+		public const int BEAM_CONTEXT_DEPENDENCIES_REFLECTION_SYSTEM_PRIORITY = 100;	
+	}
+	
+	/// <summary>
 	/// Used to initialize all reflection based systems with consistent validation and to ensure we are only doing the assembly sweeping once.
 	/// We can also use this to setup up compile-time validation of our Attribute-based systems such as Content and Microservices.
 	/// </summary>
 	// ReSharper disable once ClassNeverInstantiated.Global
-	public partial class ReflectionCache : IBeamHintProvider
+	public partial class ReflectionCache
 	{
 		/// <summary>
 		/// Validation results used by <see cref="AttributeValidationResult"/> and, potentially, other validation structs.
@@ -119,12 +148,6 @@ namespace Beamable.Common.Reflection
 		/// A <see cref="PerAttributeCache"/> holding all the cached reflection data for our <see cref="AttributeOfInterest"/> flows.
 		/// </summary>
 		private readonly PerAttributeCache _perAttributeCache;
-		
-		/// <summary>
-		/// A reference to a <see cref="IBeamHintGlobalStorage"/> that gets passed along to each <see cref="IReflectionSystem"/> that is registered prior to
-		/// <see cref="GenerateReflectionCache"/> invoking the interfaces. 
-		/// </summary>
-		private IBeamHintGlobalStorage _hintGlobalStorage;
 
 		/// <summary>
 		/// Creates a new <see cref="ReflectionCache"/> instance.
@@ -148,12 +171,8 @@ namespace Beamable.Common.Reflection
 
 		public void SetStorage(IBeamHintGlobalStorage hintGlobalStorage)
 		{
-			_hintGlobalStorage = hintGlobalStorage;
-			foreach (var userSystem in _registeredCacheUserSystems)
-			{
-				if (userSystem is IBeamHintProvider hintProviderSystem)
-					hintProviderSystem.SetStorage(hintGlobalStorage);
-			}
+			foreach (var userSystem in _registeredCacheUserSystems) 
+				userSystem.SetStorage(hintGlobalStorage);
 		}
 
 		/// <summary>
@@ -232,9 +251,6 @@ namespace Beamable.Common.Reflection
 		/// <param name="assembliesToSweep">A list of Assembly names for us to sweep in.</param>
 		public void GenerateReflectionCache(IReadOnlyList<string> assembliesToSweep)
 		{
-			Assert(_hintGlobalStorage != null,
-			       $"A Reflection Cache must have a {nameof(IBeamHintGlobalStorage)} instance! Please call {nameof(SetStorage)} before calling this method!");
-
 			RebuildReflectionCache(assembliesToSweep);
 			RebuildReflectionUserSystems();
 		}
@@ -272,7 +288,11 @@ namespace Beamable.Common.Reflection
 		/// </summary>
 		public void RebuildReflectionUserSystems(List<Type> userSystemTypesToRebuild = null)
 		{
-			_registeredCacheUserSystems.ForEach(sys => sys.ClearCachedReflectionData());
+			_registeredCacheUserSystems.ForEach(sys =>
+			{
+				sys.ClearCachedReflectionData();
+				sys.OnSetupForCacheGeneration();
+			});
 			// Pass down to each given system only the types they are interested in
 			foreach (var reflectionBasedSystem in _registeredCacheUserSystems)
 			{

@@ -6,7 +6,7 @@ namespace Beamable.Common.Assistant
 {
 	/// <summary>
 	/// Interface for the Global Storage --- only exists to enable mocking for automated testing purposes so it'll acknowledge implementation details of the
-	/// <see cref="BeamHintEditorStorage"/> which is our implementation of this interface.
+	/// <see cref="BeamHintGlobalStorage"/> which is our implementation of this interface.
 	/// <para/>
 	/// Internally, we have one <see cref="IBeamHintStorage"/> for each User's hints and another one for Beamable's hints.
 	/// As the number of generated hints a domain can produce grows, we split these macro-storages into one for each domain generated with
@@ -97,7 +97,7 @@ namespace Beamable.Common.Assistant
 		#endregion
 	}
 
-	public class BeamHintEditorStorage : IBeamHintGlobalStorage
+	public class BeamHintGlobalStorage : IBeamHintGlobalStorage
 	{
 		public IBeamHintStorage UserDefinedStorage
 		{
@@ -122,7 +122,7 @@ namespace Beamable.Common.Assistant
 
 		#endregion
 
-		public BeamHintEditorStorage()
+		public BeamHintGlobalStorage()
 		{
 			UserDefinedStorage = new BeamHintStorage();
 			BeamableStorage = new BeamHintStorage();

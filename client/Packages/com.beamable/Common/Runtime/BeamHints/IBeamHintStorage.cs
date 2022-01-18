@@ -9,7 +9,7 @@ namespace Beamable.Common.Assistant
 {
 	/// <summary>
 	/// Defines a storage for <see cref="BeamHint"/>s. It is a query-able in-memory database of <see cref="BeamHint"/>s.
-	/// Other <see cref="IBeamHintProvider"/> systems add hints to these and <see cref="IBeamHintManager"/> read, filter, clear and arrange data logically in
+	/// Other <see cref="IBeamHintSystem"/> systems add hints to these and <see cref="IBeamHintSystem"/> read, filter, clear and arrange data logically in
 	/// relation to <see cref="BeamHintHeader"/>s to be read by UI. 
 	/// </summary>
 	public interface IBeamHintStorage : IEnumerable<BeamHint>

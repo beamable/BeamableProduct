@@ -1,6 +1,7 @@
 using Beamable.Common.Reflection;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace Beamable.Common.Assistant
 {
@@ -26,7 +27,6 @@ namespace Beamable.Common.Assistant
 		public const string BEAM_HINT_PREFERENCES_SEPARATOR = "₢";
 	}
 
-	
 	/// <summary>
 	/// A compound-key identifying each hint.
 	/// It is a string-based compound key whose individual fields cannot have <see cref="AS_KEY_SEPARATOR"/> or <see cref="BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR"/>.
@@ -116,7 +116,7 @@ namespace Beamable.Common.Assistant
 		/// The unique <see cref="BeamHintHeader"/> identifying this hint.
 		/// </summary>
 		public readonly BeamHintHeader Header;
-		
+
 		/// <summary>
 		/// An object associated with this hint to provide some context to it (normally used to render hint details via HintDetailsProvider).
 		/// </summary>
@@ -134,19 +134,6 @@ namespace Beamable.Common.Assistant
 	}
 
 	/// <summary>
-	/// <see cref="IBeamHintProvider"/> detect the existence of <see cref="BeamHint"/>s and should add them to the storage with the correct domain.
-	/// TODO: Support Scriptable Object-based injection of BeamHintProviders similar to what we do with <see cref="IReflectionSystem"/>s at EditorAPI initialization.
-	/// </summary>
-	public interface IBeamHintProvider
-	{
-		/// <summary>
-		/// Called with the Editor's BeamHint storage instance on initialization.
-		/// </summary>
-		void SetStorage(IBeamHintGlobalStorage hintGlobalStorage);
-	}
-	
-
-	/// <summary>
 	/// Manages and persists <see cref="BeamHint"/> preferences. Can decide to display/ignore hints, play mode warnings and/or notifications.
 	/// It persists this configuration in a per-session or permanent level. 
 	/// </summary>
@@ -161,12 +148,12 @@ namespace Beamable.Common.Assistant
 		/// Gets the current <see cref="BeamHintVisibilityPreference"/> for the given hint.  
 		/// </summary>
 		BeamHintVisibilityPreference GetHintVisibilityPreferences(BeamHint hint);
-		
+
 		/// <summary>
 		/// Sets, for the given <paramref name="hint"/>, the given <paramref name="newBeamHintVisibilityPreference"/>.
 		/// </summary>
 		void SetHintVisibilityPreferences(BeamHint hint, BeamHintVisibilityPreference newBeamHintVisibilityPreference);
-		
+
 		/// <summary>
 		/// Splits all given hints by their <see cref="BeamHintVisibilityPreference"/>s.
 		/// </summary>
@@ -174,9 +161,7 @@ namespace Beamable.Common.Assistant
 		/// <param name="outToDisplayHints">The resulting list of <see cref="BeamHint"/>s that should be displayed.</param>
 		/// <param name="outToIgnoreHints">The resulting list of <see cref="BeamHint"/>s that should be ignored.</param>
 		void SplitHintsByVisibilityPreferences(IEnumerable<BeamHint> hints, out IEnumerable<BeamHint> outToDisplayHints, out IEnumerable<BeamHint> outToIgnoreHints);
-		
-		
-		
+
 		/// <summary>
 		/// Gets the current <see cref="BeamHintPlayModeWarningPreference"/> for the given hint.  
 		/// </summary>
@@ -186,7 +171,7 @@ namespace Beamable.Common.Assistant
 		/// Sets, for the given <paramref name="hint"/>, the given <paramref name="newBeamHintPlayModeWarningPreference"/>.
 		/// </summary>
 		void SetHintPlayModeWarningPreferences(BeamHint hint, BeamHintPlayModeWarningPreference newBeamHintPlayModeWarningPreference);
-		
+
 		/// <summary>
 		/// Splits all given hints by their <see cref="BeamHintPlayModeWarningPreference"/>s.
 		/// </summary>
@@ -194,30 +179,25 @@ namespace Beamable.Common.Assistant
 		/// <param name="outToWarnHints">The resulting list of <see cref="BeamHint"/>s that should cause a play-mode-warning.</param>
 		/// <param name="outToIgnoreHints">The resulting list of <see cref="BeamHint"/>s that should cause a play-mode-warning.</param>
 		void SplitHintsByPlayModeWarningPreferences(IEnumerable<BeamHint> hints, out IEnumerable<BeamHint> outToWarnHints, out IEnumerable<BeamHint> outToIgnoreHints);
-		
 
-		
 		/// <summary>
 		/// Gets the current <see cref="BeamHintNotificationPreference"/> for the given hint.
 		/// </summary>
 		BeamHintNotificationPreference GetHintNotificationPreferences(BeamHint hint);
-		
+
 		/// <summary>
 		/// Update the <see cref="BeamHintNotificationPreference"/> for a given hint. 
 		/// </summary>
 		void SetHintNotificationPreferences(BeamHint hint, BeamHintNotificationPreference newBeamHintNotificationPreference);
 
-
 		/// <summary>
 		/// Splits all given hints by their <see cref="BeamHintPlayModeWarningPreference"/>s.
 		/// </summary>
 		/// <param name="hints">The hints to split by.</param>
-		/// <param name="outToNotifyAlways">The resulting list of <see cref="BeamHint"/>s that should always notify.</param>
 		/// <param name="outToNotifyNever">The resulting list of <see cref="BeamHint"/>s that should never notify.</param>
 		/// <param name="outToNotifyOncePerSession">The resulting list of <see cref="BeamHint"/>s that should notify only once per session.</param>
 		/// <param name="outToNotifyOnContextObjectChange">The resulting list of <see cref="BeamHint"/>s that should notify whenever the context object changed.</param>
 		void SplitHintsByNotificationPreferences(IEnumerable<BeamHint> hints,
-		                                         out List<BeamHint> outToNotifyAlways,
 		                                         out List<BeamHint> outToNotifyNever,
 		                                         out List<BeamHint> outToNotifyOncePerSession,
 		                                         out List<BeamHint> outToNotifyOnContextObjectChange);
@@ -227,7 +207,7 @@ namespace Beamable.Common.Assistant
 		/// </summary>
 		void ClearAllPreferences();
 	}
-	
+
 	/// <summary>
 	/// Current State of display tied to any specific <see cref="BeamHintHeader"/>.
 	/// </summary>
@@ -248,7 +228,6 @@ namespace Beamable.Common.Assistant
 		Disabled,
 	}
 
-
 	/// <summary>
 	/// Current state of the Notification preference setting tied to any specific <see cref="BeamHintHeader"/>s.
 	/// </summary>
@@ -257,16 +236,55 @@ namespace Beamable.Common.Assistant
 		NotifyOncePerSession, // Default for hints ----------------> Stores which hints were already notified in SessionState
 		NotifyOnContextObjectChanged, // Default for validations --> Stores ContextObject of each hint in internal state, compares when bumps into a hint --- if not same reference, notify. Assumes that validations will change the Hint's context object when they run again and therefore should be notified again.
 		NotifyNever, // Only if user explicitly asks for these ----> Never notifies the user
-		NotifyAlways, // Only if user explicitly asks for these ---> Always notifies 
 	}
 
 	/// <summary>
-	/// <see cref="IBeamHintManager"/>s read, filter, clear and arrange data logically in relation to <see cref="BeamHintHeader"/>s to be read by UI and other systems.
-	/// TODO: Support Scriptable Object-based injection of BeamHintManagers similar to what we do with <see cref="IReflectionSystem"/>s at EditorAPI initialization.
+	/// These are <see cref="UnityEditor"/> only systems. You should assume they'll only exist "#if UNITY_EDITOR" is true.
+	/// You can use these to <see cref="IBeamHintSystem"/>s read, filter, clear and arrange data logically in relation to <see cref="BeamHintHeader"/>s to be read by UI and other systems.
+	/// Keep in mind:
+	/// <list type="bullet">
+	/// <item>These only work in editor --- their instances won't ever be initialized outside of it.</item>
+	/// <item>Place <see cref="System.Diagnostics.ConditionalAttribute"/>("UNITY_EDITOR") on all functions you plan to call from non-editor code.</item>
+	/// <item>For use with non-editor only systems, write pure functions that take in ALL the necessary data from the non-editor systems and does the processing and addition of hints. </item>
+	/// <item>Use "void" functions whenever interacting with non-editor code as we'll strip these calls in non-editor environments.</item>
+	/// <item>If you need state to decide to show hints, aggregate and store this state in the <see cref="IBeamHintSystem"/>'s member fields via calls to methods that are <see cref="System.Diagnostics.ConditionalAttribute"/>. </item> 
+	/// </list>
+	/// 
+	/// Keep the usage of these as simple as you can.
+	/// The point of these systems is to provide a simple way for teams to bake their assumptions and established conventions into their editor workflow.
+	/// If complicate the process of doing this, it defeats its very purpose.
 	/// </summary>
-	public interface IBeamHintManager
+	public interface IBeamHintSystem
 	{
 		void SetPreferencesManager(IBeamHintPreferencesManager preferencesManager);
 		void SetStorage(IBeamHintGlobalStorage hintGlobalStorage);
+
+		void OnInitialized();
+	}
+
+	[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
+	public class BeamHintSystemAttribute : Attribute, IReflectionAttribute
+	{
+		public bool IsBeamContextSystem
+		{
+			get;
+		}
+
+		public BeamHintSystemAttribute(bool isBeamContextSystem = false)
+		{
+			IsBeamContextSystem = isBeamContextSystem;
+		}
+
+		public AttributeValidationResult IsAllowedOnMember(MemberInfo member)
+		{
+			var type = (Type)member;
+			if (!typeof(IBeamHintSystem).IsAssignableFrom(type))
+			{
+				return new AttributeValidationResult(this, type, ReflectionCache.ValidationResultType.Error, $"BeamHintSystemAttribute cannot be over type [{member.Name}] " +
+				                                                                                             $"since [{member.Name}] does not implement [{nameof(IBeamHintSystem)}].");
+			}
+
+			return new AttributeValidationResult(this, type, ReflectionCache.ValidationResultType.Valid, "");
+		}
 	}
 }

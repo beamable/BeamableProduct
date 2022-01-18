@@ -19,6 +19,11 @@ namespace Beamable.Server.Clients
     public sealed class CacheDependentMSClient : Beamable.Server.MicroserviceClient
     {
         
+        public CacheDependentMSClient(Beamable.BeamContext context = null) : 
+                base(context)
+        {
+        }
+        
         /// <summary>
         /// Call the GetCachedView method on the CacheDependentMS microservice
         /// <see cref="Beamable.Server.CacheDependentMS.GetCachedView"/>
@@ -101,6 +106,21 @@ namespace Beamable.Server.Clients
         [System.SerializableAttribute()]
         internal sealed class ParameterBeamable_Common_Promise : Beamable.Server.MicroserviceClientDataWrapper<Beamable.Common.Promise>
         {
+        }
+    }
+    
+    internal static class ExtensionsForCacheDependentMSClient
+    {
+        
+        [Beamable.Common.Dependencies.RegisterBeamableDependenciesAttribute()]
+        public static void RegisterService(Beamable.Common.Dependencies.IDependencyBuilder builder)
+        {
+            builder.AddScoped<CacheDependentMSClient>();
+        }
+        
+        public static CacheDependentMSClient CacheDependentMS(this Beamable.Server.MicroserviceClients clients)
+        {
+            return clients.GetClient<CacheDependentMSClient>();
         }
     }
 }

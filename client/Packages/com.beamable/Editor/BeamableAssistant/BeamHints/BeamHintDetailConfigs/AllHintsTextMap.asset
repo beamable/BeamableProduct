@@ -28,12 +28,14 @@ MonoBehaviour:
     - AttributeValidation-MicroserviceAttributeMissing
     - AttributeValidation-MisconfiguredHintDetailsProvider
     - AttributeNameCollision-MicroserviceNameCollision
+    - AttributeValidation-MisconfiguredHintSystemAttribute
     values:
     - ClientCallable has unsupported parameters
     - '"async void" ClientCallable exists'
     - Missing MicroserviceAttribute
     - HintDetailsProvider with invalid signature
     - Microservice Name Collision
+    - Hint System Attribute Misuse
   HintIdToHintIntroText:
     keys:
     - AttributeValidation-ClientCallableUnsupportedParameters
@@ -41,6 +43,7 @@ MonoBehaviour:
     - AttributeValidation-MicroserviceAttributeMissing
     - AttributeValidation-MisconfiguredHintDetailsProvider
     - AttributeNameCollision-MicroserviceNameCollision
+    - AttributeValidation-MisconfiguredHintSystemAttribute
     values:
     - "The ClientCallables below have unsupported parameters. We don't support client
       callables with Delegate, Task or Promise parameters. \n\nWe don't support it
@@ -88,6 +91,14 @@ MonoBehaviour:
 '
     - 'All MicroserviceAttributes must have unique project-wide unique names. Here
       are all collisions we detected:
+
+
+'
+    - 'The BeamHintSystemAttribute can only be used with classes that implement IBeamHintSystem.
+      This allows our systems to correctly identify it and parse its internal attributes
+      in a more performant way.
+
+      The following attributes were found in types that don''t implement IBeamHintSystem:
 
 
 '

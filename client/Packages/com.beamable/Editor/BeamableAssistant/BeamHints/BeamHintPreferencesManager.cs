@@ -56,18 +56,7 @@ namespace Beamable.Editor.Assistant
 		/// of <see cref="BeamHintHeaders"/> states persisted in each prefs.
 		/// </summary>
 		private const string PLAY_MODE_WARNING_MANUALLY_DISABLED_SAVED = "BEAM_HINT_"+nameof(PLAY_MODE_WARNING_MANUALLY_DISABLED_SAVED);
-		
-		/// <summary>
-		/// Key into <see cref="EditorPrefs"/> to store number of <see cref="BeamHint"/> states persisted to always notify.
-		/// Used to allocate once at startup and avoid continuous resize allocations mid-loop.
-		/// </summary>
-		private const string NOTIFICATION_ALWAYS_SAVED_COUNT = "BEAM_HINT_"+nameof(NOTIFICATION_ALWAYS_SAVED_COUNT);
 
-		/// <summary>
-		/// Key into <see cref="EditorPrefs"/> to store the <see cref="BEAM_HINT_PREFERENCES_SEPARATOR"/>-separated list of hints that are configured to always notify.
-		/// </summary>
-		private const string NOTIFICATION_ALWAYS_SAVED = "BEAM_HINT_"+nameof(NOTIFICATION_ALWAYS_SAVED);
-		
 		/// <summary>
 		/// Key into <see cref="EditorPrefs"/> to store number of <see cref="BeamHint"/> states persisted to always notify.
 		/// Used to allocate once at startup and avoid continuous resize allocations mid-loop.
@@ -131,12 +120,7 @@ namespace Beamable.Editor.Assistant
 		/// </para>
 		/// </summary>
 		private readonly Dictionary<BeamHintHeader, BeamHintNotificationPreference> _perHintNotificationStates;
-		
-		/// <summary>
-		/// List of all header's currently set to <see cref="BeamHintNotificationPreference.NotifyAlways"/>. Helper list to make the code for managing this easier.
-		/// </summary>
-		private readonly List<BeamHintHeader> _alwaysNotifyHints;
-		
+
 		/// <summary>
 		/// List of all headers currently set to <see cref="BeamHintNotificationPreference.NotifyNever"/>. Helper list to make the code for managing this easier.
 		/// </summary>
@@ -170,11 +154,8 @@ namespace Beamable.Editor.Assistant
 			_permanentlyPlayModeWarningManuallyDisabledHints = new List<BeamHintHeader>(hintPlayModeWarningManuallyDisabledPrefsCount);
 			
 			
-			var alwaysNotifyCount = EditorPrefs.GetInt(NOTIFICATION_ALWAYS_SAVED_COUNT, 0);
 			var neverNotifyCount = EditorPrefs.GetInt(NOTIFICATION_NEVER_SAVED_COUNT, 0);
-			_perHintNotificationStates = new Dictionary<BeamHintHeader, BeamHintNotificationPreference>(alwaysNotifyCount + neverNotifyCount);
-
-			_alwaysNotifyHints = new List<BeamHintHeader>(alwaysNotifyCount);
+			_perHintNotificationStates = new Dictionary<BeamHintHeader, BeamHintNotificationPreference>(neverNotifyCount);
 			_neverNotifyHints = new List<BeamHintHeader>(neverNotifyCount);
 
 			_hintsToPlayModeWarningByDefault = new List<BeamHintHeader>();
@@ -226,13 +207,8 @@ namespace Beamable.Editor.Assistant
 			
 			// Rebuild Notification preferences
 			_perHintNotificationStates.Clear();
-			_alwaysNotifyHints.Clear();
 			_neverNotifyHints.Clear();
-			
-			// Go through stored notification preferences set as NotifyAlways. 
-			var alwaysNotificationHints = EditorPrefs.GetString(NOTIFICATION_ALWAYS_SAVED, "");
-			ApplyStoredHintPreferences(alwaysNotificationHints, BeamHintNotificationPreference.NotifyAlways, _perHintNotificationStates, _alwaysNotifyHints);
-			
+
 			// Go through stored notification preferences set as NotifyNever. 
 			var neverNotificationHints = EditorPrefs.GetString(NOTIFICATION_NEVER_SAVED, "");
 			ApplyStoredHintPreferences(neverNotificationHints, BeamHintNotificationPreference.NotifyNever, _perHintNotificationStates, _neverNotifyHints);
@@ -495,19 +471,11 @@ namespace Beamable.Editor.Assistant
 				case BeamHintNotificationPreference.NotifyOncePerSession:
 				case BeamHintNotificationPreference.NotifyOnContextObjectChanged:
 				{
-					RemoveHintPreferenceState(hint, NOTIFICATION_ALWAYS_SAVED, NOTIFICATION_ALWAYS_SAVED_COUNT, PersistenceLevel.Permanent, _alwaysNotifyHints);
 					RemoveHintPreferenceState(hint, NOTIFICATION_NEVER_SAVED, NOTIFICATION_NEVER_SAVED_COUNT, PersistenceLevel.Permanent, _neverNotifyHints);
-					break;
-				}
-				case BeamHintNotificationPreference.NotifyAlways:
-				{
-					RemoveHintPreferenceState(hint, NOTIFICATION_NEVER_SAVED, NOTIFICATION_NEVER_SAVED_COUNT, PersistenceLevel.Permanent, _neverNotifyHints);
-					SetSerializedHintPreference(hint, NOTIFICATION_ALWAYS_SAVED, NOTIFICATION_ALWAYS_SAVED_COUNT, PersistenceLevel.Permanent, _alwaysNotifyHints);
 					break;
 				}
 				case BeamHintNotificationPreference.NotifyNever:
 				{
-					RemoveHintPreferenceState(hint, NOTIFICATION_ALWAYS_SAVED, NOTIFICATION_ALWAYS_SAVED_COUNT, PersistenceLevel.Permanent, _alwaysNotifyHints);
 					SetSerializedHintPreference(hint, NOTIFICATION_NEVER_SAVED, NOTIFICATION_NEVER_SAVED_COUNT, PersistenceLevel.Permanent, _neverNotifyHints);
 					break;
 				}
@@ -517,7 +485,6 @@ namespace Beamable.Editor.Assistant
 		}
 		
 		public void SplitHintsByNotificationPreferences(IEnumerable<BeamHint> hints,
-		                                                out List<BeamHint> outToNotifyAlways,
 		                                                out List<BeamHint> outToNotifyNever,
 		                                                out List<BeamHint> outToNotifyOncePerSession,
 		                                                out List<BeamHint> outToNotifyOnContextObjectChange)
@@ -546,9 +513,7 @@ namespace Beamable.Editor.Assistant
 				return state;
 			}).ToList();
 
-			outToNotifyAlways = groups.Where(h => h.Key == BeamHintNotificationPreference.NotifyAlways)
-			                          .SelectMany(h => h).ToList();
-			
+
 			outToNotifyNever = groups.Where(h => h.Key == BeamHintNotificationPreference.NotifyNever)
 			                         .SelectMany(h => h).ToList();
 			
@@ -579,7 +544,9 @@ namespace Beamable.Editor.Assistant
 		                                       List<BeamHintHeader> outHints)
 		{
 			outHints.Remove(hint.Header);
-			var serializedPreferences = string.Join(BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR, outHints);
+			outHints = outHints.Distinct().ToList();
+			var keys = outHints.Select(header => header.AsKey()).ToList();
+			var serializedPreferences = string.Join(BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR, keys);
 			
 			switch (persistenceLevel)
 			{
@@ -658,9 +625,6 @@ namespace Beamable.Editor.Assistant
 
 			EditorPrefs.SetInt(PLAY_MODE_WARNING_ENABLED_SAVED_COUNT, 0);
 			SessionState.SetInt(PLAY_MODE_WARNING_ENABLED_SAVED_COUNT, 0);
-			
-			EditorPrefs.SetInt(NOTIFICATION_ALWAYS_SAVED_COUNT, 0);
-			EditorPrefs.SetString(NOTIFICATION_ALWAYS_SAVED, "");
 
 			EditorPrefs.SetInt(NOTIFICATION_NEVER_SAVED_COUNT, 0);
 			EditorPrefs.SetString(NOTIFICATION_NEVER_SAVED, "");

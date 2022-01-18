@@ -193,7 +193,6 @@ namespace Beamable.Editor.Assistant
 					{
 						case BeamHintNotificationPreference.NotifyOncePerSession:
 						case BeamHintNotificationPreference.NotifyOnContextObjectChanged:
-						case BeamHintNotificationPreference.NotifyAlways:
 							notificationToggle.SetValueWithoutNotify(true);
 							break;
 						case BeamHintNotificationPreference.NotifyNever:
@@ -265,7 +264,14 @@ namespace Beamable.Editor.Assistant
 
 				// Call the converter to fill up this injection bag.
 				var beamHint = _hintDataModel.GetHint(_displayingHintHeader);
-				converter.ConverterCall.Invoke(in beamHint, in converter.HintTextMap, injectionBag);
+				// TODO: Change this hacky way of injecting texts when we have our in-editor localization solution 
+				if(converter.HintTextMap.TryGetHintTitle(beamHint.Header, out _) && converter.HintTextMap.TryGetHintIntroText(beamHint.Header, out _))
+					converter.ConverterCall.Invoke(in beamHint, in converter.HintTextMap, injectionBag);
+				else
+				{
+					var textMap = _hintDetailsReflectionCache.GetTextMapForId(beamHint.Header);
+					converter.ConverterCall.Invoke(in beamHint, in textMap, injectionBag);
+				}
 
 				// Resolve all supported injections.
 				ResolveInjections(injectionBag.TextInjections, _detailsBox);

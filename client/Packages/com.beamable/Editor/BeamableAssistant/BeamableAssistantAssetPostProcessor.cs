@@ -31,14 +31,11 @@ namespace Beamable.Editor.Assistant
 
 			if (beamHintDetailsRelatedAssets.Count > 0 || deletedAssets.Length > 0)
 			{
-				EditorAPI.Instance.Then(editorApi => {
-					editorApi.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>()
-					         .ReloadHintDetailConfigScriptableObjects(editorApi.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
+				BeamEditor.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>()
+				          .ReloadHintDetailConfigScriptableObjects(BeamEditor.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
 					
-					editorApi.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>()
-					         .ReloadHintTextMapScriptableObjects(editorApi.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
-					
-				});
+				BeamEditor.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>()
+				          .ReloadHintTextMapScriptableObjects(BeamEditor.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
 			}
 		}
 	}

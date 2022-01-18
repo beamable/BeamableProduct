@@ -1,5 +1,6 @@
 #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 
+using Beamable.Editor.Assistant;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -64,7 +65,7 @@ namespace Beamable.Editor.ToolbarExtender
 				_editorAPI = api;
 
 				// Load and inject Beamable Menu Items (necessary due to multiple package split of SDK) --- sort them by specified order, and alphabetically when tied.
-				var menuItemsSearchInFolders = _editorAPI.CoreConfiguration.BeamableAssistantMenuItemsPath.Where(Directory.Exists).ToArray();
+				var menuItemsSearchInFolders = BeamEditor.CoreConfiguration.BeamableAssistantMenuItemsPath.Where(Directory.Exists).ToArray();
 				var menuItemsGuids = AssetDatabase.FindAssets($"t:{nameof(BeamableAssistantMenuItem)}", menuItemsSearchInFolders);
 				_assistantMenuItems = menuItemsGuids.Select(guid => AssetDatabase.LoadAssetAtPath<BeamableAssistantMenuItem>(AssetDatabase.GUIDToAssetPath(guid))).ToList();
 				_assistantMenuItems.Sort((mi1, mi2) => {
@@ -74,7 +75,7 @@ namespace Beamable.Editor.ToolbarExtender
 					return orderComp == 0 ? labelComp : orderComp;
 				});
 
-				var toolbarButtonsSearchInFolders = _editorAPI.CoreConfiguration.BeamableAssistantToolbarButtonsPaths.Where(Directory.Exists).ToArray();
+				var toolbarButtonsSearchInFolders = BeamEditor.CoreConfiguration.BeamableAssistantToolbarButtonsPaths.Where(Directory.Exists).ToArray();
 				var toolbarButtonsGuids = AssetDatabase.FindAssets($"t:{nameof(BeamableToolbarButton)}", toolbarButtonsSearchInFolders);
 				var toolbarButtons = toolbarButtonsGuids.Select(guid => AssetDatabase.LoadAssetAtPath<BeamableToolbarButton>(AssetDatabase.GUIDToAssetPath(guid))).ToList();
 
@@ -214,12 +215,17 @@ namespace Beamable.Editor.ToolbarExtender
 
 			var beamableAssistantButtonRect = new Rect(beamableAssistantStart, rightRect.y + 2, beamableAssistantEnd - beamableAssistantStart, dropdownHeight);
 			var btnTexture = _noHintsTexture;
-			if (_editorAPI.HintNotificationsManager.PendingHintNotifications.Any())
+			
+			// Gets notification manager and evaluate if there are pending notifications
+			BeamHintNotificationManager notificationManager = null;
+			BeamEditor.GetBeamHintSystem(ref notificationManager);
+			if (notificationManager.PendingHintNotifications.Any())
 				btnTexture = _hintsTexture;
 
-			if (_editorAPI.HintNotificationsManager.PendingValidationNotifications.Any())
+			if (notificationManager.PendingValidationNotifications.Any())
 				btnTexture = _validationTexture;
 
+			
 			GUILayout.BeginArea(beamableAssistantButtonRect);
 			if (GUILayout.Button(new GUIContent("  Assistant Window", btnTexture), GUILayout.Width(beamableAssistantEnd - beamableAssistantStart), GUILayout.Height(dropdownHeight)))
 			{

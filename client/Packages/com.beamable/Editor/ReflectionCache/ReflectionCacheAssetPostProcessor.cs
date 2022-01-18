@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Reflection;
+using Beamable.Reflection;
 using System.Linq;
 using UnityEditor;
 
@@ -24,24 +25,18 @@ namespace Beamable.Editor.Reflection
 			{
 				var reimportedReflectionTypes = reflectionCacheRelatedAssets.Select(tuple => AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(tuple.path).SystemType).ToList();
 
-				EditorAPI.Instance.Then(api =>
-				{
-					BeamableLogger.Log("Re-building the Reflection Systems from Cached Data!");
-					api.EditorReflectionCache.RebuildReflectionUserSystems(reimportedReflectionTypes);
-					BeamableLogger.Log("Finished Rebuilding Reflection Cache Systems");
-					AssetDatabase.Refresh();
-				});
+				BeamableLogger.Log("Re-building the Reflection Systems from Cached Data!");
+				BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems(reimportedReflectionTypes);
+				BeamableLogger.Log("Finished Rebuilding Reflection Cache Systems");
+				AssetDatabase.Refresh();
 			}
 
 			if (deletedAssets.Length > 0)
 			{
-				EditorAPI.Instance.Then(api =>
-				{
-					BeamableLogger.Log("Re-building the Reflection Systems from Cached Data!");
-					api.EditorReflectionCache.RebuildReflectionUserSystems();
-					BeamableLogger.Log("Finished Rebuilding Reflection Cache Systems");
-					AssetDatabase.Refresh();
-				});
+				BeamableLogger.Log("Re-building the Reflection Systems from Cached Data!");
+				BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems();
+				BeamableLogger.Log("Finished Rebuilding Reflection Cache Systems");
+				AssetDatabase.Refresh();
 			}
 		}
 	}

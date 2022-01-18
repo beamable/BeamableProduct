@@ -112,7 +112,7 @@ namespace Beamable.Common.Reflection
 		/// <returns>
 		/// A list, parallel to <paramref name="acceptedSignatures"/>, containing the index or -1 for each of the given <paramref name="acceptedSignatures"/>.
 		/// </returns>
-		public static List<int> FindMatchingMethodSignatures(this IReadOnlyList<SignatureOfInterest> acceptedSignatures, MethodInfo methodInfo)
+		public static List<int> FindMatchingMethodSignatures(this IEnumerable<SignatureOfInterest> acceptedSignatures, MethodInfo methodInfo)
 		{
 			var parameters = methodInfo.GetParameters();
 			var retValType = methodInfo.ReturnType;
@@ -145,6 +145,41 @@ namespace Beamable.Common.Reflection
 			}).ToList();
 
 			return matchedSignaturesIndices;
+		}
+
+		/// <summary>
+		/// Helper method that can be used to check if the given <paramref name="methodInfo"/> matches the signature at the given <paramref name="idx"/>.
+		/// </summary>
+		public static bool MatchSignatureAtIdx(this IEnumerable<SignatureOfInterest> acceptedSignatures, int idx, MethodInfo methodInfo)
+		{
+			var parameters = methodInfo.GetParameters();
+			var retValType = methodInfo.ReturnType;
+			var isStatic = methodInfo.IsStatic;
+			
+			var acceptableSignature = acceptedSignatures.ElementAt(idx);
+			
+			if (isStatic != acceptableSignature.IsStatic) return false;
+			if (retValType != acceptableSignature.ReturnType) return false;
+
+			// If no parameters were passed, we assume the user does not care about it.
+			// If a parameter was passed, but has 0 length, it will be enforced that the method has 0 parameters.
+			if (acceptableSignature.Parameters != null)
+			{
+				if (parameters.Length != acceptableSignature.Parameters.Length) return false;
+
+				for (var i = 0; i < parameters.Length; i++)
+				{
+					var parameter = parameters[i];
+					var acceptableParameter = acceptableSignature.Parameters[i];
+
+					// Use assignable from in case we accept interfaces.
+					bool matchParameter = MatchParameter(acceptableParameter, parameter);
+					if (!(matchParameter))
+						return false;
+				}
+			}
+
+			return true;
 		}
 		
 		/// <summary>

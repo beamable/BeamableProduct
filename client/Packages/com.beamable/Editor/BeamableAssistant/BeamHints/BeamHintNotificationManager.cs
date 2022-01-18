@@ -16,7 +16,8 @@ namespace Beamable.Editor.Assistant
 	/// We use these to keep an updated list of pending <see cref="BeamHintType.Hint"/> and <see cref="BeamHintType.Validation"/> notifications. These are cleared
 	/// whenever the <see cref="BeamableAssistantWindow"/> is opened or focused. 
 	/// </summary>
-	public class BeamHintNotificationManager : IBeamHintManager
+	// ReSharper disable once ClassNeverInstantiated.Global
+	public class BeamHintNotificationManager : IBeamHintSystem
 	{
 		private const string NOTIFICATION_SESSION_KEY = "BEAM_HINT_NOTIFICATION_SESSION_KEY";
 
@@ -73,6 +74,11 @@ namespace Beamable.Editor.Assistant
 		}
 
 		/// <summary>
+		/// False, since this is a globally accessible hint system. It does not get injected into <see cref="BeamContext"/>.
+		/// </summary>
+		public bool IsBeamContextSystem => false;
+
+		/// <summary>
 		/// Update the reference to the <see cref="IBeamHintPreferencesManager"/> used by this <see cref="BeamHintNotificationManager"/>.
 		/// </summary>
 		public void SetPreferencesManager(IBeamHintPreferencesManager preferencesManager)
@@ -86,6 +92,15 @@ namespace Beamable.Editor.Assistant
 		public void SetStorage(IBeamHintGlobalStorage hintGlobalStorage)
 		{
 			_hintStorage = hintGlobalStorage;
+		}
+
+		/// <summary>
+		/// Initializes the update callback for this <see cref="IBeamHintSystem"/>.
+		/// </summary>
+		public void OnInitialized()
+		{
+			EditorApplication.update -= Update;
+			EditorApplication.update += Update;
 		}
 
 		/// <summary>
@@ -106,6 +121,8 @@ namespace Beamable.Editor.Assistant
 			{
 				if (!_lastDetectedContextObjects.ContainsKey(hint.Header))
 					_lastDetectedContextObjects.Add(hint.Header, hint.ContextObject);
+				else
+					_lastDetectedContextObjects[hint.Header] = hint.ContextObject;
 			}
 
 			if (hintsToMarkAsSeen == null)
@@ -228,7 +245,6 @@ namespace Beamable.Editor.Assistant
 		                                        List<BeamHintHeader> outPendingNotificationValidations)
 		{
 			beamHintPreferencesManager.SplitHintsByNotificationPreferences(hintsToUpdate,
-			                                                               out var toNotifyAlways,
 			                                                               out var toNotifyNever,
 			                                                               out var sessionNotify,
 			                                                               out var contextObjectChangeNotify);
@@ -240,14 +256,13 @@ namespace Beamable.Editor.Assistant
 				return true;
 			}).ToList();
 
-			var toNotify = toNotifyAlways
-			               .Union(notYetNotifiedThisSession)
+			var toNotify = notYetNotifiedThisSession
 			               .Union(notYetNotifiedWithCurrentContextObj)
 			               .Except(toNotifyNever)
 			               .ToList();
 
-			outPendingNotificationHints.AddRange(toNotify.Where(h => (h.Header.Type & BeamHintType.Hint) != 0).Select(h => h.Header));
-			outPendingNotificationValidations.AddRange(toNotify.Where(h => (h.Header.Type & BeamHintType.Validation) != 0).Select(h => h.Header));
+			outPendingNotificationHints.AddRange(toNotify.Where(h => (h.Header.Type & BeamHintType.Hint) != 0).Select(h => h.Header).Distinct());
+			outPendingNotificationValidations.AddRange(toNotify.Where(h => (h.Header.Type & BeamHintType.Validation) != 0).Select(h => h.Header).Distinct());
 		}
 	}
 }

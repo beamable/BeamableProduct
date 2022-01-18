@@ -14,19 +14,19 @@ namespace Beamable
 		           "Core Configuration")]
 	public class CoreConfiguration : ModuleConfigurationObject
 	{
-		public const string PROJECT_REFLECTION_SYSTEM_PATH = "Assets/Beamable/ReflectionCache/UserSystems";	
-		public const string BEAMABLE_REFLECTION_SYSTEM_PATH = "Packages/com.beamable/Editor/ReflectionCache/UserSystems";
-		public const string BEAMABLE_SERVER_REFLECTION_SYSTEM_PATH = "Packages/com.beamable.server/Editor/ReflectionCache/UserSystems";
+		public const string PROJECT_EDITOR_REFLECTION_SYSTEM_PATH = "Assets/Beamable/Editor/ReflectionCache/UserSystems";	
+		public const string BEAMABLE_EDITOR_REFLECTION_SYSTEM_PATH = "Packages/com.beamable/Editor/ReflectionCache/UserSystems";
+		public const string BEAMABLE_EDITOR_SERVER_REFLECTION_SYSTEM_PATH = "Packages/com.beamable.server/Editor/ReflectionCache/UserSystems";
 		
-		public const string PROJECT_ASSISTANT_MENU_ITEM_PATH = "Assets/Beamable/Assistant/MenuItems";
+		public const string PROJECT_ASSISTANT_MENU_ITEM_PATH = "Assets/Beamable/Editor/Assistant/MenuItems";
 		public const string BEAMABLE_ASSISTANT_MENU_ITEM_PATH = "Packages/com.beamable/Editor/BeamableAssistant/MenuItems";
 		public const string BEAMABLE_SERVER_ASSISTANT_MENU_ITEM_PATH = "Packages/com.beamable.server/Editor/BeamableAssistant/MenuItems";
 		
-		public const string PROJECT_ASSISTANT_TOOLBAR_BUTTON_PATH = "Assets/Beamable/Assistant/ToolbarButtons";
+		public const string PROJECT_ASSISTANT_TOOLBAR_BUTTON_PATH = "Assets/Beamable/Editor/Assistant/ToolbarButtons";
 		public const string BEAMABLE_ASSISTANT_TOOLBAR_BUTTON_PATH = "Packages/com.beamable/Editor/BeamableAssistant/ToolbarButtons";
 		public const string BEAMABLE_SERVER_ASSISTANT_TOOLBAR_BUTTON_PATH = "Packages/com.beamable.server/Editor/BeamableAssistant/ToolbarButtons";
 		
-		public const string PROJECT_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH = "Assets/Beamable/Assistant/Hint/HintDetails";
+		public const string PROJECT_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH = "Assets/Beamable/Editor/Assistant/Hint/HintDetails";
 		public const string BEAMABLE_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH = "Packages/com.beamable/Editor/BeamableAssistant/BeamHints/BeamHintDetailConfigs";
 		public const string BEAMABLE_SERVER_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH = "Packages/com.beamable.server/Editor/BeamableAssistant/BeamHints/BeamHintDetailConfigs";
 
@@ -76,14 +76,14 @@ namespace Beamable
 		private void OnValidate()
 		{
 			// Ensure default paths exist for Reflection Cache User System Objects
-			if (!ReflectionSystemPaths.Contains(PROJECT_REFLECTION_SYSTEM_PATH))
-				ReflectionSystemPaths.Add(PROJECT_REFLECTION_SYSTEM_PATH);
+			if (!ReflectionSystemPaths.Contains(PROJECT_EDITOR_REFLECTION_SYSTEM_PATH))
+				ReflectionSystemPaths.Add(PROJECT_EDITOR_REFLECTION_SYSTEM_PATH);
 
-			if (!ReflectionSystemPaths.Contains(BEAMABLE_REFLECTION_SYSTEM_PATH))
-				ReflectionSystemPaths.Add(BEAMABLE_REFLECTION_SYSTEM_PATH);
+			if (!ReflectionSystemPaths.Contains(BEAMABLE_EDITOR_REFLECTION_SYSTEM_PATH))
+				ReflectionSystemPaths.Add(BEAMABLE_EDITOR_REFLECTION_SYSTEM_PATH);
 
-			if (!ReflectionSystemPaths.Contains(BEAMABLE_SERVER_REFLECTION_SYSTEM_PATH))
-				ReflectionSystemPaths.Add(BEAMABLE_SERVER_REFLECTION_SYSTEM_PATH);
+			if (!ReflectionSystemPaths.Contains(BEAMABLE_EDITOR_SERVER_REFLECTION_SYSTEM_PATH))
+				ReflectionSystemPaths.Add(BEAMABLE_EDITOR_SERVER_REFLECTION_SYSTEM_PATH);
 			
 			
 			// Ensure default paths exist for Beamable Assistant Menu Items

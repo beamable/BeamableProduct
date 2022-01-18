@@ -13,7 +13,7 @@ namespace Beamable.Editor.Assistant
 	[Serializable]
 	public class BeamHintsDataModel
 	{
-		private IBeamHintGlobalStorage _hintGlobalStorage;
+		private List<IBeamHintGlobalStorage> _hintGlobalStorages;
 		private IBeamHintPreferencesManager _hintPreferencesManager;
 
 		/// <summary>
@@ -37,21 +37,23 @@ namespace Beamable.Editor.Assistant
 		[SerializeField] public List<string> SortedDomainsInStorage;
 
 		/// <summary>
-		/// Current text filter applied to existing hints in <see cref="_hintGlobalStorage"/> to generate the <see cref="DisplayingHints"/>.
+		/// Current text filter applied to existing hints in <see cref="_hintGlobalStorages"/> to generate the <see cref="DisplayingHints"/>.
 		/// </summary>
 		[SerializeField] public string CurrentFilter;
 
 		public BeamHintsDataModel()
 		{
+			_hintGlobalStorages = new List<IBeamHintGlobalStorage>();
 			DetailsOpenedHints = new List<BeamHintHeader>();
 			SelectedDomains = new List<string>();
 			SortedDomainsInStorage = new List<string>();
 			DisplayingHints = new List<BeamHintHeader>();
 		}
 
-		public void SetGlobalStorage(IBeamHintGlobalStorage beamHintGlobalStorage)
+		public void AppendGlobalStorage(IBeamHintGlobalStorage beamHintGlobalStorage)
 		{
-			_hintGlobalStorage = beamHintGlobalStorage;
+			_hintGlobalStorages.Add(beamHintGlobalStorage);
+			_hintGlobalStorages = _hintGlobalStorages.Distinct().ToList();
 		}
 
 		public void SetPreferencesManager(IBeamHintPreferencesManager beamHintPreferencesManager)
@@ -100,17 +102,18 @@ namespace Beamable.Editor.Assistant
 		/// </summary>
 		public void SelectDomains(List<string> domainsToSelect)
 		{
-			RefreshDomainsFromHints(_hintGlobalStorage);
+			var hints = _hintGlobalStorages.SelectMany(storage => storage).ToList();
+			RefreshDomainsFromHints(hints);
 
 			var selectedDomains = domainsToSelect.Count == 0 ? SortedDomainsInStorage : domainsToSelect;
-			RefreshDisplayingHints(_hintGlobalStorage, selectedDomains);
+			RefreshDisplayingHints(hints, selectedDomains);
 			SelectedDomains = selectedDomains;
 		}
 
 		/// <summary>
 		/// Gets the full <see cref="BeamHint"/> from a <see cref="BeamHintHeader"/>. 
 		/// </summary>
-		public BeamHint GetHint(BeamHintHeader header) => _hintGlobalStorage.GetHint(header);
+		public BeamHint GetHint(BeamHintHeader header) => _hintGlobalStorages.SelectMany(storage => storage).FirstOrDefault(hint => hint.Header.Equals(header));
 
 		/// <summary>
 		/// Updates <see cref="CurrentFilter"/> and <see cref="DisplayingHints"/> based on the given <paramref name="searchText"/>.  
@@ -118,7 +121,7 @@ namespace Beamable.Editor.Assistant
 		public void FilterDisplayedBy(string searchText)
 		{
 			CurrentFilter = searchText;
-			RefreshDisplayingHints(_hintGlobalStorage, SelectedDomains);
+			RefreshDisplayingHints(_hintGlobalStorages.SelectMany(storage => storage), SelectedDomains);
 		}
 
 		/// <summary>
@@ -138,7 +141,9 @@ namespace Beamable.Editor.Assistant
 		public void SetHintNotificationValue(BeamHintHeader header, bool evtNewValue)
 		{
 			var hint = GetHint(header);
-			var state = evtNewValue ? BeamHintNotificationPreference.NotifyAlways : BeamHintNotificationPreference.NotifyNever;
+			var state = evtNewValue  
+				?  (header.Type == BeamHintType.Validation ? BeamHintNotificationPreference.NotifyOnContextObjectChanged : BeamHintNotificationPreference.NotifyOncePerSession)
+				: BeamHintNotificationPreference.NotifyNever;
 			_hintPreferencesManager.SetHintNotificationPreferences(hint, state);
 		}
 

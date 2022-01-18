@@ -1,6 +1,8 @@
+using Beamable.Common;
 using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
 using Beamable.Editor.Assistant;
+using Beamable.Reflection;
 using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
@@ -43,13 +45,17 @@ namespace Beamable.Editor.Reflection
 			_cache = new Registry();
 		}
 
+		private void OnValidate() => Priority = BeamableReflectionSystemPriorities.BEAM_HINT_REFLECTION_SYSTEM_PRIORITY;
+
 		public delegate void DefaultConverter(in BeamHint hint, in BeamHintTextMap textMap, BeamHintVisualsInjectionBag injectionBag);
 
-		public class Registry : IReflectionSystem, IBeamHintProvider
+		public class Registry : IReflectionSystem
 		{
+			private static readonly BaseTypeOfInterest BEAM_HINT_SYSTEM_TYPE;
 			private static readonly BaseTypeOfInterest BEAM_HINT_DETAIL_CONVERTER_PROVIDER_TYPE;
 			private static readonly List<BaseTypeOfInterest> BASE_TYPES_OF_INTEREST;
 
+			private static readonly AttributeOfInterest BEAM_HINT_SYSTEM_ATTRIBUTE;
 			private static readonly AttributeOfInterest BEAM_HINT_DOMAIN_PROVIDER_ATTRIBUTE;
 			private static readonly AttributeOfInterest BEAM_HINT_ID_PROVIDER_ATTRIBUTE;
 			private static readonly AttributeOfInterest BEAM_HINT_DETAIL_CONVERTER_ATTRIBUTE;
@@ -57,25 +63,34 @@ namespace Beamable.Editor.Reflection
 
 			static Registry()
 			{
+				BEAM_HINT_SYSTEM_TYPE = new BaseTypeOfInterest(typeof(IBeamHintSystem));
 				BEAM_HINT_DETAIL_CONVERTER_PROVIDER_TYPE = new BaseTypeOfInterest(typeof(BeamHintDetailConverterProvider), true);
 				BEAM_HINT_DETAIL_CONVERTER_ATTRIBUTE = new AttributeOfInterest(typeof(BeamHintDetailConverterAttribute), new Type[] { }, new[] {typeof(BeamHintDetailConverterProvider)});
+
+				BEAM_HINT_SYSTEM_ATTRIBUTE = new AttributeOfInterest(typeof(BeamHintSystemAttribute), new Type[] { }, new Type[] { });
 
 				BEAM_HINT_DOMAIN_PROVIDER_ATTRIBUTE = new AttributeOfInterest(typeof(BeamHintDomainAttribute), new Type[] { }, new[] {typeof(BeamHintDomainProvider)});
 				BEAM_HINT_ID_PROVIDER_ATTRIBUTE = new AttributeOfInterest(typeof(BeamHintIdAttribute), new Type[] { }, new Type[] {typeof(BeamHintIdProvider)});
 
-				BASE_TYPES_OF_INTEREST = new List<BaseTypeOfInterest>() {BEAM_HINT_DETAIL_CONVERTER_PROVIDER_TYPE,};
+				BASE_TYPES_OF_INTEREST = new List<BaseTypeOfInterest>() {BEAM_HINT_DETAIL_CONVERTER_PROVIDER_TYPE, BEAM_HINT_SYSTEM_TYPE};
 				ATTRIBUTES_OF_INTEREST = new List<AttributeOfInterest>() {BEAM_HINT_DOMAIN_PROVIDER_ATTRIBUTE, BEAM_HINT_ID_PROVIDER_ATTRIBUTE, BEAM_HINT_DETAIL_CONVERTER_ATTRIBUTE,};
 			}
 
 			public List<BaseTypeOfInterest> BaseTypesOfInterest => BASE_TYPES_OF_INTEREST;
 			public List<AttributeOfInterest> AttributesOfInterest => ATTRIBUTES_OF_INTEREST;
 
+			// Domain/Ids Attributes data
 			private readonly Dictionary<string, List<string>> _perProviderDomains;
 			private readonly Dictionary<string, List<string>> _perProviderIds;
 
+			// Converter Attributes data
 			private readonly List<BeamHintDetailsConfig> _loadedConfigs;
 			private readonly List<BeamHintTextMap> _loadedTextMaps;
 			private readonly List<ConverterData<DefaultConverter>> _defaultConverterDelegates;
+
+			// IBeamHintSystem sub-types data
+			private readonly List<IBeamHintSystem> _globallyAccessibleHintSystems;
+			private readonly List<ConstructorInfo> _beamContextAccessibleHintSystems;
 
 			private IBeamHintGlobalStorage _hintStorage;
 
@@ -87,7 +102,16 @@ namespace Beamable.Editor.Reflection
 				_loadedConfigs = new List<BeamHintDetailsConfig>(16);
 				_loadedTextMaps = new List<BeamHintTextMap>(16);
 				_defaultConverterDelegates = new List<ConverterData<DefaultConverter>>(16);
+				_globallyAccessibleHintSystems = new List<IBeamHintSystem>(16);
+				_beamContextAccessibleHintSystems = new List<ConstructorInfo>(16);
 			}
+
+			/// <summary>
+			/// Readonly accessor to the list of cached and instantiated <see cref="IBeamHintSystem"/> that are not injected into Beam Context.
+			/// </summary>
+			public IReadOnlyList<IBeamHintSystem> GloballyAccessibleHintSystems => _globallyAccessibleHintSystems;
+
+			public IReadOnlyList<ConstructorInfo> BeamContextAccessibleHintSystems => _beamContextAccessibleHintSystems;
 
 			/// <summary>
 			/// Called to load all <see cref="BeamHintTextMap"/>s in the given <paramref name="hintConfigPaths"/>.
@@ -202,12 +226,91 @@ namespace Beamable.Editor.Reflection
 				_defaultConverterDelegates.Clear();
 			}
 
+			public void OnSetupForCacheGeneration()
+			{
+				ReloadHintTextMapScriptableObjects(BeamEditor.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
+				ReloadHintDetailConfigScriptableObjects(BeamEditor.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
+			}
+
 			public void OnReflectionCacheBuilt(PerBaseTypeCache perBaseTypeCache,
 			                                   PerAttributeCache perAttributeCache) { }
 
 			public void OnBaseTypeOfInterestFound(BaseTypeOfInterest baseType, IReadOnlyList<MemberInfo> cachedSubTypes)
 			{
-				// We Don't actually care about this type --- we care about its members
+				// Handle BeamHint System types.
+				if (baseType.Equals(BEAM_HINT_SYSTEM_TYPE))
+				{
+					var attributes = cachedSubTypes.GetAndValidateAttributeExistence(BEAM_HINT_SYSTEM_ATTRIBUTE,
+					                                                                 info => new AttributeValidationResult(null,
+					                                                                                                       info,
+					                                                                                                       ReflectionCache.ValidationResultType.Warning,
+					                                                                                                       "No Attribute Detected! Assuming it is not a BeamContext system!"));
+
+					attributes.SplitValidationResults(out var valid, out var warning, out var errors);
+
+					if (errors.Count > 0)
+					{
+						_hintStorage.AddOrReplaceHint(BeamHintType.Validation, BeamHintDomains.BEAM_ASSISTANT_CODE_MISUSE, BeamHintIds.ID_MISCONFIGURED_HINT_SYSTEM_ATTRIBUTE, errors);
+					}
+
+					// Get the types of hints based on whether or not they have the attribute (if not, we assume it is a Globally Accessible System
+					var splitByTypeOfHintSystems = valid.Union(warning)
+					                                    .GroupBy(pair =>
+					                                    {
+						                                    var isGloballyAccessibleHintSystem = pair.Pair.Attribute == null || !pair.Pair.AttrAs<BeamHintSystemAttribute>().IsBeamContextSystem;
+						                                    return isGloballyAccessibleHintSystem;
+					                                    });
+
+					// Handle globally accessible hint systems
+					{
+						var globallyAccessibleSystemTypes = splitByTypeOfHintSystems
+						                                    .Where(g => g.Key)
+						                                    .SelectMany(g => g)
+						                                    .ToList();
+
+						var constructors = globallyAccessibleSystemTypes.Select(pair => pair.Pair.Info)
+						                                                .Cast<Type>()
+						                                                .Select(cachedSubType => cachedSubType
+							                                                        .GetConstructor(new Type[] { }))
+						                                                .GroupBy(constructor => constructor != null)
+						                                                .ToList();
+
+						var validConstructors = constructors
+						                        .Where(group => group.Key)
+						                        .SelectMany(g => g)
+						                        .ToList();
+
+						var hintSystems = validConstructors
+						                  .Select(constructor => constructor.Invoke(null))
+						                  .Cast<IBeamHintSystem>();
+						
+						_globallyAccessibleHintSystems.Clear();
+						_globallyAccessibleHintSystems.AddRange(hintSystems);
+					}
+
+					// Handle BeamContext injected hint systems
+					{
+						var beamContextSystemTypes = splitByTypeOfHintSystems
+						                         .Where(g => !g.Key)
+						                         .SelectMany(g => g)
+						                         .ToList();
+
+						// For each type, finds a parameterless constructor --- this is by design. These dependency-less classes that have one or two pure functions (or at least that
+						// only depend on internal state).
+						var constructors = beamContextSystemTypes
+							.Select(res =>
+							{
+								var type = (Type)res.Pair.Info;
+								var maximumNumberOfParametersConstructor = type
+									.GetConstructor(new Type[] { });
+
+								return maximumNumberOfParametersConstructor;
+							});
+
+						// Store the constructor here. These are injected by BeamEditor.ConditionallyRegisterBeamHintsAsServices ONLY while in the editor.
+						_beamContextAccessibleHintSystems.AddRange(constructors);
+					}
+				}
 			}
 
 			public void OnAttributeOfInterestFound(AttributeOfInterest attributeType, IReadOnlyList<MemberAttribute> cachedMemberAttributes)
@@ -294,6 +397,14 @@ namespace Beamable.Editor.Reflection
 					HintTextMap = textMap,
 					ConverterCall = cachedDelegate
 				};
+			}
+
+			/// <summary>
+			/// Gets the first text map that matches the given header. TODO: Replace when we have our in-editor localization solution
+			/// </summary>
+			public BeamHintTextMap GetTextMapForId(BeamHintHeader header)
+			{
+				return _loadedTextMaps.FirstOrDefault(txtMap => txtMap.TryGetHintTitle(header, out _));
 			}
 		}
 

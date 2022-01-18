@@ -2,7 +2,7 @@ using Beamable.Common.Reflection;
 using System;
 using UnityEngine;
 
-namespace Beamable.Editor.Reflection
+namespace Beamable.Reflection
 {
 	/// <summary>
 	/// The base <see cref="ScriptableObject"/> type to wrap around any <see cref="IReflectionSystem"/> that a user may want to piggy-back in our assembly sweep
@@ -10,6 +10,12 @@ namespace Beamable.Editor.Reflection
 	/// </summary>
 	public abstract class ReflectionSystemObject : ScriptableObject
 	{
+		[Tooltip("Used to disable reflection systems from running if you are not going to use them.")]
+		public bool Enabled = true;
+		
+		[Tooltip("Used to sort all reflection systems in ascending order before generating the reflection cache. Lowest value means highest priority.")]
+		public int Priority;
+
 		/// <summary>
 		/// The <see cref="IReflectionSystem"/> instance. There are two common options here:
 		/// <list type="bullet">

@@ -2,6 +2,7 @@ using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
 using Beamable.Editor.Reflection;
 using Beamable.Editor.UI.Model;
+using Beamable.Reflection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,7 +28,7 @@ namespace Beamable.Server.Editor
 			Cache = new Registry();
 		}
 
-		public class Registry : IReflectionSystem, IBeamHintProvider
+		public class Registry : IReflectionSystem
 		{
 			private static readonly BaseTypeOfInterest MICROSERVICE_BASE_TYPE;
 			private static readonly List<BaseTypeOfInterest> BASE_TYPES_OF_INTEREST;
@@ -68,8 +69,13 @@ namespace Beamable.Server.Editor
 				AllDescriptors.Clear();
 			}
 
+			public void OnSetupForCacheGeneration()
+			{
+				// Since we don't require any setup prior to generating the cache, we can skip it.
+			}
+
 			public void OnReflectionCacheBuilt(PerBaseTypeCache perBaseTypeCache,
-			                                PerAttributeCache perAttributeCache)
+			                                   PerAttributeCache perAttributeCache)
 			{
 				// TODO: Display BeamHint of validation type for microservices declared in ignored assemblies.
 			}
