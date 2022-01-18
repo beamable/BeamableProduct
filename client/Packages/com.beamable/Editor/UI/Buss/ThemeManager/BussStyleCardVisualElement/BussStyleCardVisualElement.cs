@@ -51,7 +51,6 @@ namespace Beamable.Editor.UI.Components
 			_variables = Root.Q<VisualElement>("variables");
 			_properties = Root.Q<VisualElement>("properties");
 			_colorBlock = Root.Q<VisualElement>("colorBlock");
-			_colorBlock.EnableInClassList("active", false); // TODO: change this when we change selected BussElement
 
 			_removeButton = Root.Q<VisualElement>("removeButton");
 			_editButton = Root.Q<VisualElement>("editButton");
@@ -61,6 +60,8 @@ namespace Beamable.Editor.UI.Components
 			_addVariableButton = Root.Q<VisualElement>("addVariableButton");
 			_addRuleButton = Root.Q<VisualElement>("addRuleButton");
 			_showAllButton = Root.Q<VisualElement>("showAllButton");
+
+			Selection.selectionChanged += OnSelectionChanged;
 			
 			RegisterButtonActions();
 
@@ -88,6 +89,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			_styleSheet.Change -= Refresh;
 			ClearButtonActions();
+			Selection.selectionChanged -= OnSelectionChanged;
 		}
 
 		private void RegisterButtonActions()
@@ -198,6 +200,20 @@ namespace Beamable.Editor.UI.Components
 				element.Setup(_styleSheet, _styleRule, property, _variableDatabase);
 				(property.IsVariable ? _variables : _properties).Add(element);
 			}
+		}
+
+		private void OnSelectionChanged()
+		{
+			if (_colorBlock == null || Selection.activeGameObject == null) return;
+			
+			var active = false;
+			var bussElement = Selection.activeGameObject.GetComponent<BussElement>();
+			if (bussElement != null && _styleRule.Selector != null)
+			{
+				active = _styleRule.Selector.CheckMatch(bussElement);
+			}
+			
+			_colorBlock.EnableInClassList("active", active);
 		}
 	}
 }
