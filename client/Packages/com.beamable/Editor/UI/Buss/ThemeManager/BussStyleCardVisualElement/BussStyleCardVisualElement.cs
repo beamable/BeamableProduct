@@ -202,6 +202,7 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
+		// TODO: change this, card should be setup/refreshed by it's parent
 		private void OnSelectionChanged()
 		{
 			if (_colorBlock == null || Selection.activeGameObject == null) return;
