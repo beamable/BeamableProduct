@@ -52,6 +52,14 @@
     align-self: center;
 }
 
-/*BussElementHierarchyVisualElement {*/
-/*    flex-grow: 1;*/
-/*}*/
+#filterToggle {
+    align-self: flex-end;
+    margin-bottom: 10px;
+    margin-right: 10px;
+}
+
+#filterToggle Label {
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    -unity-font-style: bold;
+    -unity-text-align: middle-right;
+}

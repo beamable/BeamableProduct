@@ -19,11 +19,17 @@ namespace Beamable.Editor.UI.Components
 	{
 		public event Action HierarchyChanged;
 		public event Action<GameObject> SelectionChanged;
-		
-		protected readonly List<IndentedLabelVisualElement> SpawnedLabels = new List<IndentedLabelVisualElement>();
 
+		private readonly List<IndentedLabelVisualElement> _spawnedLabels = new List<IndentedLabelVisualElement>();
 		private ScrollView _hierarchyContainer;
+		private IndentedLabelVisualElement _selectedLabel;
 
+		public T SelectedComponent
+		{
+			get;
+			protected set;
+		}
+		
 		private IndentedLabelVisualElement SelectedLabel
 		{
 			get => _selectedLabel;
@@ -43,9 +49,6 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
-		private IndentedLabelVisualElement _selectedLabel;
-		
-		
 #if UNITY_2018
 		protected ComponentBasedHierarchyVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement.2018.uss") { }
@@ -79,7 +82,18 @@ namespace Beamable.Editor.UI.Components
 			OnHierarchyChanged();
 		}
 
-		protected abstract void OnSelectionChanged();
+		protected void OnSelectionChanged()
+		{
+			IndentedLabelVisualElement indentedLabelVisualElement =
+				_spawnedLabels.Find(label => label.RelatedGameObject == Selection.activeGameObject);
+
+			if (indentedLabelVisualElement != null)
+			{
+				SelectedComponent = indentedLabelVisualElement.RelatedGameObject.GetComponent<T>(); 
+				ChangeSelectedLabel(indentedLabelVisualElement, false);
+			}
+		}
+		
 		protected abstract void OnObjectRegistered(T registeredObject);
 
 		protected virtual string GetLabel(T component)
@@ -106,12 +120,12 @@ namespace Beamable.Editor.UI.Components
 
 		protected virtual void OnHierarchyChanged()
 		{
-			foreach (IndentedLabelVisualElement child in SpawnedLabels)
+			foreach (IndentedLabelVisualElement child in _spawnedLabels)
 			{
 				child.Destroy();
 			}
 
-			SpawnedLabels.Clear();
+			_spawnedLabels.Clear();
 			_hierarchyContainer.Clear();
 
 			foreach (Object foundObject in Object.FindObjectsOfType(typeof(GameObject)))
@@ -141,7 +155,7 @@ namespace Beamable.Editor.UI.Components
 				label.Setup(foundComponent.gameObject, GetLabel(foundComponent), OnMouseClicked,
 				            currentLevel, IndentedLabelVisualElement.DEFAULT_SINGLE_INDENT_WIDTH);
 				label.Refresh();
-				SpawnedLabels.Add(label);
+				_spawnedLabels.Add(label);
 				_hierarchyContainer.Add(label);
 				
 				OnObjectRegistered(foundComponent);

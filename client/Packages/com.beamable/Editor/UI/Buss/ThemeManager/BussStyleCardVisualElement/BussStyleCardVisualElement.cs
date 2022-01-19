@@ -5,6 +5,7 @@ using Beamable.UI.Buss;
 using Editor.UI.BUSS.ThemeManager;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Experimental.UIElements.StyleSheets;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -36,8 +37,13 @@ namespace Beamable.Editor.UI.Components
 
 		private VariableDatabase _variableDatabase;
 		private BussStyleSheet _styleSheet;
-		private BussStyleRule _styleRule;
 		private BussElementHierarchyVisualElement _navigationWindow;
+
+		public BussStyleRule StyleRule
+		{
+			get;
+			private set;
+		}
 
 		public BussStyleCardVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}") { }
@@ -71,7 +77,7 @@ namespace Beamable.Editor.UI.Components
 			_styleSheet.Change -= Refresh;
 			_styleSheet.Change += Refresh;
 
-			_removeButton.SetVisibility(_styleRule.EditMode);
+			_removeButton.SetHidden(!StyleRule.EditMode);
 		}
 
 		public void Setup(BussStyleSheet styleSheet,
@@ -80,7 +86,7 @@ namespace Beamable.Editor.UI.Components
 		                  BussElementHierarchyVisualElement navigationWindow)
 		{
 			_styleSheet = styleSheet;
-			_styleRule = styleRule;
+			StyleRule = styleRule;
 			_variableDatabase = variableDatabase;
 			_navigationWindow = navigationWindow;
 
@@ -128,14 +134,14 @@ namespace Beamable.Editor.UI.Components
 
 		private void RemoveButtonClicked(MouseDownEvent evt)
 		{
-			_styleSheet.RemoveStyle(_styleRule);
+			_styleSheet.RemoveStyle(StyleRule);
 			AssetDatabase.SaveAssets();
 		}
 
 		private void AddRuleButtonClicked(MouseDownEvent evt)
 		{
 			var keys = new HashSet<string>();
-			foreach (var propertyProvider in _styleRule.Properties)
+			foreach (var propertyProvider in StyleRule.Properties)
 			{
 				keys.Add(propertyProvider.Key);
 			}
@@ -147,7 +153,7 @@ namespace Beamable.Editor.UI.Components
 				if (keys.Contains(key)) continue;
 				context.AddItem(new GUIContent(key), false, () =>
 				{
-					_styleRule.Properties.Add(
+					StyleRule.Properties.Add(
 						BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty()));
 					AssetDatabase.SaveAssets();
 					_styleSheet.TriggerChange();
@@ -162,7 +168,7 @@ namespace Beamable.Editor.UI.Components
 			var window = NewVariableWindow.ShowWindow();
 			window?.Init((key, property) =>
 			{
-				_styleRule.TryAddProperty(key, property, out _);
+				StyleRule.TryAddProperty(key, property, out _);
 				AssetDatabase.SaveAssets();
 				_styleSheet.TriggerChange();
 			});
@@ -185,7 +191,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void EditButtonClicked(MouseDownEvent evt)
 		{
-			_styleRule.EditMode = !_styleRule.EditMode;
+			StyleRule.EditMode = !StyleRule.EditMode;
 			Refresh();
 		}
 
@@ -200,16 +206,16 @@ namespace Beamable.Editor.UI.Components
 			_selectorLabelParent.Clear();
 
 			_selectorLabelComponent = new BussSelectorLabelVisualElement();
-			_selectorLabelComponent.Setup(_styleRule);
+			_selectorLabelComponent.Setup(StyleRule);
 			_selectorLabelParent.Add(_selectorLabelComponent);
 		}
 
 		private void CreateProperties()
 		{
-			foreach (BussPropertyProvider property in _styleRule.Properties)
+			foreach (BussPropertyProvider property in StyleRule.Properties)
 			{
 				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
-				element.Setup(_styleSheet, _styleRule, property, _variableDatabase);
+				element.Setup(_styleSheet, StyleRule, property, _variableDatabase);
 				(property.IsVariable ? _variables : _properties).Add(element);
 			}
 		}
@@ -221,9 +227,9 @@ namespace Beamable.Editor.UI.Components
 
 			var active = false;
 			var bussElement = gameObject.GetComponent<BussElement>();
-			if (bussElement != null && _styleRule.Selector != null)
+			if (bussElement != null && StyleRule.Selector != null)
 			{
-				active = _styleRule.Selector.CheckMatch(bussElement);
+				active = StyleRule.Selector.CheckMatch(bussElement);
 			}
 
 			_colorBlock.EnableInClassList("active", active);
