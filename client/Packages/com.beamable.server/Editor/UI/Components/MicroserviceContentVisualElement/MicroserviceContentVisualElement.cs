@@ -153,10 +153,10 @@ namespace Beamable.Editor.Microservice.UI.Components
                 mongoService.OnSelectionChanged += b =>
                     OnAllServiceSelectedStatusChanged?.Invoke(Model.Storages.All(m => m.IsSelected));
 
-				mongoService.OnSortChanged -= SortMicroservices;
-				mongoService.OnSortChanged += SortMicroservices;
+                mongoService.OnSortChanged -= SortMicroservices;
+                mongoService.OnSortChanged += SortMicroservices;
 
-				return mongoServiceElement;
+                return mongoServiceElement;
 
             }
 
@@ -262,7 +262,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             _servicesListElement.Sort(Comparer);
         }
 
-		private bool ShouldDisplayService(ServiceType type)
+        private bool ShouldDisplayService(ServiceType type)
         {
 	        switch (Model.Filter)
 	        {
@@ -328,11 +328,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 				        hasStorageDependency |= val;
 				        break;
 			        case ServiceType.StorageObject:
-						if (serviceStatus.Value != ServiceAvailability.RemoteOnly)
-							serviceElement = GetStorageObjectVisualElement(serviceStatus.Key);
-						else
-							serviceElement = GetRemoteStorageObjectVisualElement(serviceStatus.Key);
-						break;
+				        if (serviceStatus.Value != ServiceAvailability.RemoteOnly)
+					        serviceElement = GetStorageObjectVisualElement(serviceStatus.Key);
+				        else
+					        serviceElement = GetRemoteStorageObjectVisualElement(serviceStatus.Key);
+				        break;
 			        default:
 				        throw new ArgumentOutOfRangeException();
 		        }
