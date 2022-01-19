@@ -543,6 +543,7 @@ namespace Beamable.Server.Editor
          var existingServiceToState = existingManifest.manifest.ToDictionary(s => s.serviceName);
 
          var nameToImageId = new Dictionary<string, string>();
+		 var enabledServices = new List<string>();
 
          foreach (var descriptor in Descriptors)
          {
@@ -597,6 +598,9 @@ namespace Beamable.Server.Editor
             var serviceDependencies = new List<ServiceDependency>();
             foreach (var storage in descriptor.GetStorageReferences())
             {
+				if (!enabledServices.Contains(storage.Name))
+					enabledServices.Add(storage.Name);
+
                 serviceDependencies.Add(new ServiceDependency
                 {
                     id = storage.Name,
@@ -642,7 +646,8 @@ namespace Beamable.Server.Editor
 
          var storages = model.Storages.Select(kvp =>
          {
-             return new ServiceStorageReference
+			 kvp.Value.Enabled &= enabledServices.Contains(kvp.Value.Name);
+			 return new ServiceStorageReference
              {
                  id = kvp.Value.Name,
                  storageType = kvp.Value.Type,
