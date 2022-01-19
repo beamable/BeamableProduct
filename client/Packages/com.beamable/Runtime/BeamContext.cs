@@ -582,12 +582,12 @@ namespace Beamable
 			IDependencyBuilder dependencyBuilder=null
 			)
 		{
+			dependencyBuilder = dependencyBuilder ?? Beam.DependencyBuilder;
 			playerCode = playerCode ?? "";
 			// get the cid & pid if not given
 			var cid = ConfigDatabase.GetString("cid");
 			var pid = ConfigDatabase.GetString("pid");
 
-			dependencyBuilder = dependencyBuilder ?? Beam.DependencyBuilder;
 			// there should only be one context per playerCode.
 			if (_playerCodeToContext.TryGetValue(playerCode, out var existingContext))
 			{
