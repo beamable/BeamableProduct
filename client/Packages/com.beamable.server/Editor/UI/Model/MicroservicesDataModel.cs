@@ -183,7 +183,7 @@ namespace Beamable.Editor.UI.Model
 
 	  public ServiceStorageReference GetStorageReference(StorageObjectDescriptor descriptor)
       {
-         return ServerManifest?.storages?.FirstOrDefault(r => r.id.Equals(descriptor.Name));
+         return ServerManifest?.storageReference?.FirstOrDefault(r => r.id.Equals(descriptor.Name));
       }
 
       public ServiceType GetModelServiceType(string name)
