@@ -25,17 +25,17 @@ namespace Beamable.Editor.UI.Model
     [System.Serializable]
     public class MongoStorageModel : ServiceModelBase, IBeamableStorageObject
     {
-		public ServiceStorageReference RemoteReference { get; protected set; }
-		public StorageObjectDescriptor ServiceDescriptor { get; protected set; }
+        public ServiceStorageReference RemoteReference { get; protected set; }
+        public StorageObjectDescriptor ServiceDescriptor { get; protected set; }
         public MongoStorageBuilder ServiceBuilder { get; protected set; }
         public override IBeamableBuilder Builder => ServiceBuilder;
         public override IDescriptor Descriptor => ServiceDescriptor;
         public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
         public StorageConfigurationEntry Config { get; protected set; }
 
-		public Action<ServiceStorageReference> OnRemoteReferenceEnriched;
+        public Action<ServiceStorageReference> OnRemoteReferenceEnriched;
 
-		public override event Action<Task> OnStart;
+        public override event Action<Task> OnStart;
         public override event Action<Task> OnStop;
         
         public static MongoStorageModel CreateNew(StorageObjectDescriptor descriptor, MicroservicesDataModel dataModel)
@@ -63,11 +63,11 @@ namespace Beamable.Editor.UI.Model
             return task;
         }
 
-		public void EnrichWithRemoteReference(ServiceStorageReference remoteReference)
-		{
-			RemoteReference = remoteReference;
-			OnRemoteReferenceEnriched?.Invoke(remoteReference);
-		}
+        public void EnrichWithRemoteReference(ServiceStorageReference remoteReference)
+        {
+            RemoteReference = remoteReference;
+            OnRemoteReferenceEnriched?.Invoke(remoteReference);
+        }
 
 		public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
         {
@@ -80,17 +80,17 @@ namespace Beamable.Editor.UI.Model
             evt.menu.BeamableAppendAction($"Download a snapshot", _ => AssemblyDefinitionHelper.RestoreMongo(ServiceDescriptor));
             evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());
 
-			if (MicroserviceConfiguration.Instance.Microservices.Count > 1)
-			{
-				evt.menu.BeamableAppendAction($"Order/Move Up", pos => {
+            if (MicroserviceConfiguration.Instance.Microservices.Count > 1)
+            {
+                evt.menu.BeamableAppendAction($"Order/Move Up", pos => {
 					MicroserviceConfiguration.Instance.MoveIndex(Name, -1, ServiceType.StorageObject);
 					OnSortChanged?.Invoke();
-				}, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.StorageObject) > 0);
-				evt.menu.BeamableAppendAction($"Order/Move Down", pos => {
+                }, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.StorageObject) > 0);
+                evt.menu.BeamableAppendAction($"Order/Move Down", pos => {
 					MicroserviceConfiguration.Instance.MoveIndex(Name, 1, ServiceType.StorageObject);
 					OnSortChanged?.Invoke();
-				}, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.StorageObject) < MicroserviceConfiguration.Instance.StorageObjects.Count - 1);
-			}
+                }, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.StorageObject) < MicroserviceConfiguration.Instance.StorageObjects.Count - 1);
+            }
 		}
         public override void Refresh(IDescriptor descriptor)
         {
