@@ -53,17 +53,33 @@ MonoBehaviour:
     Enabled: 1
     TemplateId: small
     CustomDockerFileStrings: 
-    IncludeDebugTools: 1
+    IncludeDebugTools: 0
     DebugData:
       Username: root
       Password: Password!
       SshPort: 11104
-  StorageObjects: []
+  StorageObjects:
+  - StorageName: AliveStorage
+    StorageType: mongov1
+    Enabled: 1
+    TemplateId: small
+    LocalDataPort: 12100
+    LocalUIPort: 13100
+    LocalInitUser: beamable
+    LocalInitPass: beamable
+  - StorageName: DerpStorage
+    StorageType: mongov1
+    Enabled: 0
+    TemplateId: small
+    LocalDataPort: 12101
+    LocalUIPort: 13101
+    LocalInitUser: beamable
+    LocalInitPass: beamable
   CustomContainerPrefix: 
   AutoReferenceContent: 0
   ColorLogs: 0
   EnableDockerBuildkit: 0
-  EnableStoragePreview: 0
+  DockerAppCheckInMicroservicesWindow: 1
   DockerCommand: 
   ForwardContainerLogsToUnityConsole: 1
   LogProcessLabelColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
