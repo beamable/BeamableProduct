@@ -114,8 +114,14 @@ namespace Beamable.Editor.UI.Model
                   var remoteService = manifest.manifest.FirstOrDefault(remote => string.Equals(remote.serviceName, service.Name));
                   service.EnrichWithRemoteReference(remoteService);
                }
-    
-               foreach(var singleManifest in ServerManifest.manifest)
+
+               foreach (var storage in Storages)
+               {
+                  var remoteStorage = manifest.storageReference.FirstOrDefault(remote => string.Equals(remote.id, storage.Name));
+                  storage.EnrichWithRemoteReference(remoteStorage);
+               }
+
+               foreach (var singleManifest in ServerManifest.manifest)
                {
                   if (ContainsRemoteOnlyModel(singleManifest.serviceName))
                         continue;

@@ -33,7 +33,9 @@ namespace Beamable.Editor.UI.Model
         public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
         public StorageConfigurationEntry Config { get; protected set; }
 
-        public override event Action<Task> OnStart;
+		public Action<ServiceStorageReference> OnRemoteReferenceEnriched;
+
+		public override event Action<Task> OnStart;
         public override event Action<Task> OnStop;
         
         public static MongoStorageModel CreateNew(StorageObjectDescriptor descriptor, MicroservicesDataModel dataModel)
@@ -60,7 +62,14 @@ namespace Beamable.Editor.UI.Model
             OnStop?.Invoke(task);
             return task;
         }
-        public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
+
+		public void EnrichWithRemoteReference(ServiceStorageReference remoteReference)
+		{
+			RemoteReference = remoteReference;
+			OnRemoteReferenceEnriched?.Invoke(remoteReference);
+		}
+
+		public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
         {
             // TODO - Implement copy connection strings
             

@@ -28,7 +28,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         private MongoStorageModel _mongoStorageModel;
 
-        protected override void UpdateStatusIcon()
+		protected override void UpdateVisualElements()
+		{
+			base.UpdateVisualElements();
+			_mongoStorageModel.OnRemoteReferenceEnriched -= OnServiceReferenceChanged;
+			_mongoStorageModel.OnRemoteReferenceEnriched += OnServiceReferenceChanged;
+		}
+
+		protected override void UpdateStatusIcon()
         {
             _statusIcon.ClearClassList();
 
@@ -55,7 +62,13 @@ namespace Beamable.Editor.Microservice.UI.Components
             _statusIcon.tooltip = _statusLabel.text = statusText;
             _statusIcon.AddToClassList(statusClassName);
         }
-        protected override void UpdateRemoteStatusIcon()
+
+		private void OnServiceReferenceChanged(ServiceStorageReference serviceReference)
+		{
+			UpdateRemoteStatusIcon();
+		}
+
+		protected override void UpdateRemoteStatusIcon()
         {
 			_remoteStatusIcon.ClearClassList();
 			string statusClassName;
