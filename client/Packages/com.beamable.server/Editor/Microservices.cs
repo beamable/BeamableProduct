@@ -1,10 +1,10 @@
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
-using Beamable.Server;
 using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Server.Editor.CodeGen;
@@ -21,8 +21,6 @@ using System.Threading;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
-using Task = UnityEditor.VersionControl.Task;
 
 namespace Beamable.Server.Editor
 {
@@ -34,6 +32,14 @@ namespace Beamable.Server.Editor
 
       private static List<MicroserviceDescriptor> _descriptors = null;
       private static List<IDescriptor> _allDescriptors = null;
+
+      private static MicroserviceReflectionCache _MicroserviceReflectionCacheObj;
+
+      static Microservices()
+      {
+	      _MicroserviceReflectionCacheObj = AssetDatabase.LoadAssetAtPath<MicroserviceReflectionCache>("Packages/com.beamable.server/Editor/ReflectionCache/UserSystems/MicroserviceReflectionCache.asset");
+      }
+      
       public static List<IDescriptor> AllDescriptors
       {
          get
@@ -101,23 +107,6 @@ namespace Beamable.Server.Editor
             {
                foreach (var type in assembly.GetTypes())
                {
-                  if (TryGetAttribute<MicroserviceAttribute, Microservice>(type, out var serviceAttribute))
-                  {
-                     if (serviceAttribute.MicroserviceName.ToLower().Equals("xxxx"))
-                     {
-                        continue; // TODO: XXX this is a hacky way to ignore the default microservice...
-                     }
-                     var descriptor = new MicroserviceDescriptor
-                     {
-                        Name = serviceAttribute.MicroserviceName,
-                        Type = type,
-                        AttributePath = serviceAttribute.GetSourcePath(),
-                        Methods = GetClientCallables(type)
-                     };
-                     _descriptors.Add(descriptor);
-                     _allDescriptors.Add(descriptor);
-                  }
-
                   if (TryGetAttribute<StorageObjectAttribute, StorageObject>(type, out var storageAttribute))
                   {
                      if (storageAttribute.StorageName.ToLower().Equals("xxxx"))
@@ -133,7 +122,6 @@ namespace Beamable.Server.Editor
                      _storageDescriptors.Add(descriptor);
                      _allDescriptors.Add(descriptor);
                   }
-
                }
             }
             catch (Exception)
@@ -141,6 +129,10 @@ namespace Beamable.Server.Editor
                continue; // ignore anything that doesn't have a Location property..
             }
          }
+
+         _descriptors = _MicroserviceReflectionCacheObj.Cache.Descriptors;
+         _allDescriptors.AddRange(_descriptors);
+
       }
 
       public static List<MicroserviceDescriptor> ListMicroservices()
@@ -149,69 +141,32 @@ namespace Beamable.Server.Editor
          return _descriptors;
       }
 
-      private static List<ClientCallableDescriptor> GetClientCallables(Type serviceType)
-      {
-         var methods = serviceType.GetMethods(BindingFlags.Instance | BindingFlags.Public);
-         var output = new List<ClientCallableDescriptor>();
-         foreach (var method in methods)
-         {
-            var attr = method.GetCustomAttribute<ClientCallableAttribute>();
-            if (attr == null) continue;
-
-            var parameters = new List<ClientCallableParameterDescriptor>();
-            var methodParameters = method.GetParameters();
-            for (var i = 0; i < methodParameters.Length; i++)
-            {
-               var param = methodParameters[i];
-               var paramAttr = param.GetCustomAttribute<ParameterAttribute>();
-               var paramName = string.IsNullOrEmpty(paramAttr?.ParameterNameOverride)
-                  ? param.Name
-                  : paramAttr.ParameterNameOverride;
-               parameters.Add(new ClientCallableParameterDescriptor
-               {
-                  Name = paramName,
-                  Index = i,
-                  Type = param.ParameterType
-               });
-            }
-
-            output.Add(new ClientCallableDescriptor
-            {
-               Path = string.IsNullOrEmpty(attr.PathName) ? method.Name : attr.PathName,
-               Scopes = attr.RequiredScopes,
-               Parameters = parameters.ToArray(),
-            });
-         }
-
-         return output;
-      }
-
       [DidReloadScripts]
       static void WatchMicroserviceFiles()
       {
          foreach (var service in ListMicroservices())
          {
             GenerateClientSourceCode(service);
-            System.Threading.Tasks.Task.Factory.StartNew(() =>
+            Task.Factory.StartNew(() =>
             {
-	            Directory.CreateDirectory(service.SourcePath);
-               using (var fsw = new FileSystemWatcher(service.SourcePath))
-               {
-                  fsw.IncludeSubdirectories = false;
-                  fsw.NotifyFilter = NotifyFilters.LastWrite;
-                  fsw.Filter = "*.cs";
+            	Directory.CreateDirectory(service.SourcePath);
+	            using (var fsw = new FileSystemWatcher(service.SourcePath))
+	            {
+		            fsw.IncludeSubdirectories = false;
+		            fsw.NotifyFilter = NotifyFilters.LastWrite;
+		            fsw.Filter = "*.cs";
 
-                  fsw.Changed += (sender, args) =>
-                  {
-                     GenerateClientSourceCode(service);
-                  };
-                  fsw.Deleted += (sender, args) =>
-                  {
-                     /* TODO: Delete the generated client? */
-                  };
+		            fsw.Changed += (sender, args) =>
+		            {
+			            GenerateClientSourceCode(service);
+		            };
+		            fsw.Deleted += (sender, args) =>
+		            {
+			            /* TODO: Delete the generated client? */
+		            };
 
-                  fsw.EnableRaisingEvents = true;
-               }
+		            fsw.EnableRaisingEvents = true;
+	            }
             });
          }
       }
@@ -519,7 +474,7 @@ namespace Beamable.Server.Editor
       public static event Action<ManifestModel, int> OnBeforeDeploy;
       public static event Action<ManifestModel, int> OnDeploySuccess;
       public static event Action<ManifestModel, string> OnDeployFailed;
-      public static event Action<IDescriptor, ServicePublishState> OnServiceDeployStatusChanged;
+      public static event Action<IDescriptor, ServicePublishState> OnServiceDeployStatusChanged;	
       public static event Action<IDescriptor> OnServiceDeployProgress;
 
       public static async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context, CancellationToken token, Action<IDescriptor> onServiceDeployed = null)
@@ -545,7 +500,7 @@ namespace Beamable.Server.Editor
          var nameToImageId = new Dictionary<string, string>();
 
          foreach (var descriptor in Descriptors)
-         {
+         { 
 	         OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.InProgress);
             Debug.Log($"Building service=[{descriptor.Name}]");
             var buildCommand = new BuildImageCommand(descriptor, false);
@@ -571,7 +526,7 @@ namespace Beamable.Server.Editor
             var msModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(descriptor);
             uploader.onProgress += msModel.OnDeployProgress;
             uploader.onProgress +=(_, __, ___) => OnServiceDeployProgress?.Invoke(descriptor);
-
+            
             Debug.Log($"Getting Id service=[{descriptor.Name}]");
             var imageId = await uploader.GetImageId(descriptor);
             if (string.IsNullOrEmpty(imageId))

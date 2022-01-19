@@ -1,0 +1,5 @@
+
+.wrapLine {
+    white-space: normal;
+    -unity-word-wrap: true;
+}

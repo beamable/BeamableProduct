@@ -27,11 +27,19 @@ namespace Beamable.Editor.UI.Model
         [SerializeField]
         private MicroserviceDescriptor _serviceDescriptor;
 
-        public MicroserviceDescriptor ServiceDescriptor
-        {
-            get => _serviceDescriptor;
-            set => _serviceDescriptor = value;
+        [SerializeField]
+        private string _assemblyQualifiedMicroserviceTypeName;
+        public MicroserviceDescriptor ServiceDescriptor {
+	        get => _serviceDescriptor;
+	        set 
+	        {
+		        _serviceDescriptor = value;
+		        if (_serviceDescriptor.Type != null)
+			        _assemblyQualifiedMicroserviceTypeName = _serviceDescriptor.Type.AssemblyQualifiedName;
+	        }
         }
+
+        public string AssemblyQualifiedMicroserviceTypeName => _assemblyQualifiedMicroserviceTypeName;
 
         public MicroserviceBuilder ServiceBuilder { get; protected set; }
         public override IBeamableBuilder Builder => ServiceBuilder;

@@ -30,6 +30,8 @@ namespace Beamable.Server.Editor
       public string ContainerName => $"{Name}_container";
       public string ImageName => Name.ToLower();
       public ServiceType ServiceType => ServiceType.MicroService;
+      public bool HasValidationError { get; set; }
+      public bool HasValidationWarning { get; set; }
 
       public bool IsPublishFeatureDisabled()
       {

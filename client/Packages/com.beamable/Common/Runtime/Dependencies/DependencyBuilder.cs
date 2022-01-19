@@ -1,4 +1,5 @@
 
+using Beamable.Common.Assistant;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -274,6 +275,16 @@ namespace Beamable.Common.Dependencies
 		IDependencyBuilder AddSingleton<T>(Func<T> factory);
 
 		/// <summary>
+		/// Add a singleton service to the <see cref="IDependencyBuilder"/>. This overload allows for you to add batches of concrete service implementations
+		/// that are tied to their concrete implementation dynamically (without knowing them at compilation-time).
+		/// </summary>
+		/// <param name="registeredType">The service is added tied to this type. Once the services are built, use this type to retrieve it.</param>
+		/// <param name="factory">A function  that produces an instance of <paramref name="registeredType"/>. This type must inherit from <typeparamref name="T"/>.</param>
+		/// <typeparam name="T">A parent type of <paramref name="registeredType"/>.</typeparam>
+		/// <returns>The same instance of <see cref="IDependencyBuilder"/> so that you can chain methods together.</returns>
+		IDependencyBuilder AddSingleton<T>(Type registeredType, Func<T> factory);
+
+		/// <summary>
 		/// Add a singleton service to the <see cref="IDependencyBuilder"/>.
 		/// <para>
 		/// A singleton service will be instantiated once, and the same instance will be requested from <see cref="IDependencyProvider.GetService"/>.
@@ -437,6 +448,17 @@ namespace Beamable.Common.Dependencies
 			});
 			return this;
 		}
+		
+		public IDependencyBuilder AddSingleton<T>(Type registeringType, Func<T> factory)
+		{
+			System.Diagnostics.Debug.Assert(typeof(T).IsAssignableFrom(registeringType), $"RegisteringType [{registeringType.Name}] does not implement/inherit from [{typeof(T).Name}]!");
+			SingletonServices.Add(new ServiceDescriptor {
+				Interface = registeringType,
+				Implementation = registeringType,
+				Factory = (provider) => factory()
+			});
+			return this;
+		}
 
 		public IDependencyBuilder AddSingleton<TInterface, TImpl>(Func<TInterface> factory) where TImpl : TInterface =>
 			AddSingleton<TInterface, TImpl>(_ => factory());
@@ -463,8 +485,12 @@ namespace Beamable.Common.Dependencies
 
 		private object Instantiate(Type type, IDependencyProvider provider)
 		{
-			// TODO: XXX: This only works for the first constructor; really it should scan for the first constructor it can match
-			var cons = type.GetConstructors().FirstOrDefault();
+			// Gets all constructors
+			var constructors = type.GetConstructors();
+			
+			// TODO: XXX: This only works for the largest constructor (the one with the most dependencies); really it should scan for the constructor it can match with the most dependencies
+			// Currently, we just get the constructor with the most parameters
+			var cons = constructors.Aggregate((c1, c2) => c1.GetParameters().Length.CompareTo(c2.GetParameters().Length) > 0 ? c1 : c2);
 			if (cons == null)
 				throw new Exception(
 					$"Cannot create {type.Name} via automatic reflection with Dependency Injection. There isn't a single constructor found.");
