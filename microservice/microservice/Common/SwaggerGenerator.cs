@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Beamable.Common;
 using Beamable.Server;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Extensions;
@@ -64,7 +65,7 @@ namespace microservice.Common
 
       private static string GetJsonTypeName(Type type)
       {
-         if (type.IsArray || type.IsAssignableFrom(typeof(IList)))
+         if (type.IsArray || typeof(IList).IsAssignableFrom(type))
          {
             return ARRAY;
          }
@@ -94,7 +95,7 @@ namespace microservice.Common
       {
          return new List<OpenApiTag> { new OpenApiTag {Name = method.Tag} };
       }
-      
+
       private static OpenApiPathItem GeneratePathItem(ServiceMethod method)
       {
          var pathItem = new OpenApiPathItem();
@@ -264,12 +265,9 @@ namespace microservice.Common
          var jsonType = GetJsonTypeName(type);
          var schema = new OpenApiSchema
          {
-            Title = type.Name,
+            Title = type.GetTypeString(),
             Type = jsonType
          };
-
-         if (type.IsGenericType)
-            schema.Title =  $"{type.GetGenericTypeDefinition().Name.ToUpper()}<{GetJsonTypeName(type.GetGenericArguments()[0])}";
 
          void HandleArray()
          {
@@ -309,7 +307,7 @@ namespace microservice.Common
 
          return schema;
       }
-      
+
       public static OpenApiDocument GenerateDocument(BeamableMicroService service)
       {
          if (_serviceToDoc.TryGetValue(service, out var existing))
@@ -318,9 +316,15 @@ namespace microservice.Common
          }
 
          var paths = GeneratePaths(service.ServiceMethods.Methods);
-         var schemas = _typeToSchema.ToDictionary(
-            kvp => kvp.Value.Title,
-            kvp => kvp.Value);
+         Dictionary<string, OpenApiSchema> schemas = new Dictionary<string, OpenApiSchema>();
+         foreach (var kvp in _typeToSchema)
+         {
+            var key = kvp.Value.Title;
+            if (!schemas.ContainsKey(key))
+            {
+               schemas.Add(key, kvp.Value);
+            }
+         }
          var document = new OpenApiDocument
          {
             Info = new OpenApiInfo
