@@ -88,7 +88,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
 			_checkbox.Refresh();
-			_checkbox.SetWithoutNotify(Model.Enabled);
+			_checkbox.SetWithoutNotify(!IsRemoteOnly && Model.Enabled);
 			_checkbox.OnValueChanged += b => Model.Enabled = b;
 
 			_sizeDropdown = Root.Q<DropdownVisualElement>("sizeDropdown");
@@ -128,12 +128,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				icon.AddToClassList(STORAGE_IMAGE_CLASS);
 			}
 
-			UpdateStatus(_wasPublished ? ServicePublishState.Published : ServicePublishState.Unpublished);
-			if (IsRemoteOnly)
-			{
-				SetEnabled(false);
-				Root.tooltip = "Service is available on remote but is not present in local environment.";
-			}
+			SetEnabled(!IsRemoteOnly);
 		}
 
 		public void HandlePublishStarted()
@@ -150,15 +145,19 @@ namespace Beamable.Editor.Microservice.UI.Components
 			if (state == PublishState)
 				return;
 			PublishState = state;
+			if (state != ServicePublishState.Unpublished)
+			{
+				_checkImage.tooltip = state.ToString();
+			}
 			if (state == ServicePublishState.Failed)
 			{
 				_loadingBar.UpdateProgress(0, failed: true);
 				return;
 			}
 
-			_checkImage.RemoveFromClassList(_currentPublishState);
+			RemoveFromClassList(_currentPublishState);
 			_currentPublishState = CheckImageClasses[state];
-			_checkImage.AddToClassList(_currentPublishState);
+			AddToClassList(_currentPublishState);
 		}
 
 		public int CompareTo(PublishManifestEntryVisualElement other)
