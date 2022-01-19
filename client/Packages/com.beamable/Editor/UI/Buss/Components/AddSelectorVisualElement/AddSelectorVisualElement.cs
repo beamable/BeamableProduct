@@ -21,9 +21,12 @@ namespace Beamable.Editor.Toolbox.Components
 {
 	public class AddSelectorVisualElement : BeamableVisualElement
 	{
-		public AddSelectorVisualElement() : base(
+		private Action<BussStyleRule> _onSelectorAdded;
+		
+		public AddSelectorVisualElement(Action<BussStyleRule> onSelectorAdded) : base(
 			$"{BeamableComponentsConstants.BUSS_COMPONENTS_PATH}/{nameof(AddSelectorVisualElement)}/{nameof(AddSelectorVisualElement)}")
 		{
+			_onSelectorAdded = onSelectorAdded;
 		}
 
 		private LabeledTextField _selectorName;
@@ -52,7 +55,7 @@ namespace Beamable.Editor.Toolbox.Components
 			var cancelButton = Root.Q<GenericButtonVisualElement>("cancelButton");
 			cancelButton.OnClick += AddSelectorWindow.CloseWindow;
 			
-			var styleSheets = Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[] {"Assets"}).ToList();
+			var styleSheets = Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[] {"Assets"});
 			var selectStyleSheet = Root.Q<LabeledDropdownVisualElement>("selectStyleSheet");
 			selectStyleSheet.Setup(styleSheets.Select(x => x.name).ToList(), index =>
 			{
@@ -89,7 +92,9 @@ namespace Beamable.Editor.Toolbox.Components
 				rules.Add(BussPropertyProvider.Create(kvp.Key, BussStyle.GetDefaultValue(kvp.Key).CopyProperty()));
 			}
 
-			_currentSelectedStyleSheet.Styles.Add(BussStyleRule.Create(_selectorName.Value, rules));
+			var selector = BussStyleRule.Create(_selectorName.Value, rules);
+			_currentSelectedStyleSheet.Styles.Add(selector);
+			_onSelectorAdded?.Invoke(selector);
 			AssetDatabase.SaveAssets();
 			AddSelectorWindow.CloseWindow();
 		}

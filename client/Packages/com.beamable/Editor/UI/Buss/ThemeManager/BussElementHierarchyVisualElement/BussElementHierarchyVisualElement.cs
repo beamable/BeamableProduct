@@ -1,5 +1,6 @@
 ﻿using Beamable.UI.Buss;
 using System.Collections.Generic;
+using Beamable.Editor.UI.Buss;
 using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -20,18 +21,14 @@ namespace Beamable.Editor.UI.Components
 
 		protected override string GetLabel(BussElement component)
 		{
-			return string.IsNullOrWhiteSpace(component.Id) ? component.name : component.Id;
-		}
+			var label = string.IsNullOrWhiteSpace(component.Id) ? component.name : BussNameUtility.AsIdSelector(component.Id);
 
-		protected override void OnSelectionChanged()
-		{
-			IndentedLabelVisualElement indentedLabelVisualElement =
-				SpawnedLabels.Find(label => label.RelatedGameObject == Selection.activeGameObject);
-
-			if (indentedLabelVisualElement != null)
+			foreach (string className in component.Classes)
 			{
-				ChangeSelectedLabel(indentedLabelVisualElement, false);
+				label += " " + BussNameUtility.AsClassSelector(className);
 			}
+
+			return label;
 		}
 
 		protected override void OnObjectRegistered(BussElement registeredObject)

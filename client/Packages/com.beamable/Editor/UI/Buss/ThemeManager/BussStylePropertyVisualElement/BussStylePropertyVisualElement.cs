@@ -48,7 +48,7 @@ namespace Beamable.Editor.UI.Components
 			Root.Add(buttonContainer);
 
 			_removeButton.RegisterCallback<MouseDownEvent>(OnRemoveButtonClicked);
-			buttonContainer.SetVisibility(_styleRule.EditMode);
+			buttonContainer.SetHidden(!_styleRule.EditMode);
 
 			_labelComponent = new TextElement();
 			_labelComponent.name = "propertyLabel";
