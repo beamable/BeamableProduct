@@ -22,14 +22,14 @@ jobs:
         id: branch-name
         uses: tj-actions/branch-names@v5.1
       - name: "Install dotnet-format"
-        run: dotnet tool install -g dotnet-format
+        run: dotnet tool install --global --version 5.1.250801 dotnet-format
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v11.7
         with:
           files: |
             .cs$
-      - name: Format changed cs files
+      - name: Format files
         if: contains(steps.changed-files.outputs.all_modified_files, '.cs')
         id: format
         run: |
@@ -46,11 +46,10 @@ jobs:
           git commit -a -m 'Autoformat code'
       - name: Push changes
         if: steps.format-changes.outputs.any == 'true'
-        uses: ad-m/github-push-action@v0.5.0
-        with:
-          branch: ${{ steps.branch-name.outputs.current_branch }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git push "https://$GITHUB_ACTOR:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY.git" HEAD:${{ steps.branch-name.outputs.current_branch }}
   testMicroserviceBaseImage:
+    needs: dotnet-format
     timeout-minutes: 10
     runs-on: ubuntu-latest
     concurrency:
@@ -80,6 +79,7 @@ jobs:
         run: dotnet test --configuration Release --no-restore microservice/microserviceTests
 
   testAllModes:
+    needs: dotnet-format
     timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
     runs-on: ubuntu-latest
@@ -161,6 +161,7 @@ jobs:
         shell: bash
 
   build:
+    needs: dotnet-format
     name: Build for ${{ matrix.targetPlatform }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
