@@ -138,4 +138,5 @@ BussStylePropertyVisualElement.doesntExists, BussStylePropertyVisualElement.does
 
 .showAllProperties BussStylePropertyVisualElement.doesntExists, BussStylePropertyVisualElement.exists {
     display: flex;
+    visibility: visible;
 }

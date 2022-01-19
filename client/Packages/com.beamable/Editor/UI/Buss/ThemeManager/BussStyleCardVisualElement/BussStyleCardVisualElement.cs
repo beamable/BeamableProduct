@@ -32,6 +32,7 @@ namespace Beamable.Editor.UI.Components
 		private VisualElement _addVariableButton;
 		private VisualElement _addRuleButton;
 		private VisualElement _showAllButton;
+		private TextElement _showAllButtonText;
 		private TextElement _styleIdLabel;
 		private TextField _styleIdEditField;
 
@@ -60,6 +61,7 @@ namespace Beamable.Editor.UI.Components
 			_addVariableButton = Root.Q<VisualElement>("addVariableButton");
 			_addRuleButton = Root.Q<VisualElement>("addRuleButton");
 			_showAllButton = Root.Q<VisualElement>("showAllButton");
+			_showAllButtonText = Root.Q<TextElement>("showAllButtonText");
 
 			_navigationWindow.SelectionChanged -= OnSelectionChanged;
 			_navigationWindow.SelectionChanged += OnSelectionChanged;
@@ -192,7 +194,10 @@ namespace Beamable.Editor.UI.Components
 
 		private void ShowAllButtonClicked(MouseDownEvent evt)
 		{
-			ToggleInClassList("showAllProperties");
+			const string showAllProperty = "showAllProperties";
+			ToggleInClassList(showAllProperty);
+			bool showAllEnabled = ClassListContains(showAllProperty);
+			_showAllButtonText.text = showAllEnabled ? "Hide All" : "Show All";
 		}
 
 		private void CreateSelectorLabel()
