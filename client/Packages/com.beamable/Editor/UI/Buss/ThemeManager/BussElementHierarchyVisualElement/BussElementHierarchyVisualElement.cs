@@ -31,17 +31,6 @@ namespace Beamable.Editor.UI.Components
 			return label;
 		}
 
-		protected override void OnSelectionChanged()
-		{
-			IndentedLabelVisualElement indentedLabelVisualElement =
-				SpawnedLabels.Find(label => label.RelatedGameObject == Selection.activeGameObject);
-
-			if (indentedLabelVisualElement != null)
-			{
-				ChangeSelectedLabel(indentedLabelVisualElement, false);
-			}
-		}
-
 		protected override void OnObjectRegistered(BussElement registeredObject)
 		{
 			BussStyleSheet styleSheet = registeredObject.StyleSheet;

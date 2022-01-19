@@ -13,7 +13,7 @@
 
 #navigationGroup {
     height: 210px;
-    background-color: rgb(77,77,77);
+    background-color: rgb(77, 77, 77);
     margin-bottom: 10px;
 }
 
@@ -30,7 +30,7 @@ BussElementHierarchyVisualElement {
     flex-grow: 1;
 }
 
-#themeManagerContainer > ScrollView > #ContentViewport > #ContentView.content-view{
+#themeManagerContainer > ScrollView > #ContentViewport > #ContentView.content-view {
     flex-grow: 1;
     position: absolute;
     left: 0px;
@@ -41,7 +41,7 @@ BussElementHierarchyVisualElement {
     margin-top: 15px;
     padding-top: 3px;
     align-self: center;
-    background-color: rgb(100,100,100);
+    background-color: rgb(100, 100, 100);
     justify-content: center;
     width: 200px;
     height: 26px;
@@ -54,12 +54,24 @@ BussElementHierarchyVisualElement {
 }
 
 #addSelectorButton:hover {
-    background-color: rgb(120,120,120);
+    background-color: rgb(120, 120, 120);
 }
 
 #addSelectorButton > Label {
-    color: #FFFFFF;
+    color: rgb(255,255,255);
     -unity-font-style: bold;
     align-self: center;
 }
 
+#filterToggle {
+    align-self: flex-end;
+    margin-bottom: 10px;
+    margin-right: 10px;
+}
+
+#filterToggle Label {
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    -unity-font-style: bold;
+    -unity-text-align: middle-right;
+    color: rgb(255,255,255);
+}
