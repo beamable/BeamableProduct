@@ -62,7 +62,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Image _checkImage;
 		private LoadingBarElement _loadingBar;
 		private string _currentPublishState;
-		private VisualElement _mainElement;
+		private BeamableCheckboxVisualElement _checkbox;
+		private DropdownVisualElement _sizeDropdown;
+		private TextField _commentField;
 
 		public PublishManifestEntryVisualElement(IEntryModel model,
 		                                         bool argWasPublished,
@@ -79,27 +81,26 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			base.Refresh();
 
-			_mainElement = Root.Q<VisualElement>("mainContainer");
 			_loadingBar = Root.Q<LoadingBarElement>();
 			_loadingBar.SmallBar = true;
 			_loadingBar.Hidden = true;
 			_loadingBar.Refresh();
 
-			var checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
-			checkbox.Refresh();
-			checkbox.SetWithoutNotify(Model.Enabled);
-			checkbox.OnValueChanged += b => Model.Enabled = b;
+			_checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
+			_checkbox.Refresh();
+			_checkbox.SetWithoutNotify(!IsRemoteOnly && Model.Enabled);
+			_checkbox.OnValueChanged += b => Model.Enabled = b;
 
-			var sizeDropdown = Root.Q<DropdownVisualElement>("sizeDropdown");
-			sizeDropdown.Setup(TemplateSizes.ToList(), null);
-			sizeDropdown.Refresh();
+			_sizeDropdown = Root.Q<DropdownVisualElement>("sizeDropdown");
+			_sizeDropdown.Setup(TemplateSizes.ToList(), null);
+			_sizeDropdown.Refresh();
 
 			var nameLabel = Root.Q<Label>("nameMS");
 			nameLabel.text = Model.Name;
 
-			var commentField = Root.Q<TextField>("commentsText");
-			commentField.value = Model.Comment;
-			commentField.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
+			_commentField = Root.Q<TextField>("commentsText");
+			_commentField.value = Model.Comment;
+			_commentField.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
 
 			var icon = Root.Q<Image>("typeImage");
 			_checkImage = Root.Q<Image>("checkImage");
@@ -127,12 +128,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 				icon.AddToClassList(STORAGE_IMAGE_CLASS);
 			}
 
-			UpdateStatus(_wasPublished ? ServicePublishState.Published : ServicePublishState.Unpublished);
-			if (IsRemoteOnly)
-			{
-				SetEnabled(false);
-				Root.tooltip = "Service is available on remote but is not present in local environment.";
-			}
+			SetEnabled(!IsRemoteOnly);
+		}
+
+		public void HandlePublishStarted()
+		{
+			_checkbox.SetEnabled(false);
+			_sizeDropdown.SetEnabled(false);
+			_commentField.SetEnabled(false);
 		}
 
 		public void SetOddRow(bool isOdd) => EnableInClassList("oddRow", isOdd);
@@ -142,15 +145,19 @@ namespace Beamable.Editor.Microservice.UI.Components
 			if (state == PublishState)
 				return;
 			PublishState = state;
+			if (state != ServicePublishState.Unpublished)
+			{
+				_checkImage.tooltip = state.ToString();
+			}
 			if (state == ServicePublishState.Failed)
 			{
 				_loadingBar.UpdateProgress(0, failed: true);
 				return;
 			}
 
-			_checkImage.RemoveFromClassList(_currentPublishState);
+			RemoveFromClassList(_currentPublishState);
 			_currentPublishState = CheckImageClasses[state];
-			_checkImage.AddToClassList(_currentPublishState);
+			AddToClassList(_currentPublishState);
 		}
 
 		public int CompareTo(PublishManifestEntryVisualElement other)

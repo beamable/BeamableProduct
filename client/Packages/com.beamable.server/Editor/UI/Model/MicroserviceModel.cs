@@ -91,7 +91,7 @@ namespace Beamable.Editor.UI.Model
 		public Task BuildAndRestart()
 		{
 			var task = ServiceBuilder.TryToBuildAndRestart(IncludeDebugTools);
-			OnBuildAndRestart?.Invoke(task);
+			OnBuildAndRestart?.Invoke(task);...
 			return task;
 		}
 		public Task BuildAndStart()
@@ -127,6 +127,82 @@ namespace Beamable.Editor.UI.Model
 			OnRemoteStatusEnriched?.Invoke(status);
 		}
 
+        public static MicroserviceModel CreateNew(MicroserviceDescriptor descriptor, MicroservicesDataModel dataModel)
+        {
+            return new MicroserviceModel
+            {
+                ServiceDescriptor = descriptor,
+                ServiceBuilder = Microservices.GetServiceBuilder(descriptor),
+                RemoteReference = dataModel.GetReference(descriptor),
+                RemoteStatus = dataModel.GetStatus(descriptor),
+                Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name)
+            };
+        }
+        
+        public override Task Start()
+        {
+            OnLogsAttached?.Invoke();
+            var task = ServiceBuilder.TryToStart();
+            OnStart?.Invoke(task);
+            return task;
+        }
+        public override Task Stop()
+        {
+            var task = ServiceBuilder.TryToStop();
+            OnStop?.Invoke(task);
+            return task;
+        }
+        public Task BuildAndRestart()
+        {
+            var task = ServiceBuilder.TryToBuildAndRestart(IncludeDebugTools);
+            OnBuildAndRestart?.Invoke(task);
+            return task;
+        }
+        public Task BuildAndStart()
+        {
+            var task = ServiceBuilder.TryToBuildAndStart(IncludeDebugTools);
+            OnBuildAndStart?.Invoke(task);
+            return task;
+        }
+        public Task Build()
+        {
+            var task = ServiceBuilder.TryToBuild(IncludeDebugTools);
+            OnBuild?.Invoke(task);
+            return task;
+        }
+        public void OpenLocalDocs()
+        {
+            EditorAPI.Instance.Then(de =>
+            {
+                //http://localhost:10001/1323424830305280/games/DE_1323424830305283/realms/DE_1323424830305283/microservices/DeploymentTest/docs/remote/?
+                var url =
+                    $"{BeamableEnvironment.PortalUrl}/{de.CidOrAlias}/games/{de.ProductionRealm.Pid}/realms/{de.Pid}/microservices/{ServiceDescriptor.Name}/docs/{MicroserviceIndividualization.Prefix}/?";
+                Application.OpenURL(url);
+            });
+        }
+        public void EnrichWithRemoteReference(ServiceReference remoteReference)
+        {
+            RemoteReference = remoteReference;
+            OnRemoteReferenceEnriched?.Invoke(remoteReference);
+        }
+        public void EnrichWithStatus(ServiceStatus status)
+        {
+            RemoteStatus = status;
+            OnRemoteStatusEnriched?.Invoke(status);
+        }
+        
+        public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
+        {
+            var existsOnRemote = RemoteReference?.enabled ?? false;
+            var hasImageSuffix = ServiceBuilder.HasBuildDirectory ? string.Empty : " (Build first)";
+            var localCategory = IsRunning ? "Local" : "Local (not running)";
+            var remoteCategory = existsOnRemote ? "Cloud" : "Cloud (not deployed)";
+            var debugToolsSuffix = IncludeDebugTools ? string.Empty : " (Debug tools disabled)";
+            evt.menu.BeamableAppendAction($"Reveal build directory{hasImageSuffix}", pos =>
+            {
+                var full = Path.GetFullPath(ServiceDescriptor.BuildPath);
+                EditorUtility.RevealInFinder(full);
+            }, ServiceBuilder.HasBuildDirectory);
 
 		public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
 		{
