@@ -33,15 +33,15 @@ namespace Beamable.Editor
 		   }
 	   }
 
-	   public static void SetVisibility(this VisualElement element, bool value)
+	   public static void SetHidden(this VisualElement element, bool value)
 	   {
 		   if (value)
 		   {
-			   element.RemoveFromClassList(PROPERTY_HIDDEN);
+			   element.AddToClassList(PROPERTY_HIDDEN);
 		   }
 		   else
 		   {
-			   element.AddToClassList(PROPERTY_HIDDEN);
+			   element.RemoveFromClassList(PROPERTY_HIDDEN);
 		   }
 	   }
 	   
