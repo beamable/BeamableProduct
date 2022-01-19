@@ -133,6 +133,19 @@ namespace Beamable.Editor.UI.Model
                     AllRemoteOnlyServices.Add(RemoteMicroserviceModel.CreateNew(descriptor, this));
                }
 
+               foreach (var singleStorageManifest in ServerManifest.storageReference)
+               {
+					if (ContainsRemoteOnlyModel(singleStorageManifest.id))
+						continue;
+
+					var descriptor = new StorageObjectDescriptor
+					{
+						Name = singleStorageManifest.id
+					};
+
+                    AllRemoteOnlyServices.Add(RemoteMongoStorageModel.CreateNew(descriptor, this));
+               }
+
                OnServerManifestUpdated?.Invoke(manifest);
             });
          });
