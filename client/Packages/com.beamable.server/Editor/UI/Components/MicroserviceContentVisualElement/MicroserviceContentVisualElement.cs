@@ -163,26 +163,26 @@ namespace Beamable.Editor.Microservice.UI.Components
             return null;
         }
 
-		private StorageObjectVisualElement GetRemoteStorageObjectVisualElement(string serviceName)
-		{
-			var mongoService = Model.GetModel<MongoStorageModel>(serviceName);
+        private StorageObjectVisualElement GetRemoteStorageObjectVisualElement(string serviceName)
+        {
+            var mongoService = Model.GetModel<MongoStorageModel>(serviceName);
 
-			if (mongoService != null)
-			{
-				var mongoServiceElement = new RemoteStorageObjectVisualElement { Model = mongoService };
-				_modelToVisual[mongoService] = mongoServiceElement;
-				mongoService.OnLogsDetached += () => { ServiceLogWindow.ShowService(mongoService); };
+            if (mongoService != null)
+            {
+                var mongoServiceElement = new RemoteStorageObjectVisualElement { Model = mongoService };
+                _modelToVisual[mongoService] = mongoServiceElement;
+                mongoService.OnLogsDetached += () => { ServiceLogWindow.ShowService(mongoService); };
 
-				mongoServiceElement.Refresh();
-				mongoService.OnSelectionChanged += b =>
-					OnAllServiceSelectedStatusChanged?.Invoke(Model.Storages.All(m => m.IsSelected));
+                mongoServiceElement.Refresh();
+                mongoService.OnSelectionChanged += b =>
+                    OnAllServiceSelectedStatusChanged?.Invoke(Model.Storages.All(m => m.IsSelected));
 
-				return mongoServiceElement;
+                return mongoServiceElement;
 
-			}
+            }
 
-			return null;
-		}
+            return null;
+        }
 
 		private void MicroserviceStartFailed()
         {

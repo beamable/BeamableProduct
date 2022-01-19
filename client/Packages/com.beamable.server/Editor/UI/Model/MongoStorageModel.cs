@@ -42,8 +42,8 @@ namespace Beamable.Editor.UI.Model
         {
             return new MongoStorageModel
             {
-				RemoteReference = dataModel.GetStorageReference(descriptor),
-				ServiceDescriptor = descriptor,
+                RemoteReference = dataModel.GetStorageReference(descriptor),
+                ServiceDescriptor = descriptor,
                 ServiceBuilder = Microservices.GetStorageBuilder(descriptor),
                 Config = MicroserviceConfiguration.Instance.GetStorageEntry(descriptor.Name)
             };
@@ -69,7 +69,7 @@ namespace Beamable.Editor.UI.Model
             OnRemoteReferenceEnriched?.Invoke(remoteReference);
         }
 
-		public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
+        public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
         {
             // TODO - Implement copy connection strings
             
@@ -91,8 +91,9 @@ namespace Beamable.Editor.UI.Model
 					OnSortChanged?.Invoke();
                 }, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.StorageObject) < MicroserviceConfiguration.Instance.StorageObjects.Count - 1);
             }
-		}
-        public override void Refresh(IDescriptor descriptor)
+        }
+
+		public override void Refresh(IDescriptor descriptor)
         {
             // reset the descriptor and statemachines; because they aren't system.serializable durable.
             ServiceDescriptor = (StorageObjectDescriptor)descriptor;
