@@ -15,6 +15,7 @@ using UnityEngine;
 
 namespace Beamable
 {
+	[InitializeOnLoad]
 	public static class BeamEditor
 	{
 		public static readonly CoreConfiguration CoreConfiguration;
@@ -123,18 +124,13 @@ namespace Beamable
 			}
 		}
 
-		public static void Init()
-		{
-			BeamableLogger.Log("Static Initializing BeamEditor!");
-		}
-
 		public static T GetReflectionSystem<T>() where T : IReflectionSystem => EditorReflectionCache.GetFirstSystemOfType<T>();
 
 		[System.Diagnostics.Conditional("UNITY_EDITOR")]
 		// ReSharper disable once RedundantAssignment
 		public static void GetBeamHintSystem<T>(ref T foundProvider) where T : IBeamHintSystem
 		{
-			foundProvider = GetReflectionSystem<BeamHintReflectionCache.Registry>().GloballyAccessibleHintSystems.Where(a => a is T).Cast<T>().First();
+			foundProvider = GetReflectionSystem<BeamHintReflectionCache.Registry>().GloballyAccessibleHintSystems.Where(a => a is T).Cast<T>().FirstOrDefault();
 		}
 
 		[RegisterBeamableDependencies(), System.Diagnostics.Conditional("UNITY_EDITOR")]

@@ -2,15 +2,11 @@ using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
-using Beamable.Common.Assistant;
-using Beamable.Common.Reflection;
 using Beamable.Config;
-using Beamable.Editor.Assistant;
 using Beamable.Editor.Config;
 using Beamable.Editor.Content;
 using Beamable.Editor.Modules.Account;
 using Beamable.Editor.Realms;
-using Beamable.Editor.Reflection;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -92,8 +88,6 @@ namespace Beamable.Editor
 
       private Promise<EditorAPI> Initialize()
       {
-	      BeamEditor.Init();
-	      
 	      // Apply the defined configuration for how users want to uncaught promises (with no .Error callback attached) in Beamable promises. 
 	     if (!Application.isPlaying) 
          {

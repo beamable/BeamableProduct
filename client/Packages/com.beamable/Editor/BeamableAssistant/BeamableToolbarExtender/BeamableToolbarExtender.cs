@@ -219,10 +219,10 @@ namespace Beamable.Editor.ToolbarExtender
 			// Gets notification manager and evaluate if there are pending notifications
 			BeamHintNotificationManager notificationManager = null;
 			BeamEditor.GetBeamHintSystem(ref notificationManager);
-			if (notificationManager.PendingHintNotifications.Any())
+			if (notificationManager != null && notificationManager.PendingHintNotifications.Any())
 				btnTexture = _hintsTexture;
 
-			if (notificationManager.PendingValidationNotifications.Any())
+			if (notificationManager != null && notificationManager.PendingValidationNotifications.Any())
 				btnTexture = _validationTexture;
 
 			
