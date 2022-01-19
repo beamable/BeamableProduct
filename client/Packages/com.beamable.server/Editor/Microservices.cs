@@ -254,7 +254,7 @@ namespace Beamable.Server.Editor
 
                var allStorages = new HashSet<string>();
 
-               foreach (var serverSideStorage in manifest.storages.Select(s => s.id))
+               foreach (var serverSideStorage in manifest.storageReference.Select(s => s.id))
                {
                    allStorages.Add(serverSideStorage);
                }
@@ -655,7 +655,7 @@ namespace Beamable.Server.Editor
          {
             comments = model.Comment,
             manifest = manifest,
-            storages = storages
+            storageReference = storages
          });
          OnDeploySuccess?.Invoke(model, descriptorsCount);
          Debug.Log("Service Deploy Complete");
