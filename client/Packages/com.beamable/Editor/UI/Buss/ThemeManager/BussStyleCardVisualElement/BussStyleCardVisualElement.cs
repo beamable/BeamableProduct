@@ -6,10 +6,10 @@ using Editor.UI.BUSS.ThemeManager;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements.StyleSheets;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
+using UnityEngine.Experimental.UIElements.StyleSheets;
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -81,6 +81,7 @@ namespace Beamable.Editor.UI.Components
 			_styleSheet.Change += Refresh;
 
 			_removeButton.SetHidden(!StyleRule.EditMode);
+			UpdateShowAllStatus();
 		}
 
 		public void Setup(BussStyleSheet styleSheet,
@@ -200,10 +201,15 @@ namespace Beamable.Editor.UI.Components
 
 		private void ShowAllButtonClicked(MouseDownEvent evt)
 		{
+			StyleRule.ShowAllMode = !StyleRule.ShowAllMode;
+			UpdateShowAllStatus();
+		}
+
+		private void UpdateShowAllStatus()
+		{
 			const string showAllProperty = "showAllProperties";
-			ToggleInClassList(showAllProperty);
-			bool showAllEnabled = ClassListContains(showAllProperty);
-			_showAllButtonText.text = showAllEnabled ? "Hide All" : "Show All";
+			EnableInClassList(showAllProperty, StyleRule.ShowAllMode);
+			_showAllButtonText.text = StyleRule.ShowAllMode ? "Hide All" : "Show All";
 		}
 
 		private void CreateSelectorLabel()
@@ -226,13 +232,19 @@ namespace Beamable.Editor.UI.Components
 				(property.IsVariable ? _variables : _properties).Add(element);
 			}
 
-			var restPropertyKeys = BussStyle.Keys.Where(s => _styleRule.Properties.All(provider => provider.Key != s));
+			var restPropertyKeys = BussStyle.Keys.Where(s => StyleRule.Properties.All(provider => provider.Key != s));
 			foreach (var key in restPropertyKeys)
 			{
 				var propertyProvider = BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key));
 
 				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
-				element.Setup(_styleSheet, _styleRule, propertyProvider, _variableDatabase);
+				element.OnValueChanged = () =>
+				{
+					Debug.Log("VALUE CHANGED");
+					StyleRule.TryAddProperty(key, propertyProvider.GetProperty(), out _);
+					Refresh();
+				};
+				element.Setup(null, StyleRule, propertyProvider, _variableDatabase);
 				element.AddToClassList("doesntExists");
 				_properties.Add(element);
 			}
