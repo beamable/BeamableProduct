@@ -83,7 +83,7 @@ namespace Beamable.Server.Editor
 				}
 
 
-				var toAdd = new List<string> {GetCommonAsmDefName()};
+				var toAdd = new List<string> { GetCommonAsmDefName() };
 				Microservices.Descriptors.ForEach(d => d.AddAndRemoveReferences(toAdd, null));
 
 			}
