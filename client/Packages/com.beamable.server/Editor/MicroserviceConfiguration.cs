@@ -44,7 +44,10 @@ namespace Beamable.Server.Editor
       private string _cachedContainerPrefix = null;
 
       [Tooltip("When you build a microservice, any ContentType class will automatically be referenced if this field is set to true. Beamable recommends that you put your ContentTypes into a shared assembly definition instead.")]
-      public bool AutoReferenceContent = true;
+      public bool AutoReferenceContent = false;
+
+      [Tooltip("When true, Beamable automatically generates a common assembly called Beamable.UserCode.Shared that is auto-referenced by Unity code, and automatically imported by Microservice assembly definitions. ")]
+      public bool AutoBuildCommonAssembly = true;
 
       [Tooltip("When you build and run microservices, the logs will be color coded if this field is set to true.")]
       public bool ColorLogs = true;
@@ -54,6 +57,7 @@ namespace Beamable.Server.Editor
 
       [Tooltip("It will enable checking if docker app is running before you can start microservices.")]
       public bool DockerAppCheckInMicroservicesWindow = true;
+
 
       public string DockerCommand = DOCKER_LOCATION;
       private string _dockerCommandCached = DOCKER_LOCATION;
