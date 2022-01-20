@@ -2,7 +2,7 @@
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.UI.Buss;
-using Editor.UI.BUSS.ThemeManager;
+using Beamable.Editor.UI.BUSS.ThemeManager;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
