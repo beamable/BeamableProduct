@@ -235,12 +235,10 @@ namespace Beamable.Editor.UI.Components
 			var restPropertyKeys = BussStyle.Keys.Where(s => StyleRule.Properties.All(provider => provider.Key != s));
 			foreach (var key in restPropertyKeys)
 			{
-				var propertyProvider = BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key));
-
+				var propertyProvider = BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
 				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
 				element.OnValueChanged = () =>
 				{
-					Debug.Log("VALUE CHANGED");
 					StyleRule.TryAddProperty(key, propertyProvider.GetProperty(), out _);
 					Refresh();
 				};

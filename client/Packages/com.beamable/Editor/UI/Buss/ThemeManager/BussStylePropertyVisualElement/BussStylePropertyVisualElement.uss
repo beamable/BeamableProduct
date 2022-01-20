@@ -1,8 +1,9 @@
 BussStylePropertyVisualElement.doesntExists {
     background-color: rgba(255, 255, 255, 0.16);
 }
-.doesntExists #globalVariable {
+.doesntExists #globalVariable, .doesntExists #removeButton {
     display: none;
+    visibility: hidden;
 }
 #root {
     flex-direction: row;

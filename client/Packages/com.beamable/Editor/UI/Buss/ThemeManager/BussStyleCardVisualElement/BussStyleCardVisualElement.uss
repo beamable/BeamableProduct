@@ -132,7 +132,7 @@
     width: 16px;
     height: 16px;
 }
-BussStylePropertyVisualElement.doesntExists, BussStylePropertyVisualElement.doesntExists #globalVariable, .doesntExist > #removeButtonContainer {
+BussStylePropertyVisualElement.doesntExists, BussStylePropertyVisualElement.doesntExists #globalVariable {
     display: none;
     visibility: hidden;
 }
