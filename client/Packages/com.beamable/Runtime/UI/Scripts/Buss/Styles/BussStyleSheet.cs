@@ -48,6 +48,12 @@ namespace Beamable.UI.Buss
 			}
 		}
 
+		public void RemoveAllProperties(BussStyleRule styleRule)
+		{
+			styleRule.Properties.Clear();
+			TriggerChange();			
+		}
+
 		public void OnBeforeSerialize()
 		{
 			PutAssetReferencesInReferenceList();
