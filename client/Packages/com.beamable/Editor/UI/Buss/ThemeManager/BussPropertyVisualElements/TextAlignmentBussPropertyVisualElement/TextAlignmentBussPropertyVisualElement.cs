@@ -19,9 +19,9 @@ namespace Beamable.Editor.UI.Components
 
 		public TextAlignmentBussPropertyVisualElement(TextAlignmentOptionsBussProperty property) : base(property) { }
 
-		public override void Refresh()
+		public override void Init()
 		{
-			base.Refresh();
+			base.Init();
 
 			_horizontalContainer = new VisualElement();
 			_horizontalContainer.style.SetFlexDirection(FlexDirection.Row);

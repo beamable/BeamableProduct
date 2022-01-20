@@ -122,7 +122,7 @@ namespace Beamable.Editor.Toolbox.Components
 			_currentPropertyElement = propertyProvider.GetVisualElement();
 			_propertyValue.Add(_currentPropertyElement);
 			_propertyLabel.text = kvp.Key;
-			_currentPropertyElement.Refresh();
+			_currentPropertyElement.Init();
 		}
 
 		private void RemoveProperty()
