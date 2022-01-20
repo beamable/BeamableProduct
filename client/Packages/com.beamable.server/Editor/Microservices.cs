@@ -32,7 +32,7 @@ namespace Beamable.Server.Editor
 
 		private static List<MicroserviceDescriptor> _descriptors = null;
 		private static List<IDescriptor> _allDescriptors = null;
-		
+
 		public static List<IDescriptor> AllDescriptors
 		{
 			get
@@ -155,7 +155,7 @@ namespace Beamable.Server.Editor
 						};
 						fsw.Deleted += (sender, args) =>
 						{
-						/* TODO: Delete the generated client? */
+							/* TODO: Delete the generated client? */
 						};
 
 						fsw.EnableRaisingEvents = true;
@@ -172,66 +172,66 @@ namespace Beamable.Server.Editor
 				var client = de.GetMicroserviceManager();
 				return client.GetCurrentManifest().Map(manifest =>
 			 {
-				   var allServices = new HashSet<string>();
+				 var allServices = new HashSet<string>();
 
-				// make sure all server-side things are represented
-				foreach (var serverSideService in manifest.manifest.Select(s => s.serviceName))
-				   {
-					   allServices.Add(serverSideService);
-				   }
+				 // make sure all server-side things are represented
+				 foreach (var serverSideService in manifest.manifest.Select(s => s.serviceName))
+				 {
+					 allServices.Add(serverSideService);
+				 }
 
-				// add in anything locally...
-				foreach (var descriptor in Descriptors)
-				   {
-					   allServices.Add(descriptor.Name);
-				   }
+				 // add in anything locally...
+				 foreach (var descriptor in Descriptors)
+				 {
+					 allServices.Add(descriptor.Name);
+				 }
 
-				// get enablement for each service...
-				var entries = allServices.Select(name =>
-				{
-					  var configEntry = MicroserviceConfiguration.Instance.GetEntry(name);//config.FirstOrDefault(s => s.ServiceName == name);
-				   return new ManifestEntryModel
-					  {
-						  Comment = "",
-						  Name = name,
-						  Enabled = configEntry?.Enabled ?? true,
-						  TemplateId = configEntry?.TemplateId ?? "small",
-					  };
-				  }).ToList();
+				 // get enablement for each service...
+				 var entries = allServices.Select(name =>
+				 {
+					 var configEntry = MicroserviceConfiguration.Instance.GetEntry(name);//config.FirstOrDefault(s => s.ServiceName == name);
+					return new ManifestEntryModel
+					 {
+						 Comment = "",
+						 Name = name,
+						 Enabled = configEntry?.Enabled ?? true,
+						 TemplateId = configEntry?.TemplateId ?? "small",
+					 };
+				 }).ToList();
 
 
-				   var allStorages = new HashSet<string>();
+				 var allStorages = new HashSet<string>();
 
-				   foreach (var serverSideStorage in manifest.storageReference.Select(s => s.id))
-				   {
-					   allStorages.Add(serverSideStorage);
-				   }
+				 foreach (var serverSideStorage in manifest.storageReference.Select(s => s.id))
+				 {
+					 allStorages.Add(serverSideStorage);
+				 }
 
-				   foreach (var storageDescriptor in StorageDescriptors)
-				   {
-					   allStorages.Add(storageDescriptor.Name);
-				   }
+				 foreach (var storageDescriptor in StorageDescriptors)
+				 {
+					 allStorages.Add(storageDescriptor.Name);
+				 }
 
-				   var storageEntries = allStorages.Select(name =>
-				{
-					  var configEntry = MicroserviceConfiguration.Instance.GetStorageEntry(name);
-					  return new StorageEntryModel
-					  {
-						  Name = name,
-						  Type = configEntry?.StorageType ?? "mongov1",
-						  Enabled = configEntry?.Enabled ?? true,
-						  TemplateId = configEntry?.TemplateId ?? "small",
-					  };
-				  }).ToList();
+				 var storageEntries = allStorages.Select(name =>
+			  {
+				  var configEntry = MicroserviceConfiguration.Instance.GetStorageEntry(name);
+				  return new StorageEntryModel
+				  {
+					  Name = name,
+					  Type = configEntry?.StorageType ?? "mongov1",
+					  Enabled = configEntry?.Enabled ?? true,
+					  TemplateId = configEntry?.TemplateId ?? "small",
+				  };
+			  }).ToList();
 
-				   return new ManifestModel
-				   {
-					   ServerManifest = manifest.manifest.ToDictionary(e => e.serviceName),
-					   Comment = "",
-					   Services = entries.ToDictionary(e => e.Name),
-					   Storages = storageEntries.ToDictionary(s => s.Name)
-				   };
-			   });
+				 return new ManifestModel
+				 {
+					 ServerManifest = manifest.manifest.ToDictionary(e => e.serviceName),
+					 Comment = "",
+					 Services = entries.ToDictionary(e => e.Name),
+					 Storages = storageEntries.ToDictionary(s => s.Name)
+				 };
+			 });
 			});
 		}
 
