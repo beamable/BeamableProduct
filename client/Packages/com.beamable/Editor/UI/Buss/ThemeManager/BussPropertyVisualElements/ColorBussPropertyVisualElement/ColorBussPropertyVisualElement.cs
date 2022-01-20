@@ -1,5 +1,4 @@
 ﻿using Beamable.UI.Buss;
-using Beamable.Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -11,11 +10,11 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class ColorButtPropertyVisualElement : BussPropertyVisualElement<SingleColorBussProperty>
+	public class ColorBussPropertyVisualElement : BussPropertyVisualElement<SingleColorBussProperty>
 	{
 		private ColorField _field;
 		
-		public ColorButtPropertyVisualElement(SingleColorBussProperty property) : base(property) { }
+		public ColorBussPropertyVisualElement(SingleColorBussProperty property) : base(property) { }
 
 		public override void Init()
 		{

@@ -38,6 +38,7 @@ namespace Beamable.Editor.UI.Components
 
 		private VariableDatabase _variableDatabase;
 		private BussStyleSheet _styleSheet;
+		private BussStyleRule _styleRule;
 		private BussElementHierarchyVisualElement _navigationWindow;
 
 		private List<BussStylePropertyVisualElement> _properties = new List<BussStylePropertyVisualElement>();
@@ -89,7 +90,7 @@ namespace Beamable.Editor.UI.Components
 		                  BussElementHierarchyVisualElement navigationWindow)
 		{
 			_styleSheet = styleSheet;
-			StyleRule = styleRule;
+			_styleRule = styleRule;
 			_variableDatabase = variableDatabase;
 			_navigationWindow = navigationWindow;
 
@@ -202,6 +203,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			StyleRule.ShowAllMode = !StyleRule.ShowAllMode;
 			UpdateShowAllStatus();
+			RefreshProperties();
 		}
 
 		private void UpdateShowAllStatus()
