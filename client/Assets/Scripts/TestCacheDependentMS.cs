@@ -128,6 +128,12 @@ public class TestBeamContextSystem
 	{
 		builder.AddSingleton<TestBeamContextSystem>();
 	}
+	
+	[RegisterBeamableDependencies]
+	public static void InvalidRegisterDependency(IDependencyBuilder builder, int parameterThatShouldntExist)
+	{
+		builder.AddSingleton<TestBeamContextSystem>();
+	}
 }
 
 public class TestGloballyAccessibleHintSystem : IBeamHintSystem

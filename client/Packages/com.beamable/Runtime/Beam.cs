@@ -198,7 +198,8 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(CoreConfiguration.Instance);
 			DependencyBuilder.AddSingleton<IAuthSettings>(AccountManagementConfiguration.Instance);
 
-			LoadCustomDependencies();
+			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(DependencyBuilder);
+			//LoadCustomDependencies();
 		}
 
 		/// <summary>
@@ -261,52 +262,6 @@ namespace Beamable
 
 			await allScenesUnloaded;
 			loadAction();
-		}
-
-		private static void LoadCustomDependencies()
-		{
-			var registrations = new List<(RegisterBeamableDependenciesAttribute, MethodInfo)>();
-			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-			foreach (var assembly in assemblies)
-			{
-				var asmName = assembly.GetName().Name;
-				if ("Tests".Equals(asmName)) continue; // TODO think harder about this.
-				try
-				{
-					foreach (var type in assembly.GetTypes())
-					{
-						var methodsWithAttr = type
-						                      .GetMethods(BindingFlags.Static | BindingFlags.Public)
-						                      .Where(m =>
-						                      {
-							                      var methodParameters = m.GetParameters();
-							                      return methodParameters.Length == 1 &&
-							                             typeof(IDependencyBuilder).IsAssignableFrom(
-								                             methodParameters[0].ParameterType);
-						                      })
-						                      .ToList();
-						var possibleMethods = methodsWithAttr;
-						foreach (var method in possibleMethods)
-						{
-							var attr = method.GetCustomAttribute<RegisterBeamableDependenciesAttribute>(false);
-							if (attr == null) continue;
-
-							registrations.Add((attr, method));
-						}
-					}
-				}
-				catch
-				{
-					// don't do anything.
-				}
-			}
-
-			registrations.Sort((a, b) => a.Item1.Order.CompareTo(b.Item1.Order));
-			foreach (var registration in registrations)
-			{
-				registration.Item2.Invoke(null, new object[] {Beam.DependencyBuilder});
-			}
 		}
 
 		private static Action GetLoadSceneFunction(string sceneQualifier = null)
