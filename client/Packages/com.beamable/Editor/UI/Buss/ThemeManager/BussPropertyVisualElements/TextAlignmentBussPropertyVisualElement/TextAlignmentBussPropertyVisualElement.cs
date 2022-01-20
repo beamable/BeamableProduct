@@ -1,5 +1,6 @@
 ﻿using Beamable.UI.Buss;
 using TMPro;
+using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -23,6 +24,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			base.Refresh();
 
+			Root.style.SetFlexDirection(FlexDirection.Column);
 			_horizontalContainer = new VisualElement();
 			_horizontalContainer.style.SetFlexDirection(FlexDirection.Row);
 			Root.Add(_horizontalContainer);
