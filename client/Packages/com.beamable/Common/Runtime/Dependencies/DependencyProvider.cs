@@ -1,0 +1,335 @@
+// unset
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Beamable.Common.Dependencies
+{
+	/// <summary>
+	/// The <see cref="IDependencyProvider"/> is a collection of services, built from a <see cref="IDependencyBuilder"/>.
+	/// Use the <see cref="GetService{T}"/> method to get services.
+	/// </summary>
+	public interface IDependencyProvider
+	{
+		/// <summary>
+		/// Returns true if the given service is registered in the provider.
+		/// If you make a call to <see cref="GetService{T}"/> for a service that doesn't exist, you'll get an exception.
+		///
+		/// </summary>
+		/// <param name="t">the type of service to check for</param>
+		/// <returns>True if the service can be got, False otherwise.</returns>
+		bool CanBuildService(Type t);
+
+		/// <summary>
+		/// Finds an instance of a service given the type parameter.
+		/// All services are lazily initialized, so its possible that if is the first time the type of
+		/// service has been requested, this call could allocate a new instance of the service.
+		///
+		/// If the service wasn't registered, you'll get an exception. Use <see cref="CanBuildService{T}"/> to check if the service can be got.
+		/// </summary>
+		/// <param name="t">the type of service to get</param>
+		/// <returns>An instance of the type requested</returns>
+		object GetService(Type t);
+
+		/// <summary>
+		/// Finds an instance of a service given the type parameter.
+		/// All services are lazily initialized, so its possible that if is the first time the type of
+		/// service has been requested, this call could allocate a new instance of the service.
+		///
+		/// If the service wasn't registered, you'll get an exception. Use <see cref="CanBuildService{T}"/> to check if the service can be got.
+		/// </summary>
+		/// <typeparam name="T">The type of service to get</typeparam>
+		/// <returns>An instance of <typeparamref name="T"/></returns>
+		T GetService<T>();
+
+		/// <summary>
+		/// Returns true if the given service is registered in the provider.
+		/// If you make a call to <see cref="GetService{T}"/> for a service that doesn't exist, you'll get an exception.
+		///
+		/// </summary>
+		/// <typeparam name="T">The type of service to get</typeparam>
+		/// <returns>True if the service can be got, False otherwise.</returns>
+		bool CanBuildService<T>();
+
+		/// <summary>
+		/// Create a new <see cref="IDependencyProviderScope"/>, using the current instance as a parent.
+		/// Any service that was registered as a Scoped service will be re-created in the new provider.
+		/// Any service that was registered as a Singleton will use the instance from the parent provider.
+		/// If the parent provider has <see cref="IDependencyProviderScope.Dispose"/> called, then the child provider
+		/// will also be disposed.
+		/// </summary>
+		/// <param name="configure">Optionally, you can pass a configuration function that registers new services specific to the child provider.</param>
+		/// <returns>A new <see cref="IDependencyProviderScope"/></returns>
+		IDependencyProviderScope Fork(Action<IDependencyBuilder> configure = null);
+	}
+
+	/// <summary>
+	/// The <see cref="IDependencyProviderScope"/> is a <see cref="IDependencyProvider"/>
+	/// But has more access methods and lifecycle controls.
+	/// </summary>
+	public interface IDependencyProviderScope : IDependencyProvider
+	{
+		/// <summary>
+		/// Disposing a <see cref="IDependencyProviderScope"/> will call <see cref="IBeamableDisposable.OnDispose"/>
+		/// on all inner services that implement <see cref="IBeamableDisposable"/>.
+		/// Also, after the dispose method has been called, any call to <see cref="IDependencyProvider.GetService"/> will fail.
+		/// After this method, the <see cref="IsDisposed"/> will be true.
+		/// However, if you re-hydrate a scope using the <see cref="Hydrate"/> method, then the scope is no longer in a disposed state.
+		/// </summary>
+		/// <returns>A promise capturing when the disposal will complete.</returns>
+		Promise Dispose();
+
+		/// <summary>
+		/// Using the <see cref="IDependencyProvider.Fork"/> method allows you to create hierarchical <see cref="IDependencyProviderScope"/>.
+		/// If this scope has a parent, this will point to it, or be null.
+		/// </summary>
+		IDependencyProviderScope Parent { get; }
+
+		/// <summary>
+		/// Using the <see cref="IDependencyProvider.Fork"/> method allows you to create hierarchical <see cref="IDependencyProviderScope"/>.
+		/// If this scope has any children, this enumeration shows them, or it will be empty.
+		/// </summary>
+		IEnumerable<IDependencyProviderScope> Children { get; }
+
+		/// <summary>
+		/// It is possible to "un-dispose" a scope. Hydrating a scope from another scope copies all of the services
+		/// from the other scope, and uses the other scope's service descriptors to create new services.
+		/// Any children will be re-hydrated and their original configuration methods will be re-fire.
+		/// After this method, the <see cref="IsDisposed"/> will be false.
+		///
+		/// This method can be useful to re-use an instance of a <see cref="IDependencyProviderScope"/> that had been disposed.
+		/// </summary>
+		/// <param name="serviceScope">The scope to get life from.</param>
+		void Hydrate(IDependencyProviderScope serviceScope);
+
+		/// <summary>
+		/// By default, returns false.
+		/// Returns true after <see cref="Dispose"/> completed.
+		/// If <see cref="Hydrate"/> is run, then this returns false again.
+		/// </summary>
+		bool IsDisposed { get; }
+
+		/// <summary>
+		/// An enumerable set of the <see cref="ServiceDescriptor"/>s that are attached to this provider as transient
+		/// </summary>
+		IEnumerable<ServiceDescriptor> TransientServices { get; }
+
+		/// <summary>
+		/// An enumerable set of the <see cref="ServiceDescriptor"/>s that are attached to this provider as scoped
+		/// </summary>
+		IEnumerable<ServiceDescriptor> ScopedServices{ get; }
+
+		/// <summary>
+		/// An enumerable set of the <see cref="ServiceDescriptor"/>s that are attached to this provider as singleton
+		/// </summary>
+		IEnumerable<ServiceDescriptor> SingletonServices{ get; }
+	}
+
+	public class DependencyProvider : IDependencyProviderScope
+	{
+		private Dictionary<Type, ServiceDescriptor> Transients { get; set; }
+		private Dictionary<Type, ServiceDescriptor> Scoped { get; set; }
+		private Dictionary<Type, ServiceDescriptor> Singletons { get; set; }
+
+		private Dictionary<Type, object> SingletonCache { get; set; } = new Dictionary<Type, object>();
+		private Dictionary<Type, object> ScopeCache { get; set; } = new Dictionary<Type, object>();
+
+		private bool _destroyed;
+
+		public bool IsDisposed => _destroyed;
+		public IEnumerable<ServiceDescriptor> TransientServices => Transients.Values;
+		public IEnumerable<ServiceDescriptor> ScopedServices => Scoped.Values;
+		public IEnumerable<ServiceDescriptor> SingletonServices => Singletons.Values;
+
+		public IDependencyProviderScope Parent { get; private set; }
+		private HashSet<IDependencyProviderScope> _children = new HashSet<IDependencyProviderScope>();
+
+		private Dictionary<IDependencyProviderScope, Action<IDependencyBuilder>> _childToConfigurator =
+			new Dictionary<IDependencyProviderScope, Action<IDependencyBuilder>>();
+		public IEnumerable<IDependencyProviderScope> Children => _children;
+
+		public Guid Id = Guid.NewGuid();
+
+		public DependencyProvider(DependencyBuilder builder)
+		{
+			Transients = builder.TransientServices.ToDictionary(s => s.Interface);
+			Scoped = builder.ScopedServices.ToDictionary(s => s.Interface);
+			Singletons = builder.SingletonServices.ToDictionary(s => s.Interface);
+		}
+
+		public T GetService<T>()
+		{
+			return (T)GetService(typeof(T));
+		}
+
+		public bool CanBuildService<T>()
+		{
+			return CanBuildService(typeof(T));
+		}
+
+		public bool CanBuildService(Type t)
+		{
+			if (_destroyed) throw new Exception("Provider scope has been destroyed and can no longer be accessed.");
+
+			return Transients.ContainsKey(t) || Scoped.ContainsKey(t) || Singletons.ContainsKey(t) || (Parent?.CanBuildService(t) ?? false);
+		}
+
+		public object GetService(Type t)
+		{
+			if (_destroyed) throw new Exception("Provider scope has been destroyed and can no longer be accessed.");
+
+			if (t == typeof(IDependencyProvider)) return this;
+
+			if (Transients.TryGetValue(t, out var descriptor))
+			{
+				var service = descriptor.Factory(this);
+				return service;
+			}
+
+			if (Scoped.TryGetValue(t, out descriptor))
+			{
+				if (ScopeCache.TryGetValue(t, out var instance))
+				{
+					return instance;
+				}
+
+				return ScopeCache[t] = descriptor.Factory(this);
+			}
+
+
+			if (Singletons.TryGetValue(t, out descriptor))
+			{
+				if (SingletonCache.TryGetValue(t, out var instance))
+				{
+					return instance;
+				}
+
+				return SingletonCache[t] = descriptor.Factory(this);
+			}
+
+			if (Parent != null)
+			{
+				return Parent.GetService(t);
+			}
+
+
+			throw new Exception($"Service not found {t.Name}");
+		}
+
+		// ReSharper disable Unity.PerformanceAnalysis
+		public async Promise Dispose()
+		{
+			if (_destroyed) return; // don't dispose twice!
+
+			_destroyed = true;
+			var disposalPromises = new List<Promise<Unit>>();
+
+			// remove from parent.
+
+			var childRemovalPromises = new List<Promise<Unit>>();
+			foreach (var child in _children)
+			{
+				if (child != null)
+				{
+					var removePromise = child.Dispose();
+					if (removePromise != null)
+					{
+						childRemovalPromises.Add(removePromise);
+					}
+				}
+			}
+			await Promise.Sequence(childRemovalPromises);
+
+			void DisposeServices(IEnumerable<object> services)
+			{
+				foreach (var service in services)
+				{
+
+					if (service == null) continue;
+					if (service is IBeamableDisposable disposable)
+					{
+						var promise = disposable.OnDispose();
+						if (promise != null)
+						{
+							disposalPromises.Add(promise);
+						}
+					}
+				}
+			}
+
+			DisposeServices(SingletonCache.Values);
+			DisposeServices(ScopeCache.Values);
+
+			await Promise.Sequence(disposalPromises);
+
+			SingletonCache.Clear();
+			ScopeCache.Clear();
+		}
+
+		public void Hydrate(IDependencyProviderScope other)
+		{
+			_destroyed = other.IsDisposed;
+			Transients = other.TransientServices.ToDictionary(desc => desc.Interface);
+			Scoped = other.ScopedServices.ToDictionary(desc => desc.Interface);
+			Singletons = other.SingletonServices.ToDictionary(desc => desc.Interface);
+			SingletonCache.Clear();
+			ScopeCache.Clear();
+
+			var oldChildren = new HashSet<IDependencyProviderScope>(_children);
+			var newChildren = new HashSet<IDependencyProviderScope>();
+			foreach (var child in oldChildren)
+			{
+				var configurator = _childToConfigurator[child];
+				var newChild = Fork(configurator);
+				newChildren.Add(newChild);
+				child.Hydrate(newChild);
+			}
+
+			foreach (var child in newChildren)
+			{
+				_children.Remove(child);
+			}
+		}
+
+
+		public IDependencyProviderScope Fork(Action<IDependencyBuilder> configure=null)
+		{
+			var builder = new DependencyBuilder();
+			// populate all of the existing services we have in this scope.
+
+			void AddDescriptors(List<ServiceDescriptor> target,
+			                    Dictionary<Type, ServiceDescriptor> source,
+			                    Func<IDependencyProvider, ServiceDescriptor, object> factory)
+			{
+				foreach (var kvp in source)
+				{
+					target.Add(new ServiceDescriptor {
+						Implementation = kvp.Value.Implementation,
+						Interface = kvp.Value.Interface,
+						Factory = p => factory(p, kvp.Value)
+					});
+				}
+			}
+
+			// transients are stupid, and I should probably delete them.
+			AddDescriptors(builder.TransientServices, Transients,(nextProvider, desc) => desc.Factory(nextProvider));
+
+			// all scoped descriptors
+			AddDescriptors(builder.ScopedServices, Scoped,(nextProvider, desc) => desc.Factory(nextProvider));
+			// scopes services build brand new instances per provider
+
+			// singletons use their parent singleton cache.
+			AddDescriptors(builder.SingletonServices, Scoped, (_, desc) => GetService(desc.Interface));
+
+			configure?.Invoke(builder);
+
+			var provider = new DependencyProvider(builder) {Parent = this};
+			_children.Add(provider);
+			_childToConfigurator[provider] = configure;
+
+			return provider;
+		}
+	}
+
+}

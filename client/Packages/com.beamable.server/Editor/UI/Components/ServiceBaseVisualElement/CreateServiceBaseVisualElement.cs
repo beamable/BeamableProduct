@@ -29,7 +29,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         
         public event Action OnCreateServiceClicked;
 
-        private const int MAX_NAME_LENGTH = 32;
+        private const int MAX_NAME_LENGTH = 28;
         private bool _canCreateService;
         
         private TextField _nameTextField;

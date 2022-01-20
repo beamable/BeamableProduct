@@ -82,7 +82,6 @@ namespace Beamable.Editor.Content.Components
          _publishDropdownButton.RegisterCallback<MouseEnterEvent>(evt => _mouseOverPublishDropdown = true);
          _publishDropdownButton.RegisterCallback<MouseLeaveEvent>(evt => _mouseOverPublishDropdown = false);
          _publishDropdownButton.clickable.activators.Clear();
-         RefreshPublishDropdownVisibility();
 
          var publishButtonManipulator = new ContextualMenuManipulator(HandlePublishButtonClick);
          publishButtonManipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
@@ -120,15 +119,6 @@ namespace Beamable.Editor.Content.Components
             _searchBar.SetValueWithoutNotify(filterString);
          };
          _searchBar.OnSearchChanged += SearchBar_OnSearchChanged;
-      }
-
-      public void RefreshPublishDropdownVisibility()
-      {
-         if (_publishDropdownButton?.parent == null) return;
-
-
-         _publishDropdownButton.parent.EnableInClassList("hidden",
-            !ContentConfiguration.Instance.EnableMultipleContentNamespaces);
       }
 
       private void SearchBar_OnSearchChanged(string obj)

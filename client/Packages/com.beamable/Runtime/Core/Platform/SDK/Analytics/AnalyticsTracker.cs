@@ -8,15 +8,15 @@ namespace Beamable.Api.Analytics
 {
 	/// <summary>
 	/// This type defines the %Client main entry point for the %Analytics feature.
-	/// 
+	///
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-	/// 
+	///
 	/// #### Related Links
 	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/analytics-feature">Analytics</a> feature documentation
 	/// - See Beamable.API script reference
-	/// 
+	///
 	/// ![img beamable-logo]
-	/// 
+	///
 	/// </summary>
    public interface IAnalyticsTracker
    {
@@ -25,15 +25,15 @@ namespace Beamable.Api.Analytics
 
 	/// <summary>
 	/// This type defines the %Client main entry point for the %Analytics feature.
-	/// 
+	///
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-	/// 
+	///
 	/// #### Related Links
 	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/analytics-feature">Analytics</a> feature documentation
 	/// - See Beamable.API script reference
-	/// 
+	///
 	/// ![img beamable-logo]
-	/// 
+	///
 	/// </summary>
 	public class AnalyticsTracker : IAnalyticsTracker
 	{
@@ -53,7 +53,7 @@ namespace Beamable.Api.Analytics
 		private const double _defaultBatchTimeout = 60f;
 
 		private List<AnalyticsEventRequest> _earlyRequests = new List<AnalyticsEventRequest>();
-		private PlatformService _platform;
+		private IPlatformService _platform;
 		private AnalyticsService service;
 
 		/// <summary>
@@ -84,7 +84,7 @@ namespace Beamable.Api.Analytics
 		/// </summary>
 		/// <param name="batchTimeoutSeconds">Batch timeout seconds before expiration.</param>
 		/// <param name="batchMaxSize">Batch max size before expiration.</param>
-		public AnalyticsTracker (PlatformService platform, PlatformRequester requester,  CoroutineService coroutineService, int batchTimeoutSeconds, int batchMaxSize)
+		public AnalyticsTracker (IPlatformService platform, PlatformRequester requester,  CoroutineService coroutineService, int batchTimeoutSeconds, int batchMaxSize)
 		{
 			_platform = platform;
 			batchManager = new PersistentBatchManager<AnalyticsEventRequest> (coroutineService, _storageKey, _defaultBatchCapacity, _defaultBatchTimeout);
@@ -165,9 +165,10 @@ namespace Beamable.Api.Analytics
 				// Start as Object and Serialize Directly, so that we can inject shard
 				jsonSaveStream.Init(JsonSerializable.JsonSaveStream.JsonType.Object);
 				analyticsEvent.Serialize(jsonSaveStream);
-				string shard = _platform.Shard;
-				if(shard != null)
-					jsonSaveStream.Serialize("shard", ref shard);
+				// TODO: Double check that we don't support shards anymore.
+				// string shard = _platform.Shard;
+				// if(shard != null)
+				// 	jsonSaveStream.Serialize("shard", ref shard);
 				jsonSaveStream.Conclude();
 				return new AnalyticsEventRequest(jsonSaveStream.ToString());
 			}

@@ -7,6 +7,7 @@ using Beamable.Common;
 using Beamable.Coroutines;
 using Beamable.Platform.SDK;
 using Beamable.Service;
+using System.Runtime.ExceptionServices;
 using UnityEngine;
 
 namespace Beamable
@@ -17,12 +18,12 @@ namespace Beamable
       private static HashSet<Task> _uncaughtTasks = new HashSet<Task>();
       public static async Task WaitForAllUncaughtHandlers()
       {
-         var tasks = _uncaughtTasks.ToArray();
+         var tasks = _uncaughtTasks.Where(t => t != null).ToArray();
          await Task.WhenAll(tasks);
       }
 
       /// <summary>
-      /// Registers Beamable's default Uncaught Promise Handler. This removes all other handlers  
+      /// Registers Beamable's default Uncaught Promise Handler. This removes all other handlers
       /// </summary>
       public static void RegisterBeamableDefaultUncaughtPromiseHandler(bool replaceExistingHandlers = true)
       {
@@ -35,10 +36,11 @@ namespace Beamable
          async Task DelayedCheck()
          {
             await Task.Yield();
+            // await Task.Delay(10);
             // execute check.
             if (!promise.HadAnyErrbacks)
             {
-               Beamable.Common.BeamableLogger.LogException(new UncaughtPromiseException(promise, ex));
+	            Beamable.Common.BeamableLogger.LogException(new UncaughtPromiseException(promise, ex));
             }
          }
          var t = DelayedCheck(); // we don't want to await this call.
@@ -55,7 +57,7 @@ namespace Beamable
             promise.Then(x => result.CompleteSuccess(x));
          };
 
-         ServiceManager.Resolve<CoroutineService>().StartCoroutine(Wait());
+         BeamContext.Default.CoroutineService.StartCoroutine(Wait());
 
          return result;
       }
@@ -63,6 +65,32 @@ namespace Beamable
       public static CustomYieldInstruction ToYielder<T>(this Promise<T> self)
       {
          return new PromiseYieldInstruction<T>(self);
+      }
+
+      public static void SetupDefaultHandler()
+      {
+	      if (Application.isPlaying)
+	      {
+		      var promiseHandlerConfig = CoreConfiguration.Instance.DefaultUncaughtPromiseHandlerConfiguration;
+		      switch (promiseHandlerConfig)
+		      {
+			      case CoreConfiguration.EventHandlerConfig.Guarantee:
+			      {
+				      if(!PromiseBase.HasUncaughtErrorHandler)
+					      PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler();
+
+				      break;
+			      }
+			      case CoreConfiguration.EventHandlerConfig.Replace:
+			      case CoreConfiguration.EventHandlerConfig.Add:
+			      {
+				      PromiseExtensions.RegisterBeamableDefaultUncaughtPromiseHandler(promiseHandlerConfig == CoreConfiguration.EventHandlerConfig.Replace);
+				      break;
+			      }
+			      default:
+				      throw new ArgumentOutOfRangeException();
+		      }
+	      }
       }
    }
 

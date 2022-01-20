@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Editor;
 using ICSharpCode.SharpZipLib.Tar;
-
+using System.Threading;
 using UnityEditor;
 using UnityEngine;
 
@@ -71,7 +71,7 @@ namespace Beamable.Server.Editor.Uploader
       /// <summary>
       /// Upload the specified container to the private Docker registry.
       /// </summary>
-      public async Task UploadContainer(MicroserviceDescriptor descriptor, Action onSuccess, Action onFailure, string imageId=null)
+      public async Task UploadContainer(MicroserviceDescriptor descriptor, CancellationToken token, Action onSuccess, Action onFailure, string imageId=null)
       {
 
          // TODO: Either check disk space prior to extraction, or offer a streaming-only solution? ~ACM 2019-12-18
@@ -93,7 +93,7 @@ namespace Beamable.Server.Editor.Uploader
 
             var beamable = await EditorAPI.Instance;
             var uploader = new ContainerUploader(beamable, this, descriptor, imageId);
-            await uploader.Upload(folder);
+            await uploader.Upload(folder,token);
             Debug.Log("Finished upload");
 
             onSuccess?.Invoke();

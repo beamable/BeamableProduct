@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Beamable.Common;
-using Beamable.Service;
 using Beamable.Serialization;
 using Beamable.Api;
 using Beamable.Api.Notification;
+using Beamable.Common.Api.Notifications;
+using Beamable.Common.Dependencies;
 
 namespace Beamable.Experimental.Api.Chat
 {
@@ -37,7 +38,7 @@ namespace Beamable.Experimental.Api.Chat
             this.roomHandles = new List<RoomHandle>();
         }
 
-        public void Update(List<RoomInfo> roomInfo)
+        public void Update(List<RoomInfo> roomInfo, IDependencyProvider dependencyProvider)
         {
             HashSet<string> remove = new HashSet<string>();
             foreach (var handle in roomHandles)
@@ -56,7 +57,7 @@ namespace Beamable.Experimental.Api.Chat
                 var room = roomHandles.Find(handle => handle.Id == info.id);
                 if (room == null)
                 {
-                    roomHandles.Add(new RoomHandle(info));
+                    roomHandles.Add(new RoomHandle(info, dependencyProvider));
                 }
             }
 
@@ -69,7 +70,8 @@ namespace Beamable.Experimental.Api.Chat
     [Serializable]
     public class RoomHandle
     {
-        private const string ChatEvent = "CHAT.RECEIVED";
+	    private readonly IDependencyProvider _dependencyProvider;
+	    private const string ChatEvent = "CHAT.RECEIVED";
 
         public readonly string Id;
         public readonly string Name;
@@ -94,9 +96,14 @@ namespace Beamable.Experimental.Api.Chat
 
         private Promise<Unit> _subscribe;
 
-        public RoomHandle(RoomInfo room)
+        private ChatService ChatService => _dependencyProvider.GetService<ChatService>();
+        private IPubnubSubscriptionManager Pubnub => _dependencyProvider.GetService<IPubnubSubscriptionManager>();
+        private INotificationService NotificationService => _dependencyProvider.GetService<INotificationService>();
+
+        public RoomHandle(RoomInfo room, IDependencyProvider dependencyProvider)
         {
-            this.Id = room.id;
+	        _dependencyProvider = dependencyProvider;
+	        this.Id = room.id;
             this.Name = room.name;
             this.KeepSubscribed = room.keepSubscribed;
             this.Players = room.players;
@@ -120,10 +127,10 @@ namespace Beamable.Experimental.Api.Chat
                 return LoadHistory();
             });
 
-            var pubnub = ServiceManager.Resolve<PlatformService>().PubnubSubscriptionManager;
-            pubnub.EnqueueOperation(new PubNubOp(PubNubOp.PNO.OpSubscribe, Id, () =>
+
+            Pubnub.EnqueueOperation(new PubNubOp(PubNubOp.PNO.OpSubscribe, Id, () =>
             {
-                ServiceManager.Resolve<PlatformService>().Notification.Subscribe(ChatEvent, OnChatEvent);
+	            NotificationService.Subscribe(ChatEvent, OnChatEvent);
                 promise.CompleteSuccess(PromiseBase.Unit);
             }), shouldRunNextOp: true);
 
@@ -133,11 +140,11 @@ namespace Beamable.Experimental.Api.Chat
         public Promise<Unit> Unsubscribe()
         {
             var promise = new Promise<Unit>();
-            var pubnub = ServiceManager.Resolve<PlatformService>().PubnubSubscriptionManager;
-            pubnub.EnqueueOperation(new PubNubOp(PubNubOp.PNO.OpUnsubscribe, Id, () =>
+
+            Pubnub.EnqueueOperation(new PubNubOp(PubNubOp.PNO.OpUnsubscribe, Id, () =>
             {
                 _subscribe = null;
-                ServiceManager.Resolve<PlatformService>().Notification.Unsubscribe(ChatEvent, OnChatEvent);
+                NotificationService.Unsubscribe(ChatEvent, OnChatEvent);
                 promise.CompleteSuccess(PromiseBase.Unit);
             }), shouldRunNextOp: true);
 
@@ -146,12 +153,12 @@ namespace Beamable.Experimental.Api.Chat
 
         public Promise<Unit> LeaveRoom()
         {
-            return ServiceManager.Resolve<PlatformService>().Chat.LeaveRoom(Id).Map(_ => PromiseBase.Unit);
+	        return  ChatService.LeaveRoom(Id).Map(_ => PromiseBase.Unit);
         }
 
         public Promise<Unit> SendMessage(string message)
         {
-            return ServiceManager.Resolve<PlatformService>().Chat.SendMessage(Id, message).Map(_ => PromiseBase.Unit);
+            return  ChatService.SendMessage(Id, message).Map(_ => PromiseBase.Unit);
         }
 
         public void Terminate()
@@ -164,11 +171,8 @@ namespace Beamable.Experimental.Api.Chat
 
         private Promise<Unit> LoadHistory()
         {
-            //TODO: Fetch this another way
-            var pubnub = ServiceManager.Resolve<PlatformService>().PubnubSubscriptionManager;
-
             var promise = new Promise<Unit>();
-            pubnub.LoadChannelHistory(Id, 50,
+            Pubnub.LoadChannelHistory(Id, 50,
                pubnubMessages =>
                {
                    Messages.Clear();

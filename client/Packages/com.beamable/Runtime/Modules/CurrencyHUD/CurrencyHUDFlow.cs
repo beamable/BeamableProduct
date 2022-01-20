@@ -1,15 +1,10 @@
 ﻿using System.Collections;
 using Beamable.Common.Inventory;
-using Beamable.Content;
-using Beamable.Coroutines;
-using Beamable.Inventory;
-using Beamable.Service;
+using Beamable;
 using Beamable.UI.Scripts;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.AddressableAssets;
-
 
 namespace Beamable.CurrencyHUD
 
@@ -32,12 +27,15 @@ namespace Beamable.CurrencyHUD
 
         private async void Start()
         {
-            var de = await API.Instance;
-            de.InventoryService.Subscribe(content.Id, view =>
-            {
-                view.currencies.TryGetValue(content.Id, out targetAmount);
-                ServiceManager.Resolve<CoroutineService>().StartCoroutine(DisplayCurrency());
-            });
+	        var ctx = BeamContext.InParent(this);
+
+	        ctx.Inventory.GetCurrency(content).OnAmountUpdated += amount =>
+	        {
+		        targetAmount = amount;
+		        Debug.Log("Got currency change event. " + amount);
+		        ctx.CoroutineService.StartCoroutine(DisplayCurrency());
+	        };
+
             var currency = await content.Resolve();
             var currencyAddress = currency.icon;
             img.texture = await currencyAddress.LoadTexture();

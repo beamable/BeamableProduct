@@ -12,14 +12,14 @@ namespace Beamable.Common.Inventory
    /// #### Related Links
    /// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-code#contentlink-vs-contentref">ContentLink vs ContentRef</a> documentation
    /// - See Beamable.Common.Content.ContentObject script reference
-   /// 
+   ///
    /// ![img beamable-logo]
    ///
    /// </summary>
    [System.Serializable]
    [Agnostic]
    public class CurrencyLink : ContentLink<CurrencyContent>{}
-   
+
    /// <summary>
    /// This type defines a methodology for resolving a reference to a %Beamable %ContentObject.
    ///
@@ -28,7 +28,7 @@ namespace Beamable.Common.Inventory
    /// #### Related Links
    /// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-code#contentlink-vs-contentref">ContentLink vs ContentRef</a> documentation
    /// - See Beamable.Common.Content.ContentObject script reference
-   /// 
+   ///
    /// ![img beamable-logo]
    ///
    /// </summary>
@@ -42,6 +42,9 @@ namespace Beamable.Common.Inventory
       {
          Id = id;
       }
+
+      public static implicit operator string(CurrencyRef data) => data.GetId();
+      public static implicit operator CurrencyRef(string data) => new CurrencyRef {Id = data};
    }
 
    /// <summary>
@@ -52,7 +55,7 @@ namespace Beamable.Common.Inventory
    /// #### Related Links
    /// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-code#contentlink-vs-contentref">ContentLink vs ContentRef</a> documentation
    /// - See Beamable.Common.Content.ContentObject script reference
-   /// 
+   ///
    /// ![img beamable-logo]
    ///
    /// </summary>
@@ -68,7 +71,7 @@ namespace Beamable.Common.Inventory
    {
       [Tooltip(ContentObject.TooltipAmount1)]
       public int amount;
-      
+
       [Tooltip(ContentObject.TooltipCurrency1)]
       [MustReferenceContent]
       public CurrencyRef symbol;

@@ -29,26 +29,39 @@ namespace Beamable.Api.Caches
         private readonly static string _offlineCacheRootDir = Path.Combine(Application.persistentDataPath, _offlineCacheRoot, _offlineCacheDir, _cid, _pid, Application.version);
         private readonly MD5 _md5 = MD5.Create();
 
-        public static Promise<T> Get<T>(string key, IAccessToken token)
+        private static string GetKey(string key, IAccessToken token, bool includeAuthHeader)
         {
-            return _instance.Read<T>(_instance.GetHash(key + token.RefreshToken));
+	        if (includeAuthHeader)
+	        {
+		        return key;
+	        }
+	        else
+	        {
+		        return key + token?.RefreshToken;
+	        }
         }
 
-        public static void Set<T>(string key, T data, IAccessToken token)
+        public static Promise<T> Get<T>(string key, IAccessToken token, bool includeAuthHeader)
         {
-            _instance.Update(_instance.GetHash(key + token.RefreshToken), data);
+	        return _instance.Read<T>(_instance.GetHash(GetKey(key, token, includeAuthHeader)),$"url=[{key}], token=[{token.Token}]" );
+	        // .RecoverFromNoConnectivity(ex => throw new NoConnectivityException($"url=[{key}], token=[{token.Token}]\n{ex.Message}"));
+        }
+
+        public static void Set<T>(string key, T data, IAccessToken token, bool includeAuthHeader)
+        {
+            _instance.Update(_instance.GetHash(GetKey(key, token, includeAuthHeader)), data);
         }
 
         public static void Merge<TKey, TValue>(string key, IAccessToken token, Dictionary<long, Dictionary<TKey, TValue>> data)
         {
-            _instance.Merge(key + token.RefreshToken, data);
+            _instance.Merge(key + token?.RefreshToken, data);
         }
 
         public static Promise<Dictionary<long, Dictionary<TKey, TValue>>> RecoverDictionary<TKey, TValue>(Exception ex, string key,
             IAccessToken token,
             List<long> gamerTags)
         {
-            return _instance.HandleDictionaryCase<TKey, TValue>(ex, key + token.RefreshToken, gamerTags);
+            return _instance.HandleDictionaryCase<TKey, TValue>(ex, key + token?.RefreshToken, gamerTags);
         }
 
 
@@ -156,7 +169,7 @@ namespace Beamable.Api.Caches
             }
         }
 
-        private Promise<T> Read<T>(string key)
+        private Promise<T> Read<T>(string key, string desc="")
         {
             Promise<T> _localCacheResponse = new Promise<T>();
 
@@ -168,7 +181,7 @@ namespace Beamable.Api.Caches
             {
                 if (!File.Exists(GetFullPathForKey(key)))
                 {
-                     return Promise<T>.Failed(new NoConnectivityException(key + " is not cached and requires internet connectivity."));
+                     return Promise<T>.Failed(new NoConnectivityException( $"{desc} {key} is not cached and requires internet connectivity."));
                 }
                 _offlineCacheData.Add(key, ReadCacheFromDisk<T>(key));
                 _localCacheResponse.CompleteSuccess((T)_offlineCacheData[key]);

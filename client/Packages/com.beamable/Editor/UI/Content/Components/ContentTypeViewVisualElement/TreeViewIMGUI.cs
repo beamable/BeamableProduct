@@ -60,7 +60,10 @@ namespace Beamable.Editor.Content.Components
 			return GetRows().Count * RowHeight;
 		}
 
-		public float RowHeight => rowHeight;
+		public float RowHeight {
+			get => rowHeight;
+			set => rowHeight = value;
+		}
 
 		public float Height => totalHeight;
 

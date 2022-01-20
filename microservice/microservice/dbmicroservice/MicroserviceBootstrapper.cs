@@ -1,6 +1,7 @@
 using System;
 using Beamable.Common;
 using Beamable.Server;
+using Beamable.Server.Common;
 using Core.Server.Common;
 using microservice.Common;
 using Serilog;
@@ -30,6 +31,9 @@ namespace Beamable.Server
             .WriteTo.Console(new MicroserviceLogFormatter())
             .CreateLogger();
 
+         // use newtonsoft for JsonUtility
+         JsonUtilityConverter.Init();
+
          BeamableLogProvider.Provider = new BeamableSerilogProvider();
          Debug.Instance = new MicroserviceDebug();
          BeamableSerilogProvider.LogContext.Value = Log.Logger;
@@ -57,7 +61,7 @@ namespace Beamable.Server
 
          var beamableService = new BeamableMicroService();
          var args = new EnviornmentArgs();
-         
+
          var localDebug = new LocalDebugService(beamableService);
 
          if (!string.Equals(args.SdkVersionExecution, args.SdkVersionBaseBuild))

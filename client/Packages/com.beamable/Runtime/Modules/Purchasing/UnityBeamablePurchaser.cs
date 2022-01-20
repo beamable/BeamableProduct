@@ -3,6 +3,7 @@ using System.Collections;
 using Beamable.Api;
 using Beamable.Api.Payments;
 using Beamable.Common;
+using Beamable.Common.Dependencies;
 using Beamable.Coroutines;
 using Beamable.Service;
 using Beamable.Spew;
@@ -21,33 +22,38 @@ namespace Beamable.Purchasing
         private IAppleExtensions _appleExtensions;
         private IGooglePlayStoreExtensions _googleExtensions;
         #pragma warning restore CS0649
-        
+
         private readonly Promise<Unit> _initPromise = new Promise<Unit>();
         private long _txid;
         private Action<CompletedTransaction> _success;
         private Action<ErrorCode> _fail;
         private Action _cancelled;
+        private IDependencyProvider _serviceProvider;
 
         static readonly int[] RETRY_DELAYS = { 1, 2, 5, 10, 20 }; // TODO: Just double a few times. ~ACM 2021-03-10
 
         /// <summary>
         /// Begin initialization of Beamable purchasing.
         /// </summary>
-        public Promise<Unit> Initialize()
+        public Promise<Unit> Initialize(IDependencyProvider provider)
         {
-            ServiceManager.Resolve<PlatformService>().Payments.GetSKUs().Then(rsp =>
-            {
-                var noSkusAvailable = rsp.skus.definitions.Count == 0;
-                if (noSkusAvailable)
-                {
-                    // If there are no SKUs available, we will short-circuit the rest of the init-flow.
-                    // Most importantly, we don't call `UnityPurchasing.Initialize`, so that we don't receive the Purchase Finished callbacks.
-                    _initPromise.CompleteSuccess(PromiseBase.Unit);
-                    return;
-                }
+	        _serviceProvider = provider;
+	        var paymentService = GetPaymentService();
 
-                #if USE_STEAMWORKS && !UNITY_EDITOR
-                var builder = ConfigurationBuilder.Instance(new Steam.SteamPurchasingModule());
+	        var skuPromise = paymentService.GetSKUs(); // XXX: This is failing, but nothing is listening for it.
+	        return skuPromise.FlatMap(rsp =>
+	        {
+		        var noSkusAvailable = rsp.skus.definitions.Count == 0;
+		        if (noSkusAvailable)
+		        {
+			        // If there are no SKUs available, we will short-circuit the rest of the init-flow.
+			        // Most importantly, we don't call `UnityPurchasing.Initialize`, so that we don't receive the Purchase Finished callbacks.
+			        _initPromise.CompleteSuccess(PromiseBase.Unit);
+			        return _initPromise;
+		        }
+
+#if USE_STEAMWORKS && !UNITY_EDITOR
+                var builder = ConfigurationBuilder.Instance(new Steam.SteamPurchasingModule(_serviceProvider));
                 foreach (var sku in rsp.skus.definitions)
                 {
                     builder.AddProduct(sku.name, ProductType.Consumable, new IDs
@@ -55,25 +61,25 @@ namespace Beamable.Purchasing
                         { sku.productIds.steam, Steam.SteamStore.Name }
                     });
                 }
-                #else
-                var builder = ConfigurationBuilder.Instance(StandardPurchasingModule.Instance());
-                foreach (var sku in rsp.skus.definitions)
-                {
-                    builder.AddProduct(sku.name, ProductType.Consumable, new IDs
-                    {
-                        { sku.productIds.itunes, AppleAppStore.Name },
-                        { sku.productIds.googleplay, GooglePlay.Name },
-                    });
-                }
-                #endif
+#else
+		        var builder = ConfigurationBuilder.Instance(StandardPurchasingModule.Instance());
+		        foreach (var sku in rsp.skus.definitions)
+		        {
+			        builder.AddProduct(sku.name, ProductType.Consumable, new IDs
+			        {
+				        { sku.productIds.itunes, AppleAppStore.Name },
+				        { sku.productIds.googleplay, GooglePlay.Name },
+			        });
+		        }
+#endif
 
-                // Kick off the remainder of the set-up with an asynchrounous call,
-                // passing the configuration and this class's instance. Expect a
-                // response either in OnInitialized or OnInitializeFailed.
-                UnityPurchasing.Initialize(this, builder);
-            });
+		        // Kick off the remainder of the set-up with an asynchrounous call,
+		        // passing the configuration and this class's instance. Expect a
+		        // response either in OnInitialized or OnInitializeFailed.
+		        UnityPurchasing.Initialize(this, builder);
+		        return _initPromise;
+	        });
 
-            return _initPromise;
         }
 
         /// <summary>
@@ -85,6 +91,16 @@ namespace Beamable.Purchasing
             _fail = null;
             _cancelled = null;
             _txid = 0;
+        }
+
+        private PaymentService GetPaymentService()
+        {
+	        return _serviceProvider.GetService<PaymentService>();
+        }
+
+        private CoroutineService GetCoroutineService()
+        {
+	        return _serviceProvider.GetService<CoroutineService>();
         }
 
         #region "IBeamablePurchaser"
@@ -115,7 +131,7 @@ namespace Beamable.Purchasing
                  new ErrorCode(400, GameSystem.GAME_CLIENT, "Purchase Cancelled"));
             };
 
-            ServiceManager.Resolve<PlatformService>().Payments.BeginPurchase(listingSymbol).Then(rsp =>
+            GetPaymentService().BeginPurchase(listingSymbol).Then(rsp =>
             {
                 _txid = rsp.txid;
                 _storeController.InitiatePurchase(skuSymbol, _txid.ToString());
@@ -237,16 +253,16 @@ namespace Beamable.Purchasing
             // this reason with the user to guide their troubleshooting actions.
             InAppPurchaseLogger.Log(string.Format("OnPurchaseFailed: FAIL. Product: '{0}', PurchaseFailureReason: {1}",
                product.definition.storeSpecificId, failureReason));
-            var platform = ServiceManager.Resolve<PlatformService>();
+            var paymentService = GetPaymentService();
             var reasonInt = (int)failureReason;
             if (failureReason == PurchaseFailureReason.UserCancelled)
             {
-                platform.Payments.CancelPurchase(_txid);
+	            paymentService.CancelPurchase(_txid);
                 _cancelled?.Invoke();
             }
             else
             {
-                platform.Payments.FailPurchase(_txid, product.definition.storeSpecificId + ":" + failureReason);
+	            paymentService.FailPurchase(_txid, product.definition.storeSpecificId + ":" + failureReason);
                 var errorCode = new ErrorCode(reasonInt, GameSystem.GAME_CLIENT,
                    failureReason.ToString() + $" ({product.definition.storeSpecificId})");
                 _fail?.Invoke(errorCode);
@@ -264,7 +280,7 @@ namespace Beamable.Purchasing
         /// <param name="purchasedProduct">The product being purchased</param>
         private void FulfillTransaction(CompletedTransaction transaction, Product purchasedProduct)
         {
-            ServiceManager.Resolve<PlatformService>().Payments.CompletePurchase(transaction).Then(_ =>
+            GetPaymentService().CompletePurchase(transaction).Then(_ =>
             {
                 _storeController.ConfirmPendingPurchase(purchasedProduct);
                 _success?.Invoke(transaction);
@@ -282,7 +298,7 @@ namespace Beamable.Purchasing
                 var retryable = err.Code >= 500 || err.Code == 429 || err.Code == 0;   // Server error or rate limiting or network error
                 if (retryable)
                 {
-                    ServiceManager.Resolve<CoroutineService>().StartCoroutine(RetryTransaction(transaction, purchasedProduct));
+                    GetCoroutineService().StartCoroutine(RetryTransaction(transaction, purchasedProduct));
                 }
                 else
                 {
@@ -339,7 +355,14 @@ namespace Beamable.Purchasing
         {
             return _unityBeamablePurchaser ?? (_unityBeamablePurchaser = new UnityBeamablePurchaser());
         }
+
+        [RegisterBeamableDependencies]
+        public static void Register(IDependencyBuilder builder)
+        {
+	        builder.AddSingleton<IBeamablePurchaser, UnityBeamablePurchaser>();
+        }
     }
+
 
     [Serializable]
     public class UnityPurchaseReceipt

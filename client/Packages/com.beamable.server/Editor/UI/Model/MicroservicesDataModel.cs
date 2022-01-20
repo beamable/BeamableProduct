@@ -213,19 +213,19 @@ namespace Beamable.Editor.UI.Model
 
       private void OnEnable()
       {
-         Microservices.onAfterDeploy += HandleMicroservicesAfterDeploy;
+         Microservices.OnDeploySuccess += HandleMicroservicesDeploySuccess;
          RefreshLocal();
          RefreshServerManifest();
       }
 
-      private void HandleMicroservicesAfterDeploy(ManifestModel oldManifest, int serviceCount)
+      private void HandleMicroservicesDeploySuccess(ManifestModel oldManifest, int serviceCount)
       {
          RefreshServerManifest();
       }
 
       public void Destroy()
       {
-         Microservices.onAfterDeploy -= HandleMicroservicesAfterDeploy;
+         Microservices.OnDeploySuccess -= HandleMicroservicesDeploySuccess;
 
          _instance = null;
          _hasEnabledYet = false;
@@ -260,7 +260,22 @@ namespace Beamable.Editor.UI.Model
                   listToPopulate.FirstOrDefault(s => string.Equals(s.Descriptor.Name, service.Descriptor.Name));
                if (existing == null)
                {
+	               // Types aren't serialized properly so we store their assembly qualified name and retrieve it afterwards.
+	               switch (service)
+	               {
+		               case MicroserviceModel microserviceModel:
+			               if(!string.IsNullOrEmpty(microserviceModel.AssemblyQualifiedMicroserviceTypeName))
+							microserviceModel.Descriptor.Type = Type.GetType(microserviceModel.AssemblyQualifiedMicroserviceTypeName);
+			               if(microserviceModel.Builder != null)
+				               ((MicroserviceBuilder)microserviceModel.Builder).Descriptor = microserviceModel.Descriptor;
+			               break;
+		               case MongoStorageModel mongoModel:
+			               _localStorageModels.Add(mongoModel);
+			               break;
+	               }
+	               
                   listToPopulate.Add(service);
+                  
                }
             }
          }

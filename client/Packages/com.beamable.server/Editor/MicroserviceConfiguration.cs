@@ -52,23 +52,18 @@ namespace Beamable.Server.Editor
       [Tooltip("Docker Buildkit may speed up and increase performance on your microservice builds. However, it is not fully supported with Beamable microservices, and you may encounter issues using it. ")]
       public bool EnableDockerBuildkit = false;
 
-      [Header("Warning- remember that for now it is not possible to upload storages to cloud.")]
-      public bool EnableStoragePreview = false;
-
       [Tooltip("It will enable checking if docker app is running before you can start microservices.")]
       public bool DockerAppCheckInMicroservicesWindow = true;
 
       public string DockerCommand = DOCKER_LOCATION;
       private string _dockerCommandCached = DOCKER_LOCATION;
       private bool _dockerCheckCached = true;
-      
-      public string ValidatedDockerCommand => string.IsNullOrWhiteSpace(DockerCommand) ? 
+
+      public string ValidatedDockerCommand => string.IsNullOrWhiteSpace(DockerCommand) ?
          DOCKER_LOCATION :
          DockerCommand;
-      
-      private bool _enableStoragePreviewCached = false;
 
-      #if !BEAMABLE_LEGACY_MSW
+#if !BEAMABLE_LEGACY_MSW
       [Tooltip("Microservice Logs are sent to a dedicated logging window. If you enable this field, then service logs will also be sent to the Unity Console.")]
       public bool ForwardContainerLogsToUnityConsole;
       #endif
@@ -102,7 +97,6 @@ namespace Beamable.Server.Editor
          }
          _dockerCommandCached = DockerCommand = DOCKER_LOCATION;
          _dockerCheckCached = DockerAppCheckInMicroservicesWindow;
-         _enableStoragePreviewCached = EnableStoragePreview = false;
       }
       #endif
 
@@ -157,10 +151,8 @@ namespace Beamable.Server.Editor
                   api.CidOrAlias, api.Pid, api.Host, api.Cid, CustomContainerPrefix));
          }
 
-         if (_dockerCommandCached != DockerCommand || _enableStoragePreviewCached != EnableStoragePreview 
-                                                   || _dockerCheckCached != DockerAppCheckInMicroservicesWindow) {
+         if (_dockerCommandCached != DockerCommand || _dockerCheckCached != DockerAppCheckInMicroservicesWindow) {
             _dockerCommandCached = DockerCommand;
-            _enableStoragePreviewCached = EnableStoragePreview;
             _dockerCheckCached = DockerAppCheckInMicroservicesWindow;
             if (MicroserviceWindow.IsInstantiated) {
                MicroserviceWindow.Instance.RefreshWindow(true);

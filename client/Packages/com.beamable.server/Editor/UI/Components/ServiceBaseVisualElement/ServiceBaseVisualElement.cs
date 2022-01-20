@@ -61,7 +61,6 @@ namespace Beamable.Editor.Microservice.UI.Components
         protected override void OnDestroy()
         {
             base.OnDestroy();
-            Microservices.onBeforeDeploy -= SetupProgressBarForDeployment;
 
             if (Model == null) return;
 
@@ -118,9 +117,6 @@ namespace Beamable.Editor.Microservice.UI.Components
             Model.OnStop -= SetupProgressBarForStop;
             Model.OnStop += SetupProgressBarForStop;
 
-            Microservices.onBeforeDeploy -= SetupProgressBarForDeployment;
-            Microservices.onBeforeDeploy += SetupProgressBarForDeployment;
-
             _stopButton.clickable.clicked += HandleStopButtonClicked;
             var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
             manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
@@ -130,10 +126,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             var dependentServicesBtnState = MicroserviceConfiguration.Instance.Microservices.Count > 0 &&
                                            MicroserviceConfiguration.Instance.StorageObjects.Count > 0;
-            
+
             _dependentServicesBtn.clickable.clicked += () => DependentServicesWindow.ShowWindow();
             _dependentServicesBtn.SetEnabled(dependentServicesBtnState);
-            
+
             _checkbox.Refresh();
             _checkbox.SetText(Model.Name);
             _checkbox.SetWithoutNotify(Model.IsSelected);
@@ -146,15 +142,13 @@ namespace Beamable.Editor.Microservice.UI.Components
             Model.Builder.OnIsRunningChanged -= HandleIsRunningChanged;
             Model.Builder.OnIsRunningChanged += HandleIsRunningChanged;
 
-            _dependentServicesContainer.visible = MicroserviceConfiguration.Instance.EnableStoragePreview;
-            
             _separator.Setup(OnDrag);
             _separator.Refresh();
 
             _collapseButton.clickable.clicked += HandleCollapseButton;
             _mainParent.AddToClassList("collapsedMain");
             _rootVisualElement.AddToClassList("collapsedMain");
-            
+
             UpdateButtons();
             CreateLogSection(Model.AreLogsAttached);
             UpdateStatusIcon();
@@ -268,13 +262,6 @@ namespace Beamable.Editor.Microservice.UI.Components
         private void OnStopFailed()
         {
             OnServiceStopFailed?.Invoke();
-        }
-        private void SetupProgressBarForDeployment(ManifestModel _, int __)
-        {
-            new GroupLoadingBarUpdater("Build and Deploy", _loadingBar, false,
-                new StepLogParser(new VirtualLoadingBar(), Model, null),
-                new DeployMSLogParser(new VirtualLoadingBar(), Model)
-            );
         }
         private void HandleCollapseButton()
         {

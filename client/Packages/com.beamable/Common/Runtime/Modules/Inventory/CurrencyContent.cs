@@ -31,6 +31,9 @@ namespace Beamable.Common.Inventory
       [ContentField("icon", FormerlySerializedAs = new []{"Icon"})]
       public AssetReferenceSprite icon;
 
+      /// <summary>
+      /// <inheritdoc cref="ClientPermissions"/>
+      /// </summary>
       [Tooltip(ContentObject.TooltipClientPermission1)]
       public ClientPermissions clientPermission;
 

@@ -36,7 +36,7 @@ namespace Beamable.Editor.Content
          ContentManagerWindow.Instance.Show();
          ContentManagerWindow.Instance.Focus();
       }
-      
+
       private static ContentManagerWindow _instance;
 
       public static ContentManagerWindow Instance
@@ -63,7 +63,7 @@ namespace Beamable.Editor.Content
             }
         }
       }
-      
+
       private ContentManager _contentManager;
       private VisualElement _windowRoot;
       private VisualElement _explorerContainer, _statusBarContainer;
@@ -150,7 +150,7 @@ namespace Beamable.Editor.Content
          var noUserVisualElement = new NoUserVisualElement();
          root.Add(noUserVisualElement);
       }
-      
+
       public void SoftReset()
       {
          _contentManager.Model.TriggerSoftReset();
@@ -197,8 +197,8 @@ namespace Beamable.Editor.Content
             {
                _currentWindow.Close();
             }
-            
-            _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ValidateContent, GetValidateContentVisualElement(), this, 
+
+            _currentWindow = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ValidateContent, GetValidateContentVisualElement(), this,
             ContentManagerConstants.WindowSizeMinimum, (window) =>
             {
                 // trigger after Unity domain reload
@@ -335,9 +335,6 @@ namespace Beamable.Editor.Content
          _currentWindow.minSize = ContentManagerConstants.WindowSizeMinimum;
       }
 
-      private void Update() {
-         _actionBarVisualElement.RefreshPublishDropdownVisibility();
-      }
 
       DownloadContentVisualElement GetDownloadContentVisualElement()
       {

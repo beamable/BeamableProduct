@@ -1,24 +1,25 @@
 using UnityEngine;
 using System;
 using Beamable.Common;
+using Beamable.Common.Dependencies;
 
 namespace Beamable.Api.Payments
 {
    /// <summary>
    /// This type defines the %Client main entry point for the %In-App %Purchasing feature.
-   /// 
+   ///
    /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-   /// 
+   ///
    /// #### Related Links
    /// - See the <a target="_blank" href="https://docs.beamable.com/docs/store-feature">Store</a> feature documentation
    /// - See Beamable.API script reference
-   /// 
+   ///
    /// ![img beamable-logo]
-   /// 
+   ///
    /// </summary>
    public interface IBeamablePurchaser
    {
-      Promise<Unit> Initialize();
+      Promise<Unit> Initialize(IDependencyProvider provider=null);
 
       /// <summary>
       /// Fetches the localized string from the provider.

@@ -107,6 +107,12 @@ namespace Beamable.Editor.UI.Components
          Button.SetEnabled(true);
       }
 
+      public void SetAsFailure(bool failure = true)
+      {
+	      const string failureClass = "failure";
+	      EnableInClassList(failureClass, failure);
+      }
+
       public void Load<T>(Promise<T> promise)
       {
          AddToClassList("loading");

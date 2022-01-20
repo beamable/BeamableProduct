@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Inventory;
+using Beamable.Common.Content;
 using UnityEngine.TestTools;
 
 namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
@@ -40,13 +41,14 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
                new ItemCreateRequest
                {
                   contentId = InventoryTestItem.FULL_CONTENT_ID,
-                  properties = props
+                  properties = props.ToSerializable()
                }
             }
          };
 
          // stub out request.
-         _requester.MockRequest<EmptyResponse>(Method.PUT, $"{objectUrl}")
+         _requester.MockRequest<EmptyResponse>(Method.PUT, null)
+                   .WithURIPrefix("/object/inventory")
             .WithoutJsonField("transaction")
             .WithJsonFieldMatch("newItems[0].contentId", obj =>
             {

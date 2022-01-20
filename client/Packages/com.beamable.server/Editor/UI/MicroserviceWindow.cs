@@ -1,20 +1,18 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Beamable.Editor;
+// using ActionBarVisualElement = Beamable.Editor.Microservice.UI.Components.ActionBarVisualElement;
+// using MicroserviceBreadcrumbsVisualElement = Beamable.Editor.Microservice.UI.Components.MicroserviceBreadcrumbsVisualElement;
 using Beamable.Editor.Login.UI;
 using Beamable.Editor.Microservice.UI.Components;
-using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
+using Beamable.Server.Editor.UI;
 using UnityEditor;
 using Beamable.Server.Editor.UI.Components;
+using System;
+using System.Linq;
+
 using UnityEngine;
-// using ActionBarVisualElement = Beamable.Editor.Microservice.UI.Components.ActionBarVisualElement;
-// using MicroserviceBreadcrumbsVisualElement = Beamable.Editor.Microservice.UI.Components.MicroserviceBreadcrumbsVisualElement;
-using Debug = UnityEngine.Debug;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -28,14 +26,12 @@ namespace Beamable.Editor.Microservice.UI
 {
     public class MicroserviceWindow : CommandRunnerWindow, ISerializationCallbackReceiver
     {
-#if !BEAMABLE_LEGACY_MSW
         [MenuItem(
             BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
             BeamableConstants.OPEN + " " +
             BeamableConstants.MICROSERVICES_MANAGER,
             priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_2
         )]
-#endif
         public static async void Init()
         {
             var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
@@ -90,10 +86,10 @@ namespace Beamable.Editor.Microservice.UI
         }
 
 
-#if UNITY_2018
-        public static bool IsInstantiated => _instance != null;
+#if UNITY_2019_3_OR_NEWER
+		public static bool IsInstantiated => _instance != null || HasOpenInstances<MicroserviceWindow>();
 #else
-        public static bool IsInstantiated => _instance != null || HasOpenInstances<MicroserviceWindow>();
+		public static bool IsInstantiated => _instance != null;
 #endif
 
         void CreateModel()
@@ -193,10 +189,10 @@ namespace Beamable.Editor.Microservice.UI
             _actionBarVisualElement.OnBuildAllClicked += () =>
                 _microserviceContentVisualElement.BuildAllMicroservices(_loadingBar);
 
-            Microservices.onBeforeDeploy -= HandleBeforeDeploy;
-            Microservices.onBeforeDeploy += HandleBeforeDeploy;
-            Microservices.onAfterDeploy -= HandleAfterDeploy;
-            Microservices.onAfterDeploy += HandleAfterDeploy;
+            Microservices.OnDeploySuccess -= HandleDeploySuccess;
+            Microservices.OnDeploySuccess += HandleDeploySuccess;
+            Microservices.OnDeployFailed -= HandleDeployFailed;
+            Microservices.OnDeployFailed += HandleDeployFailed;
         }
 
         private void HandleDisplayFilterSelected(ServicesDisplayFilter filter)
@@ -215,7 +211,7 @@ namespace Beamable.Editor.Microservice.UI
         {
             if (isHardRefresh)
             {
-                MicroserviceWindow.Instance.Refresh();
+                Instance.Refresh();
             }
             else
             {
@@ -238,17 +234,23 @@ namespace Beamable.Editor.Microservice.UI
 
         private void OnEnable()
         {
-            SetMinSize();
-            CreateModel();
-            SetForContent();
+	        EditorAPI.Instance.Then(api => {
+		        SetMinSize();
+		        CreateModel();
+		        SetForContent();
+	        });
         }
-
-        private void HandleBeforeDeploy(ManifestModel manifestModel, int totalSteps)
+        
+        private void HandleDeploySuccess(ManifestModel _model, int _totalSteps)
         {
-	        new DeployLogParser(_loadingBar, manifestModel, totalSteps);
+	        RefreshWindow(true);
         }
 
-        private void HandleAfterDeploy(ManifestModel _model, int _totalSteps) => RefreshWindow(true);
+        private void HandleDeployFailed(ManifestModel _model, string reason)
+        {
+	        Debug.Log(reason);
+	        _microserviceContentVisualElement?.Refresh();
+        }
 
         public void SortMicroservices() {
             if (_windowRoot != null)
