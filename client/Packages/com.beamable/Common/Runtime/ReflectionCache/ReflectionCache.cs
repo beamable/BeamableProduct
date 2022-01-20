@@ -22,7 +22,7 @@ namespace Beamable.Common.Reflection
 		/// Called once on each <see cref="IReflectionSystem"/> before building the reflection cache.
 		/// </summary>
 		void OnSetupForCacheGeneration();
-		
+
 		/// <summary>
 		/// Called once per <see cref="ReflectionCache.GenerateReflectionCache"/> invocation after the assembly sweep <see cref="ReflectionCache.RebuildReflectionCache"/> is completed.
 		/// </summary>
@@ -91,13 +91,13 @@ namespace Beamable.Common.Reflection
 		/// Since we need to gather some data before we resolve any BeamContexts when we are in the editor, this must happen before.
 		/// </summary>
 		public const int BEAM_HINT_REFLECTION_SYSTEM_PRIORITY = 0;
-		
+
 		/// <summary>
 		/// Priority for the BeamContext user-dependency reflection system.
 		/// </summary>
-		public const int BEAM_CONTEXT_DEPENDENCIES_REFLECTION_SYSTEM_PRIORITY = 100;	
+		public const int BEAM_CONTEXT_DEPENDENCIES_REFLECTION_SYSTEM_PRIORITY = 100;
 	}
-	
+
 	/// <summary>
 	/// Used to initialize all reflection based systems with consistent validation and to ensure we are only doing the assembly sweeping once.
 	/// We can also use this to setup up compile-time validation of our Attribute-based systems such as Content and Microservices.
@@ -122,18 +122,18 @@ namespace Beamable.Common.Reflection
 		/// (TODO: this may need to go up or down based on numbers we see after we start using the system more heavily). 
 		/// </summary>
 		private const int PRE_ALLOC_SYSTEM_AND_PROVIDER_AMOUNT = 16;
-		
+
 		/// <summary>
 		/// Just a pre-allocation so we don't keep re-allocating the list mid-loop
 		/// (TODO: this may need to go up or down based on numbers we see after we start using the system more heavily).
 		/// </summary>
 		private const int PRE_ALLOC_TYPE_CACHES_AMOUNT = 256;
-		
+
 		/// <summary>
 		/// List of registered <see cref="IReflectionTypeProvider"/>s.
 		/// </summary>
 		private readonly List<IReflectionTypeProvider> _registeredProvider;
-		
+
 		/// <summary>
 		/// List of registered <see cref="IReflectionSystem"/>s that'll get the callbacks after <see cref="GenerateReflectionCache"/> finishes the assembly sweep.
 		/// </summary>
@@ -143,7 +143,7 @@ namespace Beamable.Common.Reflection
 		/// A <see cref="PerBaseTypeCache"/> holding all the cached reflection data for our <see cref="BaseTypeOfInterest"/> flows.
 		/// </summary>
 		private readonly PerBaseTypeCache _perBaseTypeCache;
-		
+
 		/// <summary>
 		/// A <see cref="PerAttributeCache"/> holding all the cached reflection data for our <see cref="AttributeOfInterest"/> flows.
 		/// </summary>
@@ -171,7 +171,7 @@ namespace Beamable.Common.Reflection
 
 		public void SetStorage(IBeamHintGlobalStorage hintGlobalStorage)
 		{
-			foreach (var userSystem in _registeredCacheUserSystems) 
+			foreach (var userSystem in _registeredCacheUserSystems)
 				userSystem.SetStorage(hintGlobalStorage);
 		}
 
@@ -203,7 +203,7 @@ namespace Beamable.Common.Reflection
 		{
 			Assert(provider != null, "Provider cannot be null. Please ensure the provider instance exists when passing it in here.");
 			Assert(!_registeredProvider.Contains(provider), "Already registered this provider --- Please ensure providers are registered a single time. " +
-			                                                "This is makes the Assembly Sweep more efficient.");
+															"This is makes the Assembly Sweep more efficient.");
 
 			// Guard so people don't accidentally shoot themselves in the foot when defining their attributes of interest.
 			foreach (var attributeOfInterest in provider.AttributesOfInterest)
@@ -239,7 +239,7 @@ namespace Beamable.Common.Reflection
 		{
 			Assert(system != null, "System cannot be null. Please ensure the system instance exists when passing it in here.");
 			Assert(!_registeredCacheUserSystems.Contains(system), "Already registered this system --- Please ensure systems are registered a single time. " +
-			                                                      "This is makes the Assembly Sweep more efficient and makes it so that you run the system callbacks run only once.");
+																  "This is makes the Assembly Sweep more efficient and makes it so that you run the system callbacks run only once.");
 
 			_registeredCacheUserSystems.Add(system);
 		}
@@ -277,10 +277,10 @@ namespace Beamable.Common.Reflection
 			sortedAssembliesToSweep = sortedAssembliesToSweep ?? new List<string>();
 
 			BuildTypeCaches(in _perBaseTypeCache,
-			                in _perAttributeCache,
-			                in baseTypesOfInterest,
-			                in attributesOfInterest,
-			                in sortedAssembliesToSweep);
+							in _perAttributeCache,
+							in baseTypesOfInterest,
+							in attributesOfInterest,
+							in sortedAssembliesToSweep);
 		}
 
 		/// <summary>
@@ -290,9 +290,13 @@ namespace Beamable.Common.Reflection
 		{
 			_registeredCacheUserSystems.ForEach(sys =>
 			{
+				if (userSystemTypesToRebuild != null && !userSystemTypesToRebuild.Contains(sys.GetType()))
+					return;
+
 				sys.ClearCachedReflectionData();
 				sys.OnSetupForCacheGeneration();
 			});
+
 			// Pass down to each given system only the types they are interested in
 			foreach (var reflectionBasedSystem in _registeredCacheUserSystems)
 			{
@@ -301,7 +305,7 @@ namespace Beamable.Common.Reflection
 					BeamableLogger.Log($"Skipping Reflection User System [{reflectionBasedSystem.GetType().FullName}] on this rebuild!");
 					continue;
 				}
-				
+
 				reflectionBasedSystem.OnReflectionCacheBuilt(_perBaseTypeCache, _perAttributeCache);
 				foreach (var type in reflectionBasedSystem.BaseTypesOfInterest)
 				{
@@ -319,10 +323,10 @@ namespace Beamable.Common.Reflection
 		/// Internal method that generates, given a list of base types, a dictionary of each type that <see cref="Type.IsAssignableFrom"/> to each base type. 
 		/// </summary>
 		private void BuildTypeCaches(in PerBaseTypeCache perBaseTypeLists,
-		                             in PerAttributeCache perAttributeLists,
-		                             in IReadOnlyList<BaseTypeOfInterest> baseTypesOfInterest,
-		                             in IReadOnlyList<AttributeOfInterest> attributesOfInterest,
-		                             in IReadOnlyList<string> sortedAssembliesToSweep)
+									 in PerAttributeCache perAttributeLists,
+									 in IReadOnlyList<BaseTypeOfInterest> baseTypesOfInterest,
+									 in IReadOnlyList<AttributeOfInterest> attributesOfInterest,
+									 in IReadOnlyList<string> sortedAssembliesToSweep)
 		{
 			// Initialize Per-Base Cache
 			{
@@ -358,15 +362,15 @@ namespace Beamable.Common.Reflection
 			// Groups by whether or not the assembly is one we care about sweeping.
 			var assembliesToSweepStr = "₢" + string.Join("₢", sortedAssembliesToSweep) + "₢";
 			var checkedOrIgnoredAssemblySplit = assemblies
-			                                    .GroupBy(asm => assembliesToSweepStr.Contains("₢" + asm.GetName().Name + "₢"))
-			                                    .ToList();
+												.GroupBy(asm => assembliesToSweepStr.Contains("₢" + asm.GetName().Name + "₢"))
+												.ToList();
 
 			// Gets all groups that don't have the IgnoreFromBeamableAssemblySweepAttribute and parse them
 			{
 				var validAssemblies = checkedOrIgnoredAssemblySplit
-				                      .Where(group => group.Key == true)
-				                      .SelectMany(group => group.ToList())
-				                      .ToList();
+									  .Where(group => group.Key == true)
+									  .SelectMany(group => group.ToList())
+									  .ToList();
 
 				foreach (var assembly in validAssemblies)
 				{
@@ -375,9 +379,9 @@ namespace Beamable.Common.Reflection
 					{
 						// Get a list of all attributes of interest that were found on this type.
 						GatherMembersFromAttributesOfInterest(type,
-						                                                   perAttributeLists.AttributeTypes,
-						                                                   perAttributeLists.MemberAttributeTypes,
-						                                                   perAttributeLists.AttributeMappings);
+																		   perAttributeLists.AttributeTypes,
+																		   perAttributeLists.MemberAttributeTypes,
+																		   perAttributeLists.AttributeMappings);
 
 						// Check for base types of interest                        
 						if (TryFindBaseTypesOfInterest(type, baseTypesOfInterest, out var foundType))
