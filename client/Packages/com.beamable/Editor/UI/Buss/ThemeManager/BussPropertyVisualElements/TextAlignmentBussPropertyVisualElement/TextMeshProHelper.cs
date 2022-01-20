@@ -71,18 +71,18 @@ namespace Beamable.Editor.UI.Components
 
 		public static class UIStyleManager
 		{
-			public static GUIStyle label;
-			public static GUIStyle textAreaBoxWindow;
-			public static GUIStyle boldFoldout;
-			public static GUIStyle panelTitle;
-			public static GUIStyle sectionHeader;
-			public static GUIStyle centeredLabel;
-			public static GUIStyle rightLabel;
-			public static GUIStyle wrappingTextArea;
-
-			public static GUIStyle alignmentButtonLeft;
-			public static GUIStyle alignmentButtonMid;
-			public static GUIStyle alignmentButtonRight;
+			// public static GUIStyle label;
+			// public static GUIStyle textAreaBoxWindow;
+			// public static GUIStyle boldFoldout;
+			// public static GUIStyle panelTitle;
+			// public static GUIStyle sectionHeader;
+			// public static GUIStyle centeredLabel;
+			// public static GUIStyle rightLabel;
+			// public static GUIStyle wrappingTextArea;
+			//
+			// public static GUIStyle alignmentButtonLeft;
+			// public static GUIStyle alignmentButtonMid;
+			// public static GUIStyle alignmentButtonRight;
 
 			// Alignment Button Textures
 			public static Texture2D alignLeft;
@@ -214,44 +214,44 @@ namespace Beamable.Editor.UI.Components
 							typeof(Texture2D)) as Texture2D;
 				}
 
-				label = new GUIStyle(EditorStyles.label) {richText = true, wordWrap = true, stretchWidth = true};
-				textAreaBoxWindow = new GUIStyle(EditorStyles.textArea) {richText = true};
-				boldFoldout = new GUIStyle(EditorStyles.foldout) {fontStyle = FontStyle.Bold};
-				panelTitle = new GUIStyle(EditorStyles.label) {fontStyle = FontStyle.Bold};
-
-				sectionHeader = new GUIStyle(EditorStyles.label)
-				{
-					fixedHeight = 22,
-					richText = true,
-					border = new RectOffset(9, 9, 0, 0),
-					overflow = new RectOffset(9, 0, 0, 0),
-					padding = new RectOffset(0, 0, 4, 0)
-				};
-				sectionHeader.normal.background = sectionHeaderTexture;
-
-				centeredLabel = new GUIStyle(EditorStyles.label) {alignment = TextAnchor.MiddleCenter};
-				rightLabel = new GUIStyle(EditorStyles.label) {alignment = TextAnchor.MiddleRight, richText = true};
-
-				alignmentButtonLeft = new GUIStyle(EditorStyles.miniButtonLeft);
-				alignmentButtonLeft.padding.left = 4;
-				alignmentButtonLeft.padding.right = 4;
-				alignmentButtonLeft.padding.top = 2;
-				alignmentButtonLeft.padding.bottom = 2;
-
-				alignmentButtonMid = new GUIStyle(EditorStyles.miniButtonMid);
-				alignmentButtonMid.padding.left = 4;
-				alignmentButtonMid.padding.right = 4;
-				alignmentButtonLeft.padding.top = 2;
-				alignmentButtonLeft.padding.bottom = 2;
-
-				alignmentButtonRight = new GUIStyle(EditorStyles.miniButtonRight);
-				alignmentButtonRight.padding.left = 4;
-				alignmentButtonRight.padding.right = 4;
-				alignmentButtonLeft.padding.top = 2;
-				alignmentButtonLeft.padding.bottom = 2;
-
-				wrappingTextArea = new GUIStyle(EditorStyles.textArea);
-				wrappingTextArea.wordWrap = true;
+				// label = new GUIStyle(EditorStyles.label) {richText = true, wordWrap = true, stretchWidth = true};
+				// textAreaBoxWindow = new GUIStyle(EditorStyles.textArea) {richText = true};
+				// boldFoldout = new GUIStyle(EditorStyles.foldout) {fontStyle = FontStyle.Bold};
+				// panelTitle = new GUIStyle(EditorStyles.label) {fontStyle = FontStyle.Bold};
+				//
+				// sectionHeader = new GUIStyle(EditorStyles.label)
+				// {
+				// 	fixedHeight = 22,
+				// 	richText = true,
+				// 	border = new RectOffset(9, 9, 0, 0),
+				// 	overflow = new RectOffset(9, 0, 0, 0),
+				// 	padding = new RectOffset(0, 0, 4, 0)
+				// };
+				// sectionHeader.normal.background = sectionHeaderTexture;
+				//
+				// centeredLabel = new GUIStyle(EditorStyles.label) {alignment = TextAnchor.MiddleCenter};
+				// rightLabel = new GUIStyle(EditorStyles.label) {alignment = TextAnchor.MiddleRight, richText = true};
+				//
+				// alignmentButtonLeft = new GUIStyle(EditorStyles.miniButtonLeft);
+				// alignmentButtonLeft.padding.left = 4;
+				// alignmentButtonLeft.padding.right = 4;
+				// alignmentButtonLeft.padding.top = 2;
+				// alignmentButtonLeft.padding.bottom = 2;
+				//
+				// alignmentButtonMid = new GUIStyle(EditorStyles.miniButtonMid);
+				// alignmentButtonMid.padding.left = 4;
+				// alignmentButtonMid.padding.right = 4;
+				// alignmentButtonLeft.padding.top = 2;
+				// alignmentButtonLeft.padding.bottom = 2;
+				//
+				// alignmentButtonRight = new GUIStyle(EditorStyles.miniButtonRight);
+				// alignmentButtonRight.padding.left = 4;
+				// alignmentButtonRight.padding.right = 4;
+				// alignmentButtonLeft.padding.top = 2;
+				// alignmentButtonLeft.padding.bottom = 2;
+				//
+				// wrappingTextArea = new GUIStyle(EditorStyles.textArea);
+				// wrappingTextArea.wordWrap = true;
 
 				alignContentA = new[]
 				{
