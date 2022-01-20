@@ -140,7 +140,7 @@ namespace Beamable.Editor.UI.Model
 
                   var descriptor = new StorageObjectDescriptor
                   {
-						Name = singleStorageManifest.id
+                        Name = singleStorageManifest.id
                   };
 
                   AllRemoteOnlyServices.Add(RemoteMongoStorageModel.CreateNew(descriptor, this));
