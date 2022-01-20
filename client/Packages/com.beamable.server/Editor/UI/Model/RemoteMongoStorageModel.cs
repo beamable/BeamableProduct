@@ -26,16 +26,16 @@ namespace Beamable.Editor.UI.Model
 		{
 			// TO DO HERE
 
-			if (MicroserviceConfiguration.Instance.Microservices.Count > 1)
+			if (MicroserviceConfiguration.Instance.StorageObjects.Count > 1)
 			{
 				evt.menu.BeamableAppendAction($"Order/Move Up", pos => {
-					MicroserviceConfiguration.Instance.MoveIndex(Name, -1, ServiceType.MicroService);
+					MicroserviceConfiguration.Instance.MoveIndex(Name, -1, ServiceType.StorageObject);
 					OnSortChanged?.Invoke();
-				}, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.MicroService) > 0);
+				}, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.StorageObject) > 0);
 				evt.menu.BeamableAppendAction($"Order/Move Down", pos => {
-					MicroserviceConfiguration.Instance.MoveIndex(Name, 1, ServiceType.MicroService);
+					MicroserviceConfiguration.Instance.MoveIndex(Name, 1, ServiceType.StorageObject);
 					OnSortChanged?.Invoke();
-				}, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.MicroService) < MicroserviceConfiguration.Instance.Microservices.Count - 1);
+				}, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.StorageObject) < MicroserviceConfiguration.Instance.StorageObjects.Count - 1);
 			}
 		}
 	}

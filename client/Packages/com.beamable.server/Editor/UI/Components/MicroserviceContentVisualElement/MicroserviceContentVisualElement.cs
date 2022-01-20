@@ -177,7 +177,10 @@ namespace Beamable.Editor.Microservice.UI.Components
                 mongoService.OnSelectionChanged += b =>
                     OnAllServiceSelectedStatusChanged?.Invoke(Model.Storages.All(m => m.IsSelected));
 
-                return mongoServiceElement;
+				mongoService.OnSortChanged -= SortMicroservices;
+				mongoService.OnSortChanged += SortMicroservices;
+
+				return mongoServiceElement;
 
             }
 

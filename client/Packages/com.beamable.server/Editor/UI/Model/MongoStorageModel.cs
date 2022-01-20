@@ -80,7 +80,7 @@ namespace Beamable.Editor.UI.Model
             evt.menu.BeamableAppendAction($"Download a snapshot", _ => AssemblyDefinitionHelper.RestoreMongo(ServiceDescriptor));
             evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());
 
-            if (MicroserviceConfiguration.Instance.Microservices.Count > 1)
+            if (MicroserviceConfiguration.Instance.StorageObjects.Count > 1)
             {
                 evt.menu.BeamableAppendAction($"Order/Move Up", pos => {
 					MicroserviceConfiguration.Instance.MoveIndex(Name, -1, ServiceType.StorageObject);
