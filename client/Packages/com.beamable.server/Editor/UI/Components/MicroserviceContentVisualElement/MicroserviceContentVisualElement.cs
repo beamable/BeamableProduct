@@ -294,7 +294,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			SortServices(ServiceType.StorageObject);
 		}
 
-		private bool ShouldDisplayService(ServiceType type)
+        private bool ShouldDisplayService(ServiceType type)
         {
 	        switch (Model.Filter)
 	        {
