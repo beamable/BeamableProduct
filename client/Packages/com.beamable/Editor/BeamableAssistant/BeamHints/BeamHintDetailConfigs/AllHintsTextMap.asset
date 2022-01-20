@@ -17,10 +17,12 @@ MonoBehaviour:
     - BEAM_C#MS
     - CODE_MISUSE
     - BEAM_BEAMABLE_ASSISTANT
+    - BEAM_INITIALIZATION
     values:
-    - Microservices
-    - Beamable Code Misuse
-    - Assistant
+    - Beamable C# Microservices
+    - Code Misuse
+    - Beamable Assistant
+    - Beamable Initialization
   HintIdToHintTitle:
     keys:
     - AttributeValidation-ClientCallableUnsupportedParameters
@@ -29,6 +31,7 @@ MonoBehaviour:
     - AttributeValidation-MisconfiguredHintDetailsProvider
     - AttributeNameCollision-MicroserviceNameCollision
     - AttributeValidation-MisconfiguredHintSystemAttribute
+    - AttributeValidation-UnsupportedRegisterBeamableDependencySignature
     values:
     - ClientCallable has unsupported parameters
     - '"async void" ClientCallable exists'
@@ -36,6 +39,7 @@ MonoBehaviour:
     - HintDetailsProvider with invalid signature
     - Microservice Name Collision
     - Hint System Attribute Misuse
+    - Unsupported BeamableRegisterDependency Attribute
   HintIdToHintIntroText:
     keys:
     - AttributeValidation-ClientCallableUnsupportedParameters
@@ -44,6 +48,7 @@ MonoBehaviour:
     - AttributeValidation-MisconfiguredHintDetailsProvider
     - AttributeNameCollision-MicroserviceNameCollision
     - AttributeValidation-MisconfiguredHintSystemAttribute
+    - AttributeValidation-UnsupportedRegisterBeamableDependencySignature
     values:
     - "The ClientCallables below have unsupported parameters. We don't support client
       callables with Delegate, Task or Promise parameters. \n\nWe don't support it
@@ -102,3 +107,6 @@ MonoBehaviour:
 
 
 '
+    - "We detected you are using RegisterBeamableDependency over a method with an
+      unsupported signature. Only the following signatures are supported:\r\n\r\nstatic
+      void(IDependencyBuilder builder)\r\n\r\nThe methods we identified were:\r\n"
