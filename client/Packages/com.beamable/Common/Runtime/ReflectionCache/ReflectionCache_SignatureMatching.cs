@@ -99,7 +99,8 @@ namespace Beamable.Common.Reflection
 
 				return $"{prefix}{param.ParameterType.Name}";
 			}));
-			return $"{signatureOfInterest.ReturnType.Name}({paramsDeclaration})";
+			var staticModifier = signatureOfInterest.IsStatic ? "static " : "";
+			return $"{staticModifier}{signatureOfInterest.ReturnType.Name}({paramsDeclaration})";
 		}
 
 		/// <summary>

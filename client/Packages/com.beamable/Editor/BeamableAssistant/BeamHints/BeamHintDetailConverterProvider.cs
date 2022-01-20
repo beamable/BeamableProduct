@@ -61,12 +61,17 @@ namespace Beamable.Editor.Assistant
 			{
 				string line;
 
+				
 				// Format the data depending on the hint we are rendering
 				if (hintId == BeamHintIds.ID_CLIENT_CALLABLE_UNSUPPORTED_PARAMETERS) { line = $"{attrValidation.Pair.Info.DeclaringType.Name}.{attrValidation.Pair.Info.Name} => {attrValidation.Message}"; }
 				else if (hintId == BeamHintIds.ID_CLIENT_CALLABLE_ASYNC_VOID) { line = $"{attrValidation.Pair.Info.DeclaringType.FullName}.{attrValidation.Pair.Info.Name}"; }
 				else if (hintId == BeamHintIds.ID_MICROSERVICE_ATTRIBUTE_MISSING) { line = $"{attrValidation.Pair.Info.Name}"; }
 				else if (hintId == BeamHintIds.ID_MISCONFIGURED_HINT_DETAILS_PROVIDER) { line = $"{attrValidation.Pair.Info.DeclaringType.FullName}.{attrValidation.Pair.Info.Name}"; }
-				else { line = $"{attrValidation.Pair.Info.ReflectedType.FullName}"; }
+				else
+				{
+					var msg = string.IsNullOrEmpty(attrValidation.Message) ? "" : $" => {attrValidation.Message}";
+					line = $"{attrValidation.Pair.Info.ReflectedType.FullName}{msg}";
+				}
 
 				validationMsg.AppendLine(line);
 			}

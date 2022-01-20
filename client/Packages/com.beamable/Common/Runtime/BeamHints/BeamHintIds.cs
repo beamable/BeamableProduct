@@ -83,6 +83,10 @@ namespace Beamable.Common.Assistant
 		/// </summary>
 		public const string ATTRIBUTE_NAME_COLLISION_ID_PREFIX = "AttributeNameCollision";
 
+		
+		// Beamable Initialization IDs
+		[BeamHintId] public static readonly string ID_UNSUPPORTED_REGISTER_BEAMABLE_DEPENDENCY_SIGNATURE = GenerateHintId("UnsupportedRegisterBeamableDependencySignature", ATTRIBUTE_VALIDATION_ID_PREFIX);
+
 		// Beamable Assistant IDs
 		[BeamHintId] public static readonly string ID_MISCONFIGURED_HINT_DETAILS_PROVIDER = GenerateHintId("MisconfiguredHintDetailsProvider", ATTRIBUTE_VALIDATION_ID_PREFIX);
 		[BeamHintId] public static readonly string ID_MISCONFIGURED_HINT_SYSTEM_ATTRIBUTE = GenerateHintId("MisconfiguredHintSystemAttribute", ATTRIBUTE_VALIDATION_ID_PREFIX);

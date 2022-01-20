@@ -89,6 +89,11 @@ namespace Beamable.Common.Reflection
 		public readonly List<Type> FoundInTypesWithAttributes;
 
 		/// <summary>
+		/// Whether or not we should force all types' members to be searched for a certain attribute. Ideally, we shouldn't use this too much.
+		/// </summary>
+		private readonly bool _forceSearchInAllTypes;
+		
+		/// <summary>
 		/// Whether or not the attribute targets a Non-Type-Member (see <see cref="INTERNAL_TYPE_SEARCH_WHEN_ATTRIBUTE_TARGETS"/> and <see cref="INTERNAL_TYPE_SEARCH_WHEN_IS_MEMBER_TYPES"/>).
 		/// </summary>
 		public bool TargetsDeclaredMember => INTERNAL_TYPE_SEARCH_WHEN_ATTRIBUTE_TARGETS.ContainsAnyFlag(Targets);
@@ -115,7 +120,7 @@ namespace Beamable.Common.Reflection
 		{
 			var canHaveDeclaredMembers = FoundInBaseTypes.Any(baseType => baseType.IsAssignableFrom(type));
 			canHaveDeclaredMembers |= FoundInTypesWithAttributes.Any(attrType => type.GetCustomAttribute(attrType) != null);
-			return canHaveDeclaredMembers;
+			return canHaveDeclaredMembers || _forceSearchInAllTypes;
 		}
 
 		/// <summary>
@@ -138,7 +143,7 @@ namespace Beamable.Common.Reflection
 		/// Thrown if <paramref name="attributeType"/> does not have a <see cref="AttributeUsageAttribute"/> or if <see cref="TargetsDeclaredMember"/> and both
 		/// <paramref name="foundInBaseTypes"/> and <paramref name="foundInTypesWithAttributes"/> have no types.
 		/// </exception>
-		public AttributeOfInterest(Type attributeType, Type[] foundInTypesWithAttributes = null, Type[] foundInBaseTypes = null)
+		public AttributeOfInterest(Type attributeType, Type[] foundInTypesWithAttributes = null, Type[] foundInBaseTypes = null, bool forceSearchInAllTypes = false)
 		{
 			AttributeType = attributeType;
 			Targets = AttributeType.GetCustomAttribute<AttributeUsageAttribute>()?.ValidOn ??
@@ -147,7 +152,8 @@ namespace Beamable.Common.Reflection
 			FoundInBaseTypes = new List<Type>(foundInBaseTypes ?? new Type[] { });
 			FoundInTypesWithAttributes = new List<Type>(foundInTypesWithAttributes ?? new Type[] { });
 
-			if (TargetsDeclaredMember)
+			_forceSearchInAllTypes = forceSearchInAllTypes;
+			if (TargetsDeclaredMember && !_forceSearchInAllTypes)
 			{
 				Debug.Assert(foundInTypesWithAttributes != null || foundInBaseTypes != null,
 				             "Attributes targeting members of classes and structs must specify either a base class/struct or " +
