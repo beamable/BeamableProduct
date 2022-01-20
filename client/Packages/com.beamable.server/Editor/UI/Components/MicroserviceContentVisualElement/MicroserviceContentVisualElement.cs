@@ -255,12 +255,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         public void SortServices(ServiceType serviceType)
         {
-            var config = MicroserviceConfiguration.Instance;
+			var config = MicroserviceConfiguration.Instance;
 
-            int Comparer(VisualElement a, VisualElement b)
-            {
-                if (a is CreateServiceBaseVisualElement) return -1;
-                if (b is CreateServiceBaseVisualElement) return 1;
+			int Comparer(VisualElement a, VisualElement b)
+			{
+				if (a is CreateServiceBaseVisualElement) return -1;
+				if (b is CreateServiceBaseVisualElement) return 1;
 
 				switch (serviceType)
 				{
@@ -276,8 +276,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 						break;
 				}
 
-                return config.OrderComparer(a.name, b.name, serviceType);
-            }
+				return config.OrderComparer(a.name, b.name, serviceType);
+			}
 
 			_servicesListElement.Sort(Comparer);
 		}
@@ -296,7 +296,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         {
 	        switch (Model.Filter)
 	        {
-		        case ServicesDisplayFilter.AllTypes:
+				case ServicesDisplayFilter.AllTypes:
 			        return true;
 		        case ServicesDisplayFilter.Microservices:
 			        return type == ServiceType.MicroService;
