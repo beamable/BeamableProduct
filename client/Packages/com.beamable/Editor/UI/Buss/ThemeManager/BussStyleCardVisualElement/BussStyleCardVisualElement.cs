@@ -228,7 +228,6 @@ namespace Beamable.Editor.UI.Components
 			{
 				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
 				element.Setup(_styleSheet, StyleRule, property, _variableDatabase);
-				element.AddToClassList("exists");
 				(property.IsVariable ? _variables : _properties).Add(element);
 			}
 
@@ -237,13 +236,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				var propertyProvider = BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
 				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
-				element.OnValueChanged = () =>
-				{
-					StyleRule.TryAddProperty(key, propertyProvider.GetProperty(), out _);
-					Refresh();
-				};
-				element.Setup(null, StyleRule, propertyProvider, _variableDatabase);
-				element.AddToClassList("doesntExists");
+				element.Setup(_styleSheet, StyleRule, propertyProvider, _variableDatabase);
 				_properties.Add(element);
 			}
 		}

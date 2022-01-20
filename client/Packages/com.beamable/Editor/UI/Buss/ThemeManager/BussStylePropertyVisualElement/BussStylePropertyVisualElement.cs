@@ -3,7 +3,6 @@ using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using Beamable.Editor.UI.BUSS.ThemeManager;
 using Beamable.Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements;
-using System;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -16,8 +15,6 @@ namespace Beamable.Editor.UI.Components
 {
 	public class BussStylePropertyVisualElement : BeamableBasicVisualElement
 	{
-		public Action OnValueChanged;
-
 #if UNITY_2018
 		public BussStylePropertyVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.2018.uss") { }
@@ -37,6 +34,7 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleSheet _styleSheet;
 		private BussStyleRule _styleRule;
 		private BussPropertyProvider _propertyProvider;
+		private bool _propertyIsInStyle;
 
 		public override void Refresh()
 		{
@@ -65,6 +63,8 @@ namespace Beamable.Editor.UI.Components
 			_variableParent.name = "globalVariable";
 			Root.Add(_variableParent);
 
+			Root.parent.EnableInClassList("exists", _propertyIsInStyle);
+			Root.parent.EnableInClassList("doesntExists", !_propertyIsInStyle);
 			Update();
 		}
 
@@ -88,6 +88,7 @@ namespace Beamable.Editor.UI.Components
 			_styleSheet = styleSheet;
 			_styleRule = styleRule;
 			_propertyProvider = property;
+			_propertyIsInStyle = _styleRule.Properties.Contains(_propertyProvider);
 
 			Refresh();
 			AddStyleSheetListener();
@@ -112,15 +113,29 @@ namespace Beamable.Editor.UI.Components
 
 			if (_propertyVisualElement != null)
 			{
-				_propertyVisualElement.UpdatedStyleSheet = _styleSheet;
+				_propertyVisualElement.UpdatedStyleSheet = _propertyIsInStyle ? _styleSheet : null;
 				_valueParent.Add(_propertyVisualElement);
 				_propertyVisualElement.Refresh();
-				_propertyVisualElement.OnValueChanged = () => OnValueChanged?.Invoke();
+				_propertyVisualElement.OnValueChanged -= HandlePropertyChanged;
+				_propertyVisualElement.OnValueChanged += HandlePropertyChanged;
+			}
+		}
+		
+		void HandlePropertyChanged()
+		{
+			if(!_propertyIsInStyle)
+			{
+				_styleRule.TryAddProperty(_propertyProvider.Key, _propertyProvider.GetProperty(), out _);
+				_styleSheet.TriggerChange();
 			}
 		}
 
 		protected override void OnDestroy()
 		{
+			if (_propertyVisualElement != null)
+			{
+				_propertyVisualElement.OnValueChanged -= HandlePropertyChanged;
+			}
 			_removeButton?.UnregisterCallback<MouseDownEvent>(OnRemoveButtonClicked);
 			RemoveStyleSheetListener();
 		}
