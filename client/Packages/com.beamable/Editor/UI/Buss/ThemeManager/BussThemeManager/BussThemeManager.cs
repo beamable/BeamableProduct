@@ -1,4 +1,5 @@
-﻿using Beamable.Editor.UI.Buss;
+﻿using Beamable.Editor.Common;
+using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
@@ -6,10 +7,7 @@ using Editor.UI.Buss;
 using Editor.UI.BUSS;
 using Editor.UI.BUSS.ThemeManager;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor;
-using UnityEngine;
-using Object = UnityEngine.Object;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -105,11 +103,12 @@ namespace Beamable.UI.BUSS
 
 		private void RefreshStyleCards()
 		{
+			UndoSystem<BussStyleRule>.Update();
 			ClearStyleCards();
 			CreateStyleCards();
 			AddSelectorButton();
 		}
-		
+
 		private void AddSelectorButton()
 		{
 			var addSelectorButton = new VisualElement {name = "addSelectorButton"};
@@ -170,8 +169,14 @@ namespace Beamable.UI.BUSS
 			{
 				foreach (BussStyleRule styleRule in styleSheet.Styles)
 				{
+					var undoKey = $"{styleSheet.name}-{styleRule.SelectorString}";
+					UndoSystem<BussStyleRule>.AddRecord(styleRule, undoKey);
 					BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-					styleCard.Setup(styleSheet, styleRule, _variableDatabase, _navigationWindow);
+					styleCard.Setup(styleSheet, styleRule, _variableDatabase, _navigationWindow, () =>
+					{
+						UndoSystem<BussStyleRule>.Undo(undoKey);
+						RefreshStyleCards();
+					});
 					_styleCardsVisualElements.Add(styleCard);
 					_stylesGroup.Add(styleCard);
 				}
@@ -201,6 +206,7 @@ namespace Beamable.UI.BUSS
 			ClearCurrentStyleSheet();
 			_navigationWindow.HierarchyChanged -= RefreshStyleSheets;
 			_navigationWindow.Destroy();
+			UndoSystem<BussStyleRule>.DeleteAllRecords();
 		}
 	}
 }

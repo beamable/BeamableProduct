@@ -1,6 +1,5 @@
 ﻿using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
-using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using Editor.UI.Buss;
@@ -8,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
-using UnityEngine;
 
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
