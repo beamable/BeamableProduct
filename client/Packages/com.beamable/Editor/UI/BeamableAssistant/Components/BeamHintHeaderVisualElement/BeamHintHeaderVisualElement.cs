@@ -122,6 +122,7 @@ namespace Beamable.Editor.Assistant
 			_ = BeamHintDomains.TryGetDomainAtDepth(_displayingHintHeader.Domain, 0, out var primaryDomain);
 			_ = _hintDetailsReflectionCache.TryGetDomainTitleText(primaryDomain, out var hintPrimaryDomainText);
 			hintPrimaryDomain.text = hintPrimaryDomainText;
+			hintPrimaryDomain.AddTextWrapStyle();
 
 			// Find the ConverterData that is tied to the hint we are displaying from the HintDetails Reflection Cache system.
 			if (!_hintDetailsReflectionCache.TryGetConverterDataForHint(_displayingHintHeader, out var converter))

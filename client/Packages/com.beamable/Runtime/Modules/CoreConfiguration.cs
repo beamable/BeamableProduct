@@ -73,7 +73,7 @@ namespace Beamable
 		[Tooltip("Register any assemblies you wish to ignore from the assembly sweep.")]
 		public List<string> AssembliesToSweep = new List<string>();
 
-		private void OnValidate()
+		public void OnValidate()
 		{
 			// Ensure default paths exist for Reflection Cache User System Objects
 			if (!ReflectionSystemPaths.Contains(PROJECT_EDITOR_REFLECTION_SYSTEM_PATH))
@@ -123,9 +123,10 @@ namespace Beamable
 
 #if UNITY_EDITOR
 			Assembly[] playerAssemblies = CompilationPipeline.GetAssemblies();
-			AssembliesToSweep.AddRange(playerAssemblies.Select(asm => asm.name));
+			AssembliesToSweep.AddRange(playerAssemblies.Select(asm => asm.name).Where(n => !string.IsNullOrEmpty(n)));
 			AssembliesToSweep = AssembliesToSweep.Distinct().ToList();
 			AssembliesToSweep.Sort();
+			Debug.Log($"Assemblies to Sweep\n{string.Join(", ", AssembliesToSweep)}");
 #endif
 		}
 	}
