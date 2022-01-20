@@ -36,6 +36,9 @@ namespace Beamable
 			{
 				coreConfiguration = CoreConfiguration = AssetDatabase.LoadAssetAtPath<CoreConfiguration>("Packages/com.beamable/Editor/Config/CoreConfiguration.asset");
 			}
+
+			// Ensures we have the latest assembly definitions and paths are all correctly setup.
+			coreConfiguration.OnValidate();
 			
 			// Initializes the Config database
 			ConfigDatabase.Init();
