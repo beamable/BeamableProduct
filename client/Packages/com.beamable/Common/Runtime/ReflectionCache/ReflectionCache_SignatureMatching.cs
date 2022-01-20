@@ -67,7 +67,7 @@ namespace Beamable.Common.Reflection
 		/// Whether or not the parameter is a <b>ref</b> parameter.
 		/// </summary>
 		public readonly bool IsByRef;
-		
+
 		/// <summary>
 		/// <see cref="ParameterOfInterest"/> default constructor. Validates in/ref/out correctness.
 		/// </summary>
@@ -156,9 +156,9 @@ namespace Beamable.Common.Reflection
 			var parameters = methodInfo.GetParameters();
 			var retValType = methodInfo.ReturnType;
 			var isStatic = methodInfo.IsStatic;
-			
+
 			var acceptableSignature = acceptedSignatures.ElementAt(idx);
-			
+
 			if (isStatic != acceptableSignature.IsStatic) return false;
 			if (retValType != acceptableSignature.ReturnType) return false;
 
@@ -182,11 +182,11 @@ namespace Beamable.Common.Reflection
 
 			return true;
 		}
-		
+
 		/// <summary>
 		/// Utility to checks if the given method info is an async method with the given return type.
 		/// </summary>
-		public static bool IsAsyncMethodOfType(this MethodInfo methodInfo, Type returnType) => 
+		public static bool IsAsyncMethodOfType(this MethodInfo methodInfo, Type returnType) =>
 			methodInfo.GetCustomAttribute<AsyncStateMachineAttribute>() != null && methodInfo.ReturnType == returnType;
 
 		/// <summary>
@@ -217,10 +217,10 @@ namespace Beamable.Common.Reflection
 			}
 			return result;
 		}
-		
+
 		private static bool MatchParameter(ParameterOfInterest acceptableParameter, ParameterInfo parameter)
 		{
-			var matchType = acceptableParameter.ParameterType.IsInterface ? acceptableParameter.ParameterType.IsAssignableFrom(parameter.ParameterType) : 
+			var matchType = acceptableParameter.ParameterType.IsInterface ? acceptableParameter.ParameterType.IsAssignableFrom(parameter.ParameterType) :
 				acceptableParameter.ParameterType == parameter.ParameterType || parameter.ParameterType.IsSubclassOf(acceptableParameter.ParameterType);
 			var matchIn = acceptableParameter.IsIn == parameter.IsIn;
 			var matchOut = acceptableParameter.IsOut == parameter.IsOut;
@@ -229,14 +229,14 @@ namespace Beamable.Common.Reflection
 			var matchParameter = matchType && matchIn && matchOut && matchRef;
 			return matchParameter;
 		}
-		
+
 		private static bool MatchParameterTypeOnly(ParameterOfInterest acceptableParameter, ParameterInfo parameter)
 		{
-			var matchType = acceptableParameter.ParameterType.IsInterface ? acceptableParameter.ParameterType.IsAssignableFrom(parameter.ParameterType) : 
+			var matchType = acceptableParameter.ParameterType.IsInterface ? acceptableParameter.ParameterType.IsAssignableFrom(parameter.ParameterType) :
 				acceptableParameter.ParameterType == parameter.ParameterType || parameter.ParameterType.IsSubclassOf(acceptableParameter.ParameterType);
 			return matchType;
 		}
 
-		
+
 	}
 }

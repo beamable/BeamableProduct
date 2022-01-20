@@ -64,10 +64,10 @@ namespace Beamable.Common.Assistant
 
 		[BeamHintDomain] public static readonly string BEAM_INIT = GenerateBeamableDomain("INITIALIZATION");
 		public static bool IsInitializationDomain(string domain) => IsBeamableDomain(domain) && domain.Contains(BEAM_INIT);
-		
+
 		[BeamHintDomain] public static readonly string BEAM_REFLECTION_CACHE = GenerateBeamableDomain("REFLECTION_CACHE");
 		public static bool IsReflectionCacheDomain(string domain) => IsBeamableDomain(domain) && domain.Contains(BEAM_REFLECTION_CACHE);
-		
+
 
 		[BeamHintDomain] public static readonly string BEAM_CSHARP_MICROSERVICES = GenerateBeamableDomain("C#MS");
 		[BeamHintDomain] public static readonly string BEAM_CSHARP_MICROSERVICES_CODE_MISUSE = GenerateSubDomain(BEAM_CSHARP_MICROSERVICES, "CODE_MISUSE");

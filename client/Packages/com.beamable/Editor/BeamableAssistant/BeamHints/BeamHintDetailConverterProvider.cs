@@ -9,7 +9,7 @@ using System.Text;
 
 namespace Beamable.Editor.Assistant
 {
-	
+
 	/// <summary>
 	/// The base class defining all <see cref="BeamHintReflectionCache.DefaultConverter"/> (and other similar delegates).
 	/// <para/>
@@ -18,14 +18,14 @@ namespace Beamable.Editor.Assistant
 	/// </summary>
 	public abstract class BeamHintDetailConverterProvider
 	{
-		
+
 		/// <summary>
 		/// Converter to handle cases where other <see cref="BeamHintDetailConverterAttribute"/> fail their validations. It also handles <see cref="AttributeValidationResults"/>,
 		/// but in a way that guarantees that the converter function matches one of the accepted signatures.
 		/// </summary>
 		[BeamHintDetailConverter(typeof(BeamHintReflectionCache.DefaultConverter),
-		                         BeamHintType.Validation, "", "MisconfiguredHintDetailsProvider",
-		                         "HintDetailsAttributeValidationResultConfig")]
+								 BeamHintType.Validation, "", "MisconfiguredHintDetailsProvider",
+								 "HintDetailsAttributeValidationResultConfig")]
 		public static void MisconfiguredHintDetailsAttributeConverter(in BeamHint hint, in BeamHintTextMap textMap, BeamHintVisualsInjectionBag injectionBag)
 		{
 			var ctx = hint.ContextObject as IEnumerable<AttributeValidationResult>;
@@ -41,14 +41,14 @@ namespace Beamable.Editor.Assistant
 
 			injectionBag.SetLabel(validationIntro + validationMsg, "hintText");
 		}
-		
-		
+
+
 		/// <summary>
 		/// Converter that handles <see cref="AttributeValidationResult"/>s as context object and displays a single Label text message.
 		/// </summary>
 		[BeamHintDetailConverter(typeof(BeamHintReflectionCache.DefaultConverter),
-		                         BeamHintType.Validation | BeamHintType.Hint, "", BeamHintIds.ATTRIBUTE_VALIDATION_ID_PREFIX,
-		                         "HintDetailsAttributeValidationResultConfig")]
+								 BeamHintType.Validation | BeamHintType.Hint, "", BeamHintIds.ATTRIBUTE_VALIDATION_ID_PREFIX,
+								 "HintDetailsAttributeValidationResultConfig")]
 		public static void AttributeValidationConverter(in BeamHint hint, in BeamHintTextMap textMap, BeamHintVisualsInjectionBag injectionBag)
 		{
 			var hintId = hint.Header.Id;
@@ -61,7 +61,7 @@ namespace Beamable.Editor.Assistant
 			{
 				string line;
 
-				
+
 				// Format the data depending on the hint we are rendering
 				if (hintId == BeamHintIds.ID_CLIENT_CALLABLE_UNSUPPORTED_PARAMETERS) { line = $"{attrValidation.Pair.Info.DeclaringType.Name}.{attrValidation.Pair.Info.Name} => {attrValidation.Message}"; }
 				else if (hintId == BeamHintIds.ID_CLIENT_CALLABLE_ASYNC_VOID) { line = $"{attrValidation.Pair.Info.DeclaringType.FullName}.{attrValidation.Pair.Info.Name}"; }
@@ -78,14 +78,14 @@ namespace Beamable.Editor.Assistant
 
 			injectionBag.SetLabel(validationIntro + validationMsg, "hintText");
 		}
-		
-		
+
+
 		/// <summary>
 		/// Converter that handles <see cref="UniqueNameCollisionData"/>s as context object and displays a single Label text message.
 		/// </summary>
 		[BeamHintDetailConverter(typeof(BeamHintReflectionCache.DefaultConverter),
-		                         BeamHintType.Validation | BeamHintType.Hint, "", BeamHintIds.ATTRIBUTE_NAME_COLLISION_ID_PREFIX,
-		                         "HintDetailsAttributeValidationResultConfig")]
+								 BeamHintType.Validation | BeamHintType.Hint, "", BeamHintIds.ATTRIBUTE_NAME_COLLISION_ID_PREFIX,
+								 "HintDetailsAttributeValidationResultConfig")]
 		public static void UniqueNameAttributeValidationConverter(in BeamHint hint, in BeamHintTextMap textMap, BeamHintVisualsInjectionBag injectionBag)
 		{
 			var hintId = hint.Header.Id;

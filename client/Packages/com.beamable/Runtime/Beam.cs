@@ -85,8 +85,8 @@ namespace Beamable
 #endif
 
 			var reflectionSystemObjects = Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems")
-			                                       .Where(system => system.Enabled)
-			                                       .ToList();
+												   .Where(system => system.Enabled)
+												   .ToList();
 			reflectionSystemObjects.Sort((reflectionSys1, reflectionSys2) => reflectionSys1.Priority.CompareTo(reflectionSys2.Priority));
 
 			// Inject them into the ReflectionCache system in the correct order.
@@ -136,17 +136,17 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IContentApi>(provider => provider.GetService<ContentService>());
 			DependencyBuilder.AddScoped<InventoryService>();
 			DependencyBuilder.AddScoped<StatsService>(provider =>
-				                                          new StatsService(
-					                                          provider.GetService<IPlatformService>(),
-					                                          provider.GetService<PlatformRequester>(),
-					                                          provider,
-					                                          UnityUserDataCache<Dictionary<string, string>>
-						                                          .CreateInstance));
+														  new StatsService(
+															  provider.GetService<IPlatformService>(),
+															  provider.GetService<PlatformRequester>(),
+															  provider,
+															  UnityUserDataCache<Dictionary<string, string>>
+																  .CreateInstance));
 			DependencyBuilder.AddSingleton<AnalyticsTracker>(provider =>
-				                                                 new AnalyticsTracker(
-					                                                 provider.GetService<IPlatformService>(),
-					                                                 provider.GetService<PlatformRequester>(),
-					                                                 provider.GetService<CoroutineService>(), 30, 10)
+																 new AnalyticsTracker(
+																	 provider.GetService<IPlatformService>(),
+																	 provider.GetService<PlatformRequester>(),
+																	 provider.GetService<CoroutineService>(), 30, 10)
 			);
 			DependencyBuilder.AddSingleton<IAnalyticsTracker>(provider => provider.GetService<AnalyticsTracker>());
 			DependencyBuilder.AddSingleton<MailService>();
@@ -162,17 +162,17 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<TournamentService>();
 			DependencyBuilder.AddSingleton<ChatService>();
 			DependencyBuilder.AddSingleton<LeaderboardService>(provider =>
-				                                                   new LeaderboardService(
-					                                                   provider.GetService<IPlatformService>(),
-					                                                   provider.GetService<IBeamableRequester>(),
-					                                                   provider,
-					                                                   UnityUserDataCache<RankEntry>.CreateInstance
-				                                                   ));
+																   new LeaderboardService(
+																	   provider.GetService<IPlatformService>(),
+																	   provider.GetService<IBeamableRequester>(),
+																	   provider,
+																	   UnityUserDataCache<RankEntry>.CreateInstance
+																   ));
 			DependencyBuilder.AddSingleton<GameRelayService>();
 			DependencyBuilder.AddSingleton<MatchmakingService>(provider => new MatchmakingService(
-				                                                   provider.GetService<IPlatformService>(),
-				                                                   // the matchmaking service needs a special instance of the beamable api requester
-				                                                   provider.GetService<IBeamableApiRequester>())
+																   provider.GetService<IPlatformService>(),
+																   // the matchmaking service needs a special instance of the beamable api requester
+																   provider.GetService<IBeamableApiRequester>())
 			);
 			DependencyBuilder.AddSingleton<SocialService>();
 			DependencyBuilder.AddSingleton<CalendarsService>();
@@ -281,7 +281,8 @@ namespace Beamable
 				};
 #else
 				var activeScene = SceneManager.GetActiveScene();
-				loadAction = () => {
+				loadAction = () =>
+				{
 					SceneManager.LoadScene(activeScene.name, LoadSceneMode.Single);
 				};
 #endif

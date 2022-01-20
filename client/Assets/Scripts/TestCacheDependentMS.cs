@@ -5,10 +5,10 @@ using Beamable.Common.Api;
 using Beamable.Common.Assistant;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
+using Beamable.Server.Clients;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Beamable.Server.Clients;
 using System.Linq;
 using UnityEngine;
 
@@ -37,7 +37,7 @@ public class TestCacheDependentMS : MonoBehaviour
 	{
 		// Calling this just to see if we don't have a static initialization problem...
 		//Beam.ReflectionCache.ClearProviders();
-		
+
 		var testBeamContextSystem = BeamContext.Default.ServiceProvider.GetService<TestBeamContextSystem>();
 		testBeamContextSystem.DoSomething(ref beamContextText);
 
@@ -128,7 +128,7 @@ public class TestBeamContextSystem
 	{
 		builder.AddSingleton<TestBeamContextSystem>();
 	}
-	
+
 	[RegisterBeamableDependencies]
 	public static void InvalidRegisterDependency(IDependencyBuilder builder, int parameterThatShouldntExist)
 	{

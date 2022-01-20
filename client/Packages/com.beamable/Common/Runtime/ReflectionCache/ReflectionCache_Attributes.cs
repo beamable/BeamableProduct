@@ -53,19 +53,19 @@ namespace Beamable.Common.Reflection
 		/// Mask for all possible <see cref="AttributeTargets"/> declaring an attribute must only exist on a "Member" of classes/structs. 
 		/// </summary>
 		public const AttributeTargets INTERNAL_TYPE_SEARCH_WHEN_ATTRIBUTE_TARGETS = AttributeTargets.Constructor |
-		                                                                            AttributeTargets.Event |
-		                                                                            AttributeTargets.Field |
-		                                                                            AttributeTargets.Method |
-		                                                                            AttributeTargets.Property;
+																					AttributeTargets.Event |
+																					AttributeTargets.Field |
+																					AttributeTargets.Method |
+																					AttributeTargets.Property;
 
 		/// <summary>
 		/// Mask for all possible <see cref="MemberTypes"/> that can be "Members" of declared classes/structs.
 		/// </summary>
 		private const MemberTypes INTERNAL_TYPE_SEARCH_WHEN_IS_MEMBER_TYPES = MemberTypes.Constructor |
-		                                                                      MemberTypes.Event |
-		                                                                      MemberTypes.Field |
-		                                                                      MemberTypes.Method |
-		                                                                      MemberTypes.Property;
+																			  MemberTypes.Event |
+																			  MemberTypes.Field |
+																			  MemberTypes.Method |
+																			  MemberTypes.Property;
 
 		/// <summary>
 		/// Type of the attribute you are interested in.
@@ -92,7 +92,7 @@ namespace Beamable.Common.Reflection
 		/// Whether or not we should force all types' members to be searched for a certain attribute. Ideally, we shouldn't use this too much.
 		/// </summary>
 		private readonly bool _forceSearchInAllTypes;
-		
+
 		/// <summary>
 		/// Whether or not the attribute targets a Non-Type-Member (see <see cref="INTERNAL_TYPE_SEARCH_WHEN_ATTRIBUTE_TARGETS"/> and <see cref="INTERNAL_TYPE_SEARCH_WHEN_IS_MEMBER_TYPES"/>).
 		/// </summary>
@@ -109,7 +109,7 @@ namespace Beamable.Common.Reflection
 			// Assert instead of failing silently. Failing silently here means we could fail due to the member not having the correct flag. This is a case where we should fail loudly, as it's 
 			// supposed to be impossible.
 			Debug.Assert(INTERNAL_TYPE_SEARCH_WHEN_IS_MEMBER_TYPES.ContainsAnyFlag(info.MemberType),
-			             "Calling this with a member info that is not a declared member. Please ensure all MemberInfos passed to this function respect this clause.");
+						 "Calling this with a member info that is not a declared member. Please ensure all MemberInfos passed to this function respect this clause.");
 			return attribute != null;
 		}
 
@@ -147,7 +147,7 @@ namespace Beamable.Common.Reflection
 		{
 			AttributeType = attributeType;
 			Targets = AttributeType.GetCustomAttribute<AttributeUsageAttribute>()?.ValidOn ??
-			          throw new ArgumentException($"To use Attribute Of Interest, you must declare a AttributeUsage attribute with the correct usage targets.");
+					  throw new ArgumentException($"To use Attribute Of Interest, you must declare a AttributeUsage attribute with the correct usage targets.");
 
 			FoundInBaseTypes = new List<Type>(foundInBaseTypes ?? new Type[] { });
 			FoundInTypesWithAttributes = new List<Type>(foundInTypesWithAttributes ?? new Type[] { });
@@ -156,8 +156,8 @@ namespace Beamable.Common.Reflection
 			if (TargetsDeclaredMember && !_forceSearchInAllTypes)
 			{
 				Debug.Assert(foundInTypesWithAttributes != null || foundInBaseTypes != null,
-				             "Attributes targeting members of classes and structs must specify either a base class/struct or " +
-				             "an attribute over the classes/structs whose members we must check for the attribute of interest.");
+							 "Attributes targeting members of classes and structs must specify either a base class/struct or " +
+							 "an attribute over the classes/structs whose members we must check for the attribute of interest.");
 			}
 		}
 	}
@@ -198,9 +198,9 @@ namespace Beamable.Common.Reflection
 		/// <param name="declaredMemberAttributesToSearchFor">List of pre-filtered <see cref="AttributeOfInterest"/> that passes <see cref="AttributeOfInterest.TargetsDeclaredMember"/>.</param>
 		/// <param name="foundAttributes">Dictionary with pre-allocated lists for all registered <see cref="AttributeOfInterest"/>.</param>
 		private void GatherMembersFromAttributesOfInterest(MemberInfo member,
-		                                                                IReadOnlyList<AttributeOfInterest> attributesToSearchFor,
-		                                                                IReadOnlyList<AttributeOfInterest> declaredMemberAttributesToSearchFor,
-		                                                                Dictionary<AttributeOfInterest, List<MemberAttribute>> foundAttributes)
+																		IReadOnlyList<AttributeOfInterest> attributesToSearchFor,
+																		IReadOnlyList<AttributeOfInterest> declaredMemberAttributesToSearchFor,
+																		Dictionary<AttributeOfInterest, List<MemberAttribute>> foundAttributes)
 		{
 			// Check for attributes over the type itself.
 			foreach (var attributeOfInterest in attributesToSearchFor)
@@ -223,9 +223,9 @@ namespace Beamable.Common.Reflection
 					// For each declared member, check if they have the current attribute of interest -- if they do, add them to the found attribute list.
 					// In this step we catch every member with the attribute --- individual systems are welcome to parse and yield errors at a later step. 
 					foreach (var memberInfo in type.GetMembers(BindingFlags.Public |
-					                                           BindingFlags.NonPublic |
-					                                           BindingFlags.Instance |
-					                                           BindingFlags.Static))
+															   BindingFlags.NonPublic |
+															   BindingFlags.Instance |
+															   BindingFlags.Static))
 					{
 						if (attributeOfInterest.TryGetFromMemberInfo(memberInfo, out var attribute))
 							foundAttributes[attributeOfInterest].Add(new MemberAttribute(memberInfo, attribute));

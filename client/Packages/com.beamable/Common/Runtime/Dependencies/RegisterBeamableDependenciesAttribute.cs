@@ -24,7 +24,7 @@ namespace Beamable.Common.Dependencies
 		};
 
 		public static readonly string ValidSignaturesText = string.Join(", ", ValidSignatures.Select(sig => sig.ToHumanReadableSignature()));
-		
+
 		/// <summary>
 		/// Defines the order in which the functions with <see cref="RegisterBeamableDependenciesAttribute"/> will run.
 		/// </summary>
@@ -44,9 +44,9 @@ namespace Beamable.Common.Dependencies
 			if (matchingSignatureIndices.TrueForAll(idx => idx == -1))
 			{
 				return new AttributeValidationResult(this,
-				                                     method,
-				                                     ReflectionCache.ValidationResultType.Error,
-				                                     $"{method.ToHumanReadableSignature()} must have one of the following signatures: {ValidSignaturesText}");
+													 method,
+													 ReflectionCache.ValidationResultType.Error,
+													 $"{method.ToHumanReadableSignature()} must have one of the following signatures: {ValidSignaturesText}");
 			}
 
 			return new AttributeValidationResult(this, method, ReflectionCache.ValidationResultType.Valid, "");

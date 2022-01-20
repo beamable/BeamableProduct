@@ -3,8 +3,8 @@ using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 using Debug = System.Diagnostics.Debug;
 
@@ -41,20 +41,20 @@ namespace Beamable.Reflection
 				true);
 
 			public List<BaseTypeOfInterest> BaseTypesOfInterest => new List<BaseTypeOfInterest>();
-			public List<AttributeOfInterest> AttributesOfInterest => new List<AttributeOfInterest>() {REGISTER_BEAMABLE_DEPENDENCIES_ATTRIBUTE};
+			public List<AttributeOfInterest> AttributesOfInterest => new List<AttributeOfInterest>() { REGISTER_BEAMABLE_DEPENDENCIES_ATTRIBUTE };
 
 			private List<MemberAttribute> _registerBeamableDependencyFunctions;
-			
+
 			private IBeamHintGlobalStorage _hintGlobalStorage;
 
 			public Registry()
 			{
 				_registerBeamableDependencyFunctions = new List<MemberAttribute>();
 			}
-		
+
 			public void ClearCachedReflectionData()
 			{
-				if (_registerBeamableDependencyFunctions != null) 
+				if (_registerBeamableDependencyFunctions != null)
 					_registerBeamableDependencyFunctions.Clear();
 				else
 					_registerBeamableDependencyFunctions = new List<MemberAttribute>();
@@ -71,7 +71,7 @@ namespace Beamable.Reflection
 			public void OnAttributeOfInterestFound(AttributeOfInterest attributeType, IReadOnlyList<MemberAttribute> cachedMemberAttributes)
 			{
 				Debug.Assert(attributeType.Equals(REGISTER_BEAMABLE_DEPENDENCIES_ATTRIBUTE),
-				             "This should never fail. If it does, there's a bug in the ReflectionCache parsing code!");
+							 "This should never fail. If it does, there's a bug in the ReflectionCache parsing code!");
 
 				// Initialize valid members local variable so we can easily #ifdef away the editor only validation. 
 				var validMembers = cachedMemberAttributes;
@@ -86,7 +86,7 @@ namespace Beamable.Reflection
 
 				validMembers = valid.Select(v => v.Pair).ToList();
 #endif
-				
+
 				// Pass along the valid members, when not in the editor.
 				_registerBeamableDependencyFunctions.AddRange(validMembers);
 				_registerBeamableDependencyFunctions.Sort((a, b) =>
@@ -109,11 +109,11 @@ namespace Beamable.Reflection
 				foreach (var registerBeamableDependencyFunction in _registerBeamableDependencyFunctions)
 				{
 					var method = registerBeamableDependencyFunction.InfoAs<MethodInfo>();
-					method.Invoke(null, new object[] {builderToConfigure});
+					method.Invoke(null, new object[] { builderToConfigure });
 				}
 			}
 		}
 
-		
+
 	}
 }
