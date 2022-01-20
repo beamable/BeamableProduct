@@ -4,7 +4,6 @@ using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.UI.Buss;
 using Beamable.Editor.UI.BUSS.ThemeManager;
-using System.Linq;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -226,7 +225,9 @@ namespace Beamable.Editor.UI.Components
 
 		public void RefreshProperties()
 		{
-			var toRemove = _properties.Where(p => !_styleRule.Properties.Contains(p.PropertyProvider)).ToArray();
+			var toRemove = _styleRule.ShowAllMode ? 
+				_properties.Where(p => p.PropertyProvider.IsVariable && !_styleRule.Properties.Contains(p.PropertyProvider)).ToArray() : 
+				_properties.Where(p => !_styleRule.Properties.Contains(p.PropertyProvider)).ToArray();
 
 			foreach (BussStylePropertyVisualElement element in toRemove)
 			{
@@ -250,13 +251,23 @@ namespace Beamable.Editor.UI.Components
 				_properties.Add(element);
 			}
 
-			var restPropertyKeys = BussStyle.Keys.Where(s => StyleRule.Properties.All(provider => provider.Key != s));
-			foreach (var key in restPropertyKeys)
+			if (_styleRule.ShowAllMode)
 			{
-				var propertyProvider = BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
-				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
-				element.Setup(_styleSheet, StyleRule, propertyProvider, _variableDatabase);
-				_properties.Add(element);
+				var restPropertyKeys = BussStyle.Keys.Where(s => StyleRule.Properties.All(provider => provider.Key != s));
+				foreach (var key in restPropertyKeys)
+				{
+					var existingProperty = _properties.FirstOrDefault(p => p.PropertyProvider.Key == key);
+					if (existingProperty != null)
+					{
+						existingProperty.Refresh();
+						continue;
+					}
+					var propertyProvider = BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
+					BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
+					element.Setup(_styleSheet, StyleRule, propertyProvider, _variableDatabase);
+					_propertiesParent.Add(element);
+					_properties.Add(element);
+				}
 			}
 		}
 
