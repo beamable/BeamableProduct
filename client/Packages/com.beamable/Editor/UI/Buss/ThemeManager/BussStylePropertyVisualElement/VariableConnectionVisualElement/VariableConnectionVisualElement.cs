@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Beamable.Editor.UI.Buss;
 using Beamable.UI.Buss;
-using Editor.UI.BUSS.ThemeManager;
+using Beamable.Editor.UI.BUSS.ThemeManager;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018

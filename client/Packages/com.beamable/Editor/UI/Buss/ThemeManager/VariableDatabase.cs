@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Beamable.UI.Buss;
 
-namespace Editor.UI.BUSS.ThemeManager
+namespace Beamable.Editor.UI.BUSS.ThemeManager
 {
 	public class VariableDatabase
 	{

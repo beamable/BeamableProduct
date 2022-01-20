@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Editor.UI.Buss
+namespace Beamable.Editor.UI.Buss
 {
 	public static class Extensions
 	{

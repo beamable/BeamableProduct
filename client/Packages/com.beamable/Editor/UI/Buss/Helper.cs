@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 
-namespace Editor.UI.Buss
+namespace Beamable.Editor.UI.Buss
 {
 	public static class Helper
 	{

@@ -4,7 +4,7 @@ using System.Linq;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 
-namespace Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements
+namespace Beamable.Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements
 {
 	public static class BussPropertyVisualElementUtility
 	{
