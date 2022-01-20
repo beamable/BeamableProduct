@@ -23,9 +23,9 @@ namespace Beamable.Editor.UI.Components
 
 		public VertexColorBussPropertyVisualElement(VertexColorBussProperty property) : base(property) { }
 
-		public override void Refresh()
+		public override void Init()
 		{
-			base.Refresh();
+			base.Init();
 			
 			_topRow = CreateRowContainer();
 			_bottomRow = CreateRowContainer();

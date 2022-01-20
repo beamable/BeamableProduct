@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.UI.Buss;
@@ -21,7 +22,7 @@ namespace Beamable.Editor.UI.Components
 		private VisualElement _styleIdParent;
 		private VisualElement _selectorLabelParent;
 		private VisualElement _variables;
-		private VisualElement _properties;
+		private VisualElement _propertiesParent;
 		private VisualElement _colorBlock;
 		private VisualElement _removeButton;
 		private VisualElement _editButton;
@@ -39,11 +40,9 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleSheet _styleSheet;
 		private BussElementHierarchyVisualElement _navigationWindow;
 
-		public BussStyleRule StyleRule
-		{
-			get;
-			private set;
-		}
+		private List<BussStylePropertyVisualElement> _properties = new List<BussStylePropertyVisualElement>();
+
+		public BussStyleRule StyleRule => _styleRule;
 
 		public BussStyleCardVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}") { }
@@ -51,10 +50,12 @@ namespace Beamable.Editor.UI.Components
 		public override void Refresh()
 		{
 			base.Refresh();
+			
+			_properties.Clear();
 
 			_selectorLabelParent = Root.Q<VisualElement>("selectorLabelParent");
 			_variables = Root.Q<VisualElement>("variables");
-			_properties = Root.Q<VisualElement>("properties");
+			_propertiesParent = Root.Q<VisualElement>("properties");
 			_colorBlock = Root.Q<VisualElement>("colorBlock");
 
 			_removeButton = Root.Q<VisualElement>("removeButton");
@@ -73,10 +74,10 @@ namespace Beamable.Editor.UI.Components
 			RegisterButtonActions();
 
 			CreateSelectorLabel();
-			CreateProperties();
+			RefreshProperties();
 
-			_styleSheet.Change -= Refresh;
-			_styleSheet.Change += Refresh;
+			_styleSheet.Change -= RefreshProperties;
+			_styleSheet.Change += RefreshProperties;
 
 			_removeButton.SetHidden(!StyleRule.EditMode);
 			UpdateShowAllStatus();
@@ -92,14 +93,14 @@ namespace Beamable.Editor.UI.Components
 			_variableDatabase = variableDatabase;
 			_navigationWindow = navigationWindow;
 
-			_styleSheet.Change += Refresh;
+			_styleSheet.Change += RefreshProperties;
 
 			Refresh();
 		}
 
 		protected override void OnDestroy()
 		{
-			_styleSheet.Change -= Refresh;
+			_styleSheet.Change -= RefreshProperties;
 			ClearButtonActions();
 
 			if (_navigationWindow != null)
@@ -220,13 +221,30 @@ namespace Beamable.Editor.UI.Components
 			_selectorLabelParent.Add(_selectorLabelComponent);
 		}
 
-		private void CreateProperties()
+		public void RefreshProperties()
 		{
-			foreach (BussPropertyProvider property in StyleRule.Properties)
+			var toRemove = _properties.Where(p => !_styleRule.Properties.Contains(p.PropertyProvider)).ToArray();
+
+			foreach (BussStylePropertyVisualElement element in toRemove)
 			{
+				element.RemoveFromHierarchy();
+				element.Destroy();
+				_properties.Remove(element);
+			}
+			
+			foreach (BussPropertyProvider property in _styleRule.Properties)
+			{
+				var existingProperty = _properties.FirstOrDefault(p => p.PropertyProvider == property);
+				if (existingProperty != null)
+				{
+					existingProperty.Refresh();
+					continue;
+				}
+				
 				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
-				element.Setup(_styleSheet, StyleRule, property, _variableDatabase);
-				(property.IsVariable ? _variables : _properties).Add(element);
+				element.Setup(_styleSheet, _styleRule, property, _variableDatabase);
+				(property.IsVariable ? _variables : _propertiesParent).Add(element);
+				_properties.Add(element);
 			}
 
 			var restPropertyKeys = BussStyle.Keys.Where(s => StyleRule.Properties.All(provider => provider.Key != s));

@@ -16,9 +16,9 @@ namespace Beamable.Editor.UI.Components
 		
 		public FloatBussPropertyVisualElement(FloatBussProperty property) : base(property) { }
 
-		public override void Refresh()
+		public override void Init()
 		{
-			base.Refresh();
+			base.Init();
 			
 			_field = new FloatField();
 			AddBussPropertyFieldClass(_field);
