@@ -1,6 +1,6 @@
 ﻿using Beamable.Editor.Toolbox.Components;
 using Beamable.UI.Buss;
-using Editor.UI.Buss;
+using Beamable.Editor.UI.Buss;
 using System;
 using System.Linq;
 using UnityEngine;
