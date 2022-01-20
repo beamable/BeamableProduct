@@ -24,7 +24,10 @@ namespace Beamable.Editor.UI.Model
 
 		public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
 		{
-			// TO DO HERE
+			var remoteCategory = "Cloud";
+
+			evt.menu.BeamableAppendAction($"{remoteCategory}/Goto data explorer", _ => AssemblyDefinitionHelper.OpenMongoExplorer(ServiceDescriptor));
+			evt.menu.BeamableAppendAction($"{remoteCategory}/Copy connection string", _ => AssemblyDefinitionHelper.CopyConnectionString(ServiceDescriptor));
 
 			if (MicroserviceConfiguration.Instance.StorageObjects.Count > 1)
 			{

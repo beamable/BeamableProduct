@@ -71,11 +71,18 @@ namespace Beamable.Editor.UI.Model
 
         public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
         {
-            // TODO - Implement copy connection strings
-            
-            evt.menu.BeamableAppendAction($"Erase data", _ => AssemblyDefinitionHelper.ClearMongo(ServiceDescriptor));
-            //evt.menu.BeamableAppendAction($"Copy connection strings", _ => Debug.Log("Not implemented!"));
-            evt.menu.BeamableAppendAction($"Goto data explorer", _ => AssemblyDefinitionHelper.OpenMongoExplorer(ServiceDescriptor));
+
+			var existsOnRemote = RemoteReference?.enabled ?? false;
+			var localCategory = IsRunning ? "Local" : "Local (not running)";
+			var remoteCategory = existsOnRemote ? "Cloud" : "Cloud (not deployed)";
+
+            evt.menu.BeamableAppendAction($"{localCategory}/Erase data", _ => AssemblyDefinitionHelper.ClearMongo(ServiceDescriptor), IsRunning);
+            evt.menu.BeamableAppendAction($"{localCategory}/Goto data explorer", _ => AssemblyDefinitionHelper.OpenMongoExplorer(ServiceDescriptor), IsRunning);
+            evt.menu.BeamableAppendAction($"{localCategory}/Copy connection string", _ => AssemblyDefinitionHelper.CopyConnectionString(ServiceDescriptor), IsRunning);
+
+            evt.menu.BeamableAppendAction($"{remoteCategory}/Goto data explorer", _ => AssemblyDefinitionHelper.OpenMongoExplorer(ServiceDescriptor), existsOnRemote);
+            evt.menu.BeamableAppendAction($"{remoteCategory}/Copy connection string", _ => AssemblyDefinitionHelper.CopyConnectionString(ServiceDescriptor), existsOnRemote);
+
             evt.menu.BeamableAppendAction($"Create a snapshot", _ => AssemblyDefinitionHelper.SnapshotMongo(ServiceDescriptor));
             evt.menu.BeamableAppendAction($"Download a snapshot", _ => AssemblyDefinitionHelper.RestoreMongo(ServiceDescriptor));
             evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());

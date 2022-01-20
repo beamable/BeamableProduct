@@ -310,13 +310,13 @@ namespace Beamable.Server.Editor
          foreach (var reference in service.GetStorageReferences())
          {
             var key = $"STORAGE_CONNSTR_{reference.Name}";
-            env[key] = await GetConnectionString(reference, service);
+            env[key] = await GetConnectionString(reference);
          }
 
          return env;
       }
 
-      public static async Promise<string> GetConnectionString(StorageObjectDescriptor storage, MicroserviceDescriptor user)
+      public static async Promise<string> GetConnectionString(StorageObjectDescriptor storage)
       {
 	      var storageCheck = new CheckImageReturnableCommand(storage);
 	      var isStorageRunning = await storageCheck.Start(null);
