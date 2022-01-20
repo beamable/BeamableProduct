@@ -290,9 +290,13 @@ namespace Beamable.Common.Reflection
 		{
 			_registeredCacheUserSystems.ForEach(sys =>
 			{
+				if (userSystemTypesToRebuild != null && !userSystemTypesToRebuild.Contains(sys.GetType()))
+					return;
+				
 				sys.ClearCachedReflectionData();
 				sys.OnSetupForCacheGeneration();
 			});
+			
 			// Pass down to each given system only the types they are interested in
 			foreach (var reflectionBasedSystem in _registeredCacheUserSystems)
 			{
