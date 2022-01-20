@@ -172,9 +172,7 @@ namespace Beamable.Server.Editor
 		 if (serviceType == ServiceType.MicroService)
 		 {
 			if (newIndex < 0 || newIndex >= Microservices.Count)
-			{
                throw new IndexOutOfRangeException();
-			}
 
 			var currentIndex = GetIndex(serviceName, serviceType);
 			if (currentIndex != -1)
@@ -190,9 +188,7 @@ namespace Beamable.Server.Editor
 		 else
 		 {
 			if (newIndex < 0 || newIndex >= StorageObjects.Count)
-			{
                throw new IndexOutOfRangeException();
-			}
 
 			var currentIndex = GetIndex(serviceName, serviceType);
 			if (currentIndex != -1)
@@ -209,9 +205,21 @@ namespace Beamable.Server.Editor
 
       public void MoveIndex(string serviceName, int offset, ServiceType serviceType) {
          var newIndex = GetIndex(serviceName, serviceType) + offset;
-         if (newIndex < 0 || newIndex >= Microservices.Count) {
-            return;
+
+         switch (serviceType)
+         {
+               case ServiceType.MicroService:
+                  if (newIndex < 0 || newIndex >= Microservices.Count)
+					return;
+                  break;
+               case ServiceType.StorageObject:
+                  if (newIndex < 0 || newIndex >= StorageObjects.Count)
+					return;
+                  break;
+               default:
+                  return;
          }
+
          SetIndex(serviceName, newIndex, serviceType);
       }
 
