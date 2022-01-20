@@ -1,5 +1,4 @@
 ﻿using Beamable.Common;
-using Beamable.Server;
 using MongoDB.Driver;
 
 namespace Beamable.Server

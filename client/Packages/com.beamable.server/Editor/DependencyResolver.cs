@@ -29,6 +29,9 @@ namespace Beamable.Server
         public string[] References = new string[]{};
         public string[] DllReferences = new string[] { };
         public string Location;
+
+        public string[] IncludePlatforms = new string[] { };
+        public bool AutoReferenced = false;
     }
 
     public class AssemblyDefinitionInfoGroup
