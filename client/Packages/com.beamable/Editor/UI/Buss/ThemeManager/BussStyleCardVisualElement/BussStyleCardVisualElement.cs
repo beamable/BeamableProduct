@@ -3,13 +3,11 @@ using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.UI.Buss;
 using Beamable.Editor.UI.BUSS.ThemeManager;
-using System.Linq;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleSheets;
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -115,7 +113,7 @@ namespace Beamable.Editor.UI.Components
 			_editButton?.RegisterCallback<MouseDownEvent>(EditButtonClicked);
 			_wizardButton?.RegisterCallback<MouseDownEvent>(WizardButtonClicked);
 			_undoButton?.RegisterCallback<MouseDownEvent>(UndoButtonClicked);
-			_cleanAllButton?.RegisterCallback<MouseDownEvent>(CleanAllButtonClicked);
+			_cleanAllButton?.RegisterCallback<MouseDownEvent>(ClearAllButtonClicked);
 			_addVariableButton?.RegisterCallback<MouseDownEvent>(AddVariableButtonClicked);
 			_addRuleButton?.RegisterCallback<MouseDownEvent>(AddRuleButtonClicked);
 			_showAllButton?.RegisterCallback<MouseDownEvent>(ShowAllButtonClicked);
@@ -127,7 +125,7 @@ namespace Beamable.Editor.UI.Components
 			_editButton?.UnregisterCallback<MouseDownEvent>(EditButtonClicked);
 			_wizardButton?.UnregisterCallback<MouseDownEvent>(WizardButtonClicked);
 			_undoButton?.UnregisterCallback<MouseDownEvent>(UndoButtonClicked);
-			_cleanAllButton?.UnregisterCallback<MouseDownEvent>(CleanAllButtonClicked);
+			_cleanAllButton?.UnregisterCallback<MouseDownEvent>(ClearAllButtonClicked);
 			_addVariableButton?.UnregisterCallback<MouseDownEvent>(AddVariableButtonClicked);
 			_addRuleButton?.UnregisterCallback<MouseDownEvent>(AddRuleButtonClicked);
 			_showAllButton?.UnregisterCallback<MouseDownEvent>(ShowAllButtonClicked);
@@ -175,9 +173,9 @@ namespace Beamable.Editor.UI.Components
 			});
 		}
 
-		private void CleanAllButtonClicked(MouseDownEvent evt)
+		private void ClearAllButtonClicked(MouseDownEvent evt)
 		{
-			Debug.Log("CleanAllButtonClicked");
+			_styleSheet.RemoveAllProperties(StyleRule);
 		}
 
 		private void UndoButtonClicked(MouseDownEvent evt)
