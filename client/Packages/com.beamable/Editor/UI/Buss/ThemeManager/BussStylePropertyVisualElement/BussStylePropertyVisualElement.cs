@@ -85,8 +85,6 @@ namespace Beamable.Editor.UI.Components
 		                  BussPropertyProvider property,
 		                  VariableDatabase variableDatabase)
 		{
-			RemoveStyleSheetListener();
-
 			_variableDatabase = variableDatabase;
 			_styleSheet = styleSheet;
 			_styleRule = styleRule;
@@ -94,7 +92,6 @@ namespace Beamable.Editor.UI.Components
 			_propertyIsInStyle = _styleRule.Properties.Contains(_propertyProvider);
 
 			Init();
-			AddStyleSheetListener();
 		}
 
 		private void SetupEditableField()
@@ -141,7 +138,6 @@ namespace Beamable.Editor.UI.Components
 				_propertyVisualElement.OnValueChanged -= HandlePropertyChanged;
 			}
 			_removeButton?.UnregisterCallback<MouseDownEvent>(OnRemoveButtonClicked);
-			RemoveStyleSheetListener();
 		}
 
 		private void OnRemoveButtonClicked(MouseDownEvent evt)
@@ -165,22 +161,6 @@ namespace Beamable.Editor.UI.Components
 			_variableConnection.OnConnectionChange -= Refresh;
 			_variableConnection.Setup(_styleSheet, _propertyProvider, _variableDatabase);
 			_variableConnection.OnConnectionChange += Refresh;
-		}
-
-		private void AddStyleSheetListener()
-		{
-			if (_styleSheet != null)
-			{
-				_styleSheet.Change += Refresh;
-			}
-		}
-
-		private void RemoveStyleSheetListener()
-		{
-			if (_styleSheet != null)
-			{
-				_styleSheet.Change -= Refresh;
-			}
 		}
 	}
 }
