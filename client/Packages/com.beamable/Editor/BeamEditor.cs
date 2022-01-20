@@ -39,7 +39,7 @@ namespace Beamable
 
 			// Ensures we have the latest assembly definitions and paths are all correctly setup.
 			coreConfiguration.OnValidate();
-			
+
 			// Initializes the Config database
 			ConfigDatabase.Init();
 
@@ -51,18 +51,18 @@ namespace Beamable
 			// Load up all Asset-based IReflectionSystem (injected via ReflectionSystemObject instances). This was made to solve a cross-package injection problem.
 			// It doubles as a no-code way for users to inject their own IReflectionSystem into our pipeline.
 			var reflectionCacheSystemGuids = AssetDatabase.FindAssets($"t:{nameof(ReflectionSystemObject)}", coreConfiguration.ReflectionSystemPaths
-			                                                                                                                  .Where(Directory.Exists)
-			                                                                                                                  .ToArray());
+																															  .Where(Directory.Exists)
+																															  .ToArray());
 
 			// Get ReflectionSystemObjects and sort them
 			var reflectionSystemObjects = reflectionCacheSystemGuids.Select(reflectionCacheSystemGuid =>
-			                                                        {
-				                                                        var assetPath = AssetDatabase.GUIDToAssetPath(reflectionCacheSystemGuid);
-				                                                        return AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(assetPath);
-			                                                        })
-			                                                        .Union(Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems"))
-			                                                        .Where(system => system.Enabled)
-			                                                        .ToList();
+																	{
+																		var assetPath = AssetDatabase.GUIDToAssetPath(reflectionCacheSystemGuid);
+																		return AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(assetPath);
+																	})
+																	.Union(Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems"))
+																	.Where(system => system.Enabled)
+																	.ToList();
 			reflectionSystemObjects.Sort((reflectionSys1, reflectionSys2) => reflectionSys1.Priority.CompareTo(reflectionSys2.Priority));
 
 			// Inject them into the ReflectionCache system in the correct order.
@@ -92,10 +92,10 @@ namespace Beamable
 						var msg = string.Join("\n", hintsToWarnAbout.Select(hint => $"- {hint.Header.Id}"));
 
 						var res = EditorUtility.DisplayDialogComplex("Beamable Assistant",
-						                                             "There are pending Beamable Validations.\n" + "These Hints may cause problems during runtime:\n\n" + $"{msg}\n\n" +
-						                                             "Do you wish to stop entering playmode and see these validations?", "Yes, I want to stop and go see validations.",
-						                                             "No, I'll take my chances and don't bother me about these hints anymore.",
-						                                             "No, I'll take my chances and don't bother me ever again about any hints.");
+																	 "There are pending Beamable Validations.\n" + "These Hints may cause problems during runtime:\n\n" + $"{msg}\n\n" +
+																	 "Do you wish to stop entering playmode and see these validations?", "Yes, I want to stop and go see validations.",
+																	 "No, I'll take my chances and don't bother me about these hints anymore.",
+																	 "No, I'll take my chances and don't bother me ever again about any hints.");
 
 						if (res == 0)
 						{
