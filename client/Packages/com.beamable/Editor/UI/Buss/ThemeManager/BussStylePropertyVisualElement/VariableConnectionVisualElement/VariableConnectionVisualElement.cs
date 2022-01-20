@@ -50,6 +50,8 @@ namespace Beamable.Editor.UI.Components
 			_button = _mainElement.Q<Button>("button");
 			_dropdown = _mainElement.Q<DropdownVisualElement>("dropdown");
 			_mainElement.style.SetFlexDirection(FlexDirection.Row);
+
+			_dropdown.Refresh();
 		}
 
 		public void Update()
@@ -83,8 +85,6 @@ namespace Beamable.Editor.UI.Components
 			{
 				_dropdown.Set(0);
 			}
-
-			_dropdown.Refresh();
 		}
 
 		public void Setup(BussStyleSheet styleSheet,
