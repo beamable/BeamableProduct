@@ -27,10 +27,11 @@ namespace Beamable.Server.Editor
         private const int MENU_TOGGLE_PRIORITY = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3;
 
         public const string CONFIG_AUTO_RUN = "auto_run_local_microservices";
-        private const string TEMPLATE_MICROSERVICE_DIRECTORY = "Packages/com.beamable.server/Template";
+        public const string TEMPLATE_DIRECTORY = "Packages/com.beamable.server/Template";
+        private const string TEMPLATE_MICROSERVICE_DIRECTORY = TEMPLATE_DIRECTORY;
         private const string DESTINATION_MICROSERVICE_DIRECTORY = "Assets/Beamable/Microservices";
 
-        private const string TEMPLATE_STORAGE_OBJECT_DIRECTORY = "Packages/com.beamable.server/Template/StorageObject";
+        private const string TEMPLATE_STORAGE_OBJECT_DIRECTORY = TEMPLATE_DIRECTORY + "/StorageObject";
         private const string DESTINATION_STORAGE_OBJECT_DIRECTORY = "Assets/Beamable/StorageObjects";
 
         private static Dictionary<ServiceType, ServiceCreateInfo> _serviceCreateInfos =
@@ -86,28 +87,71 @@ namespace Beamable.Server.Editor
 
         public static void CreateNewServiceFile(ServiceType serviceType, string serviceName)
         {
-            if (string.IsNullOrWhiteSpace(serviceName))
-            {
-                return;
-            }
+	        AssetDatabase.StartAssetEditing();
+	        try
+	        {
+		        if (string.IsNullOrWhiteSpace(serviceName))
+		        {
+			        return;
+		        }
 
-            var serviceCreateInfo = _serviceCreateInfos[serviceType];
-            var rootPath = Directory.GetParent(Application.dataPath).FullName;
-            var servicePath = Path.Combine(rootPath, serviceCreateInfo.DestinationDirectoryPath, serviceName);
-            var destinationDirectory = Directory.CreateDirectory(servicePath);
-            var assemblyTemplatePath = Path.Combine(rootPath, serviceCreateInfo.TemplateDirectoryPath,
-                                                    $"Unity.Beamable.Runtime.User{serviceCreateInfo.ServiceTypeName}.XXXX.asmdef");
-            var scriptTemplatePath = Path.Combine(rootPath, serviceCreateInfo.TemplateDirectoryPath,
-                                                  serviceCreateInfo.TemplateFileName);
-            Debug.Assert(File.Exists(assemblyTemplatePath));
-            Debug.Assert(File.Exists(scriptTemplatePath));
+		        var serviceCreateInfo = _serviceCreateInfos[serviceType];
+		        var rootPath = Directory.GetParent(Application.dataPath).FullName;
+		        var relativeDestPath = Path.Combine(serviceCreateInfo.DestinationDirectoryPath, serviceName);
+		        var absoluteDestPath = Path.Combine(rootPath, relativeDestPath);
+		        var destinationDirectory = Directory.CreateDirectory(absoluteDestPath);
 
-            SetupServiceFileInfo(serviceName,assemblyTemplatePath,
-                destinationDirectory.FullName + $"/Unity.Beamable.Runtime.User{serviceCreateInfo.ServiceTypeName}.{serviceName}.asmdef");
+		        var scriptTemplatePath = Path.Combine(rootPath, serviceCreateInfo.TemplateDirectoryPath,
+		                                              serviceCreateInfo.TemplateFileName);
 
-            SetupServiceFileInfo(serviceName, scriptTemplatePath, destinationDirectory.FullName + $"/{serviceName}.cs");
+		        Debug.Assert(File.Exists(scriptTemplatePath));
 
-            AssetDatabase.Refresh();
+
+		        // create the asmdef by hand.
+		        var asmName = serviceType == ServiceType.MicroService
+			        ? $"Beamable.Microservice.{serviceName}"
+			        : $"Beamable.Storage.{serviceName}";
+
+		        var asmPath = relativeDestPath +
+		                      $"/{asmName}.asmdef";
+
+		        var references = new List<string>
+		        {
+			        "Unity.Beamable.Runtime.Common",
+			        "Unity.Beamable.Server.Runtime",
+			        "Unity.Beamable.Server.Runtime.Shared",
+			        "Unity.Beamable",
+			        "Beamable.SmallerJSON"
+		        };
+		        if (MicroserviceConfiguration.Instance.AutoBuildCommonAssembly)
+		        {
+			        references.Add(CommonAreaService.GetCommonAsmDefName());
+		        }
+
+		        AssemblyDefinitionHelper.CreateAssetDefinitionAssetOnDisk(
+			        asmPath,
+			        new AssemblyDefinitionInfo
+			        {
+				        Name = asmName,
+				        DllReferences =
+					        serviceType == ServiceType.StorageObject
+						        ? AssemblyDefinitionHelper.MongoLibraries
+						        : new string[] { },
+				        IncludePlatforms = new[] {"Editor"},
+				        References = references.ToArray()
+			        });
+
+		        SetupServiceFileInfo(serviceName, scriptTemplatePath,
+		                             destinationDirectory.FullName + $"/{serviceName}.cs");
+
+		        CommonAreaService.EnsureCommon();
+	        }
+	        finally
+	        {
+		        AssetDatabase.StopAssetEditing();
+	        }
+
+	        AssetDatabase.Refresh();
         }
 
         private static void SetupServiceFileInfo(string serviceName, string sourceFile, string targetFile)
