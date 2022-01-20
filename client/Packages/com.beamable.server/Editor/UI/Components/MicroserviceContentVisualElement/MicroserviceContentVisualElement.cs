@@ -262,6 +262,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 				if (a is CreateServiceBaseVisualElement) return -1;
 				if (b is CreateServiceBaseVisualElement) return 1;
 
+				// we want to sort Services only in their categories
+
 				switch (serviceType)
 				{
 					case ServiceType.MicroService:
