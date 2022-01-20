@@ -139,3 +139,15 @@
     width: 16px;
     height: 16px;
 }
+
+BussStylePropertyVisualElement.doesntExists {
+    display: none;
+    visibility: hidden;
+    height: 0px;
+}
+
+.showAllProperties BussStylePropertyVisualElement.doesntExists, BussStylePropertyVisualElement.exists {
+    display: flex;
+    visibility: visible;
+    height: 36px;
+}

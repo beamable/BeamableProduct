@@ -16,6 +16,8 @@ namespace Beamable.Editor.UI.Components
 {
 	public class BussStylePropertyVisualElement : BeamableBasicVisualElement
 	{
+		public Action OnValueChanged;
+
 #if UNITY_2018
 		public BussStylePropertyVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.2018.uss") { }
@@ -113,6 +115,7 @@ namespace Beamable.Editor.UI.Components
 				_propertyVisualElement.UpdatedStyleSheet = _styleSheet;
 				_valueParent.Add(_propertyVisualElement);
 				_propertyVisualElement.Refresh();
+				_propertyVisualElement.OnValueChanged = () => OnValueChanged?.Invoke();
 			}
 		}
 
