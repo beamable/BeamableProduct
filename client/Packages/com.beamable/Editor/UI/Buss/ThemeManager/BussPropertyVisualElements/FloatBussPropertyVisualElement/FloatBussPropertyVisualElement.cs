@@ -1,5 +1,4 @@
 ﻿using Beamable.UI.Buss;
-using Beamable.Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;

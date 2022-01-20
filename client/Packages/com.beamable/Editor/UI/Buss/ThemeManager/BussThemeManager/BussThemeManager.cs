@@ -6,6 +6,7 @@ using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using Beamable.Editor.UI.BUSS.ThemeManager;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.Experimental.TerrainAPI;
 using UnityEngine;
@@ -168,16 +169,6 @@ namespace Beamable.UI.BUSS
 
 		private void AddSelectorButton()
 		{
-			VisualElement addSelectorButton = new VisualElement {name = "addSelectorButton"};
-			addSelectorButton.AddToClassList("button");
-			addSelectorButton.Add(new Label("Add Selector"));
-			addSelectorButton.UnregisterCallback<MouseDownEvent>(_ => OpenAddSelectorWindow());
-			addSelectorButton.RegisterCallback<MouseDownEvent>(_ => OpenAddSelectorWindow());
-
-			EditorApplication.update -= CheckEnableState;
-			EditorApplication.update += CheckEnableState;
-
-			_stylesGroup.Add(addSelectorButton);
 			_addSelectorButton = new VisualElement {name = "addSelectorButton"};
 			_addSelectorButton.AddToClassList("button");
 			_addSelectorButton.Add(new Label("Add Selector"));
@@ -197,7 +188,7 @@ namespace Beamable.UI.BUSS
 
 			void CheckEnableState()
 			{
-				addSelectorButton.tooltip = string.Empty;
+				_addSelectorButton.tooltip = string.Empty;
 				List<BussStyleSheet> styleSheets =
 					Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[] {"Assets"});
 				if (styleSheets.Count == 0)
@@ -207,7 +198,7 @@ namespace Beamable.UI.BUSS
 				}
 				else
 				{
-					addSelectorButton.SetEnabled(true);
+					_addSelectorButton.SetEnabled(true);
 				}
 			}
 		}
