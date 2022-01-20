@@ -53,9 +53,9 @@ namespace Beamable.Editor.UI.Components
 			_singleIndentWidth = width;
 		}
 
-		public override void Refresh()
+		public override void Init()
 		{
-			base.Refresh();
+			base.Init();
 
 			_container = new VisualElement();
 			_container.name = "indentedLabelContainer";

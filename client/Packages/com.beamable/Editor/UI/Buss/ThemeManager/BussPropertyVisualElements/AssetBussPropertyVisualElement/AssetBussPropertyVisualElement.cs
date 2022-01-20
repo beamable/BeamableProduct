@@ -17,9 +17,9 @@ namespace Beamable.Editor.UI.Components
 		
 		private ObjectField _field;
 
-		public override void Refresh()
+		public override void Init()
 		{
-			base.Refresh();
+			base.Init();
 			
 			_field = new ObjectField();
 			AddBussPropertyFieldClass(_field);

@@ -1,11 +1,14 @@
-﻿using Beamable.Editor;
+using System;﻿
+using Beamable.Editor;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using Beamable.Editor.UI.BUSS.ThemeManager;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
+using UnityEditor.Experimental.TerrainAPI;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -28,6 +31,7 @@ namespace Beamable.UI.BUSS
 
 		private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements =
 			new List<BussStyleCardVisualElement>();
+		private VisualElement _addSelectorButton;
 
 		private bool _filterMode;
 
@@ -55,6 +59,8 @@ namespace Beamable.UI.BUSS
 		{
 			VisualElement root = this.GetRootVisualContainer();
 			root.Clear();
+			_styleCardsVisualElements.Clear();
+			_addSelectorButton = null;
 
 			VisualElement mainVisualElement = new VisualElement();
 			mainVisualElement.name = "themeManagerContainer";
@@ -76,7 +82,7 @@ namespace Beamable.UI.BUSS
 			scrollView.Add(navigationGroup);
 
 			_navigationWindow = new BussElementHierarchyVisualElement();
-			_navigationWindow.Refresh();
+			_navigationWindow.Init();
 			navigationGroup.Add(_navigationWindow);
 
 			_filterToggle = new LabeledCheckboxVisualElement("Filter by selected element");
@@ -99,6 +105,7 @@ namespace Beamable.UI.BUSS
 			_navigationWindow.SelectionChanged += FilterCards;
 
 			RefreshStyleSheets();
+			AddSelectorButton();
 		}
 
 		private void OnFilterToggleClicked(bool value)
@@ -121,6 +128,8 @@ namespace Beamable.UI.BUSS
 		{
 			ClearCurrentStyleSheet();
 
+			_variableDatabase.RemoveAllStyleSheets();
+			
 			foreach (BussStyleSheet styleSheet in _navigationWindow.StyleSheets)
 			{
 				_variableDatabase.AddStyleSheet(styleSheet);
@@ -132,23 +141,44 @@ namespace Beamable.UI.BUSS
 
 		private void RefreshStyleCards()
 		{
-			ClearStyleCards();
-			CreateStyleCards();
-			AddSelectorButton();
+			var rulesToDraw = _navigationWindow.StyleSheets.SelectMany(ss => ss.Styles).ToArray();
+
+			var cardsToRemove = _styleCardsVisualElements.Where(card => !rulesToDraw.Contains(card.StyleRule)).ToArray();
+
+			foreach (BussStyleCardVisualElement card in cardsToRemove)
+			{
+				RemoveStyleCard(card);
+			}
+
+			foreach (BussStyleSheet styleSheet in _navigationWindow.StyleSheets)
+			{
+				foreach (BussStyleRule rule in styleSheet.Styles)
+				{
+					var spawned = _styleCardsVisualElements.FirstOrDefault(c => c.StyleRule == rule);
+					if (spawned != null)
+					{
+						spawned.RefreshProperties();
+					}
+					else
+					{
+						AddStyleCard(styleSheet, rule);
+					}
+				}
+			}
 		}
 
 		private void AddSelectorButton()
 		{
-			VisualElement addSelectorButton = new VisualElement {name = "addSelectorButton"};
-			addSelectorButton.AddToClassList("button");
-			addSelectorButton.Add(new Label("Add Selector"));
-			addSelectorButton.UnregisterCallback<MouseDownEvent>(_ => OpenAddSelectorWindow());
-			addSelectorButton.RegisterCallback<MouseDownEvent>(_ => OpenAddSelectorWindow());
+			_addSelectorButton = new VisualElement {name = "addSelectorButton"};
+			_addSelectorButton.AddToClassList("button");
+			_addSelectorButton.Add(new Label("Add Selector"));
+			_addSelectorButton.UnregisterCallback<MouseDownEvent>(_ => OpenAddSelectorWindow());
+			_addSelectorButton.RegisterCallback<MouseDownEvent>(_ => OpenAddSelectorWindow());
 
 			EditorApplication.update -= CheckEnableState;
 			EditorApplication.update += CheckEnableState;
-
-			_stylesGroup.Add(addSelectorButton);
+			
+			_stylesGroup.Add(_addSelectorButton);
 
 			void OpenAddSelectorWindow()
 			{
@@ -158,17 +188,17 @@ namespace Beamable.UI.BUSS
 
 			void CheckEnableState()
 			{
-				addSelectorButton.tooltip = string.Empty;
+				_addSelectorButton.tooltip = string.Empty;
 				List<BussStyleSheet> styleSheets =
 					Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[] {"Assets"});
 				if (styleSheets.Count == 0)
 				{
-					addSelectorButton.tooltip = "There should be created at least one BUSS Style Config!";
-					addSelectorButton.SetEnabled(false);
+					_addSelectorButton.tooltip = "There should be created at least one BUSS Style Config!";
+					_addSelectorButton.SetEnabled(false);
 				}
 				else
 				{
-					addSelectorButton.SetEnabled(true);
+					_addSelectorButton.SetEnabled(true);
 				}
 			}
 		}
@@ -181,6 +211,28 @@ namespace Beamable.UI.BUSS
 			}
 
 			_variableDatabase.RemoveAllStyleSheets();
+		}
+
+		private BussStyleCardVisualElement AddStyleCard(BussStyleSheet styleSheet, BussStyleRule styleRule)
+		{
+			BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
+			styleCard.Setup(styleSheet, styleRule, _variableDatabase, _navigationWindow);
+			_styleCardsVisualElements.Add(styleCard);
+			_stylesGroup.Add(styleCard);
+
+			if (_addSelectorButton != null)
+			{
+				_addSelectorButton.PlaceInFront(styleCard);
+			}
+			
+			return styleCard;
+		}
+
+		private void RemoveStyleCard(BussStyleCardVisualElement card)
+		{
+			_styleCardsVisualElements.Remove(card);
+			card.RemoveFromHierarchy();
+			card.Destroy();
 		}
 
 		private void ClearStyleCards()
@@ -214,15 +266,16 @@ namespace Beamable.UI.BUSS
 
 			_inStyleSheetChangedLoop = true;
 
-			_variableDatabase.ReconsiderAllStyleSheets();
-
-			// TODO: We will use it in order to update only visual elements affected by change.
-			// foreach (BussPropertyVisualElement propertyVisualElement in this.GetRootVisualContainer().Query<BussPropertyVisualElement>().Build().ToList())
-			// {
-			// 	propertyVisualElement.OnPropertyChangedExternally();
-			// }
-
-			RefreshStyleCards();
+			try {
+				_variableDatabase.ReconsiderAllStyleSheets();
+			
+				RefreshStyleCards();
+			}
+			catch (Exception e)
+			{
+				Debug.LogException(e);
+			}
+			
 			_inStyleSheetChangedLoop = false;
 		}
 
