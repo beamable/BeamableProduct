@@ -31,7 +31,7 @@
                 <engine:TextElement name="sectionLabel" text="Rules"/>
                 <engine:VisualElement name="divider"/>
                 <engine:VisualElement name="showAllButton" class="button mediumButton headerButton">
-                    <engine:TextElement text="Show All"/>
+                    <engine:TextElement text="Show All" name="showAllButtonText"/>
                 </engine:VisualElement>
                 <engine:VisualElement name="addRuleButton" class="button smallButton add"/>
             </engine:VisualElement>

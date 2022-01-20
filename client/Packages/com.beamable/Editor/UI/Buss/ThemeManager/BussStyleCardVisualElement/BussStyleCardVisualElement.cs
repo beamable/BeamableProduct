@@ -31,6 +31,7 @@ namespace Beamable.Editor.UI.Components
 		private VisualElement _addVariableButton;
 		private VisualElement _addRuleButton;
 		private VisualElement _showAllButton;
+		private TextElement _showAllButtonText;
 		private TextElement _styleIdLabel;
 		private TextField _styleIdEditField;
 
@@ -64,6 +65,7 @@ namespace Beamable.Editor.UI.Components
 			_addVariableButton = Root.Q<VisualElement>("addVariableButton");
 			_addRuleButton = Root.Q<VisualElement>("addRuleButton");
 			_showAllButton = Root.Q<VisualElement>("showAllButton");
+			_showAllButtonText = Root.Q<TextElement>("showAllButtonText");
 
 			_navigationWindow.SelectionChanged -= OnSelectionChanged;
 			_navigationWindow.SelectionChanged += OnSelectionChanged;
@@ -77,6 +79,7 @@ namespace Beamable.Editor.UI.Components
 			_styleSheet.Change += Refresh;
 
 			_removeButton.SetHidden(!StyleRule.EditMode);
+			UpdateShowAllStatus();
 		}
 
 		public void Setup(BussStyleSheet styleSheet,
@@ -196,7 +199,15 @@ namespace Beamable.Editor.UI.Components
 
 		private void ShowAllButtonClicked(MouseDownEvent evt)
 		{
-			Debug.Log("ShowAllButtonClicked");
+			StyleRule.ShowAllMode = !StyleRule.ShowAllMode;
+			UpdateShowAllStatus();
+		}
+
+		private void UpdateShowAllStatus()
+		{
+			const string showAllProperty = "showAllProperties";
+			EnableInClassList(showAllProperty, StyleRule.ShowAllMode);
+			_showAllButtonText.text = StyleRule.ShowAllMode ? "Hide All" : "Show All";
 		}
 
 		private void CreateSelectorLabel()
@@ -216,6 +227,15 @@ namespace Beamable.Editor.UI.Components
 				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
 				element.Setup(_styleSheet, StyleRule, property, _variableDatabase);
 				(property.IsVariable ? _variables : _properties).Add(element);
+			}
+
+			var restPropertyKeys = BussStyle.Keys.Where(s => StyleRule.Properties.All(provider => provider.Key != s));
+			foreach (var key in restPropertyKeys)
+			{
+				var propertyProvider = BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
+				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
+				element.Setup(_styleSheet, StyleRule, propertyProvider, _variableDatabase);
+				_properties.Add(element);
 			}
 		}
 

@@ -91,6 +91,7 @@ namespace Beamable.UI.Buss
 		private string _selector;
 
 		[HideInInspector] [SerializeField] private bool _editMode;
+		[HideInInspector] [SerializeField] private bool _showAllMode;
 #pragma warning restore CS0649
 
 		public BussSelector Selector => BussSelectorParser.Parse(_selector);
@@ -105,6 +106,12 @@ namespace Beamable.UI.Buss
 		{
 			get => _editMode;
 			set => _editMode = value;
+		}
+
+		public bool ShowAllMode
+		{
+			get => _showAllMode;
+			set => _showAllMode = value;
 		}
 
 		public static BussStyleRule Create(string selector, List<BussPropertyProvider> properties)

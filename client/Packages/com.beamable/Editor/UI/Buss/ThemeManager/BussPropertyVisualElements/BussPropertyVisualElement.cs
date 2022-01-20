@@ -1,6 +1,7 @@
 ﻿using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
+using System;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -13,6 +14,7 @@ namespace Beamable.Editor.UI.Components
 {
 	public abstract class BussPropertyVisualElement : BeamableBasicVisualElement
 	{
+		public Action OnValueChanged;
 		public BussStyleSheet UpdatedStyleSheet;
 
 		public abstract IBussProperty BaseProperty
@@ -41,6 +43,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				UpdatedStyleSheet.TriggerChange();
 			}
+			OnValueChanged?.Invoke();
 		}
 	}
 
