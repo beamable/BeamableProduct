@@ -9,7 +9,7 @@ using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
+
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -41,6 +41,8 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleSheet _styleSheet;
 		private BussStyleRule _styleRule;
 		private BussElementHierarchyVisualElement _navigationWindow;
+
+		private Action _onUndoRequest;
 
 		private List<BussStylePropertyVisualElement> _properties = new List<BussStylePropertyVisualElement>();
 
@@ -88,13 +90,14 @@ namespace Beamable.Editor.UI.Components
 		public void Setup(BussStyleSheet styleSheet,
 		                  BussStyleRule styleRule,
 		                  VariableDatabase variableDatabase,
-		                  BussElementHierarchyVisualElement navigationWindow)
+		                  BussElementHierarchyVisualElement navigationWindow,
+		                  Action onUndoRequest)
 		{
 			_styleSheet = styleSheet;
 			_styleRule = styleRule;
 			_variableDatabase = variableDatabase;
 			_navigationWindow = navigationWindow;
-
+			_onUndoRequest = onUndoRequest;
 			_styleSheet.Change += RefreshProperties;
 
 			Refresh();
@@ -186,7 +189,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void UndoButtonClicked(MouseDownEvent evt)
 		{
-			Debug.Log("UndoButtonClicked");
+			_onUndoRequest?.Invoke();
 		}
 
 		private void WizardButtonClicked(MouseDownEvent evt)
