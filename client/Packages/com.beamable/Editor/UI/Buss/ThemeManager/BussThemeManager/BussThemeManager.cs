@@ -1,5 +1,6 @@
 using System;﻿
 using Beamable.Editor;
+using Beamable.Editor.Common;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
@@ -141,6 +142,8 @@ namespace Beamable.UI.BUSS
 
 		private void RefreshStyleCards()
 		{
+			UndoSystem<BussStyleRule>.Update();
+		
 			var rulesToDraw = _navigationWindow.StyleSheets.SelectMany(ss => ss.Styles).ToArray();
 
 			var cardsToRemove = _styleCardsVisualElements.Where(card => !rulesToDraw.Contains(card.StyleRule)).ToArray();
@@ -161,7 +164,13 @@ namespace Beamable.UI.BUSS
 					}
 					else
 					{
-						AddStyleCard(styleSheet, rule);
+						var undoKey = $"{styleSheet.name}-{rule.SelectorString}";
+						UndoSystem<BussStyleRule>.AddRecord(rule, undoKey);
+						AddStyleCard(styleSheet, rule, () =>
+						{
+							UndoSystem<BussStyleRule>.Undo(undoKey);
+							RefreshStyleCards();
+						});
 					}
 				}
 			}
@@ -213,10 +222,10 @@ namespace Beamable.UI.BUSS
 			_variableDatabase.RemoveAllStyleSheets();
 		}
 
-		private BussStyleCardVisualElement AddStyleCard(BussStyleSheet styleSheet, BussStyleRule styleRule)
+		private BussStyleCardVisualElement AddStyleCard(BussStyleSheet styleSheet, BussStyleRule styleRule, Action callback)
 		{
 			BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-			styleCard.Setup(styleSheet, styleRule, _variableDatabase, _navigationWindow);
+			styleCard.Setup(styleSheet, styleRule, _variableDatabase, _navigationWindow, callback);
 			_styleCardsVisualElements.Add(styleCard);
 			_stylesGroup.Add(styleCard);
 
@@ -252,8 +261,14 @@ namespace Beamable.UI.BUSS
 			{
 				foreach (BussStyleRule styleRule in styleSheet.Styles)
 				{
+					var undoKey = $"{styleSheet.name}-{styleRule.SelectorString}";
+					UndoSystem<BussStyleRule>.AddRecord(styleRule, undoKey);
 					BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-					styleCard.Setup(styleSheet, styleRule, _variableDatabase, _navigationWindow);
+					styleCard.Setup(styleSheet, styleRule, _variableDatabase, _navigationWindow, () =>
+					{
+						UndoSystem<BussStyleRule>.Undo(undoKey);
+						RefreshStyleCards();
+					});
 					_styleCardsVisualElements.Add(styleCard);
 					_stylesGroup.Add(styleCard);
 				}
@@ -289,6 +304,7 @@ namespace Beamable.UI.BUSS
 			_navigationWindow.SelectionChanged -= FilterCards;
 
 			_navigationWindow.Destroy();
+			UndoSystem<BussStyleRule>.DeleteAllRecords();
 		}
 	}
 }
