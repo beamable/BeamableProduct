@@ -153,8 +153,8 @@ namespace Beamable.Editor.Microservice.UI.Components
                 mongoService.OnSelectionChanged += b =>
                     OnAllServiceSelectedStatusChanged?.Invoke(Model.Storages.All(m => m.IsSelected));
 
-                mongoService.OnSortChanged -= SortMicroservices;
-                mongoService.OnSortChanged += SortMicroservices;
+                mongoService.OnSortChanged -= SortStorages;
+                mongoService.OnSortChanged += SortStorages;
 
                 return mongoServiceElement;
 
@@ -177,8 +177,8 @@ namespace Beamable.Editor.Microservice.UI.Components
                 mongoService.OnSelectionChanged += b =>
                     OnAllServiceSelectedStatusChanged?.Invoke(Model.Storages.All(m => m.IsSelected));
 
-                mongoService.OnSortChanged -= SortMicroservices;
-                mongoService.OnSortChanged += SortMicroservices;
+                mongoService.OnSortChanged -= SortStorages;
+                mongoService.OnSortChanged += SortStorages;
 
                 return mongoServiceElement;
 
@@ -253,19 +253,46 @@ namespace Beamable.Editor.Microservice.UI.Components
             var _ = new GroupLoadingBarUpdater("Starting Microservices", loadingBar, false, children.ToArray());
         }
 
-        public void SortMicroservices()
+        public void SortServices(ServiceType serviceType)
         {
             var config = MicroserviceConfiguration.Instance;
+
             int Comparer(VisualElement a, VisualElement b)
             {
                 if (a is CreateServiceBaseVisualElement) return -1;
                 if (b is CreateServiceBaseVisualElement) return 1;
-                return config.OrderComparer(a.name, b.name, ServiceType.MicroService);
-            }
-            _servicesListElement.Sort(Comparer);
-        }
 
-        private bool ShouldDisplayService(ServiceType type)
+				switch (serviceType)
+				{
+					case ServiceType.MicroService:
+						if (b is StorageObjectVisualElement)
+							return -1;
+						break;
+					case ServiceType.StorageObject:
+						if (b is MicroserviceVisualElement)
+							return 1;
+						break;
+					default:
+						break;
+				}
+
+                return config.OrderComparer(a.name, b.name, serviceType);
+            }
+
+			_servicesListElement.Sort(Comparer);
+		}
+
+		public void SortMicroservices()
+		{
+			SortServices(ServiceType.MicroService);
+		}
+
+		public void SortStorages()
+		{
+			SortServices(ServiceType.StorageObject);
+		}
+
+		private bool ShouldDisplayService(ServiceType type)
         {
 	        switch (Model.Filter)
 	        {
