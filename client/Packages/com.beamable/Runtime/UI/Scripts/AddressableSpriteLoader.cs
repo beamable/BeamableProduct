@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Core.Platform;
+using System;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
@@ -21,10 +22,16 @@ namespace Beamable.UI.Scripts
       public AwaitableAsyncOperationHandle(AsyncOperationHandle<T> handle)
       {
          _handle = handle;
+
       }
 
       public override T GetResult() => _handle.Result;
       public override bool IsCompleted => _handle.IsDone;
+
+      public override void UnsafeOnCompleted(Action continuation)
+      {
+	      _handle.Completed += handle => continuation();
+      }
    }
 
 

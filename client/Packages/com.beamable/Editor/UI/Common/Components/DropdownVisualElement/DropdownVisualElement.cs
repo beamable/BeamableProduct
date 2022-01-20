@@ -107,6 +107,7 @@ namespace Beamable.Editor.UI.Components
             }
 
             Rect popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(bounds);
+            popupWindowRect.y -= 1f;
 
             List<DropdownSingleOptionVisualElement> allOptions = new List<DropdownSingleOptionVisualElement>();
 

@@ -6,6 +6,7 @@ using Beamable.Common.Leaderboards;
 using Beamable.Server;
 using Beamable.Server.Api.Groups;
 using Beamable.Server.Api.Leaderboards;
+using System.Threading.Tasks;
 
 namespace Beamable.Server
 {
@@ -139,5 +140,47 @@ namespace Beamable.Server
       {
          return _instance.CachedView;
       }
+      
+      /// <summary>
+      /// Just a trivial example of a ClientCallable that access the cached data. 
+      /// </summary>
+      /// <returns></returns>
+      [ClientCallable]
+      public LeaderBoardView GetCachedView(int testParameters)
+      {
+	      return _instance.CachedView;
+      }
+      
+      
+      /// <summary>
+      /// Just a trivial example of a ClientCallable that access the cached data. 
+      /// </summary>
+      /// <returns></returns>
+      [ClientCallable]
+      public async void AsyncVoidTestMethod(int testParameters)
+      {
+	      await Task.CompletedTask;
+      }
+
+      /// <summary>
+      /// Just a trivial example of a ClientCallable that access the cached data. 
+      /// </summary>
+      /// <returns></returns>
+      [ClientCallable]
+      public void TestUnsupportedParameters(Action testAction)
+      {
+	      
+      }
+      
+      /// <summary>
+      /// Just a trivial example of a ClientCallable that access the cached data. 
+      /// </summary>
+      /// <returns></returns>
+      [ClientCallable]
+      public void TestUnsupportedParameters2(Task testTask, Promise testPromise)
+      {
+	      
+      }
+      
    }
 }

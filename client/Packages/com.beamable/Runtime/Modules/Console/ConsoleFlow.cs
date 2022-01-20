@@ -29,7 +29,7 @@ namespace Beamable.Console
         private int _fingerCount;
         private bool _waitForRelease;
         private Vector2 _averagePositionStart;
-        private IBeamableAPI _beamable;
+        // private IBeamableAPI _beamable;
         private TextAutoCompleter _textAutoCompleter;
         private ConsoleHistory _consoleHistory;
         private string consoleText;
@@ -76,6 +76,7 @@ namespace Beamable.Console
 
         private void Update()
         {
+	        var _ = Beamable.API.Instance;
             if (!_isInitialized) return;
 
             if (_showNextTick)
@@ -109,13 +110,16 @@ namespace Beamable.Console
 
             // We want to ensure that we create the instance of the Beamable API if the console is the only thing
             // in the scene.
-            _beamable = await API.Instance;
+            // _beamable = await API.Instance;
             _textAutoCompleter = new TextAutoCompleter(ref txtInput, ref txtAutoCompleteSuggestion);
             _consoleHistory = new ConsoleHistory();
 
-            ServiceManager.ProvideWithDefaultContainer(new BeamableConsole());
+            var ctx = BeamContext.InParent(this);
+            await ctx.OnReady;
+            var console = ctx.ServiceProvider.GetService<BeamableConsole>();
 
-            var console = ServiceManager.Resolve<BeamableConsole>();
+            ServiceManager.Provide<BeamableConsole>(ctx.ServiceProvider); // this exists for legacy purposes, for anyone who might be using the service manager to the console...
+
             console.OnLog += Log;
             console.OnExecute += ExecuteCommand;
             console.OnCommandRegistered += RegisterCommand;
@@ -202,7 +206,7 @@ namespace Beamable.Console
 #if UNITY_EDITOR
             return true;
 #else
-            return ConsoleConfiguration.Instance.ForceEnabled || _beamable.User.HasScope("cli:console");
+            return ConsoleConfiguration.Instance.ForceEnabled /*|| _beamable.User.HasScope("cli:console")*/;
 #endif
         }
 
@@ -219,7 +223,18 @@ namespace Beamable.Console
             var args = new string[parts.Length - 1];
             for (var i = 1; i < parts.Length; i++) args[i - 1] = parts[i];
 
-            Log(ServiceManager.Resolve<BeamableConsole>().Execute(parts[0], args));
+
+            var ctx = BeamContext.InParent(this);
+            var console = ctx.ServiceProvider.GetService<BeamableConsole>();
+            // need to re-register commands because they might have been lost in a reset or restart
+            console.OnLog -= Log;
+            console.OnExecute -= ExecuteCommand;
+            console.OnCommandRegistered -= RegisterCommand;
+            console.OnLog += Log;
+            console.OnExecute += ExecuteCommand;
+            console.OnCommandRegistered += RegisterCommand;
+
+            Log(console.Execute(parts[0], args));
         }
 
         private static void RegisterCommand(BeamableConsoleCommandAttribute command, ConsoleCommandCallback callback)

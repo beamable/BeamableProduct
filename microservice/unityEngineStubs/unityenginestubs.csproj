@@ -8,7 +8,7 @@
       <Authors>Beamable Team</Authors>
       <Company>Beamable</Company>
 
-      <TargetFramework>net5.0</TargetFramework>
+      <TargetFramework>net6.0</TargetFramework>
       <AssemblyName>UnityEngine</AssemblyName>
    </PropertyGroup>
    <ItemGroup>
