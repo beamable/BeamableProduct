@@ -187,9 +187,8 @@ namespace Beamable.Editor.UI.Model
          foreach (var storage in MicroserviceConfiguration.Instance.StorageObjects)
          {
             var name = storage.StorageName;
-            var remotely = servicesStatus?.Find(status => status.serviceName.Equals(name)) != null;
             if (!result.ContainsKey(name))
-               result.Add(name, getServiceStatus(ContainsModel(name), remotely));
+               result.Add(name, getServiceStatus(ContainsModel(name), storage.Enabled));
          }
          
          return result;
