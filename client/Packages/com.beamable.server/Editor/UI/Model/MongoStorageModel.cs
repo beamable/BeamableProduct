@@ -72,9 +72,9 @@ namespace Beamable.Editor.UI.Model
         public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
         {
 
-			var existsOnRemote = RemoteReference?.enabled ?? false;
-			var localCategory = IsRunning ? "Local" : "Local (not running)";
-			var remoteCategory = existsOnRemote ? "Cloud" : "Cloud (not deployed)";
+            var existsOnRemote = RemoteReference?.enabled ?? false;
+            var localCategory = IsRunning ? "Local" : "Local (not running)";
+            var remoteCategory = existsOnRemote ? "Cloud" : "Cloud (not deployed)";
 
             evt.menu.BeamableAppendAction($"{localCategory}/Erase data", _ => AssemblyDefinitionHelper.ClearMongo(ServiceDescriptor), IsRunning);
             evt.menu.BeamableAppendAction($"{localCategory}/Goto data explorer", _ => AssemblyDefinitionHelper.OpenMongoExplorer(ServiceDescriptor), IsRunning);
@@ -100,7 +100,7 @@ namespace Beamable.Editor.UI.Model
             }
         }
 
-		public override void Refresh(IDescriptor descriptor)
+        public override void Refresh(IDescriptor descriptor)
         {
             // reset the descriptor and statemachines; because they aren't system.serializable durable.
             ServiceDescriptor = (StorageObjectDescriptor)descriptor;

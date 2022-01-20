@@ -187,7 +187,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             return null;
         }
 
-		private void MicroserviceStartFailed()
+        private void MicroserviceStartFailed()
         {
             _actionPrompt.SetVisible(Constants.PROMPT_STARTED_FAILURE, true, false);
         }
