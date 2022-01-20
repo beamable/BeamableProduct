@@ -7,6 +7,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Beamable.Common.Runtime.Collections;
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.ExceptionServices;
 
 #if !DISABLE_BEAMABLE_ASYNCMETHODBUILDER
 
@@ -39,8 +42,10 @@ namespace Beamable.Common
       public bool HadAnyErrbacks { protected set; get; }
 
       protected Exception err;
+      protected ExceptionDispatchInfo errInfo;
+      protected StackTrace _errStackTrace;
       protected object _lock = new object();
-
+      internal bool RaiseInnerException { get; set; }
 
 #if DISABLE_THREADING
       protected bool done { get; set; }
@@ -87,7 +92,7 @@ namespace Beamable.Common
 
       protected void InvokeUncaughtPromise()
       {
-         OnPotentialUncaughtError?.Invoke(this, err);
+         OnPotentialUncaughtError?.Invoke(this, errInfo?.SourceException ?? err);
       }
 
    }
@@ -180,7 +185,12 @@ namespace Beamable.Common
             }
 
             err = ex;
+            if (err.StackTrace == null)
+            {
+	            err.SetStackTrace(new StackTrace());
+            }
             done = true;
+            errInfo = ExceptionDispatchInfo.Capture(err);
 
             try
             {
@@ -224,6 +234,14 @@ namespace Beamable.Common
                      BeamableLogger.LogException(e);
                   }
                }
+               else
+               {
+	               // maybe there is no error handler for this guy...
+	               if (!HadAnyErrbacks)
+	               {
+		               InvokeUncaughtPromise();
+	               }
+               }
             }
             else
             {
@@ -231,6 +249,13 @@ namespace Beamable.Common
             }
          }
 
+         return this;
+      }
+
+      public Promise<T> Merge(Promise<T> other)
+      {
+         Then(other.CompleteSuccess);
+         Error(other.CompleteError);
          return this;
       }
 
@@ -276,19 +301,22 @@ namespace Beamable.Common
       public Promise<TU> Map<TU>(Func<T, TU> callback)
       {
          var result = new Promise<TU>();
+         // need to forward the error handles of this one, to the next one.x
+         // result.Error(err => errbacks?.Invoke(err));
          Then(value =>
-            {
-               try
-               {
-                  var nextResult = callback(value);
-                  result.CompleteSuccess(nextResult);
-               }
-               catch (Exception ex)
-               {
-                  result.CompleteError(ex);
-               }
-            })
-            .Error(ex => result.CompleteError(ex));
+	         {
+		         try
+		         {
+			         var nextResult = callback(value);
+			         result.CompleteSuccess(nextResult);
+		         }
+		         catch (Exception ex)
+		         {
+			         result.CompleteError(ex);
+		         }
+	         })
+	         .Error(ex => result.CompleteError(ex))
+	         ;
          return result;
       }
 
@@ -358,17 +386,23 @@ namespace Beamable.Common
       /// <returns></returns>
       public static Promise<T> Failed(Exception err)
       {
-         return new Promise<T>
+	      if (err?.StackTrace == null)
+	      {
+		      err?.SetStackTrace(new StackTrace());
+	      }
+	      ExceptionDispatchInfo errInfo = ExceptionDispatchInfo.Capture(err);
+	      return new Promise<T>
          {
             done = true,
-            err = err
+            err = err,
+            errInfo = errInfo
          };
       }
 
       void ICriticalNotifyCompletion.UnsafeOnCompleted(Action continuation)
       {
-         Then(_ => continuation());
-         Error(_ => continuation());
+	      Error(_ => continuation());
+	      Then(_ => continuation());
       }
 
       void INotifyCompletion.OnCompleted(Action continuation)
@@ -383,20 +417,53 @@ namespace Beamable.Common
       /// <exception cref="Exception"></exception>
       public T GetResult()
       {
-         if (err != null)
-            throw err;
-         return _val;
+	      if (err != null)
+	      {
+		      if (RaiseInnerException)
+		      {
+			      errInfo.Throw();
+		      }
+		      else throw err;
+	      }
+	      return _val;
       }
 
       /// <summary>
       /// Get the awaiter of the <see cref="Promise"/>.
+      /// Once an awaiter is established, this promise will never raise an uncaught exception.
       /// </summary>
       /// <returns></returns>
       /// <exception cref="Exception"></exception>
       public Promise<T> GetAwaiter()
       {
-         return this;
+	      Error((ex) =>
+	      {
+		      // remove the ability for an uncaught exception to raise. As an awaiter, the .GetResult() method will trigger, which will THROW an error if one exists.
+	      });
+	      return this;
       }
+
+   }
+
+   public static class ExceptionUtilities
+   {
+	   private static readonly FieldInfo STACK_TRACE_STRING_FI = typeof(Exception).GetField("_stackTraceString", BindingFlags.NonPublic | BindingFlags.Instance);
+	   private static readonly Type TRACE_FORMAT_TI = Type.GetType("System.Diagnostics.StackTrace").GetNestedType("TraceFormat", BindingFlags.NonPublic);
+	   private static readonly MethodInfo TRACE_TO_STRING_MI = typeof(StackTrace).GetMethod("ToString", BindingFlags.NonPublic | BindingFlags.Instance, null, new[] { TRACE_FORMAT_TI }, null);
+
+	   public static Exception SetStackTrace(this Exception target, StackTrace stack)
+	   {
+		   var getStackTraceString = TRACE_TO_STRING_MI.Invoke(stack, new object[] { Enum.GetValues(TRACE_FORMAT_TI).GetValue(0) });
+		   STACK_TRACE_STRING_FI.SetValue(target, getStackTraceString);
+		   return target;
+	   }
+   }
+   public class PromiseException : Exception
+   {
+	   public PromiseException(Exception inner) : base($"Promise failed with exception {inner.Message}", inner)
+	   {
+
+	   }
    }
 
    /// <summary>
@@ -503,6 +570,7 @@ namespace Beamable.Common
    [AsyncMethodBuilder(typeof(PromiseAsyncMethodBuilder))]
    public class Promise : Promise<Unit>
    {
+      public static Promise Success { get; } = new Promise {done = true};
 
       public void CompleteSuccess() => CompleteSuccess(PromiseBase.Unit);
 
@@ -908,6 +976,14 @@ namespace Beamable.Common
       {
          return self.Map(_ => PromiseBase.Unit);
       }
+
+      public static Promise ToPromise<T>(this Promise<T> self)
+      {
+         var p = new Promise();
+         self.Then(_ => p.CompleteSuccess(PromiseBase.Unit));
+         self.Error(p.CompleteError);
+         return p;
+      }
    }
 
    /// <summary>
@@ -926,7 +1002,7 @@ namespace Beamable.Common
       public PromiseBase Promise { get; }
 
       public UncaughtPromiseException(PromiseBase promise, Exception ex) : base(
-         $"Uncaught promise innerMsg=[{ex.Message}]", ex)
+         $"Uncaught promise innerMsg=[{ex.Message}] ", ex)
       {
          Promise = promise;
       }
@@ -969,7 +1045,10 @@ namespace Beamable.Common
 
       public void SetException(Exception ex)
       {
-         _promise.CompleteError(ex);
+	      _promise.RaiseInnerException = true;
+	      // TODO: there is a bug here, where an "uncaught" exception can still happen even if someone try/catches it.
+	      _promise.Error(err => { });
+	      _promise.CompleteError(ex);
       }
 
       public void SetStateMachine(IAsyncStateMachine machine)
@@ -999,7 +1078,7 @@ namespace Beamable.Common
          where TAwaiter : ICriticalNotifyCompletion
          where TStateMachine : IAsyncStateMachine
       {
-         AwaitOnCompleted(ref awaiter, ref stateMachine);
+	      AwaitOnCompleted(ref awaiter, ref stateMachine);
       }
 
       public void Start<TStateMachine>(ref TStateMachine stateMachine)
@@ -1028,6 +1107,7 @@ namespace Beamable.Common
 
       public void SetException(Exception ex)
       {
+	      _promise.RaiseInnerException = true;
          _promise.CompleteError(ex);
       }
 

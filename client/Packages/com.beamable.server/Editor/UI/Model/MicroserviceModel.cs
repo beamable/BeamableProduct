@@ -27,11 +27,19 @@ namespace Beamable.Editor.UI.Model
         [SerializeField]
         private MicroserviceDescriptor _serviceDescriptor;
 
-        public MicroserviceDescriptor ServiceDescriptor
-        {
-            get => _serviceDescriptor;
-            set => _serviceDescriptor = value;
+        [SerializeField]
+        private string _assemblyQualifiedMicroserviceTypeName;
+        public MicroserviceDescriptor ServiceDescriptor {
+	        get => _serviceDescriptor;
+	        set 
+	        {
+		        _serviceDescriptor = value;
+		        if (_serviceDescriptor.Type != null)
+			        _assemblyQualifiedMicroserviceTypeName = _serviceDescriptor.Type.AssemblyQualifiedName;
+	        }
         }
+
+        public string AssemblyQualifiedMicroserviceTypeName => _assemblyQualifiedMicroserviceTypeName;
 
         public MicroserviceBuilder ServiceBuilder { get; protected set; }
         public override IBeamableBuilder Builder => ServiceBuilder;
@@ -127,11 +135,9 @@ namespace Beamable.Editor.UI.Model
             OnRemoteStatusEnriched?.Invoke(status);
         }
         
-        // TODO - When MongoStorageModel will be ready feel free to implement these methods
-        // TODO === BEGIN
         public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
         {
-            var existsOnRemote = RemoteStatus?.serviceName?.Length > 0;
+            var existsOnRemote = RemoteReference?.enabled ?? false;
             var hasImageSuffix = ServiceBuilder.HasBuildDirectory ? string.Empty : " (Build first)";
             var localCategory = IsRunning ? "Local" : "Local (not running)";
             var remoteCategory = existsOnRemote ? "Cloud" : "Cloud (not deployed)";

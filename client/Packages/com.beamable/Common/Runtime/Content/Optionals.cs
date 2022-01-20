@@ -88,6 +88,14 @@ namespace Beamable.Common.Content
     [Agnostic]
     public class OptionalBoolean : Optional<bool> { }
 
+    public static class OptionalBooleanExtensions
+    {
+	    public static bool IsTruthy(this OptionalBoolean self)
+	    {
+		    return self != null && (self.HasValue && self.Value);
+	    }
+    }
+
     [System.Serializable]
     [Agnostic]
     public class OptionalInt : Optional<int> { }

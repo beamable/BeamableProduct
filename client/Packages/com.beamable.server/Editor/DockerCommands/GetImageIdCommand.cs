@@ -1,6 +1,7 @@
 using System;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Platform.SDK;
+using UnityEngine;
 
 namespace Beamable.Server.Editor.DockerCommands
 {
@@ -19,8 +20,14 @@ namespace Beamable.Server.Editor.DockerCommands
 
       protected override void Resolve()
       {
-         var imageId = StandardOutBuffer?.Length > 0 ? StandardOutBuffer.Trim() : string.Empty;
-         Promise.CompleteSuccess(imageId);
+         if (StandardOutBuffer?.Length > 0)
+         {
+	         Promise.CompleteSuccess(StandardOutBuffer.Trim());
+	         return;
+         }
+
+         Debug.LogError($"Failed to get {ImageName} image id. Error buffer: {StandardErrorBuffer}");
+         Promise.CompleteSuccess(string.Empty);
       }
    }
 }

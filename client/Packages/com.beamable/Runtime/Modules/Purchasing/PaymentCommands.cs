@@ -4,6 +4,7 @@ using Beamable.Api;
 using Beamable.ConsoleCommands;
 using Beamable.Coroutines;
 using Beamable.Api.Payments;
+using Beamable.Common.Dependencies;
 using Beamable.Service;
 using UnityEngine.Scripting;
 
@@ -13,20 +14,19 @@ namespace Beamable.Purchasing
   [BeamableConsoleCommandProvider]
   public class PaymentCommands
   {
-    private BeamableConsole Console => ServiceManager.Resolve<BeamableConsole>();
-    private CoroutineService CoroutineService => ServiceManager.Resolve<CoroutineService>();
+	  private readonly IDependencyProvider _provider;
+	  private BeamableConsole Console => _provider.GetService<BeamableConsole>();
+	  private PaymentService PaymentService => _provider.GetService<PaymentService>();
 
     [Preserve]
-    public PaymentCommands()
+    public PaymentCommands(IDependencyProvider provider)
     {
+	    _provider = provider;
     }
 
     [BeamableConsoleCommand("TRACK_PAYMENT", "Track a test payment audit", "TRACK_PAYMENT")]
     private string TrackPurchase(string[] args)
     {
-      var platform = ServiceManager.Resolve<PlatformService>();
-      var payments = platform.Payments;
-
       var obtainCurrency = new List<ObtainCurrency>();
       var obtainItems = new List<ObtainItem>();
 
@@ -47,7 +47,7 @@ namespace Beamable.Purchasing
         obtainItems
       );
 
-      payments.Track(request).Then( _ => {
+      PaymentService.Track(request).Then( _ => {
         Console.Log("Purchase Tracked");
       });
 

@@ -1,3 +1,4 @@
+using Beamable.Common.Dependencies;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Beamable.Service;
@@ -9,11 +10,13 @@ namespace Beamable.ConsoleCommands
     [BeamableConsoleCommandProvider]
     public class DefaultConsoleCommands
     {
-        private BeamableConsole Console => ServiceManager.Resolve<BeamableConsole>();
+	    private readonly IDependencyProvider _provider;
+	    private BeamableConsole Console => _provider.GetService<BeamableConsole>();
 
         [Preserve]
-        public DefaultConsoleCommands()
+        public DefaultConsoleCommands(IDependencyProvider provider)
         {
+	        _provider = provider;
         }
 
 

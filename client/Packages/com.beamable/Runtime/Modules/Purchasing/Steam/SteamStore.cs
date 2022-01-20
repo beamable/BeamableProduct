@@ -1,4 +1,5 @@
-﻿using Beamable.Service;
+﻿using Beamable.Common.Dependencies;
+using Beamable.Service;
 using Beamable.Common.Steam;
 using UnityEngine;
 using UnityEngine.Purchasing;
@@ -10,7 +11,8 @@ namespace Beamable.Purchasing.Steam
 {
     public class SteamStore : IStore
     {
-        public const string Name = "SteamStore";
+	    private readonly IDependencyProvider _provider;
+	    public const string Name = "SteamStore";
 
         public ISteamService steam;
         public IStoreCallback callback;
@@ -18,15 +20,21 @@ namespace Beamable.Purchasing.Steam
 
         private Dictionary<string, InProgressPurchase> _inProgress = new Dictionary<string, InProgressPurchase>();
 
+        public SteamStore(IDependencyProvider provider)
+        {
+	        _provider = provider;
+        }
+
         public void Initialize(IStoreCallback callback)
         {
             this.callback = callback;
-            this.steam = ServiceManager.Resolve<ISteamService>();
+
+            this.steam = _provider.GetService<ISteamService>();
 
             if (this.steam == null)
             {
                 OnInitializeFailed("Steam service unavailable. Provide ServiceManager an ISteamService instance.");
-            } 
+            }
             else
             {
                 this.steam.RegisterTransactionCallback(OnTransactionAuthorized);
@@ -53,9 +61,9 @@ namespace Beamable.Purchasing.Steam
                 {
                     var price = System.Convert.ToDecimal(steamProduct.localizedPrice);
                     var metadata = new ProductMetadata(
-                        steamProduct.localizedPriceString, 
-                        steamProduct.description, 
-                        steamProduct.description, 
+                        steamProduct.localizedPriceString,
+                        steamProduct.description,
+                        steamProduct.description,
                         steamProduct.isoCurrencyCode,
                         price);
 
@@ -73,7 +81,7 @@ namespace Beamable.Purchasing.Steam
             {
                 Debug.LogError(ex);
             }
-                
+
             callback.OnSetupFailed(InitializationFailureReason.PurchasingUnavailable);
         }
 
@@ -106,8 +114,8 @@ namespace Beamable.Purchasing.Steam
             if(this.steam == null)
             {
                 callback.OnPurchaseFailed(new PurchaseFailureDescription(
-                    product.id, 
-                    PurchaseFailureReason.PurchasingUnavailable, 
+                    product.id,
+                    PurchaseFailureReason.PurchasingUnavailable,
                     "Steam service unavailable. Provide ServiceManager an ISteamService instance."));
 
                 return;

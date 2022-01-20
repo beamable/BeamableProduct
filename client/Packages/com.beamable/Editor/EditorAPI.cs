@@ -1,22 +1,20 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
-using Beamable.Editor.Content;
-using Beamable.Editor.Environment;
 using Beamable.Config;
 using Beamable.Editor.Config;
+using Beamable.Editor.Content;
 using Beamable.Editor.Modules.Account;
 using Beamable.Editor.Realms;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.VersionControl;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
 using Task = System.Threading.Tasks.Task;
 
 namespace Beamable.Editor
@@ -44,7 +42,7 @@ namespace Beamable.Editor
             return _instance;
          }
       }
-
+      
       // Services
       private AccessTokenStorage _accessTokenStorage;
       private PlatformRequester _requester;
@@ -90,9 +88,10 @@ namespace Beamable.Editor
 
       private Promise<EditorAPI> Initialize()
       {
-         if (!Application.isPlaying) 
+	      // Apply the defined configuration for how users want to uncaught promises (with no .Error callback attached) in Beamable promises. 
+	     if (!Application.isPlaying) 
          {
-            var promiseHandlerConfig = CoreConfiguration.Instance.DefaultUncaughtPromiseHandlerConfiguration;
+            var promiseHandlerConfig = BeamEditor.CoreConfiguration.DefaultUncaughtPromiseHandlerConfiguration;
             switch (promiseHandlerConfig)
             {
                case CoreConfiguration.EventHandlerConfig.Guarantee:
@@ -163,7 +162,7 @@ namespace Beamable.Editor
       {
          if (File.Exists(path))
          {
-            var fileInfo = new System.IO.FileInfo(path);
+            var fileInfo = new FileInfo(path);
             fileInfo.IsReadOnly = false;
          }
 
@@ -535,7 +534,7 @@ namespace Beamable.Editor
 
    }
 
-   [System.Serializable]
+   [Serializable]
    public class ConfigData
    {
       public string cid;
@@ -546,19 +545,19 @@ namespace Beamable.Editor
       public string containerPrefix;
    }
 
-   [System.Serializable]
+   [Serializable]
    public class CustomerResponse
    {
       public CustomerDTO customer;
    }
 
-   [System.Serializable]
+   [Serializable]
    public class CustomerDTO
    {
       public List<ProjectDTO> projects;
    }
 
-   [System.Serializable]
+   [Serializable]
    public class ProjectDTO
    {
       public string name;
