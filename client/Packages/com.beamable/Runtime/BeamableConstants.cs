@@ -21,6 +21,7 @@ public static class BeamableConstants
    public const string MICROSERVICES_MANAGER = "Microservices Manager";
    public const string PORTAL = "Portal";
    public const string TOOLBOX = "Toolbox";
+   public const string BEAMABLE_ASSISTANT = BEAMABLE + " Assistant";
    public const string BUSS = BEAMABLE + " Styles";
    public const string BUSS_SHEET_EDITOR = "Sheet Inspector";
    public const string BUSS_WIZARD = "Theme Wizard";
