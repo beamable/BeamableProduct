@@ -74,6 +74,7 @@ namespace Beamable.Server.Editor
 						{
 							"Unity.Beamable.Runtime.Common", "Unity.Beamable.Server.Runtime.Shared",
 						},
+						AutoReferenced = true,
 						DllReferences = AssemblyDefinitionHelper.MongoLibraries
 					});
 
