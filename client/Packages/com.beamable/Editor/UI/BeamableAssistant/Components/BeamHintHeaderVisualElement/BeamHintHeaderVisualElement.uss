@@ -55,10 +55,7 @@
     color: #eeeeee;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-text-align: middle-left;
-    white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
-    text-overflow-position: end;
 }
 
 #moreDetailsButton{
@@ -142,11 +139,8 @@ Toggle#hintDetailsBoxNotificationToggle > VisualElement > #unity-checkmark {
     margin-bottom: 2px;
     flex-grow: 2;
     font-size: 12px;
-    color: #eeeeee;    
-    white-space: normal;
-    overflow: visible;
-    text-overflow: ellipsis;
-    text-overflow-position: start;
+    color: #eeeeee;
+    overflow: visible;    
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
 }
 
