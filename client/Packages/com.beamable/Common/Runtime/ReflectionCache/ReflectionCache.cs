@@ -414,7 +414,8 @@ namespace Beamable.Common.Reflection
 
 				return $"{prefix}{param.ParameterType.Name} {param.Name}";
 			}));
-			return $"{info.ReturnType.Name}({paramsDeclaration})";
+			var staticModifier = info.IsStatic ? "static " : "";
+			return $"{staticModifier}{info.ReturnType.Name}({paramsDeclaration})";
 		}
 	}
 }
