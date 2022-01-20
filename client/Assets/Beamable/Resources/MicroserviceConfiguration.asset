@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2a96b3852b93843ef94fc3401214399e, type: 3}
   m_Name: MicroserviceConfiguration
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   Microservices:
   - ServiceName: DeploymentTest
     Enabled: 1
@@ -25,7 +25,7 @@ MonoBehaviour:
   - ServiceName: SecondService2
     Enabled: 0
     TemplateId: small
-    CustomDockerFileStrings: 
+    CustomDockerFileStrings:
     IncludeDebugTools: 0
     DebugData:
       Username: root
@@ -34,7 +34,7 @@ MonoBehaviour:
   - ServiceName: Demo
     Enabled: 1
     TemplateId: small
-    CustomDockerFileStrings: 
+    CustomDockerFileStrings:
     IncludeDebugTools: 0
     DebugData:
       Username: root
@@ -43,7 +43,7 @@ MonoBehaviour:
   - ServiceName: ForJustin
     Enabled: 1
     TemplateId: small
-    CustomDockerFileStrings: 
+    CustomDockerFileStrings:
     IncludeDebugTools: 0
     DebugData:
       Username: root
@@ -52,35 +52,19 @@ MonoBehaviour:
   - ServiceName: CacheDependentMS
     Enabled: 1
     TemplateId: small
-    CustomDockerFileStrings: 
+    CustomDockerFileStrings:
     IncludeDebugTools: 0
     DebugData:
       Username: root
       Password: Password!
       SshPort: 11104
   StorageObjects:
-  - StorageName: AliveStorage
-    StorageType: mongov1
-    Enabled: 1
-    TemplateId: small
-    LocalDataPort: 12100
-    LocalUIPort: 13100
-    LocalInitUser: beamable
-    LocalInitPass: beamable
-  - StorageName: DerpStorage
-    StorageType: mongov1
-    Enabled: 0
-    TemplateId: small
-    LocalDataPort: 12101
-    LocalUIPort: 13101
-    LocalInitUser: beamable
-    LocalInitPass: beamable
-  CustomContainerPrefix: 
+  CustomContainerPrefix: []
   AutoReferenceContent: 0
   ColorLogs: 0
   EnableDockerBuildkit: 0
   DockerAppCheckInMicroservicesWindow: 1
-  DockerCommand: 
+  DockerCommand:
   ForwardContainerLogsToUnityConsole: 1
   LogProcessLabelColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   LogStandardOutColor: {r: 0.4, g: 0.4, b: 1, a: 1}
