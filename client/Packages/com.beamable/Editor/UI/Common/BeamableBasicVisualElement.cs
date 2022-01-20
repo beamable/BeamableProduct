@@ -62,7 +62,7 @@ namespace Beamable.Editor.UI.Common
 
 		protected virtual void OnDestroy() { }
 
-		public virtual void Refresh()
+		public virtual void Init()
 		{
 			Destroy();
 			Clear();
@@ -79,5 +79,7 @@ namespace Beamable.Editor.UI.Common
 				elem?.SetBackgroundScaleModeToFit();
 			});
 		}
+
+		public virtual void Refresh() { }
 	}
 }

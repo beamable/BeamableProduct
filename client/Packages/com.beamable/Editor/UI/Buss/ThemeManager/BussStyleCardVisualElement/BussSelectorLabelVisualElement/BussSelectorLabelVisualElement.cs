@@ -26,7 +26,7 @@ namespace Beamable.Editor.UI.Components
 
 		public void Setup(BussStyleRule styleRule)
 		{
-			base.Refresh();
+			base.Init();
 
 			_styleRule = styleRule;
 

@@ -36,9 +36,13 @@ namespace Beamable.Editor.UI.Components
 		private BussPropertyProvider _propertyProvider;
 		private bool _propertyIsInStyle;
 
-		public override void Refresh()
+		public BussStyleSheet StyleSheet => _styleSheet;
+		public BussStyleRule StyleRule => _styleRule;
+		public BussPropertyProvider PropertyProvider => _propertyProvider;
+
+		public override void Init()
 		{
-			base.Refresh();
+			base.Init();
 
 			VisualElement buttonContainer = new VisualElement();
 			buttonContainer.name = "removeButtonContainer";
@@ -65,11 +69,10 @@ namespace Beamable.Editor.UI.Components
 
 			Root.parent.EnableInClassList("exists", _propertyIsInStyle);
 			Root.parent.EnableInClassList("doesntExists", !_propertyIsInStyle);
-			Update();
+			Refresh();
 		}
 
-		// TODO: should be a part of base class and overriden here, TBD later
-		private void Update()
+		public override void Refresh()
 		{
 			_labelComponent.text = _propertyProvider.Key;
 
@@ -90,7 +93,7 @@ namespace Beamable.Editor.UI.Components
 			_propertyProvider = property;
 			_propertyIsInStyle = _styleRule.Properties.Contains(_propertyProvider);
 
-			Refresh();
+			Init();
 			AddStyleSheetListener();
 		}
 
@@ -102,6 +105,7 @@ namespace Beamable.Editor.UI.Components
 				if (_propertyVisualElement.BaseProperty ==
 				    _propertyProvider.GetProperty().GetEndProperty(_variableDatabase, _styleRule))
 				{
+					_propertyVisualElement.OnPropertyChangedExternally();
 					return;
 				}
 
@@ -115,7 +119,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				_propertyVisualElement.UpdatedStyleSheet = _propertyIsInStyle ? _styleSheet : null;
 				_valueParent.Add(_propertyVisualElement);
-				_propertyVisualElement.Refresh();
+				_propertyVisualElement.Init();
 				_propertyVisualElement.OnValueChanged -= HandlePropertyChanged;
 				_propertyVisualElement.OnValueChanged += HandlePropertyChanged;
 			}
@@ -158,16 +162,16 @@ namespace Beamable.Editor.UI.Components
 				_variableConnection.Refresh();
 			}
 
-			_variableConnection.OnConnectionChange -= Update;
+			_variableConnection.OnConnectionChange -= Refresh;
 			_variableConnection.Setup(_styleSheet, _propertyProvider, _variableDatabase);
-			_variableConnection.OnConnectionChange += Update;
+			_variableConnection.OnConnectionChange += Refresh;
 		}
 
 		private void AddStyleSheetListener()
 		{
 			if (_styleSheet != null)
 			{
-				_styleSheet.Change += Update;
+				_styleSheet.Change += Refresh;
 			}
 		}
 
@@ -175,7 +179,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			if (_styleSheet != null)
 			{
-				_styleSheet.Change -= Update;
+				_styleSheet.Change -= Refresh;
 			}
 		}
 	}

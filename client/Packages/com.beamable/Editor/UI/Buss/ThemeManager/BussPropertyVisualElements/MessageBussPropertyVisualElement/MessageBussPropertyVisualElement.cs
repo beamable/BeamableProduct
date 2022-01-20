@@ -18,9 +18,9 @@ namespace Beamable.Editor.UI.Components
 		
 		public MessageBussPropertyVisualElement(IBussProperty property) : base(property) { }
 
-		public override void Refresh()
+		public override void Init()
 		{
-			base.Refresh();
+			base.Init();
 			var label = new Label(Message);
 			AddBussPropertyFieldClass(label);
 			label.style.SetFontSize(8f);

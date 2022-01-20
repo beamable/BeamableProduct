@@ -23,7 +23,7 @@ namespace Beamable.Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements
 
 			if (property is SingleColorBussProperty colorProperty)
 			{
-				return new ColorButtPropertyVisualElement(colorProperty);
+				return new ColorBussPropertyVisualElement(colorProperty);
 			}
 
 			if (property is VertexColorBussProperty vertexColorProperty)

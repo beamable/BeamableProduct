@@ -1,5 +1,4 @@
 ﻿using Beamable.UI.Buss;
-using Beamable.Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -16,9 +15,9 @@ namespace Beamable.Editor.UI.Components
 		
 		public FloatBussPropertyVisualElement(FloatBussProperty property) : base(property) { }
 
-		public override void Refresh()
+		public override void Init()
 		{
-			base.Refresh();
+			base.Init();
 			
 			_field = new FloatField();
 			AddBussPropertyFieldClass(_field);
