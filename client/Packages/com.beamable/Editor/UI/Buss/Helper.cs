@@ -9,8 +9,8 @@ namespace Beamable.Editor.UI.Buss
 	{
 		public static IEnumerable<Type> GetAllClassesInheritedFrom(Type baseClass) =>
 			AppDomain.CurrentDomain.GetAssemblies()
-			         .SelectMany(assembly => assembly.GetTypes())
-			         .Where(x => x.IsClass && !x.IsAbstract && x.IsInheritedFrom(baseClass));
+					 .SelectMany(assembly => assembly.GetTypes())
+					 .Where(x => x.IsClass && !x.IsAbstract && x.IsInheritedFrom(baseClass));
 
 		public static List<string> GetAllClassesNamesInheritedFrom(Type baseClass) =>
 			GetAllClassesInheritedFrom(baseClass).Select(x => x.Name).ToList();
@@ -23,11 +23,11 @@ namespace Beamable.Editor.UI.Buss
 		/// <typeparam name="T">Asset type</typeparam>
 		/// <returns>Collection of loaded assets</returns>
 		/// <footer><a href="file:///C:/Program%20Files/Unity/Hub/Editor/2018.4.36f1/Editor/Data/Documentation/en/ScriptReference/AssetDatabase.html">External documentation for `AssetDatabase`</a></footer>
-		public static List<T> FindAssets<T>(string filter, string[] searchInFolders) 
+		public static List<T> FindAssets<T>(string filter, string[] searchInFolders)
 			where T : UnityEngine.Object
 		{
 			var GUIDs = AssetDatabase.FindAssets(filter, searchInFolders);
-			var assets = new List<T>(); 
+			var assets = new List<T>();
 			foreach (var GUID in GUIDs)
 			{
 				var path = AssetDatabase.GUIDToAssetPath(GUID);

@@ -13,7 +13,7 @@ namespace Beamable.Editor.UI.Components
 	{
 		protected override string Message =>
 			$"No visual element implemented for drawing a property of type {Property?.GetType().Name ?? "NULL"}.";
-		
+
 		public NotImplementedBussPropertyVisualElement(IBussProperty property) : base(property) { }
 	}
 }

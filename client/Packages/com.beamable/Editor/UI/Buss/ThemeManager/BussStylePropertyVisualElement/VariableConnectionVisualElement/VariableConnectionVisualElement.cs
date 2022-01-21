@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.BUSS.ThemeManager;
+using Beamable.UI.Buss;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Editor.UI.Buss;
-using Beamable.UI.Buss;
-using Beamable.Editor.UI.BUSS.ThemeManager;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -22,7 +22,8 @@ namespace Beamable.Editor.UI.Components
 	{
 		public VariableConnectionVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStylePropertyVisualElement)}/" +
-			$"{nameof(VariableConnectionVisualElement)}/{nameof(VariableConnectionVisualElement)}") { }
+			$"{nameof(VariableConnectionVisualElement)}/{nameof(VariableConnectionVisualElement)}")
+		{ }
 
 		private VisualElement _mainElement;
 		private Button _button;
@@ -65,8 +66,8 @@ namespace Beamable.Editor.UI.Components
 			_dropdownOptions.Add(_noneOption);
 			// _dropdownOptions.Add(_addNewOption);
 			_dropdownOptions.AddRange(_variableDatabase
-			                          .GetVariableNames()
-			                          .Where(key => _variableDatabase.GetVariableData(key).HasTypeDeclared(baseType)));
+									  .GetVariableNames()
+									  .Where(key => _variableDatabase.GetVariableData(key).HasTypeDeclared(baseType)));
 
 			_dropdown.visible = IsConnected;
 			_dropdown.Setup(_dropdownOptions, OnVariableSelected, false);
@@ -88,8 +89,8 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void Setup(BussStyleSheet styleSheet,
-		                  BussPropertyProvider propertyProvider,
-		                  VariableDatabase variableDatabase) // temporary parameter
+						  BussPropertyProvider propertyProvider,
+						  VariableDatabase variableDatabase) // temporary parameter
 		{
 			RemoveOnChangeUpdate();
 			_variableDatabase = variableDatabase;
@@ -107,7 +108,7 @@ namespace Beamable.Editor.UI.Components
 					? BussStyle.GetDefaultValue(_propertyProvider.Key).CopyProperty()
 					: new VariableProperty();
 			}
-			
+
 			RemoveOnChangeUpdate();
 
 			var temp = _cachedProperty;
@@ -115,7 +116,7 @@ namespace Beamable.Editor.UI.Components
 			_propertyProvider.SetProperty(temp);
 			AssetDatabase.SaveAssets();
 			OnConnectionChange?.Invoke();
-			
+
 			AddOnChangeUpdate();
 		}
 

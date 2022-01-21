@@ -15,8 +15,9 @@ namespace Beamable.Editor.UI.Components
 		public new class UxmlFactory : UxmlFactory<SpritePickerVisualElement, UxmlTraits> { }
 
 		public SpritePickerVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(SpritePickerVisualElement)}/{nameof(SpritePickerVisualElement)}") { }
-		
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(SpritePickerVisualElement)}/{nameof(SpritePickerVisualElement)}")
+		{ }
+
 		public Sprite SelectedSprite { get; private set; }
 		public override void Refresh()
 		{

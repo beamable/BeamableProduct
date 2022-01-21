@@ -48,7 +48,7 @@ namespace Beamable.UI.Sdf
 				normal,
 				new Vector4(shadowSoftness, PackVector2ToFloat(shadowOffset.x, shadowOffset.y),
 							PackVector3ToFloat(outlineColor.BottomLeftColor.a, shadowColor.BottomLeftColor.a,
-							                   shadowThreshold),
+											   shadowThreshold),
 							PackRGBToFloat(shadowColor.BottomLeftColor)));
 			vh.AddVert(
 				new Vector3(position.bottomRight.x, position.bottomRight.y, rounding),
@@ -61,7 +61,7 @@ namespace Beamable.UI.Sdf
 				normal,
 				new Vector4(shadowSoftness, PackVector2ToFloat(shadowOffset.x, shadowOffset.y),
 							PackVector3ToFloat(outlineColor.BottomRightColor.a, shadowColor.BottomRightColor.a,
-							                   shadowThreshold),
+											   shadowThreshold),
 							PackRGBToFloat(shadowColor.BottomRightColor)));
 			vh.AddVert(
 				new Vector3(position.topRight.x, position.topRight.y, rounding),
@@ -74,7 +74,7 @@ namespace Beamable.UI.Sdf
 				normal,
 				new Vector4(shadowSoftness, PackVector2ToFloat(shadowOffset.x, shadowOffset.y),
 							PackVector3ToFloat(outlineColor.TopRightColor.a, shadowColor.TopRightColor.a,
-							                   shadowThreshold),
+											   shadowThreshold),
 							PackRGBToFloat(shadowColor.TopRightColor)));
 			vh.AddVert(
 				new Vector3(position.topLeft.x, position.topLeft.y, rounding),
@@ -87,7 +87,7 @@ namespace Beamable.UI.Sdf
 				normal,
 				new Vector4(shadowSoftness, PackVector2ToFloat(shadowOffset.x, shadowOffset.y),
 							PackVector3ToFloat(outlineColor.TopLeftColor.a, shadowColor.TopLeftColor.a,
-							                   shadowThreshold),
+											   shadowThreshold),
 							PackRGBToFloat(shadowColor.TopLeftColor)));
 
 			vh.AddTriangle(startVertexIndex, startVertexIndex + 3, startVertexIndex + 2);

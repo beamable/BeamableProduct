@@ -14,13 +14,13 @@ namespace Beamable.Editor.UI.Components
 	public class AssetBussPropertyVisualElement : BussPropertyVisualElement<BaseAssetProperty>
 	{
 		public AssetBussPropertyVisualElement(BaseAssetProperty property) : base(property) { }
-		
+
 		private ObjectField _field;
 
 		public override void Init()
 		{
 			base.Init();
-			
+
 			_field = new ObjectField();
 			AddBussPropertyFieldClass(_field);
 			_field.objectType = Property.GetAssetType();
@@ -35,7 +35,7 @@ namespace Beamable.Editor.UI.Components
 			Property.GenericAsset = evt.newValue;
 			TriggerStyleSheetChange();
 		}
-		
+
 		public override void OnPropertyChangedExternally()
 		{
 			_field.value = Property.GenericAsset;

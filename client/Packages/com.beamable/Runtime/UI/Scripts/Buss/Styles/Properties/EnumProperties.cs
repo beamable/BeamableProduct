@@ -1,7 +1,7 @@
-﻿using System;
-using Beamable.UI.Sdf;
+﻿using Beamable.UI.Sdf;
 using Beamable.UI.Sdf.MaterialManagement;
 using Beamable.UI.Tweening;
+using System;
 using TMPro;
 
 namespace Beamable.UI.Buss
@@ -120,7 +120,8 @@ namespace Beamable.UI.Buss
 		public TextAlignmentOptionsBussProperty() { }
 
 		public TextAlignmentOptionsBussProperty(TextAlignmentOptions textAlignmentOptions) :
-			base(textAlignmentOptions) { }
+			base(textAlignmentOptions)
+		{ }
 
 		public override IBussProperty CopyProperty()
 		{

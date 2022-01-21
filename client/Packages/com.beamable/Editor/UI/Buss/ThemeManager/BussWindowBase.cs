@@ -21,7 +21,7 @@ namespace Beamable.Editor.UI.Buss
 		{
 			if (IsAlreadyOpened)
 				return null;
-			
+
 			var wnd = CreateInstance<TWindow>();
 			wnd.ShowUtility();
 			return wnd;
@@ -31,7 +31,7 @@ namespace Beamable.Editor.UI.Buss
 		{
 			if (!IsAlreadyOpened)
 				return;
-			
+
 			Instance.Close();
 		}
 
@@ -53,7 +53,7 @@ namespace Beamable.Editor.UI.Buss
 
 			Repaint();
 		}
-		
+
 		protected abstract TVisualElement GetVisualElement();
 	}
 }

@@ -1,8 +1,8 @@
 ﻿using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Common;
-using Beamable.UI.Buss;
 using Beamable.Editor.UI.BUSS.ThemeManager;
 using Beamable.Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements;
+using Beamable.Editor.UI.Common;
+using Beamable.UI.Buss;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -87,9 +87,9 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void Setup(BussStyleSheet styleSheet,
-		                  BussStyleRule styleRule,
-		                  BussPropertyProvider property,
-		                  VariableDatabase variableDatabase)
+						  BussStyleRule styleRule,
+						  BussPropertyProvider property,
+						  VariableDatabase variableDatabase)
 		{
 			_variableDatabase = variableDatabase;
 			_styleSheet = styleSheet;
@@ -106,7 +106,7 @@ namespace Beamable.Editor.UI.Components
 			if (_propertyVisualElement != null)
 			{
 				if (_propertyVisualElement.BaseProperty ==
-				    _propertyProvider.GetProperty().GetEndProperty(_variableDatabase, _styleRule))
+					_propertyProvider.GetProperty().GetEndProperty(_variableDatabase, _styleRule))
 				{
 					_propertyVisualElement.OnPropertyChangedExternally();
 					return;
@@ -127,10 +127,10 @@ namespace Beamable.Editor.UI.Components
 				_propertyVisualElement.OnValueChanged += HandlePropertyChanged;
 			}
 		}
-		
+
 		void HandlePropertyChanged()
 		{
-			if(!PropertyIsInStyle)
+			if (!PropertyIsInStyle)
 			{
 				_styleRule.TryAddProperty(_propertyProvider.Key, _propertyProvider.GetProperty(), out _);
 				_styleSheet.TriggerChange();
@@ -156,7 +156,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			if (_propertyProvider.IsVariable)
 				return;
-			
+
 			if (_variableConnection == null)
 			{
 				_variableConnection = new VariableConnectionVisualElement();

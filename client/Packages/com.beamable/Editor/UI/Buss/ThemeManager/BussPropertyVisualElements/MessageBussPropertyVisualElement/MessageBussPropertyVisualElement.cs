@@ -14,8 +14,8 @@ namespace Beamable.Editor.UI.Components
 		protected abstract string Message
 		{
 			get;
-		} 
-		
+		}
+
 		public MessageBussPropertyVisualElement(IBussProperty property) : base(property) { }
 
 		public override void Init()
@@ -30,7 +30,7 @@ namespace Beamable.Editor.UI.Components
 
 		public override void OnPropertyChangedExternally()
 		{
-			
+
 		}
 	}
 }

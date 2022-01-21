@@ -12,13 +12,13 @@ namespace Beamable.Editor.UI.Components
 	public class FloatBussPropertyVisualElement : BussPropertyVisualElement<FloatBussProperty>
 	{
 		private FloatField _field;
-		
+
 		public FloatBussPropertyVisualElement(FloatBussProperty property) : base(property) { }
 
 		public override void Init()
 		{
 			base.Init();
-			
+
 			_field = new FloatField();
 			AddBussPropertyFieldClass(_field);
 			_field.value = Property.FloatValue;

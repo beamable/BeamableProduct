@@ -5,7 +5,7 @@ namespace Beamable.Editor.UI.Buss
 	public static class BussNameUtility
 	{
 		private static Regex _cleanRegex = new Regex("\\w+");
-		
+
 		public static string CleanString(string input)
 		{
 			return _cleanRegex?.Match(input)?.Value ?? "";

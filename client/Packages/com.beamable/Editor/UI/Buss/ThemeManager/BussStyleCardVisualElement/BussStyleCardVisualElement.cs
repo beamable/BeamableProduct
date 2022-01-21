@@ -1,11 +1,11 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Beamable.Editor.UI.Buss;
+﻿using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
-using Beamable.UI.Buss;
 using Beamable.Editor.UI.BUSS.ThemeManager;
+using Beamable.UI.Buss;
 using Beamable.UI.BUSS;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -49,7 +49,8 @@ namespace Beamable.Editor.UI.Components
 		public BussStyleRule StyleRule => _styleRule;
 
 		public BussStyleCardVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}") { }
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}")
+		{ }
 
 		public override void Refresh()
 		{
@@ -88,11 +89,11 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void Setup(BussThemeManager themeManager,
-		                  BussStyleSheet styleSheet,
-		                  BussStyleRule styleRule,
-		                  VariableDatabase variableDatabase,
-		                  BussElementHierarchyVisualElement navigationWindow,
-		                  Action onUndoRequest)
+						  BussStyleSheet styleSheet,
+						  BussStyleRule styleRule,
+						  VariableDatabase variableDatabase,
+						  BussElementHierarchyVisualElement navigationWindow,
+						  Action onUndoRequest)
 		{
 			_themeManager = themeManager;
 			_styleSheet = styleSheet;
@@ -237,7 +238,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				_themeManager.CloseConfirmationPopup();
 			}
-			
+
 			Refresh();
 		}
 
@@ -277,7 +278,7 @@ namespace Beamable.Editor.UI.Components
 				else
 				{
 					remove = !_styleRule.ShowAllMode ||
-					         _styleRule.Properties.Any(p => p.Key == element.PropertyKey);
+							 _styleRule.Properties.Any(p => p.Key == element.PropertyKey);
 				}
 
 				if (remove)
@@ -324,7 +325,7 @@ namespace Beamable.Editor.UI.Components
 					_properties.Add(element);
 				}
 			}
-			
+
 			_propertiesParent.Sort((a, b) =>
 			{
 				if (!(a is BussStylePropertyVisualElement p1) || !(b is BussStylePropertyVisualElement p2)) return 0;
@@ -342,7 +343,7 @@ namespace Beamable.Editor.UI.Components
 					{
 						var keys = BussStyle.Keys.ToArray();
 						return Array.IndexOf(keys, p1.PropertyProvider.Key) -
-						       Array.IndexOf(keys, p2.PropertyProvider.Key);
+							   Array.IndexOf(keys, p2.PropertyProvider.Key);
 					}
 				}
 				return value;

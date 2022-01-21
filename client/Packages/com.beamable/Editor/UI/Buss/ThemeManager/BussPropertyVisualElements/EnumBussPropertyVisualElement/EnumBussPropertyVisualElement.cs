@@ -1,5 +1,5 @@
-﻿using System;
-using Beamable.UI.Buss;
+﻿using Beamable.UI.Buss;
+using System;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -10,16 +10,17 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class EnumBussPropertyVisualElement : BussPropertyVisualElement<EnumBussProperty> {
-		
+	public class EnumBussPropertyVisualElement : BussPropertyVisualElement<EnumBussProperty>
+	{
+
 		public EnumBussPropertyVisualElement(EnumBussProperty property) : base(property) { }
-		
+
 		private EnumField _field;
 
 		public override void Init()
 		{
 			base.Init();
-			
+
 			_field = new EnumField();
 			AddBussPropertyFieldClass(_field);
 			_field.Init(Property.EnumValue);
@@ -33,7 +34,7 @@ namespace Beamable.Editor.UI.Components
 			Property.EnumValue = changeEvent.newValue;
 			TriggerStyleSheetChange();
 		}
-		
+
 		public override void OnPropertyChangedExternally()
 		{
 			_field.Init(Property.EnumValue);
