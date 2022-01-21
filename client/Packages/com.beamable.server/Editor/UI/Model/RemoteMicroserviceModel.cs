@@ -34,13 +34,13 @@ namespace Beamable.Editor.UI.Model
             if (MicroserviceConfiguration.Instance.Microservices.Count > 1)
             {
                 evt.menu.BeamableAppendAction($"Order/Move Up", pos => {
-                    MicroserviceConfiguration.Instance.MoveMicroserviceIndex(Name, -1);
+                    MicroserviceConfiguration.Instance.MoveIndex(Name, -1, ServiceType.MicroService);
                     OnSortChanged?.Invoke();
-                }, MicroserviceConfiguration.Instance.GetMicroserviceIndex(Name) > 0);
+                }, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.MicroService) > 0);
                 evt.menu.BeamableAppendAction($"Order/Move Down", pos => {
-                    MicroserviceConfiguration.Instance.MoveMicroserviceIndex(Name, 1);
+                    MicroserviceConfiguration.Instance.MoveIndex(Name, 1, ServiceType.MicroService);
                     OnSortChanged?.Invoke();
-                }, MicroserviceConfiguration.Instance.GetMicroserviceIndex(Name) < MicroserviceConfiguration.Instance.Microservices.Count - 1);
+                }, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.MicroService) < MicroserviceConfiguration.Instance.Microservices.Count - 1);
             }
         }
     }

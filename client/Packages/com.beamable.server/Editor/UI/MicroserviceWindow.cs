@@ -252,14 +252,6 @@ namespace Beamable.Editor.Microservice.UI
 	        _microserviceContentVisualElement?.Refresh();
         }
 
-        public void SortMicroservices() {
-            if (_windowRoot != null)
-            {
-                var content = _windowRoot.Q<MicroserviceContentVisualElement>();
-                content.SortMicroservices();
-            }
-        }
-
         private void OnDestroy()
         {
             if (_instance)

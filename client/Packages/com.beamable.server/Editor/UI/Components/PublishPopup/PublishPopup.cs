@@ -191,7 +191,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				if (kvp.Value.IsRemoteOnly)
 					continue;
-				var serviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(kvp.Key);
+				var serviceModel = MicroservicesDataModel.Instance.GetModel<ServiceModelBase>(kvp.Key);
 
 				if (serviceModel == null)
 				{

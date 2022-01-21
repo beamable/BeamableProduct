@@ -110,6 +110,24 @@ namespace Beamable.Server.Editor
          });
       }
 
+      public static void CopyConnectionString(StorageObjectDescriptor descriptor)
+      {
+         var work = Microservices.GetConnectionString(descriptor);
+         work.Then(connectionString =>
+			{
+				if (!string.IsNullOrEmpty(connectionString))
+				{
+					GUIUtility.systemCopyBuffer = connectionString;
+					Debug.Log($"Connection string {connectionString}");
+
+				}
+				else
+				{
+					Debug.LogWarning("Failed to copy connection string.");
+				}
+         });
+      }
+
       [MenuItem(ADD_MONGO, false, BEAMABLE_PRIORITY)]
       public static void AddMongoLibraries() {
          if (Selection.activeObject is AssemblyDefinitionAsset asm)

@@ -153,6 +153,33 @@ namespace Beamable.Editor.Microservice.UI.Components
                 mongoService.OnSelectionChanged += b =>
                     OnAllServiceSelectedStatusChanged?.Invoke(Model.Storages.All(m => m.IsSelected));
 
+                mongoService.OnSortChanged -= SortStorages;
+                mongoService.OnSortChanged += SortStorages;
+
+                return mongoServiceElement;
+
+            }
+
+            return null;
+        }
+
+        private StorageObjectVisualElement GetRemoteStorageObjectVisualElement(string serviceName)
+        {
+            var mongoService = Model.GetModel<MongoStorageModel>(serviceName);
+
+            if (mongoService != null)
+            {
+                var mongoServiceElement = new RemoteStorageObjectVisualElement { Model = mongoService };
+                _modelToVisual[mongoService] = mongoServiceElement;
+                mongoService.OnLogsDetached += () => { ServiceLogWindow.ShowService(mongoService); };
+
+                mongoServiceElement.Refresh();
+                mongoService.OnSelectionChanged += b =>
+                    OnAllServiceSelectedStatusChanged?.Invoke(Model.Storages.All(m => m.IsSelected));
+
+                mongoService.OnSortChanged -= SortStorages;
+                mongoService.OnSortChanged += SortStorages;
+
                 return mongoServiceElement;
 
             }
@@ -226,23 +253,52 @@ namespace Beamable.Editor.Microservice.UI.Components
             var _ = new GroupLoadingBarUpdater("Starting Microservices", loadingBar, false, children.ToArray());
         }
 
-        public void SortMicroservices()
+        public void SortServices(ServiceType serviceType)
         {
-            var config = MicroserviceConfiguration.Instance;
-            int Comparer(VisualElement a, VisualElement b)
-            {
-                if (a is CreateServiceBaseVisualElement) return -1;
-                if (b is CreateServiceBaseVisualElement) return 1;
-                return config.MicroserviceOrderComparer(a.name, b.name);
-            }
-            _servicesListElement.Sort(Comparer);
-        }
+			var config = MicroserviceConfiguration.Instance;
+
+			int Comparer(VisualElement a, VisualElement b)
+			{
+				if (a is CreateServiceBaseVisualElement) return -1;
+				if (b is CreateServiceBaseVisualElement) return 1;
+
+				// we want to sort Services only in their categories
+
+				switch (serviceType)
+				{
+					case ServiceType.MicroService:
+						if (b is StorageObjectVisualElement)
+							return -1;
+						break;
+					case ServiceType.StorageObject:
+						if (b is MicroserviceVisualElement)
+							return 1;
+						break;
+					default:
+						break;
+				}
+
+				return config.OrderComparer(a.name, b.name, serviceType);
+			}
+
+			_servicesListElement.Sort(Comparer);
+		}
+
+		public void SortMicroservices()
+		{
+			SortServices(ServiceType.MicroService);
+		}
+
+		public void SortStorages()
+		{
+			SortServices(ServiceType.StorageObject);
+		}
 
         private bool ShouldDisplayService(ServiceType type)
         {
 	        switch (Model.Filter)
 	        {
-		        case ServicesDisplayFilter.AllTypes:
+				case ServicesDisplayFilter.AllTypes:
 			        return true;
 		        case ServicesDisplayFilter.Microservices:
 			        return type == ServiceType.MicroService;
@@ -304,7 +360,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 				        hasStorageDependency |= val;
 				        break;
 			        case ServiceType.StorageObject:
-				        serviceElement = GetStorageObjectVisualElement(serviceStatus.Key);
+				        if (serviceStatus.Value != ServiceAvailability.RemoteOnly)
+					        serviceElement = GetStorageObjectVisualElement(serviceStatus.Key);
+				        else
+					        serviceElement = GetRemoteStorageObjectVisualElement(serviceStatus.Key);
 				        break;
 			        default:
 				        throw new ArgumentOutOfRangeException();
