@@ -73,19 +73,17 @@ namespace Beamable.Editor.Assistant
 
 		private void OnEnable()
 		{
-			EditorAPI.Instance.Then(_ => Refresh());
+			Refresh();
+			
 		}
 
 		private void OnFocus()
 		{
-			EditorAPI.Instance.Then(_ =>
-			{
-				Refresh();
-				
-				// TODO: Display NEW icon and clear notifications on hover on a per hint header basis.
-				// For now, just clear notifications whenever the window is focused
-				_hintNotificationManager.ClearPendingNotifications();
-			});
+			Refresh();
+			
+			// TODO: Display NEW icon and clear notifications on hover on a per hint header basis.
+			// For now, just clear notifications whenever the window is focused
+			_hintNotificationManager.ClearPendingNotifications();
 		}
 
 		private void Update()
@@ -165,7 +163,8 @@ namespace Beamable.Editor.Assistant
 				}
 				_hintsSearchBar.OnSearchChanged -= OnSearchTextUpdated;
 				_hintsSearchBar.OnSearchChanged += OnSearchTextUpdated;
-
+				_hintsSearchBar.SetValueWithoutNotify(_beamHintsDataModel.CurrentFilter);
+				
 				SetupTreeViewCallbacks(
 					_treeViewIMGUI,
 					() => { },
@@ -261,8 +260,6 @@ namespace Beamable.Editor.Assistant
 			_beamHintsDataModel.FilterDisplayedBy(beamHintHeader.Id);
 			_beamHintsDataModel.OpenHintDetails(beamHintHeader);
 			Refresh();
-			_hintsSearchBar.SetValueWithoutNotify(beamHintHeader.Id);
-			_hintsSearchBar.MarkDirtyRepaint();
 		}
 	}
 }

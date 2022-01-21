@@ -273,7 +273,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			                                                                        BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
 			                                                                        BeamHintIds.ID_INSTALL_DOCKER_PROCESS));
 			        
-			        //Application.OpenURL("https://docs.docker.com/get-docker/");
 		        };
 	        }
 	        else

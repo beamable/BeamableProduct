@@ -38,7 +38,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			set
 			{
 				var globalHintStorage = BeamEditor.HintGlobalStorage;
-				if (value)
+				if (!DockerNotInstalled && value)
 					globalHintStorage.AddOrReplaceHint(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER, BeamHintIds.ID_DOCKER_PROCESS_NOT_RUNNING);
 				else
 					globalHintStorage.RemoveHint(new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER, BeamHintIds.ID_DOCKER_PROCESS_NOT_RUNNING));
@@ -113,7 +113,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		public void Kill()
 		{
 			if (_process == null || !_started || _hasExited) return;
-
+ 
 			_process.Kill();
 			try { }
 			catch (InvalidOperationException ex)
