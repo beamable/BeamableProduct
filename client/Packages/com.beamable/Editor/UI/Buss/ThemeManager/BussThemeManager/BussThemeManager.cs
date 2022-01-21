@@ -1,4 +1,4 @@
-using System;﻿
+using System;
 using Beamable.Editor;
 using Beamable.Editor.Common;
 using Beamable.Editor.UI.Buss;
@@ -32,9 +32,10 @@ namespace Beamable.UI.BUSS
 
 		private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements =
 			new List<BussStyleCardVisualElement>();
-		private VisualElement _addSelectorButton;
 
+		private VisualElement _addSelectorButton;
 		private bool _filterMode;
+		private BeamablePopupWindow _confirmationPopup;
 
 #if BEAMABLE_DEVELOPER
 		// [MenuItem(
@@ -48,6 +49,21 @@ namespace Beamable.UI.BUSS
 		{
 			BussThemeManager themeManagerWindow = GetWindow<BussThemeManager>(BeamableConstants.THEME_MANAGER, true);
 			themeManagerWindow.Show(true);
+		}
+
+		public void CloseConfirmationPopup()
+		{
+			if (_confirmationPopup != null)
+			{
+				_confirmationPopup.Close();
+			}
+
+			_confirmationPopup = null;
+		}
+
+		public void SetConfirmationPopup(BeamablePopupWindow popupWindow)
+		{
+			_confirmationPopup = popupWindow;
 		}
 
 		private void OnEnable()
@@ -130,7 +146,7 @@ namespace Beamable.UI.BUSS
 			ClearCurrentStyleSheet();
 
 			_variableDatabase.RemoveAllStyleSheets();
-			
+
 			foreach (BussStyleSheet styleSheet in _navigationWindow.StyleSheets)
 			{
 				_variableDatabase.AddStyleSheet(styleSheet);
@@ -143,10 +159,11 @@ namespace Beamable.UI.BUSS
 		private void RefreshStyleCards()
 		{
 			UndoSystem<BussStyleRule>.Update();
-		
+
 			var rulesToDraw = _navigationWindow.StyleSheets.SelectMany(ss => ss.Styles).ToArray();
 
-			var cardsToRemove = _styleCardsVisualElements.Where(card => !rulesToDraw.Contains(card.StyleRule)).ToArray();
+			var cardsToRemove = _styleCardsVisualElements.Where(card => !rulesToDraw.Contains(card.StyleRule))
+			                                             .ToArray();
 
 			foreach (BussStyleCardVisualElement card in cardsToRemove)
 			{
@@ -186,7 +203,7 @@ namespace Beamable.UI.BUSS
 
 			EditorApplication.update -= CheckEnableState;
 			EditorApplication.update += CheckEnableState;
-			
+
 			_stylesGroup.Add(_addSelectorButton);
 
 			void OpenAddSelectorWindow()
@@ -222,10 +239,10 @@ namespace Beamable.UI.BUSS
 			_variableDatabase.RemoveAllStyleSheets();
 		}
 
-		private BussStyleCardVisualElement AddStyleCard(BussStyleSheet styleSheet, BussStyleRule styleRule, Action callback)
+		private void AddStyleCard(BussStyleSheet styleSheet, BussStyleRule styleRule, Action callback)
 		{
 			BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-			styleCard.Setup(styleSheet, styleRule, _variableDatabase, _navigationWindow, callback);
+			styleCard.Setup(this, styleSheet, styleRule, _variableDatabase, _navigationWindow, callback);
 			_styleCardsVisualElements.Add(styleCard);
 			_stylesGroup.Add(styleCard);
 
@@ -233,8 +250,6 @@ namespace Beamable.UI.BUSS
 			{
 				_addSelectorButton.PlaceInFront(styleCard);
 			}
-			
-			return styleCard;
 		}
 
 		private void RemoveStyleCard(BussStyleCardVisualElement card)
@@ -244,53 +259,23 @@ namespace Beamable.UI.BUSS
 			card.Destroy();
 		}
 
-		private void ClearStyleCards()
-		{
-			foreach (BussStyleCardVisualElement styleCard in _styleCardsVisualElements)
-			{
-				styleCard.Destroy();
-			}
-
-			_styleCardsVisualElements.Clear();
-			_stylesGroup.Clear();
-		}
-
-		private void CreateStyleCards()
-		{
-			foreach (BussStyleSheet styleSheet in _navigationWindow.StyleSheets)
-			{
-				foreach (BussStyleRule styleRule in styleSheet.Styles)
-				{
-					var undoKey = $"{styleSheet.name}-{styleRule.SelectorString}";
-					UndoSystem<BussStyleRule>.AddRecord(styleRule, undoKey);
-					BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-					styleCard.Setup(styleSheet, styleRule, _variableDatabase, _navigationWindow, () =>
-					{
-						UndoSystem<BussStyleRule>.Undo(undoKey);
-						RefreshStyleCards();
-					});
-					_styleCardsVisualElements.Add(styleCard);
-					_stylesGroup.Add(styleCard);
-				}
-			}
-		}
-
 		private void OnStyleSheetExternallyChanged()
 		{
 			if (_inStyleSheetChangedLoop) return;
 
 			_inStyleSheetChangedLoop = true;
 
-			try {
+			try
+			{
 				_variableDatabase.ReconsiderAllStyleSheets();
-			
+
 				RefreshStyleCards();
 			}
 			catch (Exception e)
 			{
 				Debug.LogException(e);
 			}
-			
+
 			_inStyleSheetChangedLoop = false;
 		}
 

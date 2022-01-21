@@ -4,6 +4,7 @@ using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.UI.Buss;
 using Beamable.Editor.UI.BUSS.ThemeManager;
+using Beamable.UI.BUSS;
 using System;
 using UnityEditor;
 using UnityEngine;
@@ -43,8 +44,8 @@ namespace Beamable.Editor.UI.Components
 		private BussElementHierarchyVisualElement _navigationWindow;
 
 		private Action _onUndoRequest;
-
-		private List<BussStylePropertyVisualElement> _properties = new List<BussStylePropertyVisualElement>();
+		private readonly List<BussStylePropertyVisualElement> _properties = new List<BussStylePropertyVisualElement>();
+		private BussThemeManager _themeManager;
 
 		public BussStyleRule StyleRule => _styleRule;
 
@@ -54,7 +55,7 @@ namespace Beamable.Editor.UI.Components
 		public override void Refresh()
 		{
 			base.Refresh();
-			
+
 			_properties.Clear();
 
 			_selectorLabelParent = Root.Q<VisualElement>("selectorLabelParent");
@@ -87,12 +88,14 @@ namespace Beamable.Editor.UI.Components
 			UpdateShowAllStatus();
 		}
 
-		public void Setup(BussStyleSheet styleSheet,
+		public void Setup(BussThemeManager themeManager,
+		                  BussStyleSheet styleSheet,
 		                  BussStyleRule styleRule,
 		                  VariableDatabase variableDatabase,
 		                  BussElementHierarchyVisualElement navigationWindow,
 		                  Action onUndoRequest)
 		{
+			_themeManager = themeManager;
 			_styleSheet = styleSheet;
 			_styleRule = styleRule;
 			_variableDatabase = variableDatabase;
@@ -142,8 +145,23 @@ namespace Beamable.Editor.UI.Components
 
 		private void RemoveButtonClicked(MouseDownEvent evt)
 		{
-			_styleSheet.RemoveStyle(StyleRule);
-			AssetDatabase.SaveAssets();
+			_themeManager.CloseConfirmationPopup();
+
+			ConfirmationPopupVisualElement confirmationPopup = new ConfirmationPopupVisualElement(
+				BUSSConstants.StyleDeletionMessage,
+				() =>
+				{
+					_styleSheet.RemoveStyle(StyleRule);
+					AssetDatabase.SaveAssets();
+				},
+				_themeManager.CloseConfirmationPopup
+			);
+
+			BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowConfirmationUtility(
+				BUSSConstants.StyleDeletionHeader,
+				confirmationPopup, _themeManager);
+
+			_themeManager.SetConfirmationPopup(popupWindow);
 		}
 
 		private void AddRuleButtonClicked(MouseDownEvent evt)
@@ -200,6 +218,12 @@ namespace Beamable.Editor.UI.Components
 		private void EditButtonClicked(MouseDownEvent evt)
 		{
 			StyleRule.EditMode = !StyleRule.EditMode;
+
+			if (!StyleRule.EditMode)
+			{
+				_themeManager.CloseConfirmationPopup();
+			}
+			
 			Refresh();
 		}
 
@@ -229,9 +253,11 @@ namespace Beamable.Editor.UI.Components
 
 		public void RefreshProperties()
 		{
-			var toRemove = _styleRule.ShowAllMode ? 
-				_properties.Where(p => p.PropertyProvider.IsVariable && !_styleRule.Properties.Contains(p.PropertyProvider)).ToArray() : 
-				_properties.Where(p => !_styleRule.Properties.Contains(p.PropertyProvider)).ToArray();
+			var toRemove = _styleRule.ShowAllMode
+				? _properties
+				  .Where(p => p.PropertyProvider.IsVariable && !_styleRule.Properties.Contains(p.PropertyProvider))
+				  .ToArray()
+				: _properties.Where(p => !_styleRule.Properties.Contains(p.PropertyProvider)).ToArray();
 
 			foreach (BussStylePropertyVisualElement element in toRemove)
 			{
@@ -239,7 +265,7 @@ namespace Beamable.Editor.UI.Components
 				element.Destroy();
 				_properties.Remove(element);
 			}
-			
+
 			foreach (BussPropertyProvider property in _styleRule.Properties)
 			{
 				var existingProperty = _properties.FirstOrDefault(p => p.PropertyProvider == property);
@@ -248,7 +274,7 @@ namespace Beamable.Editor.UI.Components
 					existingProperty.Refresh();
 					continue;
 				}
-				
+
 				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
 				element.Setup(_styleSheet, _styleRule, property, _variableDatabase);
 				(property.IsVariable ? _variables : _propertiesParent).Add(element);
@@ -257,7 +283,8 @@ namespace Beamable.Editor.UI.Components
 
 			if (_styleRule.ShowAllMode)
 			{
-				var restPropertyKeys = BussStyle.Keys.Where(s => StyleRule.Properties.All(provider => provider.Key != s));
+				var restPropertyKeys =
+					BussStyle.Keys.Where(s => StyleRule.Properties.All(provider => provider.Key != s));
 				foreach (var key in restPropertyKeys)
 				{
 					var existingProperty = _properties.FirstOrDefault(p => p.PropertyProvider.Key == key);
@@ -266,7 +293,9 @@ namespace Beamable.Editor.UI.Components
 						existingProperty.Refresh();
 						continue;
 					}
-					var propertyProvider = BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
+
+					var propertyProvider =
+						BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
 					BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
 					element.Setup(_styleSheet, StyleRule, propertyProvider, _variableDatabase);
 					_propertiesParent.Add(element);
