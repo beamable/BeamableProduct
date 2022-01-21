@@ -1,14 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using System.Threading.Tasks;
 using Beamable.Common;
 using Beamable.Editor.Environment;
 using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.ManagerClient;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -21,193 +21,197 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Model
 {
-    [System.Serializable]
-    public class MicroserviceModel : ServiceModelBase, IBeamableMicroservice
-    {
-        [SerializeField]
-        private MicroserviceDescriptor _serviceDescriptor;
+	[System.Serializable]
+	public class MicroserviceModel : ServiceModelBase, IBeamableMicroservice
+	{
+		[SerializeField]
+		private MicroserviceDescriptor _serviceDescriptor;
 
-        [SerializeField]
-        private string _assemblyQualifiedMicroserviceTypeName;
-        public MicroserviceDescriptor ServiceDescriptor {
-	        get => _serviceDescriptor;
-	        set 
-	        {
-		        _serviceDescriptor = value;
-		        if (_serviceDescriptor.Type != null)
-			        _assemblyQualifiedMicroserviceTypeName = _serviceDescriptor.Type.AssemblyQualifiedName;
-	        }
-        }
+		[SerializeField]
+		private string _assemblyQualifiedMicroserviceTypeName;
+		public MicroserviceDescriptor ServiceDescriptor
+		{
+			get => _serviceDescriptor;
+			set
+			{
+				_serviceDescriptor = value;
+				if (_serviceDescriptor.Type != null)
+					_assemblyQualifiedMicroserviceTypeName = _serviceDescriptor.Type.AssemblyQualifiedName;
+			}
+		}
 
-        public string AssemblyQualifiedMicroserviceTypeName => _assemblyQualifiedMicroserviceTypeName;
+		public string AssemblyQualifiedMicroserviceTypeName => _assemblyQualifiedMicroserviceTypeName;
 
-        public MicroserviceBuilder ServiceBuilder { get; protected set; }
-        public override IBeamableBuilder Builder => ServiceBuilder;
-        public override IDescriptor Descriptor => ServiceDescriptor;
-        public ServiceReference RemoteReference { get; protected set; }
-        public ServiceStatus RemoteStatus { get; protected set; }
-        public MicroserviceConfigurationEntry Config { get; protected set; }
-        public List<MongoStorageModel> Dependencies { get; private set; } = new List<MongoStorageModel>();
-        public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
-        public bool IsBuilding => ServiceBuilder?.IsBuilding ?? false;
-        public bool SameImageOnRemoteAndLocally => string.Equals(ServiceBuilder?.LastBuildImageId, RemoteReference?.imageId);
-        public bool IncludeDebugTools
-        {
-            get => Config.IncludeDebugTools;
-            set
-            {
-                Config.IncludeDebugTools = value;
-                EditorUtility.SetDirty(MicroserviceConfiguration.Instance);
-            }
-        }
+		public MicroserviceBuilder ServiceBuilder { get; protected set; }
+		public override IBeamableBuilder Builder => ServiceBuilder;
+		public override IDescriptor Descriptor => ServiceDescriptor;
+		public ServiceReference RemoteReference { get; protected set; }
+		public ServiceStatus RemoteStatus { get; protected set; }
+		public MicroserviceConfigurationEntry Config { get; protected set; }
+		public List<MongoStorageModel> Dependencies { get; private set; } = new List<MongoStorageModel>();
+		public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
+		public bool IsBuilding => ServiceBuilder?.IsBuilding ?? false;
+		public bool SameImageOnRemoteAndLocally => string.Equals(ServiceBuilder?.LastBuildImageId, RemoteReference?.imageId);
+		public bool IncludeDebugTools
+		{
+			get => Config.IncludeDebugTools;
+			set
+			{
+				Config.IncludeDebugTools = value;
+				EditorUtility.SetDirty(MicroserviceConfiguration.Instance);
+			}
+		}
 
-        public Action<ServiceReference> OnRemoteReferenceEnriched;
-        public Action<ServiceStatus> OnRemoteStatusEnriched;
+		public Action<ServiceReference> OnRemoteReferenceEnriched;
+		public Action<ServiceStatus> OnRemoteStatusEnriched;
 
-        public override event Action<Task> OnStart;
-        public override event Action<Task> OnStop;
-        public event Action<Task> OnBuildAndRestart;
-        public event Action<Task> OnBuildAndStart;
-        public event Action<Task> OnBuild;
-        public event Action<Promise<Unit>> OnDockerLoginRequired;
+		public override event Action<Task> OnStart;
+		public override event Action<Task> OnStop;
+		public event Action<Task> OnBuildAndRestart;
+		public event Action<Task> OnBuildAndStart;
+		public event Action<Task> OnBuild;
+		public event Action<Promise<Unit>> OnDockerLoginRequired;
 
-        public static MicroserviceModel CreateNew(MicroserviceDescriptor descriptor, MicroservicesDataModel dataModel)
-        {
-            return new MicroserviceModel
-            {
-                ServiceDescriptor = descriptor,
-                ServiceBuilder = Microservices.GetServiceBuilder(descriptor),
-                RemoteReference = dataModel.GetReference(descriptor),
-                RemoteStatus = dataModel.GetStatus(descriptor),
-                Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name)
-            };
-        }
-        
-        public override Task Start()
-        {
-            OnLogsAttached?.Invoke();
-            var task = ServiceBuilder.TryToStart();
-            OnStart?.Invoke(task);
-            return task;
-        }
-        public override Task Stop()
-        {
-            var task = ServiceBuilder.TryToStop();
-            OnStop?.Invoke(task);
-            return task;
-        }
-        public Task BuildAndRestart()
-        {
-            var task = ServiceBuilder.TryToBuildAndRestart(IncludeDebugTools);
-            OnBuildAndRestart?.Invoke(task);
-            return task;
-        }
-        public Task BuildAndStart()
-        {
-            var task = ServiceBuilder.TryToBuildAndStart(IncludeDebugTools);
-            OnBuildAndStart?.Invoke(task);
-            return task;
-        }
-        public Task Build()
-        {
-            var task = ServiceBuilder.TryToBuild(IncludeDebugTools);
-            OnBuild?.Invoke(task);
-            return task;
-        }
-        public void OpenLocalDocs()
-        {
-            EditorAPI.Instance.Then(de =>
-            {
-                //http://localhost:10001/1323424830305280/games/DE_1323424830305283/realms/DE_1323424830305283/microservices/DeploymentTest/docs/remote/?
-                var url =
-                    $"{BeamableEnvironment.PortalUrl}/{de.CidOrAlias}/games/{de.ProductionRealm.Pid}/realms/{de.Pid}/microservices/{ServiceDescriptor.Name}/docs/{MicroserviceIndividualization.Prefix}/?";
-                Application.OpenURL(url);
-            });
-        }
-        public void EnrichWithRemoteReference(ServiceReference remoteReference)
-        {
-            RemoteReference = remoteReference;
-            OnRemoteReferenceEnriched?.Invoke(remoteReference);
-        }
-        public void EnrichWithStatus(ServiceStatus status)
-        {
-            RemoteStatus = status;
-            OnRemoteStatusEnriched?.Invoke(status);
-        }
-        
-        public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
-        {
-            var existsOnRemote = RemoteReference?.enabled ?? false;
-            var hasImageSuffix = ServiceBuilder.HasBuildDirectory ? string.Empty : " (Build first)";
-            var localCategory = IsRunning ? "Local" : "Local (not running)";
-            var remoteCategory = existsOnRemote ? "Cloud" : "Cloud (not deployed)";
-            var debugToolsSuffix = IncludeDebugTools ? string.Empty : " (Debug tools disabled)";
-            evt.menu.BeamableAppendAction($"Reveal build directory{hasImageSuffix}", pos =>
-            {
-                var full = Path.GetFullPath(ServiceDescriptor.BuildPath);
-                EditorUtility.RevealInFinder(full);
-            }, ServiceBuilder.HasBuildDirectory);
+		public static MicroserviceModel CreateNew(MicroserviceDescriptor descriptor, MicroservicesDataModel dataModel)
+		{
+			return new MicroserviceModel
+			{
+				ServiceDescriptor = descriptor,
+				ServiceBuilder = Microservices.GetServiceBuilder(descriptor),
+				RemoteReference = dataModel.GetReference(descriptor),
+				RemoteStatus = dataModel.GetStatus(descriptor),
+				Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name)
+			};
+		}
 
-            evt.menu.BeamableAppendAction($"Run Snyk Tests{hasImageSuffix}", pos => RunSnykTests(), ServiceBuilder.HasImage);
+		public override Task Start()
+		{
+			OnLogsAttached?.Invoke();
+			var task = ServiceBuilder.TryToStart();
+			OnStart?.Invoke(task);
+			return task;
+		}
+		public override Task Stop()
+		{
+			var task = ServiceBuilder.TryToStop();
+			OnStop?.Invoke(task);
+			return task;
+		}
+		public Task BuildAndRestart()
+		{
+			var task = ServiceBuilder.TryToBuildAndRestart(IncludeDebugTools);
+			OnBuildAndRestart?.Invoke(task);
+			return task;
+		}
+		public Task BuildAndStart()
+		{
+			var task = ServiceBuilder.TryToBuildAndStart(IncludeDebugTools);
+			OnBuildAndStart?.Invoke(task);
+			return task;
+		}
+		public Task Build()
+		{
+			var task = ServiceBuilder.TryToBuild(IncludeDebugTools);
+			OnBuild?.Invoke(task);
+			return task;
+		}
+		public void OpenLocalDocs()
+		{
+			EditorAPI.Instance.Then(de =>
+			{
+				//http://localhost:10001/1323424830305280/games/DE_1323424830305283/realms/DE_1323424830305283/microservices/DeploymentTest/docs/remote/?
+				var url =
+					$"{BeamableEnvironment.PortalUrl}/{de.CidOrAlias}/games/{de.ProductionRealm.Pid}/realms/{de.Pid}/microservices/{ServiceDescriptor.Name}/docs/{MicroserviceIndividualization.Prefix}/?";
+				Application.OpenURL(url);
+			});
+		}
+		public void EnrichWithRemoteReference(ServiceReference remoteReference)
+		{
+			RemoteReference = remoteReference;
+			OnRemoteReferenceEnriched?.Invoke(remoteReference);
+		}
+		public void EnrichWithStatus(ServiceStatus status)
+		{
+			RemoteStatus = status;
+			OnRemoteStatusEnriched?.Invoke(status);
+		}
 
-            evt.menu.BeamableAppendAction($"{localCategory}/Open in CLI", pos => OpenInCli(), IsRunning);
-            evt.menu.BeamableAppendAction($"{localCategory}/View Documentation", pos => OpenLocalDocs(), IsRunning);
+		public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
+		{
+			var existsOnRemote = RemoteReference?.enabled ?? false;
+			var hasImageSuffix = ServiceBuilder.HasBuildDirectory ? string.Empty : " (Build first)";
+			var localCategory = IsRunning ? "Local" : "Local (not running)";
+			var remoteCategory = existsOnRemote ? "Cloud" : "Cloud (not deployed)";
+			var debugToolsSuffix = IncludeDebugTools ? string.Empty : " (Debug tools disabled)";
+			evt.menu.BeamableAppendAction($"Reveal build directory{hasImageSuffix}", pos =>
+			{
+				var full = Path.GetFullPath(ServiceDescriptor.BuildPath);
+				EditorUtility.RevealInFinder(full);
+			}, ServiceBuilder.HasBuildDirectory);
 
-            evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => {OpenOnRemote("docs/remote/");}, existsOnRemote);
-            evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => {OpenOnRemote("metrics");}, existsOnRemote);
-            evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => {OpenOnRemote("logs");}, existsOnRemote);
-            evt.menu.BeamableAppendAction($"Visual Studio Code/Copy Debug Configuration{debugToolsSuffix}", pos => { CopyVSCodeDebugTool(); }, IncludeDebugTools);
-            evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());
-            if (MicroserviceConfiguration.Instance.Microservices.Count > 1) {
-                evt.menu.BeamableAppendAction($"Order/Move Up", pos => {
-                    MicroserviceConfiguration.Instance.MoveIndex(Name, -1, ServiceType.MicroService);
-                    OnSortChanged?.Invoke();
-                }, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.MicroService) > 0);
-                evt.menu.BeamableAppendAction($"Order/Move Down", pos => {
-                    MicroserviceConfiguration.Instance.MoveIndex(Name, 1, ServiceType.MicroService);
-                    OnSortChanged?.Invoke();
-                }, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.MicroService) < MicroserviceConfiguration.Instance.Microservices.Count - 1);
-            }
+			evt.menu.BeamableAppendAction($"Run Snyk Tests{hasImageSuffix}", pos => RunSnykTests(), ServiceBuilder.HasImage);
 
-            if (!AreLogsAttached)
-            {
-                evt.menu.BeamableAppendAction($"Reattach Logs", pos => AttachLogs());
-            }
-        }
-        // TODO === END
-        
-        private void RunSnykTests()
-        {
-            var snykCommand = new SnykTestCommand(ServiceDescriptor);
-            Debug.Log($"Starting Snyk Tests for {ServiceDescriptor.Name}. Please hold.");
-            snykCommand.Start(null).Then(res =>
-            {
-                if (res.RequiresLogin)
-                {
-                    var onLogin = new Promise<Unit>();
-                    onLogin.Then(_ => RunSnykTests()).Error(_ =>
-                    {
-                        Debug.Log("Cannot run Snyk Tests without being logged into DockerHub");
-                    });
-                    OnDockerLoginRequired?.Invoke(onLogin);
+			evt.menu.BeamableAppendAction($"{localCategory}/Open in CLI", pos => OpenInCli(), IsRunning);
+			evt.menu.BeamableAppendAction($"{localCategory}/View Documentation", pos => OpenLocalDocs(), IsRunning);
 
-                }
-                else
-                {
-                    Debug.Log(res.Output);
-                    var date = DateTime.UtcNow.ToFileTimeUtc().ToString();
-                    var filePath =
-                        $"{Directory.GetParent(Application.dataPath)}{Path.DirectorySeparatorChar}{ServiceDescriptor.Name}-snyk-results-{date}.txt";
+			evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => { OpenOnRemote("docs/remote/"); }, existsOnRemote);
+			evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => { OpenOnRemote("metrics"); }, existsOnRemote);
+			evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => { OpenOnRemote("logs"); }, existsOnRemote);
+			evt.menu.BeamableAppendAction($"Visual Studio Code/Copy Debug Configuration{debugToolsSuffix}", pos => { CopyVSCodeDebugTool(); }, IncludeDebugTools);
+			evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());
+			if (MicroserviceConfiguration.Instance.Microservices.Count > 1)
+			{
+				evt.menu.BeamableAppendAction($"Order/Move Up", pos =>
+				{
+					MicroserviceConfiguration.Instance.MoveIndex(Name, -1, ServiceType.MicroService);
+					OnSortChanged?.Invoke();
+				}, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.MicroService) > 0);
+				evt.menu.BeamableAppendAction($"Order/Move Down", pos =>
+				{
+					MicroserviceConfiguration.Instance.MoveIndex(Name, 1, ServiceType.MicroService);
+					OnSortChanged?.Invoke();
+				}, MicroserviceConfiguration.Instance.GetIndex(Name, ServiceType.MicroService) < MicroserviceConfiguration.Instance.Microservices.Count - 1);
+			}
 
-                    File.WriteAllText(filePath, res.Output);
-                    EditorUtility.OpenWithDefaultApp(filePath);
-                }
-            });
-        }
-        private void CopyVSCodeDebugTool()
-        {
+			if (!AreLogsAttached)
+			{
+				evt.menu.BeamableAppendAction($"Reattach Logs", pos => AttachLogs());
+			}
+		}
+		// TODO === END
 
-            EditorGUIUtility.systemCopyBuffer =
+		private void RunSnykTests()
+		{
+			var snykCommand = new SnykTestCommand(ServiceDescriptor);
+			Debug.Log($"Starting Snyk Tests for {ServiceDescriptor.Name}. Please hold.");
+			snykCommand.Start(null).Then(res =>
+			{
+				if (res.RequiresLogin)
+				{
+					var onLogin = new Promise<Unit>();
+					onLogin.Then(_ => RunSnykTests()).Error(_ =>
+					{
+						Debug.Log("Cannot run Snyk Tests without being logged into DockerHub");
+					});
+					OnDockerLoginRequired?.Invoke(onLogin);
+
+				}
+				else
+				{
+					Debug.Log(res.Output);
+					var date = DateTime.UtcNow.ToFileTimeUtc().ToString();
+					var filePath =
+						$"{Directory.GetParent(Application.dataPath)}{Path.DirectorySeparatorChar}{ServiceDescriptor.Name}-snyk-results-{date}.txt";
+
+					File.WriteAllText(filePath, res.Output);
+					EditorUtility.OpenWithDefaultApp(filePath);
+				}
+			});
+		}
+		private void CopyVSCodeDebugTool()
+		{
+
+			EditorGUIUtility.systemCopyBuffer =
 $@"{{
      ""name"": ""Attach {ServiceDescriptor.Name}"",
      ""type"": ""coreclr"",
@@ -224,72 +228,73 @@ $@"{{
         ""/subsrc"": ""{Path.GetFullPath(ServiceDescriptor.BuildPath)}/""
      }}
   }}";
-        }
-        protected void OpenOnRemote(string relativePath)
-        {
-            EditorAPI.Instance.Then(api =>
-            {
-                var path =
-                    $"{BeamableEnvironment.PortalUrl}/{api.CidOrAlias}/" +
-                    $"games/{api.ProductionRealm.Pid}/realms/{api.Pid}/" +
-                    $"microservices/{ServiceDescriptor.Name}/{relativePath}?refresh_token={api.Token.RefreshToken}";
-                Application.OpenURL(path);
-            });
-        }
-        private void OpenInCli()
-        {
-            System.Diagnostics.Process GetProcess(string command)
-            {
-                var baseProcess = new System.Diagnostics.Process();
+		}
+		protected void OpenOnRemote(string relativePath)
+		{
+			EditorAPI.Instance.Then(api =>
+			{
+				var path =
+					$"{BeamableEnvironment.PortalUrl}/{api.CidOrAlias}/" +
+					$"games/{api.ProductionRealm.Pid}/realms/{api.Pid}/" +
+					$"microservices/{ServiceDescriptor.Name}/{relativePath}?refresh_token={api.Token.RefreshToken}";
+				Application.OpenURL(path);
+			});
+		}
+		private void OpenInCli()
+		{
+			System.Diagnostics.Process GetProcess(string command)
+			{
+				var baseProcess = new System.Diagnostics.Process();
 #if UNITY_EDITOR_WIN
                 baseProcess.StartInfo.FileName = "cmd.exe";
                 baseProcess.StartInfo.Arguments = $"/C {command}";
 #else
-                baseProcess.StartInfo.FileName = "sh";
-                baseProcess.StartInfo.Arguments = $"-c \"{command}\"";
+				baseProcess.StartInfo.FileName = "sh";
+				baseProcess.StartInfo.Arguments = $"-c \"{command}\"";
 #endif
-                return baseProcess;
-            }
-            var baseCommand =
-                $"{MicroserviceConfiguration.Instance.DockerCommand} container exec -it {ServiceDescriptor.ContainerName} sh";
+				return baseProcess;
+			}
+			var baseCommand =
+				$"{MicroserviceConfiguration.Instance.DockerCommand} container exec -it {ServiceDescriptor.ContainerName} sh";
 #if UNITY_EDITOR_WIN
             var process = GetProcess(baseCommand);
             process.Start();
 #else
-            var tmpPath = Path.Combine(FileUtil.GetUniqueTempPathInProject(), "..");
+			var tmpPath = Path.Combine(FileUtil.GetUniqueTempPathInProject(), "..");
 
-            tmpPath = Path.Combine(tmpPath, $"{Descriptor.ContainerName}_cli_shell");
-            tmpPath = Path.GetFullPath(tmpPath);
-            if(File.Exists(tmpPath))
-                FileUtil.DeleteFileOrDirectory(tmpPath);
+			tmpPath = Path.Combine(tmpPath, $"{Descriptor.ContainerName}_cli_shell");
+			tmpPath = Path.GetFullPath(tmpPath);
+			if (File.Exists(tmpPath))
+				FileUtil.DeleteFileOrDirectory(tmpPath);
 
-            using (var file = new StreamWriter(tmpPath, false, Encoding.UTF8)) {
-                file.WriteLine("#!/bin/sh");
-                file.WriteLine(baseCommand);
-            }
-            using (var process = GetProcess($"chmod +x {tmpPath}"))
-            {
-                process.Start();
-            }
-            using (var process = GetProcess($"open {tmpPath}"))
-            {
-                process.Start();
-            }
+			using (var file = new StreamWriter(tmpPath, false, Encoding.UTF8))
+			{
+				file.WriteLine("#!/bin/sh");
+				file.WriteLine(baseCommand);
+			}
+			using (var process = GetProcess($"chmod +x {tmpPath}"))
+			{
+				process.Start();
+			}
+			using (var process = GetProcess($"open {tmpPath}"))
+			{
+				process.Start();
+			}
 #endif
-        }
-        public override void Refresh(IDescriptor descriptor)
-        {
-            // reset the descriptor and statemachines; because they aren't system.serializable durable.
-            ServiceDescriptor = (MicroserviceDescriptor)descriptor;
-            var oldBuilder = ServiceBuilder;
-            ServiceBuilder = Microservices.GetServiceBuilder(ServiceDescriptor);
-            ServiceBuilder.ForwardEventsTo(oldBuilder);
-            Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name);
-        }
-        
-        // Chris took these out because they weren't being used yet, and were throwing warnings on package builds.
-        // public event Action OnRenameRequested;
-        // public event Action<MicroserviceModel> OnEnriched;
-        // private string _name = "";
-    }
+		}
+		public override void Refresh(IDescriptor descriptor)
+		{
+			// reset the descriptor and statemachines; because they aren't system.serializable durable.
+			ServiceDescriptor = (MicroserviceDescriptor)descriptor;
+			var oldBuilder = ServiceBuilder;
+			ServiceBuilder = Microservices.GetServiceBuilder(ServiceDescriptor);
+			ServiceBuilder.ForwardEventsTo(oldBuilder);
+			Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name);
+		}
+
+		// Chris took these out because they weren't being used yet, and were throwing warnings on package builds.
+		// public event Action OnRenameRequested;
+		// public event Action<MicroserviceModel> OnEnriched;
+		// private string _name = "";
+	}
 }

@@ -24,7 +24,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			private UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
 			{
-				name = "custom-text", defaultValue = "nada"
+				name = "custom-text",
+				defaultValue = "nada"
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -129,7 +130,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			int Comparer(VisualElement a, VisualElement b)
 			{
 				if (a is PublishManifestEntryVisualElement firstManifestElement &&
-				    b is PublishManifestEntryVisualElement secondManifestElement)
+					b is PublishManifestEntryVisualElement secondManifestElement)
 				{
 					return firstManifestElement.CompareTo(secondManifestElement);
 				}
@@ -137,7 +138,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				return 0;
 			}
 			_scrollContainer.Sort(Comparer);
-			
+
 			var publishElements = _scrollContainer.Children();
 			bool isOdd = false;
 			foreach (VisualElement child in publishElements)
@@ -240,7 +241,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private float CalculateProgress()
 		{
 			return _publishManifestElements.Values.Where(element => !element.IsRemoteOnly)
-			                               .Average(x => x.LoadingBar.Progress);
+										   .Average(x => x.LoadingBar.Progress);
 		}
 	}
 }
