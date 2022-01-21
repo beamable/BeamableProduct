@@ -1,0 +1,112 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ef5b1bc461025a4a9ae68c8ed87c677, type: 3}
+  m_Name: AllHintsTextMap
+  m_EditorClassIdentifier: 
+  HintDomainToTitle:
+    keys:
+    - BEAM_C#MS
+    - CODE_MISUSE
+    - BEAM_BEAMABLE_ASSISTANT
+    - BEAM_INITIALIZATION
+    values:
+    - Beamable C# Microservices
+    - Code Misuse
+    - Beamable Assistant
+    - Beamable Initialization
+  HintIdToHintTitle:
+    keys:
+    - AttributeValidation-ClientCallableUnsupportedParameters
+    - AttributeValidation-ClientCallableAsyncVoid
+    - AttributeValidation-MicroserviceAttributeMissing
+    - AttributeValidation-MisconfiguredHintDetailsProvider
+    - AttributeNameCollision-MicroserviceNameCollision
+    - AttributeValidation-MisconfiguredHintSystemAttribute
+    - AttributeValidation-UnsupportedRegisterBeamableDependencySignature
+    values:
+    - ClientCallable has unsupported parameters
+    - '"async void" ClientCallable exists'
+    - Missing MicroserviceAttribute
+    - HintDetailsProvider with invalid signature
+    - Microservice Name Collision
+    - Hint System Attribute Misuse
+    - Unsupported BeamableRegisterDependency Attribute
+  HintIdToHintIntroText:
+    keys:
+    - AttributeValidation-ClientCallableUnsupportedParameters
+    - AttributeValidation-ClientCallableAsyncVoid
+    - AttributeValidation-MicroserviceAttributeMissing
+    - AttributeValidation-MisconfiguredHintDetailsProvider
+    - AttributeNameCollision-MicroserviceNameCollision
+    - AttributeValidation-MisconfiguredHintSystemAttribute
+    - AttributeValidation-UnsupportedRegisterBeamableDependencySignature
+    values:
+    - "The ClientCallables below have unsupported parameters. We don't support client
+      callables with Delegate, Task or Promise parameters. \n\nWe don't support it
+      since it's impossible to serialize these types over to the microservice as they
+      are not really data types (function-pointer-like types).\n\nThe following ClientCallables
+      have unsupported parameters:\n\n"
+    - 'ClientCallables with "async void" signatures are not Awaitable.
+
+
+      This means the Microservice will treat the call as a fire-and-forget and will
+      return a 200 response to the client calling the method provided it doesn''t
+      throw any exception during the first part of its execution.
+
+
+      The following ClientCallables have "async void" signatures:
+
+
+'
+    - 'When creating a Microservices, you must both subclass the Microservice class
+      as well as add a MicroserviceAttribute with a unique name to it. This allows
+      our systems to correctly identify it and parse its internal attributes in a
+      more performant way.
+
+
+      Create microservices through the Microservice Window''s Create button, so you
+      don''t forget to add the attribute.
+
+
+      The following subclassed types have attributes missing:
+
+
+'
+    - 'When configuring your own hints, please ensure the signature is as follows.
+      If it isn''t, we can''t correctly store and map your converter to the hints
+      it is meant to convert.
+
+
+      void(in BeamHint hint, in BeamHintTextMap textMap, BeamHintVisualsInjectionBag
+      injectionBag)
+
+
+      These converters have incorrect signatures:
+
+
+'
+    - 'All MicroserviceAttributes must have unique project-wide unique names. Here
+      are all collisions we detected:
+
+
+'
+    - 'The BeamHintSystemAttribute can only be used with classes that implement IBeamHintSystem.
+      This allows our systems to correctly identify it and parse its internal attributes
+      in a more performant way.
+
+      The following attributes were found in types that don''t implement IBeamHintSystem:
+
+
+'
+    - "We detected you are using RegisterBeamableDependency over a method with an
+      unsupported signature. Only the following signatures are supported:\r\n\r\nstatic
+      void(IDependencyBuilder builder)\r\n\r\nThe methods we identified were:\r\n"

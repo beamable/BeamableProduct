@@ -30,8 +30,9 @@ using Beamable.Common.Api.Inventory;
 using Beamable.Common.Api.Leaderboards;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Api.Tournaments;
+using Beamable.Common.Assistant;
 using Beamable.Common.Dependencies;
-using Beamable.Common.Player;
+using Beamable.Common.Reflection;
 using Beamable.Config;
 using Beamable.Content;
 using Beamable.Coroutines;
@@ -41,6 +42,7 @@ using Beamable.Experimental.Api.Matchmaking;
 using Beamable.Experimental.Api.Sim;
 using Beamable.Experimental.Api.Social;
 using Beamable.Player;
+using Beamable.Reflection;
 using Beamable.Sessions;
 using Core.Platform.SDK;
 using System;
@@ -49,6 +51,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Scripting;
 
 namespace Beamable
 {
@@ -56,6 +59,7 @@ namespace Beamable
 	/// Beam is a bootstrapping class for Beamable. It managers registration for the dependency injection,
 	/// and provides a few helper methods for Unity wide operations.
 	/// </summary>
+	[Preserve]
 	public static class Beam
 	{
 		/// <summary>
@@ -70,8 +74,36 @@ namespace Beamable
 		/// </summary>
 		public static IDependencyBuilder DependencyBuilder;
 
+		public static ReflectionCache ReflectionCache;
+		public static IBeamHintGlobalStorage RuntimeGlobalStorage;
+
 		static Beam()
 		{
+			ReflectionCache = new ReflectionCache();
+#if UNITY_EDITOR
+			RuntimeGlobalStorage = new BeamHintGlobalStorage();
+#endif
+
+			var reflectionSystemObjects = Resources.LoadAll<ReflectionSystemObject>("ReflectionSystems")
+												   .Where(system => system.Enabled)
+												   .ToList();
+			reflectionSystemObjects.Sort((reflectionSys1, reflectionSys2) => reflectionSys1.Priority.CompareTo(reflectionSys2.Priority));
+
+			// Inject them into the ReflectionCache system in the correct order.
+			foreach (var reflectionSystemObject in reflectionSystemObjects)
+			{
+				ReflectionCache.RegisterTypeProvider(reflectionSystemObject.TypeProvider);
+				ReflectionCache.RegisterReflectionSystem(reflectionSystemObject.System);
+			}
+
+			// Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance when in the editor. When not in the editor, the storage should really not
+			// be used and 
+			// Finally, calls the Generate Reflection cache
+#if UNITY_EDITOR
+			ReflectionCache.SetStorage(RuntimeGlobalStorage);
+#endif
+			ReflectionCache.GenerateReflectionCache(CoreConfiguration.Instance.AssembliesToSweep);
+
 			// Set the default promise error handlers
 			PromiseExtensions.SetupDefaultHandler();
 
@@ -104,17 +136,17 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<IContentApi>(provider => provider.GetService<ContentService>());
 			DependencyBuilder.AddScoped<InventoryService>();
 			DependencyBuilder.AddScoped<StatsService>(provider =>
-				                                          new StatsService(
-					                                          provider.GetService<IPlatformService>(),
-					                                          provider.GetService<PlatformRequester>(),
-					                                          provider,
-					                                          UnityUserDataCache<Dictionary<string, string>>
-						                                          .CreateInstance));
+														  new StatsService(
+															  provider.GetService<IPlatformService>(),
+															  provider.GetService<PlatformRequester>(),
+															  provider,
+															  UnityUserDataCache<Dictionary<string, string>>
+																  .CreateInstance));
 			DependencyBuilder.AddSingleton<AnalyticsTracker>(provider =>
-				                                                 new AnalyticsTracker(
-					                                                 provider.GetService<IPlatformService>(),
-					                                                 provider.GetService<PlatformRequester>(),
-					                                                 provider.GetService<CoroutineService>(), 30, 10)
+																 new AnalyticsTracker(
+																	 provider.GetService<IPlatformService>(),
+																	 provider.GetService<PlatformRequester>(),
+																	 provider.GetService<CoroutineService>(), 30, 10)
 			);
 			DependencyBuilder.AddSingleton<IAnalyticsTracker>(provider => provider.GetService<AnalyticsTracker>());
 			DependencyBuilder.AddSingleton<MailService>();
@@ -130,17 +162,17 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<TournamentService>();
 			DependencyBuilder.AddSingleton<ChatService>();
 			DependencyBuilder.AddSingleton<LeaderboardService>(provider =>
-				                                                   new LeaderboardService(
-					                                                   provider.GetService<IPlatformService>(),
-					                                                   provider.GetService<IBeamableRequester>(),
-					                                                   provider,
-					                                                   UnityUserDataCache<RankEntry>.CreateInstance
-				                                                   ));
+																   new LeaderboardService(
+																	   provider.GetService<IPlatformService>(),
+																	   provider.GetService<IBeamableRequester>(),
+																	   provider,
+																	   UnityUserDataCache<RankEntry>.CreateInstance
+																   ));
 			DependencyBuilder.AddSingleton<GameRelayService>();
 			DependencyBuilder.AddSingleton<MatchmakingService>(provider => new MatchmakingService(
-				                                                   provider.GetService<IPlatformService>(),
-				                                                   // the matchmaking service needs a special instance of the beamable api requester
-				                                                   provider.GetService<IBeamableApiRequester>())
+																   provider.GetService<IPlatformService>(),
+																   // the matchmaking service needs a special instance of the beamable api requester
+																   provider.GetService<IBeamableApiRequester>())
 			);
 			DependencyBuilder.AddSingleton<SocialService>();
 			DependencyBuilder.AddSingleton<CalendarsService>();
@@ -154,9 +186,6 @@ namespace Beamable
 			DependencyBuilder.AddSingleton<INotificationService>(
 				provider => provider.GetService<NotificationService>());
 
-
-
-
 			DependencyBuilder.AddSingleton<Promise<IBeamablePurchaser>>(provider => new Promise<IBeamablePurchaser>());
 			DependencyBuilder.AddSingleton<PlayerAnnouncements>();
 			DependencyBuilder.AddScoped<PlayerStats>();
@@ -169,8 +198,14 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(CoreConfiguration.Instance);
 			DependencyBuilder.AddSingleton<IAuthSettings>(AccountManagementConfiguration.Instance);
 
-			LoadCustomDependencies();
+			ReflectionCache.GetFirstSystemOfType<BeamReflectionCache.Registry>().LoadCustomDependencies(DependencyBuilder);
+			//LoadCustomDependencies();
 		}
+
+		/// <summary>
+		/// Non-editor systems should use the reflection system returned by this methods to do what they need.
+		/// </summary>
+		public static T GetReflectionSystem<T>() where T : IReflectionSystem => ReflectionCache.GetFirstSystemOfType<T>();
 
 		/// <summary>
 		/// Runs the <see cref="BeamContext.ClearPlayerAndStop"/> method on every <see cref="BeamContext"/> in memory.
@@ -192,16 +227,18 @@ namespace Beamable
 		/// This method won't deploy objects in the DontDestroyOnLoad scene.
 		/// </summary>
 		/// <param name="sceneQualifier">The string should either be a scene name, or the stringified int of a scene build index.</param>
-		public static async Promise ResetToScene(string sceneQualifier=null)
+		public static async Promise ResetToScene(string sceneQualifier = null)
 		{
 			var loadAction = GetLoadSceneFunction(sceneQualifier);
 
 			var totalScenesRequired = 0;
 			var scenesDestroyed = 0;
 			var allScenesUnloaded = new Promise();
+
 			Action<AsyncOperation> Check(Scene unloadedScene)
 			{
-				return (_) => {
+				return (_) =>
+				{
 					scenesDestroyed++;
 					if (scenesDestroyed != totalScenesRequired) return;
 
@@ -227,84 +264,45 @@ namespace Beamable
 			loadAction();
 		}
 
-
-		private static void LoadCustomDependencies()
-		{
-			var registrations = new List<(RegisterBeamableDependenciesAttribute, MethodInfo)>();
-			var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-			foreach (var assembly in assemblies)
-			{
-				var asmName = assembly.GetName().Name;
-				if ("Tests".Equals(asmName)) continue; // TODO think harder about this.
-				try
-				{
-					foreach (var type in assembly.GetTypes())
-					{
-						var methodsWithAttr = type
-						                      .GetMethods(BindingFlags.Static | BindingFlags.Public)
-						                      .Where(m => {
-							                      var methodParameters = m.GetParameters();
-							                      return methodParameters.Length == 1 &&
-							                             typeof(IDependencyBuilder).IsAssignableFrom(
-								                             methodParameters[0].ParameterType);
-						                      })
-						                      .ToList();
-						var possibleMethods = methodsWithAttr;
-						foreach (var method in possibleMethods)
-						{
-							var attr = method.GetCustomAttribute<RegisterBeamableDependenciesAttribute>(false);
-							if (attr == null) continue;
-
-							registrations.Add((attr, method));
-						}
-					}
-				}
-				catch
-				{
-					// don't do anything.
-				}
-			}
-			registrations.Sort( (a, b) => a.Item1.Order.CompareTo(b.Item1.Order));
-			foreach (var registration in registrations)
-			{
-				registration.Item2.Invoke(null, new object[] {Beam.DependencyBuilder});
-			}
-		}
-
 		private static Action GetLoadSceneFunction(string sceneQualifier = null)
 		{
-			Action loadAction = () => { Debug.LogWarning("No scene could be identified to reload."); };
+			Action loadAction = () =>
+			{
+				Debug.LogWarning("No scene could be identified to reload.");
+			};
 			if (sceneQualifier == null)
 			{
 				// load the activeScene, or if in Unity Editor, load
 #if UNITY_EDITOR
-				loadAction = () => {
+				loadAction = () =>
+				{
 					UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode(
 						"Temp/__Backupscenes/0.backup", new LoadSceneParameters(LoadSceneMode.Single));
 				};
 #else
 				var activeScene = SceneManager.GetActiveScene();
-				loadAction = () => {
+				loadAction = () =>
+				{
 					SceneManager.LoadScene(activeScene.name, LoadSceneMode.Single);
 				};
 #endif
 			}
 			else if (int.TryParse(sceneQualifier, out var buildIndex))
 			{
-				loadAction = () => {
+				loadAction = () =>
+				{
 					SceneManager.LoadScene(buildIndex, LoadSceneMode.Single);
 				};
 			}
 			else
 			{
-				loadAction = () => {
+				loadAction = () =>
+				{
 					SceneManager.LoadScene(sceneQualifier, LoadSceneMode.Single);
 				};
 			}
 
 			return loadAction;
 		}
-
 	}
 }

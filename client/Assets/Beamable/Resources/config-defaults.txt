@@ -1,7 +1,7 @@
 {
-    "cid": "",
-    "alias": "",
-    "pid": "",
+    "cid": "1418713959809028",
+    "alias": "pedro-dev",
+    "pid": "DE_1418713959809029",
     "platform": "https://dev.api.beamable.com",
     "socket": "https://dev.api.beamable.com",
     "containerPrefix": ""
