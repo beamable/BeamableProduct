@@ -1,5 +1,4 @@
 ﻿using UnityEditor;
-using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -8,13 +7,13 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
-namespace Beamable.Editor.UI.Buss.Components
+namespace Beamable.Editor.UI.Buss
 {
-	public abstract class BUSSWindowBase<TWindow, TVisualElement> : EditorWindow
-		where TWindow : BUSSWindowBase<TWindow, TVisualElement>
+	public abstract class BussWindowBase<TWindow, TVisualElement> : EditorWindow
+		where TWindow : BussWindowBase<TWindow, TVisualElement>
 		where TVisualElement : BeamableVisualElement
 	{
-		private static BUSSWindowBase<TWindow, TVisualElement> Instance { get; set; }
+		private static BussWindowBase<TWindow, TVisualElement> Instance { get; set; }
 
 		private static bool IsAlreadyOpened => Instance != null;
 
