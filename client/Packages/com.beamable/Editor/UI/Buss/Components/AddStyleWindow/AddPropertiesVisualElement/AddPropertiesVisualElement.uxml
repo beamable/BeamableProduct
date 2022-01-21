@@ -10,10 +10,10 @@
     <engine:VisualElement name="mainVisualElement">
         <engine:VisualElement name="styleSheetContainer">
             <beamable:LabeledDropdownVisualElement name="selectStyleSheet" label="Select style sheet"/>
-            <beamable:LabeledTextField name="selectorName" label="Selector name"/>
+            <beamable:LabeledTextField name="styleName"/>
             <engine:VisualElement name="bodyContainer">
-                <engine:Label name="rulesLabel" text="Rules"/>
-                <engine:ScrollView name="rulesContainer"/>
+                <engine:Label name="rulesLabel" text="Properties"/>
+                <engine:ScrollView name="propertiesContainer"/>
             </engine:VisualElement>
         </engine:VisualElement>
         <engine:VisualElement name="buttonStrip">

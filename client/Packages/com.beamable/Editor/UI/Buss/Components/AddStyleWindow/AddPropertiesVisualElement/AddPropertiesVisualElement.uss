@@ -1,12 +1,12 @@
-AddSelectorVisualElement,
-AddSelectorVisualElement > TemplateContainer,
-AddSelectorVisualElement > TemplateContainer > #mainVisualElement,
+AddPropertiesVisualElement,
+AddPropertiesVisualElement > TemplateContainer,
+AddPropertiesVisualElement > TemplateContainer > #mainVisualElement,
 #styleSheetContainer,
 #bodyContainer {
     flex-grow: 1;
 }
 
-AddSelectorVisualElement > TemplateContainer > #mainVisualElement {
+AddPropertiesVisualElement > TemplateContainer > #mainVisualElement {
     padding-top: 20px;
     padding-left: 50px;
     padding-right: 50px;
@@ -69,13 +69,13 @@ DropdownVisualElement > TemplateContainer > #mainVisualElement > #mainContainer 
     flex-direction: row;
 }
 
-#rulesContainer {
+#propertiesContainer {
     flex-grow: 1;
     margin-left: 5px;
     margin-right: 5px;
 }
 
-#selectStyleSheet, #selectorName, #bodyContainer {
+#selectStyleSheet, #styleName, #bodyContainer {
     padding-top: 5px;
     padding-bottom: 5px;
 }

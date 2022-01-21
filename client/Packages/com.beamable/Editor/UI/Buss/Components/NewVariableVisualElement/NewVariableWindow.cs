@@ -1,11 +1,10 @@
 ﻿using System;
-using Beamable.Editor.Toolbox.Components;
 using Beamable.UI.Buss;
 using UnityEngine;
 
-namespace Beamable.Editor.UI.Buss.Components
+namespace Beamable.Editor.UI.Buss
 {
-	public class NewVariableWindow : BUSSWindowBase<NewVariableWindow, NewVariableVisualElement>
+	public class NewVariableWindow : BussWindowBase<NewVariableWindow, NewVariableVisualElement>
 	{
 		private Action<string, IBussProperty> _onPropertyCreated;
 

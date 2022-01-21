@@ -1,6 +1,4 @@
 ﻿using System;
-using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using System.Collections.Generic;
@@ -9,12 +7,11 @@ using UnityEngine;
 using Beamable.Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
-
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
-namespace Beamable.Editor.Toolbox.Components
+namespace Beamable.Editor.UI.Buss
 {
 	public class NewVariableVisualElement : BeamableVisualElement
 	{
