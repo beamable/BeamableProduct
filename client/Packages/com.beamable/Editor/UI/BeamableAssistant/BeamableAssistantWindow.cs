@@ -30,10 +30,12 @@ namespace Beamable.Editor.Assistant
 		          BeamableConstants.OPEN + " " +
 		          BeamableConstants.BEAMABLE_ASSISTANT,
 		          priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
-		public static void ShowWindow()
+		public static BeamableAssistantWindow ShowWindow()
 		{
 			var window = GetWindow<BeamableAssistantWindow>(BeamableConstants.BEAMABLE_ASSISTANT, true, typeof(SceneView));
 			window.Show();
+
+			return window;
 		}
 
 		private readonly Vector2 MIN_SIZE = new Vector2(450, 200);
@@ -253,5 +255,14 @@ namespace Beamable.Editor.Assistant
 		public void OnBeforeSerialize() { }
 
 		public void OnAfterDeserialize() { }
+
+		public void ExpandHint(BeamHintHeader beamHintHeader)
+		{
+			_beamHintsDataModel.FilterDisplayedBy(beamHintHeader.Id);
+			_beamHintsDataModel.OpenHintDetails(beamHintHeader);
+			Refresh();
+			_hintsSearchBar.SetValueWithoutNotify(beamHintHeader.Id);
+			_hintsSearchBar.MarkDirtyRepaint();
+		}
 	}
 }

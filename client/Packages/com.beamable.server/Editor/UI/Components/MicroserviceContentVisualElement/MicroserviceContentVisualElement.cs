@@ -1,3 +1,5 @@
+using Beamable.Common.Assistant;
+using Beamable.Editor.Assistant;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +11,8 @@ using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI.Components;
 using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -70,12 +74,15 @@ namespace Beamable.Editor.Microservice.UI.Components
         {
 	        base.Refresh();
 
+	        if (MicroserviceConfiguration.Instance.DockerAppCheckInMicroservicesWindow)
+		        DockerCommand.CheckDockerAppRunning();
+	        
             _mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
             _scrollView = Root.Q<ScrollView>();
             _servicesListElement = Root.Q<VisualElement>("listRoot");
             _servicesCreateElements = new Dictionary<ServiceType, CreateServiceBaseVisualElement>();
             _dockerHubIsRunning = !MicroserviceConfiguration.Instance.DockerAppCheckInMicroservicesWindow
-                                  || IsDockerAppRunning();
+                                  || !DockerCommand.DockerNotRunning;
 
             if (DockerCommand.DockerNotInstalled || !_dockerHubIsRunning)
             {
@@ -259,11 +266,26 @@ namespace Beamable.Editor.Microservice.UI.Components
 	        dockerAnnouncement.IsDockerInstalled = !DockerCommand.DockerNotInstalled;
 	        if (DockerCommand.DockerNotInstalled)
 	        {
-		        dockerAnnouncement.OnInstall = () => Application.OpenURL("https://docs.docker.com/get-docker/");
+		        dockerAnnouncement.OnInstall = () =>
+		        {
+			        BeamableAssistantWindow.ShowWindow()
+			                               .ExpandHint(new BeamHintHeader(BeamHintType.Validation,
+			                                                                        BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
+			                                                                        BeamHintIds.ID_INSTALL_DOCKER_PROCESS));
+			        
+			        //Application.OpenURL("https://docs.docker.com/get-docker/");
+		        };
 	        }
 	        else
 	        {
-		        dockerAnnouncement.OnInstall = Refresh;
+		        dockerAnnouncement.OnInstall = () =>
+		        {
+			        BeamableAssistantWindow.ShowWindow()
+			                    .ExpandHint(new BeamHintHeader(BeamHintType.Validation,
+			                                                             BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
+			                                                             BeamHintIds.ID_DOCKER_PROCESS_NOT_RUNNING));
+		        };
+		        
 	        }
 	        var element = new DockerAnnouncementVisualElement() { DockerAnnouncementModel = dockerAnnouncement };
 	        Root.Q<VisualElement>("announcementList").Add(element);
@@ -318,27 +340,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 	        }
         }
 
-        static bool IsDockerAppRunning()
-        {
-	        var procList = Process.GetProcesses();
-	        for (int i = 0; i < procList.Length; i++)
-	        {
-		        try
-		        {
-#if UNITY_EDITOR_WIN
-			        const string procName = "docker desktop";
-#else
-			        const string procName = "docker";
-#endif
-			        if (procList[i].ProcessName.ToLower().Contains(procName))
-			        {
-				        return true;
-			        }
-		        }
-		        catch { }
-	        }
-
-	        return false;
-        }
+        
     }
 }

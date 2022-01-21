@@ -22,7 +22,7 @@ namespace Beamable.Editor.Toolbox.Models
 				? "Start Docker Hub first and try again"
 				: "You need to install Docker to use the Beamable C# Microservices Feature";
 
-		public string InstallButtonText => IsDockerInstalled ? "Check now" : "Install";
+		public string InstallButtonText => IsDockerInstalled ? "Details" : "Install";
 
 		public Action OnInstall;
 

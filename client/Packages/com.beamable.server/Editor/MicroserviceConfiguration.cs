@@ -1,3 +1,4 @@
+using Beamable.Common.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -55,6 +56,9 @@ namespace Beamable.Server.Editor
       [Tooltip("It will enable checking if docker app is running before you can start microservices.")]
       public bool DockerAppCheckInMicroservicesWindow = true;
 
+      [FilePathSelector(true, DialogTitle = "Path to Docker Desktop", FileExtension = "exe", OnlyFiles = true)]
+      public string DockerDesktopPath;
+      
       public string DockerCommand = DOCKER_LOCATION;
       private string _dockerCommandCached = DOCKER_LOCATION;
       private bool _dockerCheckCached = true;

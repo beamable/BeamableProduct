@@ -1,5 +1,6 @@
 ﻿using System;
 using Beamable.Common.Content;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
@@ -16,7 +17,7 @@ namespace Beamable.Editor
 			var editedPath = EditorGUI.DelayedTextField(rc.ReserveWidth(rc.rect.width - 60f), property.stringValue);
 			if (EditorGUI.EndChangeCheck())
 			{
-				ApplyChanges(property, editedPath);
+				ApplyChanges(property, editedPath, attribute as FilePathSelectorAttribute);
 			}
 
 			if (GUI.Button(rc.rect, "Open..."))
@@ -25,7 +26,7 @@ namespace Beamable.Editor
 					GetPathFromDialogWindow(property.stringValue, attribute as FilePathSelectorAttribute);
 				if (!string.IsNullOrWhiteSpace(newPath))
 				{
-					ApplyChanges(property, newPath);
+					ApplyChanges(property, newPath, attribute as FilePathSelectorAttribute);
 				}
 			}
 		}
@@ -60,12 +61,20 @@ namespace Beamable.Editor
 			return path;
 		}
 
-		private void ApplyChanges(SerializedProperty property, string newPath)
+		private void ApplyChanges(SerializedProperty property, string newPath, FilePathSelectorAttribute attribute)
 		{
-			if (Uri.IsWellFormedUriString(newPath, UriKind.RelativeOrAbsolute))
+			if (string.IsNullOrEmpty(attribute.PathRelativeTo))
 			{
-				property.stringValue = newPath;
+				property.stringValue = string.IsNullOrEmpty(newPath) ? newPath: Path.GetFullPath(newPath);
 				property.serializedObject.ApplyModifiedProperties();
+			}
+			else
+			{
+				if (Uri.IsWellFormedUriString(newPath, UriKind.RelativeOrAbsolute))
+				{
+					property.stringValue = newPath;
+					property.serializedObject.ApplyModifiedProperties();
+				}	
 			}
 		}
 	}
