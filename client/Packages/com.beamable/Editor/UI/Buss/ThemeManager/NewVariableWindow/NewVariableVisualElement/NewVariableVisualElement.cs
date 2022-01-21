@@ -15,12 +15,6 @@ namespace Beamable.Editor.UI.Buss
 {
 	public class NewVariableVisualElement : BeamableVisualElement
 	{
-		public NewVariableVisualElement(Action<string, IBussProperty> onPropertyCreated) : base(
-			$"{BeamableComponentsConstants.BUSS_COMPONENTS_PATH}/{nameof(NewVariableVisualElement)}/{nameof(NewVariableVisualElement)}")
-		{
-			_onPropertyCreated = onPropertyCreated;
-		}
-
 		private Action<string, IBussProperty> _onPropertyCreated;
 		
 		private LabeledTextField _variableName;
@@ -33,6 +27,12 @@ namespace Beamable.Editor.UI.Buss
 		private IBussProperty _selectedBussProperty;
 
 		private const int LABEL_WIDTH = 160;
+
+		public NewVariableVisualElement(Action<string, IBussProperty> onPropertyCreated) : base(
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/NewVariableWindow/{nameof(NewVariableVisualElement)}/{nameof(NewVariableVisualElement)}")
+		{
+			_onPropertyCreated = onPropertyCreated;
+		}
 
 		private readonly Dictionary<string, IBussProperty> _typesDict = new Dictionary<string, IBussProperty>
 		{

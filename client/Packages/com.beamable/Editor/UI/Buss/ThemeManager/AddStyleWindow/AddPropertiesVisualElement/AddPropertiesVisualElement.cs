@@ -26,7 +26,7 @@ namespace Beamable.Editor.UI.Buss
 		private BussStyleSheet _currentSelectedStyleSheet;
 
 		public AddPropertiesVisualElement(Action<BussStyleRule> onSelectorAdded) : base(
-			$"{BeamableComponentsConstants.BUSS_COMPONENTS_PATH}/AddStyleWindow/{nameof(AddPropertiesVisualElement)}/{nameof(AddPropertiesVisualElement)}")
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/AddStyleWindow/{nameof(AddPropertiesVisualElement)}/{nameof(AddPropertiesVisualElement)}")
 		{
 			_onSelectorAdded = onSelectorAdded;
 		}

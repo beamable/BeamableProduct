@@ -13,8 +13,8 @@ namespace Beamable.UI.BUSS
 		{
 			_onSelectorAdded = onSelectorAdded;
 			
-			titleContent = new GUIContent(BUSSConstants.AddStyleWindowHeader);
-			minSize = maxSize = BUSSConstants.AddStyleWindowSize;
+			titleContent = new GUIContent(BussConstants.AddStyleWindowHeader);
+			minSize = maxSize = BussConstants.AddStyleWindowSize;
 			position = new Rect((Screen.width + minSize.x) * 0.5f, Screen.width * 0.5f, minSize.x, minSize.y);
 			
 			Refresh();
