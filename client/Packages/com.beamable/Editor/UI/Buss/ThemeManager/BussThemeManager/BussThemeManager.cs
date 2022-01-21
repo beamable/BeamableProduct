@@ -1,4 +1,4 @@
-using System;﻿
+using System;
 using Beamable.Editor;
 using Beamable.Editor.Common;
 using Beamable.Editor.UI.Buss;
@@ -9,7 +9,6 @@ using Beamable.Editor.UI.BUSS.ThemeManager;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
-using UnityEditor.Experimental.TerrainAPI;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -32,9 +31,10 @@ namespace Beamable.UI.BUSS
 
 		private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements =
 			new List<BussStyleCardVisualElement>();
-		private VisualElement _addSelectorButton;
 
+		private VisualElement _addStyleButton;
 		private bool _filterMode;
+		private BeamablePopupWindow _confirmationPopup;
 
 #if BEAMABLE_DEVELOPER
 		// [MenuItem(
@@ -50,6 +50,21 @@ namespace Beamable.UI.BUSS
 			themeManagerWindow.Show(true);
 		}
 
+		public void CloseConfirmationPopup()
+		{
+			if (_confirmationPopup != null)
+			{
+				_confirmationPopup.Close();
+			}
+
+			_confirmationPopup = null;
+		}
+
+		public void SetConfirmationPopup(BeamablePopupWindow popupWindow)
+		{
+			_confirmationPopup = popupWindow;
+		}
+
 		private void OnEnable()
 		{
 			minSize = BUSSConstants.ThemeManagerWindowSize;
@@ -61,7 +76,7 @@ namespace Beamable.UI.BUSS
 			VisualElement root = this.GetRootVisualContainer();
 			root.Clear();
 			_styleCardsVisualElements.Clear();
-			_addSelectorButton = null;
+			_addStyleButton = null;
 
 			VisualElement mainVisualElement = new VisualElement();
 			mainVisualElement.name = "themeManagerContainer";
@@ -130,7 +145,7 @@ namespace Beamable.UI.BUSS
 			ClearCurrentStyleSheet();
 
 			_variableDatabase.RemoveAllStyleSheets();
-			
+
 			foreach (BussStyleSheet styleSheet in _navigationWindow.StyleSheets)
 			{
 				_variableDatabase.AddStyleSheet(styleSheet);
@@ -143,10 +158,11 @@ namespace Beamable.UI.BUSS
 		private void RefreshStyleCards()
 		{
 			UndoSystem<BussStyleRule>.Update();
-		
+
 			var rulesToDraw = _navigationWindow.StyleSheets.SelectMany(ss => ss.Styles).ToArray();
 
-			var cardsToRemove = _styleCardsVisualElements.Where(card => !rulesToDraw.Contains(card.StyleRule)).ToArray();
+			var cardsToRemove = _styleCardsVisualElements.Where(card => !rulesToDraw.Contains(card.StyleRule))
+			                                             .ToArray();
 
 			foreach (BussStyleCardVisualElement card in cardsToRemove)
 			{
@@ -178,36 +194,36 @@ namespace Beamable.UI.BUSS
 
 		private void AddSelectorButton()
 		{
-			_addSelectorButton = new VisualElement {name = "addSelectorButton"};
-			_addSelectorButton.AddToClassList("button");
-			_addSelectorButton.Add(new Label("Add Selector"));
-			_addSelectorButton.UnregisterCallback<MouseDownEvent>(_ => OpenAddSelectorWindow());
-			_addSelectorButton.RegisterCallback<MouseDownEvent>(_ => OpenAddSelectorWindow());
+			_addStyleButton = new VisualElement {name = "addStyleButton"};
+			_addStyleButton.AddToClassList("button");
+			_addStyleButton.Add(new Label("Add Style"));
+			_addStyleButton.UnregisterCallback<MouseDownEvent>(_ => OpenAddSelectorWindow());
+			_addStyleButton.RegisterCallback<MouseDownEvent>(_ => OpenAddSelectorWindow());
 
 			EditorApplication.update -= CheckEnableState;
 			EditorApplication.update += CheckEnableState;
-			
-			_stylesGroup.Add(_addSelectorButton);
+
+			_stylesGroup.Add(_addStyleButton);
 
 			void OpenAddSelectorWindow()
 			{
-				AddSelectorWindow window = AddSelectorWindow.ShowWindow();
+				AddStyleWindow window = AddStyleWindow.ShowWindow();
 				window?.Init(_ => RefreshStyleSheets());
 			}
 
 			void CheckEnableState()
 			{
-				_addSelectorButton.tooltip = string.Empty;
+				_addStyleButton.tooltip = string.Empty;
 				List<BussStyleSheet> styleSheets =
 					Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[] {"Assets"});
 				if (styleSheets.Count == 0)
 				{
-					_addSelectorButton.tooltip = "There should be created at least one BUSS Style Config!";
-					_addSelectorButton.SetEnabled(false);
+					_addStyleButton.tooltip = "There should be created at least one BUSS Style Config!";
+					_addStyleButton.SetEnabled(false);
 				}
 				else
 				{
-					_addSelectorButton.SetEnabled(true);
+					_addStyleButton.SetEnabled(true);
 				}
 			}
 		}
@@ -222,19 +238,17 @@ namespace Beamable.UI.BUSS
 			_variableDatabase.RemoveAllStyleSheets();
 		}
 
-		private BussStyleCardVisualElement AddStyleCard(BussStyleSheet styleSheet, BussStyleRule styleRule, Action callback)
+		private void AddStyleCard(BussStyleSheet styleSheet, BussStyleRule styleRule, Action callback)
 		{
 			BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-			styleCard.Setup(styleSheet, styleRule, _variableDatabase, _navigationWindow, callback);
+			styleCard.Setup(this, styleSheet, styleRule, _variableDatabase, _navigationWindow, callback);
 			_styleCardsVisualElements.Add(styleCard);
 			_stylesGroup.Add(styleCard);
 
-			if (_addSelectorButton != null)
+			if (_addStyleButton != null)
 			{
-				_addSelectorButton.PlaceInFront(styleCard);
+				_addStyleButton.PlaceInFront(styleCard);
 			}
-			
-			return styleCard;
 		}
 
 		private void RemoveStyleCard(BussStyleCardVisualElement card)
@@ -244,53 +258,23 @@ namespace Beamable.UI.BUSS
 			card.Destroy();
 		}
 
-		private void ClearStyleCards()
-		{
-			foreach (BussStyleCardVisualElement styleCard in _styleCardsVisualElements)
-			{
-				styleCard.Destroy();
-			}
-
-			_styleCardsVisualElements.Clear();
-			_stylesGroup.Clear();
-		}
-
-		private void CreateStyleCards()
-		{
-			foreach (BussStyleSheet styleSheet in _navigationWindow.StyleSheets)
-			{
-				foreach (BussStyleRule styleRule in styleSheet.Styles)
-				{
-					var undoKey = $"{styleSheet.name}-{styleRule.SelectorString}";
-					UndoSystem<BussStyleRule>.AddRecord(styleRule, undoKey);
-					BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-					styleCard.Setup(styleSheet, styleRule, _variableDatabase, _navigationWindow, () =>
-					{
-						UndoSystem<BussStyleRule>.Undo(undoKey);
-						RefreshStyleCards();
-					});
-					_styleCardsVisualElements.Add(styleCard);
-					_stylesGroup.Add(styleCard);
-				}
-			}
-		}
-
 		private void OnStyleSheetExternallyChanged()
 		{
 			if (_inStyleSheetChangedLoop) return;
 
 			_inStyleSheetChangedLoop = true;
 
-			try {
+			try
+			{
 				_variableDatabase.ReconsiderAllStyleSheets();
-			
+
 				RefreshStyleCards();
 			}
 			catch (Exception e)
 			{
 				Debug.LogException(e);
 			}
-			
+
 			_inStyleSheetChangedLoop = false;
 		}
 
