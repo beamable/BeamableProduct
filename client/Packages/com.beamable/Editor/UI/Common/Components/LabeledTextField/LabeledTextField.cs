@@ -97,5 +97,10 @@ namespace Beamable.Editor.UI.Components
             Value = evt.newValue;
             InvokeValidationCheck(Value);
         }
+
+        public void OverrideLabelWidth(float width)
+        {
+	        _labelComponent?.style.SetWidth(width);
+        }
     }
 }
