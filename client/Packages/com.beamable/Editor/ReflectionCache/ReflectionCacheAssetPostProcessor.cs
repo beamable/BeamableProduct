@@ -27,6 +27,7 @@ namespace Beamable.Editor.Reflection
 
 				BeamableLogger.Log("Re-building the Reflection Systems from Cached Data!");
 				BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems(reimportedReflectionTypes);
+				BeamEditor.EditorReflectionCache.SetStorage(BeamEditor.HintGlobalStorage);
 				BeamableLogger.Log("Finished Rebuilding Reflection Cache Systems");
 				AssetDatabase.Refresh();
 			}
@@ -35,6 +36,7 @@ namespace Beamable.Editor.Reflection
 			{
 				BeamableLogger.Log("Re-building the Reflection Systems from Cached Data!");
 				BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems();
+				BeamEditor.EditorReflectionCache.SetStorage(BeamEditor.HintGlobalStorage);
 				BeamableLogger.Log("Finished Rebuilding Reflection Cache Systems");
 				AssetDatabase.Refresh();
 			}

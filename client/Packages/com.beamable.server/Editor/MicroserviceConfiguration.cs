@@ -1,7 +1,7 @@
+using Beamable.Common.Content;
+using Beamable.Config;
 using Beamable.Editor;
 using Beamable.Editor.Microservice.UI;
-using Beamable.Editor.UI.Model;
-using Beamable.Server.Editor.ManagerClient;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,40 +32,42 @@ namespace Beamable.Server.Editor
 		const string DOCKER_LOCATION = "docker";
 #endif
 
-		public static MicroserviceConfiguration Instance => Get<MicroserviceConfiguration>();
+      public static MicroserviceConfiguration Instance => Get<MicroserviceConfiguration>();
 
-		public List<MicroserviceConfigurationEntry> Microservices;
+      public List<MicroserviceConfigurationEntry> Microservices;
 
-		public List<StorageConfigurationEntry> StorageObjects;
+      public List<StorageConfigurationEntry> StorageObjects;
 
-		[Tooltip("When you run a microservice in the Editor, the prefix controls the flow of traffic. By default, the prefix is your MAC address. If two developers use the same prefix, their microservices will share traffic. The prefix is ignored for games running outside of the Editor."), Delayed]
-		public string CustomContainerPrefix;
+      [Tooltip("When you run a microservice in the Editor, the prefix controls the flow of traffic. By default, the prefix is your MAC address. If two developers use the same prefix, their microservices will share traffic. The prefix is ignored for games running outside of the Editor."), Delayed]
+      public string CustomContainerPrefix;
 
-		private string _cachedContainerPrefix = null;
+      private string _cachedContainerPrefix = null;
 
-		[Tooltip("When you build a microservice, any ContentType class will automatically be referenced if this field is set to true. Beamable recommends that you put your ContentTypes into a shared assembly definition instead.")]
-		public bool AutoReferenceContent = false;
+      [Tooltip("When you build a microservice, any ContentType class will automatically be referenced if this field is set to true. Beamable recommends that you put your ContentTypes into a shared assembly definition instead.")]
+      public bool AutoReferenceContent = false;
 
-		[Tooltip("When true, Beamable automatically generates a common assembly called Beamable.UserCode.Shared that is auto-referenced by Unity code, and automatically imported by Microservice assembly definitions. ")]
-		public bool AutoBuildCommonAssembly = true;
+	  [Tooltip("When true, Beamable automatically generates a common assembly called Beamable.UserCode.Shared that is auto-referenced by Unity code, and automatically imported by Microservice assembly definitions. ")]
+	  public bool AutoBuildCommonAssembly = true; 
 
-		[Tooltip("When you build and run microservices, the logs will be color coded if this field is set to true.")]
-		public bool ColorLogs = true;
+      [Tooltip("When you build and run microservices, the logs will be color coded if this field is set to true.")]
+      public bool ColorLogs = true;
 
-		[Tooltip("Docker Buildkit may speed up and increase performance on your microservice builds. However, it is not fully supported with Beamable microservices, and you may encounter issues using it. ")]
-		public bool EnableDockerBuildkit = false;
+      [Tooltip("Docker Buildkit may speed up and increase performance on your microservice builds. However, it is not fully supported with Beamable microservices, and you may encounter issues using it. ")]
+      public bool EnableDockerBuildkit = false;
 
-		[Tooltip("It will enable checking if docker app is running before you can start microservices.")]
-		public bool DockerAppCheckInMicroservicesWindow = true;
+      [Tooltip("It will enable checking if docker app is running before you can start microservices.")]
+      public bool DockerAppCheckInMicroservicesWindow = true;
 
+      [FilePathSelector(true, DialogTitle = "Path to Docker Desktop", FileExtension = "exe", OnlyFiles = true)]
+      public string DockerDesktopPath;
+      
+      public string DockerCommand = DOCKER_LOCATION;
+      private string _dockerCommandCached = DOCKER_LOCATION;
+      private bool _dockerCheckCached = true;
 
-		public string DockerCommand = DOCKER_LOCATION;
-		private string _dockerCommandCached = DOCKER_LOCATION;
-		private bool _dockerCheckCached = true;
-
-		public string ValidatedDockerCommand => string.IsNullOrWhiteSpace(DockerCommand) ?
-		   DOCKER_LOCATION :
-		   DockerCommand;
+      public string ValidatedDockerCommand => string.IsNullOrWhiteSpace(DockerCommand) ?
+         DOCKER_LOCATION :
+         DockerCommand;
 
 #if !BEAMABLE_LEGACY_MSW
 		[Tooltip("Microservice Logs are sent to a dedicated logging window. If you enable this field, then service logs will also be sent to the Unity Console.")]
@@ -85,7 +87,7 @@ namespace Beamable.Server.Editor
 #if UNITY_EDITOR
       public override void OnFreshCopy()
       {
-         var isDark = UnityEditor.EditorGUIUtility.isProSkin;
+         var isDark = EditorGUIUtility.isProSkin;
 
          if (isDark)
          {
@@ -151,7 +153,7 @@ namespace Beamable.Server.Editor
 			if (CustomContainerPrefix != _cachedContainerPrefix)
 			{
 				_cachedContainerPrefix = CustomContainerPrefix;
-				Config.ConfigDatabase.SetString("containerPrefix", _cachedContainerPrefix, true, true);
+				ConfigDatabase.SetString("containerPrefix", _cachedContainerPrefix, true, true);
 				EditorApplication.delayCall += () => // using delayCall to avoid Unity warning about sending messages from OnValidate()
 				   EditorAPI.Instance.Then(api => api.SaveConfig(
 					  api.CidOrAlias, api.Pid, api.Host, api.Cid, CustomContainerPrefix));
@@ -165,6 +167,15 @@ namespace Beamable.Server.Editor
 				{
 					MicroserviceWindow.Instance.RefreshWindow(true);
 				}
+			}
+
+			if (string.IsNullOrEmpty(DockerDesktopPath))
+			{
+#if UNITY_EDITOR_OSX
+				DockerDesktopPath = "/Applications/Docker.app/";
+#else
+				DockerDesktopPath = "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe";
+#endif
 			}
 		}
 
@@ -244,7 +255,7 @@ namespace Beamable.Server.Editor
 		}
 	}
 
-	[System.Serializable]
+	[Serializable]
 	public class StorageConfigurationEntry
 	{
 		public string StorageName;
@@ -264,7 +275,7 @@ namespace Beamable.Server.Editor
 		public string LocalInitPass = "beamable";
 	}
 
-	[System.Serializable]
+	[Serializable]
 	public class MicroserviceConfigurationEntry
 	{
 		public string ServiceName;
@@ -281,7 +292,7 @@ namespace Beamable.Server.Editor
 		public MicroserviceConfigurationDebugEntry DebugData;
 	}
 
-	[System.Serializable]
+	[Serializable]
 	public class MicroserviceConfigurationDebugEntry
 	{
 		public string Username = "beamable";

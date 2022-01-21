@@ -165,6 +165,16 @@ namespace Beamable.Editor.Assistant
 			var hint = GetHint(header);
 			_hintPreferencesManager.SetHintPlayModeWarningPreferences(hint, newPreference);
 		}
+
+		/// <summary>
+		/// Guarantees a hint's details are opened.
+		/// </summary>
+		/// <param name="beamHintHeader"></param>
+		public void OpenHintDetails(BeamHintHeader beamHintHeader)
+		{
+			if(DisplayingHints.Contains(beamHintHeader) && !DetailsOpenedHints.Contains(beamHintHeader))
+				DetailsOpenedHints.Add(beamHintHeader);
+		}
 	}
 
 	/// <summary>
