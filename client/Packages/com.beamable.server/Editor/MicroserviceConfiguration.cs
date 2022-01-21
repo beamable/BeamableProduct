@@ -168,50 +168,81 @@ namespace Beamable.Server.Editor
 			}
 		}
 
-		public int GetMicroserviceIndex(string serviceName)
-		{
-			return Microservices.FindIndex(m => m.ServiceName == serviceName);
-		}
+        public int GetIndex(string serviceName, ServiceType serviceType)
+        {
+            if (serviceType == ServiceType.StorageObject)
+                return StorageObjects.FindIndex(m => m.StorageName == serviceName);
+            else
+                return Microservices.FindIndex(m => m.ServiceName == serviceName);
+        }
 
-		public void SetMicroserviceIndex(string serviceName, int newIndex)
-		{
-			if (newIndex < 0 || newIndex >= Microservices.Count)
-			{
-				throw new IndexOutOfRangeException();
-			}
+        public void SetIndex(string serviceName, int newIndex, ServiceType serviceType)
+        {
+            if (serviceType == ServiceType.MicroService)
+            {
+                if (newIndex < 0 || newIndex >= Microservices.Count)
+                    throw new IndexOutOfRangeException();
 
-			var currentIndex = GetMicroserviceIndex(serviceName);
-			if (currentIndex != -1)
-			{
-				var value = Microservices[currentIndex];
-				Microservices.RemoveAt(currentIndex);
-				Microservices.Insert(newIndex, value);
-				EditorUtility.SetDirty(this);
-				AssetDatabase.SaveAssets();
-				AssetDatabase.Refresh();
-			}
-		}
+                var currentIndex = GetIndex(serviceName, serviceType);
+                if (currentIndex != -1)
+                {
+                    var value = Microservices[currentIndex];
+                    Microservices.RemoveAt(currentIndex);
+                    Microservices.Insert(newIndex, value);
+                    EditorUtility.SetDirty(this);
+                    AssetDatabase.SaveAssets();
+                    AssetDatabase.Refresh();
+                }
+            }
+            else
+            {
+                if (newIndex < 0 || newIndex >= StorageObjects.Count)
+                    throw new IndexOutOfRangeException();
 
-		public void MoveMicroserviceIndex(string serviceName, int offset)
-		{
-			var newIndex = GetMicroserviceIndex(serviceName) + offset;
-			if (newIndex < 0 || newIndex >= Microservices.Count)
-			{
-				return;
-			}
-			SetMicroserviceIndex(serviceName, newIndex);
-		}
+                var currentIndex = GetIndex(serviceName, serviceType);
+                if (currentIndex != -1)
+                {
+                    var value = StorageObjects[currentIndex];
+                    StorageObjects.RemoveAt(currentIndex);
+                    StorageObjects.Insert(newIndex, value);
+                    EditorUtility.SetDirty(this);
+                    AssetDatabase.SaveAssets();
+                    AssetDatabase.Refresh();
+                }
+            }
+        }
 
-		public int MicroserviceOrderComparer(string a, string b)
-		{
-			var aIdx = GetMicroserviceIndex(a);
-			if (aIdx < 0) aIdx = Int32.MaxValue;
-			var bIdx = GetMicroserviceIndex(b);
-			if (bIdx < 0) bIdx = Int32.MaxValue;
-			if (aIdx > bIdx) return 1;
-			return -1;
-		}
-	}
+        public void MoveIndex(string serviceName, int offset, ServiceType serviceType)
+        {
+            var newIndex = GetIndex(serviceName, serviceType) + offset;
+
+            switch (serviceType)
+            {
+                case ServiceType.MicroService:
+                    if (newIndex < 0 || newIndex >= Microservices.Count)
+                        return;
+                    break;
+                case ServiceType.StorageObject:
+                    if (newIndex < 0 || newIndex >= StorageObjects.Count)
+                        return;
+                    break;
+                default:
+                    return;
+            }
+
+            SetIndex(serviceName, newIndex, serviceType);
+        }
+
+        public int OrderComparer(string a, string b, ServiceType serviceType)
+        {
+            var aIdx = GetIndex(a, serviceType);
+            if (aIdx < 0) aIdx = Int32.MaxValue;
+            var bIdx = GetIndex(b, serviceType);
+            if (bIdx < 0) bIdx = Int32.MaxValue;
+            if (aIdx > bIdx) return 1;
+            return -1;
+        }
+    }
 
 	[System.Serializable]
 	public class StorageConfigurationEntry
