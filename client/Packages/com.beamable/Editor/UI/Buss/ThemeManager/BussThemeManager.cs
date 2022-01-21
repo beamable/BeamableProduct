@@ -67,7 +67,7 @@ namespace Beamable.UI.BUSS
 
 		private void OnEnable()
 		{
-			minSize = BUSSConstants.ThemeManagerWindowSize;
+			minSize = BussConstants.ThemeManagerWindowSize;
 			Refresh();
 		}
 
@@ -83,10 +83,10 @@ namespace Beamable.UI.BUSS
 
 #if UNITY_2018
 			mainVisualElement.AddStyleSheet(
-				$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussThemeManager/BussThemeManager.2018.uss");
+				$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussThemeManager.2018.uss");
 #elif UNITY_2019_1_OR_NEWER
 			mainVisualElement.AddStyleSheet(
-				$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussThemeManager/BussThemeManager.uss");
+				$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
 #endif
 
 			ScrollView scrollView = new ScrollView();

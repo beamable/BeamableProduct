@@ -147,7 +147,7 @@ namespace Beamable.Editor.UI.Components
 			_themeManager.CloseConfirmationPopup();
 
 			ConfirmationPopupVisualElement confirmationPopup = new ConfirmationPopupVisualElement(
-				BUSSConstants.StyleDeletionMessage,
+				BussConstants.DeleteStyleMessage,
 				() =>
 				{
 					_styleSheet.RemoveStyle(StyleRule);
@@ -157,7 +157,7 @@ namespace Beamable.Editor.UI.Components
 			);
 
 			BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowConfirmationUtility(
-				BUSSConstants.StyleDeletionHeader,
+				BussConstants.DeleteStyleHeader,
 				confirmationPopup, _themeManager);
 
 			_themeManager.SetConfirmationPopup(popupWindow);
@@ -201,7 +201,22 @@ namespace Beamable.Editor.UI.Components
 
 		private void ClearAllButtonClicked(MouseDownEvent evt)
 		{
-			_styleSheet.RemoveAllProperties(StyleRule);
+			_themeManager.CloseConfirmationPopup();
+
+			ConfirmationPopupVisualElement confirmationPopup = new ConfirmationPopupVisualElement(
+				BussConstants.ClearAllPropertiesMessage,
+				() =>
+				{
+					_styleSheet.RemoveAllProperties(StyleRule);
+				},
+				_themeManager.CloseConfirmationPopup
+			);
+
+			BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowConfirmationUtility(
+				BussConstants.ClearAllPropertiesHeader,
+				confirmationPopup, _themeManager);
+
+			_themeManager.SetConfirmationPopup(popupWindow);
 		}
 
 		private void UndoButtonClicked(MouseDownEvent evt)
