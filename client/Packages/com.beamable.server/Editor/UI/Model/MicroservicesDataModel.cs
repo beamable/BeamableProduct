@@ -254,10 +254,19 @@ namespace Beamable.Editor.UI.Model
       {
          void AddModels<T>(List<T> models, List<IBeamableService> listToPopulate) where T: ServiceModelBase
          {
-            foreach (var service in models)
+            foreach (var service in models.ToArray())
             {
-               var existing =
-                  listToPopulate.FirstOrDefault(s => string.Equals(s.Descriptor.Name, service.Descriptor.Name));
+               IBeamableService existing = null;
+
+               for (int i = 0; i < listToPopulate.Count; i++)
+               {
+					if (string.Equals(listToPopulate[i].Descriptor.Name, service.Descriptor.Name))
+					{
+						existing = listToPopulate[i];
+						break;
+					}
+               }
+
                if (existing == null)
                {
 	               // Types aren't serialized properly so we store their assembly qualified name and retrieve it afterwards.
