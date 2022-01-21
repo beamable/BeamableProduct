@@ -258,7 +258,7 @@ namespace Beamable.Server.Editor
 			foreach (var reference in service.GetStorageReferences())
 			{
 				var key = $"STORAGE_CONNSTR_{reference.Name}";
-				env[key] = await GetConnectionString(reference, service);
+				env[key] = await GetConnectionString(reference);
 			}
 
 			return env;
