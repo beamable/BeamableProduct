@@ -1,6 +1,9 @@
 // unset
 
+using Beamable.Common.Reflection;
 using System;
+using System.Linq;
+using System.Reflection;
 
 namespace Beamable.Common.Dependencies
 {
@@ -10,13 +13,43 @@ namespace Beamable.Common.Dependencies
 	/// Add whatever services you want to on the builder instance. Any service you register will exist for each BeamContext.
 	/// </summary>
 	[AttributeUsage(validOn: AttributeTargets.Method)]
-	public class RegisterBeamableDependenciesAttribute : Attribute
+	public class RegisterBeamableDependenciesAttribute : Attribute, IReflectionAttribute
 	{
+		/// <summary>
+		/// Valid signatures on top of which you can place <see cref="RegisterBeamableDependenciesAttribute"/>s.
+		/// </summary>
+		public static readonly SignatureOfInterest[] ValidSignatures = new[]
+		{
+			new SignatureOfInterest(true, typeof(void), new[] {new ParameterOfInterest(typeof(IDependencyBuilder), false, false, false)})
+		};
+
+		public static readonly string ValidSignaturesText = string.Join(", ", ValidSignatures.Select(sig => sig.ToHumanReadableSignature()));
+
+		/// <summary>
+		/// Defines the order in which the functions with <see cref="RegisterBeamableDependenciesAttribute"/> will run.
+		/// </summary>
 		public int Order { get; set; }
 
 		public RegisterBeamableDependenciesAttribute(int order = 0)
 		{
 			Order = order;
+		}
+
+		public AttributeValidationResult IsAllowedOnMember(MemberInfo member)
+		{
+			var method = (MethodInfo)member;
+
+			// Check against matching signatures.
+			var matchingSignatureIndices = ValidSignatures.FindMatchingMethodSignatures(method);
+			if (matchingSignatureIndices.TrueForAll(idx => idx == -1))
+			{
+				return new AttributeValidationResult(this,
+													 method,
+													 ReflectionCache.ValidationResultType.Error,
+													 $"{method.ToHumanReadableSignature()} must have one of the following signatures: {ValidSignaturesText}");
+			}
+
+			return new AttributeValidationResult(this, method, ReflectionCache.ValidationResultType.Valid, "");
 		}
 	}
 }

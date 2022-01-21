@@ -1,30 +1,22 @@
-﻿using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Buss.Components;
-using Beamable.Editor.UI.Components;
+﻿using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
+using Beamable.UI.BUSS;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
-
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
-
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
-namespace Beamable.Editor.Toolbox.Components
+
+namespace Beamable.Editor.UI.Buss
 {
-	public class AddSelectorVisualElement : BeamableVisualElement
+	public class AddPropertiesVisualElement : BeamableVisualElement
 	{
 		private Action<BussStyleRule> _onSelectorAdded;
-		
-		public AddSelectorVisualElement(Action<BussStyleRule> onSelectorAdded) : base(
-			$"{BeamableComponentsConstants.BUSS_COMPONENTS_PATH}/{nameof(AddSelectorVisualElement)}/{nameof(AddSelectorVisualElement)}")
-		{
-			_onSelectorAdded = onSelectorAdded;
-		}
 
 		private LabeledTextField _selectorName;
 		private PrimaryButtonVisualElement _confirmButton;
@@ -33,24 +25,30 @@ namespace Beamable.Editor.Toolbox.Components
 		private readonly Dictionary<string, LabeledCheckboxVisualElement> _rules = new Dictionary<string, LabeledCheckboxVisualElement>();
 		private BussStyleSheet _currentSelectedStyleSheet;
 
+		public AddPropertiesVisualElement(Action<BussStyleRule> onSelectorAdded) : base(
+			$"{BeamableComponentsConstants.BUSS_COMPONENTS_PATH}/AddStyleWindow/{nameof(AddPropertiesVisualElement)}/{nameof(AddPropertiesVisualElement)}")
+		{
+			_onSelectorAdded = onSelectorAdded;
+		}
+
 		public override void Refresh()
 		{
 			base.Refresh();
 
 			Root.parent.parent.style.flexGrow = 1;
 
-			_selectorName = Root.Q<LabeledTextField>("selectorName");
-			_selectorName.Setup("Selector name", string.Empty, OnValidate);
+			_selectorName = Root.Q<LabeledTextField>("styleName");
+			_selectorName.Setup("Style name", string.Empty, OnValidate);
 			_selectorName.Refresh();
 			
-			_rulesContainer = Root.Q<ScrollView>("rulesContainer");
+			_rulesContainer = Root.Q<ScrollView>("propertiesContainer");
 
 			_confirmButton = Root.Q<PrimaryButtonVisualElement>("confirmButton");
 			_confirmButton.Button.clickable.clicked += HandleConfirmButton;
 			_confirmButton.Disable();
 			
 			var cancelButton = Root.Q<GenericButtonVisualElement>("cancelButton");
-			cancelButton.OnClick += AddSelectorWindow.CloseWindow;
+			cancelButton.OnClick += AddStyleWindow.CloseWindow;
 			
 			var styleSheets = Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[] {"Assets"});
 			var selectStyleSheet = Root.Q<LabeledDropdownVisualElement>("selectStyleSheet");
@@ -93,7 +91,7 @@ namespace Beamable.Editor.Toolbox.Components
 			_currentSelectedStyleSheet.Styles.Add(selector);
 			_onSelectorAdded?.Invoke(selector);
 			AssetDatabase.SaveAssets();
-			AddSelectorWindow.CloseWindow();
+			AddStyleWindow.CloseWindow();
 		}
 		
 		private void OnValidate()

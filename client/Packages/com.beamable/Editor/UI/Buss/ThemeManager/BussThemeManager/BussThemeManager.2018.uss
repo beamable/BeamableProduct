@@ -37,7 +37,7 @@ BussElementHierarchyVisualElement {
     right: 0px;
 }
 
-#addSelectorButton {
+#addStyleButton {
     margin-top: 15px;
     padding-top: 3px;
     align-self: center;
@@ -53,11 +53,11 @@ BussElementHierarchyVisualElement {
     border-color: #000000;
 }
 
-#addSelectorButton:hover {
+#addStyleButton:hover {
     background-color: rgb(120, 120, 120);
 }
 
-#addSelectorButton > Label {
+#addStyleButton > Label {
     color: rgb(255,255,255);
     -unity-font-style: bold;
     align-self: center;
