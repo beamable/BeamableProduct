@@ -19,5 +19,5 @@ MonoBehaviour:
     DisableContentRefPropertyDrawers: 0
     DisableBeamableDictionaryPropertyDrawers: 0
     DisableBeamableListPropertyDrawers: 0
-    RunAsBeamableDeveloper: 0
+    RunAsBeamableDeveloper: 1
     DisableBeamableDateStringPropertyDrawers: 0
