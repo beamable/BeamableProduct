@@ -206,7 +206,7 @@ namespace Beamable.Console
 #if UNITY_EDITOR
             return true;
 #else
-            return ConsoleConfiguration.Instance.ForceEnabled /*|| _beamable.User.HasScope("cli:console")*/;
+            return ConsoleConfiguration.Instance.ForceEnabled || BeamContext.InParent(this).AuthorizedUser.Value.HasScope("cli:console");
 #endif
         }
 
