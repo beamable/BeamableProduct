@@ -34,11 +34,17 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleSheet _styleSheet;
 		private BussStyleRule _styleRule;
 		private BussPropertyProvider _propertyProvider;
-		private bool _propertyIsInStyle;
 
 		public BussStyleSheet StyleSheet => _styleSheet;
 		public BussStyleRule StyleRule => _styleRule;
 		public BussPropertyProvider PropertyProvider => _propertyProvider;
+		public string PropertyKey => PropertyProvider.Key;
+
+		public bool PropertyIsInStyle
+		{
+			get;
+			private set;
+		}
 
 		public override void Init()
 		{
@@ -67,8 +73,8 @@ namespace Beamable.Editor.UI.Components
 			_variableParent.name = "globalVariable";
 			Root.Add(_variableParent);
 
-			Root.parent.EnableInClassList("exists", _propertyIsInStyle);
-			Root.parent.EnableInClassList("doesntExists", !_propertyIsInStyle);
+			Root.parent.EnableInClassList("exists", PropertyIsInStyle);
+			Root.parent.EnableInClassList("doesntExists", !PropertyIsInStyle);
 			Refresh();
 		}
 
@@ -89,7 +95,7 @@ namespace Beamable.Editor.UI.Components
 			_styleSheet = styleSheet;
 			_styleRule = styleRule;
 			_propertyProvider = property;
-			_propertyIsInStyle = _styleRule.Properties.Contains(_propertyProvider);
+			PropertyIsInStyle = _styleRule.Properties.Contains(_propertyProvider);
 
 			Init();
 		}
@@ -114,7 +120,7 @@ namespace Beamable.Editor.UI.Components
 
 			if (_propertyVisualElement != null)
 			{
-				_propertyVisualElement.UpdatedStyleSheet = _propertyIsInStyle ? _styleSheet : null;
+				_propertyVisualElement.UpdatedStyleSheet = PropertyIsInStyle ? _styleSheet : null;
 				_valueParent.Add(_propertyVisualElement);
 				_propertyVisualElement.Init();
 				_propertyVisualElement.OnValueChanged -= HandlePropertyChanged;
@@ -124,7 +130,7 @@ namespace Beamable.Editor.UI.Components
 		
 		void HandlePropertyChanged()
 		{
-			if(!_propertyIsInStyle)
+			if(!PropertyIsInStyle)
 			{
 				_styleRule.TryAddProperty(_propertyProvider.Key, _propertyProvider.GetProperty(), out _);
 				_styleSheet.TriggerChange();
