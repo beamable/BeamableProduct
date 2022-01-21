@@ -190,7 +190,7 @@ namespace Beamable.Server.Editor
 				 var entries = allServices.Select(name =>
 				 {
 					 var configEntry = MicroserviceConfiguration.Instance.GetEntry(name);//config.FirstOrDefault(s => s.ServiceName == name);
-					return new ManifestEntryModel
+					 return new ManifestEntryModel
 					 {
 						 Comment = "",
 						 Name = name,
@@ -213,16 +213,16 @@ namespace Beamable.Server.Editor
 				 }
 
 				 var storageEntries = allStorages.Select(name =>
-			  {
-				  var configEntry = MicroserviceConfiguration.Instance.GetStorageEntry(name);
-				  return new StorageEntryModel
-				  {
-					  Name = name,
-					  Type = configEntry?.StorageType ?? "mongov1",
-					  Enabled = configEntry?.Enabled ?? true,
-					  TemplateId = configEntry?.TemplateId ?? "small",
-				  };
-			  }).ToList();
+				 {
+					 var configEntry = MicroserviceConfiguration.Instance.GetStorageEntry(name);
+					 return new StorageEntryModel
+					 {
+						 Name = name,
+						 Type = configEntry?.StorageType ?? "mongov1",
+						 Enabled = configEntry?.Enabled ?? true,
+						 TemplateId = configEntry?.TemplateId ?? "small",
+					 };
+				 }).ToList();
 
 				 return new ManifestModel
 				 {
@@ -258,13 +258,13 @@ namespace Beamable.Server.Editor
 			foreach (var reference in service.GetStorageReferences())
 			{
 				var key = $"STORAGE_CONNSTR_{reference.Name}";
-				env[key] = await GetConnectionString(reference, service);
+				env[key] = await GetConnectionString(reference);
 			}
 
 			return env;
 		}
 
-		public static async Promise<string> GetConnectionString(StorageObjectDescriptor storage, MicroserviceDescriptor user)
+		public static async Promise<string> GetConnectionString(StorageObjectDescriptor storage)
 		{
 			var storageCheck = new CheckImageReturnableCommand(storage);
 			var isStorageRunning = await storageCheck.Start(null);
@@ -491,6 +491,7 @@ namespace Beamable.Server.Editor
 			var existingServiceToState = existingManifest.manifest.ToDictionary(s => s.serviceName);
 
 			var nameToImageId = new Dictionary<string, string>();
+			var enabledServices = new List<string>();
 
 			foreach (var descriptor in Descriptors)
 			{
@@ -545,6 +546,9 @@ namespace Beamable.Server.Editor
 				var serviceDependencies = new List<ServiceDependency>();
 				foreach (var storage in descriptor.GetStorageReferences())
 				{
+					if (!enabledServices.Contains(storage.Name))
+						enabledServices.Add(storage.Name);
+
 					serviceDependencies.Add(new ServiceDependency
 					{
 						id = storage.Name,
@@ -590,6 +594,7 @@ namespace Beamable.Server.Editor
 
 			var storages = model.Storages.Select(kvp =>
 			{
+				kvp.Value.Enabled &= enabledServices.Contains(kvp.Value.Name);
 				return new ServiceStorageReference
 				{
 					id = kvp.Value.Name,

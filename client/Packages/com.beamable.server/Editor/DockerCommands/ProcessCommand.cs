@@ -289,13 +289,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 			var dockerDesktopPath = MicroserviceConfiguration.Instance.DockerDesktopPath;
 
-			dockerDesktopPath = string.IsNullOrEmpty(dockerDesktopPath)
-				?
-#if UNITY_EDITOR_OSX
-				"/Applications/Docker.app/" : dockerDesktopPath;
-#else
-				"C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe" : dockerDesktopPath;
-#endif
+			
 
 			if (!File.Exists(dockerDesktopPath))
 			{

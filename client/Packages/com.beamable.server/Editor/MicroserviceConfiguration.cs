@@ -44,7 +44,7 @@ namespace Beamable.Server.Editor
       private string _cachedContainerPrefix = null;
 
       [Tooltip("When you build a microservice, any ContentType class will automatically be referenced if this field is set to true. Beamable recommends that you put your ContentTypes into a shared assembly definition instead.")]
-      public bool AutoReferenceContent = true;
+      public bool AutoReferenceContent = false;
 
 	  [Tooltip("When true, Beamable automatically generates a common assembly called Beamable.UserCode.Shared that is auto-referenced by Unity code, and automatically imported by Microservice assembly definitions. ")]
 	  public bool AutoBuildCommonAssembly = true; 
@@ -168,47 +168,87 @@ namespace Beamable.Server.Editor
 					MicroserviceWindow.Instance.RefreshWindow(true);
 				}
 			}
-		}
 
-		public int GetMicroserviceIndex(string serviceName)
-		{
-			return Microservices.FindIndex(m => m.ServiceName == serviceName);
-		}
-
-		public void SetMicroserviceIndex(string serviceName, int newIndex)
-		{
-			if (newIndex < 0 || newIndex >= Microservices.Count)
+			if (string.IsNullOrEmpty(DockerDesktopPath))
 			{
-				throw new IndexOutOfRangeException();
-			}
-
-			var currentIndex = GetMicroserviceIndex(serviceName);
-			if (currentIndex != -1)
-			{
-				var value = Microservices[currentIndex];
-				Microservices.RemoveAt(currentIndex);
-				Microservices.Insert(newIndex, value);
-				EditorUtility.SetDirty(this);
-				AssetDatabase.SaveAssets();
-				AssetDatabase.Refresh();
+#if UNITY_EDITOR_OSX
+				DockerDesktopPath = "/Applications/Docker.app/";
+#else
+				DockerDesktopPath = "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe";
+#endif
 			}
 		}
 
-		public void MoveMicroserviceIndex(string serviceName, int offset)
+		public int GetIndex(string serviceName, ServiceType serviceType)
 		{
-			var newIndex = GetMicroserviceIndex(serviceName) + offset;
-			if (newIndex < 0 || newIndex >= Microservices.Count)
-			{
-				return;
-			}
-			SetMicroserviceIndex(serviceName, newIndex);
+			if (serviceType == ServiceType.StorageObject)
+				return StorageObjects.FindIndex(m => m.StorageName == serviceName);
+			else
+				return Microservices.FindIndex(m => m.ServiceName == serviceName);
 		}
 
-		public int MicroserviceOrderComparer(string a, string b)
+		public void SetIndex(string serviceName, int newIndex, ServiceType serviceType)
 		{
-			var aIdx = GetMicroserviceIndex(a);
+			if (serviceType == ServiceType.MicroService)
+			{
+				if (newIndex < 0 || newIndex >= Microservices.Count)
+					throw new IndexOutOfRangeException();
+
+				var currentIndex = GetIndex(serviceName, serviceType);
+				if (currentIndex != -1)
+				{
+					var value = Microservices[currentIndex];
+					Microservices.RemoveAt(currentIndex);
+					Microservices.Insert(newIndex, value);
+					EditorUtility.SetDirty(this);
+					AssetDatabase.SaveAssets();
+					AssetDatabase.Refresh();
+				}
+			}
+			else
+			{
+				if (newIndex < 0 || newIndex >= StorageObjects.Count)
+					throw new IndexOutOfRangeException();
+
+				var currentIndex = GetIndex(serviceName, serviceType);
+				if (currentIndex != -1)
+				{
+					var value = StorageObjects[currentIndex];
+					StorageObjects.RemoveAt(currentIndex);
+					StorageObjects.Insert(newIndex, value);
+					EditorUtility.SetDirty(this);
+					AssetDatabase.SaveAssets();
+					AssetDatabase.Refresh();
+				}
+			}
+		}
+
+		public void MoveIndex(string serviceName, int offset, ServiceType serviceType)
+		{
+			var newIndex = GetIndex(serviceName, serviceType) + offset;
+
+			switch (serviceType)
+			{
+				case ServiceType.MicroService:
+					if (newIndex < 0 || newIndex >= Microservices.Count)
+						return;
+					break;
+				case ServiceType.StorageObject:
+					if (newIndex < 0 || newIndex >= StorageObjects.Count)
+						return;
+					break;
+				default:
+					return;
+			}
+
+			SetIndex(serviceName, newIndex, serviceType);
+		}
+
+		public int OrderComparer(string a, string b, ServiceType serviceType)
+		{
+			var aIdx = GetIndex(a, serviceType);
 			if (aIdx < 0) aIdx = Int32.MaxValue;
-			var bIdx = GetMicroserviceIndex(b);
+			var bIdx = GetIndex(b, serviceType);
 			if (bIdx < 0) bIdx = Int32.MaxValue;
 			if (aIdx > bIdx) return 1;
 			return -1;
