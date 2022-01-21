@@ -1,36 +1,35 @@
 using Beamable.Common.Content;
+using Beamable.Config;
+using Beamable.Editor;
+using Beamable.Editor.Microservice.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Editor;
-using Beamable.Editor.Microservice.UI;
-using Beamable.Editor.UI.Model;
-using Beamable.Server.Editor.ManagerClient;
 using UnityEditor;
 using UnityEngine;
 
 namespace Beamable.Server.Editor
 {
 
-   public class MicroserviceConfigConstants : IConfigurationConstants
-   {
-      public string GetSourcePath(Type type)
-      {
-         //
-         // TODO: make this work for multiple config types
-         //       but for now, there is just the one...
+	public class MicroserviceConfigConstants : IConfigurationConstants
+	{
+		public string GetSourcePath(Type type)
+		{
+			//
+			// TODO: make this work for multiple config types
+			//       but for now, there is just the one...
 
-         return "Packages/com.beamable.server/Editor/microserviceConfiguration.asset";
+			return "Packages/com.beamable.server/Editor/microserviceConfiguration.asset";
 
-      }
-   }
+		}
+	}
 
-   public class MicroserviceConfiguration : AbsModuleConfigurationObject<MicroserviceConfigConstants>
-   {
+	public class MicroserviceConfiguration : AbsModuleConfigurationObject<MicroserviceConfigConstants>
+	{
 #if UNITY_EDITOR_OSX
       const string DOCKER_LOCATION = "/usr/local/bin/docker";
 #else
-      const string DOCKER_LOCATION = "docker";
+		const string DOCKER_LOCATION = "docker";
 #endif
 
       public static MicroserviceConfiguration Instance => Get<MicroserviceConfiguration>();
@@ -46,6 +45,9 @@ namespace Beamable.Server.Editor
 
       [Tooltip("When you build a microservice, any ContentType class will automatically be referenced if this field is set to true. Beamable recommends that you put your ContentTypes into a shared assembly definition instead.")]
       public bool AutoReferenceContent = true;
+
+	  [Tooltip("When true, Beamable automatically generates a common assembly called Beamable.UserCode.Shared that is auto-referenced by Unity code, and automatically imported by Microservice assembly definitions. ")]
+	  public bool AutoBuildCommonAssembly = true; 
 
       [Tooltip("When you build and run microservices, the logs will be color coded if this field is set to true.")]
       public bool ColorLogs = true;
@@ -68,24 +70,24 @@ namespace Beamable.Server.Editor
          DockerCommand;
 
 #if !BEAMABLE_LEGACY_MSW
-      [Tooltip("Microservice Logs are sent to a dedicated logging window. If you enable this field, then service logs will also be sent to the Unity Console.")]
-      public bool ForwardContainerLogsToUnityConsole;
-      #endif
+		[Tooltip("Microservice Logs are sent to a dedicated logging window. If you enable this field, then service logs will also be sent to the Unity Console.")]
+		public bool ForwardContainerLogsToUnityConsole;
+#endif
 
-      public Color LogProcessLabelColor = Color.grey;
-      public Color LogStandardOutColor = Color.blue;
-      public Color LogStandardErrColor = Color.red;
-      public Color LogDebugLabelColor =  new Color(.25f, .5f, 1);
-      public Color LogInfoLabelColor =  Color.blue;
-      public Color LogErrorLabelColor =  Color.red;
-      public Color LogWarningLabelColor =  new Color(1, .6f, .15f);
-      public Color LogFatalLabelColor =  Color.red;
+		public Color LogProcessLabelColor = Color.grey;
+		public Color LogStandardOutColor = Color.blue;
+		public Color LogStandardErrColor = Color.red;
+		public Color LogDebugLabelColor = new Color(.25f, .5f, 1);
+		public Color LogInfoLabelColor = Color.blue;
+		public Color LogErrorLabelColor = Color.red;
+		public Color LogWarningLabelColor = new Color(1, .6f, .15f);
+		public Color LogFatalLabelColor = Color.red;
 
 
-      #if UNITY_EDITOR
+#if UNITY_EDITOR
       public override void OnFreshCopy()
       {
-         var isDark = UnityEditor.EditorGUIUtility.isProSkin;
+         var isDark = EditorGUIUtility.isProSkin;
 
          if (isDark)
          {
@@ -102,149 +104,160 @@ namespace Beamable.Server.Editor
          _dockerCommandCached = DockerCommand = DOCKER_LOCATION;
          _dockerCheckCached = DockerAppCheckInMicroservicesWindow;
       }
-      #endif
+#endif
 
-      public StorageConfigurationEntry GetStorageEntry(string storageName)
-      {
-         var existing = StorageObjects.FirstOrDefault(s => string.Equals(s.StorageName, storageName));
-         if (existing == null)
-         {
-            existing = new StorageConfigurationEntry
-            {
-               StorageName = storageName,
-               StorageType = "mongov1",
-               Enabled = true,
-               TemplateId = "small",
-               LocalDataPort = 12100 + (uint) StorageObjects.Count,
-               LocalUIPort = 13100 + (uint) StorageObjects.Count
-            };
-            StorageObjects.Add(existing);
-         }
-         return existing;
-      }
+		public StorageConfigurationEntry GetStorageEntry(string storageName)
+		{
+			var existing = StorageObjects.FirstOrDefault(s => string.Equals(s.StorageName, storageName));
+			if (existing == null)
+			{
+				existing = new StorageConfigurationEntry
+				{
+					StorageName = storageName,
+					StorageType = "mongov1",
+					Enabled = true,
+					TemplateId = "small",
+					LocalDataPort = 12100 + (uint)StorageObjects.Count,
+					LocalUIPort = 13100 + (uint)StorageObjects.Count
+				};
+				StorageObjects.Add(existing);
+			}
+			return existing;
+		}
 
-      public MicroserviceConfigurationEntry GetEntry(string serviceName)
-      {
-         var existing = Microservices.FirstOrDefault(s => s.ServiceName == serviceName);
-         if (existing == null)
-         {
-            existing = new MicroserviceConfigurationEntry
-            {
-               ServiceName = serviceName,
-               TemplateId = "small",
-               Enabled = true,
+		public MicroserviceConfigurationEntry GetEntry(string serviceName)
+		{
+			var existing = Microservices.FirstOrDefault(s => s.ServiceName == serviceName);
+			if (existing == null)
+			{
+				existing = new MicroserviceConfigurationEntry
+				{
+					ServiceName = serviceName,
+					TemplateId = "small",
+					Enabled = true,
 
-               DebugData = new MicroserviceConfigurationDebugEntry
-               {
-                  Password = "Password!",
-                  Username = "root",
-                  SshPort = 11100 + Microservices.Count
-               }
-            };
-            Microservices.Add(existing);
-         }
-         return existing;
-      }
+					DebugData = new MicroserviceConfigurationDebugEntry
+					{
+						Password = "Password!",
+						Username = "root",
+						SshPort = 11100 + Microservices.Count
+					}
+				};
+				Microservices.Add(existing);
+			}
+			return existing;
+		}
 
-      private void OnValidate() {
-         if (CustomContainerPrefix != _cachedContainerPrefix) {
-            _cachedContainerPrefix = CustomContainerPrefix;
-            Config.ConfigDatabase.SetString("containerPrefix", _cachedContainerPrefix, true, true);
-            EditorApplication.delayCall += () => // using delayCall to avoid Unity warning about sending messages from OnValidate()
-               EditorAPI.Instance.Then(api => api.SaveConfig(
-                  api.CidOrAlias, api.Pid, api.Host, api.Cid, CustomContainerPrefix));
-         }
+		private void OnValidate()
+		{
+			if (CustomContainerPrefix != _cachedContainerPrefix)
+			{
+				_cachedContainerPrefix = CustomContainerPrefix;
+				ConfigDatabase.SetString("containerPrefix", _cachedContainerPrefix, true, true);
+				EditorApplication.delayCall += () => // using delayCall to avoid Unity warning about sending messages from OnValidate()
+				   EditorAPI.Instance.Then(api => api.SaveConfig(
+					  api.CidOrAlias, api.Pid, api.Host, api.Cid, CustomContainerPrefix));
+			}
 
-         if (_dockerCommandCached != DockerCommand || _dockerCheckCached != DockerAppCheckInMicroservicesWindow) {
-            _dockerCommandCached = DockerCommand;
-            _dockerCheckCached = DockerAppCheckInMicroservicesWindow;
-            if (MicroserviceWindow.IsInstantiated) {
-               MicroserviceWindow.Instance.RefreshWindow(true);
-            }
-         }
-      }
+			if (_dockerCommandCached != DockerCommand || _dockerCheckCached != DockerAppCheckInMicroservicesWindow)
+			{
+				_dockerCommandCached = DockerCommand;
+				_dockerCheckCached = DockerAppCheckInMicroservicesWindow;
+				if (MicroserviceWindow.IsInstantiated)
+				{
+					MicroserviceWindow.Instance.RefreshWindow(true);
+				}
+			}
+		}
 
-      public int GetMicroserviceIndex(string serviceName) {
-         return Microservices.FindIndex(m => m.ServiceName == serviceName);
-      }
+		public int GetMicroserviceIndex(string serviceName)
+		{
+			return Microservices.FindIndex(m => m.ServiceName == serviceName);
+		}
 
-      public void SetMicroserviceIndex(string serviceName, int newIndex) {
-         if (newIndex < 0 || newIndex >= Microservices.Count) {
-            throw new IndexOutOfRangeException();
-         }
+		public void SetMicroserviceIndex(string serviceName, int newIndex)
+		{
+			if (newIndex < 0 || newIndex >= Microservices.Count)
+			{
+				throw new IndexOutOfRangeException();
+			}
 
-         var currentIndex = GetMicroserviceIndex(serviceName);
-         if (currentIndex != -1) {
-            var value = Microservices[currentIndex];
-            Microservices.RemoveAt(currentIndex);
-            Microservices.Insert(newIndex, value);
-            EditorUtility.SetDirty(this);
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-         }
-      }
+			var currentIndex = GetMicroserviceIndex(serviceName);
+			if (currentIndex != -1)
+			{
+				var value = Microservices[currentIndex];
+				Microservices.RemoveAt(currentIndex);
+				Microservices.Insert(newIndex, value);
+				EditorUtility.SetDirty(this);
+				AssetDatabase.SaveAssets();
+				AssetDatabase.Refresh();
+			}
+		}
 
-      public void MoveMicroserviceIndex(string serviceName, int offset) {
-         var newIndex = GetMicroserviceIndex(serviceName) + offset;
-         if (newIndex < 0 || newIndex >= Microservices.Count) {
-            return;
-         }
-         SetMicroserviceIndex(serviceName, newIndex);
-      }
+		public void MoveMicroserviceIndex(string serviceName, int offset)
+		{
+			var newIndex = GetMicroserviceIndex(serviceName) + offset;
+			if (newIndex < 0 || newIndex >= Microservices.Count)
+			{
+				return;
+			}
+			SetMicroserviceIndex(serviceName, newIndex);
+		}
 
-      public int MicroserviceOrderComparer(string a, string b) {
-         var aIdx = GetMicroserviceIndex(a);
-         if(aIdx < 0) aIdx = Int32.MaxValue;
-         var bIdx = GetMicroserviceIndex(b);
-         if(bIdx < 0) bIdx = Int32.MaxValue;
-         if (aIdx > bIdx) return 1;
-         return -1;
-      }
-   }
+		public int MicroserviceOrderComparer(string a, string b)
+		{
+			var aIdx = GetMicroserviceIndex(a);
+			if (aIdx < 0) aIdx = Int32.MaxValue;
+			var bIdx = GetMicroserviceIndex(b);
+			if (bIdx < 0) bIdx = Int32.MaxValue;
+			if (aIdx > bIdx) return 1;
+			return -1;
+		}
+	}
 
-   [System.Serializable]
-   public class StorageConfigurationEntry
-   {
-      public string StorageName;
-      public string StorageType;
-      public bool Enabled;
-      public string TemplateId;
+	[Serializable]
+	public class StorageConfigurationEntry
+	{
+		public string StorageName;
+		public string StorageType;
+		public bool Enabled;
+		public string TemplateId;
 
-      [Tooltip("When running locally, what port will the data be available on?")]
-      public uint LocalDataPort;
+		[Tooltip("When running locally, what port will the data be available on?")]
+		public uint LocalDataPort;
 
-      [Tooltip("When running locally, what port will the data tool be available on?")]
-      public uint LocalUIPort;
+		[Tooltip("When running locally, what port will the data tool be available on?")]
+		public uint LocalUIPort;
 
-      [Tooltip("When running locally, The MONGO_INITDB_ROOT_USERNAME env var for Mongo")]
-      public string LocalInitUser = "beamable";
-      [Tooltip("When running locally, The MONGO_INITDB_ROOT_PASSWORD env var for Mongo")]
-      public string LocalInitPass = "beamable";
-   }
+		[Tooltip("When running locally, The MONGO_INITDB_ROOT_USERNAME env var for Mongo")]
+		public string LocalInitUser = "beamable";
+		[Tooltip("When running locally, The MONGO_INITDB_ROOT_PASSWORD env var for Mongo")]
+		public string LocalInitPass = "beamable";
+	}
 
-   [System.Serializable]
-   public class MicroserviceConfigurationEntry
-   {
-      public string ServiceName;
-      [Tooltip("If the service should be running on the cloud, in the current realm.")]
-      public bool Enabled;
-      public string TemplateId;
+	[Serializable]
+	public class MicroserviceConfigurationEntry
+	{
+		public string ServiceName;
+		[Tooltip("If the service should be running on the cloud, in the current realm.")]
+		public bool Enabled;
+		public string TemplateId;
 
-      [Tooltip("When the container is built, inject the following string into the built docker file.")]
-      public string CustomDockerFileStrings;
+		[Tooltip("When the container is built, inject the following string into the built docker file.")]
+		public string CustomDockerFileStrings;
 
-      [Tooltip("When building locally, should the service be build with debugging tools? If false, you cannot attach breakpoints.")]
-      public bool IncludeDebugTools;
+		[Tooltip("When building locally, should the service be build with debugging tools? If false, you cannot attach breakpoints.")]
+		public bool IncludeDebugTools;
 
-      public MicroserviceConfigurationDebugEntry DebugData;
-   }
+		public MicroserviceConfigurationDebugEntry DebugData;
+	}
 
-   [System.Serializable]
-   public class MicroserviceConfigurationDebugEntry
-   {
-      public string Username = "beamable";
-      [Tooltip("The SSH password to use to connect a debugger. This is only supported for local development. SSH is completely disabled on cloud services.")]
-      public string Password = "beamable";
-      public int SshPort = -1;
-   }
+	[Serializable]
+	public class MicroserviceConfigurationDebugEntry
+	{
+		public string Username = "beamable";
+		[Tooltip("The SSH password to use to connect a debugger. This is only supported for local development. SSH is completely disabled on cloud services.")]
+		public string Password = "beamable";
+		public int SshPort = -1;
+	}
 }
