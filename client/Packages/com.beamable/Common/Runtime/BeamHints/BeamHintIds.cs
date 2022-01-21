@@ -37,7 +37,7 @@ namespace Beamable.Common.Assistant
 		public static string GenerateHintId(string id, string prefix = null)
 		{
 			Assert(!id.Contains(BeamHintDomains.SUB_DOMAIN_SEPARATOR) &&
-			       !id.Contains(BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR),
+				   !id.Contains(BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR),
 				$"Failed to generate hint id {id}! The Id cannot contain {BeamHintDomains.SUB_DOMAIN_SEPARATOR} or {BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR}");
 
 			return prefix != null ? $"{prefix}-{id}" : id;
@@ -50,18 +50,18 @@ namespace Beamable.Common.Assistant
 		public static string AppendHintIdParams(string id, string separator = "_", params object[] appendedParams)
 		{
 			Assert(!id.Contains(BeamHintDomains.SUB_DOMAIN_SEPARATOR) &&
-			       !id.Contains(BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR),
-			       $"Failed to generate hint id with id={id}! The Id cannot contain {BeamHintDomains.SUB_DOMAIN_SEPARATOR} or {BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR}");
-			
+				   !id.Contains(BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR),
+				   $"Failed to generate hint id with id={id}! The Id cannot contain {BeamHintDomains.SUB_DOMAIN_SEPARATOR} or {BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR}");
+
 			Assert(!separator.Contains(BeamHintDomains.SUB_DOMAIN_SEPARATOR) &&
-			       !separator.Contains(BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR),
-			       $"Failed to generate hint id with id={id} and separator={separator}! The separator cannot contain {BeamHintDomains.SUB_DOMAIN_SEPARATOR} or {BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR}");
-			
+				   !separator.Contains(BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR),
+				   $"Failed to generate hint id with id={id} and separator={separator}! The separator cannot contain {BeamHintDomains.SUB_DOMAIN_SEPARATOR} or {BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR}");
+
 			foreach (var param in appendedParams)
 			{
 				Assert(!param.ToString().Contains(BeamHintDomains.SUB_DOMAIN_SEPARATOR) &&
-				       !param.ToString().Contains(BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR),
-				       $"Failed to generate hint id with id={id}, separator={separator} and param={param}! The param cannot contain {BeamHintDomains.SUB_DOMAIN_SEPARATOR} or {BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR}");
+					   !param.ToString().Contains(BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR),
+					   $"Failed to generate hint id with id={id}, separator={separator} and param={param}! The param cannot contain {BeamHintDomains.SUB_DOMAIN_SEPARATOR} or {BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR}");
 			}
 
 			var idBuilder = new StringBuilder($"{id}");
@@ -77,23 +77,27 @@ namespace Beamable.Common.Assistant
 		/// Prefix added to all hints whose context objects are known to be lists of <see cref="Reflection.AttributeValidationResult"/>.
 		/// </summary>
 		public const string ATTRIBUTE_VALIDATION_ID_PREFIX = "AttributeValidation";
-		
+
 		/// <summary>
 		/// Prefix added to all hints whose context objects are known to be lists of <see cref="Reflection.UniqueNameCollisionData"/>.
 		/// </summary>
 		public const string ATTRIBUTE_NAME_COLLISION_ID_PREFIX = "AttributeNameCollision";
 
+
+		// Beamable Initialization IDs
+		[BeamHintId] public static readonly string ID_UNSUPPORTED_REGISTER_BEAMABLE_DEPENDENCY_SIGNATURE = GenerateHintId("UnsupportedRegisterBeamableDependencySignature", ATTRIBUTE_VALIDATION_ID_PREFIX);
+
 		// Beamable Assistant IDs
 		[BeamHintId] public static readonly string ID_MISCONFIGURED_HINT_DETAILS_PROVIDER = GenerateHintId("MisconfiguredHintDetailsProvider", ATTRIBUTE_VALIDATION_ID_PREFIX);
 		[BeamHintId] public static readonly string ID_MISCONFIGURED_HINT_SYSTEM_ATTRIBUTE = GenerateHintId("MisconfiguredHintSystemAttribute", ATTRIBUTE_VALIDATION_ID_PREFIX);
-		
+
 		// Microservices IDs
 		[BeamHintId] public static readonly string ID_MICROSERVICE_ATTRIBUTE_MISSING = GenerateHintId("MicroserviceAttributeMissing", ATTRIBUTE_VALIDATION_ID_PREFIX);
 		[BeamHintId] public static readonly string ID_MICROSERVICE_NAME_COLLISION = GenerateHintId("MicroserviceNameCollision", ATTRIBUTE_NAME_COLLISION_ID_PREFIX);
 		[BeamHintId] public static readonly string ID_CLIENT_CALLABLE_ASYNC_VOID = GenerateHintId("ClientCallableAsyncVoid", ATTRIBUTE_VALIDATION_ID_PREFIX);
 		[BeamHintId] public static readonly string ID_CLIENT_CALLABLE_UNSUPPORTED_PARAMETERS = GenerateHintId("ClientCallableUnsupportedParameters", ATTRIBUTE_VALIDATION_ID_PREFIX);
 
-			
-		
+
+
 	}
 }
