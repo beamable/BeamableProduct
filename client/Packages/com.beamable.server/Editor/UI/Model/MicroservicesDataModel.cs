@@ -99,37 +99,37 @@ namespace Beamable.Editor.UI.Model
 			{
 				b.GetMicroserviceManager().GetStatus().Then(status =>
 			 {
-				   Status = status;
-				   foreach (var serviceStatus in status.services)
-				   {
-					   GetModel<MicroserviceModel>(serviceStatus.serviceName)?.EnrichWithStatus(serviceStatus);
-				   }
-				   OnStatusUpdated?.Invoke(status);
-			   });
+				 Status = status;
+				 foreach (var serviceStatus in status.services)
+				 {
+					 GetModel<MicroserviceModel>(serviceStatus.serviceName)?.EnrichWithStatus(serviceStatus);
+				 }
+				 OnStatusUpdated?.Invoke(status);
+			 });
 				b.GetMicroserviceManager().GetCurrentManifest().Then(manifest =>
 			 {
-				   ServerManifest = manifest;
-				   foreach (var service in Services)
-				   {
-					   var remoteService = manifest.manifest.FirstOrDefault(remote => string.Equals(remote.serviceName, service.Name));
-					   service.EnrichWithRemoteReference(remoteService);
-				   }
+				 ServerManifest = manifest;
+				 foreach (var service in Services)
+				 {
+					 var remoteService = manifest.manifest.FirstOrDefault(remote => string.Equals(remote.serviceName, service.Name));
+					 service.EnrichWithRemoteReference(remoteService);
+				 }
 
-				   foreach (var singleManifest in ServerManifest.manifest)
-				   {
-					   if (ContainsRemoteOnlyModel(singleManifest.serviceName))
-						   continue;
+				 foreach (var singleManifest in ServerManifest.manifest)
+				 {
+					 if (ContainsRemoteOnlyModel(singleManifest.serviceName))
+						 continue;
 
-					   var descriptor = new MicroserviceDescriptor
-					   {
-						   Name = singleManifest.serviceName
-					   };
+					 var descriptor = new MicroserviceDescriptor
+					 {
+						 Name = singleManifest.serviceName
+					 };
 
-					   AllRemoteOnlyServices.Add(RemoteMicroserviceModel.CreateNew(descriptor, this));
-				   }
+					 AllRemoteOnlyServices.Add(RemoteMicroserviceModel.CreateNew(descriptor, this));
+				 }
 
-				   OnServerManifestUpdated?.Invoke(manifest);
-			   });
+				 OnServerManifestUpdated?.Invoke(manifest);
+			 });
 			});
 		}
 
