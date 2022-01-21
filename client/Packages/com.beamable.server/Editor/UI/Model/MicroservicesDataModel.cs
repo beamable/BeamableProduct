@@ -81,8 +81,8 @@ namespace Beamable.Editor.UI.Model
 				IBeamableService newService;
 				if (descriptor.ServiceType == ServiceType.StorageObject)
 				{
-                    newService = MongoStorageModel.CreateNew(descriptor as StorageObjectDescriptor, this);
-                }
+					newService = MongoStorageModel.CreateNew(descriptor as StorageObjectDescriptor, this);
+				}
 				else
 				{
 					newService = MicroserviceModel.CreateNew(descriptor as MicroserviceDescriptor, this);
@@ -115,13 +115,13 @@ namespace Beamable.Editor.UI.Model
 					 service.EnrichWithRemoteReference(remoteService);
 				 }
 
-                 foreach (var storage in Storages)
-                 {
-                     var remoteStorage = manifest.storageReference.FirstOrDefault(remote => string.Equals(remote.id, storage.Name));
-                     storage.EnrichWithRemoteReference(remoteStorage);
-                 }
+				 foreach (var storage in Storages)
+				 {
+					 var remoteStorage = manifest.storageReference.FirstOrDefault(remote => string.Equals(remote.id, storage.Name));
+					 storage.EnrichWithRemoteReference(remoteStorage);
+				 }
 
-                 foreach (var singleManifest in ServerManifest.manifest)
+				 foreach (var singleManifest in ServerManifest.manifest)
 				 {
 					 if (ContainsRemoteOnlyModel(singleManifest.serviceName))
 						 continue;
@@ -134,20 +134,20 @@ namespace Beamable.Editor.UI.Model
 					 AllRemoteOnlyServices.Add(RemoteMicroserviceModel.CreateNew(descriptor, this));
 				 }
 
-                 foreach (var singleStorageManifest in ServerManifest.storageReference)
-                 {
-                     if (ContainsRemoteOnlyModel(singleStorageManifest.id))
-                         continue;
+				 foreach (var singleStorageManifest in ServerManifest.storageReference)
+				 {
+					 if (ContainsRemoteOnlyModel(singleStorageManifest.id))
+						 continue;
 
-                     var descriptor = new StorageObjectDescriptor
-                     {
-                         Name = singleStorageManifest.id
-                     };
+					 var descriptor = new StorageObjectDescriptor
+					 {
+						 Name = singleStorageManifest.id
+					 };
 
-                     AllRemoteOnlyServices.Add(RemoteMongoStorageModel.CreateNew(descriptor, this));
-                 }
+					 AllRemoteOnlyServices.Add(RemoteMongoStorageModel.CreateNew(descriptor, this));
+				 }
 
-                 OnServerManifestUpdated?.Invoke(manifest);
+				 OnServerManifestUpdated?.Invoke(manifest);
 			 });
 			});
 		}
@@ -187,10 +187,10 @@ namespace Beamable.Editor.UI.Model
 
 			foreach (var storage in MicroserviceConfiguration.Instance.StorageObjects)
 			{
-                var name = storage.StorageName;
-                if (!result.ContainsKey(name))
-                    result.Add(name, getServiceStatus(ContainsModel(name), storage.Enabled));
-            }
+				var name = storage.StorageName;
+				if (!result.ContainsKey(name))
+					result.Add(name, getServiceStatus(ContainsModel(name), storage.Enabled));
+			}
 
 			return result;
 		}
@@ -200,12 +200,12 @@ namespace Beamable.Editor.UI.Model
 			return ServerManifest?.manifest?.FirstOrDefault(r => r.serviceName.Equals(descriptor.Name));
 		}
 
-        public ServiceStorageReference GetStorageReference(StorageObjectDescriptor descriptor)
-        {
-            return ServerManifest?.storageReference?.FirstOrDefault(r => r.id.Equals(descriptor.Name));
-        }
+		public ServiceStorageReference GetStorageReference(StorageObjectDescriptor descriptor)
+		{
+			return ServerManifest?.storageReference?.FirstOrDefault(r => r.id.Equals(descriptor.Name));
+		}
 
-        public ServiceType GetModelServiceType(string name)
+		public ServiceType GetModelServiceType(string name)
 		{
 			var allServices = new List<IBeamableService>();
 			allServices.AddRange(AllLocalServices);
