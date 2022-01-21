@@ -29,14 +29,14 @@ namespace Beamable.Editor.UI.Components
 			get;
 			protected set;
 		}
-		
+
 		private IndentedLabelVisualElement SelectedLabel
 		{
 			get => _selectedLabel;
 			set
 			{
 				_selectedLabel = value;
-				
+
 				if (_selectedLabel == null)
 				{
 					return;
@@ -89,11 +89,11 @@ namespace Beamable.Editor.UI.Components
 
 			if (indentedLabelVisualElement != null)
 			{
-				SelectedComponent = indentedLabelVisualElement.RelatedGameObject.GetComponent<T>(); 
+				SelectedComponent = indentedLabelVisualElement.RelatedGameObject.GetComponent<T>();
 				ChangeSelectedLabel(indentedLabelVisualElement, false);
 			}
 		}
-		
+
 		protected abstract void OnObjectRegistered(T registeredObject);
 
 		protected virtual string GetLabel(T component)
@@ -111,11 +111,11 @@ namespace Beamable.Editor.UI.Components
 			SelectedLabel?.Deselect();
 			SelectedLabel = newLabel;
 			SelectedLabel?.Select();
-			
+
 			if (!setInHierarchy) return;
-			
+
 			Selection.SetActiveObjectWithContext(SelectedLabel?.RelatedGameObject,
-			                                     SelectedLabel?.RelatedGameObject);
+												 SelectedLabel?.RelatedGameObject);
 		}
 
 		protected virtual void OnHierarchyChanged()
@@ -136,7 +136,7 @@ namespace Beamable.Editor.UI.Components
 					Traverse(gameObject, 0);
 				}
 			}
-			
+
 			HierarchyChanged?.Invoke();
 		}
 
@@ -153,11 +153,11 @@ namespace Beamable.Editor.UI.Components
 			{
 				IndentedLabelVisualElement label = new IndentedLabelVisualElement();
 				label.Setup(foundComponent.gameObject, GetLabel(foundComponent), OnMouseClicked,
-				            currentLevel, IndentedLabelVisualElement.DEFAULT_SINGLE_INDENT_WIDTH);
+							currentLevel, IndentedLabelVisualElement.DEFAULT_SINGLE_INDENT_WIDTH);
 				label.Init();
 				_spawnedLabels.Add(label);
 				_hierarchyContainer.Add(label);
-				
+
 				OnObjectRegistered(foundComponent);
 
 				foreach (Transform child in gameObject.transform)

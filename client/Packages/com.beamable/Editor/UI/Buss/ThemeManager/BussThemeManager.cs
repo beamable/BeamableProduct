@@ -1,11 +1,11 @@
-using System;
 using Beamable.Editor;
 using Beamable.Editor.Common;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
+using Beamable.Editor.UI.BUSS.ThemeManager;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
-using Beamable.Editor.UI.BUSS.ThemeManager;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -162,7 +162,7 @@ namespace Beamable.UI.BUSS
 			var rulesToDraw = _navigationWindow.StyleSheets.SelectMany(ss => ss.Styles).ToArray();
 
 			var cardsToRemove = _styleCardsVisualElements.Where(card => !rulesToDraw.Contains(card.StyleRule))
-			                                             .ToArray();
+														 .ToArray();
 
 			foreach (BussStyleCardVisualElement card in cardsToRemove)
 			{
@@ -194,7 +194,7 @@ namespace Beamable.UI.BUSS
 
 		private void AddSelectorButton()
 		{
-			_addStyleButton = new VisualElement {name = "addStyleButton"};
+			_addStyleButton = new VisualElement { name = "addStyleButton" };
 			_addStyleButton.AddToClassList("button");
 			_addStyleButton.Add(new Label("Add Style"));
 			_addStyleButton.UnregisterCallback<MouseDownEvent>(_ => OpenAddSelectorWindow());
@@ -215,7 +215,7 @@ namespace Beamable.UI.BUSS
 			{
 				_addStyleButton.tooltip = string.Empty;
 				List<BussStyleSheet> styleSheets =
-					Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[] {"Assets"});
+					Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[] { "Assets" });
 				if (styleSheets.Count == 0)
 				{
 					_addStyleButton.tooltip = "There should be created at least one BUSS Style Config!";

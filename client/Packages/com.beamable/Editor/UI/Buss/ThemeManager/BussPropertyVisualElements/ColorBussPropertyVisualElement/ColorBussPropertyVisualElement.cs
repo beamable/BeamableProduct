@@ -13,13 +13,13 @@ namespace Beamable.Editor.UI.Components
 	public class ColorBussPropertyVisualElement : BussPropertyVisualElement<SingleColorBussProperty>
 	{
 		private ColorField _field;
-		
+
 		public ColorBussPropertyVisualElement(SingleColorBussProperty property) : base(property) { }
 
 		public override void Init()
 		{
 			base.Init();
-			
+
 			_field = new ColorField();
 			AddBussPropertyFieldClass(_field);
 			_field.value = Property.Color;

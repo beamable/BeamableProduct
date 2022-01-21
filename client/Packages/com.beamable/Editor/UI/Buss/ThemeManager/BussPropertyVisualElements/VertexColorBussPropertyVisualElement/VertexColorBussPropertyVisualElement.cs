@@ -26,7 +26,7 @@ namespace Beamable.Editor.UI.Components
 		public override void Init()
 		{
 			base.Init();
-			
+
 			_topRow = CreateRowContainer();
 			_bottomRow = CreateRowContainer();
 
@@ -35,7 +35,7 @@ namespace Beamable.Editor.UI.Components
 
 			_topLeftColor = CreateColorField(_topRow);
 			_topRightColor = CreateColorField(_topRow);
-			
+
 			OnPropertyChangedExternally();
 		}
 

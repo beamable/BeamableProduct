@@ -1,7 +1,7 @@
-﻿using System;
+﻿using Beamable.UI.Buss;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.UI.Buss;
 
 namespace Beamable.Editor.UI.BUSS.ThemeManager
 {
@@ -25,16 +25,16 @@ namespace Beamable.Editor.UI.BUSS.ThemeManager
 		{
 			return _variables.Keys;
 		}
-		
+
 		public void AddStyleSheet(BussStyleSheet sheet)
 		{
 			if (sheet == null) return;
-			
+
 			if (_styleSheets.Contains(sheet))
 			{
 				RemoveStyleSheet(sheet);
 			}
-			
+
 			foreach (BussStyleRule rule in sheet.Styles)
 			{
 				foreach (BussPropertyProvider propertyProvider in rule.Properties)
@@ -51,7 +51,7 @@ namespace Beamable.Editor.UI.BUSS.ThemeManager
 					}
 				}
 			}
-			
+
 			_styleSheets.Add(sheet);
 		}
 
@@ -62,7 +62,7 @@ namespace Beamable.Editor.UI.BUSS.ThemeManager
 				variableData.Declarations.RemoveAll(pr => pr.styleSheet == sheet);
 				variableData.Usages.RemoveAll(pr => pr.styleSheet == sheet);
 			}
-			
+
 			_styleSheets.Remove(sheet);
 		}
 
@@ -94,7 +94,7 @@ namespace Beamable.Editor.UI.BUSS.ThemeManager
 			public readonly string Name;
 			public List<PropertyReference> Declarations = new List<PropertyReference>();
 			public List<PropertyReference> Usages = new List<PropertyReference>();
-			
+
 			public VariableData(string name)
 			{
 				Name = name;

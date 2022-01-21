@@ -10,8 +10,8 @@ namespace Beamable.Editor.Common
 	public class UndoSystem<T>
 	{
 		private static readonly List<UndoRecord> _records = new List<UndoRecord>();
-		
-		public static void AddRecord(T objectToRecord, string key, int maxUndoHistorySize = 10) 
+
+		public static void AddRecord(T objectToRecord, string key, int maxUndoHistorySize = 10)
 		{
 			if (IsKeyRecorded(key))
 				return;
@@ -19,23 +19,23 @@ namespace Beamable.Editor.Common
 			var entry = new UndoRecord(objectToRecord, key, maxUndoHistorySize);
 			_records.Add(entry);
 		}
-		
+
 		public static void DeleteRecord(string key)
 		{
 			if (_records.Count == 0)
 				return;
-			
+
 			var record = _records.FirstOrDefault(x => x.Key == key);
 			if (record == null)
 				return;
-			
+
 			DeleteRecord(record);
 		}
 		public static void DeleteAllRecords()
 		{
 			if (_records.Count == 0)
 				return;
-			
+
 			foreach (var record in _records.ToList())
 				DeleteRecord(record);
 			_records.Clear();
@@ -50,11 +50,11 @@ namespace Beamable.Editor.Common
 		{
 			if (_records.Count == 0)
 				return;
-			
+
 			foreach (var record in _records.ToList())
 				record.Compare();
 		}
-		
+
 		private static void DeleteRecord(UndoRecord record) => _records.Remove(record);
 		private static bool IsKeyRecorded(string key) => _records.Any(x => x.Key == key);
 
@@ -79,7 +79,7 @@ namespace Beamable.Editor.Common
 			{
 				var currentJson = EditorJsonUtility.ToJson(_current);
 				var areEquals = currentJson == _previous;
-			
+
 				if (areEquals)
 					return;
 
@@ -90,12 +90,12 @@ namespace Beamable.Editor.Common
 			{
 				if (_history.Count == 0)
 					return;
-				
+
 				_previous = _history.Pop();
 				EditorJsonUtility.FromJsonOverwrite(_previous, _current);
 			}
 		}
-		
+
 		[Serializable]
 		private class CustomStack<T1>
 		{

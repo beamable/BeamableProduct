@@ -17,13 +17,13 @@ namespace Beamable.Editor.UI.Components
 		public ColorPickerVisualElement() : base(
 			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(ColorPickerVisualElement)}/{nameof(ColorPickerVisualElement)}")
 		{ }
-		
+
 		public Color SelectedColor { get; private set; }
 
 		public override void Refresh()
 		{
 			base.Refresh();
-			
+
 			VisualElement main = Root.Q<VisualElement>("mainVisualElement");
 
 			ColorField colorField = new ColorField();

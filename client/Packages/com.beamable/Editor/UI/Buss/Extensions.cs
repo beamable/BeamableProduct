@@ -11,7 +11,7 @@ namespace Beamable.Editor.UI.Buss
 				return false;
 
 			if (baseType.IsGenericType
-			    && baseType.GetGenericTypeDefinition() == baseClass)
+				&& baseType.GetGenericTypeDefinition() == baseClass)
 				return true;
 
 			return baseType.IsInheritedFrom(baseClass);

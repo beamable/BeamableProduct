@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Beamable.Editor.UI.Components;
+using Beamable.UI.Buss;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Editor.UI.Components;
-using Beamable.UI.Buss;
 
 namespace Beamable.Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements
 {
@@ -52,30 +52,30 @@ namespace Beamable.Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements
 		private static HashSet<string> _visitedVariables = new HashSet<string>();
 
 		public static BussPropertyVisualElement GetVisualElement(this BussPropertyProvider propertyProvider,
-		                                                         VariableDatabase variableDatabase,
-		                                                         BussStyleRule context,
-		                                                         Type baseType = null)
+																 VariableDatabase variableDatabase,
+																 BussStyleRule context,
+																 Type baseType = null)
 		{
 			return propertyProvider.GetProperty().GetEndProperty(variableDatabase, context, baseType)?.GetVisualElement() ??
-			       new NoValidVariableBussPropertyVisualElement(propertyProvider.GetProperty());
+				   new NoValidVariableBussPropertyVisualElement(propertyProvider.GetProperty());
 		}
-		
+
 		public static BussPropertyVisualElement GetVisualElement(this BussPropertyProvider propertyProvider,
-		                                                         VariableDatabase variableDatabase,
-		                                                         Type baseType = null)
+																 VariableDatabase variableDatabase,
+																 Type baseType = null)
 		{
 			return propertyProvider.GetProperty().GetEndProperty(variableDatabase, baseType)?.GetVisualElement() ??
-			       new NoValidVariableBussPropertyVisualElement(propertyProvider.GetProperty());
+				   new NoValidVariableBussPropertyVisualElement(propertyProvider.GetProperty());
 		}
 
 		public static IBussProperty GetEndProperty(this IBussProperty property,
-		                                           VariableDatabase variableDatabase,
-		                                           BussStyleRule context,
-		                                           Type baseType = null)
+												   VariableDatabase variableDatabase,
+												   BussStyleRule context,
+												   Type baseType = null)
 		{
-			if (property is VariableProperty variableProperty && 
-			    context != null &&
-			    BussStyleSheetUtility.IsValidVariableName(variableProperty.VariableName))
+			if (property is VariableProperty variableProperty &&
+				context != null &&
+				BussStyleSheetUtility.IsValidVariableName(variableProperty.VariableName))
 			{
 				var propertyInContext = context.Properties.FirstOrDefault(p => p.Key == variableProperty.VariableName);
 				if (propertyInContext != null)
@@ -88,8 +88,8 @@ namespace Beamable.Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements
 		}
 
 		public static IBussProperty GetEndProperty(this IBussProperty property,
-		                                           VariableDatabase variableDatabase,
-		                                           Type baseType = null)
+												   VariableDatabase variableDatabase,
+												   Type baseType = null)
 		{
 			if (baseType == null)
 			{
@@ -97,7 +97,7 @@ namespace Beamable.Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements
 			}
 
 			if (property is VariableProperty variableProperty &&
-			    !_visitedVariables.Contains(variableProperty.VariableName))
+				!_visitedVariables.Contains(variableProperty.VariableName))
 			{
 				if (BussStyleSheetUtility.IsValidVariableName(variableProperty.VariableName))
 				{
@@ -111,8 +111,8 @@ namespace Beamable.Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements
 							{
 								_visitedVariables.Clear();
 								var endProperty = reference
-								                  .propertyProvider.GetProperty()
-								                  .GetEndProperty(variableDatabase, baseType);
+												  .propertyProvider.GetProperty()
+												  .GetEndProperty(variableDatabase, baseType);
 								if (baseType.IsInstanceOfType(endProperty))
 								{
 									return endProperty;

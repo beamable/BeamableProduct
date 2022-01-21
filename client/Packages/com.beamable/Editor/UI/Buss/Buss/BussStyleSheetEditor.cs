@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Beamable.Editor.UI.Buss
 {
-	[CustomEditor(typeof(BussStyleSheet))]	
+	[CustomEditor(typeof(BussStyleSheet))]
 	public class BussStyleSheetEditor : UnityEditor.Editor
 	{
 		public override void OnInspectorGUI()

@@ -40,10 +40,10 @@ namespace Beamable.Editor.UI.Components
 #endif
 
 		public void Setup(GameObject relatedGameObject,
-		                  string label,
-		                  Action<IndentedLabelVisualElement> onMouseClicked,
-		                  int level,
-		                  float width)
+						  string label,
+						  Action<IndentedLabelVisualElement> onMouseClicked,
+						  int level,
+						  float width)
 		{
 			_onMouseClicked = onMouseClicked;
 
@@ -59,7 +59,7 @@ namespace Beamable.Editor.UI.Components
 
 			_container = new VisualElement();
 			_container.name = "indentedLabelContainer";
-			
+
 			_labelComponent = new TextElement();
 			_labelComponent.name = "indentedLabel";
 			_labelComponent.text = _label;
@@ -71,7 +71,7 @@ namespace Beamable.Editor.UI.Components
 #elif UNITY_2019_1_OR_NEWER
 			_labelComponent.style.paddingLeft = new StyleLength(width);
 #endif
-			
+
 			_container.Add(_labelComponent);
 
 			Root.Add(_container);

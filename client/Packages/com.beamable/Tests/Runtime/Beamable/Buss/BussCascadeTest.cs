@@ -14,7 +14,7 @@ namespace Beamable.Tests.Buss
 		private GameObject _root;
 		private BussStyleSheet styleSheetA, styleSheetB;
 		private Dictionary<string, BussElement> _bussElements = new Dictionary<string, BussElement>();
-		
+
 		/*
 		 * Hierarchy:
 		 *	A
@@ -36,33 +36,33 @@ namespace Beamable.Tests.Buss
 			styleSheetA = BussStyleSheet.CreateInstance<BussStyleSheet>();
 			styleSheetA.Styles.Add(BussStyleRule.Create("#A", new BussPropertyProvider[]
 			{
-				BussPropertyProvider.Create(BussStyle.Threshold.Key, new FloatBussProperty(10f)), 
+				BussPropertyProvider.Create(BussStyle.Threshold.Key, new FloatBussProperty(10f)),
 			}.ToList()));
 			styleSheetA.Styles.Add(BussStyleRule.Create("#A > *", new BussPropertyProvider[]
 			{
-				BussPropertyProvider.Create(BussStyle.Threshold.Key, new FloatBussProperty(15f)), 
+				BussPropertyProvider.Create(BussStyle.Threshold.Key, new FloatBussProperty(15f)),
 			}.ToList()));
 			styleSheetA.Styles.Add(BussStyleRule.Create("#A > .class1", new BussPropertyProvider[]
 			{
-				BussPropertyProvider.Create(BussStyle.Threshold.Key, new FloatBussProperty(20f)), 
+				BussPropertyProvider.Create(BussStyle.Threshold.Key, new FloatBussProperty(20f)),
 			}.ToList()));
-			
+
 			styleSheetB = BussStyleSheet.CreateInstance<BussStyleSheet>();
 			styleSheetB.Styles.Add(BussStyleRule.Create("*", new BussPropertyProvider[]
 			{
-				BussPropertyProvider.Create(BussStyle.BorderWidth.Key, new FloatBussProperty(44f)), 
+				BussPropertyProvider.Create(BussStyle.BorderWidth.Key, new FloatBussProperty(44f)),
 			}.ToList()));
 			styleSheetB.Styles.Add(BussStyleRule.Create("#B", new BussPropertyProvider[]
 			{
-				BussPropertyProvider.Create(BussStyle.Threshold.Key, new FloatBussProperty(15f)), 
+				BussPropertyProvider.Create(BussStyle.Threshold.Key, new FloatBussProperty(15f)),
 			}.ToList()));
 			styleSheetB.Styles.Add(BussStyleRule.Create("#B *", new BussPropertyProvider[]
 			{
-				BussPropertyProvider.Create(BussStyle.Threshold.Key, new FloatBussProperty(20f)), 
+				BussPropertyProvider.Create(BussStyle.Threshold.Key, new FloatBussProperty(20f)),
 			}.ToList()));
 			styleSheetB.Styles.Add(BussStyleRule.Create("#B, #B_B_B", new BussPropertyProvider[]
 			{
-				BussPropertyProvider.Create(BussStyle.BorderWidth.Key, new FloatBussProperty(66f)), 
+				BussPropertyProvider.Create(BussStyle.BorderWidth.Key, new FloatBussProperty(66f)),
 			}.ToList()));
 		}
 

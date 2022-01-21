@@ -1,6 +1,6 @@
-﻿using Beamable.UI.Buss;
+﻿using Beamable.Editor.UI.Buss;
+using Beamable.UI.Buss;
 using System.Collections.Generic;
-using Beamable.Editor.UI.Buss;
 using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -34,8 +34,8 @@ namespace Beamable.Editor.UI.Components
 		protected override void OnObjectRegistered(BussElement registeredObject)
 		{
 			BussStyleSheet styleSheet = registeredObject.StyleSheet;
-			
-			if(styleSheet == null) return;
+
+			if (styleSheet == null) return;
 
 			if (!StyleSheets.Contains(styleSheet))
 			{

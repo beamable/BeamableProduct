@@ -21,7 +21,7 @@ namespace Beamable.Editor.UI.Buss
 		private LabeledTextField _selectorName;
 		private PrimaryButtonVisualElement _confirmButton;
 		private ScrollView _rulesContainer;
-		
+
 		private readonly Dictionary<string, LabeledCheckboxVisualElement> _rules = new Dictionary<string, LabeledCheckboxVisualElement>();
 		private BussStyleSheet _currentSelectedStyleSheet;
 
@@ -40,17 +40,17 @@ namespace Beamable.Editor.UI.Buss
 			_selectorName = Root.Q<LabeledTextField>("styleName");
 			_selectorName.Setup("Style name", string.Empty, OnValidate);
 			_selectorName.Refresh();
-			
+
 			_rulesContainer = Root.Q<ScrollView>("propertiesContainer");
 
 			_confirmButton = Root.Q<PrimaryButtonVisualElement>("confirmButton");
 			_confirmButton.Button.clickable.clicked += HandleConfirmButton;
 			_confirmButton.Disable();
-			
+
 			var cancelButton = Root.Q<GenericButtonVisualElement>("cancelButton");
 			cancelButton.OnClick += AddStyleWindow.CloseWindow;
-			
-			var styleSheets = Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[] {"Assets"});
+
+			var styleSheets = Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[] { "Assets" });
 			var selectStyleSheet = Root.Q<LabeledDropdownVisualElement>("selectStyleSheet");
 			selectStyleSheet.Setup(styleSheets.Select(x => x.name).ToList(), index =>
 			{
@@ -59,7 +59,7 @@ namespace Beamable.Editor.UI.Buss
 			});
 
 			selectStyleSheet.Refresh();
-			
+
 			ListAllRules();
 			OnValidate();
 		}
@@ -83,7 +83,7 @@ namespace Beamable.Editor.UI.Buss
 				var checkboxVisualElement = kvp.Value;
 				if (!checkboxVisualElement.Value)
 					continue;
-				
+
 				rules.Add(BussPropertyProvider.Create(kvp.Key, BussStyle.GetDefaultValue(kvp.Key).CopyProperty()));
 			}
 
@@ -93,20 +93,20 @@ namespace Beamable.Editor.UI.Buss
 			AssetDatabase.SaveAssets();
 			AddStyleWindow.CloseWindow();
 		}
-		
+
 		private void OnValidate()
 		{
 			if (string.IsNullOrWhiteSpace(_selectorName.Value))
-				ChangeButtonState(false, 
-				                  "Selector name cannot be empty or white space");
+				ChangeButtonState(false,
+								  "Selector name cannot be empty or white space");
 			else
 				ChangeButtonState(true);
 
 			foreach (var localStyle in _currentSelectedStyleSheet.Styles)
 				if (localStyle.SelectorString == _selectorName.Value)
-					ChangeButtonState(false, 
-					                  $"Selector '{_selectorName.Value}' already exists in '{_currentSelectedStyleSheet.name}' BUSS style sheet");
-			
+					ChangeButtonState(false,
+									  $"Selector '{_selectorName.Value}' already exists in '{_currentSelectedStyleSheet.name}' BUSS style sheet");
+
 		}
 
 		private void ChangeButtonState(bool isEnabled, string tooltip = "")
