@@ -44,7 +44,10 @@ namespace Beamable.Server.Editor
 		private string _cachedContainerPrefix = null;
 
 		[Tooltip("When you build a microservice, any ContentType class will automatically be referenced if this field is set to true. Beamable recommends that you put your ContentTypes into a shared assembly definition instead.")]
-		public bool AutoReferenceContent = true;
+		public bool AutoReferenceContent = false;
+
+		[Tooltip("When true, Beamable automatically generates a common assembly called Beamable.UserCode.Shared that is auto-referenced by Unity code, and automatically imported by Microservice assembly definitions. ")]
+		public bool AutoBuildCommonAssembly = true;
 
 		[Tooltip("When you build and run microservices, the logs will be color coded if this field is set to true.")]
 		public bool ColorLogs = true;
@@ -54,6 +57,7 @@ namespace Beamable.Server.Editor
 
 		[Tooltip("It will enable checking if docker app is running before you can start microservices.")]
 		public bool DockerAppCheckInMicroservicesWindow = true;
+
 
 		public string DockerCommand = DOCKER_LOCATION;
 		private string _dockerCommandCached = DOCKER_LOCATION;
@@ -164,82 +168,81 @@ namespace Beamable.Server.Editor
 			}
 		}
 
-		public int GetIndex(string serviceName, ServiceType serviceType)
-		{
-			if (serviceType == ServiceType.StorageObject)
-				return StorageObjects.FindIndex(m => m.StorageName == serviceName);
-			else
-				return Microservices.FindIndex(m => m.ServiceName == serviceName);
-		}
+        public int GetIndex(string serviceName, ServiceType serviceType)
+        {
+            if (serviceType == ServiceType.StorageObject)
+                return StorageObjects.FindIndex(m => m.StorageName == serviceName);
+            else
+                return Microservices.FindIndex(m => m.ServiceName == serviceName);
+        }
 
-		public void SetIndex(string serviceName, int newIndex, ServiceType serviceType)
-		{
+        public void SetIndex(string serviceName, int newIndex, ServiceType serviceType)
+        {
+            if (serviceType == ServiceType.MicroService)
+            {
+                if (newIndex < 0 || newIndex >= Microservices.Count)
+                    throw new IndexOutOfRangeException();
 
-			if (serviceType == ServiceType.MicroService)
-			{
-				if (newIndex < 0 || newIndex >= Microservices.Count)
-					throw new IndexOutOfRangeException();
+                var currentIndex = GetIndex(serviceName, serviceType);
+                if (currentIndex != -1)
+                {
+                    var value = Microservices[currentIndex];
+                    Microservices.RemoveAt(currentIndex);
+                    Microservices.Insert(newIndex, value);
+                    EditorUtility.SetDirty(this);
+                    AssetDatabase.SaveAssets();
+                    AssetDatabase.Refresh();
+                }
+            }
+            else
+            {
+                if (newIndex < 0 || newIndex >= StorageObjects.Count)
+                    throw new IndexOutOfRangeException();
 
-				var currentIndex = GetIndex(serviceName, serviceType);
-				if (currentIndex != -1)
-				{
-					var value = Microservices[currentIndex];
-					Microservices.RemoveAt(currentIndex);
-					Microservices.Insert(newIndex, value);
-					EditorUtility.SetDirty(this);
-					AssetDatabase.SaveAssets();
-					AssetDatabase.Refresh();
-				}
-			}
-			else
-			{
-				if (newIndex < 0 || newIndex >= StorageObjects.Count)
-					throw new IndexOutOfRangeException();
+                var currentIndex = GetIndex(serviceName, serviceType);
+                if (currentIndex != -1)
+                {
+                    var value = StorageObjects[currentIndex];
+                    StorageObjects.RemoveAt(currentIndex);
+                    StorageObjects.Insert(newIndex, value);
+                    EditorUtility.SetDirty(this);
+                    AssetDatabase.SaveAssets();
+                    AssetDatabase.Refresh();
+                }
+            }
+        }
 
-				var currentIndex = GetIndex(serviceName, serviceType);
-				if (currentIndex != -1)
-				{
-					var value = StorageObjects[currentIndex];
-					StorageObjects.RemoveAt(currentIndex);
-					StorageObjects.Insert(newIndex, value);
-					EditorUtility.SetDirty(this);
-					AssetDatabase.SaveAssets();
-					AssetDatabase.Refresh();
-				}
-			}
-		}
+        public void MoveIndex(string serviceName, int offset, ServiceType serviceType)
+        {
+            var newIndex = GetIndex(serviceName, serviceType) + offset;
 
-		public void MoveIndex(string serviceName, int offset, ServiceType serviceType)
-		{
-			var newIndex = GetIndex(serviceName, serviceType) + offset;
+            switch (serviceType)
+            {
+                case ServiceType.MicroService:
+                    if (newIndex < 0 || newIndex >= Microservices.Count)
+                        return;
+                    break;
+                case ServiceType.StorageObject:
+                    if (newIndex < 0 || newIndex >= StorageObjects.Count)
+                        return;
+                    break;
+                default:
+                    return;
+            }
 
-			switch (serviceType)
-			{
-				case ServiceType.MicroService:
-					if (newIndex < 0 || newIndex >= Microservices.Count)
-						return;
-					break;
-				case ServiceType.StorageObject:
-					if (newIndex < 0 || newIndex >= StorageObjects.Count)
-						return;
-					break;
-				default:
-					return;
-			}
+            SetIndex(serviceName, newIndex, serviceType);
+        }
 
-			SetIndex(serviceName, newIndex, serviceType);
-		}
-
-		public int OrderComparer(string a, string b, ServiceType serviceType)
-		{
-			var aIdx = GetIndex(a, serviceType);
-			if (aIdx < 0) aIdx = Int32.MaxValue;
-			var bIdx = GetIndex(b, serviceType);
-			if (bIdx < 0) bIdx = Int32.MaxValue;
-			if (aIdx > bIdx) return 1;
-			return -1;
-		}
-	}
+        public int OrderComparer(string a, string b, ServiceType serviceType)
+        {
+            var aIdx = GetIndex(a, serviceType);
+            if (aIdx < 0) aIdx = Int32.MaxValue;
+            var bIdx = GetIndex(b, serviceType);
+            if (bIdx < 0) bIdx = Int32.MaxValue;
+            if (aIdx > bIdx) return 1;
+            return -1;
+        }
+    }
 
 	[System.Serializable]
 	public class StorageConfigurationEntry

@@ -15,6 +15,9 @@ namespace Beamable.Server.Editor
 	{
 		const string PRECOMPILED = "precompiledReferences";
 		const string REFERENCES = "references";
+		const string OVERRIDE_REFERENCES = "overrideReferences";
+		const string AUTO_REFERENCED = "autoReferenced";
+		const string INCLUDE_PLATFORMS = "includePlatforms";
 		const string NAME = "name";
 		private const string ASSETS_BEAMABLE = "Assets/Beamable/";
 		private const string ADD_MONGO = ASSETS_BEAMABLE + "Add Mongo Libraries";
@@ -27,7 +30,7 @@ namespace Beamable.Server.Editor
 		// private const string RESTORE_MONGO = ASSETS_BEAMABLE + "Restore Mongo Snapshot"; // TODO: Delete this when we have a UI
 		private const int BEAMABLE_PRIORITY = 190;
 
-		private static readonly string[] MongoLibraries = new[]
+		public static readonly string[] MongoLibraries = new[]
 		{
 		 "DnsClient.dll",
 		 "MongoDB.Bson.dll",
@@ -76,6 +79,7 @@ namespace Beamable.Server.Editor
 			});
 		}
 
+
 		public static void ClearMongo(StorageObjectDescriptor descriptor)
 		{
 			var work = Microservices.ClearMongoData(descriptor);
@@ -110,25 +114,25 @@ namespace Beamable.Server.Editor
 			});
 		}
 
-		public static void CopyConnectionString(StorageObjectDescriptor descriptor)
-		{
-			var work = Microservices.GetConnectionString(descriptor);
-			work.Then(connectionString =>
-			   {
-				   if (!string.IsNullOrEmpty(connectionString))
-				   {
-					   GUIUtility.systemCopyBuffer = connectionString;
-					   Debug.Log($"Connection string {connectionString}");
+        public static void CopyConnectionString(StorageObjectDescriptor descriptor)
+        {
+            var work = Microservices.GetConnectionString(descriptor);
+            work.Then(connectionString =>
+            {
+                if (!string.IsNullOrEmpty(connectionString))
+                {
+                    GUIUtility.systemCopyBuffer = connectionString;
+                    Debug.Log($"Connection string {connectionString}");
 
-				   }
-				   else
-				   {
-					   Debug.LogWarning("Failed to copy connection string.");
-				   }
-			   });
-		}
+                }
+                else
+                {
+                    Debug.LogWarning("Failed to copy connection string.");
+                }
+            });
+        }
 
-		[MenuItem(ADD_MONGO, false, BEAMABLE_PRIORITY)]
+        [MenuItem(ADD_MONGO, false, BEAMABLE_PRIORITY)]
 		public static void AddMongoLibraries()
 		{
 			if (Selection.activeObject is AssemblyDefinitionAsset asm)
@@ -305,18 +309,51 @@ namespace Beamable.Server.Editor
 			jsonData[PRECOMPILED] = dllReferences.ToArray();
 			WriteAssembly(asm, jsonData);
 		}
+
+		public static void CreateAssetDefinitionAssetOnDisk(string filePath, AssemblyDefinitionInfo info)
+		{
+			var dict = new ArrayDict
+			{
+				[REFERENCES] = info.References,
+				[NAME] = info.Name,
+				[AUTO_REFERENCED] = info.AutoReferenced
+			};
+			if (info.DllReferences.Length > 0) // don't include the field if there are no values.
+			{
+				dict[PRECOMPILED] = info.DllReferences;
+				dict[OVERRIDE_REFERENCES] = true;
+			}
+
+			if (info.IncludePlatforms.Length > 0) // don't include the field at all if there are no values
+			{
+				dict[INCLUDE_PLATFORMS] = info.IncludePlatforms;
+			}
+
+			var json = Json.Serialize(dict, new StringBuilder());
+			json = Json.FormatJson(json);
+			File.WriteAllText(filePath, json);
+			AssetDatabase.ImportAsset(filePath);
+		}
+
 		public static void AddAndRemoveReferences(this AssemblyDefinitionAsset asm, List<string> toAddReferences, List<string> toRemoveReferences)
 		{
 			var jsonData = Json.Deserialize(asm.text) as ArrayDict;
 			var dllReferences = GetReferences(REFERENCES, jsonData);
 
-			foreach (var toAdd in toAddReferences)
+			if (toAddReferences != null)
 			{
-				dllReferences.Add(toAdd);
+				foreach (var toAdd in toAddReferences)
+				{
+					dllReferences.Add(toAdd);
+				}
 			}
-			foreach (var toRemove in toRemoveReferences)
+
+			if (toRemoveReferences != null)
 			{
-				dllReferences.Remove(toRemove);
+				foreach (var toRemove in toRemoveReferences)
+				{
+					dllReferences.Remove(toRemove);
+				}
 			}
 
 			jsonData[REFERENCES] = dllReferences.ToArray();
