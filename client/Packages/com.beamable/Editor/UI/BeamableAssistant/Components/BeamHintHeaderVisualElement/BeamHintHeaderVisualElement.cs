@@ -31,7 +31,7 @@ namespace Beamable.Editor.Assistant
 
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
-			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription {name = "custom-text", defaultValue = "nada"};
+			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription { name = "custom-text", defaultValue = "nada" };
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
 			{
@@ -83,9 +83,9 @@ namespace Beamable.Editor.Assistant
 		public BeamHintHeaderVisualElement() : base(nameof(BeamHintHeaderVisualElement)) { }
 
 		public BeamHintHeaderVisualElement(BeamHintsDataModel dataModel,
-		                                   BeamHintReflectionCache.Registry library,
-		                                   in BeamHintHeader hint,
-		                                   int headerIdx) : base(nameof(BeamHintHeaderVisualElement))
+										   BeamHintReflectionCache.Registry library,
+										   in BeamHintHeader hint,
+										   int headerIdx) : base(nameof(BeamHintHeaderVisualElement))
 		{
 			_hintDataModel = dataModel;
 			_hintDetailsReflectionCache = library;
@@ -122,12 +122,13 @@ namespace Beamable.Editor.Assistant
 			_ = BeamHintDomains.TryGetDomainAtDepth(_displayingHintHeader.Domain, 0, out var primaryDomain);
 			_ = _hintDetailsReflectionCache.TryGetDomainTitleText(primaryDomain, out var hintPrimaryDomainText);
 			hintPrimaryDomain.text = hintPrimaryDomainText;
+			hintPrimaryDomain.AddTextWrapStyle();
 
 			// Find the ConverterData that is tied to the hint we are displaying from the HintDetails Reflection Cache system.
 			if (!_hintDetailsReflectionCache.TryGetConverterDataForHint(_displayingHintHeader, out var converter))
 			{
 				BeamableLogger.Log($"[Assistant] No BeamableHintDetails Found for Hint Header {_displayingHintHeader}! Skipping rendering of this hint." +
-				                   $"See BeamHintDetailConverterProvider and BeamHintDetailsConfig to see how to configure BeamHintConverter functions and visuals.");
+								   $"See BeamHintDetailConverterProvider and BeamHintDetailsConfig to see how to configure BeamHintConverter functions and visuals.");
 			}
 
 			var hintDetailsConfig = converter.HintConfigDetailsConfig;
@@ -265,7 +266,7 @@ namespace Beamable.Editor.Assistant
 				// Call the converter to fill up this injection bag.
 				var beamHint = _hintDataModel.GetHint(_displayingHintHeader);
 				// TODO: Change this hacky way of injecting texts when we have our in-editor localization solution 
-				if(converter.HintTextMap.TryGetHintTitle(beamHint.Header, out _) && converter.HintTextMap.TryGetHintIntroText(beamHint.Header, out _))
+				if (converter.HintTextMap.TryGetHintTitle(beamHint.Header, out _) && converter.HintTextMap.TryGetHintIntroText(beamHint.Header, out _))
 					converter.ConverterCall.Invoke(in beamHint, in converter.HintTextMap, injectionBag);
 				else
 				{
@@ -294,16 +295,16 @@ namespace Beamable.Editor.Assistant
 				var query = injection.Query;
 				var queryExpectedType = query.ExpectedType;
 				var queriedElements = container
-				                      .Query(query.Name, query.Classes)
-				                      .Where(element => element.GetType() == queryExpectedType)
-				                      .Build()
-				                      .ToList();
+									  .Query(query.Name, query.Classes)
+									  .Where(element => element.GetType() == queryExpectedType)
+									  .Build()
+									  .ToList();
 
 				Debug.Assert(queriedElements.Count != 0,
-				             $"Query [{query}] found no matches when searching in the {nameof(VisualElement)} [{container.name}]");
+							 $"Query [{query}] found no matches when searching in the {nameof(VisualElement)} [{container.name}]");
 
 				Debug.Assert(queriedElements.TrueForAll(element => element.GetType() == queryExpectedType),
-				             $"Query [{query}] does not match its expected type when searching in the {nameof(VisualElement)} [{container.name}]");
+							 $"Query [{query}] does not match its expected type when searching in the {nameof(VisualElement)} [{container.name}]");
 
 				// For each found element, inject based on the type of element and the type of the injection
 				foreach (var queriedElement in queriedElements)
