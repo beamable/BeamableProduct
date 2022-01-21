@@ -77,13 +77,13 @@ namespace Beamable.Editor.UI.Model
 
 			evt.menu.BeamableAppendAction($"{localCategory}/Erase data", _ => AssemblyDefinitionHelper.ClearMongo(ServiceDescriptor), IsRunning);
 			evt.menu.BeamableAppendAction($"{localCategory}/Goto data explorer", _ => AssemblyDefinitionHelper.OpenMongoExplorer(ServiceDescriptor), IsRunning);
+			evt.menu.BeamableAppendAction($"{localCategory}/Create a snapshot", _ => AssemblyDefinitionHelper.SnapshotMongo(ServiceDescriptor), IsRunning);
+			evt.menu.BeamableAppendAction($"{localCategory}/Download a snapshot", _ => AssemblyDefinitionHelper.RestoreMongo(ServiceDescriptor), IsRunning);
 			evt.menu.BeamableAppendAction($"{localCategory}/Copy connection string", _ => AssemblyDefinitionHelper.CopyConnectionString(ServiceDescriptor), IsRunning);
 
 			evt.menu.BeamableAppendAction($"{remoteCategory}/Goto data explorer", _ => AssemblyDefinitionHelper.OpenMongoExplorer(ServiceDescriptor), existsOnRemote);
 			evt.menu.BeamableAppendAction($"{remoteCategory}/Copy connection string", _ => AssemblyDefinitionHelper.CopyConnectionString(ServiceDescriptor), existsOnRemote);
 
-			evt.menu.BeamableAppendAction($"Create a snapshot", _ => AssemblyDefinitionHelper.SnapshotMongo(ServiceDescriptor));
-			evt.menu.BeamableAppendAction($"Download a snapshot", _ => AssemblyDefinitionHelper.RestoreMongo(ServiceDescriptor));
 			evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());
 
 			if (MicroserviceConfiguration.Instance.StorageObjects.Count > 1)
