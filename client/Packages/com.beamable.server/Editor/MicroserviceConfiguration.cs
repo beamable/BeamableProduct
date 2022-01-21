@@ -168,45 +168,76 @@ namespace Beamable.Server.Editor
 			}
 		}
 
-		public int GetMicroserviceIndex(string serviceName)
+		public int GetIndex(string serviceName, ServiceType serviceType)
 		{
-			return Microservices.FindIndex(m => m.ServiceName == serviceName);
+			if (serviceType == ServiceType.StorageObject)
+				return StorageObjects.FindIndex(m => m.StorageName == serviceName);
+			else
+				return Microservices.FindIndex(m => m.ServiceName == serviceName);
 		}
 
-		public void SetMicroserviceIndex(string serviceName, int newIndex)
+		public void SetIndex(string serviceName, int newIndex, ServiceType serviceType)
 		{
-			if (newIndex < 0 || newIndex >= Microservices.Count)
+			if (serviceType == ServiceType.MicroService)
 			{
-				throw new IndexOutOfRangeException();
-			}
+				if (newIndex < 0 || newIndex >= Microservices.Count)
+					throw new IndexOutOfRangeException();
 
-			var currentIndex = GetMicroserviceIndex(serviceName);
-			if (currentIndex != -1)
+				var currentIndex = GetIndex(serviceName, serviceType);
+				if (currentIndex != -1)
+				{
+					var value = Microservices[currentIndex];
+					Microservices.RemoveAt(currentIndex);
+					Microservices.Insert(newIndex, value);
+					EditorUtility.SetDirty(this);
+					AssetDatabase.SaveAssets();
+					AssetDatabase.Refresh();
+				}
+			}
+			else
 			{
-				var value = Microservices[currentIndex];
-				Microservices.RemoveAt(currentIndex);
-				Microservices.Insert(newIndex, value);
-				EditorUtility.SetDirty(this);
-				AssetDatabase.SaveAssets();
-				AssetDatabase.Refresh();
+				if (newIndex < 0 || newIndex >= StorageObjects.Count)
+					throw new IndexOutOfRangeException();
+
+				var currentIndex = GetIndex(serviceName, serviceType);
+				if (currentIndex != -1)
+				{
+					var value = StorageObjects[currentIndex];
+					StorageObjects.RemoveAt(currentIndex);
+					StorageObjects.Insert(newIndex, value);
+					EditorUtility.SetDirty(this);
+					AssetDatabase.SaveAssets();
+					AssetDatabase.Refresh();
+				}
 			}
 		}
 
-		public void MoveMicroserviceIndex(string serviceName, int offset)
+		public void MoveIndex(string serviceName, int offset, ServiceType serviceType)
 		{
-			var newIndex = GetMicroserviceIndex(serviceName) + offset;
-			if (newIndex < 0 || newIndex >= Microservices.Count)
+			var newIndex = GetIndex(serviceName, serviceType) + offset;
+
+			switch (serviceType)
 			{
-				return;
+				case ServiceType.MicroService:
+					if (newIndex < 0 || newIndex >= Microservices.Count)
+						return;
+					break;
+				case ServiceType.StorageObject:
+					if (newIndex < 0 || newIndex >= StorageObjects.Count)
+						return;
+					break;
+				default:
+					return;
 			}
-			SetMicroserviceIndex(serviceName, newIndex);
+
+			SetIndex(serviceName, newIndex, serviceType);
 		}
 
-		public int MicroserviceOrderComparer(string a, string b)
+		public int OrderComparer(string a, string b, ServiceType serviceType)
 		{
-			var aIdx = GetMicroserviceIndex(a);
+			var aIdx = GetIndex(a, serviceType);
 			if (aIdx < 0) aIdx = Int32.MaxValue;
-			var bIdx = GetMicroserviceIndex(b);
+			var bIdx = GetIndex(b, serviceType);
 			if (bIdx < 0) bIdx = Int32.MaxValue;
 			if (aIdx > bIdx) return 1;
 			return -1;
