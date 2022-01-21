@@ -19,6 +19,7 @@ namespace Beamable.Editor
    {
 	   private const string PROPERTY_SELECTED = "selected";
 	   private const string PROPERTY_HOVERED = "hovered";
+	   private const string PROPERTY_HIDDEN = "hidden";
 	   
 	   public static void SetSelected(this VisualElement element, bool value)
 	   {
@@ -29,6 +30,18 @@ namespace Beamable.Editor
 		   else
 		   {
 			   element.RemoveFromClassList(PROPERTY_SELECTED);
+		   }
+	   }
+
+	   public static void SetHidden(this VisualElement element, bool value)
+	   {
+		   if (value)
+		   {
+			   element.AddToClassList(PROPERTY_HIDDEN);
+		   }
+		   else
+		   {
+			   element.RemoveFromClassList(PROPERTY_HIDDEN);
 		   }
 	   }
 	   

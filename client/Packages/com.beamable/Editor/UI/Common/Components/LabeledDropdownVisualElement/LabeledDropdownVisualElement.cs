@@ -73,5 +73,10 @@ namespace Beamable.Editor.UI.Components
         {
             Dropdown.Set(id);
         }
+        
+        public void OverrideLabelWidth(float width)
+        {
+	        _label?.style.SetWidth(width);
+        }
     }
 }

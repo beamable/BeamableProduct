@@ -1,0 +1,153 @@
+#cardContainer {
+    -unity-text-align: middle-left;
+    margin-bottom: 10px;
+    flex-grow: 1;
+}
+
+#cardHeader {
+    -unity-font-style: bold;
+    color: rgba(256, 256, 256, 1);
+    height: 36px;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-self: stretch;
+}
+
+#selectorLabelParent {
+    flex-grow: 1;
+    justify-content: center;
+}
+
+#colorBlock {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    width: 5px;
+    background-color: rgb(144,144,144);
+}
+
+#colorBlock.active {
+    background-color: rgb(0,145,255);
+}
+
+#sectionHeader {
+    color: rgb(255,255,255);
+    height: 30px;
+    background-color: rgb(89,89,89);
+    flex-direction: row;
+}
+
+#sectionLabel {
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    -unity-text-align: middle-left;
+    font-size: 14px;
+    padding-left: 20px;
+    color: rgb(255,255,255);
+    
+}
+
+#properties {
+    background-color: rgb(77,77,77);
+}
+
+#divider {
+    flex-grow: 1;
+}
+
+#variables {
+    min-height: 60px;
+    background-color: rgb(77,77,77);
+}
+
+.button {
+    -unity-text-align: middle-center;
+    align-self: center;
+    margin-left: 3px;
+    height: 30px;
+    background-color: rgb(100,100,100);
+    flex-shrink: 0;
+    justify-content: center;
+}
+
+.button > TextElement {
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    -unity-text-align: middle-center;
+    color: rgb(255,255,255);
+    height: 12px;
+    font-size: 12px;
+}
+
+.button:hover {
+    background-color: rgb(120,120,120); 
+}
+
+.smallButton {
+    width: 30px;
+}
+
+.mediumButton {
+    width: 70px;
+}
+
+.largeButton {
+    width: 90px;
+}
+
+.headerButton {
+    background-color: rgb(142,142,142);
+}
+
+.headerButton:hover {
+    background-color: rgb(162,162,162); 
+}
+
+.edit {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/edit.png");
+}
+
+.wizard {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/wizard.png");
+}
+
+.undo {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/undo.png");
+}
+
+.cleanAll {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/cleanAll.png");
+}
+
+.add {
+    margin-left: 0;
+    background-color: rgb(89,89,89);
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new L.png");
+}
+
+.hidden {
+    visibility: hidden;
+    height: 0;
+}
+
+#removeButtonContainer {
+    width: 26px;
+    height: 36px;
+    justify-content: center;
+}
+
+#removeButton {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/remove.png");
+    align-self: center;
+    width: 16px;
+    height: 16px;
+}
+
+BussStylePropertyVisualElement.doesntExists {
+    display: none;
+    visibility: hidden;
+    height: 0px;
+}
+
+.showAllProperties BussStylePropertyVisualElement.doesntExists, BussStylePropertyVisualElement.exists {
+    display: flex;
+    visibility: visible;
+    height: 36px;
+}

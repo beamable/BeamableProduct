@@ -61,7 +61,7 @@ namespace Beamable.Editor.UI.Components
             _button.RegisterCallback<MouseDownEvent>(async (e) => await OnButtonClicked(worldBound) );
         }
 
-        public void Setup(List<string> labels, Action<int> onOptionSelected)
+        public void Setup(List<string> labels, Action<int> onOptionSelected, bool autoSelectFirstOption = true)
         {
             _optionModels.Clear();
             _onSelection = onOptionSelected;
@@ -78,7 +78,7 @@ namespace Beamable.Editor.UI.Components
                 _optionModels.Add(singleOption);
             }
 
-            if (_optionModels.Count > 0)
+            if (autoSelectFirstOption && _optionModels.Count > 0)
             {
                 Value = _optionModels[0].Label;
                 onOptionSelected?.Invoke(0);

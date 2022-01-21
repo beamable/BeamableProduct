@@ -3,15 +3,34 @@ using Beamable.UI.Sdf;
 using Beamable.UI.Sdf.MaterialManagement;
 using Beamable.UI.Tweening;
 using TMPro;
-using UnityEngine.UI;
 
 namespace Beamable.UI.Buss
 {
-	public abstract class EnumBussProperty<T> : IEnumBussProperty where T : Enum
+	public abstract class EnumBussProperty : IEnumBussProperty
+	{
+		public abstract Enum EnumValue
+		{
+			get;
+			set;
+		}
+
+		public abstract IBussProperty CopyProperty();
+
+		public T CastEnumValue<T>() where T : Enum
+		{
+			return (T)EnumValue;
+		}
+	}
+
+	public abstract class EnumBussProperty<T> : EnumBussProperty where T : Enum
 	{
 		public T Enum;
 
-		public Enum EnumValue => Enum;
+		public override Enum EnumValue
+		{
+			get => Enum;
+			set => Enum = (T)value;
+		}
 
 		protected EnumBussProperty() { }
 
@@ -19,13 +38,6 @@ namespace Beamable.UI.Buss
 		{
 			Enum = @enum;
 		}
-
-		public T1 CastEnumValue<T1>() where T1 : Enum
-		{
-			return (T1)EnumValue;
-		}
-
-		public abstract IBussProperty CopyProperty();
 	}
 
 	[Serializable]
