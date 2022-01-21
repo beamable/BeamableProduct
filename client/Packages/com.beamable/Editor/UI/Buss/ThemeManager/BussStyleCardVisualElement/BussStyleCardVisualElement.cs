@@ -267,17 +267,25 @@ namespace Beamable.Editor.UI.Components
 
 		public void RefreshProperties()
 		{
-			var toRemove = _styleRule.ShowAllMode
-				? _properties
-				  .Where(p => p.PropertyProvider.IsVariable && !_styleRule.Properties.Contains(p.PropertyProvider))
-				  .ToArray()
-				: _properties.Where(p => !_styleRule.Properties.Contains(p.PropertyProvider)).ToArray();
-
-			foreach (BussStylePropertyVisualElement element in toRemove)
+			foreach (BussStylePropertyVisualElement element in _properties.ToArray())
 			{
-				element.RemoveFromHierarchy();
-				element.Destroy();
-				_properties.Remove(element);
+				bool remove = false;
+				if (element.PropertyIsInStyle)
+				{
+					remove = !_styleRule.Properties.Contains(element.PropertyProvider);
+				}
+				else
+				{
+					remove = !_styleRule.ShowAllMode ||
+					         _styleRule.Properties.Any(p => p.Key == element.PropertyKey);
+				}
+
+				if (remove)
+				{
+					element.RemoveFromHierarchy();
+					element.Destroy();
+					_properties.Remove(element);
+				}
 			}
 
 			foreach (BussPropertyProvider property in _styleRule.Properties)
@@ -316,6 +324,29 @@ namespace Beamable.Editor.UI.Components
 					_properties.Add(element);
 				}
 			}
+			
+			_propertiesParent.Sort((a, b) =>
+			{
+				if (!(a is BussStylePropertyVisualElement p1) || !(b is BussStylePropertyVisualElement p2)) return 0;
+				var value = 0;
+				if (p1.PropertyIsInStyle) value--;
+				if (p2.PropertyIsInStyle) value++;
+				if (value == 0)
+				{
+					if (p1.PropertyIsInStyle)
+					{
+						var properties = _styleRule.Properties;
+						return properties.IndexOf(p1.PropertyProvider) - properties.IndexOf(p2.PropertyProvider);
+					}
+					else
+					{
+						var keys = BussStyle.Keys.ToArray();
+						return Array.IndexOf(keys, p1.PropertyProvider.Key) -
+						       Array.IndexOf(keys, p2.PropertyProvider.Key);
+					}
+				}
+				return value;
+			});
 		}
 
 		// TODO: change this, card should be setup/refreshed by it's parent
