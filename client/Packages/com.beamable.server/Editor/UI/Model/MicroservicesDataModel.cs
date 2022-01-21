@@ -261,7 +261,7 @@ namespace Beamable.Editor.UI.Model
 
 					for (int i = 0; i < listToPopulate.Count; i++)
 					{
-						if (string.Equals(listToPopulate[i].Descriptor.Name, service.Descriptor.Name))
+						if (string.Equals(listToPopulate[i]?.Descriptor?.Name, service?.Descriptor?.Name))
 						{
 							existing = listToPopulate[i];
 							break;
