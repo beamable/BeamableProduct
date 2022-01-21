@@ -17,9 +17,9 @@ namespace Beamable.Editor.Reflection
 		public static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
 		{
 			var reflectionCacheRelatedAssets = importedAssets.Union(movedAssets)
-			                                                 .Select(path => (path, type: AssetDatabase.GetMainAssetTypeAtPath(path)))
-			                                                 .Where(t => typeof(ReflectionSystemObject).IsAssignableFrom(t.type))
-			                                                 .ToList();
+															 .Select(path => (path, type: AssetDatabase.GetMainAssetTypeAtPath(path)))
+															 .Where(t => typeof(ReflectionSystemObject).IsAssignableFrom(t.type))
+															 .ToList();
 
 			if (reflectionCacheRelatedAssets.Count > 0)
 			{

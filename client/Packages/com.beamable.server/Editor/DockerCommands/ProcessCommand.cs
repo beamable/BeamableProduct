@@ -1,10 +1,10 @@
 using Beamable.Common.Assistant;
+using Beamable.Platform.SDK;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Beamable.Platform.SDK;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -113,7 +113,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		public void Kill()
 		{
 			if (_process == null || !_started || _hasExited) return;
- 
+
 			_process.Kill();
 			try { }
 			catch (InvalidOperationException ex)
@@ -138,17 +138,17 @@ namespace Beamable.Server.Editor.DockerCommands
 		protected void LogInfo(string data)
 		{
 			Debug.Log(ColorizeMessage(
-				          data,
-				          MicroserviceConfiguration.Instance.LogProcessLabelColor,
-				          MicroserviceConfiguration.Instance.LogStandardOutColor));
+						  data,
+						  MicroserviceConfiguration.Instance.LogProcessLabelColor,
+						  MicroserviceConfiguration.Instance.LogStandardOutColor));
 		}
 
 		protected void LogError(string data)
 		{
 			Debug.Log(ColorizeMessage(
-				          data,
-				          MicroserviceConfiguration.Instance.LogProcessLabelColor,
-				          MicroserviceConfiguration.Instance.LogStandardErrColor));
+						  data,
+						  MicroserviceConfiguration.Instance.LogProcessLabelColor,
+						  MicroserviceConfiguration.Instance.LogStandardErrColor));
 		}
 
 		protected virtual void ModifyStartInfo(ProcessStartInfo processStartInfo) { }
@@ -270,7 +270,7 @@ namespace Beamable.Server.Editor.DockerCommands
 #if UNITY_EDITOR_WIN
 					const string procName = "docker desktop";
 #else
-			        const string procName = "docker";
+					const string procName = "docker";
 #endif
 					if (procList[i].ProcessName.ToLower().Contains(procName))
 					{
@@ -289,7 +289,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 			var dockerDesktopPath = MicroserviceConfiguration.Instance.DockerDesktopPath;
 
-			
+
 
 			if (!File.Exists(dockerDesktopPath))
 			{

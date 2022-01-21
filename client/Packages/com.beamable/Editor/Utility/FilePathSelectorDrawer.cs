@@ -1,5 +1,5 @@
-﻿using System;
-using Beamable.Common.Content;
+﻿using Beamable.Common.Content;
+using System;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
@@ -50,8 +50,8 @@ namespace Beamable.Editor
 			}
 
 			if (!string.IsNullOrWhiteSpace(attribute.PathRelativeTo)
-			    && Uri.IsWellFormedUriString(attribute.PathRelativeTo, UriKind.RelativeOrAbsolute)
-			    && Uri.IsWellFormedUriString(path, UriKind.RelativeOrAbsolute))
+				&& Uri.IsWellFormedUriString(attribute.PathRelativeTo, UriKind.RelativeOrAbsolute)
+				&& Uri.IsWellFormedUriString(path, UriKind.RelativeOrAbsolute))
 			{
 				var rootUri = new Uri(attribute.PathRelativeTo);
 				var fullUri = new Uri(path);
@@ -65,7 +65,7 @@ namespace Beamable.Editor
 		{
 			if (string.IsNullOrEmpty(attribute.PathRelativeTo))
 			{
-				property.stringValue = string.IsNullOrEmpty(newPath) ? newPath: Path.GetFullPath(newPath);
+				property.stringValue = string.IsNullOrEmpty(newPath) ? newPath : Path.GetFullPath(newPath);
 				property.serializedObject.ApplyModifiedProperties();
 			}
 			else
@@ -74,7 +74,7 @@ namespace Beamable.Editor
 				{
 					property.stringValue = newPath;
 					property.serializedObject.ApplyModifiedProperties();
-				}	
+				}
 			}
 		}
 	}

@@ -11,8 +11,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 using System.Linq;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -74,15 +74,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			base.Refresh();
 
-	        if (MicroserviceConfiguration.Instance.DockerAppCheckInMicroservicesWindow)
-		        DockerCommand.CheckDockerAppRunning();
-	        
+			if (MicroserviceConfiguration.Instance.DockerAppCheckInMicroservicesWindow)
+				DockerCommand.CheckDockerAppRunning();
+
 			_mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
 			_scrollView = Root.Q<ScrollView>();
 			_servicesListElement = Root.Q<VisualElement>("listRoot");
 			_servicesCreateElements = new Dictionary<ServiceType, CreateServiceBaseVisualElement>();
 			_dockerHubIsRunning = !MicroserviceConfiguration.Instance.DockerAppCheckInMicroservicesWindow
-                                  || !DockerCommand.DockerNotRunning;
+								  || !DockerCommand.DockerNotRunning;
 
 			if (DockerCommand.DockerNotInstalled || !_dockerHubIsRunning)
 			{
@@ -322,25 +322,25 @@ namespace Beamable.Editor.Microservice.UI.Components
 			dockerAnnouncement.IsDockerInstalled = !DockerCommand.DockerNotInstalled;
 			if (DockerCommand.DockerNotInstalled)
 			{
-		        dockerAnnouncement.OnInstall = () =>
-		        {
-			        BeamableAssistantWindow.ShowWindow()
-			                               .ExpandHint(new BeamHintHeader(BeamHintType.Validation,
-			                                                                        BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
-			                                                                        BeamHintIds.ID_INSTALL_DOCKER_PROCESS));
-			        
-		        };
+				dockerAnnouncement.OnInstall = () =>
+				{
+					BeamableAssistantWindow.ShowWindow()
+										   .ExpandHint(new BeamHintHeader(BeamHintType.Validation,
+																					BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
+																					BeamHintIds.ID_INSTALL_DOCKER_PROCESS));
+
+				};
 			}
 			else
 			{
-		        dockerAnnouncement.OnInstall = () =>
-		        {
-			        BeamableAssistantWindow.ShowWindow()
-			                    .ExpandHint(new BeamHintHeader(BeamHintType.Validation,
-			                                                             BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
-			                                                             BeamHintIds.ID_DOCKER_PROCESS_NOT_RUNNING));
-		        };
-		        
+				dockerAnnouncement.OnInstall = () =>
+				{
+					BeamableAssistantWindow.ShowWindow()
+								.ExpandHint(new BeamHintHeader(BeamHintType.Validation,
+																		 BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
+																		 BeamHintIds.ID_DOCKER_PROCESS_NOT_RUNNING));
+				};
+
 			}
 			var element = new DockerAnnouncementVisualElement() { DockerAnnouncementModel = dockerAnnouncement };
 			Root.Q<VisualElement>("announcementList").Add(element);
@@ -398,6 +398,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 		}
 
-        
+
 	}
 }

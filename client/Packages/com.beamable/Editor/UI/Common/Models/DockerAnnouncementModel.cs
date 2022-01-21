@@ -1,6 +1,6 @@
-﻿using System;
-using Beamable.Editor.Toolbox.Components;
+﻿using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.UI.Buss;
+using System;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -28,7 +28,7 @@ namespace Beamable.Editor.Toolbox.Models
 
 		public override BeamableVisualElement CreateVisualElement()
 		{
-			return new DockerAnnouncementVisualElement() {DockerAnnouncementModel = this};
+			return new DockerAnnouncementVisualElement() { DockerAnnouncementModel = this };
 		}
 	}
 }
