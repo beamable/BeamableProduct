@@ -1,6 +1,7 @@
 ﻿using Beamable.Editor.UI.Buss;
 using Beamable.UI.Buss;
-using UnityEngine.UI;
+using System.Collections.Generic;
+using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -11,18 +12,41 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class BussElementHierarchyVisualElement : ComponentBasedHierarchyVisualElement<BussElement>	
+	public class BussElementHierarchyVisualElement : ComponentBasedHierarchyVisualElement<BussElement>
 	{
-		public new class UxmlFactory : UxmlFactory<BussElementHierarchyVisualElement, UxmlTraits>
+		public List<BussStyleSheet> StyleSheets
 		{
-		}
-
-		public BussElementHierarchyVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussElementHierarchyVisualElement)}/{nameof(BussElementHierarchyVisualElement)}") { }
+			get;
+		} = new List<BussStyleSheet>();
 
 		protected override string GetLabel(BussElement component)
 		{
-			return string.IsNullOrWhiteSpace(component.Id) ? component.name : component.Id;
+			var label = string.IsNullOrWhiteSpace(component.Id) ? component.name : BussNameUtility.AsIdSelector(component.Id);
+
+			foreach (string className in component.Classes)
+			{
+				label += " " + BussNameUtility.AsClassSelector(className);
+			}
+
+			return label;
+		}
+
+		protected override void OnObjectRegistered(BussElement registeredObject)
+		{
+			BussStyleSheet styleSheet = registeredObject.StyleSheet;
+
+			if (styleSheet == null) return;
+
+			if (!StyleSheets.Contains(styleSheet))
+			{
+				StyleSheets.Add(styleSheet);
+			}
+		}
+
+		protected override void OnHierarchyChanged()
+		{
+			StyleSheets.Clear();
+			base.OnHierarchyChanged();
 		}
 	}
 }
