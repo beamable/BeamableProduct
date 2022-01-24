@@ -82,7 +82,7 @@ namespace Beamable.Editor.UI.Buss
 
 			var cancelButton = Root.Q<GenericButtonVisualElement>("cancelButton");
 			cancelButton.OnClick += NewVariableWindow.CloseWindow;
-			
+
 			OnValidate();
 		}
 
@@ -162,7 +162,7 @@ namespace Beamable.Editor.UI.Buss
 			_selectEnum.EnableInClassList("hide", true);
 			return false;
 		}
-		
+
 		private void ChangeButtonState(bool isEnabled, string tooltip = "")
 		{
 			_confirmButton.tooltip = tooltip;
