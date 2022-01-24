@@ -27,13 +27,15 @@ namespace Beamable.Editor.Assistant
 	public class BeamableAssistantWindow : EditorWindow, ISerializationCallbackReceiver
 	{
 		[MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
-		          BeamableConstants.OPEN + " " +
-		          BeamableConstants.BEAMABLE_ASSISTANT,
-		          priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
-		public static void ShowWindow()
+				  BeamableConstants.OPEN + " " +
+				  BeamableConstants.BEAMABLE_ASSISTANT,
+				  priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
+		public static BeamableAssistantWindow ShowWindow()
 		{
 			var window = GetWindow<BeamableAssistantWindow>(BeamableConstants.BEAMABLE_ASSISTANT, true, typeof(SceneView));
 			window.Show();
+
+			return window;
 		}
 
 		private readonly Vector2 MIN_SIZE = new Vector2(450, 200);
@@ -71,19 +73,17 @@ namespace Beamable.Editor.Assistant
 
 		private void OnEnable()
 		{
-			EditorAPI.Instance.Then(_ => Refresh());
+			Refresh();
+
 		}
 
 		private void OnFocus()
 		{
-			EditorAPI.Instance.Then(_ =>
-			{
-				Refresh();
-				
-				// TODO: Display NEW icon and clear notifications on hover on a per hint header basis.
-				// For now, just clear notifications whenever the window is focused
-				_hintNotificationManager.ClearPendingNotifications();
-			});
+			Refresh();
+
+			// TODO: Display NEW icon and clear notifications on hover on a per hint header basis.
+			// For now, just clear notifications whenever the window is focused
+			_hintNotificationManager.ClearPendingNotifications();
 		}
 
 		private void Update()
@@ -137,17 +137,18 @@ namespace Beamable.Editor.Assistant
 
 				//Create IMGUI, The VisualElement Wrapper, and add to the parent
 				_treeViewState = _treeViewState ?? new TreeViewState();
-				_treeViewIMGUI = new TreeViewIMGUI(_treeViewState) {SelectionType = SelectionType.Multiple, TreeViewItemRoot = new TreeViewItem {id = 0, depth = -1, displayName = "Root"}};
+				_treeViewIMGUI = new TreeViewIMGUI(_treeViewState) { SelectionType = SelectionType.Multiple, TreeViewItemRoot = new TreeViewItem { id = 0, depth = -1, displayName = "Root" } };
 				_imguiContainer = new IMGUIContainer(() =>
 				{
 					// Tree view - Re-render every frame
 					Rect rect = GUILayoutUtility.GetRect(200,
-					                                     200,
-					                                     _treeViewIMGUI.GetCalculatedHeight(),
-					                                     _treeViewIMGUI.GetCalculatedHeight());
+														 200,
+														 _treeViewIMGUI.GetCalculatedHeight(),
+														 _treeViewIMGUI.GetCalculatedHeight());
 
 					_treeViewIMGUI.OnGUI(rect);
-				}) {name = "domain-tree-imgui"};
+				})
+				{ name = "domain-tree-imgui" };
 				_domainTreeContainer = root.Q<VisualElement>("domain-tree-container");
 				_domainTreeContainer.Add(_imguiContainer);
 
@@ -163,6 +164,7 @@ namespace Beamable.Editor.Assistant
 				}
 				_hintsSearchBar.OnSearchChanged -= OnSearchTextUpdated;
 				_hintsSearchBar.OnSearchChanged += OnSearchTextUpdated;
+				_hintsSearchBar.SetValueWithoutNotify(_beamHintsDataModel.CurrentFilter);
 
 				SetupTreeViewCallbacks(
 					_treeViewIMGUI,
@@ -170,9 +172,9 @@ namespace Beamable.Editor.Assistant
 					list =>
 					{
 						var allDomains = list
-						                 .SelectMany(a => a.children != null ? a.children.Cast<BeamHintDomainTreeViewItem>() : new List<BeamHintDomainTreeViewItem>())
-						                 .Concat(list.Cast<BeamHintDomainTreeViewItem>())
-						                 .Select(item => item.FullDomain).ToList();
+										 .SelectMany(a => a.children != null ? a.children.Cast<BeamHintDomainTreeViewItem>() : new List<BeamHintDomainTreeViewItem>())
+										 .Concat(list.Cast<BeamHintDomainTreeViewItem>())
+										 .Select(item => item.FullDomain).ToList();
 
 						beamHintsDataModel.SelectDomains(allDomains);
 						FillDisplayingBeamHints(_hintsContainer, beamHintsDataModel.DisplayingHints);
@@ -241,9 +243,9 @@ namespace Beamable.Editor.Assistant
 		}
 
 		public void SetupTreeViewCallbacks(TreeViewIMGUI imgui,
-		                                   Action onContextClicked,
-		                                   Action<IList<TreeViewItem>> onSelectionChange,
-		                                   Action<IList<TreeViewItem>> onSelectionBranchChange)
+										   Action onContextClicked,
+										   Action<IList<TreeViewItem>> onSelectionChange,
+										   Action<IList<TreeViewItem>> onSelectionBranchChange)
 		{
 			imgui.OnContextClicked += onContextClicked;
 			imgui.OnSelectionChanged += onSelectionChange;
@@ -253,5 +255,12 @@ namespace Beamable.Editor.Assistant
 		public void OnBeforeSerialize() { }
 
 		public void OnAfterDeserialize() { }
+
+		public void ExpandHint(BeamHintHeader beamHintHeader)
+		{
+			_beamHintsDataModel.FilterDisplayedBy(beamHintHeader.Id);
+			_beamHintsDataModel.OpenHintDetails(beamHintHeader);
+			Refresh();
+		}
 	}
 }

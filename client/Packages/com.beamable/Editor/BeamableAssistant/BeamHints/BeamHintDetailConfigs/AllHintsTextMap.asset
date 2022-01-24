@@ -18,11 +18,13 @@ MonoBehaviour:
     - CODE_MISUSE
     - BEAM_BEAMABLE_ASSISTANT
     - BEAM_INITIALIZATION
+    - DOCKER
     values:
     - Beamable C# Microservices
     - Code Misuse
     - Beamable Assistant
     - Beamable Initialization
+    - Docker
   HintIdToHintTitle:
     keys:
     - AttributeValidation-ClientCallableUnsupportedParameters
@@ -32,6 +34,7 @@ MonoBehaviour:
     - AttributeNameCollision-MicroserviceNameCollision
     - AttributeValidation-MisconfiguredHintSystemAttribute
     - AttributeValidation-UnsupportedRegisterBeamableDependencySignature
+    - DockerProcessNotRunning
     values:
     - ClientCallable has unsupported parameters
     - '"async void" ClientCallable exists'
@@ -40,6 +43,7 @@ MonoBehaviour:
     - Microservice Name Collision
     - Hint System Attribute Misuse
     - Unsupported BeamableRegisterDependency Attribute
+    - Docker is not running
   HintIdToHintIntroText:
     keys:
     - AttributeValidation-ClientCallableUnsupportedParameters
@@ -49,6 +53,7 @@ MonoBehaviour:
     - AttributeNameCollision-MicroserviceNameCollision
     - AttributeValidation-MisconfiguredHintSystemAttribute
     - AttributeValidation-UnsupportedRegisterBeamableDependencySignature
+    - DockerProcessNotRunning
     values:
     - "The ClientCallables below have unsupported parameters. We don't support client
       callables with Delegate, Task or Promise parameters. \n\nWe don't support it
@@ -110,3 +115,6 @@ MonoBehaviour:
     - "We detected you are using RegisterBeamableDependency over a method with an
       unsupported signature. Only the following signatures are supported:\r\n\r\nstatic
       void(IDependencyBuilder builder)\r\n\r\nThe methods we identified were:\r\n"
+    - We noticed Docker is not running in your machine. We can start Docker Hub for
+      you (if you have it installed to the default path) by clicking on the button
+      below.
