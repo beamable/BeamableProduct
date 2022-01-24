@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Swagger docs handle generic types instead of failing to load
+- C#MS Log View stay attached to the bottom of the scroller
 
 ## [0.18.2]
 ### Fixed
