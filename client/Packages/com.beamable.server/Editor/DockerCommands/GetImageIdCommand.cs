@@ -1,3 +1,6 @@
+using Beamable.Platform.SDK;
+using Beamable.Server.Editor.DockerCommands;
+using System;
 using UnityEngine;
 
 namespace Beamable.Server.Editor.DockerCommands
@@ -33,6 +36,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			}
 
 			Debug.LogError($"Failed to get {ImageName} image id. Error buffer: {StandardErrorBuffer}");
+			// there is no built image, we shouldn't log an error, we should just know that empty string means "not built".
 			Promise.CompleteSuccess(string.Empty);
 		}
 	}
