@@ -58,10 +58,9 @@ namespace Beamable.Editor.Toolbox.Components
 			})
 			{
 				target = portalButton
-			}
+			 }
 				;
-
-
+			
 		}
 
 
