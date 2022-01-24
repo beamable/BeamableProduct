@@ -41,6 +41,7 @@ jobs:
       - name: Commit files
         if: steps.format-changes.outputs.any == 'true'
         run: |
+          git checkout ${{ steps.branch-name.outputs.current_branch }}
           git config --local user.name "github-actions[bot]"
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -a -m 'Autoformat code'
