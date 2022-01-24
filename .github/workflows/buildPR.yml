@@ -62,6 +62,11 @@ jobs:
         if: ${{ steps.format-changes.outputs.any == 'true' && !github.ref_protected }}
         run: |
           git push "https://$GITHUB_ACTOR:${{ secrets.FORMAT_GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY.git" HEAD:${{github.head_ref}}
+      - name: Cancel Previous Runs
+        if: ${{ steps.format-changes.outputs.any == 'true' && !github.ref_protected }}
+        uses: styfle/cancel-workflow-action@0.9.1
+        with:
+          access_token: ${{ github.token }}
   testMicroserviceBaseImage:
     needs: dotnet-format
     timeout-minutes: 10
