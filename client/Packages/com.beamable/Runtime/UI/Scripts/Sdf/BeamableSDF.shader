@@ -104,11 +104,11 @@
                 o.roundingNThresholdNOutlineWidth.z = v.params.x;
                 o.shadowColor.rgb = floatToRGB(v.tangent.w);
                 float3 tangentZ = floatToRGB(v.tangent.z);
-                o.outlineColor.a = tangentZ.z;
+                o.outlineColor.a = tangentZ.x;
                 o.shadowColor.a = tangentZ.y;
                 o.shadowSoftness = v.tangent.x;
                 o.shadowOffset.xy = floatToRG(v.tangent.y);
-                o.shadowOffset.z = (tangentZ.x - .5) * 100;
+                o.shadowOffset.z = (tangentZ.z - .5) * 100;
                 return o;
             }
             
