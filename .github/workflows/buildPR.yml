@@ -14,7 +14,8 @@ jobs:
   dotnet-format:
     runs-on: ubuntu-latest
     permissions: 
-     - actions: read|write
+      actions: read|write
+      checks: read|write
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2
