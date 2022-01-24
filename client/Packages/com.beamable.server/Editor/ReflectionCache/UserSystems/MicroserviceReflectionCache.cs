@@ -173,10 +173,15 @@ namespace Beamable.Server.Editor
 					};
 
 					// Add client callables for this microservice type
-					var clientCallables = validClientCallablesLookup[type];
+					var clientCallablesFound = validClientCallablesLookup.TryGetValue(type, out var clientCallables);
 
 					// Generates descriptors for each of the individual client callables.
-					descriptor.Methods = clientCallables.Select(delegate(MemberAttribute pair) {
+					descriptor.Methods = !clientCallablesFound ?
+						// If no client callables were found in the C#MS, initialize an empty list.
+						new List<ClientCallableDescriptor>() :
+						
+						// Otherwise, initialize the ClientCallableDescriptors.
+						clientCallables.Select(delegate(MemberAttribute pair) {
 						var clientCallableAttribute = pair.AttrAs<ClientCallableAttribute>();
 						var clientCallableMethod = pair.InfoAs<MethodInfo>();
 
