@@ -13,18 +13,18 @@ using FontStyle = UnityEngine.FontStyle;
 
 namespace Beamable.Editor.Modules.Theme
 {
+	[Obsolete(BeamableConstants.OBSOLETE_BUSS_INTRODUCED)]
    public class ThemeWindow : EditorWindow
    {
-      [MenuItem(
-         BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
-         BeamableConstants.OPEN + " " +
-         BeamableConstants.THEME_MANAGER,
-         priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_2 + 5)]
+      // [MenuItem(
+      //    BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
+      //    BeamableConstants.OPEN + " " +
+      //    BeamableConstants.THEME_MANAGER,
+      //    priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_2 + 5)]
       public static void Init()
       {
          var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
          GetWindow<ThemeWindow>(BeamableConstants.THEME_MANAGER, true,  inspector);
-
       }
 
       private GameObject _lastRawSelection;

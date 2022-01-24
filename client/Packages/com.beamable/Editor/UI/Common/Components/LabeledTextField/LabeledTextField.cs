@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Validation;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Validation;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -14,88 +14,93 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-    public class LabeledTextField : ValidableVisualElement<string>
-    {
-        public new class UxmlFactory : UxmlFactory<LabeledTextField, UxmlTraits>
-        {
-        }
+	public class LabeledTextField : ValidableVisualElement<string>
+	{
+		public new class UxmlFactory : UxmlFactory<LabeledTextField, UxmlTraits>
+		{
+		}
 
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
-                {name = "label", defaultValue = "Label"};
+		public new class UxmlTraits : VisualElement.UxmlTraits
+		{
+			readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
+			{ name = "label", defaultValue = "Label" };
 
-            readonly UxmlStringAttributeDescription _value = new UxmlStringAttributeDescription
-                {name = "value"};
+			readonly UxmlStringAttributeDescription _value = new UxmlStringAttributeDescription
+			{ name = "value" };
 
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
+				get { yield break; }
+			}
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                if (ve is LabeledTextField component)
-                {
-                    component.Label = _label.GetValueFromBag(bag, cc);
-                    component.Value = _value.GetValueFromBag(bag, cc);
-                }
-            }
-        }
+			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+			{
+				base.Init(ve, bag, cc);
+				if (ve is LabeledTextField component)
+				{
+					component.Label = _label.GetValueFromBag(bag, cc);
+					component.Value = _value.GetValueFromBag(bag, cc);
+				}
+			}
+		}
 
 
-        private Action _onValueChanged;
-        private Label _labelComponent;
-        private TextField _textFieldComponent;
-        private string _value;
+		private Action _onValueChanged;
+		private Label _labelComponent;
+		private TextField _textFieldComponent;
+		private string _value;
 
-        public string Value
-        {
-	        get => _value;
-            set
-            {
-                _value = value;
-                _textFieldComponent?.SetValueWithoutNotify(_value);
-                _onValueChanged?.Invoke();
-            }
-        }
+		public string Value
+		{
+			get => _value;
+			set
+			{
+				_value = value;
+				_textFieldComponent?.SetValueWithoutNotify(_value);
+				_onValueChanged?.Invoke();
+			}
+		}
 
-        private string Label { get; set; }
+		private string Label { get; set; }
 
-        public LabeledTextField() : base(
-            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledTextField)}/{nameof(LabeledTextField)}")
-        {
-        }
+		public LabeledTextField() : base(
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledTextField)}/{nameof(LabeledTextField)}")
+		{
+		}
 
-        public override void Refresh()
-        {
-            base.Refresh();
+		public override void Refresh()
+		{
+			base.Refresh();
 
-            _labelComponent = Root.Q<Label>("label");
-            _labelComponent.text = Label;
+			_labelComponent = Root.Q<Label>("label");
+			_labelComponent.text = Label;
 
-            _textFieldComponent = Root.Q<TextField>("textField");
-            _textFieldComponent.value = Value;
-            _textFieldComponent.RegisterValueChangedCallback(ValueChanged);
-        }
+			_textFieldComponent = Root.Q<TextField>("textField");
+			_textFieldComponent.value = Value;
+			_textFieldComponent.RegisterValueChangedCallback(ValueChanged);
+		}
 
-        public void Setup(string label, string value, Action onValueChanged)
-        {
-            Label = label;
-            Value = value;
-            _onValueChanged = onValueChanged;
-        }
+		public void Setup(string label, string value, Action onValueChanged)
+		{
+			Label = label;
+			Value = value;
+			_onValueChanged = onValueChanged;
+		}
 
-        protected override void OnDestroy()
-        {
-            _textFieldComponent.UnregisterValueChangedCallback(ValueChanged);
-        }
+		protected override void OnDestroy()
+		{
+			_textFieldComponent.UnregisterValueChangedCallback(ValueChanged);
+		}
 
-        private void ValueChanged(ChangeEvent<string> evt)
-        {
-            Value = evt.newValue;
-            InvokeValidationCheck(Value);
-        }
-    }
+		private void ValueChanged(ChangeEvent<string> evt)
+		{
+			Value = evt.newValue;
+			InvokeValidationCheck(Value);
+		}
+
+		public void OverrideLabelWidth(float width)
+		{
+			_labelComponent?.style.SetWidth(width);
+		}
+	}
 }

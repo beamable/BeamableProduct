@@ -85,4 +85,7 @@ public static class BeamableConstants
 
    //Editor Pref Keys
    public const string REALM_PREFERENCE = "BeamableSelectedRealms";
+   
+   // Obsolete/deprecated elements
+   public const string OBSOLETE_BUSS_INTRODUCED = "Not used after introducing BUSS system";
 }
