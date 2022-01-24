@@ -12,9 +12,11 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
+
 namespace Beamable.Editor.Toolbox.Components
 {
-	public class ToolboxBreadcrumbsVisualElement : ToolboxComponent
+	public class ToolboxBreadcrumbsVisualElement
+		    : ToolboxComponent
 	{
 		public new class UxmlFactory : UxmlFactory<ToolboxBreadcrumbsVisualElement, UxmlTraits>
 		{
@@ -60,7 +62,7 @@ namespace Beamable.Editor.Toolbox.Components
 				target = portalButton
 			 }
 				;
-			
+
 		}
 
 
