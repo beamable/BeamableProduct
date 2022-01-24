@@ -257,19 +257,20 @@ namespace Beamable.Editor.Toolbox.UI
             {
                 return;
             }
-            
+
             BeamablePackageUpdateMeta.IsBlogSiteAvailable = BeamableWebRequester.IsBlogSpotAvailable(BeamablePackageUpdateMeta.NewestVersionNumber);
             var updateAvailableAnnouncement = new UpdateAvailableAnnouncementModel();
-            updateAvailableAnnouncement.SetPackageVersion(BeamablePackageUpdateMeta.NewestVersionNumber);
-
+            updateAvailableAnnouncement.SetDescription(BeamablePackageUpdateMeta.NewestVersionNumber, BeamablePackageUpdateMeta.IsBlogSiteAvailable);
+            
             if (BeamablePackageUpdateMeta.IsBlogSiteAvailable)
             {
-                updateAvailableAnnouncement.OnWhatsNew = () =>
+	            updateAvailableAnnouncement.OnWhatsNew = () =>
                 {
                     Application.OpenURL(BeamableWebRequester.BlogSpotUrl);
                     BeamablePackageUpdateMeta.IsBlogVisited = true;
                 };
             }
+            else
 
             updateAvailableAnnouncement.OnIgnore = () =>
             {
