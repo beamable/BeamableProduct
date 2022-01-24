@@ -11,8 +11,8 @@
             <engine:Label name="contentLabel"/>
         </engine:VisualElement>
         <engine:VisualElement name="buttonsVisualElement">
-            <beamable:PrimaryButtonVisualElement name="okButton" text="OK"/>
             <beamable:GenericButtonVisualElement name="cancelButton" text="Cancel" type ="Cancel"/>
+            <beamable:PrimaryButtonVisualElement name="okButton" text="OK"/>
         </engine:VisualElement>
     </engine:VisualElement>
 </engine:UXML>

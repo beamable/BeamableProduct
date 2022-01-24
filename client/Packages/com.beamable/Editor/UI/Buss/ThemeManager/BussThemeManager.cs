@@ -78,13 +78,8 @@ namespace Beamable.UI.BUSS
 			VisualElement mainVisualElement = new VisualElement();
 			mainVisualElement.name = "themeManagerContainer";
 
-#if UNITY_2018
-			mainVisualElement.AddStyleSheet(
-				$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussThemeManager.2018.uss");
-#elif UNITY_2019_1_OR_NEWER
 			mainVisualElement.AddStyleSheet(
 				$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
-#endif
 
 			ScrollView scrollView = new ScrollView();
 			scrollView.name = "themeManagerContainerScrollView";

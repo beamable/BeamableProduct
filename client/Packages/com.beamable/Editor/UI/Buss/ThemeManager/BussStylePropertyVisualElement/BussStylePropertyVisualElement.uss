@@ -7,7 +7,6 @@
 
 #propertyLabel {
     width: 140px;
-    color: rgb(255,255,255);
     -unity-text-align: middle-left;
     height: 20px;
 }
@@ -45,10 +44,6 @@
     align-self: center;
     width: 16px;
     height: 16px;
-}
-
-BussStylePropertyVisualElement.doesntExists {
-    background-color: rgba(255, 255, 255, 0.16);
 }
 
 .doesntExists #globalVariable, .doesntExists #removeButton {
