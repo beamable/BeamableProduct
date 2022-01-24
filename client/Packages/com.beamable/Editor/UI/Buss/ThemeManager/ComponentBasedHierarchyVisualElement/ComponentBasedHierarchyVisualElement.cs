@@ -50,7 +50,8 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		protected ComponentBasedHierarchyVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement.uss") { }
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement.uss")
+		{ }
 
 		public override void Init()
 		{

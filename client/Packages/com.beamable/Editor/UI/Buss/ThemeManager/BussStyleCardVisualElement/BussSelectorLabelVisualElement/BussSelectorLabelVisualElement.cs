@@ -17,7 +17,8 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleRule _styleRule;
 
 		public BussSelectorLabelVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStyleCardVisualElement/BussSelectorLabelVisualElement/BussSelectorLabelVisualElement.uss") { }
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStyleCardVisualElement/BussSelectorLabelVisualElement/BussSelectorLabelVisualElement.uss")
+		{ }
 
 		public void Setup(BussStyleRule styleRule)
 		{

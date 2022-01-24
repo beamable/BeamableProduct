@@ -37,7 +37,7 @@ namespace Beamable.Editor.UI.Components
 		public event Action OnConnectionChange;
 
 		public bool IsConnected => _propertyProvider.GetProperty() is VariableProperty;
-		
+
 		public VariableConnectionVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStylePropertyVisualElement)}/" +
 			$"{nameof(VariableConnectionVisualElement)}/{nameof(VariableConnectionVisualElement)}")
