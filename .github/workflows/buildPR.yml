@@ -17,6 +17,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v2
         with:
+          persist-credentials: false
           fetch-depth: 0 # otherwise, there would be errors pushing refs to the destination repository.
       - name: Get branch name
         id: branch-name
