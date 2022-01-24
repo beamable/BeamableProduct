@@ -53,6 +53,7 @@ namespace Beamable.Editor.UI.Components
 			_mainElement.style.SetFlexDirection(FlexDirection.Row);
 
 			_dropdown.Refresh();
+			_dropdown.Q("valueContainer").SetWidth(_dropdown.Q("valueContainer").style.width - 30f);
 		}
 
 		public void Update()
