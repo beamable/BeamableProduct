@@ -59,7 +59,7 @@ jobs:
       - name: Push changes 
         if: ${{ steps.format-changes.outputs.any == 'true' && !github.ref_protected }}
         run: |
-          git push "https://$GITHUB_ACTOR:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY.git" ${{github.head_ref}}
+          git push "https://$GITHUB_ACTOR:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY.git" HEAD:${{github.head_ref}}
   testMicroserviceBaseImage:
     needs: dotnet-format
     timeout-minutes: 10
