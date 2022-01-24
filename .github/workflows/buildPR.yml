@@ -29,6 +29,7 @@ jobs:
           echo ${{github.base_ref}}
           echo ${{ github.ref_protected }}
           echo ${{ !github.ref_protected }}
+          git status
         shell: bash
       - name: "Install dotnet-format"
         if: ${{ !github.ref_protected}}
