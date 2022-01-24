@@ -84,6 +84,7 @@ namespace Beamable.Common.Assistant
 		public const string ATTRIBUTE_NAME_COLLISION_ID_PREFIX = "AttributeNameCollision";
 
 
+
 		// Beamable Initialization IDs
 		[BeamHintId] public static readonly string ID_UNSUPPORTED_REGISTER_BEAMABLE_DEPENDENCY_SIGNATURE = GenerateHintId("UnsupportedRegisterBeamableDependencySignature", ATTRIBUTE_VALIDATION_ID_PREFIX);
 
@@ -91,12 +92,15 @@ namespace Beamable.Common.Assistant
 		[BeamHintId] public static readonly string ID_MISCONFIGURED_HINT_DETAILS_PROVIDER = GenerateHintId("MisconfiguredHintDetailsProvider", ATTRIBUTE_VALIDATION_ID_PREFIX);
 		[BeamHintId] public static readonly string ID_MISCONFIGURED_HINT_SYSTEM_ATTRIBUTE = GenerateHintId("MisconfiguredHintSystemAttribute", ATTRIBUTE_VALIDATION_ID_PREFIX);
 
-		// Microservices IDs
+		// Microservices - Code Misuse IDs
 		[BeamHintId] public static readonly string ID_MICROSERVICE_ATTRIBUTE_MISSING = GenerateHintId("MicroserviceAttributeMissing", ATTRIBUTE_VALIDATION_ID_PREFIX);
 		[BeamHintId] public static readonly string ID_MICROSERVICE_NAME_COLLISION = GenerateHintId("MicroserviceNameCollision", ATTRIBUTE_NAME_COLLISION_ID_PREFIX);
 		[BeamHintId] public static readonly string ID_CLIENT_CALLABLE_ASYNC_VOID = GenerateHintId("ClientCallableAsyncVoid", ATTRIBUTE_VALIDATION_ID_PREFIX);
 		[BeamHintId] public static readonly string ID_CLIENT_CALLABLE_UNSUPPORTED_PARAMETERS = GenerateHintId("ClientCallableUnsupportedParameters", ATTRIBUTE_VALIDATION_ID_PREFIX);
 
+		// Microservices - Docker - Ids
+		[BeamHintId] public static readonly string ID_INSTALL_DOCKER_PROCESS = GenerateHintId("InstallDockerProcess");
+		[BeamHintId] public static readonly string ID_DOCKER_PROCESS_NOT_RUNNING = GenerateHintId("DockerProcessNotRunning");
 
 
 	}

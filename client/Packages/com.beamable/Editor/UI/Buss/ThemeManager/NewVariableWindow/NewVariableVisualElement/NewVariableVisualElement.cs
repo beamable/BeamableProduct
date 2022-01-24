@@ -36,25 +36,27 @@ namespace Beamable.Editor.UI.Buss
 
 		private readonly Dictionary<string, IBussProperty> _typesDict = new Dictionary<string, IBussProperty>
 		{
-			{ "Color", new SingleColorBussProperty() },
-			{ "VertexColor", new VertexColorBussProperty() },
-			{ "Float", new FloatBussProperty() },
-			{ "FloatFromFloat", new FractionFloatBussProperty() },
-			{ "Enum", null },
-			{ "Sprite", new SpriteBussProperty() },
-			{ "Font", new FontBussAssetProperty() },
+			{"Color", new SingleColorBussProperty()},
+			{"VertexColor", new VertexColorBussProperty()},
+			{"Float", new FloatBussProperty()},
+			{"FloatFromFloat", new FractionFloatBussProperty()},
+			{"Enum", null},
+			{"Sprite", new SpriteBussProperty()},
+			{"Font", new FontBussAssetProperty()},
 		};
 
 		private readonly Dictionary<string, IBussProperty> _enumsDict = new Dictionary<string, IBussProperty>
 		{
-			{ "ImageType", new ImageTypeBussProperty() },
-			{ "SdfMode", new SdfModeBussProperty() },
-			{ "BorderMode", new BorderModeBussProperty() },
-			{ "BackgroundMode", new BackgroundModeBussProperty() },
-			{ "ShadowMode", new ShadowModeBussProperty() },
-			{ "Easing", new EasingBussProperty() },
-			{ "TextAlignmentOptions", new TextAlignmentOptionsBussProperty() },
+			{"ImageType", new ImageTypeBussProperty()},
+			{"SdfMode", new SdfModeBussProperty()},
+			{"BorderMode", new BorderModeBussProperty()},
+			{"BackgroundMode", new BackgroundModeBussProperty()},
+			{"ShadowMode", new ShadowModeBussProperty()},
+			{"Easing", new EasingBussProperty()},
+			{"TextAlignmentOptions", new TextAlignmentOptionsBussProperty()},
 		};
+
+		private PrimaryButtonVisualElement _confirmButton;
 
 		public override void Refresh()
 		{
@@ -64,6 +66,7 @@ namespace Beamable.Editor.UI.Buss
 			_propertyLabel = Root.Q<Label>("propertyLabel");
 
 			_variableName = Root.Q<LabeledTextField>("variableName");
+			_variableName.Setup("Variable name", string.Empty, OnValidate);
 			_variableName.Refresh();
 			_variableName.OverrideLabelWidth(LABEL_WIDTH);
 
@@ -74,11 +77,25 @@ namespace Beamable.Editor.UI.Buss
 			_selectType.Refresh();
 			_selectType.OverrideLabelWidth(LABEL_WIDTH);
 
-			var confirmButton = Root.Q<PrimaryButtonVisualElement>("confirmButton");
-			confirmButton.Button.clickable.clicked += HandleConfirmButton;
+			_confirmButton = Root.Q<PrimaryButtonVisualElement>("confirmButton");
+			_confirmButton.Button.clickable.clicked += HandleConfirmButton;
 
 			var cancelButton = Root.Q<GenericButtonVisualElement>("cancelButton");
 			cancelButton.OnClick += NewVariableWindow.CloseWindow;
+
+			OnValidate();
+		}
+
+		private void OnValidate()
+		{
+			if (string.IsNullOrWhiteSpace(_variableName.Value))
+			{
+				ChangeButtonState(false, "Variable name can't be empty");
+			}
+			else
+			{
+				ChangeButtonState(true);
+			}
 		}
 
 		private void HandleConfirmButton()
@@ -141,8 +158,18 @@ namespace Beamable.Editor.UI.Buss
 				_selectEnum.EnableInClassList("hide", false);
 				return true;
 			}
+
 			_selectEnum.EnableInClassList("hide", true);
 			return false;
+		}
+
+		private void ChangeButtonState(bool isEnabled, string tooltip = "")
+		{
+			_confirmButton.tooltip = tooltip;
+			if (isEnabled)
+				_confirmButton.Enable();
+			else
+				_confirmButton.Disable();
 		}
 	}
 }
