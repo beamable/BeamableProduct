@@ -115,6 +115,11 @@ namespace UnityEngine.Experimental.UIElements
 			self.fontSize = (int)value;
 		}
 
+		public static float GetWidth(this IStyle style)
+		{
+			return style.width.value;
+		}
+
 		public static void SetWidth(this IStyle self, float value)
 		{
 			self.width = value;
