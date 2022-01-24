@@ -25,7 +25,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			{
 				try
 				{
-					return new Optional<BussConfiguration> {Value = Instance, HasValue = true};
+					return new Optional<BussConfiguration> { Value = Instance, HasValue = true };
 				}
 				catch (ModuleConfigurationNotReadyException)
 				{
@@ -119,7 +119,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 		{
 			if (globalStyleSheet != null)
 			{
-				globalStyleSheet.OnChange -= OnGlobalStyleChanged;
+				globalStyleSheet.Change -= OnGlobalStyleChanged;
 			}
 		}
 
@@ -127,7 +127,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 		{
 			if (globalStyleSheet != null)
 			{
-				globalStyleSheet.OnChange -= OnGlobalStyleChanged;
+				globalStyleSheet.Change -= OnGlobalStyleChanged;
 			}
 		}
 
@@ -195,8 +195,8 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 		}
 
 		public static void ApplyDescriptorWithPseudoClass(BussElement element,
-		                                                  string pseudoClass,
-		                                                  BussStyleDescription descriptor)
+														  string pseudoClass,
+														  BussStyleDescription descriptor)
 		{
 			if (element == null || descriptor == null) return;
 			foreach (var property in descriptor.Properties)
