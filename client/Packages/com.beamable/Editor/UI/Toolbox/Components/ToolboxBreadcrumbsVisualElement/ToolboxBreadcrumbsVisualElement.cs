@@ -60,6 +60,7 @@ namespace Beamable.Editor.Toolbox.Components
                     mp => { GetPortalUrl.Then(url => { EditorGUIUtility.systemCopyBuffer = url; }); });
             }) {target = portalButton};
         }
+
         
         private Promise<string> GetPortalUrl => EditorAPI.Instance.Map(de =>
             $"{BeamableEnvironment.PortalUrl}/{de.CidOrAlias}/games/{de.ProductionRealm.Pid}/realms/{de.Pid}?refresh_token={de.Token.RefreshToken}");
