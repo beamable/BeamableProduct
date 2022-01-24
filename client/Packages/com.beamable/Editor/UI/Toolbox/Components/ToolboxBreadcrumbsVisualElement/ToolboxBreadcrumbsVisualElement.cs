@@ -17,8 +17,8 @@ namespace Beamable.Editor.Toolbox.Components
 {
 	public class ToolboxBreadcrumbsVisualElement
 
-		
-		:   ToolboxComponent
+
+		: ToolboxComponent
 	{
 		public new class UxmlFactory : UxmlFactory<ToolboxBreadcrumbsVisualElement, UxmlTraits>
 		{
