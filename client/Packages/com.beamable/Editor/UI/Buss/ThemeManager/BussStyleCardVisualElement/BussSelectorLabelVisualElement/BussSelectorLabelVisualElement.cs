@@ -16,13 +16,9 @@ namespace Beamable.Editor.UI.Components
 		private TextField _editableLabel;
 		private BussStyleRule _styleRule;
 
-#if UNITY_2018
 		public BussSelectorLabelVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStyleCardVisualElement/BussSelectorLabelVisualElement/BussSelectorLabelVisualElement.2018.uss") { }
-#elif UNITY_2019_1_OR_NEWER
-		public BussSelectorLabelVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStyleCardVisualElement/BussSelectorLabelVisualElement/BussSelectorLabelVisualElement.uss") { }
-#endif
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStyleCardVisualElement/BussSelectorLabelVisualElement/BussSelectorLabelVisualElement.uss")
+		{ }
 
 		public void Setup(BussStyleRule styleRule)
 		{
