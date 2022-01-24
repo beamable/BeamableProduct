@@ -1,7 +1,7 @@
+using Beamable.Common.Content;
+using Beamable.Config;
 using Beamable.Editor;
 using Beamable.Editor.Microservice.UI;
-using Beamable.Editor.UI.Model;
-using Beamable.Server.Editor.ManagerClient;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -58,6 +58,8 @@ namespace Beamable.Server.Editor
 		[Tooltip("It will enable checking if docker app is running before you can start microservices.")]
 		public bool DockerAppCheckInMicroservicesWindow = true;
 
+		[FilePathSelector(true, DialogTitle = "Path to Docker Desktop", FileExtension = "exe", OnlyFiles = true)]
+		public string DockerDesktopPath;
 
 		public string DockerCommand = DOCKER_LOCATION;
 		private string _dockerCommandCached = DOCKER_LOCATION;
@@ -85,7 +87,7 @@ namespace Beamable.Server.Editor
 #if UNITY_EDITOR
       public override void OnFreshCopy()
       {
-         var isDark = UnityEditor.EditorGUIUtility.isProSkin;
+         var isDark = EditorGUIUtility.isProSkin;
 
          if (isDark)
          {
@@ -151,7 +153,7 @@ namespace Beamable.Server.Editor
 			if (CustomContainerPrefix != _cachedContainerPrefix)
 			{
 				_cachedContainerPrefix = CustomContainerPrefix;
-				Config.ConfigDatabase.SetString("containerPrefix", _cachedContainerPrefix, true, true);
+				ConfigDatabase.SetString("containerPrefix", _cachedContainerPrefix, true, true);
 				EditorApplication.delayCall += () => // using delayCall to avoid Unity warning about sending messages from OnValidate()
 				   EditorAPI.Instance.Then(api => api.SaveConfig(
 					  api.CidOrAlias, api.Pid, api.Host, api.Cid, CustomContainerPrefix));
@@ -165,6 +167,15 @@ namespace Beamable.Server.Editor
 				{
 					MicroserviceWindow.Instance.RefreshWindow(true);
 				}
+			}
+
+			if (string.IsNullOrEmpty(DockerDesktopPath))
+			{
+#if UNITY_EDITOR_OSX
+				DockerDesktopPath = "/Applications/Docker.app/";
+#else
+				DockerDesktopPath = "C:\\Program Files\\Docker\\Docker\\Docker Desktop.exe";
+#endif
 			}
 		}
 
@@ -244,7 +255,7 @@ namespace Beamable.Server.Editor
 		}
 	}
 
-	[System.Serializable]
+	[Serializable]
 	public class StorageConfigurationEntry
 	{
 		public string StorageName;
@@ -264,7 +275,7 @@ namespace Beamable.Server.Editor
 		public string LocalInitPass = "beamable";
 	}
 
-	[System.Serializable]
+	[Serializable]
 	public class MicroserviceConfigurationEntry
 	{
 		public string ServiceName;
@@ -281,7 +292,7 @@ namespace Beamable.Server.Editor
 		public MicroserviceConfigurationDebugEntry DebugData;
 	}
 
-	[System.Serializable]
+	[Serializable]
 	public class MicroserviceConfigurationDebugEntry
 	{
 		public string Username = "beamable";
