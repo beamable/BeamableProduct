@@ -1,8 +1,5 @@
 using Beamable.Common;
-using Beamable.Editor.Environment;
-using Beamable.Editor.Login.UI;
 using Beamable.Editor.Toolbox.UI.Components;
-using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
 using System.Collections.Generic;
 using UnityEditor;
@@ -61,10 +58,7 @@ namespace Beamable.Editor.Toolbox.Components
 			})
 			{
 				target = portalButton
-
-
-			}
-
+			 }
 				;
 		}
 
