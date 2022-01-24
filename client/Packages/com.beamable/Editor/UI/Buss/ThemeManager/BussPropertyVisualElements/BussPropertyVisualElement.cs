@@ -22,13 +22,8 @@ namespace Beamable.Editor.UI.Components
 			get;
 		}
 
-#if UNITY_2018
-		protected BussPropertyVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussPropertyVisualElements/BussPropertyVisualElement.2018.uss") { }
-#elif UNITY_2019_1_OR_NEWER
 		protected BussPropertyVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussPropertyVisualElements/BussPropertyVisualElement.uss") { }
-#endif
 
 		protected void AddBussPropertyFieldClass(VisualElement ve)
 		{

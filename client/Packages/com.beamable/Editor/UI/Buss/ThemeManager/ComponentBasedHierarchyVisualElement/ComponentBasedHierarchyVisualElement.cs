@@ -49,14 +49,8 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
-#if UNITY_2018
 		protected ComponentBasedHierarchyVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement.2018.uss") { }
-
-#elif UNITY_2019_1_OR_NEWER
-		public ComponentBasedHierarchyVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement.uss") { }
-#endif
 
 		public override void Init()
 		{
