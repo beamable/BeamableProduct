@@ -102,5 +102,6 @@ namespace Beamable.Editor.Assistant
 
 			injectionBag.SetLabel(validationIntro + validationMsg, "hintText");
 		}
+
 	}
 }

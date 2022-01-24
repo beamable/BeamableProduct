@@ -141,8 +141,8 @@ namespace Beamable.Editor.Assistant
 		public void SetHintNotificationValue(BeamHintHeader header, bool evtNewValue)
 		{
 			var hint = GetHint(header);
-			var state = evtNewValue  
-				?  (header.Type == BeamHintType.Validation ? BeamHintNotificationPreference.NotifyOnContextObjectChanged : BeamHintNotificationPreference.NotifyOncePerSession)
+			var state = evtNewValue
+				? (header.Type == BeamHintType.Validation ? BeamHintNotificationPreference.NotifyOnContextObjectChanged : BeamHintNotificationPreference.NotifyOncePerSession)
 				: BeamHintNotificationPreference.NotifyNever;
 			_hintPreferencesManager.SetHintNotificationPreferences(hint, state);
 		}
@@ -164,6 +164,16 @@ namespace Beamable.Editor.Assistant
 		{
 			var hint = GetHint(header);
 			_hintPreferencesManager.SetHintPlayModeWarningPreferences(hint, newPreference);
+		}
+
+		/// <summary>
+		/// Guarantees a hint's details are opened.
+		/// </summary>
+		/// <param name="beamHintHeader"></param>
+		public void OpenHintDetails(BeamHintHeader beamHintHeader)
+		{
+			if (DisplayingHints.Contains(beamHintHeader) && !DetailsOpenedHints.Contains(beamHintHeader))
+				DetailsOpenedHints.Add(beamHintHeader);
 		}
 	}
 

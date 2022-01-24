@@ -17,9 +17,9 @@ namespace Beamable.Editor.Reflection
 		public static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
 		{
 			var reflectionCacheRelatedAssets = importedAssets.Union(movedAssets)
-			                                                 .Select(path => (path, type: AssetDatabase.GetMainAssetTypeAtPath(path)))
-			                                                 .Where(t => typeof(ReflectionSystemObject).IsAssignableFrom(t.type))
-			                                                 .ToList();
+															 .Select(path => (path, type: AssetDatabase.GetMainAssetTypeAtPath(path)))
+															 .Where(t => typeof(ReflectionSystemObject).IsAssignableFrom(t.type))
+															 .ToList();
 
 			if (reflectionCacheRelatedAssets.Count > 0)
 			{
@@ -27,6 +27,7 @@ namespace Beamable.Editor.Reflection
 
 				BeamableLogger.Log("Re-building the Reflection Systems from Cached Data!");
 				BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems(reimportedReflectionTypes);
+				BeamEditor.EditorReflectionCache.SetStorage(BeamEditor.HintGlobalStorage);
 				BeamableLogger.Log("Finished Rebuilding Reflection Cache Systems");
 				AssetDatabase.Refresh();
 			}
@@ -35,6 +36,7 @@ namespace Beamable.Editor.Reflection
 			{
 				BeamableLogger.Log("Re-building the Reflection Systems from Cached Data!");
 				BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems();
+				BeamEditor.EditorReflectionCache.SetStorage(BeamEditor.HintGlobalStorage);
 				BeamableLogger.Log("Finished Rebuilding Reflection Cache Systems");
 				AssetDatabase.Refresh();
 			}
