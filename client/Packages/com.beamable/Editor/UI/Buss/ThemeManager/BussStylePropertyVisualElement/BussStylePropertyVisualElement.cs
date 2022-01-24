@@ -15,14 +15,6 @@ namespace Beamable.Editor.UI.Components
 {
 	public class BussStylePropertyVisualElement : BeamableBasicVisualElement
 	{
-#if UNITY_2018
-		public BussStylePropertyVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.2018.uss") { }
-#elif UNITY_2019_1_OR_NEWER
-		public BussStylePropertyVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.uss") { }
-#endif
-
 		private BussPropertyVisualElement _propertyVisualElement;
 		private VariableConnectionVisualElement _variableConnection;
 		private VisualElement _valueParent;
@@ -45,6 +37,9 @@ namespace Beamable.Editor.UI.Components
 			get;
 			private set;
 		}
+		
+		public BussStylePropertyVisualElement() : base(
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.uss") { }
 
 		public override void Init()
 		{

@@ -31,13 +31,8 @@ namespace Beamable.Editor.UI.Components
 			private set;
 		}
 
-#if UNITY_2018
-		public IndentedLabelVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/IndentedLabelVisualElement/IndentedLabelVisualElement.2018.uss") { }
-#elif UNITY_2019_1_OR_NEWER
 		public IndentedLabelVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/IndentedLabelVisualElement/IndentedLabelVisualElement.uss") { }
-#endif
 
 		public void Setup(GameObject relatedGameObject,
 						  string label,
