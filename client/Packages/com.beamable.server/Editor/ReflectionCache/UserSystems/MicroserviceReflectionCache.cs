@@ -177,7 +177,8 @@ namespace Beamable.Server.Editor
 					// Initialize the ClientCallableDescriptors if the type has any.
 					if (validClientCallablesLookup.TryGetValue(type, out var clientCallables))
 					{
-						descriptor.Methods = clientCallables.Select(delegate(MemberAttribute pair) {
+						descriptor.Methods = clientCallables.Select(delegate (MemberAttribute pair)
+						{
 							var clientCallableAttribute = pair.AttrAs<ClientCallableAttribute>();
 							var clientCallableMethod = pair.InfoAs<MethodInfo>();
 
@@ -185,33 +186,36 @@ namespace Beamable.Server.Editor
 							var callableScopes = clientCallableAttribute.RequiredScopes;
 
 							var parameters = clientCallableMethod
-							                 .GetParameters()
-							                 .Select((param, i) => {
-								                 var paramAttr = param.GetCustomAttribute<ParameterAttribute>();
-								                 var paramName = string.IsNullOrEmpty(paramAttr?.ParameterNameOverride)
-									                 ? param.Name
-									                 : paramAttr.ParameterNameOverride;
-								                 return new ClientCallableParameterDescriptor {
-									                 Name = paramName,
-									                 Index = i,
-									                 Type = param.ParameterType
-								                 };
-							                 }).ToArray();
+											 .GetParameters()
+											 .Select((param, i) =>
+											 {
+												 var paramAttr = param.GetCustomAttribute<ParameterAttribute>();
+												 var paramName = string.IsNullOrEmpty(paramAttr?.ParameterNameOverride)
+													 ? param.Name
+													 : paramAttr.ParameterNameOverride;
+												 return new ClientCallableParameterDescriptor
+												 {
+													 Name = paramName,
+													 Index = i,
+													 Type = param.ParameterType
+												 };
+											 }).ToArray();
 
-							return new ClientCallableDescriptor() {
+							return new ClientCallableDescriptor()
+							{
 								Path = callableName,
 								Scopes = callableScopes,
 								Parameters = parameters,
 							};
-						}).ToList();						
+						}).ToList();
 					}
 					else // If no client callables were found in the C#MS, initialize an empty list.
 					{
 						descriptor.Methods = new List<ClientCallableDescriptor>();
 					}
-					
-					
-					
+
+
+
 
 					Descriptors.Add(descriptor);
 					AllDescriptors.Add(descriptor);
