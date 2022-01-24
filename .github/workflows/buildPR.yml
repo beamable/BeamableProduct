@@ -13,9 +13,9 @@ on:
 jobs:
   dotnet-format:
     runs-on: ubuntu-latest
-    if: ${{ github.base_ref == 'refs/heads/main' }}
     steps:
       - name: Checkout repo
+        if: ${{ github.head_ref == 'refs/heads/main' }}
         uses: actions/checkout@v2
         with:
           fetch-depth: 0 # otherwise, there would be errors pushing refs to the destination repository.
