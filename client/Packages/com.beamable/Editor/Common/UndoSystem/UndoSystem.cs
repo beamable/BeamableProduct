@@ -96,7 +96,6 @@ namespace Beamable.Editor.Common
 			}
 		}
 
-		[Serializable]
 		private class CustomStack<T1>
 		{
 			public int Count => _list.Count;
