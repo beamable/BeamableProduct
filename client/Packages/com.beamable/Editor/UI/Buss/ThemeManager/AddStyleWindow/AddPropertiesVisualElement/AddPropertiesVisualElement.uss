@@ -1,0 +1,85 @@
+AddPropertiesVisualElement,
+AddPropertiesVisualElement > TemplateContainer,
+AddPropertiesVisualElement > TemplateContainer > #mainVisualElement,
+#styleSheetContainer,
+#bodyContainer {
+    flex-grow: 1;
+}
+
+AddPropertiesVisualElement > TemplateContainer > #mainVisualElement {
+    padding-top: 20px;
+    padding-left: 50px;
+    padding-right: 50px;
+}
+
+#buttonStrip {
+    flex-direction: row;
+    justify-content: flex-end;
+    padding-right: 5px;
+    padding-top: 10px;
+    height: 60;
+}
+
+#confirmButton {
+    width: 100px;
+    height: 28px;
+    align-self: flex-start;
+}
+
+Label {
+    -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+    font-size: 14px;
+    -unity-font-style: bold;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    margin-left: 0px;
+    margin-right: 0px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    padding-left: 0px;
+    padding-right: 0px;
+}
+
+TextField {
+    min-height: 20px;
+    font-size: 14px;
+}
+
+DropdownVisualElement,
+DropdownVisualElement > TemplateContainer,
+DropdownVisualElement > TemplateContainer > #mainVisualElement > * {
+    flex-grow: 1;
+}
+
+DropdownVisualElement > TemplateContainer > #mainVisualElement {
+    padding-right: 5px;
+    padding-left: 5px;
+}
+
+DropdownVisualElement > TemplateContainer > #mainVisualElement > #mainContainer > #valueContainer {
+    width: 0px;
+}
+
+DropdownVisualElement > TemplateContainer > #mainVisualElement > #mainContainer > #valueContainer > #value {
+    -unity-text-align: middle-left;
+    padding-left: 5px;
+}
+
+#bodyContainer {
+    flex-direction: row;
+}
+
+#propertiesContainer {
+    flex-grow: 1;
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+#selectStyleSheet, #styleName, #bodyContainer {
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+#rulesLabel {
+    width: 120px;
+}
