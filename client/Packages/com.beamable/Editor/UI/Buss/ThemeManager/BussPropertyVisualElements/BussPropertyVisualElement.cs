@@ -23,7 +23,8 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		protected BussPropertyVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussPropertyVisualElements/BussPropertyVisualElement.uss") { }
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussPropertyVisualElements/BussPropertyVisualElement.uss")
+		{ }
 
 		protected void AddBussPropertyFieldClass(VisualElement ve)
 		{

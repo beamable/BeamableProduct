@@ -37,9 +37,10 @@ namespace Beamable.Editor.UI.Components
 			get;
 			private set;
 		}
-		
+
 		public BussStylePropertyVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.uss") { }
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.uss")
+		{ }
 
 		public override void Init()
 		{

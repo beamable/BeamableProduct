@@ -32,7 +32,8 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public IndentedLabelVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/IndentedLabelVisualElement/IndentedLabelVisualElement.uss") { }
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/IndentedLabelVisualElement/IndentedLabelVisualElement.uss")
+		{ }
 
 		public void Setup(GameObject relatedGameObject,
 						  string label,
