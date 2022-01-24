@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
 using Beamable.Common.Content;
 using Beamable.Editor.Schedules;
@@ -10,7 +9,17 @@ using UnityEngine;
 namespace Beamable.Editor.Tests.Content
 {
 	public class SchedulesTests
-    {
+	{
+		private readonly string _dateStartString = "2021-01-01T01:00:00.0000000Z";
+
+		private DateTime _dateStart;
+
+		[SetUp]
+		public void SetUp()
+		{
+			Assert.IsTrue(DateTime.TryParse(_dateStartString, out _dateStart), "Date strings are not parsing correctly");
+		}
+		
         [Test]
         public void Event_Schedule_Daily_Mode_Test()
         {
@@ -28,10 +37,10 @@ namespace Beamable.Editor.Tests.Content
             EventScheduleWindow window = new EventScheduleWindow();
             window.Refresh();
             window.ModeComponent.Set(0);
-            window.StartTimeComponent.Set(DateTime.Now);
+            window.StartTimeComponent.Set(_dateStart);
             window.NeverExpiresComponent.Value = true;
-            window.ActiveToDateComponent.Set(DateTime.Now + TimeSpan.FromDays(2));
-            window.ActiveToHourComponent.Set(DateTime.Now + TimeSpan.FromDays(2));
+            window.ActiveToDateComponent.Set(_dateStart + TimeSpan.FromDays(2));
+            window.ActiveToHourComponent.Set(_dateStart + TimeSpan.FromDays(2));
             window.OnScheduleUpdated += ScheduleReceived;
             window.InvokeTestConfirm();
             window.OnScheduleUpdated -= ScheduleReceived;
@@ -70,11 +79,11 @@ namespace Beamable.Editor.Tests.Content
             EventScheduleWindow window = new EventScheduleWindow();
             window.Refresh();
             window.ModeComponent.Set(1);
-            window.StartTimeComponent.Set(DateTime.Now);
+            window.StartTimeComponent.Set(_dateStart);
             window.DaysComponent.SetSelectedDays(new List<string> {"1", "3", "5"});
             window.NeverExpiresComponent.Value = true;
-            window.ActiveToDateComponent.Set(DateTime.Now + TimeSpan.FromDays(2));
-            window.ActiveToHourComponent.Set(DateTime.Now + TimeSpan.FromDays(2));
+            window.ActiveToDateComponent.Set(_dateStart + TimeSpan.FromDays(2));
+            window.ActiveToHourComponent.Set(_dateStart + TimeSpan.FromDays(2));
             window.OnScheduleUpdated += ScheduleReceived;
             window.InvokeTestConfirm();
             window.OnScheduleUpdated -= ScheduleReceived;
@@ -114,7 +123,7 @@ namespace Beamable.Editor.Tests.Content
             EventScheduleWindow window = new EventScheduleWindow();
             window.Refresh();
             window.ModeComponent.Set(2);
-            window.StartTimeComponent.Set(DateTime.Now);
+            window.StartTimeComponent.Set(_dateStart);
             window.CalendarComponent.Calendar.SetInitialValues(new List<string>
             {
                 "5-10-2021",
@@ -122,8 +131,8 @@ namespace Beamable.Editor.Tests.Content
                 "12-12-2022"
             });
             window.NeverExpiresComponent.Value = false;
-            window.ActiveToDateComponent.Set(DateTime.Now + TimeSpan.FromDays(2));
-            window.ActiveToHourComponent.Set(DateTime.Now + TimeSpan.FromDays(2));
+            window.ActiveToDateComponent.Set(_dateStart + TimeSpan.FromDays(2));
+            window.ActiveToHourComponent.Set(_dateStart + TimeSpan.FromDays(2));
             window.OnScheduleUpdated += ScheduleReceived;
             window.InvokeTestConfirm();
             window.OnScheduleUpdated -= ScheduleReceived;
@@ -162,11 +171,11 @@ namespace Beamable.Editor.Tests.Content
             window.Refresh();
             window.ModeComponent.Set(0);
             window.AllDayComponent.Value = false;
-            window.PeriodFromHourComponent.Set(DateTime.Now);
-            window.PeriodToHourComponent.Set(DateTime.Now + TimeSpan.FromHours(2));
+            window.PeriodFromHourComponent.Set(_dateStart);
+            window.PeriodToHourComponent.Set(_dateStart + TimeSpan.FromHours(2));
             window.NeverExpiresComponent.Value = true;
-            window.ActiveToDateComponent.Set(DateTime.Now + TimeSpan.FromDays(2));
-            window.ActiveToHourComponent.Set(DateTime.Now + TimeSpan.FromDays(2));
+            window.ActiveToDateComponent.Set(_dateStart + TimeSpan.FromDays(2));
+            window.ActiveToHourComponent.Set(_dateStart + TimeSpan.FromDays(2));
             window.OnScheduleUpdated += ScheduleReceived;
             window.InvokeTestConfirm();
             window.OnScheduleUpdated -= ScheduleReceived;
@@ -207,11 +216,11 @@ namespace Beamable.Editor.Tests.Content
             window.ModeComponent.Set(1);
             window.DaysComponent.SetSelectedDays(new List<string> {"1", "3", "5"});
             window.AllDayComponent.Value = false;
-            window.PeriodFromHourComponent.Set(DateTime.Now);
-            window.PeriodToHourComponent.Set(DateTime.Now + TimeSpan.FromHours(2));
+            window.PeriodFromHourComponent.Set(_dateStart);
+            window.PeriodToHourComponent.Set(_dateStart + TimeSpan.FromHours(2));
             window.NeverExpiresComponent.Value = false;
-            window.ActiveToDateComponent.Set(DateTime.Now + TimeSpan.FromDays(2));
-            window.ActiveToHourComponent.Set(DateTime.Now + TimeSpan.FromDays(2));
+            window.ActiveToDateComponent.Set(_dateStart + TimeSpan.FromDays(2));
+            window.ActiveToHourComponent.Set(_dateStart + TimeSpan.FromDays(2));
             window.OnScheduleUpdated += ScheduleReceived;
             window.InvokeTestConfirm();
             window.OnScheduleUpdated -= ScheduleReceived;
@@ -256,11 +265,11 @@ namespace Beamable.Editor.Tests.Content
                 "12-12-2022"
             });
             window.AllDayComponent.Value = false;
-            window.PeriodFromHourComponent.Set(DateTime.Now);
-            window.PeriodToHourComponent.Set(DateTime.Now + TimeSpan.FromHours(2));
+            window.PeriodFromHourComponent.Set(_dateStart);
+            window.PeriodToHourComponent.Set(_dateStart + TimeSpan.FromHours(2));
             window.NeverExpiresComponent.Value = false;
-            window.ActiveToDateComponent.Set(DateTime.Now + TimeSpan.FromDays(2));
-            window.ActiveToHourComponent.Set(DateTime.Now + TimeSpan.FromDays(2));
+            window.ActiveToDateComponent.Set(_dateStart + TimeSpan.FromDays(2));
+            window.ActiveToHourComponent.Set(_dateStart + TimeSpan.FromDays(2));
             window.OnScheduleUpdated += ScheduleReceived;
             window.InvokeTestConfirm();
             window.OnScheduleUpdated -= ScheduleReceived;
