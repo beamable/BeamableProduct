@@ -36,14 +36,11 @@ namespace Beamable.UI.BUSS
 		private bool _filterMode;
 		private BeamablePopupWindow _confirmationPopup;
 
-#if BEAMABLE_DEVELOPER
-		// [MenuItem(
-		// 	BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_THEME_MANAGER + "/" +
-		// 	BeamableConstants.OPEN + " " +
-		// 	BeamableConstants.THEME_MANAGER,
-		// 	priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
-		[MenuItem("Private/Theme Manager")]
-#endif
+		[MenuItem(
+			BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
+			BeamableConstants.OPEN + " " +
+			BeamableConstants.THEME_MANAGER,
+			priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_2 + 5)]
 		public static void Init()
 		{
 			BussThemeManager themeManagerWindow = GetWindow<BussThemeManager>(BeamableConstants.THEME_MANAGER, true);
