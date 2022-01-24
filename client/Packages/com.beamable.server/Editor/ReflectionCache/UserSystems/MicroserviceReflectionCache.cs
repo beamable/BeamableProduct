@@ -39,10 +39,10 @@ namespace Beamable.Server.Editor
 			static Registry()
 			{
 				MICROSERVICE_BASE_TYPE = new BaseTypeOfInterest(typeof(Microservice));
-				MICROSERVICE_ATTRIBUTE = new AttributeOfInterest(typeof(MicroserviceAttribute), new Type[] { }, new[] {typeof(Microservice)});
+				MICROSERVICE_ATTRIBUTE = new AttributeOfInterest(typeof(MicroserviceAttribute), new Type[] { }, new[] { typeof(Microservice) });
 
-				BASE_TYPES_OF_INTEREST = new List<BaseTypeOfInterest>() {MICROSERVICE_BASE_TYPE,};
-				ATTRIBUTES_OF_INTEREST = new List<AttributeOfInterest>() {MICROSERVICE_ATTRIBUTE,};
+				BASE_TYPES_OF_INTEREST = new List<BaseTypeOfInterest>() { MICROSERVICE_BASE_TYPE, };
+				ATTRIBUTES_OF_INTEREST = new List<AttributeOfInterest>() { MICROSERVICE_ATTRIBUTE, };
 			}
 
 			public List<BaseTypeOfInterest> BaseTypesOfInterest => BASE_TYPES_OF_INTEREST;
@@ -75,7 +75,7 @@ namespace Beamable.Server.Editor
 			}
 
 			public void OnReflectionCacheBuilt(PerBaseTypeCache perBaseTypeCache,
-			                                   PerAttributeCache perAttributeCache)
+											   PerAttributeCache perAttributeCache)
 			{
 				// TODO: Display BeamHint of validation type for microservices declared in ignored assemblies.
 			}
@@ -96,10 +96,11 @@ namespace Beamable.Server.Editor
 			{
 				var validationResults = cachedMicroserviceSubtypes
 					.GetAndValidateAttributeExistence(MICROSERVICE_ATTRIBUTE,
-					                                  info => {
-						                                  var message = $"Microservice sub-class [{info.Name}] does not have the [{nameof(MicroserviceAttribute)}].";
-						                                  return new AttributeValidationResult(null, info, ReflectionCache.ValidationResultType.Error, message);
-					                                  });
+													  info =>
+													  {
+														  var message = $"Microservice sub-class [{info.Name}] does not have the [{nameof(MicroserviceAttribute)}].";
+														  return new AttributeValidationResult(null, info, ReflectionCache.ValidationResultType.Error, message);
+													  });
 
 				// Get all Microservice Attribute usage errors found
 				validationResults.SplitValidationResults(out _, out _, out var microserviceAttrErrors);
@@ -126,13 +127,13 @@ namespace Beamable.Server.Editor
 
 				// Get all ClientCallables
 				var clientCallableValidationResults = cachedMicroserviceAttributes
-				                                      .SelectMany(pair => pair.InfoAs<Type>().GetMethods(BindingFlags.Public | BindingFlags.Instance))
-				                                      .GetOptionalAttributeInMembers<ClientCallableAttribute>();
+													  .SelectMany(pair => pair.InfoAs<Type>().GetMethods(BindingFlags.Public | BindingFlags.Instance))
+													  .GetOptionalAttributeInMembers<ClientCallableAttribute>();
 
 				// Handle invalid signatures and warnings
 				clientCallableValidationResults.SplitValidationResults(out var clientCallablesValid,
-				                                                       out var clientCallableWarnings,
-				                                                       out var clientCallableErrors);
+																	   out var clientCallableWarnings,
+																	   out var clientCallableErrors);
 				if (clientCallableWarnings.Count > 0)
 				{
 					var hint = new BeamHintHeader(BeamHintType.Hint, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, BeamHintIds.ID_CLIENT_CALLABLE_ASYNC_VOID);
@@ -147,10 +148,10 @@ namespace Beamable.Server.Editor
 
 				// Builds a lookup of DeclaringType => MemberAttribute.
 				var validClientCallablesLookup = clientCallablesValid
-				                                 .Concat(clientCallableWarnings)
-				                                 .Concat(clientCallableErrors)
-				                                 .Select(result => result.Pair)
-				                                 .CreateMemberAttributeOwnerLookupTable();
+												 .Concat(clientCallableWarnings)
+												 .Concat(clientCallableErrors)
+												 .Select(result => result.Pair)
+												 .CreateMemberAttributeOwnerLookupTable();
 
 				// Register all configured microservices
 				foreach (var msAttrValidationResult in uniqueNameValidationResults.PerAttributeNameValidations)
@@ -164,7 +165,8 @@ namespace Beamable.Server.Editor
 					// Create descriptor
 					var hasWarning = msAttrValidationResult.Type == ReflectionCache.ValidationResultType.Warning;
 					var hasError = msAttrValidationResult.Type == ReflectionCache.ValidationResultType.Error;
-					var descriptor = new MicroserviceDescriptor {
+					var descriptor = new MicroserviceDescriptor
+					{
 						Name = serviceAttribute.MicroserviceName,
 						Type = type,
 						AttributePath = serviceAttribute.GetSourcePath(),
