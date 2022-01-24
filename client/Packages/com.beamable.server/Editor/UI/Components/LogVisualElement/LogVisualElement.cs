@@ -64,6 +64,7 @@ namespace Beamable.Editor.Microservice.UI.Components
         private Button _errorViewBtn;
         public ServiceModelBase Model { get; set; }
         private bool NoModel => Model == null;
+        private float MaxScrollValue => _listView.itemHeight * _listView.itemsSource.Count;
 
         public event Action OnDetachLogs;
 
@@ -161,7 +162,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
                 EditorApplication.delayCall += () =>
                 {
-                    _scrollView.verticalScroller.highValue = _listView.itemHeight * _listView.itemsSource.Count;
+	                _scrollView.verticalScroller.highValue = MaxScrollValue;
                     _scrollView.verticalScroller.value = Model.Logs.ScrollValue;
                     _scrollView.MarkDirtyRepaint();
                 };
@@ -275,26 +276,26 @@ namespace Beamable.Editor.Microservice.UI.Components
 
         void MaybeScrollToBottom()
         {
-            Model.Logs.IsTailingLog |= !Model.Logs.HasScrolled;
+	        Model.Logs.IsTailingLog |= !Model.Logs.HasScrolled;
 
-            if (!Model.Logs.IsTailingLog)
-            {
-                return; // don't do anything. We aren't tailing.
-            }
+	        if (!Model.Logs.IsTailingLog)
+	        {
+		        return; // don't do anything. We aren't tailing.
+	        }
 
-            ScrollToWithoutNotify(ScrollerHeight); // always jump to the end.
+	        ScrollToWithoutNotify(MaxScrollValue); // always jump to the end.
         }
 
         void ScrollToWithoutNotify(float value)
         {
-            _scrollBlocker++;
-            EditorApplication.delayCall += () =>
-            {
-                _scrollView.scrollOffset = new Vector2(0, value);
-                _scrollView.MarkDirtyRepaint();
-            };
+	        _scrollBlocker++;
+	        EditorApplication.delayCall += () =>
+	        {
+		        _scrollView.verticalScroller.value = value;
+		        _scrollView.MarkDirtyRepaint();
+	        };
 
-            Model.Logs.ScrollValue = value;
+	        Model.Logs.ScrollValue = value;
         }
 
         private ListView CreateListView()
