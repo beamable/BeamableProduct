@@ -172,42 +172,44 @@ namespace Beamable.Server.Editor
 						HasValidationWarning = hasWarning,
 					};
 
-					// Add client callables for this microservice type
-					var clientCallablesFound = validClientCallablesLookup.TryGetValue(type, out var clientCallables);
+					// Initialize the ClientCallableDescriptors if the type has any.
+					if (validClientCallablesLookup.TryGetValue(type, out var clientCallables))
+					{
+						descriptor.Methods = clientCallables.Select(delegate(MemberAttribute pair) {
+							var clientCallableAttribute = pair.AttrAs<ClientCallableAttribute>();
+							var clientCallableMethod = pair.InfoAs<MethodInfo>();
 
-					// Generates descriptors for each of the individual client callables.
-					descriptor.Methods = !clientCallablesFound ?
-						// If no client callables were found in the C#MS, initialize an empty list.
-						new List<ClientCallableDescriptor>() :
-						
-						// Otherwise, initialize the ClientCallableDescriptors.
-						clientCallables.Select(delegate(MemberAttribute pair) {
-						var clientCallableAttribute = pair.AttrAs<ClientCallableAttribute>();
-						var clientCallableMethod = pair.InfoAs<MethodInfo>();
+							var callableName = pair.GetOptionalNameOrMemberName<ClientCallableAttribute>();
+							var callableScopes = clientCallableAttribute.RequiredScopes;
 
-						var callableName = pair.GetOptionalNameOrMemberName<ClientCallableAttribute>();
-						var callableScopes = clientCallableAttribute.RequiredScopes;
+							var parameters = clientCallableMethod
+							                 .GetParameters()
+							                 .Select((param, i) => {
+								                 var paramAttr = param.GetCustomAttribute<ParameterAttribute>();
+								                 var paramName = string.IsNullOrEmpty(paramAttr?.ParameterNameOverride)
+									                 ? param.Name
+									                 : paramAttr.ParameterNameOverride;
+								                 return new ClientCallableParameterDescriptor {
+									                 Name = paramName,
+									                 Index = i,
+									                 Type = param.ParameterType
+								                 };
+							                 }).ToArray();
 
-						var parameters = clientCallableMethod
-						                 .GetParameters()
-						                 .Select((param, i) => {
-							                 var paramAttr = param.GetCustomAttribute<ParameterAttribute>();
-							                 var paramName = string.IsNullOrEmpty(paramAttr?.ParameterNameOverride)
-								                 ? param.Name
-								                 : paramAttr.ParameterNameOverride;
-							                 return new ClientCallableParameterDescriptor {
-								                 Name = paramName,
-								                 Index = i,
-								                 Type = param.ParameterType
-							                 };
-						                 }).ToArray();
-
-						return new ClientCallableDescriptor() {
-							Path = callableName,
-							Scopes = callableScopes,
-							Parameters = parameters,
-						};
-					}).ToList();
+							return new ClientCallableDescriptor() {
+								Path = callableName,
+								Scopes = callableScopes,
+								Parameters = parameters,
+							};
+						}).ToList();						
+					}
+					else // If no client callables were found in the C#MS, initialize an empty list.
+					{
+						descriptor.Methods = new List<ClientCallableDescriptor>();
+					}
+					
+					
+					
 
 					Descriptors.Add(descriptor);
 					AllDescriptors.Add(descriptor);
