@@ -40,6 +40,7 @@ jobs:
         if: ${{ !github.ref_protected}}
         uses: tj-actions/changed-files@v11.7
         with:
+          token: ${{ secrets.FORMAT_GITHUB_TOKEN }}
           files: |
             .cs$
       - name: Format files
