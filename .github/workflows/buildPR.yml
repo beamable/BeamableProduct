@@ -21,6 +21,13 @@ jobs:
       - name: Get branch name
         id: branch-name
         uses: tj-actions/branch-names@v5.1
+      - name: Diag
+        run: |
+          echo ${{github.ref_protected}}
+          echo ${{github.ref}}
+          echo ${{github.head_ref}}
+          echo ${{github.base_ref}}
+        shell: bash
       - name: "Install dotnet-format"
         if: ${{ github.ref_protected == 'false' }}
         run: dotnet tool install --global --version 5.1.250801 dotnet-format
