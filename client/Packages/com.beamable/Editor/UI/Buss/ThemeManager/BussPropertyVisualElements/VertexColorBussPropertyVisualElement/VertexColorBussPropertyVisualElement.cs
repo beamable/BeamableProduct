@@ -27,6 +27,8 @@ namespace Beamable.Editor.UI.Components
 		{
 			base.Init();
 
+			Root.style.SetFlexDirection(FlexDirection.Column);
+			
 			_topRow = CreateRowContainer();
 			_bottomRow = CreateRowContainer();
 

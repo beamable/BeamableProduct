@@ -21,6 +21,11 @@ namespace Beamable.Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements
 				return new FloatBussPropertyVisualElement(floatProperty);
 			}
 
+			if (property is Vector2BussProperty vector2BussProperty)
+			{
+				return new Vector2BussPropertyVisualElement(vector2BussProperty);
+			}
+
 			if (property is SingleColorBussProperty colorProperty)
 			{
 				return new ColorBussPropertyVisualElement(colorProperty);

@@ -177,13 +177,20 @@ namespace Beamable.Editor.UI.Components
 			foreach (var key in BussStyle.Keys)
 			{
 				if (keys.Contains(key)) continue;
-				context.AddItem(new GUIContent(key), false, () =>
+				var baseType = BussStyle.GetBaseType(key);
+				var data = SerializableValueImplementationHelper.Get(baseType);
+				var types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract);
+				foreach (Type type in types)
 				{
-					StyleRule.Properties.Add(
-						BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty()));
-					AssetDatabase.SaveAssets();
-					_styleSheet.TriggerChange();
-				});
+					var label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
+					context.AddItem(new GUIContent(label), false, () =>
+					{
+						StyleRule.Properties.Add(
+							BussPropertyProvider.Create(key, (IBussProperty)Activator.CreateInstance(type)));
+						AssetDatabase.SaveAssets();
+						_styleSheet.TriggerChange();
+					});
+				}
 			}
 
 			context.ShowAsContext();
