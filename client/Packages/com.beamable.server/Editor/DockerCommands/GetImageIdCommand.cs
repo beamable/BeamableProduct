@@ -1,33 +1,39 @@
-using System;
-using Beamable.Server.Editor.DockerCommands;
-using Beamable.Platform.SDK;
 using UnityEngine;
 
 namespace Beamable.Server.Editor.DockerCommands
 {
-   public class GetImageIdCommand : DockerCommandReturnable<string>
-   {
-      public string ImageName { get; }
+	public class GetImageIdCommand : DockerCommandReturnable<string>
+	{
+		public string ImageName { get; }
+		private bool WasEverBuild { get; }
 
-      public GetImageIdCommand(IDescriptor descriptor)
-      {
-         ImageName = descriptor.ImageName;
-      }
-      public override string GetCommandString()
-      {
-         return $"{DockerCmd} images -q {ImageName}";
-      }
+		public GetImageIdCommand(IDescriptor descriptor)
+		{
+			ImageName = descriptor.ImageName;
+			WasEverBuild = BuildImageCommand.WasEverBuildLocally(descriptor);
+		}
 
-      protected override void Resolve()
-      {
-         if (StandardOutBuffer?.Length > 0)
-         {
-	         Promise.CompleteSuccess(StandardOutBuffer.Trim());
-	         return;
-         }
+		public override string GetCommandString()
+		{
+			return $"{DockerCmd} images -q {ImageName}";
+		}
 
-         Debug.LogError($"Failed to get {ImageName} image id. Error buffer: {StandardErrorBuffer}");
-         Promise.CompleteSuccess(string.Empty);
-      }
-   }
+		protected override void Resolve()
+		{
+			if (StandardOutBuffer?.Length > 0)
+			{
+				Promise.CompleteSuccess(StandardOutBuffer.Trim());
+				return;
+			}
+
+			if (!WasEverBuild)
+			{
+				Promise.CompleteSuccess(string.Empty);
+				return;
+			}
+
+			Debug.LogError($"Failed to get {ImageName} image id. Error buffer: {StandardErrorBuffer}");
+			Promise.CompleteSuccess(string.Empty);
+		}
+	}
 }

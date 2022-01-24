@@ -6,6 +6,7 @@ using System.Linq;
 using Beamable.Common;
 using Beamable.Server.Editor.CodeGen;
 using Beamable.Platform.SDK;
+using UnityEditor;
 using UnityEditor.VersionControl;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -14,13 +15,22 @@ namespace Beamable.Server.Editor.DockerCommands
 {
    public class BuildImageCommand : DockerCommandReturnable<Unit>
    {
+	   private const string BUILD_PREF = "{0}BuildAtLeastOnce";
       private MicroserviceDescriptor _descriptor;
       public bool IncludeDebugTools { get; }
       public string ImageName { get; set; }
       public string BuildPath { get; set; }
-
       public Promise<Unit> ReadyForExecution { get; private set; }
 
+      public static bool WasEverBuildLocally(IDescriptor descriptor)
+      {
+	      return EditorPrefs.GetBool(string.Format(BUILD_PREF, descriptor.Name), false);
+      }
+      
+      static void SetAsBuild(IDescriptor descriptor)
+      {
+	      EditorPrefs.SetBool(string.Format(BUILD_PREF, descriptor.Name), true);
+      }
 
       public BuildImageCommand(MicroserviceDescriptor descriptor, bool includeDebugTools)
       {
@@ -196,10 +206,10 @@ namespace Beamable.Server.Editor.DockerCommands
 
       protected override void Resolve()
       {
-
-         if (string.IsNullOrEmpty(StandardErrorBuffer))
+	      if (string.IsNullOrEmpty(StandardErrorBuffer))
          {
             Promise.CompleteSuccess(PromiseBase.Unit);
+            SetAsBuild(_descriptor);
          }
          else
          {
