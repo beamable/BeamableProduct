@@ -330,6 +330,11 @@ namespace UnityEngine.UIElements
       self.fontSize = new StyleLength((int)value);
     }
 
+    public static float GetWidth(this IStyle style)
+    {
+	    return style.width.value.value;
+    }
+
     public static void SetWidth(this IStyle self, float value)
     {
       self.width = new StyleLength(value);
