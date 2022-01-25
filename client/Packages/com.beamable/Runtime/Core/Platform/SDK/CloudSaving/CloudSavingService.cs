@@ -83,20 +83,20 @@ namespace Beamable.Api.CloudSaving
 				.FlatMap(SyncRemoteContent)
 				.FlatMap(startRoutines =>
 				{
-					  Subscribe(cb =>
-				   {
-					  //DO NOT REMOVE THIS, WE NEED THIS TO GET DEFAULT NOTIFICATIONS
-				  });
+					Subscribe(cb =>
+				 {
+					   //DO NOT REMOVE THIS, WE NEED THIS TO GET DEFAULT NOTIFICATIONS
+				   });
 
-					  _fileWatchingRoutine = StartFileSystemWatchingCoroutine();
-					  _platform.Notification.Subscribe(
-					  "cloudsaving.datareplaced",
-					  OnReplacedNtf
-				   );
-					  _initDone.CompleteSuccess(PromiseBase.Unit);
-					  isInitializing = false;
-					  return _initDone;
-				  });
+					_fileWatchingRoutine = StartFileSystemWatchingCoroutine();
+					_platform.Notification.Subscribe(
+					"cloudsaving.datareplaced",
+					OnReplacedNtf
+				 );
+					_initDone.CompleteSuccess(PromiseBase.Unit);
+					isInitializing = false;
+					return _initDone;
+				});
 			});
 		}
 		private Promise<Unit> ClearQueuesAndLocalManifest()
@@ -308,44 +308,44 @@ namespace Beamable.Api.CloudSaving
 		  .Error(ProvideErrorCallback(nameof(DownloadUserData)))
 		  .FlatMap(__ =>
 		  {
-				if (manifestResponse.replacement)
-				{
-					var upload = new UploadManifestRequest(new List<ManifestEntry>());
-					foreach (var r in manifestResponse.manifest)
-					{
-						upload.request.Add(new ManifestEntry(r.key,
-						r.size,
-						r.eTag,
-						null,
-						_platform.User.id,
-						r.lastModified)
-					 );
-					}
+			  if (manifestResponse.replacement)
+			  {
+				  var upload = new UploadManifestRequest(new List<ManifestEntry>());
+				  foreach (var r in manifestResponse.manifest)
+				  {
+					  upload.request.Add(new ManifestEntry(r.key,
+					  r.size,
+					  r.eTag,
+					  null,
+					  _platform.User.id,
+					  r.lastModified)
+				   );
+				  }
 
-					return CommitManifest(upload).FlatMap(_ =>
-				 {
-				   // We want to ensure that we explicitly invoke the event with the ORIGINAL manifest.
-				   UpdateReceived?.Invoke(manifestResponse);
-					  return PromiseBase.SuccessfulUnit;
-				  });
-				}
-				else
-				{
-					if (downloadRequest.Count > 0)
+				  return CommitManifest(upload).FlatMap(_ =>
+			   {
+					 // We want to ensure that we explicitly invoke the event with the ORIGINAL manifest.
+					 UpdateReceived?.Invoke(manifestResponse);
+				   return PromiseBase.SuccessfulUnit;
+			   });
+			  }
+			  else
+			  {
+				  if (downloadRequest.Count > 0)
+				  {
+					  return Promise.ExecuteRolling(10, _ProcessFilesPromiseList).Map(_ => PromiseBase.Unit).FlatMap(downloads =>
+				   {
+					   _ProcessFilesPromiseList.Clear();
+					   return WriteManifestToDisk(manifestResponse).FlatMap(manifest =>
 					{
-						return Promise.ExecuteRolling(10, _ProcessFilesPromiseList).Map(_ => PromiseBase.Unit).FlatMap(downloads =>
-					 {
-						 _ProcessFilesPromiseList.Clear();
-						 return WriteManifestToDisk(manifestResponse).FlatMap(manifest =>
-					  {
-							UpdateReceived?.Invoke(manifestResponse);
-							return PromiseBase.SuccessfulUnit;
-						});
-					 });
-					}
-				}
-				return PromiseBase.SuccessfulUnit;
-			});
+						UpdateReceived?.Invoke(manifestResponse);
+						return PromiseBase.SuccessfulUnit;
+					});
+				   });
+				  }
+			  }
+			  return PromiseBase.SuccessfulUnit;
+		  });
 			});
 		}
 
@@ -416,9 +416,9 @@ namespace Beamable.Api.CloudSaving
 				{
 					presignedURLS.response.ForEach(resp =>
 				 {
-				   //MD5_Checksum : PresignedURL
-				   s3Response[resp.objectKey] = resp;
-				  });
+					 //MD5_Checksum : PresignedURL
+					 s3Response[resp.objectKey] = resp;
+				 });
 					foreach (var kv in fileNameToKey)
 					{
 						var fullPathToFile = kv.Key;
@@ -669,8 +669,8 @@ namespace Beamable.Api.CloudSaving
 				   _localManifest = res;
 				   return WriteManifestToDisk(res).Map(_ =>
 				{
-					  return res;
-				  });
+					return res;
+				});
 			   }
 			).Error(ProvideErrorCallback(nameof(CommitManifest)));
 		}

@@ -66,8 +66,8 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
 
 			yield return _service.Update(updateBuilder).Then(_ =>
 			{
-			 // asserts may go here.
-		 }).AsYield();
+				// asserts may go here.
+			}).AsYield();
 
 		}
 	}

@@ -185,19 +185,19 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                 socket.WithName("Test Socket");
                 socket.AddStandardMessageHandlers()
                 .AddInitialContentMessageHandler(id => true, new ContentReference
-                  {
-                      id = "items.test",
-                      visibility = "public",
-                      uri = "testuri"
-                  })
+                {
+                    id = "items.test",
+                    visibility = "public",
+                    uri = "testuri"
+                })
                 .AddMessageHandler(
                    MessageMatcher
                       .WithGet()
                       .WithRouteContains("object/inventory"),
                    MessageResponder.Success(new InventoryResponse
-                     {
-                         scope = "items.test",
-                         items = new List<ItemGroup>
+                   {
+                       scope = "items.test",
+                       items = new List<ItemGroup>
                         {
                         new ItemGroup
                         {
@@ -228,7 +228,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                            }
                         }
                         }
-                     }),
+                   }),
                    MessageFrequency.Exactly(testCount)
                 )
                 .AddMessageHandler(
@@ -329,11 +329,11 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                 socket.WithName("Test Socket");
                 socket.AddStandardMessageHandlers()
                 .AddInitialContentMessageHandler(id => true, new ContentReference
-                  {
-                      id = "leaderboards.New_LeaderboardContent",
-                      visibility = "public",
-                      uri = "testuri"
-                  })
+                {
+                    id = "leaderboards.New_LeaderboardContent",
+                    visibility = "public",
+                    uri = "testuri"
+                })
                 .AddMessageHandler(
                    MessageMatcher
                       .WithPost()
@@ -465,9 +465,9 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                       .WithBody<MicroserviceProviderRequest>(body => body.type == "event"),
                    res =>
                    {
-                         eventProvided = true;
-                         return res.Succeed(new MicroserviceProviderResponse());
-                     },
+                       eventProvided = true;
+                       return res.Succeed(new MicroserviceProviderResponse());
+                   },
                    MessageFrequency.OnlyOnce()
                 )
                 .AddMessageHandler(
@@ -476,10 +476,10 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                       .WithReqId(-5)
                       .WithGet(),
                    MessageResponder.SuccessWithDelay(50, new ContentManifest
-                     {
-                         id = "global",
-                         created = 1,
-                         references = new List<ContentReference>
+                   {
+                       id = "global",
+                       created = 1,
+                       references = new List<ContentReference>
                         {
                         new ContentReference
                         {
@@ -488,16 +488,16 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                            uri = "testuri"
                         }
                         }
-                     }),
+                   }),
                    MessageFrequency.OnlyOnce()
                 )
                 .AddInitialContentMessageHandler(-6,
                    new ContentReference
-                     {
-                         id = "content.abc",
-                         visibility = "public",
-                         uri = "testuri"
-                     })
+                   {
+                       id = "content.abc",
+                       visibility = "public",
+                       uri = "testuri"
+                   })
                 .AddMessageHandler(
                    MessageMatcher.WithReqId(1).WithStatus(200).WithPayload<string>(n => n == "Echo: content.abc"),
                    MessageResponder.NoResponse(),
@@ -568,25 +568,25 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                       .WithBody<MicroserviceProviderRequest>(body => body.type == "event"),
                    res =>
                    {
-                         eventProvided = true;
-                         return res.Succeed(new MicroserviceProviderResponse());
-                     },
+                       eventProvided = true;
+                       return res.Succeed(new MicroserviceProviderResponse());
+                   },
                    MessageFrequency.OnlyOnce()
                 )
                 .AddInitialContentMessageHandler(-5,
                    new ContentReference
-                     {
-                         id = "content.abc",
-                         visibility = "public",
-                         uri = "testuri"
-                     })
+                   {
+                       id = "content.abc",
+                       visibility = "public",
+                       uri = "testuri"
+                   })
                 .AddInitialContentMessageHandler(-6,
                    new ContentReference
-                     {
-                         id = "content.abc",
-                         visibility = "public",
-                         uri = "testuri"
-                     })
+                   {
+                       id = "content.abc",
+                       visibility = "public",
+                       uri = "testuri"
+                   })
                 .AddMessageHandler(
                    MessageMatcher.WithReqId(1).WithStatus(200).WithPayload<string>(n => n == "Echo: content.abc"),
                    MessageResponder.NoResponse(),
@@ -657,18 +657,18 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                       .WithBody<MicroserviceProviderRequest>(body => body.type == "event"),
                    res =>
                    {
-                         eventProvided = true;
-                         return res.Succeed(new MicroserviceProviderResponse());
-                     },
+                       eventProvided = true;
+                       return res.Succeed(new MicroserviceProviderResponse());
+                   },
                    MessageFrequency.OnlyOnce()
                 )
                 .AddInitialContentMessageHandler(-5,
                    new ContentReference
-                     {
-                         id = "content.abc",
-                         visibility = "public",
-                         uri = "testuri"
-                     })
+                   {
+                       id = "content.abc",
+                       visibility = "public",
+                       uri = "testuri"
+                   })
                 .AddMessageHandler(
                    MessageMatcher.WithReqId(1).WithStatus(200).WithPayload<string>(n => n == "Echo: content.abc"),
                    MessageResponder.NoResponse(),
@@ -714,11 +714,11 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                 testSocket = socket;
                 socket.AddStandardMessageHandlers()
                 .AddInitialContentMessageHandler(-5, new ContentReference
-                  {
-                      id = "content.abc",
-                      visibility = "public",
-                      uri = "testuri"
-                  })
+                {
+                    id = "content.abc",
+                    visibility = "public",
+                    uri = "testuri"
+                })
                 .AddMessageHandler(
                    MessageMatcher.WithReqId(1).WithStatus(200).WithPayload<string>(n => n == "Echo: content.abc"),
                    MessageResponder.NoResponse(),
@@ -911,9 +911,9 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                       .WithRouteContains("basic/accounts")
                       .WithBody<dynamic>(d => d.gamerTag == dbid),
                    MessageResponder.SuccessWithDelay(25, new User
-                     {
-                         email = fakeEmail
-                     }),
+                   {
+                       email = fakeEmail
+                   }),
                    MessageFrequency.OnlyOnce())
                 .AddMessageHandler(
                    MessageMatcher.WithReqId(1).WithStatus(200).WithPayload<string>(n => n == fakeEmail), // TODO rename to "MessageMatcher"
@@ -1014,9 +1014,9 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                       .WithBody<MicroserviceProviderRequest>(body => body.type == "event"),
                    res =>
                    {
-                         eventProvided = true;
-                         return res.Succeed(new MicroserviceProviderResponse());
-                     },
+                       eventProvided = true;
+                       return res.Succeed(new MicroserviceProviderResponse());
+                   },
                    MessageFrequency.OnlyOnce()
                 )
 
@@ -1081,9 +1081,9 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                       .WithRouteContains("basic/accounts")
                       .WithBody<dynamic>(d => d.gamerTag == dbid),
                    MessageResponder.SuccessWithDelay(250, new User // this request will take a quarter second...
-                  {
-                         email = fakeEmail
-                     }),
+                   {
+                       email = fakeEmail
+                   }),
                    MessageFrequency.OnlyOnce())
                 .AddMessageHandler(
                    MessageMatcher.WithReqId(1).WithStatus(200).WithPayload<string>(n => n == fakeEmail),
@@ -1129,9 +1129,9 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                       .WithRouteContains("basic/accounts")
                       .WithBody<dynamic>(d => d.gamerTag == dbid),
                    MessageResponder.SuccessWithDelay(250, new User // this request will take a quarter second...
-                  {
-                         email = fakeEmail
-                     }),
+                   {
+                       email = fakeEmail
+                   }),
                    MessageFrequency.OnlyOnce())
                 .AddMessageHandler(
                    MessageMatcher.WithReqId(1).WithStatus(200).WithPayload<string>(n => n == fakeEmail),

@@ -49,39 +49,39 @@ namespace Beamable.Api.Stats
 				   return OfflineCache.RecoverDictionary<string, string>(ex, "stats", Requester.AccessToken, gamerTags).Map(
 				   stats =>
 				   {
-						 var results = stats.Select(kvp =>
-					  {
-							return new BatchReadEntry
+					   var results = stats.Select(kvp =>
+					{
+						return new BatchReadEntry
+						{
+							id = kvp.Key,
+							stats = kvp.Value.Select(statKvp => new StatEntry
 							{
-								id = kvp.Key,
-								stats = kvp.Value.Select(statKvp => new StatEntry
-								{
-									k = statKvp.Key,
-									v = statKvp.Value
-								}).ToList()
-							};
-						}).ToList();
+								k = statKvp.Key,
+								v = statKvp.Value
+							}).ToList()
+						};
+					}).ToList();
 
-						 var rsp = new BatchReadStatsResponse
-						 {
-							 results = results
-						 };
-						 return rsp;
-					 });
-				/*
-				 * Handle the NoNetworkConnectivity error, by using a custom cache layer.
-				 *
-				 * the "stats" key cache maintains stats for all users, not per request.
-				 */
+					   var rsp = new BatchReadStatsResponse
+					   {
+						   results = results
+					   };
+					   return rsp;
+				   });
+				   /*
+					* Handle the NoNetworkConnectivity error, by using a custom cache layer.
+					*
+					* the "stats" key cache maintains stats for all users, not per request.
+					*/
 
 			   })
 			   .Map(rsp => rsp.ToDictionary())
 			   .Then(playerStats =>
 			   {
-				/*
-				 * Successfully looked up stats. Commit them to the offline cache.
-				 *
-				 */
+				   /*
+					* Successfully looked up stats. Commit them to the offline cache.
+					*
+					*/
 				   OfflineCache.Merge("stats", Requester.AccessToken, playerStats);
 			   });
 		}

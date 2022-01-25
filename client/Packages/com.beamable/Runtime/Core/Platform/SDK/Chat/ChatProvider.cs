@@ -77,8 +77,8 @@ namespace Beamable.Experimental.Api.Chat
 				   ChatLogger.LogFormat("ChatManager: Player has access to {0} rooms.", MyRooms.Count);
 				   ChatLogger.LogFormat("ChatManager: Player joined {0} private rooms.", joinedPrivateRooms.Count);
 
-				// Subscribe for re-syncs
-				var ntfService = NotificationService;
+				   // Subscribe for re-syncs
+				   var ntfService = NotificationService;
 				   ntfService.Subscribe(
 				   "GROUP.MEMBERSHIP",
 				   info => { FetchAndUpdateRooms(); }

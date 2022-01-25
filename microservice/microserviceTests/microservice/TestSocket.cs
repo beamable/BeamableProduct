@@ -124,24 +124,24 @@ namespace Beamable.Microservice.Tests.Socket
                         return false;
                 }
 
-             // return req.body switch
-             // {
-             //    null => false,
-             //    JObject jObject => matcher(jObject.ToObject<T>()),
-             //    string json => matcher(JsonConvert.DeserializeObject<T>(json)),
-             //    T typedBody => matcher(typedBody),
-             //    _ => false
-             // };
-         };
+                // return req.body switch
+                // {
+                //    null => false,
+                //    JObject jObject => matcher(jObject.ToObject<T>()),
+                //    string json => matcher(JsonConvert.DeserializeObject<T>(json)),
+                //    T typedBody => matcher(typedBody),
+                //    _ => false
+                // };
+            };
         }
 
         public static TestSocketMessageMatcher WithPayload(string raw)
         {
             return req =>
             {
-             // Have to do this otherwise it becomes sensitive to the test-case's JSON's formatting which can be a pain to manage in cases where
-             // the payload is large.
-             if (req.body is JObject obj)
+                // Have to do this otherwise it becomes sensitive to the test-case's JSON's formatting which can be a pain to manage in cases where
+                // the payload is large.
+                if (req.body is JObject obj)
                 {
                     var rawJObj = JObject.Parse(raw);
                     return JToken.DeepEquals(rawJObj, obj);
@@ -154,9 +154,9 @@ namespace Beamable.Microservice.Tests.Socket
         {
             return req =>
             {
-             // Have to do this otherwise it becomes sensitive to the test-case's JSON's formatting which can be a pain to manage in cases where
-             // the payload is large.
-             if (req.body is JObject obj)
+                // Have to do this otherwise it becomes sensitive to the test-case's JSON's formatting which can be a pain to manage in cases where
+                // the payload is large.
+                if (req.body is JObject obj)
                 {
                     return JToken.DeepEquals(raw, obj);
                 }
