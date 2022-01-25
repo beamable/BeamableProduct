@@ -22,11 +22,14 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Tournaments;
 using Beamable.Common.Api.CloudData;
+using Beamable.Common.Api.Notifications;
+using Beamable.Common.Player;
 using Beamable.Content;
 using Beamable.Experimental;
 using Beamable.Experimental.Api.Chat;
 using Beamable.Experimental.Api.Matchmaking;
 using Beamable.Experimental.Api.Sim;
+using Beamable.Player;
 
 namespace Packages.Beamable.Runtime.Tests.Beamable
 {
@@ -34,6 +37,7 @@ namespace Packages.Beamable.Runtime.Tests.Beamable
     {
         public User User { get; set; }
         public AccessToken Token { get; set; }
+        public PlayerData Player { get; }
         public IExperimentalAPI Experimental { get; }
         public AnnouncementsService AnnouncementService { get; set; }
         public MockAuthService MockAuthService { get; set; } = new MockAuthService();
@@ -61,10 +65,13 @@ namespace Packages.Beamable.Runtime.Tests.Beamable
         public MatchmakingService Matchmaking { get; }
         public Promise<IBeamablePurchaser> PaymentDelegate { get; }
         public IConnectivityService ConnectivityService { get; }
+        public INotificationService NotificationService { get; }
         public ITournamentApi TournamentsService { get; }
 
         [Obsolete("Use " + nameof(TournamentsService) + " Instead")]
         public ITournamentApi Tournaments => TournamentsService;
+
+        public ISdkEventService SdkEventService { get; }
         public ICloudDataApi TrialDataService { get; }
 
 #pragma warning disable 67
@@ -101,6 +108,11 @@ namespace Packages.Beamable.Runtime.Tests.Beamable
         public void RemoveDeviceUser(TokenResponse token)
         {
             throw new NotImplementedException();
+        }
+
+        public void ClearDeviceUsers()
+        {
+	        throw new NotImplementedException();
         }
 
         public Promise<Unit> ApplyToken(TokenResponse response)

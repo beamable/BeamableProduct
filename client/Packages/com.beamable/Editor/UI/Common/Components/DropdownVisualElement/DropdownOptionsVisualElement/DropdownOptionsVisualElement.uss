@@ -1,6 +1,10 @@
-﻿#mainVisualElement {
-    -unity-text-align: middle-center;
-    justify-content: center;
-    /*width: auto;*/
+﻿.container {
+    border-color: #6C6C6C;
+    background-color: #b4b4b4;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-radius: 3px;
 }
 

@@ -1,7 +1,7 @@
+using Beamable.Common.Dependencies;
 using System;
 using System.Collections.Generic;
 using Beamable.ConsoleCommands;
-using Beamable.Service;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -10,11 +10,13 @@ namespace Beamable.Config
     [BeamableConsoleCommandProvider]
     public class ConfigConsoleCommands
     {
-        public BeamableConsole Console => ServiceManager.Resolve<BeamableConsole>();
+	    private readonly IDependencyProvider _provider;
+	    public BeamableConsole Console => _provider.GetService<BeamableConsole>();
 
         [Preserve]
-        public ConfigConsoleCommands()
+        public ConfigConsoleCommands(IDependencyProvider provider)
         {
+	        _provider = provider;
         }
 
         [BeamableConsoleCommand(nameof(Config), "Manipulate config values.","CONFIG [list | get <name> | set <name> <value> | reset [name] | usefile [filename]]")]

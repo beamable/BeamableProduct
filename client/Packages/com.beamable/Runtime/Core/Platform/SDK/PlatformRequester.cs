@@ -16,6 +16,16 @@ using Core.Platform.SDK;
 namespace Beamable.Api
 {
 
+	public interface IPlatformRequester : IBeamableRequester
+	{
+		AccessToken Token { get; set; }
+		string TimeOverride { get; set; }
+		string Cid { get; set; }
+		string Pid { get; set; }
+		string Language { get; set; }
+		IAuthApi AuthService { set; }
+		void DeleteToken();
+	}
    /// <summary>
    /// This type defines the %PlatformRequester.
    ///
@@ -27,7 +37,7 @@ namespace Beamable.Api
    /// ![img beamable-logo]
    ///
    /// </summary>
-   public class PlatformRequester : IBeamableRequester, IHttpRequester
+   public class PlatformRequester : IPlatformRequester, IHttpRequester
    {
       private const string ACCEPT_HEADER = "application/json";
       private AccessTokenStorage _accessTokenStorage;
@@ -173,6 +183,8 @@ namespace Beamable.Api
 
       public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser=null, bool useCache=false)
       {
+
+
          string contentType = null;
          byte[] bodyBytes = null;
 
@@ -225,7 +237,7 @@ namespace Beamable.Api
 
                  if (useCache && httpNoInternet && Application.isPlaying)
                  {
-                    return OfflineCache.Get<T>(uri, Token);
+                    return OfflineCache.Get<T>(uri, Token, includeAuthHeader);
                  }
 
                  switch (error)
@@ -235,6 +247,7 @@ namespace Beamable.Api
 
                     // if we get a 401 InvalidTokenError, let's refresh the token and retry the request.
                     case PlatformRequesterException code when code?.Error?.error == "InvalidTokenError":
+	                    Debug.LogError("The token was bad but we are going to retry, buddy!!" + uri);
                        return AuthService.LoginRefreshToken(Token.RefreshToken)
                           .Map(rsp =>
                           {
@@ -242,6 +255,10 @@ namespace Beamable.Api
                                 rsp.expires_in);
                              Token.Save();
                              return PromiseBase.Unit;
+                          })
+                          .Error(err => {
+	                          Debug.LogError($"Failed to refresh account for {Token.RefreshToken} for uri=[{uri}] method=[{method}] includeAuth=[{includeAuthHeader}]");
+	                          Debug.LogException(err);
                           })
                           .FlatMap(_ => MakeRequest(method, uri, contentType, body, includeAuthHeader, parser));
 
@@ -253,13 +270,13 @@ namespace Beamable.Api
               {
                  if (useCache && Token != null && Application.isPlaying)
                  {
-                    OfflineCache.Set<T>(uri, _response, Token);
+                    OfflineCache.Set<T>(uri, _response, Token, includeAuthHeader);
                  }
               });
         }
         else if (!internetConnectivity && useCache && Application.isPlaying)
         {
-            return OfflineCache.Get<T>(uri, Token);
+            return OfflineCache.Get<T>(uri, Token, includeAuthHeader);
         }
         else
         {
@@ -404,8 +421,20 @@ namespace Beamable.Api
          Request = request;
       }
    }
-    public class NoConnectivityException : Exception
+
+
+    public static class ConnectivityExceptionExtensions
     {
-        public NoConnectivityException(string message) : base(message) { }
+	    public static Promise<T> RecoverFromNoConnectivity<T>(this Promise<T> self, Func<T> recovery) =>
+		    self.RecoverFromNoConnectivity(_ => recovery());
+
+	    public static Promise<T> RecoverFromNoConnectivity<T>(this Promise<T> self, Func<NoConnectivityException, T> recovery)
+	    {
+		    return self.Recover(ex =>
+		    {
+			    if (ex is NoConnectivityException err) return recovery(err);
+			    throw ex;
+		    });
+	    }
     }
 }

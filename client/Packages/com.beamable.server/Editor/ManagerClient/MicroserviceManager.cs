@@ -5,6 +5,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Serialization;
 using Beamable.Server.Editor.UI.Components;
+using UnityEngine;
 
 namespace Beamable.Server.Editor.ManagerClient
 {
@@ -56,7 +57,7 @@ namespace Beamable.Server.Editor.ManagerClient
       {
 	      var post = new PostManifestRequest
 	      {
-		      comments = manifest.comments, manifest = manifest.manifest, storages = manifest.storages
+		      comments = manifest.comments, manifest = manifest.manifest, storageReferences = manifest.storageReference
 	      };
          return Requester.Request<EmptyResponse>(Method.POST, $"{SERVICE}/manifest", post).ToUnit();
       }
@@ -88,7 +89,7 @@ namespace Beamable.Server.Editor.ManagerClient
    {
       public string comments;
       public List<ServiceReference> manifest;
-      public List<ServiceStorageReference> storages;
+      public List<ServiceStorageReference> storageReferences;
    }
 
    [System.Serializable]
@@ -97,7 +98,7 @@ namespace Beamable.Server.Editor.ManagerClient
       public long id;
       public long created;
       public List<ServiceReference> manifest = new List<ServiceReference>();
-      public List<ServiceStorageReference> storages = new List<ServiceStorageReference>();
+      public List<ServiceStorageReference> storageReference = new List<ServiceStorageReference>();
       public long createdByAccountId;
       public string comments;
    }
@@ -119,16 +120,17 @@ namespace Beamable.Server.Editor.ManagerClient
    [System.Serializable]
    public class ServiceStorageReference
    {
-       public string storageName;
+       public string id;
        public string storageType;
        public bool enabled;
        public string templateId;
+       public string checksum;
    }
 
    [System.Serializable]
    public class ServiceDependency
    {
-       public string type;
+       public string storageType;
        public string id;
    }
 

@@ -1,3 +1,4 @@
+using Beamable.Common.Dependencies;
 using System;
 using System.Collections.Generic;
 
@@ -5,7 +6,7 @@ namespace Beamable.Common.Api
 {
    public abstract class UserDataCache<T>
    {
-      public delegate UserDataCache<T> FactoryFunction(string name, long ttlMs, CacheResolver resolver);
+      public delegate UserDataCache<T> FactoryFunction(string name, long ttlMs, CacheResolver resolver, IDependencyProvider provider);
 
       public delegate Promise<Dictionary<long, T>> CacheResolver(List<long> gamerTags);
 

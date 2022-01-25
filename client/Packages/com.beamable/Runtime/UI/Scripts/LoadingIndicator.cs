@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Beamable;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Beamable.Coroutines;
@@ -34,7 +35,9 @@ public class LoadingIndicator : MonoBehaviour
 
         if (_currentSession == null)
         {
-            ServiceManager.Resolve<CoroutineService>().StartCoroutine(ShowAfterFlashProtection());
+            //ServiceManager.Resolve<CoroutineService>().StartCoroutine(ShowAfterFlashProtection());
+            BeamContext.Default.ServiceProvider.GetService<CoroutineService>()
+                       .StartCoroutine(ShowAfterFlashProtection());
 
             loadingSession.Promise.Then(_ => { Hide(); });
             _currentSession = loadingSession;

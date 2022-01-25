@@ -22,15 +22,16 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
 
          // Mock out a network request that get an item. This semi defines the web API itself.
          _requester
-            .MockRequest<InventoryResponse>(Method.POST, $"{objectUrl}")
+            .MockRequest<InventoryResponse>(Method.POST)
+            .WithURIPrefix("/object/inventory")
             .WithBodyMatch<ArrayDict>(sent =>
             {
 	            var expected = new ArrayDict() {{"scopes", new[] {"items.inventoryTestItem.test"}}};
 
 	            var matchKeys = expected.Keys.SequenceEqual(sent.Keys);
 	            var matchValuesLength = expected.Values.Count == sent.Values.Count;
-	            var matchValues = ((string[])expected.Values.ElementAt(0))[0] == ((string[])sent.Values.ElementAt(0))[0]; 
-	            
+	            var matchValues = ((string[])expected.Values.ElementAt(0))[0] == ((string[])sent.Values.ElementAt(0))[0];
+
 	            return matchKeys && matchValuesLength && matchValues;
             })
             .WithResponse(new InventoryResponse
@@ -101,15 +102,16 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
 
          // Mock out a network request that get an item. This semi defines the web API itself.
          _requester
-            .MockRequest<InventoryResponse>(Method.POST, $"{objectUrl}")
+            .MockRequest<InventoryResponse>(Method.POST)
+            .WithURIPrefix("/object/inventory")
             .WithBodyMatch<ArrayDict>(sent =>
             {
 	            var expected = new ArrayDict() {{"scopes", new[] {"items.inventoryTestItem"}}};
 
 	            var matchKeys = expected.Keys.SequenceEqual(sent.Keys);
 	            var matchValuesLength = expected.Values.Count == sent.Values.Count;
-	            var matchValues = ((string[])expected.Values.ElementAt(0))[0] == ((string[])sent.Values.ElementAt(0))[0]; 
-	            
+	            var matchValues = ((string[])expected.Values.ElementAt(0))[0] == ((string[])sent.Values.ElementAt(0))[0];
+
 	            return matchKeys && matchValuesLength && matchValues;
             })
             .WithResponse(new InventoryResponse
@@ -178,7 +180,8 @@ namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
 
          // Mock out a network request that get an item. This semi defines the web API itself.
          _requester
-            .MockRequest<InventoryResponse>(Method.POST, $"{objectUrl}")
+            .MockRequest<InventoryResponse>(Method.POST)
+            .WithURIPrefix("/object/inventory")
             .WithResponse(new InventoryResponse
             {
                currencies = new List<Currency>(),

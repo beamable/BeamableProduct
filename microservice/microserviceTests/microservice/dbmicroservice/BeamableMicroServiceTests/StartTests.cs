@@ -312,7 +312,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
             JObject.Parse(@"{""maxEntries"":100,""partitioned"":true,""cohortSettings"":{""cohorts"":[{""id"":""stat_a"",""description"":""stat_a_description"",""statRequirements"":[{""domain"":""game"",""access"":""public"",""constraint"":""eq"",""stat"":""stat_a"",""value"":2}]}]},""permissions"":{""write_self"":false}}")
          }
       };
-      
+
       [Test, TestCaseSource(nameof(sAdminCreateLeaderboardTestCases))]
       [NonParallelizable]
       public async Task HandleSimple_AdminCreateLeaderboard(JObject leaderboardTemplateContent, JObject expectedRequestBody)
@@ -320,8 +320,8 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          LoggingUtil.Init();
          TestSocket testSocket = null;
          const int testCount = 1;
-         
-         // Leaderboard content 
+
+         // Leaderboard content
          var contentResolver = new TestContentResolver(async uri => leaderboardTemplateContent.ToString());
          var ms = new BeamableMicroService(new TestSocketProvider(socket =>
          {
@@ -418,7 +418,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          // simulate shutdown event...
          await ms.OnShutdown(this, null);
          //Assert.IsTrue(testSocket.AllMocksCalled());
-         
+
       }
 
       [Test]
@@ -1208,6 +1208,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
 
       [Test]
       [NonParallelizable]
+      [Timeout(120000)]
       public async Task HandleAuthDrop_WithMultipleRequestsInFlight_WithoutHardcodedRequestIds()
       {
           LoggingUtil.Init();
@@ -1215,9 +1216,10 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          var contentResolver = new TestContentResolver();
          var dbid = 123;
          var fakeEmail = "fake@example.com";
-         var nonceDelay = 1500; // needs to be well above how long it takes to issue failureCount requests
+         var nonceDelay = 2500; // needs to be well above how long it takes to issue failureCount requests
          var authDelay = 100;
          const int failureCount = 2000;
+         var sent = false;
          var ms = new BeamableMicroService(new TestSocketProvider(socket =>
          {
             testSocket = socket;
@@ -1232,7 +1234,7 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
                   MessageFrequency.Exactly(failureCount))
                .AddMessageHandler(
                   MessageMatcher.WithRouteContains("nonce"),
-                  MessageResponder.SuccessWithDelay(nonceDelay, new MicroserviceNonceResponse {nonce = "testnonce"}),
+                  MessageResponder.SuccessAfterCondition(() => sent, new MicroserviceNonceResponse {nonce = "testnonce"}),
                   MessageFrequency.OnlyOnce()
                )
                .AddMessageHandler(
@@ -1272,11 +1274,12 @@ namespace microserviceTests.microservice.dbmicroservice.BeamableMicroServiceTest
          {
             tasks.Add(Task.Run(() =>
             {
-
                testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", i + 1, 0, dbid));
             }));
-
          }
+
+         await Task.Delay(nonceDelay);
+         sent = true;
 
          await Task.WhenAll(tasks);
          // testSocket.SendToClient(ClientRequest.ClientCallable("micro_sample", "GetUserEmail", 2, 0, dbid));

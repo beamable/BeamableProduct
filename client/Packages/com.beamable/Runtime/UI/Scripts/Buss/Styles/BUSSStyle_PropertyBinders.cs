@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Beamable.UI.Tweening;
+using System;
 using System.Collections.Generic;
-using Beamable.UI.Tweening;
 using TMPro;
 using UnityEngine;
 
@@ -78,8 +78,8 @@ namespace Beamable.UI.Buss
 
 		public static readonly PropertyBinding<TextAlignmentOptionsBussProperty> TextAlignment =
 			new PropertyBinding<TextAlignmentOptionsBussProperty>("textAlignment",
-			                                                      new TextAlignmentOptionsBussProperty(
-				                                                      TextAlignmentOptions.TopLeft));
+																  new TextAlignmentOptionsBussProperty(
+																	  TextAlignmentOptions.TopLeft));
 
 		// Transitions
 		public static readonly PropertyBinding<IFloatBussProperty> TransitionDuration =

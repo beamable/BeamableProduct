@@ -10,7 +10,7 @@ namespace Beamable
 {
    public static class BeamableEnvironment
    {
-      private const string FilePath = "Packages/com.beamable/Runtime/Environment/env-default.json";
+	  private const string ResourcesPath = "env-default";
 
       private const string ENV_STAGING = "staging";
       private const string ENV_DEV = "dev";
@@ -49,8 +49,9 @@ namespace Beamable
 
       public static void ReloadEnvironment()
       {
-         var envText = File.ReadAllText(FilePath);
-         var rawDict = Json.Deserialize(envText) as ArrayDict;
+	      string envText = "";
+          envText = Resources.Load<TextAsset>(ResourcesPath).text;
+	      var rawDict = Json.Deserialize(envText) as ArrayDict;
          JsonSerializable.Deserialize(Data, rawDict);
       }
    }
