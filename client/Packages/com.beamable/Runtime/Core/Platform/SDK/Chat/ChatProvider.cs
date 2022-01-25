@@ -1,185 +1,192 @@
-using System.Collections.Generic;
 using Beamable.Api;
 using Beamable.Common;
+using Beamable.Common.Api.Notifications;
+using Beamable.Common.Dependencies;
+using Beamable.Service;
 using Beamable.Spew;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Experimental.Api.Chat
 {
 
-   public abstract class ChatProvider : MonoBehaviour
-   {
-      protected PlatformService Platform;
-      private readonly List<Room> _rooms = new List<Room>();
-      private OnRoomAddedDelegate _onRoomAdded;
+	[Obsolete("Use ChatService instead")]
+	public abstract class ChatProvider : MonoBehaviour
+	{
+		protected IDependencyProvider Provider;
 
-      /// <summary>
-      /// Return the full list of rooms this player has access to.
-      /// </summary>
-      public List<Room> MyRooms
-      {
-         get { return _rooms; }
-      }
+		protected INotificationService NotificationService => Provider.GetService<INotificationService>();
 
-      /// <summary>
-      /// Return the general room for this game.
-      /// </summary>
-      public Room GeneralRoom
-      {
-         get { return MyRooms.Find(room => room.Name.StartsWith("general")); }
-      }
+		private readonly List<Room> _rooms = new List<Room>();
+		private OnRoomAddedDelegate _onRoomAdded;
 
-      /// <summary>
-      /// Return the guild room if the player is in a guild. Otherwise, this will return null.
-      /// </summary>
-      public Room GuildRoom
-      {
-         get { return MyRooms.Find(room => room.Name.StartsWith("group")); }
-      }
+		/// <summary>
+		/// Return the full list of rooms this player has access to.
+		/// </summary>
+		public List<Room> MyRooms
+		{
+			get { return _rooms; }
+		}
 
-      /// <summary>
-      /// Return this player's direct messages.
-      /// </summary>
-      public List<Room> DirectMessageRooms
-      {
-         get { return MyRooms.FindAll(room => room.Name.StartsWith("direct")); }
-      }
+		/// <summary>
+		/// Return the general room for this game.
+		/// </summary>
+		public Room GeneralRoom
+		{
+			get { return MyRooms.Find(room => room.Name.StartsWith("general")); }
+		}
 
-      /// <summary>
-      /// Return all of the rooms the client should join immediately (and never leave).
-      /// </summary>
-      public List<Room> AlwaysSubscribedRooms
-      {
-         get { return MyRooms.FindAll(room => room.KeepSubscribed); }
-      }
+		/// <summary>
+		/// Return the guild room if the player is in a guild. Otherwise, this will return null.
+		/// </summary>
+		public Room GuildRoom
+		{
+			get { return MyRooms.Find(room => room.Name.StartsWith("group")); }
+		}
 
-      /// <summary>
-      /// Initializes the ChatProvider. This should connect to the service and populate the list of rooms accessible
-      /// to the user.
-      /// </summary>
-      /// <param name="platform"></param>
-      public void Initialize(PlatformService platform)
-      {
-         Platform = platform;
+		/// <summary>
+		/// Return this player's direct messages.
+		/// </summary>
+		public List<Room> DirectMessageRooms
+		{
+			get { return MyRooms.FindAll(room => room.Name.StartsWith("direct")); }
+		}
 
-         Connect()
-            .FlatMap(_ => FetchAndUpdateRooms())
-            .Then(joinedPrivateRooms =>
-            {
-               ChatLogger.LogFormat("ChatManager: Player has access to {0} rooms.", MyRooms.Count);
-               ChatLogger.LogFormat("ChatManager: Player joined {0} private rooms.", joinedPrivateRooms.Count);
+		/// <summary>
+		/// Return all of the rooms the client should join immediately (and never leave).
+		/// </summary>
+		public List<Room> AlwaysSubscribedRooms
+		{
+			get { return MyRooms.FindAll(room => room.KeepSubscribed); }
+		}
 
-               // Subscribe for re-syncs
-               var ntfService = Platform.Notification;
-               ntfService.Subscribe(
-                  "GROUP.MEMBERSHIP",
-                  info => { FetchAndUpdateRooms(); }
-               );
+		/// <summary>
+		/// Initializes the ChatProvider. This should connect to the service and populate the list of rooms accessible
+		/// to the user.
+		/// </summary>
+		public void Initialize(IDependencyProvider provider)
+		{
+			Provider = provider;
 
-               ntfService.Subscribe(
-                  "CHAT.ROOM_CREATED",
-                  info => { FetchAndUpdateRooms(); }
-               );
+			Connect()
+			   .FlatMap(_ => FetchAndUpdateRooms())
+			   .Then(joinedPrivateRooms =>
+			   {
+				   ChatLogger.LogFormat("ChatManager: Player has access to {0} rooms.", MyRooms.Count);
+				   ChatLogger.LogFormat("ChatManager: Player joined {0} private rooms.", joinedPrivateRooms.Count);
 
-               ntfService.Subscribe(
-                  "SOCIAL.UPDATE",
-                  info => { FetchAndUpdateRooms(); }
-               );
-            })
-            .Error(Debug.LogError);
-      }
+				// Subscribe for re-syncs
+				var ntfService = NotificationService;
+				   ntfService.Subscribe(
+				   "GROUP.MEMBERSHIP",
+				   info => { FetchAndUpdateRooms(); }
+				);
 
-      public Promise<List<Room>> FetchAndUpdateRooms()
-      {
-         return FetchMyRooms().Then(rooms =>
-            {
-               for (int i = 0; i < _rooms.Count; i++)
-               {
-                  _rooms[i].Leave();
-               }
+				   ntfService.Subscribe(
+				   "CHAT.ROOM_CREATED",
+				   info => { FetchAndUpdateRooms(); }
+				);
 
-               _rooms.Clear();
-               _rooms.AddRange(rooms);
-            })
-            // We want to immediately join the AlwaysSubscribedRooms. This will allow us to show toasts for
-            // guild messages or direct messages if we wish. Other rooms we'll join only when the chat panel opens.
-            .FlatMap(_ => JoinRooms(AlwaysSubscribedRooms));
-      }
+				   ntfService.Subscribe(
+				   "SOCIAL.UPDATE",
+				   info => { FetchAndUpdateRooms(); }
+				);
+			   })
+			   .Error(Debug.LogError);
+		}
 
-      public void AddOnRoomAdded(OnRoomAddedDelegate callback)
-      {
-         _onRoomAdded = callback;
-      }
+		public Promise<List<Room>> FetchAndUpdateRooms()
+		{
+			return FetchMyRooms().Then(rooms =>
+			   {
+				   for (int i = 0; i < _rooms.Count; i++)
+				   {
+					   _rooms[i].Leave();
+				   }
 
-      /// <summary>
-      /// Replaces :shortcode: emoji instances with TMP rich sprite tags.
-      /// </summary>
-      /// <param name="original">The unaltered string</param>
-      public string SubstituteEmoji(string original)
-      {
-         return original;
-      }
+				   _rooms.Clear();
+				   _rooms.AddRange(rooms);
+			   })
+			   // We want to immediately join the AlwaysSubscribedRooms. This will allow us to show toasts for
+			   // guild messages or direct messages if we wish. Other rooms we'll join only when the chat panel opens.
+			   .FlatMap(_ => JoinRooms(AlwaysSubscribedRooms));
+		}
 
-      protected void AddRoom(Room room)
-      {
-         if (MyRooms.Exists(r => r.Id == room.Id))
-         {
-            return;
-         }
+		public void AddOnRoomAdded(OnRoomAddedDelegate callback)
+		{
+			_onRoomAdded = callback;
+		}
 
-         MyRooms.Add(room);
-         if (_onRoomAdded != null)
-         {
-            _onRoomAdded(room);
-         }
-      }
+		/// <summary>
+		/// Replaces :shortcode: emoji instances with TMP rich sprite tags.
+		/// </summary>
+		/// <param name="original">The unaltered string</param>
+		public string SubstituteEmoji(string original)
+		{
+			return original;
+		}
 
-      private static Promise<List<Room>> JoinRooms(List<Room> rooms)
-      {
-         var promisedRooms = new List<Promise<Room>>();
+		protected void AddRoom(Room room)
+		{
+			if (MyRooms.Exists(r => r.Id == room.Id))
+			{
+				return;
+			}
 
-         foreach (var room in rooms)
-         {
-            promisedRooms.Add(room.Join());
-         }
+			MyRooms.Add(room);
+			if (_onRoomAdded != null)
+			{
+				_onRoomAdded(room);
+			}
+		}
 
-         return Promise.Sequence(promisedRooms);
-      }
+		private static Promise<List<Room>> JoinRooms(List<Room> rooms)
+		{
+			var promisedRooms = new List<Promise<Room>>();
 
-      protected string CreateRoomNameFromGamerTags(IEnumerable<long> gamerTags)
-      {
-         var playersForName = new List<string>();
+			foreach (var room in rooms)
+			{
+				promisedRooms.Add(room.Join());
+			}
 
-         foreach (var gamerTag in gamerTags)
-         {
-            playersForName.Add(gamerTag.ToString());
-         }
+			return Promise.Sequence(promisedRooms);
+		}
 
-         playersForName.Sort();
+		protected string CreateRoomNameFromGamerTags(IEnumerable<long> gamerTags)
+		{
+			var playersForName = new List<string>();
 
-         return string.Format("direct-{0}", string.Join("-", playersForName.ToArray()));
-      }
+			foreach (var gamerTag in gamerTags)
+			{
+				playersForName.Add(gamerTag.ToString());
+			}
 
-      /// <summary>
-      /// Ask the provider to create a private room consisting of the provided list of players.
-      /// </summary>
-      /// <param name="gamerTags">GamerTags of players who should be in the room.</param>
-      public abstract Promise<Room> CreatePrivateRoom(List<long> gamerTags);
+			playersForName.Sort();
 
-      /// <summary>
-      /// Create a connection to the chat provider. This will be called when the ChatManager is initialized. The
-      /// rest of the methods in this interface depend on a successfully connected player.
-      /// </summary>
-      protected abstract Promise<Unit> Connect();
+			return string.Format("direct-{0}", string.Join("-", playersForName.ToArray()));
+		}
 
-      /// <summary>
-      /// Return the list of rooms the currently connected player has access to.
-      /// </summary>
-      protected abstract Promise<List<Room>> FetchMyRooms();
-   }
+		/// <summary>
+		/// Ask the provider to create a private room consisting of the provided list of players.
+		/// </summary>
+		/// <param name="gamerTags">GamerTags of players who should be in the room.</param>
+		public abstract Promise<Room> CreatePrivateRoom(List<long> gamerTags);
 
-   public delegate void OnRoomAddedDelegate(Room room);
+		/// <summary>
+		/// Create a connection to the chat provider. This will be called when the ChatManager is initialized. The
+		/// rest of the methods in this interface depend on a successfully connected player.
+		/// </summary>
+		protected abstract Promise<Unit> Connect();
 
-   public delegate void OnMessageReceivedDelegate(Message message);
+		/// <summary>
+		/// Return the list of rooms the currently connected player has access to.
+		/// </summary>
+		protected abstract Promise<List<Room>> FetchMyRooms();
+	}
+
+	public delegate void OnRoomAddedDelegate(Room room);
+
+	public delegate void OnMessageReceivedDelegate(Message message);
 }

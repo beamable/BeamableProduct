@@ -24,5 +24,8 @@ ConfirmationPopupVisualElement #buttonsVisualElement {
 PrimaryButtonVisualElement{
     width: 100px;
     height: 28px;
-    /*margin-bottom: 5px;*/
+}
+
+PrimaryButtonVisualElement Button {
+    background-color: #0090FD;
 }

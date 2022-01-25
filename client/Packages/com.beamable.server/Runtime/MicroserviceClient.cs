@@ -1,14 +1,37 @@
+
+using Beamable;
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Dependencies;
+using Beamable.Platform.SDK;
 using Beamable.Serialization.SmallerJSON;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace Beamable.Server
 {
+	// a class that acts as vessel for extension methods for service clients
+	public class MicroserviceClients
+	{
+		private BeamContext _ctx;
+
+		public MicroserviceClients(BeamContext context)
+		{
+			_ctx = context;
+		}
+
+		public TClient GetClient<TClient>() where TClient : MicroserviceClient
+		{
+			return _ctx.ServiceProvider.GetService<TClient>();
+		}
+	}
+
+
+
 	[Serializable]
 	public class MicroserviceClientDataWrapper<T> : ScriptableObject
 	{
@@ -17,16 +40,32 @@ namespace Beamable.Server
 
 	public class MicroserviceClient
 	{
+		protected IBeamableRequester _requester;
+		protected MicroserviceClient(IBeamableRequester requester = null)
+		{
+			_requester = requester;
+		}
+
+		protected MicroserviceClient(BeamContext ctx) : this(ctx?.Requester)
+		{
+
+		}
+
 		protected async Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
 		{
-			return await MicroserviceClientHelper.Request<T>(serviceName, endpoint, serializedFields);
+			if (_requester == null)
+			{
+				_requester = await API.Instance.Map(b => b.Requester);
+			}
+			return await MicroserviceClientHelper.Request<T>(_requester, serviceName, endpoint, serializedFields);
 		}
 
 		protected string SerializeArgument<T>(T arg) => MicroserviceClientHelper.SerializeArgument(arg);
 
-		protected string CreateUrl(string cid, string pid, string serviceName, string endpoint) =>
-			MicroserviceClientHelper.CreateUrl(cid, pid, serviceName, endpoint);
+		protected string CreateUrl(string cid, string pid, string serviceName, string endpoint)
+		   => MicroserviceClientHelper.CreateUrl(cid, pid, serviceName, endpoint);
 	}
+
 
 	public static class MicroserviceClientHelper
 	{
@@ -42,8 +81,8 @@ namespace Beamable.Server
 			public string payload;
 		}
 
-		static readonly StringBuilder _builder = new StringBuilder();
 		static string _prefix;
+		static readonly StringBuilder _builder = new StringBuilder();
 
 		public static void SetPrefix(string prefix) => _prefix = prefix;
 
@@ -199,7 +238,6 @@ namespace Beamable.Server
 
 			return dictionary;
 		}
-
 		private class JsonUtilityWrappedList<TList>
 		{
 			public TList items = default;
@@ -213,7 +251,7 @@ namespace Beamable.Server
 			return url;
 		}
 
-		public static async Promise<T> Request<T>(string serviceName, string endpoint, string[] serializedFields)
+		public static async Promise<T> Request<T>(IBeamableRequester requester, string serviceName, string endpoint, string[] serializedFields)
 		{
 			Debug.Log($"Client called {endpoint} with {serializedFields.Length} arguments");
 			var argArray = "[ " + string.Join(",", serializedFields) + " ]";
@@ -222,24 +260,28 @@ namespace Beamable.Server
 			T Parser(string json)
 			{
 				// TODO: Remove this in 0.13.0
-				if (!(json?.StartsWith("{\"payload\":\"") ?? false))
-					return DeserializeResult<T>(json);
+				if (!(json?.StartsWith("{\"payload\":\"") ?? false)) return DeserializeResult<T>(json);
 
 #pragma warning disable 618
-				Debug.LogWarning(
-					$"Using legacy payload string. Redeploy the {serviceName} service without the UseLegacySerialization setting.");
+				Debug.LogWarning($"Using legacy payload string. Redeploy the {serviceName} service without the UseLegacySerialization setting.");
 #pragma warning restore 618
 				var responseObject = DeserializeResult<ResponseObject>(json);
 				var result = DeserializeResult<T>(responseObject.payload);
 				return result;
 			}
 
-			var b = await API.Instance;
-			var requester = b.Requester;
-			var url = CreateUrl(b.Token.Cid, b.Token.Pid, serviceName, endpoint);
-			var req = new RequestObject { payload = argArray };
+			// var b = await API.Instance;
+			// var requester = b.Requester;
+			var url = CreateUrl(requester.AccessToken.Cid, requester.AccessToken.Pid, serviceName, endpoint);
+			var req = new RequestObject
+			{
+				payload = argArray
+			};
 			Debug.Log($"Sending Request uri=[{url}]");
 			return await requester.Request<T>(Method.POST, url, req, parser: Parser);
 		}
+
+
 	}
+
 }
