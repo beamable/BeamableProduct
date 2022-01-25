@@ -23,7 +23,8 @@ namespace Beamable.Editor.Microservice.UI.Components
         protected CreateServiceBaseVisualElement() : base(nameof(ServiceBaseVisualElement))
         {
         }
-        
+
+        protected abstract ServiceType ServiceType { get; }
         protected abstract string NewServiceName { get; set; }
         protected abstract string ScriptName { get; }
         
@@ -40,6 +41,9 @@ namespace Beamable.Editor.Microservice.UI.Components
         private VisualElement _logContainerElement;
         private List<string> _servicesNames;
         private VisualElement _rootVisualElement;
+
+        private bool _isServiceNameConfirmed;
+        private ServiceCreateDependentService _serviceCreateDependentService;
 
         public override void Refresh()
         {
@@ -94,11 +98,45 @@ namespace Beamable.Editor.Microservice.UI.Components
         {
             if (string.IsNullOrWhiteSpace(NewServiceName)) 
                 return;
-            _createBtn.text = "Creating...";
-            OnCreateServiceClicked?.Invoke();
-            EditorApplication.delayCall += () => CreateService(NewServiceName);
+
+            _isServiceNameConfirmed = true;
+            _nameTextField.SetEnabled(false);
+            
+            if ((ServiceType == ServiceType.MicroService && MicroservicesDataModel.Instance.Storages.Count == 0) ||
+                (ServiceType == ServiceType.StorageObject && MicroservicesDataModel.Instance.Services.Count == 0))
+            {
+	            HandleContinueButtonClicked();
+	            return;
+            }
+       
+            _createBtn.clickable.clicked -= HandleCreateButtonClicked;
+            _createBtn.text = "Continue";
+            _createBtn.clickable.clicked += HandleContinueButtonClicked;
+            ShowServiceCreateDependentService();
         }
-        protected abstract void CreateService(string serviceName);
+
+        private void ShowServiceCreateDependentService()
+        {
+	        _serviceCreateDependentService = new ServiceCreateDependentService();
+	        _serviceCreateDependentService.Refresh();
+
+	        if (ServiceType == ServiceType.MicroService)
+		        _serviceCreateDependentService.Init(MicroservicesDataModel.Instance.Storages);
+	        else
+		        _serviceCreateDependentService.Init(MicroservicesDataModel.Instance.Services);
+	        
+	        _rootVisualElement.Add(_serviceCreateDependentService);
+        }
+        
+        private void HandleContinueButtonClicked()
+        {
+	        var additionalReferences = _serviceCreateDependentService?.GetReferences();
+	        _createBtn.text = "Creating...";
+	        OnCreateServiceClicked?.Invoke();
+	        EditorApplication.delayCall += () => CreateService(NewServiceName, additionalReferences);
+        }
+        
+        protected abstract void CreateService(string serviceName, List<ServiceModelBase> additionalReferences = null);
         private void HandeMouseDownEvent(MouseDownEvent evt)
         {
             RenameGestureBegin();
@@ -118,6 +156,9 @@ namespace Beamable.Editor.Microservice.UI.Components
         }
         private void RenameGestureBegin()
         {
+	        if (_isServiceNameConfirmed)
+		        return;
+	        
             NewServiceName = _nameTextField.value;
             _nameTextField.SetEnabled(true);
             _nameTextField.BeamableFocus();
