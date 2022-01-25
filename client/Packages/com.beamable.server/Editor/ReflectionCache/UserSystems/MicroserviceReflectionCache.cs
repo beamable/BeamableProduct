@@ -55,7 +55,7 @@ namespace Beamable.Server.Editor
 			static Registry()
 			{
 				MICROSERVICE_BASE_TYPE = new BaseTypeOfInterest(typeof(Microservice));
-				MICROSERVICE_ATTRIBUTE = new AttributeOfInterest(typeof(MicroserviceAttribute), new Type[] { }, new[] {typeof(Microservice)});
+				MICROSERVICE_ATTRIBUTE = new AttributeOfInterest(typeof(MicroserviceAttribute), new Type[] { }, new[] { typeof(Microservice) });
 
 				MONGO_STORAGE_OBJECT_BASE_TYPE = new BaseTypeOfInterest(typeof(MongoStorageObject));
 				STORAGE_OBJECT_ATTRIBUTE = new AttributeOfInterest(typeof(StorageObjectAttribute), new Type[] { }, new[] {typeof(StorageObject)});
@@ -95,7 +95,7 @@ namespace Beamable.Server.Editor
 			}
 
 			public void OnReflectionCacheBuilt(PerBaseTypeCache perBaseTypeCache,
-			                                   PerAttributeCache perAttributeCache)
+											   PerAttributeCache perAttributeCache)
 			{
 				// TODO: Display BeamHint of validation type for microservices declared in ignored assemblies.
 			}
