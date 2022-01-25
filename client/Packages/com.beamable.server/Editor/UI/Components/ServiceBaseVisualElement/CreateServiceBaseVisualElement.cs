@@ -79,6 +79,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_nameTextField.RegisterCallback<FocusEvent>(HandleNameLabelFocus, TrickleDown.TrickleDown);
 			_nameTextField.RegisterCallback<KeyUpEvent>(HandleNameLabelKeyUp, TrickleDown.TrickleDown);
 
+			_cancelBtn.clickable.clicked += Root.RemoveFromHierarchy;
 			_createBtn.text = "Create";
 			_createBtn.clickable.clicked += HandleCreateButtonClicked;
 
