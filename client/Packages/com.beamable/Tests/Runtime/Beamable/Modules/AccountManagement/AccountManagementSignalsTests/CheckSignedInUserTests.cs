@@ -1,13 +1,13 @@
-using System.Collections;
-using System.Collections.Generic;
+using Beamable.AccountManagement;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
-using Beamable.AccountManagement;
 using Beamable.Platform.SDK;
 using Beamable.Platform.SDK.Auth;
 using Beamable.Platform.Tests;
 using NUnit.Framework;
 using Packages.Beamable.Runtime.Tests.Beamable;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.TestTools;
 
@@ -93,7 +93,7 @@ namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
 			var listenerCalled = false;
 
 			_engineUser.email = "";
-			_engineUser.thirdPartyAppAssociations = new List<string> {"facebook"};
+			_engineUser.thirdPartyAppAssociations = new List<string> { "facebook" };
 
 			_signaler.UserAvailable = new UserEvent();
 			_signaler.UserAvailable.AddListener(arg =>

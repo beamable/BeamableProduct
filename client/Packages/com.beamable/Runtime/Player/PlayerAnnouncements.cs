@@ -1,11 +1,11 @@
 using Beamable.Api;
 using Beamable.Common;
-using System;
-using System.Linq;
 using Beamable.Common.Api.Announcements;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Player;
+using System;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Player
@@ -42,7 +42,7 @@ namespace Beamable.Player
 		private bool Equals(Announcement other)
 		{
 			return Id == other.Id && Title == other.Title && Channel == other.Channel && Body == other.Body &&
-			       IsRead == other.IsRead && IsClaimed == other.IsClaimed && IsIgnored == other.IsIgnored;
+				   IsRead == other.IsRead && IsClaimed == other.IsClaimed && IsIgnored == other.IsIgnored;
 		}
 
 		public override bool Equals(object obj)
@@ -81,10 +81,10 @@ namespace Beamable.Player
 		private ISdkEventService _sdkEventService;
 
 		public PlayerAnnouncements(IPlatformService platform,
-		                           IAnnouncementsApi announcementsApi,
-		                           PlayerInventory playerInventory,
-		                           INotificationService notifications,
-		                           ISdkEventService sdkEventService)
+								   IAnnouncementsApi announcementsApi,
+								   PlayerInventory playerInventory,
+								   INotificationService notifications,
+								   ISdkEventService sdkEventService)
 		{
 			_platform = platform;
 			_announcementsApi = announcementsApi;
@@ -96,7 +96,7 @@ namespace Beamable.Player
 
 			_sdkEventService.Register(nameof(Announcements), HandleEvent);
 			_notifications.Subscribe(_notifications.GetRefreshEventNameForService("announcements"),
-			                         HandleSubscriptionUpdate);
+									 HandleSubscriptionUpdate);
 
 
 			var _ = Refresh(); // automatically start.
@@ -134,7 +134,8 @@ namespace Beamable.Player
 			// TODO: add a toplevel awaitable thingy so that players can KNOW they have data
 			var data = await _announcementsApi.GetCurrent();
 
-			var nextAnnouncements = data.announcements.Select(view => new Announcement(this) {
+			var nextAnnouncements = data.announcements.Select(view => new Announcement(this)
+			{
 				// TODO: fill in rest of properties.
 				Id = view.id,
 				Title = view.title,
