@@ -1,0 +1,5 @@
+﻿#buttonStrip Button {
+    margin-top: 0px;
+    margin-bottom: 0px;
+    height: 26px;
+}
