@@ -151,7 +151,7 @@ namespace Beamable.Editor
 				if (token == null)
 				{
 					_requester.Token = null; // show state as logged out.
-				 return Promise<EditorAPI>.Successful(this);
+					return Promise<EditorAPI>.Successful(this);
 				}
 
 				return Login(token);
@@ -209,8 +209,8 @@ namespace Beamable.Editor
 			{
 				var token = new AccessToken(_accessTokenStorage, CidOrAlias, null, tokenRes.access_token, tokenRes.refresh_token, tokenRes.expires_in);
 
-			 // use this token.
-			 return ApplyToken(token);
+				// use this token.
+				return ApplyToken(token);
 			});
 		}
 
@@ -241,9 +241,9 @@ namespace Beamable.Editor
 				var promise = new Promise<Unit>();
 				task.ContinueWith(_ =>
 				{
-				   // Put the execution back on the Editor thread; lest ye suffer Unity's wrath.
-				   EditorApplication.delayCall += () => { promise.CompleteSuccess(PromiseBase.Unit); };
-				  });
+					// Put the execution back on the Editor thread; lest ye suffer Unity's wrath.
+					EditorApplication.delayCall += () => { promise.CompleteSuccess(PromiseBase.Unit); };
+				});
 				return promise;
 			});
 		}
@@ -304,9 +304,9 @@ namespace Beamable.Editor
 
 				   return ContentIO.OnManifest.FlatMap(serverManifest =>
 				{
-					  var hasNoContent = serverManifest.References.Count == 0;
-					  return hasNoContent ? DoSilentContentPublish() : PromiseBase.SuccessfulUnit;
-				  });
+					var hasNoContent = serverManifest.References.Count == 0;
+					return hasNoContent ? DoSilentContentPublish() : PromiseBase.SuccessfulUnit;
+				});
 			   });
 		}
 
@@ -333,8 +333,8 @@ namespace Beamable.Editor
 			   {
 				   return ContentPublisher.CreatePublishSet().FlatMap(set =>
 				{
-					  return ContentPublisher.Publish(set, progress => { });
-				  });
+					return ContentPublisher.Publish(set, progress => { });
+				});
 			   })
 			   .FlatMap(_ =>
 			   {
@@ -447,23 +447,23 @@ namespace Beamable.Editor
 				   return RealmService.GetRealm()
 				   .Recover(ex =>
 				   {
-						 if (ex is RealmServiceException err)
-						 {
-						  // there is no realm.
-						  return null;
-						 }
+					   if (ex is RealmServiceException err)
+					   {
+						   // there is no realm.
+						   return null;
+					   }
 
-						 throw ex;
-					 })
+					   throw ex;
+				   })
 				   .FlatMap(realm =>
 				   {
-						 if (realm == null)
-						 {
-							 return Promise<Unit>.Successful(PromiseBase.Unit); // nothing to do.
-					  }
+					   if (realm == null)
+					   {
+						   return Promise<Unit>.Successful(PromiseBase.Unit); // nothing to do.
+					   }
 
-						 return SwitchRealm(realm);
-					 });
+					   return SwitchRealm(realm);
+				   });
 			   })
 			   .Map(_ => this);
 		}
@@ -521,10 +521,10 @@ namespace Beamable.Editor
 				   {
 					   return AuthService.GetUser().Map(user2 =>
 					{
-						 User = new EditorUser(user2);
-						 OnUserChange?.Invoke(User);
-						 return this;
-					 });
+						User = new EditorUser(user2);
+						OnUserChange?.Invoke(User);
+						return this;
+					});
 				   }
 				   else throw ex;
 			   })

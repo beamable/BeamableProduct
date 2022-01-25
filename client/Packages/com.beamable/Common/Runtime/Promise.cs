@@ -438,8 +438,8 @@ namespace Beamable.Common
 		{
 			Error((ex) =>
 			{
-			  // remove the ability for an uncaught exception to raise. As an awaiter, the .GetResult() method will trigger, which will THROW an error if one exists.
-		  });
+				// remove the ability for an uncaught exception to raise. As an awaiter, the .GetResult() method will trigger, which will THROW an error if one exists.
+			});
 			return this;
 		}
 
@@ -903,8 +903,8 @@ namespace Beamable.Common
 					var nextPromise = callback(err);
 					nextPromise.Then(value => result.CompleteSuccess(value)).Error(errInner =>
 				 {
-					  result.CompleteError(errInner);
-				  });
+					 result.CompleteError(errInner);
+				 });
 				}
 				catch (Exception ex)
 				{

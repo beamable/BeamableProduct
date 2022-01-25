@@ -168,7 +168,7 @@ namespace Beamable.Api.Notification
 			{
 				if (err is NoConnectivityException) return; // we don't care about a no-connectivity exception.
 
-			 Debug.LogError("ERROR - Subscriber Details Failure: " + err.ToString());
+				Debug.LogError("ERROR - Subscriber Details Failure: " + err.ToString());
 			});
 		}
 
@@ -367,9 +367,9 @@ namespace Beamable.Api.Notification
 					{
 						var jsonMessage = (string)itemDict["message"];
 
-					 // The string was encoded to prevent Pubnub from misinterpreting the json so we
-					 // need to decode it.
-					 var decodedString = UnityWebRequest.UnEscapeURL(jsonMessage);
+						// The string was encoded to prevent Pubnub from misinterpreting the json so we
+						// need to decode it.
+						var decodedString = UnityWebRequest.UnEscapeURL(jsonMessage);
 
 						dict = Json.Deserialize(decodedString) as IDictionary<string, object>;
 						if (dict == null)

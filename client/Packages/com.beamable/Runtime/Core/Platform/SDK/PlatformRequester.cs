@@ -246,17 +246,17 @@ namespace Beamable.Api
 						   case Exception _ when httpNoInternet:
 							   return Promise<T>.Failed(new NoConnectivityException(uri + " should not be cached and requires internet connectivity. Internet connection lost."));
 
-					  // if we get a 401 InvalidTokenError, let's refresh the token and retry the request.
-					  case PlatformRequesterException code when code?.Error?.error == "InvalidTokenError":
+						   // if we get a 401 InvalidTokenError, let's refresh the token and retry the request.
+						   case PlatformRequesterException code when code?.Error?.error == "InvalidTokenError":
 							   Debug.LogError("The token was bad but we are going to retry, buddy!!" + uri);
 							   return AuthService.LoginRefreshToken(Token.RefreshToken)
 							 .Map(rsp =>
 							 {
-								   Token = new AccessToken(_accessTokenStorage, Cid, Pid, rsp.access_token, rsp.refresh_token,
-								 rsp.expires_in);
-								   Token.Save();
-								   return PromiseBase.Unit;
-							   })
+								 Token = new AccessToken(_accessTokenStorage, Cid, Pid, rsp.access_token, rsp.refresh_token,
+							   rsp.expires_in);
+								 Token.Save();
+								 return PromiseBase.Unit;
+							 })
 							 .Error(err =>
 							   {
 								   Debug.LogError($"Failed to refresh account for {Token.RefreshToken} for uri=[{uri}] method=[{method}] includeAuth=[{includeAuthHeader}]");
@@ -267,14 +267,14 @@ namespace Beamable.Api
 					   }
 
 					   return Promise<T>.Failed(error);
-				  //The uri + Token.RefreshToken.ToString() wont work properly for anything with a body in the request
-			  }).Then(_response =>
-			  {
-				  if (useCache && Token != null && Application.isPlaying)
-				  {
-					  OfflineCache.Set<T>(uri, _response, Token, includeAuthHeader);
-				  }
-			  });
+					   //The uri + Token.RefreshToken.ToString() wont work properly for anything with a body in the request
+				   }).Then(_response =>
+				   {
+					   if (useCache && Token != null && Application.isPlaying)
+					   {
+						   OfflineCache.Set<T>(uri, _response, Token, includeAuthHeader);
+					   }
+				   });
 			}
 			else if (!internetConnectivity && useCache && Application.isPlaying)
 			{

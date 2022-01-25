@@ -136,15 +136,15 @@ namespace Beamable.Api
 				{
 					gamerTagsInFlight.Clear();
 
-				// Update cache and fill result
-				foreach (var next in data)
+					// Update cache and fill result
+					foreach (var next in data)
 					{
 						Set(next.Key, next.Value);
 						result.Add(next.Key, next.Value);
 					}
 
-				// Resolve waiters
-				promise.CompleteSuccess(result);
+					// Resolve waiters
+					promise.CompleteSuccess(result);
 				}).Error(err =>
 				{
 					gamerTagsInFlight.Clear();

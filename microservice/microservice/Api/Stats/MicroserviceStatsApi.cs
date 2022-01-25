@@ -78,12 +78,12 @@ namespace Beamable.Server.Api.Stats
                 kvp => kvp.Key,
                 kvp =>
                 {
-                      if (kvp.Value is JContainer jarray)
-                      {
-                          return jarray.ToString(Formatting.None);
-                      }
-                      return $"{kvp.Value}";
-                  });
+                    if (kvp.Value is JContainer jarray)
+                    {
+                        return jarray.ToString(Formatting.None);
+                    }
+                    return $"{kvp.Value}";
+                });
                 return stats;
             });
         }

@@ -273,24 +273,24 @@ namespace Beamable.Api
 				var scopes = scope.Split(',');
 				if (scopes.Length > 0)
 				{
-				 // Collapse all outstanding scopes into the next refresh
-				 for (int i = 0; i < scopes.Length; i++)
+					// Collapse all outstanding scopes into the next refresh
+					for (int i = 0; i < scopes.Length; i++)
 					{
 						if (!nextRefreshScopes.Contains(scopes[i]))
 							nextRefreshScopes.Add(scopes[i]);
 					}
 
-				 // Schedule a refresh delay to capture all outstanding scopes
-				 ScheduleRefresh(delay, scopes[0]);
+					// Schedule a refresh delay to capture all outstanding scopes
+					ScheduleRefresh(delay, scopes[0]);
 				}
 				else
 				{
 					ScheduleRefresh(delay, "");
 				}
 
-			 // Avoid incrementing the backoff if the device is definitely not connected to the network at all.
-			 // This is narrow, and would still increment if the device is connected, but the internet has other problems
-			 if (connectivityService.HasConnectivity)
+				// Avoid incrementing the backoff if the device is definitely not connected to the network at all.
+				// This is narrow, and would still increment if the device is connected, but the internet has other problems
+				if (connectivityService.HasConnectivity)
 				{
 					retry += 1;
 				}

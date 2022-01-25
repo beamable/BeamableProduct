@@ -66,8 +66,8 @@ namespace Beamable.Experimental.Api.Sim
 						return;
 					}
 
-				// Purge all events we already might know about
-				for (int j = 0; j < rsp.events.Count; j++)
+					// Purge all events we already might know about
+					for (int j = 0; j < rsp.events.Count; j++)
 					{
 						var evt = rsp.events[j];
 						if (evt.t > _nextFrame.Frame)
@@ -76,8 +76,8 @@ namespace Beamable.Experimental.Api.Sim
 						}
 					}
 
-				// If the response is higher than what we know, let's get it
-				if (rsp.t > _nextFrame.Frame)
+					// If the response is higher than what we know, let's get it
+					if (rsp.t > _nextFrame.Frame)
 					{
 						_nextFrame.Frame = rsp.t;
 						hasData = true;
