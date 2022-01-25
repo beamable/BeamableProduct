@@ -28,7 +28,7 @@ namespace Beamable.Editor.UI.Model
 		public ServiceStorageReference RemoteReference { get; protected set; }
 
 		[SerializeField]
-		public StorageObjectDescriptor _serviceDescriptor;
+		private StorageObjectDescriptor _serviceDescriptor;
 
 		[SerializeField]
 		private string _assemblyQualifiedStorageTypeName;
