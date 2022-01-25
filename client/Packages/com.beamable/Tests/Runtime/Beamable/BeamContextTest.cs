@@ -12,8 +12,8 @@ namespace Beamable.Tests.Runtime
 		public void Setup()
 		{
 			Context = MockBeamContext.Create(
-				mutateDependencies:OnRegister,
-				onInit:OnInit
+				mutateDependencies: OnRegister,
+				onInit: OnInit
 				);
 		}
 

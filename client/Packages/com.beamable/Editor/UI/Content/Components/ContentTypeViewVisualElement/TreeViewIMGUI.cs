@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using UnityEditor.IMGUI.Controls;
 using System.Linq;
+using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -60,7 +60,8 @@ namespace Beamable.Editor.Content.Components
 			return GetRows().Count * RowHeight;
 		}
 
-		public float RowHeight {
+		public float RowHeight
+		{
 			get => rowHeight;
 			set => rowHeight = value;
 		}
@@ -104,7 +105,7 @@ namespace Beamable.Editor.Content.Components
 		}
 
 		private TreeViewItem _treeViewItemRoot;
-      private List<TreeViewItem> _selectionBranch;
+		private List<TreeViewItem> _selectionBranch;
 		public List<TreeViewItem> MainSelectionBranch { private set { _selectionBranch = value; } get { return _selectionBranch; } }
 
 		public TreeViewIMGUI(TreeViewState treeViewState)
@@ -156,35 +157,35 @@ namespace Beamable.Editor.Content.Components
 			return _treeViewItemRoot;
 		}
 
-      protected override void ContextClicked()
-      {
-         base.ContextClicked();
+		protected override void ContextClicked()
+		{
+			base.ContextClicked();
 
 			OnContextClicked?.Invoke();
 		}
 
-      protected override bool CanMultiSelect(TreeViewItem item)
-      {
+		protected override bool CanMultiSelect(TreeViewItem item)
+		{
 			if (_selectionType == SelectionType.Single)
-         {
+			{
 				return false;
-         }
-         return base.CanMultiSelect(item);
-      }
+			}
+			return base.CanMultiSelect(item);
+		}
 
 
 
-      /// <summary>
-      /// The branch contains the selected <see cref="TreeViewItem"/>
-      /// and all its ancestor <see cref="TreeViewItem"/>(s) if they exist.
-      /// </summary>
-      /// <param name="treeViewItem"></param>
-      private void SetMainSelectionBranch(TreeViewItem treeViewItem)
+		/// <summary>
+		/// The branch contains the selected <see cref="TreeViewItem"/>
+		/// and all its ancestor <see cref="TreeViewItem"/>(s) if they exist.
+		/// </summary>
+		/// <param name="treeViewItem"></param>
+		private void SetMainSelectionBranch(TreeViewItem treeViewItem)
 		{
 			_selectionBranch = new List<TreeViewItem>();
 
 			if (treeViewItem != null)
-         {
+			{
 				//Convert to objects for ease-of-use via API
 				IList<TreeViewItem> ancestorTreeViewItems = GetTreeViewItemsFromInts(GetAncestors(treeViewItem.id));
 				foreach (TreeViewItem ancestor in ancestorTreeViewItems)
