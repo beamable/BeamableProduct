@@ -85,8 +85,8 @@ namespace Beamable.Api.CloudSaving
 				{
 					Subscribe(cb =>
 				 {
-					   //DO NOT REMOVE THIS, WE NEED THIS TO GET DEFAULT NOTIFICATIONS
-				   });
+					 //DO NOT REMOVE THIS, WE NEED THIS TO GET DEFAULT NOTIFICATIONS
+				 });
 
 					_fileWatchingRoutine = StartFileSystemWatchingCoroutine();
 					_platform.Notification.Subscribe(
@@ -324,8 +324,8 @@ namespace Beamable.Api.CloudSaving
 
 				  return CommitManifest(upload).FlatMap(_ =>
 			   {
-					 // We want to ensure that we explicitly invoke the event with the ORIGINAL manifest.
-					 UpdateReceived?.Invoke(manifestResponse);
+				   // We want to ensure that we explicitly invoke the event with the ORIGINAL manifest.
+				   UpdateReceived?.Invoke(manifestResponse);
 				   return PromiseBase.SuccessfulUnit;
 			   });
 			  }
