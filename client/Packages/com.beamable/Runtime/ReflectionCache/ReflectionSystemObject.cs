@@ -12,7 +12,7 @@ namespace Beamable.Reflection
 	{
 		[Tooltip("Used to disable reflection systems from running if you are not going to use them.")]
 		public bool Enabled = true;
-		
+
 		[Tooltip("Used to sort all reflection systems in ascending order before generating the reflection cache. Lowest value means highest priority.")]
 		public int Priority;
 

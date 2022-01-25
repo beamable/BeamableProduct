@@ -1,12 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Beamable.Server.Editor.ManagerClient;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
+using Beamable.Server.Editor.ManagerClient;
 using Beamable.Server.Editor.UI.Components;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -26,9 +26,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 	}
 
 	public class PublishManifestEntryVisualElement : MicroserviceComponent,
-	                                                 IComparable<PublishManifestEntryVisualElement>
+													 IComparable<PublishManifestEntryVisualElement>
 	{
-		private static readonly string[] TemplateSizes = {"small", "medium", "large"};
+		private static readonly string[] TemplateSizes = { "small", "medium", "large" };
 		private static readonly Dictionary<ServicePublishState, string> CheckImageClasses =
 			new Dictionary<ServicePublishState, string>()
 			{
@@ -67,9 +67,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private TextField _commentField;
 
 		public PublishManifestEntryVisualElement(IEntryModel model,
-		                                         bool argWasPublished,
-		                                         int elementIndex,
-		                                         bool isRemoteOnly) : base(nameof(PublishManifestEntryVisualElement))
+												 bool argWasPublished,
+												 int elementIndex,
+												 bool isRemoteOnly) : base(nameof(PublishManifestEntryVisualElement))
 		{
 			Model = model;
 			_wasPublished = argWasPublished;

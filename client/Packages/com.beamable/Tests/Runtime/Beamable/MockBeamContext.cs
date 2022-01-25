@@ -24,10 +24,10 @@ namespace Beamable.Tests.Runtime
 
 
 		public static MockBeamContext Create(
-			string playerCode="test",
-			Action<IDependencyBuilder> mutateDependencies=null,
-			Action<MockBeamContext> onInit=null,
-			MockPlatformAPI requester=null)
+			string playerCode = "test",
+			Action<IDependencyBuilder> mutateDependencies = null,
+			Action<MockBeamContext> onInit = null,
+			MockPlatformAPI requester = null)
 		{
 			_onInit = onInit;
 			_mutateDependencies = mutateDependencies;
@@ -82,17 +82,17 @@ namespace Beamable.Tests.Runtime
 		public MockBeamContext AddPubnubRequests()
 		{
 			Requester.MockRequest<SubscriberDetailsResponse>(Method.GET, "/basic/notification")
-			         .WithResponse(new SubscriberDetailsResponse
-			         {
-				         authenticationKey = "testauthkey",
-				         customChannelPrefix = "",
-				         gameGlobalNotificationChannel = "globalchannel",
-				         gameNotificationChannel = "gamechannel",
-				         playerChannel = "playerchannel",
-				         playerForRealmChannel = "playersforrealmchannel",
-				         subscribeKey = "subscriberkey"
-			         })
-			         .WithToken(ACCESS_TOKEN)
+					 .WithResponse(new SubscriberDetailsResponse
+					 {
+						 authenticationKey = "testauthkey",
+						 customChannelPrefix = "",
+						 gameGlobalNotificationChannel = "globalchannel",
+						 gameNotificationChannel = "gamechannel",
+						 playerChannel = "playerchannel",
+						 playerForRealmChannel = "playersforrealmchannel",
+						 subscribeKey = "subscriberkey"
+					 })
+					 .WithToken(ACCESS_TOKEN)
 				;
 			return this;
 		}
@@ -100,32 +100,32 @@ namespace Beamable.Tests.Runtime
 		public MockBeamContext AddSessionRequests()
 		{
 			Requester.MockRequest<EmptyResponse>(Method.POST, "/basic/session")
-			         .WithResponse(new EmptyResponse())
-			         .WithToken(ACCESS_TOKEN);
+					 .WithResponse(new EmptyResponse())
+					 .WithToken(ACCESS_TOKEN);
 
 			Requester.MockRequest<EmptyResponse>(Method.POST, "/basic/session/heartbeat")
-			         .WithResponse(new EmptyResponse())
-			         .WithToken(ACCESS_TOKEN);
+					 .WithResponse(new EmptyResponse())
+					 .WithToken(ACCESS_TOKEN);
 			return this;
 		}
 
 		public MockBeamContext AddStandardGuestLoginRequests()
 		{
 			Requester.MockRequest<TokenResponse>(Method.POST, "/basic/auth/token")
-			         .WithNoAuthHeader()
-			         .WithJsonFieldMatch("grant_type", "guest")
-			         .WithResponse(new TokenResponse
-			         {
-				         access_token = ACCESS_TOKEN,
-				         refresh_token = "test_refresh",
-				         expires_in = 10000,
-				         token_type = "test_token"
-			         });
+					 .WithNoAuthHeader()
+					 .WithJsonFieldMatch("grant_type", "guest")
+					 .WithResponse(new TokenResponse
+					 {
+						 access_token = ACCESS_TOKEN,
+						 refresh_token = "test_refresh",
+						 expires_in = 10000,
+						 token_type = "test_token"
+					 });
 
 			Requester.MockRequest<User>(Method.GET, "/basic/accounts/me")
-			         .WithResponse(new User {id = 1234})
-			         .WithToken(ACCESS_TOKEN)
-			         ;
+					 .WithResponse(new User { id = 1234 })
+					 .WithToken(ACCESS_TOKEN)
+					 ;
 
 			// Requester.MockRequest<TokenResponse>(Method.POST, "/basic/auth/token")
 			//          .WithNoAuthHeader()

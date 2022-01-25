@@ -149,7 +149,7 @@ namespace Beamable.Common.Assistant
 
 			System.Diagnostics.Debug.Assert(beamHint_headers.Count == contextObjs.Count, "These must be parallel arrays of the same length.");
 
-			var zipped = beamHint_headers.Zip(contextObjs, (header, obj) => new {Header = header, ContextObject = obj});
+			var zipped = beamHint_headers.Zip(contextObjs, (header, obj) => new { Header = header, ContextObject = obj });
 			foreach (var hint in zipped)
 			{
 				AddOrReplaceHint(hint.Header, hint.ContextObject);
@@ -166,12 +166,12 @@ namespace Beamable.Common.Assistant
 
 		public void RemoveHint(BeamHintHeader header)
 		{
-			RemoveHints(new[] {header});
+			RemoveHints(new[] { header });
 		}
 
 		public void RemoveHint(BeamHint hint)
 		{
-			RemoveHints(new[] {hint});
+			RemoveHints(new[] { hint });
 		}
 
 		public void RemoveHints(IEnumerable<BeamHintHeader> headers)
