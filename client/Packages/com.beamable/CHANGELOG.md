@@ -1,15 +1,29 @@
 
 
 
+
 # Changelog
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Added
+- `BeamContext` classes and new player centric SDK types like `PlayerInventory`
+
+### Fixed
+- Deleting all items from an inventory subscription notifies client
+- Immediately failed promises throw uncaught errors on access
+
+### Changed
+- `ServiceManager` no longer provides Beamable types. Use `BeamContext` instead.
+- `Beamable.API.Instance` now returns `BeamContext.Default.Api` after waiting for the context initialization
+
 ## [0.18.2]
 ### Changed
 - Improved baked content performance by keeping data in a single file and limiting number of IO operations.
+
 
 ## [0.18.1]
 ### Fixed
