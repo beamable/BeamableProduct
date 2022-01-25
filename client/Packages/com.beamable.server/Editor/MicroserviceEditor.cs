@@ -164,7 +164,7 @@ namespace Beamable.Server.Editor
 			}
 			finally
 			{
-				if (additionalReferences != null && additionalReferences.Count != 0)
+				if (!string.IsNullOrWhiteSpace(asmName) && additionalReferences != null && additionalReferences.Count != 0)
 				{
 					foreach (var additionalReference in additionalReferences)
 					{
