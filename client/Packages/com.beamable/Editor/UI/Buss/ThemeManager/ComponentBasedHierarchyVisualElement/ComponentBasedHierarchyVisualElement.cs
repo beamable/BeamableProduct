@@ -77,8 +77,10 @@ namespace Beamable.Editor.UI.Components
 			OnHierarchyChanged();
 		}
 
-		protected void OnSelectionChanged()
+		private void OnSelectionChanged()
 		{
+			ChangeSelectedLabel(null, false);
+			
 			IndentedLabelVisualElement indentedLabelVisualElement =
 				_spawnedLabels.Find(label => label.RelatedGameObject == Selection.activeGameObject);
 
@@ -101,18 +103,6 @@ namespace Beamable.Editor.UI.Components
 			EditorApplication.hierarchyChanged -= OnHierarchyChanged;
 		}
 
-		protected void ChangeSelectedLabel(IndentedLabelVisualElement newLabel, bool setInHierarchy = true)
-		{
-			SelectedLabel?.Deselect();
-			SelectedLabel = newLabel;
-			SelectedLabel?.Select();
-
-			if (!setInHierarchy) return;
-
-			Selection.SetActiveObjectWithContext(SelectedLabel?.RelatedGameObject,
-												 SelectedLabel?.RelatedGameObject);
-		}
-
 		protected virtual void OnHierarchyChanged()
 		{
 			foreach (IndentedLabelVisualElement child in _spawnedLabels)
@@ -133,6 +123,18 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			HierarchyChanged?.Invoke();
+		}
+
+		private void ChangeSelectedLabel(IndentedLabelVisualElement newLabel, bool setInHierarchy = true)
+		{
+			SelectedLabel?.Deselect();
+			SelectedLabel = newLabel;
+			SelectedLabel?.Select();
+
+			if (!setInHierarchy) return;
+
+			Selection.SetActiveObjectWithContext(SelectedLabel?.RelatedGameObject,
+			                                     SelectedLabel?.RelatedGameObject);
 		}
 
 		private void OnMouseClicked(IndentedLabelVisualElement newLabel)

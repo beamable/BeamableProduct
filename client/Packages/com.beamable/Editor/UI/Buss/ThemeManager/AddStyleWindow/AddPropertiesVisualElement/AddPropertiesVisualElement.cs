@@ -22,7 +22,9 @@ namespace Beamable.Editor.UI.Buss
 		private PrimaryButtonVisualElement _confirmButton;
 		private ScrollView _rulesContainer;
 
-		private readonly Dictionary<string, LabeledCheckboxVisualElement> _rules = new Dictionary<string, LabeledCheckboxVisualElement>();
+		private readonly Dictionary<string, LabeledCheckboxVisualElement> _rules =
+			new Dictionary<string, LabeledCheckboxVisualElement>();
+
 		private BussStyleSheet _currentSelectedStyleSheet;
 
 		public AddPropertiesVisualElement(Action<BussStyleRule> onSelectorAdded) : base(
@@ -47,11 +49,17 @@ namespace Beamable.Editor.UI.Buss
 			_confirmButton.Button.clickable.clicked += HandleConfirmButton;
 			_confirmButton.Disable();
 
-			var cancelButton = Root.Q<GenericButtonVisualElement>("cancelButton");
+			GenericButtonVisualElement cancelButton = Root.Q<GenericButtonVisualElement>("cancelButton");
 			cancelButton.OnClick += AddStyleWindow.CloseWindow;
 
-			var styleSheets = Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[] { "Assets" });
-			var selectStyleSheet = Root.Q<LabeledDropdownVisualElement>("selectStyleSheet");
+			List<string> folders = new List<string>{"Assets"};
+
+#if BEAMABLE_DEVELOPER
+			folders.Add("Packages");
+#endif
+
+			List<BussStyleSheet> styleSheets = Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", folders.ToArray());
+			LabeledDropdownVisualElement selectStyleSheet = Root.Q<LabeledDropdownVisualElement>("selectStyleSheet");
 			selectStyleSheet.Setup(styleSheets.Select(x => x.name).ToList(), index =>
 			{
 				_currentSelectedStyleSheet = styleSheets[index];
@@ -98,15 +106,14 @@ namespace Beamable.Editor.UI.Buss
 		{
 			if (string.IsNullOrWhiteSpace(_selectorName.Value))
 				ChangeButtonState(false,
-								  "Selector name cannot be empty or white space");
+				                  "Selector name cannot be empty or white space");
 			else
 				ChangeButtonState(true);
 
 			foreach (var localStyle in _currentSelectedStyleSheet.Styles)
 				if (localStyle.SelectorString == _selectorName.Value)
 					ChangeButtonState(false,
-									  $"Selector '{_selectorName.Value}' already exists in '{_currentSelectedStyleSheet.name}' BUSS style sheet");
-
+					                  $"Selector '{_selectorName.Value}' already exists in '{_currentSelectedStyleSheet.name}' BUSS style sheet");
 		}
 
 		private void ChangeButtonState(bool isEnabled, string tooltip = "")
