@@ -61,7 +61,7 @@ namespace Beamable.Common.Assistant
 		public BeamHintHeader(BeamHintType type, string domain, string id = "")
 		{
 			System.Diagnostics.Debug.Assert(!(domain.Contains(AS_KEY_SEPARATOR) || domain.Contains(BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR)),
-			                                $"Domain [{domain}] cannot contain: '{AS_KEY_SEPARATOR}' or '{BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR}'");
+											$"Domain [{domain}] cannot contain: '{AS_KEY_SEPARATOR}' or '{BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR}'");
 			System.Diagnostics.Debug.Assert(
 				!(id.Contains(AS_KEY_SEPARATOR) || id.Contains(BeamHintDomains.SUB_DOMAIN_SEPARATOR) || id.Contains(BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR)),
 				$"Id [{id}] cannot contain: '{AS_KEY_SEPARATOR}', '{BeamHintDomains.SUB_DOMAIN_SEPARATOR}' or '{BeamHintSharedConstants.BEAM_HINT_PREFERENCES_SEPARATOR}'");
@@ -96,7 +96,7 @@ namespace Beamable.Common.Assistant
 		/// </summary>
 		public static BeamHintHeader DeserializeBeamHintHeader(string serializedHint)
 		{
-			var typeDomainId = serializedHint.Split(new[] {BeamHintHeader.AS_KEY_SEPARATOR}, StringSplitOptions.None);
+			var typeDomainId = serializedHint.Split(new[] { BeamHintHeader.AS_KEY_SEPARATOR }, StringSplitOptions.None);
 			var type = (BeamHintType)Enum.Parse(typeof(BeamHintType), typeDomainId[0]);
 			var domain = typeDomainId[1];
 			var id = typeDomainId[2];
@@ -198,9 +198,9 @@ namespace Beamable.Common.Assistant
 		/// <param name="outToNotifyOncePerSession">The resulting list of <see cref="BeamHint"/>s that should notify only once per session.</param>
 		/// <param name="outToNotifyOnContextObjectChange">The resulting list of <see cref="BeamHint"/>s that should notify whenever the context object changed.</param>
 		void SplitHintsByNotificationPreferences(IEnumerable<BeamHint> hints,
-		                                         out List<BeamHint> outToNotifyNever,
-		                                         out List<BeamHint> outToNotifyOncePerSession,
-		                                         out List<BeamHint> outToNotifyOnContextObjectChange);
+												 out List<BeamHint> outToNotifyNever,
+												 out List<BeamHint> outToNotifyOncePerSession,
+												 out List<BeamHint> outToNotifyOnContextObjectChange);
 
 		/// <summary>
 		/// Discards all persisted <see cref="BeamHintVisibilityPreference"/>s, <see cref="BeamHintPlayModeWarningPreference"/>s and <see cref="BeamHintNotificationPreference"/>s of all hints.
@@ -281,7 +281,7 @@ namespace Beamable.Common.Assistant
 			if (!typeof(IBeamHintSystem).IsAssignableFrom(type))
 			{
 				return new AttributeValidationResult(this, type, ReflectionCache.ValidationResultType.Error, $"BeamHintSystemAttribute cannot be over type [{member.Name}] " +
-				                                                                                             $"since [{member.Name}] does not implement [{nameof(IBeamHintSystem)}].");
+																											 $"since [{member.Name}] does not implement [{nameof(IBeamHintSystem)}].");
 			}
 
 			return new AttributeValidationResult(this, type, ReflectionCache.ValidationResultType.Valid, "");

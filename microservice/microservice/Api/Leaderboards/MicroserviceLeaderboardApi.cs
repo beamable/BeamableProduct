@@ -48,7 +48,7 @@ namespace Beamable.Server.Api.Leaderboards
             if (derivatives != null && derivatives.HasValue)
                 derivativesValue = derivatives.Value;
 
-            var freezeValue = (long?) null;
+            var freezeValue = (long?)null;
             if (freezeTime != null && freezeTime.HasValue)
                 freezeValue = freezeTime.Value;
 
@@ -111,7 +111,7 @@ namespace Beamable.Server.Api.Leaderboards
                     if (cohort.description != null && cohort.description.HasValue)
                         arrayDict.Add("description", cohort.description.Value);
 
-                    arrayDict.Add("statRequirements", cohort.statRequirements.Select(delegate(StatRequirement requirement)
+                    arrayDict.Add("statRequirements", cohort.statRequirements.Select(delegate (StatRequirement requirement)
                     {
                         var statDict = new ArrayDict();
                         if (requirement.domain != null && requirement.domain.HasValue)
@@ -145,7 +145,7 @@ namespace Beamable.Server.Api.Leaderboards
                 });
             }
 
-            if(req.freezeTime.HasValue) dict.Add("freezeTime", req.freezeTime.Value);
+            if (req.freezeTime.HasValue) dict.Add("freezeTime", req.freezeTime.Value);
 
             var json = Json.Serialize(dict, pooledBuilder.Builder);
             return Requester.Request<EmptyResponse>(Method.POST, $"{SERVICE_PATH}/{leaderboardId}", json);

@@ -381,7 +381,8 @@ namespace Beamable.Common.Dependencies
 
 		public IDependencyBuilder AddTransient<TInterface, TImpl>(Func<IDependencyProvider, TInterface> factory) where TImpl : TInterface
 		{
-			TransientServices.Add(new ServiceDescriptor {
+			TransientServices.Add(new ServiceDescriptor
+			{
 				Interface = typeof(TInterface),
 				Implementation = typeof(TImpl),
 				Factory = (provider) => factory(provider)
@@ -403,7 +404,8 @@ namespace Beamable.Common.Dependencies
 
 		public IDependencyBuilder AddScoped<TInterface, TImpl>(Func<IDependencyProvider, TInterface> factory) where TImpl : TInterface
 		{
-			ScopedServices.Add(new ServiceDescriptor {
+			ScopedServices.Add(new ServiceDescriptor
+			{
 				Interface = typeof(TInterface),
 				Implementation = typeof(TImpl),
 				Factory = (provider) => factory(provider)
@@ -431,7 +433,8 @@ namespace Beamable.Common.Dependencies
 
 		public IDependencyBuilder AddSingleton<TInterface, TImpl>(Func<IDependencyProvider, TInterface> factory) where TImpl : TInterface
 		{
-			SingletonServices.Add(new ServiceDescriptor {
+			SingletonServices.Add(new ServiceDescriptor
+			{
 				Interface = typeof(TInterface),
 				Implementation = typeof(TImpl),
 				Factory = (provider) => factory(provider)
@@ -441,18 +444,20 @@ namespace Beamable.Common.Dependencies
 
 		public IDependencyBuilder AddSingleton(Type type)
 		{
-			SingletonServices.Add(new ServiceDescriptor {
+			SingletonServices.Add(new ServiceDescriptor
+			{
 				Interface = type,
 				Implementation = type,
 				Factory = provider => Instantiate(type, provider)
 			});
 			return this;
 		}
-		
+
 		public IDependencyBuilder AddSingleton<T>(Type registeringType, Func<T> factory)
 		{
 			System.Diagnostics.Debug.Assert(typeof(T).IsAssignableFrom(registeringType), $"RegisteringType [{registeringType.Name}] does not implement/inherit from [{typeof(T).Name}]!");
-			SingletonServices.Add(new ServiceDescriptor {
+			SingletonServices.Add(new ServiceDescriptor
+			{
 				Interface = registeringType,
 				Implementation = registeringType,
 				Factory = (provider) => factory()
@@ -487,7 +492,7 @@ namespace Beamable.Common.Dependencies
 		{
 			// Gets all constructors
 			var constructors = type.GetConstructors();
-			
+
 			// TODO: XXX: This only works for the largest constructor (the one with the most dependencies); really it should scan for the constructor it can match with the most dependencies
 			// Currently, we just get the constructor with the most parameters
 			var cons = constructors.Aggregate((c1, c2) => c1.GetParameters().Length.CompareTo(c2.GetParameters().Length) > 0 ? c1 : c2);
@@ -560,7 +565,8 @@ namespace Beamable.Common.Dependencies
 
 		public IDependencyBuilder Clone()
 		{
-			return new DependencyBuilder {
+			return new DependencyBuilder
+			{
 				ScopedServices = ScopedServices.ToList(),
 				TransientServices = TransientServices.ToList(),
 				SingletonServices = SingletonServices.ToList()

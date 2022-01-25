@@ -45,7 +45,7 @@ namespace Beamable.Editor.ToolbarExtender
 #endif
 
 			FieldInfo toolIcons = toolbarType.GetField(fieldName,
-			                                           BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+													   BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
 
 #if UNITY_2019_3_OR_NEWER
 			_toolCount = toolIcons != null ? ((int) toolIcons.GetValue(null)) : 8;
@@ -54,21 +54,23 @@ namespace Beamable.Editor.ToolbarExtender
 #elif UNITY_2018_1_OR_NEWER
 			_toolCount = toolIcons != null ? ((Array)toolIcons.GetValue(null)).Length : 6;
 #else
-			_toolCount = toolIcons != null ? ((Array) toolIcons.GetValue(null)).Length : 5;
+			_toolCount = toolIcons != null ? ((Array)toolIcons.GetValue(null)).Length : 5;
 #endif
 
 			BeamableToolbarCallbacks.OnToolbarGUI = OnGUI;
 			BeamableToolbarCallbacks.OnToolbarGUILeft = GUILeft;
 			BeamableToolbarCallbacks.OnToolbarGUIRight = GUIRight;
 
-			EditorAPI.Instance.Then(api => {
+			EditorAPI.Instance.Then(api =>
+			{
 				_editorAPI = api;
 
 				// Load and inject Beamable Menu Items (necessary due to multiple package split of SDK) --- sort them by specified order, and alphabetically when tied.
 				var menuItemsSearchInFolders = BeamEditor.CoreConfiguration.BeamableAssistantMenuItemsPath.Where(Directory.Exists).ToArray();
 				var menuItemsGuids = AssetDatabase.FindAssets($"t:{nameof(BeamableAssistantMenuItem)}", menuItemsSearchInFolders);
 				_assistantMenuItems = menuItemsGuids.Select(guid => AssetDatabase.LoadAssetAtPath<BeamableAssistantMenuItem>(AssetDatabase.GUIDToAssetPath(guid))).ToList();
-				_assistantMenuItems.Sort((mi1, mi2) => {
+				_assistantMenuItems.Sort((mi1, mi2) =>
+				{
 					var orderComp = mi1.Order.CompareTo(mi2.Order);
 					var labelComp = string.Compare(mi1.RenderLabel(_editorAPI).text, mi2.RenderLabel(_editorAPI).text, StringComparison.Ordinal);
 
@@ -81,14 +83,15 @@ namespace Beamable.Editor.ToolbarExtender
 
 				var groupedBySide = toolbarButtons.GroupBy(btn => btn.GetButtonSide(api)).ToList();
 				_leftButtons = groupedBySide.Where(g => g.Key == BeamableToolbarButton.Side.Left)
-				                            .SelectMany(g => g)
-				                            .ToList();
+											.SelectMany(g => g)
+											.ToList();
 
 				_rightButtons = groupedBySide.Where(g => g.Key == BeamableToolbarButton.Side.Right)
-				                             .SelectMany(g => g)
-				                             .ToList();
+											 .SelectMany(g => g)
+											 .ToList();
 
-				_leftButtons.Sort((b1, b2) => {
+				_leftButtons.Sort((b1, b2) =>
+				{
 					var orderComp = b1.GetButtonOrder(_editorAPI).CompareTo(b2.GetButtonOrder(_editorAPI));
 					var labelComp = string.Compare(b1.GetButtonText(_editorAPI), b2.GetButtonText(_editorAPI), StringComparison.Ordinal);
 					var textureComp = string.Compare(b1.GetButtonTexture(_editorAPI).name, b2.GetButtonTexture(_editorAPI).name, StringComparison.Ordinal);
@@ -96,7 +99,8 @@ namespace Beamable.Editor.ToolbarExtender
 					return orderComp == 0 ? (labelComp == 0 ? textureComp : labelComp) : orderComp;
 				});
 
-				_rightButtons.Sort((b1, b2) => {
+				_rightButtons.Sort((b1, b2) =>
+				{
 					var orderComp = b1.GetButtonOrder(_editorAPI).CompareTo(b2.GetButtonOrder(_editorAPI));
 					var labelComp = string.Compare(b1.GetButtonText(_editorAPI), b2.GetButtonText(_editorAPI), StringComparison.Ordinal);
 					var textureComp = string.Compare(b1.GetButtonTexture(_editorAPI).name, b2.GetButtonTexture(_editorAPI).name, StringComparison.Ordinal);
@@ -120,7 +124,7 @@ namespace Beamable.Editor.ToolbarExtender
 		public const float largeSpace = 20;
 		public const float buttonWidth = 32;
 		public const float dropdownWidth = 80;
-		
+
 #if UNITY_2019_1_OR_NEWER
 		public const float dropdownHeight = 21;
 #else
@@ -133,7 +137,7 @@ namespace Beamable.Editor.ToolbarExtender
 #else
 		public const float playPauseStopWidth = 100;
 #endif
-	
+
 #if UNITY_2020_1_OR_NEWER
 		public const float versionControlWidth = 60;
 #elif UNITY_2019_1_OR_NEWER
@@ -172,7 +176,7 @@ namespace Beamable.Editor.ToolbarExtender
 #if UNITY_2019_3_OR_NEWER
 			leftRect.xMin += buttonWidth; // Spacing grid snapping tool
 #endif
-			
+
 			Rect rightRect = new Rect(0, 0, screenWidth, Screen.height);
 			rightRect.xMin = playButtonsPosition;
 			rightRect.xMin += _commandStyle.fixedWidth * 3; // Play buttons
@@ -215,7 +219,7 @@ namespace Beamable.Editor.ToolbarExtender
 
 			var beamableAssistantButtonRect = new Rect(beamableAssistantStart, rightRect.y + 2, beamableAssistantEnd - beamableAssistantStart, dropdownHeight);
 			var btnTexture = _noHintsTexture;
-			
+
 			// Gets notification manager and evaluate if there are pending notifications
 			BeamHintNotificationManager notificationManager = null;
 			BeamEditor.GetBeamHintSystem(ref notificationManager);
@@ -225,7 +229,7 @@ namespace Beamable.Editor.ToolbarExtender
 			if (notificationManager != null && notificationManager.PendingValidationNotifications.Any())
 				btnTexture = _validationTexture;
 
-			
+
 			GUILayout.BeginArea(beamableAssistantButtonRect);
 			if (GUILayout.Button(new GUIContent("  Assistant Window", btnTexture), GUILayout.Width(beamableAssistantEnd - beamableAssistantStart), GUILayout.Height(dropdownHeight)))
 			{
@@ -233,7 +237,8 @@ namespace Beamable.Editor.ToolbarExtender
 				var menu = new GenericMenu();
 
 				_assistantMenuItems
-					.ForEach(item => {
+					.ForEach(item =>
+					{
 						menu.AddItem(item.RenderLabel(_editorAPI), false, data => item.OnItemClicked((EditorAPI)data), _editorAPI);
 					});
 

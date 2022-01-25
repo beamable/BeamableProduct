@@ -125,7 +125,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 		public void NewItems_WithStuff()
 		{
 			var builder = new InventoryUpdateBuilder();
-			builder = builder.AddItem("item.tuna", new Dictionary<string, string> {["a"] = "b"});
+			builder = builder.AddItem("item.tuna", new Dictionary<string, string> { ["a"] = "b" });
 
 			var json = InventoryUpdateBuilderSerializer.ToNetworkJson(builder);
 			var deserialized = InventoryUpdateBuilderSerializer.FromNetworkJson(json);
@@ -139,7 +139,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 		public void NewItems_WithStuff_RequestIdUnset()
 		{
 			var builder = new InventoryUpdateBuilder();
-			builder = builder.AddItem("item.tuna", new Dictionary<string, string> {["a"] = "b"});
+			builder = builder.AddItem("item.tuna", new Dictionary<string, string> { ["a"] = "b" });
 
 			var startReqId = builder.newItems[0].requestId;
 
@@ -157,7 +157,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 		public void NewItems_WithStuff_RequestIdSet()
 		{
 			var builder = new InventoryUpdateBuilder();
-			builder = builder.AddItem("item.tuna", new Dictionary<string, string> {["a"] = "b"});
+			builder = builder.AddItem("item.tuna", new Dictionary<string, string> { ["a"] = "b" });
 			builder.newItems[0].requestId = "abc";
 			var startReqId = builder.newItems[0].requestId;
 
@@ -214,7 +214,7 @@ namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 		public void ChangeItems_WithStuff()
 		{
 			var builder = new InventoryUpdateBuilder();
-			builder = builder.UpdateItem("item.tuna", 3, new Dictionary<string, string> {["a"] = "b"});
+			builder = builder.UpdateItem("item.tuna", 3, new Dictionary<string, string> { ["a"] = "b" });
 
 			var json = InventoryUpdateBuilderSerializer.ToNetworkJson(builder);
 			var deserialized = InventoryUpdateBuilderSerializer.FromNetworkJson(json);

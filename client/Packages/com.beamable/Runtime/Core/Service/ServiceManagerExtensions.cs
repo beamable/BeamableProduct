@@ -1,7 +1,7 @@
 namespace Beamable.Service
 {
-   public static class ServiceManagerExtensions
-   {
+	public static class ServiceManagerExtensions
+	{
 
-   }
+	}
 }

@@ -1,9 +1,9 @@
 ﻿using Beamable.Editor.Microservice.UI.Components;
-using System;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.UI.Components;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -21,7 +21,7 @@ namespace Beamable.Editor.UI.Components
 	public class PublishLoggerVisualElement : MicroserviceComponent
 	{
 		public new class UxmlFactory : UxmlFactory<PublishLoggerVisualElement, UxmlTraits>
-		{}
+		{ }
 
 		public PublishLoggerVisualElement() : base(nameof(PublishLoggerVisualElement)) { }
 
@@ -33,7 +33,7 @@ namespace Beamable.Editor.UI.Components
 		public override void Refresh()
 		{
 			base.Refresh();
-			
+
 			_logListRoot = Root.Q("logListRoot");
 			_logMessages = new List<LogMessage>();
 			_listView = new ListView()

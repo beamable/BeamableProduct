@@ -49,7 +49,7 @@ namespace Beamable.Common.Assistant
 		/// <param name="headers">List of headers to add. Parallel to <paramref name="hintContextObj"/>.</param>
 		/// <param name="hintContextObj">List of context objects to add. Parallel to <paramref name="headers"/>.</param>
 		void BatchAddBeamHints(string domainOwner, IEnumerable<BeamHintHeader> headers, IEnumerable<object> hintContextObj);
-		
+
 		/// <summary>
 		/// More performant version of <see cref="IBeamHintStorage.AddOrReplaceHints(System.Collections.Generic.IEnumerable{Common.Runtime.BeamHints.BeamHint})"/>
 		/// for the global case. Call this if you know that all hints are either <see cref="BeamHintDomains.IsBeamableDomain"/> or <see cref="BeamHintDomains.IsUserDomain"/>.
@@ -57,7 +57,7 @@ namespace Beamable.Common.Assistant
 		/// <param name="domainOwner">Either <see cref="BeamHintDomains.BEAM_DOMAIN_PREFIX"/> or <see cref="BeamHintDomains.USER_DOMAIN_PREFIX"/>.</param>
 		/// <param name="hints">The <see cref="BeamHint"/>s to add.</param>
 		void BatchAddBeamHints(string domainOwner, IEnumerable<BeamHint> hints);
-		
+
 
 		#region Per-Domain Beamable Storages
 
@@ -68,7 +68,7 @@ namespace Beamable.Common.Assistant
 		{
 			get;
 		}
-		
+
 		/// <summary>
 		/// Contains the <see cref="BeamHint"/>s for the entire <see cref="BeamHintDomains.BEAM_CSHARP_MICROSERVICES"/> domain.
 		/// </summary>
@@ -88,7 +88,7 @@ namespace Beamable.Common.Assistant
 		/// <summary>
 		/// Contains the <see cref="BeamHint"/>s for the entire <see cref="BeamHintDomains.BEAM_ASSISTANT"/> domain.
 		/// </summary>
-		IEnumerable<BeamHint> AssistantHints 
+		IEnumerable<BeamHint> AssistantHints
 		{
 			get;
 		}
@@ -109,7 +109,7 @@ namespace Beamable.Common.Assistant
 			get;
 		}
 
-		
+
 
 		public IEnumerable<BeamHint> All => BeamableStorage.Union(UserDefinedStorage);
 
@@ -167,7 +167,7 @@ namespace Beamable.Common.Assistant
 			{
 				var header = hint.Header;
 				var hintContextObj = hint.ContextObject;
-				
+
 				if (BeamHintDomains.IsBeamableDomain(header.Domain))
 					BeamableStorage.AddOrReplaceHint(header, hintContextObj);
 
@@ -248,7 +248,7 @@ namespace Beamable.Common.Assistant
 		public void BatchAddBeamHints(string domainOwner, IEnumerable<BeamHint> hints)
 		{
 			var beamHints = hints.ToList();
-			
+
 			if (BeamHintDomains.IsBeamableDomain(domainOwner))
 			{
 				foreach (BeamHint beamHint in beamHints)
@@ -265,6 +265,6 @@ namespace Beamable.Common.Assistant
 				}
 			}
 		}
-		
+
 	}
 }

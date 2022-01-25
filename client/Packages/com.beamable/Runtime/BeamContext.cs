@@ -107,8 +107,10 @@ namespace Beamable
 
 		#region Service Accessors
 
-		public long PlayerId {
-			get {
+		public long PlayerId
+		{
+			get
+			{
 				var userContext = ServiceProvider.GetService<IUserContext>();
 				if (userContext == this) return AuthorizedUser?.Value?.id ?? 0;
 				return userContext.UserId;
@@ -251,7 +253,8 @@ namespace Beamable
 		/// <param name="otherPlayerId"></param>
 		public IObservedPlayer ObservePlayer(long otherPlayerId)
 		{
-			return Fork(builder => {
+			return Fork(builder =>
+			{
 				builder
 					.RemoveIfExists<IUserContext>()
 					.AddScoped<IUserContext>(new SimpleUserContext(otherPlayerId))
@@ -273,10 +276,10 @@ namespace Beamable
 		}
 
 		protected void Init(string cid,
-		                    string pid,
-		                    string playerCode,
-		                    BeamableBehaviour behaviour,
-		                    IDependencyBuilder builder)
+							string pid,
+							string playerCode,
+							BeamableBehaviour behaviour,
+							IDependencyBuilder builder)
 		{
 			PlayerCode = playerCode;
 			_isStopped = false;
@@ -295,7 +298,7 @@ namespace Beamable
 				if (string.IsNullOrEmpty(playerCode) || (behaviour?.DontDestroyContext?.Value ?? false))
 				{
 					// the default context shouldn't destroy on load, unless again, it has already been specified.
-					nextBehaviour.DontDestroyContext = new OptionalBoolean {HasValue = true, Value = true};
+					nextBehaviour.DontDestroyContext = new OptionalBoolean { HasValue = true, Value = true };
 				}
 
 				behaviour = nextBehaviour;
@@ -318,7 +321,7 @@ namespace Beamable
 			{
 				var success = false;
 				var attempt = 0;
-				var attemptDurations = new int[] {2, 2, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10};
+				var attemptDurations = new int[] { 2, 2, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10 };
 				while (!success)
 				{
 					yield return InitializeUser()
@@ -392,11 +395,11 @@ namespace Beamable
 		{
 			ClearToken();
 			var token = new AccessToken(_tokenStorage,
-			                            Cid,
-			                            Pid,
-			                            rsp.access_token,
-			                            rsp.refresh_token,
-			                            rsp.expires_in);
+										Cid,
+										Pid,
+										rsp.access_token,
+										rsp.refresh_token,
+										rsp.expires_in);
 
 			_requester.Token = token;
 			_beamableApiRequester.Token = token;
@@ -454,7 +457,7 @@ namespace Beamable
 					});
 					OfflineCache.Set<User>(AuthApi.ACCOUNT_URL + "/me", new User
 					{
-						id= Random.Range(int.MinValue, 0),
+						id = Random.Range(int.MinValue, 0),
 						scopes = new List<string>(),
 						thirdPartyAppAssociations = new List<string>()
 					}, Requester.AccessToken, true);
@@ -470,7 +473,8 @@ namespace Beamable
 						await InitStep_StartPubnub();
 					}, -100);
 				}
-			} else if (AccessToken.IsExpired)
+			}
+			else if (AccessToken.IsExpired)
 			{
 				try
 				{
@@ -492,7 +496,9 @@ namespace Beamable
 		{
 			var user = new User
 			{
-				id = 0, scopes = new List<string>(), thirdPartyAppAssociations = new List<string>()
+				id = 0,
+				scopes = new List<string>(),
+				thirdPartyAppAssociations = new List<string>()
 			};
 			try
 			{
@@ -577,9 +583,9 @@ namespace Beamable
 		/// <param name="playerCode">A named code that represents a player slot on the device. The <see cref="Default"/> context uses an empty string. </param>
 		/// <returns></returns>
 		public static BeamContext Instantiate(
-			BeamableBehaviour beamable=null,
-			string playerCode=null,
-			IDependencyBuilder dependencyBuilder=null
+			BeamableBehaviour beamable = null,
+			string playerCode = null,
+			IDependencyBuilder dependencyBuilder = null
 			)
 		{
 			dependencyBuilder = dependencyBuilder ?? Beam.DependencyBuilder;
@@ -623,7 +629,7 @@ namespace Beamable
 		/// <summary>
 		/// Finds or creates the first <see cref="BeamContext"/> that matches the given <see cref="BeamContext.PlayerCode"/> value
 		/// </summary>
-		public static BeamContext ForPlayer(string playerCode="") => Instantiate(playerCode: playerCode);
+		public static BeamContext ForPlayer(string playerCode = "") => Instantiate(playerCode: playerCode);
 
 		/// <summary>
 		/// Finds all <see cref="BeamContext"/>s that have been created. This may include disposed contexts.

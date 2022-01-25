@@ -23,9 +23,9 @@ namespace Beamable.Common.Assistant
 				return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Valid, $"");
 
 			return new AttributeValidationResult(this,
-			                                     member,
-			                                     ReflectionCache.ValidationResultType.Error,
-			                                     $"{member.Name} is not \"static readonly string\". It cannot be a BeamHintDomain.");
+												 member,
+												 ReflectionCache.ValidationResultType.Error,
+												 $"{member.Name} is not \"static readonly string\". It cannot be a BeamHintDomain.");
 		}
 	}
 }

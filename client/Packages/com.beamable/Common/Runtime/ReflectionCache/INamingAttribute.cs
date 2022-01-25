@@ -114,10 +114,10 @@ namespace Beamable.Common.Reflection
 
 			// Get the duplicate names and bake them into a proper data structure for consumption by other systems.
 			var duplicateNames = namesList
-			                     .GroupBy(tuple => tuple.name)
-			                     .Where(group => group.Count() > 1)
-			                     .Select(group => new UniqueNameCollisionData(group.Key, group.Select(tuple => tuple.pair).ToArray()))
-			                     .ToList();
+								 .GroupBy(tuple => tuple.name)
+								 .Where(group => group.Count() > 1)
+								 .Select(group => new UniqueNameCollisionData(group.Key, group.Select(tuple => tuple.pair).ToArray()))
+								 .ToList();
 
 			return new UniqueNameValidationResults(attributeNameStringValidations, duplicateNames);
 		}

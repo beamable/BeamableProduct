@@ -62,7 +62,7 @@ namespace Beamable.Player
 				return false;
 			}
 
-			return Equals((PlayerStat) obj);
+			return Equals((PlayerStat)obj);
 		}
 
 		public override int GetHashCode()
@@ -77,7 +77,7 @@ namespace Beamable.Player
 	}
 
 	[Serializable]
-	public class SerializableDictionaryStringToPlayerStat : SerializableDictionaryStringToSomething<PlayerStat> {}
+	public class SerializableDictionaryStringToPlayerStat : SerializableDictionaryStringToSomething<PlayerStat> { }
 
 
 	[Serializable]

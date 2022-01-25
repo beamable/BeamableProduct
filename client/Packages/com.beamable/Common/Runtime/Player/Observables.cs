@@ -1,8 +1,8 @@
+using Beamable.Common;
+using Beamable.Common.Content;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Beamable.Common;
-using Beamable.Common.Content;
 using System.Linq;
 using UnityEngine;
 
@@ -142,13 +142,13 @@ namespace Beamable.Common.Player
 	[Serializable]
 	public class ObservableLong : Observable<long>
 	{
-		public static implicit operator ObservableLong(long data) => new ObservableLong {Value = data};
+		public static implicit operator ObservableLong(long data) => new ObservableLong { Value = data };
 	}
 
 	[Serializable]
 	public class ObservableString : Observable<string>
 	{
-		public static implicit operator ObservableString(string data) => new ObservableString {Value = data};
+		public static implicit operator ObservableString(string data) => new ObservableString { Value = data };
 	}
 
 	public class Observable<T> : AbsRefreshableObservable
@@ -235,7 +235,7 @@ namespace Beamable.Common.Player
 	}
 
 	public abstract class AbsObservableReadonlyList<T> : AbsRefreshableObservable, IObservableReadonlyList<T>,
-	                                                     IGetProtectedDataList<T>
+														 IGetProtectedDataList<T>
 	{
 		[SerializeField]
 		private List<T> _data = new List<T>(); // set to new() to avoid null

@@ -118,12 +118,12 @@ namespace Beamable.Common.Dependencies
 		/// <summary>
 		/// An enumerable set of the <see cref="ServiceDescriptor"/>s that are attached to this provider as scoped
 		/// </summary>
-		IEnumerable<ServiceDescriptor> ScopedServices{ get; }
+		IEnumerable<ServiceDescriptor> ScopedServices { get; }
 
 		/// <summary>
 		/// An enumerable set of the <see cref="ServiceDescriptor"/>s that are attached to this provider as singleton
 		/// </summary>
-		IEnumerable<ServiceDescriptor> SingletonServices{ get; }
+		IEnumerable<ServiceDescriptor> SingletonServices { get; }
 	}
 
 	public class DependencyProvider : IDependencyProviderScope
@@ -293,18 +293,19 @@ namespace Beamable.Common.Dependencies
 		}
 
 
-		public IDependencyProviderScope Fork(Action<IDependencyBuilder> configure=null)
+		public IDependencyProviderScope Fork(Action<IDependencyBuilder> configure = null)
 		{
 			var builder = new DependencyBuilder();
 			// populate all of the existing services we have in this scope.
 
 			void AddDescriptors(List<ServiceDescriptor> target,
-			                    Dictionary<Type, ServiceDescriptor> source,
-			                    Func<IDependencyProvider, ServiceDescriptor, object> factory)
+								Dictionary<Type, ServiceDescriptor> source,
+								Func<IDependencyProvider, ServiceDescriptor, object> factory)
 			{
 				foreach (var kvp in source)
 				{
-					target.Add(new ServiceDescriptor {
+					target.Add(new ServiceDescriptor
+					{
 						Implementation = kvp.Value.Implementation,
 						Interface = kvp.Value.Interface,
 						Factory = p => factory(p, kvp.Value)
@@ -313,10 +314,10 @@ namespace Beamable.Common.Dependencies
 			}
 
 			// transients are stupid, and I should probably delete them.
-			AddDescriptors(builder.TransientServices, Transients,(nextProvider, desc) => desc.Factory(nextProvider));
+			AddDescriptors(builder.TransientServices, Transients, (nextProvider, desc) => desc.Factory(nextProvider));
 
 			// all scoped descriptors
-			AddDescriptors(builder.ScopedServices, Scoped,(nextProvider, desc) => desc.Factory(nextProvider));
+			AddDescriptors(builder.ScopedServices, Scoped, (nextProvider, desc) => desc.Factory(nextProvider));
 			// scopes services build brand new instances per provider
 
 			// singletons use their parent singleton cache.
@@ -324,7 +325,7 @@ namespace Beamable.Common.Dependencies
 
 			configure?.Invoke(builder);
 
-			var provider = new DependencyProvider(builder) {Parent = this};
+			var provider = new DependencyProvider(builder) { Parent = this };
 			_children.Add(provider);
 			_childToConfigurator[provider] = configure;
 

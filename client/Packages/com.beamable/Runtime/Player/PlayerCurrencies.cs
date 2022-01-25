@@ -3,13 +3,13 @@ using Beamable.Api.Connectivity;
 using Beamable.Api.Inventory;
 using Beamable.Common;
 using Beamable.Common.Api;
-using System;
-using System.Linq;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Inventory;
 using Beamable.Common.Player;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Beamable.Player
 {
@@ -97,11 +97,11 @@ namespace Beamable.Player
 		private readonly IDependencyProvider _provider;
 
 		public PlayerCurrencyGroup(IPlatformService platformService,
-		                           InventoryService inventoryApi,
-		                           INotificationService notificationService,
-		                           ISdkEventService sdkEventService,
-		                           IConnectivityService connectivityService,
-		                           IDependencyProvider provider)
+								   InventoryService inventoryApi,
+								   INotificationService notificationService,
+								   ISdkEventService sdkEventService,
+								   IConnectivityService connectivityService,
+								   IDependencyProvider provider)
 		{
 			_platformService = platformService;
 			_inventoryApi = inventoryApi;
@@ -181,7 +181,7 @@ namespace Beamable.Player
 					}
 					else
 					{
-						next.Add(new PlayerCurrency {CurrencyId = kvp.Key, Amount = kvp.Value});
+						next.Add(new PlayerCurrency { CurrencyId = kvp.Key, Amount = kvp.Value });
 					}
 				}
 
@@ -211,8 +211,8 @@ namespace Beamable.Player
 			var existing = this.FirstOrDefault(a => string.Equals(a.CurrencyId, id));
 			if (existing == null)
 			{
-				var currency = new PlayerCurrency {CurrencyId = id, Amount = 0}; // TODO: should this be the starting amount?
-				// commit this to memory.
+				var currency = new PlayerCurrency { CurrencyId = id, Amount = 0 }; // TODO: should this be the starting amount?
+																				   // commit this to memory.
 
 				var next = this.ToList();
 				next.Add(currency);

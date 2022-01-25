@@ -66,11 +66,11 @@ namespace Beamable.Editor.Assistant
 		/// <see cref="BeamHintDetailsConfig"/>. 
 		/// </summary>
 		public BeamHintDetailConverterAttribute(Type delegateType,
-		                                        BeamHintType matchType,
-		                                        string domainSubstring,
-		                                        string idRegex,
-		                                        string hintDetailConfigId,
-		                                        string userOverrideToHintDetailConfigId = null)
+												BeamHintType matchType,
+												string domainSubstring,
+												string idRegex,
+												string hintDetailConfigId,
+												string userOverrideToHintDetailConfigId = null)
 		{
 			HintDetailConfigId = hintDetailConfigId;
 			DelegateType = delegateType;
@@ -95,9 +95,9 @@ namespace Beamable.Editor.Assistant
 				message.Append(string.Join("\n", signatureOfInterests.Select(acceptedSignature => acceptedSignature.ToHumanReadableSignature())));
 
 				return new AttributeValidationResult(this,
-				                                     member,
-				                                     ReflectionCache.ValidationResultType.Error,
-				                                     message.ToString());
+													 member,
+													 ReflectionCache.ValidationResultType.Error,
+													 message.ToString());
 			}
 
 			return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Valid, $"");

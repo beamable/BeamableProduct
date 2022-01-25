@@ -1,6 +1,6 @@
-using System;
 using Beamable.Common;
 using Beamable.Common.Api;
+using System;
 
 namespace Beamable.Api
 {
@@ -9,30 +9,30 @@ namespace Beamable.Api
 		Promise<SubscriberDetailsResponse> GetSubscriberDetails();
 	}
 
-   public class PubnubNotificationService : IPubnubNotificationService
-   {
-      private IBeamableRequester _requester;
+	public class PubnubNotificationService : IPubnubNotificationService
+	{
+		private IBeamableRequester _requester;
 
-      public PubnubNotificationService (IBeamableRequester requester)
-      {
-         _requester = requester;
-      }
+		public PubnubNotificationService(IBeamableRequester requester)
+		{
+			_requester = requester;
+		}
 
-      public Promise<SubscriberDetailsResponse> GetSubscriberDetails ()
-      {
-         return _requester.Request<SubscriberDetailsResponse>(Method.GET, "/basic/notification");
-      }
-   }
+		public Promise<SubscriberDetailsResponse> GetSubscriberDetails()
+		{
+			return _requester.Request<SubscriberDetailsResponse>(Method.GET, "/basic/notification");
+		}
+	}
 
-   [Serializable]
-   public class SubscriberDetailsResponse
-   {
-      public string subscribeKey;
-      public string gameNotificationChannel;
-      public string gameGlobalNotificationChannel;
-      public string playerChannel;
-      public string playerForRealmChannel;
-      public string customChannelPrefix;
-      public string authenticationKey;
-   }
+	[Serializable]
+	public class SubscriberDetailsResponse
+	{
+		public string subscribeKey;
+		public string gameNotificationChannel;
+		public string gameGlobalNotificationChannel;
+		public string playerChannel;
+		public string playerForRealmChannel;
+		public string customChannelPrefix;
+		public string authenticationKey;
+	}
 }

@@ -75,7 +75,7 @@ namespace Beamable.Player
 			_contentService = contentService;
 			_sdkEventService = sdkEventService;
 
-			Currencies  = new PlayerCurrencyGroup(
+			Currencies = new PlayerCurrencyGroup(
 				_platformService, _inventoryApi, _notificationService, _sdkEventService, connectivityService, _provider
 			);
 
@@ -98,7 +98,7 @@ namespace Beamable.Player
 		/// </summary>
 		/// <param name="itemRef">An <see cref="ItemRef"/> for the type of item to get. </param>
 		/// <returns>a <see cref="PlayerItemGroup"/> object for the given itemRef</returns>
-		public PlayerItemGroup GetItems(ItemRef itemRef=null)
+		public PlayerItemGroup GetItems(ItemRef itemRef = null)
 		{
 			itemRef = itemRef ?? "items";
 
@@ -115,7 +115,7 @@ namespace Beamable.Player
 		/// <param name="updateBuilder">An action that gives you a <see cref="InventoryUpdateBuilder"/> to configure with actions to apply to the player's inventory</param>
 		/// <param name="transaction">An optional transaction id for the operation. </param>
 		/// <returns>A promise representing the success of the operation.</returns>
-		public Promise Update(Action<InventoryUpdateBuilder> updateBuilder, string transaction=null)
+		public Promise Update(Action<InventoryUpdateBuilder> updateBuilder, string transaction = null)
 		{
 			var builder = new InventoryUpdateBuilder();
 			updateBuilder?.Invoke(builder);
@@ -179,12 +179,12 @@ namespace Beamable.Player
 
 					var itemGroup = GetItems(newItem.contentId);
 
-					_nextOfflineItemId --;
+					_nextOfflineItemId--;
 					var nextItemId = _nextOfflineItemId;
 					_itemIdToReqId[OfflineIdKey(newItem.contentId, nextItemId)] = newItem.requestId;
 
 					if (!_inventoryApi.Subscribable.GetCurrentView().items
-					                  .TryGetValue(newItem.contentId, out var existingItems))
+									  .TryGetValue(newItem.contentId, out var existingItems))
 					{
 						existingItems = new List<ItemView>();
 						_inventoryApi.Subscribable.GetCurrentView().items[newItem.contentId] = existingItems;
@@ -207,7 +207,7 @@ namespace Beamable.Player
 				foreach (var updateItem in builder.updateItems)
 				{
 					if (!_inventoryApi.Subscribable.GetCurrentView().items
-					                  .TryGetValue(updateItem.contentId, out var existingItems))
+									  .TryGetValue(updateItem.contentId, out var existingItems))
 					{
 						existingItems = new List<ItemView>();
 						_inventoryApi.Subscribable.GetCurrentView().items[updateItem.contentId] = existingItems;
@@ -236,7 +236,7 @@ namespace Beamable.Player
 				foreach (var deleteItem in builder.deleteItems)
 				{
 					if (!_inventoryApi.Subscribable.GetCurrentView().items
-					                  .TryGetValue(deleteItem.contentId, out var existingItems))
+									  .TryGetValue(deleteItem.contentId, out var existingItems))
 					{
 						existingItems = new List<ItemView>();
 						_inventoryApi.Subscribable.GetCurrentView().items[deleteItem.contentId] = existingItems;
@@ -268,7 +268,8 @@ namespace Beamable.Player
 			return _itemIdToReqId.TryGetValue(OfflineIdKey(contentId, itemId), out reqId);
 		}
 
-		private void UpdateOfflineBuilder(InventoryUpdateBuilder builder){
+		private void UpdateOfflineBuilder(InventoryUpdateBuilder builder)
+		{
 			// TODO: merge currencies and vip_bonus and such.
 
 			foreach (var curr in builder.currencies)
