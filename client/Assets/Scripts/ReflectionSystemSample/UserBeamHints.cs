@@ -1,8 +1,8 @@
 using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
+using System;
 using System.Collections.Generic;
 using System.Text;
-using System;
 #if UNITY_EDITOR
 using Beamable.Editor.Assistant;
 using Beamable.Editor.Reflection;
