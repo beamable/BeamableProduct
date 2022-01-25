@@ -1,0 +1,44 @@
+using Beamable.Common.Api.Notifications;
+using System;
+using System.Collections.Generic;
+
+namespace Beamable.Tests.Runtime.Player.Notifications
+{
+	public class MockNotificationService : INotificationService
+	{
+		public void Subscribe(string name, Action<object> callback)
+		{
+
+		}
+
+		public void Unsubscribe(string name, Action<object> handler)
+		{
+
+		}
+
+		public void Publish(string name, object payload)
+		{
+
+		}
+
+		public void CreateNotificationChannel(string id, string name, string description)
+		{
+
+		}
+
+		public void ScheduleLocalNotification(string channel,
+											  string key,
+											  int trackingId,
+											  string title,
+											  string message,
+											  TimeSpan timeFromNow,
+											  bool restrictTime,
+											  Dictionary<string, string> customData = null)
+		{
+		}
+
+		public void RegisterForNotifications()
+		{
+		}
+	}
+}

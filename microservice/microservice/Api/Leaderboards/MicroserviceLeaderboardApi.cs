@@ -5,6 +5,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Leaderboards;
 using Beamable.Common.Content;
+using Beamable.Common.Dependencies;
 using Beamable.Common.Leaderboards;
 using Beamable.Common.Pooling;
 using Beamable.Common.Shop;
@@ -22,8 +23,8 @@ namespace Beamable.Server.Api.Leaderboards
 
         public RequestContext Context { get; }
 
-        public MicroserviceLeaderboardApi(IBeamableRequester requester, RequestContext context, UserDataCache<RankEntry>.FactoryFunction factoryFunction)
-            : base(requester, context, factoryFunction)
+        public MicroserviceLeaderboardApi(IBeamableRequester requester, RequestContext context, IDependencyProvider provider, UserDataCache<RankEntry>.FactoryFunction factoryFunction)
+            : base(requester, context, provider, factoryFunction)
         {
             Context = context;
         }
@@ -47,7 +48,7 @@ namespace Beamable.Server.Api.Leaderboards
             if (derivatives != null && derivatives.HasValue)
                 derivativesValue = derivatives.Value;
 
-            var freezeValue = (long?) null;
+            var freezeValue = (long?)null;
             if (freezeTime != null && freezeTime.HasValue)
                 freezeValue = freezeTime.Value;
 
@@ -61,7 +62,7 @@ namespace Beamable.Server.Api.Leaderboards
                 permissions = permissions,
                 freezeTime = freezeValue,
             };
-            
+
             return CreateLeaderboard(leaderboardId, request);
         }
 
@@ -91,7 +92,7 @@ namespace Beamable.Server.Api.Leaderboards
         public Promise<EmptyResponse> CreateLeaderboard(string leaderboardId, CreateLeaderboardRequest req)
         {
             using var pooledBuilder = StringBuilderPool.StaticPool.Spawn();
-            
+
             var dict = new ArrayDict();
 
             if (req.maxEntries.HasValue) dict.Add("maxEntries", req.maxEntries.Value);
@@ -106,11 +107,11 @@ namespace Beamable.Server.Api.Leaderboards
                 {
                     var arrayDict = new ArrayDict();
                     arrayDict.Add("id", cohort.id);
-                    
+
                     if (cohort.description != null && cohort.description.HasValue)
                         arrayDict.Add("description", cohort.description.Value);
 
-                    arrayDict.Add("statRequirements", cohort.statRequirements.Select(delegate(StatRequirement requirement)
+                    arrayDict.Add("statRequirements", cohort.statRequirements.Select(delegate (StatRequirement requirement)
                     {
                         var statDict = new ArrayDict();
                         if (requirement.domain != null && requirement.domain.HasValue)
@@ -143,9 +144,9 @@ namespace Beamable.Server.Api.Leaderboards
                     {"write_self", req.permissions.writeSelf }
                 });
             }
-                
-            if(req.freezeTime.HasValue) dict.Add("freezeTime", req.freezeTime.Value);
-                
+
+            if (req.freezeTime.HasValue) dict.Add("freezeTime", req.freezeTime.Value);
+
             var json = Json.Serialize(dict, pooledBuilder.Builder);
             return Requester.Request<EmptyResponse>(Method.POST, $"{SERVICE_PATH}/{leaderboardId}", json);
         }

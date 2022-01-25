@@ -1,0 +1,16 @@
+#button {
+    background-color: rgba(0, 0, 0, 0);
+    border-color: rgba(0, 0, 0, 0);
+}
+
+#button:hover {
+    -unity-background-image-tint-color: #808080;
+}
+
+DropdownVisualElement #mainContainer{
+    background-color: #808080;
+}
+
+#button {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new L.png");
+}
