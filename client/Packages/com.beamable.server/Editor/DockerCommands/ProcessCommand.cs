@@ -275,6 +275,7 @@ namespace Beamable.Server.Editor.DockerCommands
 					if (procList[i].ProcessName.ToLower().Contains(procName))
 					{
 						DockerNotRunning = false;
+						return;
 					}
 				}
 				catch { }
