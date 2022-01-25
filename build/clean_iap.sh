@@ -9,5 +9,5 @@ then
     rm -f ./client/Assets/Plugins/UnityPurchasing.meta
 else
     echo "Leaving Unity IAP Plugin alone"
-    ls -a ./client/Assets/Plugins/UnityPurchasing
+    ls -a --block-size=M ./client/Assets/Plugins/UnityPurchasing/Bin 
 fi
