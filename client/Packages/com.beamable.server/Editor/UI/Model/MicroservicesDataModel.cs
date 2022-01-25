@@ -303,6 +303,11 @@ namespace Beamable.Editor.UI.Model
 									((MicroserviceBuilder)microserviceModel.Builder).Descriptor = microserviceModel.Descriptor;
 								break;
 							case MongoStorageModel mongoModel:
+								if (!string.IsNullOrEmpty(mongoModel.AssemblyQualifiedStorageTypeName))
+									mongoModel.Descriptor.Type = Type.GetType(mongoModel.AssemblyQualifiedStorageTypeName);
+								if (mongoModel.Builder != null)
+									((MongoStorageBuilder)mongoModel.Builder).Descriptor = mongoModel.Descriptor;
+
 								_localStorageModels.Add(mongoModel);
 								break;
 						}
