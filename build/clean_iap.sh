@@ -9,4 +9,5 @@ then
     rm -f ./client/Assets/Plugins/UnityPurchasing.meta
 else
     echo "Leaving Unity IAP Plugin alone"
+    ls -a ./client/Assets/Plugins/UnityPurchasing
 fi
