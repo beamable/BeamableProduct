@@ -32,7 +32,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			wnd.minSize = MIN_SIZE;
 			wnd.position = new Rect(wnd.position.x, wnd.position.y + 40, wnd.minSize.x, wnd.minSize.y);
 
-			Microservices.GenerateUploadModel().Then(model =>
+			var servicesRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			servicesRegistry.GenerateUploadModel().Then(model =>
 			{
 				wnd._model = model;
 				wnd.Refresh();
@@ -51,7 +52,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				Refresh();
 
-				Microservices.GenerateUploadModel().Then(model =>
+				var servicesRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+				servicesRegistry.GenerateUploadModel().Then(model =>
 				{
 					_model = model;
 					Refresh();
@@ -80,7 +82,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 				 */
 				WindowStateUtility.DisableAllWindows(new []{Constants.Publish});
 				e.PrepareForPublish();
-				await Microservices.Deploy(model, this, _tokenSource.Token, e.HandleServiceDeployed);
+				var microservicesRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+				await microservicesRegistry.Deploy(model, this, _tokenSource.Token, e.HandleServiceDeployed);
 			};
 
 			container.Add(e);

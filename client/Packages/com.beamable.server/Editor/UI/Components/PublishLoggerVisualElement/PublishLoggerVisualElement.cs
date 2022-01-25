@@ -46,13 +46,17 @@ namespace Beamable.Editor.UI.Components
 			};
 			_listView.Refresh();
 			_logListRoot.Add(_listView);
-			Microservices.OnServiceDeployStatusChanged -= MicroservicesOnOnServiceDeployStatusChanged;
-			Microservices.OnServiceDeployStatusChanged += MicroservicesOnOnServiceDeployStatusChanged;
+
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			
+			serviceRegistry.OnServiceDeployStatusChanged -= MicroservicesOnOnServiceDeployStatusChanged;
+			serviceRegistry.OnServiceDeployStatusChanged += MicroservicesOnOnServiceDeployStatusChanged;
 		}
 
 		protected override void OnDestroy()
 		{
-			Microservices.OnServiceDeployStatusChanged -= MicroservicesOnOnServiceDeployStatusChanged;
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			serviceRegistry.OnServiceDeployStatusChanged -= MicroservicesOnOnServiceDeployStatusChanged;
 			base.OnDestroy();
 			if (_service != null)
 			{

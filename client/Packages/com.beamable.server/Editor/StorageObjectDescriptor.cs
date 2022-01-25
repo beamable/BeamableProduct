@@ -18,7 +18,9 @@ namespace Beamable.Server.Editor
       public string ContainerName => $"db_{Name}_storage";
       public string ImageName => "mongo:latest";
       public ServiceType ServiceType => ServiceType.StorageObject;
-
+      public bool HasValidationError { get; set; }
+      public bool HasValidationWarning { get; set; }
+      
       public string DataVolume => $"beamable_storage_{Name}_data";
       public string FilesVolume => $"beamable_storage_{Name}_files";
 

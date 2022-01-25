@@ -20,7 +20,8 @@ namespace Beamable.Server.Editor
 
          try
          {
-            foreach (var service in Microservices.ListMicroservices())
+	         var microserviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+            foreach (var service in microserviceRegistry.Descriptors)
             {
                var command = new CheckImageCommand(service)
                {

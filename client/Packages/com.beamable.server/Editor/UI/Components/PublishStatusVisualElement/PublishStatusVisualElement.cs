@@ -37,10 +37,13 @@ namespace Beamable.Editor.UI.Components
 			base.Refresh();
 			_lastUpdateTime = DateTime.Now;
 			_label = Root.Q<Label>("value");
-			Microservices.OnDeploySuccess -= HandleDeploySuccess;
-			Microservices.OnDeploySuccess += HandleDeploySuccess;
-			Microservices.OnServiceDeployStatusChanged -= HandleServiceDeployStatusChanged;
-			Microservices.OnServiceDeployStatusChanged += HandleServiceDeployStatusChanged;
+
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			
+			serviceRegistry.OnDeploySuccess -= HandleDeploySuccess;
+			serviceRegistry.OnDeploySuccess += HandleDeploySuccess;
+			serviceRegistry.OnServiceDeployStatusChanged -= HandleServiceDeployStatusChanged;
+			serviceRegistry.OnServiceDeployStatusChanged += HandleServiceDeployStatusChanged;
 			HandleServiceDeployStatusChanged(null, ServicePublishState.Unpublished);
 		}
 		

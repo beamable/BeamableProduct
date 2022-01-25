@@ -12,9 +12,11 @@ namespace Beamable.Server.Editor
 
       public static void Show(Vector2 pos)
       {
+	      var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+	      
           CreateMicroservicePopup window = ScriptableObject.CreateInstance<CreateMicroservicePopup>();
           window.position = new Rect(pos.x,pos.y, 250, 80);
-          window.microservicesNames = Microservices.Descriptors.Select(descriptor => descriptor.Name).ToList();
+          window.microservicesNames = serviceRegistry.Descriptors.Select(descriptor => descriptor.Name).ToList();
           window.ShowPopup();
       }
 

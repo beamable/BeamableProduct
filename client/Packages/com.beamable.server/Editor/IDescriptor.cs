@@ -11,6 +11,8 @@ namespace Beamable.Server.Editor
       string ContainerName { get; }
       string ImageName { get; }
       ServiceType ServiceType { get; }
+      bool HasValidationError { get; }
+      bool HasValidationWarning { get; }
       bool IsPublishFeatureDisabled();
    }
 }
