@@ -1,4 +1,5 @@
 using Beamable.Config;
+using Beamable.Editor.UI.Model;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -79,15 +80,16 @@ namespace Beamable.Server.Editor
 			setAutoRun(!enabled);
 		}
 
-		public static void CreateNewMicroservice(string microserviceName)
+		public static void CreateNewMicroservice(string microserviceName, List<ServiceModelBase> additionalReferences = null)
 		{
-			CreateNewServiceFile(ServiceType.MicroService, microserviceName);
+			CreateNewServiceFile(ServiceType.MicroService, microserviceName, additionalReferences);
 		}
 
 
-		public static void CreateNewServiceFile(ServiceType serviceType, string serviceName)
+		public static void CreateNewServiceFile(ServiceType serviceType, string serviceName, List<ServiceModelBase> additionalReferences = null)
 		{
 			AssetDatabase.StartAssetEditing();
+			string asmName = string.Empty;
 			try
 			{
 				if (string.IsNullOrWhiteSpace(serviceName))
@@ -108,12 +110,12 @@ namespace Beamable.Server.Editor
 
 
 				// create the asmdef by hand.
-				var asmName = serviceType == ServiceType.MicroService
+				asmName = serviceType == ServiceType.MicroService
 					? $"Beamable.Microservice.{serviceName}"
 					: $"Beamable.Storage.{serviceName}";
 
 				var asmPath = relativeDestPath +
-							  $"/{asmName}.asmdef";
+				          $"/{asmName}.asmdef";
 
 				var references = new List<string>
 				{
@@ -126,6 +128,20 @@ namespace Beamable.Server.Editor
 				if (MicroserviceConfiguration.Instance.AutoBuildCommonAssembly)
 				{
 					references.Add(CommonAreaService.GetCommonAsmDefName());
+				}
+
+				
+				if (additionalReferences != null && additionalReferences.Count != 0)
+				{
+					foreach (var additionalReference in additionalReferences)
+					{
+						// For creating Microservice
+						if (additionalReference is MongoStorageModel mongoStorageModel)
+						{
+							var info = AssemblyDefinitionHelper.ConvertToInfo(mongoStorageModel.Descriptor);
+							references.Add(info.Name);
+						}
+					}
 				}
 
 				AssemblyDefinitionHelper.CreateAssetDefinitionAssetOnDisk(
@@ -148,6 +164,18 @@ namespace Beamable.Server.Editor
 			}
 			finally
 			{
+				if (!string.IsNullOrWhiteSpace(asmName) && additionalReferences != null && additionalReferences.Count != 0)
+				{
+					foreach (var additionalReference in additionalReferences)
+					{
+						// For creating StorageObject
+						if (additionalReference is MicroserviceModel microserviceModel)
+						{
+							AssemblyDefinitionHelper.AddAndRemoveReferences(microserviceModel.ServiceDescriptor, new List<string> {asmName}, null);
+						}
+					}
+				}
+				
 				AssetDatabase.StopAssetEditing();
 			}
 

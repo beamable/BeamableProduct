@@ -1,4 +1,4 @@
-﻿using Beamable.Editor.UI.Components;
+using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.UI.Components;
@@ -24,6 +24,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 		}
 
+    protected abstract ServiceType ServiceType { get; }
 		protected abstract string NewServiceName { get; set; }
 		protected abstract string ScriptName { get; }
 
@@ -40,6 +41,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private VisualElement _logContainerElement;
 		private List<string> _servicesNames;
 		private VisualElement _rootVisualElement;
+		
+		private bool _isServiceNameConfirmed;
+    private ServiceCreateDependentService _serviceCreateDependentService;
 
 		public override void Refresh()
 		{
@@ -74,9 +78,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_nameTextField.maxLength = MAX_NAME_LENGTH;
 			_nameTextField.RegisterCallback<FocusEvent>(HandleNameLabelFocus, TrickleDown.TrickleDown);
 			_nameTextField.RegisterCallback<KeyUpEvent>(HandleNameLabelKeyUp, TrickleDown.TrickleDown);
-
-			_cancelBtn.clickable.clicked += Root.RemoveFromHierarchy;
-
+			
 			_createBtn.text = "Create";
 			_createBtn.clickable.clicked += HandleCreateButtonClicked;
 
@@ -92,49 +94,86 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		protected virtual void HandleCreateButtonClicked()
 		{
-			if (string.IsNullOrWhiteSpace(NewServiceName))
-				return;
+				if (string.IsNullOrWhiteSpace(NewServiceName)) 
+						return;
+
+				_isServiceNameConfirmed = true;
+				_nameTextField.SetEnabled(false);
+
+				if ((ServiceType == ServiceType.MicroService && MicroservicesDataModel.Instance.Storages.Count == 0) ||
+						(ServiceType == ServiceType.StorageObject && MicroservicesDataModel.Instance.Services.Count == 0))
+				{
+					HandleContinueButtonClicked();
+					return;
+				}
+
+				_createBtn.clickable.clicked -= HandleCreateButtonClicked;
+				_createBtn.text = "Continue";
+				_createBtn.clickable.clicked += HandleContinueButtonClicked;
+				ShowServiceCreateDependentService();
+		}
+
+		private void ShowServiceCreateDependentService()
+		{
+			_serviceCreateDependentService = new ServiceCreateDependentService();
+			_serviceCreateDependentService.Refresh();
+
+			if (ServiceType == ServiceType.MicroService)
+				_serviceCreateDependentService.Init(MicroservicesDataModel.Instance.Storages, "StorageObjects");
+			else
+				_serviceCreateDependentService.Init(MicroservicesDataModel.Instance.Services, "MicroServices");
+
+			_rootVisualElement.Add(_serviceCreateDependentService);
+		}
+
+		private void HandleContinueButtonClicked()
+		{
+			var additionalReferences = _serviceCreateDependentService?.GetReferences();
 			_createBtn.text = "Creating...";
 			OnCreateServiceClicked?.Invoke();
-			EditorApplication.delayCall += () => CreateService(NewServiceName);
+			EditorApplication.delayCall += () => CreateService(NewServiceName, additionalReferences);
 		}
-		protected abstract void CreateService(string serviceName);
+
+		protected abstract void CreateService(string serviceName, List<ServiceModelBase> additionalReferences = null);
 		private void HandeMouseDownEvent(MouseDownEvent evt)
 		{
-			RenameGestureBegin();
+				RenameGestureBegin();
 		}
 		private void HandleNameLabelFocus(FocusEvent evt)
 		{
-			_nameTextField.SelectAll();
+				_nameTextField.SelectAll();
 		}
 		private void HandleNameLabelKeyUp(KeyUpEvent evt)
 		{
-			if ((evt.keyCode == KeyCode.KeypadEnter || evt.keyCode == KeyCode.Return) && _canCreateService)
-			{
-				HandleCreateButtonClicked();
-				return;
-			}
-			CheckName();
+				if ((evt.keyCode == KeyCode.KeypadEnter || evt.keyCode == KeyCode.Return) && _canCreateService)
+				{
+						HandleCreateButtonClicked();
+						return;
+				}
+				CheckName();
 		}
 		private void RenameGestureBegin()
 		{
-			NewServiceName = _nameTextField.value;
-			_nameTextField.SetEnabled(true);
-			_nameTextField.BeamableFocus();
-			CheckName();
+			if (_isServiceNameConfirmed)
+				return;
+
+				NewServiceName = _nameTextField.value;
+				_nameTextField.SetEnabled(true);
+				_nameTextField.BeamableFocus();
+				CheckName();
 		}
 		private void CheckName()
 		{
-			var newName = _nameTextField.value;
-			if (Regex.IsMatch(newName, @"^[a-zA-Z]+$"))
-			{
-				NewServiceName = newName;
-			}
-			_nameTextField.value = NewServiceName;
-			_canCreateService = !_servicesNames.Contains(NewServiceName)
-								&& NewServiceName.Length > 2
-								&& NewServiceName.Length <= MAX_NAME_LENGTH;
-			_createBtn.SetEnabled(_canCreateService);
+				var newName = _nameTextField.value;
+				if (Regex.IsMatch(newName, @"^[a-zA-Z]+$"))
+				{
+						NewServiceName = newName;
+				}
+				_nameTextField.value = NewServiceName;
+				_canCreateService = !_servicesNames.Contains(NewServiceName) 
+														&& NewServiceName.Length > 2 
+														&& NewServiceName.Length <= MAX_NAME_LENGTH;
+				_createBtn.SetEnabled(_canCreateService);
 		}
 	}
 }
