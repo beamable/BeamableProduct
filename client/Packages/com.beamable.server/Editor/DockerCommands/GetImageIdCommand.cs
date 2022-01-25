@@ -13,7 +13,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		public GetImageIdCommand(IDescriptor descriptor)
 		{
 			ImageName = descriptor.ImageName;
-			WasBuildLocally = BuildImageCommand.WasEverBuildLocally(descriptor;
+			WasBuildLocally = BuildImageCommand.WasEverBuildLocally(descriptor);
 		}
 		public override string GetCommandString()
 		{
