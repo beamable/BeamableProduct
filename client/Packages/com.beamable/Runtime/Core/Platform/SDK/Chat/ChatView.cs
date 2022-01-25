@@ -1,215 +1,220 @@
-﻿using System;
+﻿using Beamable.Api;
+using Beamable.Api.Notification;
+using Beamable.Common;
+using Beamable.Common.Api.Notifications;
+using Beamable.Common.Dependencies;
+using Beamable.Serialization;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
-using Beamable.Common;
-using Beamable.Service;
-using Beamable.Serialization;
-using Beamable.Api;
-using Beamable.Api.Notification;
 
 namespace Beamable.Experimental.Api.Chat
 {
-    [Serializable]
-    public class ChatView
-    {
-        public readonly List<RoomHandle> roomHandles;
+	[Serializable]
+	public class ChatView
+	{
+		public readonly List<RoomHandle> roomHandles;
 
-        public RoomHandle GeneralRoom
-        {
-            get;
-            private set;
-        }
+		public RoomHandle GeneralRoom
+		{
+			get;
+			private set;
+		}
 
-        public List<RoomHandle> GuildRooms
-        {
-            get;
-            private set;
-        }
+		public List<RoomHandle> GuildRooms
+		{
+			get;
+			private set;
+		}
 
-        public List<RoomHandle> DirectMessageRooms
-        {
-            get;
-            private set;
-        }
+		public List<RoomHandle> DirectMessageRooms
+		{
+			get;
+			private set;
+		}
 
-        public ChatView()
-        {
-            this.roomHandles = new List<RoomHandle>();
-        }
+		public ChatView()
+		{
+			this.roomHandles = new List<RoomHandle>();
+		}
 
-        public void Update(List<RoomInfo> roomInfo)
-        {
-            HashSet<string> remove = new HashSet<string>();
-            foreach (var handle in roomHandles)
-            {
-                var room = roomInfo.Find(info => info.id == handle.Id);
-                if (room == null)
-                {
-                    remove.Add(handle.Id);
-                    handle.Terminate();
-                }
-            }
-            roomHandles.RemoveAll(handle => remove.Contains(handle.Id));
+		public void Update(List<RoomInfo> roomInfo, IDependencyProvider dependencyProvider)
+		{
+			HashSet<string> remove = new HashSet<string>();
+			foreach (var handle in roomHandles)
+			{
+				var room = roomInfo.Find(info => info.id == handle.Id);
+				if (room == null)
+				{
+					remove.Add(handle.Id);
+					handle.Terminate();
+				}
+			}
+			roomHandles.RemoveAll(handle => remove.Contains(handle.Id));
 
-            foreach (var info in roomInfo)
-            {
-                var room = roomHandles.Find(handle => handle.Id == info.id);
-                if (room == null)
-                {
-                    roomHandles.Add(new RoomHandle(info));
-                }
-            }
+			foreach (var info in roomInfo)
+			{
+				var room = roomHandles.Find(handle => handle.Id == info.id);
+				if (room == null)
+				{
+					roomHandles.Add(new RoomHandle(info, dependencyProvider));
+				}
+			}
 
-            GeneralRoom = roomHandles.Find(room => room.Name.StartsWith("general"));
-            GuildRooms = roomHandles.FindAll(room => room.Name.StartsWith("group"));
-            DirectMessageRooms = roomHandles.FindAll(room => room.Name.StartsWith("direct"));
-        }
-    }
+			GeneralRoom = roomHandles.Find(room => room.Name.StartsWith("general"));
+			GuildRooms = roomHandles.FindAll(room => room.Name.StartsWith("group"));
+			DirectMessageRooms = roomHandles.FindAll(room => room.Name.StartsWith("direct"));
+		}
+	}
 
-    [Serializable]
-    public class RoomHandle
-    {
-        private const string ChatEvent = "CHAT.RECEIVED";
+	[Serializable]
+	public class RoomHandle
+	{
+		private readonly IDependencyProvider _dependencyProvider;
+		private const string ChatEvent = "CHAT.RECEIVED";
 
-        public readonly string Id;
-        public readonly string Name;
-        public readonly bool KeepSubscribed;
-        public readonly List<long> Players;
-        public readonly List<Message> Messages;
+		public readonly string Id;
+		public readonly string Name;
+		public readonly bool KeepSubscribed;
+		public readonly List<long> Players;
+		public readonly List<Message> Messages;
 
-        public bool ShowPlayerList => Players == null;
-        public bool IsSubscribed
-        {
-            get
-            {
-                if (_subscribe == null)
-                    return false;
-                else
-                    return _subscribe.IsCompleted;
-            }
-        }
+		public bool ShowPlayerList => Players == null;
+		public bool IsSubscribed
+		{
+			get
+			{
+				if (_subscribe == null)
+					return false;
+				else
+					return _subscribe.IsCompleted;
+			}
+		}
 
-        public Action OnRemoved;
-        public Action<Message> OnMessageReceived;
+		public Action OnRemoved;
+		public Action<Message> OnMessageReceived;
 
-        private Promise<Unit> _subscribe;
+		private Promise<Unit> _subscribe;
 
-        public RoomHandle(RoomInfo room)
-        {
-            this.Id = room.id;
-            this.Name = room.name;
-            this.KeepSubscribed = room.keepSubscribed;
-            this.Players = room.players;
-            this.Messages = new List<Message>();
+		private ChatService ChatService => _dependencyProvider.GetService<ChatService>();
+		private IPubnubSubscriptionManager Pubnub => _dependencyProvider.GetService<IPubnubSubscriptionManager>();
+		private INotificationService NotificationService => _dependencyProvider.GetService<INotificationService>();
 
-            if (KeepSubscribed)
-            {
-                Subscribe();
-            }
-        }
+		public RoomHandle(RoomInfo room, IDependencyProvider dependencyProvider)
+		{
+			_dependencyProvider = dependencyProvider;
+			this.Id = room.id;
+			this.Name = room.name;
+			this.KeepSubscribed = room.keepSubscribed;
+			this.Players = room.players;
+			this.Messages = new List<Message>();
 
-        public Promise<Unit> Subscribe()
-        {
-            if (_subscribe != null)
-            {
-                return _subscribe;
-            }
+			if (KeepSubscribed)
+			{
+				Subscribe();
+			}
+		}
 
-            var promise = new Promise<Unit>();
-            _subscribe = promise.FlatMap(_ => {
-                return LoadHistory();
-            });
+		public Promise<Unit> Subscribe()
+		{
+			if (_subscribe != null)
+			{
+				return _subscribe;
+			}
 
-            var pubnub = ServiceManager.Resolve<PlatformService>().PubnubSubscriptionManager;
-            pubnub.EnqueueOperation(new PubNubOp(PubNubOp.PNO.OpSubscribe, Id, () =>
-            {
-                ServiceManager.Resolve<PlatformService>().Notification.Subscribe(ChatEvent, OnChatEvent);
-                promise.CompleteSuccess(PromiseBase.Unit);
-            }), shouldRunNextOp: true);
+			var promise = new Promise<Unit>();
+			_subscribe = promise.FlatMap(_ =>
+			{
+				return LoadHistory();
+			});
 
-            return _subscribe;
-        }
 
-        public Promise<Unit> Unsubscribe()
-        {
-            var promise = new Promise<Unit>();
-            var pubnub = ServiceManager.Resolve<PlatformService>().PubnubSubscriptionManager;
-            pubnub.EnqueueOperation(new PubNubOp(PubNubOp.PNO.OpUnsubscribe, Id, () =>
-            {
-                _subscribe = null;
-                ServiceManager.Resolve<PlatformService>().Notification.Unsubscribe(ChatEvent, OnChatEvent);
-                promise.CompleteSuccess(PromiseBase.Unit);
-            }), shouldRunNextOp: true);
+			Pubnub.EnqueueOperation(new PubNubOp(PubNubOp.PNO.OpSubscribe, Id, () =>
+			{
+				NotificationService.Subscribe(ChatEvent, OnChatEvent);
+				promise.CompleteSuccess(PromiseBase.Unit);
+			}), shouldRunNextOp: true);
 
-            return promise;
-        }
+			return _subscribe;
+		}
 
-        public Promise<Unit> LeaveRoom()
-        {
-            return ServiceManager.Resolve<PlatformService>().Chat.LeaveRoom(Id).Map(_ => PromiseBase.Unit);
-        }
+		public Promise<Unit> Unsubscribe()
+		{
+			var promise = new Promise<Unit>();
 
-        public Promise<Unit> SendMessage(string message)
-        {
-            return ServiceManager.Resolve<PlatformService>().Chat.SendMessage(Id, message).Map(_ => PromiseBase.Unit);
-        }
+			Pubnub.EnqueueOperation(new PubNubOp(PubNubOp.PNO.OpUnsubscribe, Id, () =>
+			{
+				_subscribe = null;
+				NotificationService.Unsubscribe(ChatEvent, OnChatEvent);
+				promise.CompleteSuccess(PromiseBase.Unit);
+			}), shouldRunNextOp: true);
 
-        public void Terminate()
-        {
-            Unsubscribe().Then(_ =>
-            {
-                OnRemoved?.Invoke();
-            });
-        }
+			return promise;
+		}
 
-        private Promise<Unit> LoadHistory()
-        {
-            //TODO: Fetch this another way
-            var pubnub = ServiceManager.Resolve<PlatformService>().PubnubSubscriptionManager;
+		public Promise<Unit> LeaveRoom()
+		{
+			return ChatService.LeaveRoom(Id).Map(_ => PromiseBase.Unit);
+		}
 
-            var promise = new Promise<Unit>();
-            pubnub.LoadChannelHistory(Id, 50,
-               pubnubMessages =>
-               {
-                   Messages.Clear();
-                   foreach (var message in pubnubMessages)
-                   {
-                       Messages.Add(ToMessage(message));
-                   }
+		public Promise<Unit> SendMessage(string message)
+		{
+			return ChatService.SendMessage(Id, message).Map(_ => PromiseBase.Unit);
+		}
 
-                   promise.CompleteSuccess(PromiseBase.Unit);
-               },
-               error =>
-               {
-                   Debug.LogError(error.Message);
-                   promise.CompleteError(new ErrorCode(error.StatusCode));
-               }
-            );
+		public void Terminate()
+		{
+			Unsubscribe().Then(_ =>
+			{
+				OnRemoved?.Invoke();
+			});
+		}
 
-            return promise;
-        }
+		private Promise<Unit> LoadHistory()
+		{
+			var promise = new Promise<Unit>();
+			Pubnub.LoadChannelHistory(Id, 50,
+			   pubnubMessages =>
+			   {
+				   Messages.Clear();
+				   foreach (var message in pubnubMessages)
+				   {
+					   Messages.Add(ToMessage(message));
+				   }
 
-        private void OnChatEvent(object payload)
-        {
-            var message = ToMessage(payload);
-            if (message.roomId == Id)
-            {
-                bool foundMessage = Messages.Exists(m => m.messageId == message.messageId);
-                if (!foundMessage)
-                {
-                    Messages.Add(message);
-                    OnMessageReceived?.Invoke(message);
-                }
-            }
-        }
+				   promise.CompleteSuccess(PromiseBase.Unit);
+			   },
+			   error =>
+			   {
+				   Debug.LogError(error.Message);
+				   promise.CompleteError(new ErrorCode(error.StatusCode));
+			   }
+			);
 
-        private Message ToMessage(object payload)
-        {
-            var result = new Message();
-            var data = payload as IDictionary<string, object>;
-            JsonSerializable.Deserialize(result, data, JsonSerializable.ListMode.kReplace);
+			return promise;
+		}
 
-            return result;
-        }
-    }
+		private void OnChatEvent(object payload)
+		{
+			var message = ToMessage(payload);
+			if (message.roomId == Id)
+			{
+				bool foundMessage = Messages.Exists(m => m.messageId == message.messageId);
+				if (!foundMessage)
+				{
+					Messages.Add(message);
+					OnMessageReceived?.Invoke(message);
+				}
+			}
+		}
+
+		private Message ToMessage(object payload)
+		{
+			var result = new Message();
+			var data = payload as IDictionary<string, object>;
+			JsonSerializable.Deserialize(result, data, JsonSerializable.ListMode.kReplace);
+
+			return result;
+		}
+	}
 }

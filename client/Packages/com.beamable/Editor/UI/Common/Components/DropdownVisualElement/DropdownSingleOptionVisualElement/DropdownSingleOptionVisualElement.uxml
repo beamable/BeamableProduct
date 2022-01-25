@@ -4,10 +4,5 @@
         xmlns:beamable="Beamable.Editor.UI.Components"
         xsi:noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
-
-    <engine:VisualElement name="mainVisualElement">
-        <engine:Label name="value" text="Test"/>
-    </engine:VisualElement>
-
+    <engine:Label name="value" text="Test"/>
 </UXML>
-

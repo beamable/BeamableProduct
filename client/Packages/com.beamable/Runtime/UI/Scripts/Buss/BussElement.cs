@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Beamable.Editor.UI.Buss;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.UI.Buss
@@ -7,8 +8,8 @@ namespace Beamable.UI.Buss
 	public class BussElement : MonoBehaviour, ISerializationCallbackReceiver
 	{
 #pragma warning disable CS0649
-		[SerializeField] private string _id;
-        [SerializeField] private List<string> _classes = new List<string>();
+		[SerializeField, BussId] private string _id;
+		[SerializeField, BussClass] private List<string> _classes = new List<string>();
 		[SerializeField] private BussStyleDescription _inlineStyle;
 		[SerializeField] private BussStyleSheet _styleSheet;
 		private List<string> _pseudoClasses = new List<string>();
@@ -21,43 +22,45 @@ namespace Beamable.UI.Buss
 		public List<BussStyleSheet> AllStyleSheets { get; } = new List<BussStyleSheet>();
 		public BussStyle Style { get; } = new BussStyle();
 
-        public string Id
-        {
-	        get
-	        {
-		        return _id;
-	        }
-	        set
-	        {
-		        _id = value;
-		        OnStyleChanged();
-	        }
-        }
+		public string Id
+		{
+			get
+			{
+				return _id;
+			}
+			set
+			{
+				_id = value;
+				OnStyleChanged();
+			}
+		}
 		public IEnumerable<string> Classes => _classes;
 		public IEnumerable<string> PseudoClasses => _pseudoClasses;
 		public string TypeName => GetType().Name;
 		public Dictionary<string, BussStyle> PseudoStyles { get; } = new Dictionary<string, BussStyle>();
 
 		public BussStyleDescription InlineStyle => _inlineStyle;
-        public BussStyleSheet StyleSheet
-        {
-	        get
-	        {
-		        return _styleSheet;
-	        }
-	        set
-	        {
-		        _styleSheet = value;
-		        OnStyleChanged();
-	        }
-        }
+		public BussStyleSheet StyleSheet
+		{
+			get
+			{
+				return _styleSheet;
+			}
+			set
+			{
+				_styleSheet = value;
+				OnStyleChanged();
+			}
+		}
 
 		public BussElement Parent => _parent;
 
 		private IReadOnlyList<BussElement> _childrenReadOnly;
 
-		public IReadOnlyList<BussElement> Children {
-			get {
+		public IReadOnlyList<BussElement> Children
+		{
+			get
+			{
 				if (_childrenReadOnly == null)
 				{
 					if (_children == null)
