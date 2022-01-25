@@ -50,7 +50,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
             }
         }
-        
+
         public ActionBarVisualElement() : base(nameof(ActionBarVisualElement))
         {
         }
@@ -66,46 +66,49 @@ namespace Beamable.Editor.Microservice.UI.Components
         private Button _infoButton;
         private Button _publish;
         private Button _buildAll;
-        
+
         public event Action OnInfoButtonClicked;
 
         public override void Refresh()
         {
             base.Refresh();
-            bool storagePreviewEnabled = MicroserviceConfiguration.Instance.EnableStoragePreview;
-            
             _refreshButton = Root.Q<Button>("refreshButton");
             _refreshButton.clickable.clicked += () => { OnRefreshButtonClicked?.Invoke(); };
             _refreshButton.tooltip = "Refresh Window";
             _createNew = Root.Q<Button>("createNew");
-            if (storagePreviewEnabled)
-            {
-                var manipulator = new ContextualMenuManipulator(PopulateCreateMenu);
-                manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
-                _createNew.clickable.activators.Clear();
-                _createNew.AddManipulator(manipulator);
-            }
-            else
-            {
-                _createNew.AddToClassList("disabledStorage");
-                _createNew.clickable.clicked += () => OnCreateNewClicked?.Invoke(ServiceType.MicroService);
-            }
+
+            var manipulator = new ContextualMenuManipulator(PopulateCreateMenu);
+            manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
+            _createNew.clickable.activators.Clear();
+            _createNew.AddManipulator(manipulator);
+
             _createNew.SetEnabled(!DockerCommand.DockerNotInstalled);
-            
+
             _startAll = Root.Q<Button>("startAll");
             _startAll.clickable.clicked += () => { OnStartAllClicked?.Invoke(); };
             _startAll.SetEnabled(!DockerCommand.DockerNotInstalled);
-            
+
             _buildAll = Root.Q<Button>("buildAll");
             _buildAll.tooltip =
                 "Build services, if service is already running, it will rebuild it and run again";
             _buildAll.clickable.clicked += () => { OnBuildAllClicked?.Invoke(); };
             _buildAll.SetEnabled(!DockerCommand.DockerNotInstalled);
-            
+
+            const string cannotPublishText = "Cannot open Publish Window, fix compilation errors first!";
             _publish = Root.Q<Button>("publish");
-            _publish.clickable.clicked += () => { OnPublishClicked?.Invoke(); };
-            _publish.SetEnabled(!(DockerCommand.DockerNotInstalled || storagePreviewEnabled));
-            
+            _publish.clickable.clicked += () =>
+            {
+	            if (!NoErrorsValidator.LastCompilationSucceded)
+	            {
+		            Debug.LogError(cannotPublishText);
+		            return;
+	            }
+	            OnPublishClicked?.Invoke();
+            };
+			if (!NoErrorsValidator.LastCompilationSucceded)
+				_publish.tooltip = cannotPublishText;
+            _publish.SetEnabled(!(DockerCommand.DockerNotInstalled));
+
             _infoButton = Root.Q<Button>("infoButton");
             _infoButton.clickable.clicked += () => { OnInfoButtonClicked?.Invoke(); };
             _infoButton.tooltip = "Open Documentation";
@@ -132,12 +135,7 @@ namespace Beamable.Editor.Microservice.UI.Components
             _buildAll.SetEnabled(false);
             _publish.SetEnabled(false);
         }
-
-        public void SetPublishButtonState(bool isEnabled)
-        {
-            _publish.SetEnabled(isEnabled);
-        }
     }
 
-    
+
 }

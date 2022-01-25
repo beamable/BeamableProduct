@@ -4,4 +4,14 @@ namespace Beamable.Common.Api
    {
       long UserId { get; }
    }
+
+   public class SimpleUserContext : IUserContext
+   {
+	   public long UserId { get; }
+
+	   public SimpleUserContext(long userId)
+	   {
+		   UserId = userId;
+	   }
+   }
 }

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Dependencies;
 using Beamable.Coroutines;
 using Beamable.Pooling;
 using Beamable.Serialization;
@@ -15,9 +16,11 @@ using Debug = UnityEngine.Debug;
 
 namespace Beamable.Api.Payments
 {
+	[Obsolete("This is no longer a supported Beamable flow. Please migrate to Beamable Purchaser")]
    public class TransactionManager
    {
-      public event Action<CompletedTransaction> OnFulfillmentComplete;
+	   private readonly IDependencyProvider _provider;
+	   public event Action<CompletedTransaction> OnFulfillmentComplete;
       public event Action<ErrorCode, CompletedTransaction> OnFulfillmentFailed;
 
       private readonly Dictionary<string, PurchaseInfo> pendingPurchases = new Dictionary<string, PurchaseInfo>();
@@ -29,8 +32,12 @@ namespace Beamable.Api.Payments
       private const string unfulfilledStorageKey = "unfulfilled_transactions";
 
 
-      public TransactionManager ()
+      private PaymentService PaymentService => _provider.GetService<PaymentService>();
+      private CoroutineService CoroutineService => _provider.GetService<CoroutineService>();
+
+      public TransactionManager (IDependencyProvider provider)
       {
+	      _provider = provider;
       }
 
       public void Initialize ()
@@ -45,7 +52,7 @@ namespace Beamable.Api.Payments
       private void FulfillTransaction(CompletedTransaction transaction)
       {
          InAppPurchaseLogger.Log($"[TransactionManager] FulfillTransaction: Fulfilling Transaction: {transaction.Txid}");
-         ServiceManager.Resolve<PlatformService>().Payments.CompletePurchase(transaction).Then(rsp => {
+         PaymentService.CompletePurchase(transaction).Then(rsp => {
             FulfillmentCompleted(transaction);
          }).Error(error => {
             Debug.LogError($"There was an exception making the complete purchase request: {error}");
@@ -61,7 +68,7 @@ namespace Beamable.Api.Payments
             if (retryable)
             {
                transaction.Retries += 1;
-               ServiceManager.Resolve<CoroutineService>().StartCoroutine(RetryTransaction(transaction));
+               CoroutineService.StartCoroutine(RetryTransaction(transaction));
             }
             else
             {
@@ -283,18 +290,18 @@ namespace Beamable.Api.Payments
 
       public Promise<PurchaseResponse> BeginPurchase(string purchaseId)
       {
-         return ServiceManager.Resolve<PlatformService>().Payments.BeginPurchase(purchaseId);
+         return PaymentService.BeginPurchase(purchaseId);
       }
 
       public Promise<EmptyResponse> CancelPurchase(long txid)
       {
-         return ServiceManager.Resolve<PlatformService>().Payments.CancelPurchase(txid);
+         return PaymentService.CancelPurchase(txid);
       }
 
       public void FailPurchase(long txid, string reason, string sku)
       {
          if (txid != -1) {
-            ServiceManager.Resolve<PlatformService>().Payments.FailPurchase(txid, reason);
+	         PaymentService.FailPurchase(txid, reason);
          }
       }
 

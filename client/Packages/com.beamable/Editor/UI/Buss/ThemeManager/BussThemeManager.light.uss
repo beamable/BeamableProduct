@@ -1,0 +1,16 @@
+#navigationGroup {
+    background-color: rgb(77,77,77);
+}
+
+#addStyleButton {
+    background-color: rgb(100,100,100);
+    border-color: #000000;
+}
+
+#addStyleButton:hover {
+    background-color: rgb(120,120,120);
+}
+
+#addStyleButton > Label {
+    color: #FFFFFF;
+}

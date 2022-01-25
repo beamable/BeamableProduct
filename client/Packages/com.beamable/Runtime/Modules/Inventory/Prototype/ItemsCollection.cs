@@ -25,9 +25,10 @@ namespace Beamable.Modules.Inventory
 
         protected sealed override async void Subscribe()
         {
-            if (await Beamable.API.Instance is API api)
+	        var beamable = await Beamable.API.Instance;
+            if (beamable != null)
             {
-                InventorySubscription inventorySubscription = api.InventoryService.Subscribable;
+                InventorySubscription inventorySubscription = beamable.InventoryService.Subscribable;
                 _subscription = inventorySubscription.Subscribe(HandleSubscription);
             }
             else

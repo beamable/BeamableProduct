@@ -6,6 +6,8 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Content;
+using Beamable.Common.Dependencies;
+using Beamable.Coroutines;
 using Beamable.Service;
 using UnityEngine;
 
@@ -35,8 +37,8 @@ namespace Beamable.Content
 
 		public Dictionary<Type, ContentCache> _contentCaches = new Dictionary<Type, ContentCache>();
 
-		public ManifestSubscription(IPlatformService platform, IBeamableRequester requester,
-			string manifestID) : base(platform, requester, "content")
+		public ManifestSubscription(IDependencyProvider provider,
+			string manifestID) : base(provider, "content")
 		{
 			ManifestID = manifestID;
 		}
@@ -109,15 +111,16 @@ namespace Beamable.Content
 		IHasPlatformSubscriber<ManifestSubscription, ClientManifest, ClientManifest>,
 		IHasPlatformSubscribers<ManifestSubscription, ClientManifest, ClientManifest>
 	{
+		private readonly IDependencyProvider _provider;
 		public string CurrentDefaultManifestID { get; private set; } = "global";
 		public IBeamableFilesystemAccessor FilesystemAccessor { get; }
 		public ManifestSubscription Subscribable { get; private set; }
 		public Dictionary<string, ManifestSubscription> Subscribables { get; }
-		public IBeamableRequester Requester { get; }
+		public IBeamableRequester Requester => _provider.GetService<IBeamableRequester>();
 
 		public Action<string> OnManifestChanged;
 
-		private readonly IPlatformService _platform;
+		private IPlatformService Platform => _provider.GetService<IPlatformService>();
 		private readonly Dictionary<Type, ContentCache> _contentCaches = new Dictionary<Type, ContentCache>();
 		private static bool _testScopeEnabled;
 
@@ -140,14 +143,13 @@ namespace Beamable.Content
 		}
 #endif
 
-		public ContentService(IPlatformService platform, IBeamableRequester requester,
-			IBeamableFilesystemAccessor filesystemAccessor) {
-			CurrentDefaultManifestID = ServiceManager.Resolve<ContentParameterProvider>().manifestID;
-			Requester = requester;
+		public ContentService(IDependencyProvider provider,
+			IBeamableFilesystemAccessor filesystemAccessor, ContentParameterProvider config) {
+			_provider = provider;
+			CurrentDefaultManifestID = config.manifestID;
 			FilesystemAccessor = filesystemAccessor;
-			_platform = platform;
 
-			Subscribable = new ManifestSubscription(_platform, Requester, CurrentDefaultManifestID);
+			Subscribable = new ManifestSubscription(_provider, CurrentDefaultManifestID);
 			Subscribable.Subscribe(cb =>
 			{
 				// pay attention, server...
@@ -170,7 +172,7 @@ namespace Beamable.Content
 			if (Subscribables.ContainsKey(manifestID))
 				return;
 
-			Subscribables.Add(manifestID, new ManifestSubscription(_platform, Requester, manifestID));
+			Subscribables.Add(manifestID, new ManifestSubscription(_provider, manifestID));
 			Subscribables[manifestID].Subscribe(cb => { });
 		}
 
@@ -207,8 +209,8 @@ namespace Beamable.Content
 			{
 				var cacheType = typeof(ContentCache<>).MakeGenericType(contentType);
 				var constructor = cacheType.GetConstructor(new[]
-					{typeof(IHttpRequester), typeof(IBeamableFilesystemAccessor), typeof(ContentService)});
-				rawCache = (ContentCache) constructor.Invoke(new[] {Requester, (object) FilesystemAccessor, this});
+					{typeof(IHttpRequester), typeof(IBeamableFilesystemAccessor), typeof(ContentService), typeof(CoroutineService)});
+				rawCache = (ContentCache) constructor.Invoke(new[] {Requester, (object) FilesystemAccessor, this, Platform.CoroutineService});
 
 				_contentCaches.Add(contentType, rawCache);
 			}

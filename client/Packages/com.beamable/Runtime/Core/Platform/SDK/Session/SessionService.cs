@@ -6,41 +6,55 @@ using System.Text;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Dependencies;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Service;
 
 namespace Beamable.Api.Sessions
 {
+	public interface ISessionService
+	{
+		Promise<EmptyResponse> StartSession(User user, string advertisingId, string locale);
+		Promise<Session> GetHeartbeat(long gamerTag);
+		Promise<EmptyResponse> SendHeartbeat();
+		float SessionStartedAt { get; }
+		float TimeSinceLastSessionStart { get; }
+
+	}
+
    /// <summary>
    /// This type defines the %Client main entry point for the %Session feature.
-   /// 
+   ///
    /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-   /// 
+   ///
    /// #### Related Links
    /// - See the <a target="_blank" href="https://docs.beamable.com/docs/accounts-feature">Accounts</a> feature documentation
    /// - See Beamable.API script reference
-   /// 
+   ///
    /// ![img beamable-logo]
-   /// 
+   ///
    /// </summary>
-   public class SessionService
+   public class SessionService : ISessionService
    {
       private static long TTL_MS = 60 * 1000;
 
       private UnityUserDataCache<Session> cache;
-      private PlatformService _platform;
-      private PlatformRequester _requester;
+      private IBeamableRequester _requester;
 
       private readonly SessionParameterProvider _parameterProvider;
       private readonly SessionDeviceOptions _deviceOptions;
 
-      public SessionService (PlatformService platform, PlatformRequester requester)
+      public float SessionStartedAt { get; private set; }
+      public float TimeSinceLastSessionStart => Time.realtimeSinceStartup - SessionStartedAt;
+
+      public SessionService (IBeamableRequester requester, IDependencyProvider provider, SessionParameterProvider parameterProvider, SessionDeviceOptions deviceOptions)
       {
-         _platform = platform;
          _requester = requester;
-         _parameterProvider = ServiceManager.ResolveIfAvailable<SessionParameterProvider>();
-         _deviceOptions = ServiceManager.ResolveIfAvailable<SessionDeviceOptions>();
-         cache = new UnityUserDataCache<Session>("Session", TTL_MS, resolve);
+         // _parameterProvider = ServiceManager.ResolveIfAvailable<SessionParameterProvider>();
+         // _deviceOptions = ServiceManager.ResolveIfAvailable<SessionDeviceOptions>();
+         _parameterProvider = parameterProvider;
+         _deviceOptions = deviceOptions;
+         cache = new UnityUserDataCache<Session>("Session", TTL_MS, resolve, provider);
       }
 
       private Promise<Dictionary<long, Session>> resolve(List<long> gamerTags)
@@ -103,6 +117,7 @@ namespace Beamable.Api.Sessions
       /// <returns></returns>
       public Promise<EmptyResponse> StartSession (User user, string advertisingId, string locale)
       {
+	      SessionStartedAt = Time.realtimeSinceStartup;
          var args = new SessionStartRequestArgs
          {
             advertisingId = advertisingId,

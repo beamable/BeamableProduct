@@ -49,7 +49,7 @@ namespace Beamable.Server.Editor.DockerCommands
       }
       protected override void HandleStandardErr(string data)
       {
-         if (!MicroserviceLogHelper.HandleMongoLog(_storage, data, LogLevel.ERROR, true))
+         if (!MicroserviceLogHelper.HandleMongoLog(_storage, data, LogLevel.INFO, true))
          {
             base.HandleStandardErr(data);
          }
