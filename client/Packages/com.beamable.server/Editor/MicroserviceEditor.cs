@@ -115,7 +115,7 @@ namespace Beamable.Server.Editor
 					: $"Beamable.Storage.{serviceName}";
 
 				var asmPath = relativeDestPath +
-				          $"/{asmName}.asmdef";
+						  $"/{asmName}.asmdef";
 
 				var references = new List<string>
 				{
@@ -130,7 +130,7 @@ namespace Beamable.Server.Editor
 					references.Add(CommonAreaService.GetCommonAsmDefName());
 				}
 
-				
+
 				if (additionalReferences != null && additionalReferences.Count != 0)
 				{
 					foreach (var additionalReference in additionalReferences)
@@ -171,11 +171,11 @@ namespace Beamable.Server.Editor
 						// For creating StorageObject
 						if (additionalReference is MicroserviceModel microserviceModel)
 						{
-							AssemblyDefinitionHelper.AddAndRemoveReferences(microserviceModel.ServiceDescriptor, new List<string> {asmName}, null);
+							AssemblyDefinitionHelper.AddAndRemoveReferences(microserviceModel.ServiceDescriptor, new List<string> { asmName }, null);
 						}
 					}
 				}
-				
+
 				AssetDatabase.StopAssetEditing();
 			}
 

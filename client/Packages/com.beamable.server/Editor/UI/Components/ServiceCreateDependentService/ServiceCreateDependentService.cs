@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text.RegularExpressions;
-using Beamable.Editor.UI.Components;
+﻿using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.UI.Components;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -24,7 +24,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private readonly Dictionary<ServiceModelBase, LabeledCheckboxVisualElement> _serviceModelBases =
 			new Dictionary<ServiceModelBase, LabeledCheckboxVisualElement>();
-		
+
 		public ServiceCreateDependentService() : base(nameof(ServiceCreateDependentService))
 		{
 		}
@@ -53,8 +53,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public List<ServiceModelBase> GetReferences()
 		{
 			return _serviceModelBases.Where(x => x.Value.Value)
-			                         .Select(y => y.Key)
-			                         .ToList();
+									 .Select(y => y.Key)
+									 .ToList();
 		}
 	}
 }
