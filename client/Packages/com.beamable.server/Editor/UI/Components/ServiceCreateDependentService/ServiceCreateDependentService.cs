@@ -35,8 +35,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_mainContainer = Root.Q("mainContainer");
 		}
 
-		public void Init<T>(List<T> services) where T : ServiceModelBase
+		public void Init<T>(List<T> services, string serviceTypeName) where T : ServiceModelBase
 		{
+			Root.Q<Label>("header").text = $"Optional dependencies ({serviceTypeName}):";
 			foreach (var service in services)
 			{
 				var checkbox = new LabeledCheckboxVisualElement();

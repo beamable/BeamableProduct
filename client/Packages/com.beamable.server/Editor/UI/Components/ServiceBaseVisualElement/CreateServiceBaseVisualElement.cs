@@ -121,9 +121,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 	        _serviceCreateDependentService.Refresh();
 
 	        if (ServiceType == ServiceType.MicroService)
-		        _serviceCreateDependentService.Init(MicroservicesDataModel.Instance.Storages);
+		        _serviceCreateDependentService.Init(MicroservicesDataModel.Instance.Storages, "StorageObjects");
 	        else
-		        _serviceCreateDependentService.Init(MicroservicesDataModel.Instance.Services);
+		        _serviceCreateDependentService.Init(MicroservicesDataModel.Instance.Services, "MicroServices");
 	        
 	        _rootVisualElement.Add(_serviceCreateDependentService);
         }
