@@ -26,7 +26,21 @@ namespace Beamable.Editor.UI.Model
 	public class MongoStorageModel : ServiceModelBase, IBeamableStorageObject
 	{
 		public ServiceStorageReference RemoteReference { get; protected set; }
-		public StorageObjectDescriptor ServiceDescriptor { get; protected set; }
+		public StorageObjectDescriptor _serviceDescriptor;
+
+		[SerializeField]
+		private string _assemblyQualifiedStorageTypeName;
+		public StorageObjectDescriptor ServiceDescriptor
+		{
+			get => _serviceDescriptor;
+			set
+			{
+				_serviceDescriptor = value;
+				if (_serviceDescriptor.Type != null)
+					_assemblyQualifiedStorageTypeName = _serviceDescriptor.Type.AssemblyQualifiedName;
+			}
+		}
+
 		public MongoStorageBuilder ServiceBuilder { get; protected set; }
 		public override IBeamableBuilder Builder => ServiceBuilder;
 		public override IDescriptor Descriptor => ServiceDescriptor;
