@@ -11,24 +11,24 @@ namespace Beamable.Experimental.Api.Sim
 {
    /// <summary>
    /// This type defines the %Client main entry point for the %Multiplayer feature.
-   /// 
+   ///
    /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-   /// 
+   ///
    /// #### Related Links
    /// - See the <a target="_blank" href="https://docs.beamable.com/docs/multiplayer-feature">Multiplayer</a> feature documentation
    /// - See Beamable.API script reference
-   /// 
+   ///
    /// ![img beamable-logo]
-   /// 
+   ///
    /// </summary>
    public class GameRelayService
    {
-      private PlatformService _platform;
+      private IPlatformService _platform;
       private PlatformRequester _requester;
 
       private const string GAME_RESULTS_EVENT_NAME = "gamerelay.game_results";
 
-      public GameRelayService(PlatformService platform, PlatformRequester requester)
+      public GameRelayService(IPlatformService platform, PlatformRequester requester)
       {
          _platform = platform;
          _requester = requester;
@@ -58,17 +58,17 @@ namespace Beamable.Experimental.Api.Sim
          );
       }
    }
-   
+
    /// <summary>
    /// This type defines the %ResultsRequest for the %GameRelayService.
-   /// 
+   ///
    /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-   /// 
+   ///
    /// #### Related Links
    /// - See Beamable.Experimental.Api.Sim.GameRelayService script reference
-   /// 
+   ///
    /// ![img beamable-logo]
-   /// 
+   ///
    /// </summary>
    [Serializable]
    public class ResultsRequest
@@ -83,14 +83,14 @@ namespace Beamable.Experimental.Api.Sim
 
    /// <summary>
    /// This type defines the %GameResults for the %GameRelayService.
-   /// 
+   ///
    /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-   /// 
+   ///
    /// #### Related Links
    /// - See Beamable.Experimental.Api.Sim.GameRelayService script reference
-   /// 
+   ///
    /// ![img beamable-logo]
-   /// 
+   ///
    /// </summary>
    [Serializable]
    public class GameResults
@@ -103,14 +103,14 @@ namespace Beamable.Experimental.Api.Sim
 
    /// <summary>
    /// This type defines the %DeltaScoresByLeaderBoardId for the %GameRelayService.
-   /// 
+   ///
    /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-   /// 
+   ///
    /// #### Related Links
    /// - See Beamable.Experimental.Api.Sim.GameRelayService script reference
-   /// 
+   ///
    /// ![img beamable-logo]
-   /// 
+   ///
    /// </summary>
    [Serializable]
    public class DeltaScoresByLeaderBoardId
@@ -121,14 +121,14 @@ namespace Beamable.Experimental.Api.Sim
 
    /// <summary>
    /// This type defines the %PlayerResult for the %GameRelayService.
-   /// 
+   ///
    /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-   /// 
+   ///
    /// #### Related Links
    /// - See Beamable.Experimental.Api.Sim.GameRelayService script reference
-   /// 
+   ///
    /// ![img beamable-logo]
-   /// 
+   ///
    /// </summary>
    [Serializable]
    public class PlayerResult
@@ -140,14 +140,14 @@ namespace Beamable.Experimental.Api.Sim
 
    /// <summary>
    /// This type defines the %GameRelaySyncMsg for the %GameRelayService.
-   /// 
+   ///
    /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-   /// 
+   ///
    /// #### Related Links
    /// - See Beamable.Experimental.Api.Sim.GameRelayService script reference
-   /// 
+   ///
    /// ![img beamable-logo]
-   /// 
+   ///
    /// </summary>
    [Serializable]
    public class GameRelaySyncMsg
@@ -158,14 +158,14 @@ namespace Beamable.Experimental.Api.Sim
 
    /// <summary>
    /// This type defines the %GameRelayEvent for the %GameRelayService.
-   /// 
+   ///
    /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-   /// 
+   ///
    /// #### Related Links
    /// - See Beamable.Experimental.Api.Sim.GameRelayService script reference
-   /// 
+   ///
    /// ![img beamable-logo]
-   /// 
+   ///
    /// </summary>
    [Serializable]
    public class GameRelayEvent

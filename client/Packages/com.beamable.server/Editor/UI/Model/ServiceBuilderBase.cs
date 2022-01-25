@@ -11,7 +11,7 @@ namespace Beamable.Editor.UI.Model
 {
     public abstract class ServiceBuilderBase : IBeamableBuilder
     {
-        public IDescriptor Descriptor { get; private set; }
+        public IDescriptor Descriptor { get; internal set; }
         public Action<bool> OnIsRunningChanged { get; set; }
         public Action<int, int> OnBuildingProgress { get; set; }
         public Action<int, int> OnStartingProgress { get; set; }

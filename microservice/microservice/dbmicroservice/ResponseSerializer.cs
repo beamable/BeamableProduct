@@ -1,5 +1,6 @@
 using System;
 using Beamable.Serialization.SmallerJSON;
+using Beamable.Server.Common;
 using Core.Server.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -53,26 +54,26 @@ namespace Beamable.Server
                id = ctx.Id,
                status = 200,
             };
-            
-            string serializedString = JsonConvert.SerializeObject(result);
-            
+
+
             if (result is string strResult && Json.IsValidJson(strResult))
             {
-               response.body = new
+               response.body = new ClientResponse
                {
-                  payload = JToken.Parse(serializedString)
+                  payload = strResult
                };
             }
             else
             {
+               string serializedString = JsonConvert.SerializeObject(result, UnitySerializationSettings.Instance);
                response.body = new ClientResponse
                {
                   payload = serializedString
                };
             }
          }
- 
-         var json = JsonConvert.SerializeObject(response);
+
+         var json = JsonConvert.SerializeObject(response, UnitySerializationSettings.Instance);
          return json;
       }
    }

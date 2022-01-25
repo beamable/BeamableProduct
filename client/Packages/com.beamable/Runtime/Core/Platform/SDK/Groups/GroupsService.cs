@@ -4,6 +4,7 @@ using System.Linq;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Groups;
+using Beamable.Common.Dependencies;
 using JetBrains.Annotations;
 
 namespace Beamable.Api.Groups
@@ -15,9 +16,9 @@ namespace Beamable.Api.Groups
 
       private readonly GroupsView _view = new GroupsView();
 
-      public GroupsSubscription(IPlatformService platform, IBeamableRequester requester, IGroupsApi api) : base(platform, requester, Service)
+      public GroupsSubscription(IDependencyProvider provider, IGroupsApi api) : base(provider, Service)
       {
-         _api = api;
+	      _api = api;
       }
 
       public void ForceRefresh()
@@ -36,23 +37,23 @@ namespace Beamable.Api.Groups
 
    /// <summary>
    /// This type defines the %Client main entry point for the %Groups feature.
-   /// 
+   ///
    /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-   /// 
+   ///
    /// #### Related Links
    /// - See the <a target="_blank" href="https://docs.beamable.com/docs/groups-feature">Groups</a> feature documentation
    /// - See Beamable.API script reference
-   /// 
+   ///
    /// ![img beamable-logo]
-   /// 
+   ///
    /// </summary>
    public class GroupsService : GroupsApi, IHasPlatformSubscriber<GroupsSubscription, GroupUser, GroupsView>
    {
       public GroupsSubscription Subscribable { get; }
 
-      public GroupsService(IPlatformService platform, IBeamableRequester requester) : base(platform, requester)
+      public GroupsService(IPlatformService platform, IBeamableRequester requester, IDependencyProvider provider) : base(platform, requester)
       {
-         Subscribable = new GroupsSubscription(platform, requester, this);
+         Subscribable = new GroupsSubscription(provider, this);
       }
 
       public override Promise<GroupsView> GetCurrent(string scope = "") => Subscribable.GetCurrent(scope);

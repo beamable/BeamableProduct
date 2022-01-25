@@ -36,10 +36,12 @@ namespace Beamable.Server
       /// <param name="variables">Optionally, you can pass variables to this call. If the api callback requires variables, and you don't pass sufficient variables, the call will fail.</param>
       public static async Promise RequestApi(this ApiContent api, ApiVariableBag variables=null)
       {
-         await MicroserviceClientHelper.Request<Unit>(
-            api.ServiceRoute.Service,
-            api.ServiceRoute.Endpoint,
-            api.PrepareParameters(variables));
+	      // TODO: all people to configure which requester gets used
+	      var requester = await Beamable.API.Instance.Map(b => b.Requester);
+	      await MicroserviceClientHelper.Request<Unit>(requester,
+	                                                   api.ServiceRoute.Service,
+	                                                   api.ServiceRoute.Endpoint,
+	                                                   api.PrepareParameters(variables));
       }
 
 

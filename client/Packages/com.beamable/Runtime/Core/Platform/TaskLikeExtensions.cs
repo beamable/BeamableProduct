@@ -12,9 +12,7 @@ namespace Core.Platform
 
    public abstract class BeamableTaskLike<TResult> : ITaskLike<TResult, BeamableTaskLike<TResult>>
    {
-
-
-      public abstract TResult GetResult();
+	   public abstract TResult GetResult();
       public abstract bool IsCompleted { get; }
 
       public Guid Id { get; } = Guid.NewGuid();
@@ -24,27 +22,11 @@ namespace Core.Platform
          return this;
       }
 
-      void ICriticalNotifyCompletion.UnsafeOnCompleted(Action continuation)
-      {
-         var coroutineService = ServiceManager.Resolve<CoroutineService>();
-         var waitForFrame = new WaitForEndOfFrame();
-
-         IEnumerator Routine()
-         {
-            while (!IsCompleted)
-            {
-               yield return waitForFrame;
-            }
-
-            continuation();
-         }
-
-         coroutineService.StartNew($"task-like-{Id}", Routine());
-      }
-
       void INotifyCompletion.OnCompleted(Action continuation)
       {
          ((ICriticalNotifyCompletion) this).UnsafeOnCompleted(continuation);
       }
+
+      public abstract void UnsafeOnCompleted(Action continuation);
    }
 }

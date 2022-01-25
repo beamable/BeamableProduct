@@ -17,124 +17,176 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
-	public enum ServicePublishState	
+	public enum ServicePublishState
 	{
 		Unpublished,
 		InProgress,
 		Failed,
 		Published,
 	}
-	
-   public class PublishManifestEntryVisualElement : MicroserviceComponent
-   {
-      private static readonly string[] TemplateSizes = {"small", "medium", "large"};
 
-      private const string MICROSERVICE_IMAGE_CLASS = "microserviceImage";
-      private const string STORAGE_IMAGE_CLASS = "storageImage";
-      
-      private Dictionary<ServicePublishState, string> _checkImageClasses = new Dictionary<ServicePublishState, string>()
-      {
-	      {ServicePublishState.Unpublished, "unpublished"},
-	      {ServicePublishState.Published, "published"},
-	      {ServicePublishState.InProgress, "publish-inProgress"},
-	      {ServicePublishState.Failed, "publish-failed"},
-      };
+	public class PublishManifestEntryVisualElement : MicroserviceComponent,
+	                                                 IComparable<PublishManifestEntryVisualElement>
+	{
+		private static readonly string[] TemplateSizes = {"small", "medium", "large"};
+		private static readonly Dictionary<ServicePublishState, string> CheckImageClasses =
+			new Dictionary<ServicePublishState, string>()
+			{
+				{ServicePublishState.Unpublished, "unpublished"},
+				{ServicePublishState.Published, "published"},
+				{ServicePublishState.InProgress, "publish-inProgress"},
+				{ServicePublishState.Failed, "publish-failed"},
+			};
 
-      public IEntryModel Model { get; }
-      
-      public ILoadingBar LoadingBar	
-      {
-	      get
-	      {
-		      _loadingBar.Hidden = false;
-		      return _loadingBar;
-	      }
-      }
+		private const string MICROSERVICE_IMAGE_CLASS = "microserviceImage";
+		private const string STORAGE_IMAGE_CLASS = "storageImage";
 
-      private bool wasPublished;
-      private bool oddRow;
-      
-      private Image _checkImage;
-      private LoadingBarElement _loadingBar;
-      private string _currentPublishState;
+		public IEntryModel Model { get; }
+		public int Index => _index;
+		public bool IsRemoteOnly => _remoteOnly;
+		public ServicePublishState PublishState { get; private set; }
 
-      public PublishManifestEntryVisualElement(IEntryModel model, bool argWasPublished, bool isOddRow) : base(nameof(PublishManifestEntryVisualElement))
-      {
-         Model = model;
-         wasPublished = argWasPublished;
-         oddRow = isOddRow;
-      }
+		public ILoadingBar LoadingBar
+		{
+			get
+			{
+				_loadingBar.Hidden = false;
+				return _loadingBar;
+			}
+		}
 
-      public override void Refresh()
-      {
-         base.Refresh();
-         
-         _loadingBar = Root.Q<LoadingBarElement>();
-         _loadingBar.SmallBar = true;
-         _loadingBar.Hidden = true;
-         _loadingBar.Refresh();
+		private readonly bool _wasPublished;
+		private readonly int _index;
+		private readonly bool _remoteOnly;
 
-         var checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
-         checkbox.Refresh();
-         checkbox.SetWithoutNotify(Model.Enabled);
-         checkbox.OnValueChanged += b => Model.Enabled = b;
+		private Image _checkImage;
+		private LoadingBarElement _loadingBar;
+		private string _currentPublishState;
+		private BeamableCheckboxVisualElement _checkbox;
+		private DropdownVisualElement _sizeDropdown;
+		private TextField _commentField;
 
-         var sizeDropdown = Root.Q<DropdownVisualElement>("sizeDropdown");
-         sizeDropdown.Setup(TemplateSizes.ToList(), null);
-         sizeDropdown.Refresh();
+		public PublishManifestEntryVisualElement(IEntryModel model,
+		                                         bool argWasPublished,
+		                                         int elementIndex,
+		                                         bool isRemoteOnly) : base(nameof(PublishManifestEntryVisualElement))
+		{
+			Model = model;
+			_wasPublished = argWasPublished;
+			_index = elementIndex;
+			_remoteOnly = isRemoteOnly;
+		}
 
-         var nameLabel = Root.Q<Label>("nameMS");
-         nameLabel.text = Model.Name;
+		public override void Refresh()
+		{
+			base.Refresh();
 
-         var commentField = Root.Q<TextField>("commentsText");
-         commentField.value = Model.Comment;
-         commentField.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
+			_loadingBar = Root.Q<LoadingBarElement>();
+			_loadingBar.SmallBar = true;
+			_loadingBar.Hidden = true;
+			_loadingBar.Refresh();
 
-         var icon = Root.Q<Image>("typeImage");
-         _checkImage = Root.Q<Image>("checkImage");
+			_checkbox = Root.Q<BeamableCheckboxVisualElement>("checkbox");
+			_checkbox.Refresh();
+			_checkbox.SetWithoutNotify(!IsRemoteOnly && Model.Enabled);
+			_checkbox.OnValueChanged += b => Model.Enabled = b;
 
-         if (Model is ManifestEntryModel serviceModel)
-         {
-            icon.AddToClassList(MICROSERVICE_IMAGE_CLASS);
+			_sizeDropdown = Root.Q<DropdownVisualElement>("sizeDropdown");
+			_sizeDropdown.Setup(TemplateSizes.ToList(), null);
+			_sizeDropdown.Refresh();
 
-            var microserviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(serviceModel.Name);
+			var nameLabel = Root.Q<Label>("nameMS");
+			nameLabel.text = Model.Name;
 
-            if (microserviceModel != null && microserviceModel.Dependencies != null)
-            {
-	            List<string> dependencies = new List<string>();
-	            foreach (var dep in microserviceModel.Dependencies)
-	            {
-		            dependencies.Add(dep.Name);
-	            }
+			_commentField = Root.Q<TextField>("commentsText");
+			_commentField.value = Model.Comment;
+			_commentField.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
 
-	            var depsList = Root.Q<ExpandableListVisualElement>("depsList");
-	            depsList.Setup(dependencies);
-            }
-         }
-         else
-         {
-            icon.AddToClassList(STORAGE_IMAGE_CLASS);
-         }
+			var icon = Root.Q<Image>("typeImage");
+			_checkImage = Root.Q<Image>("checkImage");
 
-         UpdateStatus(wasPublished ? ServicePublishState.Published : ServicePublishState.Unpublished);
+			if (Model is ManifestEntryModel serviceModel)
+			{
+				icon.AddToClassList(MICROSERVICE_IMAGE_CLASS);
 
-         if (oddRow)
-         {
-	         Root.Q<VisualElement>("mainContainer").AddToClassList("oddRow");
-         }
-      }
-      
-      public void UpdateStatus(ServicePublishState state)
-      {
-	      if (state == ServicePublishState.Failed)
-	      {
-		      _loadingBar.UpdateProgress(0, failed: true);
-		      return;
-	      }
-	      
-	      _checkImage.RemoveFromClassList(_currentPublishState);
-	      _currentPublishState = _checkImageClasses[state];
-	      _checkImage.AddToClassList(_currentPublishState);
-      }
-   }
+				var microserviceModel = MicroservicesDataModel.Instance.GetModel<MicroserviceModel>(serviceModel.Name);
+
+				if (microserviceModel != null && microserviceModel.Dependencies != null)
+				{
+					List<string> dependencies = new List<string>();
+					foreach (var dep in microserviceModel.Dependencies)
+					{
+						dependencies.Add(dep.Name);
+					}
+
+					var depsList = Root.Q<ExpandableListVisualElement>("depsList");
+					depsList.Setup(dependencies);
+				}
+			}
+			else
+			{
+				icon.AddToClassList(STORAGE_IMAGE_CLASS);
+			}
+
+			SetEnabled(!IsRemoteOnly);
+		}
+
+		public void HandlePublishStarted()
+		{
+			_checkbox.SetEnabled(false);
+			_sizeDropdown.SetEnabled(false);
+			_commentField.SetEnabled(false);
+		}
+
+		public void SetOddRow(bool isOdd) => EnableInClassList("oddRow", isOdd);
+
+		public void UpdateStatus(ServicePublishState state)
+		{
+			if (state == PublishState)
+				return;
+			PublishState = state;
+			if (state != ServicePublishState.Unpublished)
+			{
+				_checkImage.tooltip = state.ToString();
+			}
+			if (state == ServicePublishState.Failed)
+			{
+				_loadingBar.UpdateProgress(0, failed: true);
+				return;
+			}
+
+			RemoveFromClassList(_currentPublishState);
+			_currentPublishState = CheckImageClasses[state];
+			AddToClassList(_currentPublishState);
+		}
+
+		public int CompareTo(PublishManifestEntryVisualElement other)
+		{
+			if (IsRemoteOnly)
+				return 1;
+			if (other.IsRemoteOnly)
+				return -1;
+			if (PublishState == other.PublishState)
+				return Index.CompareTo(other.Index);
+
+			return GetPublishStateOrder(PublishState).CompareTo(GetPublishStateOrder(other.PublishState));
+		}
+
+		private static int GetPublishStateOrder(ServicePublishState state)
+		{
+			switch (state)
+			{
+				case ServicePublishState.Failed:
+					return 0;
+				case ServicePublishState.InProgress:
+					return 1;
+				case ServicePublishState.Unpublished:
+					return 2;
+				case ServicePublishState.Published:
+					return 3;
+				default:
+					throw new ArgumentOutOfRangeException(nameof(state), state, null);
+			}
+		}
+	}
 }
