@@ -26,7 +26,8 @@ namespace Beamable.Server.Editor
          var serviceNameProperty = serviceRouteProperty.FindPropertyRelative(nameof(ServiceRoute.Service));
          var endpointProperty = serviceRouteProperty.FindPropertyRelative(nameof(ServiceRoute.Endpoint));
 
-         var descriptor = Microservices.Descriptors.FirstOrDefault(d => d.Name.Equals(serviceNameProperty.stringValue));
+         var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+         var descriptor = serviceRegistry.Descriptors.FirstOrDefault(d => d.Name.Equals(serviceNameProperty.stringValue));
          if (descriptor == null)
          {
             return EditorGUIUtility.singleLineHeight;
@@ -64,7 +65,8 @@ namespace Beamable.Server.Editor
          var variablesArrayProperty =  variablesProperty.FindPropertyRelative(nameof(RouteVariables.Variables));
 
          var hasAnyVariables = variablesArrayProperty.arraySize > 0;
-         var descriptor = Microservices.Descriptors.FirstOrDefault(d => d.Name.Equals(serviceNameProperty.stringValue));
+         var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+         var descriptor = serviceRegistry.Descriptors.FirstOrDefault(d => d.Name.Equals(serviceNameProperty.stringValue));
          if (descriptor == null) return;
 
          position.height = EditorGUIUtility.singleLineHeight;

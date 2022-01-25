@@ -50,6 +50,8 @@ namespace Beamable.Editor.UI.Model
 			return _instance;
 		}
 
+		private MicroserviceReflectionCache.Registry _serviceRegistry; 
+
 		[SerializeField] private List<MicroserviceModel> _localMicroserviceModels;
 		[SerializeField] private List<MongoStorageModel> _localStorageModels;
 
@@ -66,8 +68,9 @@ namespace Beamable.Editor.UI.Model
 
 		public void RefreshLocal()
 		{
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			var unseen = new HashSet<IBeamableService>(AllLocalServices);
-			foreach (var descriptor in Microservices.AllDescriptors)
+			foreach (var descriptor in serviceRegistry.AllDescriptors)
 			{
 				var serviceExists = ContainsModel(descriptor.Name);
 				if (serviceExists)
@@ -237,7 +240,8 @@ namespace Beamable.Editor.UI.Model
 
 		private void OnEnable()
 		{
-			Microservices.OnDeploySuccess += HandleMicroservicesDeploySuccess;
+			_serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			_serviceRegistry.OnDeploySuccess += HandleMicroservicesDeploySuccess;
 			RefreshLocal();
 			RefreshServerManifest();
 		}
@@ -249,7 +253,7 @@ namespace Beamable.Editor.UI.Model
 
 		public void Destroy()
 		{
-			Microservices.OnDeploySuccess -= HandleMicroservicesDeploySuccess;
+			_serviceRegistry.OnDeploySuccess -= HandleMicroservicesDeploySuccess;
 
 			_instance = null;
 			_hasEnabledYet = false;

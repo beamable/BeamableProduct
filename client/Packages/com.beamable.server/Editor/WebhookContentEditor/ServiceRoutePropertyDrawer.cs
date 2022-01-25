@@ -18,7 +18,8 @@ namespace Beamable.Server.Editor
       public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
       {
          // need to show a dropdown for the available services...
-         var descriptors = Microservices.Descriptors;
+         var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+         var descriptors = serviceRegistry.Descriptors;
 
          if (descriptors.Count == 0)
          {
