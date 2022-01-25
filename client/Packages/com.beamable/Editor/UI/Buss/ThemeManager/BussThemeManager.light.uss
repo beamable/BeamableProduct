@@ -1,5 +1,5 @@
 #navigationGroup {
-    background-color: rgb(77,77,77);
+    background-color: #B4B4B4;
 }
 
 #addStyleButton {
@@ -12,5 +12,4 @@
 }
 
 #addStyleButton > Label {
-    color: #FFFFFF;
 }

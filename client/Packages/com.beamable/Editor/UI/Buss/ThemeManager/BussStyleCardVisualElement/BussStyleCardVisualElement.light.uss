@@ -1,5 +1,5 @@
 #cardHeader {
-    color: rgb(256, 256, 256);
+    color:#252525;
 }
 
 #colorBlock {
@@ -11,28 +11,28 @@
 }
 
 #sectionHeader {
-    color: rgb(255,255,255);
-    background-color: rgb(89,89,89);
+    color: #252525;
+    background-color: #B4B4B4;
 }
 
 #sectionLabel {
-    color: rgb(255,255,255);
+    color:#252525;
 }
 
 #properties {
-    background-color: rgb(77,77,77);
+    background-color: #C3C3C3;
 }
 
 #variables {
-    background-color: rgb(77,77,77);
+    background-color: #C3C3C3;
 }
 
 .button {
-    background-color: rgb(100,100,100);
+    background-color:#B4B4B4;
 }
 
 .button > TextElement {
-    color: rgb(255,255,255);
+    color:#252525;
 }
 
 .button:hover {
@@ -40,7 +40,7 @@
 }
 
 .headerButton {
-    background-color: rgb(142,142,142);
+    background-color:#B4B4B4;
 }
 
 .headerButton:hover {
@@ -48,5 +48,22 @@
 }
 
 .add {
-    background-color: rgb(89,89,89);
+    background-color:#B4B4B4;
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new D.png");
+}
+
+.edit {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/editing_dark.png");
+}
+
+.wizard {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/wizard_dark.png");
+}
+
+.undo {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/undo_dark.png");
+}
+
+.cleanAll {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/Erase_dark.png");
 }

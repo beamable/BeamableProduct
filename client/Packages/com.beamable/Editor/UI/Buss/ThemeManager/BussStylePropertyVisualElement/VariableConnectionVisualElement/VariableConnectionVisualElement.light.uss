@@ -10,3 +10,7 @@
 DropdownVisualElement #mainContainer{
     background-color: #808080;
 }
+
+#button {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new D.png");
+}
