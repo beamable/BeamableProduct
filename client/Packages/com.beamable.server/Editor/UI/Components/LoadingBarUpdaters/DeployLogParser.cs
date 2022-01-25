@@ -21,7 +21,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			Application.logMessageReceived += HandleLog;
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-            serviceRegistry.OnDeployFailed += HandleDeployFailed;
+			serviceRegistry.OnDeployFailed += HandleDeployFailed;
 			Update();
 		}
 

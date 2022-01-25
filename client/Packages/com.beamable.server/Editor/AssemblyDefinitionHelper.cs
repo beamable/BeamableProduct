@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace Beamable.Server.Editor
 {
-	
+
 	/// <summary>
 	/// Helper class that handles the assembly definitions we generate when creating C#MS and StorageObjects.
 	/// Also, contains a bunch of helper functions to manage data inside local StorageObject and some other C#MS stuff.

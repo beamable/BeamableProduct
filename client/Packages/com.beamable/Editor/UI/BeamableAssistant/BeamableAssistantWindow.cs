@@ -262,7 +262,7 @@ namespace Beamable.Editor.Assistant
 			_beamHintsDataModel.SelectDomains(new List<string>());
 			_treeViewIMGUI.SetSelectionSafe(new List<int>());
 			_imguiContainer.MarkDirtyRepaint();
-			
+
 			// Filter by the id of the hint you are asking to expand.
 			_beamHintsDataModel.FilterDisplayedBy(beamHintHeader.Id);
 			_beamHintsDataModel.OpenHintDetails(beamHintHeader);

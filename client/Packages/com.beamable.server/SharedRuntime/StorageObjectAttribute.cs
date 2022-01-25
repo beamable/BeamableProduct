@@ -4,41 +4,41 @@ using System.Reflection;
 
 namespace Beamable.Server
 {
-   [AttributeUsage(AttributeTargets.Class)]
-   public class StorageObjectAttribute : Attribute, INamingAttribute
-   {
-      public string StorageName { get; }
-      public string SourcePath { get; }
+	[AttributeUsage(AttributeTargets.Class)]
+	public class StorageObjectAttribute : Attribute, INamingAttribute
+	{
+		public string StorageName { get; }
+		public string SourcePath { get; }
 
-      public StorageObjectAttribute(string storageName, [System.Runtime.CompilerServices.CallerFilePath]
-         string sourcePath = "")
-      {
-         StorageName = storageName;
-         SourcePath = sourcePath;
-      }
+		public StorageObjectAttribute(string storageName, [System.Runtime.CompilerServices.CallerFilePath]
+		 string sourcePath = "")
+		{
+			StorageName = storageName;
+			SourcePath = sourcePath;
+		}
 
-      public string[] Names => new[] {StorageName};
-      
-      public AttributeValidationResult IsAllowedOnMember(MemberInfo member)
-      {
-	      var type = (Type)member;
+		public string[] Names => new[] { StorageName };
 
-	      if (!typeof(StorageObject).IsAssignableFrom(type))
-	      {
-		      return new AttributeValidationResult(this,
-		                                           type,
-		                                           ReflectionCache.ValidationResultType.Error,
-		                                           $"StorageObject Attribute [{StorageName}] cannot be over type [{type.Name}] " +
-		                                           $"since [{type.Name}] does not inherit from [{nameof(StorageObject)}].");
-	      }
+		public AttributeValidationResult IsAllowedOnMember(MemberInfo member)
+		{
+			var type = (Type)member;
 
-	      return new AttributeValidationResult(this, type, ReflectionCache.ValidationResultType.Valid, $"");
-      }
+			if (!typeof(StorageObject).IsAssignableFrom(type))
+			{
+				return new AttributeValidationResult(this,
+													 type,
+													 ReflectionCache.ValidationResultType.Error,
+													 $"StorageObject Attribute [{StorageName}] cannot be over type [{type.Name}] " +
+													 $"since [{type.Name}] does not inherit from [{nameof(StorageObject)}].");
+			}
 
-      public AttributeValidationResult AreValidNameForType(MemberInfo member, string[] potentialNames)
-      {
-	      // TODO: Validate no invalid characters are in the C#MS/Storage Object name
-	      return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Valid, "");
-      }
-   }
+			return new AttributeValidationResult(this, type, ReflectionCache.ValidationResultType.Valid, $"");
+		}
+
+		public AttributeValidationResult AreValidNameForType(MemberInfo member, string[] potentialNames)
+		{
+			// TODO: Validate no invalid characters are in the C#MS/Storage Object name
+			return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Valid, "");
+		}
+	}
 }

@@ -40,7 +40,7 @@ namespace Beamable.Editor.UI.Model
 		public StorageConfigurationEntry Config { get; protected set; }
 
 		public Action<ServiceStorageReference> OnRemoteReferenceEnriched;
-		
+
 		[SerializeField] private StorageObjectDescriptor _serviceDescriptor;
 
 		public override event Action<Task> OnStart;

@@ -48,7 +48,7 @@ namespace Beamable.Editor.UI.Components
 			_logListRoot.Add(_listView);
 
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-			
+
 			serviceRegistry.OnServiceDeployStatusChanged -= MicroservicesOnOnServiceDeployStatusChanged;
 			serviceRegistry.OnServiceDeployStatusChanged += MicroservicesOnOnServiceDeployStatusChanged;
 		}

@@ -39,7 +39,7 @@ namespace Beamable.Editor.UI.Components
 			_label = Root.Q<Label>("value");
 
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-			
+
 			serviceRegistry.OnDeploySuccess -= HandleDeploySuccess;
 			serviceRegistry.OnDeploySuccess += HandleDeploySuccess;
 			serviceRegistry.OnServiceDeployStatusChanged -= HandleServiceDeployStatusChanged;

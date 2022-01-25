@@ -50,7 +50,7 @@ namespace Beamable.Editor.UI.Model
 			return _instance;
 		}
 
-		private MicroserviceReflectionCache.Registry _serviceRegistry; 
+		private MicroserviceReflectionCache.Registry _serviceRegistry;
 
 		[SerializeField] private List<MicroserviceModel> _localMicroserviceModels;
 		[SerializeField] private List<MongoStorageModel> _localStorageModels;

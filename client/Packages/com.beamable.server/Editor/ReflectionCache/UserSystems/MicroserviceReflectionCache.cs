@@ -58,10 +58,10 @@ namespace Beamable.Server.Editor
 				MICROSERVICE_ATTRIBUTE = new AttributeOfInterest(typeof(MicroserviceAttribute), new Type[] { }, new[] { typeof(Microservice) });
 
 				MONGO_STORAGE_OBJECT_BASE_TYPE = new BaseTypeOfInterest(typeof(MongoStorageObject));
-				STORAGE_OBJECT_ATTRIBUTE = new AttributeOfInterest(typeof(StorageObjectAttribute), new Type[] { }, new[] {typeof(StorageObject)});
+				STORAGE_OBJECT_ATTRIBUTE = new AttributeOfInterest(typeof(StorageObjectAttribute), new Type[] { }, new[] { typeof(StorageObject) });
 
-				BASE_TYPES_OF_INTEREST = new List<BaseTypeOfInterest>() {MICROSERVICE_BASE_TYPE, MONGO_STORAGE_OBJECT_BASE_TYPE};
-				ATTRIBUTES_OF_INTEREST = new List<AttributeOfInterest>() {MICROSERVICE_ATTRIBUTE, STORAGE_OBJECT_ATTRIBUTE};
+				BASE_TYPES_OF_INTEREST = new List<BaseTypeOfInterest>() { MICROSERVICE_BASE_TYPE, MONGO_STORAGE_OBJECT_BASE_TYPE };
+				ATTRIBUTES_OF_INTEREST = new List<AttributeOfInterest>() { MICROSERVICE_ATTRIBUTE, STORAGE_OBJECT_ATTRIBUTE };
 			}
 
 			public List<BaseTypeOfInterest> BaseTypesOfInterest => BASE_TYPES_OF_INTEREST;
@@ -112,11 +112,11 @@ namespace Beamable.Server.Editor
 				{
 					var validationResults = cachedMicroserviceSubtypes
 						.GetAndValidateAttributeExistence(MICROSERVICE_ATTRIBUTE,
-						                                  info =>
-						                                  {
-							                                  var message = $"Microservice sub-class [{info.Name}] does not have the [{nameof(MicroserviceAttribute)}].";
-							                                  return new AttributeValidationResult(null, info, ReflectionCache.ValidationResultType.Error, message);
-						                                  });
+														  info =>
+														  {
+															  var message = $"Microservice sub-class [{info.Name}] does not have the [{nameof(MicroserviceAttribute)}].";
+															  return new AttributeValidationResult(null, info, ReflectionCache.ValidationResultType.Error, message);
+														  });
 
 					// Get all Microservice Attribute usage errors found
 					validationResults.SplitValidationResults(out _, out _, out var microserviceAttrErrors);
@@ -133,11 +133,11 @@ namespace Beamable.Server.Editor
 				{
 					var validationResults = cachedStorageObjectSubTypes
 						.GetAndValidateAttributeExistence(STORAGE_OBJECT_ATTRIBUTE,
-						                                  info =>
-						                                  {
-							                                  var message = $"{nameof(StorageObject)} sub-class [{info.Name}] does not have the [{nameof(StorageObjectAttribute)}].";
-							                                  return new AttributeValidationResult(null, info, ReflectionCache.ValidationResultType.Error, message);
-						                                  });
+														  info =>
+														  {
+															  var message = $"{nameof(StorageObject)} sub-class [{info.Name}] does not have the [{nameof(StorageObjectAttribute)}].";
+															  return new AttributeValidationResult(null, info, ReflectionCache.ValidationResultType.Error, message);
+														  });
 
 					// Get all Microservice Attribute usage errors found
 					validationResults.SplitValidationResults(out _, out _, out var storageObjAttrErrors);
@@ -173,13 +173,13 @@ namespace Beamable.Server.Editor
 
 					// Get all ClientCallables
 					var clientCallableValidationResults = cachedMicroserviceAttributes
-					                                      .SelectMany(pair => pair.InfoAs<Type>().GetMethods(BindingFlags.Public | BindingFlags.Instance))
-					                                      .GetOptionalAttributeInMembers<ClientCallableAttribute>();
+														  .SelectMany(pair => pair.InfoAs<Type>().GetMethods(BindingFlags.Public | BindingFlags.Instance))
+														  .GetOptionalAttributeInMembers<ClientCallableAttribute>();
 
 					// Handle invalid signatures and warnings
 					clientCallableValidationResults.SplitValidationResults(out var clientCallablesValid,
-					                                                       out var clientCallableWarnings,
-					                                                       out var clientCallableErrors);
+																		   out var clientCallableWarnings,
+																		   out var clientCallableErrors);
 					if (clientCallableWarnings.Count > 0)
 					{
 						var hint = new BeamHintHeader(BeamHintType.Hint, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_CODE_MISUSE, BeamHintIds.ID_CLIENT_CALLABLE_ASYNC_VOID);
@@ -194,10 +194,10 @@ namespace Beamable.Server.Editor
 
 					// Builds a lookup of DeclaringType => MemberAttribute.
 					var validClientCallablesLookup = clientCallablesValid
-					                                 .Concat(clientCallableWarnings)
-					                                 .Concat(clientCallableErrors)
-					                                 .Select(result => result.Pair)
-					                                 .CreateMemberAttributeOwnerLookupTable();
+													 .Concat(clientCallableWarnings)
+													 .Concat(clientCallableErrors)
+													 .Select(result => result.Pair)
+													 .CreateMemberAttributeOwnerLookupTable();
 
 					// Register all configured microservices
 					foreach (var msAttrValidationResult in uniqueNameValidationResults.PerAttributeNameValidations)
@@ -224,7 +224,7 @@ namespace Beamable.Server.Editor
 						if (validClientCallablesLookup.TryGetValue(type, out var clientCallables))
 						{
 							// Generates descriptors for each of the individual client callables.
-							descriptor.Methods = clientCallables.Select(delegate(MemberAttribute pair)
+							descriptor.Methods = clientCallables.Select(delegate (MemberAttribute pair)
 							{
 								var clientCallableAttribute = pair.AttrAs<ClientCallableAttribute>();
 								var clientCallableMethod = pair.InfoAs<MethodInfo>();
@@ -233,17 +233,17 @@ namespace Beamable.Server.Editor
 								var callableScopes = clientCallableAttribute.RequiredScopes;
 
 								var parameters = clientCallableMethod
-								                 .GetParameters()
-								                 .Select((param, i) =>
-								                 {
-									                 var paramAttr = param.GetCustomAttribute<ParameterAttribute>();
-									                 var paramName = string.IsNullOrEmpty(paramAttr?.ParameterNameOverride)
-										                 ? param.Name
-										                 : paramAttr.ParameterNameOverride;
-									                 return new ClientCallableParameterDescriptor {Name = paramName, Index = i, Type = param.ParameterType};
-								                 }).ToArray();
+												 .GetParameters()
+												 .Select((param, i) =>
+												 {
+													 var paramAttr = param.GetCustomAttribute<ParameterAttribute>();
+													 var paramName = string.IsNullOrEmpty(paramAttr?.ParameterNameOverride)
+														 ? param.Name
+														 : paramAttr.ParameterNameOverride;
+													 return new ClientCallableParameterDescriptor { Name = paramName, Index = i, Type = param.ParameterType };
+												 }).ToArray();
 
-								return new ClientCallableDescriptor() {Path = callableName, Scopes = callableScopes, Parameters = parameters,};
+								return new ClientCallableDescriptor() { Path = callableName, Scopes = callableScopes, Parameters = parameters, };
 							}).ToList();
 						}
 						else // If no client callables were found in the C#MS, initialize an empty list.
@@ -385,7 +385,7 @@ namespace Beamable.Server.Editor
 						if (!enabledServices.Contains(storage.Name))
 							enabledServices.Add(storage.Name);
 
-						serviceDependencies.Add(new ServiceDependency {id = storage.Name, storageType = "storage"});
+						serviceDependencies.Add(new ServiceDependency { id = storage.Name, storageType = "storage" });
 					}
 
 					entryModel.Dependencies = serviceDependencies;
@@ -393,20 +393,20 @@ namespace Beamable.Server.Editor
 					Debug.Log($"Uploading container service=[{descriptor.Name}]");
 
 					await uploader.UploadContainer(descriptor, token, () =>
-					                               {
-						                               Debug.Log(string.Format(BeamableLogConstants.UploadedContainerMessage, descriptor.Name));
-						                               onServiceDeployed?.Invoke(descriptor);
-						                               OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Published);
-					                               },
-					                               () =>
-					                               {
-						                               Debug.LogError(string.Format(BeamableLogConstants.CantUploadContainerMessage, descriptor.Name));
-						                               if (token.IsCancellationRequested)
-						                               {
-							                               OnDeployFailed?.Invoke(model, $"Cancellation requested during upload of {descriptor.Name}.");
-							                               OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
-						                               }
-					                               }, imageId);
+												   {
+													   Debug.Log(string.Format(BeamableLogConstants.UploadedContainerMessage, descriptor.Name));
+													   onServiceDeployed?.Invoke(descriptor);
+													   OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Published);
+												   },
+												   () =>
+												   {
+													   Debug.LogError(string.Format(BeamableLogConstants.CantUploadContainerMessage, descriptor.Name));
+													   if (token.IsCancellationRequested)
+													   {
+														   OnDeployFailed?.Invoke(model, $"Cancellation requested during upload of {descriptor.Name}.");
+														   OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
+													   }
+												   }, imageId);
 				}
 
 				Debug.Log($"Deploying manifest");
@@ -430,11 +430,14 @@ namespace Beamable.Server.Editor
 					kvp.Value.Enabled &= enabledServices.Contains(kvp.Value.Name);
 					return new ServiceStorageReference
 					{
-						id = kvp.Value.Name, storageType = kvp.Value.Type, templateId = kvp.Value.TemplateId, enabled = kvp.Value.Enabled,
+						id = kvp.Value.Name,
+						storageType = kvp.Value.Type,
+						templateId = kvp.Value.TemplateId,
+						enabled = kvp.Value.Enabled,
 					};
 				}).ToList();
 
-				await client.Deploy(new ServiceManifest {comments = model.Comment, manifest = manifest, storageReference = storages});
+				await client.Deploy(new ServiceManifest { comments = model.Comment, manifest = manifest, storageReference = storages });
 				OnDeploySuccess?.Invoke(model, descriptorsCount);
 				Debug.Log("Service Deploy Complete");
 
@@ -483,7 +486,10 @@ namespace Beamable.Server.Editor
 							var configEntry = MicroserviceConfiguration.Instance.GetEntry(name); //config.FirstOrDefault(s => s.ServiceName == name);
 							return new ManifestEntryModel
 							{
-								Comment = "", Name = name, Enabled = configEntry?.Enabled ?? true, TemplateId = configEntry?.TemplateId ?? "small",
+								Comment = "",
+								Name = name,
+								Enabled = configEntry?.Enabled ?? true,
+								TemplateId = configEntry?.TemplateId ?? "small",
 							};
 						}).ToList();
 
@@ -504,7 +510,10 @@ namespace Beamable.Server.Editor
 							var configEntry = MicroserviceConfiguration.Instance.GetStorageEntry(name);
 							return new StorageEntryModel
 							{
-								Name = name, Type = configEntry?.StorageType ?? "mongov1", Enabled = configEntry?.Enabled ?? true, TemplateId = configEntry?.TemplateId ?? "small",
+								Name = name,
+								Type = configEntry?.StorageType ?? "mongov1",
+								Enabled = configEntry?.Enabled ?? true,
+								TemplateId = configEntry?.TemplateId ?? "small",
 							};
 						}).ToList();
 
@@ -550,7 +559,7 @@ namespace Beamable.Server.Editor
 					return "";
 				}
 			}
-			
+
 
 			#endregion
 
@@ -582,7 +591,7 @@ namespace Beamable.Server.Editor
 			}
 
 			#endregion
-			
+
 			#region On Script Reload Callbacks
 
 			[DidReloadScripts]

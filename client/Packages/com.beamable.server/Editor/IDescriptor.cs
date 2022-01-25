@@ -13,6 +13,6 @@ namespace Beamable.Server.Editor
 		ServiceType ServiceType { get; }
 		bool IsPublishFeatureDisabled();
 		bool HasValidationError { get; }
-      	bool HasValidationWarning { get; }
+		bool HasValidationWarning { get; }
 	}
 }
