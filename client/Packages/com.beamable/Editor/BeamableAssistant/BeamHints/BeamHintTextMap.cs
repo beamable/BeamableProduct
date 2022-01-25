@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Beamable.Editor.Assistant
 {
-	
+
 	/// <summary>
 	/// A quick and dirty way of mapping Domains, Sub-Domains and HintIds to specific blobs of text.
 	/// TODO: Replace with in-editor localization system 
@@ -15,7 +15,7 @@ namespace Beamable.Editor.Assistant
 	public class BeamHintTextMap : ScriptableObject
 	{
 		public SerializedStringToTextDictionary HintDomainToTitle = new SerializedStringToTextDictionary();
-		
+
 		public SerializedStringToTextDictionary HintIdToHintTitle = new SerializedStringToTextDictionary();
 		public SerializedStringToTextDictionary HintIdToHintIntroText = new SerializedStringToTextDictionary();
 
@@ -23,7 +23,7 @@ namespace Beamable.Editor.Assistant
 		public void AddDomainTitle() => HintDomainToTitle.Add("hintId", "title");
 
 		public void AddDomainTitle(string id, string title) => HintDomainToTitle.Add(id, title);
-		
+
 		[ContextMenu("Add Hint Title")]
 		public void AddHintTitle() => HintIdToHintTitle.Add("hintId", "title");
 
@@ -65,7 +65,7 @@ namespace Beamable.Editor.Assistant
 
 			if (keys.Count != values.Count)
 				throw new System.Exception(string.Format(
-					                           "there are {0} keys and {1} values after deserialization. Make sure that both key and value types are serializable."));
+											   "there are {0} keys and {1} values after deserialization. Make sure that both key and value types are serializable."));
 
 			for (int i = 0; i < keys.Count; i++)
 				this.Add(keys[i], values[i]);

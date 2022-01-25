@@ -45,7 +45,7 @@ namespace Beamable.Player
 				return false;
 			}
 
-			return Equals((PlayerItem) obj);
+			return Equals((PlayerItem)obj);
 		}
 
 		public override int GetHashCode()
@@ -91,7 +91,7 @@ namespace Beamable.Player
 			// TODO: XXX: There must be a better way to implement this nonsense.
 			var propertiesBroadcastCode = Properties.Select(x => $"{x.Key}:{x.Value}").ToList();
 			propertiesBroadcastCode.Sort();
-			return $"{ContentId}-{ItemId}-{CreatedAt}-{UpdatedAt}-{string.Join(",",propertiesBroadcastCode)}".GetHashCode();
+			return $"{ContentId}-{ItemId}-{CreatedAt}-{UpdatedAt}-{string.Join(",", propertiesBroadcastCode)}".GetHashCode();
 		}
 
 		internal void TriggerDeletion()

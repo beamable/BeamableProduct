@@ -22,7 +22,8 @@ namespace Beamable
 		public static IDependencyBuilder AddComponentSingleton<T>(this IDependencyBuilder builder, Action<T, IDependencyProvider> initializer)
 			where T : Component
 		{
-			builder.AddSingleton(provider => {
+			builder.AddSingleton(provider =>
+			{
 				var gob = provider.GetService<IGameObjectContext>().GameObject;
 				var existing = gob.GetComponent<T>();
 				if (existing != null) return existing;

@@ -21,11 +21,11 @@ public class MyNonEditorReflectionSystem : ReflectionSystemObject, IReflectionSy
 		MY_INTERESTING_BASE_TYPE = new BaseTypeOfInterest(typeof(MyInterestingBaseType));
 
 		MY_REFLECTION_ATTRIBUTE = new AttributeOfInterest(typeof(MyReflectionAttribute),
-		                                                  new Type[] { },
-		                                                  new[] {typeof(MyInterestingBaseType)});
+														  new Type[] { },
+														  new[] { typeof(MyInterestingBaseType) });
 
-		BASE_TYPES_OF_INTEREST = new List<BaseTypeOfInterest>() {MY_INTERESTING_BASE_TYPE};
-		ATTRIBUTES_OF_INTEREST = new List<AttributeOfInterest>() {MY_REFLECTION_ATTRIBUTE};
+		BASE_TYPES_OF_INTEREST = new List<BaseTypeOfInterest>() { MY_INTERESTING_BASE_TYPE };
+		ATTRIBUTES_OF_INTEREST = new List<AttributeOfInterest>() { MY_REFLECTION_ATTRIBUTE };
 	}
 
 	public override IReflectionSystem System => this;
@@ -60,7 +60,7 @@ public class MyNonEditorReflectionSystem : ReflectionSystemObject, IReflectionSy
 
 		if (CachedSecondSignatureMethods == null)
 			CachedSecondSignatureMethods = new Dictionary<string, List<Func<bool, string, int>>>();
-		
+
 		CachedInstancesOfBaseType.Clear();
 		CachedFirstSignatureMethods.Clear();
 		CachedSecondSignatureMethods.Clear();
@@ -78,7 +78,7 @@ public class MyNonEditorReflectionSystem : ReflectionSystemObject, IReflectionSy
 
 	public void OnBaseTypeOfInterestFound(BaseTypeOfInterest baseType, IReadOnlyList<MemberInfo> cachedSubTypes)
 	{
-#if UNITY_EDITOR 
+#if UNITY_EDITOR
 		// We care about this type, since we want to ensure it always has at least one member with a MyReflectionAttribute --- so we add some quick editor-only validations.
 		if (baseType.Equals(MY_INTERESTING_BASE_TYPE))
 		{
@@ -127,15 +127,15 @@ public class MyNonEditorReflectionSystem : ReflectionSystemObject, IReflectionSy
 			{
 				var type = (Type)declaringTypeFunctions.Key;
 				var functions = declaringTypeFunctions.Value;
-				
+
 				// Create the cached instance of the declaring type
 				var constructor = type.GetConstructor(new Type[] { });
 				var instance = (MyInterestingBaseType)constructor.Invoke(null);
-				
+
 				CachedInstancesOfBaseType.Add(type.Name, instance);
 				CachedFirstSignatureMethods.Add(type.Name, new List<Func<bool, int>>());
 				CachedSecondSignatureMethods.Add(type.Name, new List<Func<bool, string, int>>());
-				
+
 				// Create Delegates for found methods.
 				foreach (var memberAttribute in functions)
 				{
@@ -144,7 +144,7 @@ public class MyNonEditorReflectionSystem : ReflectionSystemObject, IReflectionSy
 					// If matches the first signature, we add it to the first signature cached delegates
 					if (MyReflectionAttribute.ValidSignatures.MatchSignatureAtIdx(0, methodInfo))
 					{
-						var cachedMethod = (Func<bool, int>) Delegate.CreateDelegate(typeof(Func<bool, int>), instance, methodInfo.Name);
+						var cachedMethod = (Func<bool, int>)Delegate.CreateDelegate(typeof(Func<bool, int>), instance, methodInfo.Name);
 						CachedFirstSignatureMethods[type.Name].Add(cachedMethod);
 					}
 
@@ -178,7 +178,7 @@ public class MyNonEditorReflectionSystem : ReflectionSystemObject, IReflectionSy
 
 		return returnedValues;
 	}
-	
+
 	/// <summary>
 	/// Calls all functions implementing <see cref="MyReflectionAttribute"/> and returns all their return values.
 	/// </summary>
@@ -211,7 +211,7 @@ public class MySubtype : MyInterestingBaseType
 		Debug.Log($"Doing some game-specific stuff here with {param}");
 		return param ? 1 : 0;
 	}
-	
+
 	[MyReflection]
 	public int SecondSignatureMethod(bool param, string text)
 	{
@@ -224,7 +224,7 @@ public class MySubtype : MyInterestingBaseType
 public class MyInvalidSubtype : MyInterestingBaseType
 {
 	public int MyData;
-	
+
 	[MyReflection]
 	public int SecondSignatureMethod(bool param, string text, GameObject invalidParam)
 	{
@@ -265,22 +265,22 @@ public class MyReflectionAttribute : Attribute, IReflectionAttribute
 		if (matchedSignatureIndices.TrueForAll(idx => idx == -1))
 		{
 			return new AttributeValidationResult(this, methodInfo, ReflectionCache.ValidationResultType.Error,
-			                                     $"Method with signature [{methodInfo.ToHumanReadableSignature()}] doesn't match a valid signature [{ValidSignaturesText}]");
+												 $"Method with signature [{methodInfo.ToHumanReadableSignature()}] doesn't match a valid signature [{ValidSignaturesText}]");
 		}
 
 		// If matched second signature, leave a warning that the user should know.
 		if (matchedSignatureIndices.Contains(1))
 		{
 			return new AttributeValidationResult(this, methodInfo, ReflectionCache.ValidationResultType.Warning,
-			                                     $"This version of the method is interesting and you should know about this assumption here!");
+												 $"This version of the method is interesting and you should know about this assumption here!");
 		}
 
 		if (methodInfo.DeclaringType == null || !methodInfo.DeclaringType.IsSubclassOf(typeof(MyInterestingBaseType)))
 		{
 			return new AttributeValidationResult(this, methodInfo, ReflectionCache.ValidationResultType.Error,
-			                                     $"This attribute only works inside {nameof(MyInterestingBaseType)} subclasses!");
+												 $"This attribute only works inside {nameof(MyInterestingBaseType)} subclasses!");
 		}
-		
+
 		return new AttributeValidationResult(this, methodInfo, ReflectionCache.ValidationResultType.Valid, "");
 	}
 }

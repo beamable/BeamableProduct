@@ -15,7 +15,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			BeamableLogConstants.UploadedContainerMessage, BeamableLogConstants.ContainerAlreadyUploadedMessage
 		};
 
-		private static readonly string[] globalFailureLogs = {BeamableLogConstants.CantUploadContainerMessage};
+		private static readonly string[] globalFailureLogs = { BeamableLogConstants.CantUploadContainerMessage };
 
 		private readonly string[] successLogs, failureLogs;
 

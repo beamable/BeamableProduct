@@ -65,7 +65,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			VisualElement container = this.GetRootVisualContainer();
 			container.Clear();
-			var e = new PublishPopup {Model = _model};
+			var e = new PublishPopup { Model = _model };
 			_tokenSource = new CancellationTokenSource();
 			e.OnCloseRequested += () =>
 			{
@@ -80,7 +80,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				 * upload each image that is different than whats in the manifest...
 				 * upload the manifest file...
 				 */
-				WindowStateUtility.DisableAllWindows(new []{Constants.Publish});
+				WindowStateUtility.DisableAllWindows(new[] { Constants.Publish });
 				e.PrepareForPublish();
 				var microservicesRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 				await microservicesRegistry.Deploy(model, this, _tokenSource.Token, e.HandleServiceDeployed);
