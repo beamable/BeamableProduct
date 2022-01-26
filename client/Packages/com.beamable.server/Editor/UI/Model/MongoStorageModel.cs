@@ -58,11 +58,12 @@ namespace Beamable.Editor.UI.Model
 
 		public static MongoStorageModel CreateNew(StorageObjectDescriptor descriptor, MicroservicesDataModel dataModel)
 		{
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			return new MongoStorageModel
 			{
 				RemoteReference = dataModel.GetStorageReference(descriptor),
 				ServiceDescriptor = descriptor,
-				ServiceBuilder = Microservices.GetStorageBuilder(descriptor),
+				ServiceBuilder = serviceRegistry.GetStorageBuilder(descriptor),
 				Config = MicroserviceConfiguration.Instance.GetStorageEntry(descriptor.Name)
 			};
 		}
@@ -121,10 +122,11 @@ namespace Beamable.Editor.UI.Model
 
 		public override void Refresh(IDescriptor descriptor)
 		{
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			// reset the descriptor and statemachines; because they aren't system.serializable durable.
 			ServiceDescriptor = (StorageObjectDescriptor)descriptor;
 			var oldBuilder = ServiceBuilder;
-			ServiceBuilder = Microservices.GetStorageBuilder(ServiceDescriptor);
+			ServiceBuilder = serviceRegistry.GetStorageBuilder(ServiceDescriptor);
 			ServiceBuilder.ForwardEventsTo(oldBuilder);
 		}
 	}

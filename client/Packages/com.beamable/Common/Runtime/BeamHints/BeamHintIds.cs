@@ -95,6 +95,8 @@ namespace Beamable.Common.Assistant
 		// Microservices - Code Misuse IDs
 		[BeamHintId] public static readonly string ID_MICROSERVICE_ATTRIBUTE_MISSING = GenerateHintId("MicroserviceAttributeMissing", ATTRIBUTE_VALIDATION_ID_PREFIX);
 		[BeamHintId] public static readonly string ID_MICROSERVICE_NAME_COLLISION = GenerateHintId("MicroserviceNameCollision", ATTRIBUTE_NAME_COLLISION_ID_PREFIX);
+		[BeamHintId] public static readonly string ID_STORAGE_OBJECT_ATTRIBUTE_MISSING = GenerateHintId("StorageObjectAttributeMissing", ATTRIBUTE_VALIDATION_ID_PREFIX);
+		[BeamHintId] public static readonly string ID_STORAGE_OBJECT_NAME_COLLISION = GenerateHintId("StorageObjectNameCollision", ATTRIBUTE_NAME_COLLISION_ID_PREFIX);
 		[BeamHintId] public static readonly string ID_CLIENT_CALLABLE_ASYNC_VOID = GenerateHintId("ClientCallableAsyncVoid", ATTRIBUTE_VALIDATION_ID_PREFIX);
 		[BeamHintId] public static readonly string ID_CLIENT_CALLABLE_UNSUPPORTED_PARAMETERS = GenerateHintId("ClientCallableUnsupportedParameters", ATTRIBUTE_VALIDATION_ID_PREFIX);
 
