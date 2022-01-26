@@ -207,7 +207,13 @@ namespace Beamable.UI.BUSS
 			{
 				_addStyleButton.tooltip = string.Empty;
 				List<BussStyleSheet> styleSheets =
-					Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[] { "Assets" });
+					Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[]
+					{
+						"Assets",
+#if BEAMABLE_DEVELOPER
+						"Packages"
+#endif
+					});
 				if (styleSheets.Count == 0)
 				{
 					_addStyleButton.tooltip = "There should be created at least one BUSS Style Config!";
