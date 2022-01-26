@@ -209,8 +209,11 @@ namespace Beamable.Editor.Assistant
 				// Update Play-Mode Preferences
 				{
 					var playModeNever = _detailsBox.Q<Toggle>("playModeWarningDisableToggle");
+					playModeNever.Q<Label>().AddTextWrapStyle();
 					var playModeSession = _detailsBox.Q<Toggle>("playModeWarningSessionToggle");
+					playModeSession.Q<Label>().AddTextWrapStyle();
 					var playModeAlways = _detailsBox.Q<Toggle>("playModeWarningAlwaysToggle");
+					playModeAlways.Q<Label>().AddTextWrapStyle();
 					var playModeState = _hintDataModel.GetHintPlayModeWarningState(_displayingHintHeader);
 					if (playModeState == BeamHintPlayModeWarningPreference.Enabled)
 					{
@@ -350,6 +353,7 @@ namespace Beamable.Editor.Assistant
 				case string text:
 				{
 					label.text = text;
+					label.AddTextWrapStyle();
 					break;
 				}
 				default:

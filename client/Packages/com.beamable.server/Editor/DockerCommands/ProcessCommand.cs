@@ -39,9 +39,9 @@ namespace Beamable.Server.Editor.DockerCommands
 			{
 				var globalHintStorage = BeamEditor.HintGlobalStorage;
 				if (!DockerNotInstalled && value)
-					globalHintStorage.AddOrReplaceHint(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER, BeamHintIds.ID_DOCKER_PROCESS_NOT_RUNNING);
+					globalHintStorage?.AddOrReplaceHint(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER, BeamHintIds.ID_DOCKER_PROCESS_NOT_RUNNING);
 				else
-					globalHintStorage.RemoveHint(new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER, BeamHintIds.ID_DOCKER_PROCESS_NOT_RUNNING));
+					globalHintStorage?.RemoveHint(new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER, BeamHintIds.ID_DOCKER_PROCESS_NOT_RUNNING));
 
 				SessionState.SetBool("DockerNotRunning", value);
 			}
@@ -275,6 +275,7 @@ namespace Beamable.Server.Editor.DockerCommands
 					if (procList[i].ProcessName.ToLower().Contains(procName))
 					{
 						DockerNotRunning = false;
+						return;
 					}
 				}
 				catch { }

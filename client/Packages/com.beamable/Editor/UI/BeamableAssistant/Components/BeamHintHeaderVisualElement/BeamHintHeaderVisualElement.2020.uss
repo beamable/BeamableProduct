@@ -1,5 +1,4 @@
 .hintTitle{
     white-space: nowrap;    
     text-overflow: ellipsis;
-    text-overflow-position: end;
 }

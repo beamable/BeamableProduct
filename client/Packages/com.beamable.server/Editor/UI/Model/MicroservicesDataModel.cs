@@ -50,6 +50,8 @@ namespace Beamable.Editor.UI.Model
 			return _instance;
 		}
 
+		private MicroserviceReflectionCache.Registry _serviceRegistry;
+
 		[SerializeField] private List<MicroserviceModel> _localMicroserviceModels;
 		[SerializeField] private List<MongoStorageModel> _localStorageModels;
 
@@ -67,27 +69,32 @@ namespace Beamable.Editor.UI.Model
 		public void RefreshLocal()
 		{
 			var unseen = new HashSet<IBeamableService>(AllLocalServices);
-			foreach (var descriptor in Microservices.AllDescriptors)
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			if (serviceRegistry != null)
 			{
-				var serviceExists = ContainsModel(descriptor.Name);
-				if (serviceExists)
+				foreach (var descriptor in serviceRegistry.AllDescriptors)
 				{
-					var service = GetModel<IBeamableService>(descriptor.Name);
-					unseen.Remove(GetModel<IBeamableService>(descriptor.Name));
-					service.Refresh(descriptor);
-					continue;
-				}
+					var serviceExists = ContainsModel(descriptor.Name);
+					if (serviceExists)
+					{
+						var service = GetModel<IBeamableService>(descriptor.Name);
+						unseen.Remove(GetModel<IBeamableService>(descriptor.Name));
+						service.Refresh(descriptor);
+						continue;
+					}
 
-				IBeamableService newService;
-				if (descriptor.ServiceType == ServiceType.StorageObject)
-				{
-					newService = MongoStorageModel.CreateNew(descriptor as StorageObjectDescriptor, this);
+					IBeamableService newService;
+					if (descriptor.ServiceType == ServiceType.StorageObject)
+					{
+						newService = MongoStorageModel.CreateNew(descriptor as StorageObjectDescriptor, this);
+					}
+					else
+					{
+						newService = MicroserviceModel.CreateNew(descriptor as MicroserviceDescriptor, this);
+					}
+
+					AllLocalServices.Add(newService);
 				}
-				else
-				{
-					newService = MicroserviceModel.CreateNew(descriptor as MicroserviceDescriptor, this);
-				}
-				AllLocalServices.Add(newService);
 			}
 
 			AllLocalServices.RemoveAll(model => unseen.Contains(model));
@@ -237,7 +244,10 @@ namespace Beamable.Editor.UI.Model
 
 		private void OnEnable()
 		{
-			Microservices.OnDeploySuccess += HandleMicroservicesDeploySuccess;
+			_serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			if (_serviceRegistry != null)
+				_serviceRegistry.OnDeploySuccess += HandleMicroservicesDeploySuccess;
+
 			RefreshLocal();
 			RefreshServerManifest();
 		}
@@ -249,7 +259,7 @@ namespace Beamable.Editor.UI.Model
 
 		public void Destroy()
 		{
-			Microservices.OnDeploySuccess -= HandleMicroservicesDeploySuccess;
+			_serviceRegistry.OnDeploySuccess -= HandleMicroservicesDeploySuccess;
 
 			_instance = null;
 			_hasEnabledYet = false;
