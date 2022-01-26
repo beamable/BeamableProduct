@@ -42,3 +42,4 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch-suffix: 'timestamp'
           title: 'Formatting: ${{ github.event.head_commit.message }}'
+          labels: 'bot'
