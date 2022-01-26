@@ -350,6 +350,7 @@ namespace Beamable.Editor.Assistant
 				case string text:
 				{
 					label.text = text;
+					label.AddTextWrapStyle();
 					break;
 				}
 				default:
