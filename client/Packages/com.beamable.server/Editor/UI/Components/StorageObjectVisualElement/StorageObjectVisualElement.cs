@@ -28,6 +28,17 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private MongoStorageModel _mongoStorageModel;
 
+		protected override void OnDestroy()
+		{
+			base.OnDestroy();
+
+			if (_mongoStorageModel == null) return;
+
+			_mongoStorageModel.OnRemoteReferenceEnriched -= OnServiceReferenceChanged;
+			_mongoStorageModel.ServiceBuilder.OnBuildingFinished -= OnBuildingFinished;
+			_mongoStorageModel.ServiceBuilder.OnIsRunningChanged -= OnIsRunningChanged;
+		}
+
 		protected override void UpdateVisualElements()
 		{
 			base.UpdateVisualElements();
