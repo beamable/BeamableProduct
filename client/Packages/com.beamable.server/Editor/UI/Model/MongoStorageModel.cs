@@ -27,11 +27,23 @@ namespace Beamable.Editor.UI.Model
 	{
 		public ServiceStorageReference RemoteReference { get; protected set; }
 
+		[SerializeField]
+		private StorageObjectDescriptor _serviceDescriptor;
+
+		[SerializeField]
+		private string _assemblyQualifiedStorageTypeName;
 		public StorageObjectDescriptor ServiceDescriptor
 		{
 			get => _serviceDescriptor;
-			protected set => _serviceDescriptor = value;
+			set
+			{
+				_serviceDescriptor = value;
+				if (_serviceDescriptor.Type != null)
+					_assemblyQualifiedStorageTypeName = _serviceDescriptor.Type.AssemblyQualifiedName;
+			}
 		}
+
+		public string AssemblyQualifiedStorageTypeName => _assemblyQualifiedStorageTypeName;
 
 		public MongoStorageBuilder ServiceBuilder { get; protected set; }
 		public override IBeamableBuilder Builder => ServiceBuilder;
@@ -40,8 +52,6 @@ namespace Beamable.Editor.UI.Model
 		public StorageConfigurationEntry Config { get; protected set; }
 
 		public Action<ServiceStorageReference> OnRemoteReferenceEnriched;
-
-		[SerializeField] private StorageObjectDescriptor _serviceDescriptor;
 
 		public override event Action<Task> OnStart;
 		public override event Action<Task> OnStop;
