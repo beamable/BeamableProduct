@@ -213,11 +213,11 @@ namespace Beamable.Editor.Environment
 			{
 				IsServerPackageUpdated().Then(isUpdated =>
 			 {
-				   if (!isUpdated)
-				   {
-					   UpdateBeamablePackageServer();
-				   }
-			   });
+				 if (!isUpdated)
+				 {
+					 UpdateBeamablePackageServer();
+				 }
+			 });
 			});
 		}
 

@@ -42,11 +42,11 @@ namespace Beamable.Stats
 				{
 					de.OnUserChanged += user =>
 				{
-					   if (DefaultPlayerDbid == 0)
-					   {
-						   Refresh(user.id, "");
-					   }
-				   };
+					if (DefaultPlayerDbid == 0)
+					{
+						Refresh(user.id, "");
+					}
+				};
 				});
 			}
 		}
@@ -126,21 +126,21 @@ namespace Beamable.Stats
 				var requestDbid = GetRequestDbid(de, dbid);
 				return de.StatsService.GetStats("client", Stat.Access.GetString(), "player", requestDbid).Map(stats =>
 			 {
-				   var currentRequestDbid = GetRequestDbid(de, dbid);
-				   if (currentRequestDbid != requestDbid)
-				   {
-					// the stat user has changed out from under us, we should discard the response.
-					throw new StatUserChangeException();
-				   }
+				 var currentRequestDbid = GetRequestDbid(de, dbid);
+				 if (currentRequestDbid != requestDbid)
+				 {
+					 // the stat user has changed out from under us, we should discard the response.
+					 throw new StatUserChangeException();
+				 }
 
-				   if (!stats.TryGetValue(Stat.StatKey, out var statValue))
-				   {
-					   statValue = Stat.DefaultValue;
-				   }
+				 if (!stats.TryGetValue(Stat.StatKey, out var statValue))
+				 {
+					 statValue = Stat.DefaultValue;
+				 }
 
-				   Value = statValue;
-				   return statValue;
-			   });
+				 Value = statValue;
+				 return statValue;
+			 });
 			});
 		}
 
@@ -160,8 +160,8 @@ namespace Beamable.Stats
 			{
 				if (dbid == 0 && ex is StatUserChangeException)
 				{
-				 // this is okay. The user was changed out from under us, we should just try again.
-				 return Refresh(0, noStatValue);
+					// this is okay. The user was changed out from under us, we should just try again.
+					return Refresh(0, noStatValue);
 				}
 
 				throw ex;

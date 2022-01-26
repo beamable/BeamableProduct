@@ -215,19 +215,19 @@ namespace Beamable.AccountManagement
 
 				return de.GetDeviceUsers().Map(userBundles =>
 			 {
-				   var otherUserBundles = userBundles
-				   .Where(userBundle => userBundle.User.id != activeUser.id)
-				   .ToList();
-				   otherUserBundles.Sort((a, b) => a.User.id.CompareTo(b.User.id));
+				 var otherUserBundles = userBundles
+				 .Where(userBundle => userBundle.User.id != activeUser.id)
+				 .ToList();
+				 otherUserBundles.Sort((a, b) => a.User.id.CompareTo(b.User.id));
 
-				   var deviceUserArg = new DeviceUserArg
-				   {
-					   ActiveUser = activeUser,
-					   OtherUsers = otherUserBundles
-				   };
-				   Broadcast(deviceUserArg, s => s.DeviceUsersAvailable);
-				   return deviceUserArg;
-			   });
+				 var deviceUserArg = new DeviceUserArg
+				 {
+					 ActiveUser = activeUser,
+					 OtherUsers = otherUserBundles
+				 };
+				 Broadcast(deviceUserArg, s => s.DeviceUsersAvailable);
+				 return deviceUserArg;
+			 });
 			})).Error(HandleError);
 		}
 
@@ -308,33 +308,33 @@ namespace Beamable.AccountManagement
 			{
 				return de.GetDeviceUsers().FlatMap(deviceUsers =>
 			 {
-				   return IsEmailRegistered(email).FlatMap(registered =>
-				{
-					  var currentUserHasEmail = de.User.HasDBCredentials();
-					  var storedUser = deviceUsers.FirstOrDefault(b => b.User.email != null && b.User.email.Equals(email));
+				 return IsEmailRegistered(email).FlatMap(registered =>
+			  {
+				  var currentUserHasEmail = de.User.HasDBCredentials();
+				  var storedUser = deviceUsers.FirstOrDefault(b => b.User.email != null && b.User.email.Equals(email));
 
-					  var shouldSwitchUser = registered;
-					  var shouldCreateNewUser = !registered && currentUserHasEmail;
-					  var shouldAttachToCurrentUser = !registered && !currentUserHasEmail;
+				  var shouldSwitchUser = registered;
+				  var shouldCreateNewUser = !registered && currentUserHasEmail;
+				  var shouldAttachToCurrentUser = !registered && !currentUserHasEmail;
 
-					  if (shouldSwitchUser)
-					  {
-						  return GetAccountWithCredentials(de, email, password)
-						  .Then(OfferSwitch);
-					  }
+				  if (shouldSwitchUser)
+				  {
+					  return GetAccountWithCredentials(de, email, password)
+						.Then(OfferSwitch);
+				  }
 
-					  if (shouldCreateNewUser)
-					  {
-						  return LoginToNewUser(de)
-						  .FlatMap(_ => AttachEmailToCurrentUser(de, email, password));
-					  }
-					  if (shouldAttachToCurrentUser)
-					  {
-						  return AttachEmailToCurrentUser(de, email, password);
-					  }
-					  throw new Exception($"unrecognized login state. registered=[{registered}] currentUserHasEmail=[{currentUserHasEmail}] storedUser=[{storedUser}]");
-				  });
-			   });
+				  if (shouldCreateNewUser)
+				  {
+					  return LoginToNewUser(de)
+						.FlatMap(_ => AttachEmailToCurrentUser(de, email, password));
+				  }
+				  if (shouldAttachToCurrentUser)
+				  {
+					  return AttachEmailToCurrentUser(de, email, password);
+				  }
+				  throw new Exception($"unrecognized login state. registered=[{registered}] currentUserHasEmail=[{currentUserHasEmail}] storedUser=[{storedUser}]");
+			  });
+			 });
 			})).Error(HandleError);
 		}
 
@@ -358,38 +358,38 @@ namespace Beamable.AccountManagement
 			{
 				return API.Instance.FlatMap(de =>
 			 {
-				   if (thirdPartyResponse.Cancelled)
-				   {
-					   return Promise<User>.Successful(de.User);
-				   }
-				   var token = thirdPartyResponse.AuthToken;
+				 if (thirdPartyResponse.Cancelled)
+				 {
+					 return Promise<User>.Successful(de.User);
+				 }
+				 var token = thirdPartyResponse.AuthToken;
 
-				   return de.AuthService.IsThirdPartyAvailable(thirdParty, token)
-				   .FlatMap(available =>
-				   {
-						 var userHasCredentials = de.User.HasThirdPartyAssociation(thirdParty);
+				 return de.AuthService.IsThirdPartyAvailable(thirdParty, token)
+				 .FlatMap(available =>
+				 {
+					 var userHasCredentials = de.User.HasThirdPartyAssociation(thirdParty);
 
-						 var shouldSwitchUsers = !available;
-						 var shouldCreateUser = available && userHasCredentials;
-						 var shouldAttachToCurrentUser = available && !userHasCredentials;
+					 var shouldSwitchUsers = !available;
+					 var shouldCreateUser = available && userHasCredentials;
+					 var shouldAttachToCurrentUser = available && !userHasCredentials;
 
-						 if (shouldSwitchUsers)
-						 {
-							 return GetAccountWithCredentials(de, thirdParty, token)
-							 .Then(OfferSwitch);
-						 }
-						 if (shouldCreateUser)
-						 {
-							 return LoginToNewUser(de)
-							 .FlatMap(_ => AttachThirdPartyToCurrentUser(de, thirdParty, token));
-						 }
-						 if (shouldAttachToCurrentUser)
-						 {
-							 return AttachThirdPartyToCurrentUser(de, thirdParty, token);
-						 }
-						 throw new Exception($"unrecognized third party state. thirdparty=[{thirdParty}] available=[{available}] userHasCredentials=[{userHasCredentials}]");
-					 });
-			   });
+					 if (shouldSwitchUsers)
+					 {
+						 return GetAccountWithCredentials(de, thirdParty, token)
+						   .Then(OfferSwitch);
+					 }
+					 if (shouldCreateUser)
+					 {
+						 return LoginToNewUser(de)
+						   .FlatMap(_ => AttachThirdPartyToCurrentUser(de, thirdParty, token));
+					 }
+					 if (shouldAttachToCurrentUser)
+					 {
+						 return AttachThirdPartyToCurrentUser(de, thirdParty, token);
+					 }
+					 throw new Exception($"unrecognized third party state. thirdparty=[{thirdParty}] available=[{available}] userHasCredentials=[{userHasCredentials}]");
+				 });
+			 });
 			})).Error(HandleError);
 			DeferBroadcast(promise, s => s.ThirdPartyLoginAttempted);
 		}
@@ -400,8 +400,8 @@ namespace Beamable.AccountManagement
 			{
 				WithCriticalLoading("New Account...", de.AuthService.CreateUser().Then(newToken =>
 			 {
-				   de.ApplyToken(newToken).Then(_ => { CheckSignedInUser(); });
-			   }));
+				 de.ApplyToken(newToken).Then(_ => { CheckSignedInUser(); });
+			 }));
 			}).Error(HandleError);
 		}
 
@@ -439,8 +439,8 @@ namespace Beamable.AccountManagement
 			{
 				WithLoading("Confirming Code...", de.AuthService.ConfirmPasswordUpdate(code, password)).Then(_ =>
 			 {
-				   Login(email, password);
-			   }).Error(HandleError);
+				 Login(email, password);
+			 }).Error(HandleError);
 			});
 		}
 

@@ -39,8 +39,8 @@ namespace Beamable.Editor.Login.UI
 		{
 			InitializedModel = model.Initialize().Then(initializedModel =>
 			{
-			 //            _loginVisualElement = new Components.LoginVisualElement(){Model = initializedModel, Manager = this};
-			 _newCustomerVisualElement = new NewCustomerVisualElement() { Model = initializedModel, Manager = this };
+				//            _loginVisualElement = new Components.LoginVisualElement(){Model = initializedModel, Manager = this};
+				_newCustomerVisualElement = new NewCustomerVisualElement() { Model = initializedModel, Manager = this };
 				_existingCustomerVisualElement = new ExistingCustomerVisualElement() { Model = initializedModel, Manager = this };
 				_legalCopyVisualElement = new LegalCopyVisualElement() { Model = initializedModel, Manager = this };
 				_projectSelectVisualElement = new ProjectSelectVisualElement() { Model = initializedModel, Manager = this };
@@ -130,9 +130,9 @@ namespace Beamable.Editor.Login.UI
 				false
 				).Then(res =>
 			 {
-				   if (!res.Success) return;
-				   GotoExistingCustomer();
-			   });
+				 if (!res.Success) return;
+				 GotoExistingCustomer();
+			 });
 			});
 		}
 

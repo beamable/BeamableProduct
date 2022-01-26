@@ -56,7 +56,7 @@ namespace Beamable.Signals
 				var signal = getter(tower);
 
 				if (self.Diagnostic || tower.Diagnostic) // if the sender, or the receiver has diagnostic on...
-			 {
+				{
 					signal?.InvokeWithTrace(self, tower, arg);
 				}
 				else

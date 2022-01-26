@@ -103,10 +103,10 @@ namespace Beamable.Server.Editor
 						var logLevel = UseDebug ? "Debug" : "Information";
 						StartProcess(new RunServiceCommand(ServiceDescriptor, cid, secret, null));
 
-				   // also, always start a log process...
-				   // CaptureLogs();
+						// also, always start a log process...
+						// CaptureLogs();
 
-				   return CurrentState;
+						return CurrentState;
 					});
 				case MicroserviceState.STOPPING:
 					StartProcess(new StopImageCommand(ServiceDescriptor));

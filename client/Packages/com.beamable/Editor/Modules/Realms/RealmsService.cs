@@ -62,7 +62,7 @@ namespace Beamable.Editor.Realms
 				if (ex is PlatformRequesterException err && err.Status == 403)
 				{
 					return new List<RealmView>(); // empty list.
-			 }
+				}
 				throw ex;
 			});
 		}
@@ -151,7 +151,7 @@ namespace Beamable.Editor.Realms
 				   if (ex is PlatformRequesterException err && err.Status == 403)
 				   {
 					   return new List<RealmView>(); // empty set.
-				}
+				   }
 
 				   throw ex;
 			   });
