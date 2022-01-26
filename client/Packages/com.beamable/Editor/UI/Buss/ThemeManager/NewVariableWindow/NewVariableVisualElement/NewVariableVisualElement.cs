@@ -39,7 +39,7 @@ namespace Beamable.Editor.UI.Buss
 			{"Color", new SingleColorBussProperty()},
 			{"VertexColor", new VertexColorBussProperty()},
 			{"Float", new FloatBussProperty()},
-			{"FloatFromFloat", new FractionFloatBussProperty()},
+			//{"FloatFromFloat", new FractionFloatBussProperty()},
 			{"Enum", null},
 			{"Sprite", new SpriteBussProperty()},
 			{"Font", new FontBussAssetProperty()},

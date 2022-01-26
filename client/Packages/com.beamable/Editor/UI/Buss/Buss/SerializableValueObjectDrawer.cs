@@ -65,8 +65,8 @@ namespace Beamable.Editor.UI.Buss
 			sysType = type == null ? null : Type.GetType(type);
 			var valueField =
 				typeof(SerializableValueObject).GetField("value", BindingFlags.Instance | BindingFlags.NonPublic);
-			var obj = property.GetFieldInfo().GetValue(property.GetParentObject());
-			if (value == null)
+			var obj = property?.GetFieldInfo()?.GetValue(property?.GetParentObject());
+			if (value == null && obj != null)
 			{
 				value = valueField.GetValue(obj);
 			}
