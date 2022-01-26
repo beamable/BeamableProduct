@@ -106,7 +106,7 @@ namespace Beamable.Server.Editor
 													  serviceCreateInfo.TemplateFileName);
 
 				Debug.Assert(File.Exists(scriptTemplatePath));
-				
+
 				// create the asmdef by hand.
 				var asmName = serviceType == ServiceType.MicroService
 					? $"Beamable.Microservice.{serviceName}"
@@ -159,7 +159,7 @@ namespace Beamable.Server.Editor
 									 destinationDirectory.FullName + $"/{serviceName}.cs");
 
 				CommonAreaService.EnsureCommon();
-				
+
 				if (!string.IsNullOrWhiteSpace(asmName) && additionalReferences != null && additionalReferences.Count != 0)
 				{
 					foreach (var additionalReference in additionalReferences)

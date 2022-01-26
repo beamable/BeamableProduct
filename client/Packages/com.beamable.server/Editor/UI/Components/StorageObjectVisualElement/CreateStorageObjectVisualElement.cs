@@ -11,7 +11,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override string ScriptName => nameof(StorageObjectVisualElement);
 		protected override bool ShouldShowCreateDependentService => MicroservicesDataModel.Instance.Services.Count != 0;
 
-		
+
 		protected override void CreateService(string serviceName, List<ServiceModelBase> additionalReferences = null)
 		{
 			MicroserviceEditor.CreateNewServiceFile(ServiceType.StorageObject, serviceName, additionalReferences);

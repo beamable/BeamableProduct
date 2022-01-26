@@ -132,7 +132,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected abstract void CreateService(string serviceName, List<ServiceModelBase> additionalReferences = null);
 		protected abstract void InitCreateDependentService();
 		protected abstract bool ShouldShowCreateDependentService { get; }
-		
+
 		private void HandeMouseDownEvent(MouseDownEvent evt)
 		{
 			RenameGestureBegin();
