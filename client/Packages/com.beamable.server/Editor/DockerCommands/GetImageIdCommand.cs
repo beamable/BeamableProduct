@@ -8,10 +8,12 @@ namespace Beamable.Server.Editor.DockerCommands
 	public class GetImageIdCommand : DockerCommandReturnable<string>
 	{
 		public string ImageName { get; }
+		private bool WasBuildLocally { get; }
 
 		public GetImageIdCommand(IDescriptor descriptor)
 		{
 			ImageName = descriptor.ImageName;
+			WasBuildLocally = BuildImageCommand.WasEverBuildLocally(descriptor);
 		}
 		public override string GetCommandString()
 		{
@@ -20,13 +22,9 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		protected override void Resolve()
 		{
-			if (StandardOutBuffer?.Length > 0)
-			{
-				Promise.CompleteSuccess(StandardOutBuffer.Trim());
-				return;
-			}
+			bool hasResult = WasBuildLocally && StandardOutBuffer?.Length > 0;
 			// there is no built image, we shouldn't log an error, we should just know that empty string means "not built".
-			Promise.CompleteSuccess(string.Empty);
+			Promise.CompleteSuccess(hasResult ? StandardOutBuffer.Trim() : string.Empty);
 		}
 	}
 }
