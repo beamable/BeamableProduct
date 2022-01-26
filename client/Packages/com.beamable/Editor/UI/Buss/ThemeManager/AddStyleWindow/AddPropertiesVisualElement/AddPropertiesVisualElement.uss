@@ -17,7 +17,7 @@ AddPropertiesVisualElement > TemplateContainer > #mainVisualElement {
     justify-content: flex-end;
     padding-right: 5px;
     padding-top: 10px;
-    height: 60;
+    height: 60px;
 }
 
 #confirmButton {
