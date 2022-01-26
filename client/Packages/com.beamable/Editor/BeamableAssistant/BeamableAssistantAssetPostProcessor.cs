@@ -31,11 +31,17 @@ namespace Beamable.Editor.Assistant
 
 			if (beamHintDetailsRelatedAssets.Count > 0 || deletedAssets.Length > 0)
 			{
-				BeamEditor.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>()
-						  .ReloadHintDetailConfigScriptableObjects(BeamEditor.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
+				EditorDebouncer.Debounce("Reload HintDetails Configuration Objects", () =>
+				{
+					// Do nothing if the BeamEditor is not initialized.
+					if (BeamEditor.EditorReflectionCache == null) return;
+					
+					BeamEditor.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>()
+					          .ReloadHintDetailConfigScriptableObjects(BeamEditor.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
 
-				BeamEditor.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>()
-						  .ReloadHintTextMapScriptableObjects(BeamEditor.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
+					BeamEditor.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>()
+					          .ReloadHintTextMapScriptableObjects(BeamEditor.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);	
+				});
 			}
 		}
 	}

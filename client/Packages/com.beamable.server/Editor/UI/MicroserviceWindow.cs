@@ -110,6 +110,13 @@ namespace Beamable.Editor.Microservice.UI
 
 		void SetForContent()
 		{
+			// if null, close the window --- exists to handle the re-import all case.
+			if (BeamEditor.CoreConfiguration == null)
+			{
+				Close();
+				return;
+			}
+			
 			var root = this.GetRootVisualContainer();
 			root.Clear();
 
@@ -190,7 +197,6 @@ namespace Beamable.Editor.Microservice.UI
 				_microserviceContentVisualElement.BuildAllMicroservices(_loadingBar);
 
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-
 			serviceRegistry.OnDeploySuccess -= HandleDeploySuccess;
 			serviceRegistry.OnDeploySuccess += HandleDeploySuccess;
 			serviceRegistry.OnDeployFailed -= HandleDeployFailed;
