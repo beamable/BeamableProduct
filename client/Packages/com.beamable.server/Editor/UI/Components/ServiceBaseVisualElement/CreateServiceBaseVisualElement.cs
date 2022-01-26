@@ -1,4 +1,4 @@
-﻿using Beamable.Editor.UI.Components;
+using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.UI.Components;
@@ -29,6 +29,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public event Action OnCreateServiceClicked;
 
+		protected ServiceCreateDependentService _serviceCreateDependentService;
+
 		private const int MAX_NAME_LENGTH = 28;
 		private bool _canCreateService;
 
@@ -40,6 +42,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private VisualElement _logContainerElement;
 		private List<string> _servicesNames;
 		private VisualElement _rootVisualElement;
+
+		private bool _isServiceNameConfirmed;
 
 		public override void Refresh()
 		{
@@ -76,7 +80,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_nameTextField.RegisterCallback<KeyUpEvent>(HandleNameLabelKeyUp, TrickleDown.TrickleDown);
 
 			_cancelBtn.clickable.clicked += Root.RemoveFromHierarchy;
-
 			_createBtn.text = "Create";
 			_createBtn.clickable.clicked += HandleCreateButtonClicked;
 
@@ -94,11 +97,42 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			if (string.IsNullOrWhiteSpace(NewServiceName))
 				return;
+
+			_isServiceNameConfirmed = true;
+			_nameTextField.SetEnabled(false);
+
+			if (!ShouldShowCreateDependentService)
+			{
+				HandleContinueButtonClicked();
+				return;
+			}
+
+			_createBtn.clickable.clicked -= HandleCreateButtonClicked;
+			_createBtn.text = "Continue";
+			_createBtn.clickable.clicked += HandleContinueButtonClicked;
+			ShowServiceCreateDependentService();
+		}
+
+		private void ShowServiceCreateDependentService()
+		{
+			_serviceCreateDependentService = new ServiceCreateDependentService();
+			_serviceCreateDependentService.Refresh();
+			InitCreateDependentService();
+			_rootVisualElement.Add(_serviceCreateDependentService);
+		}
+
+		private void HandleContinueButtonClicked()
+		{
+			var additionalReferences = _serviceCreateDependentService?.GetReferences();
 			_createBtn.text = "Creating...";
 			OnCreateServiceClicked?.Invoke();
-			EditorApplication.delayCall += () => CreateService(NewServiceName);
+			EditorApplication.delayCall += () => CreateService(NewServiceName, additionalReferences);
 		}
-		protected abstract void CreateService(string serviceName);
+
+		protected abstract void CreateService(string serviceName, List<ServiceModelBase> additionalReferences = null);
+		protected abstract void InitCreateDependentService();
+		protected abstract bool ShouldShowCreateDependentService { get; }
+
 		private void HandeMouseDownEvent(MouseDownEvent evt)
 		{
 			RenameGestureBegin();
@@ -118,6 +152,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		private void RenameGestureBegin()
 		{
+			if (_isServiceNameConfirmed)
+				return;
+
 			NewServiceName = _nameTextField.value;
 			_nameTextField.SetEnabled(true);
 			_nameTextField.BeamableFocus();
@@ -132,8 +169,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 			_nameTextField.value = NewServiceName;
 			_canCreateService = !_servicesNames.Contains(NewServiceName)
-								&& NewServiceName.Length > 2
-								&& NewServiceName.Length <= MAX_NAME_LENGTH;
+													&& NewServiceName.Length > 2
+													&& NewServiceName.Length <= MAX_NAME_LENGTH;
 			_createBtn.SetEnabled(_canCreateService);
 		}
 	}
