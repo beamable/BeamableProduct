@@ -59,8 +59,8 @@ namespace Beamable.Leaderboards
 			return de.LeaderboardService.GetBoard(LeaderboardBehavior.Leaderboard.Id, 0, 50)
 			   .Error(err =>
 			   {
-				// Explicitly do nothing to prevent an error from being logged.
-			})
+				   // Explicitly do nothing to prevent an error from being logged.
+			   })
 			   .Then(HandleBoard);
 		}
 

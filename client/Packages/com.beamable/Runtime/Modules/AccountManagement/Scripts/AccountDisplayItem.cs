@@ -66,63 +66,63 @@ namespace Beamable.AccountManagement
 			LoadingPromise.Then(_ =>
 			{
 
-			 // apply the third party icons...
-			 ThirdPartyAssociationPromise.Then(assocs =>
-			 {
-				   EmailIcon.SetActive(User.HasDBCredentials());
-				   if (AttachedEmailTextReference != null)
-				   {
-					   AttachedEmailTextReference.Value = User.email;
-				   }
+				// apply the third party icons...
+				ThirdPartyAssociationPromise.Then(assocs =>
+				{
+					EmailIcon.SetActive(User.HasDBCredentials());
+					if (AttachedEmailTextReference != null)
+					{
+						AttachedEmailTextReference.Value = User.email;
+					}
 
-				   foreach (var assoc in assocs)
-				   {
-					   switch (assoc.ThirdParty)
-					   {
-						   case AuthThirdParty.Apple:
-							   AppleIcon.SetActive(assoc.ShouldShowIcon);
-							   break;
-						   case AuthThirdParty.Facebook:
-							   FacebookIcon.SetActive(assoc.ShouldShowIcon);
-							   break;
-						   case AuthThirdParty.Google:
-							   GoogleIcon.SetActive(assoc.ShouldShowIcon);
-							   break;
-					   }
-				   }
+					foreach (var assoc in assocs)
+					{
+						switch (assoc.ThirdParty)
+						{
+							case AuthThirdParty.Apple:
+								AppleIcon.SetActive(assoc.ShouldShowIcon);
+								break;
+							case AuthThirdParty.Facebook:
+								FacebookIcon.SetActive(assoc.ShouldShowIcon);
+								break;
+							case AuthThirdParty.Google:
+								GoogleIcon.SetActive(assoc.ShouldShowIcon);
+								break;
+						}
+					}
 
-				   LayoutCredentialIcons();
-			   });
+					LayoutCredentialIcons();
+				});
 
-			 // apply the stat data
-			 StatPromise.Then(stats =>
-			 {
-				   InitializeStatCallbacks();
-				   var config = AccountManagementConfiguration.Instance;
-				   DisplayNameStat.SetStat(config.DisplayNameStat);
-				   SubTextStat.SetStat(config.SubtextStat);
-				   AvatarStat.SetStat(config.AvatarStat);
-				   SubTextLabel = config.SubtextLabel;
+				// apply the stat data
+				StatPromise.Then(stats =>
+				{
+					InitializeStatCallbacks();
+					var config = AccountManagementConfiguration.Instance;
+					DisplayNameStat.SetStat(config.DisplayNameStat);
+					SubTextStat.SetStat(config.SubtextStat);
+					AvatarStat.SetStat(config.AvatarStat);
+					SubTextLabel = config.SubtextLabel;
 
-				   DisplayNameStat.SetForUser(User);
-				   SubTextStat.SetForUser(User);
-				   AvatarStat.SetForUser(User);
+					DisplayNameStat.SetForUser(User);
+					SubTextStat.SetForUser(User);
+					AvatarStat.SetForUser(User);
 
-				   var alias = stats.Get(DisplayNameStat.Stat);
-				   var subtext = stats.Get(SubTextStat.Stat);
-				   var avatar = stats.Get(AvatarStat.Stat);
+					var alias = stats.Get(DisplayNameStat.Stat);
+					var subtext = stats.Get(SubTextStat.Stat);
+					var avatar = stats.Get(AvatarStat.Stat);
 
-				   var aliasValue = alias ?? (User.email ?? "Anonymous");
-				   var subtextValue = subtext ?? (User.id.ToString());
-				   SubTextStat.DefaultValueOverride = subtextValue;
-				   AvatarStat.DefaultValueOverride = avatar;
-				   DisplayNameStat.SetCurrentValue(aliasValue);
-				   SubTextStat.SetCurrentValue(subtextValue);
-				   AvatarStat.SetCurrentValue(avatar);
-				   DisplayNameStat.RefreshOnStart = true;
-				   SubTextStat.RefreshOnStart = true;
-				   AvatarStat.RefreshOnStart = true;
-			   });
+					var aliasValue = alias ?? (User.email ?? "Anonymous");
+					var subtextValue = subtext ?? (User.id.ToString());
+					SubTextStat.DefaultValueOverride = subtextValue;
+					AvatarStat.DefaultValueOverride = avatar;
+					DisplayNameStat.SetCurrentValue(aliasValue);
+					SubTextStat.SetCurrentValue(subtextValue);
+					AvatarStat.SetCurrentValue(avatar);
+					DisplayNameStat.RefreshOnStart = true;
+					SubTextStat.RefreshOnStart = true;
+					AvatarStat.RefreshOnStart = true;
+				});
 
 				SetActiveAccount(IsCurrent);
 				SetRemoveAccountElements(false);

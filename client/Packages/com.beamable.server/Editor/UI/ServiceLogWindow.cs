@@ -60,7 +60,7 @@ namespace Beamable.Editor.Microservice.UI
 					_model = MicroservicesDataModel.Instance.GetModel<ServiceModelBase>(_serviceName);
 				}
 				_model.DetachLogs(); // take note of the fact that logs are detached...
-			 RegisterEvents();
+				RegisterEvents();
 				Refresh();
 			};
 		}

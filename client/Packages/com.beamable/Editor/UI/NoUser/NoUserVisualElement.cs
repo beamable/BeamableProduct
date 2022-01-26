@@ -28,8 +28,8 @@ namespace Beamable.Editor.NoUser
 
 			_root.Q<Button>().clickable.clicked += () =>
 			{
-			 // go to login.
-			 var _ = LoginWindow.CheckLogin();
+				// go to login.
+				var _ = LoginWindow.CheckLogin();
 			};
 
 			this.Add(_root);

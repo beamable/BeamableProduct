@@ -30,14 +30,14 @@ namespace Beamable.Announcements
 			{
 				Announcements = announcements.announcements;
 
-			 // Clear all data
-			 for (var i = 0; i < AnnouncementList.childCount; i++)
+				// Clear all data
+				for (var i = 0; i < AnnouncementList.childCount; i++)
 				{
 					Destroy(AnnouncementList.GetChild(i).gameObject);
 				}
 
-			 // Populate summaries
-			 foreach (var announcement in Announcements)
+				// Populate summaries
+				foreach (var announcement in Announcements)
 				{
 					var summary = Instantiate(SummaryPrefab, AnnouncementList);
 					summary.Setup(announcement.title, announcement.body);

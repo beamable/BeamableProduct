@@ -36,11 +36,11 @@ namespace Beamable.Editor.Content
 
 					foreach (var contentDescriptor in allContent)
 					{
-					 //                  System.Threading.Thread.Sleep(50);
-					 if (contentDescriptor.LocalStatus != HostStatus.AVAILABLE)
+						//                  System.Threading.Thread.Sleep(50);
+						if (contentDescriptor.LocalStatus != HostStatus.AVAILABLE)
 							continue; // cannot validate server content. (yet?)
 
-					 var validationPromise = new Promise<ContentExceptionCollection>();
+						var validationPromise = new Promise<ContentExceptionCollection>();
 						validationPromises.Add(validationPromise);
 
 						var localContent = contentDescriptor.GetLocalContent();
@@ -71,13 +71,13 @@ namespace Beamable.Editor.Content
 
 					Promise.Sequence(validationPromises).Then(allValidationErrors =>
 				 {
-					  EditorApplication.delayCall += () =>
-				   {
+					 EditorApplication.delayCall += () =>
+				  {
 
-						 progressHandler?.Invoke(1, allContentCount, allContentCount);
-						 promise.CompleteSuccess(allValidationErrors.Where(e => e != null).ToList());
-					 };
-				  });
+					  progressHandler?.Invoke(1, allContentCount, allContentCount);
+					  promise.CompleteSuccess(allValidationErrors.Where(e => e != null).ToList());
+				  };
+				 });
 
 				}
 				catch (Exception ex)

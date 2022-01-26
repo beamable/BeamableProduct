@@ -27,8 +27,8 @@ namespace Beamable.AccountManagement
 			{
 				if (!menuManager) return;
 
-			 // only show the player data menu if there is no alias, and if there the menu wasn't just opened
-			 var isAliasUndefined = string.IsNullOrEmpty(alias);
+				// only show the player data menu if there is no alias, and if there the menu wasn't just opened
+				var isAliasUndefined = string.IsNullOrEmpty(alias);
 				if (isAliasUndefined && !menuManager.IsFirst)
 				{
 					menuManager.Show<AccountPlayerDataMenu>();

@@ -42,13 +42,13 @@ namespace Beamable.Editor.Config
 						{
 							ConfigManager.Initialize(); // re-initialize every time the window is activated, so that we make sure the SO's always exist.
 
-					   if (ConfigManager.MissingAnyConfiguration)
+							if (ConfigManager.MissingAnyConfiguration)
 							{
 								var createButton = new Button(() =>
 						   {
-								 Open();
-								 SettingsService.NotifySettingsProviderChanged();
-							 })
+							   Open();
+							   SettingsService.NotifySettingsProviderChanged();
+						   })
 								{
 									text = "Create Beamable Config Files"
 								};
@@ -72,8 +72,8 @@ namespace Beamable.Editor.Config
 						}
 						catch (Exception)
 						{
-					   // try to reset the assets.
-					   AssetDatabase.Refresh();
+							// try to reset the assets.
+							AssetDatabase.Refresh();
 						}
 					},
 					keywords = new HashSet<string>(new[] { "Beamable" })
@@ -102,12 +102,12 @@ namespace Beamable.Editor.Config
 					{
 						activateHandler = (searchContext, rootElement) =>
 					{
-						  options = ConfigManager.GenerateOptions(config);
-						  var scroller = new ScrollView();
-						  rootElement.AddStyleSheet($"{ConfigWindowConstants.BASE_PATH}/ConfigWindow.uss");
-						  rootElement.Add(scroller);
-						  ConfigWindow.CreateFields(scroller, null, options, false);
-					  },
+						options = ConfigManager.GenerateOptions(config);
+						var scroller = new ScrollView();
+						rootElement.AddStyleSheet($"{ConfigWindowConstants.BASE_PATH}/ConfigWindow.uss");
+						rootElement.Add(scroller);
+						ConfigWindow.CreateFields(scroller, null, options, false);
+					},
 
 						keywords = new HashSet<string>(options.Select(o => o.Name))
 					};

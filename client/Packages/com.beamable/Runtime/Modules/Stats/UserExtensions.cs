@@ -51,9 +51,9 @@ namespace Beamable.Stats
 			{
 				return de.StatsService.GetStats("client", statObject.Access.GetString(), "player", user.id).Map(all =>
 			 {
-				   all.TryGetValue(statObject.StatKey, out var result);
-				   return result;
-			   });
+				 all.TryGetValue(statObject.StatKey, out var result);
+				 return result;
+			 });
 			});
 		}
 
@@ -63,18 +63,18 @@ namespace Beamable.Stats
 			{
 				return de.StatsService.GetStats("client", access.GetString(), "player", user.id).Map(all =>
 			 {
-				   var output = new Dictionary<string, string>();
-				   for (var i = 0; i < stats.Length; i++)
-				   {
-					   if (string.IsNullOrEmpty(stats[i])) continue;
-					   if (all.TryGetValue(stats[i], out var result))
-					   {
-						   output[stats[i]] = result;
-					   }
-				   }
+				 var output = new Dictionary<string, string>();
+				 for (var i = 0; i < stats.Length; i++)
+				 {
+					 if (string.IsNullOrEmpty(stats[i])) continue;
+					 if (all.TryGetValue(stats[i], out var result))
+					 {
+						 output[stats[i]] = result;
+					 }
+				 }
 
-				   return output;
-			   });
+				 return output;
+			 });
 			});
 		}
 

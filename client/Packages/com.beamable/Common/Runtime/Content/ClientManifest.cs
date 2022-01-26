@@ -52,14 +52,14 @@ namespace Beamable.Common.Content
 				if (parts.Length <= 1)
 				{
 					return null; // skip line.
-			 }
+				}
 				return new ClientContentInfo()
 				{
 					type = parts[0].Trim(),
 					contentId = parts[1].Trim(),
 					version = parts[2].Trim(),
 					visibility = ContentVisibility.Public, // the csv content is always public.
-				 uri = parts[3].Trim(),
+					uri = parts[3].Trim(),
 					tags = parts.Length >= 5
 				   ? parts[4].Trim().Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
 				   : new string[] { }

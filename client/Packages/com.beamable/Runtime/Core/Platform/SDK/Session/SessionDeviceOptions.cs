@@ -128,9 +128,9 @@ namespace Beamable.Api.Sessions
 #if UNITY_IOS
             return args.advertisingId;
 #else
-			 return "";
+				return "";
 #endif
-		 };
+			};
 		}
 
 		public IosDeviceGenerationProperty IosDeviceGeneration;
@@ -143,9 +143,9 @@ namespace Beamable.Api.Sessions
 #if UNITY_IOS
             return UnityEngine.iOS.Device.generation.ToString();
 #else
-			 return "";
+				return "";
 #endif
-		 };
+			};
 		}
 
 		public IosSystemVersionProperty IosSystemVersion;
@@ -158,9 +158,9 @@ namespace Beamable.Api.Sessions
 #if UNITY_IOS
             return UnityEngine.iOS.Device.systemVersion.ToString();
 #else
-			 return "";
+				return "";
 #endif
-		 };
+			};
 		}
 
 		public GaidProperty Gaid;
@@ -174,9 +174,9 @@ namespace Beamable.Api.Sessions
 #if UNITY_ANDROID
             return args.advertisingId;
 #else
-			 return "";
+				return "";
 #endif
-		 };
+			};
 		}
 
 		[Serializable]
@@ -190,9 +190,9 @@ namespace Beamable.Api.Sessions
 #if USE_STEAMWORKS
             return "Steam";
 #else
-			 return SystemInfo.operatingSystem.ToString();
+				return SystemInfo.operatingSystem.ToString();
 #endif
-		 };
+			};
 		}
 	}
 

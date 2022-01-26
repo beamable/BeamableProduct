@@ -92,8 +92,8 @@ namespace Beamable.Editor.Login.UI.Components
 				{
 					_projectListView.Query<RealmVisualElement>().Build().ToList().ForEach(element =>
 				{
-					   element.RemoveFromClassList("highLight");
-				   });
+					element.RemoveFromClassList("highLight");
+				});
 					realmVisualElement.AddToClassList("highLight");
 					SelectGame(selectedGame, realmVisualElement);
 

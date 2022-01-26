@@ -216,16 +216,16 @@ namespace Beamable.AccountManagement
 
 				Promise.Sequence(allAccountPromises).Then(set =>
 			 {
-				   SetButtonsForUser(_user);
-				   TogglePromotion();
-				   foreach (var accountPromise in set)
-				   {
-					   accountPromise.Apply();
-				   }
+				 SetButtonsForUser(_user);
+				 TogglePromotion();
+				 foreach (var accountPromise in set)
+				 {
+					 accountPromise.Apply();
+				 }
 
-				// LOADING IS FINALLY TOTALLY DONE.
-				entireLoadingSession.CompleteSuccess(PromiseBase.Unit);
-			   });
+				 // LOADING IS FINALLY TOTALLY DONE.
+				 entireLoadingSession.CompleteSuccess(PromiseBase.Unit);
+			 });
 			});
 		}
 

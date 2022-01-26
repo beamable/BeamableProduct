@@ -38,17 +38,17 @@ namespace Beamable.Editor.Content
 			{
 				return new Func<Promise<Tuple<ContentObject, string>>>(() => FetchContentFromCDN(operation.Uri).Map(response =>
 			 {
-				   var contentType = ContentRegistry.GetTypeFromId(operation.ContentId);
+				 var contentType = ContentRegistry.GetTypeFromId(operation.ContentId);
 
-				   var newAsset = serializer.DeserializeByType(response, contentType);
-				   newAsset.Tags = operation.Tags;
+				 var newAsset = serializer.DeserializeByType(response, contentType);
+				 newAsset.Tags = operation.Tags;
 
-				   completed += 1;
-				   progressCallback?.Invoke(completed / totalOperations, (int)completed, totalOperations);
+				 completed += 1;
+				 progressCallback?.Invoke(completed / totalOperations, (int)completed, totalOperations);
 
-				   return new Tuple<ContentObject, string>(newAsset, operation.AssetPath);
+				 return new Tuple<ContentObject, string>(newAsset, operation.AssetPath);
 
-			   }));
+			 }));
 			}).ToList();
 
 			var downloadPromises = new Promise<Unit>();

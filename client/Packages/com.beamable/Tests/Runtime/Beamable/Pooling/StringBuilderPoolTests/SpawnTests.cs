@@ -30,8 +30,8 @@ namespace Beamable.Tests.Runtime.Pooling.StringBuilderPoolTests
 						{
 							using (var _ = StringBuilderPool.StaticPool.Spawn())
 							{
-							// do nothing...
-							Thread.Sleep(1);
+								// do nothing...
+								Thread.Sleep(1);
 							}
 						}
 					}

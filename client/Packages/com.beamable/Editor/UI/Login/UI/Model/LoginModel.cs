@@ -127,9 +127,9 @@ namespace Beamable.Editor.Login.UI.Model
 
 				b.RealmService.GetGames().Then(games =>
 			 {
-				   Games = games;
-				   OnGamesUpdated?.Invoke(games);
-			   });
+				 Games = games;
+				 OnGamesUpdated?.Invoke(games);
+			 });
 
 				if (b.HasToken)
 				{

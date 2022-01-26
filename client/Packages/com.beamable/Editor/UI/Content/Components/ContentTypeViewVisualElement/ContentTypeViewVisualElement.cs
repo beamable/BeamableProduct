@@ -93,9 +93,9 @@ namespace Beamable.Editor.Content.Components
 		{
 			IMGUIContainer treeView = new IMGUIContainer(() =>
 			{
-			 // Tree view - Re-render every frame
-			 Rect rect = GUILayoutUtility.GetRect(200, 200,
-				treeViewIMGUI.GetCalculatedHeight(), treeViewIMGUI.GetCalculatedHeight());
+				// Tree view - Re-render every frame
+				Rect rect = GUILayoutUtility.GetRect(200, 200,
+				   treeViewIMGUI.GetCalculatedHeight(), treeViewIMGUI.GetCalculatedHeight());
 
 				_treeViewIMGUI.OnGUI(rect);
 

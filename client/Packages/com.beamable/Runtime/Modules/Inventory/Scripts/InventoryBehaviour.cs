@@ -30,11 +30,11 @@ namespace Beamable.Inventory.Scripts
 			{
 				if (this == null) return; // unity lifecycle check.
 
-			 Group.ItemRef.Resolve().Then(content =>
-			 {
-				   _content = content;
-				   _subscription = de.InventoryService.Subscribe(content.Id, HandleInventory);
-			   });
+				Group.ItemRef.Resolve().Then(content =>
+				{
+					_content = content;
+					_subscription = de.InventoryService.Subscribe(content.Id, HandleInventory);
+				});
 			});
 		}
 
