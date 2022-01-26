@@ -179,7 +179,7 @@ namespace Beamable.Editor.UI.Components
 				if (keys.Contains(key)) continue;
 				var baseType = BussStyle.GetBaseType(key);
 				var data = SerializableValueImplementationHelper.Get(baseType);
-				var types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract);
+				var types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract && t != typeof(FractionFloatBussProperty));
 				foreach (Type type in types)
 				{
 					var label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
