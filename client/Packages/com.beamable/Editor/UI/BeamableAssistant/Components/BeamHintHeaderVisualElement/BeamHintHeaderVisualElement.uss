@@ -89,7 +89,7 @@
 Toggle#moreDetailsButton > #Checkmark,
 Toggle#moreDetailsButton > VisualElement >  #unity-checkmark{    
     position: absolute;
-    left: 100000;
+    left: 100000px;
     visibility: hidden;
 }
 
