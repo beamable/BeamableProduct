@@ -1,70 +1,85 @@
 ﻿using System;
 using UnityEngine;
 
-namespace Beamable.UI.Buss {
-    [Serializable]
-    public class FloatBussProperty : IFloatBussProperty, IFloatFromFloatBussProperty {
-        [SerializeField]
-        private float _floatValue;
-        
-        public float FloatValue {
-            get => _floatValue;
-            set => _floatValue = value;
-        }
+namespace Beamable.UI.Buss
+{
+	[Serializable]
+	public class FloatBussProperty : IFloatBussProperty, IFloatFromFloatBussProperty
+	{
+		[SerializeField]
+		private float _floatValue;
 
-        public FloatBussProperty() { }
+		public float FloatValue
+		{
+			get => _floatValue;
+			set => _floatValue = value;
+		}
 
-        public FloatBussProperty(float floatValue) {
-            _floatValue = floatValue;
-        }
+		public FloatBussProperty() { }
 
-        public float GetFloatValue(float input) => FloatValue;
-        public IBussProperty CopyProperty() {
-            return new FloatBussProperty(FloatValue);
-        }
+		public FloatBussProperty(float floatValue)
+		{
+			_floatValue = floatValue;
+		}
 
-        public IBussProperty Interpolate(IBussProperty other, float value) {
-            if (other is IFloatBussProperty fl) {
-                return new FloatBussProperty(Mathf.Lerp(FloatValue, fl.FloatValue, value));
-            }
+		public float GetFloatValue(float input) => FloatValue;
+		public IBussProperty CopyProperty()
+		{
+			return new FloatBussProperty(FloatValue);
+		}
 
-            if (other is FractionFloatBussProperty frac) {
-                return new FractionFloatBussProperty(Mathf.Lerp(0f, frac.Fraction, value), Mathf.Lerp(FloatValue, frac.Offset, value));
-            }
+		public IBussProperty Interpolate(IBussProperty other, float value)
+		{
+			if (other is IFloatBussProperty fl)
+			{
+				return new FloatBussProperty(Mathf.Lerp(FloatValue, fl.FloatValue, value));
+			}
 
-            return CopyProperty();
-        }
-    }
+			if (other is FractionFloatBussProperty frac)
+			{
+				return new FractionFloatBussProperty(Mathf.Lerp(0f, frac.Fraction, value), Mathf.Lerp(FloatValue, frac.Offset, value));
+			}
 
-    [Serializable]
-    public class FractionFloatBussProperty : IFloatFromFloatBussProperty {
-        public float Fraction;
-        public float Offset;
-        public FractionFloatBussProperty() { }
+			return CopyProperty();
+		}
+	}
 
-        public FractionFloatBussProperty(float fraction, float offset) {
-            Fraction = fraction;
-            Offset = offset;
-        }
+	[Serializable]
+	public class FractionFloatBussProperty : IFloatFromFloatBussProperty
+	{
+		public float Fraction;
+		public float Offset;
+		public FractionFloatBussProperty() { }
 
-        public float GetFloatValue(float input) {
-            return input * Fraction + Offset;
-        }
+		public FractionFloatBussProperty(float fraction, float offset)
+		{
+			Fraction = fraction;
+			Offset = offset;
+		}
 
-        public IBussProperty CopyProperty() {
-            return new FractionFloatBussProperty(Fraction, Offset);
-        }
+		public float GetFloatValue(float input)
+		{
+			return input * Fraction + Offset;
+		}
 
-        public IBussProperty Interpolate(IBussProperty other, float value) {
-            if (other is IFloatBussProperty fp) {
-                return new FractionFloatBussProperty(Mathf.Lerp(Fraction, 0f, value), Mathf.Lerp(Offset, fp.FloatValue, value));
-            }
+		public IBussProperty CopyProperty()
+		{
+			return new FractionFloatBussProperty(Fraction, Offset);
+		}
 
-            if (other is FractionFloatBussProperty frac) {
-                return new FractionFloatBussProperty(Mathf.Lerp(Fraction, frac.Fraction, value), Mathf.Lerp(Offset, frac.Offset, value));
-            }
+		public IBussProperty Interpolate(IBussProperty other, float value)
+		{
+			if (other is IFloatBussProperty fp)
+			{
+				return new FractionFloatBussProperty(Mathf.Lerp(Fraction, 0f, value), Mathf.Lerp(Offset, fp.FloatValue, value));
+			}
 
-            return CopyProperty();
-        }
-    }
+			if (other is FractionFloatBussProperty frac)
+			{
+				return new FractionFloatBussProperty(Mathf.Lerp(Fraction, frac.Fraction, value), Mathf.Lerp(Offset, frac.Offset, value));
+			}
+
+			return CopyProperty();
+		}
+	}
 }

@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Beamable.UI.Tweening;
+using System;
 using System.Collections.Generic;
-using Beamable.UI.Tweening;
 using UnityEngine;
 
 namespace Beamable.UI.Buss
@@ -10,8 +10,10 @@ namespace Beamable.UI.Buss
 		private Action _styleAnimatedAction;
 		private Dictionary<string, BussPseudoStyle> PseudoStyles { get; set; }
 
-		public IBussProperty this[string key] {
-			get {
+		public IBussProperty this[string key]
+		{
+			get
+			{
 				if (_properties.TryGetValue(key, out var property))
 				{
 					return property;
@@ -20,13 +22,16 @@ namespace Beamable.UI.Buss
 				return null;
 			}
 
-			set {
+			set
+			{
 				_properties[key] = value;
 			}
 		}
 
-		public IBussProperty this[string pseudoClass, string key] {
-			get {
+		public IBussProperty this[string pseudoClass, string key]
+		{
+			get
+			{
 				if (PseudoStyles != null && PseudoStyles.TryGetValue(pseudoClass, out var pseudoStyle))
 				{
 					return pseudoStyle[key];
@@ -35,7 +40,8 @@ namespace Beamable.UI.Buss
 				return null;
 			}
 
-			set {
+			set
+			{
 				if (PseudoStyles == null)
 				{
 					PseudoStyles = new Dictionary<string, BussPseudoStyle>();
@@ -52,7 +58,7 @@ namespace Beamable.UI.Buss
 
 		public static IEnumerable<string> Keys => _bindings.Keys;
 
-        public static bool IsKeyValid(string key) => _bindings.ContainsKey(key);
+		public static bool IsKeyValid(string key) => _bindings.ContainsKey(key);
 
 		public static Type GetBaseType(string key)
 		{
@@ -105,11 +111,13 @@ namespace Beamable.UI.Buss
 					var easing = TransitionEasing.Get(this).Enum;
 					if (style.Tween == null)
 					{
-						style.Tween = new FloatTween(t => {
+						style.Tween = new FloatTween(t =>
+						{
 							style.BlendValue = t;
 							OnStyleAnimated();
 						});
-						style.Tween.CompleteEvent += () => {
+						style.Tween.CompleteEvent += () =>
+						{
 							style.Enabled = style.BlendValue > .5f;
 							OnStyleAnimated();
 						};

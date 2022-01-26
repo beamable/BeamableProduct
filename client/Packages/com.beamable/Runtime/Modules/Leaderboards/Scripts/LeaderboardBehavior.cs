@@ -1,28 +1,33 @@
-﻿using System.Collections;
-using Beamable.Common.Leaderboards;
+﻿using Beamable.Common.Leaderboards;
 using Beamable.Content;
 using Beamable.UI.Scripts;
+using System.Collections;
 using UnityEngine;
 
-namespace Beamable.Leaderboards {
+namespace Beamable.Leaderboards
+{
 
 
-   [HelpURL(BeamableConstants.URL_FEATURE_LEADERBOARD_FLOW)]
-   public class LeaderboardBehavior : MonoBehaviour {
+	[HelpURL(BeamableConstants.URL_FEATURE_LEADERBOARD_FLOW)]
+	public class LeaderboardBehavior : MonoBehaviour
+	{
 
-        public MenuManagementBehaviour MenuManager;
-        public LeaderboardRef Leaderboard;
+		public MenuManagementBehaviour MenuManager;
+		public LeaderboardRef Leaderboard;
 
-        public void Toggle(bool leaderboardDesiredState) {
+		public void Toggle(bool leaderboardDesiredState)
+		{
 
-            if (!leaderboardDesiredState && MenuManager.IsOpen){
+			if (!leaderboardDesiredState && MenuManager.IsOpen)
+			{
 
-                MenuManager.CloseAll();
-            }
-            else if (leaderboardDesiredState && !MenuManager.IsOpen){
+				MenuManager.CloseAll();
+			}
+			else if (leaderboardDesiredState && !MenuManager.IsOpen)
+			{
 
-                MenuManager.Show<LeaderboardMainMenu>();
-            }
-        }
-    }
+				MenuManager.Show<LeaderboardMainMenu>();
+			}
+		}
+	}
 }

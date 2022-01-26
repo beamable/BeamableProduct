@@ -1,10 +1,11 @@
-﻿using UnityEngine;
+﻿using Beamable.Coroutines;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Beamable.Coroutines;
+using UnityEngine;
 
-namespace Beamable.Api.Analytics.Batch {
+namespace Beamable.Api.Analytics.Batch
+{
 
 	/// <summary>
 	/// Batch manager.
@@ -48,19 +49,21 @@ namespace Beamable.Api.Analytics.Batch {
 			_batchTimeoutSeconds = batchTimeoutSeconds;
 			SetHeartbeat(heartbeatInterval);
 
-			RotateBatch ();
+			RotateBatch();
 		}
 
 		/// <summary>
 		/// Start this batch's lifecycle processing
 		/// This starts a coroutine which executs a Heartbeat at a regular interval
 		/// </summary>
-		public void Start() {
-			if (!_isActive) {
+		public void Start()
+		{
+			if (!_isActive)
+			{
 				// Start checking periodically
 				_isActive = true;
 				_heatbeatCoroutine = Heartbeat();
-				_coroutineService.StartCoroutine (_heatbeatCoroutine);
+				_coroutineService.StartCoroutine(_heatbeatCoroutine);
 				OnStart();
 			}
 		}
@@ -69,10 +72,12 @@ namespace Beamable.Api.Analytics.Batch {
 		/// Stop this batch's lifecycle processing
 		/// This means the Heartbeat will cease to execute
 		/// </summary>
-		public void Stop() {
-			if (_isActive) {
+		public void Stop()
+		{
+			if (_isActive)
+			{
 				_isActive = false;
-				_coroutineService.StopCoroutine (_heatbeatCoroutine);
+				_coroutineService.StopCoroutine(_heatbeatCoroutine);
 				_heatbeatCoroutine = null;
 			}
 		}
@@ -92,7 +97,7 @@ namespace Beamable.Api.Analytics.Batch {
 		/// <param name="item">Item.</param>
 		virtual public void Add(T item)
 		{
-			_currentBatch.Add (item);
+			_currentBatch.Add(item);
 		}
 
 		/// <summary>
@@ -101,14 +106,15 @@ namespace Beamable.Api.Analytics.Batch {
 		/// </summary>
 		virtual public void Flush()
 		{
-			_currentBatch.Expire ();
+			_currentBatch.Expire();
 		}
 
 		/// <summary>
 		/// Sets the batch's capacity threshold before expiration.
 		/// </summary>
 		/// <param name="batchCapacity">Batch capacity.</param>
-		public void SetCapacity (int batchCapacity) {
+		public void SetCapacity(int batchCapacity)
+		{
 			_batchCapacity = batchCapacity;
 		}
 
@@ -148,10 +154,10 @@ namespace Beamable.Api.Analytics.Batch {
 		/// <param name="batchItems">Batch items.</param>
 		protected void OnExpired(List<T> batchItems)
 		{
-			RotateBatch ();
+			RotateBatch();
 
 			if (OnBatchExpired != null)
-				OnBatchExpired (batchItems);
+				OnBatchExpired(batchItems);
 		}
 
 		/// <summary>
@@ -163,11 +169,11 @@ namespace Beamable.Api.Analytics.Batch {
 			{
 				var timestampSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
-				bool capacityExceeded =  _currentBatch.Count >= _currentBatch.Capacity;
+				bool capacityExceeded = _currentBatch.Count >= _currentBatch.Capacity;
 				bool timeoutExceeded = timestampSeconds > _currentBatch.ExpiresTimestamp;
 
 				if (capacityExceeded || timeoutExceeded)
-					_currentBatch.Expire ();
+					_currentBatch.Expire();
 			}
 		}
 
@@ -176,7 +182,7 @@ namespace Beamable.Api.Analytics.Batch {
 		/// </summary>
 		virtual protected void OnHeartbeat()
 		{
-			CheckBatchExpired ();
+			CheckBatchExpired();
 		}
 
 		/// <summary>
@@ -185,13 +191,14 @@ namespace Beamable.Api.Analytics.Batch {
 		/// </summary>
 		IEnumerator Heartbeat()
 		{
-			while (_isActive) {
-				OnHeartbeat ();
+			while (_isActive)
+			{
+				OnHeartbeat();
 				yield return _heartbeatInterval;
 			}
 		}
 
-		virtual protected void OnStart ()
+		virtual protected void OnStart()
 		{
 
 		}

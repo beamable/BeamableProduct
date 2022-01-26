@@ -10,7 +10,7 @@ namespace Beamable.Modules.Leaderboards
 	{
 		public static RankEntry GenerateCurrentUserRankEntryTestData(string statKey, string statDefaultValue)
 		{
-			RankEntryStat[] stats = {new RankEntryStat {name = statKey, value = statDefaultValue}};
+			RankEntryStat[] stats = { new RankEntryStat { name = statKey, value = statDefaultValue } };
 
 			return new RankEntry
 			{
@@ -22,10 +22,10 @@ namespace Beamable.Modules.Leaderboards
 		}
 
 		public static Promise<List<RankEntry>> GetTestData(int firstEntryId,
-		                                                   int lastEntryId,
-		                                                   RankEntry currentUserRankEntry,
-		                                                   string statKey,
-		                                                   string defaultValue)
+														   int lastEntryId,
+														   RankEntry currentUserRankEntry,
+														   string statKey,
+														   string defaultValue)
 		{
 			List<RankEntry> rankEntries =
 				GenerateLeaderboardsTestData(firstEntryId, lastEntryId, currentUserRankEntry, statKey, defaultValue);
@@ -37,10 +37,10 @@ namespace Beamable.Modules.Leaderboards
 		}
 
 		public static List<RankEntry> GenerateLeaderboardsTestData(int firstId,
-		                                                            int lastId,
-		                                                            RankEntry currentUserEntry,
-		                                                            string statKey,
-		                                                            string statDefaultValue)
+																	int lastId,
+																	RankEntry currentUserEntry,
+																	string statKey,
+																	string statDefaultValue)
 		{
 			List<RankEntry> entries = new List<RankEntry>();
 
