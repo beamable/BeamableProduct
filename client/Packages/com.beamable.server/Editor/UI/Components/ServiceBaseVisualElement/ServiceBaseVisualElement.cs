@@ -67,6 +67,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Model.OnStart -= SetupProgressBarForStart;
 			Model.OnStop -= SetupProgressBarForStop;
 			Model.OnLogsAttachmentChanged -= CreateLogSection;
+
+			if (Model.Builder == null) return;
+
 			Model.Builder.OnIsRunningChanged -= HandleIsRunningChanged;
 		}
 		public override void Refresh()

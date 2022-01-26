@@ -110,6 +110,13 @@ namespace Beamable.Editor.Microservice.UI
 
 		void SetForContent()
 		{
+			// if null, close the window --- exists to handle the re-import all case.
+			if (BeamEditor.CoreConfiguration == null)
+			{
+				Close();
+				return;
+			}
+
 			var root = this.GetRootVisualContainer();
 			root.Clear();
 
@@ -189,10 +196,11 @@ namespace Beamable.Editor.Microservice.UI
 			_actionBarVisualElement.OnBuildAllClicked += () =>
 				_microserviceContentVisualElement.BuildAllMicroservices(_loadingBar);
 
-			Microservices.OnDeploySuccess -= HandleDeploySuccess;
-			Microservices.OnDeploySuccess += HandleDeploySuccess;
-			Microservices.OnDeployFailed -= HandleDeployFailed;
-			Microservices.OnDeployFailed += HandleDeployFailed;
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			serviceRegistry.OnDeploySuccess -= HandleDeploySuccess;
+			serviceRegistry.OnDeploySuccess += HandleDeploySuccess;
+			serviceRegistry.OnDeployFailed -= HandleDeployFailed;
+			serviceRegistry.OnDeployFailed += HandleDeployFailed;
 		}
 
 		private void HandleDisplayFilterSelected(ServicesDisplayFilter filter)

@@ -3,9 +3,11 @@ using Beamable.Common.Assistant;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
 using Beamable.Config;
+using Beamable.Editor;
 using Beamable.Editor.Assistant;
 using Beamable.Editor.Reflection;
 using Beamable.Reflection;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -36,6 +38,13 @@ namespace Beamable
 			{
 				coreConfiguration = CoreConfiguration = AssetDatabase.LoadAssetAtPath<CoreConfiguration>("Packages/com.beamable/Editor/Config/CoreConfiguration.asset");
 			}
+
+			// This is needed ONLY for the Re-Import All case. When a re-import all happens, the first time this is InitializeOnLoad --- the AssetDatabase fails to find the CoreConfiguration object.
+			// There's not really a lot of ways we can avoid get around this.
+			// This means CANNOT have an internal guarantee that BeamEditor is always fully initialized --- which means, we need to null-check the stuff we get from BeamEditor 😭
+			// TODO: Maybe we can talk to Unity about this and hope that by Unity 2027 LTS we get an InitializeOnLoadAfterAssets callback 🤷‍ or something.
+			if (coreConfiguration == null)
+				return;
 
 			// Ensures we have the latest assembly definitions and paths are all correctly setup.
 			coreConfiguration.OnValidate();
@@ -127,13 +136,18 @@ namespace Beamable
 			}
 		}
 
-		public static T GetReflectionSystem<T>() where T : IReflectionSystem => EditorReflectionCache.GetFirstSystemOfType<T>();
+		public static T GetReflectionSystem<T>() where T : IReflectionSystem => EditorReflectionCache == null ? default : EditorReflectionCache.GetFirstSystemOfType<T>();
 
 		[System.Diagnostics.Conditional("UNITY_EDITOR")]
 		// ReSharper disable once RedundantAssignment
 		public static void GetBeamHintSystem<T>(ref T foundProvider) where T : IBeamHintSystem
 		{
-			foundProvider = GetReflectionSystem<BeamHintReflectionCache.Registry>().GloballyAccessibleHintSystems.Where(a => a is T).Cast<T>().FirstOrDefault();
+			var hintReflectionSystem = GetReflectionSystem<BeamHintReflectionCache.Registry>();
+
+			if (hintReflectionSystem == null)
+				foundProvider = default;
+			else
+				foundProvider = hintReflectionSystem.GloballyAccessibleHintSystems.Where(a => a is T).Cast<T>().FirstOrDefault();
 		}
 
 		[RegisterBeamableDependencies(), System.Diagnostics.Conditional("UNITY_EDITOR")]
