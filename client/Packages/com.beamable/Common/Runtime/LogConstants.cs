@@ -9,5 +9,6 @@
         public const string REGISTERING_CUSTOM_SERVICES = "Registering custom services";
         public const string SERVICE_PROVIDER_INITIALIZED = "Service provider initialized";
         public const string EVENT_PROVIDER_INITIALIZED = "Event provider initialized";
-    }
+		public const string STORAGE_READY = "Waiting for connections";
+	}
 }
