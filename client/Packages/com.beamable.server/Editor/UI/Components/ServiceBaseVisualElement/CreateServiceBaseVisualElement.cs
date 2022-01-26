@@ -24,11 +24,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 		}
 
-		protected abstract ServiceType ServiceType { get; }
 		protected abstract string NewServiceName { get; set; }
 		protected abstract string ScriptName { get; }
 
 		public event Action OnCreateServiceClicked;
+
+		protected ServiceCreateDependentService _serviceCreateDependentService;
 
 		private const int MAX_NAME_LENGTH = 28;
 		private bool _canCreateService;
@@ -43,7 +44,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private VisualElement _rootVisualElement;
 
 		private bool _isServiceNameConfirmed;
-		private ServiceCreateDependentService _serviceCreateDependentService;
 
 		public override void Refresh()
 		{
@@ -101,8 +101,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_isServiceNameConfirmed = true;
 			_nameTextField.SetEnabled(false);
 
-			if ((ServiceType == ServiceType.MicroService && MicroservicesDataModel.Instance.Storages.Count == 0) ||
-					(ServiceType == ServiceType.StorageObject && MicroservicesDataModel.Instance.Services.Count == 0))
+			if (!ShouldShowCreateDependentService)
 			{
 				HandleContinueButtonClicked();
 				return;
@@ -118,12 +117,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			_serviceCreateDependentService = new ServiceCreateDependentService();
 			_serviceCreateDependentService.Refresh();
-
-			if (ServiceType == ServiceType.MicroService)
-				_serviceCreateDependentService.Init(MicroservicesDataModel.Instance.Storages, "StorageObjects");
-			else
-				_serviceCreateDependentService.Init(MicroservicesDataModel.Instance.Services, "MicroServices");
-
+			InitCreateDependentService();
 			_rootVisualElement.Add(_serviceCreateDependentService);
 		}
 
@@ -136,6 +130,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 
 		protected abstract void CreateService(string serviceName, List<ServiceModelBase> additionalReferences = null);
+		protected abstract void InitCreateDependentService();
+		protected abstract bool ShouldShowCreateDependentService { get; }
+		
 		private void HandeMouseDownEvent(MouseDownEvent evt)
 		{
 			RenameGestureBegin();

@@ -89,7 +89,6 @@ namespace Beamable.Server.Editor
 		public static void CreateNewServiceFile(ServiceType serviceType, string serviceName, List<ServiceModelBase> additionalReferences = null)
 		{
 			AssetDatabase.StartAssetEditing();
-			string asmName = string.Empty;
 			try
 			{
 				if (string.IsNullOrWhiteSpace(serviceName))
@@ -107,10 +106,9 @@ namespace Beamable.Server.Editor
 													  serviceCreateInfo.TemplateFileName);
 
 				Debug.Assert(File.Exists(scriptTemplatePath));
-
-
+				
 				// create the asmdef by hand.
-				asmName = serviceType == ServiceType.MicroService
+				var asmName = serviceType == ServiceType.MicroService
 					? $"Beamable.Microservice.{serviceName}"
 					: $"Beamable.Storage.{serviceName}";
 
@@ -161,9 +159,7 @@ namespace Beamable.Server.Editor
 									 destinationDirectory.FullName + $"/{serviceName}.cs");
 
 				CommonAreaService.EnsureCommon();
-			}
-			finally
-			{
+				
 				if (!string.IsNullOrWhiteSpace(asmName) && additionalReferences != null && additionalReferences.Count != 0)
 				{
 					foreach (var additionalReference in additionalReferences)
@@ -175,7 +171,9 @@ namespace Beamable.Server.Editor
 						}
 					}
 				}
-
+			}
+			finally
+			{
 				AssetDatabase.StopAssetEditing();
 			}
 
