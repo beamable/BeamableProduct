@@ -48,13 +48,13 @@ namespace Beamable.Editor {
             for (int i = 0; i < pathParts.Length; i++) {
 	            if (typeof(IEnumerable).IsAssignableFrom(parentType))
 	            {
-		            parentType = parentType.GetElementType() ?? parentType.GetGenericArguments()[0];
+		            parentType = parentType?.GetElementType() ?? parentType.GetGenericArguments()[0];
 		            i += 1;
 	            }
 	            else
 	            {
-		            fieldInfo = parentType.GetField(pathParts[i], BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-		            parentType = fieldInfo.FieldType;
+		            fieldInfo = parentType?.GetField(pathParts[i], BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+		            parentType = fieldInfo?.FieldType;
 	            }
             }
 
@@ -84,8 +84,8 @@ namespace Beamable.Editor {
 	            }
 	            else
 	            {
-		            var fieldInfo = parent.GetType().GetField(pathParts[i], BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-		            parent = fieldInfo.GetValue(parent);
+		            var fieldInfo = parent?.GetType().GetField(pathParts[i], BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+		            parent = fieldInfo?.GetValue(parent);
 	            }
             }
 
