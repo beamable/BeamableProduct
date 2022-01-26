@@ -13,10 +13,11 @@ namespace Beamable.Editor.UI.Model
 	{
 		public new static RemoteMicroserviceModel CreateNew(MicroserviceDescriptor descriptor, MicroservicesDataModel dataModel)
 		{
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			return new RemoteMicroserviceModel
 			{
 				ServiceDescriptor = descriptor,
-				ServiceBuilder = Microservices.GetServiceBuilder(descriptor),
+				ServiceBuilder = serviceRegistry.GetServiceBuilder(descriptor),
 				RemoteReference = dataModel.GetReference(descriptor),
 				RemoteStatus = dataModel.GetStatus(descriptor),
 				Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name)
