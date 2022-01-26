@@ -10,34 +10,34 @@ using UnityEngine.UI;
 namespace Beamable
 {
 
-    [ExecuteAlways]
-    public class BeamableDisplayModule : BeamableModule
-    {
+	[ExecuteAlways]
+	public class BeamableDisplayModule : BeamableModule
+	{
 #pragma warning disable CS0649
 		[HideInInspector] [SerializeField] private bool useThisCanvas;
-        [HideInInspector] [SerializeField] private Canvas canvas;
+		[HideInInspector] [SerializeField] private Canvas canvas;
 #pragma warning restore CS0649
 
 		public void SetVisible(bool visible = true)
-        {
-            if (useThisCanvas)
-            {
-                canvas.enabled = visible;
-            }
-            else
-            {
-                gameObject.SetActive(visible);
-            }
-        }
+		{
+			if (useThisCanvas)
+			{
+				canvas.enabled = visible;
+			}
+			else
+			{
+				gameObject.SetActive(visible);
+			}
+		}
 
-        void Awake()
-        {
-            CheckForCanvas();
-        }
+		void Awake()
+		{
+			CheckForCanvas();
+		}
 
-        [Conditional("UNITY_EDITOR")]
-        private void CheckForCanvas()
-        {
+		[Conditional("UNITY_EDITOR")]
+		private void CheckForCanvas()
+		{
 #if UNITY_EDITOR
             void StrechRectTransform(RectTransform t)
             {
@@ -78,6 +78,6 @@ namespace Beamable
                 EditorApplication.delayCall += () => StrechRectTransform(GetComponent<RectTransform>());
             }
 #endif
-        }
-    }
+		}
+	}
 }

@@ -1,5 +1,5 @@
-﻿using System;
-using Beamable.Editor.UI.Components;
+﻿using Beamable.Editor.UI.Components;
+using System;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -10,67 +10,67 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Buss.Components
 {
-    public class ConfirmationPopupVisualElement : BeamableVisualElement
-    {
-        private Label _bodyLabel;
-        private PrimaryButtonVisualElement _okButton;
-        private GenericButtonVisualElement _cancelButton;
+	public class ConfirmationPopupVisualElement : BeamableVisualElement
+	{
+		private Label _bodyLabel;
+		private PrimaryButtonVisualElement _okButton;
+		private GenericButtonVisualElement _cancelButton;
 
-        private readonly string _contentText;
-        private readonly Action _onConfirm;
-        private readonly Action _onClose;
-        private readonly bool _showCancelButton;
+		private readonly string _contentText;
+		private readonly Action _onConfirm;
+		private readonly Action _onClose;
+		private readonly bool _showCancelButton;
 
-        public ConfirmationPopupVisualElement(string contentText, Action onConfirm, Action onClose, bool showCancelButton = true) : base(
-            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(ConfirmationPopupVisualElement)}/{nameof(ConfirmationPopupVisualElement)}")
-        {
-            _contentText = contentText;
-            _onConfirm = onConfirm;
-            _onClose = onClose;
-            _showCancelButton = showCancelButton;
-        }
+		public ConfirmationPopupVisualElement(string contentText, Action onConfirm, Action onClose, bool showCancelButton = true) : base(
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(ConfirmationPopupVisualElement)}/{nameof(ConfirmationPopupVisualElement)}")
+		{
+			_contentText = contentText;
+			_onConfirm = onConfirm;
+			_onClose = onClose;
+			_showCancelButton = showCancelButton;
+		}
 
-        public override void Refresh()
-        {
-            base.Refresh();
+		public override void Refresh()
+		{
+			base.Refresh();
 
-            _bodyLabel = Root.Q<Label>("contentLabel");
-            _bodyLabel.text = _contentText;
+			_bodyLabel = Root.Q<Label>("contentLabel");
+			_bodyLabel.text = _contentText;
 
-            _okButton = Root.Q<PrimaryButtonVisualElement>("okButton");
-            _okButton.Button.clickable.clicked += HandleOkButtonClicked;
+			_okButton = Root.Q<PrimaryButtonVisualElement>("okButton");
+			_okButton.Button.clickable.clicked += HandleOkButtonClicked;
 
-            _cancelButton = Root.Q<GenericButtonVisualElement>("cancelButton");
+			_cancelButton = Root.Q<GenericButtonVisualElement>("cancelButton");
 
-            if (_showCancelButton)
-            {
-                _cancelButton.OnClick += HandleCancelButtonClicked;
-            }
-            else
-            {
-                _cancelButton.RemoveFromHierarchy();
-            }
-        }
+			if (_showCancelButton)
+			{
+				_cancelButton.OnClick += HandleCancelButtonClicked;
+			}
+			else
+			{
+				_cancelButton.RemoveFromHierarchy();
+			}
+		}
 
-        public void SetCancelButtonText(string text)
-        {
-            _cancelButton.SetText(text);
-        }
+		public void SetCancelButtonText(string text)
+		{
+			_cancelButton.SetText(text);
+		}
 
-        public void SetConfirmButtonText(string text)
-        {
-            _okButton.SetText(text);
-        }
+		public void SetConfirmButtonText(string text)
+		{
+			_okButton.SetText(text);
+		}
 
-        private void HandleOkButtonClicked()
-        {
-            _onConfirm?.Invoke();
-            _onClose?.Invoke();
-        }
+		private void HandleOkButtonClicked()
+		{
+			_onConfirm?.Invoke();
+			_onClose?.Invoke();
+		}
 
-        private void HandleCancelButtonClicked()
-        {
-            _onClose?.Invoke();
-        }
-    }
+		private void HandleCancelButtonClicked()
+		{
+			_onClose?.Invoke();
+		}
+	}
 }

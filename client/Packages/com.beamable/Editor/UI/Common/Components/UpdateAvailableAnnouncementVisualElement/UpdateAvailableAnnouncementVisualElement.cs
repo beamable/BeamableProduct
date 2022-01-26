@@ -12,43 +12,43 @@ using UnityEditor.UIElements;
 #endif
 namespace Beamable.Editor.Toolbox.Components
 {
-   public class UpdateAvailableAnnouncementVisualElement : BeamableVisualElement
-   {
-      public UpdateAvailableAnnouncementModel UpdateAvailableAnnouncementModel { get; set; }
-      public UpdateAvailableAnnouncementVisualElement() : base(
-         $"{BeamableComponentsConstants.COMP_PATH}/{nameof(UpdateAvailableAnnouncementVisualElement)}/{nameof(UpdateAvailableAnnouncementVisualElement)}")
-      {
-      }
+	public class UpdateAvailableAnnouncementVisualElement : BeamableVisualElement
+	{
+		public UpdateAvailableAnnouncementModel UpdateAvailableAnnouncementModel { get; set; }
+		public UpdateAvailableAnnouncementVisualElement() : base(
+		   $"{BeamableComponentsConstants.COMP_PATH}/{nameof(UpdateAvailableAnnouncementVisualElement)}/{nameof(UpdateAvailableAnnouncementVisualElement)}")
+		{
+		}
 
-      public override void Refresh()
-      {
-         base.Refresh();
-         
-         var titleLabel = Root.Q<Label>("announcement-title");
-         titleLabel.text = UpdateAvailableAnnouncementModel.TitleLabelText;
-         titleLabel.AddTextWrapStyle();
-         
-         var descriptionLabel = Root.Q<Label>("announcement-description");
-         descriptionLabel.text = UpdateAvailableAnnouncementModel.DescriptionLabelText;
-         descriptionLabel.AddTextWrapStyle();
-         
-         var ignoreButton = Root.Q<Button>("announcement-ignore");
-         ignoreButton.clickable.clicked += () => UpdateAvailableAnnouncementModel.OnIgnore?.Invoke();
-         
-         var whatsnewButton = Root.Q<Button>("announcement-whatsnew");
-         if (BeamablePackageUpdateMeta.IsBlogSiteAvailable)
-         {
-            whatsnewButton.text = UpdateAvailableAnnouncementModel.WhatsNewButtonText;
-            whatsnewButton.clickable.clicked += () => UpdateAvailableAnnouncementModel.OnWhatsNew?.Invoke();
-         }
-         else
-         {
-             whatsnewButton.RemoveFromHierarchy();
-         }
+		public override void Refresh()
+		{
+			base.Refresh();
 
-         var installButton = Root.Q<Button>("announcement-install");
-         installButton.text = UpdateAvailableAnnouncementModel.InstallButtonText;
-         installButton.clickable.clicked += () => UpdateAvailableAnnouncementModel.OnInstall?.Invoke();
-      }
-   }
+			var titleLabel = Root.Q<Label>("announcement-title");
+			titleLabel.text = UpdateAvailableAnnouncementModel.TitleLabelText;
+			titleLabel.AddTextWrapStyle();
+
+			var descriptionLabel = Root.Q<Label>("announcement-description");
+			descriptionLabel.text = UpdateAvailableAnnouncementModel.DescriptionLabelText;
+			descriptionLabel.AddTextWrapStyle();
+
+			var ignoreButton = Root.Q<Button>("announcement-ignore");
+			ignoreButton.clickable.clicked += () => UpdateAvailableAnnouncementModel.OnIgnore?.Invoke();
+
+			var whatsnewButton = Root.Q<Button>("announcement-whatsnew");
+			if (BeamablePackageUpdateMeta.IsBlogSiteAvailable)
+			{
+				whatsnewButton.text = UpdateAvailableAnnouncementModel.WhatsNewButtonText;
+				whatsnewButton.clickable.clicked += () => UpdateAvailableAnnouncementModel.OnWhatsNew?.Invoke();
+			}
+			else
+			{
+				whatsnewButton.RemoveFromHierarchy();
+			}
+
+			var installButton = Root.Q<Button>("announcement-install");
+			installButton.text = UpdateAvailableAnnouncementModel.InstallButtonText;
+			installButton.clickable.clicked += () => UpdateAvailableAnnouncementModel.OnInstall?.Invoke();
+		}
+	}
 }

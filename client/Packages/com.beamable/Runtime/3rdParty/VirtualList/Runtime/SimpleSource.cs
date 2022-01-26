@@ -26,56 +26,56 @@ using UnityEngine;
 
 namespace VirtualList
 {
-   // An interface used by the SimpleSource
-   public interface IViewFor<T>
-   {
-      void Set(T value);
-   }
+	// An interface used by the SimpleSource
+	public interface IViewFor<T>
+	{
+		void Set(T value);
+	}
 
-   // A simple data source backed by an IList (which can be an array)
-   public class SimpleSource<TData, TView> : IListSource
-      where TView : Component, IViewFor<TData>
-   {
-      protected IList<TData> _list;
+	// A simple data source backed by an IList (which can be an array)
+	public class SimpleSource<TData, TView> : IListSource
+	   where TView : Component, IViewFor<TData>
+	{
+		protected IList<TData> _list;
 
-      public SimpleSource(IList<TData> list)
-      {
-         _list = list;
-      }
+		public SimpleSource(IList<TData> list)
+		{
+			_list = list;
+		}
 
-      // Number of items
-      public int Count
-      {
-         get
-            {
-               if (_list != null)
-                  return _list.Count;
-               else
-                  return 0;
-            }
-      }
+		// Number of items
+		public int Count
+		{
+			get
+			{
+				if (_list != null)
+					return _list.Count;
+				else
+					return 0;
+			}
+		}
 
-      public virtual void SetItem(GameObject view, int index)
-      {
-         var element = _list[index];
-         var display = view.GetComponent<TView>();
-         display.Set(element);
-      }
-   }
+		public virtual void SetItem(GameObject view, int index)
+		{
+			var element = _list[index];
+			var display = view.GetComponent<TView>();
+			display.Set(element);
+		}
+	}
 
-   public class SimpleSourceWithPrefab<TData, TView> : SimpleSource<TData, TView>, IPrefabSource
-      where TView : Component, IViewFor<TData>
-   {
-      private readonly GameObject _prefab;
+	public class SimpleSourceWithPrefab<TData, TView> : SimpleSource<TData, TView>, IPrefabSource
+	   where TView : Component, IViewFor<TData>
+	{
+		private readonly GameObject _prefab;
 
-      public SimpleSourceWithPrefab(IList<TData> list, GameObject prefab) : base(list)
-      {
-         _prefab = prefab;
-      }
+		public SimpleSourceWithPrefab(IList<TData> list, GameObject prefab) : base(list)
+		{
+			_prefab = prefab;
+		}
 
-      public GameObject PrefabAt(int _index)
-      {
-         return _prefab;
-      }
-   }
+		public GameObject PrefabAt(int _index)
+		{
+			return _prefab;
+		}
+	}
 }

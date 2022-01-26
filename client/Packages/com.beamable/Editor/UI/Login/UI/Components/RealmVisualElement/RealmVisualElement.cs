@@ -1,7 +1,7 @@
-using System;
-using System.Linq;
 using Beamable.Editor.Login.UI.Components;
 using Beamable.Editor.Realms;
+using System;
+using System.Linq;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -13,45 +13,45 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Login.UI.Components
 {
-    public class RealmVisualElement : LoginBaseComponent
-    {
+	public class RealmVisualElement : LoginBaseComponent
+	{
 
-        public event Action<RealmView> OnSelected;
-        public RealmVisualElement() : base(nameof(RealmVisualElement))
-        {
-        }
+		public event Action<RealmView> OnSelected;
+		public RealmVisualElement() : base(nameof(RealmVisualElement))
+		{
+		}
 
-        public RealmView Realm;
-        private Button _clickableBackground;
+		public RealmView Realm;
+		private Button _clickableBackground;
 
-        public override void Refresh()
-        {
-            base.Refresh();
+		public override void Refresh()
+		{
+			base.Refresh();
 
-            _clickableBackground = Root.Q<Button>("clickableBackground");
-            // _clickableBackground.clickable.clicked += ToggleOnSelected;
-            _clickableBackground.clickable.clicked += () => OnSelected?.Invoke(Realm);
+			_clickableBackground = Root.Q<Button>("clickableBackground");
+			// _clickableBackground.clickable.clicked += ToggleOnSelected;
+			_clickableBackground.clickable.clicked += () => OnSelected?.Invoke(Realm);
 
-            Label realmNameLabel = Root.Q<Label>("realmName");
-            realmNameLabel.text = Realm.ProjectName;
+			Label realmNameLabel = Root.Q<Label>("realmName");
+			realmNameLabel.text = Realm.ProjectName;
 
-            Label pidLabel = Root.Q<Label>("pID");
-            pidLabel.text = Realm.Pid;
+			Label pidLabel = Root.Q<Label>("pID");
+			pidLabel.text = Realm.Pid;
 
-            VisualElement realmCard = Root.Q<VisualElement>("card");
-            //realmCard.Select() +=() => OnSelected?.Invoke(Realm);
-        }
+			VisualElement realmCard = Root.Q<VisualElement>("card");
+			//realmCard.Select() +=() => OnSelected?.Invoke(Realm);
+		}
 
-        // private void ToggleOnSelected()
-        // {
-        //     if (_selected)
-        //     {
-        //
-        //     }
-        //     else
-        //     {
-        //         _clickableBackground.AddToClassList("borderSelected");
-        //     }
-        // }
-    }
+		// private void ToggleOnSelected()
+		// {
+		//     if (_selected)
+		//     {
+		//
+		//     }
+		//     else
+		//     {
+		//         _clickableBackground.AddToClassList("borderSelected");
+		//     }
+		// }
+	}
 }

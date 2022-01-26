@@ -1,9 +1,9 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using Beamable.Content;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.Serialization;
@@ -11,49 +11,49 @@ using UnityEngine.Serialization;
 namespace Beamable.Common.Inventory
 {
 
-   /// <summary>
-   /// This type defines a %Beamable %ContentObject subclass for %Item related to the %InventoryService.
-   ///
-   /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-   ///
-   /// #### Related Links
-   /// - See Beamable.Common.Content.ContentObject script reference
-   /// - See Beamable.Api.Inventory.InventoryService script reference
-   ///
-   /// ![img beamable-logo]
-   ///
-   /// </summary>
-   [ContentType("items")]
-   [System.Serializable]
-   [Agnostic]
-   public class ItemContent : ContentObject
-   {
-      [Tooltip(ContentObject.TooltipIcon1)]
-      [FormerlySerializedAs("Icon")]
-      [ContentField("icon", FormerlySerializedAs = new[] {"Icon"})]
-      public AssetReferenceSprite icon;
+	/// <summary>
+	/// This type defines a %Beamable %ContentObject subclass for %Item related to the %InventoryService.
+	///
+	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
+	///
+	/// #### Related Links
+	/// - See Beamable.Common.Content.ContentObject script reference
+	/// - See Beamable.Api.Inventory.InventoryService script reference
+	///
+	/// ![img beamable-logo]
+	///
+	/// </summary>
+	[ContentType("items")]
+	[System.Serializable]
+	[Agnostic]
+	public class ItemContent : ContentObject
+	{
+		[Tooltip(ContentObject.TooltipIcon1)]
+		[FormerlySerializedAs("Icon")]
+		[ContentField("icon", FormerlySerializedAs = new[] { "Icon" })]
+		public AssetReferenceSprite icon;
 
-      [Tooltip(ContentObject.TooltipClientPermission1)]
-      public ClientPermissions clientPermission;
-   }
+		[Tooltip(ContentObject.TooltipClientPermission1)]
+		public ClientPermissions clientPermission;
+	}
 
-   [Serializable]
-   public class NewItem
-   {
-      [MustReferenceContent]
-      public ItemRef symbol;
-      public OptionalSerializableDictionaryStringToString properties;
-   }
+	[Serializable]
+	public class NewItem
+	{
+		[MustReferenceContent]
+		public ItemRef symbol;
+		public OptionalSerializableDictionaryStringToString properties;
+	}
 
-   [Serializable]
-   public class ListOfNewItems : DisplayableList<NewItem>
-   {
-      public List<NewItem> listData = new List<NewItem>();
+	[Serializable]
+	public class ListOfNewItems : DisplayableList<NewItem>
+	{
+		public List<NewItem> listData = new List<NewItem>();
 
-      protected override IList InternalList => listData;
-      public override string GetListPropertyPath() => nameof(listData);
-   }
+		protected override IList InternalList => listData;
+		public override string GetListPropertyPath() => nameof(listData);
+	}
 
-   [Serializable]
-   public class OptionalNewItemList : Optional<ListOfNewItems> {}
+	[Serializable]
+	public class OptionalNewItemList : Optional<ListOfNewItems> { }
 }

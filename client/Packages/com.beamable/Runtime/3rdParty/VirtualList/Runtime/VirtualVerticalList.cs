@@ -25,60 +25,60 @@ using UnityEngine;
 
 namespace VirtualList
 {
-   public class VirtualVerticalList : AbstractVirtualList
-   {
-      public RectOffset padding;
-      public float cellSize;
-      public float spacing;
+	public class VirtualVerticalList : AbstractVirtualList
+	{
+		public RectOffset padding;
+		public float cellSize;
+		public float spacing;
 
-      protected override void OnInvalidate()
-      {
-         RecalculateSize();
-      }
+		protected override void OnInvalidate()
+		{
+			RecalculateSize();
+		}
 
-      private void RecalculateSize()
-      {
-         int primary = ItemCount();
-         float size = padding.vertical + cellSize * primary + Mathf.Max(0, primary - 1) * spacing;
-         scrollRect.content.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, size);
-      }
+		private void RecalculateSize()
+		{
+			int primary = ItemCount();
+			float size = padding.vertical + cellSize * primary + Mathf.Max(0, primary - 1) * spacing;
+			scrollRect.content.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, size);
+		}
 
-      protected override void PositionCell(GameObject cell, int index)
-      {
-         var trans = cell.GetComponent<RectTransform>();
-         trans.SetParent(scrollRect.content, false);
+		protected override void PositionCell(GameObject cell, int index)
+		{
+			var trans = cell.GetComponent<RectTransform>();
+			trans.SetParent(scrollRect.content, false);
 
-         float primaryPos = index * (cellSize + spacing) + padding.top;
-         
-         trans.anchorMin = new Vector2(0, 1); // left-top
-         trans.anchorMax = new Vector2(1, 1); // right-top
-         trans.sizeDelta = new Vector2(-padding.horizontal, cellSize);
-         trans.pivot = new Vector2(0f, 1f); // anchor to top-left
-         trans.anchoredPosition = new Vector2(padding.left, -primaryPos);
-      }
+			float primaryPos = index * (cellSize + spacing) + padding.top;
 
-      protected override Vector2 CalculateRawIndices(Rect window)
-      {
-         var pos = window.position;
-         var size = window.size;
+			trans.anchorMin = new Vector2(0, 1); // left-top
+			trans.anchorMax = new Vector2(1, 1); // right-top
+			trans.sizeDelta = new Vector2(-padding.horizontal, cellSize);
+			trans.pivot = new Vector2(0f, 1f); // anchor to top-left
+			trans.anchoredPosition = new Vector2(padding.left, -primaryPos);
+		}
 
-         const int axis = 1;
-         float pad = padding.top;
-         float lowestPosVisible = pos[axis] - pad;
-         float highestPosVisible = pos[axis] + size[axis] + cellSize - pad;
-         float rowSize = cellSize + spacing;
+		protected override Vector2 CalculateRawIndices(Rect window)
+		{
+			var pos = window.position;
+			var size = window.size;
 
-         int min = (int)(lowestPosVisible / rowSize);
-         int max = (int)(highestPosVisible / rowSize);
-         return new Vector2(min, max);
-      }
+			const int axis = 1;
+			float pad = padding.top;
+			float lowestPosVisible = pos[axis] - pad;
+			float highestPosVisible = pos[axis] + size[axis] + cellSize - pad;
+			float rowSize = cellSize + spacing;
 
-      public override Vector2 GetCenteredScrollPosition(int index)
-      {
-         float primaryPos = index * (cellSize + spacing) + padding.top;
-         var rect = Viewport.rect;
-         float offset = primaryPos - ((rect.size.y - cellSize) * 0.5f);
-         return new Vector2(0, Mathf.Clamp(offset, 0, scrollRect.content.rect.size.y - rect.size.y));
-      }
-   }
+			int min = (int)(lowestPosVisible / rowSize);
+			int max = (int)(highestPosVisible / rowSize);
+			return new Vector2(min, max);
+		}
+
+		public override Vector2 GetCenteredScrollPosition(int index)
+		{
+			float primaryPos = index * (cellSize + spacing) + padding.top;
+			var rect = Viewport.rect;
+			float offset = primaryPos - ((rect.size.y - cellSize) * 0.5f);
+			return new Vector2(0, Mathf.Clamp(offset, 0, scrollRect.content.rect.size.y - rect.size.y));
+		}
+	}
 }

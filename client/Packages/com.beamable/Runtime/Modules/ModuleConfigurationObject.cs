@@ -1,42 +1,42 @@
+using Beamable.Common;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using Beamable.Common;
 using UnityEditor;
 using UnityEngine;
 
 namespace Beamable
 {
-   public interface IConfigurationConstants
-   {
+	public interface IConfigurationConstants
+	{
 
-      string GetSourcePath(Type type);
-   }
+		string GetSourcePath(Type type);
+	}
 
-   public class BeamableConfigurationConstants : IConfigurationConstants
-   {
-      private const string PACKAGE_EDITOR_DIR = "Packages/com.beamable/Editor/Config";
+	public class BeamableConfigurationConstants : IConfigurationConstants
+	{
+		private const string PACKAGE_EDITOR_DIR = "Packages/com.beamable/Editor/Config";
 
-      public string GetSourcePath(Type type)
-      {
-         var name = type.Name;
-         var sourcePath = $"{PACKAGE_EDITOR_DIR}/{name}.asset";
-         return sourcePath;
-      }
-   }
+		public string GetSourcePath(Type type)
+		{
+			var name = type.Name;
+			var sourcePath = $"{PACKAGE_EDITOR_DIR}/{name}.asset";
+			return sourcePath;
+		}
+	}
 
-   public abstract class BaseModuleConfigurationObject : ScriptableObject
-   {
-      protected const string CONFIG_RESOURCES_DIR = "Assets/Beamable/Resources";
+	public abstract class BaseModuleConfigurationObject : ScriptableObject
+	{
+		protected const string CONFIG_RESOURCES_DIR = "Assets/Beamable/Resources";
 
-      /// <summary>
-      /// Called by the Configuration.Instance spawn function, the FIRST time the configuration is copied from the Beamable package into the /Assets
-      /// </summary>
-      public virtual void OnFreshCopy()
-      {
+		/// <summary>
+		/// Called by the Configuration.Instance spawn function, the FIRST time the configuration is copied from the Beamable package into the /Assets
+		/// </summary>
+		public virtual void OnFreshCopy()
+		{
 
-      }
+		}
 
 #if UNITY_EDITOR
       public static Promise PrepareInstances(params Type[] configTypes)
@@ -117,41 +117,41 @@ namespace Beamable
          promise.CompleteSuccess(PromiseBase.Unit);
          return promise;
       }
-      #endif
-   }
+#endif
+	}
 
-   public abstract class AbsModuleConfigurationObject<TConstants> : BaseModuleConfigurationObject
-      where TConstants : IConfigurationConstants, new()
-   {
-      private static Dictionary<Type, BaseModuleConfigurationObject> _typeToConfig = new Dictionary<Type, BaseModuleConfigurationObject>();
+	public abstract class AbsModuleConfigurationObject<TConstants> : BaseModuleConfigurationObject
+	   where TConstants : IConfigurationConstants, new()
+	{
+		private static Dictionary<Type, BaseModuleConfigurationObject> _typeToConfig = new Dictionary<Type, BaseModuleConfigurationObject>();
 
-      public static bool Exists<TConfig>() where TConfig : BaseModuleConfigurationObject
-      {
-         var type = typeof(TConfig);
-         if (_typeToConfig.TryGetValue(type, out var existingData) && existingData && existingData != null)
-         {
-            return true;
-         }
+		public static bool Exists<TConfig>() where TConfig : BaseModuleConfigurationObject
+		{
+			var type = typeof(TConfig);
+			if (_typeToConfig.TryGetValue(type, out var existingData) && existingData && existingData != null)
+			{
+				return true;
+			}
 
-         var name = type.Name;
-         var data = Resources.Load<TConfig>(name);
-         return data != null;
-      }
+			var name = type.Name;
+			var data = Resources.Load<TConfig>(name);
+			return data != null;
+		}
 
-      public static IConfigurationConstants GetStaticConfigConstants() => new TConstants();
+		public static IConfigurationConstants GetStaticConfigConstants() => new TConstants();
 
-      public static TConfig Get<TConfig>() where TConfig : BaseModuleConfigurationObject
-      {
-         var type = typeof(TConfig);
-         if (_typeToConfig.TryGetValue(type, out var existingData) && existingData && existingData != null)
-         {
-            return existingData as TConfig;
-         }
+		public static TConfig Get<TConfig>() where TConfig : BaseModuleConfigurationObject
+		{
+			var type = typeof(TConfig);
+			if (_typeToConfig.TryGetValue(type, out var existingData) && existingData && existingData != null)
+			{
+				return existingData as TConfig;
+			}
 
-         var constants = new TConstants();
-         var name = type.Name;
+			var constants = new TConstants();
+			var name = type.Name;
 
-         var data = Resources.Load<TConfig>(name);
+			var data = Resources.Load<TConfig>(name);
 #if UNITY_EDITOR
          if (data == null)
          {
@@ -179,25 +179,25 @@ namespace Beamable
             UnityEditor.SettingsService.NotifySettingsProviderChanged();
          }
 #endif
-         _typeToConfig[type] = data;
-         return data;
-      }
+			_typeToConfig[type] = data;
+			return data;
+		}
 
-   }
+	}
 
-   public class ModuleConfigurationNotReadyException : Exception
-   {
-      public ModuleConfigurationNotReadyException(Type type) : base($"Configuration of type=[{type.Name}] is not available yet.")
-      {
+	public class ModuleConfigurationNotReadyException : Exception
+	{
+		public ModuleConfigurationNotReadyException(Type type) : base($"Configuration of type=[{type.Name}] is not available yet.")
+		{
 
-      }
+		}
 
-   }
+	}
 
 
-   public class ModuleConfigurationObject : AbsModuleConfigurationObject<BeamableConfigurationConstants>
-   {
+	public class ModuleConfigurationObject : AbsModuleConfigurationObject<BeamableConfigurationConstants>
+	{
 
-   }
+	}
 
 }

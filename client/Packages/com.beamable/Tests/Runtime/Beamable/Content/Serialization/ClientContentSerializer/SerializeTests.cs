@@ -13,7 +13,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void Primitives()
 		{
-			var c = new PrimitiveContent {
+			var c = new PrimitiveContent
+			{
 				Id = "test.nothing",
 				x = 3,
 				b = true,
@@ -50,7 +51,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void Primitive_SubClassed()
 		{
-			var c = new PrimitiveSubclass() {
+			var c = new PrimitiveSubclass()
+			{
 				Id = "test.nothing",
 				x = 3,
 				b = true,
@@ -91,7 +93,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void SerializeField_Serialize()
 		{
-			var c = new SerializeFieldContent(3) {
+			var c = new SerializeFieldContent(3)
+			{
 				Id = "test.nothing"
 			};
 			var expected = @"{
@@ -111,7 +114,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void SerializeFieldSubClass_Serialize()
 		{
-			var c = new SerializeFieldSubContent(3, 2) {
+			var c = new SerializeFieldSubContent(3, 2)
+			{
 				Id = "test.nothing"
 			};
 			var expected = @"{
@@ -132,7 +136,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void IdAndVersion()
 		{
-			var c = new PrimitiveContent {
+			var c = new PrimitiveContent
+			{
 				Id = "test.nothing",
 				Version = "123",
 				x = 3,
@@ -170,9 +175,11 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void Nested()
 		{
-			var c = new NestedContent {
+			var c = new NestedContent
+			{
 				Id = "test.nothing",
-				sub = new PrimitiveContent {
+				sub = new PrimitiveContent
+				{
 					x = 3,
 					b = true,
 					s = "test",
@@ -211,9 +218,11 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void OptionalWithValue()
 		{
-			var c = new OptionalContent {
+			var c = new OptionalContent
+			{
 				Id = "test.nothing",
-				maybeNumber = new OptionalInt {
+				maybeNumber = new OptionalInt
+				{
 					HasValue = true,
 					Value = 32
 				}
@@ -235,7 +244,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void OptionalWithoutValue()
 		{
-			var c = new OptionalContent {
+			var c = new OptionalContent
+			{
 				Id = "test.nothing",
 				maybeNumber = new OptionalInt { HasValue = false, Value = 32 }
 			};
@@ -255,9 +265,11 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void OptionalNestedWithValue()
 		{
-			var c = new NestedOptionalContent {
+			var c = new NestedOptionalContent
+			{
 				Id = "test.nothing",
-				sub = new OptionalContent {
+				sub = new OptionalContent
+				{
 					Id = "sub.nothing",
 					maybeNumber = new OptionalInt { HasValue = true, Value = 30 }
 				}
@@ -281,9 +293,11 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void OptionalNestedWithoutValue()
 		{
-			var c = new NestedOptionalContent {
+			var c = new NestedOptionalContent
+			{
 				Id = "test.nothing",
-				sub = new OptionalContent {
+				sub = new OptionalContent
+				{
 					Id = "sub.nothing",
 					maybeNumber = new OptionalInt { HasValue = false, Value = 30 }
 				}
@@ -307,7 +321,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void Color()
 		{
-			var c = new ColorContent {
+			var c = new ColorContent
+			{
 				Id = "test.nothing",
 				color = new Color(1f, 0f, 0f)
 			};
@@ -335,7 +350,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void Ref()
 		{
-			var c = new RefContent {
+			var c = new RefContent
+			{
 				Id = "test.nothing",
 				reference = new PrimitiveRef { Id = "primitive.foo" }
 			};
@@ -359,9 +375,11 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void RefNested()
 		{
-			var c = new NestedRefContent {
+			var c = new NestedRefContent
+			{
 				Id = "test.nothing",
-				sub = new RefContent {
+				sub = new RefContent
+				{
 					reference = new PrimitiveRef { Id = "primitive.foo" }
 				}
 			};
@@ -386,7 +404,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void Link()
 		{
-			var c = new LinkContent {
+			var c = new LinkContent
+			{
 				Id = "test.nothing",
 				link = new PrimitiveLink { Id = "primitive.foo" }
 			};
@@ -409,7 +428,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void LinkNested()
 		{
-			var c = new LinkNestedContent {
+			var c = new LinkNestedContent
+			{
 				Id = "test.nothing",
 				sub = new LinkContent { link = new PrimitiveLink { Id = "primitive.foo" } }
 			};
@@ -432,7 +452,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void LinkArray()
 		{
-			var c = new LinkArrayContent {
+			var c = new LinkArrayContent
+			{
 				Id = "test.nothing",
 				links = new PrimitiveLink[] {
 					new PrimitiveLink {Id = "primitive.foo"},
@@ -458,7 +479,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void LinkList()
 		{
-			var c = new LinkListContent {
+			var c = new LinkListContent
+			{
 				Id = "test.nothing",
 				links = new List<PrimitiveLink> {
 					new PrimitiveLink {Id = "primitive.foo"},
@@ -484,7 +506,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void ListNumbers()
 		{
-			var c = new NumberListContent {
+			var c = new NumberListContent
+			{
 				Id = "test.nothing",
 				numbers = new List<int> { 1, 2, 3 }
 			};
@@ -507,7 +530,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void ArrayNumbers()
 		{
-			var c = new NumberArrayContent {
+			var c = new NumberArrayContent
+			{
 				Id = "test.nothing",
 				numbers = new int[] { 1, 2, 3 }
 			};
@@ -530,9 +554,11 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void ArrayNestedNumbers()
 		{
-			var c = new NestedNumberArrayContent {
+			var c = new NestedNumberArrayContent
+			{
 				Id = "test.nothing",
-				sub = new NumberArrayContent {
+				sub = new NumberArrayContent
+				{
 					numbers = new int[] { 1, 2, 3 }
 				}
 			};
@@ -556,7 +582,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		public void Addressable()
 		{
 			var fakeGuid = Guid.NewGuid().ToString();
-			var c = new SpriteAddressableContent {
+			var c = new SpriteAddressableContent
+			{
 				Id = "test.nothing",
 				sprite = new AssetReferenceSprite(fakeGuid)
 			};
@@ -580,7 +607,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void Enum()
 		{
-			var c = new EnumContent {
+			var c = new EnumContent
+			{
 				Id = "test.nothing",
 				e = TestEnum.B
 			};
@@ -603,7 +631,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void DictStringToString()
 		{
-			var c = new SerializeDictStringToString {
+			var c = new SerializeDictStringToString
+			{
 				Id = "test.nothing",
 				Dict = new SerializableDictionaryStringToString {
 					{"a", "v1"},
@@ -629,7 +658,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void DictStringToInt()
 		{
-			var c = new SerializeDictStringToInt {
+			var c = new SerializeDictStringToInt
+			{
 				Id = "test.nothing",
 				Dict = new SerializableDictionaryStringToInt {
 					{"a", 2},
@@ -680,9 +710,11 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void NullArray_Nested_SerializesAsEmpty()
 		{
-			var c = new NestedNumberArrayContent() {
+			var c = new NestedNumberArrayContent()
+			{
 				Id = "test.tuna",
-				sub = new NumberArrayContent {
+				sub = new NumberArrayContent
+				{
 					numbers = null
 				}
 			};
@@ -703,7 +735,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void NullArray_SerializesAsEmpty()
 		{
-			var c = new NumberArrayContent {
+			var c = new NumberArrayContent
+			{
 				Id = "test.tuna",
 				numbers = null
 			};
@@ -724,7 +757,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void NullList_SerializesAsEmpty()
 		{
-			var c = new NumberListContent {
+			var c = new NumberListContent
+			{
 				Id = "test.tuna",
 				numbers = null
 			};
@@ -745,7 +779,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void NullSerializable_SerializesWithDefaultInstance()
 		{
-			var c = new NestedContent {
+			var c = new NestedContent
+			{
 				Id = "test.tuna",
 				sub = null
 			};
@@ -774,7 +809,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 		[Test]
 		public void CustomFieldName_SerializeWithCustomName()
 		{
-			var c = new CustomFieldNameContent {
+			var c = new CustomFieldNameContent
+			{
 				Id = "test.tuna",
 				FooBar = 123
 			};

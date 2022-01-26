@@ -21,7 +21,8 @@ namespace Beamable.Editor.UI.Components
 		{
 			readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription { name = "label", defaultValue = "Label" };
 
-			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription {
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
 				get { yield break; }
 			}
 
@@ -38,7 +39,8 @@ namespace Beamable.Editor.UI.Components
 		private ColorPickerVisualElement _colorPicker;
 		private Label _label;
 
-		public string Label {
+		public string Label
+		{
 			get;
 			set;
 		}

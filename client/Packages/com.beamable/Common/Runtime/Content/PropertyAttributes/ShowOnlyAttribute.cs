@@ -2,7 +2,7 @@
 
 namespace Beamable.Common.Content
 {
-    public class ShowOnlyAttribute : PropertyAttribute
-    {
-    }
+	public class ShowOnlyAttribute : PropertyAttribute
+	{
+	}
 }

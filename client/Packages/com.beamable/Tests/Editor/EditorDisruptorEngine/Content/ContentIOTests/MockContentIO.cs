@@ -1,39 +1,39 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Content;
 using Beamable.Editor.Content;
 using Beamable.Platform.SDK;
+using System;
+using System.Collections.Generic;
 using Manifest = Beamable.Editor.Content.Manifest;
 
 namespace Beamable.Editor.Tests.Beamable.Content.ContentIOTests
 {
-   public class MockContentIO : IContentIO
-   {
-      public Func<Promise<Editor.Content.Manifest>> FetchManifestResult = () => null;
-      public Func<IEnumerable<ContentObject>> FindAllResult = () => null;
-      public Func<IContentObject, string> ChecksumResult = c => "";
+	public class MockContentIO : IContentIO
+	{
+		public Func<Promise<Editor.Content.Manifest>> FetchManifestResult = () => null;
+		public Func<IEnumerable<ContentObject>> FindAllResult = () => null;
+		public Func<IContentObject, string> ChecksumResult = c => "";
 
 
-      public Promise<Editor.Content.Manifest> FetchManifest()
-      {
-         return FetchManifestResult();
-      }
+		public Promise<Editor.Content.Manifest> FetchManifest()
+		{
+			return FetchManifestResult();
+		}
 
-      public Promise<Manifest> FetchManifest(string id)
-      {
-         return FetchManifestResult();
-      }
+		public Promise<Manifest> FetchManifest(string id)
+		{
+			return FetchManifestResult();
+		}
 
-      public IEnumerable<ContentObject> FindAll(ContentQuery query=null)
-      {
-         return FindAllResult();
-      }
+		public IEnumerable<ContentObject> FindAll(ContentQuery query = null)
+		{
+			return FindAllResult();
+		}
 
-      public string Checksum(IContentObject content)
-      {
-         return ChecksumResult(content);
-      }
-   }
+		public string Checksum(IContentObject content)
+		{
+			return ChecksumResult(content);
+		}
+	}
 }

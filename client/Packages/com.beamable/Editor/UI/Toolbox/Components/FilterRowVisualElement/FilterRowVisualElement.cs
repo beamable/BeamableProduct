@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using Beamable.Editor.Toolbox.UI.Components;
+﻿using Beamable.Editor.Toolbox.UI.Components;
 using Beamable.Editor.UI.Buss;
+using System;
+using System.Collections.Generic;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -12,32 +12,32 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Toolbox.Components
 {
-    public class FilterRowVisualElement : ToolboxComponent
-    {
-        private Toggle _checkbox;
-        public string FilterName { set; get; }
-        public event Action<bool> OnValueChanged;
+	public class FilterRowVisualElement : ToolboxComponent
+	{
+		private Toggle _checkbox;
+		public string FilterName { set; get; }
+		public event Action<bool> OnValueChanged;
 
-        public FilterRowVisualElement() : base(nameof(FilterRowVisualElement))
-        {
+		public FilterRowVisualElement() : base(nameof(FilterRowVisualElement))
+		{
 
-        }
+		}
 
-        public override void Refresh()
-        {
-            base.Refresh();
-            var title = Root.Q<Label>("tagName");
-            _checkbox = Root.Q<Toggle>(name: "filterCheckbox");
-            _checkbox.RegisterValueChangedCallback(evt => OnValueChanged?.Invoke(evt.newValue));
+		public override void Refresh()
+		{
+			base.Refresh();
+			var title = Root.Q<Label>("tagName");
+			_checkbox = Root.Q<Toggle>(name: "filterCheckbox");
+			_checkbox.RegisterValueChangedCallback(evt => OnValueChanged?.Invoke(evt.newValue));
 
-            title.text = FilterName;
-        }
+			title.text = FilterName;
+		}
 
-        public void SetValue(bool value)
-        {
-            _checkbox.SetValueWithoutNotify(value);
-        }
-    }
+		public void SetValue(bool value)
+		{
+			_checkbox.SetValueWithoutNotify(value);
+		}
+	}
 
 
 }

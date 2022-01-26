@@ -3,8 +3,8 @@ using UnityEngine;
 
 namespace Beamable.Shop
 {
-   public abstract class ListingRenderer : MonoBehaviour
-   {
-      public abstract void RenderListing(PlayerStoreView store, PlayerListingView listing);
-   }
+	public abstract class ListingRenderer : MonoBehaviour
+	{
+		public abstract void RenderListing(PlayerStoreView store, PlayerListingView listing);
+	}
 }

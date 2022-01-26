@@ -1,6 +1,5 @@
 ﻿using Beamable.AccountManagement;
 using Beamable.Avatars;
-using System.Globalization;
 using Beamable.Common.Api.Leaderboards;
 using Beamable.Constats;
 using Beamable.Modules.Generics;
@@ -8,6 +7,7 @@ using Beamable.Stats;
 using Beamable.UI.Buss;
 using Beamable.UI.Scripts;
 using System.Collections.Generic;
+using System.Globalization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;

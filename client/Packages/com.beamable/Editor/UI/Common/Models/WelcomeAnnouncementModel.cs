@@ -1,22 +1,22 @@
-﻿using System;
-using Beamable.Editor.Toolbox.Components;
+﻿using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.UI.Buss;
+using System;
 
 namespace Beamable.Editor.Toolbox.Models
 {
-    public class WelcomeAnnouncementModel : AnnouncementModelBase
-    {
-        public string TitleLabelText => "BEAMABLE + TEXTMESHPRO + ADDRESSABLES = ♥";
-        public string ImportButtonText => "Import";
-        
-        public Action OnImport;
-        
-        public override BeamableVisualElement CreateVisualElement()
-        {
-            return new WelcomeAnnouncementVisualElement()
-            {
-                WelcomeAnnouncementModel = this
-            };
-        }
-    }
+	public class WelcomeAnnouncementModel : AnnouncementModelBase
+	{
+		public string TitleLabelText => "BEAMABLE + TEXTMESHPRO + ADDRESSABLES = ♥";
+		public string ImportButtonText => "Import";
+
+		public Action OnImport;
+
+		public override BeamableVisualElement CreateVisualElement()
+		{
+			return new WelcomeAnnouncementVisualElement()
+			{
+				WelcomeAnnouncementModel = this
+			};
+		}
+	}
 }

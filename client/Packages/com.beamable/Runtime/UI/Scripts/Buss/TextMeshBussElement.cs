@@ -45,9 +45,9 @@ namespace Beamable.UI.Buss
 
 			_text.fontMaterial.SetFloat(ShaderUtilities.ID_OutlineWidth, borderWidth);
 			_text.fontMaterial.SetColor(ShaderUtilities.ID_OutlineColor,
-			                            BussStyle.BorderColor.Get(Style).ColorRect.TopLeftColor);
+										BussStyle.BorderColor.Get(Style).ColorRect.TopLeftColor);
 			_text.fontMaterial.SetColor(ShaderUtilities.ID_UnderlayColor,
-			                            BussStyle.ShadowColor.Get(Style).ColorRect.TopLeftColor);
+										BussStyle.ShadowColor.Get(Style).ColorRect.TopLeftColor);
 
 			// SHADOW
 			Vector2 shadowOffset = BussStyle.ShadowOffset.Get(Style).Vector2Value;
@@ -60,9 +60,9 @@ namespace Beamable.UI.Buss
 			_text.fontMaterial.SetFloat(ShaderUtilities.ID_UnderlayOffsetX, shadowOffset.x);
 			_text.fontMaterial.SetFloat(ShaderUtilities.ID_UnderlayOffsetY, shadowOffset.y);
 			_text.fontMaterial.SetFloat(ShaderUtilities.ID_UnderlaySoftness,
-			                            BussStyle.ShadowSoftness.Get(Style).FloatValue);
+										BussStyle.ShadowSoftness.Get(Style).FloatValue);
 			_text.fontMaterial.SetFloat(ShaderUtilities.ID_UnderlayDilate,
-			                            BussStyle.ShadowThreshold.Get(Style).FloatValue);
+										BussStyle.ShadowThreshold.Get(Style).FloatValue);
 		}
 	}
 }

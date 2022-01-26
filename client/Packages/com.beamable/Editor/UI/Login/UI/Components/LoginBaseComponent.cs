@@ -11,34 +11,34 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Login.UI.Components
 {
-    public class LoginBaseComponent : BeamableVisualElement
-    {
-        public LoginModel Model;
-        public LoginManager Manager;
+	public class LoginBaseComponent : BeamableVisualElement
+	{
+		public LoginModel Model;
+		public LoginManager Manager;
 
-        public virtual string GetMessage()
-        {
-            return "";
-        }
+		public virtual string GetMessage()
+		{
+			return "";
+		}
 
-        public virtual bool ShowHeader => true;
+		public virtual bool ShowHeader => true;
 
-        public LoginBaseComponent(string name) : base($"{LoginBaseConstants.COMP_PATH}/{name}/{name}")
-        {
+		public LoginBaseComponent(string name) : base($"{LoginBaseConstants.COMP_PATH}/{name}/{name}")
+		{
 
-        }
+		}
 
-        protected Promise<LoginManagerResult> AddErrorLabel(Promise<LoginManagerResult> promise, Label errorLabel)
-        {
-            return promise.Then(res =>
-                {
-                    errorLabel.text = res.Error;
-                })
-                .Error(err =>
-                {
-                    BeamableLogger.LogError("Failed " + err.Message);
-                    errorLabel.text = err.Message;
-                });
-        }
-    }
+		protected Promise<LoginManagerResult> AddErrorLabel(Promise<LoginManagerResult> promise, Label errorLabel)
+		{
+			return promise.Then(res =>
+				{
+					errorLabel.text = res.Error;
+				})
+				.Error(err =>
+				{
+					BeamableLogger.LogError("Failed " + err.Message);
+					errorLabel.text = err.Message;
+				});
+		}
+	}
 }
