@@ -1,5 +1,5 @@
 #propertyLabel {
-    color: rgb(255,255,255);
+    color:#252525;
 }
 
 .equalWidth {
@@ -8,4 +8,7 @@
 
 BussStylePropertyVisualElement.doesntExists {
     background-color: rgba(255, 255, 255, 0.16);
+}
+#removeButton {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/remove_Dark.png");
 }
