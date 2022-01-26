@@ -95,6 +95,13 @@ namespace Beamable.Editor.Assistant
 
 		void Refresh()
 		{
+			// if null, close the window --- exists to handle the re-import all case.
+			if (BeamEditor.CoreConfiguration == null)
+			{
+				Close();
+				return;
+			}
+
 			minSize = MIN_SIZE;
 
 			// Cache the newest instances of relevant reflection and hint systems
@@ -140,13 +147,17 @@ namespace Beamable.Editor.Assistant
 				_treeViewIMGUI = new TreeViewIMGUI(_treeViewState) { SelectionType = SelectionType.Multiple, TreeViewItemRoot = new TreeViewItem { id = 0, depth = -1, displayName = "Root" } };
 				_imguiContainer = new IMGUIContainer(() =>
 				{
-					// Tree view - Re-render every frame
-					Rect rect = GUILayoutUtility.GetRect(200,
-														 200,
-														 _treeViewIMGUI.GetCalculatedHeight(),
-														 _treeViewIMGUI.GetCalculatedHeight());
+					// Necessary as in a re-import all flow with this window opened this will throw for some reason
+					if (_treeViewIMGUI != null && _treeViewIMGUI.TreeViewItems.Count > 0)
+					{
+						// Tree view - Re-render every frame
+						Rect rect = GUILayoutUtility.GetRect(200,
+															 200,
+															 _treeViewIMGUI.GetCalculatedHeight(),
+															 _treeViewIMGUI.GetCalculatedHeight());
 
-					_treeViewIMGUI.OnGUI(rect);
+						_treeViewIMGUI.OnGUI(rect);
+					}
 				})
 				{ name = "domain-tree-imgui" };
 				_domainTreeContainer = root.Q<VisualElement>("domain-tree-container");
