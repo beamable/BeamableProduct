@@ -277,12 +277,12 @@ namespace Beamable.Editor.Content.Components
 				   {
 					   _loadingBar.Progress = 1;
 					   _loadingBar.RunWithoutUpdater = false;
-						 // TODO make this error reporting better.
-						 EditorApplication.delayCall += () =>
-						 {
-						EditorUtility.DisplayDialog("Download Failed", "See console for errors.", "OK");
-						OnClosed?.Invoke();
-					};
+					   // TODO make this error reporting better.
+					   EditorApplication.delayCall += () =>
+					   {
+						   EditorUtility.DisplayDialog("Download Failed", "See console for errors.", "OK");
+						   OnClosed?.Invoke();
+					   };
 				   });
 			   });
 		}
