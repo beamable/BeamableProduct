@@ -41,4 +41,4 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch-suffix: 'timestamp'
-          title: 'Formatting fixes'
+          title: 'Formatting: ${{ github.event.head_commit.message }}'
