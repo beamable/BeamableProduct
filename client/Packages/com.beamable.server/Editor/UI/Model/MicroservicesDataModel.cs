@@ -68,29 +68,33 @@ namespace Beamable.Editor.UI.Model
 
 		public void RefreshLocal()
 		{
-			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			var unseen = new HashSet<IBeamableService>(AllLocalServices);
-			foreach (var descriptor in serviceRegistry.AllDescriptors)
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			if (serviceRegistry != null)
 			{
-				var serviceExists = ContainsModel(descriptor.Name);
-				if (serviceExists)
+				foreach (var descriptor in serviceRegistry.AllDescriptors)
 				{
-					var service = GetModel<IBeamableService>(descriptor.Name);
-					unseen.Remove(GetModel<IBeamableService>(descriptor.Name));
-					service.Refresh(descriptor);
-					continue;
-				}
+					var serviceExists = ContainsModel(descriptor.Name);
+					if (serviceExists)
+					{
+						var service = GetModel<IBeamableService>(descriptor.Name);
+						unseen.Remove(GetModel<IBeamableService>(descriptor.Name));
+						service.Refresh(descriptor);
+						continue;
+					}
 
-				IBeamableService newService;
-				if (descriptor.ServiceType == ServiceType.StorageObject)
-				{
-					newService = MongoStorageModel.CreateNew(descriptor as StorageObjectDescriptor, this);
+					IBeamableService newService;
+					if (descriptor.ServiceType == ServiceType.StorageObject)
+					{
+						newService = MongoStorageModel.CreateNew(descriptor as StorageObjectDescriptor, this);
+					}
+					else
+					{
+						newService = MicroserviceModel.CreateNew(descriptor as MicroserviceDescriptor, this);
+					}
+
+					AllLocalServices.Add(newService);
 				}
-				else
-				{
-					newService = MicroserviceModel.CreateNew(descriptor as MicroserviceDescriptor, this);
-				}
-				AllLocalServices.Add(newService);
 			}
 
 			AllLocalServices.RemoveAll(model => unseen.Contains(model));
@@ -241,7 +245,9 @@ namespace Beamable.Editor.UI.Model
 		private void OnEnable()
 		{
 			_serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-			_serviceRegistry.OnDeploySuccess += HandleMicroservicesDeploySuccess;
+			if(_serviceRegistry != null)
+				_serviceRegistry.OnDeploySuccess += HandleMicroservicesDeploySuccess;
+			
 			RefreshLocal();
 			RefreshServerManifest();
 		}
