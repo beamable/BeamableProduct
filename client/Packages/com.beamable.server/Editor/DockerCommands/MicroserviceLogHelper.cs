@@ -281,7 +281,7 @@ namespace Beamable.Server.Editor.DockerCommands
 					builder.OnStartingProgress?.Invoke(i + 1, RunLogsSteps);
 				}
 			}
-			if (message.Contains(LogConstants.READY_FOR_TRAFFIC_PREFIX))
+			if (message.Contains(LogConstants.READY_FOR_TRAFFIC_PREFIX) || message.Contains(LogConstants.STORAGE_READY))
 			{
 				builder.OnStartingFinished?.Invoke(true);
 				builder.IsRunning = true;
