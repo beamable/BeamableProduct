@@ -35,12 +35,12 @@ namespace Beamable.Editor.Assistant
 				{
 					// Do nothing if the BeamEditor is not initialized.
 					if (BeamEditor.EditorReflectionCache == null) return;
-					
-					BeamEditor.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>()
-					          .ReloadHintDetailConfigScriptableObjects(BeamEditor.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
 
 					BeamEditor.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>()
-					          .ReloadHintTextMapScriptableObjects(BeamEditor.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);	
+							  .ReloadHintDetailConfigScriptableObjects(BeamEditor.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
+
+					BeamEditor.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>()
+							  .ReloadHintTextMapScriptableObjects(BeamEditor.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
 				});
 			}
 		}

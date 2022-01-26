@@ -598,10 +598,10 @@ namespace Beamable.Server.Editor
 			private static void WatchMicroserviceFiles()
 			{
 				var registry = BeamEditor.GetReflectionSystem<Registry>();
-				
+
 				// Handle case where initialization doesn't happen properly due to Unity Re-Import vs InitializeOnLoad logic...
 				if (registry == null) return;
-				
+
 				foreach (var service in registry.Descriptors)
 				{
 					GenerateClientSourceCode(service);
@@ -674,7 +674,7 @@ namespace Beamable.Server.Editor
 				var registry = BeamEditor.GetReflectionSystem<Registry>();
 				// Handle case where initialization doesn't happen properly due to Unity Re-Import vs InitializeOnLoad logic...
 				if (registry == null) return;
-				
+
 				if (DockerCommand.DockerNotInstalled) return;
 				try
 				{

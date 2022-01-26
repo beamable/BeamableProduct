@@ -116,7 +116,7 @@ namespace Beamable.Editor.Microservice.UI
 				Close();
 				return;
 			}
-			
+
 			var root = this.GetRootVisualContainer();
 			root.Clear();
 

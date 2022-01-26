@@ -245,9 +245,9 @@ namespace Beamable.Editor.UI.Model
 		private void OnEnable()
 		{
 			_serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-			if(_serviceRegistry != null)
+			if (_serviceRegistry != null)
 				_serviceRegistry.OnDeploySuccess += HandleMicroservicesDeploySuccess;
-			
+
 			RefreshLocal();
 			RefreshServerManifest();
 		}

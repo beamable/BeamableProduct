@@ -143,7 +143,7 @@ namespace Beamable
 		public static void GetBeamHintSystem<T>(ref T foundProvider) where T : IBeamHintSystem
 		{
 			var hintReflectionSystem = GetReflectionSystem<BeamHintReflectionCache.Registry>();
-			
+
 			if (hintReflectionSystem == null)
 				foundProvider = default;
 			else

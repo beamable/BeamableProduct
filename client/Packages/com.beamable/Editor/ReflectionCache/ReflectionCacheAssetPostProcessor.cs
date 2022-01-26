@@ -18,8 +18,8 @@ namespace Beamable.Editor.Reflection
 	{
 		public static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
 		{
-			
-			
+
+
 			var reflectionCacheRelatedAssets = importedAssets.Union(movedAssets)
 															 .Select(path => (path, type: AssetDatabase.GetMainAssetTypeAtPath(path)))
 															 .Where(t => typeof(ReflectionSystemObject).IsAssignableFrom(t.type))
@@ -31,9 +31,9 @@ namespace Beamable.Editor.Reflection
 				{
 					// Do nothing if the BeamEditor is not initialized.
 					if (BeamEditor.EditorReflectionCache == null) return;
-					
+
 					var reimportedReflectionSystemObjects = reflectionCacheRelatedAssets
-					                                .Select(tuple => AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(tuple.path)).ToList();
+													.Select(tuple => AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(tuple.path)).ToList();
 					var reimportedReflectionTypes = reimportedReflectionSystemObjects.Select(sysObj => sysObj.SystemType).ToList();
 
 					BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems(reimportedReflectionTypes);
@@ -50,9 +50,9 @@ namespace Beamable.Editor.Reflection
 							hintSystem.OnInitialized();
 						}
 					}
-					
+
 					BeamableLogger.Log("Finished Rebuilding Reflection Cache Systems");
-					AssetDatabase.Refresh();	
+					AssetDatabase.Refresh();
 				});
 			}
 
@@ -62,11 +62,11 @@ namespace Beamable.Editor.Reflection
 				{
 					// Do nothing if the BeamEditor is not initialized.
 					if (BeamEditor.EditorReflectionCache == null) return;
-					
+
 					BeamableLogger.Log("Re-building the Reflection Systems from Cached Data!");
 					BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems();
 					BeamEditor.EditorReflectionCache.SetStorage(BeamEditor.HintGlobalStorage);
-					
+
 					// Set up Globally Accessible Hint System Dependencies and then call init
 					foreach (var hintSystem in BeamEditor.GetReflectionSystem<BeamHintReflectionCache.Registry>().GloballyAccessibleHintSystems)
 					{
@@ -75,9 +75,9 @@ namespace Beamable.Editor.Reflection
 
 						hintSystem.OnInitialized();
 					}
-					
+
 					BeamableLogger.Log("Finished Rebuilding Reflection Cache Systems");
-					AssetDatabase.Refresh();	
+					AssetDatabase.Refresh();
 				});
 			}
 		}

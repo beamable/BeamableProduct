@@ -101,7 +101,7 @@ namespace Beamable.Editor.Assistant
 				Close();
 				return;
 			}
-			
+
 			minSize = MIN_SIZE;
 
 			// Cache the newest instances of relevant reflection and hint systems
@@ -152,9 +152,9 @@ namespace Beamable.Editor.Assistant
 					{
 						// Tree view - Re-render every frame
 						Rect rect = GUILayoutUtility.GetRect(200,
-						                                     200,
-						                                     _treeViewIMGUI.GetCalculatedHeight(),
-						                                     _treeViewIMGUI.GetCalculatedHeight());
+															 200,
+															 _treeViewIMGUI.GetCalculatedHeight(),
+															 _treeViewIMGUI.GetCalculatedHeight());
 
 						_treeViewIMGUI.OnGUI(rect);
 					}
