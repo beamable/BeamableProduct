@@ -9,18 +9,18 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Toolbox.Models
 {
-    public abstract class AnnouncementModelBase
-    {
-        public abstract BeamableVisualElement CreateVisualElement();
+	public abstract class AnnouncementModelBase
+	{
+		public abstract BeamableVisualElement CreateVisualElement();
 
-        public VisualElement TitleElement;
-        public VisualElement DescriptionElement;
-        public ToolboxAnnouncementStatus Status;
-    }
-    public enum ToolboxAnnouncementStatus
-    {
-        INFO,
-        WARNING,
-        DANGER
-    }
+		public VisualElement TitleElement;
+		public VisualElement DescriptionElement;
+		public ToolboxAnnouncementStatus Status;
+	}
+	public enum ToolboxAnnouncementStatus
+	{
+		INFO,
+		WARNING,
+		DANGER
+	}
 }

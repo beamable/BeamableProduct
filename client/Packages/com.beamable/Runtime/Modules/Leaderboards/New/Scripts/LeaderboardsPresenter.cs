@@ -14,7 +14,7 @@ namespace Beamable.Modules.Leaderboards
 		[SerializeField] private GenericButton _topButton;
 		[SerializeField] private LeaderboardsRankEntriesPresenter _rankEntries;
 		[SerializeField] private LeaderboardsRankEntryPresenter _currentUserRankEntry;
-		
+
 		[Space]
 		[SerializeField] private UnityEvent _backButtonAction;
 
@@ -30,7 +30,7 @@ namespace Beamable.Modules.Leaderboards
 			{
 				Debug.LogWarning($"You are using a Leaderboard in test mode", this);
 			}
-			
+
 			Model.Initialize(_leaderboardRef, _entriesAmount, _testMode, _backButtonAction);
 
 			Model.OnScrollRefresh += OnScrollRefresh;

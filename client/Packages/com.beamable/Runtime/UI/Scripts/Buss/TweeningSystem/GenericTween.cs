@@ -18,9 +18,11 @@ namespace Beamable.UI.Tweening
 			_updateAction = updateAction;
 		}
 
-		public T StartValue {
+		public T StartValue
+		{
 			get => _startValue;
-			set {
+			set
+			{
 				if (IsRunning)
 				{
 					throw new Exception(
@@ -31,9 +33,11 @@ namespace Beamable.UI.Tweening
 			}
 		}
 
-		public T EndValue {
+		public T EndValue
+		{
 			get => _endValue;
-			set {
+			set
+			{
 				if (IsRunning)
 				{
 					throw new Exception(

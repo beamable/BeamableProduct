@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using Beamable.Common.Content;
+﻿using Beamable.Common.Content;
 using Beamable.Editor.UI.Buss;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -13,195 +13,195 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-    public class CalendarVisualElement : BeamableVisualElement
-    {
-        public new class UxmlFactory : UxmlFactory<CalendarVisualElement, UxmlTraits>
-        {
-        }
+	public class CalendarVisualElement : BeamableVisualElement
+	{
+		public new class UxmlFactory : UxmlFactory<CalendarVisualElement, UxmlTraits>
+		{
+		}
 
-        public CalendarVisualElement() : base(
-            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(CalendarVisualElement)}/{nameof(CalendarVisualElement)}")
-        {
-        }
-        
-        public Action<List<string>> OnValueChanged;
+		public CalendarVisualElement() : base(
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(CalendarVisualElement)}/{nameof(CalendarVisualElement)}")
+		{
+		}
 
-        private PreviousNextOptionSelectorVisualElement _yearSelector;
-        private PreviousNextOptionSelectorVisualElement _monthSelector;
+		public Action<List<string>> OnValueChanged;
 
-        private VisualElement _mainVisualElement;
-        private readonly List<VisualElement> _dayRows = new List<VisualElement>();
-        private readonly List<DayToggleVisualElement> _currentDayToggles = new List<DayToggleVisualElement>();
-        private List<string> _selectedDays = new List<string>();
+		private PreviousNextOptionSelectorVisualElement _yearSelector;
+		private PreviousNextOptionSelectorVisualElement _monthSelector;
 
-        public List<string> SelectedDays => _selectedDays;
+		private VisualElement _mainVisualElement;
+		private readonly List<VisualElement> _dayRows = new List<VisualElement>();
+		private readonly List<DayToggleVisualElement> _currentDayToggles = new List<DayToggleVisualElement>();
+		private List<string> _selectedDays = new List<string>();
 
-        public override void Refresh()
-        {
-            base.Refresh();
+		public List<string> SelectedDays => _selectedDays;
 
-            _mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
+		public override void Refresh()
+		{
+			base.Refresh();
 
-            _yearSelector = Root.Q<PreviousNextOptionSelectorVisualElement>("yearSelector");
-            _yearSelector.Setup(GenerateYears(), 0, OnDateChanged);
-            _yearSelector.Refresh();
+			_mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
 
-            _monthSelector = Root.Q<PreviousNextOptionSelectorVisualElement>("monthSelector");
-            _monthSelector.Setup(GenerateMonths(), 0, OnDateChanged);
-            _monthSelector.Refresh();
-        }
+			_yearSelector = Root.Q<PreviousNextOptionSelectorVisualElement>("yearSelector");
+			_yearSelector.Setup(GenerateYears(), 0, OnDateChanged);
+			_yearSelector.Refresh();
 
-        private void OnDateChanged()
-        {
-            if (_yearSelector != null && _monthSelector != null)
-            {
-                RenderCalendar(_yearSelector.CurrentOption.Key, _monthSelector.CurrentOption.Key);
-            }
-        }
+			_monthSelector = Root.Q<PreviousNextOptionSelectorVisualElement>("monthSelector");
+			_monthSelector.Setup(GenerateMonths(), 0, OnDateChanged);
+			_monthSelector.Refresh();
+		}
 
-        private void RenderCalendar(int year, int month)
-        {
-            foreach (DayToggleVisualElement toggle in _currentDayToggles)
-            {
-                toggle.RemoveFromHierarchy();
-            }
+		private void OnDateChanged()
+		{
+			if (_yearSelector != null && _monthSelector != null)
+			{
+				RenderCalendar(_yearSelector.CurrentOption.Key, _monthSelector.CurrentOption.Key);
+			}
+		}
 
-            _currentDayToggles.Clear();
+		private void RenderCalendar(int year, int month)
+		{
+			foreach (DayToggleVisualElement toggle in _currentDayToggles)
+			{
+				toggle.RemoveFromHierarchy();
+			}
 
-            foreach (VisualElement dayRow in _dayRows)
-            {
-                dayRow.RemoveFromHierarchy();
-            }
+			_currentDayToggles.Clear();
 
-            _dayRows.Clear();
+			foreach (VisualElement dayRow in _dayRows)
+			{
+				dayRow.RemoveFromHierarchy();
+			}
 
-            int daysInMonth = DateTime.DaysInMonth(year, month);
-            int firstDay = DetermineFirstDayOffset(year, month);
-            int necessaryRows = (daysInMonth + firstDay) / 7;
+			_dayRows.Clear();
 
-            if ((daysInMonth + firstDay) % 7 > 0)
-            {
-                necessaryRows++;
-            }
+			int daysInMonth = DateTime.DaysInMonth(year, month);
+			int firstDay = DetermineFirstDayOffset(year, month);
+			int necessaryRows = (daysInMonth + firstDay) / 7;
 
-            for (int i = 0; i < necessaryRows; i++)
-            {
-                VisualElement currentRow = new VisualElement();
-                currentRow.AddToClassList("row");
-                _mainVisualElement.Add(currentRow);
-                _dayRows.Add(currentRow);
+			if ((daysInMonth + firstDay) % 7 > 0)
+			{
+				necessaryRows++;
+			}
 
-                for (int j = 0; j < 7; j++)
-                {
-                    DayToggleVisualElement toggle = new DayToggleVisualElement();
-                    string path =
-                        $"{BeamableComponentsConstants.COMP_PATH}/{nameof(DayToggleVisualElement)}/{nameof(DayToggleVisualElement)}.uss";
-                    toggle.AddStyleSheet(path);
-                    toggle.AddToClassList("--margin5px");
-                    currentRow.Add(toggle);
-                    _currentDayToggles.Add(toggle);
-                }
-            }
+			for (int i = 0; i < necessaryRows; i++)
+			{
+				VisualElement currentRow = new VisualElement();
+				currentRow.AddToClassList("row");
+				_mainVisualElement.Add(currentRow);
+				_dayRows.Add(currentRow);
 
-            int specificDayCounter = 0;
+				for (int j = 0; j < 7; j++)
+				{
+					DayToggleVisualElement toggle = new DayToggleVisualElement();
+					string path =
+						$"{BeamableComponentsConstants.COMP_PATH}/{nameof(DayToggleVisualElement)}/{nameof(DayToggleVisualElement)}.uss";
+					toggle.AddStyleSheet(path);
+					toggle.AddToClassList("--margin5px");
+					currentRow.Add(toggle);
+					_currentDayToggles.Add(toggle);
+				}
+			}
 
-            for (int i = 0; i < _currentDayToggles.Count; i++)
-            {
-                DayToggleVisualElement toggle = _currentDayToggles[i];
+			int specificDayCounter = 0;
 
-                if (i < firstDay)
-                {
-                    toggle.SetInactive();
-                }
-                else
-                {
-                    specificDayCounter++;
+			for (int i = 0; i < _currentDayToggles.Count; i++)
+			{
+				DayToggleVisualElement toggle = _currentDayToggles[i];
 
-                    if (specificDayCounter > daysInMonth)
-                    {
-                        toggle.SetInactive();
-                    }
-                    else
-                    {
-                        string option = FormatDate(year, month, specificDayCounter);
-                        toggle.Setup($"{specificDayCounter}", option);
-                        toggle.Set(_selectedDays.Contains(option));
-                        toggle.OnValueChanged = () => DayToggleClicked(toggle.Selected, toggle.Value);
-                    }
-                }
+				if (i < firstDay)
+				{
+					toggle.SetInactive();
+				}
+				else
+				{
+					specificDayCounter++;
 
-                toggle.Refresh();
-            }
-        }
+					if (specificDayCounter > daysInMonth)
+					{
+						toggle.SetInactive();
+					}
+					else
+					{
+						string option = FormatDate(year, month, specificDayCounter);
+						toggle.Setup($"{specificDayCounter}", option);
+						toggle.Set(_selectedDays.Contains(option));
+						toggle.OnValueChanged = () => DayToggleClicked(toggle.Selected, toggle.Value);
+					}
+				}
 
-        private void DayToggleClicked(bool toggleSelected, string toggleValue)
-        {
-            if (toggleSelected)
-            {
-	            if (!_selectedDays.Contains(toggleValue))
-	            {
-		            _selectedDays.Add(toggleValue);
-	            }
-            }
-            else
-            {
-                if (_selectedDays.Contains(toggleValue))
-                {
-                    _selectedDays.Remove(toggleValue);
-                }
-            }
+				toggle.Refresh();
+			}
+		}
 
-            OnValueChanged?.Invoke(_selectedDays);
-        }
+		private void DayToggleClicked(bool toggleSelected, string toggleValue)
+		{
+			if (toggleSelected)
+			{
+				if (!_selectedDays.Contains(toggleValue))
+				{
+					_selectedDays.Add(toggleValue);
+				}
+			}
+			else
+			{
+				if (_selectedDays.Contains(toggleValue))
+				{
+					_selectedDays.Remove(toggleValue);
+				}
+			}
 
-        private string FormatDate(int year, int month, int day)
-        {
-            return $"{day}-{month}-{year}";
-        }
+			OnValueChanged?.Invoke(_selectedDays);
+		}
 
-        private int DetermineFirstDayOffset(int year, int month)
-        {
-            DateTime firstDay = new DateTime(year, month, 1);
-            return (int) firstDay.DayOfWeek;
-        }
+		private string FormatDate(int year, int month, int day)
+		{
+			return $"{day}-{month}-{year}";
+		}
 
-        private Dictionary<int, string> GenerateYears()
-        {
-            int yearsAdvance = 3;
+		private int DetermineFirstDayOffset(int year, int month)
+		{
+			DateTime firstDay = new DateTime(year, month, 1);
+			return (int)firstDay.DayOfWeek;
+		}
 
-            Dictionary<int, string> options = new Dictionary<int, string>();
+		private Dictionary<int, string> GenerateYears()
+		{
+			int yearsAdvance = 3;
 
-            DateTime now = DateTime.Now;
+			Dictionary<int, string> options = new Dictionary<int, string>();
 
-            for (int i = 0; i < yearsAdvance; i++)
-            {
-                int year = now.Year + i;
-                options.Add(year, year.ToString());
-            }
+			DateTime now = DateTime.Now;
 
-            return options;
-        }
+			for (int i = 0; i < yearsAdvance; i++)
+			{
+				int year = now.Year + i;
+				options.Add(year, year.ToString());
+			}
 
-        private Dictionary<int, string> GenerateMonths()
-        {
-            Dictionary<int, string> options = new Dictionary<int, string>
-            {
-                {1, "January"},
-                {2, "February"},
-                {3, "March"},
-                {4, "April"},
-                {5, "May"},
-                {6, "June"},
-                {7, "July"},
-                {8, "August"},
-                {9, "September"},
-                {10, "October"},
-                {11, "November"},
-                {12, "December"},
-            };
+			return options;
+		}
 
-            return options;
-        }
+		private Dictionary<int, string> GenerateMonths()
+		{
+			Dictionary<int, string> options = new Dictionary<int, string>
+			{
+				{1, "January"},
+				{2, "February"},
+				{3, "March"},
+				{4, "April"},
+				{5, "May"},
+				{6, "June"},
+				{7, "July"},
+				{8, "August"},
+				{9, "September"},
+				{10, "October"},
+				{11, "November"},
+				{12, "December"},
+			};
+
+			return options;
+		}
 
 		public void SetDefaultValues()
 		{
@@ -215,9 +215,9 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
-        public void SetInitialValues(List<ScheduleDefinition> definitions)
-        {
-            _selectedDays.Clear();
+		public void SetInitialValues(List<ScheduleDefinition> definitions)
+		{
+			_selectedDays.Clear();
 
 			if (definitions.Count == 0)
 			{
@@ -229,8 +229,8 @@ namespace Beamable.Editor.UI.Components
 				_monthSelector.SetCurrentOption(month - 1);
 			}
 
-            foreach (ScheduleDefinition scheduleDefinition in definitions)
-            {
+			foreach (ScheduleDefinition scheduleDefinition in definitions)
+			{
 				foreach (string year in scheduleDefinition.year)
 					foreach (string month in scheduleDefinition.month)
 						foreach (string day in scheduleDefinition.dayOfMonth)
@@ -238,23 +238,23 @@ namespace Beamable.Editor.UI.Components
 								_selectedDays.Add($"{day}-{month}-{year}");
 			}
 
-            OnDateChanged();
-            
-            // Forcing to ensure validation check
-            OnValueChanged?.Invoke(_selectedDays);
-        }
+			OnDateChanged();
 
-        public void SetInitialValues(List<string> dates)
-        {
-            if (dates.Count == 0)
-            {
-                OnDateChanged();
-                return;
-            }
+			// Forcing to ensure validation check
+			OnValueChanged?.Invoke(_selectedDays);
+		}
 
-            _selectedDays = new List<string>(dates);
-            OnDateChanged();
-            OnValueChanged?.Invoke(_selectedDays);
-        }
-    }
+		public void SetInitialValues(List<string> dates)
+		{
+			if (dates.Count == 0)
+			{
+				OnDateChanged();
+				return;
+			}
+
+			_selectedDays = new List<string>(dates);
+			OnDateChanged();
+			OnValueChanged?.Invoke(_selectedDays);
+		}
+	}
 }

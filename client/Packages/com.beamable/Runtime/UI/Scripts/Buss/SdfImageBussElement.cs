@@ -4,21 +4,21 @@ using UnityEngine;
 
 namespace Beamable.UI.Buss
 {
-    [ExecuteAlways, DisallowMultipleComponent, RequireComponent(typeof(SdfImage))]
-    public class SdfImageBussElement : BussElement 
-    {
-        private SdfImage _image;
-        private bool _hasImage;
+	[ExecuteAlways, DisallowMultipleComponent, RequireComponent(typeof(SdfImage))]
+	public class SdfImageBussElement : BussElement
+	{
+		private SdfImage _image;
+		private bool _hasImage;
 
-        public override void ApplyStyle() 
-        {
-            if (!_hasImage) 
-            {
-                _image = GetComponent<SdfImage>();
-                _hasImage = true;
-            }
+		public override void ApplyStyle()
+		{
+			if (!_hasImage)
+			{
+				_image = GetComponent<SdfImage>();
+				_hasImage = true;
+			}
 
-            _image.Style = Style.GetCombinedStyle();
-        }
-    }
+			_image.Style = Style.GetCombinedStyle();
+		}
+	}
 }

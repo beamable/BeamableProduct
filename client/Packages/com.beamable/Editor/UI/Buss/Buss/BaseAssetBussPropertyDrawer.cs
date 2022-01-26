@@ -17,15 +17,15 @@ namespace Beamable.Editor.UI.Buss
 		}
 
 		public static BaseAssetProperty DrawAssetProperty(GUIContent label,
-		                                                  EditorGUIRectController rc,
-		                                                  BaseAssetProperty assetProperty)
+														  EditorGUIRectController rc,
+														  BaseAssetProperty assetProperty)
 		{
 			EditorGUI.LabelField(rc.ReserveSingleLine(), label);
 			rc.MoveIndent(1);
 			assetProperty.GenericAsset = EditorGUI.ObjectField(rc.ReserveSingleLine(), "Asset", assetProperty.GenericAsset,
-			                                                   assetProperty.GetAssetType(), false);
+															   assetProperty.GetAssetType(), false);
 			rc.MoveIndent(-1);
-			
+
 			return assetProperty;
 		}
 
