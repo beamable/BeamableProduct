@@ -15,24 +15,12 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2
-        with:
-          fetch-depth: 0 # otherwise, there would be errors pushing refs to the destination repository.
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v11.7
-        with:
-          files: |
-            .cs$
       - name: Install dotnet-format
-        if:  ${{ contains(steps.changed-files.outputs.all_modified_files, '.cs') }}
         run: dotnet tool install --global --version 5.1.250801 dotnet-format
       - name: Format files
-        if: ${{ contains(steps.changed-files.outputs.all_modified_files, '.cs') }}
         id: format
-        run: |
-          dotnet-format -f --include ${{ steps.changed-files.outputs.all_modified_files }}
+        run: dotnet-format -f --include client/Packages
       - name: Format results
-        if:  ${{ contains(steps.changed-files.outputs.all_modified_files, '.cs') }}
         run: echo ::set-output name=any::$(if [ -n "$(git status --porcelain)" ]; then echo "true"; else echo "false"; fi)
         id: format-changes
       - name: Create Pull Request
