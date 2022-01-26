@@ -85,7 +85,8 @@ namespace Beamable.Server.Editor
 
 
 				var toAdd = new List<string> { GetCommonAsmDefName() };
-				Microservices.Descriptors.ForEach(d => d.AddAndRemoveReferences(toAdd, null));
+				var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+				serviceRegistry.Descriptors.ForEach(d => d.AddAndRemoveReferences(toAdd, null));
 
 			}
 			finally

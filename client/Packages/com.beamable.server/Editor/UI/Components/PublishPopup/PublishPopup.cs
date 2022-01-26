@@ -77,14 +77,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 				return;
 			}
 
-			Microservices.OnServiceDeployStatusChanged -= HandleServiceDeployStatusChanged;
-			Microservices.OnServiceDeployStatusChanged += HandleServiceDeployStatusChanged;
-			Microservices.OnServiceDeployProgress -= HandleServiceDeployProgress;
-			Microservices.OnServiceDeployProgress += HandleServiceDeployProgress;
-			Microservices.OnDeployFailed -= HandleDeployFailed;
-			Microservices.OnDeployFailed += HandleDeployFailed;
-			Microservices.OnDeploySuccess -= HandleDeploySuccess;
-			Microservices.OnDeploySuccess += HandleDeploySuccess;
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+
+			serviceRegistry.OnServiceDeployStatusChanged -= HandleServiceDeployStatusChanged;
+			serviceRegistry.OnServiceDeployStatusChanged += HandleServiceDeployStatusChanged;
+			serviceRegistry.OnServiceDeployProgress -= HandleServiceDeployProgress;
+			serviceRegistry.OnServiceDeployProgress += HandleServiceDeployProgress;
+			serviceRegistry.OnDeployFailed -= HandleDeployFailed;
+			serviceRegistry.OnDeployFailed += HandleDeployFailed;
+			serviceRegistry.OnDeploySuccess -= HandleDeploySuccess;
+			serviceRegistry.OnDeploySuccess += HandleDeploySuccess;
 
 			_mainLoadingBar = Root.Q<LoadingBarElement>("mainLoadingBar");
 			_mainLoadingBar.SmallBar = true;
@@ -213,7 +215,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private string GetPublishedKey(string serviceName)
 		{
-			return string.Format(Microservices.SERVICE_PUBLISHED_KEY, serviceName);
+			return string.Format(MicroserviceReflectionCache.Registry.SERVICE_PUBLISHED_KEY, serviceName);
 		}
 
 		private void HandleServiceDeployStatusChanged(IDescriptor descriptor, ServicePublishState state)

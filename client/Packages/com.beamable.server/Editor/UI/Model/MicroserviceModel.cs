@@ -74,10 +74,11 @@ namespace Beamable.Editor.UI.Model
 
 		public static MicroserviceModel CreateNew(MicroserviceDescriptor descriptor, MicroservicesDataModel dataModel)
 		{
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			return new MicroserviceModel
 			{
 				ServiceDescriptor = descriptor,
-				ServiceBuilder = Microservices.GetServiceBuilder(descriptor),
+				ServiceBuilder = serviceRegistry.GetServiceBuilder(descriptor),
 				RemoteReference = dataModel.GetReference(descriptor),
 				RemoteStatus = dataModel.GetStatus(descriptor),
 				Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name)
@@ -285,9 +286,10 @@ $@"{{
 		public override void Refresh(IDescriptor descriptor)
 		{
 			// reset the descriptor and statemachines; because they aren't system.serializable durable.
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			ServiceDescriptor = (MicroserviceDescriptor)descriptor;
 			var oldBuilder = ServiceBuilder;
-			ServiceBuilder = Microservices.GetServiceBuilder(ServiceDescriptor);
+			ServiceBuilder = serviceRegistry.GetServiceBuilder(ServiceDescriptor);
 			ServiceBuilder.ForwardEventsTo(oldBuilder);
 			Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name);
 		}

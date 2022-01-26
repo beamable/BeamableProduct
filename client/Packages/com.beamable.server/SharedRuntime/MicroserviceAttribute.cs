@@ -46,6 +46,7 @@ namespace Beamable.Server
 
 		public AttributeValidationResult AreValidNameForType(MemberInfo member, string[] potentialNames)
 		{
+			// TODO: Validate no invalid characters are in the C#MS/Storage Object name
 			return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Valid, "");
 		}
 	}

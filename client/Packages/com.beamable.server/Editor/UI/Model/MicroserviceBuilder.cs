@@ -63,7 +63,8 @@ namespace Beamable.Editor.UI.Model
 			var secret = await beamable.GetRealmSecret();
 			var cid = beamable.CustomerView.Cid;
 			// check to see if the storage descriptor is running.
-			var connectionStrings = await Microservices.GetConnectionStringEnvironmentVariables((MicroserviceDescriptor)Descriptor);
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			var connectionStrings = await serviceRegistry.GetConnectionStringEnvironmentVariables((MicroserviceDescriptor)Descriptor);
 			return new RunServiceCommand((MicroserviceDescriptor)Descriptor, cid, secret, connectionStrings);
 		}
 

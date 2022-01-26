@@ -13,7 +13,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void CreateService(string serviceName, List<ServiceModelBase> additionalReferences = null)
 		{
 			MicroserviceEditor.CreateNewServiceFile(ServiceType.MicroService, serviceName, additionalReferences);
-			Microservices.MicroserviceCreated(serviceName);
+			BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>().MicroserviceCreated(serviceName);
 		}
 		protected override void InitCreateDependentService()
 		{
