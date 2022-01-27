@@ -55,7 +55,7 @@ namespace Beamable.Api
 		protected string Reset(params string[] args)
 		{
 
-			Beam.ClearAndDisposeAllContexts()
+			Beam.ClearAndStopAllContexts()
 				.FlatMap(_ => Beam.ResetToScene(args.Length == 1 ? args[0] : null))
 				.Then(_ =>
 				{
@@ -67,7 +67,7 @@ namespace Beamable.Api
 		[BeamableConsoleCommand(new[] { "RESTART", "FR" }, "Clear access tokens, then Restart the game as if it had just been launched", "FORCE-RESTART")]
 		public string Restart(params string[] args)
 		{
-			Beam.ClearAndDisposeAllContexts()
+			Beam.ClearAndStopAllContexts()
 				.FlatMap(_ => Beam.ResetToScene("0"))
 				.Then(_ =>
 				{
