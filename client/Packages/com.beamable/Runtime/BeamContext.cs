@@ -21,6 +21,7 @@ using Core.Platform.SDK;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -89,7 +90,7 @@ namespace Beamable
 		/// <summary>
 		/// Each <see cref="BeamContext"/> has a set of components that need to live on a gameObject in the scene.
 		/// </summary>
-		public GameObject GameObject => _gob ? _gob : _parent.GameObject;
+		public GameObject GameObject => _gob ? _gob : _parent?.GameObject;
 
 		public bool IsInitialized => _initPromise != null;
 
@@ -162,8 +163,7 @@ namespace Beamable
 		public IContentApi Content =>
 			_contentService ?? (_contentService = _serviceScope.GetService<IContentApi>());
 
-		private ApiServices _api;
-		public ApiServices Api => _api ?? (_api = new ApiServices(this));
+		public ApiServices Api => ServiceProvider.GetService<ApiServices>();
 
 		public string TimeOverride
 		{
@@ -235,7 +235,7 @@ namespace Beamable
 			}
 
 			await SaveToken(token); // set the token so that it gets picked up on the next initialization
-			var ctx = Instantiate(null, PlayerCode);
+			var ctx = Instantiate(_behaviour, PlayerCode);
 
 			// await InitStep_SaveToken();
 			await InitStep_GetUser();
@@ -637,6 +637,15 @@ namespace Beamable
 		/// </summary>
 		public static IEnumerable<BeamContext> All => _playerCodeToContext.Values;
 
+#if UNITY_2019_3_OR_NEWER
+		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+		private static async void HandleDomainReset()
+		{
+			// tear down all instances, and let them reboot normally.
+			await Beam.StopAllContexts();
+		}
+#endif
+
 		/// <summary>
 		/// After a context has been Stopped with the <see cref="Stop"/> method, this method can restart the instance.
 		/// <para>
@@ -707,8 +716,12 @@ namespace Beamable
 
 		public Promise OnDispose()
 		{
-			// delete the gameObject.
-			UnityEngine.Object.Destroy(GameObject);
+			if (GameObject)
+			{
+				UnityEngine.Object.Destroy(GameObject);
+			}
+
+
 			return Promise.Success;
 		}
 	}
