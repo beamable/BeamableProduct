@@ -51,7 +51,7 @@ namespace Beamable
 			// TODO: Maybe we can talk to Unity about this and hope that by Unity 2027 LTS we get an InitializeOnLoadAfterAssets callback 🤷‍ or something.
 			if (coreConfiguration == null)
 			{
-				Debug.Log("Triggering Script Recompile From Core Config check");
+				Spew.Logger.DoSpew("Triggering Script Recompile From Core Config check");
 				TriggerScriptRecompile();
 				return;
 			}
@@ -68,7 +68,7 @@ namespace Beamable
 			{
 				if (e.FileName == ConfigDatabase.GetConfigFileName())
 				{
-					Debug.Log("Triggering Script Recompile From Config Database check");
+					Spew.Logger.DoSpew("Triggering Script Recompile From Config Database check");
 					TriggerScriptRecompile();
 					return;
 				}
@@ -211,7 +211,7 @@ namespace Beamable
 			if (isCompilationPending || isCompiling)
 				return;
 			
-			Debug.Log("Actually requesting recompilation to happen!");
+			Spew.Logger.DoSpew("Actually requesting recompilation to happen!");
 
 			var dirtyAllScriptsMethod = editorCompilationInterfaceType.GetMethod("DirtyAllScripts", BindingFlags.Static | BindingFlags.Public);
 			dirtyAllScriptsMethod?.Invoke(editorCompilationInterfaceType, null);
