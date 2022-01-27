@@ -31,16 +31,12 @@
 #sectionLabel {
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-text-align: middle-left;
-    font-size: 14px;
+    font-size: 12px;
     padding-left: 20px;
 }
 
 #divider {
     flex-grow: 1;
-}
-
-#variables {
-    background-color: rgb(77, 77, 77);
 }
 
 .button {
