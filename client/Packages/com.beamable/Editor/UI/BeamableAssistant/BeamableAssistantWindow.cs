@@ -96,7 +96,7 @@ namespace Beamable.Editor.Assistant
 		void Refresh()
 		{
 			// if null, close the window --- exists to handle the re-import all case.
-			if (BeamEditor.CoreConfiguration == null)
+			if (!BeamEditor.IsInitialized)
 			{
 				Close();
 				return;
@@ -148,7 +148,7 @@ namespace Beamable.Editor.Assistant
 				_imguiContainer = new IMGUIContainer(() =>
 				{
 					// Necessary as in a re-import all flow with this window opened this will throw for some reason
-					if (_treeViewIMGUI != null && _treeViewIMGUI.TreeViewItems.Count > 0)
+					if (_treeViewIMGUI?.TreeViewItems?.Count > 0)
 					{
 						// Tree view - Re-render every frame
 						Rect rect = GUILayoutUtility.GetRect(200,

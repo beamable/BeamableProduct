@@ -47,6 +47,7 @@ using Beamable.Sessions;
 using Core.Platform.SDK;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -108,7 +109,14 @@ namespace Beamable
 			PromiseExtensions.SetupDefaultHandler();
 
 			// The config-database is what sits inside of config-defaults
-			ConfigDatabase.Init();
+			try
+			{
+				ConfigDatabase.Init();
+			}
+			catch (FileNotFoundException)
+			{
+				Debug.LogError("Failed to find 'config-defaults' file. This should never be seen here. If you do, please file a bug-report.");
+			}
 
 			// Flush cache that wasn't created with this version of the game.
 			OfflineCache.FlushInvalidCache();
