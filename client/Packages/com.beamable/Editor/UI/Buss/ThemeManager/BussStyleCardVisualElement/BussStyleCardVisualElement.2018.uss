@@ -31,16 +31,12 @@
 #sectionLabel {
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-text-align: middle-left;
-    font-size: 14px;
+    font-size: 12px;
     padding-left: 20px;
 }
 
 #divider {
     flex-grow: 1;
-}
-
-#variables {
-    background-color: rgb(77, 77, 77);
 }
 
 .button {
@@ -69,27 +65,6 @@
 
 .largeButton {
     width: 90px;
-}
-
-.edit {
-    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/edit.png");
-}
-
-.wizard {
-    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/wizard.png");
-}
-
-.undo {
-    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/undo.png");
-}
-
-.cleanAll {
-    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/cleanAll.png");
-}
-
-.add {
-    margin-left: 0;
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new L.png");
 }
 
 .hidden {

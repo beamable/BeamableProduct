@@ -13,6 +13,10 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+#if UNITY_2019_3_OR_NEWER
+using UnityEditor.Compilation;
+#endif
+
 
 namespace Beamable
 {
@@ -23,6 +27,8 @@ namespace Beamable
 		public static readonly ReflectionCache EditorReflectionCache;
 		public static readonly IBeamHintGlobalStorage HintGlobalStorage;
 		public static readonly IBeamHintPreferencesManager HintPreferencesManager;
+
+		public static readonly bool IsInitialized;
 
 		static BeamEditor()
 		{
@@ -43,13 +49,29 @@ namespace Beamable
 			// This means CANNOT have an internal guarantee that BeamEditor is always fully initialized --- which means, we need to null-check the stuff we get from BeamEditor 😭
 			// TODO: Maybe we can talk to Unity about this and hope that by Unity 2027 LTS we get an InitializeOnLoadAfterAssets callback 🤷‍ or something.
 			if (coreConfiguration == null)
+			{
+				Spew.Logger.DoSpew("Triggering Script Recompile From Core Config check");
+				TriggerScriptRecompile();
 				return;
+			}
 
 			// Ensures we have the latest assembly definitions and paths are all correctly setup.
 			coreConfiguration.OnValidate();
 
 			// Initializes the Config database
-			ConfigDatabase.Init();
+			try
+			{
+				ConfigDatabase.Init();
+			}
+			catch (FileNotFoundException e)
+			{
+				if (e.FileName == ConfigDatabase.GetConfigFileName())
+				{
+					Spew.Logger.DoSpew("Triggering Script Recompile From Config Database check");
+					TriggerScriptRecompile();
+					return;
+				}
+			}
 
 			// Initialize Editor instances of Reflection and Assistant services
 			EditorReflectionCache = new ReflectionCache();
@@ -133,6 +155,8 @@ namespace Beamable
 
 				hintSystem.OnInitialized();
 			}
+
+			IsInitialized = true;
 		}
 
 		public static T GetReflectionSystem<T>() where T : IReflectionSystem => EditorReflectionCache == null ? default : EditorReflectionCache.GetFirstSystemOfType<T>();
@@ -166,5 +190,32 @@ namespace Beamable
 				});
 			}
 		}
+
+
+
+#if UNITY_EDITOR
+		public static void TriggerScriptRecompile()
+		{
+#if UNITY_2019_3_OR_NEWER
+            CompilationPipeline.RequestScriptCompilation();
+#elif UNITY_2017_1_OR_NEWER
+			var editorAssembly = Assembly.GetAssembly(typeof(UnityEditor.Editor));
+			var editorCompilationInterfaceType = editorAssembly.GetType("UnityEditor.Scripting.ScriptCompilation.EditorCompilationInterface");
+			
+			var isCompilationPendingMethod = editorCompilationInterfaceType.GetMethod("IsCompilationPending", BindingFlags.Static | BindingFlags.Public);
+			var isCompilingMethod = editorCompilationInterfaceType.GetMethod("IsCompiling", BindingFlags.Static | BindingFlags.Public);
+
+			var isCompilationPending = (bool)isCompilationPendingMethod.Invoke(editorCompilationInterfaceType, null);
+			var isCompiling = (bool)isCompilingMethod.Invoke(editorCompilationInterfaceType, null);
+			if (isCompilationPending || isCompiling)
+				return;
+			
+			Spew.Logger.DoSpew("Actually requesting recompilation to happen!");
+
+			var dirtyAllScriptsMethod = editorCompilationInterfaceType.GetMethod("DirtyAllScripts", BindingFlags.Static | BindingFlags.Public);
+			dirtyAllScriptsMethod?.Invoke(editorCompilationInterfaceType, null);
+#endif
+		}
+#endif
 	}
 }

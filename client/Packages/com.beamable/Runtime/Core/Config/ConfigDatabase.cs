@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
 namespace Beamable.Config
@@ -49,7 +50,7 @@ namespace Beamable.Config
 			TextAsset asset = Resources.Load(fileName) as TextAsset;
 			if (asset == null)
 			{
-				Debug.LogError("Cannot find config file in Resource directory");
+				throw new FileNotFoundException("Cannot find config file in Resource directory", fileName);
 			}
 			else
 			{

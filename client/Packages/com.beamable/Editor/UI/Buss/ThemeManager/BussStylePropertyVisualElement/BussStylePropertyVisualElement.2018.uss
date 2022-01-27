@@ -7,7 +7,6 @@
 
 #propertyLabel {
     width: 140px;
-    color: rgb(255,255,255);
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-font-style: bold;
     -unity-text-align: middle-left;
