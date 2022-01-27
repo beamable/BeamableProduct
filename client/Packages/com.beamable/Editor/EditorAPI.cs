@@ -136,7 +136,7 @@ namespace Beamable.Editor
 			}
 			catch (FileNotFoundException)
 			{
-				Debug.LogError("Failed to find 'config-defaults' file. This should never be seen here. If you do, please file a bug-report.");
+				Debug.LogError("Failed to find 'config-defaults' file from Editor API. This should never be seen here. If you do, please file a bug-report.");
 			}
 
 			ConfigDatabase.TryGetString("alias", out var alias);
