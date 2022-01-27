@@ -24,9 +24,9 @@ namespace Beamable.Server.Editor.DockerCommands
 			{
 				var globalHintStorage = BeamEditor.HintGlobalStorage;
 				if (value)
-					globalHintStorage.AddOrReplaceHint(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER, BeamHintIds.ID_INSTALL_DOCKER_PROCESS);
+					globalHintStorage?.AddOrReplaceHint(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER, BeamHintIds.ID_INSTALL_DOCKER_PROCESS);
 				else
-					globalHintStorage.RemoveHint(new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER, BeamHintIds.ID_INSTALL_DOCKER_PROCESS));
+					globalHintStorage?.RemoveHint(new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER, BeamHintIds.ID_INSTALL_DOCKER_PROCESS));
 
 				EditorPrefs.SetBool("DockerNotInstalled", value);
 			}
