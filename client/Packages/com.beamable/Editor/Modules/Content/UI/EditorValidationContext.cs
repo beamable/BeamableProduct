@@ -1,7 +1,7 @@
 namespace Beamable.Editor.Content.UI
 {
-   public class EditorValidationContext
-   {
+	public class EditorValidationContext
+	{
 
-   }
+	}
 }

@@ -15,8 +15,8 @@ namespace Beamable.Platform.Tests.Auth.AuthServiceTests
 		public IEnumerator PassingNullSendsEmptyJson()
 		{
 			var mockReq = _requester.MockRequest<User>(Method.DELETE, $"{ROUTE}/me/device")
-			                        .WithoutJsonField("deviceIds")
-			                        .WithResponse(_sampleUser);
+									.WithoutJsonField("deviceIds")
+									.WithResponse(_sampleUser);
 
 			var req = _service.RemoveDeviceIds(null);
 			yield return req.AsYield();
@@ -28,19 +28,19 @@ namespace Beamable.Platform.Tests.Auth.AuthServiceTests
 		public IEnumerator PassingAnEmptyArraySendsEmptyArray()
 		{
 			var mockReq = _requester.MockRequest<User>(Method.DELETE, $"{ROUTE}/me/device")
-			                        .WithJsonFieldMatch("deviceIds", x =>
-			                        {
-				                        if (x is List<object> strArr)
-				                        {
-					                        return strArr.Count == 0;
-				                        }
+									.WithJsonFieldMatch("deviceIds", x =>
+									{
+										if (x is List<object> strArr)
+										{
+											return strArr.Count == 0;
+										}
 
 
-				                        return false;
-			                        })
-			                        .WithResponse(_sampleUser);
+										return false;
+									})
+									.WithResponse(_sampleUser);
 
-			var req = _service.RemoveDeviceIds(new string[]{});
+			var req = _service.RemoveDeviceIds(new string[] { });
 			yield return req.AsYield();
 
 			Assert.AreEqual(1, mockReq.CallCount);
@@ -50,18 +50,18 @@ namespace Beamable.Platform.Tests.Auth.AuthServiceTests
 		public IEnumerator PassAnArrayWithDataSendsTheData()
 		{
 			var mockReq = _requester.MockRequest<User>(Method.DELETE, $"{ROUTE}/me/device")
-			                        .WithJsonFieldMatch("deviceIds", x =>
-			                        {
-				                        if (x is List<object> strArr)
-				                        {
-					                        return strArr.Count == 2;
-				                        }
+									.WithJsonFieldMatch("deviceIds", x =>
+									{
+										if (x is List<object> strArr)
+										{
+											return strArr.Count == 2;
+										}
 
-				                        return false;
-			                        })
-			                        .WithResponse(_sampleUser);
+										return false;
+									})
+									.WithResponse(_sampleUser);
 
-			var req = _service.RemoveDeviceIds(new string[]{"a", "b"});
+			var req = _service.RemoveDeviceIds(new string[] { "a", "b" });
 			yield return req.AsYield();
 
 			Assert.AreEqual(1, mockReq.CallCount);

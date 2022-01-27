@@ -10,11 +10,11 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
-    public class MicroserviceComponent : BeamableVisualElement
-    {
-        public MicroserviceComponent(string name) : base($"{Constants.COMP_PATH}/{name}/{name}")
-        {
+	public class MicroserviceComponent : BeamableVisualElement
+	{
+		public MicroserviceComponent(string name) : base($"{Constants.COMP_PATH}/{name}/{name}")
+		{
 
-        }
-    }
+		}
+	}
 }

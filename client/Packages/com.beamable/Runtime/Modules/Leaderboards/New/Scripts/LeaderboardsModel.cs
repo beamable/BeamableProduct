@@ -1,11 +1,11 @@
 ﻿using Beamable.AccountManagement;
-using System;
-using System.Collections.Generic;
 using Beamable.Api.Leaderboard;
 using Beamable.Common.Api.Leaderboards;
 using Beamable.Common.Leaderboards;
 using Beamable.Modules.Generics;
 using Beamable.Stats;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Events;
@@ -72,7 +72,7 @@ namespace Beamable.Modules.Leaderboards
 					_firstEntryId, LastEntryId, CurrentUserRankEntry,
 					_aliasStatObject.StatKey,
 					_aliasStatObject.DefaultValue);
-				
+
 				InvokeRefresh();
 			}
 		}

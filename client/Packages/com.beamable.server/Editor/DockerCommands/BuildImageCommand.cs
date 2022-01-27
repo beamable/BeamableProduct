@@ -76,7 +76,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			{
 				var sourceDirectory = Path.GetDirectoryName(dll.assetPath);
 				var fullSource = Path.Combine(rootPath, sourceDirectory);
-				Debug.Log("Copying dll from " + fullSource);
+				MicroserviceLogHelper.HandleLog(descriptor, "Build", "Copying dll from " + fullSource);
 
 				// TODO: better folder namespacing?
 				CopyFolderToBuildDirectory(fullSource, "libdll", descriptor);
@@ -97,7 +97,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			{
 				var sourceDirectory = Path.GetDirectoryName(assemblyDependency.Location);
 				var fullSource = Path.Combine(rootPath, sourceDirectory);
-				Debug.Log("Copying assembly from " + fullSource);
+				MicroserviceLogHelper.HandleLog(descriptor, "Build", "Copying assembly from " + fullSource);
 
 				// TODO: better folder namespacing?
 				CopyFolderToBuildDirectory(fullSource, assemblyDependency.Name, descriptor);
@@ -122,7 +122,8 @@ namespace Beamable.Server.Editor.DockerCommands
 				var targetRelative = dep.Agnostic.SourcePath.Substring(Application.dataPath.Length - "Assets/".Length);
 				var targetFull = descriptor.BuildPath + targetRelative;
 
-				Debug.Log("Copying source code to " + targetFull);
+				MicroserviceLogHelper.HandleLog(descriptor, "Build", "Copying source code to " + targetFull);
+
 				var targetDir = Path.GetDirectoryName(targetFull);
 				Directory.CreateDirectory(targetDir);
 

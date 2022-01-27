@@ -91,7 +91,7 @@ namespace Beamable.Editor
 			// Apply the defined configuration for how users want to uncaught promises (with no .Error callback attached) in Beamable promises. 
 			if (!Application.isPlaying)
 			{
-				var promiseHandlerConfig = BeamEditor.CoreConfiguration.DefaultUncaughtPromiseHandlerConfiguration;
+				var promiseHandlerConfig = CoreConfiguration.Instance.DefaultUncaughtPromiseHandlerConfiguration;
 				switch (promiseHandlerConfig)
 				{
 					case CoreConfiguration.EventHandlerConfig.Guarantee:

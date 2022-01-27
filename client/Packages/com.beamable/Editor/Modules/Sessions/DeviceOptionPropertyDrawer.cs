@@ -15,44 +15,44 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Modules.Sessions
 {
-   [CustomPropertyDrawer(typeof(SessionOption), true)]
-   public class DeviceOptionPropertyDrawer
-      :
+	[CustomPropertyDrawer(typeof(SessionOption), true)]
+	public class DeviceOptionPropertyDrawer
+	   :
 #if UNITY_2019_1_OR_NEWER
       PropertyDrawer
 #else
-      UIElementsPropertyDrawer
+	  UIElementsPropertyDrawer
 #endif
-   {
-      public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
-      {
-         var subProperty = property.FindPropertyRelative(nameof(SessionOption.UserEnabled));
+	{
+		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+		{
+			var subProperty = property.FindPropertyRelative(nameof(SessionOption.UserEnabled));
 
-         var obj = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property);
-         var option = obj as SessionOption;
+			var obj = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property);
+			var option = obj as SessionOption;
 
-         if (option?.ForceEnabled ?? false)
-         {
-            return;
-         }
+			if (option?.ForceEnabled ?? false)
+			{
+				return;
+			}
 
-         EditorGUI.PropertyField(position, subProperty, label);
-      }
+			EditorGUI.PropertyField(position, subProperty, label);
+		}
 
-      public override VisualElement CreatePropertyGUI(SerializedProperty property)
-      {
-         var subProperty = property.FindPropertyRelative(nameof(SessionOption.UserEnabled));
-         var field = new PropertyField(subProperty, property.displayName);
+		public override VisualElement CreatePropertyGUI(SerializedProperty property)
+		{
+			var subProperty = property.FindPropertyRelative(nameof(SessionOption.UserEnabled));
+			var field = new PropertyField(subProperty, property.displayName);
 
-         var obj = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property);
-         var option = obj as SessionOption;
+			var obj = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property);
+			var option = obj as SessionOption;
 
-         if (option?.ForceEnabled ?? false)
-         {
-            return new VisualElement(); // nothing to do; its always enabled
-         }
+			if (option?.ForceEnabled ?? false)
+			{
+				return new VisualElement(); // nothing to do; its always enabled
+			}
 
-         return field;
-      }
-   }
+			return field;
+		}
+	}
 }

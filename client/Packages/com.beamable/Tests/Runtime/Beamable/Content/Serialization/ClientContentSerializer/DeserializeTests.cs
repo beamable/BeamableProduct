@@ -47,7 +47,8 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 
 			void LaunchThread()
 			{
-				var thread = new Thread(() => {
+				var thread = new Thread(() =>
+				{
 					try
 					{
 						var cycle = cycleCount;

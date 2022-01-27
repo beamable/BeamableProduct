@@ -31,7 +31,8 @@ namespace Beamable.Editor.ToolbarExtender
 
 		static BeamableToolbarExtender()
 		{
-			Reload();
+			EditorDebouncer.Debounce("Beamable Toolbar Init", Reload);
+			//Reload();
 		}
 
 		public static void Reload()
@@ -66,7 +67,7 @@ namespace Beamable.Editor.ToolbarExtender
 				_editorAPI = api;
 
 				// Load and inject Beamable Menu Items (necessary due to multiple package split of SDK) --- sort them by specified order, and alphabetically when tied.
-				var menuItemsSearchInFolders = BeamEditor.CoreConfiguration.BeamableAssistantMenuItemsPath.Where(Directory.Exists).ToArray();
+				var menuItemsSearchInFolders = CoreConfiguration.Instance.BeamableAssistantMenuItemsPath.Where(Directory.Exists).ToArray();
 				var menuItemsGuids = AssetDatabase.FindAssets($"t:{nameof(BeamableAssistantMenuItem)}", menuItemsSearchInFolders);
 				_assistantMenuItems = menuItemsGuids.Select(guid => AssetDatabase.LoadAssetAtPath<BeamableAssistantMenuItem>(AssetDatabase.GUIDToAssetPath(guid))).ToList();
 				_assistantMenuItems.Sort((mi1, mi2) =>
@@ -77,7 +78,7 @@ namespace Beamable.Editor.ToolbarExtender
 					return orderComp == 0 ? labelComp : orderComp;
 				});
 
-				var toolbarButtonsSearchInFolders = BeamEditor.CoreConfiguration.BeamableAssistantToolbarButtonsPaths.Where(Directory.Exists).ToArray();
+				var toolbarButtonsSearchInFolders = CoreConfiguration.Instance.BeamableAssistantToolbarButtonsPaths.Where(Directory.Exists).ToArray();
 				var toolbarButtonsGuids = AssetDatabase.FindAssets($"t:{nameof(BeamableToolbarButton)}", toolbarButtonsSearchInFolders);
 				var toolbarButtons = toolbarButtonsGuids.Select(guid => AssetDatabase.LoadAssetAtPath<BeamableToolbarButton>(AssetDatabase.GUIDToAssetPath(guid))).ToList();
 

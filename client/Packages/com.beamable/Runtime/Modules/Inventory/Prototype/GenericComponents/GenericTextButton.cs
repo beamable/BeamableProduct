@@ -4,33 +4,33 @@ using UnityEngine.UI;
 
 namespace Beamable.Modules.Inventory.Prototypes
 {
-    [RequireComponent(typeof(Button))]
-    public class GenericTextButton : MonoBehaviour
-    {
-        private Button _button;
-        private Action _onClick;
+	[RequireComponent(typeof(Button))]
+	public class GenericTextButton : MonoBehaviour
+	{
+		private Button _button;
+		private Action _onClick;
 
-        private void Awake()
-        {
-            _button = GetComponent<Button>();
-        }
+		private void Awake()
+		{
+			_button = GetComponent<Button>();
+		}
 
-        private void OnDestroy()
-        {
-            if (_button != null)
-            {
-                _button.onClick.RemoveAllListeners();
-            }
-        }
+		private void OnDestroy()
+		{
+			if (_button != null)
+			{
+				_button.onClick.RemoveAllListeners();
+			}
+		}
 
-        public void Setup(Action onClick)
-        {
-            _onClick = onClick;
+		public void Setup(Action onClick)
+		{
+			_onClick = onClick;
 
-            if (_button != null)
-            {
-                _button.onClick.AddListener(() => { _onClick?.Invoke(); });
-            }
-        }
-    }
+			if (_button != null)
+			{
+				_button.onClick.AddListener(() => { _onClick?.Invoke(); });
+			}
+		}
+	}
 }
