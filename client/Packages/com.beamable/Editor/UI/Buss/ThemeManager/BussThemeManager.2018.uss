@@ -73,5 +73,10 @@ BussElementHierarchyVisualElement {
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-font-style: bold;
     -unity-text-align: middle-right;
-    color: rgb(255,255,255);
+    /*color: rgb(255,255,255);*/
+}
+
+#filterToggle > TemplateContainer > #mainVisualElement> Label {
+    font-size: 12px;
+    margin-right: 0px;
 }
