@@ -13,3 +13,7 @@
 
 #addStyleButton > Label {
 }
+
+#filterToggle > TemplateContainer > #mainVisualElement> Label {
+    color: rgba(9, 9, 9, 1);
+}

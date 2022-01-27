@@ -1,5 +1,9 @@
 #cardHeader {
-    color: rgb(256, 256, 256);
+    color: rgb(255, 255, 255);
+}
+
+#selectorLabelParent > BussSelectorLabelVisualElement > #root > TextElement {
+    color: rgba(255, 255, 255, 1);
 }
 
 #colorBlock {

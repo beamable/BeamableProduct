@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-using Beamable.Common.Api.Leaderboards;
+﻿using Beamable.Common.Api.Leaderboards;
 using Beamable.Modules.Generics;
 using Beamable.UI.Scripts;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.Modules.Leaderboards
@@ -46,7 +46,7 @@ namespace Beamable.Modules.Leaderboards
 			foreach (RankEntry rankEntry in Data)
 			{
 				LeaderboardsRankEntryPresenter.PoolData rankEntryPoolData =
-					new LeaderboardsRankEntryPresenter.PoolData {RankEntry = rankEntry, Height = 50.0f};
+					new LeaderboardsRankEntryPresenter.PoolData { RankEntry = rankEntry, Height = 50.0f };
 				items.Add(rankEntryPoolData);
 			}
 

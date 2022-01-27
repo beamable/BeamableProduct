@@ -1,0 +1,33 @@
+name: Format check on push
+
+on:
+  push:
+    branches:
+      - 'main'
+      - 'master'
+    paths:
+      - 'client/**'
+      - 'microservice/**'
+
+jobs:
+  dotnet-format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+      - name: Install dotnet-format
+        run: dotnet tool install --global --version 5.1.250801 dotnet-format
+      - name: Format files
+        id: format
+        run: dotnet-format -f client/Packages
+      - name: Format results
+        run: echo ::set-output name=any::$(if [ -n "$(git status --porcelain)" ]; then echo "true"; else echo "false"; fi)
+        id: format-changes
+      - name: Create Pull Request
+        if:  ${{ steps.format-changes.outputs.any == 'true' }}
+        uses: peter-evans/create-pull-request@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch-suffix: 'timestamp'
+          title: 'Formatting: ${{ github.event.head_commit.message }}'
+          labels: 'bot'

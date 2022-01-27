@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using Beamable.UI.Tweening;
+﻿using Beamable.UI.Tweening;
+using System.Collections.Generic;
 
 namespace Beamable.UI.Buss
 {

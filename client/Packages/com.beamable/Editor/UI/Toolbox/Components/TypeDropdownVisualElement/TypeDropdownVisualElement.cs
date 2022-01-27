@@ -1,9 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.Toolbox.UI.Components;
 using Beamable.Editor.UI.Buss;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -15,48 +15,48 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Toolbox.Components
 {
-    public class TypeDropdownVisualElement : ToolboxComponent
-    {
-        public ToolboxModel Model { get; set; }
+	public class TypeDropdownVisualElement : ToolboxComponent
+	{
+		public ToolboxModel Model { get; set; }
 
-        public TypeDropdownVisualElement() : base(nameof(TypeDropdownVisualElement))
-        {
+		public TypeDropdownVisualElement() : base(nameof(TypeDropdownVisualElement))
+		{
 
-        }
+		}
 
-        public override void Refresh()
-        {
-            base.Refresh();
-            // add two rows as testing
-            var listRoot = Root.Q<VisualElement>("typeList");
-            var allTypes = Enum.GetValues(typeof(WidgetOrientationSupport)).Cast<WidgetOrientationSupport>().ToList();
+		public override void Refresh()
+		{
+			base.Refresh();
+			// add two rows as testing
+			var listRoot = Root.Q<VisualElement>("typeList");
+			var allTypes = Enum.GetValues(typeof(WidgetOrientationSupport)).Cast<WidgetOrientationSupport>().ToList();
 
-            SetTypesList(allTypes, listRoot);
-        }
+			SetTypesList(allTypes, listRoot);
+		}
 
-        private void SetTypesList(IEnumerable<WidgetOrientationSupport> allTypes, VisualElement listRoot)
-        {
-            listRoot.Clear();
-            foreach (var orientation in allTypes)
-            {
-                var typeName = orientation.Serialize();
+		private void SetTypesList(IEnumerable<WidgetOrientationSupport> allTypes, VisualElement listRoot)
+		{
+			listRoot.Clear();
+			foreach (var orientation in allTypes)
+			{
+				var typeName = orientation.Serialize();
 
 
-                var row = new FilterRowVisualElement();
-                row.OnValueChanged += nextValue =>
-                {
-                    Model.SetOrientationSupport(orientation, nextValue);
-                };
+				var row = new FilterRowVisualElement();
+				row.OnValueChanged += nextValue =>
+				{
+					Model.SetOrientationSupport(orientation, nextValue);
+				};
 
-                row.FilterName = typeName;
-                row.Refresh();
-                var isOrientationSupported = (Model.Query?.HasOrientationConstraint ?? false)
-                                             && Model.Query.FilterIncludes(orientation);
-                row.SetValue(isOrientationSupported);
+				row.FilterName = typeName;
+				row.Refresh();
+				var isOrientationSupported = (Model.Query?.HasOrientationConstraint ?? false)
+											 && Model.Query.FilterIncludes(orientation);
+				row.SetValue(isOrientationSupported);
 
-                listRoot.Add(row);
-            }
-        }
+				listRoot.Add(row);
+			}
+		}
 
-    }
+	}
 }

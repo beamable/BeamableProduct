@@ -10,7 +10,7 @@ namespace Beamable.UI.Scripts
 	[DisallowMultipleComponent]
 	[RequireComponent(typeof(RectTransform))]
 	public class PoolableScrollView : UIBehaviour, IInitializePotentialDragHandler, IBeginDragHandler, IEndDragHandler,
-	                                  IDragHandler, IScrollHandler, ICanvasElement
+									  IDragHandler, IScrollHandler, ICanvasElement
 	{
 		public interface IItem
 		{
@@ -25,7 +25,7 @@ namespace Beamable.UI.Scripts
 			RectTransform Spawn(IItem item, out int order);
 			void Despawn(IItem item, RectTransform transform);
 		}
-		
+
 		public event Action OnPositionChanged;
 
 #pragma warning disable CS0649
@@ -151,7 +151,7 @@ namespace Beamable.UI.Scripts
 			if (_trackLastElement && _items.Count > 0 && (_lowerLimit || forceTrackLastElement))
 			{
 				bool animateContent = _lastElement != null && !EqualItems(_lastElement, _items[_items.Count - 1]) &&
-				                      _items.Exists(i => EqualItems(i, _lastElement));
+									  _items.Exists(i => EqualItems(i, _lastElement));
 				_lastElement = _items[_items.Count - 1];
 				_positionMoveTo = _positionLimit;
 				_position = Mathf.Max(0, _positionLimit - _lastElement.Height);
@@ -205,8 +205,8 @@ namespace Beamable.UI.Scripts
 			float pos = -_position + _padding.top;
 
 			if (_itemsHeight < limit && (_childAlignment == TextAnchor.LowerCenter ||
-			                             _childAlignment == TextAnchor.LowerLeft ||
-			                             _childAlignment == TextAnchor.LowerRight))
+										 _childAlignment == TextAnchor.LowerLeft ||
+										 _childAlignment == TextAnchor.LowerRight))
 			{
 				pos += limit - _itemsHeight;
 			}
@@ -239,8 +239,8 @@ namespace Beamable.UI.Scripts
 					itemRectOrder.rect.offsetMax = new Vector2(0, item.Height);
 					itemRectOrder.rect.anchoredPosition = new Vector2(_padding.left, -pos);
 					itemRectOrder.rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal,
-					                                             itemRectOrder.rect.rect.width - _padding.right -
-					                                             _padding.left);
+																 itemRectOrder.rect.rect.width - _padding.right -
+																 _padding.left);
 				}
 
 				pos += item.Height;
@@ -249,7 +249,7 @@ namespace Beamable.UI.Scripts
 
 			// fix for order in gear list view (sort by cached order)
 			RectTransform[] sortedItems = _itemRects.OrderBy(kv => kv.Value.order)
-			                                        .Select(kv => kv.Value.rect).ToArray();
+													.Select(kv => kv.Value.rect).ToArray();
 
 			for (int i = 0; i < sortedItems.Length; i++)
 			{
@@ -305,7 +305,7 @@ namespace Beamable.UI.Scripts
 				if (offset != 0)
 				{
 					_position = Mathf.SmoothDamp(_position, _position - offset, ref _velocity, _elasticity,
-					                             Mathf.Infinity, deltaTime);
+												 Mathf.Infinity, deltaTime);
 					_positionMoveTo = _position;
 					UpdateContent();
 
@@ -366,7 +366,7 @@ namespace Beamable.UI.Scripts
 				return;
 
 			RectTransformUtility.ScreenPointToLocalPointInRectangle(_viewRect, eventData.position,
-			                                                        eventData.pressEventCamera, out _dragStart);
+																	eventData.pressEventCamera, out _dragStart);
 			_dragStartPosition = _position;
 			_dragging = true;
 			_lowerLimit = false;
@@ -440,7 +440,7 @@ namespace Beamable.UI.Scripts
 		private static float RubberDelta(float overStretching, float viewSize)
 		{
 			return (1 - (1 / ((Mathf.Abs(overStretching) * 0.55f / viewSize) + 1))) * viewSize *
-			       Mathf.Sign(overStretching);
+				   Mathf.Sign(overStretching);
 		}
 
 		private bool EqualItems(IItem l, IItem r)

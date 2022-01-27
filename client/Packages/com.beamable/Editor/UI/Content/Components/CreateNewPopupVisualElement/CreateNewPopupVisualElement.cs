@@ -1,8 +1,8 @@
-﻿using UnityEngine;
+﻿using Beamable.Editor.Content.Models;
 using System;
 using System.Collections.Generic;
-using Beamable.Editor.Content.Models;
 using UnityEditor.IMGUI.Controls;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -13,103 +13,103 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Content.Components
 {
-   public class CreateNewPopupVisualElement : ContentManagerComponent
-   {
-      public event Action<ContentTypeDescriptor> OnAddItemButtonClicked;
-      public ContentDataModel Model { get; internal set; }
-      private HashSet<ContentTypeDescriptor> selectedTypeDescriptors = new HashSet<ContentTypeDescriptor>();
+	public class CreateNewPopupVisualElement : ContentManagerComponent
+	{
+		public event Action<ContentTypeDescriptor> OnAddItemButtonClicked;
+		public ContentDataModel Model { get; internal set; }
+		private HashSet<ContentTypeDescriptor> selectedTypeDescriptors = new HashSet<ContentTypeDescriptor>();
 
-      private Button _addContentGroupButton;
-      private Button _addContentButton;
-      // private Button _addItemButton;
-      private VisualElement buttonListRoot;
-      
-      public CreateNewPopupVisualElement() : base(nameof(CreateNewPopupVisualElement)) { }
+		private Button _addContentGroupButton;
+		private Button _addContentButton;
+		// private Button _addItemButton;
+		private VisualElement buttonListRoot;
 
-      public override void Refresh()
-      {
-         base.Refresh();
+		public CreateNewPopupVisualElement() : base(nameof(CreateNewPopupVisualElement)) { }
 
-         buttonListRoot = Root.Q("mainVisualElement");
-         // _addItemButton = Root.Q<Button>("addItemButton");
+		public override void Refresh()
+		{
+			base.Refresh();
 
-         // if (Model.SelectedContentTypes.Count == 1)
-         // {
-         //    TreeViewItem treeViewItem = Model.SelectedContentTypes[0];
-         //    ContentTypeTreeViewItem contentTypeTreeViewItem = (ContentTypeTreeViewItem)treeViewItem;
-         //    // Type type = contentTypeTreeViewItem.TypeDescriptor.ContentType;
-         //
-         //    _addItemButton.SetEnabled(true);
-         //    _addItemButton.text = string.Format(ContentManagerConstants.CreateNewPopupAddButtonEnabledText,
-         //       contentTypeTreeViewItem.TypeDescriptor.TypeName);
-         //
-         // }
-         // else
-         // {
-         //    _addItemButton.SetEnabled(false);
-         //    _addItemButton.text = ContentManagerConstants.CreateNewPopupAddButtonDisabledText;
-         // }
-         //
-         // _addItemButton.clickable.clicked += () =>
-         // {
-         //    AddItemButton_OnClicked();
-         // };
-         GetSelectedItemCount();
-         foreach (var typeDescriptor in selectedTypeDescriptors)
-         {
-            AddNewItem(typeDescriptor);
-         }
-      }
+			buttonListRoot = Root.Q("mainVisualElement");
+			// _addItemButton = Root.Q<Button>("addItemButton");
 
-      private void AddNewItem(ContentTypeDescriptor typeDescriptor)
-      {
-         Button createItemButton = new Button();
-         createItemButton.AddToClassList("addItemButton");
-         createItemButton.SetEnabled(true);
-         createItemButton.text = string.Format(ContentManagerConstants.CreateNewPopupAddButtonEnabledText,
-            typeDescriptor.TypeName);
-         createItemButton.clickable.clicked += () =>
-         {
-            OnAddItemButtonClicked?.Invoke(typeDescriptor);
-         };
-         
-         buttonListRoot.Add(createItemButton);
-      }
+			// if (Model.SelectedContentTypes.Count == 1)
+			// {
+			//    TreeViewItem treeViewItem = Model.SelectedContentTypes[0];
+			//    ContentTypeTreeViewItem contentTypeTreeViewItem = (ContentTypeTreeViewItem)treeViewItem;
+			//    // Type type = contentTypeTreeViewItem.TypeDescriptor.ContentType;
+			//
+			//    _addItemButton.SetEnabled(true);
+			//    _addItemButton.text = string.Format(ContentManagerConstants.CreateNewPopupAddButtonEnabledText,
+			//       contentTypeTreeViewItem.TypeDescriptor.TypeName);
+			//
+			// }
+			// else
+			// {
+			//    _addItemButton.SetEnabled(false);
+			//    _addItemButton.text = ContentManagerConstants.CreateNewPopupAddButtonDisabledText;
+			// }
+			//
+			// _addItemButton.clickable.clicked += () =>
+			// {
+			//    AddItemButton_OnClicked();
+			// };
+			GetSelectedItemCount();
+			foreach (var typeDescriptor in selectedTypeDescriptors)
+			{
+				AddNewItem(typeDescriptor);
+			}
+		}
 
-      // Get a list of all items able to be created.
-      public int GetSelectedItemCount()
-      {
-         selectedTypeDescriptors.Clear();
+		private void AddNewItem(ContentTypeDescriptor typeDescriptor)
+		{
+			Button createItemButton = new Button();
+			createItemButton.AddToClassList("addItemButton");
+			createItemButton.SetEnabled(true);
+			createItemButton.text = string.Format(ContentManagerConstants.CreateNewPopupAddButtonEnabledText,
+			   typeDescriptor.TypeName);
+			createItemButton.clickable.clicked += () =>
+			{
+				OnAddItemButtonClicked?.Invoke(typeDescriptor);
+			};
 
-         if (Model.SelectedContentTypes.Count == 0)
-         {
-            // Add all
-            var types = Model.GetContentTypes();
-            foreach (var type in types)
-            {
-               string[] splitTypes = type.TypeName.Split('.');
-               if (splitTypes.Length == 1)
-                  selectedTypeDescriptors.Add(type);
-            }
-         }
-         else
-         {
-            var selectedViewItems = Model.SelectedContentTypes;
-            foreach (var selectedViewItem in selectedViewItems)
-            {
-               ContentTypeTreeViewItem contentTypeTreeViewItem = (ContentTypeTreeViewItem)selectedViewItem;
-               selectedTypeDescriptors.Add(contentTypeTreeViewItem.TypeDescriptor);
-            }
-         }
+			buttonListRoot.Add(createItemButton);
+		}
 
-         return selectedTypeDescriptors.Count;
-      }
-      
-      
+		// Get a list of all items able to be created.
+		public int GetSelectedItemCount()
+		{
+			selectedTypeDescriptors.Clear();
 
-      // private void AddItemButton_OnClicked()
-      // {
-      //    OnAddItemButtonClicked?.Invoke();
-      // }
-   }
+			if (Model.SelectedContentTypes.Count == 0)
+			{
+				// Add all
+				var types = Model.GetContentTypes();
+				foreach (var type in types)
+				{
+					string[] splitTypes = type.TypeName.Split('.');
+					if (splitTypes.Length == 1)
+						selectedTypeDescriptors.Add(type);
+				}
+			}
+			else
+			{
+				var selectedViewItems = Model.SelectedContentTypes;
+				foreach (var selectedViewItem in selectedViewItems)
+				{
+					ContentTypeTreeViewItem contentTypeTreeViewItem = (ContentTypeTreeViewItem)selectedViewItem;
+					selectedTypeDescriptors.Add(contentTypeTreeViewItem.TypeDescriptor);
+				}
+			}
+
+			return selectedTypeDescriptors.Count;
+		}
+
+
+
+		// private void AddItemButton_OnClicked()
+		// {
+		//    OnAddItemButtonClicked?.Invoke();
+		// }
+	}
 }

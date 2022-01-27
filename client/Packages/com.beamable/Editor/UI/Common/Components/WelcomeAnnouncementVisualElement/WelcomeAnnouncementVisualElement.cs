@@ -11,27 +11,27 @@ using UnityEditor.UIElements;
 #endif
 namespace Beamable.Editor.Toolbox.Components
 {
-   public class WelcomeAnnouncementVisualElement : BeamableVisualElement
-   {
-      public WelcomeAnnouncementModel WelcomeAnnouncementModel { get; set; }
-      public WelcomeAnnouncementVisualElement() : base(
-         $"{BeamableComponentsConstants.COMP_PATH}/{nameof(WelcomeAnnouncementVisualElement)}/{nameof(WelcomeAnnouncementVisualElement)}")
-      {
-      }
+	public class WelcomeAnnouncementVisualElement : BeamableVisualElement
+	{
+		public WelcomeAnnouncementModel WelcomeAnnouncementModel { get; set; }
+		public WelcomeAnnouncementVisualElement() : base(
+		   $"{BeamableComponentsConstants.COMP_PATH}/{nameof(WelcomeAnnouncementVisualElement)}/{nameof(WelcomeAnnouncementVisualElement)}")
+		{
+		}
 
-      public override void Refresh()
-      {
-         base.Refresh();
-         
-         var titleLabel = Root.Q<Label>("announcement-title");
-         titleLabel.text = WelcomeAnnouncementModel.TitleLabelText;
-         
-         var textsSection = Root.Q<VisualElement>("announcement-textsSection");
-         textsSection.Add(WelcomeAnnouncementModel.DescriptionElement);
+		public override void Refresh()
+		{
+			base.Refresh();
 
-         var importButton = Root.Q<Button>("announcement-import");
-         importButton.text = WelcomeAnnouncementModel.ImportButtonText;
-         importButton.clickable.clicked += () => WelcomeAnnouncementModel.OnImport?.Invoke();
-      }
-   }
+			var titleLabel = Root.Q<Label>("announcement-title");
+			titleLabel.text = WelcomeAnnouncementModel.TitleLabelText;
+
+			var textsSection = Root.Q<VisualElement>("announcement-textsSection");
+			textsSection.Add(WelcomeAnnouncementModel.DescriptionElement);
+
+			var importButton = Root.Q<Button>("announcement-import");
+			importButton.text = WelcomeAnnouncementModel.ImportButtonText;
+			importButton.clickable.clicked += () => WelcomeAnnouncementModel.OnImport?.Invoke();
+		}
+	}
 }
