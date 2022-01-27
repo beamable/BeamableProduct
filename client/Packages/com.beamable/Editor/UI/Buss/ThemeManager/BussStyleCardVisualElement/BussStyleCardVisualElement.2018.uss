@@ -67,27 +67,6 @@
     width: 90px;
 }
 
-.edit {
-    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/edit.png");
-}
-
-.wizard {
-    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/wizard.png");
-}
-
-.undo {
-    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/undo.png");
-}
-
-.cleanAll {
-    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/cleanAll.png");
-}
-
-.add {
-    margin-left: 0;
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new L.png");
-}
-
 .hidden {
     visibility: hidden;
     height: 0;
