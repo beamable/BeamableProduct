@@ -109,10 +109,6 @@ namespace Beamable.Editor.Toolbox.Components
 			Model.SetQuery(filter);
 		}
 
-		private Promise<string> GetPortalUrl =>
-			EditorAPI.Instance.Map(de =>
-									   $"{BeamableEnvironment.PortalUrl}/{de.CidOrAlias}?refresh_token={de.Token.RefreshToken}");
-
 		private void TypeButton_OnClicked(Rect visualElementBounds)
 		{
 			Rect popupWindowRect = BeamablePopupWindow.GetLowerLeftOfBounds(visualElementBounds);
