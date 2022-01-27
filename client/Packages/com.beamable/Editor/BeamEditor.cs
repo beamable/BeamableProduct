@@ -6,16 +6,14 @@ using Beamable.Config;
 using Beamable.Editor.Assistant;
 using Beamable.Editor.Reflection;
 using Beamable.Reflection;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
 namespace Beamable
 {
-	[InitializeOnLoad]
+	[InitializeOnLoad, BeamContextSystem]
 	public static class BeamEditor
 	{
 		public static readonly CoreConfiguration CoreConfiguration;
