@@ -7,15 +7,15 @@ using UnityEngine.Experimental.UIElements;
 
 namespace Beamable.Editor.UI.Common
 {
-    /// <summary>
-    /// This class is needed only to make ClearSelection a public method instead of protected.
-    /// </summary>
-    public class ExtendedListView : ListView
-    {
-        public new void ClearSelection()
-        {
-            base.ClearSelection();
-        }
-    }
+	/// <summary>
+	/// This class is needed only to make ClearSelection a public method instead of protected.
+	/// </summary>
+	public class ExtendedListView : ListView
+	{
+		public new void ClearSelection()
+		{
+			base.ClearSelection();
+		}
+	}
 
 }

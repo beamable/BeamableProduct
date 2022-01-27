@@ -7,9 +7,9 @@ using UnityEngine;
 
 namespace Beamable.AccountManagement
 {
-   public class AppleSignInBehavior : MonoBehaviour
-   {
-      #if UNITY_IOS
+	public class AppleSignInBehavior : MonoBehaviour
+	{
+#if UNITY_IOS
 
       private SignInWithApple signInWithApple;
 
@@ -43,11 +43,11 @@ namespace Beamable.AccountManagement
             }
          });
       }
-      #else
-      public void StartAppleLogin(ThirdPartyLoginPromise promise)
-      {
-         // we aren't on apple, so don't do _anything_
-      }
-      #endif
-   }
+#else
+		public void StartAppleLogin(ThirdPartyLoginPromise promise)
+		{
+			// we aren't on apple, so don't do _anything_
+		}
+#endif
+	}
 }

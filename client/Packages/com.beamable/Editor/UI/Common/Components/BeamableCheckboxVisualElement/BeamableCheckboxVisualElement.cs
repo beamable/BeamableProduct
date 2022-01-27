@@ -1,9 +1,9 @@
-using System;
-using System.Collections.Generic;
 using Beamable.Editor.Realms;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Common.Models;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -15,57 +15,57 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-    public class BeamableCheckboxVisualElement : BeamableVisualElement
-    {
-        public new class UxmlFactory : UxmlFactory<BeamableCheckboxVisualElement, UxmlTraits>
-        {
-        }
+	public class BeamableCheckboxVisualElement : BeamableVisualElement
+	{
+		public new class UxmlFactory : UxmlFactory<BeamableCheckboxVisualElement, UxmlTraits>
+		{
+		}
 
-        // TODO: remove after implementing composite validation rules
-        public Action OnValueChangedNotifier;
-        public event Action<bool> OnValueChanged;
+		// TODO: remove after implementing composite validation rules
+		public Action OnValueChangedNotifier;
+		public event Action<bool> OnValueChanged;
 
-        public bool Value
-        {
-            get => _value;
-            set
-            {
-                SetWithoutNotify(value);
-                OnValueChanged?.Invoke(value);
-                OnValueChangedNotifier?.Invoke();
-            }
-        }
+		public bool Value
+		{
+			get => _value;
+			set
+			{
+				SetWithoutNotify(value);
+				OnValueChanged?.Invoke(value);
+				OnValueChangedNotifier?.Invoke();
+			}
+		}
 
-        public Button Button => _button;
+		public Button Button => _button;
 
-        private bool _value;
+		private bool _value;
 
-        private VisualElement _onNotifier;
-        private Button _button;
-        
-        public BeamableCheckboxVisualElement() : base(
-            $"{BeamableComponentsConstants.COMP_PATH}/{nameof(BeamableCheckboxVisualElement)}/{nameof(BeamableCheckboxVisualElement)}")
-        {
-        }
+		private VisualElement _onNotifier;
+		private Button _button;
 
-        public override void Refresh()
-        {
-            base.Refresh();
-            _onNotifier = Root.Q<VisualElement>("onNotifier");
-            _button = Root.Q<Button>("checkboxButton");
-            _button.clickable.clicked += () => Value = !_value;;
-            UpdateLook();
-        }
+		public BeamableCheckboxVisualElement() : base(
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(BeamableCheckboxVisualElement)}/{nameof(BeamableCheckboxVisualElement)}")
+		{
+		}
 
-        public void SetWithoutNotify(bool value)
-        {
-            _value = value;
-            UpdateLook();
-        }
+		public override void Refresh()
+		{
+			base.Refresh();
+			_onNotifier = Root.Q<VisualElement>("onNotifier");
+			_button = Root.Q<Button>("checkboxButton");
+			_button.clickable.clicked += () => Value = !_value; ;
+			UpdateLook();
+		}
 
-        void UpdateLook()
-        {
-            _onNotifier.visible = Value;
-        }
-    }
+		public void SetWithoutNotify(bool value)
+		{
+			_value = value;
+			UpdateLook();
+		}
+
+		void UpdateLook()
+		{
+			_onNotifier.visible = Value;
+		}
+	}
 }

@@ -2,25 +2,25 @@
 
 namespace Beamable.Modules.Generics
 {
-    public abstract class Model
-    {
-        public Action OnRefreshRequested;
-        public Action OnRefresh;
+	public abstract class Model
+	{
+		public Action OnRefreshRequested;
+		public Action OnRefresh;
 
-        protected bool IsBusy { get; set; } = true;
-        
-        public abstract void Initialize(params object[] initParams);
+		protected bool IsBusy { get; set; } = true;
 
-        protected void InvokeRefreshRequested()
-        {
-            IsBusy = true;
-            OnRefreshRequested?.Invoke();
-        }
+		public abstract void Initialize(params object[] initParams);
 
-        protected void InvokeRefresh()
-        {
-            IsBusy = false;
-            OnRefresh?.Invoke();
-        }
-    }
+		protected void InvokeRefreshRequested()
+		{
+			IsBusy = true;
+			OnRefreshRequested?.Invoke();
+		}
+
+		protected void InvokeRefresh()
+		{
+			IsBusy = false;
+			OnRefresh?.Invoke();
+		}
+	}
 }

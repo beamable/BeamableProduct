@@ -1,5 +1,5 @@
-using System.IO;
 using Beamable.AccountManagement;
+using System.IO;
 using UnityEditor;
 using UnityEditor.Callbacks;
 #if UNITY_IOS
@@ -8,11 +8,11 @@ using UnityEditor.iOS.Xcode;
 
 namespace DemoGame.Scripts.Editor
 {
-   /// <summary>
-   /// Post-process builds before compiling to native platform (such as Xcode for iOS).
-   /// </summary>
-   public static class BuildPostProcessor
-   {
+	/// <summary>
+	/// Post-process builds before compiling to native platform (such as Xcode for iOS).
+	/// </summary>
+	public static class BuildPostProcessor
+	{
 #if UNITY_IOS
       [PostProcessBuild]
       public static void OnPostProcessBuild(BuildTarget target, string path)
@@ -40,5 +40,5 @@ namespace DemoGame.Scripts.Editor
          File.WriteAllText(pbxPath, project.WriteToString());
       }
 #endif
-   }
+	}
 }

@@ -1,5 +1,5 @@
-﻿using UnityEngine;
-using Beamable.Extensions;
+﻿using Beamable.Extensions;
+using UnityEngine;
 
 namespace Beamable.Service
 {

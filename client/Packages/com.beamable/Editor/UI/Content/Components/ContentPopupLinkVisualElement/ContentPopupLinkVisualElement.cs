@@ -10,30 +10,30 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Content.Components
 {
-   public class ContentPopupLinkVisualElement : ContentManagerComponent
-   {
-      public ContentDownloadEntryDescriptor Model { get; set; }
-      public VisualElement _checkIcon;
+	public class ContentPopupLinkVisualElement : ContentManagerComponent
+	{
+		public ContentDownloadEntryDescriptor Model { get; set; }
+		public VisualElement _checkIcon;
 
-      public ContentPopupLinkVisualElement() : base(nameof(ContentPopupLinkVisualElement))
-      {
-      }
+		public ContentPopupLinkVisualElement() : base(nameof(ContentPopupLinkVisualElement))
+		{
+		}
 
-      public override void Refresh()
-      {
-         base.Refresh();
+		public override void Refresh()
+		{
+			base.Refresh();
 
-         var nameLbl = Root.Q<Label>("title");
-         nameLbl.text = Model.ContentId;
+			var nameLbl = Root.Q<Label>("title");
+			nameLbl.text = Model.ContentId;
 
-         _checkIcon = Root.Q<VisualElement>("checkIcon");
-      }
+			_checkIcon = Root.Q<VisualElement>("checkIcon");
+		}
 
-      // Content is downloaded.
-      public void MarkChecked()
-      {
-         _checkIcon.RemoveFromClassList("unchecked");
-         _checkIcon.AddToClassList("checked");
-      }
-   }
+		// Content is downloaded.
+		public void MarkChecked()
+		{
+			_checkIcon.RemoveFromClassList("unchecked");
+			_checkIcon.AddToClassList("checked");
+		}
+	}
 }

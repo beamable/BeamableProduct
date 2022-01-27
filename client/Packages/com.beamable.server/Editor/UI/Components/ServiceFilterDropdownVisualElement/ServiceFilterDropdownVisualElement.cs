@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Beamable.Editor.Realms;
+﻿using Beamable.Editor.Realms;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common.Models;
 using Beamable.Editor.UI.Model;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -15,41 +15,41 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
-    public class ServiceFilterDropdownVisualElement : MicroserviceComponent
-    {
-        public event Action<ServicesDisplayFilter> OnNewServicesDisplayFilterSelected;
-        private VisualElement _listRoot;
-        public ServiceFilterDropdownVisualElement() : base(nameof(ServiceFilterDropdownVisualElement))
-        {
-        }
+	public class ServiceFilterDropdownVisualElement : MicroserviceComponent
+	{
+		public event Action<ServicesDisplayFilter> OnNewServicesDisplayFilterSelected;
+		private VisualElement _listRoot;
+		public ServiceFilterDropdownVisualElement() : base(nameof(ServiceFilterDropdownVisualElement))
+		{
+		}
 
-        public override void Refresh()
-        {
-            base.Refresh();
-            _listRoot = Root.Q<VisualElement>("popupContent");
-            _listRoot.Clear();
-            AddButton(ServicesDisplayFilter.AllTypes);
-            AddButton(ServicesDisplayFilter.Microservices);
-            AddButton(ServicesDisplayFilter.Storages);
-        }
+		public override void Refresh()
+		{
+			base.Refresh();
+			_listRoot = Root.Q<VisualElement>("popupContent");
+			_listRoot.Clear();
+			AddButton(ServicesDisplayFilter.AllTypes);
+			AddButton(ServicesDisplayFilter.Microservices);
+			AddButton(ServicesDisplayFilter.Storages);
+		}
 
-        void AddButton(ServicesDisplayFilter filter)
-        {
-            var currentFilter = MicroservicesDataModel.Instance.Filter;
-            var realmSelectButton = new Button();
-            switch (filter)
-            {
-                case ServicesDisplayFilter.AllTypes:
-                    realmSelectButton.text = "All types";
-                    break;
-                default:
-                    realmSelectButton.text = filter.ToString();
-                    break;
-            }
+		void AddButton(ServicesDisplayFilter filter)
+		{
+			var currentFilter = MicroservicesDataModel.Instance.Filter;
+			var realmSelectButton = new Button();
+			switch (filter)
+			{
+				case ServicesDisplayFilter.AllTypes:
+					realmSelectButton.text = "All types";
+					break;
+				default:
+					realmSelectButton.text = filter.ToString();
+					break;
+			}
 
-            realmSelectButton.SetEnabled(currentFilter != filter);
-            realmSelectButton.clickable.clicked += () => OnNewServicesDisplayFilterSelected?.Invoke(filter);
-            _listRoot.Add(realmSelectButton);
-        }
-    }
+			realmSelectButton.SetEnabled(currentFilter != filter);
+			realmSelectButton.clickable.clicked += () => OnNewServicesDisplayFilterSelected?.Invoke(filter);
+			_listRoot.Add(realmSelectButton);
+		}
+	}
 }

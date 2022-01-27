@@ -1,5 +1,5 @@
 #cardHeader {
-    color:#252525;
+    color: rgb(37, 37, 37);
 }
 
 #colorBlock {
@@ -11,28 +11,28 @@
 }
 
 #sectionHeader {
-    color: #252525;
-    background-color: #B4B4B4;
+    color: rgb(37, 37, 37);
+    background-color: rgb(180, 180, 180);
 }
 
 #sectionLabel {
-    color:#252525;
+    color: rgb(37, 37, 37);
 }
 
 #properties {
-    background-color: #C3C3C3;
+    background-color: rgb(195, 195, 195);
 }
 
 #variables {
-    background-color: #C3C3C3;
+    background-color: rgb(195, 195, 195);
 }
 
 .button {
-    background-color:#B4B4B4;
+    background-color: rgb(180, 180, 180);
 }
 
 .button > TextElement {
-    color:#252525;
+    color: rgb(37, 37, 37);
 }
 
 .button:hover {
@@ -40,7 +40,7 @@
 }
 
 .headerButton {
-    background-color:#B4B4B4;
+    background-color: rgb(180, 180, 180);
 }
 
 .headerButton:hover {
@@ -48,7 +48,7 @@
 }
 
 .add {
-    background-color:#B4B4B4;
+    background-color: rgb(180, 180, 180);
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new D.png");
 }
 
