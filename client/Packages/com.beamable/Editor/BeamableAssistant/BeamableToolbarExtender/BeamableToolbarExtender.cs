@@ -68,7 +68,7 @@ namespace Beamable.Editor.ToolbarExtender
 			EditorAPI.Instance.Then(api =>
 			{
 				_editorAPI = api;
-				
+
 				if (BeamEditor.CoreConfiguration == null)
 					return;
 
@@ -90,12 +90,12 @@ namespace Beamable.Editor.ToolbarExtender
 
 				var groupedBySide = toolbarButtons.GroupBy(btn => btn.GetButtonSide(api)).ToList();
 				_leftButtons = groupedBySide.Where(g => g.Key == BeamableToolbarButton.Side.Left)
-				                            .SelectMany(g => g)
-				                            .ToList();
+											.SelectMany(g => g)
+											.ToList();
 
 				_rightButtons = groupedBySide.Where(g => g.Key == BeamableToolbarButton.Side.Right)
-				                             .SelectMany(g => g)
-				                             .ToList();
+											 .SelectMany(g => g)
+											 .ToList();
 
 				_leftButtons.Sort((b1, b2) =>
 				{
