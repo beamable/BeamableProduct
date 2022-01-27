@@ -143,7 +143,7 @@ namespace Beamable.Server.Editor
 				}
 
 				SetupServiceFileInfo(serviceName, scriptTemplatePath,
-				                     destinationDirectory.FullName + $"/{serviceName}.cs");
+									 destinationDirectory.FullName + $"/{serviceName}.cs");
 				AssemblyDefinitionHelper.CreateAssetDefinitionAssetOnDisk(
 					asmPath,
 					new AssemblyDefinitionInfo
