@@ -142,6 +142,8 @@ namespace Beamable.Server.Editor
 					}
 				}
 
+				SetupServiceFileInfo(serviceName, scriptTemplatePath,
+				                     destinationDirectory.FullName + $"/{serviceName}.cs");
 				AssemblyDefinitionHelper.CreateAssetDefinitionAssetOnDisk(
 					asmPath,
 					new AssemblyDefinitionInfo
@@ -154,9 +156,6 @@ namespace Beamable.Server.Editor
 						IncludePlatforms = new[] { "Editor" },
 						References = references.ToArray()
 					});
-
-				SetupServiceFileInfo(serviceName, scriptTemplatePath,
-									 destinationDirectory.FullName + $"/{serviceName}.cs");
 
 				CommonAreaService.EnsureCommon();
 
