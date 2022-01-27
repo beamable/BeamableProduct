@@ -36,7 +36,7 @@ namespace Beamable.Reflection
 		{
 			private static readonly AttributeOfInterest REGISTER_BEAMABLE_DEPENDENCIES_ATTRIBUTE = new AttributeOfInterest(
 				typeof(RegisterBeamableDependenciesAttribute),
-				new Type[] { },
+				new Type[] { typeof(BeamContextSystemAttribute) },
 				new Type[] { });
 
 			public List<BaseTypeOfInterest> BaseTypesOfInterest => new List<BaseTypeOfInterest>();

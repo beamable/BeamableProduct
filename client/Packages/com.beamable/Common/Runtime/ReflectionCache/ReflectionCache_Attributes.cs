@@ -146,11 +146,6 @@ namespace Beamable.Common.Reflection
 
 			FoundInBaseTypes = new List<Type>(foundInBaseTypes ?? new Type[] { });
 			FoundInTypesWithAttributes = new List<Type>(foundInTypesWithAttributes ?? new Type[] { });
-			
-			if (!FoundInTypesWithAttributes.Contains(typeof(BeamContextSystemAttribute)))
-			{
-				FoundInTypesWithAttributes.Add(typeof(BeamContextSystemAttribute));
-			}
 
 			if (TargetsDeclaredMember)
 			{
