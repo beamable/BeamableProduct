@@ -341,6 +341,7 @@ namespace Beamable.Purchasing
 	/// <summary>
 	/// Unity IAP Beamable service resolver.
 	/// </summary>
+	[BeamContextSystem]
 	public class UnityBeamableIAPServiceResolver : IServiceResolver<IBeamablePurchaser>
 	{
 		private UnityBeamablePurchaser _unityBeamablePurchaser;

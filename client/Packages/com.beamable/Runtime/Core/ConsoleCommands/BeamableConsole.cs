@@ -18,6 +18,7 @@ namespace Beamable.ConsoleCommands
 
 	public delegate void OnCommandRegistered(BeamableConsoleCommandAttribute command, ConsoleCommandCallback callback);
 
+	[BeamContextSystem]
 	public class BeamableConsole
 	{
 		public event OnConsoleLog OnLog;
