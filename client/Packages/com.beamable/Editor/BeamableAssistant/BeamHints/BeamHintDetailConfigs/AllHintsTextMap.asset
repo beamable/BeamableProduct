@@ -37,6 +37,7 @@ MonoBehaviour:
     - DockerProcessNotRunning
     - AttributeValidation-StorageObjectAttributeMissing
     - AttributeNameCollision-StorageObjectNameCollision
+    - InstallDockerProcess
     values:
     - ClientCallable has unsupported parameters
     - '"async void" ClientCallable exists'
@@ -48,6 +49,7 @@ MonoBehaviour:
     - Docker is not running
     - Missing StorageObject Attributes
     - StorageObject Name Collision
+    - Docker is not installed
   HintIdToHintIntroText:
     keys:
     - AttributeValidation-ClientCallableUnsupportedParameters
@@ -60,6 +62,7 @@ MonoBehaviour:
     - DockerProcessNotRunning
     - AttributeValidation-StorageObjectAttributeMissing
     - AttributeNameCollision-StorageObjectNameCollision
+    - InstallDockerProcess
     values:
     - "The ClientCallables below have unsupported parameters. We don't support client
       callables with Delegate, Task or Promise parameters. \n\nWe don't support it
@@ -131,3 +134,8 @@ MonoBehaviour:
     - "All StorageObject Attributes must have project-wide unique names. We utilize
       this name to create the docker container that your storage object will live
       in. Here are all collisions we detected:\r\n\r\n"
+    - "We noticed Docker is not installed or incorrectly configured.\r\n\r\nIf you
+      have docker installed out of the default path, go to Beamable => Configuration
+      Manager => Microservices Configuration => Docker Command and write the command
+      to run docker.\r\n\r\nIf you don't have docker installed, click on the button
+      and follow the instructions to install it.\r\n"

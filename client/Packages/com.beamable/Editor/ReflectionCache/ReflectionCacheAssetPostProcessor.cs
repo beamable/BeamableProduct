@@ -18,55 +18,25 @@ namespace Beamable.Editor.Reflection
 	{
 		public static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
 		{
-
+			if (!BeamEditor.IsInitialized)
+				return;
 
 			var reflectionCacheRelatedAssets = importedAssets.Union(movedAssets)
-															 .Select(path => (path, type: AssetDatabase.GetMainAssetTypeAtPath(path)))
-															 .Where(t => typeof(ReflectionSystemObject).IsAssignableFrom(t.type))
-															 .ToList();
+			                                                 .Select(path => (path, type: AssetDatabase.GetMainAssetTypeAtPath(path)))
+			                                                 .Where(t => typeof(ReflectionSystemObject).IsAssignableFrom(t.type))
+			                                                 .ToList();
 
 			if (reflectionCacheRelatedAssets.Count > 0)
 			{
-				EditorDebouncer.Debounce("Rebuild Re-Imported Reflection System", () =>
+				var reimportedReflectionSystemObjects = reflectionCacheRelatedAssets
+				                                        .Select(tuple => AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(tuple.path)).ToList();
+				var reimportedReflectionTypes = reimportedReflectionSystemObjects.Select(sysObj => sysObj.SystemType).ToList();
+
+				BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems(reimportedReflectionTypes);
+				BeamEditor.EditorReflectionCache.SetStorage(BeamEditor.HintGlobalStorage);
+
+				if (reimportedReflectionTypes.Contains(typeof(BeamHintReflectionCache.Registry)))
 				{
-					// Do nothing if the BeamEditor is not initialized.
-					if (BeamEditor.EditorReflectionCache == null) return;
-
-					var reimportedReflectionSystemObjects = reflectionCacheRelatedAssets
-													.Select(tuple => AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(tuple.path)).ToList();
-					var reimportedReflectionTypes = reimportedReflectionSystemObjects.Select(sysObj => sysObj.SystemType).ToList();
-
-					BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems(reimportedReflectionTypes);
-					BeamEditor.EditorReflectionCache.SetStorage(BeamEditor.HintGlobalStorage);
-
-					if (reimportedReflectionTypes.Contains(typeof(BeamHintReflectionCache.Registry)))
-					{
-						// Set up Globally Accessible Hint System Dependencies and then call init
-						foreach (var hintSystem in BeamEditor.GetReflectionSystem<BeamHintReflectionCache.Registry>().GloballyAccessibleHintSystems)
-						{
-							hintSystem.SetStorage(BeamEditor.HintGlobalStorage);
-							hintSystem.SetPreferencesManager(BeamEditor.HintPreferencesManager);
-
-							hintSystem.OnInitialized();
-						}
-					}
-
-					BeamableLogger.Log("Finished Rebuilding Reflection Cache Systems");
-					AssetDatabase.Refresh();
-				});
-			}
-
-			if (deletedAssets.Length > 0)
-			{
-				EditorDebouncer.Debounce("Rebuild All Reflection Systems", () =>
-				{
-					// Do nothing if the BeamEditor is not initialized.
-					if (BeamEditor.EditorReflectionCache == null) return;
-
-					BeamableLogger.Log("Re-building the Reflection Systems from Cached Data!");
-					BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems();
-					BeamEditor.EditorReflectionCache.SetStorage(BeamEditor.HintGlobalStorage);
-
 					// Set up Globally Accessible Hint System Dependencies and then call init
 					foreach (var hintSystem in BeamEditor.GetReflectionSystem<BeamHintReflectionCache.Registry>().GloballyAccessibleHintSystems)
 					{
@@ -75,10 +45,29 @@ namespace Beamable.Editor.Reflection
 
 						hintSystem.OnInitialized();
 					}
+				}
 
-					BeamableLogger.Log("Finished Rebuilding Reflection Cache Systems");
-					AssetDatabase.Refresh();
-				});
+				Spew.Logger.DoSpew("Finished Rebuilding Reflection Cache Systems");
+				AssetDatabase.Refresh();
+			}
+
+			if (deletedAssets.Length > 0)
+			{
+				Spew.Logger.DoSpew("Re-building the Reflection Systems from Cached Data!");
+				BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems();
+				BeamEditor.EditorReflectionCache.SetStorage(BeamEditor.HintGlobalStorage);
+
+				// Set up Globally Accessible Hint System Dependencies and then call init
+				foreach (var hintSystem in BeamEditor.GetReflectionSystem<BeamHintReflectionCache.Registry>().GloballyAccessibleHintSystems)
+				{
+					hintSystem.SetStorage(BeamEditor.HintGlobalStorage);
+					hintSystem.SetPreferencesManager(BeamEditor.HintPreferencesManager);
+
+					hintSystem.OnInitialized();
+				}
+
+				Spew.Logger.DoSpew("Finished Rebuilding Reflection Cache Systems");
+				AssetDatabase.Refresh();
 			}
 		}
 	}

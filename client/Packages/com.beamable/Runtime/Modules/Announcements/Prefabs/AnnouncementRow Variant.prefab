@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da9492a689bd94fcbb4ada778908cee7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  TxtTitle: {fileID: 4606141328379453207}
-  TxtBody: {fileID: 3210686060304290086}
+  _txtTitle: {fileID: 4606141328379453207}
+  _txtBody: {fileID: 3210686060304290086}
 --- !u!1001 &882225108800391910
 PrefabInstance:
   m_ObjectHideFlags: 0

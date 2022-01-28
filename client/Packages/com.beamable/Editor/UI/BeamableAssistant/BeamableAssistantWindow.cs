@@ -74,13 +74,18 @@ namespace Beamable.Editor.Assistant
 		private void OnEnable()
 		{
 			Refresh();
-
 		}
 
 		private void OnFocus()
 		{
+			// BeamEditor is not yet initialized --- delay callback until it is.
+			if (!BeamEditor.IsInitialized)
+			{
+				EditorApplication.delayCall += OnFocus;
+				return;
+			}
+			
 			Refresh();
-
 			// TODO: Display NEW icon and clear notifications on hover on a per hint header basis.
 			// For now, just clear notifications whenever the window is focused
 			_hintNotificationManager.ClearPendingNotifications();
@@ -95,10 +100,10 @@ namespace Beamable.Editor.Assistant
 
 		void Refresh()
 		{
-			// if null, close the window --- exists to handle the re-import all case.
+			// BeamEditor is not yet initialized --- delay callback until it is.
 			if (!BeamEditor.IsInitialized)
 			{
-				Close();
+				EditorApplication.delayCall += Refresh;
 				return;
 			}
 

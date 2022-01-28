@@ -15,33 +15,30 @@ namespace Beamable.Editor.Assistant
 	{
 		public static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
 		{
+			if (!BeamEditor.IsInitialized)
+				return;
+
 #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 			var toolbarExtendedRelatedAssets = importedAssets.Union(movedAssets)
-															 .Select(path => (path, type: AssetDatabase.GetMainAssetTypeAtPath(path)))
-															 .Where(t => typeof(BeamableAssistantMenuItem).IsAssignableFrom(t.type) || typeof(BeamableToolbarButton).IsAssignableFrom(t.type))
-															 .ToList();
+			                                                 .Select(path => (path, type: AssetDatabase.GetMainAssetTypeAtPath(path)))
+			                                                 .Where(t => typeof(BeamableAssistantMenuItem).IsAssignableFrom(t.type) || typeof(BeamableToolbarButton).IsAssignableFrom(t.type))
+			                                                 .ToList();
 
 			if (toolbarExtendedRelatedAssets.Count > 0 || deletedAssets.Length > 0)
-				BeamableToolbarExtender.Reload();
+				BeamableToolbarExtender.LoadToolbarExtender();
 #endif
 			var beamHintDetailsRelatedAssets = importedAssets.Union(movedAssets)
-															 .Select(path => (path, type: AssetDatabase.GetMainAssetTypeAtPath(path)))
-															 .Where(t => typeof(BeamHintDetailsConfig).IsAssignableFrom(t.type) || typeof(BeamHintTextMap).IsAssignableFrom(t.type))
-															 .ToList();
+			                                                 .Select(path => (path, type: AssetDatabase.GetMainAssetTypeAtPath(path)))
+			                                                 .Where(t => typeof(BeamHintDetailsConfig).IsAssignableFrom(t.type) || typeof(BeamHintTextMap).IsAssignableFrom(t.type))
+			                                                 .ToList();
 
 			if (beamHintDetailsRelatedAssets.Count > 0 || deletedAssets.Length > 0)
 			{
-				EditorDebouncer.Debounce("Reload HintDetails Configuration Objects", () =>
-				{
-					// Do nothing if the BeamEditor is not initialized.
-					if (BeamEditor.EditorReflectionCache == null) return;
+				BeamEditor.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>()
+				          .ReloadHintDetailConfigScriptableObjects(BeamEditor.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
 
-					BeamEditor.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>()
-							  .ReloadHintDetailConfigScriptableObjects(BeamEditor.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
-
-					BeamEditor.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>()
-							  .ReloadHintTextMapScriptableObjects(BeamEditor.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
-				});
+				BeamEditor.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>()
+				          .ReloadHintTextMapScriptableObjects(BeamEditor.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
 			}
 		}
 	}

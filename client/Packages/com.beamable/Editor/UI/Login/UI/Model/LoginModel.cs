@@ -125,11 +125,14 @@ namespace Beamable.Editor.Login.UI.Model
 				b.OnRealmChange += SetRealm;
 				b.OnCustomerChange += SetCustomer;
 
-				b.RealmService.GetGames().Then(games =>
-			 {
-				 Games = games;
-				 OnGamesUpdated?.Invoke(games);
-			 });
+				if (!string.IsNullOrEmpty(b.CidOrAlias))
+				{
+					b.RealmService.GetGames().Then(games =>
+					{
+						Games = games;
+						OnGamesUpdated?.Invoke(games);
+					});
+				}
 
 				if (b.HasToken)
 				{
