@@ -79,6 +79,7 @@ namespace Beamable.Editor.Content
 		private void Update()
 		{
 			_actionBarVisualElement.RefreshPublishDropdownVisibility();
+			_explorerElement.RefreshManifestButton();
 		}
 
 		private void OnEnable()
