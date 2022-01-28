@@ -84,7 +84,7 @@ namespace Beamable.Editor.Assistant
 				EditorApplication.delayCall += OnFocus;
 				return;
 			}
-			
+
 			Refresh();
 			// TODO: Display NEW icon and clear notifications on hover on a per hint header basis.
 			// For now, just clear notifications whenever the window is focused
