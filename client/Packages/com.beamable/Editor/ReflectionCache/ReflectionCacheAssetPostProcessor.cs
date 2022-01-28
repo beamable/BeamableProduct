@@ -22,14 +22,14 @@ namespace Beamable.Editor.Reflection
 				return;
 
 			var reflectionCacheRelatedAssets = importedAssets.Union(movedAssets)
-			                                                 .Select(path => (path, type: AssetDatabase.GetMainAssetTypeAtPath(path)))
-			                                                 .Where(t => typeof(ReflectionSystemObject).IsAssignableFrom(t.type))
-			                                                 .ToList();
+															 .Select(path => (path, type: AssetDatabase.GetMainAssetTypeAtPath(path)))
+															 .Where(t => typeof(ReflectionSystemObject).IsAssignableFrom(t.type))
+															 .ToList();
 
 			if (reflectionCacheRelatedAssets.Count > 0)
 			{
 				var reimportedReflectionSystemObjects = reflectionCacheRelatedAssets
-				                                        .Select(tuple => AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(tuple.path)).ToList();
+														.Select(tuple => AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(tuple.path)).ToList();
 				var reimportedReflectionTypes = reimportedReflectionSystemObjects.Select(sysObj => sysObj.SystemType).ToList();
 
 				BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems(reimportedReflectionTypes);
