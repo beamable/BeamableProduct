@@ -4,6 +4,7 @@ using Beamable.Server;
 
 namespace Beamable
 {
+	[BeamContextSystem]
 	public static class BeamContextExtensions
 	{
 		[RegisterBeamableDependencies]
