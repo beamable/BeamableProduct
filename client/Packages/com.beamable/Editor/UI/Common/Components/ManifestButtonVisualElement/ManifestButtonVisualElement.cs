@@ -83,6 +83,7 @@ namespace Beamable.Editor.UI.Components
 		public void RefreshButtonVisibility()
 		{
 			visible = (_manyManifests && ContentConfiguration.Instance.EnableMultipleContentNamespaces) || _nonDefaultManifest;
+			ContentConfiguration.Instance.multipleContentNamespacesSettingLocked = ContentConfiguration.Instance.EditorManifestID != BeamableConstants.DEFAULT_MANIFEST_ID;
 		}
 
 		private void HandleManifestChanged(ISearchableElement manifest)
