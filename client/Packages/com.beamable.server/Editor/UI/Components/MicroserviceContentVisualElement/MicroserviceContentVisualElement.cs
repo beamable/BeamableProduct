@@ -212,7 +212,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public void SetAllMicroserviceSelectedStatus(bool selected)
 		{
-			foreach (var microservice in Model.Services)
+			foreach (var microservice in Model.AllLocalServices)
 			{
 				microservice.IsSelected = selected;
 			}

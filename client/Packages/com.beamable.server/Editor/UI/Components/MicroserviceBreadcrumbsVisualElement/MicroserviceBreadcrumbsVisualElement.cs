@@ -58,6 +58,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Button _servicesFilter;
 		private Label _servicesFilterLabel;
 		private LabeledCheckboxVisualElement _selectAllLabeledCheckbox;
+		private bool _triggeringChange;
 
 		public MicroserviceBreadcrumbsVisualElement() : base(nameof(MicroserviceBreadcrumbsVisualElement))
 		{
@@ -99,12 +100,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		void TriggerSelectAll(bool value)
 		{
+			_triggeringChange = true;
 			OnSelectAllCheckboxChanged?.Invoke(value);
-		}
-
-		private void OnCheckboxValueChanged(bool b)
-		{
-			OnSelectAllCheckboxChanged?.Invoke(b);
+			_triggeringChange = false;
 		}
 
 		void UpdateServicesFilterText(ServicesDisplayFilter filter)
@@ -139,12 +137,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 			};
 		}
 
-		public void SetSelectAllCheckboxValue(bool value)
+		public void UpdateSelectAllCheckboxValue(int selectedServicesAmount, int servicesAmount)
 		{
-			_selectAllLabeledCheckbox.SetWithoutNotify(value);
+			if(_triggeringChange) return;
+			_selectAllLabeledCheckbox.SetWithoutNotify(selectedServicesAmount == servicesAmount);
+			SetSelectAllVisibility(servicesAmount > 0);
 		}
 
-		public void SetSelectAllVisibility(bool value)
+		private void SetSelectAllVisibility(bool value)
 		{
 			_selectAllLabeledCheckbox.EnableInClassList("hidden", !value);
 		}
