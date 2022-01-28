@@ -598,7 +598,7 @@ namespace Beamable.Server.Editor
 			private static void WatchMicroserviceFiles()
 			{
 				// If we are not initialized, delay the call until we are.
-				if (!BeamEditor.IsInitialized)
+				if (!BeamEditor.IsInitialized || !MicroserviceEditor.IsInitialized)
 				{
 					EditorApplication.delayCall += WatchMicroserviceFiles;
 					return;
@@ -675,7 +675,7 @@ namespace Beamable.Server.Editor
 			private static void AutomaticMachine()
 			{
 				// If we are not initialized, delay the call until we are.
-				if (!BeamEditor.IsInitialized)
+				if (!BeamEditor.IsInitialized || !MicroserviceEditor.IsInitialized)
 				{
 					EditorApplication.delayCall += AutomaticMachine;
 					return;
