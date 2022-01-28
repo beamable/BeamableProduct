@@ -55,7 +55,7 @@ namespace Beamable.Server.Editor
 			/// Delaying until first editor tick so that the menu
 			/// will be populated before setting check state, and
 			/// re-apply correct action
-			Initialize();
+			EditorApplication.delayCall += Initialize;
 			void Initialize()
 			{
 				try
