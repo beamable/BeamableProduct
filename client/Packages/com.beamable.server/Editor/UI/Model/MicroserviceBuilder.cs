@@ -68,9 +68,9 @@ namespace Beamable.Editor.UI.Model
 			return new RunServiceCommand((MicroserviceDescriptor)Descriptor, cid, secret, connectionStrings);
 		}
 
-		public async Task TryToBuild(bool includeDebuggingTools)
+		public async Task<bool> TryToBuild(bool includeDebuggingTools)
 		{
-			if (IsBuilding) return;
+			if (IsBuilding) return true;
 
 			IsBuilding = true;
 			var command = new BuildImageCommand((MicroserviceDescriptor)Descriptor, includeDebuggingTools);
@@ -80,11 +80,18 @@ namespace Beamable.Editor.UI.Model
 			{
 				await command.Start(null);
 				await TryToGetLastImageId();
+				return true;
+			}
+			catch(Exception e)
+			{
+				System.Console.WriteLine(e);
 			}
 			finally
 			{
 				IsBuilding = false;
 			}
+
+			return false;
 		}
 		public async Task TryToGetLastImageId()
 		{
@@ -101,13 +108,19 @@ namespace Beamable.Editor.UI.Model
 		}
 		public async Task TryToBuildAndRestart(bool includeDebuggingTools)
 		{
-			await TryToBuild(includeDebuggingTools);
-			await TryToRestart();
+			bool isSucced = await TryToBuild(includeDebuggingTools);
+
+			if (isSucced)
+				await TryToRestart();
+			else
+				await TryToStop();
 		}
 		public async Task TryToBuildAndStart(bool includeDebuggingTools)
 		{
-			await TryToBuild(includeDebuggingTools);
-			await TryToStart();
+			bool isSucced = await TryToBuild(includeDebuggingTools);
+
+			if (isSucced)
+				await TryToStart();
 		}
 	}
 }
