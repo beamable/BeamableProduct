@@ -1,22 +1,9 @@
-using Beamable.Common;
-using Beamable.Editor.Config;
-using Beamable.Editor.Content;
-using Beamable.Editor.Content.Components;
-using Beamable.Editor.Content.Models;
-using Beamable.Editor.Environment;
-using Beamable.Editor.Modules.Theme;
-using Beamable.Editor.Toolbox.Models;
-using Beamable.Editor.Toolbox.UI.Components;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
-using Beamable.Server.Editor;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -58,7 +45,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Button _servicesFilter;
 		private Label _servicesFilterLabel;
 		private LabeledCheckboxVisualElement _selectAllLabeledCheckbox;
-		private bool _triggeringChange;
 
 		public MicroserviceBreadcrumbsVisualElement() : base(nameof(MicroserviceBreadcrumbsVisualElement))
 		{
@@ -100,9 +86,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		void TriggerSelectAll(bool value)
 		{
-			_triggeringChange = true;
 			OnSelectAllCheckboxChanged?.Invoke(value);
-			_triggeringChange = false;
 		}
 
 		void UpdateServicesFilterText(ServicesDisplayFilter filter)
@@ -139,7 +123,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public void UpdateSelectAllCheckboxValue(int selectedServicesAmount, int servicesAmount)
 		{
-			if(_triggeringChange) return;
 			_selectAllLabeledCheckbox.SetWithoutNotify(selectedServicesAmount == servicesAmount);
 			SetSelectAllVisibility(servicesAmount > 0);
 		}

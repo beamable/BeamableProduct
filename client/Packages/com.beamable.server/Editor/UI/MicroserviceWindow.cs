@@ -133,7 +133,6 @@ namespace Beamable.Editor.Microservice.UI
 
 			bool localServicesAvailable = Model?.AllLocalServices != null;
 			int localServicesAmount = localServicesAvailable ? Model.AllLocalServices.Count : 0;
-			bool anyServiceExists = localServicesAmount > 0;
 			int selectedServicesAmount = localServicesAvailable
 				? Model.AllLocalServices.Count(beamService => beamService.IsSelected)
 				: 0;
