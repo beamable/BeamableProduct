@@ -102,7 +102,9 @@ namespace Beamable.Editor.UI.Model
 		protected void OpenCode()
 		{
 			var path = Path.GetDirectoryName(AssemblyDefinitionHelper.ConvertToInfo(Descriptor).Location);
-			EditorUtility.OpenWithDefaultApp($@"{path}/{Descriptor.Name}.cs");
+			var fileName = $@"{path}/{Descriptor.Name}.cs";
+			var asset = AssetDatabase.LoadMainAssetAtPath(fileName);
+			AssetDatabase.OpenAsset(asset);
 		}
 	}
 }
