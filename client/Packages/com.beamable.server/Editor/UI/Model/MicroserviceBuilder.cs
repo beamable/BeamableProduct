@@ -83,8 +83,8 @@ namespace Beamable.Editor.UI.Model
 				return true;
 			}
 			catch(Exception e)
-			{
-				System.Console.WriteLine(e);
+            {
+                MicroserviceLogHelper.HandleBuildCommandOutput(this, e);
 			}
 			finally
 			{
@@ -108,9 +108,9 @@ namespace Beamable.Editor.UI.Model
 		}
 		public async Task TryToBuildAndRestart(bool includeDebuggingTools)
 		{
-			bool isBuilded = await TryToBuild(includeDebuggingTools);
+			bool isBuilt = await TryToBuild(includeDebuggingTools);
 
-			if (isBuilded)
+			if (isBuilt)
 				await TryToRestart();
 			else
 				await TryToStop();
