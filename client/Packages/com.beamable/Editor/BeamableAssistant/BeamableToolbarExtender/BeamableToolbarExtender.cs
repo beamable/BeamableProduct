@@ -29,13 +29,7 @@ namespace Beamable.Editor.ToolbarExtender
 		private static Texture _hintsTexture;
 		private static Texture _validationTexture;
 
-		static BeamableToolbarExtender()
-		{
-			EditorDebouncer.Debounce("Beamable Toolbar Init", Reload);
-			//Reload();
-		}
-
-		public static void Reload()
+		public static void LoadToolbarExtender()
 		{
 			Type toolbarType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.Toolbar");
 
@@ -61,17 +55,17 @@ namespace Beamable.Editor.ToolbarExtender
 			BeamableToolbarCallbacks.OnToolbarGUI = OnGUI;
 			BeamableToolbarCallbacks.OnToolbarGUILeft = GUILeft;
 			BeamableToolbarCallbacks.OnToolbarGUIRight = GUIRight;
-
+			
 			if (!BeamEditor.IsInitialized)
 				return;
-
+			
 			EditorAPI.Instance.Then(api =>
 			{
 				_editorAPI = api;
-
-				if (BeamEditor.CoreConfiguration == null)
+				
+				if (!BeamEditor.IsInitialized)
 					return;
-
+				
 				// Load and inject Beamable Menu Items (necessary due to multiple package split of SDK) --- sort them by specified order, and alphabetically when tied.
 				var menuItemsSearchInFolders = BeamEditor.CoreConfiguration.BeamableAssistantMenuItemsPath.Where(Directory.Exists).ToArray();
 				var menuItemsGuids = AssetDatabase.FindAssets($"t:{nameof(BeamableAssistantMenuItem)}", menuItemsSearchInFolders);
