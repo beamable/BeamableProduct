@@ -34,7 +34,7 @@ using UnityEditor.Compilation;
 
 namespace Beamable
 {
-	[InitializeOnLoad]
+	[InitializeOnLoad, BeamContextSystem]
 	public static class BeamEditor
 	{
 		public static CoreConfiguration CoreConfiguration { get; private set; }
