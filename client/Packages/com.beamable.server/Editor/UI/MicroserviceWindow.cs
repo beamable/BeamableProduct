@@ -131,15 +131,20 @@ namespace Beamable.Editor.Microservice.UI
 				root.Add(_windowRoot);
 			}
 
+			bool localServicesAvailable = Model?.AllLocalServices != null;
+			int localServicesAmount = localServicesAvailable ? Model.AllLocalServices.Count : 0;
+			bool anyServiceExists = localServicesAmount > 0;
+			int selectedServicesAmount = localServicesAvailable
+				? Model.AllLocalServices.Count(beamService => beamService.IsSelected)
+				: 0;
+			
 			_actionBarVisualElement = root.Q<ActionBarVisualElement>("actionBarVisualElement");
 			_actionBarVisualElement.Refresh();
-			_actionBarVisualElement.UpdateButtonsState(Model);
+			_actionBarVisualElement.UpdateButtonsState(selectedServicesAmount,localServicesAmount);
 
-			bool anyServiceExists = Model?.AllLocalServices?.Count > 0;
 			_microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
 			_microserviceBreadcrumbsVisualElement.Refresh();
-			_microserviceBreadcrumbsVisualElement.SetSelectAllCheckboxValue(anyServiceExists && Model.AllLocalServices.All(model => model.IsSelected));
-			_microserviceBreadcrumbsVisualElement.SetSelectAllVisibility(anyServiceExists);
+			_microserviceBreadcrumbsVisualElement.UpdateSelectAllCheckboxValue(selectedServicesAmount,localServicesAmount);
 
 			_loadingBar = root.Q<LoadingBarElement>("loadingBar");
 			_loadingBar.Hidden = true;
@@ -165,8 +170,9 @@ namespace Beamable.Editor.Microservice.UI
 				_microserviceContentVisualElement.SetAllMicroserviceSelectedStatus;
 			_microserviceBreadcrumbsVisualElement.OnNewServicesDisplayFilterSelected += HandleDisplayFilterSelected;
 
-			_microserviceContentVisualElement.OnAllServiceSelectedStatusChanged +=
-				_microserviceBreadcrumbsVisualElement.SetSelectAllCheckboxValue;
+			_microserviceContentVisualElement.OnServiceSelectionAmountChange +=
+				_microserviceBreadcrumbsVisualElement.UpdateSelectAllCheckboxValue;
+			_microserviceContentVisualElement.OnServiceSelectionAmountChange += _actionBarVisualElement.UpdateButtonsState;
 
 			_actionBarVisualElement.OnInfoButtonClicked += () =>
 			{
@@ -196,12 +202,6 @@ namespace Beamable.Editor.Microservice.UI
 				serviceRegistry.OnDeployFailed -= HandleDeployFailed;
 				serviceRegistry.OnDeployFailed += HandleDeployFailed;
 			}
-
-			foreach (IBeamableService beamableService in Model.AllLocalServices)
-			{
-				beamableService.OnSelectionChanged -= HandleSingleModelSelectionChanged;
-				beamableService.OnSelectionChanged += HandleSingleModelSelectionChanged;
-			}
 		}
 
 		private void HandleDisplayFilterSelected(ServicesDisplayFilter filter)
@@ -216,11 +216,6 @@ namespace Beamable.Editor.Microservice.UI
 			{
 				microserviceVisualElement.Q<LoadingBarElement>().Hidden = true;
 			}
-		}
-
-		private void HandleSingleModelSelectionChanged(bool _)
-		{
-			_actionBarVisualElement.UpdateButtonsState(Model);
 		}
 
 		public void RefreshWindow(bool isHardRefresh)
