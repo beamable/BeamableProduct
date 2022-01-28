@@ -84,7 +84,7 @@ namespace Beamable.Editor.UI.Model
 			}
 			catch(Exception e)
             {
-                MicroserviceLogHelper.HandleBuildCommandOutput(this, e);
+                MicroserviceLogHelper.HandleBuildCommandOutput(this, e.Message);
 			}
 			finally
 			{
