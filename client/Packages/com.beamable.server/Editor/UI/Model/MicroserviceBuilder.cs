@@ -108,18 +108,18 @@ namespace Beamable.Editor.UI.Model
 		}
 		public async Task TryToBuildAndRestart(bool includeDebuggingTools)
 		{
-			bool isSucced = await TryToBuild(includeDebuggingTools);
+			bool isBuilded = await TryToBuild(includeDebuggingTools);
 
-			if (isSucced)
+			if (isBuilded)
 				await TryToRestart();
 			else
 				await TryToStop();
 		}
 		public async Task TryToBuildAndStart(bool includeDebuggingTools)
 		{
-			bool isSucced = await TryToBuild(includeDebuggingTools);
+			bool isBuilded = await TryToBuild(includeDebuggingTools);
 
-			if (isSucced)
+			if (isBuilded)
 				await TryToStart();
 		}
 	}
