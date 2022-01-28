@@ -110,13 +110,6 @@ namespace Beamable.Editor.Microservice.UI
 
 		void SetForContent()
 		{
-			// if null, close the window --- exists to handle the re-import all case.
-			if (!BeamEditor.IsInitialized)
-			{
-				Close();
-				return;
-			}
-
 			var root = this.GetRootVisualContainer();
 			root.Clear();
 
@@ -249,6 +242,21 @@ namespace Beamable.Editor.Microservice.UI
 
 		private void OnEnable()
 		{
+			// if BeamEditor is not initialized, schedule a delay call to try again.
+			if (!BeamEditor.IsInitialized)
+			{
+				EditorApplication.delayCall += () =>
+				{
+					EditorAPI.Instance.Then(api =>
+					{
+						SetMinSize();
+						CreateModel();
+						SetForContent();
+					});		
+				};
+				return;
+			}
+			
 			EditorAPI.Instance.Then(api =>
 			{
 				SetMinSize();

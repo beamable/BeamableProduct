@@ -431,7 +431,15 @@ namespace Beamable.Editor
 				CheckoutPath(path);
 				File.WriteAllText(path, asJson);
 				AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
-				ConfigDatabase.Init();
+				try
+				{
+					ConfigDatabase.Init();
+				}
+				catch (FileNotFoundException)
+				{
+					Debug.LogError("Failed to find 'config-defaults' file from EditorAPI.SaveConfig. This should never be seen here. If you do, please file a bug-report.");
+				}
+
 				AssetDatabase.Refresh();
 			}
 
