@@ -252,11 +252,11 @@ namespace Beamable.Editor.Microservice.UI
 						SetMinSize();
 						CreateModel();
 						SetForContent();
-					});		
+					});
 				};
 				return;
 			}
-			
+
 			EditorAPI.Instance.Then(api =>
 			{
 				SetMinSize();

@@ -603,7 +603,7 @@ namespace Beamable.Server.Editor
 					EditorApplication.delayCall += WatchMicroserviceFiles;
 					return;
 				}
-				
+
 				var registry = BeamEditor.GetReflectionSystem<Registry>();
 				foreach (var service in registry.Descriptors)
 				{
