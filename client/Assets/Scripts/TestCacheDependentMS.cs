@@ -93,6 +93,7 @@ public class TestBeamContextHintSystem : IBeamHintSystem
 	}
 }
 
+[BeamContextSystem]
 public class TestBeamContextSystem
 {
 	private IUserContext _context;

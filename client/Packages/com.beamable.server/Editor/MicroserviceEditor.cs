@@ -48,6 +48,8 @@ namespace Beamable.Server.Editor
 				}
 			};
 
+		public static bool IsInitialized { get; private set; }
+		
 		static MicroserviceEditor()
 		{
 			/// Delaying until first editor tick so that the menu
@@ -62,6 +64,8 @@ namespace Beamable.Server.Editor
 					enabled = EditorPrefs.GetBool(CONFIG_AUTO_RUN, false);
 
 				setAutoRun(enabled);
+
+				IsInitialized = true;
 			};
 		}
 
