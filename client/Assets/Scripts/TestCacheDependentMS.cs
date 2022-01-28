@@ -1,16 +1,13 @@
 ﻿using Beamable;
-using Beamable.Api.Auth;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Assistant;
-using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
-using Beamable.Server.Clients;
-using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 public class TestCacheDependentMS : MonoBehaviour
 {
@@ -43,11 +40,11 @@ public class TestCacheDependentMS : MonoBehaviour
 
 		for (int i = 0; i < 2; i++)
 		{
-			_usefulListOfInts.Add(UnityEngine.Random.Range(0, 100));
+			_usefulListOfInts.Add(Random.Range(0, 100));
 		}
 
 #if UNITY_EDITOR
-		Beamable.BeamEditor.GetBeamHintSystem(ref _userHintSystem);
+		BeamEditor.GetBeamHintSystem(ref _userHintSystem);
 #endif
 		_userHintSystem.AddHintTest(_usefulListOfInts);
 
@@ -78,7 +75,7 @@ public class TestBeamContextHintSystem : IBeamHintSystem
 		BeamableLogger.Log("TestBeamHintContextHintSystem Initialized!!!");
 	}
 
-	[System.Diagnostics.Conditional("UNITY_EDITOR")]
+	[Conditional("UNITY_EDITOR")]
 	public void AddHintTest(long playerId, string param2)
 	{
 		var hintId = BeamHintIds.GenerateHintId("Test Hint Id");
@@ -86,13 +83,14 @@ public class TestBeamContextHintSystem : IBeamHintSystem
 		_globalStorage.AddOrReplaceHint(BeamHintType.Hint, BeamHintDomains.GenerateUserDomain("TestDomain"), parameterizedHintId, param2);
 	}
 
-	[System.Diagnostics.Conditional("UNITY_EDITOR")]
+	[Conditional("UNITY_EDITOR")]
 	public void TestFillOutEditorOnlyDataWithText(ref string text)
 	{
 		text = "TEST EDITOR ONLY STRING ---- YOU SHOULD NOT SEE THIS IN THE BUILD";
 	}
 }
 
+[BeamContextSystem]
 public class TestBeamContextSystem
 {
 	private IUserContext _context;
@@ -158,7 +156,7 @@ public class TestGloballyAccessibleHintSystem : IBeamHintSystem
 		BeamableLogger.Log("TestGloballyAccessibleHintSystem Initialized!!!");
 	}
 
-	[System.Diagnostics.Conditional("UNITY_EDITOR")]
+	[Conditional("UNITY_EDITOR")]
 	public void AddHintTest(List<int> dataToCheckForHints)
 	{
 		var gt50HintId = BeamHintIds.GenerateHintId("Hint Only if an element GT 50");

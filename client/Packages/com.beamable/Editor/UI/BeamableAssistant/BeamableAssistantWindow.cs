@@ -29,7 +29,7 @@ namespace Beamable.Editor.Assistant
 		[MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
 				  BeamableConstants.OPEN + " " +
 				  BeamableConstants.BEAMABLE_ASSISTANT,
-				  priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
+				  priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_2)]
 		public static BeamableAssistantWindow ShowWindow()
 		{
 			var window = GetWindow<BeamableAssistantWindow>(BeamableConstants.BEAMABLE_ASSISTANT, true, typeof(SceneView));
