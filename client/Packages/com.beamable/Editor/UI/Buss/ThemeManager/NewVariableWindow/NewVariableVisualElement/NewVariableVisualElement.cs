@@ -4,6 +4,7 @@ using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -15,6 +16,7 @@ namespace Beamable.Editor.UI.Buss
 {
 	public class NewVariableVisualElement : BeamableVisualElement
 	{
+		private BussStyleRule _styleRule;
 		private Action<string, IBussProperty> _onPropertyCreated;
 
 		private LabeledTextField _variableName;
@@ -27,10 +29,14 @@ namespace Beamable.Editor.UI.Buss
 		private IBussProperty _selectedBussProperty;
 
 		private const int LABEL_WIDTH = 160;
+		// Can start exactly with two dashes ("--") OR with any letter 
+		// Numbers and special characters are not valid
+		private const string VARIABLE_NAME_REGEX = "^\\A(-{2}|[a-zA-Z])*$";
 
-		public NewVariableVisualElement(Action<string, IBussProperty> onPropertyCreated) : base(
+		public NewVariableVisualElement(BussStyleRule styleRule, Action<string, IBussProperty> onPropertyCreated) : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/NewVariableWindow/{nameof(NewVariableVisualElement)}/{nameof(NewVariableVisualElement)}")
 		{
+			_styleRule = styleRule;
 			_onPropertyCreated = onPropertyCreated;
 		}
 
@@ -57,6 +63,7 @@ namespace Beamable.Editor.UI.Buss
 		};
 
 		private PrimaryButtonVisualElement _confirmButton;
+		private List<string> _reservedVariableNames = new List<string>();
 
 		public override void Refresh()
 		{
@@ -83,14 +90,16 @@ namespace Beamable.Editor.UI.Buss
 			var cancelButton = Root.Q<GenericButtonVisualElement>("cancelButton");
 			cancelButton.OnClick += NewVariableWindow.CloseWindow;
 
+			_reservedVariableNames = _styleRule?.GetVariablePropertyProviders()?.Select(x => x.Key.Substring(2)).ToList();
+
 			OnValidate();
 		}
 
 		private void OnValidate()
 		{
-			if (string.IsNullOrWhiteSpace(_variableName.Value))
+			if (!IsNameValid(out var message))
 			{
-				ChangeButtonState(false, "Variable name can't be empty");
+				ChangeButtonState(false, message);
 			}
 			else
 			{
@@ -98,6 +107,36 @@ namespace Beamable.Editor.UI.Buss
 			}
 		}
 
+		private bool IsNameValid(out string message)
+		{
+			message = string.Empty;
+			var variableName = _variableName.Value;
+			
+			if (string.IsNullOrWhiteSpace(variableName))
+			{
+				message = "Variable name can't be empty";
+				return false;
+			}
+			if (!Regex.IsMatch(variableName, VARIABLE_NAME_REGEX))
+			{
+				message = "Variable name can contain only letters";
+				return false;
+			}
+			if (_reservedVariableNames.Count != 0)
+			{
+				if (variableName.StartsWith("--"))
+					variableName = variableName.Substring(2);
+				
+				if (_reservedVariableNames.Contains(variableName))
+				{
+					message = "Variable name already exists in local variable list";
+					return false;
+				}
+			}
+			
+			return true;
+		}
+		
 		private void HandleConfirmButton()
 		{
 			if (string.IsNullOrWhiteSpace(_variableName.Value))
