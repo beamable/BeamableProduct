@@ -50,7 +50,13 @@ namespace Beamable.Editor.UI.Buss
 			var cancelButton = Root.Q<GenericButtonVisualElement>("cancelButton");
 			cancelButton.OnClick += AddStyleWindow.CloseWindow;
 
-			var styleSheets = Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[] { "Assets" });
+			var styleSheets = Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[]
+			{
+				"Assets",
+#if BEAMABLE_DEVELOPER
+				"Packages"
+#endif
+			});
 			var selectStyleSheet = Root.Q<LabeledDropdownVisualElement>("selectStyleSheet");
 			selectStyleSheet.Setup(styleSheets.Select(x => x.name).ToList(), index =>
 			{
