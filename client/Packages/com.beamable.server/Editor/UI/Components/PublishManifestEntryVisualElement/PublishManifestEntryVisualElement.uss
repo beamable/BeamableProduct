@@ -3,8 +3,8 @@
     flex-direction: row;
     align-content: stretch;
     justify-content: space-between;
-    padding-left: 10px;
-    padding-right: 10px;
+    /*padding-left: 10px;*/
+    /*padding-right: 10px;*/
 }
 
 .oddRow {
@@ -31,7 +31,10 @@
 
 #SizeC {
     flex-direction: row;
-    width: 140px;
+    width: 90px;
+}
+#SizeC #valueContainer {
+    width: 70px;
 }
 
 #sizeDropdown {
@@ -47,9 +50,10 @@
 }
 
 #enabledC {
-    width: 100px;
+    /*width: 100px;*/
     height: 20px;
     flex-direction: row;
+    /*padding-left: 15px;*/
     justify-content: center;
 }
 
@@ -67,8 +71,9 @@
 }
 
 #typeC {
-    width: 80px;
+    /*width: 80px;*/
     margin-left: 10px;
+    margin-right: 10px;
     align-self: flex-start;
 }
 

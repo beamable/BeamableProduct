@@ -484,12 +484,19 @@ namespace Beamable.Server.Editor
 						var entries = allServices.Select(name =>
 						{
 							var configEntry = MicroserviceConfiguration.Instance.GetEntry(name); //config.FirstOrDefault(s => s.ServiceName == name);
+							var descriptor = Descriptors.FirstOrDefault(d => d.Name == configEntry.ServiceName);
+							var serviceDependencies = new List<ServiceDependency>();
+							foreach (var storage in descriptor.GetStorageReferences())
+							{
+								serviceDependencies.Add(new ServiceDependency { id = storage.Name, storageType = "storage" });
+							}
 							return new ManifestEntryModel
 							{
 								Comment = "",
 								Name = name,
 								Enabled = configEntry?.Enabled ?? true,
 								TemplateId = configEntry?.TemplateId ?? "small",
+								Dependencies = serviceDependencies
 							};
 						}).ToList();
 

@@ -1,3 +1,4 @@
+using Beamable.Editor.UI.Buss.Components;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI;
@@ -17,63 +18,78 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class PublishWindow : CommandRunnerWindow
 	{
-		private static readonly Vector2 MIN_SIZE = new Vector2(860, 550);
+		private static readonly Vector2 MIN_SIZE = new Vector2(860, 290);
 
-		private bool isSet;
+		// private bool isSet;
 		private CancellationTokenSource _tokenSource;
 
-		public static PublishWindow ShowPublishWindow()
+		public static PublishWindow ShowPublishWindow(EditorWindow parent)
 		{
 			var wnd = CreateInstance<PublishWindow>();
 			wnd.name = Constants.Publish;
 			wnd.titleContent = new GUIContent(Constants.Publish);
-
 			wnd.ShowUtility();
-			wnd.minSize = MIN_SIZE;
-			wnd.position = new Rect(wnd.position.x, wnd.position.y + 40, wnd.minSize.x, wnd.minSize.y);
+			wnd._model = new ManifestModel();
 
 			var servicesRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-			servicesRegistry.GenerateUploadModel().Then(model =>
+			var loadPromise = servicesRegistry.GenerateUploadModel();
+
+			wnd._element = new PublishPopup {Model = wnd._model, InitPromise = loadPromise, Registry = servicesRegistry};
+			wnd.Refresh();
+
+			var startHeight = MIN_SIZE.y + (Mathf.Min(5, servicesRegistry.AllDescriptors.Count)) * 50;
+			var size = new Vector2(MIN_SIZE.x, startHeight);
+
+			wnd.minSize = size;
+			wnd.position = BeamablePopupWindow.GetCenteredScreenRectForWindow(parent, size);
+			loadPromise.Then(model =>
 			{
 				wnd._model = model;
-				wnd.Refresh();
+				wnd._element.Model = model;
+				wnd.RefreshElement();
 			});
 
 			return wnd;
 		}
 
 		private ManifestModel _model;
+		private PublishPopup _element;
 
-		private void OnEnable()
+		// private void OnEnable()
+		// {
+		// 	VisualElement root = this.GetRootVisualContainer();
+		//
+		// 	if (isSet)
+		// 	{
+		// 		Refresh();
+		//
+		// 		var servicesRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+		// 		servicesRegistry.GenerateUploadModel().Then(model =>
+		// 		{
+		// 			_model = model;
+		// 			Refresh();
+		// 		});
+		// 	}
+		// }
+
+		private void RefreshElement()
 		{
-			VisualElement root = this.GetRootVisualContainer();
-
-			if (isSet)
-			{
-				Refresh();
-
-				var servicesRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-				servicesRegistry.GenerateUploadModel().Then(model =>
-				{
-					_model = model;
-					Refresh();
-				});
-			}
+			_element.Refresh();
+			Repaint();
 		}
 
 		private void Refresh()
 		{
 			VisualElement container = this.GetRootVisualContainer();
 			container.Clear();
-			var e = new PublishPopup { Model = _model };
 			_tokenSource = new CancellationTokenSource();
-			e.OnCloseRequested += () =>
+			_element.OnCloseRequested += () =>
 			{
 				_tokenSource?.Cancel();
 				WindowStateUtility.EnableAllWindows();
 				Close();
 			};
-			e.OnSubmit += async model =>
+			_element.OnSubmit += async model =>
 			{
 				/*
 				 * We need to build each image...
@@ -81,16 +97,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 				 * upload the manifest file...
 				 */
 				WindowStateUtility.DisableAllWindows(new[] { Constants.Publish });
-				e.PrepareForPublish();
+				_element.PrepareForPublish();
 				var microservicesRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-				await microservicesRegistry.Deploy(model, this, _tokenSource.Token, e.HandleServiceDeployed);
+				await microservicesRegistry.Deploy(model, this, _tokenSource.Token, _element.HandleServiceDeployed);
 			};
 
-			container.Add(e);
-			e.PrepareParent();
-			e.Refresh();
+			container.Add(_element);
+			_element.PrepareParent();
+			_element.Refresh();
 			Repaint();
-			isSet = true;
+			// isSet = true;
 		}
 
 		private void OnDestroy()

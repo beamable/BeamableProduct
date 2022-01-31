@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
@@ -7,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Assertions;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER
@@ -52,6 +54,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			set;
 		}
 
+		public Promise<ManifestModel> InitPromise { get; set; }
+		public MicroserviceReflectionCache.Registry Registry { get; set; }
+
 		private TextField _generalComments;
 		private GenericButtonVisualElement _cancelButton;
 		private PrimaryButtonVisualElement _primarySubmitButton;
@@ -71,6 +76,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public override void Refresh()
 		{
 			base.Refresh();
+
+			var loadingIndicator = Root.Q<LoadingIndicatorVisualElement>();
+			loadingIndicator.SetText("Fetching Beamable Cloud Data");
+			Assert.IsNotNull(InitPromise, "The InitPromise must be set before calling Refresh()");
+			loadingIndicator.SetPromise(InitPromise, Root.Q("mainVisualElement"));
 
 			if (Model?.Services == null)
 			{
