@@ -59,6 +59,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_checkbox.Refresh();
 			_checkbox.SetText(Model.Name);
 			_checkbox.SetWithoutNotify(Model.IsSelected);
+			_checkbox.SetEnabled(false);
 			Model.OnSelectionChanged += _checkbox.SetWithoutNotify;
 			_checkbox.OnValueChanged += b => Model.IsSelected = b;
 
