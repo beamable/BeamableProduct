@@ -76,6 +76,12 @@ namespace Beamable.Editor.Content
 		private List<string> _cachedItemsToDownload;
 		private bool _cachedCreateNewManifestFlag;
 
+		private void Update()
+		{
+			_actionBarVisualElement.RefreshPublishDropdownVisibility();
+			_explorerElement.RefreshManifestButton();
+		}
+
 		private void OnEnable()
 		{
 			// Refresh if/when the user logs-in or logs-out while this window is open

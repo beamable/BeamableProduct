@@ -14,7 +14,11 @@ namespace Beamable.Content
 		public static ContentConfiguration Instance => Get<ContentConfiguration>();
 
 		[Tooltip("Multiple content namespaces are an advanced feature. You can deploy content to a parallel content namespace. You will need to write code in your game to decide which namespace to use. Beamable features like Commerce, Inventory, or Events will only work with content deployed to the \"global\" namespace. ")]
+		[ReadonlyIf(nameof(multipleContentNamespacesSettingLocked), negate = false)]
 		public bool EnableMultipleContentNamespaces = false;
+
+		[HideInInspector]
+		public bool multipleContentNamespacesSettingLocked;
 
 #if UNITY_EDITOR
         [HideInInspector]
