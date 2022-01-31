@@ -947,11 +947,13 @@ namespace Beamable.Editor.Content
 
 			var api = await EditorAPI.Instance;
 			var allContent = api.ContentIO.FindAll();
-
+			int contentAmount = 0;
+			
 			List<ContentObject> contentList = null;
 			if (allContent != null)
 			{
 				contentList = allContent.ToList();
+				contentAmount = contentList.Count;
 			}
 
 			if (contentList == null || contentList.Count == 0)
@@ -961,31 +963,39 @@ namespace Beamable.Editor.Content
 			}
 
 			// check for local changes
+			bool hasLocalChanges = false;
 			foreach (var content in contentList)
 			{
 				var status = await api.ContentIO.GetStatus(content);
-				if (status != ContentStatus.CURRENT)
+				if (status != ContentStatus.CURRENT && !hasLocalChanges)
 				{
-					bool result = EditorUtility.DisplayDialog("Local changes",
-						"You have local changes in your content. Do you want to proceed with baking using this data?",
-						"Yes", "No");
+					hasLocalChanges = true;
+				}
 
-					if (!result)
-					{
-						return;
-					}
-
-					break;
+				if (status == ContentStatus.NEW)
+				{
+					contentAmount--;
 				}
 			}
 
-			BakeLog($"Baking {contentList.Count} items");
+			if (hasLocalChanges)
+			{
+				bool continueBaking = EditorUtility.DisplayDialog("Local changes",
+				                                             "You have local changes in your content. Do you want to proceed with baking using this data?",
+				                                             "Yes", "No");
+				if (!continueBaking)
+				{
+					return;
+				}
+			}
+			
+			BakeLog($"Baking {contentAmount} items");
 
 			var serverManifest = await api.ContentIO.FetchManifest();
 
 			bool compress = ContentConfiguration.Instance.EnableBakedContentCompression;
 
-			if (Bake(contentList, serverManifest, compress, out int objectsBaked))
+			if (Bake(contentList, serverManifest, compress, contentAmount, out int objectsBaked))
 			{
 				BakeLog($"Baked {objectsBaked} content objects to '{ContentConstants.BakedContentFilePath + ".bytes"}'");
 			}
@@ -995,12 +1005,13 @@ namespace Beamable.Editor.Content
 			}
 		}
 
-		private static bool Bake(List<ContentObject> contentList, Manifest serverManifest, bool compress, out int objectsBaked)
+		private static bool Bake(List<ContentObject> contentList, Manifest serverManifest, bool compress, int objectsToBake, out int objectsBaked)
 		{
 			Directory.CreateDirectory(ContentConstants.BeamableResourcesPath);
 
 			objectsBaked = contentList.Count;
-			ContentDataInfo[] contentData = new ContentDataInfo[contentList.Count];
+			ContentDataInfo[] contentData = new ContentDataInfo[objectsToBake];
+			int index = 0;
 			for (int i = 0; i < contentList.Count; i++)
 			{
 				var content = contentList[i];
@@ -1013,7 +1024,8 @@ namespace Beamable.Editor.Content
 				}
 				var version = serverReference.Version;
 				content.SetIdAndVersion(content.Id, version);
-				contentData[i] = new ContentDataInfo { contentId = content.Id, data = content.ToJson() };
+				contentData[index] = new ContentDataInfo { contentId = content.Id, data = content.ToJson() };
+				index++;
 			}
 
 			ContentDataInfoWrapper fileData = new ContentDataInfoWrapper { content = contentData.ToList() };
