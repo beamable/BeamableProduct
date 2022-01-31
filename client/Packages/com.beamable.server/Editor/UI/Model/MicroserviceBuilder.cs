@@ -82,9 +82,9 @@ namespace Beamable.Editor.UI.Model
 				await TryToGetLastImageId();
 				return true;
 			}
-			catch(Exception e)
-            {
-                MicroserviceLogHelper.HandleBuildCommandOutput(this, e.Message);
+			catch (Exception e)
+			{
+				MicroserviceLogHelper.HandleBuildCommandOutput(this, e.Message);
 			}
 			finally
 			{
