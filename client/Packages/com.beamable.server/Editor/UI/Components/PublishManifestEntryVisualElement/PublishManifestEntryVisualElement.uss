@@ -21,28 +21,12 @@
     flex-direction: column;
 }
 
-#CommentsC {
-    width: 130px;
-}
-
-#depsList {
-    margin-right: 10px;
-}
-
 #SizeC {
     flex-direction: row;
-    width: 90px;
-}
-#SizeC #valueContainer {
-    width: 70px;
-}
-
-#sizeDropdown {
-    width: 140px;
 }
 
 #commentsText {
-    width: 90px;
+    /*width: 90px;*/
 }
 
 #commentsText {
@@ -57,9 +41,6 @@
     justify-content: center;
 }
 
-#CheckC {
-    margin-right: 20px;
-}
 
 #nameMS {
     -unity-font-style: bold;
@@ -72,8 +53,8 @@
 
 #typeC {
     /*width: 80px;*/
-    margin-left: 10px;
-    margin-right: 10px;
+    /*margin-left: 10px;*/
+    /*margin-right: 10px;*/
     align-self: flex-start;
 }
 

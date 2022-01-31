@@ -27,15 +27,19 @@
 #nameC, #depsC {
     flex-direction: row;
     flex: 1;
-    margin-right: 10px;
+    /*margin-right: 20px;*/
+    /*margin-right: 10px;*/
+}
+#depsColumn > * {
+    padding-right: 20px;
 }
 
 #depsC {
-    margin-right: 10px;
+    /*margin-right: 10px;*/
 }
 
 #typeC {
-    width: 70px;
+    width: 50px;
     justify-content: center;
 }
 
@@ -50,20 +54,46 @@
 #CommentsC {
     /*width: 155px;*/
     /*flex-grow: .5;*/
+    width: 220px;
+    /*padding-left: 20px;*/
+    justify-content: flex-end;
+    /*margin-right: 20px; !* to account for status icon stuff *!*/
+}
+#CommentsC.column {
     padding-left: 20px;
 }
-#CommentsC > * {
+#row #CommentsC > * {
     flex-grow: 1;
 }
 
-#commentsText, #SizeC .template{
-    width: 80px;
+#SizeC {
+    width: 120px;
 }
+#SizeC DropdownVisualElement {
+    flex-direction: row;
+    flex-grow: 1;
+}
+#SizeC #mainContainer {
+    min-width: 70px;
+}
+#SizeC #mainContainer #valueContainer {
+    width: 50px;
+}
+
+#commentsText, #SizeC .template{
+    /*width: 80px;*/
+}
+
 #sizeButton Label {
     margin-right: 18px;
     margin-top: 2px;
     font-size: 10px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+}
+
+#CheckC {
+    width: 20px;
+    margin-right: 20px;
 }
 
 .column{
@@ -100,12 +130,13 @@
     align-self: auto;
     flex-direction: row;
     flex-grow: 1;
-    max-width: 120px;
+    /*max-width: 120px;*/
 }
-#commentsText{
-    padding-right: 10px;
-    width: 100px;
-}
+/*#commentsText{*/
+/*    padding-right: 10px;*/
+/*    width: 100px;*/
+/*}*/
+
 .bottomContainer{
     padding-top: 10px;
     padding-right: 0px;
@@ -159,7 +190,15 @@ LoadingBarElement {
     align-self: stretch;
     margin-bottom: 5px;
 }
+#header .column {
+    justify-content: center;
+}
+#header {
+    border-color: rgba(0,0,0,.1);
+    border-bottom-width: 2px;
+}
 #header, #topMessage, #manifestsContainer, #buttonStrip, .bottomContainer{
     margin-left: 15px;
     margin-right: 15px;
+    padding-right: 10px; /*account for scroll */
 }
