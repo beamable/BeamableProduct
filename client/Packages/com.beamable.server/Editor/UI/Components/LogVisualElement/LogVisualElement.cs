@@ -67,6 +67,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private float MaxScrollValue => _listView.itemHeight * _listView.itemsSource.Count;
 
 		public event Action OnDetachLogs;
+		public bool EnableMoreButton = true;
+		public bool EnableDetatchButton = true;
 
 		private float ScrollerHeight => _scrollView.contentContainer.contentRect.height;
 
@@ -179,6 +181,17 @@ namespace Beamable.Editor.Microservice.UI.Components
 				LogsOnOnViewFilterChanged();
 				UpdateSelectedMessageText();
 			}
+
+			if (!EnableDetatchButton)
+			{
+				_popupBtn.RemoveFromHierarchy();
+			}
+
+			if (!EnableMoreButton)
+			{
+				_advanceDropDown.RemoveFromHierarchy();
+			}
+
 			_listView.Refresh();
 			UpdateCounts();
 		}

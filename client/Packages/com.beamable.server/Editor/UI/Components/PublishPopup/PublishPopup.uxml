@@ -18,41 +18,51 @@
     <engine:VisualElement name="mainVisualElement">
         <beamable:PublishStatusVisualElement name="topMessage"/>
 
-        <engine:VisualElement name="header">
-            <engine:VisualElement name="enabledC" class="column">
-                <engine:Label text="Enabled" class="SubTitleText"/>
+        <engine:VisualElement name="splitPane">
+            <engine:VisualElement name="services">
+                <engine:VisualElement name="header">
+                    <engine:VisualElement name="enabledC" class="column">
+                        <engine:Label text="Enabled" class="SubTitleText"/>
+                    </engine:VisualElement>
+
+                    <engine:VisualElement name="typeC" class="column">
+                        <engine:Label text="Type" class="SubTitleText"/>
+                    </engine:VisualElement>
+
+                    <engine:VisualElement name="nameC" class="column">
+                        <engine:Label text="Name" class="SubTitleText"/>
+                    </engine:VisualElement>
+
+                    <engine:VisualElement name="depsC" class="column">
+                        <engine:Label text="Dependencies" class="SubTitleText"/>
+                    </engine:VisualElement>
+
+                    <engine:VisualElement name="SizeC" class="column">
+                    <engine:Label text="Profile" class="SubTitleText"/>
+                    </engine:VisualElement>
+
+                    <engine:VisualElement name="CommentsC" class="column">
+                    <engine:Label text="Comments" class="SubTitleText" name="commentsLabel"/>
+                    </engine:VisualElement>
+
+                    <engine:VisualElement name="CheckC" class="column"/>
+                </engine:VisualElement>
+                <engine:ScrollView name="manifestsContainer"/>
             </engine:VisualElement>
 
-            <engine:VisualElement name="typeC" class="column">
-                <engine:Label text="Type" class="SubTitleText"/>
+            <engine:VisualElement class="bottomContainer">
+                    <engine:TextField name="largeCommentsArea" multiline="true"/>
             </engine:VisualElement>
-
-            <engine:VisualElement name="nameC" class="column">
-                <engine:Label text="Name" class="SubTitleText"/>
-            </engine:VisualElement>
-
-            <engine:VisualElement name="depsC" class="column">
-                <engine:Label text="Dependencies" class="SubTitleText"/>
-            </engine:VisualElement>
-
-            <engine:VisualElement name="SizeC" class="column">
-            <engine:Label text="Profile" class="SubTitleText"/>
-            </engine:VisualElement>
-
-            <engine:VisualElement name="CommentsC" class="column">
-            <engine:Label text="Comments" class="SubTitleText" name="commentsLabel"/>
-            </engine:VisualElement>
-
-            <engine:VisualElement name="CheckC" class="column"/>
         </engine:VisualElement>
-        <engine:ScrollView name="manifestsContainer"/>
-        <engine:VisualElement class="bottomContainer">
-                <engine:TextField name="largeCommentsArea" multiline="true"/>
-        </engine:VisualElement>
+
+
+
         <engine:VisualElement name="buttonStrip">
             <beamable:GenericButtonVisualElement name="cancelBtn" text="Cancel"/>
             <beamable:PrimaryButtonVisualElement name="continueBtn" text="Publish"/>
         </engine:VisualElement>
+
+
     </engine:VisualElement>
 
 </engine:UXML>

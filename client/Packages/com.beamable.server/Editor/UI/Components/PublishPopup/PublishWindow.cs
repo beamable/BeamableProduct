@@ -1,3 +1,4 @@
+using System;
 using Beamable.Common;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Server.Editor;
@@ -5,6 +6,8 @@ using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI;
 using Beamable.Server.Editor.UI.Components;
 using System.Threading;
+using System.Threading.Tasks;
+using Beamable.Editor.UI.Model;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -88,7 +91,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				WindowStateUtility.EnableAllWindows();
 				Close();
 			};
-			_element.OnSubmit += async model =>
+			_element.OnSubmit += async (model, logger) =>
 			{
 				/*
 				 * We need to build each image...
@@ -98,7 +101,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				WindowStateUtility.DisableAllWindows(new[] { Constants.Publish });
 				_element.PrepareForPublish();
 				var microservicesRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-				await microservicesRegistry.Deploy(model, this, _tokenSource.Token, _element.HandleServiceDeployed);
+				await microservicesRegistry.Deploy(model, this, _tokenSource.Token, _element.HandleServiceDeployed, logger);
 			};
 
 			container.Add(_element);
@@ -113,5 +116,38 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_tokenSource?.Cancel();
 			WindowStateUtility.EnableAllWindows();
 		}
+	}
+
+	class PublishServiceAccumulator : ServiceModelBase
+	{
+		public override bool IsRunning => true;
+		public override IDescriptor Descriptor =>
+			throw new NotImplementedException("Accumulator doesn't have descriptor");
+		#pragma warning disable CS0067
+		public override event Action<Task> OnStart;
+		public override event Action<Task> OnStop;
+		#pragma warning restore CS0067
+		public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
+		{
+			// don't do anything.
+		}
+
+		public override Task Start()
+		{
+			throw new NotImplementedException();
+		}
+
+		public override Task Stop()
+		{
+			throw new NotImplementedException();
+		}
+
+		public override void Refresh(IDescriptor descriptor)
+		{
+			throw new NotImplementedException();
+		}
+
+		public override IBeamableBuilder Builder =>
+			throw new NotImplementedException("Accumulator doesn't have builder");
 	}
 }
