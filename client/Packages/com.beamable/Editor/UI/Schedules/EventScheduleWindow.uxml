@@ -27,8 +27,8 @@
             <beamable:LabeledHourPickerVisualElement name="activeToHour" label=""/>
 
             <engine:VisualElement name="buttonStrip">
-                <beamable:PrimaryButtonVisualElement name="confirmBtn" text="Confirm"/>
                 <beamable:GenericButtonVisualElement name="cancelBtn" text="Cancel" type ="Cancel"/>
+                <beamable:PrimaryButtonVisualElement name="confirmBtn" text="Confirm"/>
             </engine:VisualElement>
         </engine:ScrollView>
     </engine:VisualElement>
