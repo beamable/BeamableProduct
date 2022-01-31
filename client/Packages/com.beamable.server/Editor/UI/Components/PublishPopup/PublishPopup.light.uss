@@ -1,3 +1,6 @@
 #topMessage {
     color: #111111;
 }
+.bottomContainer LogVisualElement {
+    border-color: #9b9b9b;
+}
