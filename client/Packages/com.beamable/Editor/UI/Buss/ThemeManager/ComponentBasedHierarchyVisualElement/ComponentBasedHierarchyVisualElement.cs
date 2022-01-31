@@ -118,8 +118,11 @@ namespace Beamable.Editor.UI.Components
 
 			if (indentedLabelVisualElement != null)
 			{
-				SelectedComponent = indentedLabelVisualElement.RelatedGameObject.GetComponent<T>();
-				ChangeSelectedLabel(indentedLabelVisualElement, false);
+				if (indentedLabelVisualElement.RelatedGameObject != null)
+				{
+					SelectedComponent = indentedLabelVisualElement.RelatedGameObject.GetComponent<T>();
+					ChangeSelectedLabel(indentedLabelVisualElement, false);
+				}
 			}
 		}
 
