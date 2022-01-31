@@ -38,7 +38,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			servicesRegistry.GenerateUploadModel().Then(model =>
 			{
 				wnd._model = model;
-				wnd.minSize = new Vector2(MIN_SIZE.x, MIN_SIZE.y + Mathf.Clamp(model?.Services?.Count ?? 1, 1, MAX_ROW) * DEFAULT_ROW_HEIGHT);
+				int servicesAmount = (model?.Services?.Count ?? 0) + (model?.Storages?.Count ?? 0);
+				wnd.minSize = new Vector2(MIN_SIZE.x, MIN_SIZE.y + Mathf.Clamp(servicesAmount, 1, MAX_ROW) * DEFAULT_ROW_HEIGHT);
 				wnd.Refresh();
 			});
 
