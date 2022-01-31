@@ -132,7 +132,7 @@ namespace Beamable.Editor.UI.Components
 			if (!setInHierarchy) return;
 
 			Selection.SetActiveObjectWithContext(SelectedLabel?.RelatedGameObject,
-			                                     SelectedLabel?.RelatedGameObject);
+												 SelectedLabel?.RelatedGameObject);
 		}
 
 		private void OnMouseClicked(IndentedLabelVisualElement newLabel)
