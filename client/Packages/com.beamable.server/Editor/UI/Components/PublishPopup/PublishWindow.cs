@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Editor.UI.Buss.Components;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
@@ -22,7 +23,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected const int MAX_ROW = 6;
 		private static readonly Vector2 MIN_SIZE = new Vector2(860, 330);
 
-		// private bool isSet;
+		[SerializeField] private bool isSet;
 		private CancellationTokenSource _tokenSource;
 
 		public static PublishWindow ShowPublishWindow(EditorWindow parent)
@@ -50,29 +51,25 @@ namespace Beamable.Editor.Microservice.UI.Components
 				wnd.RefreshElement();
 			});
 
-
 			return wnd;
 		}
 
 		private ManifestModel _model;
 		private PublishPopup _element;
 
-		// private void OnEnable()
-		// {
-		// 	VisualElement root = this.GetRootVisualContainer();
-		//
-		// 	if (isSet)
-		// 	{
-		// 		Refresh();
-		//
-		// 		var servicesRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-		// 		servicesRegistry.GenerateUploadModel().Then(model =>
-		// 		{
-		// 			_model = model;
-		// 			Refresh();
-		// 		});
-		// 	}
-		// }
+		private void OnEnable()
+		{
+			if (!isSet) return;
+
+			var servicesRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			servicesRegistry.GenerateUploadModel().Then(model =>
+			{
+				_model = model;
+				_element = new PublishPopup {Model = _model, InitPromise = Promise<ManifestModel>.Successful(model), Registry = servicesRegistry};
+				Refresh();
+				RefreshElement();
+			});
+		}
 
 		private void RefreshElement()
 		{
@@ -108,7 +105,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_element.PrepareParent();
 			_element.Refresh();
 			Repaint();
-			// isSet = true;
+			isSet = true;
 		}
 
 		private void OnDestroy()
