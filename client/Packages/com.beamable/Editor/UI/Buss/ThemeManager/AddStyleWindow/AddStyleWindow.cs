@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Beamable.UI.BUSS
+namespace Beamable.UI.Buss
 {
 	public class AddStyleWindow : BussWindowBase<AddStyleWindow, AddPropertiesVisualElement>
 	{

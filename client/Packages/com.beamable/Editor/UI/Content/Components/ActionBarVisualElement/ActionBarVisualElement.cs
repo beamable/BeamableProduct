@@ -1,6 +1,4 @@
-using Beamable.Content;
 using Beamable.Editor.Content.Models;
-using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
@@ -16,7 +14,6 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Content.Components
 {
-
 	public class ActionBarVisualElement : ContentManagerComponent
 	{
 		public new class UxmlFactory : UxmlFactory<ActionBarVisualElement, UxmlTraits>
