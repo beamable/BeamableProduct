@@ -1,9 +1,8 @@
-﻿using Beamable.UI.Buss;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Beamable.Editor.UI.BUSS.ThemeManager
+namespace Beamable.UI.Buss
 {
 	public class VariableDatabase
 	{

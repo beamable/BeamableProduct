@@ -1,8 +1,5 @@
 ﻿using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Buss.Components;
-using Beamable.Editor.UI.BUSS.ThemeManager;
 using Beamable.UI.Buss;
-using Beamable.UI.BUSS;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +17,6 @@ namespace Beamable.Editor.UI.Components
 	public class BussStyleCardVisualElement : BeamableVisualElement
 	{
 		private BussSelectorLabelVisualElement _selectorLabelComponent;
-		private VisualElement _styleIdParent;
 		private VisualElement _selectorLabelParent;
 		private VisualElement _variables;
 		private VisualElement _propertiesParent;
@@ -34,8 +30,6 @@ namespace Beamable.Editor.UI.Components
 		private VisualElement _addRuleButton;
 		private VisualElement _showAllButton;
 		private TextElement _showAllButtonText;
-		private TextElement _styleIdLabel;
-		private TextField _styleIdEditField;
 
 		private VariableDatabase _variableDatabase;
 		private BussStyleSheet _styleSheet;

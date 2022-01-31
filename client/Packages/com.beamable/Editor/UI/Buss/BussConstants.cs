@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Beamable.UI.BUSS
+namespace Beamable.UI.Buss
 {
 	public static class BussConstants
 	{
