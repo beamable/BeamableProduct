@@ -1,15 +1,9 @@
 using Beamable.Common;
-using Beamable.Editor.Content;
-using Beamable.Editor.Content.Models;
-using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
-using Beamable.Platform.SDK;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
-using UnityEngine;
-using Debug = UnityEngine.Debug;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;

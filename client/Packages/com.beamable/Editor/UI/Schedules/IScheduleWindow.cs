@@ -1,7 +1,7 @@
 using Beamable.Common.Content;
 using System;
 
-namespace Beamable.Editor.Schedules
+namespace Beamable.Editor.UI.Components
 {
 	public interface IScheduleWindow<TData>
 	{
