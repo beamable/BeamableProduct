@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Deleting all items from an inventory subscription notifies client
 - Immediately failed promises throw uncaught errors on access
+- Content baking will process correct number of objects regardless of local changes
 
 ### Changed
 - `ServiceManager` no longer provides Beamable types. Use `BeamContext` instead.
