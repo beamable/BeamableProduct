@@ -49,7 +49,7 @@ namespace Beamable.Server.Editor
 			};
 
 		public static bool IsInitialized { get; private set; }
-		
+
 		static MicroserviceEditor()
 		{
 			/// Delaying until first editor tick so that the menu
@@ -62,7 +62,7 @@ namespace Beamable.Server.Editor
 				{
 					BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 				}
-				catch(InvalidOperationException)
+				catch (InvalidOperationException)
 				{
 					EditorApplication.delayCall += Initialize;
 					return;

@@ -88,7 +88,7 @@ namespace Beamable
 			CoreConfiguration.OnValidate();
 
 			EditorAPI.Instance.Then(_ => { });
-			
+
 			// Initializes the Config database
 			// This solves the same problem that the try/catch block around the ModuleConfigurations solves.
 			try
