@@ -49,8 +49,8 @@ namespace Beamable.Editor.UI.Validation
 	public class HoursValidationRule
 	{
 		public string ErrorMessage => $"{BComponentName} should be higher than {AComponentName}";
-		public string AComponentName { get; set; }
-		public string BComponentName { get; set; }
+		private string AComponentName { get; }
+		private string BComponentName { get; }
 
 		public HoursValidationRule(string aComponentName, string bComponentName)
 		{
@@ -63,8 +63,7 @@ namespace Beamable.Editor.UI.Validation
 			DateTime aTime = ParseHourString(aValue, out bool aParsed);
 			DateTime bTime = ParseHourString(bValue, out bool bParsed);
 
-			Satisfied = aParsed && bParsed && (aTime.CompareTo(bTime) < 0 ||
-				(bTime.Hour == 0 && bTime.Minute == 0));
+			Satisfied = aParsed && bParsed && aTime.CompareTo(bTime) < 0;
 		}
 
 		public bool Satisfied { get; set; }
