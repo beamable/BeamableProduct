@@ -40,6 +40,8 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":4.0}'
     _selector: '#rankEntry'
+    _editMode: 0
+    _showAllMode: 0
   - _properties:
     - key: backgroundColor
       property:
@@ -52,6 +54,8 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":5.0}'
     _selector: '#scoreBox'
+    _editMode: 0
+    _showAllMode: 0
   - _properties:
     - key: backgroundColor
       property:
@@ -64,6 +68,8 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":5.0}'
     _selector: '#rankBox'
+    _editMode: 0
+    _showAllMode: 0
   - _properties:
     - key: backgroundColor
       property:
@@ -71,6 +77,8 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         json: '{"_colorRect":{"BottomLeftColor":{"r":1.0,"g":0.7568627595901489,"b":0.0,"a":1.0},"BottomRightColor":{"r":1.0,"g":0.7568627595901489,"b":0.0,"a":1.0},"TopLeftColor":{"r":1.0,"g":0.9444069862365723,"b":0.8443396091461182,"a":1.0},"TopRightColor":{"r":1.0,"g":0.9444069862365723,"b":0.8443396091461182,"a":1.0},"_drawerMode":3}}'
     _selector: .firstPlace
+    _editMode: 0
+    _showAllMode: 0
   - _properties:
     - key: backgroundColor
       property:
@@ -78,6 +86,8 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         json: '{"_colorRect":{"BottomLeftColor":{"r":0.3294117748737335,"g":0.3294117748737335,"b":0.3294117748737335,"a":1.0},"BottomRightColor":{"r":0.3294117748737335,"g":0.3294117748737335,"b":0.3294117748737335,"a":1.0},"TopLeftColor":{"r":0.9764705896377564,"g":0.9843137264251709,"b":0.9803921580314636,"a":1.0},"TopRightColor":{"r":0.9764705896377564,"g":0.9843137264251709,"b":0.9803921580314636,"a":1.0},"_drawerMode":3}}'
     _selector: .secondPlace
+    _editMode: 0
+    _showAllMode: 0
   - _properties:
     - key: backgroundColor
       property:
@@ -85,6 +95,8 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         json: '{"_colorRect":{"BottomLeftColor":{"r":1.0,"g":0.4431372880935669,"b":0.0,"a":1.0},"BottomRightColor":{"r":1.0,"g":0.4431372880935669,"b":0.0,"a":1.0},"TopLeftColor":{"r":1.0,"g":0.7763621807098389,"b":0.5801886916160584,"a":1.0},"TopRightColor":{"r":1.0,"g":0.7763621807098389,"b":0.5801886916160584,"a":1.0},"_drawerMode":3}}'
     _selector: .thirdPlace
+    _editMode: 0
+    _showAllMode: 0
   - _properties:
     - key: backgroundColor
       property:
@@ -112,6 +124,8 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         json: '{"Enum":0}'
     _selector: '#avatarFrame'
+    _editMode: 0
+    _showAllMode: 0
   - _properties:
     - key: backgroundColor
       property:
@@ -124,6 +138,8 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         json: '{"AssetSerializationKey":0}'
     _selector: '#avatarImage'
+    _editMode: 0
+    _showAllMode: 0
   - _properties:
     - key: backgroundColor
       property:
@@ -171,6 +187,8 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":8.0}'
     _selector: '#scoreBox'
+    _editMode: 0
+    _showAllMode: 0
   - _properties:
     - key: borderWidth
       property:
@@ -198,6 +216,8 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":0.0,"g":0.0,"b":0.0,"a":0.0}}'
     _selector: .currentPlayer
+    _editMode: 0
+    _showAllMode: 0
   - _properties:
     - key: fontSize
       property:
@@ -225,6 +245,8 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":0.34117648005485537,"g":0.13333334028720857,"b":0.0,"a":1.0}}'
     _selector: '#playerNameLabel'
+    _editMode: 0
+    _showAllMode: 0
   - _properties:
     - key: borderColor
       property:
@@ -262,6 +284,8 @@ MonoBehaviour:
           Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
         json: '{"Enum":4098}'
     _selector: '#rankValueLabel'
+    _editMode: 0
+    _showAllMode: 0
   - _properties:
     - key: fontSize
       property:
@@ -289,7 +313,10 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":0.9803921580314636,"g":0.9450980424880981,"b":0.772549033164978,"a":1.0}}'
     _selector: '#scoreValueLabel'
+    _editMode: 0
+    _showAllMode: 0
   _assetReferences:
   - {fileID: 21300000, guid: f3caa2bbb88564e85b2811d16acd4c9e, type: 3}
   - {fileID: 11400000, guid: 8731414c3f69f42c78336ca4aaa22544, type: 2}
   - {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
+  _isReadOnly: 1
