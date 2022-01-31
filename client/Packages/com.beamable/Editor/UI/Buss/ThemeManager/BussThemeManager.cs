@@ -1,7 +1,6 @@
-using Beamable.Editor;
 using Beamable.Editor.Common;
-using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
+using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +14,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
-namespace Beamable.UI.Buss
+namespace Beamable.Editor.UI.Buss
 {
 	public class BussThemeManager : EditorWindow
 	{
