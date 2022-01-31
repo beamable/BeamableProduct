@@ -38,7 +38,7 @@ namespace Beamable.Editor.UI.Buss
 			Root.parent.parent.style.flexGrow = 1;
 
 			_selectorName = Root.Q<LabeledTextField>("styleName");
-			_selectorName.Setup("Style name", string.Empty, OnValidate);
+			_selectorName.Setup("Selector", string.Empty, OnValidate);
 			_selectorName.Refresh();
 
 			_rulesContainer = Root.Q<ScrollView>("propertiesContainer");
