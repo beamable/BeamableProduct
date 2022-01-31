@@ -37,7 +37,7 @@ namespace Beamable.Editor.UI.Components
 
 		public override void OnPropertyChangedExternally()
 		{
-			_field.Init(Property.EnumValue);
+			_field.SetValueWithoutNotify(Property.EnumValue);
 		}
 	}
 }

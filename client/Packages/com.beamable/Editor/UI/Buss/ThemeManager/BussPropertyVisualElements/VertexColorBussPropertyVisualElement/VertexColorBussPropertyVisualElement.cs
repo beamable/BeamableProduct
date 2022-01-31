@@ -72,10 +72,10 @@ namespace Beamable.Editor.UI.Components
 		public override void OnPropertyChangedExternally()
 		{
 			var colorRect = Property.ColorRect;
-			_bottomLeftColor.value = colorRect.BottomLeftColor;
-			_bottomRightColor.value = colorRect.BottomRightColor;
-			_topLeftColor.value = colorRect.TopLeftColor;
-			_topRightColor.value = colorRect.TopRightColor;
+			_bottomLeftColor.SetValueWithoutNotify(colorRect.BottomLeftColor);
+			_bottomRightColor.SetValueWithoutNotify(colorRect.BottomRightColor);
+			_topLeftColor.SetValueWithoutNotify(colorRect.TopLeftColor);
+			_topRightColor.SetValueWithoutNotify(colorRect.TopRightColor);
 		}
 	}
 }
