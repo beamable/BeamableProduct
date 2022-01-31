@@ -69,7 +69,7 @@ namespace Beamable.Editor.Toolbox.Components
 				elem.Refresh();
 			}
 
-			var attemptsLeft = 25;
+			var attemptsLeft = 250;
 			void WaitForRedraw()
 			{
 				var height = _mainContainer.worldBound.height;
