@@ -92,6 +92,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			if (DockerCommand.DockerNotInstalled || !_dockerHubIsRunning)
 			{
 				ShowDockerNotInstalledAnnouncement();
+				EditorApplication.delayCall += Refresh;
 			}
 			if (DockerCommand.DockerNotInstalled)
 				return;
