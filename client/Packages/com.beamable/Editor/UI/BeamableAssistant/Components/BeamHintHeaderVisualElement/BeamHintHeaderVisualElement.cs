@@ -125,13 +125,13 @@ namespace Beamable.Editor.Assistant
 			hintPrimaryDomain.AddTextWrapStyle();
 
 			// Find the ConverterData that is tied to the hint we are displaying from the HintDetails Reflection Cache system.
-			if (!_hintDetailsReflectionCache.TryGetConverterDataForHint(_displayingHintHeader, out var converter))
-			{
-				BeamableLogger.Log($"[Assistant] No BeamableHintDetails Found for Hint Header {_displayingHintHeader}! Skipping rendering of this hint." +
-								   $"See BeamHintDetailConverterProvider and BeamHintDetailsConfig to see how to configure BeamHintConverter functions and visuals.");
-			}
-
-			var hintDetailsConfig = converter.HintConfigDetailsConfig;
+			var foundConverter = _hintDetailsReflectionCache.TryGetConverterDataForHint(_displayingHintHeader, out var converter);
+			var hintDetailsConfig = foundConverter ? converter.HintConfigDetailsConfig : null;
+			BeamHintTextMap textMap;
+			if (foundConverter && converter.HintTextMap != null && converter.HintTextMap.TryGetHintTitle(_displayingHintHeader, out _) && converter.HintTextMap.TryGetHintIntroText(_displayingHintHeader, out _))
+				textMap = converter.HintTextMap;
+			else
+				textMap = _hintDetailsReflectionCache.GetTextMapForId(_displayingHintHeader);
 
 			// If there are no mapped converters, we don't display a more button since there would be no details to show.
 			var detailsUxmlPath = hintDetailsConfig == null ? "" : hintDetailsConfig.UxmlFile;
@@ -141,7 +141,7 @@ namespace Beamable.Editor.Assistant
 			_detailsContainer = Root.Q<VisualElement>("hintDetailsContainer");
 
 			// If there are no configured UXML Path or a Converter tied to the matching HintDetailsVisualConfig, simply disable the button.
-			if (hintDetailsConfig == null || string.IsNullOrEmpty(detailsUxmlPath))
+			if (hintDetailsConfig == null || string.IsNullOrEmpty(detailsUxmlPath) || textMap == null)
 			{
 				_moreDetailsButton.visible = false;
 				_detailsContainer.AddToClassList("--positionHidden");
@@ -268,14 +268,7 @@ namespace Beamable.Editor.Assistant
 
 				// Call the converter to fill up this injection bag.
 				var beamHint = _hintDataModel.GetHint(_displayingHintHeader);
-				// TODO: Change this hacky way of injecting texts when we have our in-editor localization solution 
-				if (converter.HintTextMap.TryGetHintTitle(beamHint.Header, out _) && converter.HintTextMap.TryGetHintIntroText(beamHint.Header, out _))
-					converter.ConverterCall.Invoke(in beamHint, in converter.HintTextMap, injectionBag);
-				else
-				{
-					var textMap = _hintDetailsReflectionCache.GetTextMapForId(beamHint.Header);
-					converter.ConverterCall.Invoke(in beamHint, in textMap, injectionBag);
-				}
+				converter.ConverterCall.Invoke(in beamHint, in textMap, injectionBag);
 
 				// Resolve all supported injections.
 				ResolveInjections(injectionBag.TextInjections, _detailsBox);

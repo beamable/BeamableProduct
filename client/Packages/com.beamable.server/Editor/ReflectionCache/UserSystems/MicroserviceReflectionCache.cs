@@ -597,11 +597,14 @@ namespace Beamable.Server.Editor
 			[DidReloadScripts]
 			private static void WatchMicroserviceFiles()
 			{
+				// If we are not initialized, delay the call until we are.
+				if (!BeamEditor.IsInitialized || !MicroserviceEditor.IsInitialized)
+				{
+					EditorApplication.delayCall += WatchMicroserviceFiles;
+					return;
+				}
+
 				var registry = BeamEditor.GetReflectionSystem<Registry>();
-
-				// Handle case where initialization doesn't happen properly due to Unity Re-Import vs InitializeOnLoad logic...
-				if (registry == null) return;
-
 				foreach (var service in registry.Descriptors)
 				{
 					GenerateClientSourceCode(service);
@@ -671,10 +674,13 @@ namespace Beamable.Server.Editor
 			[DidReloadScripts]
 			private static void AutomaticMachine()
 			{
+				// If we are not initialized, delay the call until we are.
+				if (!BeamEditor.IsInitialized || !MicroserviceEditor.IsInitialized)
+				{
+					EditorApplication.delayCall += AutomaticMachine;
+					return;
+				}
 				var registry = BeamEditor.GetReflectionSystem<Registry>();
-				// Handle case where initialization doesn't happen properly due to Unity Re-Import vs InitializeOnLoad logic...
-				if (registry == null) return;
-
 				if (DockerCommand.DockerNotInstalled) return;
 				try
 				{

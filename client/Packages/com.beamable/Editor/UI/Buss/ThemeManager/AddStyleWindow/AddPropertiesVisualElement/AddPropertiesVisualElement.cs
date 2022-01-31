@@ -38,7 +38,7 @@ namespace Beamable.Editor.UI.Buss
 			Root.parent.parent.style.flexGrow = 1;
 
 			_selectorName = Root.Q<LabeledTextField>("styleName");
-			_selectorName.Setup("Style name", string.Empty, OnValidate);
+			_selectorName.Setup("Selector", string.Empty, OnValidate);
 			_selectorName.Refresh();
 
 			_rulesContainer = Root.Q<ScrollView>("propertiesContainer");
@@ -102,10 +102,18 @@ namespace Beamable.Editor.UI.Buss
 			else
 				ChangeButtonState(true);
 
-			foreach (var localStyle in _currentSelectedStyleSheet.Styles)
-				if (localStyle.SelectorString == _selectorName.Value)
-					ChangeButtonState(false,
-									  $"Selector '{_selectorName.Value}' already exists in '{_currentSelectedStyleSheet.name}' BUSS style sheet");
+			if (_currentSelectedStyleSheet != null)
+			{
+				foreach (var localStyle in _currentSelectedStyleSheet.Styles)
+					if (localStyle.SelectorString == _selectorName.Value)
+						ChangeButtonState(false,
+										  $"Selector '{_selectorName.Value}' already exists in '{_currentSelectedStyleSheet.name}' BUSS style sheet");
+			}
+			else
+			{
+				ChangeButtonState(false,
+				  "Buss style sheet scriptable config doesn't exist");
+			}
 
 		}
 
