@@ -38,16 +38,15 @@ namespace Beamable.Editor.UI.Buss
 		private void OnEnable()
 		{
 			Instance = this;
-			Instance.Refresh();
 		}
 
 		private void OnDisable() => Instance = null;
 		protected void Refresh()
 		{
-			var rootContainer = this.GetRootVisualContainer();
+			VisualElement rootContainer = this.GetRootVisualContainer();
 			rootContainer.Clear();
 
-			var visualElement = GetVisualElement();
+			TVisualElement visualElement = GetVisualElement();
 			rootContainer.Add(visualElement);
 			visualElement.Refresh();
 

@@ -43,7 +43,7 @@ namespace Beamable.UI.BUSS
 			priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_2 + 5)]
 		public static void Init()
 		{
-			var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
+			Type inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
 			BussThemeManager themeManagerWindow = GetWindow<BussThemeManager>(BeamableConstants.THEME_MANAGER, true, inspector);
 			themeManagerWindow.Show(true);
 		}
@@ -152,9 +152,9 @@ namespace Beamable.UI.BUSS
 		{
 			UndoSystem<BussStyleRule>.Update();
 
-			var rulesToDraw = _navigationWindow.StyleSheets.SelectMany(ss => ss.Styles).ToArray();
+			BussStyleRule[] rulesToDraw = _navigationWindow.StyleSheets.SelectMany(ss => ss.Styles).ToArray();
 
-			var cardsToRemove = _styleCardsVisualElements.Where(card => !rulesToDraw.Contains(card.StyleRule))
+			BussStyleCardVisualElement[] cardsToRemove = _styleCardsVisualElements.Where(card => !rulesToDraw.Contains(card.StyleRule))
 														 .ToArray();
 
 			foreach (BussStyleCardVisualElement card in cardsToRemove)
@@ -166,14 +166,14 @@ namespace Beamable.UI.BUSS
 			{
 				foreach (BussStyleRule rule in styleSheet.Styles)
 				{
-					var spawned = _styleCardsVisualElements.FirstOrDefault(c => c.StyleRule == rule);
+					BussStyleCardVisualElement spawned = _styleCardsVisualElements.FirstOrDefault(c => c.StyleRule == rule);
 					if (spawned != null)
 					{
 						spawned.RefreshProperties();
 					}
 					else
 					{
-						var undoKey = $"{styleSheet.name}-{rule.SelectorString}";
+						string undoKey = $"{styleSheet.name}-{rule.SelectorString}";
 						UndoSystem<BussStyleRule>.AddRecord(rule, undoKey);
 						AddStyleCard(styleSheet, rule, () =>
 						{
@@ -201,7 +201,7 @@ namespace Beamable.UI.BUSS
 			void OpenAddSelectorWindow()
 			{
 				AddStyleWindow window = AddStyleWindow.ShowWindow();
-				window?.Init(_ => RefreshStyleSheets());
+				window?.Init(_ => RefreshStyleSheets(), _navigationWindow.StyleSheets);
 			}
 
 			void CheckEnableState()

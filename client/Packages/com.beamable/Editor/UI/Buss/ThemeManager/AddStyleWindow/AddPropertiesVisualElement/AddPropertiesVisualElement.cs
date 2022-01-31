@@ -16,19 +16,24 @@ namespace Beamable.Editor.UI.Buss
 {
 	public class AddPropertiesVisualElement : BeamableVisualElement
 	{
-		private Action<BussStyleRule> _onSelectorAdded;
+		private readonly Action<BussStyleRule> _onSelectorAdded;
+		private readonly List<BussStyleSheet> _styleSheets;
 
 		private LabeledTextField _selectorName;
 		private PrimaryButtonVisualElement _confirmButton;
 		private ScrollView _rulesContainer;
 
-		private readonly Dictionary<string, LabeledCheckboxVisualElement> _rules = new Dictionary<string, LabeledCheckboxVisualElement>();
+		private readonly Dictionary<string, LabeledCheckboxVisualElement> _rules =
+			new Dictionary<string, LabeledCheckboxVisualElement>();
+
 		private BussStyleSheet _currentSelectedStyleSheet;
 
-		public AddPropertiesVisualElement(Action<BussStyleRule> onSelectorAdded) : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/AddStyleWindow/{nameof(AddPropertiesVisualElement)}/{nameof(AddPropertiesVisualElement)}")
+		public AddPropertiesVisualElement(Action<BussStyleRule> onSelectorAdded, List<BussStyleSheet> styleSheets) :
+			base(
+				$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/AddStyleWindow/{nameof(AddPropertiesVisualElement)}/{nameof(AddPropertiesVisualElement)}")
 		{
 			_onSelectorAdded = onSelectorAdded;
+			_styleSheets = styleSheets;
 		}
 
 		public override void Refresh()
@@ -47,12 +52,20 @@ namespace Beamable.Editor.UI.Buss
 			_confirmButton.Button.clickable.clicked += HandleConfirmButton;
 			_confirmButton.Disable();
 
-			var cancelButton = Root.Q<GenericButtonVisualElement>("cancelButton");
+			GenericButtonVisualElement cancelButton = Root.Q<GenericButtonVisualElement>("cancelButton");
 			cancelButton.OnClick += AddStyleWindow.CloseWindow;
 
-			var styleSheets = Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[] { "Assets" });
-			var selectStyleSheet = Root.Q<LabeledDropdownVisualElement>("selectStyleSheet");
-			selectStyleSheet.Setup(styleSheets.Select(x => x.name).ToList(), index =>
+			LabeledDropdownVisualElement selectStyleSheet = Root.Q<LabeledDropdownVisualElement>("selectStyleSheet");
+
+#if BEAMABLE_DEVELOPER
+			List<BussStyleSheet> styleSheets =
+				Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[] {"Assets", "Packages"});
+#else
+			List<BussStyleSheet> styleSheets = new List<BussStyleSheet>(_styleSheets);
+#endif
+			List<string> labels = styleSheets.Select(x => x.name).ToList();
+
+			selectStyleSheet.Setup(labels, index =>
 			{
 				_currentSelectedStyleSheet = styleSheets[index];
 				OnValidate();
@@ -66,9 +79,9 @@ namespace Beamable.Editor.UI.Buss
 
 		private void ListAllRules()
 		{
-			foreach (var key in BussStyle.Keys.OrderBy(x => x))
+			foreach (string key in BussStyle.Keys.OrderBy(x => x))
 			{
-				var rule = new LabeledCheckboxVisualElement(key, true);
+				LabeledCheckboxVisualElement rule = new LabeledCheckboxVisualElement(key, true);
 				rule.Refresh();
 				_rules.Add(key, rule);
 				_rulesContainer.Add(rule);
@@ -77,17 +90,17 @@ namespace Beamable.Editor.UI.Buss
 
 		private void HandleConfirmButton()
 		{
-			var rules = new List<BussPropertyProvider>();
-			foreach (var kvp in _rules)
+			List<BussPropertyProvider> rules = new List<BussPropertyProvider>();
+			foreach (KeyValuePair<string, LabeledCheckboxVisualElement> kvp in _rules)
 			{
-				var checkboxVisualElement = kvp.Value;
+				LabeledCheckboxVisualElement checkboxVisualElement = kvp.Value;
 				if (!checkboxVisualElement.Value)
 					continue;
 
 				rules.Add(BussPropertyProvider.Create(kvp.Key, BussStyle.GetDefaultValue(kvp.Key).CopyProperty()));
 			}
 
-			var selector = BussStyleRule.Create(_selectorName.Value, rules);
+			BussStyleRule selector = BussStyleRule.Create(_selectorName.Value, rules);
 			_currentSelectedStyleSheet.Styles.Add(selector);
 			_onSelectorAdded?.Invoke(selector);
 			AssetDatabase.SaveAssets();
@@ -98,23 +111,22 @@ namespace Beamable.Editor.UI.Buss
 		{
 			if (string.IsNullOrWhiteSpace(_selectorName.Value))
 				ChangeButtonState(false,
-								  "Selector name cannot be empty or white space");
+				                  "Selector name cannot be empty or white space");
 			else
 				ChangeButtonState(true);
 
 			if (_currentSelectedStyleSheet != null)
 			{
-				foreach (var localStyle in _currentSelectedStyleSheet.Styles)
+				foreach (BussStyleRule localStyle in _currentSelectedStyleSheet.Styles)
 					if (localStyle.SelectorString == _selectorName.Value)
 						ChangeButtonState(false,
-										  $"Selector '{_selectorName.Value}' already exists in '{_currentSelectedStyleSheet.name}' BUSS style sheet");
+						                  $"Selector '{_selectorName.Value}' already exists in '{_currentSelectedStyleSheet.name}' BUSS style sheet");
 			}
 			else
 			{
 				ChangeButtonState(false,
-				  "Buss style sheet scriptable config doesn't exist");
+				                  "Buss style sheet scriptable config doesn't exist");
 			}
-
 		}
 
 		private void ChangeButtonState(bool isEnabled, string tooltip = "")
