@@ -120,7 +120,7 @@ namespace Beamable.Editor.Reflection
 			public void ReloadHintTextMapScriptableObjects(List<string> hintConfigPaths)
 			{
 				_loadedTextMaps.Clear();
-				
+
 				var beamHintTextMapGuids = AssetDatabase.FindAssets($"t:{nameof(BeamHintTextMap)}", hintConfigPaths
 																									.Where(Directory.Exists)
 																									.ToArray());
@@ -149,7 +149,7 @@ namespace Beamable.Editor.Reflection
 			public void ReloadHintDetailConfigScriptableObjects(List<string> hintConfigPaths)
 			{
 				_loadedConfigs.Clear();
-				
+
 				var beamHintDetailsConfigsGuids = AssetDatabase.FindAssets($"t:{nameof(BeamHintDetailsConfig)}", hintConfigPaths
 																												 .Where(Directory.Exists)
 																												 .ToArray());
