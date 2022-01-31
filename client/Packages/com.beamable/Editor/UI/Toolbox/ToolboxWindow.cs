@@ -166,7 +166,6 @@ namespace Beamable.Editor.Toolbox.UI
 
 			_actionBarVisualElement.OnInfoButtonClicked += () =>
 			{
-				Debug.Log("Show info");
 				Application.OpenURL(BeamableConstants.URL_TOOL_WINDOW_TOOLBOX);
 			};
 
@@ -176,6 +175,7 @@ namespace Beamable.Editor.Toolbox.UI
 		{
 			// TODO: animate the height...
 			_contentListVisualElement?.style.SetTop(65 + height);
+			_contentListVisualElement?.MarkDirtyRepaint();
 		}
 		private void CheckForDeps()
 		{
