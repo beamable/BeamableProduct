@@ -10,8 +10,6 @@
 
 #header{
     margin-top: 10px;
-    /*padding-left: 10px;*/
-    /*padding-right: 40px;*/
     padding-bottom: 10px;
     -unity-text-align: upper-center;
     flex-direction: row;
@@ -27,15 +25,9 @@
 #nameC, #depsC {
     flex-direction: row;
     flex: 1;
-    /*margin-right: 20px;*/
-    /*margin-right: 10px;*/
 }
 #depsColumn > * {
     padding-right: 20px;
-}
-
-#depsC {
-    /*margin-right: 10px;*/
 }
 
 #typeC {
@@ -52,12 +44,8 @@
 }
 
 #CommentsC {
-    /*width: 155px;*/
-    /*flex-grow: .5;*/
     width: 220px;
-    /*padding-left: 20px;*/
     justify-content: flex-end;
-    /*margin-right: 20px; !* to account for status icon stuff *!*/
 }
 #CommentsC.column {
     padding-left: 20px;
@@ -130,13 +118,7 @@
     align-self: auto;
     flex-direction: row;
     flex-grow: 1;
-    /*max-width: 120px;*/
 }
-/*#commentsText{*/
-/*    padding-right: 10px;*/
-/*    width: 100px;*/
-/*}*/
-
 .bottomContainer{
     padding-top: 10px;
     padding-right: 0px;
@@ -145,7 +127,6 @@
     margin-bottom: 15px;
     margin-left: 0px;
     margin-right: 0px;
-    /*margin-top: 15px;*/
     min-height: 90px;
 }
 .bottomContainer > * {
@@ -175,7 +156,6 @@
 #manifestsContainer{
     border-color: rgba(0,0,0,0);
     border-width: 1px;
-    /*min-height: 100px;*/
     flex-grow: 1;
 }
 .cover {
