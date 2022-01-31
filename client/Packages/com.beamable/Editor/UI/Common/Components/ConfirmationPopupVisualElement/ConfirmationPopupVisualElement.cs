@@ -8,7 +8,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
-namespace Beamable.Editor.UI.Buss.Components
+namespace Beamable.Editor.UI.Components
 {
 	public class ConfirmationPopupVisualElement : BeamableVisualElement
 	{

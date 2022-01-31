@@ -1,10 +1,9 @@
 ﻿using Beamable.Editor.UI.Components;
-using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Beamable.Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements
+namespace Beamable.UI.Buss
 {
 	public static class BussPropertyVisualElementUtility
 	{

@@ -1,7 +1,4 @@
-﻿using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.BUSS.ThemeManager;
-using Beamable.Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements;
-using Beamable.Editor.UI.Common;
+﻿using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -27,8 +24,6 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleRule _styleRule;
 		private BussPropertyProvider _propertyProvider;
 
-		public BussStyleSheet StyleSheet => _styleSheet;
-		public BussStyleRule StyleRule => _styleRule;
 		public BussPropertyProvider PropertyProvider => _propertyProvider;
 		public string PropertyKey => PropertyProvider.Key;
 

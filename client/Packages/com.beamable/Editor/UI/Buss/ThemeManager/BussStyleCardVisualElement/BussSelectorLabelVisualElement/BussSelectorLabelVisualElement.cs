@@ -1,9 +1,7 @@
-﻿using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Common;
+﻿using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
-
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;

@@ -1,5 +1,5 @@
 ﻿using Beamable.Editor.Toolbox.Components;
-using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Components;
 using System;
 
 namespace Beamable.Editor.Toolbox.Models

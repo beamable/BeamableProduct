@@ -1,11 +1,9 @@
-using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
-using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements.StyleSheets;
 using UnityEngine.Experimental.UIElements;
@@ -18,12 +16,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class LogVisualElement : MicroserviceComponent
 	{
-		private Button _buildDropDown;
 		private Button _advanceDropDown;
 
 		private VisualElement _logListRoot;
 		private ListView _listView;
-		private string _statusClassName;
 
 		public new class UxmlFactory : UxmlFactory<LogVisualElement, UxmlTraits>
 		{

@@ -1,8 +1,4 @@
-using Beamable.Editor;
 using Beamable.Editor.Common;
-using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Buss.Components;
-using Beamable.Editor.UI.BUSS.ThemeManager;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using System;
@@ -18,7 +14,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
-namespace Beamable.UI.BUSS
+namespace Beamable.Editor.UI.Buss
 {
 	public class BussThemeManager : EditorWindow
 	{

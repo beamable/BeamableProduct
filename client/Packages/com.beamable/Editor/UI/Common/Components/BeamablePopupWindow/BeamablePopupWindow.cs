@@ -1,12 +1,7 @@
 using Beamable.Common;
 using Beamable.Editor.Content;
-using Beamable.Editor.Content.Components;
-using Beamable.Editor.UI.Buss.Components;
-using Beamable.UI.Buss;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
 using UnityEditor;
 using UnityEngine;
@@ -18,7 +13,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
-namespace Beamable.Editor.UI.Buss.Components
+namespace Beamable.Editor.UI.Components
 {
 	public class BeamablePopupWindow : EditorWindow, ISerializationCallbackReceiver
 	{
