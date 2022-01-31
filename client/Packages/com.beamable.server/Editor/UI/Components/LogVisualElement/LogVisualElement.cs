@@ -18,13 +18,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class LogVisualElement : MicroserviceComponent
 	{
-		private Button _buildDropDown;
-		private Button _advanceDropDown;
-
-		private VisualElement _logListRoot;
-		private ListView _listView;
-		private string _statusClassName;
-
 		public new class UxmlFactory : UxmlFactory<LogVisualElement, UxmlTraits>
 		{
 		}
@@ -46,6 +39,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			}
 		}
+		public ServiceModelBase Model { get; set; }
+		public event Action OnDetachLogs;
+
+		private bool NoModel => Model == null;
 
 		private ScrollView _scrollView;
 		private VisualElement _detailView;
@@ -62,13 +59,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Button _infoViewBtn;
 		private Button _warningViewBtn;
 		private Button _errorViewBtn;
-		public ServiceModelBase Model { get; set; }
-		private bool NoModel => Model == null;
-		private float MaxScrollValue => _listView.itemHeight * _listView.itemsSource.Count;
-
-		public event Action OnDetachLogs;
-
-		private float ScrollerHeight => _scrollView.contentContainer.contentRect.height;
+		private Button _buildDropDown;
+		private Button _advanceDropDown;
+		private VisualElement _logListRoot;
+		private ListView _listView;
+		private string _statusClassName;
 
 		protected override void OnDestroy()
 		{
@@ -157,15 +152,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			if (!NoModel)
 			{
 				Model.Logs.HasScrolled = false;
+
 				_scrollView.verticalScroller.valueChanged += VerticalScrollerOnvalueChanged;
-
-
-				EditorApplication.delayCall += () =>
-				{
-					_scrollView.verticalScroller.highValue = MaxScrollValue;
-					_scrollView.verticalScroller.value = Model.Logs.ScrollValue;
-					_scrollView.MarkDirtyRepaint();
-				};
+				UpdateScroll();
 
 				Model.Logs.OnMessagesUpdated -= HandleMessagesUpdated;
 				Model.Logs.OnMessagesUpdated += HandleMessagesUpdated;
@@ -181,6 +170,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 			_listView.Refresh();
 			UpdateCounts();
+		}
+
+		private void UpdateScroll()
+		{
+			EditorApplication.delayCall += () =>
+			{
+				_scrollView.verticalScroller.value = _scrollView.verticalScroller.highValue * Model.Logs.ScrollValue;
+				_scrollView.MarkDirtyRepaint();
+			};
 		}
 
 		private void OnPopoutButton_Clicked()
@@ -202,10 +200,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			void UpdateFilterButton(VisualElement el, bool active)
 			{
 				const string ACTIVE = "active";
-				if (active)
-					el.AddToClassList(ACTIVE);
-				else
-					el.RemoveFromClassList(ACTIVE);
+				el.EnableInClassList(ACTIVE, active);
 			}
 
 			UpdateFilterButton(_debugViewBtn, Model.Logs.ViewDebugEnabled);
@@ -252,15 +247,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 			var scrollValue = _scrollView.verticalScroller.value;
 			var highValue = _scrollView.verticalScroller.highValue;
 
-			var tolerance = .0001f;
+			var tolerance = .001f;
 			var isAtBottom = Math.Abs(scrollValue - highValue) < tolerance;
 
 			if (_scrollBlocker == 0)
 			{
 				Model.Logs.HasScrolled = true;
-				Model.Logs.ScrollValue = value;
-
-
+				Model.Logs.ScrollValue = scrollValue / highValue;
 				Model.Logs.IsTailingLog = isAtBottom;
 			}
 			else
@@ -283,19 +276,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 				return; // don't do anything. We aren't tailing.
 			}
 
-			ScrollToWithoutNotify(MaxScrollValue); // always jump to the end.
+			ScrollToWithoutNotify(1f); // always jump to the end.
 		}
 
-		void ScrollToWithoutNotify(float value)
+		void ScrollToWithoutNotify(float percentValue)
 		{
 			_scrollBlocker++;
-			EditorApplication.delayCall += () =>
-			{
-				_scrollView.verticalScroller.value = value;
-				_scrollView.MarkDirtyRepaint();
-			};
-
-			Model.Logs.ScrollValue = value;
+			Model.Logs.ScrollValue = percentValue;
+			UpdateScroll();
 		}
 
 		private ListView CreateListView()
