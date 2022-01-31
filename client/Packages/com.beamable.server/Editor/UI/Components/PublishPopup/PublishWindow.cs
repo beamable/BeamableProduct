@@ -17,7 +17,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class PublishWindow : CommandRunnerWindow
 	{
-		private static readonly Vector2 MIN_SIZE = new Vector2(860, 550);
+		protected const float DEFAULT_ROW_HEIGHT = 47.0f;
+		protected const int MAX_ROW = 6;
+		private static readonly Vector2 MIN_SIZE = new Vector2(860, 330);
 
 		private bool isSet;
 		private CancellationTokenSource _tokenSource;
@@ -36,8 +38,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 			servicesRegistry.GenerateUploadModel().Then(model =>
 			{
 				wnd._model = model;
+				int servicesAmount = (model?.Services?.Count ?? 0) + (model?.Storages?.Count ?? 0);
+				wnd.minSize = new Vector2(MIN_SIZE.x, MIN_SIZE.y + Mathf.Clamp(servicesAmount, 1, MAX_ROW) * DEFAULT_ROW_HEIGHT);
 				wnd.Refresh();
 			});
+
 
 			return wnd;
 		}

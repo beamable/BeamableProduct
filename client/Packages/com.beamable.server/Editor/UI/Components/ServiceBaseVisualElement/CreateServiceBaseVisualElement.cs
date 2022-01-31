@@ -44,7 +44,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private List<string> _servicesNames;
 		private VisualElement _rootVisualElement;
 
-		private bool _isServiceNameConfirmed;
+
 		private FormConstraint _isNameValid;
 		private FormConstraint _isNameSizedRight;
 
@@ -146,9 +146,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		private void RenameGestureBegin()
 		{
-			if (_isServiceNameConfirmed)
-				return;
-
 			NewServiceName = _nameTextField.value;
 			_nameTextField.SetEnabled(true);
 			_nameTextField.BeamableFocus();
