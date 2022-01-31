@@ -56,6 +56,11 @@ namespace Beamable.Editor.UI.Components
 
 		private void SortStyleSheets()
 		{
+			if (SelectedComponent == null)
+			{
+				return;
+			}
+			
 			List<BussStyleSheet> selectedComponentAllStyleSheets = SelectedComponent.AllStyleSheets;
 			BussStyleSheet firstStyle = selectedComponentAllStyleSheets[selectedComponentAllStyleSheets.Count - 1];
 			
