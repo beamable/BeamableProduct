@@ -1,6 +1,7 @@
 ﻿using Beamable.Editor.UI.Buss;
 using Beamable.UI.Buss;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Beamable.UI.BUSS
@@ -8,10 +9,12 @@ namespace Beamable.UI.BUSS
 	public class AddStyleWindow : BussWindowBase<AddStyleWindow, AddPropertiesVisualElement>
 	{
 		private Action<BussStyleRule> _onSelectorAdded;
+		private List<BussStyleSheet> _styleSheets;
 
-		public void Init(Action<BussStyleRule> onSelectorAdded)
+		public void Init(Action<BussStyleRule> onSelectorAdded, List<BussStyleSheet> activeStyleSheets)
 		{
 			_onSelectorAdded = onSelectorAdded;
+			_styleSheets = activeStyleSheets;
 
 			titleContent = new GUIContent(BussConstants.AddStyleWindowHeader);
 			minSize = maxSize = BussConstants.AddStyleWindowSize;
@@ -19,6 +22,6 @@ namespace Beamable.UI.BUSS
 
 			Refresh();
 		}
-		protected override AddPropertiesVisualElement GetVisualElement() => new AddPropertiesVisualElement(_onSelectorAdded);
+		protected override AddPropertiesVisualElement GetVisualElement() => new AddPropertiesVisualElement(_onSelectorAdded, _styleSheets);
 	}
 }

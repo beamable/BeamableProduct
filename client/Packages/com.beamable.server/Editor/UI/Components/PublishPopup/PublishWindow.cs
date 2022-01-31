@@ -50,6 +50,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				wnd.RefreshElement();
 			});
 
+
 			return wnd;
 		}
 
