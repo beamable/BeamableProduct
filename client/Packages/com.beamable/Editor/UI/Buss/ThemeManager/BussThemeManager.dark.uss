@@ -4,7 +4,6 @@
 
 #addStyleButton {
     background-color: rgb(100,100,100);
-    border-color: #000000;
 }
 
 #addStyleButton:hover {
