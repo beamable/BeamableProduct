@@ -102,7 +102,7 @@ namespace Beamable.Editor.UI.Components
 			_navigationWindow = navigationWindow;
 			_onUndoRequest = onUndoRequest;
 			_styleSheet.Change += RefreshProperties;
-
+			
 			Refresh();
 		}
 
@@ -199,7 +199,7 @@ namespace Beamable.Editor.UI.Components
 		private void AddVariableButtonClicked(MouseDownEvent evt)
 		{
 			var window = NewVariableWindow.ShowWindow();
-			window?.Init((key, property) =>
+			window?.Init(_styleRule, (key, property) =>
 			{
 				StyleRule.TryAddProperty(key, property, out _);
 				AssetDatabase.SaveAssets();
