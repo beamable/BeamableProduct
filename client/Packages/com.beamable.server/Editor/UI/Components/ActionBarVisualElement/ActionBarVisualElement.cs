@@ -1,21 +1,7 @@
-using Beamable.Common;
-using Beamable.Editor.Config;
-using Beamable.Editor.Content;
-using Beamable.Editor.Content.Components;
-using Beamable.Editor.Content.Models;
-using Beamable.Editor.Environment;
-using Beamable.Editor.Modules.Theme;
-using Beamable.Editor.Toolbox.Models;
-using Beamable.Editor.Toolbox.UI.Components;
-using Beamable.Editor.UI.Buss.Components;
-using Beamable.Editor.UI.Components;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
-using UnityEngine;
 using Debug = UnityEngine.Debug;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -112,7 +98,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_infoButton = Root.Q<Button>("infoButton");
 			_infoButton.clickable.clicked += () => { OnInfoButtonClicked?.Invoke(); };
 			_infoButton.tooltip = "Open Documentation";
-			UpdateTextButtonTexts(false);
+		}
+
+		public void UpdateButtonsState(int selectedServicesAmount, int servicesAmount)
+		{
+			bool anyModelSelected = selectedServicesAmount > 0;
+			UpdateTextButtonTexts(selectedServicesAmount == servicesAmount);
+			_startAll.SetEnabled(anyModelSelected);
+			_buildAll.SetEnabled(anyModelSelected);
+			_publish.SetEnabled(servicesAmount > 0);
 		}
 
 		private void PopulateCreateMenu(ContextualMenuPopulateEvent evt)
@@ -121,19 +115,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 			evt.menu.BeamableAppendAction("Storage", pos => OnCreateNewClicked?.Invoke(ServiceType.StorageObject));
 		}
 
-		public void UpdateTextButtonTexts(bool allServicesSelected)
+		private void UpdateTextButtonTexts(bool allServicesSelected)
 		{
 			var startLabel = _startAll.Q<Label>();
 			startLabel.text = allServicesSelected ? "Play all" : "Play selected";
 			var buildLabel = _buildAll.Q<Label>();
 			buildLabel.text = allServicesSelected ? "Build all" : "Build selected";
-		}
-
-		public void HandleNoMicroservicesScenario()
-		{
-			_startAll.SetEnabled(false);
-			_buildAll.SetEnabled(false);
-			_publish.SetEnabled(false);
 		}
 	}
 
