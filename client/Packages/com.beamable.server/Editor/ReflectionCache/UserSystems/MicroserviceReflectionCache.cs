@@ -22,10 +22,13 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
+using LogMessage = Beamable.Editor.UI.Model.LogMessage;
 
 namespace Beamable.Server.Editor
 {
-	[CreateAssetMenu(fileName = "MicroserviceReflectionCache", menuName = "Beamable/Reflection/Server/Microservices Cache", order = 0)]
+#if BEAMABLE_DEVELOPER
+	[CreateAssetMenu(fileName = "MicroserviceReflectionCache", menuName = "Beamable/Reflection/Microservices Cache", order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
+#endif
 	public class MicroserviceReflectionCache : ReflectionSystemObject
 	{
 		[NonSerialized]
@@ -305,10 +308,14 @@ namespace Beamable.Server.Editor
 			public event Action<IDescriptor, ServicePublishState> OnServiceDeployStatusChanged;
 			public event Action<IDescriptor> OnServiceDeployProgress;
 
-			public async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context, CancellationToken token, Action<IDescriptor> onServiceDeployed = null)
+			public async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context, CancellationToken token, Action<IDescriptor> onServiceDeployed = null, Action<LogMessage> logger=null)
 			{
 				if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
 
+				if (logger == null)
+				{
+					logger = message => Debug.Log($"[{message.Level}] {message.Timestamp} - {message.Message}");
+				}
 				var descriptorsCount = Descriptors.Count;
 
 				OnBeforeDeploy?.Invoke(model, descriptorsCount);
@@ -331,7 +338,13 @@ namespace Beamable.Server.Editor
 				foreach (var descriptor in Descriptors)
 				{
 					OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.InProgress);
-					Debug.Log($"Building service=[{descriptor.Name}]");
+					logger(new LogMessage
+					{
+						Level = LogLevel.INFO,
+						Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
+						Message = $"Building service=[{descriptor.Name}]"
+					});
+
 					var buildCommand = new BuildImageCommand(descriptor, false);
 					try
 					{
@@ -356,7 +369,13 @@ namespace Beamable.Server.Editor
 					uploader.onProgress += msModel.OnDeployProgress;
 					uploader.onProgress += (_, __, ___) => OnServiceDeployProgress?.Invoke(descriptor);
 
-					Debug.Log($"Getting Id service=[{descriptor.Name}]");
+					logger(new LogMessage
+					{
+						Level = LogLevel.INFO,
+						Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
+						Message = $"Getting Id service=[{descriptor.Name}]"
+					});
+
 					var imageId = await uploader.GetImageId(descriptor);
 					if (string.IsNullOrEmpty(imageId))
 					{
@@ -371,7 +390,12 @@ namespace Beamable.Server.Editor
 					{
 						if (existingReference.imageId == imageId)
 						{
-							Debug.Log(string.Format(BeamableLogConstants.ContainerAlreadyUploadedMessage, descriptor.Name));
+							logger(new LogMessage
+							{
+								Level = LogLevel.INFO,
+								Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
+								Message = string.Format(BeamableLogConstants.ContainerAlreadyUploadedMessage, descriptor.Name)
+							});
 							onServiceDeployed?.Invoke(descriptor);
 							OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Published);
 							continue;
@@ -390,8 +414,12 @@ namespace Beamable.Server.Editor
 
 					entryModel.Dependencies = serviceDependencies;
 
-					Debug.Log($"Uploading container service=[{descriptor.Name}]");
-
+					logger(new LogMessage
+					{
+						Level = LogLevel.INFO,
+						Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
+						Message = $"Uploading container service=[{descriptor.Name}]"
+					});
 					await uploader.UploadContainer(descriptor, token, () =>
 												   {
 													   Debug.Log(string.Format(BeamableLogConstants.UploadedContainerMessage, descriptor.Name));
@@ -409,8 +437,13 @@ namespace Beamable.Server.Editor
 												   }, imageId);
 				}
 
-				Debug.Log($"Deploying manifest");
 
+				logger(new LogMessage
+				{
+					Level = LogLevel.INFO,
+					Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
+					Message = $"Deploying Manifest..."
+				});
 				var manifest = model.Services.Select(kvp =>
 				{
 					kvp.Value.Enabled &= nameToImageId.TryGetValue(kvp.Value.Name, out var imageId);
@@ -439,7 +472,12 @@ namespace Beamable.Server.Editor
 
 				await client.Deploy(new ServiceManifest { comments = model.Comment, manifest = manifest, storageReference = storages });
 				OnDeploySuccess?.Invoke(model, descriptorsCount);
-				Debug.Log("Service Deploy Complete");
+				logger(new LogMessage
+				{
+					Level = LogLevel.INFO,
+					Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
+					Message = $"Service Deploy Complete"
+				});
 
 				void HandleDeploySuccess(ManifestModel _, int __)
 				{
@@ -484,12 +522,23 @@ namespace Beamable.Server.Editor
 						var entries = allServices.Select(name =>
 						{
 							var configEntry = MicroserviceConfiguration.Instance.GetEntry(name); //config.FirstOrDefault(s => s.ServiceName == name);
+							var descriptor = Descriptors.FirstOrDefault(d => d.Name == configEntry.ServiceName);
+							var serviceDependencies = new List<ServiceDependency>();
+							if (descriptor != null)
+							{
+								foreach (var storage in descriptor.GetStorageReferences())
+								{
+									serviceDependencies.Add(new ServiceDependency { id = storage.Name, storageType = "storage" });
+								}
+							}
+
 							return new ManifestEntryModel
 							{
 								Comment = "",
 								Name = name,
 								Enabled = configEntry?.Enabled ?? true,
 								TemplateId = configEntry?.TemplateId ?? "small",
+								Dependencies = serviceDependencies
 							};
 						}).ToList();
 
@@ -598,12 +647,12 @@ namespace Beamable.Server.Editor
 			private static void WatchMicroserviceFiles()
 			{
 				// If we are not initialized, delay the call until we are.
-				if (!BeamEditor.IsInitialized)
+				if (!BeamEditor.IsInitialized || !MicroserviceEditor.IsInitialized)
 				{
 					EditorApplication.delayCall += WatchMicroserviceFiles;
 					return;
 				}
-				
+
 				var registry = BeamEditor.GetReflectionSystem<Registry>();
 				foreach (var service in registry.Descriptors)
 				{
@@ -675,7 +724,7 @@ namespace Beamable.Server.Editor
 			private static void AutomaticMachine()
 			{
 				// If we are not initialized, delay the call until we are.
-				if (!BeamEditor.IsInitialized)
+				if (!BeamEditor.IsInitialized || !MicroserviceEditor.IsInitialized)
 				{
 					EditorApplication.delayCall += AutomaticMachine;
 					return;

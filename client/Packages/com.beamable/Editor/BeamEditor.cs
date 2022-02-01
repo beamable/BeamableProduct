@@ -38,10 +38,10 @@ namespace Beamable
 	public static class BeamEditor
 	{
 		public static CoreConfiguration CoreConfiguration { get; private set; }
-		public static ReflectionCache EditorReflectionCache{ get; private set; }
-		public static IBeamHintGlobalStorage HintGlobalStorage{ get; private set; }
-		public static IBeamHintPreferencesManager HintPreferencesManager{ get; private set; }
-		public static bool IsInitialized{ get; private set; }
+		public static ReflectionCache EditorReflectionCache { get; private set; }
+		public static IBeamHintGlobalStorage HintGlobalStorage { get; private set; }
+		public static IBeamHintPreferencesManager HintPreferencesManager { get; private set; }
+		public static bool IsInitialized { get; private set; }
 
 		static BeamEditor()
 		{
@@ -51,7 +51,7 @@ namespace Beamable
 		static void Initialize()
 		{
 			if (IsInitialized) return;
-			
+
 			// Attempts to load all Module Configurations --- If they fail, we delay BeamEditor initialization until they don't fail.
 			// The ONLY fail case is:
 			//   - On first import or "re-import all", Resources and AssetDatabase don't know about the existence of these instances when this code runs for a couple of frames.
@@ -86,6 +86,8 @@ namespace Beamable
 
 			// Ensures we have the latest assembly definitions and paths are all correctly setup.
 			CoreConfiguration.OnValidate();
+
+			EditorAPI.Instance.Then(_ => { });
 
 			// Initializes the Config database
 			// This solves the same problem that the try/catch block around the ModuleConfigurations solves.
@@ -185,13 +187,13 @@ namespace Beamable
 
 				hintSystem.OnInitialized();
 			}
-			
+
 			IsInitialized = true;
-			
+
 			// Initialize toolbar
 			BeamableToolbarExtender.LoadToolbarExtender();
 		}
-		
+
 		public static T GetReflectionSystem<T>() where T : IReflectionSystem => EditorReflectionCache.GetFirstSystemOfType<T>();
 
 		[System.Diagnostics.Conditional("UNITY_EDITOR")]

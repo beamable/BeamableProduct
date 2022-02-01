@@ -1,7 +1,6 @@
 using UnityEngine;
 
-// TODO: move this to some common namespace??
-namespace Beamable.Editor.UI.Buss
+namespace Beamable.Editor.UI.Components
 {
 	public static class BeamableComponentsConstants
 	{

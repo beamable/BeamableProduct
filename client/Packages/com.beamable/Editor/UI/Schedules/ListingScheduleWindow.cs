@@ -1,7 +1,7 @@
 ﻿using Beamable.Common.Content;
 using Beamable.Common.Shop;
-using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Components;
+using Beamable.Editor.Models.Schedules;
+using Beamable.Editor.Schedules;
 using Beamable.Editor.UI.Validation;
 using System;
 using System.Collections.Generic;
@@ -15,7 +15,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
-namespace Beamable.Editor.Schedules
+namespace Beamable.Editor.UI.Components
 {
 	public class ListingScheduleWindow : BeamableVisualElement, IScheduleWindow<ListingContent>
 	{

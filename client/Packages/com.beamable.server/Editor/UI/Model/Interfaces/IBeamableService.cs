@@ -23,6 +23,7 @@ namespace Beamable.Editor.UI.Model
 {
 	public interface IBeamableService
 	{
+		bool IsSelected { get; set; }
 		bool IsRunning { get; }
 		bool AreLogsAttached { get; }
 		LogMessageStore Logs { get; }

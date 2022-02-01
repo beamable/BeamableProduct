@@ -159,11 +159,13 @@ namespace Beamable.Editor.UI.Model
 			});
 		}
 
-		public void AddLogMessage(IDescriptor descriptor, LogMessage message)
+		public void AddLogMessage(string name, LogMessage message)
 		{
-			AllLocalServices.FirstOrDefault(r => r.Descriptor.Name.Equals(descriptor.Name))
-			   ?.Logs.AddMessage(message);
+			AllLocalServices.FirstOrDefault(r => r.Descriptor.Name.Equals(name))
+				?.Logs.AddMessage(message);
 		}
+
+		public void AddLogMessage(IDescriptor descriptor, LogMessage message) => AddLogMessage(descriptor.Name, message);
 
 		public ServiceStatus GetStatus(MicroserviceDescriptor descriptor)
 		{

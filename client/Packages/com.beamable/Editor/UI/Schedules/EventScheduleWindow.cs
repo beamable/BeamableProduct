@@ -1,7 +1,5 @@
 ﻿using Beamable.Common.Content;
-using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Components;
-using Beamable.Editor.UI.Validation;
+using Beamable.Editor.Models.Schedules;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +12,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
-namespace Beamable.Editor.Schedules
+namespace Beamable.Editor.UI.Components
 {
 	public class EventScheduleWindow : BeamableVisualElement, IScheduleWindow<EventContent>
 	{

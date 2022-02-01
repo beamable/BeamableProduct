@@ -170,7 +170,6 @@ namespace Beamable.Editor.Content.Components
 			RenderTokens();
 		}
 
-
 		private void Model_OnSelectedContentChanged(IList<ContentItemDescriptor> contentItemDescriptors)
 		{
 			// Set the Selected Content
@@ -178,5 +177,9 @@ namespace Beamable.Editor.Content.Components
 			RenderTokens();
 		}
 
+		public void RefreshManifestButton()
+		{
+			_manifestButton.RefreshButtonVisibility();
+		}
 	}
 }

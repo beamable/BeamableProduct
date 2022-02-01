@@ -12,7 +12,7 @@ namespace Beamable.Editor.Modules.Sessions
 	{
 		public const string EditorPrefKey = "Beamabe.Create.CustomSettingProvider";
 
-		[MenuItem("Assets/Create/Beamable/C# Session Parameter Provider")]
+		[MenuItem("Assets/Create/Beamable - Scripts/C# Session Parameter Provider")]
 		public static void CreateProviderScript()
 		{
 

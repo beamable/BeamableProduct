@@ -1,3 +1,5 @@
+﻿using Beamable.Common;
+using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
@@ -32,18 +34,19 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected ServiceCreateDependentService _serviceCreateDependentService;
 
 		private const int MAX_NAME_LENGTH = 28;
-		private bool _canCreateService;
 
 		private TextField _nameTextField;
 		private Button _cancelBtn;
 		private Button _buildDropDownBtn;
 		private LabeledCheckboxVisualElement _checkbox;
-		private Button _createBtn;
+		private PrimaryButtonVisualElement _createBtn;
 		private VisualElement _logContainerElement;
 		private List<string> _servicesNames;
 		private VisualElement _rootVisualElement;
 
-		private bool _isServiceNameConfirmed;
+
+		private FormConstraint _isNameValid;
+		private FormConstraint _isNameSizedRight;
 
 		public override void Refresh()
 		{
@@ -58,30 +61,42 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Root.Q("dependentServicesContainer")?.RemoveFromHierarchy();
 			Root.Q("collapseContainer")?.RemoveFromHierarchy();
 			_cancelBtn = Root.Q<Button>("cancelBtn");
-			_createBtn = Root.Q<Button>("stopBtn");
+
+			var stopButton = Root.Q<Button>("stopBtn");
+			stopButton.parent.Remove(stopButton);
+			_createBtn = new PrimaryButtonVisualElement();
+			_cancelBtn.parent.Add(_createBtn);
+			_createBtn.Refresh();
+
 			_buildDropDownBtn = Root.Q<Button>("buildDropDown");
 			_checkbox = Root.Q<LabeledCheckboxVisualElement>("checkbox");
 			_logContainerElement = Root.Q<VisualElement>("logContainer");
 			_nameTextField = Root.Q<TextField>("microserviceNewTitle");
+			_nameTextField.SetValueWithoutNotify(NewServiceName);
+
+			_isNameValid = _nameTextField.AddErrorLabel("Name", PrimaryButtonVisualElement.IsValidClassName);
+			_isNameSizedRight = _nameTextField.AddErrorLabel(
+				"Length", txt => PrimaryButtonVisualElement.IsBetweenCharLength(txt, MAX_NAME_LENGTH));
+			_createBtn.AddGateKeeper(_isNameValid);
 		}
 		private void InjectStyleSheets()
 		{
 			if (string.IsNullOrWhiteSpace(ScriptName)) return;
 			_rootVisualElement.AddStyleSheet($"{Constants.COMP_PATH}/{ScriptName}/{ScriptName}.uss");
+			_rootVisualElement.AddStyleSheet($"{Constants.COMP_PATH}/ServiceBaseVisualElement/CreateService.uss");
 		}
 		protected virtual void UpdateVisualElements()
 		{
 			_servicesNames = MicroservicesDataModel.Instance.AllLocalServices.Select(x => x.Descriptor.Name).ToList();
-			RegisterCallback<MouseDownEvent>(HandeMouseDownEvent, TrickleDown.TrickleDown);
 
-			_nameTextField.SetValueWithoutNotify(NewServiceName);
+			ShowServiceCreateDependentService();
 			_nameTextField.maxLength = MAX_NAME_LENGTH;
 			_nameTextField.RegisterCallback<FocusEvent>(HandleNameLabelFocus, TrickleDown.TrickleDown);
 			_nameTextField.RegisterCallback<KeyUpEvent>(HandleNameLabelKeyUp, TrickleDown.TrickleDown);
 
 			_cancelBtn.clickable.clicked += Root.RemoveFromHierarchy;
-			_createBtn.text = "Create";
-			_createBtn.clickable.clicked += HandleCreateButtonClicked;
+			_createBtn.SetText("Create");
+			_createBtn.Button.clickable.clicked += HandleContinueButtonClicked;
 
 			_buildDropDownBtn.RemoveFromHierarchy();
 
@@ -93,38 +108,22 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_logContainerElement.RemoveFromHierarchy();
 			RenameGestureBegin();
 		}
-		protected virtual void HandleCreateButtonClicked()
-		{
-			if (string.IsNullOrWhiteSpace(NewServiceName))
-				return;
-
-			_isServiceNameConfirmed = true;
-			_nameTextField.SetEnabled(false);
-
-			if (!ShouldShowCreateDependentService)
-			{
-				HandleContinueButtonClicked();
-				return;
-			}
-
-			_createBtn.clickable.clicked -= HandleCreateButtonClicked;
-			_createBtn.text = "Continue";
-			_createBtn.clickable.clicked += HandleContinueButtonClicked;
-			ShowServiceCreateDependentService();
-		}
 
 		private void ShowServiceCreateDependentService()
 		{
+			if (!ShouldShowCreateDependentService) return;
 			_serviceCreateDependentService = new ServiceCreateDependentService();
 			_serviceCreateDependentService.Refresh();
 			InitCreateDependentService();
-			_rootVisualElement.Add(_serviceCreateDependentService);
+			_createBtn.parent.parent.parent.Insert(3, _serviceCreateDependentService);
 		}
 
 		private void HandleContinueButtonClicked()
 		{
 			var additionalReferences = _serviceCreateDependentService?.GetReferences();
-			_createBtn.text = "Creating...";
+			_createBtn.SetText("Creating...");
+			_createBtn.Load(new Promise()); // spin forever, because a re-compile will save us!
+			NewServiceName = _nameTextField.value;
 			OnCreateServiceClicked?.Invoke();
 			EditorApplication.delayCall += () => CreateService(NewServiceName, additionalReferences);
 		}
@@ -133,45 +132,23 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected abstract void InitCreateDependentService();
 		protected abstract bool ShouldShowCreateDependentService { get; }
 
-		private void HandeMouseDownEvent(MouseDownEvent evt)
-		{
-			RenameGestureBegin();
-		}
 		private void HandleNameLabelFocus(FocusEvent evt)
 		{
 			_nameTextField.SelectAll();
 		}
 		private void HandleNameLabelKeyUp(KeyUpEvent evt)
 		{
-			if ((evt.keyCode == KeyCode.KeypadEnter || evt.keyCode == KeyCode.Return) && _canCreateService)
+			if ((evt.keyCode == KeyCode.KeypadEnter || evt.keyCode == KeyCode.Return) && _isNameValid.IsValid && _isNameSizedRight.IsValid)
 			{
-				HandleCreateButtonClicked();
+				HandleContinueButtonClicked();
 				return;
 			}
-			CheckName();
 		}
 		private void RenameGestureBegin()
 		{
-			if (_isServiceNameConfirmed)
-				return;
-
 			NewServiceName = _nameTextField.value;
 			_nameTextField.SetEnabled(true);
 			_nameTextField.BeamableFocus();
-			CheckName();
-		}
-		private void CheckName()
-		{
-			var newName = _nameTextField.value;
-			if (Regex.IsMatch(newName, @"^[a-zA-Z]+$"))
-			{
-				NewServiceName = newName;
-			}
-			_nameTextField.value = NewServiceName;
-			_canCreateService = !_servicesNames.Contains(NewServiceName)
-													&& NewServiceName.Length > 2
-													&& NewServiceName.Length <= MAX_NAME_LENGTH;
-			_createBtn.SetEnabled(_canCreateService);
 		}
 	}
 }
