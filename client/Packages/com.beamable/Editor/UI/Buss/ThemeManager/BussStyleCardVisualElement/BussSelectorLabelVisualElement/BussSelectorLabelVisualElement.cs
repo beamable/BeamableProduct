@@ -1,5 +1,7 @@
-﻿using Beamable.Editor.UI.Common;
+﻿using System;
+using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER
@@ -14,6 +16,8 @@ namespace Beamable.Editor.UI.Components
 		private TextField _editableLabel;
 		private BussStyleRule _styleRule;
 		private BussStyleSheet _styleSheet;
+
+		public event Action OnChangeSubmit;
 
 		public BussSelectorLabelVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStyleCardVisualElement/BussSelectorLabelVisualElement/BussSelectorLabelVisualElement.uss")
@@ -39,6 +43,13 @@ namespace Beamable.Editor.UI.Components
 				_editableLabel.name = "styleId";
 				_editableLabel.value = styleRule.SelectorString;
 				_editableLabel.RegisterValueChangedCallback(StyleIdChanged);
+				_editableLabel.RegisterCallback<KeyDownEvent>(evt =>
+				{
+					if (evt.keyCode == KeyCode.Return)
+					{
+						OnChangeSubmit?.Invoke();
+					}
+				});
 				Root.Add(_editableLabel);
 			}
 		}
@@ -51,6 +62,7 @@ namespace Beamable.Editor.UI.Components
 		private void StyleIdChanged(ChangeEvent<string> evt)
 		{
 			_styleRule.SelectorString = evt.newValue;
+			_styleSheet.TriggerChange();
 		}
 	}
 }
