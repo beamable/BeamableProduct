@@ -29,7 +29,9 @@ namespace Beamable.Editor.Reflection
 	/// </description></item>
 	/// </list>
 	/// </summary>
-	[CreateAssetMenu(fileName = "BeamHintDetailsReflectionCache", menuName = "Beamable/Reflection/Assistant/Hint Details Cache", order = 0)]
+#if BEAMABLE_DEVELOPER
+	[CreateAssetMenu(fileName = "BeamHintDetailsReflectionCache", menuName = "Beamable/Reflection/Beam Hints Cache", order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
+#endif
 	public class BeamHintReflectionCache : ReflectionSystemObject
 	{
 		[NonSerialized] private Registry _cache;
@@ -119,6 +121,8 @@ namespace Beamable.Editor.Reflection
 			/// </summary>
 			public void ReloadHintTextMapScriptableObjects(List<string> hintConfigPaths)
 			{
+				_loadedTextMaps.Clear();
+
 				var beamHintTextMapGuids = AssetDatabase.FindAssets($"t:{nameof(BeamHintTextMap)}", hintConfigPaths
 																									.Where(Directory.Exists)
 																									.ToArray());
@@ -146,6 +150,8 @@ namespace Beamable.Editor.Reflection
 			/// </summary>
 			public void ReloadHintDetailConfigScriptableObjects(List<string> hintConfigPaths)
 			{
+				_loadedConfigs.Clear();
+
 				var beamHintDetailsConfigsGuids = AssetDatabase.FindAssets($"t:{nameof(BeamHintDetailsConfig)}", hintConfigPaths
 																												 .Where(Directory.Exists)
 																												 .ToArray());

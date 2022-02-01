@@ -1,22 +1,8 @@
-using Beamable.Common;
-using Beamable.Editor.Config;
-using Beamable.Editor.Content;
-using Beamable.Editor.Content.Components;
-using Beamable.Editor.Content.Models;
-using Beamable.Editor.Environment;
-using Beamable.Editor.Modules.Theme;
-using Beamable.Editor.Toolbox.Models;
-using Beamable.Editor.Toolbox.UI.Components;
-using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
-using Beamable.Server.Editor;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -102,11 +88,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			OnSelectAllCheckboxChanged?.Invoke(value);
 		}
 
-		private void OnCheckboxValueChanged(bool b)
-		{
-			OnSelectAllCheckboxChanged?.Invoke(b);
-		}
-
 		void UpdateServicesFilterText(ServicesDisplayFilter filter)
 		{
 			switch (filter)
@@ -139,12 +120,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 			};
 		}
 
-		public void SetSelectAllCheckboxValue(bool value)
+		public void UpdateSelectAllCheckboxValue(int selectedServicesAmount, int servicesAmount)
 		{
-			_selectAllLabeledCheckbox.SetWithoutNotify(value);
+			_selectAllLabeledCheckbox.SetWithoutNotify(selectedServicesAmount == servicesAmount);
+			SetSelectAllVisibility(servicesAmount > 0);
 		}
 
-		public void SetSelectAllVisibility(bool value)
+		private void SetSelectAllVisibility(bool value)
 		{
 			_selectAllLabeledCheckbox.EnableInClassList("hidden", !value);
 		}

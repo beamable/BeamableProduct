@@ -10,8 +10,6 @@
 
 #header{
     margin-top: 10px;
-    padding-left: 10px;
-    padding-right: 40px;
     padding-bottom: 10px;
     -unity-text-align: upper-center;
     flex-direction: row;
@@ -27,36 +25,63 @@
 #nameC, #depsC {
     flex-direction: row;
     flex: 1;
-    margin-right: 10px;
 }
-
-#depsC {
-    margin-right: 10px;
+#depsColumn > * {
+    padding-right: 20px;
 }
 
 #typeC {
-    width: 90px;
+    width: 50px;
+    justify-content: center;
 }
 
 #enabledC {
-    width: 100px;
-    justify-content: center;
+    width: 70px;
+    justify-content: flex-start;
 }
+#enabledC.column {
+    width: 70px;
+}
+
 #CommentsC {
-    width: 155px;
+    width: 220px;
+    justify-content: flex-end;
+}
+#CommentsC.column {
     padding-left: 20px;
 }
+#row #CommentsC > * {
+    flex-grow: 1;
+}
+
 #SizeC {
-    width: 140px;
+    width: 120px;
 }
+#SizeC DropdownVisualElement {
+    flex-direction: row;
+    flex-grow: 1;
+}
+#SizeC #mainContainer {
+    min-width: 70px;
+}
+#SizeC #mainContainer #valueContainer {
+    width: 50px;
+}
+
 #commentsText, #SizeC .template{
-    width: 80px;
+    /*width: 80px;*/
 }
+
 #sizeButton Label {
     margin-right: 18px;
     margin-top: 2px;
     font-size: 10px;
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
+}
+
+#CheckC {
+    width: 20px;
+    margin-right: 20px;
 }
 
 .column{
@@ -93,11 +118,6 @@
     align-self: auto;
     flex-direction: row;
     flex-grow: 1;
-    max-width: 120px;
-}
-#commentsText{
-    padding-right: 10px;
-    width: 100px;
 }
 .bottomContainer{
     padding-top: 10px;
@@ -107,8 +127,7 @@
     margin-bottom: 15px;
     margin-left: 0px;
     margin-right: 0px;
-    margin-top: 15px;
-    min-height: 140px; 
+    min-height: 90px;
 }
 .bottomContainer > * {
     flex-grow: 1;
@@ -137,15 +156,62 @@
 #manifestsContainer{
     border-color: rgba(0,0,0,0);
     border-width: 1px;
-    min-height: 100px;
     flex-grow: 1;
+    flex-shrink: 1;
+}
+.cover {
+    position: absolute;
+    left: 99999px;
+}
+LoadingIndicatorVisualElement {
+    align-items: center;
+}
+#largeCommentsArea {
+    margin-left: 0px;
+    margin-right: 0px;
 }
 
 LoadingBarElement {
     align-self: stretch;
     margin-bottom: 5px;
 }
-#header, #topMessage, #manifestsContainer, #buttonStrip, .bottomContainer{
+#header .column {
+    justify-content: center;
+}
+#header {
+    border-color: rgba(0,0,0,.1);
+    border-bottom-width: 2px;
+}
+#header, #topMessage, #manifestsContainer, #buttonStrip{
     margin-left: 15px;
     margin-right: 15px;
+    padding-right: 10px; /*account for scroll */
+}
+.bottomContainer {
+    margin-left: 15px;
+    margin-right: 15px;
+}
+
+#splitPane {
+    overflow: hidden;
+}
+#splitPane, SplitterVisualElement, #services {
+    flex-grow: 1;
+}
+
+.bottomContainer LogVisualElement {
+    border-color: #000000;
+    border-top-width: 2px;
+}
+
+.splitWrapper.leftSplit{
+    flex-grow: 0;
+    min-height: 200px;
+}
+.splitWrapper.rightSplit {
+    flex-grow: 1;
+    min-height: 50px;
+}
+.splitWrapper.rightSplit > * {
+    flex-grow: 1;
 }

@@ -48,13 +48,43 @@ namespace Beamable.Server.Editor
 				}
 			};
 
+		public static bool IsInitialized { get; private set; }
+
 		static MicroserviceEditor()
 		{
 			/// Delaying until first editor tick so that the menu
 			/// will be populated before setting check state, and
 			/// re-apply correct action
-			EditorApplication.delayCall += () =>
+			EditorApplication.delayCall += Initialize;
+			void Initialize()
 			{
+				try
+				{
+					BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+				}
+				catch (InvalidOperationException)
+				{
+					EditorApplication.delayCall += Initialize;
+					return;
+				}
+				catch (NullReferenceException)
+				{
+					EditorApplication.delayCall += Initialize;
+					return;
+				}
+
+				try
+				{
+					_ = MicroserviceConfiguration.Instance;
+				}
+				// Solves a specific issue on first installation of package ---
+				catch (ModuleConfigurationNotReadyException)
+				{
+					EditorApplication.delayCall += Initialize;
+					return;
+				}
+				
+				
 				var enabled = false;
 				if (ConfigDatabase.HasKey(CONFIG_AUTO_RUN))
 					enabled = ConfigDatabase.GetBool(CONFIG_AUTO_RUN, false);
@@ -62,7 +92,9 @@ namespace Beamable.Server.Editor
 					enabled = EditorPrefs.GetBool(CONFIG_AUTO_RUN, false);
 
 				setAutoRun(enabled);
-			};
+
+				IsInitialized = true;
+			}
 		}
 
 		private static void setAutoRun(bool value)

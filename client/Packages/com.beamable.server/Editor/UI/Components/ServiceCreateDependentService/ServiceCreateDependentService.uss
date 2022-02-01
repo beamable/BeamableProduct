@@ -1,6 +1,6 @@
 ﻿#mainContainer {
     flex-grow: 1;
-    margin-bottom: 50px;
+    margin-bottom: 5px;
     background-color: #262626;
 }
 

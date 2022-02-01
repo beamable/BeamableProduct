@@ -98,6 +98,8 @@ namespace Beamable.Editor.Assistant
 			_indexIntoDisplayingHints = headerIdx;
 		}
 
+		
+		
 		public sealed override void Refresh()
 		{
 			base.Refresh();
@@ -114,6 +116,9 @@ namespace Beamable.Editor.Assistant
 			// Update the hint's label
 			var hintTitle = _hintDetailsReflectionCache.TryGetHintTitleText(_displayingHintHeader, out var titleText) ? titleText : _displayingHintHeader.Id;
 			_hintDisplayName.text = hintTitle;
+#if UNITY_2020_1_OR_NEWER
+			_hintDisplayName.style.textOverflow = TextOverflow.Ellipsis;
+#endif
 
 			// Update Hint Type Icon and Primary Domain
 			var hintTypeClass = _displayingHintHeader.Type.ToString().ToLower();
@@ -125,15 +130,10 @@ namespace Beamable.Editor.Assistant
 			hintPrimaryDomain.AddTextWrapStyle();
 
 			// Find the ConverterData that is tied to the hint we are displaying from the HintDetails Reflection Cache system.
-			if (!_hintDetailsReflectionCache.TryGetConverterDataForHint(_displayingHintHeader, out var converter))
-			{
-				BeamableLogger.Log($"[Assistant] No BeamableHintDetails Found for Hint Header {_displayingHintHeader}! Skipping rendering of this hint." +
-								   $"See BeamHintDetailConverterProvider and BeamHintDetailsConfig to see how to configure BeamHintConverter functions and visuals.");
-			}
-
-			var hintDetailsConfig = converter.HintConfigDetailsConfig;
-			BeamHintTextMap textMap = null;
-			if (converter.HintTextMap.TryGetHintTitle(_displayingHintHeader, out var hintTitleText) && converter.HintTextMap.TryGetHintIntroText(_displayingHintHeader, out var hintIntroText))
+			var foundConverter = _hintDetailsReflectionCache.TryGetConverterDataForHint(_displayingHintHeader, out var converter);
+			var hintDetailsConfig = foundConverter ? converter.HintConfigDetailsConfig : null;
+			BeamHintTextMap textMap;
+			if (foundConverter && converter.HintTextMap != null && converter.HintTextMap.TryGetHintTitle(_displayingHintHeader, out _) && converter.HintTextMap.TryGetHintIntroText(_displayingHintHeader, out _))
 				textMap = converter.HintTextMap;
 			else
 				textMap = _hintDetailsReflectionCache.GetTextMapForId(_displayingHintHeader);

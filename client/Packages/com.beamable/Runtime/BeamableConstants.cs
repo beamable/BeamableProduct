@@ -82,6 +82,9 @@ public static class BeamableConstants
 	public const string MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS = MENU_ITEM_PATH_ASSETS_BEAMABLE + "/Configurations";
 	public const string MENU_ITEM_PATH_ASSETS_BEAMABLE_SAMPLES = MENU_ITEM_PATH_ASSETS_BEAMABLE + "/Samples";
 	public const int MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1 = 0;
+	public const int MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2 = 50;
+	public const int MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_3 = 100;
+	public const int MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_LAST = int.MaxValue;
 
 	//Editor Pref Keys
 	public const string REALM_PREFERENCE = "BeamableSelectedRealms";

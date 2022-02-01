@@ -87,12 +87,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		private void OnIsBuildingChanged(bool isBuilding)
 		{
-			UpdateButtons();
-			UpdateStatusIcon();
+			UpdateLocalStatus();
 		}
 		private void HandleLastImageIdChanged(string newId)
 		{
-			UpdateButtons();
+			UpdateLocalStatus();
 		}
 		private void OnServiceReferenceChanged(ServiceReference serviceReference)
 		{
@@ -117,37 +116,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_remoteStatusIcon.tooltip = _remoteStatusLabel.text;
 			_remoteStatusIcon.AddToClassList(statusClassName);
 		}
-		protected override void UpdateStatusIcon()
+		protected override void UpdateLocalStatus()
 		{
-			_statusIcon.ClearClassList();
-
-			string statusClassName;
-			string statusText;
-
-			string status = _microserviceModel.IsRunning ? "localRunning" :
-				_microserviceModel.IsBuilding ? "localBuilding" : "localStopped";
-			switch (status)
-			{
-				case "localRunning":
-					statusText = "Local Running";
-					statusClassName = "localRunning";
-					break;
-				case "localBuilding":
-					statusClassName = "localBuilding";
-					statusText = "Local Building";
-					break;
-				case "localStopped":
-					statusClassName = "localStopped";
-					statusText = "Local Stopped";
-					break;
-				default:
-					statusClassName = "different";
-					statusText = "Different";
-					break;
-			}
-
-			_statusIcon.tooltip = _statusLabel.text = statusText;
-			_statusIcon.AddToClassList(statusClassName);
+			base.UpdateLocalStatus();
+			UpdateLocalStatusIcon(_microserviceModel.IsRunning, _microserviceModel.IsBuilding);
 		}
 		private void SetupProgressBarForBuildAndStart(Task task)
 		{
@@ -178,7 +150,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 					: Constants.BUILD_ENABLE_DEBUG, pos =>
 				{
 					_microserviceModel.IncludeDebugTools = !_microserviceModel.IncludeDebugTools;
-					UpdateButtons();
+					UpdateLocalStatus();
 				});
 			}
 			else

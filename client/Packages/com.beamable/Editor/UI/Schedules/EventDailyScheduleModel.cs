@@ -3,7 +3,7 @@ using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Validation;
 using System;
 
-namespace Beamable.Editor.Schedules
+namespace Beamable.Editor.Models.Schedules
 {
 	public class EventDailyScheduleModel : ScheduleWindowModel
 	{

@@ -45,8 +45,8 @@ namespace Beamable.Editor.UI.Components
 		public override void OnPropertyChangedExternally()
 		{
 			var value = Property.Vector2Value;
-			_fieldX.value = value.x;
-			_fieldY.value = value.y;
+			_fieldX.SetValueWithoutNotify(value.x);
+			_fieldY.SetValueWithoutNotify(value.y);
 		}
 	}
 }

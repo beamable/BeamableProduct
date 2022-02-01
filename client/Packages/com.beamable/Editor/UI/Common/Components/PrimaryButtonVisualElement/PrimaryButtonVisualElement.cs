@@ -2,9 +2,12 @@
 using Beamable.Common;
 using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common;
+using Microsoft.CSharp;
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEditor;
 #if UNITY_2018
@@ -210,6 +213,34 @@ namespace Beamable.Editor.UI.Components
 		public static string LegalErrorHandler(bool read)
 		{
 			return read ? null : "Must agree to legal terms";
+		}
+
+		public static string IsBetweenCharLength(string text, int max, int min = -1)
+		{
+			if (text.Length > max) return $"Must be ${max} characters or less";
+			if (text.Length < min) return $"Must be ${min} characters or more";
+			return null;
+		}
+
+		public static string IsValidClassName(string name)
+		{
+			/*
+			 * A class name must be alphaNumeric and have _ and not start with a number
+			 */
+			var codeProvider = new CSharpCodeProvider();
+			string sFixedName = codeProvider.CreateValidIdentifier(name);
+			var codeType = new CodeTypeDeclaration(sFixedName);
+
+			if (!string.Equals(codeType.Name, name))
+			{
+				return "Cannot use reserved C# words";
+			}
+			if (!System.CodeDom.Compiler.CodeGenerator.IsValidLanguageIndependentIdentifier(name))
+			{
+				return "Must be a valid C# class name";
+			}
+
+			return null;
 		}
 
 		public static bool IsPassword(string password)

@@ -1,4 +1,4 @@
-using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Components;
 
 namespace Beamable.Editor.Toolbox.UI.Components
 {

@@ -291,6 +291,7 @@ namespace Beamable.Editor.Content.Components
 
 		private async Task HandlePublish()
 		{
+			_manifestNameField.SetEnabled(false);
 			if (_createNewManifest && _manifestModel.ArchivedManifestModels.Any(m => m.id == ManifestName))
 			{
 				var api = await EditorAPI.Instance;

@@ -1,9 +1,9 @@
-﻿using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Common;
+﻿using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
+using System;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
-
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -15,22 +15,26 @@ namespace Beamable.Editor.UI.Components
 	{
 		private TextField _editableLabel;
 		private BussStyleRule _styleRule;
+		private BussStyleSheet _styleSheet;
+
+		public event Action OnChangeSubmit;
 
 		public BussSelectorLabelVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStyleCardVisualElement/BussSelectorLabelVisualElement/BussSelectorLabelVisualElement.uss")
 		{ }
 
-		public void Setup(BussStyleRule styleRule)
+		public void Setup(BussStyleRule styleRule, BussStyleSheet styleSheet)
 		{
 			base.Init();
 
 			_styleRule = styleRule;
+			_styleSheet = styleSheet;
 
 			if (!_styleRule.EditMode)
 			{
 				TextElement textLabel = new TextElement();
 				textLabel.name = "styleId";
-				textLabel.text = styleRule.SelectorString;
+				textLabel.text = $"{styleRule.SelectorString} ({styleSheet.name})";
 				Root.Add(textLabel);
 			}
 			else
@@ -39,6 +43,13 @@ namespace Beamable.Editor.UI.Components
 				_editableLabel.name = "styleId";
 				_editableLabel.value = styleRule.SelectorString;
 				_editableLabel.RegisterValueChangedCallback(StyleIdChanged);
+				_editableLabel.RegisterCallback<KeyDownEvent>(evt =>
+				{
+					if (evt.keyCode == KeyCode.Return)
+					{
+						OnChangeSubmit?.Invoke();
+					}
+				});
 				Root.Add(_editableLabel);
 			}
 		}
@@ -51,6 +62,7 @@ namespace Beamable.Editor.UI.Components
 		private void StyleIdChanged(ChangeEvent<string> evt)
 		{
 			_styleRule.SelectorString = evt.newValue;
+			_styleSheet.TriggerChange();
 		}
 	}
 }

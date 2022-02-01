@@ -3,6 +3,7 @@ using Beamable.Common.Assistant;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Beamable.Editor.ToolbarExtender;
 using UnityEditor;
 
 namespace Beamable.Editor.Assistant
@@ -156,6 +157,7 @@ namespace Beamable.Editor.Assistant
 			_lastTickTime = currTickTime;
 			_hintPreferences.RebuildPerHintPreferences();
 			CheckNotifications();
+			BeamableToolbarExtender.Repaint();
 		}
 
 		private void CheckNotifications()

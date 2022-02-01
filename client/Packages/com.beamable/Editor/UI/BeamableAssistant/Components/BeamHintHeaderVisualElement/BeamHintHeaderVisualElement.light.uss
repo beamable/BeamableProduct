@@ -25,7 +25,12 @@
     border-color: #a2a2a2;
 }
 
-#moreDetailsButton > Label{    
+/*2018 UXML for Unity Toggle Component */
+#moreDetailsButton > Label {
+    color: #000;
+}
+/*2019+ UXML for Unity Toggle Component */
+#moreDetailsButton > VisualElement > Label {    
     color: #000;
 }
 

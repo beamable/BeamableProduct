@@ -17,7 +17,7 @@
 }
 
 #createNewIcon{
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new D.png");
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/addNewDark.png");
 }
 
 #publishIcon{

@@ -70,6 +70,11 @@ namespace Beamable.Editor.Content.Components
 
 		}
 
+		public void RefreshManifestButton()
+		{
+			_breadcrumbsElement.RefreshManifestButton();
+		}
+
 		/// <summary>
 		/// Handle the <see cref="Breadcrumb"/> click.
 		/// It may be an "All Contents", an item, or a content type.

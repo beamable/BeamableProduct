@@ -12,5 +12,9 @@ DropdownVisualElement #mainContainer{
 }
 
 #button {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new L.png");
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/addNewLight.png");
+}
+
+#button.whenConnected {
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/removeLight.png");
 }

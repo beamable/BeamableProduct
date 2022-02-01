@@ -60,10 +60,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_separator.Refresh();
 
-			UpdateButtons();
-			UpdateStatusIcon();
+			UpdateLocalStatus();
 			UpdateRemoteStatusIcon();
-			UpdateHeaderColor();
 			UpdateModel();
 		}
 

@@ -9,20 +9,19 @@ namespace Beamable.Editor.Modules.ContentTypes
 	{
 		private const string TemplatesPath = "Packages/com.beamable/Editor/Modules/ContentTypes/ScriptTemplates/";
 
-		[MenuItem("Content", menuItem = "Assets/Create/Beamable/Content Types/Content", priority = 100)]
+		[MenuItem("Content", menuItem = "Assets/Create/Beamable - Scripts/Content", priority = 200)]
 		public static void CreateContent()
 		{
 			CreateFile("Content");
 		}
 
-		[MenuItem("CurrencyContent", menuItem = "Assets/Create/Beamable/Content Types/Currency Content",
-			priority = 200)]
+		[MenuItem("CurrencyContent", menuItem = "Assets/Create/Beamable - Scripts/Currency Content", priority = 200)]
 		public static void CreateCurrencyContent()
 		{
 			CreateFile("CurrencyContent");
 		}
 
-		[MenuItem("ItemContent", menuItem = "Assets/Create/Beamable/Content Types/Item Content", priority = 200)]
+		[MenuItem("ItemContent", menuItem = "Assets/Create/Beamable - Scripts/Item Content", priority = 200)]
 		public static void CreateItemContent()
 		{
 			CreateFile("ItemContent");

@@ -1,0 +1,22 @@
+#buttonRow {
+    flex-grow: 1;
+}
+PrimaryButtonVisualElement {
+    width: 80px;
+    margin-bottom: 3px;
+}
+#logHeader #leftArea {
+    flex-direction: column-reverse;
+}
+
+
+CreateStorageObjectVisualElement > TemplateContainer > #mainVisualElement,
+CreateMicroserviceVisualElement > TemplateContainer > #mainVisualElement {
+    padding-top: 20px;
+}
+
+#logHeader .beamableErrorLabel {
+    position: absolute;
+    top: -14px;
+    left: 4px;
+}

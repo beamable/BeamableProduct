@@ -1,6 +1,5 @@
 using Beamable.Content;
 using Beamable.Editor.Content.Models;
-using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
@@ -16,7 +15,6 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Content.Components
 {
-
 	public class ActionBarVisualElement : ContentManagerComponent
 	{
 		public new class UxmlFactory : UxmlFactory<ActionBarVisualElement, UxmlTraits>
@@ -125,6 +123,14 @@ namespace Beamable.Editor.Content.Components
 		{
 			var query = EditorContentQuery.Parse(obj);
 			Model.SetFilter(query);
+		}
+
+		public void RefreshPublishDropdownVisibility()
+		{
+			if (_publishDropdownButton?.parent == null) return;
+
+			_publishDropdownButton.parent.EnableInClassList("hidden",
+														!ContentConfiguration.Instance.EnableMultipleContentNamespaces);
 		}
 
 		private void CreateNewButton_OnClicked(Rect visualElementBounds)

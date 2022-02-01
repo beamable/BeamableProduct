@@ -36,7 +36,7 @@ namespace Beamable.Editor.UI.Components
 
 		public override void OnPropertyChangedExternally()
 		{
-			_field.value = Property.Color;
+			_field.SetValueWithoutNotify(Property.Color);
 		}
 	}
 }

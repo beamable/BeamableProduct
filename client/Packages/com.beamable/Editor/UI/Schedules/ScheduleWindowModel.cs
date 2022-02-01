@@ -1,7 +1,7 @@
 ﻿using Beamable.Common.Content;
 using Beamable.Editor.UI.Validation;
 
-namespace Beamable.Editor.Schedules
+namespace Beamable.Editor.Models.Schedules
 {
 	public abstract class ScheduleWindowModel
 	{

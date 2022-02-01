@@ -18,7 +18,9 @@ namespace Beamable.Reflection
 	/// <see cref="Beam"/> calls on <see cref="Registry.LoadCustomDependencies"/> during it's initialization process in order for users to be able to inject dependencies into
 	/// <see cref="BeamContext"/>s.
 	/// </summary>
-	[CreateAssetMenu(fileName = "BeamReflectionCache", menuName = "Beamable/Reflection/Initialization/Beam Cache", order = 0)]
+#if BEAMABLE_DEVELOPER
+	[CreateAssetMenu(fileName = "BeamReflectionCache", menuName = "Beamable/Reflection/Beam Initialization Cache", order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
+#endif
 	public class BeamReflectionCache : ReflectionSystemObject
 	{
 		private Registry Cache;

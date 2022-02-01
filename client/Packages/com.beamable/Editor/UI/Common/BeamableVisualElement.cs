@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
-namespace Beamable.Editor.UI.Buss
+namespace Beamable.Editor.UI.Components
 {
 	public class BeamableVisualElement : VisualElement
 	{

@@ -59,6 +59,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_checkbox.Refresh();
 			_checkbox.SetText(Model.Name);
 			_checkbox.SetWithoutNotify(Model.IsSelected);
+			_checkbox.SetEnabled(false);
 			Model.OnSelectionChanged += _checkbox.SetWithoutNotify;
 			_checkbox.OnValueChanged += b => Model.IsSelected = b;
 
@@ -67,10 +68,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_separator.Refresh();
 
-			UpdateButtons();
-			UpdateStatusIcon();
+			UpdateLocalStatus();
 			UpdateRemoteStatusIcon();
-			UpdateHeaderColor();
 			UpdateModel();
 		}
 
@@ -88,7 +87,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void HandleLastImageIdChanged(string newId)
 		{
-			UpdateButtons();
+			UpdateLocalStatus();
 		}
 
 		private void OnServiceReferenceChanged(ServiceReference serviceReference)
@@ -105,9 +104,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_remoteStatusIcon.AddToClassList(statusClassName);
 		}
 
-		protected override void UpdateStatusIcon()
+		protected override void UpdateLocalStatus()
 		{
-
+			base.UpdateLocalStatus();
+			UpdateLocalStatusIcon(false, false);
 		}
 	}
 }

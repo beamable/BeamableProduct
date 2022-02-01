@@ -7,9 +7,11 @@ namespace Beamable.Editor.UI.Buss
 	public class NewVariableWindow : BussWindowBase<NewVariableWindow, NewVariableVisualElement>
 	{
 		private Action<string, IBussProperty> _onPropertyCreated;
+		private BussStyleRule _styleRule;
 
-		public void Init(Action<string, IBussProperty> onPropertyCreated)
+		public void Init(BussStyleRule styleRule, Action<string, IBussProperty> onPropertyCreated)
 		{
+			_styleRule = styleRule;
 			_onPropertyCreated = onPropertyCreated;
 
 			titleContent = new GUIContent("New Variable Window");
@@ -19,6 +21,6 @@ namespace Beamable.Editor.UI.Buss
 
 			Refresh();
 		}
-		protected override NewVariableVisualElement GetVisualElement() => new NewVariableVisualElement(_onPropertyCreated);
+		protected override NewVariableVisualElement GetVisualElement() => new NewVariableVisualElement(_styleRule, _onPropertyCreated);
 	}
 }

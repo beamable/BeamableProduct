@@ -13,11 +13,13 @@ namespace Beamable.Inventory.Scripts
 		public string DisplayName;
 	}
 
+#if BEAMABLE_DEVELOPER
 	[CreateAssetMenu(
 	   fileName = "Inventory Configuration",
 	   menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
 	   "Inventory Configuration",
 	   order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
+#endif
 	public class InventoryConfiguration : ModuleConfigurationObject
 	{
 		public static InventoryConfiguration Instance => Get<InventoryConfiguration>();
