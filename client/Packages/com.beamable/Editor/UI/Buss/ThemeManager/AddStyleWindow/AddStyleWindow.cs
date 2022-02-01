@@ -1,10 +1,9 @@
-﻿using Beamable.Editor.UI.Buss;
-using Beamable.UI.Buss;
+﻿using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Beamable.UI.BUSS
+namespace Beamable.Editor.UI.Buss
 {
 	public class AddStyleWindow : BussWindowBase<AddStyleWindow, AddPropertiesVisualElement>
 	{

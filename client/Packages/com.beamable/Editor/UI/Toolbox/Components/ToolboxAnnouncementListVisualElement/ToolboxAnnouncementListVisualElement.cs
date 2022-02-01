@@ -2,6 +2,7 @@
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.Toolbox.UI.Components;
 using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
 using UnityEditor;

@@ -1,6 +1,5 @@
 ﻿using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
-using Beamable.UI.BUSS;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -120,7 +119,7 @@ namespace Beamable.Editor.UI.Buss
 		{
 			if (string.IsNullOrWhiteSpace(_selectorName.Value))
 				ChangeButtonState(false,
-				                  "Selector name cannot be empty or white space");
+								  "Selector name cannot be empty or white space");
 			else
 				ChangeButtonState(true);
 
@@ -129,12 +128,12 @@ namespace Beamable.Editor.UI.Buss
 				foreach (BussStyleRule localStyle in _currentSelectedStyleSheet.Styles)
 					if (localStyle.SelectorString == _selectorName.Value)
 						ChangeButtonState(false,
-						                  $"Selector '{_selectorName.Value}' already exists in '{_currentSelectedStyleSheet.name}' BUSS style sheet");
+										  $"Selector '{_selectorName.Value}' already exists in '{_currentSelectedStyleSheet.name}' BUSS style sheet");
 			}
 			else
 			{
 				ChangeButtonState(false,
-				                  "Buss style sheet scriptable config doesn't exist");
+								  "Buss style sheet scriptable config doesn't exist");
 			}
 		}
 

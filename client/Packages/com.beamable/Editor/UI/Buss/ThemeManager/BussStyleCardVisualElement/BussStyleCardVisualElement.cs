@@ -1,8 +1,5 @@
 ﻿using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Buss.Components;
-using Beamable.Editor.UI.BUSS.ThemeManager;
 using Beamable.UI.Buss;
-using Beamable.UI.BUSS;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +17,6 @@ namespace Beamable.Editor.UI.Components
 	public class BussStyleCardVisualElement : BeamableVisualElement
 	{
 		private BussSelectorLabelVisualElement _selectorLabelComponent;
-		private VisualElement _styleIdParent;
 		private VisualElement _selectorLabelParent;
 		private VisualElement _variables;
 		private VisualElement _propertiesParent;
@@ -34,8 +30,6 @@ namespace Beamable.Editor.UI.Components
 		private VisualElement _addRuleButton;
 		private VisualElement _showAllButton;
 		private TextElement _showAllButtonText;
-		private TextElement _styleIdLabel;
-		private TextField _styleIdEditField;
 
 		private VariableDatabase _variableDatabase;
 		private BussStyleSheet _styleSheet;
@@ -47,6 +41,8 @@ namespace Beamable.Editor.UI.Components
 		private BussThemeManager _themeManager;
 
 		public BussStyleRule StyleRule => _styleRule;
+
+		public event Action OnEnterEditMode;
 
 		public BussStyleCardVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}")
@@ -102,7 +98,7 @@ namespace Beamable.Editor.UI.Components
 			_navigationWindow = navigationWindow;
 			_onUndoRequest = onUndoRequest;
 			_styleSheet.Change += RefreshProperties;
-			
+
 			Refresh();
 		}
 
@@ -239,7 +235,12 @@ namespace Beamable.Editor.UI.Components
 
 		private void EditButtonClicked(MouseDownEvent evt)
 		{
-			StyleRule.EditMode = !StyleRule.EditMode;
+			SetEditMode(!StyleRule.EditMode);
+		}
+
+		public void SetEditMode(bool value)
+		{
+			StyleRule.EditMode = value;
 
 			if (!StyleRule.EditMode)
 			{
@@ -247,6 +248,10 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			Refresh();
+			if (value)
+			{
+				OnEnterEditMode?.Invoke();
+			}
 		}
 
 		private void ShowAllButtonClicked(MouseDownEvent evt)
@@ -269,8 +274,10 @@ namespace Beamable.Editor.UI.Components
 			_selectorLabelParent.Clear();
 
 			_selectorLabelComponent = new BussSelectorLabelVisualElement();
-			_selectorLabelComponent.Setup(StyleRule);
+			_selectorLabelComponent.Setup(StyleRule, _styleSheet);
 			_selectorLabelParent.Add(_selectorLabelComponent);
+
+			_selectorLabelComponent.OnChangeSubmit += () => SetEditMode(false);
 		}
 
 		public void RefreshProperties()

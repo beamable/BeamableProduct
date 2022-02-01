@@ -1,8 +1,4 @@
-using Beamable.Editor;
 using Beamable.Editor.Common;
-using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Buss.Components;
-using Beamable.Editor.UI.BUSS.ThemeManager;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using System;
@@ -18,7 +14,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
-namespace Beamable.UI.BUSS
+namespace Beamable.Editor.UI.Buss
 {
 	public class BussThemeManager : EditorWindow
 	{
@@ -99,6 +95,7 @@ namespace Beamable.UI.BUSS
 			_filterToggle.OnValueChanged -= OnFilterToggleClicked;
 			_filterToggle.OnValueChanged += OnFilterToggleClicked;
 			_filterToggle.Refresh();
+			_filterToggle.SetWithoutNotify(_filterMode);
 			scrollView.Add(_filterToggle);
 
 			_stylesGroup = new VisualElement();
@@ -128,8 +125,8 @@ namespace Beamable.UI.BUSS
 			foreach (BussStyleCardVisualElement styleCardVisualElement in _styleCardsVisualElements)
 			{
 				bool isMatch =
-					styleCardVisualElement.StyleRule.Selector.CheckMatch(_navigationWindow.SelectedComponent);
-				styleCardVisualElement.SetHidden(_filterMode && !isMatch);
+					styleCardVisualElement.StyleRule.Selector?.CheckMatch(_navigationWindow.SelectedComponent) ?? false;
+				styleCardVisualElement.SetHidden(_filterMode && !isMatch && !styleCardVisualElement.StyleRule.EditMode);
 			}
 		}
 
@@ -183,6 +180,8 @@ namespace Beamable.UI.BUSS
 					}
 				}
 			}
+			
+			FilterCards();
 		}
 
 		private void AddSelectorButton()
@@ -248,6 +247,18 @@ namespace Beamable.UI.BUSS
 			{
 				_addStyleButton.PlaceInFront(styleCard);
 			}
+
+			styleCard.OnEnterEditMode += () =>
+			{
+				foreach (BussStyleCardVisualElement other in _styleCardsVisualElements)
+				{
+					if (other != styleCard && other.StyleRule.EditMode)
+					{
+						other.SetEditMode(false);
+					}
+				}
+				FilterCards();
+			};
 		}
 
 		private void RemoveStyleCard(BussStyleCardVisualElement card)

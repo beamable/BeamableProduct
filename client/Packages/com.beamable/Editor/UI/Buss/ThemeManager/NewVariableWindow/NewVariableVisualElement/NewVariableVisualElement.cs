@@ -1,5 +1,4 @@
-﻿using Beamable.Editor.UI.BUSS.ThemeManager.BussPropertyVisualElements;
-using Beamable.Editor.UI.Components;
+﻿using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
@@ -111,7 +110,7 @@ namespace Beamable.Editor.UI.Buss
 		{
 			message = string.Empty;
 			var variableName = _variableName.Value;
-			
+
 			if (string.IsNullOrWhiteSpace(variableName))
 			{
 				message = "Variable name can't be empty";
@@ -126,17 +125,17 @@ namespace Beamable.Editor.UI.Buss
 			{
 				if (variableName.StartsWith("--"))
 					variableName = variableName.Substring(2);
-				
+
 				if (_reservedVariableNames.Contains(variableName))
 				{
 					message = "Variable name already exists in local variable list";
 					return false;
 				}
 			}
-			
+
 			return true;
 		}
-		
+
 		private void HandleConfirmButton()
 		{
 			if (string.IsNullOrWhiteSpace(_variableName.Value))

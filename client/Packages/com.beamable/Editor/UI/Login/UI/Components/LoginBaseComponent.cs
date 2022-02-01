@@ -1,6 +1,6 @@
 using Beamable.Common;
 using Beamable.Editor.Login.UI.Model;
-using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Components;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;

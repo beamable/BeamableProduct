@@ -1,4 +1,4 @@
-using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Components;
 using Beamable.Server.Editor.ManagerClient;
 using System;
 using System.Collections.Generic;
