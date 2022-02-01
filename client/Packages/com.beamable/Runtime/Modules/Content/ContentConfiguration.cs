@@ -5,10 +5,12 @@ using UnityEngine;
 
 namespace Beamable.Content
 {
+#if BEAMABLE_DEVELOPER
 	[CreateAssetMenu(
 		fileName = "Content Configuration",
 		menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
 				  "Content Configuration")]
+#endif
 	public class ContentConfiguration : ModuleConfigurationObject
 	{
 		public static ContentConfiguration Instance => Get<ContentConfiguration>();

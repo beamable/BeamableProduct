@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Beamable.Common;
+using Beamable.Editor.ToolbarExtender;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -260,28 +262,43 @@ namespace Beamable.Server.Editor.DockerCommands
 			DockerNotInstalled = false;
 		}
 
+		private static Task DockerCheckThread;
 		public static void CheckDockerAppRunning()
 		{
-			var procList = Process.GetProcesses();
-			for (int i = 0; i < procList.Length; i++)
+			if (DockerCheckThread == null || !DockerCheckThread.IsCompleted)
 			{
-				try
+				bool dockerNotRunning = DockerNotRunning;
+				DockerCheckThread = new Task(() =>
 				{
+					var procList = Process.GetProcesses();
+					for (int i = 0; i < procList.Length; i++)
+					{
+						try
+						{
 #if UNITY_EDITOR_WIN
-					const string procName = "docker desktop";
+							const string procName = "docker desktop";
 #else
 					const string procName = "docker";
 #endif
-					if (procList[i].ProcessName.ToLower().Contains(procName))
-					{
-						DockerNotRunning = false;
-						return;
+							if (procList[i].ProcessName.ToLower().Contains(procName))
+							{
+								dockerNotRunning = false;
+								return;
+							}
+						}
+						catch
+						{
+						}
 					}
-				}
-				catch { }
-			}
 
-			DockerNotRunning = true;
+					dockerNotRunning = true;
+				});
+				DockerCheckThread.Start();
+				DockerCheckThread.ToPromise().Then(_ =>
+				{
+					DockerNotRunning = dockerNotRunning;
+				});
+			}
 		}
 
 		public static bool RunDockerProcess()

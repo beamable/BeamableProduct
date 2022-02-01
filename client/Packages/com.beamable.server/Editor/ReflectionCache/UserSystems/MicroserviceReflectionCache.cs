@@ -25,7 +25,9 @@ using UnityEngine;
 
 namespace Beamable.Server.Editor
 {
-	[CreateAssetMenu(fileName = "MicroserviceReflectionCache", menuName = "Beamable/Reflection/Server/Microservices Cache", order = 0)]
+#if BEAMABLE_DEVELOPER
+	[CreateAssetMenu(fileName = "MicroserviceReflectionCache", menuName = "Beamable/Reflection/Microservices Cache", order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
+#endif
 	public class MicroserviceReflectionCache : ReflectionSystemObject
 	{
 		[NonSerialized]
