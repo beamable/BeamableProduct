@@ -34,6 +34,9 @@ namespace Beamable.UI.Buss
 		{
 			BussConfiguration.UseConfig(conf => conf.UpdateStyleSheet(this));
 			Change?.Invoke();
+#if UNITY_EDITOR
+			UnityEditor.EditorUtility.SetDirty(this);
+#endif
 		}
 
 		public void RemoveStyle(BussStyleRule styleRule)

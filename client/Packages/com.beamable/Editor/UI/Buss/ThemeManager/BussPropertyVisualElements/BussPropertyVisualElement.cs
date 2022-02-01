@@ -1,7 +1,6 @@
 ﻿using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
-using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -35,12 +34,11 @@ namespace Beamable.Editor.UI.Components
 
 		protected void TriggerStyleSheetChange()
 		{
+			OnValueChanged?.Invoke();
 			if (UpdatedStyleSheet != null)
 			{
 				UpdatedStyleSheet.TriggerChange();
-				EditorUtility.SetDirty(UpdatedStyleSheet);
 			}
-			OnValueChanged?.Invoke();
 		}
 	}
 
