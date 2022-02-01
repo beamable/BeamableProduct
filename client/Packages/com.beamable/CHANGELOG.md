@@ -15,8 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Deleting all items from an inventory subscription notifies client
 - Immediately failed promises throw uncaught errors on access
-- Disabling multiple content namespaces setting will disable both Publish button dropdown and content namespace dropdown.
+- Disabling multiple content namespaces setting will disable both Publish button dropdown and content namespace dropdown
 - Content baking will process correct number of objects regardless of local changes
+- Baked content meta file warning should not appear anymore
 
 ### Changed
 - `ServiceManager` no longer provides Beamable types. Use `BeamContext` instead.
