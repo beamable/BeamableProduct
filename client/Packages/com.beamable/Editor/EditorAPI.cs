@@ -347,7 +347,6 @@ namespace Beamable.Editor
 				   return ContentIO.FetchManifest();
 			   }).Map(_ =>
 			   {
-				   Debug.Log("Beamable Content Publish: Complete.");
 				   return PromiseBase.Unit;
 			   });
 		}

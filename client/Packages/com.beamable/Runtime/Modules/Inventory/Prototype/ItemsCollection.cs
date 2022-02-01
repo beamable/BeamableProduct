@@ -53,7 +53,6 @@ namespace Beamable.Modules.Inventory
 
 			if (itemGroupData == null)
 			{
-				Debug.Log($"Registering new content with id {pair.Key}");
 				ItemContent itemContent = await new ItemRef(pair.Key).Resolve();
 				RegisterItemGroup(itemContent, out itemGroupData);
 			}

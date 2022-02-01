@@ -59,7 +59,6 @@ namespace Beamable.Editor.UI.Components
 		{
 			if (_options.Count == 0)
 			{
-				Debug.Log("Option selector has no options to render");
 				return;
 			}
 

@@ -60,7 +60,7 @@ namespace Beamable.Platform.SDK.Auth
 			}
 		    else
 		    {
-		        Debug.Log("Failed to Initialize the Facebook SDK");
+		        Debug.LogError("Failed to Initialize the Facebook SDK");
 		    }
 
 		}
@@ -82,7 +82,7 @@ namespace Beamable.Platform.SDK.Auth
 		    }
 		    else
 		    {
-		        Debug.Log("User cancelled login");
+		        Debug.LogWarning("User cancelled login");
 		    }
 		}
 

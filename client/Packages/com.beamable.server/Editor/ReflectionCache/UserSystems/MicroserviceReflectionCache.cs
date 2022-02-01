@@ -331,7 +331,6 @@ namespace Beamable.Server.Editor
 				foreach (var descriptor in Descriptors)
 				{
 					OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.InProgress);
-					Debug.Log($"Building service=[{descriptor.Name}]");
 					var buildCommand = new BuildImageCommand(descriptor, false);
 					try
 					{
@@ -356,7 +355,6 @@ namespace Beamable.Server.Editor
 					uploader.onProgress += msModel.OnDeployProgress;
 					uploader.onProgress += (_, __, ___) => OnServiceDeployProgress?.Invoke(descriptor);
 
-					Debug.Log($"Getting Id service=[{descriptor.Name}]");
 					var imageId = await uploader.GetImageId(descriptor);
 					if (string.IsNullOrEmpty(imageId))
 					{
@@ -371,7 +369,6 @@ namespace Beamable.Server.Editor
 					{
 						if (existingReference.imageId == imageId)
 						{
-							Debug.Log(string.Format(BeamableLogConstants.ContainerAlreadyUploadedMessage, descriptor.Name));
 							onServiceDeployed?.Invoke(descriptor);
 							OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Published);
 							continue;
@@ -390,8 +387,6 @@ namespace Beamable.Server.Editor
 
 					entryModel.Dependencies = serviceDependencies;
 
-					Debug.Log($"Uploading container service=[{descriptor.Name}]");
-
 					await uploader.UploadContainer(descriptor, token, () =>
 												   {
 													   Debug.Log(string.Format(BeamableLogConstants.UploadedContainerMessage, descriptor.Name));
@@ -408,8 +403,6 @@ namespace Beamable.Server.Editor
 													   }
 												   }, imageId);
 				}
-
-				Debug.Log($"Deploying manifest");
 
 				var manifest = model.Services.Select(kvp =>
 				{
@@ -439,8 +432,6 @@ namespace Beamable.Server.Editor
 
 				await client.Deploy(new ServiceManifest { comments = model.Comment, manifest = manifest, storageReference = storages });
 				OnDeploySuccess?.Invoke(model, descriptorsCount);
-				Debug.Log("Service Deploy Complete");
-
 				void HandleDeploySuccess(ManifestModel _, int __)
 				{
 					WindowStateUtility.EnableAllWindows();
@@ -649,7 +640,6 @@ namespace Beamable.Server.Editor
 
 					if (requiresRebuild)
 					{
-						Debug.Log($"Generating client for {service.Name}");
 						File.Copy(tempFile, targetFile, true);
 					}
 				}

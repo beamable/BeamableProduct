@@ -118,7 +118,6 @@ namespace UnityEngine.UDP.Editor.Analytics
                     string targetStoreJson = File.ReadAllText(UnityIAPBillingModeFile);
                     if (targetStoreJson != null)
                     {
-	                    Debug.Log(targetStoreJson);
                         var dic = MiniJson.JsonDecode(targetStoreJson);
                         res &= (string) dic["androidStore"] == "UDP";
                     }

@@ -62,7 +62,7 @@ namespace Beamable.Server.Editor
 				}
 				else
 				{
-					Debug.Log("Failed.");
+					Debug.LogError("Failed.");
 				}
 			});
 		}
@@ -76,12 +76,12 @@ namespace Beamable.Server.Editor
 			{
 				if (res)
 				{
-					Debug.Log("Finished Snapshot");
+					Debug.Log($"Finished {descriptor.Name} snapshot");
 					EditorUtility.OpenWithDefaultApp(dest);
 				}
 				else
 				{
-					Debug.Log("Failed.");
+					Debug.Log($"Failed to restore {descriptor.Name} database.");
 				}
 			});
 		}

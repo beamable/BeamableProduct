@@ -275,7 +275,6 @@ namespace Beamable.Server
 			{
 				payload = argArray
 			};
-			Debug.Log($"Sending Request uri=[{url}]");
 			return await requester.Request<T>(Method.POST, url, req, parser: Parser);
 		}
 
