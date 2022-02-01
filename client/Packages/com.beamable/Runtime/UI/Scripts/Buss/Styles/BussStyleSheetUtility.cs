@@ -70,7 +70,7 @@ namespace Beamable.UI.Buss
 		{
 			if (style.Properties == null)
 			{
-				style.Properties = new List<BussPropertyProvider>();
+				return;
 			}
 			foreach (BussPropertyProvider propertyProvider in style.Properties)
 			{

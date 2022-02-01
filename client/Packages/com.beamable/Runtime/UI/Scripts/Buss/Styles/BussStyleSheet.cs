@@ -133,11 +133,7 @@ namespace Beamable.UI.Buss
 #pragma warning disable CS0649
 		[SerializeField] protected List<BussPropertyProvider> _properties = new List<BussPropertyProvider>();
 #pragma warning restore CS0649
-		public List<BussPropertyProvider> Properties
-		{
-			get => _properties;
-			set => _properties = value;
-		}
+		public List<BussPropertyProvider> Properties => _properties;
 	}
 
 	[Serializable]
