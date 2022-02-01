@@ -43,13 +43,13 @@ namespace Beamable.Common.Announcements
 		[CannotBeBlank]
 		public string body = "body";
 
-		[Tooltip(ContentObject.TooltipOptional0 + "The startDate specifies when the announcement becomes available for players to see. If no startDate is specified, the announcement will become visible immediately " + ContentObject.TooltipStartDate2)]
+		[Tooltip(ContentObject.TooltipOptional0 + "The startDate, defined as UTC, specifies when the announcement becomes available for players to see. If no startDate is specified, the announcement will become visible immediately " + ContentObject.TooltipStartDate2)]
 		[FormerlySerializedAs("start_date")]
 		[MustBeDateString]
 		[ContentField("start_date")]
 		public OptionalString startDate;
 
-		[Tooltip(ContentObject.TooltipOptional0 + "The endDate specifies when the announcement stops being available for players to see. If no endDate is specified, the announcement will be visible forever " + ContentObject.TooltipEndDate2)]
+		[Tooltip(ContentObject.TooltipOptional0 + "The endDate, defined as UTC, specifies when the announcement stops being available for players to see. If no endDate is specified, the announcement will be visible forever " + ContentObject.TooltipEndDate2)]
 		[FormerlySerializedAs("end_date")]
 		[MustBeDateString]
 		[ContentField("end_date")]
