@@ -123,6 +123,19 @@ namespace Beamable.Editor.UI.Components
 
 		void HandlePropertyChanged()
 		{
+			if (_propertyProvider.IsVariable)
+			{
+				_variableDatabase.SetVariableDirty(_propertyProvider.Key);
+			}
+			else if (_propertyProvider.GetProperty() is VariableProperty vp)
+			{
+				_variableDatabase.SetVariableDirty(vp.VariableName);
+			}
+			else
+			{
+				_variableDatabase.SetPropertyDirty(_styleSheet, _styleRule, _propertyProvider);
+			}
+			
 			if (!PropertyIsInStyle)
 			{
 				_styleRule.TryAddProperty(_propertyProvider.Key, _propertyProvider.GetProperty(), out _);
@@ -157,9 +170,7 @@ namespace Beamable.Editor.UI.Components
 				_variableConnection.Refresh();
 			}
 
-			_variableConnection.OnConnectionChange -= Refresh;
-			_variableConnection.Setup(_styleSheet, _propertyProvider, _variableDatabase);
-			_variableConnection.OnConnectionChange += Refresh;
+			_variableConnection.Setup(_styleSheet, _styleRule, _propertyProvider, _variableDatabase);
 		}
 
 		private void CheckIfIsReadOnly()

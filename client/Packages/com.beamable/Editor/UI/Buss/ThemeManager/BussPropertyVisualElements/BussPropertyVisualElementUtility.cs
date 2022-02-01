@@ -116,7 +116,7 @@ namespace Beamable.UI.Buss
 					{
 						foreach (var reference in variableData.Declarations)
 						{
-							if (reference != null)
+							if (reference.styleSheet != null)
 							{
 								_visitedVariables.Clear();
 								var endProperty = reference
