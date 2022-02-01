@@ -38,11 +38,12 @@ namespace Beamable.UI.Layouts
 
 	public delegate void MediaQueryCallback(MediaSourceBehaviour query, bool output);
 
-	[CreateAssetMenu(
-	   fileName = "Media Query",
-	   menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE + "/" +
-	   "Media Query",
-	   order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
+	// This will be deprecated and removed very soon!!!
+	// [CreateAssetMenu(
+	//    fileName = "Media Query",
+	//    menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE + "/" +
+	//    "Media Query",
+	//    order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 	public class MediaQueryObject : ScriptableObject
 
 	{

@@ -98,6 +98,8 @@ namespace Beamable.Editor.Assistant
 			_indexIntoDisplayingHints = headerIdx;
 		}
 
+		
+		
 		public sealed override void Refresh()
 		{
 			base.Refresh();
@@ -114,6 +116,9 @@ namespace Beamable.Editor.Assistant
 			// Update the hint's label
 			var hintTitle = _hintDetailsReflectionCache.TryGetHintTitleText(_displayingHintHeader, out var titleText) ? titleText : _displayingHintHeader.Id;
 			_hintDisplayName.text = hintTitle;
+#if UNITY_2020_1_OR_NEWER
+			_hintDisplayName.style.textOverflow = TextOverflow.Ellipsis;
+#endif
 
 			// Update Hint Type Icon and Primary Domain
 			var hintTypeClass = _displayingHintHeader.Type.ToString().ToLower();

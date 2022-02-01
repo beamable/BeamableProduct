@@ -29,7 +29,9 @@ namespace Beamable.Editor.Reflection
 	/// </description></item>
 	/// </list>
 	/// </summary>
-	[CreateAssetMenu(fileName = "BeamHintDetailsReflectionCache", menuName = "Beamable/Reflection/Assistant/Hint Details Cache", order = 0)]
+#if BEAMABLE_DEVELOPER
+	[CreateAssetMenu(fileName = "BeamHintDetailsReflectionCache", menuName = "Beamable/Reflection/Beam Hints Cache", order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
+#endif
 	public class BeamHintReflectionCache : ReflectionSystemObject
 	{
 		[NonSerialized] private Registry _cache;

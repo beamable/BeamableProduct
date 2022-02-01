@@ -29,6 +29,10 @@ namespace Beamable.Editor.ToolbarExtender
 		private static Texture _hintsTexture;
 		private static Texture _validationTexture;
 
+		private static Action _repaint;
+
+		public static void Repaint() => _repaint();
+		
 		public static void LoadToolbarExtender()
 		{
 			Type toolbarType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.Toolbar");
@@ -42,6 +46,11 @@ namespace Beamable.Editor.ToolbarExtender
 			FieldInfo toolIcons = toolbarType.GetField(fieldName,
 													   BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
 
+			_repaint = () =>
+			{
+				toolbarType.GetMethod("RepaintToolbar", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).Invoke(null, null);
+			};
+			
 #if UNITY_2019_3_OR_NEWER
 			_toolCount = toolIcons != null ? ((int) toolIcons.GetValue(null)) : 8;
 #elif UNITY_2019_1_OR_NEWER
@@ -232,7 +241,7 @@ namespace Beamable.Editor.ToolbarExtender
 
 
 			GUILayout.BeginArea(beamableAssistantButtonRect);
-			if (GUILayout.Button(new GUIContent("  Assistant Window", btnTexture), GUILayout.Width(beamableAssistantEnd - beamableAssistantStart), GUILayout.Height(dropdownHeight)))
+			if (GUILayout.Button(new GUIContent(" Beamable", btnTexture), GUILayout.Width(beamableAssistantEnd - beamableAssistantStart), GUILayout.Height(dropdownHeight)))
 			{
 				// create the menu and add items to it
 				var menu = new GenericMenu();

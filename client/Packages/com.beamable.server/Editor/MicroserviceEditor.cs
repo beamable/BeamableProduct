@@ -67,7 +67,24 @@ namespace Beamable.Server.Editor
 					EditorApplication.delayCall += Initialize;
 					return;
 				}
+				catch (NullReferenceException)
+				{
+					EditorApplication.delayCall += Initialize;
+					return;
+				}
 
+				try
+				{
+					_ = MicroserviceConfiguration.Instance;
+				}
+				// Solves a specific issue on first installation of package ---
+				catch (ModuleConfigurationNotReadyException)
+				{
+					EditorApplication.delayCall += Initialize;
+					return;
+				}
+				
+				
 				var enabled = false;
 				if (ConfigDatabase.HasKey(CONFIG_AUTO_RUN))
 					enabled = ConfigDatabase.GetBool(CONFIG_AUTO_RUN, false);

@@ -41,7 +41,7 @@ namespace Beamable.Stats
 	   fileName = "Stat",
 	   menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE + "/" +
 	   "Stat",
-	   order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
+	   order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_3)]
 	[System.Serializable]
 	public class StatObject : ScriptableObject
 	{

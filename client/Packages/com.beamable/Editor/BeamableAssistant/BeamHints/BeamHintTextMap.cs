@@ -11,7 +11,7 @@ namespace Beamable.Editor.Assistant
 	/// A quick and dirty way of mapping Domains, Sub-Domains and HintIds to specific blobs of text.
 	/// TODO: Replace with in-editor localization system 
 	/// </summary>
-	[CreateAssetMenu(fileName = "BeamHintTextMap", menuName = "Beamable/Assistant/Hints/Hint Text Map", order = 0)]
+	[CreateAssetMenu(fileName = "BeamHintTextMap", menuName = "Beamable/Assistant/Hint Text Map", order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
 	public class BeamHintTextMap : ScriptableObject
 	{
 		public SerializedStringToTextDictionary HintDomainToTitle = new SerializedStringToTextDictionary();

@@ -11,11 +11,13 @@ namespace Beamable.Avatars
 		public Sprite Sprite;
 	}
 
+#if BEAMABLE_DEVELOPER
 	[CreateAssetMenu(
 	   fileName = "Avatar Configuration",
 	   menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
 	   "Avatar Configuration",
 	   order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
+#endif
 	public class AvatarConfiguration : ModuleConfigurationObject
 	{
 		public static AvatarConfiguration Instance => Get<AvatarConfiguration>();
