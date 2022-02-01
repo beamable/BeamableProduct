@@ -68,6 +68,10 @@ namespace Beamable.UI.Buss
 
 		public static void PutAssetReferencesInReferenceList(this BussStyleDescription style, List<Object> assetReferences)
 		{
+			if (style.Properties == null)
+			{
+				style.Properties = new List<BussPropertyProvider>();
+			}
 			foreach (BussPropertyProvider propertyProvider in style.Properties)
 			{
 				var property = propertyProvider.GetProperty();
