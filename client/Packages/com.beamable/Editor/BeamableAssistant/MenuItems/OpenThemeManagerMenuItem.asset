@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1559ff22bf94ad18b515e20fe27614b, type: 3}
   m_Name: OpenThemeManagerMenuItem
   m_EditorClassIdentifier: 
-  Order: 0
-  Text: 
+  Order: 10
+  Text: Open BUSS Theme Manager
