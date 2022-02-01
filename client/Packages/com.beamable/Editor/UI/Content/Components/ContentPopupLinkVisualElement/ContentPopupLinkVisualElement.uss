@@ -15,8 +15,8 @@ ContentPopupLinkVisualElement > TemplateContainer {
 }
 #title {
     min-width: 210px;
-    max-width: 400px;
     align-self: flex-start;
+    overflow: hidden;
 }
 
 .alignRight {
