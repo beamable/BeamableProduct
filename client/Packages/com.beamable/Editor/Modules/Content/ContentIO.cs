@@ -947,7 +947,7 @@ namespace Beamable.Editor.Content
 
 			var api = await EditorAPI.Instance;
 			var allContent = api.ContentIO.FindAll();
-			
+
 			List<ContentObject> contentList = null;
 			if (allContent != null)
 			{
@@ -975,15 +975,15 @@ namespace Beamable.Editor.Content
 			if (objectsToBake.Count != contentList.Count)
 			{
 				bool continueBaking = EditorUtility.DisplayDialog("Local changes",
-				                                             "You have local changes in your content. " +
-				                                             "Do you want to proceed with baking using only the unchanged data?",
-				                                             "Yes", "No");
+															 "You have local changes in your content. " +
+															 "Do you want to proceed with baking using only the unchanged data?",
+															 "Yes", "No");
 				if (!continueBaking)
 				{
 					return;
 				}
 			}
-			
+
 			BakeLog($"Baking {objectsToBake.Count} items");
 
 			var serverManifest = await api.ContentIO.FetchManifest();

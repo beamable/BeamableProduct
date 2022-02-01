@@ -124,13 +124,13 @@ namespace Beamable.Editor.Content.Components
 			var query = EditorContentQuery.Parse(obj);
 			Model.SetFilter(query);
 		}
-		
+
 		public void RefreshPublishDropdownVisibility()
 		{
 			if (_publishDropdownButton?.parent == null) return;
 
 			_publishDropdownButton.parent.EnableInClassList("hidden",
-					                                    !ContentConfiguration.Instance.EnableMultipleContentNamespaces);
+														!ContentConfiguration.Instance.EnableMultipleContentNamespaces);
 		}
 
 		private void CreateNewButton_OnClicked(Rect visualElementBounds)

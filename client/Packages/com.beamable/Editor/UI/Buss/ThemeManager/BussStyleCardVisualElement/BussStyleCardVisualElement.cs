@@ -96,7 +96,7 @@ namespace Beamable.Editor.UI.Components
 			_navigationWindow = navigationWindow;
 			_onUndoRequest = onUndoRequest;
 			_styleSheet.Change += RefreshProperties;
-			
+
 			Refresh();
 		}
 

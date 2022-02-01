@@ -60,10 +60,10 @@ namespace Beamable.Editor.UI.Components
 			{
 				return;
 			}
-			
+
 			List<BussStyleSheet> selectedComponentAllStyleSheets = SelectedComponent.AllStyleSheets;
 			BussStyleSheet firstStyle = selectedComponentAllStyleSheets[selectedComponentAllStyleSheets.Count - 1];
-			
+
 			StyleSheets.Remove(firstStyle);
 			StyleSheets.Insert(0, firstStyle);
 		}
