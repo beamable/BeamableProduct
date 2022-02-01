@@ -87,7 +87,9 @@ namespace Beamable.Editor.Assistant
 			RefreshDisplayingHints(hints, SortedDomainsInStorage);
 			
 			// If any of the new hints was not contained in the previously displayed hints, we return true as there are new hints.
-			return DisplayingHints.Except(previouslyDisplayingHints).Any();
+			var newHintsAppeared = DisplayingHints.Except(previouslyDisplayingHints).Any();
+			var oldHintsDisappeared = DisplayingHints.Intersect(previouslyDisplayingHints).Count() != previouslyDisplayingHints.Length;
+			return newHintsAppeared || oldHintsDisappeared;
 		}
 
 		/// <summary>

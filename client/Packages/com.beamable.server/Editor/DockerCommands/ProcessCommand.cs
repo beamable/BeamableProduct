@@ -6,6 +6,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Beamable.Common;
+using Beamable.Editor.Microservice.UI;
 using Beamable.Editor.ToolbarExtender;
 using UnityEditor;
 using UnityEngine;
@@ -262,13 +263,13 @@ namespace Beamable.Server.Editor.DockerCommands
 			DockerNotInstalled = false;
 		}
 
-		private static Task DockerCheckThread;
+		private static Task DockerCheckTask;
 		public static void CheckDockerAppRunning()
 		{
-			if (DockerCheckThread == null || DockerCheckThread.IsCompleted)
+			if (DockerCheckTask == null || DockerCheckTask.IsCompleted)
 			{
 				bool dockerNotRunning = DockerNotRunning;
-				DockerCheckThread = new Task(() =>
+				DockerCheckTask = new Task(() =>
 				{
 					var procList = Process.GetProcesses();
 					for (int i = 0; i < procList.Length; i++)
@@ -293,8 +294,8 @@ namespace Beamable.Server.Editor.DockerCommands
 
 					dockerNotRunning = true;
 				});
-				DockerCheckThread.Start();
-				DockerCheckThread.ToPromise().Then(_ =>
+				DockerCheckTask.Start();
+				DockerCheckTask.ToPromise().Then(_ =>
 				{
 					DockerNotRunning = dockerNotRunning;
 				});
@@ -317,9 +318,16 @@ namespace Beamable.Server.Editor.DockerCommands
 
 			var dockerProcess = Process.Start(new ProcessStartInfo(dockerDesktopPath));
 			dockerProcess.EnableRaisingEvents = true;
-			dockerProcess.Exited += (sender, args) =>
+			dockerProcess.Exited += async (sender, args) =>
 			{
-				Debug.Log("Docker Desktop was closed!");
+				await DockerCheckTask;
+
+				EditorApplication.delayCall += () =>
+				{
+					Debug.Log("Docker Desktop was closed!");
+					DockerNotRunning = true;
+					MicroserviceWindow.Instance.RefreshWindow(true);
+				};
 			};
 
 			return true;
