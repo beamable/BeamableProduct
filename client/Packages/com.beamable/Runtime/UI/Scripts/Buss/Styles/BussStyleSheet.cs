@@ -20,6 +20,11 @@ namespace Beamable.UI.Buss
 
 		public List<BussStyleRule> Styles => _styles;
 
+		[SerializeField]
+		private bool _isReadOnly;
+
+		public bool IsReadOnly => _isReadOnly;
+
 		private void OnValidate()
 		{
 			TriggerChange();
@@ -149,6 +154,7 @@ namespace Beamable.UI.Buss
 		public string Key => key;
 
 		public bool IsVariable => BussStyleSheetUtility.IsValidVariableName(Key);
+		public bool HasVariableReference => GetProperty() is VariableProperty;
 
 		public static BussPropertyProvider Create(string key, IBussProperty property)
 		{
