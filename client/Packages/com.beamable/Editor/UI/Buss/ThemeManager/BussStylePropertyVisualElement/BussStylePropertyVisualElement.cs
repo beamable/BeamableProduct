@@ -166,7 +166,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			var styleSheet = _externalVariableSource != null ? _externalVariableSource : _styleSheet;
 			var isReadOnly = styleSheet.IsReadOnly;
-			
+
 			_labelComponent.SetEnabled(!isReadOnly);
 			_propertyVisualElement.SetEnabled(!isReadOnly);
 
