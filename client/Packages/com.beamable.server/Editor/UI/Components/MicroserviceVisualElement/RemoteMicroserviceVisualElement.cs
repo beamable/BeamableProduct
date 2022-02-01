@@ -107,7 +107,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void UpdateLocalStatus()
 		{
 			base.UpdateLocalStatus();
-			UpdateLocalStatusIcon(false,false);
+			UpdateLocalStatusIcon(false, false);
 		}
 	}
 }
