@@ -20,6 +20,8 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":0.9716981053352356,"g":0.596721887588501,"b":0.07791920006275177,"a":1.0}}'
     _selector: '#leaderboardsBackground'
+    _editMode: 0
+    _showAllMode: 0
   - _properties:
     - key: backgroundColor
       property:
@@ -52,6 +54,8 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":2.0}'
     _selector: '#leaderboardMainFrame'
+    _editMode: 0
+    _showAllMode: 0
   - _properties:
     - key: backgroundColor
       property:
@@ -99,6 +103,8 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":0.650943398475647,"g":0.4057691693305969,"b":0.13203097879886628,"a":0.8156862854957581}}'
     _selector: '#leaderboardHeader'
+    _editMode: 0
+    _showAllMode: 0
   - _properties:
     - key: backgroundColor
       property:
@@ -132,8 +138,8 @@ MonoBehaviour:
         json: '{"_floatValue":4.0}'
     - key: textAlignment
       property:
-        type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
-          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+        type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
         json: '{"Enum":4098}'
     - key: fontColor
       property:
@@ -146,5 +152,8 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":22.0}'
     _selector: '#leaderboardHeaderLabel'
+    _editMode: 0
+    _showAllMode: 0
   _assetReferences:
   - {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
+  _isReadOnly: 1

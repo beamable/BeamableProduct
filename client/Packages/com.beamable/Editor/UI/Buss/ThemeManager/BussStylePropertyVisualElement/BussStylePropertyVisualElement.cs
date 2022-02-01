@@ -23,6 +23,7 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleSheet _styleSheet;
 		private BussStyleRule _styleRule;
 		private BussPropertyProvider _propertyProvider;
+		private BussStyleSheet _externalVariableSource;
 
 		public BussPropertyProvider PropertyProvider => _propertyProvider;
 		public string PropertyKey => PropertyProvider.Key;
@@ -75,6 +76,7 @@ namespace Beamable.Editor.UI.Components
 
 			SetupEditableField();
 			SetupVariableConnection();
+			CheckIfIsReadOnly();
 		}
 
 		public void Setup(BussStyleSheet styleSheet,
@@ -97,7 +99,7 @@ namespace Beamable.Editor.UI.Components
 			if (_propertyVisualElement != null)
 			{
 				if (_propertyVisualElement.BaseProperty ==
-					_propertyProvider.GetProperty().GetEndProperty(_variableDatabase, _styleRule))
+					_propertyProvider.GetProperty().GetEndProperty(_variableDatabase, _styleRule, out _externalVariableSource))
 				{
 					_propertyVisualElement.OnPropertyChangedExternally();
 					return;
@@ -107,7 +109,7 @@ namespace Beamable.Editor.UI.Components
 				_propertyVisualElement.Destroy();
 			}
 
-			_propertyVisualElement = _propertyProvider.GetVisualElement(_variableDatabase, _styleRule, baseType);
+			_propertyVisualElement = _propertyProvider.GetVisualElement(_variableDatabase, _styleRule, out _externalVariableSource, baseType);
 
 			if (_propertyVisualElement != null)
 			{
@@ -158,6 +160,20 @@ namespace Beamable.Editor.UI.Components
 			_variableConnection.OnConnectionChange -= Refresh;
 			_variableConnection.Setup(_styleSheet, _propertyProvider, _variableDatabase);
 			_variableConnection.OnConnectionChange += Refresh;
+		}
+
+		private void CheckIfIsReadOnly()
+		{
+			var styleSheet = _externalVariableSource != null ? _externalVariableSource : _styleSheet;
+			var isReadOnly = styleSheet.IsReadOnly;
+
+			_labelComponent.SetEnabled(!isReadOnly);
+			_propertyVisualElement.SetEnabled(!isReadOnly);
+
+			if (_variableConnection != null)
+			{
+				_variableConnection.SetEnabled(!_styleSheet.IsReadOnly);
+			}
 		}
 	}
 }

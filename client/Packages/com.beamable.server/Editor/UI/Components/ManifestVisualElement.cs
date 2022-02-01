@@ -82,10 +82,10 @@ namespace Beamable.Server.Editor.UI.Components
 
 	public class ManifestModel
 	{
-		public Dictionary<string, ServiceReference> ServerManifest;
+		public Dictionary<string, ServiceReference> ServerManifest = new Dictionary<string, ServiceReference>();
 
-		public Dictionary<string, ManifestEntryModel> Services;
-		public Dictionary<string, StorageEntryModel> Storages;
+		public Dictionary<string, ManifestEntryModel> Services = new Dictionary<string, ManifestEntryModel>();
+		public Dictionary<string, StorageEntryModel> Storages = new Dictionary<string, StorageEntryModel>();
 		public string Comment;
 	}
 
