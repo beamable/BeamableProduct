@@ -1,13 +1,13 @@
+using Beamable.Common;
 using Beamable.Common.Assistant;
+using Beamable.Editor.Microservice.UI;
+using Beamable.Editor.ToolbarExtender;
 using Beamable.Platform.SDK;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Beamable.Common;
-using Beamable.Editor.Microservice.UI;
-using Beamable.Editor.ToolbarExtender;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -279,7 +279,7 @@ namespace Beamable.Server.Editor.DockerCommands
 #if UNITY_EDITOR_WIN
 							const string procName = "docker desktop";
 #else
-					const string procName = "docker";
+							const string procName = "docker";
 #endif
 							if (procList[i].ProcessName.ToLower().Contains(procName))
 							{

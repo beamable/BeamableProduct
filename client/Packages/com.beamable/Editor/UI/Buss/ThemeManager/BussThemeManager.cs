@@ -133,7 +133,7 @@ namespace Beamable.Editor.UI.Buss
 
 				return;
 			}
-			
+
 			foreach (BussStyleCardVisualElement styleCardVisualElement in _styleCardsVisualElements)
 			{
 				bool isMatch =
@@ -146,7 +146,7 @@ namespace Beamable.Editor.UI.Buss
 		private void RefreshStyleSheets()
 		{
 			Profiler.BeginSample("BUSS - refreshing style sheets");
-			
+
 			ClearCurrentStyleSheet();
 
 			_variableDatabase.RemoveAllStyleSheets();
@@ -156,7 +156,7 @@ namespace Beamable.Editor.UI.Buss
 				_variableDatabase.AddStyleSheet(styleSheet);
 				styleSheet.Change += OnStyleSheetExternallyChanged;
 			}
-			
+
 			Profiler.EndSample();
 
 			RefreshStyleCards();
@@ -165,7 +165,7 @@ namespace Beamable.Editor.UI.Buss
 		private void RefreshStyleCards()
 		{
 			Profiler.BeginSample("BUSS - refreshing style cards");
-			
+
 			UndoSystem<BussStyleRule>.Update();
 
 			BussStyleRule[] rulesToDraw = _navigationWindow.StyleSheets.SelectMany(ss => ss.Styles).ToArray();
@@ -199,9 +199,9 @@ namespace Beamable.Editor.UI.Buss
 					}
 				}
 			}
-			
+
 			Profiler.EndSample();
-			
+
 			FilterCards();
 		}
 
@@ -212,7 +212,7 @@ namespace Beamable.Editor.UI.Buss
 			_addStyleButton.Add(new Label("Add Style"));
 			_addStyleButton.UnregisterCallback<MouseDownEvent>(_ => OpenAddSelectorWindow());
 			_addStyleButton.RegisterCallback<MouseDownEvent>(_ => OpenAddSelectorWindow());
-			
+
 			_addStyleButton.RegisterCallback<MouseEnterEvent>(_ => CheckEnableState());
 			CheckEnableState();
 
@@ -233,7 +233,7 @@ namespace Beamable.Editor.UI.Buss
 		private void CheckEnableState()
 		{
 			if (_addStyleButton == null) return;
-			
+
 			_addStyleButton.tooltip = string.Empty;
 			List<BussStyleSheet> styleSheets = Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[]
 			{
@@ -298,7 +298,7 @@ namespace Beamable.Editor.UI.Buss
 		private void OnStyleSheetExternallyChanged()
 		{
 			Profiler.BeginSample("BUSS - callback on style sheet change");
-			
+
 			if (_inStyleSheetChangedLoop) return;
 
 			_inStyleSheetChangedLoop = true;
@@ -308,7 +308,7 @@ namespace Beamable.Editor.UI.Buss
 				_variableDatabase.ReconsiderAllStyleSheets();
 
 				if (_variableDatabase.CrushingChangeMarker || // if we did complex change and we need to refresh all styles
-				    _variableDatabase.DirtyProperties.Count == 0) // or if we did no changes (the source of change is unknown)
+					_variableDatabase.DirtyProperties.Count == 0) // or if we did no changes (the source of change is unknown)
 				{
 					RefreshStyleCards();
 				}
@@ -331,7 +331,7 @@ namespace Beamable.Editor.UI.Buss
 			}
 
 			_inStyleSheetChangedLoop = false;
-			
+
 			Profiler.EndSample();
 		}
 

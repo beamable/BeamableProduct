@@ -1,4 +1,5 @@
 using Beamable.Editor;
+using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.DockerCommands;
 using ICSharpCode.SharpZipLib.Tar;
 using System;
@@ -6,7 +7,6 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Beamable.Editor.UI.Model;
 using UnityEditor;
 using UnityEngine;
 

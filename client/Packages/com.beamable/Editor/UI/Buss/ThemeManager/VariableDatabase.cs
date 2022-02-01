@@ -8,7 +8,7 @@ namespace Beamable.UI.Buss
 	{
 		private List<BussStyleSheet> _styleSheets = new List<BussStyleSheet>();
 		private Dictionary<string, VariableData> _variables = new Dictionary<string, VariableData>();
-		
+
 		public bool CrushingChangeMarker { get; private set; }
 		public HashSet<PropertyReference> DirtyProperties { get; } = new HashSet<PropertyReference>();
 
@@ -94,8 +94,8 @@ namespace Beamable.UI.Buss
 		public void SetCrushingChange() => CrushingChangeMarker = true;
 
 		public void SetPropertyDirty(BussStyleSheet styleSheet,
-		                             BussStyleRule styleRule,
-		                             BussPropertyProvider propertyProvider)
+									 BussStyleRule styleRule,
+									 BussPropertyProvider propertyProvider)
 		{
 			DirtyProperties.Add(new PropertyReference(styleSheet, styleRule, propertyProvider));
 		}
