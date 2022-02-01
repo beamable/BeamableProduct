@@ -3,7 +3,9 @@ using UnityEngine;
 
 namespace Beamable.Console
 {
+#if BEAMABLE_DEVELOPER
 	[CreateAssetMenu]
+#endif
 	public class ConsoleConfiguration : ModuleConfigurationObject
 	{
 		public static ConsoleConfiguration Instance => Get<ConsoleConfiguration>();

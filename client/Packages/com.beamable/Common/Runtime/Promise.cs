@@ -914,7 +914,7 @@ namespace Beamable.Common
 			return result;
 		}
 
-#if !UNITY_WEBGL // webgl does not support the system.threading library
+#if !UNITY_WEBGL || UNITY_EDITOR // webgl does not support the system.threading library
 		/// <summary>
 		/// Convert <see cref="Task"/> to <see cref="Promise{Unit}"/>.
 		/// </summary>

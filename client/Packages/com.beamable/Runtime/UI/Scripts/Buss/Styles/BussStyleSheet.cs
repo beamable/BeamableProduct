@@ -8,7 +8,7 @@ using Object = UnityEngine.Object;
 
 namespace Beamable.UI.Buss
 {
-	[CreateAssetMenu(fileName = "BUSSStyleConfig", menuName = "Beamable/Buss/Create BUSS Style", order = 0)]
+	[CreateAssetMenu(fileName = "BUSSStyleConfig", menuName = "Beamable/BUSS Style", order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
 	public class BussStyleSheet : ScriptableObject, ISerializationCallbackReceiver
 	{
 		public event Action Change;
