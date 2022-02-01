@@ -73,6 +73,17 @@ namespace Beamable.Server.Editor
 					return;
 				}
 
+				try
+				{
+					_ = MicroserviceConfiguration.Instance;
+				}
+				// Solves a specific issue on first installation of package ---
+				catch (ModuleConfigurationNotReadyException)
+				{
+					EditorApplication.delayCall += Initialize;
+					return;
+				}
+				
 				
 				var enabled = false;
 				if (ConfigDatabase.HasKey(CONFIG_AUTO_RUN))
