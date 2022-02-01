@@ -42,6 +42,8 @@ namespace Beamable.Editor.UI.Components
 
 		public BussStyleRule StyleRule => _styleRule;
 
+		public event Action OnEnterEditMode;
+
 		public BussStyleCardVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}")
 		{ }
@@ -233,7 +235,12 @@ namespace Beamable.Editor.UI.Components
 
 		private void EditButtonClicked(MouseDownEvent evt)
 		{
-			StyleRule.EditMode = !StyleRule.EditMode;
+			SetEditMode(!StyleRule.EditMode);
+		}
+
+		public void SetEditMode(bool value)
+		{
+			StyleRule.EditMode = value;
 
 			if (!StyleRule.EditMode)
 			{
@@ -241,6 +248,10 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			Refresh();
+			if (value)
+			{
+				OnEnterEditMode?.Invoke();
+			}
 		}
 
 		private void ShowAllButtonClicked(MouseDownEvent evt)
@@ -265,6 +276,8 @@ namespace Beamable.Editor.UI.Components
 			_selectorLabelComponent = new BussSelectorLabelVisualElement();
 			_selectorLabelComponent.Setup(StyleRule, _styleSheet);
 			_selectorLabelParent.Add(_selectorLabelComponent);
+
+			_selectorLabelComponent.OnChangeSubmit += () => SetEditMode(false);
 		}
 
 		public void RefreshProperties()

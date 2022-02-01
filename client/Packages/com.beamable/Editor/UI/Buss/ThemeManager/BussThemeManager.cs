@@ -126,7 +126,7 @@ namespace Beamable.Editor.UI.Buss
 			{
 				bool isMatch =
 					styleCardVisualElement.StyleRule.Selector?.CheckMatch(_navigationWindow.SelectedComponent) ?? false;
-				styleCardVisualElement.SetHidden(_filterMode && !isMatch);
+				styleCardVisualElement.SetHidden(_filterMode && !isMatch && !styleCardVisualElement.StyleRule.EditMode);
 			}
 		}
 
@@ -180,6 +180,8 @@ namespace Beamable.Editor.UI.Buss
 					}
 				}
 			}
+			
+			FilterCards();
 		}
 
 		private void AddSelectorButton()
@@ -245,6 +247,18 @@ namespace Beamable.Editor.UI.Buss
 			{
 				_addStyleButton.PlaceInFront(styleCard);
 			}
+
+			styleCard.OnEnterEditMode += () =>
+			{
+				foreach (BussStyleCardVisualElement other in _styleCardsVisualElements)
+				{
+					if (other != styleCard && other.StyleRule.EditMode)
+					{
+						other.SetEditMode(false);
+					}
+				}
+				FilterCards();
+			};
 		}
 
 		private void RemoveStyleCard(BussStyleCardVisualElement card)
