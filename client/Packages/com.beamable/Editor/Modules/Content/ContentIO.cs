@@ -993,6 +993,7 @@ namespace Beamable.Editor.Content
 			if (Bake(objectsToBake, serverManifest, compress, out int objectsBaked))
 			{
 				BakeLog($"Baked {objectsBaked} content objects to '{ContentConstants.BakedContentFilePath + ".bytes"}'");
+				AssetDatabase.Refresh();
 			}
 			else
 			{
