@@ -278,10 +278,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 			ScrollToWithoutNotify(1f); // always jump to the end.
 		}
 
-		void ScrollToWithoutNotify(float percentValue)
+		void ScrollToWithoutNotify(float normalizedValue)
 		{
 			_scrollBlocker++;
-			Model.Logs.ScrollValue = percentValue;
+			Model.Logs.ScrollValue = normalizedValue;
 			UpdateScroll();
 		}
 
