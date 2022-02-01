@@ -95,6 +95,7 @@ namespace Beamable.Editor.UI.Buss
 			_filterToggle.OnValueChanged -= OnFilterToggleClicked;
 			_filterToggle.OnValueChanged += OnFilterToggleClicked;
 			_filterToggle.Refresh();
+			_filterToggle.SetWithoutNotify(_filterMode);
 			scrollView.Add(_filterToggle);
 
 			_stylesGroup = new VisualElement();
@@ -124,7 +125,7 @@ namespace Beamable.Editor.UI.Buss
 			foreach (BussStyleCardVisualElement styleCardVisualElement in _styleCardsVisualElements)
 			{
 				bool isMatch =
-					styleCardVisualElement.StyleRule.Selector.CheckMatch(_navigationWindow.SelectedComponent);
+					styleCardVisualElement.StyleRule.Selector?.CheckMatch(_navigationWindow.SelectedComponent) ?? false;
 				styleCardVisualElement.SetHidden(_filterMode && !isMatch);
 			}
 		}
