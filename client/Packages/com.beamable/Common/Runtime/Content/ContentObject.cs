@@ -85,7 +85,7 @@ namespace Beamable.Common.Content
       internal const string TooltipDurationMinutes1 = "The duration in minutes";
       internal const string TooltipDurationPurchaseLimit1 = "The duration purchase limit";
       internal const string TooltipDurationSeconds1 = "The duration in seconds";
-      internal const string TooltipEndDate1 = "The end date";
+      internal const string TooltipEndDate1 = "The end date, defined as UTC";
       internal const string TooltipEndRank1 = "The end rank";
       internal const string TooltipEventItemObtain1 = "The event item obtain";
       internal const string TooltipEventRule1 = "The event rule";
@@ -138,7 +138,7 @@ namespace Beamable.Common.Content
       internal const string TooltipStage1 = "The stage";
       internal const string TooltipStageMax1 = "The stage maximum";
       internal const string TooltipStageMin1 = "The stage minimum";
-      internal const string TooltipStartDate1 = "The start date";
+      internal const string TooltipStartDate1 = "The start date, defined as UTC";
       internal const string TooltipStartRank1 = "The start rank";
       internal const string TooltipStat1 = "The stat";
       internal const string TooltipStatus = "The status";
