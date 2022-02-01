@@ -13,22 +13,24 @@ namespace Beamable.Editor.UI.Components
 	{
 		private TextField _editableLabel;
 		private BussStyleRule _styleRule;
+		private BussStyleSheet _styleSheet;
 
 		public BussSelectorLabelVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStyleCardVisualElement/BussSelectorLabelVisualElement/BussSelectorLabelVisualElement.uss")
 		{ }
 
-		public void Setup(BussStyleRule styleRule)
+		public void Setup(BussStyleRule styleRule, BussStyleSheet styleSheet)
 		{
 			base.Init();
 
 			_styleRule = styleRule;
+			_styleSheet = styleSheet;
 
 			if (!_styleRule.EditMode)
 			{
 				TextElement textLabel = new TextElement();
 				textLabel.name = "styleId";
-				textLabel.text = styleRule.SelectorString;
+				textLabel.text = $"{styleRule.SelectorString} ({styleSheet.name})";
 				Root.Add(textLabel);
 			}
 			else

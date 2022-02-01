@@ -263,7 +263,7 @@ namespace Beamable.Editor.UI.Components
 			_selectorLabelParent.Clear();
 
 			_selectorLabelComponent = new BussSelectorLabelVisualElement();
-			_selectorLabelComponent.Setup(StyleRule);
+			_selectorLabelComponent.Setup(StyleRule, _styleSheet);
 			_selectorLabelParent.Add(_selectorLabelComponent);
 		}
 
