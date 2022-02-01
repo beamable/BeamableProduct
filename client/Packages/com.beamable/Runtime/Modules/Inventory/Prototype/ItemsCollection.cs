@@ -33,7 +33,7 @@ namespace Beamable.Modules.Inventory
 			}
 			else
 			{
-				Debug.Log("Problem with an API access...");
+				Debug.LogWarning("Problem with an API access...");
 			}
 		}
 

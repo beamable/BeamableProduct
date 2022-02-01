@@ -105,7 +105,7 @@ namespace Beamable.Server.Editor
 
 		public static void OpenMongoExplorer(StorageObjectDescriptor descriptor)
 		{
-			Debug.Log("opening tool");
+			Debug.Log("Opening tool");
 			var work = OpenLocalMongoTool(descriptor);
 			work.Then(success =>
 			{
@@ -483,13 +483,13 @@ namespace Beamable.Server.Editor
 			var isStorageRunning = await storageCheck.Start(null);
 			if (isStorageRunning)
 			{
-				Debug.Log("stopping mongo");
+				Debug.Log("Stopping mongo");
 
 				var stopComm = new StopImageCommand(storage);
 				await stopComm.Start(null);
 			}
 
-			Debug.Log("deleting volumes");
+			Debug.Log("Deleting volumes");
 
 			var deleteVolumes = new DeleteVolumeCommand(storage);
 			var results = await deleteVolumes.Start(null);
@@ -505,7 +505,7 @@ namespace Beamable.Server.Editor
 
 			if (isStorageRunning)
 			{
-				Debug.Log("restarting mongo");
+				Debug.Log("Restarting mongo");
 
 				var restart = new RunStorageCommand(storage);
 				restart.Start();

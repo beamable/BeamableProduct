@@ -32,7 +32,7 @@ namespace Beamable.Samples.SampleProjectBase
 			}
 			else
 			{
-				//Debug.LogError("SelectReadme() No results found for Readme.");
+				Debug.LogError("SelectReadme() No results found for Readme.");
 			}
 
 			return null;

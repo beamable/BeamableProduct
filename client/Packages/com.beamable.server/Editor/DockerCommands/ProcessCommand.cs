@@ -294,7 +294,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 			if (!File.Exists(dockerDesktopPath))
 			{
-				Debug.Log("Failed to run Docker Desktop as it is not installed. We highly recommend the use of Docker Desktop for non-Docker-savvy users.");
+				Debug.LogError("Failed to run Docker Desktop as it is not installed. We highly recommend the use of Docker Desktop for non-Docker-savvy users.");
 				return false;
 			}
 

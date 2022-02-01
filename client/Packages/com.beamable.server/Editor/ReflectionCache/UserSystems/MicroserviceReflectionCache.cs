@@ -647,7 +647,6 @@ namespace Beamable.Server.Editor
 					var nextChecksum = Checksum(tempFile);
 					var requiresRebuild = !oldChecksum.Equals(nextChecksum);
 
-					//         Debug.Log($"Considering rebuilding {key}. {requiresRebuild} Old=[{oldChecksum}] Next=[{nextChecksum}]");
 					if (requiresRebuild)
 					{
 						Debug.Log($"Generating client for {service.Name}");
