@@ -6,6 +6,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Beamable.Editor.UI.Model;
 using UnityEditor;
 using UnityEngine;
 
@@ -42,8 +43,12 @@ namespace Beamable.Server.Editor.Uploader
 		public void ReportUploadProgress(string name, long amount, long total)
 		{
 			var progress = total == 0 ? 1 : (float)amount / total;
-			Debug.Log($"PROGRESS HAPPENED. name=[{name}] amount=[{amount}] total=[{total}]");
-			//ProgressPanel.ReportLayerProgress(name, progress);
+			MicroservicesDataModel.Instance.AddLogMessage(name, new LogMessage
+			{
+				Level = LogLevel.INFO,
+				Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
+				Message = $"Uploading Service. service=[{name}] amount=[{amount}] total=[{total}]"
+			});
 			onProgress?.Invoke(progress, amount, total);
 		}
 

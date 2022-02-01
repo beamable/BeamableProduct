@@ -174,7 +174,7 @@ namespace Beamable.Editor.Microservice.UI
 			_actionBarVisualElement.OnCreateNewClicked += _microserviceContentVisualElement
 				.DisplayCreatingNewService;
 
-			_actionBarVisualElement.OnPublishClicked += () => PublishWindow.ShowPublishWindow();
+			_actionBarVisualElement.OnPublishClicked += () => PublishWindow.ShowPublishWindow(this);
 
 			_actionBarVisualElement.OnRefreshButtonClicked += () =>
 			{
