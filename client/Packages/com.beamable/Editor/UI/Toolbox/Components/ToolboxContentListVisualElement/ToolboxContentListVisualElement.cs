@@ -24,7 +24,8 @@ namespace Beamable.Editor.Toolbox.Components
 		{
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
 			{
-				name = "custom-text", defaultValue = "nada"
+				name = "custom-text",
+				defaultValue = "nada"
 			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -73,7 +74,7 @@ namespace Beamable.Editor.Toolbox.Components
 
 			extraElements =
 				Mathf.Min(extraElements,
-				          totalElements); // a sane upper limit, so we don't accidently create thousands of elements on page load.
+						  totalElements); // a sane upper limit, so we don't accidently create thousands of elements on page load.
 			if (ExtraElementCount == extraElements) return;
 			ExtraElementCount = extraElements;
 
