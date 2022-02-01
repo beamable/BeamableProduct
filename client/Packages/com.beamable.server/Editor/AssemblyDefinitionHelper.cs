@@ -58,11 +58,11 @@ namespace Beamable.Server.Editor
 			{
 				if (res)
 				{
-					Debug.Log("Finished restoring");
+					Debug.Log($"Finished {descriptor.Name} restoring");
 				}
 				else
 				{
-					Debug.LogError("Failed.");
+					Debug.LogError($"Failed to restore {descriptor.Name} database");
 				}
 			});
 		}
@@ -81,7 +81,7 @@ namespace Beamable.Server.Editor
 				}
 				else
 				{
-					Debug.Log($"Failed to restore {descriptor.Name} database.");
+					Debug.Log($"Failed to snapshot {descriptor.Name} database.");
 				}
 			});
 		}
