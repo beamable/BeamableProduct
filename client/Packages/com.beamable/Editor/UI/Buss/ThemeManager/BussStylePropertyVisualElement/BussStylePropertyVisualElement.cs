@@ -170,14 +170,14 @@ namespace Beamable.Editor.UI.Components
 		private void CheckIfIsReadOnly()
 		{
 			var styleSheet = _externalVariableSource != null ? _externalVariableSource : _styleSheet;
-			var isReadOnly = styleSheet.IsIsReadOnly;
+			var isReadOnly = styleSheet.IsReadOnly;
 			
 			_labelComponent.SetEnabled(!isReadOnly);
 			_propertyVisualElement.SetEnabled(!isReadOnly);
 
 			if (_variableConnection != null)
 			{
-				_variableConnection.SetEnabled(!_styleSheet.IsIsReadOnly);
+				_variableConnection.SetEnabled(!_styleSheet.IsReadOnly);
 			}
 		}
 	}

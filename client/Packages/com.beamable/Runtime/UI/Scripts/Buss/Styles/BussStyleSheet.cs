@@ -23,7 +23,7 @@ namespace Beamable.UI.Buss
 		[SerializeField]
 		private bool _isReadOnly;
 
-		public bool IsIsReadOnly => _isReadOnly;
+		public bool IsReadOnly => _isReadOnly;
 
 		private void OnValidate()
 		{
