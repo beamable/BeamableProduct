@@ -49,7 +49,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_mongoStorageModel.ServiceBuilder.OnIsRunningChanged -= OnIsRunningChanged;
 			_mongoStorageModel.ServiceBuilder.OnIsRunningChanged += OnIsRunningChanged;
 		}
-		
+
 		protected override void UpdateLocalStatus()
 		{
 			base.UpdateLocalStatus();

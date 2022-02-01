@@ -180,7 +180,7 @@ namespace Beamable.Editor.UI.Buss
 					}
 				}
 			}
-			
+
 			FilterCards();
 		}
 
