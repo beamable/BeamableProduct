@@ -265,7 +265,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		private static Task DockerCheckThread;
 		public static void CheckDockerAppRunning()
 		{
-			if (DockerCheckThread == null || !DockerCheckThread.IsCompleted)
+			if (DockerCheckThread == null || DockerCheckThread.IsCompleted)
 			{
 				bool dockerNotRunning = DockerNotRunning;
 				DockerCheckThread = new Task(() =>
