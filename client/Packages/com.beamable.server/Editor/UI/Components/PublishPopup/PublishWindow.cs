@@ -1,6 +1,6 @@
 using System;
 using Beamable.Common;
-using Beamable.Editor.UI.Buss.Components;
+using Beamable.Editor.UI.Components;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI;
