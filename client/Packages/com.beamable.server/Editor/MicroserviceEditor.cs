@@ -64,6 +64,7 @@ namespace Beamable.Server.Editor
 				}
 				catch (InvalidOperationException)
 				{
+					// Trigger reimport to solve first import sadness...
 					EditorApplication.delayCall += Initialize;
 					return;
 				}

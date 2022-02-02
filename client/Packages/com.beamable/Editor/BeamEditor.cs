@@ -192,6 +192,16 @@ namespace Beamable
 
 			// Initialize toolbar
 			BeamableToolbarExtender.LoadToolbarExtender();
+
+			// Attempt to solve first import issue 
+			AssetDatabase.importPackageCompleted += name =>
+			{
+				if (name.Contains("com.beamable.server"))
+				{
+					AssetDatabase.ImportAsset("Packages/com.beamable.server/Editor/ReflectionCache/UserSystems/MicroserviceReflectionCache.asset", ImportAssetOptions.ForceUpdate);
+					Debug.Log("Re-importing Microservice Reflection Cache so the reflection cache gets it.");
+				}
+			};
 		}
 
 		public static T GetReflectionSystem<T>() where T : IReflectionSystem => EditorReflectionCache.GetFirstSystemOfType<T>();
