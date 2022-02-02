@@ -51,7 +51,7 @@ namespace Beamable
 		static void Initialize()
 		{
 			if (IsInitialized) return;
-			
+
 			// Attempts to load all Module Configurations --- If they fail, we delay BeamEditor initialization until they don't fail.
 			// The ONLY fail case is:
 			//   - On first import or "re-import all", Resources and AssetDatabase don't know about the existence of these instances when this code runs for a couple of frames.
@@ -193,7 +193,7 @@ namespace Beamable
 			// Initialize toolbar
 			BeamableToolbarExtender.LoadToolbarExtender();
 
-			
+
 		}
 
 		public static T GetReflectionSystem<T>() where T : IReflectionSystem => EditorReflectionCache.GetFirstSystemOfType<T>();
