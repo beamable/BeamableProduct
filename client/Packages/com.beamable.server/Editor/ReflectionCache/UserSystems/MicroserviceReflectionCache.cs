@@ -398,7 +398,7 @@ namespace Beamable.Server.Editor
 								Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
 								Message = string.Format(BeamableLogConstants.ContainerAlreadyUploadedMessage, descriptor.Name)
 							});
-              
+
 							onServiceDeployed?.Invoke(descriptor);
 							OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Published);
 							continue;
@@ -473,8 +473,8 @@ namespace Beamable.Server.Editor
 
 				await client.Deploy(new ServiceManifest { comments = model.Comment, manifest = manifest, storageReference = storages });
 				OnDeploySuccess?.Invoke(model, descriptorsCount);
-				
-        logger(new LogMessage
+
+				logger(new LogMessage
 				{
 					Level = LogLevel.INFO,
 					Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
