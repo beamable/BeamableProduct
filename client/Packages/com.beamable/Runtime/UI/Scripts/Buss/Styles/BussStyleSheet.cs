@@ -20,8 +20,9 @@ namespace Beamable.UI.Buss
 
 		public List<BussStyleRule> Styles => _styles;
 
-		[SerializeField]
-		private bool _isReadOnly;
+#pragma warning disable CS0649
+		[SerializeField] private bool _isReadOnly;
+#pragma warning restore CS0649
 
 		public bool IsReadOnly => _isReadOnly;
 
