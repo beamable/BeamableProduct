@@ -15,10 +15,10 @@ using UnityEngine.Experimental.UIElements;
 
 namespace Beamable.Editor.ToolbarExtender
 {
-    public static class BeamableToolbarCallbacks
-    {
-        static Type m_toolbarType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.Toolbar");
-        static Type m_guiViewType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.GUIView");
+	public static class BeamableToolbarCallbacks
+	{
+		static Type m_toolbarType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.Toolbar");
+		static Type m_guiViewType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.GUIView");
 #if UNITY_2020_1_OR_NEWER
         static Type m_iWindowBackendType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.IWindowBackend");
 
@@ -31,35 +31,35 @@ namespace Beamable.Editor.ToolbarExtender
 		static PropertyInfo m_viewVisualTree = m_guiViewType.GetProperty("visualTree",
 			BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 #endif
-        static FieldInfo m_imguiContainerOnGui = typeof(IMGUIContainer).GetField("m_OnGUIHandler",
-            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+		static FieldInfo m_imguiContainerOnGui = typeof(IMGUIContainer).GetField("m_OnGUIHandler",
+			BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 
-        static ScriptableObject m_currentToolbar;
+		static ScriptableObject m_currentToolbar;
 
-        /// <summary>
-        /// Callback for toolbar OnGUI method.
-        /// </summary>
-        public static Action OnToolbarGUI;
+		/// <summary>
+		/// Callback for toolbar OnGUI method.
+		/// </summary>
+		public static Action OnToolbarGUI;
 
-        public static Action OnToolbarGUILeft;
-        public static Action OnToolbarGUIRight;
+		public static Action OnToolbarGUILeft;
+		public static Action OnToolbarGUIRight;
 
-        static BeamableToolbarCallbacks()
-        {
-            EditorApplication.update -= OnUpdate;
-            EditorApplication.update += OnUpdate;
-        }
+		static BeamableToolbarCallbacks()
+		{
+			EditorApplication.update -= OnUpdate;
+			EditorApplication.update += OnUpdate;
+		}
 
-        static void OnUpdate()
-        {
-            // Relying on the fact that toolbar is ScriptableObject and gets deleted when layout changes
-            if (m_currentToolbar == null)
-            {
-                // Find toolbar
-                var toolbars = Resources.FindObjectsOfTypeAll(m_toolbarType);
-                m_currentToolbar = toolbars.Length > 0 ? (ScriptableObject)toolbars[0] : null;
-                if (m_currentToolbar != null)
-                {
+		static void OnUpdate()
+		{
+			// Relying on the fact that toolbar is ScriptableObject and gets deleted when layout changes
+			if (m_currentToolbar == null)
+			{
+				// Find toolbar
+				var toolbars = Resources.FindObjectsOfTypeAll(m_toolbarType);
+				m_currentToolbar = toolbars.Length > 0 ? (ScriptableObject)toolbars[0] : null;
+				if (m_currentToolbar != null)
+				{
 #if UNITY_2021_1_OR_NEWER
 					var root = m_currentToolbar.GetType().GetField("m_Root", BindingFlags.NonPublic | BindingFlags.Instance);
 					var rawRoot = root.GetValue(m_currentToolbar);
@@ -95,25 +95,25 @@ namespace Beamable.Editor.ToolbarExtender
 					var visualTree = (VisualElement)m_viewVisualTree.GetValue(m_currentToolbar, null);
 #endif
 
-                    // Get first child which 'happens' to be toolbar IMGUIContainer
-                    var container = (IMGUIContainer)visualTree[0];
+					// Get first child which 'happens' to be toolbar IMGUIContainer
+					var container = (IMGUIContainer)visualTree[0];
 
-                    // (Re)attach handler
-                    var handler = (Action)m_imguiContainerOnGui.GetValue(container);
-                    handler -= OnGUI;
-                    handler += OnGUI;
-                    m_imguiContainerOnGui.SetValue(container, handler);
+					// (Re)attach handler
+					var handler = (Action)m_imguiContainerOnGui.GetValue(container);
+					handler -= OnGUI;
+					handler += OnGUI;
+					m_imguiContainerOnGui.SetValue(container, handler);
 
 #endif
-                }
-            }
-        }
+				}
+			}
+		}
 
-        static void OnGUI()
-        {
-            var handler = OnToolbarGUI;
-            if (handler != null) handler();
-        }
-    }
+		static void OnGUI()
+		{
+			var handler = OnToolbarGUI;
+			if (handler != null) handler();
+		}
+	}
 }
 #endif

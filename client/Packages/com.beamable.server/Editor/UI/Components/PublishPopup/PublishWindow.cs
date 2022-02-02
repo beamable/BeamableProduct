@@ -1,13 +1,13 @@
-using System;
 using Beamable.Common;
 using Beamable.Editor.UI.Components;
+using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI;
 using Beamable.Server.Editor.UI.Components;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Beamable.Editor.UI.Model;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -40,7 +40,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			var servicesRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			var loadPromise = servicesRegistry.GenerateUploadModel();
 
-			wnd._element = new PublishPopup {Model = wnd._model, InitPromise = loadPromise, Registry = servicesRegistry};
+			wnd._element = new PublishPopup { Model = wnd._model, InitPromise = loadPromise, Registry = servicesRegistry };
 			wnd.Refresh();
 
 			var size = new Vector2(MIN_SIZE.x, MIN_SIZE.y + Mathf.Clamp(servicesRegistry.AllDescriptors.Count, 1, MAX_ROW) * DEFAULT_ROW_HEIGHT);
@@ -68,7 +68,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			servicesRegistry.GenerateUploadModel().Then(model =>
 			{
 				_model = model;
-				_element = new PublishPopup {Model = _model, InitPromise = Promise<ManifestModel>.Successful(model), Registry = servicesRegistry};
+				_element = new PublishPopup { Model = _model, InitPromise = Promise<ManifestModel>.Successful(model), Registry = servicesRegistry };
 				Refresh();
 				RefreshElement();
 			});
@@ -123,10 +123,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public override bool IsRunning => true;
 		public override IDescriptor Descriptor =>
 			throw new NotImplementedException("Accumulator doesn't have descriptor");
-		#pragma warning disable CS0067
+#pragma warning disable CS0067
 		public override event Action<Task> OnStart;
 		public override event Action<Task> OnStop;
-		#pragma warning restore CS0067
+#pragma warning restore CS0067
 		public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
 		{
 			// don't do anything.
