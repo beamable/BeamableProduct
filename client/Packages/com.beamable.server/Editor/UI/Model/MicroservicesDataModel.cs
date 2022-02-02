@@ -184,21 +184,31 @@ namespace Beamable.Editor.UI.Model
 			});
 
 			var result = new Dictionary<string, ServiceAvailability>();
-			var servicesStatus = Status?.services;
+			var servicesStatus = Status?.services ?? new List<ServiceStatus>();
+			var storageStatus = ServerManifest?.storageReference ?? new List<ServiceStorageReference>();
 
-			foreach (var configEntry in MicroserviceConfiguration.Instance.Microservices)
+			var allServiceNames = Services.Select(s => s.Name)
+			                              .Concat(servicesStatus.Select(x => x.serviceName))
+			                              .Distinct();
+			var allStorageNames = Storages.Select(s => s.Name)
+			                              .Concat(storageStatus.Select(x => x.id))
+			                              .Distinct();
+
+			foreach (var service in allServiceNames)
 			{
+				var configEntry = MicroserviceConfiguration.Instance.GetEntry(service);
 				var name = configEntry.ServiceName;
 				var remotely = servicesStatus?.Find(status => status.serviceName.Equals(name)) != null;
 				if (!result.ContainsKey(name))
 					result.Add(name, getServiceStatus(ContainsModel(configEntry.ServiceName), remotely));
 			}
 
-			foreach (var storage in MicroserviceConfiguration.Instance.StorageObjects)
+			foreach (var storage in allStorageNames)
 			{
-				var name = storage.StorageName;
+				var configEntry = MicroserviceConfiguration.Instance.GetStorageEntry(storage);
+				var name = configEntry.StorageName;
 				if (!result.ContainsKey(name))
-					result.Add(name, getServiceStatus(ContainsModel(name), storage.Enabled));
+					result.Add(name, getServiceStatus(ContainsModel(name), configEntry.Enabled));
 			}
 
 			return result;
