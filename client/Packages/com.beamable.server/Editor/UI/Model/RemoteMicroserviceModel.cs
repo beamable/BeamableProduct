@@ -28,9 +28,9 @@ namespace Beamable.Editor.UI.Model
 		{
 			var remoteCategory = "Cloud";
 
-			evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => { OpenOnRemote("docs/remote/"); });
-			evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => { OpenOnRemote("metrics"); });
-			evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => { OpenOnRemote("logs"); });
+			evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => { OpenRemoteDocs(); });
+			evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => { OpenRemoteMetrics(); });
+			evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => { OpenRemoteLogs(); });
 
 			if (MicroserviceConfiguration.Instance.Microservices.Count > 1)
 			{

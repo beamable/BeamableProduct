@@ -20,6 +20,6 @@ namespace Beamable.Editor.Modules.Account
 			return "Opening portal..";
 		}
 		private Promise<string> GetPortalUrl(string DBID) => EditorAPI.Instance.Map(api =>
-			$"{BeamableEnvironment.PortalUrl}/{api.CidOrAlias}/games/{api.ProductionRealm.Pid}/realms/{api.Pid}?playerQuery={DBID}&refresh_token={api.Token.RefreshToken}");
+			$"{BeamableEnvironment.PortalUrl}/{api.CidOrAlias}/games/{api.ProductionRealm.Pid}/realms/{api.Pid}/players/{DBID}?refresh_token={api.Token.RefreshToken}");
 	}
 }
