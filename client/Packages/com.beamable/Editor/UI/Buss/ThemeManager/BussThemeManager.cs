@@ -278,7 +278,7 @@ namespace Beamable.Editor.UI.Buss
 				_addStyleButton.PlaceInFront(styleCard);
 			}
 
-			styleCard.OnEnterEditMode += () =>
+			styleCard.EnterEditMode += () =>
 			{
 				foreach (BussStyleCardVisualElement other in _styleCardsVisualElements)
 				{
