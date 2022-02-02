@@ -270,11 +270,7 @@ namespace Beamable.Common.Reflection
 		public bool TryRegisterReflectionSystem(IReflectionSystem system)
 		{
 			Assert(system != null, "System cannot be null. Please ensure the system instance exists when passing it in here.");
-
-			if (_registeredCacheUserSystems.Contains(system))
-			{
-				return false;
-			}
+			if (_registeredCacheUserSystems.Contains(system)) return false;
 			RegisterReflectionSystem(system);
 			return true;
 		}
@@ -345,12 +341,22 @@ namespace Beamable.Common.Reflection
 				reflectionBasedSystem.OnReflectionCacheBuilt(_perBaseTypeCache, _perAttributeCache);
 				foreach (var type in reflectionBasedSystem.BaseTypesOfInterest)
 				{
-					reflectionBasedSystem.OnBaseTypeOfInterestFound(type, _perBaseTypeCache.MappedSubtypes[type]);
+					if (!_perBaseTypeCache.MappedSubtypes.TryGetValue(type, out var mappedSubtypes))
+					{
+						// TODO: Add a conditional log line.
+						continue;
+					}
+					reflectionBasedSystem.OnBaseTypeOfInterestFound(type, mappedSubtypes);
 				}
 
 				foreach (var attributeType in reflectionBasedSystem.AttributesOfInterest)
 				{
-					reflectionBasedSystem.OnAttributeOfInterestFound(attributeType, _perAttributeCache.AttributeMappings[attributeType]);
+					if (!_perAttributeCache.AttributeMappings.TryGetValue(attributeType, out var mappedAttributes))
+					{
+						// TODO: Add a conditional log line
+						continue;
+					}
+					reflectionBasedSystem.OnAttributeOfInterestFound(attributeType, mappedAttributes);
 				}
 			}
 		}
