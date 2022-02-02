@@ -7,7 +7,7 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
 
     <engine:VisualElement name="variableConnectionElement">
-        <engine:Button name="button"></engine:Button>
+        <engine:Button name="button"/>
         <beamable:DropdownVisualElement name="dropdown"/>
     </engine:VisualElement>
 

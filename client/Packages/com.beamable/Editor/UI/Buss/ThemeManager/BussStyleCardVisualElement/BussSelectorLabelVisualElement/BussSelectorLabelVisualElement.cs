@@ -1,6 +1,7 @@
 ﻿using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
+using System.Text;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -34,7 +35,16 @@ namespace Beamable.Editor.UI.Components
 			{
 				TextElement textLabel = new TextElement();
 				textLabel.name = "styleId";
-				textLabel.text = $"{styleRule.SelectorString} ({styleSheet.name})";
+
+				StringBuilder label = new StringBuilder();
+				label.Append($"{styleRule.SelectorString} ({styleSheet.name})");
+
+				if (styleSheet.IsReadOnly)
+				{
+					label.Append(" - readonly");
+				}
+				
+				textLabel.text = label.ToString();
 				Root.Add(textLabel);
 			}
 			else
