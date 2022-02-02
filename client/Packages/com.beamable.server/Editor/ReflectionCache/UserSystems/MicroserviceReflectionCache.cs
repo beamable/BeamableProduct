@@ -337,11 +337,7 @@ namespace Beamable.Server.Editor
 
 				foreach (var descriptor in Descriptors)
 				{
-					OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.InProgress);
-
-					foreach (var storage in descriptor.GetStorageReferences())
-						OnServiceDeployStatusChanged?.Invoke(storage, ServicePublishState.InProgress);
-
+					UpdateServiceDeployStatus(descriptor, ServicePublishState.InProgress);
 
 					logger(new LogMessage
 					{
@@ -358,10 +354,7 @@ namespace Beamable.Server.Editor
 					catch (Exception e)
 					{
 						OnDeployFailed?.Invoke(model, $"Deploy failed due to failed build of {descriptor.Name}: {e}.");
-						OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
-
-						foreach (var storage in descriptor.GetStorageReferences())
-							OnServiceDeployStatusChanged?.Invoke(storage, ServicePublishState.Failed);
+						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 
 						return;
 					}
@@ -369,10 +362,7 @@ namespace Beamable.Server.Editor
 					if (token.IsCancellationRequested)
 					{
 						OnDeployFailed?.Invoke(model, $"Cancellation requested after build of {descriptor.Name}.");
-						OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
-
-						foreach (var storage in descriptor.GetStorageReferences())
-							OnServiceDeployStatusChanged?.Invoke(storage, ServicePublishState.Failed);
+						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 
 						return;
 					}
@@ -393,11 +383,7 @@ namespace Beamable.Server.Editor
 					if (string.IsNullOrEmpty(imageId))
 					{
 						OnDeployFailed?.Invoke(model, $"Failed due to failed Docker {nameof(GetImageIdCommand)} for {descriptor.Name}.");
-						OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
-
-						foreach (var storage in descriptor.GetStorageReferences())
-							OnServiceDeployStatusChanged?.Invoke(storage, ServicePublishState.Failed);
-
+						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 						return;
 					}
 
@@ -416,11 +402,7 @@ namespace Beamable.Server.Editor
 							});
 
 							onServiceDeployed?.Invoke(descriptor);
-							OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Published);
-
-							foreach (var storage in descriptor.GetStorageReferences())
-								OnServiceDeployStatusChanged?.Invoke(storage, ServicePublishState.Published);
-
+							UpdateServiceDeployStatus(descriptor, ServicePublishState.Published);
 							continue;
 						}
 					}
@@ -447,10 +429,7 @@ namespace Beamable.Server.Editor
 												   {
 													   Debug.Log(string.Format(BeamableLogConstants.UploadedContainerMessage, descriptor.Name));
 													   onServiceDeployed?.Invoke(descriptor);
-													   OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Published);
-
-													   foreach (var storage in descriptor.GetStorageReferences())
-														   OnServiceDeployStatusChanged?.Invoke(storage, ServicePublishState.Published);
+													   UpdateServiceDeployStatus(descriptor, ServicePublishState.Published);
 												   },
 												   () =>
 												   {
@@ -458,10 +437,7 @@ namespace Beamable.Server.Editor
 													   if (token.IsCancellationRequested)
 													   {
 														   OnDeployFailed?.Invoke(model, $"Cancellation requested during upload of {descriptor.Name}.");
-														   OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
-
-														   foreach (var storage in descriptor.GetStorageReferences())
-															   OnServiceDeployStatusChanged?.Invoke(storage, ServicePublishState.Failed);
+														   UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 													   }
 												   }, imageId);
 				}
@@ -604,6 +580,14 @@ namespace Beamable.Server.Editor
 						};
 					});
 				});
+			}
+
+			private void UpdateServiceDeployStatus(MicroserviceDescriptor descriptor, ServicePublishState status)
+			{
+				OnServiceDeployStatusChanged?.Invoke(descriptor, status);
+
+				foreach (var storageDesc in descriptor.GetStorageReferences())
+					OnServiceDeployStatusChanged?.Invoke(storageDesc, status);
 			}
 
 			#endregion
