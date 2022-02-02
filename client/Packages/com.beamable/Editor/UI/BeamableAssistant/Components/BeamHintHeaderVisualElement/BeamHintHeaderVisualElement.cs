@@ -98,8 +98,8 @@ namespace Beamable.Editor.Assistant
 			_indexIntoDisplayingHints = headerIdx;
 		}
 
-		
-		
+
+
 		public sealed override void Refresh()
 		{
 			base.Refresh();
