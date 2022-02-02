@@ -58,11 +58,11 @@ namespace Beamable.Server.Editor
 			{
 				if (res)
 				{
-					Debug.Log($"Finished {descriptor.Name} restoring");
+					Debug.Log($"Finished restoring [{descriptor.Name}]");
 				}
 				else
 				{
-					Debug.LogError($"Failed to restore {descriptor.Name} database");
+					Debug.LogError($"Failed to restore [{descriptor.Name}] database");
 				}
 			});
 		}
@@ -76,12 +76,12 @@ namespace Beamable.Server.Editor
 			{
 				if (res)
 				{
-					Debug.Log($"Finished {descriptor.Name} snapshot");
+					Debug.Log($"[{descriptor.Name}] snapshot created at {dest}.");
 					EditorUtility.OpenWithDefaultApp(dest);
 				}
 				else
 				{
-					Debug.Log($"Failed to snapshot {descriptor.Name} database.");
+					Debug.Log($"Failed to snapshot [{descriptor.Name}] database.");
 				}
 			});
 		}
@@ -89,23 +89,23 @@ namespace Beamable.Server.Editor
 
 		public static void ClearMongo(StorageObjectDescriptor descriptor)
 		{
-			var work = ClearMongoData(descriptor);
-			work.Then(success =>
+			Debug.Log("Starting clear...");
+			ClearMongoData(descriptor).Then(success =>
 			{
 				if (success)
 				{
-					Debug.Log($"Cleared {descriptor.Name} database.");
+					Debug.Log($"Cleared [{descriptor.Name}] database.");
 				}
 				else
 				{
-					Debug.LogWarning($"Failed to clear {descriptor.Name} database.");
+					Debug.LogWarning($"Failed to clear [{descriptor.Name}] database.");
 				}
 			});
 		}
 
 		public static void OpenMongoExplorer(StorageObjectDescriptor descriptor)
 		{
-			Debug.Log("Opening tool");
+			Debug.Log("Opening tool...");
 			var work = OpenLocalMongoTool(descriptor);
 			work.Then(success =>
 			{

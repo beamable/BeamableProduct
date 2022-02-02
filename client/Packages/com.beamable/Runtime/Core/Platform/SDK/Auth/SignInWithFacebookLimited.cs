@@ -82,7 +82,7 @@ namespace Beamable.Platform.SDK.Auth
 		    }
 		    else
 		    {
-		        Debug.LogWarning("User cancelled login");
+		        Debug.Log("User cancelled login");
 		    }
 		}
 
