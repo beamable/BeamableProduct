@@ -172,7 +172,7 @@ namespace Beamable.Editor.UI.Components
 		private void AddRuleButtonClicked(MouseDownEvent evt)
 		{
 			var keys = new HashSet<string>();
-			foreach (BussPropertyProvider propertyProvider in StyleRule.Properties)
+			foreach (var propertyProvider in StyleRule.Properties)
 			{
 				keys.Add(propertyProvider.Key);
 			}
@@ -182,9 +182,9 @@ namespace Beamable.Editor.UI.Components
 			foreach (string key in BussStyle.Keys)
 			{
 				if (keys.Contains(key)) continue;
-				Type baseType = BussStyle.GetBaseType(key);
-				SerializableValueImplementationHelper.ImplementationData data = SerializableValueImplementationHelper.Get(baseType);
-				IEnumerable<Type> types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract && t != typeof(FractionFloatBussProperty));
+				var baseType = BussStyle.GetBaseType(key);
+				var data = SerializableValueImplementationHelper.Get(baseType);
+				var types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract && t != typeof(FractionFloatBussProperty));
 				foreach (Type type in types)
 				{
 					var label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
@@ -203,7 +203,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void AddVariableButtonClicked(MouseDownEvent evt)
 		{
-			NewVariableWindow window = NewVariableWindow.ShowWindow();
+			var window = NewVariableWindow.ShowWindow();
 			window?.Init(_styleRule, (key, property) =>
 			{
 				StyleRule.TryAddProperty(key, property, out _);
@@ -314,14 +314,14 @@ namespace Beamable.Editor.UI.Components
 
 			foreach (BussPropertyProvider property in _styleRule.Properties)
 			{
-				BussStylePropertyVisualElement existingProperty = _properties.FirstOrDefault(p => p.PropertyProvider == property);
+				var existingProperty = _properties.FirstOrDefault(p => p.PropertyProvider == property);
 				if (existingProperty != null)
 				{
 					existingProperty.Refresh();
 					continue;
 				}
 
-				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
+				var element = new BussStylePropertyVisualElement();
 				element.Setup(_styleSheet, _styleRule, property, _variableDatabase);
 				(property.IsVariable ? _variables : _propertiesParent).Add(element);
 				_properties.Add(element);
@@ -329,11 +329,11 @@ namespace Beamable.Editor.UI.Components
 
 			if (_styleRule.ShowAllMode)
 			{
-				IEnumerable<string> restPropertyKeys =
+				var restPropertyKeys =
 					BussStyle.Keys.Where(s => StyleRule.Properties.All(provider => provider.Key != s));
-				foreach (string key in restPropertyKeys)
+				foreach (var key in restPropertyKeys)
 				{
-					BussStylePropertyVisualElement existingProperty = _properties.FirstOrDefault(p => p.PropertyProvider.Key == key);
+					var existingProperty = _properties.FirstOrDefault(p => p.PropertyProvider.Key == key);
 					if (existingProperty != null)
 					{
 						existingProperty.Refresh();
@@ -352,19 +352,19 @@ namespace Beamable.Editor.UI.Components
 			_propertiesParent.Sort((a, b) =>
 			{
 				if (!(a is BussStylePropertyVisualElement p1) || !(b is BussStylePropertyVisualElement p2)) return 0;
-				int value = 0;
+				var value = 0;
 				if (p1.PropertyIsInStyle) value--;
 				if (p2.PropertyIsInStyle) value++;
 				if (value == 0)
 				{
 					if (p1.PropertyIsInStyle)
 					{
-						List<BussPropertyProvider> properties = _styleRule.Properties;
+						var properties = _styleRule.Properties;
 						return properties.IndexOf(p1.PropertyProvider) - properties.IndexOf(p2.PropertyProvider);
 					}
 					else
 					{
-						string[] keys = BussStyle.Keys.ToArray();
+						var keys = BussStyle.Keys.ToArray();
 						return Array.IndexOf(keys, p1.PropertyProvider.Key) -
 							   Array.IndexOf(keys, p2.PropertyProvider.Key);
 					}
@@ -375,7 +375,7 @@ namespace Beamable.Editor.UI.Components
 
 		public void RefreshPropertyByReference(VariableDatabase.PropertyReference reference)
 		{
-			BussStylePropertyVisualElement property = _properties.FirstOrDefault(p => p.PropertyProvider == reference.propertyProvider);
+			var property = _properties.FirstOrDefault(p => p.PropertyProvider == reference.propertyProvider);
 			if (property != null)
 			{
 				property.Refresh();
