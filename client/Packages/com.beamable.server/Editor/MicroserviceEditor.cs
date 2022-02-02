@@ -52,6 +52,10 @@ namespace Beamable.Server.Editor
 
 		static MicroserviceEditor()
 		{
+			// Trigger reimport of reflection cache to solve first import sadness...
+			AssetDatabase.ImportAsset("Packages/com.beamable.server/Editor/ReflectionCache/UserSystems/MicroserviceReflectionCache.asset", ImportAssetOptions.ForceUpdate);
+			Debug.Log("Re-importing Microservice Reflection Cache so the reflection cache gets it.");
+			
 			/// Delaying until first editor tick so that the menu
 			/// will be populated before setting check state, and
 			/// re-apply correct action
@@ -64,9 +68,6 @@ namespace Beamable.Server.Editor
 				}
 				catch (InvalidOperationException)
 				{
-					// Trigger reimport to solve first import sadness...
-					AssetDatabase.ImportAsset("Packages/com.beamable.server/Editor/ReflectionCache/UserSystems/MicroserviceReflectionCache.asset", ImportAssetOptions.ForceUpdate);
-					Debug.Log("Re-importing Microservice Reflection Cache so the reflection cache gets it.");
 					EditorApplication.delayCall += Initialize;
 					return;
 				}
