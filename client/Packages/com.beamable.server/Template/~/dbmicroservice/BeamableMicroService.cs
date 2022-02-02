@@ -275,7 +275,6 @@ namespace Beamable.Server
             {
                nonce = document.RootElement.GetProperty("nonce").ToString();
             }
-            Console.WriteLine("Got nonce...");
 
             string sig = signature(Secret + nonce);
             var req = new Dictionary<string, object>()

@@ -78,9 +78,8 @@ namespace Beamable.Editor.Modules.Sessions
 			{
 				if (assetInstance == null)
 				{
-					Debug.Log("Unable to create custom settings asset. " + path);
+					Debug.LogError("Unable to create custom settings asset. " + path);
 					EditorPrefs.SetString(EditorPrefKey, null);
-
 				}
 			}
 

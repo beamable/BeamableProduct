@@ -269,7 +269,7 @@ namespace Beamable.Editor.Microservice.UI
 
 		private void HandleDeployFailed(ManifestModel _model, string reason)
 		{
-			Debug.Log(reason);
+			Debug.LogError(reason);
 			_microserviceContentVisualElement?.Refresh();
 		}
 

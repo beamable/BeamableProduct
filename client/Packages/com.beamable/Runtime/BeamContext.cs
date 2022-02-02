@@ -436,7 +436,6 @@ namespace Beamable
 			{
 				try
 				{
-					Debug.Log("Creating new user!");
 					var rsp = await _authService.CreateUser();
 					await SaveToken(rsp);
 				}
@@ -467,7 +466,6 @@ namespace Beamable
 						ClearToken();
 
 						// re-create the user
-						Debug.Log("Save the token!");
 						await InitStep_SaveToken();
 						await InitStep_GetUser();
 						await InitStep_StartPubnub();

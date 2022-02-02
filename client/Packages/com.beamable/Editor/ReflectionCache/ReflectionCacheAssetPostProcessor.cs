@@ -54,13 +54,11 @@ namespace Beamable.Editor.Reflection
 					}
 				}
 
-				Spew.Logger.DoSpew("Finished Rebuilding Reflection Cache Systems");
 				AssetDatabase.Refresh();
 			}
 
 			if (deletedAssets.Length > 0)
 			{
-				Spew.Logger.DoSpew("Re-building the Reflection Systems from Cached Data!");
 				BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems();
 				BeamEditor.EditorReflectionCache.SetStorage(BeamEditor.HintGlobalStorage);
 
@@ -73,7 +71,6 @@ namespace Beamable.Editor.Reflection
 					hintSystem.OnInitialized();
 				}
 
-				Spew.Logger.DoSpew("Finished Rebuilding Reflection Cache Systems");
 				AssetDatabase.Refresh();
 			}
 		}

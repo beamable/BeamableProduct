@@ -327,7 +327,6 @@ namespace Beamable.Player
 					throw;
 				}
 
-				Debug.Log("Adding resync later");
 				UpdateOfflineBuilder(builder);
 				var _ = _consumer.RunAfterReconnection(new SdkEvent(nameof(PlayerInventory), "commit", json));
 				await Apply(builder);

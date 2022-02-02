@@ -128,7 +128,6 @@ namespace Beamable
 			AssembliesToSweep.AddRange(playerAssemblies.Select(asm => asm.name).Where(n => !string.IsNullOrEmpty(n)));
 			AssembliesToSweep = AssembliesToSweep.Distinct().ToList();
 			AssembliesToSweep.Sort();
-			Debug.Log($"Assemblies to Sweep\n{string.Join(", ", AssembliesToSweep)}");
 #endif
 		}
 	}
