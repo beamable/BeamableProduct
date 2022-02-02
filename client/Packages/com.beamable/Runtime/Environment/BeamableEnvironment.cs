@@ -35,6 +35,7 @@ namespace Beamable
 
 		public static string ApiUrl => Data.ApiUrl;
 		public static string PortalUrl => Data.PortalUrl;
+		public static string BeamMongoExpressUrl => Data.BeamMongoExpressUrl;
 		public static string Environment => Data.Environment;
 		public static PackageVersion SdkVersion => Data.SdkVersion;
 		public static string DockerRegistryUrl => Data.DockerRegistryUrl;
@@ -68,6 +69,7 @@ namespace Beamable
 		[SerializeField] private string environment;
 		[SerializeField] private string apiUrl;
 		[SerializeField] private string portalUrl;
+		[SerializeField] private string beamMongoExpressUrl;
 		[SerializeField] private string sdkVersion;
 		[SerializeField] private string dockerRegistryUrl;
 
@@ -76,6 +78,7 @@ namespace Beamable
 		public string Environment => environment;
 		public string ApiUrl => apiUrl;
 		public string PortalUrl => portalUrl;
+		public string BeamMongoExpressUrl => beamMongoExpressUrl;
 		public PackageVersion SdkVersion => _version ?? (_version = sdkVersion);
 		public string DockerRegistryUrl => dockerRegistryUrl;
 
@@ -85,6 +88,7 @@ namespace Beamable
 			s.Serialize("apiUrl", ref apiUrl);
 			s.Serialize("portalUrl", ref portalUrl);
 			s.Serialize("sdkVersion", ref sdkVersion);
+			s.Serialize("beamMongoExpressUrl", ref beamMongoExpressUrl);
 			s.Serialize("dockerRegistryUrl", ref dockerRegistryUrl);
 
 			if (sdkVersion.Equals(BUILD__SDK__VERSION__STRING))
