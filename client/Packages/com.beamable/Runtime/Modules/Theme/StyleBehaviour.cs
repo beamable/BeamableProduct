@@ -24,7 +24,7 @@ namespace Beamable.Theme
 
 		public void Refresh()
 		{
-			if (!gameObject.activeInHierarchy || !isActiveAndEnabled) return;
+			if (!gameObject.activeInHierarchy || !isActiveAndEnabled || !gameObject.scene.IsValid()) return;  // OnValidate runs on prefabs, which we absolutely don't want.
 
 			var theme = ThemeConfiguration.Instance.Style;
 			_lastTheme = theme;
