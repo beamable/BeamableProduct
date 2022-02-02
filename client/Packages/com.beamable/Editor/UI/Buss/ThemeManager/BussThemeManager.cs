@@ -237,21 +237,12 @@ namespace Beamable.Editor.UI.Buss
 			if (_addStyleButton == null) return;
 			
 			_addStyleButton.tooltip = string.Empty;
-
 			_activeStyleSheets.Clear();
 			
-			List<BussStyleSheet> allStyleSheets = Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[]
-			{
-				"Assets",
 #if BEAMABLE_DEVELOPER
-				"Packages"
-#endif
-			});
-
-#if BEAMABLE_DEVELOPER
-			_activeStyleSheets = new List<BussStyleSheet>(allStyleSheets);
+			_activeStyleSheets = new List<BussStyleSheet>(_navigationWindow.StyleSheets);
 #else
-			_activeStyleSheets.AddRange(_navigationWindow.StyleSheets.Where(bussStyleSheet => allStyleSheets.Contains(bussStyleSheet)));
+			_activeStyleSheets.AddRange(_navigationWindow.StyleSheets.Where(bussStyleSheet => !bussStyleSheet.IsReadOnly));
 #endif
 			
 			if (_activeStyleSheets.Count == 0)
