@@ -121,7 +121,7 @@ namespace Beamable.Editor.UI.Model
 			EditorAPI.Instance.Then(de =>
 			{
 				var url =
-					$"{BeamableEnvironment.PortalUrl}/{de.CidOrAlias}/games/{de.ProductionRealm.Pid}/realms/{de.Pid}/microservices/{ServiceDescriptor.Name}/docs/{MicroserviceIndividualization.Prefix}?refresh_token={de.Token.RefreshToken}";
+					$"{BeamableEnvironment.PortalUrl}{de.CidOrAlias}/games/{de.ProductionRealm.Pid}/realms/{de.Pid}/microservices/{ServiceDescriptor.Name}/docs?prefix={MicroserviceIndividualization.Prefix}&refresh_token={de.Token.RefreshToken}";
 				Application.OpenURL(url);
 			});
 		}
