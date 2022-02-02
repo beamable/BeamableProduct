@@ -187,6 +187,7 @@ namespace Beamable.Editor.UI.Buss
 					if (spawned != null)
 					{
 						spawned.RefreshProperties();
+						spawned.RefreshButtons();
 					}
 					else
 					{

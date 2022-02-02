@@ -83,7 +83,7 @@ namespace Beamable.Editor.UI.Components
 			RefreshButtons();
 		}
 
-		private void RefreshButtons()
+		public void RefreshButtons()
 		{
 			bool enabled = !_styleSheet.IsReadOnly;
 
