@@ -14,5 +14,8 @@ namespace Beamable.UI.Buss
 
 		public static readonly string ClearAllPropertiesHeader = "Clear all properties";
 		public static readonly string ClearAllPropertiesMessage = "Are You sure You want to clear all properties?";
+
+		public static readonly string NoBussStyleSheetAvailable =
+			"There should be created at least one Buss Style Sheet and it should be referenced by Buss Element present at scene";
 	}
 }

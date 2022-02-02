@@ -56,26 +56,11 @@ namespace Beamable.Editor.UI.Buss
 
 			LabeledDropdownVisualElement selectStyleSheet = Root.Q<LabeledDropdownVisualElement>("selectStyleSheet");
 
-			List<BussStyleSheet> allStyleSheets = Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[]
-			{
-				"Assets",
-#if BEAMABLE_DEVELOPER
-				"Packages"
-#endif
-			});
-
-#if BEAMABLE_DEVELOPER
-			List<BussStyleSheet> styleSheets = new List<BussStyleSheet>(allStyleSheets);
-#else
-			List<BussStyleSheet> styleSheets = new List<BussStyleSheet>();
-			styleSheets.AddRange(_styleSheets.Where(bussStyleSheet => allStyleSheets.Contains(bussStyleSheet)));
-#endif
-
-			List<string> labels = styleSheets.Select(x => x.name).ToList();
+			List<string> labels = _styleSheets.Select(x => x.name).ToList();
 
 			selectStyleSheet.Setup(labels, index =>
 			{
-				_currentSelectedStyleSheet = styleSheets[index];
+				_currentSelectedStyleSheet = _styleSheets[index];
 				OnValidate();
 			});
 

@@ -18,6 +18,12 @@ namespace Beamable.Editor.UI.Components
 			get;
 		} = new List<BussStyleSheet>();
 
+		public void ForceRebuild()
+		{
+			StyleSheets.Clear();
+			RefreshTree();
+		}
+
 		protected override string GetLabel(BussElement component)
 		{
 			string label = string.IsNullOrWhiteSpace(component.Id) ? component.name : BussNameUtility.AsIdSelector(component.Id);
