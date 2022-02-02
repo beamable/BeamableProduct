@@ -339,6 +339,10 @@ namespace Beamable.Server.Editor
 				{
 					OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.InProgress);
 
+					foreach (var storage in descriptor.GetStorageReferences())
+						OnServiceDeployStatusChanged?.Invoke(storage, ServicePublishState.InProgress);
+
+
 					logger(new LogMessage
 					{
 						Level = LogLevel.INFO,
@@ -355,6 +359,10 @@ namespace Beamable.Server.Editor
 					{
 						OnDeployFailed?.Invoke(model, $"Deploy failed due to failed build of {descriptor.Name}: {e}.");
 						OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
+
+						foreach (var storage in descriptor.GetStorageReferences())
+							OnServiceDeployStatusChanged?.Invoke(storage, ServicePublishState.Failed);
+
 						return;
 					}
 
@@ -362,6 +370,10 @@ namespace Beamable.Server.Editor
 					{
 						OnDeployFailed?.Invoke(model, $"Cancellation requested after build of {descriptor.Name}.");
 						OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
+
+						foreach (var storage in descriptor.GetStorageReferences())
+							OnServiceDeployStatusChanged?.Invoke(storage, ServicePublishState.Failed);
+
 						return;
 					}
 
@@ -382,6 +394,10 @@ namespace Beamable.Server.Editor
 					{
 						OnDeployFailed?.Invoke(model, $"Failed due to failed Docker {nameof(GetImageIdCommand)} for {descriptor.Name}.");
 						OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
+
+						foreach (var storage in descriptor.GetStorageReferences())
+							OnServiceDeployStatusChanged?.Invoke(storage, ServicePublishState.Failed);
+
 						return;
 					}
 
@@ -401,6 +417,10 @@ namespace Beamable.Server.Editor
 
 							onServiceDeployed?.Invoke(descriptor);
 							OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Published);
+
+							foreach (var storage in descriptor.GetStorageReferences())
+								OnServiceDeployStatusChanged?.Invoke(storage, ServicePublishState.Published);
+
 							continue;
 						}
 					}
@@ -428,6 +448,9 @@ namespace Beamable.Server.Editor
 													   Debug.Log(string.Format(BeamableLogConstants.UploadedContainerMessage, descriptor.Name));
 													   onServiceDeployed?.Invoke(descriptor);
 													   OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Published);
+
+													   foreach (var storage in descriptor.GetStorageReferences())
+														   OnServiceDeployStatusChanged?.Invoke(storage, ServicePublishState.Published);
 												   },
 												   () =>
 												   {
@@ -436,9 +459,13 @@ namespace Beamable.Server.Editor
 													   {
 														   OnDeployFailed?.Invoke(model, $"Cancellation requested during upload of {descriptor.Name}.");
 														   OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
+
+														   foreach (var storage in descriptor.GetStorageReferences())
+															   OnServiceDeployStatusChanged?.Invoke(storage, ServicePublishState.Failed);
 													   }
 												   }, imageId);
 				}
+
 				logger(new LogMessage
 				{
 					Level = LogLevel.INFO,
