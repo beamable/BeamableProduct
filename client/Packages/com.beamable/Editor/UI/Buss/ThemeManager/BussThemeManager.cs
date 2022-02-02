@@ -32,6 +32,7 @@ namespace Beamable.Editor.UI.Buss
 		private VisualElement _addStyleButton;
 		private bool _filterMode;
 		private BeamablePopupWindow _confirmationPopup;
+		private List<BussStyleSheet> _activeStyleSheets = new List<BussStyleSheet>();
 
 		[MenuItem(
 			BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
@@ -221,12 +222,13 @@ namespace Beamable.Editor.UI.Buss
 			void OpenAddSelectorWindow()
 			{
 				AddStyleWindow window = AddStyleWindow.ShowWindow();
-				window?.Init(_ => RefreshStyleSheets(), _navigationWindow.StyleSheets);
+				window?.Init(_ => RefreshStyleSheets(), _activeStyleSheets);
 			}
 		}
 
 		private void OnFocus()
 		{
+			_navigationWindow.ForceRebuild();
 			CheckEnableState();
 		}
 
@@ -235,16 +237,17 @@ namespace Beamable.Editor.UI.Buss
 			if (_addStyleButton == null) return;
 			
 			_addStyleButton.tooltip = string.Empty;
-			List<BussStyleSheet> styleSheets = Helper.FindAssets<BussStyleSheet>("t:BussStyleSheet", new[]
-			{
-				"Assets",
+			_activeStyleSheets.Clear();
+			
 #if BEAMABLE_DEVELOPER
-				"Packages"
+			_activeStyleSheets = new List<BussStyleSheet>(_navigationWindow.StyleSheets);
+#else
+			_activeStyleSheets.AddRange(_navigationWindow.StyleSheets.Where(bussStyleSheet => !bussStyleSheet.IsReadOnly));
 #endif
-			});
-			if (styleSheets.Count == 0)
+			
+			if (_activeStyleSheets.Count == 0)
 			{
-				_addStyleButton.tooltip = "There should be created at least one BUSS Style Config!";
+				_addStyleButton.tooltip = BussConstants.NoBussStyleSheetAvailable;
 				_addStyleButton.SetEnabled(false);
 			}
 			else
