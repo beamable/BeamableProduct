@@ -69,8 +69,6 @@ namespace Beamable.Editor.Toolbox.Components
 		private Promise<string> GetPortalUrl => EditorAPI.Instance.Map(de =>
 		{
 			var url = $"{BeamableEnvironment.PortalUrl}/{de.Cid}/games/{de.ProductionRealm.Pid}/realms/{de.Pid}/dashboard?refresh_token={de.Token.RefreshToken}";
-			Debug.Log("opening");
-			Debug.Log(url);
 			return url;
 		});
 
