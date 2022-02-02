@@ -88,8 +88,8 @@ namespace Beamable.AccountManagement
 			{
 				API.Instance.Then(de =>
 			 {
-				   AccountManagementConfiguration.Instance.Overrides.HandleAnonymousUserDataUpdated(Manager, de.User);
-			   });
+				 AccountManagementConfiguration.Instance.Overrides.HandleAnonymousUserDataUpdated(Manager, de.User);
+			 });
 			});
 		}
 	}

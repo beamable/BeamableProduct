@@ -297,7 +297,7 @@ namespace Beamable.UnityEngineClone.UI.Extensions
 				}
 				catch
 				{
-					Debug.Log("Failed to setactive child [" + i + "]");
+					Debug.LogError("Failed to setactive child [" + i + "]");
 				}
 			}
 

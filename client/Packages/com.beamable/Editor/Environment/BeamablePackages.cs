@@ -161,7 +161,7 @@ namespace Beamable.Editor.Environment
 				else if (req.Status >= StatusCode.Failure)
 				{
 					promise.CompleteError(new Exception(req.Error.message));
-					BeamableLogger.Log(req.Error.message);
+					BeamableLogger.LogError(req.Error.message);
 				}
 
 			}
@@ -198,7 +198,7 @@ namespace Beamable.Editor.Environment
 				else if (req.Status >= StatusCode.Failure)
 				{
 					promise.CompleteError(new Exception(req.Error.message));
-					BeamableLogger.Log(req.Error.message);
+					BeamableLogger.LogError(req.Error.message);
 				}
 
 			}
@@ -213,11 +213,11 @@ namespace Beamable.Editor.Environment
 			{
 				IsServerPackageUpdated().Then(isUpdated =>
 			 {
-				   if (!isUpdated)
-				   {
-					   UpdateBeamablePackageServer();
-				   }
-			   });
+				 if (!isUpdated)
+				 {
+					 UpdateBeamablePackageServer();
+				 }
+			 });
 			});
 		}
 
@@ -245,7 +245,7 @@ namespace Beamable.Editor.Environment
 				else if (req.Status >= StatusCode.Failure)
 				{
 					promise.CompleteError(new Exception(req.Error.message));
-					BeamableLogger.Log(req.Error.message);
+					BeamableLogger.LogError(req.Error.message);
 				}
 
 			}
@@ -278,7 +278,7 @@ namespace Beamable.Editor.Environment
 				else if (req.Status >= StatusCode.Failure)
 				{
 					promise.CompleteError(new Exception(req.Error.message));
-					BeamableLogger.Log(req.Error.message);
+					BeamableLogger.LogError(req.Error.message);
 				}
 
 			}
@@ -434,7 +434,7 @@ namespace Beamable.Editor.Environment
 				else if (req.Status >= StatusCode.Failure)
 				{
 					promise.CompleteError(new Exception(req.Error.message));
-					BeamableLogger.Log(req.Error.message);
+					BeamableLogger.LogError(req.Error.message);
 					_isDownloading = false;
 				}
 			}

@@ -291,6 +291,7 @@ namespace Beamable.Editor.Content.Components
 
 		private async Task HandlePublish()
 		{
+			_manifestNameField.SetEnabled(false);
 			if (_createNewManifest && _manifestModel.ArchivedManifestModels.Any(m => m.id == ManifestName))
 			{
 				var api = await EditorAPI.Instance;
@@ -357,6 +358,18 @@ namespace Beamable.Editor.Content.Components
 				return false;
 			}
 
+			if (name.TrimStart(' ') != name)
+			{
+				message = "Name cannot start with leading spaces.";
+				return false;
+			}
+
+			if (name.TrimEnd(' ') != name)
+			{
+				message = "Name cannot end with trailing spaces.";
+				return false;
+			}
+
 			if (name.Length > MAX_NAME_LENGTH)
 			{
 				message = $"Name can not be longer then {MAX_NAME_LENGTH} characters.";
@@ -366,7 +379,7 @@ namespace Beamable.Editor.Content.Components
 
 			if (char.IsDigit(name[0]))
 			{
-				message = "Name cannot start with a letter.";
+				message = "Name cannot start with a number.";
 				return false;
 			}
 

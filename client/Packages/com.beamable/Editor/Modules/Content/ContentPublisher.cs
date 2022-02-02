@@ -110,7 +110,7 @@ namespace Beamable.Editor.Content
 				  {
 					  var totalOperations = publishSet.totalOpsCount + 1; // one comes from saving the new manifest...
 																		  // We're done here. Just call the final progressCallback with a "finished" PublishProgress.
-				   progressCallback(new PublishProgress
+					  progressCallback(new PublishProgress
 					  {
 						  TotalOperations = totalOperations,
 						  CompletedOperations = totalOperations
@@ -193,9 +193,9 @@ namespace Beamable.Editor.Content
 					var promise = PushContentToComet(batch)
 				   .Map(response =>
 				   {
-						  response.content.ForEach(UpdateReference);
-						  return batch.Count;
-					  })
+					   response.content.ForEach(UpdateReference);
+					   return batch.Count;
+				   })
 				   .Then(_ => CallProgressCallback());
 					progressPromises.Add(promise);
 					return promise;

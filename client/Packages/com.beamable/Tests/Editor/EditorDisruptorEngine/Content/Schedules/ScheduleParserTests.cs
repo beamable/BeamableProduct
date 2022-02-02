@@ -1,5 +1,5 @@
 ﻿using Beamable.Common.Content;
-using Beamable.Editor.Schedules;
+using Beamable.Editor.Models.Schedules;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Linq;

@@ -484,7 +484,6 @@ namespace Beamable.Api.CloudSaving
 					isError = true;
 					yield return new WaitForSecondsRealtime(retryCount);
 					//The presignedURL did not find an object that matches
-					Debug.LogWarning($"Retrying {currentRequest.method} for {filename}. Encountered: {currentRequest.error}");
 					//The previous request was made, Unity destroys it, so we need to create a new one with the same parameters.
 					currentRequest = new UnityWebRequest(currentRequest.url, currentRequest.method);
 				}
@@ -717,7 +716,7 @@ namespace Beamable.Api.CloudSaving
 					}
 					catch (IOException deleteFailed)
 					{
-						Debug.Log($"Deletion failed because the files were open, trying again: {deleteFailed}");
+						Debug.LogError($"Deletion failed because the files were open, trying again: {deleteFailed}");
 						throw deleteFailed;
 					}
 

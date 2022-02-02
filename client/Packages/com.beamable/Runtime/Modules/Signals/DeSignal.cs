@@ -13,7 +13,7 @@ namespace Beamable.Signals
 		public void InvokeWithTrace<TSource>(TSource sourceTower, TSource currentTower, T arg)
 		   where TSource : DeSignalTower
 		{
-
+#if UNITY_DEVELOPER
 			var fields = currentTower.GetType().GetFields();
 			var field = fields.FirstOrDefault(f => f.GetValue(currentTower) == this);
 
@@ -24,6 +24,7 @@ namespace Beamable.Signals
 			{
 				Debug.Log($"   Listener {i}: Current=[{currentTower.name}] Target=[{GetPersistentTarget(i).name}] Method=[{GetPersistentMethodName(i)}]", currentTower);
 			}
+#endif
 			Invoke(arg);
 		}
 
@@ -56,7 +57,7 @@ namespace Beamable.Signals
 				var signal = getter(tower);
 
 				if (self.Diagnostic || tower.Diagnostic) // if the sender, or the receiver has diagnostic on...
-			 {
+				{
 					signal?.InvokeWithTrace(self, tower, arg);
 				}
 				else

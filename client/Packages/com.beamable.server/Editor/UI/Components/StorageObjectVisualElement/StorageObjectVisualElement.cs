@@ -50,44 +50,22 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_mongoStorageModel.ServiceBuilder.OnIsRunningChanged += OnIsRunningChanged;
 		}
 
-		protected override void UpdateStatusIcon()
+		protected override void UpdateLocalStatus()
 		{
-			_statusIcon.ClearClassList();
-
-			string statusClassName;
-			string statusText;
-
-			var status = _mongoStorageModel.IsRunning ? "localRunning" : "localStopped";
-			switch (status)
-			{
-				case "localRunning":
-					statusClassName = "localRunning";
-					statusText = "Local Running";
-					break;
-				case "localStopped":
-					statusClassName = "localStopped";
-					statusText = "Local Stopped";
-					break;
-				default:
-					statusClassName = "different";
-					statusText = "Different";
-					break;
-			}
-
-			_statusIcon.tooltip = _statusLabel.text = statusText;
-			_statusIcon.AddToClassList(statusClassName);
+			base.UpdateLocalStatus();
+			UpdateLocalStatusIcon(_mongoStorageModel.IsRunning, false);
 		}
 
 		private void OnIsRunningChanged(bool isRunning)
 		{
 			UpdateRemoteStatusIcon();
-			UpdateButtons();
+			UpdateLocalStatus();
 		}
 
 		private void OnBuildingFinished(bool isFinished)
 		{
 			UpdateRemoteStatusIcon();
-			UpdateButtons();
+			UpdateLocalStatus();
 		}
 
 		private void OnServiceReferenceChanged(ServiceStorageReference serviceReference)

@@ -41,7 +41,7 @@ namespace Beamable.Stats
 	   fileName = "Stat",
 	   menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE + "/" +
 	   "Stat",
-	   order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
+	   order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_3)]
 	[System.Serializable]
 	public class StatObject : ScriptableObject
 	{
@@ -76,22 +76,22 @@ namespace Beamable.Stats
 
 				return profanityPromise.FlatMap(unit =>
 			 {
-				   var writeOperation = de.StatsService.SetStats(Access.GetString(), new Dictionary<string, string> { { StatKey, value } });
+				 var writeOperation = de.StatsService.SetStats(Access.GetString(), new Dictionary<string, string> { { StatKey, value } });
 
-				   var changeEvent = new StatObjectChangeEvent
-				   {
-					   UserId = de.User.id,
-					   NewValue = value,
-					   Stat = this
-				   };
+				 var changeEvent = new StatObjectChangeEvent
+				 {
+					 UserId = de.User.id,
+					 NewValue = value,
+					 Stat = this
+				 };
 
-				   writeOperation.Then(_ =>
-				{
-					  OnValueChanged?.Invoke(changeEvent);
-					  _listeners.ForEach(l => l.Refresh());
-				  });
-				   return writeOperation.Map(_ => PromiseBase.Unit);
-			   });
+				 writeOperation.Then(_ =>
+			  {
+				  OnValueChanged?.Invoke(changeEvent);
+				  _listeners.ForEach(l => l.Refresh());
+			  });
+				 return writeOperation.Map(_ => PromiseBase.Unit);
+			 });
 			});
 
 		}

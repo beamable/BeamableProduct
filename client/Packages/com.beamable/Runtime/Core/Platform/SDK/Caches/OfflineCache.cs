@@ -79,7 +79,6 @@ namespace Beamable.Api.Caches
 				{
 					if (Path.GetFileName(dir) != Application.version)
 					{
-						Debug.Log("Clearing cache for :" + dir);
 						Directory.Delete(dir, true);
 					}
 				}

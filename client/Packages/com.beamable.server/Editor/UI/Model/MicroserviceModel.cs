@@ -183,7 +183,6 @@ namespace Beamable.Editor.UI.Model
 		private void RunSnykTests()
 		{
 			var snykCommand = new SnykTestCommand(ServiceDescriptor);
-			Debug.Log($"Starting Snyk Tests for {ServiceDescriptor.Name}. Please hold.");
 			snykCommand.Start(null).Then(res =>
 			{
 				if (res.RequiresLogin)
@@ -191,7 +190,7 @@ namespace Beamable.Editor.UI.Model
 					var onLogin = new Promise<Unit>();
 					onLogin.Then(_ => RunSnykTests()).Error(_ =>
 					{
-						Debug.Log("Cannot run Snyk Tests without being logged into DockerHub");
+						Debug.LogError("Cannot run Snyk Tests without being logged into DockerHub");
 					});
 					OnDockerLoginRequired?.Invoke(onLogin);
 

@@ -30,13 +30,13 @@ namespace Beamable.AccountManagement
 			{
 				de.GetDeviceUsers().Then(all =>
 			 {
-				   all.ToList().ForEach(bundle =>
-				{
-					  var user = bundle.User;
-					  var userType = user.id == de.User.id ? "CURRENT" : "DEVICE";
-					  Debug.Log($"{userType} : EMAIL: [{user.email}] ID: [{user.id}] 3RD PARTIES: [{string.Join(",", user.thirdPartyAppAssociations)}]");
-				  });
-			   });
+				 all.ToList().ForEach(bundle =>
+			  {
+				  var user = bundle.User;
+				  var userType = user.id == de.User.id ? "CURRENT" : "DEVICE";
+				  Debug.Log($"{userType} : EMAIL: [{user.email}] ID: [{user.id}] 3RD PARTIES: [{string.Join(",", user.thirdPartyAppAssociations)}]");
+			  });
+			 });
 			});
 			return "";
 		}

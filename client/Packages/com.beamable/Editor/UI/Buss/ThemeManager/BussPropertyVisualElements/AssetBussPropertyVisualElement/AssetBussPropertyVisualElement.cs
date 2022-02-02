@@ -1,5 +1,4 @@
-﻿using System;
-using Beamable.UI.Buss;
+﻿using Beamable.UI.Buss;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -38,7 +37,7 @@ namespace Beamable.Editor.UI.Components
 
 		public override void OnPropertyChangedExternally()
 		{
-			_field.value = Property.GenericAsset;
+			_field.SetValueWithoutNotify(Property.GenericAsset);
 		}
 	}
 }

@@ -1,15 +1,9 @@
 using Beamable.Common;
-using Beamable.Editor.Content;
-using Beamable.Editor.Content.Models;
-using Beamable.Editor.UI.Buss.Components;
 using Beamable.Editor.UI.Components;
-using Beamable.Platform.SDK;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
-using UnityEngine;
-using Debug = UnityEngine.Debug;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -71,8 +65,8 @@ namespace Beamable.Editor.Content.Components
 				noDownloadLabel.text = ContentManagerConstants.DownloadNoDataText;
 				noDownloadLabel.AddTextWrapStyle();
 
-			 // TODO show preview of download content.
-			 var modifiedFold = Root.Q<Foldout>("overwriteFoldout");
+				// TODO show preview of download content.
+				var modifiedFold = Root.Q<Foldout>("overwriteFoldout");
 				modifiedFold.text = "Overwrites";
 				var modifiedSource = new List<ContentDownloadEntryDescriptor>();
 				_modifiedList = new ListView
@@ -105,10 +99,10 @@ namespace Beamable.Editor.Content.Components
 				var addInCount = Root.Q<CountVisualElement>("addInCount");
 				addInCount.SetValue(tmpAdditional.Count());
 
-			 //var tmpRemoved = GetRemoveSource(summary);
-			 //tmpAdditional.AddRange(tmpRemoved);
+				//var tmpRemoved = GetRemoveSource(summary);
+				//tmpAdditional.AddRange(tmpRemoved);
 
-			 SetFold(additionFold, tmpAdditional, addSource, _addList);
+				SetFold(additionFold, tmpAdditional, addSource, _addList);
 
 				var deleteFoldoutElem = Root.Q<Foldout>("deleteFoldout");
 				deleteFoldoutElem.text = "Deletions";
@@ -256,8 +250,8 @@ namespace Beamable.Editor.Content.Components
 			OnDownloadStarted?.Invoke(Model.GetResult(), (progress, processed, total) =>
 			{
 				_loadingBar.Progress = progress;
-			 //Mark element as checked
-			 for (var i = lastProcessed; i < processed; i++)
+				//Mark element as checked
+				for (var i = lastProcessed; i < processed; i++)
 				{
 					var contentElement = _contentElements[i];
 					contentElement.MarkChecked();
@@ -270,20 +264,20 @@ namespace Beamable.Editor.Content.Components
 
 				   finalPromise.Then(_ =>
 				{
-					  SetDownloadSuccessMessageLabel();
-					  OnDownloadSuccess();
+					SetDownloadSuccessMessageLabel();
+					OnDownloadSuccess();
 
-				  }).Error(_ =>
-					 {
-						 _loadingBar.Progress = 1;
-						 _loadingBar.RunWithoutUpdater = false;
-					  // TODO make this error reporting better.
-					  EditorApplication.delayCall += () =>
-					  {
-							EditorUtility.DisplayDialog("Download Failed", "See console for errors.", "OK");
-							OnClosed?.Invoke();
-						};
-					 });
+				}).Error(_ =>
+				   {
+					   _loadingBar.Progress = 1;
+					   _loadingBar.RunWithoutUpdater = false;
+					   // TODO make this error reporting better.
+					   EditorApplication.delayCall += () =>
+					   {
+						   EditorUtility.DisplayDialog("Download Failed", "See console for errors.", "OK");
+						   OnClosed?.Invoke();
+					   };
+				   });
 			   });
 		}
 	}

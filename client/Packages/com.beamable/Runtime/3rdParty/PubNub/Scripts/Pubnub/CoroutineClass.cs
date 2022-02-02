@@ -753,7 +753,6 @@ namespace PubNubMessaging.Core
                 if (DelayRequestCoroutineSub != null)
                 {
                     StopCoroutine(DelayRequestCoroutineSub);
-                    Debug.Log("StopCoroutineDelayRequestCoroutineSub");
                 }
 
                 if((SubTimeoutCoroutine != null) && (!isSubscribeComplete)){
@@ -809,7 +808,6 @@ namespace PubNubMessaging.Core
 #if (!REDUCE_PUBNUB_COROUTINES)
                 if((PresenceHeartbeatTimeoutCoroutine != null) && (!isPresenceHeartbeatComplete)){
                     StopCoroutine (PresenceHeartbeatTimeoutCoroutine);
-                    Debug.Log("StopCoroutine (PresenceHeartbeatTimeoutCoroutine);");
                     LoggingMethod.WriteToLog (string.Format ("DateTime {0}, StartCoroutinesByName: Stopped existing timeout coroutine {1}", DateTime.Now.ToString (), cp.crt.ToString ()), LoggingMethod.LevelInfo);
             
                 }
@@ -1059,7 +1057,6 @@ namespace PubNubMessaging.Core
                     if(HeartbeatCoroutine != null)
                     {
                         StopCoroutine(HeartbeatCoroutine);
-                        Debug.Log("StopCoroutine(HeartbeatCoroutine)");
                     }
                 }
                 if (DelayRequestCoroutineHB != null)
@@ -1079,7 +1076,6 @@ namespace PubNubMessaging.Core
                 if (DelayRequestCoroutinePHB != null)
                 {
                     StopCoroutine(DelayRequestCoroutinePHB);
-                    Debug.Log("StopCoroutine(DelayRequestCoroutinePHB);");
                     
                 }
             }
@@ -1092,7 +1088,6 @@ namespace PubNubMessaging.Core
                 if (DelayRequestCoroutineSub != null)
                 {
                     StopCoroutine(DelayRequestCoroutineSub);
-                    Debug.Log("StopCoroutine(DelayRequestCoroutineSub);");
                 }
             }
             else if ((crt == CurrentRequestType.NonSubscribe) && (nonSubscribeWww != null) && (!nonSubscribeWww.isDone))

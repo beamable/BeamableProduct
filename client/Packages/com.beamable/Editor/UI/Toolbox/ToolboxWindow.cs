@@ -3,21 +3,11 @@ using Beamable.Editor.Login.UI;
 using Beamable.Editor.NoUser;
 using Beamable.Editor.Toolbox.Components;
 using Beamable.Editor.Toolbox.Models;
-using Beamable.Editor.Toolbox.UI.Components;
-using Beamable.Editor.UI.Buss.Components;
-using Beamable.Editor.UI.Components;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Networking.PlayerConnection;
-using Debug = UnityEngine.Debug;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
-
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -63,16 +53,12 @@ namespace Beamable.Editor.Toolbox.UI
 			get { return Instance != null; }
 		}
 
-		private ToolboxComponent _toolboxComponent;
 		private VisualElement _windowRoot;
 
 		private ToolboxActionBarVisualElement _actionBarVisualElement;
 		private ToolboxBreadcrumbsVisualElement _breadcrumbsVisualElement;
 
 		private ToolboxContentListVisualElement _contentListVisualElement;
-
-		// private ToolboxSelectionListVisualElement _selectionListVisualElement;
-		private SearchBarVisualElement _searchBarVisualElement;
 
 		private ToolboxModel _model;
 		private ToolboxAnnouncementListVisualElement _announcementListVisualElement;
@@ -166,7 +152,6 @@ namespace Beamable.Editor.Toolbox.UI
 
 			_actionBarVisualElement.OnInfoButtonClicked += () =>
 			{
-				Debug.Log("Show info");
 				Application.OpenURL(BeamableConstants.URL_TOOL_WINDOW_TOOLBOX);
 			};
 
@@ -176,6 +161,7 @@ namespace Beamable.Editor.Toolbox.UI
 		{
 			// TODO: animate the height...
 			_contentListVisualElement?.style.SetTop(65 + height);
+			_contentListVisualElement?.MarkDirtyRepaint();
 		}
 		private void CheckForDeps()
 		{

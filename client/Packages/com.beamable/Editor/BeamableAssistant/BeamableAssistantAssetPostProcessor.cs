@@ -15,6 +15,9 @@ namespace Beamable.Editor.Assistant
 	{
 		public static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
 		{
+			if (!BeamEditor.IsInitialized)
+				return;
+
 #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 			var toolbarExtendedRelatedAssets = importedAssets.Union(movedAssets)
 															 .Select(path => (path, type: AssetDatabase.GetMainAssetTypeAtPath(path)))
@@ -22,7 +25,7 @@ namespace Beamable.Editor.Assistant
 															 .ToList();
 
 			if (toolbarExtendedRelatedAssets.Count > 0 || deletedAssets.Length > 0)
-				BeamableToolbarExtender.Reload();
+				BeamableToolbarExtender.LoadToolbarExtender();
 #endif
 			var beamHintDetailsRelatedAssets = importedAssets.Union(movedAssets)
 															 .Select(path => (path, type: AssetDatabase.GetMainAssetTypeAtPath(path)))
@@ -31,17 +34,11 @@ namespace Beamable.Editor.Assistant
 
 			if (beamHintDetailsRelatedAssets.Count > 0 || deletedAssets.Length > 0)
 			{
-				EditorDebouncer.Debounce("Reload HintDetails Configuration Objects", () =>
-				{
-					// Do nothing if the BeamEditor is not initialized.
-					if (BeamEditor.EditorReflectionCache == null) return;
+				BeamEditor.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>()
+						  .ReloadHintDetailConfigScriptableObjects(BeamEditor.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
 
-					BeamEditor.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>()
-							  .ReloadHintDetailConfigScriptableObjects(BeamEditor.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
-
-					BeamEditor.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>()
-							  .ReloadHintTextMapScriptableObjects(BeamEditor.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
-				});
+				BeamEditor.EditorReflectionCache.GetFirstSystemOfType<BeamHintReflectionCache.Registry>()
+						  .ReloadHintTextMapScriptableObjects(BeamEditor.CoreConfiguration.BeamableAssistantHintDetailConfigPaths);
 			}
 		}
 	}

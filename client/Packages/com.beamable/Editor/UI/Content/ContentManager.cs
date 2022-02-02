@@ -30,29 +30,29 @@ namespace Beamable.Editor.Content
 				Model.UserCanPublish = de.User?.CanPushContent ?? false;
 				EditorAPI.Instance.Then(b =>
 			 {
-				   b.OnUserChange -= HandleOnUserChanged;
-				   b.OnUserChange += HandleOnUserChanged;
-			   });
+				 b.OnUserChange -= HandleOnUserChanged;
+				 b.OnUserChange += HandleOnUserChanged;
+			 });
 
 				var localManifest = de.ContentIO.BuildLocalManifest();
 				Model.SetLocalContent(localManifest);
 				de.ContentIO.OnManifest.Then(manifest =>
 			 {
-				   Model.SetServerContent(manifest);
-			   });
+				 Model.SetServerContent(manifest);
+			 });
 
 				Model.OnSoftReset += () =>
 			 {
-				   var nextLocalManifest = de.ContentIO.BuildLocalManifest();
-				   Model.SetLocalContent(nextLocalManifest);
-				   RefreshServer();
-			   };
+				 var nextLocalManifest = de.ContentIO.BuildLocalManifest();
+				 Model.SetLocalContent(nextLocalManifest);
+				 RefreshServer();
+			 };
 
 				Model.SetContentTypes(ContentRegistry.GetAll().ToList());
 
 				ValidateContent(null, null); // start a validation in the background.
 
-			 ContentIO.OnContentCreated += ContentIO_OnContentCreated;
+				ContentIO.OnContentCreated += ContentIO_OnContentCreated;
 				ContentIO.OnContentDeleted += ContentIO_OnContentDeleted;
 				ContentIO.OnContentRenamed += ContentIO_OnContentRenamed;
 			});
@@ -64,8 +64,8 @@ namespace Beamable.Editor.Content
 			{
 				de.ContentIO.FetchManifest().Then(manifest =>
 			 {
-				   Model.SetServerContent(manifest);
-			   });
+				 Model.SetServerContent(manifest);
+			 });
 			});
 		}
 
@@ -112,15 +112,15 @@ namespace Beamable.Editor.Content
 			{
 				var promise = de.ContentPublisher.Publish(publishSet, progress =>
 			 {
-				   progressHandler?.Invoke(progress.Progress, progress.CompletedOperations, progress.TotalOperations);
-			   });
+				 progressHandler?.Invoke(progress.Progress, progress.CompletedOperations, progress.TotalOperations);
+			 });
 
 				finishedHandler?.Invoke(promise);
 				return promise.Map(_ =>
 			 {
-				   de.ContentIO.FetchManifest();
-				   return _;
-			   });
+				 de.ContentIO.FetchManifest();
+				 return _;
+			 });
 			});
 		}
 
@@ -130,8 +130,8 @@ namespace Beamable.Editor.Content
 			return EditorAPI.Instance.FlatMap(de =>
 			{
 				var contentDownloader = new ContentDownloader(de.Requester, de.ContentIO);
-			 //Disallow updating anything while importing / refreshing
-			 var downloadPromise = contentDownloader.Download(summary, progressHandler);
+				//Disallow updating anything while importing / refreshing
+				var downloadPromise = contentDownloader.Download(summary, progressHandler);
 
 				finishedHandler?.Invoke(downloadPromise);
 				return downloadPromise;
@@ -156,7 +156,6 @@ namespace Beamable.Editor.Content
 
 		public void ShowDocs()
 		{
-			BeamableLogger.Log("ShowDocs");
 			Application.OpenURL(BeamableConstants.URL_TOOL_WINDOW_CONTENT_MANAGER);
 		}
 
@@ -182,12 +181,12 @@ namespace Beamable.Editor.Content
 			{
 				return de.ContentIO.FetchManifest().Map(serverManifest =>
 			 {
-				   var localManifest = de.ContentIO.BuildLocalManifest();
+				 var localManifest = de.ContentIO.BuildLocalManifest();
 
 
 
-				   return new DownloadSummary(de.ContentIO, localManifest, serverManifest, filter.Select(x => x.Id).ToArray());
-			   });
+				 return new DownloadSummary(de.ContentIO, localManifest, serverManifest, filter.Select(x => x.Id).ToArray());
+			 });
 			});
 		}
 

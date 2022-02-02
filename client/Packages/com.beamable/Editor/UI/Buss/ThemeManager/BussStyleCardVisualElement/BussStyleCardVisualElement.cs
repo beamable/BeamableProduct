@@ -1,8 +1,5 @@
 ﻿using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Buss.Components;
-using Beamable.Editor.UI.BUSS.ThemeManager;
 using Beamable.UI.Buss;
-using Beamable.UI.BUSS;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,8 +16,9 @@ namespace Beamable.Editor.UI.Components
 {
 	public class BussStyleCardVisualElement : BeamableVisualElement
 	{
+		public event Action EnterEditMode;
+		
 		private BussSelectorLabelVisualElement _selectorLabelComponent;
-		private VisualElement _styleIdParent;
 		private VisualElement _selectorLabelParent;
 		private VisualElement _variables;
 		private VisualElement _propertiesParent;
@@ -34,8 +32,6 @@ namespace Beamable.Editor.UI.Components
 		private VisualElement _addRuleButton;
 		private VisualElement _showAllButton;
 		private TextElement _showAllButtonText;
-		private TextElement _styleIdLabel;
-		private TextField _styleIdEditField;
 
 		private VariableDatabase _variableDatabase;
 		private BussStyleSheet _styleSheet;
@@ -76,24 +72,35 @@ namespace Beamable.Editor.UI.Components
 			_navigationWindow.SelectionChanged -= OnSelectionChanged;
 			_navigationWindow.SelectionChanged += OnSelectionChanged;
 
+			_removeButton.SetHidden(!StyleRule.EditMode);
+			
 			RegisterButtonActions();
-
 			CreateSelectorLabel();
 			RefreshProperties();
 
-			_styleSheet.Change -= RefreshProperties;
-			_styleSheet.Change += RefreshProperties;
-
-			_removeButton.SetHidden(!StyleRule.EditMode);
 			UpdateShowAllStatus();
+
+			RefreshButtons();
+		}
+
+		public void RefreshButtons()
+		{
+			bool enabled = !_styleSheet.IsReadOnly;
+
+			_editButton.SetEnabled(enabled);
+			_undoButton.SetEnabled(enabled);
+			_cleanAllButton.SetEnabled(enabled);
+			_addVariableButton.SetEnabled(enabled);
+			_addRuleButton.SetEnabled(enabled);
+			_showAllButton.SetEnabled(enabled);
 		}
 
 		public void Setup(BussThemeManager themeManager,
-						  BussStyleSheet styleSheet,
-						  BussStyleRule styleRule,
-						  VariableDatabase variableDatabase,
-						  BussElementHierarchyVisualElement navigationWindow,
-						  Action onUndoRequest)
+		                  BussStyleSheet styleSheet,
+		                  BussStyleRule styleRule,
+		                  VariableDatabase variableDatabase,
+		                  BussElementHierarchyVisualElement navigationWindow,
+		                  Action onUndoRequest)
 		{
 			_themeManager = themeManager;
 			_styleSheet = styleSheet;
@@ -101,14 +108,12 @@ namespace Beamable.Editor.UI.Components
 			_variableDatabase = variableDatabase;
 			_navigationWindow = navigationWindow;
 			_onUndoRequest = onUndoRequest;
-			_styleSheet.Change += RefreshProperties;
 
 			Refresh();
 		}
 
 		protected override void OnDestroy()
 		{
-			_styleSheet.Change -= RefreshProperties;
 			ClearButtonActions();
 
 			if (_navigationWindow != null)
@@ -174,7 +179,7 @@ namespace Beamable.Editor.UI.Components
 
 			var context = new GenericMenu();
 
-			foreach (var key in BussStyle.Keys)
+			foreach (string key in BussStyle.Keys)
 			{
 				if (keys.Contains(key)) continue;
 				var baseType = BussStyle.GetBaseType(key);
@@ -199,7 +204,7 @@ namespace Beamable.Editor.UI.Components
 		private void AddVariableButtonClicked(MouseDownEvent evt)
 		{
 			var window = NewVariableWindow.ShowWindow();
-			window?.Init((key, property) =>
+			window?.Init(_styleRule, (key, property) =>
 			{
 				StyleRule.TryAddProperty(key, property, out _);
 				AssetDatabase.SaveAssets();
@@ -239,7 +244,12 @@ namespace Beamable.Editor.UI.Components
 
 		private void EditButtonClicked(MouseDownEvent evt)
 		{
-			StyleRule.EditMode = !StyleRule.EditMode;
+			SetEditMode(!StyleRule.EditMode);
+		}
+
+		public void SetEditMode(bool value)
+		{
+			StyleRule.EditMode = value;
 
 			if (!StyleRule.EditMode)
 			{
@@ -247,6 +257,10 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			Refresh();
+			if (value)
+			{
+				EnterEditMode?.Invoke();
+			}
 		}
 
 		private void ShowAllButtonClicked(MouseDownEvent evt)
@@ -269,8 +283,10 @@ namespace Beamable.Editor.UI.Components
 			_selectorLabelParent.Clear();
 
 			_selectorLabelComponent = new BussSelectorLabelVisualElement();
-			_selectorLabelComponent.Setup(StyleRule);
+			_selectorLabelComponent.Setup(StyleRule, _styleSheet);
 			_selectorLabelParent.Add(_selectorLabelComponent);
+
+			_selectorLabelComponent.OnChangeSubmit += () => SetEditMode(false);
 		}
 
 		public void RefreshProperties()
@@ -305,7 +321,7 @@ namespace Beamable.Editor.UI.Components
 					continue;
 				}
 
-				BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
+				var element = new BussStylePropertyVisualElement();
 				element.Setup(_styleSheet, _styleRule, property, _variableDatabase);
 				(property.IsVariable ? _variables : _propertiesParent).Add(element);
 				_properties.Add(element);
@@ -357,12 +373,21 @@ namespace Beamable.Editor.UI.Components
 			});
 		}
 
+		public void RefreshPropertyByReference(VariableDatabase.PropertyReference reference)
+		{
+			var property = _properties.FirstOrDefault(p => p.PropertyProvider == reference.propertyProvider);
+			if (property != null)
+			{
+				property.Refresh();
+			}
+		}
+
 		// TODO: change this, card should be setup/refreshed by it's parent
 		private void OnSelectionChanged(GameObject gameObject)
 		{
 			if (_colorBlock == null || gameObject == null) return;
 
-			var active = false;
+			bool active = false;
 			var bussElement = gameObject.GetComponent<BussElement>();
 			if (bussElement != null && StyleRule.Selector != null)
 			{

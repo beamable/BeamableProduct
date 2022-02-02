@@ -3,13 +3,17 @@
 }
 
 #addStyleButton {
-    background-color: rgb(100,100,100);
-    border-color: #000000;
+    background-color: rgb(180, 180, 180);
 }
 
 #addStyleButton:hover {
-    background-color: rgb(120,120,120);
+    background-color: rgb(200, 200, 200);
 }
 
 #addStyleButton > Label {
+    color: rgba(9, 9, 9, 1);
+}
+
+#filterToggle > TemplateContainer > #mainVisualElement> Label {
+    color: rgba(9, 9, 9, 1);
 }

@@ -8,7 +8,7 @@ using Object = UnityEngine.Object;
 
 namespace Beamable.UI.Buss
 {
-	[CreateAssetMenu(fileName = "BUSSStyleConfig", menuName = "Beamable/Buss/Create BUSS Style", order = 0)]
+	[CreateAssetMenu(fileName = "BUSSStyleConfig", menuName = "Beamable/BUSS Style", order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
 	public class BussStyleSheet : ScriptableObject, ISerializationCallbackReceiver
 	{
 		public event Action Change;
@@ -20,6 +20,11 @@ namespace Beamable.UI.Buss
 
 		public List<BussStyleRule> Styles => _styles;
 
+		[SerializeField]
+		private bool _isReadOnly;
+
+		public bool IsReadOnly => _isReadOnly;
+
 		private void OnValidate()
 		{
 			TriggerChange();
@@ -29,6 +34,9 @@ namespace Beamable.UI.Buss
 		{
 			BussConfiguration.UseConfig(conf => conf.UpdateStyleSheet(this));
 			Change?.Invoke();
+#if UNITY_EDITOR
+			UnityEditor.EditorUtility.SetDirty(this);
+#endif
 		}
 
 		public void RemoveStyle(BussStyleRule styleRule)
@@ -149,6 +157,7 @@ namespace Beamable.UI.Buss
 		public string Key => key;
 
 		public bool IsVariable => BussStyleSheetUtility.IsValidVariableName(Key);
+		public bool HasVariableReference => GetProperty() is VariableProperty;
 
 		public static BussPropertyProvider Create(string key, IBussProperty property)
 		{

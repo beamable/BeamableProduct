@@ -1,11 +1,14 @@
 #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 using System;
+using System.Linq;
 using UnityEngine;
 using UnityEditor;
 using System.Reflection;
+using Beamable.Editor.Assistant;
 
 #if UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
+
 #else
 using UnityEngine.Experimental.UIElements;
 #endif
@@ -17,23 +20,27 @@ namespace Beamable.Editor.ToolbarExtender
 		static Type m_toolbarType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.Toolbar");
 		static Type m_guiViewType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.GUIView");
 #if UNITY_2020_1_OR_NEWER
-		static Type m_iWindowBackendType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.IWindowBackend");
-		static PropertyInfo m_windowBackend = m_guiViewType.GetProperty("windowBackend",
-			BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-		static PropertyInfo m_viewVisualTree = m_iWindowBackendType.GetProperty("visualTree",
-			BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        static Type m_iWindowBackendType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.IWindowBackend");
+
+        static PropertyInfo m_windowBackend = m_guiViewType.GetProperty("windowBackend",
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
+        static PropertyInfo m_viewVisualTree = m_iWindowBackendType.GetProperty("visualTree",
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 #else
 		static PropertyInfo m_viewVisualTree = m_guiViewType.GetProperty("visualTree",
 			BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 #endif
 		static FieldInfo m_imguiContainerOnGui = typeof(IMGUIContainer).GetField("m_OnGUIHandler",
 			BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
 		static ScriptableObject m_currentToolbar;
 
 		/// <summary>
 		/// Callback for toolbar OnGUI method.
 		/// </summary>
 		public static Action OnToolbarGUI;
+
 		public static Action OnToolbarGUILeft;
 		public static Action OnToolbarGUIRight;
 
@@ -79,10 +86,10 @@ namespace Beamable.Editor.ToolbarExtender
 					}
 #else
 #if UNITY_2020_1_OR_NEWER
-					var windowBackend = m_windowBackend.GetValue(m_currentToolbar);
+                    var windowBackend = m_windowBackend.GetValue(m_currentToolbar);
 
-					// Get it's visual tree
-					var visualTree = (VisualElement) m_viewVisualTree.GetValue(windowBackend, null);
+                    // Get it's visual tree
+                    var visualTree = (VisualElement)m_viewVisualTree.GetValue(windowBackend, null);
 #else
 					// Get it's visual tree
 					var visualTree = (VisualElement)m_viewVisualTree.GetValue(m_currentToolbar, null);
@@ -98,7 +105,6 @@ namespace Beamable.Editor.ToolbarExtender
 					m_imguiContainerOnGui.SetValue(container, handler);
 
 #endif
-
 				}
 			}
 		}

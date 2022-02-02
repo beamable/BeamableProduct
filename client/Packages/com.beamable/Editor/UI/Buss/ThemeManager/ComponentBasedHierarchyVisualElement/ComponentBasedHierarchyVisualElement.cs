@@ -27,7 +27,7 @@ namespace Beamable.Editor.UI.Components
 		public T SelectedComponent
 		{
 			get;
-			protected set;
+			private set;
 		}
 
 		private IndentedLabelVisualElement SelectedLabel
@@ -77,18 +77,6 @@ namespace Beamable.Editor.UI.Components
 			OnHierarchyChanged();
 		}
 
-		protected void OnSelectionChanged()
-		{
-			IndentedLabelVisualElement indentedLabelVisualElement =
-				_spawnedLabels.Find(label => label.RelatedGameObject == Selection.activeGameObject);
-
-			if (indentedLabelVisualElement != null)
-			{
-				SelectedComponent = indentedLabelVisualElement.RelatedGameObject.GetComponent<T>();
-				ChangeSelectedLabel(indentedLabelVisualElement, false);
-			}
-		}
-
 		protected abstract void OnObjectRegistered(T registeredObject);
 
 		protected virtual string GetLabel(T component)
@@ -101,19 +89,13 @@ namespace Beamable.Editor.UI.Components
 			EditorApplication.hierarchyChanged -= OnHierarchyChanged;
 		}
 
-		protected void ChangeSelectedLabel(IndentedLabelVisualElement newLabel, bool setInHierarchy = true)
+		protected virtual void OnHierarchyChanged()
 		{
-			SelectedLabel?.Deselect();
-			SelectedLabel = newLabel;
-			SelectedLabel?.Select();
-
-			if (!setInHierarchy) return;
-
-			Selection.SetActiveObjectWithContext(SelectedLabel?.RelatedGameObject,
-												 SelectedLabel?.RelatedGameObject);
+			RefreshTree();
+			HierarchyChanged?.Invoke();
 		}
 
-		protected virtual void OnHierarchyChanged()
+		protected void RefreshTree()
 		{
 			foreach (IndentedLabelVisualElement child in _spawnedLabels)
 			{
@@ -131,8 +113,33 @@ namespace Beamable.Editor.UI.Components
 					Traverse(gameObject, 0);
 				}
 			}
+		}
 
-			HierarchyChanged?.Invoke();
+		protected virtual void OnSelectionChanged()
+		{
+			IndentedLabelVisualElement indentedLabelVisualElement =
+				_spawnedLabels.Find(label => label.RelatedGameObject == Selection.activeGameObject);
+
+			if (indentedLabelVisualElement != null)
+			{
+				if (indentedLabelVisualElement.RelatedGameObject != null)
+				{
+					SelectedComponent = indentedLabelVisualElement.RelatedGameObject.GetComponent<T>();
+					ChangeSelectedLabel(indentedLabelVisualElement, false);
+				}
+			}
+		}
+
+		private void ChangeSelectedLabel(IndentedLabelVisualElement newLabel, bool setInHierarchy = true)
+		{
+			SelectedLabel?.Deselect();
+			SelectedLabel = newLabel;
+			SelectedLabel?.Select();
+
+			if (!setInHierarchy) return;
+
+			Selection.SetActiveObjectWithContext(SelectedLabel?.RelatedGameObject,
+												 SelectedLabel?.RelatedGameObject);
 		}
 
 		private void OnMouseClicked(IndentedLabelVisualElement newLabel)

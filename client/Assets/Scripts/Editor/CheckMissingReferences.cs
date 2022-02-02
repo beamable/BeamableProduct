@@ -117,7 +117,6 @@ namespace Beamable.Assets.Editor
 					string text = File.ReadAllText(newFile);
 					if (text.Contains(findString))
 					{
-						Debug.Log("Fixing: " + newFile);
 						text = text.Replace(findString, replaceString);
 						File.SetAttributes(newFile, FileAttributes.Normal);
 						File.WriteAllText(newFile, text);

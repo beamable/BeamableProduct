@@ -11,7 +11,7 @@ namespace Beamable.Editor.Assistant
 	/// Holds a mapping of UXML/USS files to ids used by <see cref="BeamHintDetailConverterProvider"/> and <see cref="BeamHintHeaderVisualElement"/> to render out
 	/// hint details. 
 	/// </summary>
-	[CreateAssetMenu(fileName = "BeamHintDetailsConfig", menuName = "Beamable/Assistant/Hints/Hint Details Configuration", order = 0)]
+	[CreateAssetMenu(fileName = "BeamHintDetailsConfig", menuName = "Beamable/Assistant/Hint Details", order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
 	public class BeamHintDetailsConfig : ScriptableObject
 	{
 		[Tooltip("The id you want to reference in your " + nameof(BeamHintDetailConverterAttribute) + "s in order to map these UXML/USS files to specific set of hint(s).")]

@@ -25,12 +25,14 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":10.0}'
     _selector: '#currencyBackground'
+    _editMode: 0
+    _showAllMode: 0
   - _properties:
     - key: font
       property:
         type: Beamable.UI.Buss.FontBussAssetProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_asset":{"instanceID":0}}'
+        json: '{"AssetSerializationKey":-1}'
     - key: fontSize
       property:
         type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
@@ -42,3 +44,7 @@ MonoBehaviour:
           Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":0.0,"g":0.0,"b":0.0,"a":1.0}}'
     _selector: '#currencyText'
+    _editMode: 0
+    _showAllMode: 0
+  _assetReferences: []
+  _isReadOnly: 1

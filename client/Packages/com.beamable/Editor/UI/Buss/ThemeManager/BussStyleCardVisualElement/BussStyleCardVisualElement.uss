@@ -117,6 +117,7 @@
     width: 16px;
     height: 16px;
 }
+
 BussStylePropertyVisualElement.doesntExists, BussStylePropertyVisualElement.doesntExists #globalVariable {
     display: none;
     visibility: hidden;
@@ -126,3 +127,8 @@ BussStylePropertyVisualElement.doesntExists, BussStylePropertyVisualElement.does
     display: flex;
     visibility: visible;
 }
+
+.hidden .showAllProperties BussStylePropertyVisualElement.doesntExists, .hidden BussStylePropertyVisualElement.exists {
+     display: none;
+     visibility: hidden;
+ }

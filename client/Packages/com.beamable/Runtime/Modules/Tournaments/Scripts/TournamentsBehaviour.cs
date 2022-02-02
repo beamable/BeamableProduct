@@ -132,7 +132,6 @@ namespace Beamable.Tournaments
 				// if the time runs out, we want to invalidate everything, and refresh again.
 				BeamableAnimationUtil.Animate((i, n) =>
 				{
-					Debug.Log("Tournament is over");
 					_dataPromise = null;
 					OnEnable();
 				}, data.TournamentInfo.secondsRemaining, 1);

@@ -1,12 +1,6 @@
-using Beamable.Editor.Content;
-using Beamable.Editor.Content.Components;
-using Beamable.Editor.Content.Models;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.Toolbox.UI.Components;
-using Beamable.Editor.UI.Buss.Components;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -23,16 +17,16 @@ namespace Beamable.Editor.Toolbox.Components
 	{
 		private VisualElement _gridContainer;
 		private IWidgetSource _widgetSource;
-		private ScrollView _scrollView;
 
+		public new class UxmlFactory : UxmlFactory<ToolboxContentListVisualElement, UxmlTraits> { }
 
-		public new class UxmlFactory : UxmlFactory<ToolboxContentListVisualElement, UxmlTraits>
-		{
-		}
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
-			{ name = "custom-text", defaultValue = "nada" };
+			{
+				name = "custom-text",
+				defaultValue = "nada"
+			};
 
 			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
 			{
@@ -51,10 +45,7 @@ namespace Beamable.Editor.Toolbox.Components
 		private int TotalWidgets = 0;
 		private List<VisualElement> _extraElements = new List<VisualElement>();
 
-		public ToolboxContentListVisualElement() : base(nameof(ToolboxContentListVisualElement))
-		{
-		}
-
+		public ToolboxContentListVisualElement() : base(nameof(ToolboxContentListVisualElement)) { }
 
 		public override void Refresh()
 		{
@@ -67,7 +58,6 @@ namespace Beamable.Editor.Toolbox.Components
 			RefreshWidgetElements(_gridContainer);
 			EditorApplication.update -= CheckForExtraElements;
 			EditorApplication.update += CheckForExtraElements;
-
 		}
 
 		public void CheckForExtraElements()
@@ -76,14 +66,15 @@ namespace Beamable.Editor.Toolbox.Components
 			var elementSize = 220; // TODO: Find this number programmaticaly
 			var totalElements = TotalWidgets;
 
-
 			var elementsPerRow = (int)(totalWidth / elementSize);
 			var completedRows = (int)(totalElements / elementsPerRow);
 			var correctElements = completedRows * elementsPerRow;
 			var leftOverElements = totalElements - correctElements;
 			var extraElements = (elementsPerRow - leftOverElements) % elementsPerRow;
 
-			extraElements = Mathf.Min(extraElements, totalElements); // a sane upper limit, so we don't accidently create thousands of elements on page load.
+			extraElements =
+				Mathf.Min(extraElements,
+						  totalElements); // a sane upper limit, so we don't accidently create thousands of elements on page load.
 			if (ExtraElementCount == extraElements) return;
 			ExtraElementCount = extraElements;
 
@@ -103,8 +94,6 @@ namespace Beamable.Editor.Toolbox.Components
 			RefreshWidgetElements(_gridContainer);
 		}
 
-
-
 		private void RefreshWidgetElements(VisualElement gridRoot, string filter = null)
 		{
 			gridRoot.Clear();
@@ -118,8 +107,8 @@ namespace Beamable.Editor.Toolbox.Components
 				gridRoot.Add(widgetElement);
 				TotalWidgets++;
 			}
-			SetExtraElements();
 
+			SetExtraElements();
 		}
 
 		private void SetExtraElements()

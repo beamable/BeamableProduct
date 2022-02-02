@@ -130,7 +130,14 @@ namespace Beamable.Editor
 				return Reset();
 			}
 
-			ConfigDatabase.Init();
+			try
+			{
+				ConfigDatabase.Init();
+			}
+			catch (FileNotFoundException)
+			{
+				Debug.LogError("Failed to find 'config-defaults' file from Editor API. This should never be seen here. If you do, please file a bug-report.");
+			}
 
 			ConfigDatabase.TryGetString("alias", out var alias);
 			var cid = ConfigDatabase.GetString("cid");
@@ -186,7 +193,6 @@ namespace Beamable.Editor
 		{
 			if (game == null)
 			{
-				Debug.Log("SetGame: game was null");
 				return Promise<Unit>.Failed(new Exception("Cannot set game to null"));
 			}
 
@@ -341,7 +347,6 @@ namespace Beamable.Editor
 				   return ContentIO.FetchManifest();
 			   }).Map(_ =>
 			   {
-				   Debug.Log("Beamable Content Publish: Complete.");
 				   return PromiseBase.Unit;
 			   });
 		}
@@ -424,7 +429,15 @@ namespace Beamable.Editor
 				CheckoutPath(path);
 				File.WriteAllText(path, asJson);
 				AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
-				ConfigDatabase.Init();
+				try
+				{
+					ConfigDatabase.Init();
+				}
+				catch (FileNotFoundException)
+				{
+					Debug.LogError("Failed to find 'config-defaults' file from EditorAPI.SaveConfig. This should never be seen here. If you do, please file a bug-report.");
+				}
+
 				AssetDatabase.Refresh();
 			}
 

@@ -162,7 +162,6 @@ namespace Beamable.Player
 
 		public Promise OnDispose()
 		{
-			Debug.Log("Shutting down announcements");
 			_platform = null;
 			_announcementsApi = null;
 			_playerInventory = null;

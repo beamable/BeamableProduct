@@ -73,7 +73,7 @@ namespace Beamable.Server
 				}
 				else
 				{
-					Debug.LogWarning($"There is no variable for {key}. Sending null reference");
+					Debug.LogError($"There is no variable for {key}");
 					return null;
 				}
 			}

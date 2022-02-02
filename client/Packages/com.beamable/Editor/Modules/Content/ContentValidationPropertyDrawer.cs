@@ -284,8 +284,8 @@ namespace Beamable.Editor.Content
 			{
 				var attributes = drawerType.GetCustomAttributes<CustomPropertyDrawer>();
 				var attribute = attributes.FirstOrDefault();
-			 //var attribute = drawerType.GetCustomAttribute<CustomPropertyDrawer>();
-			 if (attribute == null) return false;
+				//var attribute = drawerType.GetCustomAttribute<CustomPropertyDrawer>();
+				if (attribute == null) return false;
 
 				var typeField = typeof(CustomPropertyDrawer).GetField("m_Type", BindingFlags.Instance | BindingFlags.NonPublic);
 				var useChildrenField = typeof(CustomPropertyDrawer).GetField("m_UseForChildren", BindingFlags.Instance | BindingFlags.NonPublic);

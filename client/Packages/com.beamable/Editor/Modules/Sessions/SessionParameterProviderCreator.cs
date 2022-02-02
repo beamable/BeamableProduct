@@ -12,7 +12,7 @@ namespace Beamable.Editor.Modules.Sessions
 	{
 		public const string EditorPrefKey = "Beamabe.Create.CustomSettingProvider";
 
-		[MenuItem("Assets/Create/Beamable/C# Session Parameter Provider")]
+		[MenuItem("Assets/Create/Beamable - Scripts/C# Session Parameter Provider")]
 		public static void CreateProviderScript()
 		{
 
@@ -78,9 +78,8 @@ namespace Beamable.Editor.Modules.Sessions
 			{
 				if (assetInstance == null)
 				{
-					Debug.Log("Unable to create custom settings asset. " + path);
+					Debug.LogError("Unable to create custom settings asset. " + path);
 					EditorPrefs.SetString(EditorPrefKey, null);
-
 				}
 			}
 

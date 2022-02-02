@@ -1,14 +1,16 @@
-﻿using Beamable.UI.Buss;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Beamable.Editor.UI.BUSS.ThemeManager
+namespace Beamable.UI.Buss
 {
 	public class VariableDatabase
 	{
 		private List<BussStyleSheet> _styleSheets = new List<BussStyleSheet>();
 		private Dictionary<string, VariableData> _variables = new Dictionary<string, VariableData>();
+
+		public bool CrushingChangeMarker { get; private set; }
+		public HashSet<PropertyReference> DirtyProperties { get; } = new HashSet<PropertyReference>();
 
 		public VariableData GetVariableData(string key)
 		{
@@ -89,6 +91,35 @@ namespace Beamable.Editor.UI.BUSS.ThemeManager
 			}
 		}
 
+		public void SetCrushingChange() => CrushingChangeMarker = true;
+
+		public void SetPropertyDirty(BussStyleSheet styleSheet,
+									 BussStyleRule styleRule,
+									 BussPropertyProvider propertyProvider)
+		{
+			DirtyProperties.Add(new PropertyReference(styleSheet, styleRule, propertyProvider));
+		}
+
+		public void SetVariableDirty(string key)
+		{
+			var data = GetVariableData(key);
+			foreach (PropertyReference declaration in data.Declarations)
+			{
+				DirtyProperties.Add(declaration);
+			}
+
+			foreach (PropertyReference usage in data.Usages)
+			{
+				DirtyProperties.Add(usage);
+			}
+		}
+
+		public void FlushDirtyMarkers()
+		{
+			CrushingChangeMarker = false;
+			DirtyProperties.Clear();
+		}
+
 		public class VariableData
 		{
 			public readonly string Name;
@@ -126,7 +157,7 @@ namespace Beamable.Editor.UI.BUSS.ThemeManager
 			}
 		}
 
-		public class PropertyReference
+		public struct PropertyReference
 		{
 			public BussStyleSheet styleSheet;
 			public BussStyleRule styleRule;
