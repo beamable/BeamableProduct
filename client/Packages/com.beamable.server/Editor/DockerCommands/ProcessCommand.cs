@@ -1,4 +1,7 @@
+using Beamable.Common;
 using Beamable.Common.Assistant;
+using Beamable.Editor.Microservice.UI;
+using Beamable.Editor.ToolbarExtender;
 using Beamable.Platform.SDK;
 using System;
 using System.Diagnostics;
@@ -260,28 +263,43 @@ namespace Beamable.Server.Editor.DockerCommands
 			DockerNotInstalled = false;
 		}
 
+		private static Task DockerCheckTask;
 		public static void CheckDockerAppRunning()
 		{
-			var procList = Process.GetProcesses();
-			for (int i = 0; i < procList.Length; i++)
+			if (DockerCheckTask == null || DockerCheckTask.IsCompleted)
 			{
-				try
+				bool dockerNotRunning = DockerNotRunning;
+				DockerCheckTask = new Task(() =>
 				{
-#if UNITY_EDITOR_WIN
-					const string procName = "docker desktop";
-#else
-					const string procName = "docker";
-#endif
-					if (procList[i].ProcessName.ToLower().Contains(procName))
+					var procList = Process.GetProcesses();
+					for (int i = 0; i < procList.Length; i++)
 					{
-						DockerNotRunning = false;
-						return;
+						try
+						{
+#if UNITY_EDITOR_WIN
+							const string procName = "docker desktop";
+#else
+							const string procName = "docker";
+#endif
+							if (procList[i].ProcessName.ToLower().Contains(procName))
+							{
+								dockerNotRunning = false;
+								return;
+							}
+						}
+						catch
+						{
+						}
 					}
-				}
-				catch { }
-			}
 
-			DockerNotRunning = true;
+					dockerNotRunning = true;
+				});
+				DockerCheckTask.Start();
+				DockerCheckTask.ToPromise().Then(_ =>
+				{
+					DockerNotRunning = dockerNotRunning;
+				});
+			}
 		}
 
 		public static bool RunDockerProcess()
@@ -300,9 +318,16 @@ namespace Beamable.Server.Editor.DockerCommands
 
 			var dockerProcess = Process.Start(new ProcessStartInfo(dockerDesktopPath));
 			dockerProcess.EnableRaisingEvents = true;
-			dockerProcess.Exited += (sender, args) =>
+			dockerProcess.Exited += async (sender, args) =>
 			{
-				Debug.Log("Docker Desktop was closed!");
+				await DockerCheckTask;
+
+				EditorApplication.delayCall += () =>
+				{
+					Debug.Log("Docker Desktop was closed!");
+					DockerNotRunning = true;
+					MicroserviceWindow.Instance.RefreshWindow(true);
+				};
 			};
 
 			return true;

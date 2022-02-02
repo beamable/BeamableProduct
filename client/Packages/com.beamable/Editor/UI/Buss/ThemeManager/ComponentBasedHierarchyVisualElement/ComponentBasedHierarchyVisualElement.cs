@@ -91,6 +91,12 @@ namespace Beamable.Editor.UI.Components
 
 		protected virtual void OnHierarchyChanged()
 		{
+			RefreshTree();
+			HierarchyChanged?.Invoke();
+		}
+
+		protected void RefreshTree()
+		{
 			foreach (IndentedLabelVisualElement child in _spawnedLabels)
 			{
 				child.Destroy();
@@ -107,8 +113,6 @@ namespace Beamable.Editor.UI.Components
 					Traverse(gameObject, 0);
 				}
 			}
-
-			HierarchyChanged?.Invoke();
 		}
 
 		protected virtual void OnSelectionChanged()

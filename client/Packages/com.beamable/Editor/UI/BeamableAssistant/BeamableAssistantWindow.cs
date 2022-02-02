@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Assistant;
 using Beamable.Editor.Content.Components;
 using Beamable.Editor.Reflection;
+using Beamable.Editor.ToolbarExtender;
 using Beamable.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
@@ -66,11 +67,6 @@ namespace Beamable.Editor.Assistant
 
 		private BeamHintNotificationManager _hintNotificationManager;
 
-		/// <summary>
-		/// Cached reference to the <see cref="EditorAPI"/> instance.
-		/// </summary>
-		private EditorAPI _editorAPI;
-
 		private void OnEnable()
 		{
 			Refresh();
@@ -85,7 +81,8 @@ namespace Beamable.Editor.Assistant
 				return;
 			}
 
-			Refresh();
+			if (_windowRoot != null) FillDisplayingBeamHints(_hintsContainer, _beamHintsDataModel.DisplayingHints);
+			else Refresh();
 			// TODO: Display NEW icon and clear notifications on hover on a per hint header basis.
 			// For now, just clear notifications whenever the window is focused
 			_hintNotificationManager.ClearPendingNotifications();
@@ -94,8 +91,13 @@ namespace Beamable.Editor.Assistant
 		private void Update()
 		{
 			// If there are any new notifications, we refresh to get the new data rendered.
-			if (_hintNotificationManager != null && _hintNotificationManager.AllPendingNotifications.ToList().Count > 0)
-				Refresh();
+			if (_hintNotificationManager != null && _hintNotificationManager.AllPendingNotifications.Any() || _beamHintsDataModel.RefreshDisplayingHints())
+			{
+				FillDisplayingBeamHints(_hintsContainer, _beamHintsDataModel.DisplayingHints);
+				_hintNotificationManager.ClearPendingNotifications();
+				_windowRoot.MarkDirtyRepaint();
+				BeamableToolbarExtender.Repaint();
+			}
 		}
 
 		void Refresh()
@@ -200,10 +202,7 @@ namespace Beamable.Editor.Assistant
 				beamHintsDataModel.SelectDomains(beamHintsDataModel.SelectedDomains);
 				FillTreeViewFromDomains(_treeViewIMGUI, beamHintsDataModel.SortedDomainsInStorage);
 				FillDisplayingBeamHints(_hintsContainer, beamHintsDataModel.DisplayingHints);
-				_imguiContainer?.MarkDirtyLayout();
-				_imguiContainer?.MarkDirtyRepaint();
 			}
-			root.MarkDirtyRepaint();
 		}
 
 		/// <summary>

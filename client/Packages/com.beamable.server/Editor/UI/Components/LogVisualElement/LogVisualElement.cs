@@ -40,6 +40,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		public ServiceModelBase Model { get; set; }
 		public event Action OnDetachLogs;
+		public bool EnableMoreButton = true;
+		public bool EnableDetatchButton = true;
 
 		private bool NoModel => Model == null;
 
@@ -167,6 +169,17 @@ namespace Beamable.Editor.Microservice.UI.Components
 				LogsOnOnViewFilterChanged();
 				UpdateSelectedMessageText();
 			}
+
+			if (!EnableDetatchButton)
+			{
+				_popupBtn.RemoveFromHierarchy();
+			}
+
+			if (!EnableMoreButton)
+			{
+				_advanceDropDown.RemoveFromHierarchy();
+			}
+
 			_listView.Refresh();
 			UpdateCounts();
 		}

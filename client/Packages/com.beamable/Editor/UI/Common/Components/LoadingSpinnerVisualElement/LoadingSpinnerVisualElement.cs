@@ -75,7 +75,10 @@ namespace Beamable.Editor.UI.Components
 			transform.rotation = (rot * transform.rotation).normalized;
 
 #if UNITY_2018
-         parent.clippingOptions = ClippingOptions.ClipAndCacheContents;
+			if (parent != null)
+			{
+				parent.clippingOptions = ClippingOptions.ClipAndCacheContents;
+			}
 #endif
 			Angle += diff * Speed;
 		}

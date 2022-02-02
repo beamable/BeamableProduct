@@ -77,9 +77,6 @@ namespace Beamable.Editor.UI.Components
 			CreateSelectorLabel();
 			RefreshProperties();
 
-			_styleSheet.Change -= RefreshProperties;
-			_styleSheet.Change += RefreshProperties;
-
 			_removeButton.SetHidden(!StyleRule.EditMode);
 			UpdateShowAllStatus();
 		}
@@ -97,14 +94,12 @@ namespace Beamable.Editor.UI.Components
 			_variableDatabase = variableDatabase;
 			_navigationWindow = navigationWindow;
 			_onUndoRequest = onUndoRequest;
-			_styleSheet.Change += RefreshProperties;
 
 			Refresh();
 		}
 
 		protected override void OnDestroy()
 		{
-			_styleSheet.Change -= RefreshProperties;
 			ClearButtonActions();
 
 			if (_navigationWindow != null)
@@ -362,6 +357,15 @@ namespace Beamable.Editor.UI.Components
 				}
 				return value;
 			});
+		}
+
+		public void RefreshPropertyByReference(VariableDatabase.PropertyReference reference)
+		{
+			var property = _properties.FirstOrDefault(p => p.PropertyProvider == reference.propertyProvider);
+			if (property != null)
+			{
+				property.Refresh();
+			}
 		}
 
 		// TODO: change this, card should be setup/refreshed by it's parent

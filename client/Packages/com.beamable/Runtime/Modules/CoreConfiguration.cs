@@ -8,10 +8,12 @@ using UnityEditor.Compilation;
 
 namespace Beamable
 {
+#if BEAMABLE_DEVELOPER
 	[CreateAssetMenu(
 		fileName = "CoreConfiguration",
 		menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
 				   "Core Configuration")]
+#endif
 	public class CoreConfiguration : ModuleConfigurationObject
 	{
 		public const string PROJECT_EDITOR_REFLECTION_SYSTEM_PATH = "Assets/Beamable/Editor/ReflectionCache/UserSystems";

@@ -58,23 +58,26 @@ namespace Beamable.UI.Buss
 		public static BussPropertyVisualElement GetVisualElement(this BussPropertyProvider propertyProvider,
 																 VariableDatabase variableDatabase,
 																 BussStyleRule context,
+																 out BussStyleSheet variableSource,
 																 Type baseType = null)
 		{
-			return propertyProvider.GetProperty().GetEndProperty(variableDatabase, context, baseType)?.GetVisualElement() ??
+			return propertyProvider.GetProperty().GetEndProperty(variableDatabase, context, out variableSource, baseType)?.GetVisualElement() ??
 				   new NoValidVariableBussPropertyVisualElement(propertyProvider.GetProperty());
 		}
 
 		public static BussPropertyVisualElement GetVisualElement(this BussPropertyProvider propertyProvider,
 																 VariableDatabase variableDatabase,
+																 out BussStyleSheet variableSource,
 																 Type baseType = null)
 		{
-			return propertyProvider.GetProperty().GetEndProperty(variableDatabase, baseType)?.GetVisualElement() ??
+			return propertyProvider.GetProperty().GetEndProperty(variableDatabase, out variableSource, baseType)?.GetVisualElement() ??
 				   new NoValidVariableBussPropertyVisualElement(propertyProvider.GetProperty());
 		}
 
 		public static IBussProperty GetEndProperty(this IBussProperty property,
 												   VariableDatabase variableDatabase,
 												   BussStyleRule context,
+												   out BussStyleSheet variableSource,
 												   Type baseType = null)
 		{
 			if (property is VariableProperty variableProperty &&
@@ -84,15 +87,17 @@ namespace Beamable.UI.Buss
 				var propertyInContext = context.Properties.FirstOrDefault(p => p.Key == variableProperty.VariableName);
 				if (propertyInContext != null)
 				{
+					variableSource = null;
 					return propertyInContext.GetProperty();
 				}
 			}
 
-			return property.GetEndProperty(variableDatabase, baseType);
+			return property.GetEndProperty(variableDatabase, out variableSource, baseType);
 		}
 
 		public static IBussProperty GetEndProperty(this IBussProperty property,
 												   VariableDatabase variableDatabase,
+												   out BussStyleSheet variableSource,
 												   Type baseType = null)
 		{
 			if (baseType == null)
@@ -111,14 +116,18 @@ namespace Beamable.UI.Buss
 					{
 						foreach (var reference in variableData.Declarations)
 						{
-							if (reference != null)
+							if (reference.styleSheet != null)
 							{
 								_visitedVariables.Clear();
 								var endProperty = reference
 												  .propertyProvider.GetProperty()
-												  .GetEndProperty(variableDatabase, baseType);
+												  .GetEndProperty(variableDatabase, out variableSource, baseType);
 								if (baseType.IsInstanceOfType(endProperty))
 								{
+									if (variableSource == null)
+									{
+										variableSource = reference.styleSheet;
+									}
 									return endProperty;
 								}
 							}
@@ -126,10 +135,12 @@ namespace Beamable.UI.Buss
 					}
 				}
 
+				variableSource = null;
 				return null;
 			}
 
 			_visitedVariables.Clear();
+			variableSource = null;
 			return property;
 		}
 	}
