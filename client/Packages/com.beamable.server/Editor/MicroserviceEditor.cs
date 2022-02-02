@@ -57,7 +57,7 @@ namespace Beamable.Server.Editor
 			AssetDatabase.ImportAsset("Packages/com.beamable.server/Editor/ReflectionCache/UserSystems/MicroserviceReflectionCache.asset", ImportAssetOptions.ForceUpdate);
 			Debug.Log("Re-importing Microservice Reflection Cache so the reflection cache gets it.");
 			AssetDatabase.StopAssetEditing();
-			
+
 			/// Delaying until first editor tick so that the menu
 			/// will be populated before setting check state, and
 			/// re-apply correct action
