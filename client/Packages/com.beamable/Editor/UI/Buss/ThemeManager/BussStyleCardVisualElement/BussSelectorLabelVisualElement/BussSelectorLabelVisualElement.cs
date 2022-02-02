@@ -43,7 +43,7 @@ namespace Beamable.Editor.UI.Components
 				{
 					label.Append(" - readonly");
 				}
-				
+
 				textLabel.text = label.ToString();
 				Root.Add(textLabel);
 			}
