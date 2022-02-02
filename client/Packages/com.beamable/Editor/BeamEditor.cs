@@ -50,8 +50,22 @@ namespace Beamable
 
 		static void Initialize()
 		{
-			if (IsInitialized) return;
+			// Attempt to solve first import issue 
+			void OnImportPackageCompleted(string name)
+			{
+				Debug.Log($"Package import: {name}");
+				if (name.Contains("com.beamable.server"))
+				{
+					AssetDatabase.ImportAsset("Packages/com.beamable.server/Editor/ReflectionCache/UserSystems/MicroserviceReflectionCache.asset", ImportAssetOptions.ForceUpdate);
+					Debug.Log("Re-importing Microservice Reflection Cache so the reflection cache gets it.");
+				}
+			}
 
+			AssetDatabase.importPackageCompleted -= OnImportPackageCompleted;
+			AssetDatabase.importPackageCompleted += OnImportPackageCompleted;
+			
+			if (IsInitialized) return;
+			
 			// Attempts to load all Module Configurations --- If they fail, we delay BeamEditor initialization until they don't fail.
 			// The ONLY fail case is:
 			//   - On first import or "re-import all", Resources and AssetDatabase don't know about the existence of these instances when this code runs for a couple of frames.
@@ -193,15 +207,7 @@ namespace Beamable
 			// Initialize toolbar
 			BeamableToolbarExtender.LoadToolbarExtender();
 
-			// Attempt to solve first import issue 
-			AssetDatabase.importPackageCompleted += name =>
-			{
-				if (name.Contains("com.beamable.server"))
-				{
-					AssetDatabase.ImportAsset("Packages/com.beamable.server/Editor/ReflectionCache/UserSystems/MicroserviceReflectionCache.asset", ImportAssetOptions.ForceUpdate);
-					Debug.Log("Re-importing Microservice Reflection Cache so the reflection cache gets it.");
-				}
-			};
+			
 		}
 
 		public static T GetReflectionSystem<T>() where T : IReflectionSystem => EditorReflectionCache.GetFirstSystemOfType<T>();
