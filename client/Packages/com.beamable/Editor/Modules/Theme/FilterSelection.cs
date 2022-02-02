@@ -23,15 +23,10 @@ namespace Beamable.Editor.Modules.Theme
 
 			foreach (SearchableEditorWindow window in windows)
 			{
-
-				Debug.Log(window.GetType().ToString());
-
 				if (window.GetType().ToString().Equals("UnityEditor.SceneHierarchyWindow"))
 				{
-
 					hierarchy = window;
 					break;
-
 				}
 			}
 

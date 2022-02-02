@@ -34,7 +34,6 @@ namespace Beamable.Server.Editor.Uploader
 		{
 			// TODO add back in a progress system
 			//         ProgressPanel.LogMessage(message);
-			Debug.Log($"Container Upload msg=[{message}]");
 		}
 
 		/// <summary>
@@ -99,7 +98,6 @@ namespace Beamable.Server.Editor.Uploader
 				var beamable = await EditorAPI.Instance;
 				var uploader = new ContainerUploader(beamable, this, descriptor, imageId);
 				await uploader.Upload(folder, token);
-				Debug.Log("Finished upload");
 
 				onSuccess?.Invoke();
 			}

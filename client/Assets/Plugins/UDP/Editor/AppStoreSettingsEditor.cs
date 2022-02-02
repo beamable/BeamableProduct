@@ -196,7 +196,6 @@ namespace UnityEngine.UDP.Editor
 
                         if (resp.GetType() == typeof(EventRequestResponse))
                         {
-                            // Debug.Log("[Debug] Event Request Failed: " + reqStruct.eventName);
                             return; // Do not show error dialog
                         }
 

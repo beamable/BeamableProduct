@@ -110,7 +110,7 @@ namespace Beamable.Editor.Config
 				}
 				catch (ReflectionTypeLoadException ex)
 				{
-					Debug.LogWarning($"Unable to load asm {asm.FullName} and scan for configurations. {ex.Message}\n{ex.StackTrace}");
+					Debug.LogError($"Unable to load asm {asm.FullName} and scan for configurations. {ex.Message}\n{ex.StackTrace}");
 				}
 			}
 

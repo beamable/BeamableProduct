@@ -36,7 +36,6 @@ namespace Beamable.Editor
 						storage.ClearDeviceRefreshTokens(api.Cid, api.Pid);
 						storage.DeleteTokenForRealm(api.Cid, api.Pid).Then(_ =>
 						{
-							Debug.Log("Success!");
 							Close();
 						});
 					});

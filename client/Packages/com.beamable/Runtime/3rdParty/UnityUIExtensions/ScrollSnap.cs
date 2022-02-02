@@ -256,7 +256,6 @@ namespace Beamable.UnityEngineClone.UI.Extensions
 					}
 					else
 					{
-						//Debug.Log ("-------------looking for list spanning range----------------");
 						// looking for list spanning range
 						_scroll_rect.verticalNormalizedPosition = 1;
 						_listContainerMinPosition = _listContainerTransform.localPosition.y;

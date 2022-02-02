@@ -32,7 +32,6 @@ namespace Beamable.CurrencyHUD
 			ctx.Inventory.GetCurrency(content).OnAmountUpdated += amount =>
 			{
 				targetAmount = amount;
-				Debug.Log("Got currency change event. " + amount);
 				ctx.CoroutineService.StartCoroutine(DisplayCurrency());
 			};
 

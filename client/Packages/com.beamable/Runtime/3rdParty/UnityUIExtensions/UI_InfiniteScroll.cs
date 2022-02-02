@@ -84,7 +84,7 @@ namespace Beamable.UnityEngineClone.UI.Extensions
 
 				if (_isHorizontal && _isVertical)
 				{
-					Debug.LogError("UI_InfiniteScroll doesn't support scrolling in both directions, plase choose one direction (horizontal or vertical)");
+					Debug.LogError("UI_InfiniteScroll doesn't support scrolling in both directions, please choose one direction (horizontal or vertical)");
 				}
 
 				_itemCount = _scrollRect.content.childCount;

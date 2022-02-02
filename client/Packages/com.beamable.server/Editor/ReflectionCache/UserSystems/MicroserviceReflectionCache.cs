@@ -338,6 +338,7 @@ namespace Beamable.Server.Editor
 				foreach (var descriptor in Descriptors)
 				{
 					OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.InProgress);
+
 					logger(new LogMessage
 					{
 						Level = LogLevel.INFO,
@@ -390,12 +391,14 @@ namespace Beamable.Server.Editor
 					{
 						if (existingReference.imageId == imageId)
 						{
+
 							logger(new LogMessage
 							{
 								Level = LogLevel.INFO,
 								Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
 								Message = string.Format(BeamableLogConstants.ContainerAlreadyUploadedMessage, descriptor.Name)
 							});
+              
 							onServiceDeployed?.Invoke(descriptor);
 							OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Published);
 							continue;
@@ -436,8 +439,6 @@ namespace Beamable.Server.Editor
 													   }
 												   }, imageId);
 				}
-
-
 				logger(new LogMessage
 				{
 					Level = LogLevel.INFO,
@@ -472,7 +473,8 @@ namespace Beamable.Server.Editor
 
 				await client.Deploy(new ServiceManifest { comments = model.Comment, manifest = manifest, storageReference = storages });
 				OnDeploySuccess?.Invoke(model, descriptorsCount);
-				logger(new LogMessage
+				
+        logger(new LogMessage
 				{
 					Level = LogLevel.INFO,
 					Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
@@ -696,10 +698,8 @@ namespace Beamable.Server.Editor
 					var nextChecksum = Checksum(tempFile);
 					var requiresRebuild = !oldChecksum.Equals(nextChecksum);
 
-					//         Debug.Log($"Considering rebuilding {key}. {requiresRebuild} Old=[{oldChecksum}] Next=[{nextChecksum}]");
 					if (requiresRebuild)
 					{
-						Debug.Log($"Generating client for {service.Name}");
 						File.Copy(tempFile, targetFile, true);
 					}
 				}

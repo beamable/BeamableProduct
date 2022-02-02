@@ -565,7 +565,6 @@ namespace Beamable.UI.MSDF
 		private static MSDFMaterialReferenceWrapper Create(MSDFPropertyCollection properties)
 		{
 			var material = new Material(Shader.Find(MSDF_SHADER_NAME));
-			Debug.Log("Creating material for " + properties.GetHashCode());
 			properties.ApplyProperties(material);
 			return new MSDFMaterialReferenceWrapper(material);
 		}

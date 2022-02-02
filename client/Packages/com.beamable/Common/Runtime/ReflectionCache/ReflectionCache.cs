@@ -334,6 +334,7 @@ namespace Beamable.Common.Reflection
 			{
 				if (userSystemTypesToRebuild != null && !userSystemTypesToRebuild.Contains(reflectionBasedSystem.GetType()))
 				{
+
 					// TODO: Add a conditional log line.
 					continue;
 				}
