@@ -17,7 +17,7 @@ namespace Beamable.Editor.UI.Components
 	public class BussStyleCardVisualElement : BeamableVisualElement
 	{
 		public event Action EnterEditMode;
-		
+
 		private BussSelectorLabelVisualElement _selectorLabelComponent;
 		private VisualElement _selectorLabelParent;
 		private VisualElement _variables;
@@ -73,7 +73,7 @@ namespace Beamable.Editor.UI.Components
 			_navigationWindow.SelectionChanged += OnSelectionChanged;
 
 			_removeButton.SetHidden(!StyleRule.EditMode);
-			
+
 			RegisterButtonActions();
 			CreateSelectorLabel();
 			RefreshProperties();
@@ -96,11 +96,11 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void Setup(BussThemeManager themeManager,
-		                  BussStyleSheet styleSheet,
-		                  BussStyleRule styleRule,
-		                  VariableDatabase variableDatabase,
-		                  BussElementHierarchyVisualElement navigationWindow,
-		                  Action onUndoRequest)
+						  BussStyleSheet styleSheet,
+						  BussStyleRule styleRule,
+						  VariableDatabase variableDatabase,
+						  BussElementHierarchyVisualElement navigationWindow,
+						  Action onUndoRequest)
 		{
 			_themeManager = themeManager;
 			_styleSheet = styleSheet;
