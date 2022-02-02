@@ -67,8 +67,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private TextField _commentField;
 
 		public PublishManifestEntryVisualElement(IEntryModel model,
-		                                         bool argWasPublished,
-		                                         int elementIndex,
+												 bool argWasPublished,
+												 int elementIndex,
 												 bool isRemoteOnly) : base(nameof(PublishManifestEntryVisualElement))
 		{
 			Model = model;

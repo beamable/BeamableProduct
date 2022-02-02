@@ -1,9 +1,9 @@
 using Beamable.Common;
 using Beamable.Common.Assistant;
+using Beamable.Editor.ToolbarExtender;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Editor.ToolbarExtender;
 using UnityEditor;
 
 namespace Beamable.Editor.Assistant

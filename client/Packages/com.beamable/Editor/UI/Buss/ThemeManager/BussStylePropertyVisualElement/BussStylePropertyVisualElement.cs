@@ -135,7 +135,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				_variableDatabase.SetPropertyDirty(_styleSheet, _styleRule, _propertyProvider);
 			}
-			
+
 			if (!PropertyIsInStyle)
 			{
 				_styleRule.TryAddProperty(_propertyProvider.Key, _propertyProvider.GetProperty(), out _);

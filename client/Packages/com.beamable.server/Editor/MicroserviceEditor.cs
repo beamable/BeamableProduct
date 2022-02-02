@@ -83,8 +83,8 @@ namespace Beamable.Server.Editor
 					EditorApplication.delayCall += Initialize;
 					return;
 				}
-				
-				
+
+
 				var enabled = false;
 				if (ConfigDatabase.HasKey(CONFIG_AUTO_RUN))
 					enabled = ConfigDatabase.GetBool(CONFIG_AUTO_RUN, false);

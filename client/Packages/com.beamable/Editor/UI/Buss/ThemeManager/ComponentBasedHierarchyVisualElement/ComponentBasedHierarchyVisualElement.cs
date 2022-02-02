@@ -107,7 +107,7 @@ namespace Beamable.Editor.UI.Components
 
 			foreach (Object foundObject in Object.FindObjectsOfType(typeof(GameObject)))
 			{
-				GameObject gameObject = (GameObject) foundObject;
+				GameObject gameObject = (GameObject)foundObject;
 				if (gameObject.transform.parent == null)
 				{
 					Traverse(gameObject, 0);

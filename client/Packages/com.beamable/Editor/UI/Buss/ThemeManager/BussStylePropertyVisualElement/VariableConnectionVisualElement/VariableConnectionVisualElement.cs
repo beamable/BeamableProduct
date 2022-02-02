@@ -88,7 +88,7 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void Setup(BussStyleSheet styleSheet,
-		                  BussStyleRule styleRule,
+						  BussStyleRule styleRule,
 						  BussPropertyProvider propertyProvider,
 						  VariableDatabase variableDatabase) // temporary parameter
 		{
@@ -134,7 +134,7 @@ namespace Beamable.Editor.UI.Components
 				{
 					variableProperty.VariableName = option;
 				}
-				
+
 				_variableDatabase.SetPropertyDirty(_styleSheet, _styleRule, _propertyProvider);
 				_styleSheet.TriggerChange();
 
