@@ -16,6 +16,8 @@ namespace Beamable.Editor.UI.Components
 {
 	public class BussStyleCardVisualElement : BeamableVisualElement
 	{
+		public event Action EnterEditMode;
+		
 		private BussSelectorLabelVisualElement _selectorLabelComponent;
 		private VisualElement _selectorLabelParent;
 		private VisualElement _variables;
@@ -41,8 +43,6 @@ namespace Beamable.Editor.UI.Components
 		private BussThemeManager _themeManager;
 
 		public BussStyleRule StyleRule => _styleRule;
-
-		public event Action OnEnterEditMode;
 
 		public BussStyleCardVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}")
@@ -72,21 +72,35 @@ namespace Beamable.Editor.UI.Components
 			_navigationWindow.SelectionChanged -= OnSelectionChanged;
 			_navigationWindow.SelectionChanged += OnSelectionChanged;
 
+			_removeButton.SetHidden(!StyleRule.EditMode);
+			
 			RegisterButtonActions();
-
 			CreateSelectorLabel();
 			RefreshProperties();
 
-			_removeButton.SetHidden(!StyleRule.EditMode);
 			UpdateShowAllStatus();
+
+			RefreshButtons();
+		}
+
+		private void RefreshButtons()
+		{
+			bool enabled = !_styleSheet.IsReadOnly;
+
+			_editButton.SetEnabled(enabled);
+			_undoButton.SetEnabled(enabled);
+			_cleanAllButton.SetEnabled(enabled);
+			_addVariableButton.SetEnabled(enabled);
+			_addRuleButton.SetEnabled(enabled);
+			_showAllButton.SetEnabled(enabled);
 		}
 
 		public void Setup(BussThemeManager themeManager,
-						  BussStyleSheet styleSheet,
-						  BussStyleRule styleRule,
-						  VariableDatabase variableDatabase,
-						  BussElementHierarchyVisualElement navigationWindow,
-						  Action onUndoRequest)
+		                  BussStyleSheet styleSheet,
+		                  BussStyleRule styleRule,
+		                  VariableDatabase variableDatabase,
+		                  BussElementHierarchyVisualElement navigationWindow,
+		                  Action onUndoRequest)
 		{
 			_themeManager = themeManager;
 			_styleSheet = styleSheet;
@@ -158,19 +172,19 @@ namespace Beamable.Editor.UI.Components
 		private void AddRuleButtonClicked(MouseDownEvent evt)
 		{
 			var keys = new HashSet<string>();
-			foreach (var propertyProvider in StyleRule.Properties)
+			foreach (BussPropertyProvider propertyProvider in StyleRule.Properties)
 			{
 				keys.Add(propertyProvider.Key);
 			}
 
 			var context = new GenericMenu();
 
-			foreach (var key in BussStyle.Keys)
+			foreach (string key in BussStyle.Keys)
 			{
 				if (keys.Contains(key)) continue;
-				var baseType = BussStyle.GetBaseType(key);
-				var data = SerializableValueImplementationHelper.Get(baseType);
-				var types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract && t != typeof(FractionFloatBussProperty));
+				Type baseType = BussStyle.GetBaseType(key);
+				SerializableValueImplementationHelper.ImplementationData data = SerializableValueImplementationHelper.Get(baseType);
+				IEnumerable<Type> types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract && t != typeof(FractionFloatBussProperty));
 				foreach (Type type in types)
 				{
 					var label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
@@ -189,7 +203,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void AddVariableButtonClicked(MouseDownEvent evt)
 		{
-			var window = NewVariableWindow.ShowWindow();
+			NewVariableWindow window = NewVariableWindow.ShowWindow();
 			window?.Init(_styleRule, (key, property) =>
 			{
 				StyleRule.TryAddProperty(key, property, out _);
@@ -245,7 +259,7 @@ namespace Beamable.Editor.UI.Components
 			Refresh();
 			if (value)
 			{
-				OnEnterEditMode?.Invoke();
+				EnterEditMode?.Invoke();
 			}
 		}
 
@@ -300,7 +314,7 @@ namespace Beamable.Editor.UI.Components
 
 			foreach (BussPropertyProvider property in _styleRule.Properties)
 			{
-				var existingProperty = _properties.FirstOrDefault(p => p.PropertyProvider == property);
+				BussStylePropertyVisualElement existingProperty = _properties.FirstOrDefault(p => p.PropertyProvider == property);
 				if (existingProperty != null)
 				{
 					existingProperty.Refresh();
@@ -315,11 +329,11 @@ namespace Beamable.Editor.UI.Components
 
 			if (_styleRule.ShowAllMode)
 			{
-				var restPropertyKeys =
+				IEnumerable<string> restPropertyKeys =
 					BussStyle.Keys.Where(s => StyleRule.Properties.All(provider => provider.Key != s));
-				foreach (var key in restPropertyKeys)
+				foreach (string key in restPropertyKeys)
 				{
-					var existingProperty = _properties.FirstOrDefault(p => p.PropertyProvider.Key == key);
+					BussStylePropertyVisualElement existingProperty = _properties.FirstOrDefault(p => p.PropertyProvider.Key == key);
 					if (existingProperty != null)
 					{
 						existingProperty.Refresh();
@@ -338,19 +352,19 @@ namespace Beamable.Editor.UI.Components
 			_propertiesParent.Sort((a, b) =>
 			{
 				if (!(a is BussStylePropertyVisualElement p1) || !(b is BussStylePropertyVisualElement p2)) return 0;
-				var value = 0;
+				int value = 0;
 				if (p1.PropertyIsInStyle) value--;
 				if (p2.PropertyIsInStyle) value++;
 				if (value == 0)
 				{
 					if (p1.PropertyIsInStyle)
 					{
-						var properties = _styleRule.Properties;
+						List<BussPropertyProvider> properties = _styleRule.Properties;
 						return properties.IndexOf(p1.PropertyProvider) - properties.IndexOf(p2.PropertyProvider);
 					}
 					else
 					{
-						var keys = BussStyle.Keys.ToArray();
+						string[] keys = BussStyle.Keys.ToArray();
 						return Array.IndexOf(keys, p1.PropertyProvider.Key) -
 							   Array.IndexOf(keys, p2.PropertyProvider.Key);
 					}
@@ -361,7 +375,7 @@ namespace Beamable.Editor.UI.Components
 
 		public void RefreshPropertyByReference(VariableDatabase.PropertyReference reference)
 		{
-			var property = _properties.FirstOrDefault(p => p.PropertyProvider == reference.propertyProvider);
+			BussStylePropertyVisualElement property = _properties.FirstOrDefault(p => p.PropertyProvider == reference.propertyProvider);
 			if (property != null)
 			{
 				property.Refresh();
@@ -373,7 +387,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			if (_colorBlock == null || gameObject == null) return;
 
-			var active = false;
+			bool active = false;
 			var bussElement = gameObject.GetComponent<BussElement>();
 			if (bussElement != null && StyleRule.Selector != null)
 			{
