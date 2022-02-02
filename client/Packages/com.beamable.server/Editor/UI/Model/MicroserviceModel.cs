@@ -120,9 +120,8 @@ namespace Beamable.Editor.UI.Model
 		{
 			EditorAPI.Instance.Then(de =>
 			{
-				//http://localhost:10001/1323424830305280/games/DE_1323424830305283/realms/DE_1323424830305283/microservices/DeploymentTest/docs/remote/?
 				var url =
-					$"{BeamableEnvironment.PortalUrl}/{de.CidOrAlias}/games/{de.ProductionRealm.Pid}/realms/{de.Pid}/microservices/{ServiceDescriptor.Name}/docs/{MicroserviceIndividualization.Prefix}/?";
+					$"{BeamableEnvironment.PortalUrl}/{de.CidOrAlias}/games/{de.ProductionRealm.Pid}/realms/{de.Pid}/microservices/{ServiceDescriptor.Name}/docs?prefix={MicroserviceIndividualization.Prefix}&refresh_token={de.Token.RefreshToken}";
 				Application.OpenURL(url);
 			});
 		}
@@ -155,7 +154,7 @@ namespace Beamable.Editor.UI.Model
 			evt.menu.BeamableAppendAction($"{localCategory}/Open in CLI", pos => OpenInCli(), IsRunning);
 			evt.menu.BeamableAppendAction($"{localCategory}/View Documentation", pos => OpenLocalDocs(), IsRunning);
 
-			evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => { OpenOnRemote("docs/remote/"); }, existsOnRemote);
+			evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => { OpenOnRemote("docs/"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => { OpenOnRemote("metrics"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => { OpenOnRemote("logs"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"Visual Studio Code/Copy Debug Configuration{debugToolsSuffix}", pos => { CopyVSCodeDebugTool(); }, IncludeDebugTools);
@@ -229,6 +228,10 @@ $@"{{
      }}
   }}";
 		}
+
+		protected void OpenRemoteDocs() => OpenOnRemote("docs");
+		protected void OpenRemoteLogs() => OpenOnRemote("logs");
+		protected void OpenRemoteMetrics() => OpenOnRemote("metrics");
 		protected void OpenOnRemote(string relativePath)
 		{
 			EditorAPI.Instance.Then(api =>
