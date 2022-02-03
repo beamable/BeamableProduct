@@ -1,4 +1,5 @@
-﻿using Beamable.Editor.UI.Buss;
+﻿using System;
+using Beamable.Editor.UI.Buss;
 using Beamable.UI.Buss;
 using System.Collections.Generic;
 #if UNITY_2018
@@ -13,6 +14,8 @@ namespace Beamable.Editor.UI.Components
 {
 	public class BussElementHierarchyVisualElement : ComponentBasedHierarchyVisualElement<BussElement>
 	{
+		public event Action BussStyleSheetChange;
+		
 		public List<BussStyleSheet> StyleSheets
 		{
 			get;
@@ -48,6 +51,11 @@ namespace Beamable.Editor.UI.Components
 			SortStyleSheets();
 		}
 
+		private void OnBussStyleSheetChange()
+		{
+			BussStyleSheetChange?.Invoke();
+		}
+
 		protected override void OnObjectRegistered(BussElement registeredObject)
 		{
 			BussStyleSheet styleSheet = registeredObject.StyleSheet;
@@ -58,6 +66,9 @@ namespace Beamable.Editor.UI.Components
 			{
 				StyleSheets.Add(styleSheet);
 			}
+
+			registeredObject.StyleSheetsChanged -= OnBussStyleSheetChange;
+			registeredObject.StyleSheetsChanged += OnBussStyleSheetChange;
 		}
 
 		private void SortStyleSheets()
@@ -72,6 +83,15 @@ namespace Beamable.Editor.UI.Components
 
 			StyleSheets.Remove(firstStyle);
 			StyleSheets.Insert(0, firstStyle);
+		}
+
+		protected override void OnDestroy()
+		{
+			base.OnDestroy();
+			foreach (var bussElement in Components)
+			{
+				bussElement.StyleSheetsChanged -= OnBussStyleSheetChange;
+			}
 		}
 	}
 }
