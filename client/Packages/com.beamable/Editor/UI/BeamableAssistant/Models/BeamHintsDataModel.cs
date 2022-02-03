@@ -81,10 +81,9 @@ namespace Beamable.Editor.Assistant
 			var hints = _hintGlobalStorages.SelectMany(storage => storage).ToList();
 			RefreshDomainsFromHints(hints);
 
-
 			var previouslyDisplayingHints = new BeamHintHeader[DisplayingHints.Count];
 			DisplayingHints.CopyTo(previouslyDisplayingHints);
-			RefreshDisplayingHints(hints, SortedDomainsInStorage);
+			RefreshDisplayingHints(hints, SelectedDomains);
 
 			// If any of the new hints was not contained in the previously displayed hints, we return true as there are new hints.
 			var newHintsAppeared = DisplayingHints.Except(previouslyDisplayingHints).Any();
