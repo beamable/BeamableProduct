@@ -308,7 +308,7 @@ namespace Beamable.Server.Editor
 			public event Action<IDescriptor, ServicePublishState> OnServiceDeployStatusChanged;
 			public event Action<IDescriptor> OnServiceDeployProgress;
 
-			public async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context, CancellationToken token, Action<IDescriptor> onServiceDeployed = null, Action<LogMessage> logger=null)
+			public async System.Threading.Tasks.Task Deploy(ManifestModel model, CommandRunnerWindow context, CancellationToken token, Action<IDescriptor> onServiceDeployed = null, Action<LogMessage> logger = null)
 			{
 				if (Descriptors.Count == 0) return; // don't do anything if there are no descriptors.
 
@@ -337,7 +337,8 @@ namespace Beamable.Server.Editor
 
 				foreach (var descriptor in Descriptors)
 				{
-					OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.InProgress);
+					UpdateServiceDeployStatus(descriptor, ServicePublishState.InProgress);
+
 					logger(new LogMessage
 					{
 						Level = LogLevel.INFO,
@@ -353,14 +354,16 @@ namespace Beamable.Server.Editor
 					catch (Exception e)
 					{
 						OnDeployFailed?.Invoke(model, $"Deploy failed due to failed build of {descriptor.Name}: {e}.");
-						OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
+						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
+
 						return;
 					}
 
 					if (token.IsCancellationRequested)
 					{
 						OnDeployFailed?.Invoke(model, $"Cancellation requested after build of {descriptor.Name}.");
-						OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
+						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
+
 						return;
 					}
 
@@ -380,7 +383,7 @@ namespace Beamable.Server.Editor
 					if (string.IsNullOrEmpty(imageId))
 					{
 						OnDeployFailed?.Invoke(model, $"Failed due to failed Docker {nameof(GetImageIdCommand)} for {descriptor.Name}.");
-						OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
+						UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 						return;
 					}
 
@@ -390,14 +393,16 @@ namespace Beamable.Server.Editor
 					{
 						if (existingReference.imageId == imageId)
 						{
+
 							logger(new LogMessage
 							{
 								Level = LogLevel.INFO,
 								Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
 								Message = string.Format(BeamableLogConstants.ContainerAlreadyUploadedMessage, descriptor.Name)
 							});
+
 							onServiceDeployed?.Invoke(descriptor);
-							OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Published);
+							UpdateServiceDeployStatus(descriptor, ServicePublishState.Published);
 							continue;
 						}
 					}
@@ -424,7 +429,7 @@ namespace Beamable.Server.Editor
 												   {
 													   Debug.Log(string.Format(BeamableLogConstants.UploadedContainerMessage, descriptor.Name));
 													   onServiceDeployed?.Invoke(descriptor);
-													   OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Published);
+													   UpdateServiceDeployStatus(descriptor, ServicePublishState.Published);
 												   },
 												   () =>
 												   {
@@ -432,11 +437,10 @@ namespace Beamable.Server.Editor
 													   if (token.IsCancellationRequested)
 													   {
 														   OnDeployFailed?.Invoke(model, $"Cancellation requested during upload of {descriptor.Name}.");
-														   OnServiceDeployStatusChanged?.Invoke(descriptor, ServicePublishState.Failed);
+														   UpdateServiceDeployStatus(descriptor, ServicePublishState.Failed);
 													   }
 												   }, imageId);
 				}
-
 
 				logger(new LogMessage
 				{
@@ -472,6 +476,7 @@ namespace Beamable.Server.Editor
 
 				await client.Deploy(new ServiceManifest { comments = model.Comment, manifest = manifest, storageReference = storages });
 				OnDeploySuccess?.Invoke(model, descriptorsCount);
+
 				logger(new LogMessage
 				{
 					Level = LogLevel.INFO,
@@ -575,6 +580,14 @@ namespace Beamable.Server.Editor
 						};
 					});
 				});
+			}
+
+			private void UpdateServiceDeployStatus(MicroserviceDescriptor descriptor, ServicePublishState status)
+			{
+				OnServiceDeployStatusChanged?.Invoke(descriptor, status);
+
+				foreach (var storageDesc in descriptor.GetStorageReferences())
+					OnServiceDeployStatusChanged?.Invoke(storageDesc, status);
 			}
 
 			#endregion
@@ -696,10 +709,8 @@ namespace Beamable.Server.Editor
 					var nextChecksum = Checksum(tempFile);
 					var requiresRebuild = !oldChecksum.Equals(nextChecksum);
 
-					//         Debug.Log($"Considering rebuilding {key}. {requiresRebuild} Old=[{oldChecksum}] Next=[{nextChecksum}]");
 					if (requiresRebuild)
 					{
-						Debug.Log($"Generating client for {service.Name}");
 						File.Copy(tempFile, targetFile, true);
 					}
 				}

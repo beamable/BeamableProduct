@@ -1,8 +1,6 @@
 ﻿#mainContainer {
     min-width: 100px;
     min-height: 26px;
-    border-color: #6C6C6C;
-    background-color: #b4b4b4;
     border-left-width: 1px;
     border-right-width: 1px;
     border-top-width: 1px;
@@ -25,7 +23,6 @@
 }
 
 #button {
-    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown_Line_dark.png");
     width: 30px;
     margin-right: 3px;
 }

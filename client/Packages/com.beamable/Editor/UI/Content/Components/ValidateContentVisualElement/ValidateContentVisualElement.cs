@@ -139,7 +139,7 @@ namespace Beamable.Editor.Content.Components
 
 			if (view == null || data == null)
 			{
-				Debug.LogWarning("Validation ListView binding content incorrectly.");
+				Debug.LogError("Validation ListView binding content incorrectly.");
 				return;
 			}
 

@@ -2,11 +2,11 @@ using Beamable.Common;
 using Beamable.Common.Assistant;
 using Beamable.Editor.Content.Components;
 using Beamable.Editor.Reflection;
+using Beamable.Editor.ToolbarExtender;
 using Beamable.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Editor.ToolbarExtender;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
@@ -91,8 +91,9 @@ namespace Beamable.Editor.Assistant
 		private void Update()
 		{
 			// If there are any new notifications, we refresh to get the new data rendered.
-			if (_hintNotificationManager != null && _hintNotificationManager.AllPendingNotifications.Any() || _beamHintsDataModel.RefreshDisplayingHints())
+			if (_beamHintsDataModel.RefreshDisplayingHints() || _hintNotificationManager != null && _hintNotificationManager.AllPendingNotifications.Any())
 			{
+				FillTreeViewFromDomains(_treeViewIMGUI, _beamHintsDataModel.SortedDomainsInStorage, _beamHintsDataModel.SelectedDomains);
 				FillDisplayingBeamHints(_hintsContainer, _beamHintsDataModel.DisplayingHints);
 				_hintNotificationManager.ClearPendingNotifications();
 				_windowRoot.MarkDirtyRepaint();
@@ -200,7 +201,7 @@ namespace Beamable.Editor.Assistant
 					list => { });
 
 				beamHintsDataModel.SelectDomains(beamHintsDataModel.SelectedDomains);
-				FillTreeViewFromDomains(_treeViewIMGUI, beamHintsDataModel.SortedDomainsInStorage);
+				FillTreeViewFromDomains(_treeViewIMGUI, beamHintsDataModel.SortedDomainsInStorage, beamHintsDataModel.SelectedDomains);
 				FillDisplayingBeamHints(_hintsContainer, beamHintsDataModel.DisplayingHints);
 			}
 		}
@@ -226,9 +227,10 @@ namespace Beamable.Editor.Assistant
 		/// <summary>
 		/// Updates a <see cref="TreeViewGUI"/> to display the given list of <see cref="BeamHintDomains"/> strings. 
 		/// </summary>
-		public void FillTreeViewFromDomains(TreeViewIMGUI imgui, List<string> sortedDomains)
+		public void FillTreeViewFromDomains(TreeViewIMGUI imgui, List<string> sortedDomains, List<string> selectedDomains)
 		{
 			var treeViewItems = new List<BeamHintDomainTreeViewItem>();
+			var selectedIds = new List<int>();
 			var parentCache = new Dictionary<string, BeamHintDomainTreeViewItem>();
 			var id = 1;
 			foreach (string domain in sortedDomains)
@@ -250,11 +252,24 @@ namespace Beamable.Editor.Assistant
 						parentCache.Add(domainSubstring, item);
 						treeViewItems.Add(item);
 						id += 1;
+
+						if (selectedDomains.Contains(domain))
+						{
+							selectedIds.Add(item.id);
+						}
+
 					}
 				}
 			}
 
 			imgui.TreeViewItems = treeViewItems.Cast<TreeViewItem>().ToList();
+
+			// Only select if  we have any selected domains (selected domains defaults to all sorted domains unless someone clicks a subdomain).
+			// This means their counts greater than or the same when no selection is made. 
+			if (sortedDomains.Count > selectedDomains.Count && selectedDomains.Count != 0)
+			{
+				imgui.SetSelectionSafe(selectedIds);
+			}
 		}
 
 		public void SetupTreeViewCallbacks(TreeViewIMGUI imgui,

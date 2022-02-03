@@ -41,7 +41,6 @@ namespace Beamable.Modules.Content
 
 			if (data == null)
 			{
-				Debug.Log($"Registering new content with id {view.id}");
 				Add(view);
 			}
 		}

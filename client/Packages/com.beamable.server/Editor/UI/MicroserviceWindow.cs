@@ -240,7 +240,7 @@ namespace Beamable.Editor.Microservice.UI
 		private void OnEnable()
 		{
 			// if BeamEditor is not initialized, schedule a delay call to try again.
-			if (!BeamEditor.IsInitialized)
+			if (!BeamEditor.IsInitialized || !MicroserviceEditor.IsInitialized)
 			{
 				EditorApplication.delayCall += () =>
 				{
@@ -269,7 +269,7 @@ namespace Beamable.Editor.Microservice.UI
 
 		private void HandleDeployFailed(ManifestModel _model, string reason)
 		{
-			Debug.Log(reason);
+			Debug.LogError(reason);
 			_microserviceContentVisualElement?.Refresh();
 		}
 

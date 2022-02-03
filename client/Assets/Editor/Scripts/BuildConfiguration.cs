@@ -33,10 +33,6 @@ public class BuildSampleProject
 			Debug.LogError(e.Message);
 			Debug.LogError(e.Data);
 		}
-		finally
-		{
-			Debug.Log("The build has finished.");
-		}
 	}
 	[MenuItem("Beamable/SampleBuild/Development")]
 	public static void Development()

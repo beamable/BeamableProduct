@@ -248,7 +248,7 @@ namespace Beamable.Api
 
 						   // if we get a 401 InvalidTokenError, let's refresh the token and retry the request.
 						   case PlatformRequesterException code when code?.Error?.error == "InvalidTokenError":
-							   Debug.LogError("The token was bad but we are going to retry, buddy!!" + uri);
+							   Debug.LogError("Invalid token, trying again");
 							   return AuthService.LoginRefreshToken(Token.RefreshToken)
 							 .Map(rsp =>
 							 {

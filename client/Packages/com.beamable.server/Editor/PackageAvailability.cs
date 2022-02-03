@@ -1,6 +1,7 @@
 using Beamable.Editor.Environment;
 using Beamable.Editor.Microservice.UI;
 using UnityEditor;
+using UnityEngine;
 
 namespace Beamable.Server.Editor
 {

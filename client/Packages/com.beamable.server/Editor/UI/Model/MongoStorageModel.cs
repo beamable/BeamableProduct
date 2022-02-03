@@ -88,6 +88,14 @@ namespace Beamable.Editor.UI.Model
 			OnRemoteReferenceEnriched?.Invoke(remoteReference);
 		}
 
+		protected void OpenRemoteMongo()
+		{
+			EditorAPI.Instance.Then(b =>
+			{
+				UnityEngine.Application.OpenURL($"{BeamableEnvironment.BeamMongoExpressUrl}/create?cid={b.Cid}&pid={b.Pid}&token={b.Token.Token}");
+			});
+		}
+
 		public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
 		{
 			var existsOnRemote = RemoteReference?.enabled ?? false;
@@ -100,8 +108,7 @@ namespace Beamable.Editor.UI.Model
 			evt.menu.BeamableAppendAction($"{localCategory}/Download a snapshot", _ => AssemblyDefinitionHelper.RestoreMongo(ServiceDescriptor), IsRunning);
 			evt.menu.BeamableAppendAction($"{localCategory}/Copy connection string", _ => AssemblyDefinitionHelper.CopyConnectionString(ServiceDescriptor), IsRunning);
 
-			evt.menu.BeamableAppendAction($"{remoteCategory}/Goto data explorer", _ => AssemblyDefinitionHelper.OpenMongoExplorer(ServiceDescriptor), existsOnRemote);
-			evt.menu.BeamableAppendAction($"{remoteCategory}/Copy connection string", _ => AssemblyDefinitionHelper.CopyConnectionString(ServiceDescriptor), existsOnRemote);
+			evt.menu.BeamableAppendAction($"{remoteCategory}/Goto data explorer", _ => OpenRemoteMongo(), existsOnRemote);
 
 			evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());
 

@@ -2,6 +2,15 @@
     color:#252525;
 }
 
+#propertyLabel:disabled{
+    color: #646464;
+}
+
+BussStylePropertyVisualElement *:disabled{
+    opacity: 1;
+    color: #646464;
+}
+
 .equalWidth {
     width: 0;
 }

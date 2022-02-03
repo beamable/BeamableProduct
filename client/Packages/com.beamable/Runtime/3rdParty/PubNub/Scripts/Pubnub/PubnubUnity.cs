@@ -491,7 +491,6 @@ namespace PubNubMessaging.Core
 			LoggingMethod.WriteToLog(Version, LoggingMethod.LevelInfo);
 
 			gobj = gob;
-			// Debug.Log("Adding coroutine class", gob);
 			coroutine = gobj.AddComponent<CoroutineClass>();
 			coroutine.subscribeTimer = SubscribeTimeout;
 			coroutine.nonSubscribeTimer = NonSubscribeTimeout;

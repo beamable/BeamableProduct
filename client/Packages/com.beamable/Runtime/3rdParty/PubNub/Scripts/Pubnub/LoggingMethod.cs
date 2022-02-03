@@ -395,7 +395,7 @@ namespace PubNubMessaging.Core
 					}
 					break;
 				default:
-					UnityEngine.Debug.Log("ATTENTION: webExceptionStatus = " + webExceptionStatus.ToString());
+					UnityEngine.Debug.LogWarning("ATTENTION: webExceptionStatus = " + webExceptionStatus.ToString());
 					ret = PubnubErrorCode.None;
 					break;
 			}
@@ -439,8 +439,8 @@ namespace PubNubMessaging.Core
 			}
 			else
 			{
-				UnityEngine.Debug.Log("ATTENTION: Error Type = " + errorType);
-				UnityEngine.Debug.Log("ATTENTION: Error Message = " + errorMessage);
+				UnityEngine.Debug.LogWarning("ATTENTION: Error Type = " + errorType);
+				UnityEngine.Debug.LogWarning("ATTENTION: Error Message = " + errorMessage);
 				ret = PubnubErrorCode.None;
 			}
 			return ret;

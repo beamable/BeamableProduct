@@ -14,7 +14,7 @@ namespace Beamable.Common.Reflection
 	{
 		/// <summary>
 		/// Called once on each <see cref="IReflectionSystem"/> before building the reflection cache.
-		/// Exists mostly to deal with the fact that Unity's initialization hooks are weird and seem to trigger twice when entering playmode. 
+		/// Exists mostly to deal with the fact that Unity's initialization hooks are weird and seem to trigger twice when entering playmode.
 		/// </summary>
 		void ClearCachedReflectionData();
 
@@ -54,7 +54,7 @@ namespace Beamable.Common.Reflection
 		/// <summary>
 		/// Injection point for reflections systems that wish to generate hints. Leave without implementation if no hints are generated.
 		/// <para/>
-		/// Remember to wrap hint code in "#if UNITY_EDITOR" directives as this storage instance is null during non-editor builds. 
+		/// Remember to wrap hint code in "#if UNITY_EDITOR" directives as this storage instance is null during non-editor builds.
 		/// </summary>
 		void SetStorage(IBeamHintGlobalStorage hintGlobalStorage);
 	}
@@ -82,7 +82,7 @@ namespace Beamable.Common.Reflection
 	}
 
 	/// <summary>
-	/// We use this class to control the resolution order of our <see cref="IReflectionSystem"/>s. 
+	/// We use this class to control the resolution order of our <see cref="IReflectionSystem"/>s.
 	/// </summary>
 	public static class BeamableReflectionSystemPriorities
 	{
@@ -119,7 +119,7 @@ namespace Beamable.Common.Reflection
 
 		/// <summary>
 		/// Just a pre-allocation so we don't keep re-allocating the list mid-loop
-		/// (TODO: this may need to go up or down based on numbers we see after we start using the system more heavily). 
+		/// (TODO: this may need to go up or down based on numbers we see after we start using the system more heavily).
 		/// </summary>
 		private const int PRE_ALLOC_SYSTEM_AND_PROVIDER_AMOUNT = 16;
 
@@ -197,8 +197,8 @@ namespace Beamable.Common.Reflection
 		/// This must be called before Beamable's initialization or you must manage the initialization of this cache yourself.
 		/// <para/>
 		/// Type providers define which types should the ReflectionCache gather up and build maps around.
-		/// See the properties of <see cref="IReflectionTypeProvider"/> for more info on how they are used. 
-		/// </summary>        
+		/// See the properties of <see cref="IReflectionTypeProvider"/> for more info on how they are used.
+		/// </summary>
 		public void RegisterTypeProvider(IReflectionTypeProvider provider)
 		{
 			Assert(provider != null, "Provider cannot be null. Please ensure the provider instance exists when passing it in here.");
@@ -209,10 +209,10 @@ namespace Beamable.Common.Reflection
 			foreach (var attributeOfInterest in provider.AttributesOfInterest)
 			{
 				// What this does is:
-				//   - If the attribute of interest Has a Method/Constructor/Property/Field/Event Target, we'll look for them into each individual type that's given in the two lists declared here., 
+				//   - If the attribute of interest Has a Method/Constructor/Property/Field/Event Target, we'll look for them into each individual type that's given in the two lists declared here.,
 				//   - Will work with structs, classes both declared at root or internal as the Assembly.GetTypes() returns all of these.
 				//
-				// Assumption 1 ===> Does not need work for parameters or return values --- this is specific enough that each individual user system can do their own thing here.            
+				// Assumption 1 ===> Does not need work for parameters or return values --- this is specific enough that each individual user system can do their own thing here.
 				if (attributeOfInterest.Targets.HasFlag(AttributeOfInterest.INTERNAL_TYPE_SEARCH_WHEN_ATTRIBUTE_TARGETS))
 				{
 					// If you didn't tell us where to look, we'd have to look everywhere -- which is terrible for editor performance so we don't support it.
@@ -230,11 +230,27 @@ namespace Beamable.Common.Reflection
 		}
 
 		/// <summary>
+		/// Register a <see cref="IReflectionTypeProvider"/> with the cache.
+		/// This must be called before Beamable's initialization or you must manage the initialization of this cache yourself.
+		/// <para/>
+		/// Type providers define which types should the ReflectionCache gather up and build maps around.
+		/// See the properties of <see cref="IReflectionTypeProvider"/> for more info on how they are used.
+		/// </summary>
+		/// <returns>True if the type provider was successfully added, or false if the provider already existed in the cache.</returns>
+		public bool TryRegisterTypeProvider(IReflectionTypeProvider provider)
+		{
+			Assert(provider != null, "Provider cannot be null. Please ensure the provider instance exists when passing it in here.");
+			if (_registeredProvider.Contains(provider)) return false;
+			RegisterTypeProvider(provider);
+			return true;
+		}
+
+		/// <summary>
 		/// Registers a <see cref="IReflectionSystem"/> with the Reflection Cache System.
 		/// This must be called before Beamable's initialization or you must manage the initialization of this cache yourself.
 		/// <para/>
-		/// You can find Beamable's systems at: API.cs and EditorAPI.cs, for runtime dependencies and editor dependencies respectively. 
-		/// </summary>        
+		/// You can find Beamable's systems at: API.cs and EditorAPI.cs, for runtime dependencies and editor dependencies respectively.
+		/// </summary>
 		public void RegisterReflectionSystem(IReflectionSystem system)
 		{
 			Assert(system != null, "System cannot be null. Please ensure the system instance exists when passing it in here.");
@@ -243,6 +259,22 @@ namespace Beamable.Common.Reflection
 
 			_registeredCacheUserSystems.Add(system);
 		}
+
+		/// <summary>
+		/// Registers a <see cref="IReflectionSystem"/> with the Reflection Cache System.
+		/// This must be called before Beamable's initialization or you must manage the initialization of this cache yourself.
+		/// <para/>
+		/// You can find Beamable's systems at: API.cs and EditorAPI.cs, for runtime dependencies and editor dependencies respectively.
+		/// </summary>
+		/// <returns>True if the system was successfully added, or false if the system already existed in the cache.</returns>
+		public bool TryRegisterReflectionSystem(IReflectionSystem system)
+		{
+			Assert(system != null, "System cannot be null. Please ensure the system instance exists when passing it in here.");
+			if (_registeredCacheUserSystems.Contains(system)) return false;
+			RegisterReflectionSystem(system);
+			return true;
+		}
+
 
 		/// <summary>
 		/// This is a very slow function call. It triggers a full sweep of all assemblies in the project and regenerate <see cref="_perBaseTypeCache"/> and <see cref="_perAttributeCache"/>.
@@ -302,25 +334,36 @@ namespace Beamable.Common.Reflection
 			{
 				if (userSystemTypesToRebuild != null && !userSystemTypesToRebuild.Contains(reflectionBasedSystem.GetType()))
 				{
-					BeamableLogger.Log($"Skipping Reflection User System [{reflectionBasedSystem.GetType().FullName}] on this rebuild!");
+
+					// TODO: Add a conditional log line.
 					continue;
 				}
 
 				reflectionBasedSystem.OnReflectionCacheBuilt(_perBaseTypeCache, _perAttributeCache);
 				foreach (var type in reflectionBasedSystem.BaseTypesOfInterest)
 				{
-					reflectionBasedSystem.OnBaseTypeOfInterestFound(type, _perBaseTypeCache.MappedSubtypes[type]);
+					if (!_perBaseTypeCache.MappedSubtypes.TryGetValue(type, out var mappedSubtypes))
+					{
+						// TODO: Add a conditional log line.
+						continue;
+					}
+					reflectionBasedSystem.OnBaseTypeOfInterestFound(type, mappedSubtypes);
 				}
 
 				foreach (var attributeType in reflectionBasedSystem.AttributesOfInterest)
 				{
-					reflectionBasedSystem.OnAttributeOfInterestFound(attributeType, _perAttributeCache.AttributeMappings[attributeType]);
+					if (!_perAttributeCache.AttributeMappings.TryGetValue(attributeType, out var mappedAttributes))
+					{
+						// TODO: Add a conditional log line
+						continue;
+					}
+					reflectionBasedSystem.OnAttributeOfInterestFound(attributeType, mappedAttributes);
 				}
 			}
 		}
 
 		/// <summary>
-		/// Internal method that generates, given a list of base types, a dictionary of each type that <see cref="Type.IsAssignableFrom"/> to each base type. 
+		/// Internal method that generates, given a list of base types, a dictionary of each type that <see cref="Type.IsAssignableFrom"/> to each base type.
 		/// </summary>
 		private void BuildTypeCaches(in PerBaseTypeCache perBaseTypeLists,
 									 in PerAttributeCache perAttributeLists,
@@ -339,7 +382,7 @@ namespace Beamable.Common.Reflection
 
 			// Initialize Per-Attribute Cache
 			{
-				// Split attributes between declared over types and declared over members 
+				// Split attributes between declared over types and declared over members
 				var attrTypesSplit = attributesOfInterest.GroupBy(attrOfInterest => attrOfInterest.TargetsDeclaredMember).ToList();
 
 				// Clear the existing list
@@ -383,7 +426,7 @@ namespace Beamable.Common.Reflection
 																		   perAttributeLists.MemberAttributeTypes,
 																		   perAttributeLists.AttributeMappings);
 
-						// Check for base types of interest                        
+						// Check for base types of interest
 						if (TryFindBaseTypesOfInterest(type, baseTypesOfInterest, out var foundType))
 						{
 							if (perBaseTypeLists.MappedSubtypes.TryGetValue(foundType, out var baseTypesList))
@@ -396,7 +439,7 @@ namespace Beamable.Common.Reflection
 	}
 
 	/// <summary>
-	/// Helper class containing useful extensions for dealing with common reflection-related operations.  
+	/// Helper class containing useful extensions for dealing with common reflection-related operations.
 	/// </summary>
 	public static partial class ReflectionCacheExtensions
 	{

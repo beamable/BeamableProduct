@@ -1,4 +1,5 @@
 using Beamable.Editor;
+using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.DockerCommands;
 using ICSharpCode.SharpZipLib.Tar;
 using System;
@@ -6,7 +7,6 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Beamable.Editor.UI.Model;
 using UnityEditor;
 using UnityEngine;
 
@@ -34,7 +34,6 @@ namespace Beamable.Server.Editor.Uploader
 		{
 			// TODO add back in a progress system
 			//         ProgressPanel.LogMessage(message);
-			Debug.Log($"Container Upload msg=[{message}]");
 		}
 
 		/// <summary>
@@ -99,7 +98,6 @@ namespace Beamable.Server.Editor.Uploader
 				var beamable = await EditorAPI.Instance;
 				var uploader = new ContainerUploader(beamable, this, descriptor, imageId);
 				await uploader.Upload(folder, token);
-				Debug.Log("Finished upload");
 
 				onSuccess?.Invoke();
 			}

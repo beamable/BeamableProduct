@@ -1,5 +1,5 @@
-using System.Linq;
 using Beamable.Editor.Assistant;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Editor.ToolbarExtender
@@ -16,9 +16,9 @@ namespace Beamable.Editor.ToolbarExtender
 		{
 			var _hintNotificationManager = default(BeamHintNotificationManager);
 			BeamEditor.GetBeamHintSystem(ref _hintNotificationManager);
-			
+
 			var numNotifications = _hintNotificationManager.AllPendingNotifications.Count();
-			
+
 			var label = $"{Text}";
 			label += numNotifications > 0 ? $" - ({numNotifications})" : "";
 			return new GUIContent(label);

@@ -287,7 +287,7 @@ namespace Beamable.Content
 
 			if (manifestID == CurrentDefaultManifestID)
 			{
-				Debug.Log($"Manifest id: \"{manifestID}\" is already set as default.");
+				Debug.LogWarning($"Manifest id: \"{manifestID}\" is already set as default.");
 				return;
 			}
 

@@ -25,6 +25,8 @@ namespace Beamable.UI.Buss
 	/// </summary>
 	public struct SelectorWeight : IComparable<SelectorWeight>
 	{
+		public static readonly SelectorWeight Max = new SelectorWeight(int.MaxValue, int.MaxValue, int.MaxValue);
+		
 		public int IdCount { get; }
 		public int ClassCount { get; }
 		public int ElementCount { get; }

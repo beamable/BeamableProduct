@@ -62,11 +62,9 @@ namespace Beamable.Editor.Environment
 		[MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_HELP_DIAGNOSTIC_DATA)]
 		public static void WriteDebugData()
 		{
-			Debug.Log("Creating Beamable diagnostic data.");
 			Create().Then(data =>
 			{
 				var json = JsonUtility.ToJson(data, true);
-				Debug.Log(json);
 				var filePath =
 				$"{Directory.GetParent(Application.dataPath)}{Path.DirectorySeparatorChar}beamable-diag-{data.CreatedAtUTC}.json";
 				Debug.Log($"Writing diagnostic data to file. [{filePath}]");

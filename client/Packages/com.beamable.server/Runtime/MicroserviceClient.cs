@@ -253,9 +253,7 @@ namespace Beamable.Server
 
 		public static async Promise<T> Request<T>(IBeamableRequester requester, string serviceName, string endpoint, string[] serializedFields)
 		{
-			Debug.Log($"Client called {endpoint} with {serializedFields.Length} arguments");
 			var argArray = "[ " + string.Join(",", serializedFields) + " ]";
-			Debug.Log(argArray);
 
 			T Parser(string json)
 			{
@@ -277,7 +275,6 @@ namespace Beamable.Server
 			{
 				payload = argArray
 			};
-			Debug.Log($"Sending Request uri=[{url}]");
 			return await requester.Request<T>(Method.POST, url, req, parser: Parser);
 		}
 

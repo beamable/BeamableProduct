@@ -116,7 +116,6 @@ namespace Beamable.Player
 
 		private Promise RunLater(SdkEvent evt)
 		{
-			Debug.Log($"Scheduling sdk evt to run on reconnection {evt.Source}-{evt.Event}");
 			_connectivityService.OnReconnectOnce(() =>
 			{
 				Add(evt);

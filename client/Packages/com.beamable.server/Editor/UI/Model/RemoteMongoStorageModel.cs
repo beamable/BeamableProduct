@@ -1,4 +1,5 @@
 ﻿using Beamable.Server.Editor;
+using UnityEngine.WSA;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -27,8 +28,7 @@ namespace Beamable.Editor.UI.Model
 		{
 			var remoteCategory = "Cloud";
 
-			evt.menu.BeamableAppendAction($"{remoteCategory}/Goto data explorer", _ => AssemblyDefinitionHelper.OpenMongoExplorer(ServiceDescriptor));
-			evt.menu.BeamableAppendAction($"{remoteCategory}/Copy connection string", _ => AssemblyDefinitionHelper.CopyConnectionString(ServiceDescriptor));
+			evt.menu.BeamableAppendAction($"{remoteCategory}/Goto data explorer", _ => OpenRemoteMongo());
 
 			if (MicroserviceConfiguration.Instance.StorageObjects.Count > 1)
 			{

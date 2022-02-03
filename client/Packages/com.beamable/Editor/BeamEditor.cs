@@ -78,8 +78,6 @@ namespace Beamable
 			// Solves a specific issue on first installation of package ---
 			catch (ModuleConfigurationNotReadyException)
 			{
-				//coreConfiguration = CoreConfiguration = AssetDatabase.LoadAssetAtPath<CoreConfiguration>("Packages/com.beamable/Editor/Config/CoreConfiguration.asset");
-				Spew.Logger.DoSpew("Module Configuration Not Ready Exception dodged!");
 				EditorApplication.delayCall += Initialize;
 				return;
 			}
@@ -137,7 +135,7 @@ namespace Beamable
 
 			// Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance
 			// (that gets propagated down to any IReflectionSystem that also implements IBeamHintProvider).
-			// Finally, calls the Generate Reflection cache 
+			// Finally, calls the Generate Reflection cache
 			EditorReflectionCache.SetStorage(HintGlobalStorage);
 			EditorReflectionCache.GenerateReflectionCache(coreConfiguration.AssembliesToSweep);
 
@@ -192,6 +190,8 @@ namespace Beamable
 
 			// Initialize toolbar
 			BeamableToolbarExtender.LoadToolbarExtender();
+
+
 		}
 
 		public static T GetReflectionSystem<T>() where T : IReflectionSystem => EditorReflectionCache.GetFirstSystemOfType<T>();
