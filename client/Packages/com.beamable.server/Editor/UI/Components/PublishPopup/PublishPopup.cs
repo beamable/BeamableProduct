@@ -306,7 +306,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private float CalculateProgress()
 		{
-			return _publishManifestElements.Values.Where(element => !element.IsRemoteOnly)
+			return _publishManifestElements.Values.Where(element => !element.IsRemoteOnly && !(element.Model is StorageEntryModel))
 										   .Average(x => x.LoadingBar.Progress);
 		}
 	}
