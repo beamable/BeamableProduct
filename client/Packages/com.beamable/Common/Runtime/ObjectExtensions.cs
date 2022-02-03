@@ -9,10 +9,9 @@ namespace Beamable.Common
 			                                     BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
 		{
 			var method = target.GetType().GetMethods(bindingFlags).FirstOrDefault(m => m.Name == callbackMethodName);
-			if (method == null)
+			if (method == null || method.GetParameters().Any())
 				return;
-			if (!method.GetParameters().Any())
-				method.Invoke(target, null);
+			method.Invoke(target, null);
 		}
 	}
 }
