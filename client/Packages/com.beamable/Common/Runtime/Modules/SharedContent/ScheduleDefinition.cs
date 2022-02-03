@@ -58,10 +58,10 @@ namespace Beamable.Common.Content
 	{
 		[IgnoreContentField]
 		public Action<ScheduleDefinition> OnCronRawSaveButtonPressed;
-		
+
 		[IgnoreContentField]
 		public Action<Schedule> OnScheduleModified;
-		
+
 		[HideInInspector]
 		[IgnoreContentField]
 		public int index = -1;
