@@ -1,10 +1,9 @@
 using Beamable.Common.Content;
 using Beamable.Common.Shop;
+using Beamable.Content.Utility;
 using Beamable.CronExpression;
-using Beamable.Editor.Schedules;
 using Beamable.Editor.UI.Components;
 using System;
-using System.Globalization;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Beamable.Content.Utility;
+using System;
 using System.Globalization;
 
 namespace Beamable.Common.Content
@@ -13,7 +14,7 @@ namespace Beamable.Common.Content
 				return false;
 			}
 
-			if (!DateTime.TryParseExact(schedule.activeTo.Value, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture,
+			if (!DateTime.TryParseExact(schedule.activeTo.Value, DateUtility.ISO_FORMAT, CultureInfo.InvariantCulture,
 				DateTimeStyles.None, out activeToDate)) return false;
 			activeToDate = activeToDate.ToUniversalTime();
 
@@ -22,7 +23,7 @@ namespace Beamable.Common.Content
 
 		public static DateTime ParseEventStartDate(this string content, out bool isSuccess)
 		{
-			isSuccess = DateTime.TryParseExact(content, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture,
+			isSuccess = DateTime.TryParseExact(content, DateUtility.ISO_FORMAT, CultureInfo.InvariantCulture,
 			                            DateTimeStyles.None, out var result);
 			return isSuccess
 				? result.ToUniversalTime()

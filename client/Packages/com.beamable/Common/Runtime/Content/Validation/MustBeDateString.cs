@@ -1,3 +1,4 @@
+using Beamable.Content.Utility;
 using System;
 using System.Globalization;
 using System.Reflection;
@@ -69,10 +70,10 @@ namespace Beamable.Common.Content.Validation
 		{
 			if (string.IsNullOrEmpty(strValue))
 			{
-				throw new ContentValidationException(obj, validationField, "date cannot be an empty string. yyyy-MM-ddTHH:mm:ssZ");
+				throw new ContentValidationException(obj, validationField, $"date cannot be an empty string. {DateUtility.ISO_FORMAT}");
 			}
 
-			if (!DateTime.TryParseExact(strValue, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture,
+			if (!DateTime.TryParseExact(strValue, DateUtility.ISO_FORMAT, CultureInfo.InvariantCulture,
 			   DateTimeStyles.None, out _))
 			{
 				throw new ContentValidationException(obj, validationField, "date is not in 8601 iso format. yyyy-MM-ddTHH:mm:ssZ");
