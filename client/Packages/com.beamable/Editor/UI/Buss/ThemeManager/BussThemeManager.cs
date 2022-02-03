@@ -227,7 +227,7 @@ namespace Beamable.Editor.UI.Buss
 				{
 					return;
 				}
-				
+
 				AddStyleWindow window = AddStyleWindow.ShowWindow();
 				window?.Init(_ => RefreshStyleSheets(), _activeStyleSheets);
 			}

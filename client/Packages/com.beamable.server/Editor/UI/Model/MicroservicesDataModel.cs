@@ -188,11 +188,11 @@ namespace Beamable.Editor.UI.Model
 			var storageStatus = ServerManifest?.storageReference ?? new List<ServiceStorageReference>();
 
 			var allServiceNames = Services.Select(s => s.Name)
-			                              .Concat(servicesStatus.Select(x => x.serviceName))
-			                              .Distinct();
+										  .Concat(servicesStatus.Select(x => x.serviceName))
+										  .Distinct();
 			var allStorageNames = Storages.Select(s => s.Name)
-			                              .Concat(storageStatus.Select(x => x.id))
-			                              .Distinct();
+										  .Concat(storageStatus.Select(x => x.id))
+										  .Distinct();
 
 			foreach (var service in allServiceNames)
 			{

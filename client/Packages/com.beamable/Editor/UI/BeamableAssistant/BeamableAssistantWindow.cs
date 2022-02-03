@@ -93,7 +93,7 @@ namespace Beamable.Editor.Assistant
 			// If there are any new notifications, we refresh to get the new data rendered.
 			if (_beamHintsDataModel.RefreshDisplayingHints() || _hintNotificationManager != null && _hintNotificationManager.AllPendingNotifications.Any())
 			{
-				FillTreeViewFromDomains(_treeViewIMGUI,  _beamHintsDataModel.SortedDomainsInStorage, _beamHintsDataModel.SelectedDomains);
+				FillTreeViewFromDomains(_treeViewIMGUI, _beamHintsDataModel.SortedDomainsInStorage, _beamHintsDataModel.SelectedDomains);
 				FillDisplayingBeamHints(_hintsContainer, _beamHintsDataModel.DisplayingHints);
 				_hintNotificationManager.ClearPendingNotifications();
 				_windowRoot.MarkDirtyRepaint();
@@ -257,13 +257,13 @@ namespace Beamable.Editor.Assistant
 						{
 							selectedIds.Add(item.id);
 						}
-						
+
 					}
 				}
 			}
 
 			imgui.TreeViewItems = treeViewItems.Cast<TreeViewItem>().ToList();
-			
+
 			// Only select if  we have any selected domains (selected domains defaults to all sorted domains unless someone clicks a subdomain).
 			// This means their counts greater than or the same when no selection is made. 
 			if (sortedDomains.Count > selectedDomains.Count && selectedDomains.Count != 0)
