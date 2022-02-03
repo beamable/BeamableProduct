@@ -1,5 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Api;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using System;
 using System.Collections.Concurrent;
@@ -18,7 +19,7 @@ namespace Beamable.Server
 		/// </summary>
 		/// <typeparam name="TStorage"></typeparam>
 		/// <returns></returns>
-		Promise<IMongoDatabase> GetDatabase<TStorage>() where TStorage : MongoStorageObject;
+		Promise<IMongoDatabase> GetDatabase<TStorage>(bool useCache=true) where TStorage : MongoStorageObject;
 
 		/// <summary>
 		/// Get a MongoDB connection by the storageName from <see cref="StorageObjectAttribute"/> that decorates a <see cref="StorageObject"/> class
@@ -65,9 +66,15 @@ namespace Beamable.Server
 			_requester = requester;
 		}
 
-		public async Promise<IMongoDatabase> GetDatabase<TStorage>() where TStorage : MongoStorageObject
+
+		public async Promise<IMongoDatabase> GetDatabase<TStorage>(bool useCache=true) where TStorage : MongoStorageObject
 		{
-			return await _databaseCache.GetOrAdd(typeof(TStorage),  (type) =>
+			if (!useCache)
+			{
+				_databaseCache.TryRemove(typeof(TStorage), out _);
+			}
+
+			var db = await _databaseCache.GetOrAdd(typeof(TStorage),  (type) =>
 			{
 				string storageName = string.Empty;
 				var attributes = type.GetCustomAttributes(true);
@@ -88,6 +95,8 @@ namespace Beamable.Server
 
 				return GetDatabaseByStorageName(storageName);
 			});
+			
+			return db;
 		}
 
 		public Promise<IMongoCollection<TCollection>> GetCollection<TStorage, TCollection>()
