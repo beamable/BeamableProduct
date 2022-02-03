@@ -96,6 +96,8 @@ namespace Beamable.UI.Buss
 
 		private void OnValidate()
 		{
+			if (!gameObject || !gameObject.scene.IsValid()) return; // OnValidate runs on prefabs, which we absolutely don't want.
+
 			CheckParent();
 			OnStyleChanged();
 		}

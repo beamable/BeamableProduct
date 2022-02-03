@@ -55,7 +55,7 @@ namespace Beamable.Api
 		protected string Reset(params string[] args)
 		{
 
-			Beam.ClearAndDisposeAllContexts()
+			Beam.ClearAndStopAllContexts()
 				.FlatMap(_ => Beam.ResetToScene(args.Length == 1 ? args[0] : null))
 				.Then(_ =>
 				{
@@ -67,7 +67,7 @@ namespace Beamable.Api
 		[BeamableConsoleCommand(new[] { "RESTART", "FR" }, "Clear access tokens, then Restart the game as if it had just been launched", "FORCE-RESTART")]
 		public string Restart(params string[] args)
 		{
-			Beam.ClearAndDisposeAllContexts()
+			Beam.ClearAndStopAllContexts()
 				.FlatMap(_ => Beam.ResetToScene("0"))
 				.Then(_ =>
 				{
@@ -218,7 +218,7 @@ namespace Beamable.Api
 				{
 					if (ex is PlatformRequesterException code && code.Error.error == "UnableToMergeError")
 					{
-						Debug.Log("The current account is already associated with an email...");
+						Debug.LogWarning("The current account is already associated with an email");
 						return auth.Login(email, password, false);
 					}
 

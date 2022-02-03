@@ -1,4 +1,5 @@
 using Beamable.Editor;
+using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.DockerCommands;
 using ICSharpCode.SharpZipLib.Tar;
 using System;
@@ -33,7 +34,6 @@ namespace Beamable.Server.Editor.Uploader
 		{
 			// TODO add back in a progress system
 			//         ProgressPanel.LogMessage(message);
-			Debug.Log($"Container Upload msg=[{message}]");
 		}
 
 		/// <summary>
@@ -42,8 +42,12 @@ namespace Beamable.Server.Editor.Uploader
 		public void ReportUploadProgress(string name, long amount, long total)
 		{
 			var progress = total == 0 ? 1 : (float)amount / total;
-			Debug.Log($"PROGRESS HAPPENED. name=[{name}] amount=[{amount}] total=[{total}]");
-			//ProgressPanel.ReportLayerProgress(name, progress);
+			MicroservicesDataModel.Instance.AddLogMessage(name, new LogMessage
+			{
+				Level = LogLevel.INFO,
+				Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
+				Message = $"Uploading Service. service=[{name}] amount=[{amount}] total=[{total}]"
+			});
 			onProgress?.Invoke(progress, amount, total);
 		}
 
@@ -94,7 +98,6 @@ namespace Beamable.Server.Editor.Uploader
 				var beamable = await EditorAPI.Instance;
 				var uploader = new ContainerUploader(beamable, this, descriptor, imageId);
 				await uploader.Upload(folder, token);
-				Debug.Log("Finished upload");
 
 				onSuccess?.Invoke();
 			}

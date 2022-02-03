@@ -68,11 +68,9 @@ namespace UnityEngine.UDP.Editor.Analytics
                 s_OrganizationId = (string) getOrgMethod.Invoke(GetUnityConnectInstance(), null);
             }
 
-//            Debug.Log("[Debug] Organization Id: " + s_OrganizationId);
             return s_OrganizationId;
         }
 
-        // UnityEditor.Connect.UnityConnect.instance.GetUserId()
         private static string GetUserId()
         {
             if (string.IsNullOrEmpty(s_UserId))
@@ -82,7 +80,6 @@ namespace UnityEngine.UDP.Editor.Analytics
                 s_UserId = (string) getUserIdMethod.Invoke(GetUnityConnectInstance(), null);
             }
 
-//            Debug.Log("[Debug]Debug User Id: " + s_UserId);
             return s_UserId;
         }
 
@@ -94,7 +91,6 @@ namespace UnityEngine.UDP.Editor.Analytics
                 s_UnityConnectInstance = UnityConnectType.GetProperty("instance").GetValue(null, null);
             }
 
-//            Debug.Log("[Debug] UnityConnect Instance is null?: " + (s_UnityConnectInstance == null));
             return s_UnityConnectInstance;
         }
 
@@ -122,9 +118,7 @@ namespace UnityEngine.UDP.Editor.Analytics
                     string targetStoreJson = File.ReadAllText(UnityIAPBillingModeFile);
                     if (targetStoreJson != null)
                     {
-                        Debug.Log(targetStoreJson);
                         var dic = MiniJson.JsonDecode(targetStoreJson);
-
                         res &= (string) dic["androidStore"] == "UDP";
                     }
                 }

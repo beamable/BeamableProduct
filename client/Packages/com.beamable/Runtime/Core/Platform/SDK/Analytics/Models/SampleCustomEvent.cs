@@ -1,12 +1,14 @@
 using System.Collections.Generic;
 
-namespace Beamable.Api.Analytics {
+namespace Beamable.Api.Analytics
+{
 
 	/// <summary>
 	/// Sample custom event.
 	/// This subclasses the abstract class CoreEvent
 	/// </summary>
-	public class SampleCustomEvent : CoreEvent {
+	public class SampleCustomEvent : CoreEvent
+	{
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="SampleCustomEvent"/> class.

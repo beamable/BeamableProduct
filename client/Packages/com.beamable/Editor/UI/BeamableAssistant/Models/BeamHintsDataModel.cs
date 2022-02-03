@@ -73,6 +73,25 @@ namespace Beamable.Editor.Assistant
 		}
 
 		/// <summary>
+		/// Refreshes the list of displaying hints based on what is currently in storage and currently defined filters.
+		/// Returns whether or not new hints appeared.
+		/// </summary>
+		public bool RefreshDisplayingHints()
+		{
+			var hints = _hintGlobalStorages.SelectMany(storage => storage).ToList();
+			RefreshDomainsFromHints(hints);
+
+			var previouslyDisplayingHints = new BeamHintHeader[DisplayingHints.Count];
+			DisplayingHints.CopyTo(previouslyDisplayingHints);
+			RefreshDisplayingHints(hints, SelectedDomains);
+
+			// If any of the new hints was not contained in the previously displayed hints, we return true as there are new hints.
+			var newHintsAppeared = DisplayingHints.Except(previouslyDisplayingHints).Any();
+			var oldHintsDisappeared = DisplayingHints.Intersect(previouslyDisplayingHints).Count() != previouslyDisplayingHints.Length;
+			return newHintsAppeared || oldHintsDisappeared;
+		}
+
+		/// <summary>
 		/// Updates the current <see cref="DisplayingHints"/> based on the <see cref="SelectedDomains"/>, <see cref="CurrentFilter"/> and visibility preferences
 		/// stored in <see cref="IBeamHintPreferencesManager"/> to the given <see cref="storage"/>.  
 		/// </summary>

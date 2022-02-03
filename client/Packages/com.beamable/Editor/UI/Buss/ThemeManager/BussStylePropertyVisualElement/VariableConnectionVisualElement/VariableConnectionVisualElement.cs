@@ -1,11 +1,8 @@
-﻿using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.BUSS.ThemeManager;
-using Beamable.UI.Buss;
+﻿using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
-using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -26,6 +23,7 @@ namespace Beamable.Editor.UI.Components
 
 		private VariableDatabase _variableDatabase;
 		private BussStyleSheet _styleSheet;
+		private BussStyleRule _styleRule;
 		private BussPropertyProvider _propertyProvider;
 		private IBussProperty _cachedProperty;
 
@@ -90,15 +88,15 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void Setup(BussStyleSheet styleSheet,
+						  BussStyleRule styleRule,
 						  BussPropertyProvider propertyProvider,
 						  VariableDatabase variableDatabase) // temporary parameter
 		{
-			RemoveOnChangeUpdate();
 			_variableDatabase = variableDatabase;
 			_styleSheet = styleSheet;
+			_styleRule = styleRule;
 			_propertyProvider = propertyProvider;
 			Update();
-			AddOnChangeUpdate();
 		}
 
 		private void OnButtonClick()
@@ -110,15 +108,12 @@ namespace Beamable.Editor.UI.Components
 					: new VariableProperty();
 			}
 
-			RemoveOnChangeUpdate();
-
 			var temp = _cachedProperty;
 			_cachedProperty = _propertyProvider.GetProperty();
 			_propertyProvider.SetProperty(temp);
+			_styleSheet.TriggerChange();
 			AssetDatabase.SaveAssets();
 			OnConnectionChange?.Invoke();
-
-			AddOnChangeUpdate();
 		}
 
 		private void OnVariableSelected(int index)
@@ -140,23 +135,10 @@ namespace Beamable.Editor.UI.Components
 					variableProperty.VariableName = option;
 				}
 
+				_variableDatabase.SetPropertyDirty(_styleSheet, _styleRule, _propertyProvider);
+				_styleSheet.TriggerChange();
+
 				OnConnectionChange?.Invoke();
-			}
-		}
-
-		private void RemoveOnChangeUpdate()
-		{
-			if (_styleSheet != null)
-			{
-				// _styleSheet.Change -= Update;
-			}
-		}
-
-		private void AddOnChangeUpdate()
-		{
-			if (_styleSheet != null)
-			{
-				// _styleSheet.Change += Update;
 			}
 		}
 	}

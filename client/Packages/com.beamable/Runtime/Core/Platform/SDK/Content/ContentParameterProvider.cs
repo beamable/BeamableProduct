@@ -1,5 +1,7 @@
-﻿namespace Beamable.Content {
-    public class ContentParameterProvider {
-        public string manifestID;
-    }
+﻿namespace Beamable.Content
+{
+	public class ContentParameterProvider
+	{
+		public string manifestID;
+	}
 }

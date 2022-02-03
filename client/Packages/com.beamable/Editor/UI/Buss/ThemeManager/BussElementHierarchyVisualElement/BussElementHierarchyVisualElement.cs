@@ -18,9 +18,15 @@ namespace Beamable.Editor.UI.Components
 			get;
 		} = new List<BussStyleSheet>();
 
+		public void ForceRebuild()
+		{
+			StyleSheets.Clear();
+			RefreshTree();
+		}
+
 		protected override string GetLabel(BussElement component)
 		{
-			var label = string.IsNullOrWhiteSpace(component.Id) ? component.name : BussNameUtility.AsIdSelector(component.Id);
+			string label = string.IsNullOrWhiteSpace(component.Id) ? component.name : BussNameUtility.AsIdSelector(component.Id);
 
 			foreach (string className in component.Classes)
 			{
@@ -28,6 +34,18 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			return label;
+		}
+
+		protected override void OnHierarchyChanged()
+		{
+			StyleSheets.Clear();
+			base.OnHierarchyChanged();
+		}
+
+		protected override void OnSelectionChanged()
+		{
+			base.OnSelectionChanged();
+			SortStyleSheets();
 		}
 
 		protected override void OnObjectRegistered(BussElement registeredObject)
@@ -42,10 +60,18 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
-		protected override void OnHierarchyChanged()
+		private void SortStyleSheets()
 		{
-			StyleSheets.Clear();
-			base.OnHierarchyChanged();
+			if (SelectedComponent == null)
+			{
+				return;
+			}
+
+			List<BussStyleSheet> selectedComponentAllStyleSheets = SelectedComponent.AllStyleSheets;
+			BussStyleSheet firstStyle = selectedComponentAllStyleSheets[selectedComponentAllStyleSheets.Count - 1];
+
+			StyleSheets.Remove(firstStyle);
+			StyleSheets.Insert(0, firstStyle);
 		}
 	}
 }

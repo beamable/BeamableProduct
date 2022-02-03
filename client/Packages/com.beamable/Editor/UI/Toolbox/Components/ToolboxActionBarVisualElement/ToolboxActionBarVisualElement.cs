@@ -5,9 +5,8 @@ using Beamable.Editor.Environment;
 using Beamable.Editor.Login.UI;
 using Beamable.Editor.Toolbox.Models;
 using Beamable.Editor.Toolbox.UI.Components;
-using Beamable.Editor.UI.Buss.Components;
+using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
-using Beamable.UI.BUSS;
 using System;
 using System.Collections.Generic;
 using UnityEditor;
@@ -108,10 +107,6 @@ namespace Beamable.Editor.Toolbox.Components
 		{
 			Model.SetQuery(filter);
 		}
-
-		private Promise<string> GetPortalUrl =>
-			EditorAPI.Instance.Map(de =>
-									   $"{BeamableEnvironment.PortalUrl}/{de.CidOrAlias}?refresh_token={de.Token.RefreshToken}");
 
 		private void TypeButton_OnClicked(Rect visualElementBounds)
 		{

@@ -1,4 +1,3 @@
-
 using Beamable.Common;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
@@ -10,6 +9,7 @@ namespace Beamable
 {
 	public static class BeamableEnvironment
 	{
+		private const string FilePath = "Packages/com.beamable/Runtime/Environment/Resources/env-default.json";
 		private const string ResourcesPath = "env-default";
 
 		private const string ENV_STAGING = "staging";
@@ -35,6 +35,7 @@ namespace Beamable
 
 		public static string ApiUrl => Data.ApiUrl;
 		public static string PortalUrl => Data.PortalUrl;
+		public static string BeamMongoExpressUrl => Data.BeamMongoExpressUrl;
 		public static string Environment => Data.Environment;
 		public static PackageVersion SdkVersion => Data.SdkVersion;
 		public static string DockerRegistryUrl => Data.DockerRegistryUrl;
@@ -50,7 +51,11 @@ namespace Beamable
 		public static void ReloadEnvironment()
 		{
 			string envText = "";
+#if UNITY_EDITOR
+			envText = File.ReadAllText(FilePath);
+#else
 			envText = Resources.Load<TextAsset>(ResourcesPath).text;
+#endif
 			var rawDict = Json.Deserialize(envText) as ArrayDict;
 			JsonSerializable.Deserialize(Data, rawDict);
 		}
@@ -64,6 +69,7 @@ namespace Beamable
 		[SerializeField] private string environment;
 		[SerializeField] private string apiUrl;
 		[SerializeField] private string portalUrl;
+		[SerializeField] private string beamMongoExpressUrl;
 		[SerializeField] private string sdkVersion;
 		[SerializeField] private string dockerRegistryUrl;
 
@@ -72,9 +78,9 @@ namespace Beamable
 		public string Environment => environment;
 		public string ApiUrl => apiUrl;
 		public string PortalUrl => portalUrl;
+		public string BeamMongoExpressUrl => beamMongoExpressUrl;
 		public PackageVersion SdkVersion => _version ?? (_version = sdkVersion);
 		public string DockerRegistryUrl => dockerRegistryUrl;
-
 
 		public void Serialize(JsonSerializable.IStreamSerializer s)
 		{
@@ -82,6 +88,7 @@ namespace Beamable
 			s.Serialize("apiUrl", ref apiUrl);
 			s.Serialize("portalUrl", ref portalUrl);
 			s.Serialize("sdkVersion", ref sdkVersion);
+			s.Serialize("beamMongoExpressUrl", ref beamMongoExpressUrl);
 			s.Serialize("dockerRegistryUrl", ref dockerRegistryUrl);
 
 			if (sdkVersion.Equals(BUILD__SDK__VERSION__STRING))

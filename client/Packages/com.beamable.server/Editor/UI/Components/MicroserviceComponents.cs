@@ -1,4 +1,4 @@
-using Beamable.Editor.UI.Buss;
+using Beamable.Editor.UI.Components;
 using Beamable.Server.Editor.UI.Components;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -10,11 +10,11 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
-    public class MicroserviceComponent : BeamableVisualElement
-    {
-        public MicroserviceComponent(string name) : base($"{Constants.COMP_PATH}/{name}/{name}")
-        {
+	public class MicroserviceComponent : BeamableVisualElement
+	{
+		public MicroserviceComponent(string name) : base($"{Constants.COMP_PATH}/{name}/{name}")
+		{
 
-        }
-    }
+		}
+	}
 }

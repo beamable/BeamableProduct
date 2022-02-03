@@ -55,8 +55,8 @@ namespace Beamable.Server.Editor
 		[Tooltip("Docker Buildkit may speed up and increase performance on your microservice builds. However, it is not fully supported with Beamable microservices, and you may encounter issues using it. ")]
 		public bool EnableDockerBuildkit = false;
 
-		[Tooltip("It will enable checking if docker app is running before you can start microservices.")]
-		public bool DockerAppCheckInMicroservicesWindow = true;
+		[Tooltip("It will enable checking if docker desktop is running before you can start microservices.")]
+		public bool DockerDesktopCheckInMicroservicesWindow = true;
 
 		[FilePathSelector(true, DialogTitle = "Path to Docker Desktop", FileExtension = "exe", OnlyFiles = true)]
 		public string DockerDesktopPath;
@@ -102,7 +102,7 @@ namespace Beamable.Server.Editor
             LogStandardErrColor = new Color(1, .44f, .4f);
          }
          _dockerCommandCached = DockerCommand = DOCKER_LOCATION;
-         _dockerCheckCached = DockerAppCheckInMicroservicesWindow;
+         _dockerCheckCached = DockerDesktopCheckInMicroservicesWindow;
       }
 #endif
 
@@ -159,10 +159,10 @@ namespace Beamable.Server.Editor
 					  api.CidOrAlias, api.Pid, api.Host, api.Cid, CustomContainerPrefix));
 			}
 
-			if (_dockerCommandCached != DockerCommand || _dockerCheckCached != DockerAppCheckInMicroservicesWindow)
+			if (_dockerCommandCached != DockerCommand || _dockerCheckCached != DockerDesktopCheckInMicroservicesWindow)
 			{
 				_dockerCommandCached = DockerCommand;
-				_dockerCheckCached = DockerAppCheckInMicroservicesWindow;
+				_dockerCheckCached = DockerDesktopCheckInMicroservicesWindow;
 				if (MicroserviceWindow.IsInstantiated)
 				{
 					MicroserviceWindow.Instance.RefreshWindow(true);

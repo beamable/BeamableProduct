@@ -67,6 +67,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Model.OnStart -= SetupProgressBarForStart;
 			Model.OnStop -= SetupProgressBarForStop;
 			Model.OnLogsAttachmentChanged -= CreateLogSection;
+
+			if (Model.Builder == null) return;
+
 			Model.Builder.OnIsRunningChanged -= HandleIsRunningChanged;
 		}
 		public override void Refresh()
@@ -149,23 +152,60 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_mainParent.AddToClassList("collapsedMain");
 			_rootVisualElement.AddToClassList("collapsedMain");
 
-			UpdateButtons();
 			CreateLogSection(Model.AreLogsAttached);
-			UpdateStatusIcon();
+			UpdateLocalStatus();
 			UpdateRemoteStatusIcon();
-			UpdateHeaderColor();
 			ChangeCollapseState();
 			UpdateModel();
 		}
-		protected abstract void UpdateStatusIcon();
+
 		protected abstract void UpdateRemoteStatusIcon();
 		protected virtual void UpdateButtons()
 		{
 			_stopButton.text = Model.IsRunning ? Constants.STOP : Constants.START;
 		}
+		protected virtual void UpdateLocalStatus()
+		{
+			_header.EnableInClassList("running", Model.IsRunning);
+			UpdateButtons();
+		}
 		protected async void UpdateModel()
 		{
 			await Model.Builder.CheckIfIsRunning();
+			UpdateLocalStatus();
+		}
+
+		protected void UpdateLocalStatusIcon(bool isRunning, bool isBuilding)
+		{
+			_statusIcon.ClearClassList();
+
+			string statusClassName;
+			string statusText;
+
+			string status = isRunning ? "localRunning" :
+				isBuilding ? "localBuilding" : "localStopped";
+			switch (status)
+			{
+				case "localRunning":
+					statusText = "Local Running";
+					statusClassName = "localRunning";
+					break;
+				case "localBuilding":
+					statusClassName = "localBuilding";
+					statusText = "Local Building";
+					break;
+				case "localStopped":
+					statusClassName = "localStopped";
+					statusText = "Local Stopped";
+					break;
+				default:
+					statusClassName = "different";
+					statusText = "Different";
+					break;
+			}
+
+			_statusIcon.tooltip = _statusLabel.text = statusText;
+			_statusIcon.AddToClassList(statusClassName);
 		}
 		private void OnDrag(float value)
 		{
@@ -201,21 +241,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		private void HandleIsRunningChanged(bool isRunning)
 		{
-			UpdateButtons();
-			UpdateStatusIcon();
-			UpdateHeaderColor();
+			UpdateLocalStatus();
 		}
-		protected void UpdateHeaderColor()
-		{
-			if (Model.IsRunning)
-			{
-				_header.AddToClassList("running");
-			}
-			else
-			{
-				_header.RemoveFromClassList("running");
-			}
-		}
+
 		private void CreateLogSection(bool areLogsAttached)
 		{
 			_logElement?.Destroy();

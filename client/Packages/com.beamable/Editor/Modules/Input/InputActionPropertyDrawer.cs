@@ -67,7 +67,7 @@ namespace Beamable.Editor.Modules.Input
 
       }
 
-      #region Util Methods
+#region Util Methods
       public static object GetTargetObjectOfProperty(SerializedProperty prop)
       {
          if (prop == null) return null;
@@ -132,7 +132,7 @@ namespace Beamable.Editor.Modules.Input
 
          return enm.Current;
       }
-      #endregion
+#endregion
    }
 }
 #endif

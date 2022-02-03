@@ -1,4 +1,5 @@
-﻿using UnityEditor;
+﻿using Beamable.Editor.UI.Components;
+using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -38,16 +39,15 @@ namespace Beamable.Editor.UI.Buss
 		private void OnEnable()
 		{
 			Instance = this;
-			Instance.Refresh();
 		}
 
 		private void OnDisable() => Instance = null;
 		protected void Refresh()
 		{
-			var rootContainer = this.GetRootVisualContainer();
+			VisualElement rootContainer = this.GetRootVisualContainer();
 			rootContainer.Clear();
 
-			var visualElement = GetVisualElement();
+			TVisualElement visualElement = GetVisualElement();
 			rootContainer.Add(visualElement);
 			visualElement.Refresh();
 
