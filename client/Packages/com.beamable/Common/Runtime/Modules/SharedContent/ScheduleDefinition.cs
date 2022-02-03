@@ -33,9 +33,6 @@ namespace Beamable.Common.Content
 		public string description;
 
 		[MustBeDateString]
-		public string activeFrom;
-
-		[MustBeDateString]
 		public OptionalString activeTo = new OptionalString();
 
 		public List<ScheduleDefinition> definitions = new List<ScheduleDefinition>();
@@ -57,7 +54,10 @@ namespace Beamable.Common.Content
 	{
 		[IgnoreContentField]
 		public Action<ScheduleDefinition> OnCronRawSaveButtonPressed;
-
+		
+		[IgnoreContentField]
+		public Action<Schedule> OnScheduleModified;
+		
 		[HideInInspector]
 		[IgnoreContentField]
 		public int index = -1;

@@ -30,8 +30,6 @@ namespace Beamable.Editor.Tests.Content
 			void ScheduleReceived(Schedule schedule)
 			{
 				received = true;
-				bool parsedDateTime = DateTime.TryParse(schedule.activeFrom, out DateTime _);
-				Assert.IsTrue(parsedDateTime, $"{warningHeader} problem with parsing activeFrom field");
 				Assert.IsTrue(schedule.definitions.Count == 1, $"{warningHeader} should have only one definition");
 			}
 
@@ -57,10 +55,8 @@ namespace Beamable.Editor.Tests.Content
 			void ScheduleReceived(Schedule schedule)
 			{
 				received = true;
-				bool parsedDateTime = DateTime.TryParse(schedule.activeFrom, out DateTime _);
 				List<string> days = schedule.definitions[0].dayOfWeek;
 
-				Assert.IsTrue(parsedDateTime, $"{warningHeader} problem with parsing activeFrom field");
 				Assert.IsTrue(schedule.definitions.Count == 1, $"{warningHeader} should have only one definition");
 				Assert.IsTrue(days.Count > 0, $"{warningHeader} minimum one day should be selected");
 
@@ -100,9 +96,7 @@ namespace Beamable.Editor.Tests.Content
 			void ScheduleReceived(Schedule schedule)
 			{
 				received = true;
-				bool parsedDateTime = DateTime.TryParse(schedule.activeFrom, out DateTime _);
 
-				Assert.IsTrue(parsedDateTime, $"{warningHeader} problem with parsing activeFrom field");
 				Assert.IsTrue(schedule.definitions.Count > 0, $"{warningHeader} should have at least on definition");
 
 				List<string> days = schedule.definitions[0].dayOfMonth;
@@ -149,10 +143,8 @@ namespace Beamable.Editor.Tests.Content
 			void ScheduleReceived(Schedule schedule)
 			{
 				received = true;
-				Assert.IsTrue(DateTime.TryParse(schedule.activeFrom, out DateTime _),
-					$"{warningHeader} problem with parsing activeFrom field");
 				Assert.IsTrue(schedule.definitions.Count > 0 && schedule.definitions.Count <= 3,
-					$"{warningHeader} definitions amount should be greater than 0 and less or equal to 3");
+				              $"{warningHeader} definitions amount should be greater than 0 and less or equal to 3");
 
 				foreach (ScheduleDefinition scheduleDefinition in schedule.definitions)
 				{
@@ -192,9 +184,7 @@ namespace Beamable.Editor.Tests.Content
 			void ScheduleReceived(Schedule schedule)
 			{
 				received = true;
-				bool parsedDateTime = DateTime.TryParse(schedule.activeFrom, out DateTime _);
 
-				Assert.IsTrue(parsedDateTime, $"{warningHeader} problem with parsing activeFrom field");
 				Assert.IsTrue(schedule.definitions.Count > 0 && schedule.definitions.Count <= 3,
 					$"{warningHeader} definitions amount should be greater than 0 and less or equal to 3");
 
@@ -237,9 +227,7 @@ namespace Beamable.Editor.Tests.Content
 			void ScheduleReceived(Schedule schedule)
 			{
 				received = true;
-				bool parsedDateTime = DateTime.TryParse(schedule.activeFrom, out DateTime _);
 
-				Assert.IsTrue(parsedDateTime, $"{warningHeader} problem with parsing activeFrom field");
 				Assert.IsTrue(schedule.definitions.Count > 0,
 					$"{warningHeader} definitions amount should be greater than 0");
 
