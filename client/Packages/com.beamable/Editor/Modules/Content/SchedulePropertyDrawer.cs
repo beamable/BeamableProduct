@@ -43,7 +43,7 @@ namespace Beamable.Editor.Content
 
 		protected override void UpdateStartDate(EventContent data)
 		{
-			data.TryParseEventStartDate(out var date);
+			var date = data.startDate.ParseEventStartDate(out var _);
 			data.startDate = $"{date.Year}-{date.Month:00}-{date.Day:00}T{_window.StartTimeComponent.SelectedHour}";
 		}
 	}
@@ -73,7 +73,8 @@ namespace Beamable.Editor.Content
 			var buttonRect = new Rect(position.x + indent, position.y + 20, position.width - indent * 2, 20);
 
 			_schedule = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property) as Schedule;
-
+			_schedule.activeFrom = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
+			
 			var requestEdit = GUI.Button(buttonRect, "Edit Schedule");
 
 			var nextY = buttonRect.y + 20;

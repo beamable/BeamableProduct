@@ -138,7 +138,7 @@ namespace Beamable.Common.Content
 			if (!schedule.HasValue || schedule.Value.definitions.Count == 0)
 				return;
 
-			this.TryParseEventStartDate(out var date);
+			var date = startDate.ParseEventStartDate(out var _);
 			schedule.Value.definitions.ToList().ForEach(scheduleDefinition =>
 			{
 				scheduleDefinition.second = new List<string> { date.Second.ToString() };
