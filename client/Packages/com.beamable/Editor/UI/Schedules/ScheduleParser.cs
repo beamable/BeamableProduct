@@ -7,11 +7,10 @@ namespace Beamable.Editor.Models.Schedules
 {
 	public class ScheduleParser
 	{
-		public void PrepareGeneralData(Schedule newSchedule, string description, string activeFrom, bool expires,
+		public void PrepareGeneralData(Schedule newSchedule, string description, bool expires,
 			string activeTo)
 		{
 			newSchedule.description = description;
-			newSchedule.activeFrom = activeFrom;
 			newSchedule.activeTo.HasValue = !expires;
 			newSchedule.activeTo.Value = activeTo;
 		}
@@ -27,9 +26,9 @@ namespace Beamable.Editor.Models.Schedules
 			List<string> selectedDays)
 		{
 			var definition = new ScheduleDefinition(
-				new List<string> { "*" },
-				new List<string> { "*" },
-				new List<string> { "*" },
+				new List<string> { second },
+				new List<string> { minute },
+				new List<string> { hour },
 				new List<string> { "*" },
 				new List<string> { "*" },
 				new List<string> { "*" },

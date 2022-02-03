@@ -1,5 +1,6 @@
 ﻿using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
+using Beamable.Content.Utility;
 using System;
 using System.Globalization;
 using System.Linq;

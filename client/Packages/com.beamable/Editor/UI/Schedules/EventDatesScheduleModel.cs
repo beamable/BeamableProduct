@@ -38,8 +38,7 @@ namespace Beamable.Editor.Models.Schedules
 		{
 			Schedule newSchedule = new Schedule();
 
-			ScheduleParser.PrepareGeneralData(newSchedule, _descriptionComponent.Value,
-				_startTimeComponent.SelectedHour, _neverExpiresComponent.Value,
+			ScheduleParser.PrepareGeneralData(newSchedule, _descriptionComponent.Value, _neverExpiresComponent.Value,
 				$"{_activeToDateComponent.SelectedDate}{_activeToHourComponent.SelectedHour}");
 			ScheduleParser.PrepareDateModeData(newSchedule, _startTimeComponent.Hour, _startTimeComponent.Minute,
 				_startTimeComponent.Second,
