@@ -73,7 +73,7 @@ namespace Beamable.Editor.Content
 			var buttonRect = new Rect(position.x + indent, position.y + 20, position.width - indent * 2, 20);
 
 			_schedule = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property) as Schedule;
-			_schedule.activeFrom = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ");
+			_schedule.activeFrom = DateTime.UtcNow.ToString(DateUtility.ISO_FORMAT);
 			
 			var requestEdit = GUI.Button(buttonRect, "Edit Schedule");
 
