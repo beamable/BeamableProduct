@@ -70,7 +70,7 @@ namespace Beamable.Common.Content
 		[ContentField("start_date")]
 		[MustBeDateString(nameof(OnScheduleModified))]
 		public string startDate;
-		
+
 		[Tooltip(ContentObject.TooltipPartitionSize1)]
 		[FormerlySerializedAs("partition_size")]
 		[ContentField("partition_size")]
@@ -148,7 +148,7 @@ namespace Beamable.Common.Content
 			});
 		}
 	}
-	
+
 	[System.Serializable]
 	public class PhaseList : DisplayableList<EventPhase>
 	{

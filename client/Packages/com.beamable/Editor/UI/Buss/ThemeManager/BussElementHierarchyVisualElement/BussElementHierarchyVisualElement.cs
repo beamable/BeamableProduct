@@ -1,6 +1,6 @@
-﻿using System;
-using Beamable.Editor.UI.Buss;
+﻿using Beamable.Editor.UI.Buss;
 using Beamable.UI.Buss;
+using System;
 using System.Collections.Generic;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -15,7 +15,7 @@ namespace Beamable.Editor.UI.Components
 	public class BussElementHierarchyVisualElement : ComponentBasedHierarchyVisualElement<BussElement>
 	{
 		public event Action BussStyleSheetChange;
-		
+
 		public List<BussStyleSheet> StyleSheets
 		{
 			get;

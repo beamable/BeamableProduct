@@ -108,7 +108,7 @@ namespace Beamable.Editor.UI.Buss
 
 			_navigationWindow.HierarchyChanged -= RefreshStyleSheets;
 			_navigationWindow.HierarchyChanged += RefreshStyleSheets;
-			
+
 			_navigationWindow.BussStyleSheetChange -= RefreshStyleSheets;
 			_navigationWindow.BussStyleSheetChange += RefreshStyleSheets;
 

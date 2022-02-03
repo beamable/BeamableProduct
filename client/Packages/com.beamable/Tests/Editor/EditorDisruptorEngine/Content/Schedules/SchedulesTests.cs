@@ -144,7 +144,7 @@ namespace Beamable.Editor.Tests.Content
 			{
 				received = true;
 				Assert.IsTrue(schedule.definitions.Count > 0 && schedule.definitions.Count <= 3,
-				              $"{warningHeader} definitions amount should be greater than 0 and less or equal to 3");
+							  $"{warningHeader} definitions amount should be greater than 0 and less or equal to 3");
 
 				foreach (ScheduleDefinition scheduleDefinition in schedule.definitions)
 				{

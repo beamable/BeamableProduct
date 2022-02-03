@@ -26,7 +26,7 @@ namespace Beamable.Editor.UI.Components
 		private IndentedLabelVisualElement _selectedLabel;
 
 		public IEnumerable<T> Components => _spawnedLabels.Select(l => l.RelatedGameObject.GetComponent<T>());
-		
+
 		public T SelectedComponent
 		{
 			get;

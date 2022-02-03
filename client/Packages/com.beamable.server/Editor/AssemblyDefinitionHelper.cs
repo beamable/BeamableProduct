@@ -366,9 +366,9 @@ namespace Beamable.Server.Editor
 		}
 
 		public static ArrayDict AddAndRemoveReferences(ArrayDict asmArrayDict,
-		                                          string asmPath,
-		                                          List<string> toAddReferences,
-		                                          List<string> toRemoveReferences)
+												  string asmPath,
+												  List<string> toAddReferences,
+												  List<string> toRemoveReferences)
 		{
 			var dllReferences = GetReferences(REFERENCES, asmArrayDict);
 
