@@ -31,7 +31,7 @@ namespace Beamable.Common.Content.Validation
 			callbackMethodName = callbackMethodNameNoArgumentsCallback;
 			this.bindingFlags = bindingFlags;
 		}
-		
+
 		public override void Validate(ContentValidationArgs args)
 		{
 			var validationField = args.ValidationField;
@@ -56,10 +56,10 @@ namespace Beamable.Common.Content.Validation
 			{
 				var strValue = validationField.GetValue<string>();
 				ValidateString(strValue, validationField, obj, ctx);
-				
+
 				if (IsUsingCallbackMethod)
 					validationField.Target.TryInvokeCallback(callbackMethodName, bindingFlags);
-				
+
 				return;
 			}
 

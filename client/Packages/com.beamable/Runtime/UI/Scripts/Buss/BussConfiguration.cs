@@ -33,7 +33,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 				}
 			}
 		}
-		
+
 		private static Dictionary<string, SelectorWeight> _weights = new Dictionary<string, SelectorWeight>();
 
 		public static void UseConfig(Action<BussConfiguration> callback)

@@ -58,9 +58,9 @@ namespace Beamable.Editor.Content
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
 		{
 			return EditorGUIUtility.singleLineHeight * 4 +
-			       EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.description))) + 2 +
-			       EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.definitions))) + 2 +
-			       EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.activeTo)));
+				   EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.description))) + 2 +
+				   EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.definitions))) + 2 +
+				   EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.activeTo)));
 		}
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
 		{
@@ -73,7 +73,7 @@ namespace Beamable.Editor.Content
 
 			_schedule = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property) as Schedule;
 			_schedule.activeFrom = DateTime.UtcNow.ToString(DateUtility.ISO_FORMAT);
-			
+
 			var requestEdit = GUI.Button(buttonRect, "Edit Schedule");
 
 			var nextY = buttonRect.y + 20;
@@ -128,13 +128,13 @@ namespace Beamable.Editor.Content
 				if (oldElement != null)
 				{
 					oldElement.Destroy();
-				} 
+				}
 				popupWindow.SwapContent(_window);
 			}
 			else
 			{
 				popupWindow = BeamablePopupWindow.ShowUtility(BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER,
-				                                          _window, null, BeamableComponentsConstants.SchedulesWindowSize);
+														  _window, null, BeamableComponentsConstants.SchedulesWindowSize);
 			}
 
 			_window.Set(schedule, data);
@@ -167,7 +167,7 @@ namespace Beamable.Editor.Content
 			SetDefinitions(schedule);
 		}
 
-		protected virtual void UpdateStartDate(TData data) {}
+		protected virtual void UpdateStartDate(TData data) { }
 
 		private void SetDefinitions(Schedule schedule)
 		{

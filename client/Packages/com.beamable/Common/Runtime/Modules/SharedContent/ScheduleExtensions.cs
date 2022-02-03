@@ -24,7 +24,7 @@ namespace Beamable.Common.Content
 		public static DateTime ParseEventStartDate(this string content, out bool isSuccess)
 		{
 			isSuccess = DateTime.TryParseExact(content, DateUtility.ISO_FORMAT, CultureInfo.InvariantCulture,
-			                            DateTimeStyles.None, out var result);
+										DateTimeStyles.None, out var result);
 			return isSuccess
 				? result.ToUniversalTime()
 				: DateTime.UtcNow;
