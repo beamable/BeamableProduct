@@ -58,6 +58,9 @@ namespace Beamable.Editor.UI.Components
 			{
 				StyleSheets.Add(styleSheet);
 			}
+
+			registeredObject.StyleSheetsChanged -= OnHierarchyChanged;
+			registeredObject.StyleSheetsChanged += OnHierarchyChanged;
 		}
 
 		private void SortStyleSheets()
@@ -72,6 +75,15 @@ namespace Beamable.Editor.UI.Components
 
 			StyleSheets.Remove(firstStyle);
 			StyleSheets.Insert(0, firstStyle);
+		}
+
+		protected override void OnDestroy()
+		{
+			base.OnDestroy();
+			foreach (var bussElement in Components)
+			{
+				bussElement.StyleSheetsChanged -= OnHierarchyChanged;
+			}
 		}
 	}
 }
