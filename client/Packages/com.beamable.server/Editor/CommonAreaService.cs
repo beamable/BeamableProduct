@@ -58,7 +58,7 @@ namespace Beamable.Server.Editor
 		{
 			if (!MicroserviceConfiguration.Instance.AutoBuildCommonAssembly) return;
 
-			// AssetDatabase.StartAssetEditing();
+			AssetDatabase.StartAssetEditing();
 			try
 			{
 				Directory.CreateDirectory(GetCommonPath());
@@ -91,7 +91,7 @@ namespace Beamable.Server.Editor
 			}
 			finally
 			{
-				// AssetDatabase.StopAssetEditing();
+				AssetDatabase.StopAssetEditing();
 			}
 		}
 	}

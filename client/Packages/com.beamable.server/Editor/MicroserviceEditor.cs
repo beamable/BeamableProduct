@@ -160,7 +160,7 @@ namespace Beamable.Server.Editor
 					references.Add(CommonAreaService.GetCommonAsmDefName());
 				}
 
-
+				bool referencesStorage = false;
 				if (additionalReferences != null && additionalReferences.Count != 0)
 				{
 					foreach (var additionalReference in additionalReferences)
@@ -168,8 +168,9 @@ namespace Beamable.Server.Editor
 						// For creating Microservice
 						if (additionalReference is MongoStorageModel mongoStorageModel)
 						{
-							var info = AssemblyDefinitionHelper.ConvertToInfo(mongoStorageModel.Descriptor);
+							var info = mongoStorageModel.Descriptor.ConvertToInfo();
 							references.Add(info.Name);
+							referencesStorage = true;
 						}
 					}
 				}
@@ -182,7 +183,7 @@ namespace Beamable.Server.Editor
 					{
 						Name = asmName,
 						DllReferences =
-							serviceType == ServiceType.StorageObject
+							serviceType == ServiceType.StorageObject || referencesStorage
 								? AssemblyDefinitionHelper.MongoLibraries
 								: new string[] { },
 						IncludePlatforms = new[] { "Editor" },
@@ -198,7 +199,12 @@ namespace Beamable.Server.Editor
 						// For creating StorageObject
 						if (additionalReference is MicroserviceModel microserviceModel)
 						{
-							AssemblyDefinitionHelper.AddAndRemoveReferences(microserviceModel.ServiceDescriptor, new List<string> { asmName }, null);
+							var asm = microserviceModel.ServiceDescriptor.ConvertToAsset();
+							if (serviceType == ServiceType.StorageObject)
+							{
+								asm.AddMongoLibraries();
+							}
+							asm.AddAndRemoveReferences(new List<string> { asmName }, null);
 						}
 					}
 				}

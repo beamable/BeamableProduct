@@ -317,6 +317,12 @@ namespace Beamable.Server.Editor
 			}
 
 			jsonData[PRECOMPILED] = dllReferences.ToArray();
+			
+			if (dllReferences.Count > 0)
+			{
+				jsonData[OVERRIDE_REFERENCES] = true;
+			}
+
 			WriteAssembly(asm, jsonData);
 		}
 
