@@ -215,6 +215,7 @@ namespace Beamable.Editor.UI.Buss
 			_addStyleButton.UnregisterCallback<MouseDownEvent>(_ => OpenAddSelectorWindow());
 			_addStyleButton.RegisterCallback<MouseDownEvent>(_ => OpenAddSelectorWindow());
 
+			_addStyleButton.UnregisterCallback<MouseEnterEvent>(_ => CheckEnableState());
 			_addStyleButton.RegisterCallback<MouseEnterEvent>(_ => CheckEnableState());
 			CheckEnableState();
 
@@ -222,6 +223,11 @@ namespace Beamable.Editor.UI.Buss
 
 			void OpenAddSelectorWindow()
 			{
+				if (_addStyleButton.ClassListContains(UIElementExtensions.PROPERTY_INACTIVE))
+				{
+					return;
+				}
+				
 				AddStyleWindow window = AddStyleWindow.ShowWindow();
 				window?.Init(_ => RefreshStyleSheets(), _activeStyleSheets);
 			}
@@ -249,11 +255,12 @@ namespace Beamable.Editor.UI.Buss
 			if (_activeStyleSheets.Count == 0)
 			{
 				_addStyleButton.tooltip = BussConstants.NoBussStyleSheetAvailable;
-				_addStyleButton.SetEnabled(false);
+				_addStyleButton.SetInactive(true);
 			}
 			else
 			{
-				_addStyleButton.SetEnabled(true);
+				_addStyleButton.tooltip = String.Empty;
+				_addStyleButton.SetInactive(false);
 			}
 		}
 
