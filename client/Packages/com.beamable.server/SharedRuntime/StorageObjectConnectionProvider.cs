@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using MongoDB.Driver;
 using System;
+using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -55,6 +56,9 @@ namespace Beamable.Server
 		private readonly IBeamableRequester _requester;
 		private const string CONNSTR_VAR_NAME_FORMAT = "STORAGE_CONNSTR_{0}";
 
+		private ConcurrentDictionary<Type, Promise<IMongoDatabase>> _databaseCache =
+			new ConcurrentDictionary<Type, Promise<IMongoDatabase>>();
+
 		public StorageObjectConnectionProvider(IRealmInfo realmInfo, IBeamableRequester requester)
 		{
 			_realmInfo = realmInfo;
@@ -63,24 +67,27 @@ namespace Beamable.Server
 
 		public async Promise<IMongoDatabase> GetDatabase<TStorage>() where TStorage : MongoStorageObject
 		{
-			string storageName = string.Empty;
-			var attributes = typeof(TStorage).GetCustomAttributes(true);
-			foreach (var attribute in attributes)
+			return await _databaseCache.GetOrAdd(typeof(TStorage),  (type) =>
 			{
-				if (attribute is StorageObjectAttribute storageAttr)
+				string storageName = string.Empty;
+				var attributes = type.GetCustomAttributes(true);
+				foreach (var attribute in attributes)
 				{
-					storageName = storageAttr.StorageName;
-					break;
+					if (attribute is StorageObjectAttribute storageAttr)
+					{
+						storageName = storageAttr.StorageName;
+						break;
+					}
 				}
-			}
 
-			if (string.IsNullOrEmpty(storageName))
-			{
-				BeamableLogger.LogError($"Cannot find storage name for type {typeof(TStorage)} ");
-				return null;
-			}
+				if (string.IsNullOrEmpty(storageName))
+				{
+					BeamableLogger.LogError($"Cannot find storage name for type {type} ");
+					return null;
+				}
 
-			return await GetDatabaseByStorageName(storageName);
+				return GetDatabaseByStorageName(storageName);
+			});
 		}
 
 		public Promise<IMongoCollection<TCollection>> GetCollection<TStorage, TCollection>()
