@@ -193,7 +193,6 @@ namespace Beamable.Editor
 		{
 			if (game == null)
 			{
-				Debug.Log("SetGame: game was null");
 				return Promise<Unit>.Failed(new Exception("Cannot set game to null"));
 			}
 
@@ -348,7 +347,6 @@ namespace Beamable.Editor
 				   return ContentIO.FetchManifest();
 			   }).Map(_ =>
 			   {
-				   Debug.Log("Beamable Content Publish: Complete.");
 				   return PromiseBase.Unit;
 			   });
 		}

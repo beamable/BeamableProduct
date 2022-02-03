@@ -135,7 +135,6 @@ namespace Beamable.Api
 				this.coroutineService = provider.GetService<CoroutineService>();
 				this.requester = provider.GetService<IBeamableRequester>();
 
-				Debug.Log("GOT ONRELOAD USER FOR " + this.GetType().Name);
 				Reset();
 				Refresh();
 			};

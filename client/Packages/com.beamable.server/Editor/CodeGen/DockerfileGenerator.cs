@@ -153,8 +153,10 @@ ENV BEAMABLE_SDK_VERSION_EXECUTION={BeamableEnvironment.SdkVersion}
 		{
 			var content = GetString();
 
+#if BEAMABLE_DEVELOPER
 			Beamable.Common.BeamableLogger.Log("DOCKER FILE");
 			Beamable.Common.BeamableLogger.Log(content);
+#endif
 
 			File.WriteAllText(filePath, content);
 		}

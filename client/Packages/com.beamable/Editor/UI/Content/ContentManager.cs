@@ -156,7 +156,6 @@ namespace Beamable.Editor.Content
 
 		public void ShowDocs()
 		{
-			BeamableLogger.Log("ShowDocs");
 			Application.OpenURL(BeamableConstants.URL_TOOL_WINDOW_CONTENT_MANAGER);
 		}
 

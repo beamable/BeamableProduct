@@ -176,8 +176,8 @@ namespace Beamable.Api.Notification
 		{
 #if UNITY_EDITOR
          if (!Application.isPlaying)
-         {
-            Debug.Log("Subscribing to Pubnub done after quiting Play Mode, aborting.");
+         { 
+	         Debug.Log("Subscribing to Pubnub done after quiting Play Mode, aborting.");
             return;
          }
 #endif

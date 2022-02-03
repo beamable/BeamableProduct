@@ -32,6 +32,13 @@ namespace Beamable.Editor.Reflection
 														.Select(tuple => AssetDatabase.LoadAssetAtPath<ReflectionSystemObject>(tuple.path)).ToList();
 				var reimportedReflectionTypes = reimportedReflectionSystemObjects.Select(sysObj => sysObj.SystemType).ToList();
 
+				// we may need to add these new types and objects into the system.
+				foreach (var sysObject in reimportedReflectionSystemObjects)
+				{
+					BeamEditor.EditorReflectionCache.TryRegisterTypeProvider(sysObject.TypeProvider);
+					BeamEditor.EditorReflectionCache.TryRegisterReflectionSystem(sysObject.System);
+				}
+
 				BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems(reimportedReflectionTypes);
 				BeamEditor.EditorReflectionCache.SetStorage(BeamEditor.HintGlobalStorage);
 
@@ -47,13 +54,11 @@ namespace Beamable.Editor.Reflection
 					}
 				}
 
-				Spew.Logger.DoSpew("Finished Rebuilding Reflection Cache Systems");
 				AssetDatabase.Refresh();
 			}
 
 			if (deletedAssets.Length > 0)
 			{
-				Spew.Logger.DoSpew("Re-building the Reflection Systems from Cached Data!");
 				BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems();
 				BeamEditor.EditorReflectionCache.SetStorage(BeamEditor.HintGlobalStorage);
 
@@ -66,7 +71,6 @@ namespace Beamable.Editor.Reflection
 					hintSystem.OnInitialized();
 				}
 
-				Spew.Logger.DoSpew("Finished Rebuilding Reflection Cache Systems");
 				AssetDatabase.Refresh();
 			}
 		}

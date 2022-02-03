@@ -2,6 +2,7 @@
 using Beamable.Editor.UI.Common;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -24,6 +25,8 @@ namespace Beamable.Editor.UI.Components
 		private ScrollView _hierarchyContainer;
 		private IndentedLabelVisualElement _selectedLabel;
 
+		public IEnumerable<T> Components => _spawnedLabels.Select(l => l.RelatedGameObject.GetComponent<T>());
+		
 		public T SelectedComponent
 		{
 			get;
@@ -91,6 +94,12 @@ namespace Beamable.Editor.UI.Components
 
 		protected virtual void OnHierarchyChanged()
 		{
+			RefreshTree();
+			HierarchyChanged?.Invoke();
+		}
+
+		protected void RefreshTree()
+		{
 			foreach (IndentedLabelVisualElement child in _spawnedLabels)
 			{
 				child.Destroy();
@@ -107,8 +116,6 @@ namespace Beamable.Editor.UI.Components
 					Traverse(gameObject, 0);
 				}
 			}
-
-			HierarchyChanged?.Invoke();
 		}
 
 		protected virtual void OnSelectionChanged()

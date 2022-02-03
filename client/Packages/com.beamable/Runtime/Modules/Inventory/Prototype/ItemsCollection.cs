@@ -33,7 +33,7 @@ namespace Beamable.Modules.Inventory
 			}
 			else
 			{
-				Debug.Log("Problem with an API access...");
+				Debug.LogWarning("Problem with an API access...");
 			}
 		}
 
@@ -53,7 +53,6 @@ namespace Beamable.Modules.Inventory
 
 			if (itemGroupData == null)
 			{
-				Debug.Log($"Registering new content with id {pair.Key}");
 				ItemContent itemContent = await new ItemRef(pair.Key).Resolve();
 				RegisterItemGroup(itemContent, out itemGroupData);
 			}

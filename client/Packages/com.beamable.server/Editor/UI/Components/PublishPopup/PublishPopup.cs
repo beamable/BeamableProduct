@@ -2,11 +2,11 @@ using Beamable.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
+using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Beamable.Server.Editor.DockerCommands;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -306,7 +306,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private float CalculateProgress()
 		{
-			return _publishManifestElements.Values.Where(element => !element.IsRemoteOnly)
+			return _publishManifestElements.Values.Where(element => !element.IsRemoteOnly && !(element.Model is StorageEntryModel))
 										   .Average(x => x.LoadingBar.Progress);
 		}
 	}

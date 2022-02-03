@@ -15,6 +15,7 @@ using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Player;
 using Beamable.Config;
+using Beamable.Content.Utility;
 using Beamable.Coroutines;
 using Beamable.Player;
 using Core.Platform.SDK;
@@ -178,7 +179,7 @@ namespace Beamable
 				}
 
 				var date = DateTime.Parse(value, null, System.Globalization.DateTimeStyles.RoundtripKind);
-				var str = date.ToString("yyyy-MM-ddTHH:mm:ssZ");
+				var str = date.ToString(DateUtility.ISO_FORMAT);
 				_requester.TimeOverride = str;
 				TimeOverrideChanged?.Invoke();
 			}
@@ -436,7 +437,6 @@ namespace Beamable
 			{
 				try
 				{
-					Debug.Log("Creating new user!");
 					var rsp = await _authService.CreateUser();
 					await SaveToken(rsp);
 				}
@@ -467,7 +467,6 @@ namespace Beamable
 						ClearToken();
 
 						// re-create the user
-						Debug.Log("Save the token!");
 						await InitStep_SaveToken();
 						await InitStep_GetUser();
 						await InitStep_StartPubnub();

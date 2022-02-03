@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Beamable.Content.Utility;
+using System;
 using System.Globalization;
 
 namespace Beamable.Common.Content
@@ -13,21 +14,20 @@ namespace Beamable.Common.Content
 				return false;
 			}
 
-			if (!DateTime.TryParseExact(schedule.activeTo.Value, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture,
+			if (!DateTime.TryParseExact(schedule.activeTo.Value, DateUtility.ISO_FORMAT, CultureInfo.InvariantCulture,
 				DateTimeStyles.None, out activeToDate)) return false;
 			activeToDate = activeToDate.ToUniversalTime();
 
 			return true;
 		}
 
-		public static bool TryGetActiveFrom(this Schedule schedule, out DateTime activeFromDate)
+		public static DateTime ParseEventStartDate(this string content, out bool isSuccess)
 		{
-			activeFromDate = DateTime.Now;
-
-			if (!DateTime.TryParseExact(schedule.activeFrom, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture,
-				DateTimeStyles.None, out activeFromDate)) return false;
-			activeFromDate = activeFromDate.ToUniversalTime();
-			return true;
+			isSuccess = DateTime.TryParseExact(content, DateUtility.ISO_FORMAT, CultureInfo.InvariantCulture,
+			                            DateTimeStyles.None, out var result);
+			return isSuccess
+				? result.ToUniversalTime()
+				: DateTime.UtcNow;
 		}
 	}
 }

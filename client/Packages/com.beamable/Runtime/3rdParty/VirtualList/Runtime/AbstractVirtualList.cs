@@ -193,7 +193,6 @@ namespace VirtualList
 			var viewport = Viewport;
 			if (viewport == null)
 			{
-				Debug.LogWarning("no viewport", this);
 				return Vector2.zero;
 			}
 

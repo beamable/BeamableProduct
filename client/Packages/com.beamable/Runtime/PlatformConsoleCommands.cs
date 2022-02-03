@@ -218,7 +218,7 @@ namespace Beamable.Api
 				{
 					if (ex is PlatformRequesterException code && code.Error.error == "UnableToMergeError")
 					{
-						Debug.Log("The current account is already associated with an email...");
+						Debug.LogWarning("The current account is already associated with an email");
 						return auth.Login(email, password, false);
 					}
 

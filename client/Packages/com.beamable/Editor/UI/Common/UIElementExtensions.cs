@@ -14,9 +14,23 @@ namespace Beamable.Editor
 {
 	public static class UIElementExtensions
 	{
+		public const string PROPERTY_INACTIVE = "inactive";
+
 		private const string PROPERTY_SELECTED = "selected";
 		private const string PROPERTY_HOVERED = "hovered";
 		private const string PROPERTY_HIDDEN = "hidden";
+
+		public static void SetInactive(this VisualElement element, bool value)
+		{
+			if (value)
+			{
+				element.AddToClassList(PROPERTY_INACTIVE);
+			}
+			else
+			{
+				element.RemoveFromClassList(PROPERTY_INACTIVE);
+			}
+		}
 
 		public static void SetSelected(this VisualElement element, bool value)
 		{

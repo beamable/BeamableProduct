@@ -1,7 +1,7 @@
 using Beamable.Common.Content;
 using Beamable.Common.Shop;
+using Beamable.Content.Utility;
 using Beamable.CronExpression;
-using Beamable.Editor.Schedules;
 using Beamable.Editor.UI.Components;
 using System;
 using System.Linq;
@@ -38,10 +38,12 @@ namespace Beamable.Editor.Content
 		protected override void UpdateSchedule(SerializedProperty property, EventContent evtContent, Schedule schedule, Schedule nextSchedule)
 		{
 			base.UpdateSchedule(property, evtContent, schedule, nextSchedule);
-			var startDate = DateTime.Parse(evtContent.startDate);
-			startDate = startDate.ToUniversalTime();
-			schedule.activeFrom = $"{startDate.Year:0000}-{startDate.Month:00}-{startDate.Day:00}T{schedule.activeFrom}";
-			evtContent.startDate = schedule.activeFrom;
+		}
+
+		protected override void UpdateStartDate(EventContent data)
+		{
+			var date = data.startDate.ParseEventStartDate(out var _);
+			data.startDate = $"{date.Year}-{date.Month:00}-{date.Day:00}T{_window.StartTimeComponent.SelectedHour}";
 		}
 	}
 
@@ -50,16 +52,15 @@ namespace Beamable.Editor.Content
 
 	   where TWindow : BeamableVisualElement, IScheduleWindow<TData>, new()
 	{
-		public bool allowRawEdit;
 		private Schedule _schedule;
+		protected TWindow _window;
 
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
 		{
 			return EditorGUIUtility.singleLineHeight * 4 +
-				   EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.description))) + 2 +
-				   EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.definitions))) + 2 +
-				   EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.activeTo))) + 2 +
-				   EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.activeFrom)));
+			       EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.description))) + 2 +
+			       EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.definitions))) + 2 +
+			       EditorGUI.GetPropertyHeight(property.FindPropertyRelative(nameof(Schedule.activeTo)));
 		}
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
 		{
@@ -71,13 +72,12 @@ namespace Beamable.Editor.Content
 			var buttonRect = new Rect(position.x + indent, position.y + 20, position.width - indent * 2, 20);
 
 			_schedule = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property) as Schedule;
-
+			_schedule.activeFrom = DateTime.UtcNow.ToString(DateUtility.ISO_FORMAT);
+			
 			var requestEdit = GUI.Button(buttonRect, "Edit Schedule");
 
 			var nextY = buttonRect.y + 20;
 			buttonRect = new Rect(buttonRect.x, nextY, buttonRect.width, 20);
-			var toggleRaw = GUI.Button(buttonRect, "Modify Raw Data");
-			if (toggleRaw) allowRawEdit = !allowRawEdit;
 			nextY = buttonRect.y + 20;
 
 			for (var index = 0; index < _schedule.definitions.Count; index++)
@@ -86,6 +86,8 @@ namespace Beamable.Editor.Content
 				scheduleDefinition.index = index;
 				scheduleDefinition.OnCronRawSaveButtonPressed -= HandleCronRawUpdate;
 				scheduleDefinition.OnCronRawSaveButtonPressed += HandleCronRawUpdate;
+				scheduleDefinition.OnScheduleModified -= SetDefinitions;
+				scheduleDefinition.OnScheduleModified += SetDefinitions;
 			}
 
 			void RenderProperty(SerializedProperty prop)
@@ -96,9 +98,8 @@ namespace Beamable.Editor.Content
 				EditorGUI.PropertyField(rect, prop, true);
 			}
 
-			GUI.enabled = allowRawEdit;
+			GUI.enabled = false;
 			RenderProperty(property.FindPropertyRelative(nameof(Schedule.description)));
-			RenderProperty(property.FindPropertyRelative(nameof(Schedule.activeFrom)));
 			RenderProperty(property.FindPropertyRelative(nameof(Schedule.activeTo)));
 			RenderProperty(property.FindPropertyRelative(nameof(Schedule.definitions)));
 			GUI.enabled = true;
@@ -117,33 +118,33 @@ namespace Beamable.Editor.Content
 				Debug.LogWarning("No data object exists for " + property);
 			}
 
-			var element = new TWindow();
-			BeamablePopupWindow window =
+			_window = new TWindow();
+			BeamablePopupWindow popupWindow =
 				(Resources.FindObjectsOfTypeAll(typeof(BeamablePopupWindow)) as BeamablePopupWindow[]).FirstOrDefault(
 					w => w.titleContent.text == BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER);
-			if (window != null)
+			if (popupWindow != null)
 			{
-				var oldElement = window.GetRootVisualContainer().Q<TWindow>();
+				var oldElement = popupWindow.GetRootVisualContainer().Q<TWindow>();
 				if (oldElement != null)
 				{
 					oldElement.Destroy();
-				}
-				window.SwapContent(element);
+				} 
+				popupWindow.SwapContent(_window);
 			}
 			else
 			{
-				window = BeamablePopupWindow.ShowUtility(BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER,
-														 element, null, BeamableComponentsConstants.SchedulesWindowSize);
+				popupWindow = BeamablePopupWindow.ShowUtility(BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER,
+				                                          _window, null, BeamableComponentsConstants.SchedulesWindowSize);
 			}
 
-			element.Set(schedule, data);
-			element.OnScheduleUpdated += nextSchedule =>
+			_window.Set(schedule, data);
+			_window.OnScheduleUpdated += nextSchedule =>
 			{
-				element.ApplyDataTransforms(data);
+				_window.ApplyDataTransforms(data);
 				UpdateSchedule(property, data, schedule, nextSchedule);
-				window.Close();
+				popupWindow.Close();
 			};
-			element.OnCancelled += () => window.Close();
+			_window.OnCancelled += () => popupWindow.Close();
 
 		}
 
@@ -160,11 +161,13 @@ namespace Beamable.Editor.Content
 		protected virtual void UpdateSchedule(SerializedProperty property, TData data, Schedule schedule, Schedule nextSchedule)
 		{
 			schedule.description = nextSchedule.description;
-			schedule.activeFrom = nextSchedule.activeFrom;
 			schedule.activeTo = nextSchedule.activeTo;
 			schedule.definitions = nextSchedule.definitions;
+			UpdateStartDate(data);
 			SetDefinitions(schedule);
 		}
+
+		protected virtual void UpdateStartDate(TData data) {}
 
 		private void SetDefinitions(Schedule schedule)
 		{

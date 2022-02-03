@@ -17,7 +17,6 @@ public class ContentSubscriptionTest : MonoBehaviour
         CurrencyContent firstContent = null;
         b.ContentService.Subscribe(async manifest =>
         {
-            Debug.Log("Got content update.");
             var content = await CurrencyRef.Resolve();
 
             if (lastVersion == null)

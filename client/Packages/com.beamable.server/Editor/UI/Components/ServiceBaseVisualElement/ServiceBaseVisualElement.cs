@@ -172,6 +172,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected async void UpdateModel()
 		{
 			await Model.Builder.CheckIfIsRunning();
+			UpdateLocalStatus();
 		}
 
 		protected void UpdateLocalStatusIcon(bool isRunning, bool isBuilding)
