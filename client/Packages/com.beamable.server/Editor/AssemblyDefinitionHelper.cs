@@ -223,8 +223,11 @@ namespace Beamable.Server.Editor
 		public static void RemoveMongoLibraries(this MicroserviceDescriptor service) =>
 		   service.RemovePrecompiledReferences(MongoLibraries);
 
-		public static void AddMongoLibraries(this AssemblyDefinitionAsset asm) =>
+		public static ArrayDict AddMongoLibraries(this AssemblyDefinitionAsset asm) =>
 		   asm.AddPrecompiledReferences(MongoLibraries);
+
+		public static ArrayDict AddMongoLibraries(ArrayDict asmJsonData, string asmPath) =>
+			AddPrecompiledReferences(asmJsonData, asmPath, MongoLibraries);
 
 		public static void RemoveMongoLibraries(this AssemblyDefinitionAsset asm) =>
 		   asm.RemovePrecompiledReferences(MongoLibraries);
@@ -306,24 +309,35 @@ namespace Beamable.Server.Editor
 		public static void AddAndRemoveReferences(this MicroserviceDescriptor service, List<string> toAddReferences, List<string> toRemoveReferences)
 			=> service.ConvertToAsset().AddAndRemoveReferences(toAddReferences, toRemoveReferences);
 
-		public static void AddPrecompiledReferences(this AssemblyDefinitionAsset asm, params string[] libraryNames)
+		public static ArrayDict AddPrecompiledReferences(ArrayDict asmJsonData, string asmPath, params string[] libraryNames)
 		{
-			var jsonData = Json.Deserialize(asm.text) as ArrayDict;
-			var dllReferences = GetReferences(PRECOMPILED, jsonData);
+			var dllReferences = GetReferences(PRECOMPILED, asmJsonData);
 
 			foreach (var lib in libraryNames)
 			{
 				dllReferences.Add(lib);
 			}
 
-			jsonData[PRECOMPILED] = dllReferences.ToArray();
-			
+			asmJsonData[PRECOMPILED] = dllReferences.ToArray();
+
 			if (dllReferences.Count > 0)
 			{
-				jsonData[OVERRIDE_REFERENCES] = true;
+				asmJsonData[OVERRIDE_REFERENCES] = true;
+			}
+			else
+			{
+				asmJsonData.Remove(OVERRIDE_REFERENCES);
 			}
 
-			WriteAssembly(asm, jsonData);
+			WriteAssembly(asmPath, asmJsonData);
+			return asmJsonData;
+		}
+
+		public static ArrayDict AddPrecompiledReferences(this AssemblyDefinitionAsset asm, params string[] libraryNames)
+		{
+			var jsonData = Json.Deserialize(asm.text) as ArrayDict;
+			var path = AssetDatabase.GetAssetPath(asm);
+			return AddPrecompiledReferences(jsonData, path, libraryNames);
 		}
 
 		public static void CreateAssetDefinitionAssetOnDisk(string filePath, AssemblyDefinitionInfo info)
@@ -351,10 +365,12 @@ namespace Beamable.Server.Editor
 			AssetDatabase.ImportAsset(filePath);
 		}
 
-		public static void AddAndRemoveReferences(this AssemblyDefinitionAsset asm, List<string> toAddReferences, List<string> toRemoveReferences)
+		public static ArrayDict AddAndRemoveReferences(ArrayDict asmArrayDict,
+		                                          string asmPath,
+		                                          List<string> toAddReferences,
+		                                          List<string> toRemoveReferences)
 		{
-			var jsonData = Json.Deserialize(asm.text) as ArrayDict;
-			var dllReferences = GetReferences(REFERENCES, jsonData);
+			var dllReferences = GetReferences(REFERENCES, asmArrayDict);
 
 			if (toAddReferences != null)
 			{
@@ -372,8 +388,16 @@ namespace Beamable.Server.Editor
 				}
 			}
 
-			jsonData[REFERENCES] = dllReferences.ToArray();
-			WriteAssembly(asm, jsonData);
+			asmArrayDict[REFERENCES] = dllReferences.ToArray();
+			WriteAssembly(asmPath, asmArrayDict);
+			return asmArrayDict;
+		}
+
+		public static ArrayDict AddAndRemoveReferences(this AssemblyDefinitionAsset asm, List<string> toAddReferences, List<string> toRemoveReferences)
+		{
+			var jsonData = Json.Deserialize(asm.text) as ArrayDict;
+			var path = AssetDatabase.GetAssetPath(asm);
+			return AddAndRemoveReferences(jsonData, path, toAddReferences, toRemoveReferences);
 		}
 
 		public static void RemovePrecompiledReferences(this MicroserviceDescriptor service, params string[] libraryNames)
@@ -390,6 +414,14 @@ namespace Beamable.Server.Editor
 			}
 
 			jsonData[PRECOMPILED] = dllReferences.ToArray();
+			if (dllReferences.Count > 0)
+			{
+				jsonData[OVERRIDE_REFERENCES] = true;
+			}
+			else
+			{
+				jsonData.Remove(OVERRIDE_REFERENCES);
+			}
 			WriteAssembly(asm, jsonData);
 		}
 
@@ -408,13 +440,18 @@ namespace Beamable.Server.Editor
 			return dllReferences;
 		}
 
-		private static void WriteAssembly(AssemblyDefinitionAsset asm, ArrayDict jsonData)
+		private static void WriteAssembly(string asmPath, ArrayDict jsonData)
 		{
 			var json = Json.Serialize(jsonData, new StringBuilder());
 			json = Json.FormatJson(json);
+			File.WriteAllText(asmPath, json);
+			AssetDatabase.ImportAsset(asmPath);
+		}
+
+		private static void WriteAssembly(AssemblyDefinitionAsset asm, ArrayDict jsonData)
+		{
 			var path = AssetDatabase.GetAssetPath(asm);
-			File.WriteAllText(path, json);
-			AssetDatabase.ImportAsset(path);
+			WriteAssembly(path, jsonData);
 		}
 
 		#region Mongo Helpers

@@ -200,11 +200,12 @@ namespace Beamable.Server.Editor
 						if (additionalReference is MicroserviceModel microserviceModel)
 						{
 							var asm = microserviceModel.ServiceDescriptor.ConvertToAsset();
+							var dict = asm.AddAndRemoveReferences(new List<string> { asmName }, null);
+
 							if (serviceType == ServiceType.StorageObject)
 							{
-								asm.AddMongoLibraries();
+								AssemblyDefinitionHelper.AddMongoLibraries(dict, AssetDatabase.GetAssetPath(asm));
 							}
-							asm.AddAndRemoveReferences(new List<string> { asmName }, null);
 						}
 					}
 				}
