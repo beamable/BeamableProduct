@@ -19,5 +19,14 @@ namespace Beamable.Common.Content
 
 			return true;
 		}
+
+		public static bool TryParseEventStartDate(this EventContent content, out DateTime result)
+		{
+			result = DateTime.UtcNow;
+			if (!DateTime.TryParseExact(content.startDate, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture, DateTimeStyles.None, out result)) 
+				return false;
+			result = result.ToUniversalTime();
+			return true;
+		}
 	}
 }

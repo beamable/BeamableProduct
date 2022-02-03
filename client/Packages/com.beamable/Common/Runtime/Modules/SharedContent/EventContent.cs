@@ -68,7 +68,7 @@ namespace Beamable.Common.Content
 		[Tooltip(ContentObject.TooltipStartDate1 + ContentObject.TooltipStartDate2)]
 		[FormerlySerializedAs("start_date")]
 		[ContentField("start_date")]
-		[MustBeDateString("OnScheduleModified")]
+		[MustBeDateString(nameof(OnScheduleModified))]
 		public string startDate;
 		
 		[Tooltip(ContentObject.TooltipPartitionSize1)]
@@ -137,8 +137,8 @@ namespace Beamable.Common.Content
 		{
 			if (!schedule.HasValue || schedule.Value.definitions.Count == 0)
 				return;
-			
-			var date = DateTime.ParseExact(startDate, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture,DateTimeStyles.None).ToUniversalTime();
+
+			this.TryParseEventStartDate(out var date);
 			schedule.Value.definitions.ToList().ForEach(scheduleDefinition =>
 			{
 				scheduleDefinition.second = new List<string> { date.Second.ToString() };

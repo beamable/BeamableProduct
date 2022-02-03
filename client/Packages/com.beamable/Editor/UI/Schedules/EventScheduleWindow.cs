@@ -160,7 +160,8 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			_neverExpiresComponent.Value = neverExpires;
-			_startTimeComponent.Set(DateTime.Parse(content.startDate).ToUniversalTime());
+			content.TryParseEventStartDate(out var date);
+			_startTimeComponent.Set(date);
 
 			var explicitDates = schedule.definitions.Any(definition => definition.dayOfMonth.Any(day => day != "*"));
 			var hasDaysOfWeek = schedule.definitions.Any(definition => definition.dayOfWeek.Any(day => day != "*"));

@@ -31,6 +31,9 @@ namespace Beamable.Common.Content
 													(!def.hour.Contains("*") && !def.minute.Contains("*")));
 
 		public string description;
+		
+		[Obsolete]
+		public string activeFrom = DateTime.UtcNow.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
 		[MustBeDateString]
 		public OptionalString activeTo = new OptionalString();

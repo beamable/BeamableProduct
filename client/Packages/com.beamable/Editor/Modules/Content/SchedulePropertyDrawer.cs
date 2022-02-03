@@ -43,7 +43,7 @@ namespace Beamable.Editor.Content
 
 		protected override void UpdateStartDate(EventContent data)
 		{
-			var date = DateTime.ParseExact(data.startDate, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture,DateTimeStyles.None).ToUniversalTime();
+			data.TryParseEventStartDate(out var date);
 			data.startDate = $"{date.Year}-{date.Month:00}-{date.Day:00}T{_window.StartTimeComponent.SelectedHour}";
 		}
 	}

@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using System.Reflection;
+using UnityEngine;
 
 namespace Beamable.Common
 {
@@ -10,7 +11,10 @@ namespace Beamable.Common
 		{
 			var method = target.GetType().GetMethods(bindingFlags).FirstOrDefault(m => m.Name == callbackMethodName);
 			if (method == null || method.GetParameters().Any())
+			{
+				Debug.LogError("Callback method not found");
 				return;
+			}
 			method.Invoke(target, null);
 		}
 	}
