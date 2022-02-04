@@ -45,6 +45,8 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 
 		private List<BussElement> _rootBussElements = new List<BussElement>();
 
+		public List<BussElement> RootBussElements => _rootBussElements;
+
 #if UNITY_EDITOR
 		static BussConfiguration()
 		{
