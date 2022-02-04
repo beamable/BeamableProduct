@@ -25,7 +25,7 @@ namespace Beamable.Api.Inventory
       private readonly InventoryView view = new InventoryView();
 
       public InventorySubscription(IPlatformService platform, IBeamableRequester requester) 
-	      : base(platform, requester, SERVICE, new BeamableGetApiResourceViaPost<InventoryResponse>())
+	      : base(platform, requester, SERVICE)
       {
 	      UsesHierarchyScopes = true;
       }
