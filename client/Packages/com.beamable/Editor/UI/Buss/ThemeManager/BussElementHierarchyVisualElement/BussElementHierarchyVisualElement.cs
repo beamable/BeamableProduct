@@ -84,7 +84,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				return;
 			}
-			
+
 			BussStyleSheet firstStyle = selectedComponentAllStyleSheets[selectedComponentAllStyleSheets.Count - 1];
 
 			StyleSheets.Remove(firstStyle);
