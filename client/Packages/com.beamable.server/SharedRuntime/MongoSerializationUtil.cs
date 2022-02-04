@@ -9,7 +9,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.Serialization;
+
 namespace Beamable.Server
 {
 	public interface IMongoSerializationService
@@ -56,7 +59,59 @@ namespace Beamable.Server
 			return this;
 		}
 
-	}
+		public static void RegisterClass<T>() where T : class
+		{
+			if (BsonClassMap.IsClassMapRegistered(typeof(T))) return;
+
+			Debug.LogError($"RegisterClass : {typeof(T).ToString()}");
+
+			var classMap =  BsonClassMap.RegisterClassMap<T>(cm => {
+
+				cm.AutoMap();
+
+				// Unmap properties
+
+				PropertyInfo[] props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+
+				if (props.Length > 0)
+				{
+					foreach (PropertyInfo propertyInfo in props)
+						cm.UnmapProperty(propertyInfo.Name);
+				}
+
+				MemberInfo[] members = typeof(T).GetMembers(BindingFlags.Public | BindingFlags.NonPublic |  BindingFlags.Instance | BindingFlags.DeclaredOnly);
+
+				if (members.Length > 0)
+				{
+					foreach (MemberInfo memberInfo in members)
+					{
+						if (!memberInfo.IsDefined(typeof(CompilerGeneratedAttribute), false)) // we don't want to k__backingfield
+						{
+							if (memberInfo.MemberType == MemberTypes.Field)
+							{
+								// Set field as serializable if has SerializableAttribute
+
+								if (memberInfo.GetCustomAttribute(typeof(SerializeField)) != null)
+									cm.MapField(memberInfo.Name);
+								else if (!((FieldInfo)memberInfo).IsPublic)
+									cm.UnmapField(memberInfo.Name);
+
+							}
+
+							// Set new member name if has FormerlySerializedAsAttribute
+
+							if (memberInfo.GetCustomAttribute(typeof(FormerlySerializedAsAttribute)) is FormerlySerializedAsAttribute formerlySerializedAttr)
+								cm.GetMemberMap(memberInfo.Name).SetElementName(formerlySerializedAttr.oldName);
+						}
+					}
+				}
+			});
+
+			classMap.Freeze();
+
+			BsonSerializer.RegisterSerializer(typeof(T), new StructSerializer<T>(new BsonClassMapSerializer<T>(classMap)));
+		}
+}
 
 	public class StructSerializer<T> : IBsonSerializer<T>
 	{
