@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 
 namespace Beamable.Editor.UI.Model
 {
-    [Serializable]
-    public class MongoStorageBuilder : ServiceBuilderBase
+	[Serializable]
+	public class MongoStorageBuilder : ServiceBuilderBase
 	{
 		public void ForwardEventsTo(MongoStorageBuilder oldBuilder)
 		{
