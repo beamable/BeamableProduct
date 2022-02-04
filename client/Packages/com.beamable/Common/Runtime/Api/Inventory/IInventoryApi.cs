@@ -224,7 +224,7 @@ namespace Beamable.Common.Api.Inventory
             }
         }
 
-        public HashSet<string> GetNotifyScopes()
+        public HashSet<string> GetNotifyScopes(string[] givenScopes = null)
         {
             var notifyScopes = new HashSet<string>();
             notifyScopes.UnionWith(currencies.Select(currency => currency.id));
@@ -233,6 +233,11 @@ namespace Beamable.Common.Api.Inventory
             notifyScopes.Add(""); // always notify the root scope
             // TODO: if a scope is in notifySCopes, 'a.b.c', we should also make sure 'a.b', and 'a' are also in the set, so that item parent/child relationships are respected.
 
+            if (givenScopes != null)
+            {
+	            notifyScopes.UnionWith(givenScopes);
+            }
+            
             return ResolveAllScopes(notifyScopes);
         }
 

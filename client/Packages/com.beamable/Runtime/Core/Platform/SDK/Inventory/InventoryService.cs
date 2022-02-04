@@ -25,7 +25,7 @@ namespace Beamable.Api.Inventory
       private readonly InventoryView view = new InventoryView();
 
       public InventorySubscription(IPlatformService platform, IBeamableRequester requester) 
-	      : base(platform, requester, SERVICE)
+	      : base(platform, requester, SERVICE, new BeamableGetApiResourceViaPost<InventoryResponse>())
       {
 	      UsesHierarchyScopes = true;
       }
@@ -34,11 +34,11 @@ namespace Beamable.Api.Inventory
       {
          view.Clear();
       }
-
-      protected override void OnRefresh(InventoryResponse data)
-      {
-         data.MergeView(view);
-         foreach (var scope in data.GetNotifyScopes())
+      
+      protected override void OnRefresh(InventoryResponse data, string[] scopes)
+      { 
+	      data.MergeView(view);
+         foreach (var scope in data.GetNotifyScopes(scopes))
          {
             Notify(scope, view);
          }

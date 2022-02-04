@@ -233,6 +233,7 @@ namespace Beamable.Api
          yield return Yielders.EndOfFrame;
          var promise = nextRefreshPromise;
          nextRefreshPromise = null;
+         var sentScopes = nextRefreshScopes.ToArray();
          var scope = string.Join(",", nextRefreshScopes);
          nextRefreshScopes.Clear();
 
@@ -265,10 +266,10 @@ namespace Beamable.Api
             {
                retry += 1;
             }
-         }).Then(OnRefresh).Then(_ =>
+         }).Then(x => OnRefresh(x, sentScopes)).Then(_ =>
          {
-            retry = 0;
-            promise.CompleteSuccess(PromiseBase.Unit);
+	        retry = 0;
+	        promise.CompleteSuccess(PromiseBase.Unit);
          });
       }
 
@@ -361,7 +362,12 @@ namespace Beamable.Api
          }
       }
 
-      protected abstract void OnRefresh(ScopedRsp data);
+      protected virtual void OnRefresh(ScopedRsp data) { }
+
+      protected virtual void OnRefresh(ScopedRsp data, string[] scopes)
+      {
+	      OnRefresh(data);
+      }
 
       private void OnRefreshNtf(object payloadRaw)
       {
