@@ -260,7 +260,7 @@ namespace Beamable.UI.Buss
 			{
 				return;
 			}
-			
+
 			if (Parent != null)
 			{
 				Parent._children.Remove(this);
