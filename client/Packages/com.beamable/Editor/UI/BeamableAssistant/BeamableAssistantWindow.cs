@@ -2,6 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Assistant;
 using Beamable.Editor.Content.Components;
 using Beamable.Editor.Reflection;
+using Beamable.Editor.ToolbarExtender;
 using Beamable.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
@@ -29,7 +30,7 @@ namespace Beamable.Editor.Assistant
 		[MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
 				  BeamableConstants.OPEN + " " +
 				  BeamableConstants.BEAMABLE_ASSISTANT,
-				  priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
+				  priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_2)]
 		public static BeamableAssistantWindow ShowWindow()
 		{
 			var window = GetWindow<BeamableAssistantWindow>(BeamableConstants.BEAMABLE_ASSISTANT, true, typeof(SceneView));
@@ -66,21 +67,22 @@ namespace Beamable.Editor.Assistant
 
 		private BeamHintNotificationManager _hintNotificationManager;
 
-		/// <summary>
-		/// Cached reference to the <see cref="EditorAPI"/> instance.
-		/// </summary>
-		private EditorAPI _editorAPI;
-
 		private void OnEnable()
 		{
 			Refresh();
-
 		}
 
 		private void OnFocus()
 		{
-			Refresh();
+			// BeamEditor is not yet initialized --- delay callback until it is.
+			if (!BeamEditor.IsInitialized)
+			{
+				EditorApplication.delayCall += OnFocus;
+				return;
+			}
 
+			if (_windowRoot != null) FillDisplayingBeamHints(_hintsContainer, _beamHintsDataModel.DisplayingHints);
+			else Refresh();
 			// TODO: Display NEW icon and clear notifications on hover on a per hint header basis.
 			// For now, just clear notifications whenever the window is focused
 			_hintNotificationManager.ClearPendingNotifications();
@@ -89,12 +91,25 @@ namespace Beamable.Editor.Assistant
 		private void Update()
 		{
 			// If there are any new notifications, we refresh to get the new data rendered.
-			if (_hintNotificationManager != null && _hintNotificationManager.AllPendingNotifications.ToList().Count > 0)
-				Refresh();
+			if (_beamHintsDataModel.RefreshDisplayingHints() || _hintNotificationManager != null && _hintNotificationManager.AllPendingNotifications.Any())
+			{
+				FillTreeViewFromDomains(_treeViewIMGUI, _beamHintsDataModel.SortedDomainsInStorage, _beamHintsDataModel.SelectedDomains);
+				FillDisplayingBeamHints(_hintsContainer, _beamHintsDataModel.DisplayingHints);
+				_hintNotificationManager.ClearPendingNotifications();
+				_windowRoot.MarkDirtyRepaint();
+				BeamableToolbarExtender.Repaint();
+			}
 		}
 
 		void Refresh()
 		{
+			// BeamEditor is not yet initialized --- delay callback until it is.
+			if (!BeamEditor.IsInitialized)
+			{
+				EditorApplication.delayCall += Refresh;
+				return;
+			}
+
 			minSize = MIN_SIZE;
 
 			// Cache the newest instances of relevant reflection and hint systems
@@ -140,13 +155,17 @@ namespace Beamable.Editor.Assistant
 				_treeViewIMGUI = new TreeViewIMGUI(_treeViewState) { SelectionType = SelectionType.Multiple, TreeViewItemRoot = new TreeViewItem { id = 0, depth = -1, displayName = "Root" } };
 				_imguiContainer = new IMGUIContainer(() =>
 				{
-					// Tree view - Re-render every frame
-					Rect rect = GUILayoutUtility.GetRect(200,
-														 200,
-														 _treeViewIMGUI.GetCalculatedHeight(),
-														 _treeViewIMGUI.GetCalculatedHeight());
+					// Necessary as in a re-import all flow with this window opened this will throw for some reason
+					if (_treeViewIMGUI?.TreeViewItems?.Count > 0)
+					{
+						// Tree view - Re-render every frame
+						Rect rect = GUILayoutUtility.GetRect(200,
+															 200,
+															 _treeViewIMGUI.GetCalculatedHeight(),
+															 _treeViewIMGUI.GetCalculatedHeight());
 
-					_treeViewIMGUI.OnGUI(rect);
+						_treeViewIMGUI.OnGUI(rect);
+					}
 				})
 				{ name = "domain-tree-imgui" };
 				_domainTreeContainer = root.Q<VisualElement>("domain-tree-container");
@@ -182,12 +201,9 @@ namespace Beamable.Editor.Assistant
 					list => { });
 
 				beamHintsDataModel.SelectDomains(beamHintsDataModel.SelectedDomains);
-				FillTreeViewFromDomains(_treeViewIMGUI, beamHintsDataModel.SortedDomainsInStorage);
+				FillTreeViewFromDomains(_treeViewIMGUI, beamHintsDataModel.SortedDomainsInStorage, beamHintsDataModel.SelectedDomains);
 				FillDisplayingBeamHints(_hintsContainer, beamHintsDataModel.DisplayingHints);
-				_imguiContainer?.MarkDirtyLayout();
-				_imguiContainer?.MarkDirtyRepaint();
 			}
-			root.MarkDirtyRepaint();
 		}
 
 		/// <summary>
@@ -211,9 +227,10 @@ namespace Beamable.Editor.Assistant
 		/// <summary>
 		/// Updates a <see cref="TreeViewGUI"/> to display the given list of <see cref="BeamHintDomains"/> strings. 
 		/// </summary>
-		public void FillTreeViewFromDomains(TreeViewIMGUI imgui, List<string> sortedDomains)
+		public void FillTreeViewFromDomains(TreeViewIMGUI imgui, List<string> sortedDomains, List<string> selectedDomains)
 		{
 			var treeViewItems = new List<BeamHintDomainTreeViewItem>();
+			var selectedIds = new List<int>();
 			var parentCache = new Dictionary<string, BeamHintDomainTreeViewItem>();
 			var id = 1;
 			foreach (string domain in sortedDomains)
@@ -235,11 +252,24 @@ namespace Beamable.Editor.Assistant
 						parentCache.Add(domainSubstring, item);
 						treeViewItems.Add(item);
 						id += 1;
+
+						if (selectedDomains.Contains(domain))
+						{
+							selectedIds.Add(item.id);
+						}
+
 					}
 				}
 			}
 
 			imgui.TreeViewItems = treeViewItems.Cast<TreeViewItem>().ToList();
+
+			// Only select if  we have any selected domains (selected domains defaults to all sorted domains unless someone clicks a subdomain).
+			// This means their counts greater than or the same when no selection is made. 
+			if (sortedDomains.Count > selectedDomains.Count && selectedDomains.Count != 0)
+			{
+				imgui.SetSelectionSafe(selectedIds);
+			}
 		}
 
 		public void SetupTreeViewCallbacks(TreeViewIMGUI imgui,
@@ -258,6 +288,12 @@ namespace Beamable.Editor.Assistant
 
 		public void ExpandHint(BeamHintHeader beamHintHeader)
 		{
+			// Clear domain selection
+			_beamHintsDataModel.SelectDomains(new List<string>());
+			_treeViewIMGUI.SetSelectionSafe(new List<int>());
+			_imguiContainer.MarkDirtyRepaint();
+
+			// Filter by the id of the hint you are asking to expand.
 			_beamHintsDataModel.FilterDisplayedBy(beamHintHeader.Id);
 			_beamHintsDataModel.OpenHintDetails(beamHintHeader);
 			Refresh();

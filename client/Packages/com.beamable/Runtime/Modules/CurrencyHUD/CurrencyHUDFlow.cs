@@ -1,7 +1,7 @@
-﻿using System.Collections;
+﻿using Beamable;
 using Beamable.Common.Inventory;
-using Beamable;
 using Beamable.UI.Scripts;
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,70 +9,69 @@ using UnityEngine.UI;
 namespace Beamable.CurrencyHUD
 
 {
-    [HelpURL(BeamableConstants.URL_FEATURE_CURRENCY_HUD)]
-    public class CurrencyHUDFlow : MonoBehaviour
-    {
-        public CurrencyRef content;
-        public BeamableDisplayModule displayModule;
-        public RawImage img;
-        public TextMeshProUGUI txtAmount;
-        private long targetAmount = 0;
-        private long currentAmount = 0;
-        readonly WaitForSeconds _waitForSeconds = new WaitForSeconds(0.02f);
+	[HelpURL(BeamableConstants.URL_FEATURE_CURRENCY_HUD)]
+	public class CurrencyHUDFlow : MonoBehaviour
+	{
+		public CurrencyRef content;
+		public BeamableDisplayModule displayModule;
+		public RawImage img;
+		public TextMeshProUGUI txtAmount;
+		private long targetAmount = 0;
+		private long currentAmount = 0;
+		readonly WaitForSeconds _waitForSeconds = new WaitForSeconds(0.02f);
 
-        void Awake()
-        {
-            displayModule.SetVisible(false);
-        }
+		void Awake()
+		{
+			displayModule.SetVisible(false);
+		}
 
-        private async void Start()
-        {
-	        var ctx = BeamContext.InParent(this);
+		private async void Start()
+		{
+			var ctx = BeamContext.InParent(this);
 
-	        ctx.Inventory.GetCurrency(content).OnAmountUpdated += amount =>
-	        {
-		        targetAmount = amount;
-		        Debug.Log("Got currency change event. " + amount);
-		        ctx.CoroutineService.StartCoroutine(DisplayCurrency());
-	        };
+			ctx.Inventory.GetCurrency(content).OnAmountUpdated += amount =>
+			{
+				targetAmount = amount;
+				ctx.CoroutineService.StartCoroutine(DisplayCurrency());
+			};
 
-            var currency = await content.Resolve();
-            var currencyAddress = currency.icon;
-            img.texture = await currencyAddress.LoadTexture();
-            displayModule.SetVisible();
-        }
+			var currency = await content.Resolve();
+			var currencyAddress = currency.icon;
+			img.texture = await currencyAddress.LoadTexture();
+			displayModule.SetVisible();
+		}
 
-        private IEnumerator DisplayCurrency()
-        {
-            long deltaTotal = targetAmount - currentAmount;
-            long deltaStep = deltaTotal / 50;
+		private IEnumerator DisplayCurrency()
+		{
+			long deltaTotal = targetAmount - currentAmount;
+			long deltaStep = deltaTotal / 50;
 
-            if (deltaStep == 0)
-            {
-                deltaStep = deltaTotal < 0 ? -1 : 1;
-            }
+			if (deltaStep == 0)
+			{
+				deltaStep = deltaTotal < 0 ? -1 : 1;
+			}
 
-            while (currentAmount != targetAmount)
+			while (currentAmount != targetAmount)
 
-            {
-                currentAmount += deltaStep;
+			{
+				currentAmount += deltaStep;
 
-                if (deltaTotal > 0 && currentAmount > targetAmount)
+				if (deltaTotal > 0 && currentAmount > targetAmount)
 
-                {
-                    currentAmount = targetAmount;
-                }
+				{
+					currentAmount = targetAmount;
+				}
 
-                else if (deltaTotal < 0 && currentAmount < targetAmount)
+				else if (deltaTotal < 0 && currentAmount < targetAmount)
 
-                {
-                    currentAmount = targetAmount;
-                }
+				{
+					currentAmount = targetAmount;
+				}
 
 
-                txtAmount.text = currentAmount.ToString();
-                yield return _waitForSeconds;
-            }
-        }
-    }
+				txtAmount.text = currentAmount.ToString();
+				yield return _waitForSeconds;
+			}
+		}
+	}
 }

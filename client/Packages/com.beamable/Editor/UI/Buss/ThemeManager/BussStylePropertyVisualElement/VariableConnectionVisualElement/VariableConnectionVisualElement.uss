@@ -1,11 +1,7 @@
 #button {
     width: 30px;
     height: 30px;
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new L.png");
-}
-
-#button.whenConnected {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remove L.png");
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/addNewLight.png");
 }
 
 DropdownVisualElement{
@@ -28,4 +24,8 @@ DropdownVisualElement #button{
 #value{
     min-width: 0px;
     max-width: 10000px;
+}
+
+#button:hover {
+    -unity-background-image-tint-color: #808080;
 }

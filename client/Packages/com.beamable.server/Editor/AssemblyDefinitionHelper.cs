@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Server.Editor.DockerCommands;
 using System;
@@ -11,6 +12,12 @@ using UnityEngine;
 
 namespace Beamable.Server.Editor
 {
+
+	/// <summary>
+	/// Helper class that handles the assembly definitions we generate when creating C#MS and StorageObjects.
+	/// Also, contains a bunch of helper functions to manage data inside local StorageObject and some other C#MS stuff.
+	/// TODO: Refactor the non-assembly-definition helper functions into more appropriate files.
+	/// </summary>
 	public static class AssemblyDefinitionHelper
 	{
 		const string PRECOMPILED = "precompiledReferences";
@@ -47,15 +54,15 @@ namespace Beamable.Server.Editor
 			var dest = EditorUtility.OpenFolderPanel("Select where to load mongo", "", "default");
 			if (string.IsNullOrEmpty(dest)) return;
 			Debug.Log("Starting restore...");
-			Microservices.RestoreMongoSnapshot(descriptor, dest).Then(res =>
+			RestoreMongoSnapshot(descriptor, dest).Then(res =>
 			{
 				if (res)
 				{
-					Debug.Log("Finished restoring");
+					Debug.Log($"Finished restoring [{descriptor.Name}]");
 				}
 				else
 				{
-					Debug.Log("Failed.");
+					Debug.LogError($"Failed to restore [{descriptor.Name}] database");
 				}
 			});
 		}
@@ -65,16 +72,16 @@ namespace Beamable.Server.Editor
 			var dest = EditorUtility.OpenFolderPanel("Select where to save mongo", "", "default");
 			if (string.IsNullOrEmpty(dest)) return;
 			Debug.Log("Starting snapshot...");
-			Microservices.SnapshotMongo(descriptor, dest).Then(res =>
+			SnapshotMongo(descriptor, dest).Then(res =>
 			{
 				if (res)
 				{
-					Debug.Log("Finished Snapshot");
+					Debug.Log($"[{descriptor.Name}] snapshot created at {dest}.");
 					EditorUtility.OpenWithDefaultApp(dest);
 				}
 				else
 				{
-					Debug.Log("Failed.");
+					Debug.Log($"Failed to snapshot [{descriptor.Name}] database.");
 				}
 			});
 		}
@@ -82,24 +89,24 @@ namespace Beamable.Server.Editor
 
 		public static void ClearMongo(StorageObjectDescriptor descriptor)
 		{
-			var work = Microservices.ClearMongoData(descriptor);
-			work.Then(success =>
+			Debug.Log("Starting clear...");
+			ClearMongoData(descriptor).Then(success =>
 			{
 				if (success)
 				{
-					Debug.Log($"Cleared {descriptor.Name} database.");
+					Debug.Log($"Cleared [{descriptor.Name}] database.");
 				}
 				else
 				{
-					Debug.LogWarning($"Failed to clear {descriptor.Name} database.");
+					Debug.LogWarning($"Failed to clear [{descriptor.Name}] database.");
 				}
 			});
 		}
 
 		public static void OpenMongoExplorer(StorageObjectDescriptor descriptor)
 		{
-			Debug.Log("opening tool");
-			var work = Microservices.OpenLocalMongoTool(descriptor);
+			Debug.Log("Opening tool...");
+			var work = OpenLocalMongoTool(descriptor);
 			work.Then(success =>
 			{
 				if (success)
@@ -116,7 +123,8 @@ namespace Beamable.Server.Editor
 
 		public static void CopyConnectionString(StorageObjectDescriptor descriptor)
 		{
-			var work = Microservices.GetConnectionString(descriptor);
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			var work = serviceRegistry.GetConnectionString(descriptor);
 			work.Then(connectionString =>
 			{
 				if (!string.IsNullOrEmpty(connectionString))
@@ -172,7 +180,8 @@ namespace Beamable.Server.Editor
 
 			assembly = asm;
 			var info = asm.ConvertToInfo();
-			var descriptor = Microservices.Descriptors.FirstOrDefault(d => d.IsContainedInAssemblyInfo(info));
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			var descriptor = serviceRegistry.Descriptors.FirstOrDefault(d => d.IsContainedInAssemblyInfo(info));
 
 			var isService = descriptor != null;
 			return isService;
@@ -182,9 +191,10 @@ namespace Beamable.Server.Editor
 		{
 			//TODO: This won't work for nested relationships.
 
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			var serviceInfo = service.ConvertToInfo();
-			var storages = Microservices.StorageDescriptors.ToDictionary(kvp => kvp.AttributePath);
-			var infos = Microservices.StorageDescriptors.Select(s => new Tuple<AssemblyDefinitionInfo, StorageObjectDescriptor>(s.ConvertToInfo(), s)).ToDictionary(kvp => kvp.Item1.Name);
+			var storages = serviceRegistry.StorageDescriptors.ToDictionary(kvp => kvp.AttributePath);
+			var infos = serviceRegistry.StorageDescriptors.Select(s => new Tuple<AssemblyDefinitionInfo, StorageObjectDescriptor>(s.ConvertToInfo(), s)).ToDictionary(kvp => kvp.Item1.Name);
 			foreach (var reference in serviceInfo.References)
 			{
 				if (infos.TryGetValue(reference, out var storageInfo))
@@ -213,8 +223,11 @@ namespace Beamable.Server.Editor
 		public static void RemoveMongoLibraries(this MicroserviceDescriptor service) =>
 		   service.RemovePrecompiledReferences(MongoLibraries);
 
-		public static void AddMongoLibraries(this AssemblyDefinitionAsset asm) =>
+		public static ArrayDict AddMongoLibraries(this AssemblyDefinitionAsset asm) =>
 		   asm.AddPrecompiledReferences(MongoLibraries);
+
+		public static ArrayDict AddMongoLibraries(ArrayDict asmJsonData, string asmPath) =>
+			AddPrecompiledReferences(asmJsonData, asmPath, MongoLibraries);
 
 		public static void RemoveMongoLibraries(this AssemblyDefinitionAsset asm) =>
 		   asm.RemovePrecompiledReferences(MongoLibraries);
@@ -296,18 +309,35 @@ namespace Beamable.Server.Editor
 		public static void AddAndRemoveReferences(this MicroserviceDescriptor service, List<string> toAddReferences, List<string> toRemoveReferences)
 			=> service.ConvertToAsset().AddAndRemoveReferences(toAddReferences, toRemoveReferences);
 
-		public static void AddPrecompiledReferences(this AssemblyDefinitionAsset asm, params string[] libraryNames)
+		public static ArrayDict AddPrecompiledReferences(ArrayDict asmJsonData, string asmPath, params string[] libraryNames)
 		{
-			var jsonData = Json.Deserialize(asm.text) as ArrayDict;
-			var dllReferences = GetReferences(PRECOMPILED, jsonData);
+			var dllReferences = GetReferences(PRECOMPILED, asmJsonData);
 
 			foreach (var lib in libraryNames)
 			{
 				dllReferences.Add(lib);
 			}
 
-			jsonData[PRECOMPILED] = dllReferences.ToArray();
-			WriteAssembly(asm, jsonData);
+			asmJsonData[PRECOMPILED] = dllReferences.ToArray();
+
+			if (dllReferences.Count > 0)
+			{
+				asmJsonData[OVERRIDE_REFERENCES] = true;
+			}
+			else
+			{
+				asmJsonData.Remove(OVERRIDE_REFERENCES);
+			}
+
+			WriteAssembly(asmPath, asmJsonData);
+			return asmJsonData;
+		}
+
+		public static ArrayDict AddPrecompiledReferences(this AssemblyDefinitionAsset asm, params string[] libraryNames)
+		{
+			var jsonData = Json.Deserialize(asm.text) as ArrayDict;
+			var path = AssetDatabase.GetAssetPath(asm);
+			return AddPrecompiledReferences(jsonData, path, libraryNames);
 		}
 
 		public static void CreateAssetDefinitionAssetOnDisk(string filePath, AssemblyDefinitionInfo info)
@@ -335,10 +365,12 @@ namespace Beamable.Server.Editor
 			AssetDatabase.ImportAsset(filePath);
 		}
 
-		public static void AddAndRemoveReferences(this AssemblyDefinitionAsset asm, List<string> toAddReferences, List<string> toRemoveReferences)
+		public static ArrayDict AddAndRemoveReferences(ArrayDict asmArrayDict,
+												  string asmPath,
+												  List<string> toAddReferences,
+												  List<string> toRemoveReferences)
 		{
-			var jsonData = Json.Deserialize(asm.text) as ArrayDict;
-			var dllReferences = GetReferences(REFERENCES, jsonData);
+			var dllReferences = GetReferences(REFERENCES, asmArrayDict);
 
 			if (toAddReferences != null)
 			{
@@ -356,8 +388,16 @@ namespace Beamable.Server.Editor
 				}
 			}
 
-			jsonData[REFERENCES] = dllReferences.ToArray();
-			WriteAssembly(asm, jsonData);
+			asmArrayDict[REFERENCES] = dllReferences.ToArray();
+			WriteAssembly(asmPath, asmArrayDict);
+			return asmArrayDict;
+		}
+
+		public static ArrayDict AddAndRemoveReferences(this AssemblyDefinitionAsset asm, List<string> toAddReferences, List<string> toRemoveReferences)
+		{
+			var jsonData = Json.Deserialize(asm.text) as ArrayDict;
+			var path = AssetDatabase.GetAssetPath(asm);
+			return AddAndRemoveReferences(jsonData, path, toAddReferences, toRemoveReferences);
 		}
 
 		public static void RemovePrecompiledReferences(this MicroserviceDescriptor service, params string[] libraryNames)
@@ -374,6 +414,14 @@ namespace Beamable.Server.Editor
 			}
 
 			jsonData[PRECOMPILED] = dllReferences.ToArray();
+			if (dllReferences.Count > 0)
+			{
+				jsonData[OVERRIDE_REFERENCES] = true;
+			}
+			else
+			{
+				jsonData.Remove(OVERRIDE_REFERENCES);
+			}
 			WriteAssembly(asm, jsonData);
 		}
 
@@ -392,13 +440,123 @@ namespace Beamable.Server.Editor
 			return dllReferences;
 		}
 
-		private static void WriteAssembly(AssemblyDefinitionAsset asm, ArrayDict jsonData)
+		private static void WriteAssembly(string asmPath, ArrayDict jsonData)
 		{
 			var json = Json.Serialize(jsonData, new StringBuilder());
 			json = Json.FormatJson(json);
-			var path = AssetDatabase.GetAssetPath(asm);
-			File.WriteAllText(path, json);
-			AssetDatabase.ImportAsset(path);
+			File.WriteAllText(asmPath, json);
+			AssetDatabase.ImportAsset(asmPath);
 		}
+
+		private static void WriteAssembly(AssemblyDefinitionAsset asm, ArrayDict jsonData)
+		{
+			var path = AssetDatabase.GetAssetPath(asm);
+			WriteAssembly(path, jsonData);
+		}
+
+		#region Mongo Helpers
+
+		public static async Promise<bool> OpenLocalMongoTool(StorageObjectDescriptor storage)
+		{
+			var config = MicroserviceConfiguration.Instance.GetStorageEntry(storage.Name);
+
+			var toolCheck = new CheckImageReturnableCommand(storage.LocalToolContainerName);
+			var isToolRunning = await toolCheck.Start(null);
+
+			if (!isToolRunning)
+			{
+				var run = new RunStorageToolCommand(storage);
+				run.Start();
+				var success = await run.IsAvailable;
+				if (!success)
+				{
+					return false;
+				}
+			}
+
+			var path = $"http://localhost:{config.LocalUIPort}";
+			Debug.Log($"Opening {path}");
+			Application.OpenURL(path);
+			return true;
+		}
+
+		public static async Promise<bool> SnapshotMongo(StorageObjectDescriptor storage, string destPath)
+		{
+			var storageCheck = new CheckImageReturnableCommand(storage);
+			var isStorageRunning = await storageCheck.Start(null);
+			if (!isStorageRunning) return false;
+
+			var dumpCommand = new MongoDumpCommand(storage);
+			var dumpResult = await dumpCommand.Start(null);
+			if (!dumpResult) return false;
+
+			var cpCommand = new DockerCopyCommand(storage, "/beamable/.", destPath);
+			return await cpCommand.Start(null);
+		}
+
+		public static async Promise<bool> RestoreMongoSnapshot(StorageObjectDescriptor storage, string srcPath, bool hardReset = true)
+		{
+			if (hardReset)
+			{
+				await ClearMongoData(storage);
+			}
+
+
+			var storageCheck = new CheckImageReturnableCommand(storage);
+			var isStorageRunning = await storageCheck.Start(null);
+			if (!isStorageRunning)
+			{
+				var restart = new RunStorageCommand(storage);
+				restart.Start();
+			}
+
+			srcPath += "/."; // copy _contents_ of folder.
+			var cpCommand = new DockerCopyCommand(storage, "/beamable", srcPath, DockerCopyCommand.CopyType.HOST_TO_CONTAINER);
+			var cpResult = await cpCommand.Start(null);
+			if (!cpResult) return false;
+
+			var restoreCommand = new MongoRestoreCommand(storage);
+			return await restoreCommand.Start(null);
+		}
+
+		public static async Promise<bool> ClearMongoData(StorageObjectDescriptor storage)
+		{
+			Debug.Log("Clearing mongo");
+			var storageCheck = new CheckImageReturnableCommand(storage);
+			var isStorageRunning = await storageCheck.Start(null);
+			if (isStorageRunning)
+			{
+				Debug.Log("Stopping mongo");
+
+				var stopComm = new StopImageCommand(storage);
+				await stopComm.Start(null);
+			}
+
+			Debug.Log("Deleting volumes");
+
+			var deleteVolumes = new DeleteVolumeCommand(storage);
+			var results = await deleteVolumes.Start(null);
+			var err = results.Any(kvp => !kvp.Value);
+			if (err)
+			{
+				Debug.LogError("Failed to remove all volumes");
+				foreach (var kvp in results)
+				{
+					Debug.LogError($"{kvp.Key} -> {kvp.Value}");
+				}
+			}
+
+			if (isStorageRunning)
+			{
+				Debug.Log("Restarting mongo");
+
+				var restart = new RunStorageCommand(storage);
+				restart.Start();
+			}
+
+			return !err;
+		}
+
+		#endregion
 	}
 }

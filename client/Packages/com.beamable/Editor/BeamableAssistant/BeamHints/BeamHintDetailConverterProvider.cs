@@ -70,7 +70,8 @@ namespace Beamable.Editor.Assistant
 				else
 				{
 					var msg = string.IsNullOrEmpty(attrValidation.Message) ? "" : $" => {attrValidation.Message}";
-					line = $"{attrValidation.Pair.Info.ReflectedType.FullName}{msg}";
+					var type = attrValidation.Pair.Info.ReflectedType == null ? attrValidation.Pair.Info.Name : attrValidation.Pair.Info.ReflectedType.FullName;
+					line = $"{type}{msg}";
 				}
 
 				validationMsg.AppendLine(line);

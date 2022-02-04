@@ -1,12 +1,15 @@
+using Beamable.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
+using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Assertions;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER
@@ -44,13 +47,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 
 		public Action OnCloseRequested;
-		public Action<ManifestModel> OnSubmit;
+		public Action<ManifestModel, Action<LogMessage>> OnSubmit;
 
 		public ManifestModel Model
 		{
 			get;
 			set;
 		}
+
+		public Promise<ManifestModel> InitPromise { get; set; }
+		public MicroserviceReflectionCache.Registry Registry { get; set; }
 
 		private TextField _generalComments;
 		private GenericButtonVisualElement _cancelButton;
@@ -59,6 +65,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Dictionary<string, PublishManifestEntryVisualElement> _publishManifestElements;
 		private LoadingBarElement _mainLoadingBar;
 		private PublishStatusVisualElement _topMessage;
+		private LogVisualElement _logger;
+		private Dictionary<IBeamableService, Action> _logForwardActions = new Dictionary<IBeamableService, Action>();
 
 		public PublishPopup() : base(nameof(PublishPopup)) { }
 
@@ -72,19 +80,26 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			base.Refresh();
 
+			var loadingIndicator = Root.Q<LoadingIndicatorVisualElement>();
+			loadingIndicator.SetText("Fetching Beamable Cloud Data");
+			Assert.IsNotNull(InitPromise, "The InitPromise must be set before calling Refresh()");
+			loadingIndicator.SetPromise(InitPromise, Root.Q("mainVisualElement"));
+
 			if (Model?.Services == null)
 			{
 				return;
 			}
 
-			Microservices.OnServiceDeployStatusChanged -= HandleServiceDeployStatusChanged;
-			Microservices.OnServiceDeployStatusChanged += HandleServiceDeployStatusChanged;
-			Microservices.OnServiceDeployProgress -= HandleServiceDeployProgress;
-			Microservices.OnServiceDeployProgress += HandleServiceDeployProgress;
-			Microservices.OnDeployFailed -= HandleDeployFailed;
-			Microservices.OnDeployFailed += HandleDeployFailed;
-			Microservices.OnDeploySuccess -= HandleDeploySuccess;
-			Microservices.OnDeploySuccess += HandleDeploySuccess;
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+
+			serviceRegistry.OnServiceDeployStatusChanged -= HandleServiceDeployStatusChanged;
+			serviceRegistry.OnServiceDeployStatusChanged += HandleServiceDeployStatusChanged;
+			serviceRegistry.OnServiceDeployProgress -= HandleServiceDeployProgress;
+			serviceRegistry.OnServiceDeployProgress += HandleServiceDeployProgress;
+			serviceRegistry.OnDeployFailed -= HandleDeployFailed;
+			serviceRegistry.OnDeployFailed += HandleDeployFailed;
+			serviceRegistry.OnDeploySuccess -= HandleDeploySuccess;
+			serviceRegistry.OnDeploySuccess += HandleDeploySuccess;
 
 			_mainLoadingBar = Root.Q<LoadingBarElement>("mainLoadingBar");
 			_mainLoadingBar.SmallBar = true;
@@ -121,6 +136,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_primarySubmitButton.Button.clickable.clicked += HandlePrimaryButtonClicked;
 			_topMessage = Root.Q<PublishStatusVisualElement>("topMessage");
 			_topMessage.Refresh();
+
+			var servicesElement = Root.Q("services");
+			var logElement = Root.Q(className: "bottomContainer");
+			var split = Root.Q("splitPane");
+			servicesElement.RemoveFromHierarchy();
+			logElement.RemoveFromHierarchy();
+			split.AddSplitPane(servicesElement, logElement);
 
 			SortServices();
 		}
@@ -160,16 +182,60 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_primarySubmitButton.SetText("Publishing...");
 			_primarySubmitButton.Disable();
 			ReplaceCommentWithLogger();
-			OnSubmit?.Invoke(Model);
+			OnSubmit?.Invoke(Model, (message) => _logger.Model.Logs.AddMessage(message));
 		}
 
 		void ReplaceCommentWithLogger()
 		{
 			var parent = _generalComments.parent;
 			_generalComments.RemoveFromHierarchy();
-			var logger = new PublishLoggerVisualElement();
-			parent.Add(logger);
-			logger.Refresh();
+			_logger = new LogVisualElement
+			{
+				Model = new PublishServiceAccumulator(),
+				EnableDetatchButton = false,
+				EnableMoreButton = false
+			};
+
+			foreach (var desc in MicroservicesDataModel.Instance.AllLocalServices)
+			{
+				void ForwardLog()
+				{
+					var message = desc.Logs.Messages.LastOrDefault();
+					if (message != null)
+					{
+						var copiedMessage = new LogMessage
+						{
+							Level = message.Level,
+							IsBoldMessage = message.IsBoldMessage,
+							Message = $"{desc.Name} - {message.Message}",
+							MessageColor = message.MessageColor,
+							Parameters = message.Parameters,
+							ParameterText = message.ParameterText,
+							PostfixMessageIcon = message.PostfixMessageIcon,
+							Timestamp = message.Timestamp
+						};
+						_logger.Model.Logs.AddMessage(copiedMessage);
+					}
+				}
+				_logForwardActions.Add(desc, ForwardLog);
+				desc.Logs.OnMessagesUpdated += ForwardLog;
+			}
+
+			parent.Add(_logger);
+			_logger.Refresh();
+		}
+
+		protected override void OnDestroy()
+		{
+			foreach (var desc in MicroservicesDataModel.Instance.AllLocalServices)
+			{
+				if (!_logForwardActions.TryGetValue(desc, out var cb)) continue;
+				if (desc.Logs == null) continue;
+				desc.Logs.OnMessagesUpdated -= cb;
+			}
+			_logForwardActions.Clear();
+
+			base.OnDestroy();
 		}
 
 		private void HandleDeployFailed(ManifestModel _, string __) => HandleDeployEnded(false);
@@ -213,7 +279,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private string GetPublishedKey(string serviceName)
 		{
-			return string.Format(Microservices.SERVICE_PUBLISHED_KEY, serviceName);
+			return string.Format(MicroserviceReflectionCache.Registry.SERVICE_PUBLISHED_KEY, serviceName);
 		}
 
 		private void HandleServiceDeployStatusChanged(IDescriptor descriptor, ServicePublishState state)
@@ -240,7 +306,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private float CalculateProgress()
 		{
-			return _publishManifestElements.Values.Where(element => !element.IsRemoteOnly)
+			return _publishManifestElements.Values.Where(element => !element.IsRemoteOnly && !(element.Model is StorageEntryModel))
 										   .Average(x => x.LoadingBar.Progress);
 		}
 	}

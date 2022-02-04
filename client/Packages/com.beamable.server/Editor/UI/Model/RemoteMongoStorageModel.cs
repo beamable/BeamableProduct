@@ -1,4 +1,5 @@
 ﻿using Beamable.Server.Editor;
+using UnityEngine.WSA;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -13,11 +14,12 @@ namespace Beamable.Editor.UI.Model
 	{
 		public static new RemoteMongoStorageModel CreateNew(StorageObjectDescriptor descriptor, MicroservicesDataModel dataModel)
 		{
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			return new RemoteMongoStorageModel
 			{
 				RemoteReference = dataModel.GetStorageReference(descriptor),
 				ServiceDescriptor = descriptor,
-				ServiceBuilder = Microservices.GetStorageBuilder(descriptor),
+				ServiceBuilder = serviceRegistry.GetStorageBuilder(descriptor),
 				Config = MicroserviceConfiguration.Instance.GetStorageEntry(descriptor.Name)
 			};
 		}
@@ -26,8 +28,7 @@ namespace Beamable.Editor.UI.Model
 		{
 			var remoteCategory = "Cloud";
 
-			evt.menu.BeamableAppendAction($"{remoteCategory}/Goto data explorer", _ => AssemblyDefinitionHelper.OpenMongoExplorer(ServiceDescriptor));
-			evt.menu.BeamableAppendAction($"{remoteCategory}/Copy connection string", _ => AssemblyDefinitionHelper.CopyConnectionString(ServiceDescriptor));
+			evt.menu.BeamableAppendAction($"{remoteCategory}/Goto data explorer", _ => OpenRemoteMongo());
 
 			if (MicroserviceConfiguration.Instance.StorageObjects.Count > 1)
 			{

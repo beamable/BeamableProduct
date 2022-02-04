@@ -35,6 +35,9 @@ MonoBehaviour:
     - AttributeValidation-MisconfiguredHintSystemAttribute
     - AttributeValidation-UnsupportedRegisterBeamableDependencySignature
     - DockerProcessNotRunning
+    - AttributeValidation-StorageObjectAttributeMissing
+    - AttributeNameCollision-StorageObjectNameCollision
+    - InstallDockerProcess
     values:
     - ClientCallable has unsupported parameters
     - '"async void" ClientCallable exists'
@@ -44,6 +47,9 @@ MonoBehaviour:
     - Hint System Attribute Misuse
     - Unsupported BeamableRegisterDependency Attribute
     - Docker is not running
+    - Missing StorageObject Attributes
+    - StorageObject Name Collision
+    - Docker is not installed
   HintIdToHintIntroText:
     keys:
     - AttributeValidation-ClientCallableUnsupportedParameters
@@ -54,6 +60,9 @@ MonoBehaviour:
     - AttributeValidation-MisconfiguredHintSystemAttribute
     - AttributeValidation-UnsupportedRegisterBeamableDependencySignature
     - DockerProcessNotRunning
+    - AttributeValidation-StorageObjectAttributeMissing
+    - AttributeNameCollision-StorageObjectNameCollision
+    - InstallDockerProcess
     values:
     - "The ClientCallables below have unsupported parameters. We don't support client
       callables with Delegate, Task or Promise parameters. \n\nWe don't support it
@@ -99,11 +108,9 @@ MonoBehaviour:
 
 
 '
-    - 'All MicroserviceAttributes must have unique project-wide unique names. Here
-      are all collisions we detected:
-
-
-'
+    - "All Microservice attributes must have project-wide unique names. We utilize
+      this name to create the docker container that your microservice will live in.
+      Here are all collisions we detected:\r\n\r\n"
     - 'The BeamHintSystemAttribute can only be used with classes that implement IBeamHintSystem.
       This allows our systems to correctly identify it and parse its internal attributes
       in a more performant way.
@@ -118,3 +125,17 @@ MonoBehaviour:
     - We noticed Docker is not running in your machine. We can start Docker Hub for
       you (if you have it installed to the default path) by clicking on the button
       below.
+    - "When creating a StorageObject, you must both subclass a StorageObject class
+      as well as add a StorageObjectAttribute with a unique name to it. This allows
+      our systems to correctly identify it and parse its internal attributes in a
+      more performant way.\r\n\r\nCreate storage objects through the Microservice
+      Window's Create button, so you don't forget to add the attribute.\r\n\r\nThe
+      following subclassed types have attributes missing:\r\n\r\n"
+    - "All StorageObject Attributes must have project-wide unique names. We utilize
+      this name to create the docker container that your storage object will live
+      in. Here are all collisions we detected:\r\n\r\n"
+    - "We noticed Docker is not installed or incorrectly configured.\r\n\r\nIf you
+      have docker installed out of the default path, go to Beamable => Configuration
+      Manager => Microservices Configuration => Docker Command and write the command
+      to run docker.\r\n\r\nIf you don't have docker installed, click on the button
+      and follow the instructions to install it.\r\n"

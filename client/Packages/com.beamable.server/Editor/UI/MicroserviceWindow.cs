@@ -124,18 +124,19 @@ namespace Beamable.Editor.Microservice.UI
 				root.Add(_windowRoot);
 			}
 
+			bool localServicesAvailable = Model?.AllLocalServices != null;
+			int localServicesAmount = localServicesAvailable ? Model.AllLocalServices.Count : 0;
+			int selectedServicesAmount = localServicesAvailable
+				? Model.AllLocalServices.Count(beamService => beamService.IsSelected)
+				: 0;
+
 			_actionBarVisualElement = root.Q<ActionBarVisualElement>("actionBarVisualElement");
 			_actionBarVisualElement.Refresh();
+			_actionBarVisualElement.UpdateButtonsState(selectedServicesAmount, localServicesAmount);
 
 			_microserviceBreadcrumbsVisualElement = root.Q<MicroserviceBreadcrumbsVisualElement>("microserviceBreadcrumbsVisualElement");
 			_microserviceBreadcrumbsVisualElement.Refresh();
-			_microserviceBreadcrumbsVisualElement.SetSelectAllCheckboxValue(Model?.Services?.Count > 0 && Model.Services.All(model => model.IsSelected));
-			_microserviceBreadcrumbsVisualElement.SetSelectAllVisibility(Model?.Services?.Count > 0);
-
-			if (Model?.Services?.Count == 0)
-			{
-				_actionBarVisualElement.HandleNoMicroservicesScenario();
-			}
+			_microserviceBreadcrumbsVisualElement.UpdateSelectAllCheckboxValue(selectedServicesAmount, localServicesAmount);
 
 			_loadingBar = root.Q<LoadingBarElement>("loadingBar");
 			_loadingBar.Hidden = true;
@@ -161,13 +162,9 @@ namespace Beamable.Editor.Microservice.UI
 				_microserviceContentVisualElement.SetAllMicroserviceSelectedStatus;
 			_microserviceBreadcrumbsVisualElement.OnNewServicesDisplayFilterSelected += HandleDisplayFilterSelected;
 
-			_microserviceContentVisualElement.OnAllServiceSelectedStatusChanged +=
-				_microserviceBreadcrumbsVisualElement.SetSelectAllCheckboxValue;
-
-			_microserviceBreadcrumbsVisualElement.OnSelectAllCheckboxChanged +=
-				_actionBarVisualElement.UpdateTextButtonTexts;
-			_microserviceContentVisualElement.OnAllServiceSelectedStatusChanged +=
-				_actionBarVisualElement.UpdateTextButtonTexts;
+			_microserviceContentVisualElement.OnServiceSelectionAmountChange +=
+				_microserviceBreadcrumbsVisualElement.UpdateSelectAllCheckboxValue;
+			_microserviceContentVisualElement.OnServiceSelectionAmountChange += _actionBarVisualElement.UpdateButtonsState;
 
 			_actionBarVisualElement.OnInfoButtonClicked += () =>
 			{
@@ -177,7 +174,7 @@ namespace Beamable.Editor.Microservice.UI
 			_actionBarVisualElement.OnCreateNewClicked += _microserviceContentVisualElement
 				.DisplayCreatingNewService;
 
-			_actionBarVisualElement.OnPublishClicked += () => PublishWindow.ShowPublishWindow();
+			_actionBarVisualElement.OnPublishClicked += () => PublishWindow.ShowPublishWindow(this);
 
 			_actionBarVisualElement.OnRefreshButtonClicked += () =>
 			{
@@ -189,10 +186,14 @@ namespace Beamable.Editor.Microservice.UI
 			_actionBarVisualElement.OnBuildAllClicked += () =>
 				_microserviceContentVisualElement.BuildAllMicroservices(_loadingBar);
 
-			Microservices.OnDeploySuccess -= HandleDeploySuccess;
-			Microservices.OnDeploySuccess += HandleDeploySuccess;
-			Microservices.OnDeployFailed -= HandleDeployFailed;
-			Microservices.OnDeployFailed += HandleDeployFailed;
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			if (serviceRegistry != null)
+			{
+				serviceRegistry.OnDeploySuccess -= HandleDeploySuccess;
+				serviceRegistry.OnDeploySuccess += HandleDeploySuccess;
+				serviceRegistry.OnDeployFailed -= HandleDeployFailed;
+				serviceRegistry.OnDeployFailed += HandleDeployFailed;
+			}
 		}
 
 		private void HandleDisplayFilterSelected(ServicesDisplayFilter filter)
@@ -238,6 +239,21 @@ namespace Beamable.Editor.Microservice.UI
 
 		private void OnEnable()
 		{
+			// if BeamEditor is not initialized, schedule a delay call to try again.
+			if (!BeamEditor.IsInitialized || !MicroserviceEditor.IsInitialized)
+			{
+				EditorApplication.delayCall += () =>
+				{
+					EditorAPI.Instance.Then(api =>
+					{
+						SetMinSize();
+						CreateModel();
+						SetForContent();
+					});
+				};
+				return;
+			}
+
 			EditorAPI.Instance.Then(api =>
 			{
 				SetMinSize();
@@ -253,7 +269,7 @@ namespace Beamable.Editor.Microservice.UI
 
 		private void HandleDeployFailed(ManifestModel _model, string reason)
 		{
-			Debug.Log(reason);
+			Debug.LogError(reason);
 			_microserviceContentVisualElement?.Refresh();
 		}
 

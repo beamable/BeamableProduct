@@ -1,9 +1,8 @@
-﻿using System;
+﻿using Beamable.Common.Dependencies;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
-using Beamable.Common.Dependencies;
-
 using Object = UnityEngine.Object;
 
 #if UNITY_EDITOR
@@ -71,7 +70,7 @@ namespace Beamable.Service
 		public static void RuntimeOnlyDontDestroyOnLoad(GameObject go)
 		{
 #if !UNITY_EDITOR
-		Object.DontDestroyOnLoad(go);
+			Object.DontDestroyOnLoad(go);
 #endif
 		}
 

@@ -37,6 +37,7 @@
     border-bottom-width: 1px;
     border-left-width: 1px;
     border-right-width: 1px;
+    border-color: #000000;
 }
 
 #addStyleButton > Label {

@@ -9,12 +9,14 @@ ContentPopupLinkVisualElement > TemplateContainer {
 
 .alignLeft {
     flex-grow: 1;
+    flex-shrink: 1;
     flex-direction: row;
+    padding-right: 30px;
 }
 #title {
     min-width: 210px;
-    max-width: 400px;
     align-self: flex-start;
+    overflow: hidden;
 }
 
 .alignRight {

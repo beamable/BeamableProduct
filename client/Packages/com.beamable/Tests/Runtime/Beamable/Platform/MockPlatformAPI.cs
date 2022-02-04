@@ -1,14 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using Beamable.Api;
+using Beamable.Api.Auth;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
-using Beamable.Api;
-using Beamable.Api.Auth;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
 using Core.Platform.SDK;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
 using AccessToken = Beamable.Api.AccessToken;
@@ -282,7 +282,7 @@ namespace Beamable.Platform.Tests
 			Token = null;
 		}
 
-		 public IAuthApi AuthService { get; set; }
+		public IAuthApi AuthService { get; set; }
 
 		public IAccessToken AccessToken => Token;
 
@@ -303,7 +303,7 @@ namespace Beamable.Platform.Tests
 			throw new NotImplementedException();
 		}
 
-		public MockPlatformRoute<T> MockRequest<T>(Method method, string uri=null)
+		public MockPlatformRoute<T> MockRequest<T>(Method method, string uri = null)
 		{
 			var route = new MockPlatformRoute<T>()
 			{

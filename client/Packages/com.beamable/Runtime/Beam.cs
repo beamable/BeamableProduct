@@ -47,6 +47,7 @@ using Beamable.Sessions;
 using Core.Platform.SDK;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -97,7 +98,7 @@ namespace Beamable
 			}
 
 			// Also initializes the Reflection Cache system with it's IBeamHintGlobalStorage instance when in the editor. When not in the editor, the storage should really not
-			// be used and 
+			// be used and
 			// Finally, calls the Generate Reflection cache
 #if UNITY_EDITOR
 			ReflectionCache.SetStorage(RuntimeGlobalStorage);
@@ -108,7 +109,14 @@ namespace Beamable
 			PromiseExtensions.SetupDefaultHandler();
 
 			// The config-database is what sits inside of config-defaults
-			ConfigDatabase.Init();
+			try
+			{
+				ConfigDatabase.Init();
+			}
+			catch (FileNotFoundException)
+			{
+				Debug.LogError("Failed to find 'config-defaults' file. This should never be seen here. If you do, please file a bug-report.");
+			}
 
 			// Flush cache that wasn't created with this version of the game.
 			OfflineCache.FlushInvalidCache();
@@ -185,6 +193,7 @@ namespace Beamable
 				provider => provider.GetService<PubnubSubscriptionManager>());
 			DependencyBuilder.AddSingleton<INotificationService>(
 				provider => provider.GetService<NotificationService>());
+			DependencyBuilder.AddSingleton<ApiServices>();
 
 			DependencyBuilder.AddSingleton<Promise<IBeamablePurchaser>>(provider => new Promise<IBeamablePurchaser>());
 			DependencyBuilder.AddSingleton<PlayerAnnouncements>();
@@ -210,11 +219,22 @@ namespace Beamable
 		/// <summary>
 		/// Runs the <see cref="BeamContext.ClearPlayerAndStop"/> method on every <see cref="BeamContext"/> in memory.
 		/// </summary>
-		public static async Promise ClearAndDisposeAllContexts()
+		public static async Promise ClearAndStopAllContexts()
 		{
 			foreach (var ctx in BeamContext.All)
 			{
 				await ctx.ClearPlayerAndStop();
+			}
+		}
+
+		/// <summary>
+		/// Runs the <see cref="BeamContext.Stop"/> method on every <see cref="BeamContext"/> in memory.
+		/// </summary>
+		public static async Promise StopAllContexts()
+		{
+			foreach (var ctx in BeamContext.All)
+			{
+				await ctx.Stop();
 			}
 		}
 

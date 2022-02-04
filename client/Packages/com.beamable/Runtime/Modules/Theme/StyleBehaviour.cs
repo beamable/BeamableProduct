@@ -1,51 +1,51 @@
-using System;
 using Beamable.Theme.Appliers;
 using Beamable.UI.Layouts;
+using System;
 using UnityEngine;
 
 namespace Beamable.Theme
 {
-   [ExecuteInEditMode]
-   public class StyleBehaviour : MonoBehaviour
-   {
-      public ImageStyleApplier StyledImages;
-      public TextStyleApplier StyledTexts;
-      public GradientStyleApplier StyledGradients;
-      public LayoutStyleApplier StyledLayouts;
-      public SelectableStyleApplier StyledSelectables;
-      public ButtonStyleApplier StyledButtons;
-      public TransformStyleApplier StyledTransforms;
-      public WindowStyleApplier StyledWindow;
-      public SoundStyleApplier StyledSounds;
-      public StringStyleApplier StyledStrings;
+	[ExecuteInEditMode]
+	public class StyleBehaviour : MonoBehaviour
+	{
+		public ImageStyleApplier StyledImages;
+		public TextStyleApplier StyledTexts;
+		public GradientStyleApplier StyledGradients;
+		public LayoutStyleApplier StyledLayouts;
+		public SelectableStyleApplier StyledSelectables;
+		public ButtonStyleApplier StyledButtons;
+		public TransformStyleApplier StyledTransforms;
+		public WindowStyleApplier StyledWindow;
+		public SoundStyleApplier StyledSounds;
+		public StringStyleApplier StyledStrings;
 
-      private string _lastHash = "";
-      private ThemeObject _lastTheme;
+		private string _lastHash = "";
+		private ThemeObject _lastTheme;
 
-      public void Refresh()
-      {
-         if (!gameObject.activeInHierarchy || !isActiveAndEnabled) return;
+		public void Refresh()
+		{
+			if (!gameObject.activeInHierarchy || !isActiveAndEnabled || !gameObject.scene.IsValid()) return;  // OnValidate runs on prefabs, which we absolutely don't want.
 
-         var theme = ThemeConfiguration.Instance.Style;
-         _lastTheme = theme;
-         _lastHash = theme.Hash;
+			var theme = ThemeConfiguration.Instance.Style;
+			_lastTheme = theme;
+			_lastHash = theme.Hash;
 
-         StyledImages?.ApplyAll(theme);
-         StyledTexts?.ApplyAll(theme);
-         StyledGradients?.ApplyAll(theme);
-         StyledLayouts?.ApplyAll(theme);
-         StyledSelectables?.ApplyAll(theme);
-         StyledButtons?.ApplyAll(theme);
-         StyledTransforms?.ApplyAll(theme);
-         StyledWindow?.ApplyAll(theme);
-         StyledSounds?.ApplyAll(theme);
-         StyledStrings?.ApplyAll(theme);
-      }
+			StyledImages?.ApplyAll(theme);
+			StyledTexts?.ApplyAll(theme);
+			StyledGradients?.ApplyAll(theme);
+			StyledLayouts?.ApplyAll(theme);
+			StyledSelectables?.ApplyAll(theme);
+			StyledButtons?.ApplyAll(theme);
+			StyledTransforms?.ApplyAll(theme);
+			StyledWindow?.ApplyAll(theme);
+			StyledSounds?.ApplyAll(theme);
+			StyledStrings?.ApplyAll(theme);
+		}
 
-      private void OnEnable()
-      {
-         Refresh();
-      }
+		private void OnEnable()
+		{
+			Refresh();
+		}
 
 
 #if UNITY_EDITOR
@@ -68,5 +68,5 @@ namespace Beamable.Theme
       }
 #endif
 
-   }
+	}
 }

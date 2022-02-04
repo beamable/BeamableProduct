@@ -8,10 +8,12 @@ using UnityEditor.Compilation;
 
 namespace Beamable
 {
+#if BEAMABLE_DEVELOPER
 	[CreateAssetMenu(
 		fileName = "CoreConfiguration",
 		menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
 				   "Core Configuration")]
+#endif
 	public class CoreConfiguration : ModuleConfigurationObject
 	{
 		public const string PROJECT_EDITOR_REFLECTION_SYSTEM_PATH = "Assets/Beamable/Editor/ReflectionCache/UserSystems";
@@ -126,7 +128,6 @@ namespace Beamable
 			AssembliesToSweep.AddRange(playerAssemblies.Select(asm => asm.name).Where(n => !string.IsNullOrEmpty(n)));
 			AssembliesToSweep = AssembliesToSweep.Distinct().ToList();
 			AssembliesToSweep.Sort();
-			Debug.Log($"Assemblies to Sweep\n{string.Join(", ", AssembliesToSweep)}");
 #endif
 		}
 	}

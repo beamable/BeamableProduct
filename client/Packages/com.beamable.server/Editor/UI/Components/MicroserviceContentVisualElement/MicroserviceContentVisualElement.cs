@@ -27,7 +27,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class MicroserviceContentVisualElement : MicroserviceComponent
 	{
-		public event Action<bool> OnAllServiceSelectedStatusChanged;
+		/// <summary>
+		/// Action raised on selection change status of any service displayed in MicroserviceContentVisualElement,
+		/// **First argument** represents currently selected services amount.
+		/// **Second argument** represents services amount.
+		/// </summary>
+		public event Action<int, int> OnServiceSelectionAmountChange;
 
 		private VisualElement _mainVisualElement;
 		private ListView _listView;
@@ -74,19 +79,20 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			base.Refresh();
 
-			if (MicroserviceConfiguration.Instance.DockerAppCheckInMicroservicesWindow)
+			if (MicroserviceConfiguration.Instance.DockerDesktopCheckInMicroservicesWindow)
 				DockerCommand.CheckDockerAppRunning();
 
 			_mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
 			_scrollView = Root.Q<ScrollView>();
 			_servicesListElement = Root.Q<VisualElement>("listRoot");
 			_servicesCreateElements = new Dictionary<ServiceType, CreateServiceBaseVisualElement>();
-			_dockerHubIsRunning = !MicroserviceConfiguration.Instance.DockerAppCheckInMicroservicesWindow
+			_dockerHubIsRunning = !MicroserviceConfiguration.Instance.DockerDesktopCheckInMicroservicesWindow
 								  || !DockerCommand.DockerNotRunning;
 
 			if (DockerCommand.DockerNotInstalled || !_dockerHubIsRunning)
 			{
 				ShowDockerNotInstalledAnnouncement();
+				EditorDebouncer.Debounce("Refresh C#MS Window", Refresh, 1f);
 			}
 			if (DockerCommand.DockerNotInstalled)
 				return;
@@ -102,6 +108,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_actionPrompt.Refresh();
 		}
 
+		private void HandleSelectionChanged(bool _)
+		{
+			int currentlySelectedAmount = Model.AllLocalServices.Count(beamService => beamService.IsSelected);
+			int totalAmouont = Model.AllLocalServices.Count;
+			OnServiceSelectionAmountChange?.Invoke(currentlySelectedAmount, totalAmouont);
+		}
+
 		private MicroserviceVisualElement GetMicroserviceVisualElement(string serviceName)
 		{
 			var service = Model.GetModel<MicroserviceModel>(serviceName);
@@ -115,8 +128,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			service.OnLogsDetached += () => { ServiceLogWindow.ShowService(service); };
 
 			serviceElement.Refresh();
-			service.OnSelectionChanged += b =>
-				OnAllServiceSelectedStatusChanged?.Invoke(Model.Services.All(m => m.IsSelected));
+			service.OnSelectionChanged -= HandleSelectionChanged;
+			service.OnSelectionChanged += HandleSelectionChanged;
 
 			service.OnSortChanged -= SortMicroservices;
 			service.OnSortChanged += SortMicroservices;
@@ -157,8 +170,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 				mongoService.OnLogsDetached += () => { ServiceLogWindow.ShowService(mongoService); };
 
 				mongoServiceElement.Refresh();
-				mongoService.OnSelectionChanged += b =>
-					OnAllServiceSelectedStatusChanged?.Invoke(Model.Storages.All(m => m.IsSelected));
+				mongoService.OnSelectionChanged -= HandleSelectionChanged;
+				mongoService.OnSelectionChanged += HandleSelectionChanged;
 
 				mongoService.OnSortChanged -= SortStorages;
 				mongoService.OnSortChanged += SortStorages;
@@ -181,8 +194,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 				mongoService.OnLogsDetached += () => { ServiceLogWindow.ShowService(mongoService); };
 
 				mongoServiceElement.Refresh();
-				mongoService.OnSelectionChanged += b =>
-					OnAllServiceSelectedStatusChanged?.Invoke(Model.Storages.All(m => m.IsSelected));
 
 				mongoService.OnSortChanged -= SortStorages;
 				mongoService.OnSortChanged += SortStorages;
@@ -212,7 +223,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public void SetAllMicroserviceSelectedStatus(bool selected)
 		{
-			foreach (var microservice in Model.Services)
+			foreach (var microservice in Model.AllLocalServices)
 			{
 				microservice.IsSelected = selected;
 			}

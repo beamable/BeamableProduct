@@ -12,16 +12,16 @@ using UnityEngine.InputSystem;
 
 namespace Beamable.InputManagerIntegration
 {
-   [System.Serializable]
-   public class InputActionArg : IInputActionArg
-   {
+	[System.Serializable]
+	public class InputActionArg : IInputActionArg
+	{
 #if !ENABLE_INPUT_SYSTEM || ENABLE_LEGACY_INPUT_MANAGER
-      public KeyCode KeyCode;
+		public KeyCode KeyCode;
 
-      public bool IsTriggered()
-      {
-         return Input.GetKeyDown(KeyCode);
-      }
+		public bool IsTriggered()
+		{
+			return Input.GetKeyDown(KeyCode);
+		}
 
 #elif ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
       public InputActionAsset actionAsset;
@@ -29,11 +29,11 @@ namespace Beamable.InputManagerIntegration
 
       protected InputAction GetAction()
       {
-         #if UNITY_2018
+#if UNITY_2018
          return actionAsset?.FindAction(action.name);
-         #else
+#else
          return actionAsset?.FindAction(action.id);
-         #endif
+#endif
       }
 
       public bool IsTriggered()
@@ -42,10 +42,10 @@ namespace Beamable.InputManagerIntegration
          return action?.triggered ?? false;
       }
 #endif
-   }
+	}
 
-   public interface IInputActionArg
-   {
-      bool IsTriggered();
-   }
+	public interface IInputActionArg
+	{
+		bool IsTriggered();
+	}
 }

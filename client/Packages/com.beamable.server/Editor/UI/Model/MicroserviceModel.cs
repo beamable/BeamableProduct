@@ -74,10 +74,11 @@ namespace Beamable.Editor.UI.Model
 
 		public static MicroserviceModel CreateNew(MicroserviceDescriptor descriptor, MicroservicesDataModel dataModel)
 		{
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			return new MicroserviceModel
 			{
 				ServiceDescriptor = descriptor,
-				ServiceBuilder = Microservices.GetServiceBuilder(descriptor),
+				ServiceBuilder = serviceRegistry.GetServiceBuilder(descriptor),
 				RemoteReference = dataModel.GetReference(descriptor),
 				RemoteStatus = dataModel.GetStatus(descriptor),
 				Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name)
@@ -119,9 +120,8 @@ namespace Beamable.Editor.UI.Model
 		{
 			EditorAPI.Instance.Then(de =>
 			{
-				//http://localhost:10001/1323424830305280/games/DE_1323424830305283/realms/DE_1323424830305283/microservices/DeploymentTest/docs/remote/?
 				var url =
-					$"{BeamableEnvironment.PortalUrl}/{de.CidOrAlias}/games/{de.ProductionRealm.Pid}/realms/{de.Pid}/microservices/{ServiceDescriptor.Name}/docs/{MicroserviceIndividualization.Prefix}/?";
+					$"{BeamableEnvironment.PortalUrl}/{de.CidOrAlias}/games/{de.ProductionRealm.Pid}/realms/{de.Pid}/microservices/{ServiceDescriptor.Name}/docs?prefix={MicroserviceIndividualization.Prefix}&refresh_token={de.Token.RefreshToken}";
 				Application.OpenURL(url);
 			});
 		}
@@ -154,7 +154,7 @@ namespace Beamable.Editor.UI.Model
 			evt.menu.BeamableAppendAction($"{localCategory}/Open in CLI", pos => OpenInCli(), IsRunning);
 			evt.menu.BeamableAppendAction($"{localCategory}/View Documentation", pos => OpenLocalDocs(), IsRunning);
 
-			evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => { OpenOnRemote("docs/remote/"); }, existsOnRemote);
+			evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => { OpenOnRemote("docs/"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => { OpenOnRemote("metrics"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => { OpenOnRemote("logs"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"Visual Studio Code/Copy Debug Configuration{debugToolsSuffix}", pos => { CopyVSCodeDebugTool(); }, IncludeDebugTools);
@@ -183,7 +183,6 @@ namespace Beamable.Editor.UI.Model
 		private void RunSnykTests()
 		{
 			var snykCommand = new SnykTestCommand(ServiceDescriptor);
-			Debug.Log($"Starting Snyk Tests for {ServiceDescriptor.Name}. Please hold.");
 			snykCommand.Start(null).Then(res =>
 			{
 				if (res.RequiresLogin)
@@ -191,7 +190,7 @@ namespace Beamable.Editor.UI.Model
 					var onLogin = new Promise<Unit>();
 					onLogin.Then(_ => RunSnykTests()).Error(_ =>
 					{
-						Debug.Log("Cannot run Snyk Tests without being logged into DockerHub");
+						Debug.LogError("Cannot run Snyk Tests without being logged into DockerHub");
 					});
 					OnDockerLoginRequired?.Invoke(onLogin);
 
@@ -229,6 +228,10 @@ $@"{{
      }}
   }}";
 		}
+
+		protected void OpenRemoteDocs() => OpenOnRemote("docs");
+		protected void OpenRemoteLogs() => OpenOnRemote("logs");
+		protected void OpenRemoteMetrics() => OpenOnRemote("metrics");
 		protected void OpenOnRemote(string relativePath)
 		{
 			EditorAPI.Instance.Then(api =>
@@ -285,9 +288,10 @@ $@"{{
 		public override void Refresh(IDescriptor descriptor)
 		{
 			// reset the descriptor and statemachines; because they aren't system.serializable durable.
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			ServiceDescriptor = (MicroserviceDescriptor)descriptor;
 			var oldBuilder = ServiceBuilder;
-			ServiceBuilder = Microservices.GetServiceBuilder(ServiceDescriptor);
+			ServiceBuilder = serviceRegistry.GetServiceBuilder(ServiceDescriptor);
 			ServiceBuilder.ForwardEventsTo(oldBuilder);
 			Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name);
 		}

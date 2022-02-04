@@ -1,9 +1,6 @@
-
-using Beamable.Common;
-using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Common;
+using Beamable.Editor.UI.Components;
 using System;
-using System.Linq;
 using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -17,9 +14,23 @@ namespace Beamable.Editor
 {
 	public static class UIElementExtensions
 	{
+		public const string PROPERTY_INACTIVE = "inactive";
+
 		private const string PROPERTY_SELECTED = "selected";
 		private const string PROPERTY_HOVERED = "hovered";
 		private const string PROPERTY_HIDDEN = "hidden";
+
+		public static void SetInactive(this VisualElement element, bool value)
+		{
+			if (value)
+			{
+				element.AddToClassList(PROPERTY_INACTIVE);
+			}
+			else
+			{
+				element.RemoveFromClassList(PROPERTY_INACTIVE);
+			}
+		}
 
 		public static void SetSelected(this VisualElement element, bool value)
 		{
@@ -148,7 +159,6 @@ namespace Beamable.Editor
 			return Check;
 		}
 
-
 		public static FormConstraint AddErrorLabel(this TextField self, string name, FormErrorCheckWithInput checker)
 		{
 			var constraint = new FormConstraint
@@ -171,6 +181,7 @@ namespace Beamable.Editor
 					EditorApplication.delayCall += Debounce;
 					return;
 				}
+
 				constraint.Check();
 			}
 
@@ -200,21 +211,18 @@ namespace Beamable.Editor
 				Name = name
 			};
 
-
 			self.RegisterValueChangedCallback(evt => { constraint.Check(); });
 			var check = AddErrorLabel(self, constraint);
 			constraint.OnValidate += check;
 			return constraint;
 		}
 
-
 		public static void AddPlaceholder(this TextField self, string text)
 		{
 			VisualElement container = self;
 #if UNITY_2019_1_OR_NEWER
-            container = self.Q("unity-text-input");
+			container = self.Q("unity-text-input");
 #endif
-
 
 			container.AddStyleSheet(BeamableComponentsConstants.COMMON_USS_PATH);
 			var lbl = new Label(text);

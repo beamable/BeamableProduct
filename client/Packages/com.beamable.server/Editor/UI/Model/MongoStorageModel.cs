@@ -26,7 +26,25 @@ namespace Beamable.Editor.UI.Model
 	public class MongoStorageModel : ServiceModelBase, IBeamableStorageObject
 	{
 		public ServiceStorageReference RemoteReference { get; protected set; }
-		public StorageObjectDescriptor ServiceDescriptor { get; protected set; }
+
+		[SerializeField]
+		private StorageObjectDescriptor _serviceDescriptor;
+
+		[SerializeField]
+		private string _assemblyQualifiedStorageTypeName;
+		public StorageObjectDescriptor ServiceDescriptor
+		{
+			get => _serviceDescriptor;
+			set
+			{
+				_serviceDescriptor = value;
+				if (_serviceDescriptor.Type != null)
+					_assemblyQualifiedStorageTypeName = _serviceDescriptor.Type.AssemblyQualifiedName;
+			}
+		}
+
+		public string AssemblyQualifiedStorageTypeName => _assemblyQualifiedStorageTypeName;
+
 		public MongoStorageBuilder ServiceBuilder { get; protected set; }
 		public override IBeamableBuilder Builder => ServiceBuilder;
 		public override IDescriptor Descriptor => ServiceDescriptor;
@@ -40,11 +58,12 @@ namespace Beamable.Editor.UI.Model
 
 		public static MongoStorageModel CreateNew(StorageObjectDescriptor descriptor, MicroservicesDataModel dataModel)
 		{
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			return new MongoStorageModel
 			{
 				RemoteReference = dataModel.GetStorageReference(descriptor),
 				ServiceDescriptor = descriptor,
-				ServiceBuilder = Microservices.GetStorageBuilder(descriptor),
+				ServiceBuilder = serviceRegistry.GetStorageBuilder(descriptor),
 				Config = MicroserviceConfiguration.Instance.GetStorageEntry(descriptor.Name)
 			};
 		}
@@ -69,6 +88,14 @@ namespace Beamable.Editor.UI.Model
 			OnRemoteReferenceEnriched?.Invoke(remoteReference);
 		}
 
+		protected void OpenRemoteMongo()
+		{
+			EditorAPI.Instance.Then(b =>
+			{
+				UnityEngine.Application.OpenURL($"{BeamableEnvironment.BeamMongoExpressUrl}/create?cid={b.Cid}&pid={b.Pid}&token={b.Token.Token}");
+			});
+		}
+
 		public override void PopulateMoreDropdown(ContextualMenuPopulateEvent evt)
 		{
 			var existsOnRemote = RemoteReference?.enabled ?? false;
@@ -81,8 +108,7 @@ namespace Beamable.Editor.UI.Model
 			evt.menu.BeamableAppendAction($"{localCategory}/Download a snapshot", _ => AssemblyDefinitionHelper.RestoreMongo(ServiceDescriptor), IsRunning);
 			evt.menu.BeamableAppendAction($"{localCategory}/Copy connection string", _ => AssemblyDefinitionHelper.CopyConnectionString(ServiceDescriptor), IsRunning);
 
-			evt.menu.BeamableAppendAction($"{remoteCategory}/Goto data explorer", _ => AssemblyDefinitionHelper.OpenMongoExplorer(ServiceDescriptor), existsOnRemote);
-			evt.menu.BeamableAppendAction($"{remoteCategory}/Copy connection string", _ => AssemblyDefinitionHelper.CopyConnectionString(ServiceDescriptor), existsOnRemote);
+			evt.menu.BeamableAppendAction($"{remoteCategory}/Goto data explorer", _ => OpenRemoteMongo(), existsOnRemote);
 
 			evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());
 
@@ -103,10 +129,11 @@ namespace Beamable.Editor.UI.Model
 
 		public override void Refresh(IDescriptor descriptor)
 		{
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			// reset the descriptor and statemachines; because they aren't system.serializable durable.
 			ServiceDescriptor = (StorageObjectDescriptor)descriptor;
 			var oldBuilder = ServiceBuilder;
-			ServiceBuilder = Microservices.GetStorageBuilder(ServiceDescriptor);
+			ServiceBuilder = serviceRegistry.GetStorageBuilder(ServiceDescriptor);
 			ServiceBuilder.ForwardEventsTo(oldBuilder);
 		}
 	}

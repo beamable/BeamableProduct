@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
@@ -10,7 +7,10 @@ using Beamable.Common.Dependencies;
 using Beamable.Coroutines;
 using Beamable.Service;
 using Core.Platform.SDK;
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 
 namespace Beamable.Content
@@ -75,7 +75,7 @@ namespace Beamable.Content
 			return requester.Request(Method.GET, url, null, true, ClientManifest.ParseCSV, true).Recover(ex =>
 			{
 				// TODO: Put "global" as a constant value somewhere. Currently it lives in a different asm, and its too much trouble.
-				if (ex is PlatformRequesterException err && err.Status == 404 && ManifestID.Equals("global") )
+				if (ex is PlatformRequesterException err && err.Status == 404 && ManifestID.Equals("global"))
 				{
 					return new ClientManifest
 					{
@@ -127,7 +127,7 @@ namespace Beamable.Content
 		private static bool _testScopeEnabled;
 
 		public ContentDataInfoWrapper ContentDataInfo;
-
+		
 		private ClientManifest bakedManifest;
 
 #if UNITY_EDITOR
@@ -148,7 +148,7 @@ namespace Beamable.Content
 #endif
 
 		public ContentService(IDependencyProvider provider,
-			IBeamableFilesystemAccessor filesystemAccessor, ContentParameterProvider config) 
+			IBeamableFilesystemAccessor filesystemAccessor, ContentParameterProvider config)
 		{
 			_provider = provider;
 			CurrentDefaultManifestID = config.manifestID;
@@ -157,7 +157,7 @@ namespace Beamable.Content
 			Subscribable = new ManifestSubscription(_provider, CurrentDefaultManifestID);
 			Subscribable.Subscribe(cb =>
 			{
-				
+				// pay attention, server...
 			});
 
 			if (!InitializeBakedFile())
@@ -166,7 +166,7 @@ namespace Beamable.Content
 				AddSubscriber(CurrentDefaultManifestID);	
 			}
 		}
-
+		
 		private bool InitializeBakedFile()
 		{
 			string path = FilesystemAccessor.GetPersistentDataPathWithoutTrailingSlash() + "/content/content.json";
@@ -274,7 +274,7 @@ namespace Beamable.Content
 				var cacheType = typeof(ContentCache<>).MakeGenericType(contentType);
 				var constructor = cacheType.GetConstructor(new[]
 					{typeof(IHttpRequester), typeof(IBeamableFilesystemAccessor), typeof(ContentService), typeof(CoroutineService)});
-				rawCache = (ContentCache) constructor.Invoke(new[] {Requester, (object) FilesystemAccessor, this, Platform.CoroutineService});
+				rawCache = (ContentCache)constructor.Invoke(new[] { Requester, (object)FilesystemAccessor, this, Platform.CoroutineService });
 
 				_contentCaches.Add(contentType, rawCache);
 			}
@@ -308,7 +308,7 @@ namespace Beamable.Content
 			if (reference == null || string.IsNullOrEmpty(reference.GetId()))
 				return Promise<TContent>.Failed(new ContentNotFoundException());
 			var referencedType = reference.GetReferencedType();
-			return GetContent(reference.GetId(), referencedType, DetermineManifestID(manifestID)).Map(c => (TContent) c);
+			return GetContent(reference.GetId(), referencedType, DetermineManifestID(manifestID)).Map(c => (TContent)c);
 		}
 
 		public Promise<TContent> GetContent<TContent>(IContentRef<TContent> reference, string manifestID = "")
@@ -350,7 +350,7 @@ namespace Beamable.Content
 
 			if (manifestID == CurrentDefaultManifestID)
 			{
-				Debug.Log($"Manifest id: \"{manifestID}\" is already set as default.");
+				Debug.LogWarning($"Manifest id: \"{manifestID}\" is already set as default.");
 				return;
 			}
 

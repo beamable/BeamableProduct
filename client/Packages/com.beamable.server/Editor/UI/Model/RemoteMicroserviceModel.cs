@@ -13,10 +13,11 @@ namespace Beamable.Editor.UI.Model
 	{
 		public new static RemoteMicroserviceModel CreateNew(MicroserviceDescriptor descriptor, MicroservicesDataModel dataModel)
 		{
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			return new RemoteMicroserviceModel
 			{
 				ServiceDescriptor = descriptor,
-				ServiceBuilder = Microservices.GetServiceBuilder(descriptor),
+				ServiceBuilder = serviceRegistry.GetServiceBuilder(descriptor),
 				RemoteReference = dataModel.GetReference(descriptor),
 				RemoteStatus = dataModel.GetStatus(descriptor),
 				Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name)
@@ -27,9 +28,9 @@ namespace Beamable.Editor.UI.Model
 		{
 			var remoteCategory = "Cloud";
 
-			evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => { OpenOnRemote("docs/remote/"); });
-			evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => { OpenOnRemote("metrics"); });
-			evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => { OpenOnRemote("logs"); });
+			evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => { OpenRemoteDocs(); });
+			evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => { OpenRemoteMetrics(); });
+			evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => { OpenRemoteLogs(); });
 
 			if (MicroserviceConfiguration.Instance.Microservices.Count > 1)
 			{

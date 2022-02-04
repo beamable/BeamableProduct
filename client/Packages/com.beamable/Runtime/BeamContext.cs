@@ -15,12 +15,14 @@ using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Player;
 using Beamable.Config;
+using Beamable.Content.Utility;
 using Beamable.Coroutines;
 using Beamable.Player;
 using Core.Platform.SDK;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -89,7 +91,7 @@ namespace Beamable
 		/// <summary>
 		/// Each <see cref="BeamContext"/> has a set of components that need to live on a gameObject in the scene.
 		/// </summary>
-		public GameObject GameObject => _gob ? _gob : _parent.GameObject;
+		public GameObject GameObject => _gob ? _gob : _parent?.GameObject;
 
 		public bool IsInitialized => _initPromise != null;
 
@@ -107,8 +109,10 @@ namespace Beamable
 
 		#region Service Accessors
 
-		public long PlayerId {
-			get {
+		public long PlayerId
+		{
+			get
+			{
 				var userContext = ServiceProvider.GetService<IUserContext>();
 				if (userContext == this) return AuthorizedUser?.Value?.id ?? 0;
 				return userContext.UserId;
@@ -160,8 +164,7 @@ namespace Beamable
 		public IContentApi Content =>
 			_contentService ?? (_contentService = _serviceScope.GetService<IContentApi>());
 
-		private ApiServices _api;
-		public ApiServices Api => _api ?? (_api = new ApiServices(this));
+		public ApiServices Api => ServiceProvider.GetService<ApiServices>();
 
 		public string TimeOverride
 		{
@@ -176,7 +179,7 @@ namespace Beamable
 				}
 
 				var date = DateTime.Parse(value, null, System.Globalization.DateTimeStyles.RoundtripKind);
-				var str = date.ToString("yyyy-MM-ddTHH:mm:ssZ");
+				var str = date.ToString(DateUtility.ISO_FORMAT);
 				_requester.TimeOverride = str;
 				TimeOverrideChanged?.Invoke();
 			}
@@ -233,7 +236,7 @@ namespace Beamable
 			}
 
 			await SaveToken(token); // set the token so that it gets picked up on the next initialization
-			var ctx = Instantiate(null, PlayerCode);
+			var ctx = Instantiate(_behaviour, PlayerCode);
 
 			// await InitStep_SaveToken();
 			await InitStep_GetUser();
@@ -251,7 +254,8 @@ namespace Beamable
 		/// <param name="otherPlayerId"></param>
 		public IObservedPlayer ObservePlayer(long otherPlayerId)
 		{
-			return Fork(builder => {
+			return Fork(builder =>
+			{
 				builder
 					.RemoveIfExists<IUserContext>()
 					.AddScoped<IUserContext>(new SimpleUserContext(otherPlayerId))
@@ -273,10 +277,10 @@ namespace Beamable
 		}
 
 		protected void Init(string cid,
-		                    string pid,
-		                    string playerCode,
-		                    BeamableBehaviour behaviour,
-		                    IDependencyBuilder builder)
+							string pid,
+							string playerCode,
+							BeamableBehaviour behaviour,
+							IDependencyBuilder builder)
 		{
 			PlayerCode = playerCode;
 			_isStopped = false;
@@ -295,7 +299,7 @@ namespace Beamable
 				if (string.IsNullOrEmpty(playerCode) || (behaviour?.DontDestroyContext?.Value ?? false))
 				{
 					// the default context shouldn't destroy on load, unless again, it has already been specified.
-					nextBehaviour.DontDestroyContext = new OptionalBoolean {HasValue = true, Value = true};
+					nextBehaviour.DontDestroyContext = new OptionalBoolean { HasValue = true, Value = true };
 				}
 
 				behaviour = nextBehaviour;
@@ -318,7 +322,7 @@ namespace Beamable
 			{
 				var success = false;
 				var attempt = 0;
-				var attemptDurations = new int[] {2, 2, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10};
+				var attemptDurations = new int[] { 2, 2, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10 };
 				while (!success)
 				{
 					yield return InitializeUser()
@@ -392,11 +396,11 @@ namespace Beamable
 		{
 			ClearToken();
 			var token = new AccessToken(_tokenStorage,
-			                            Cid,
-			                            Pid,
-			                            rsp.access_token,
-			                            rsp.refresh_token,
-			                            rsp.expires_in);
+										Cid,
+										Pid,
+										rsp.access_token,
+										rsp.refresh_token,
+										rsp.expires_in);
 
 			_requester.Token = token;
 			_beamableApiRequester.Token = token;
@@ -433,7 +437,6 @@ namespace Beamable
 			{
 				try
 				{
-					Debug.Log("Creating new user!");
 					var rsp = await _authService.CreateUser();
 					await SaveToken(rsp);
 				}
@@ -454,7 +457,7 @@ namespace Beamable
 					});
 					OfflineCache.Set<User>(AuthApi.ACCOUNT_URL + "/me", new User
 					{
-						id= Random.Range(int.MinValue, 0),
+						id = Random.Range(int.MinValue, 0),
 						scopes = new List<string>(),
 						thirdPartyAppAssociations = new List<string>()
 					}, Requester.AccessToken, true);
@@ -464,13 +467,13 @@ namespace Beamable
 						ClearToken();
 
 						// re-create the user
-						Debug.Log("Save the token!");
 						await InitStep_SaveToken();
 						await InitStep_GetUser();
 						await InitStep_StartPubnub();
 					}, -100);
 				}
-			} else if (AccessToken.IsExpired)
+			}
+			else if (AccessToken.IsExpired)
 			{
 				try
 				{
@@ -492,7 +495,9 @@ namespace Beamable
 		{
 			var user = new User
 			{
-				id = 0, scopes = new List<string>(), thirdPartyAppAssociations = new List<string>()
+				id = 0,
+				scopes = new List<string>(),
+				thirdPartyAppAssociations = new List<string>()
 			};
 			try
 			{
@@ -543,6 +548,7 @@ namespace Beamable
 		{
 			// Create a new account
 			_requester.Token = _tokenStorage.LoadTokenForRealmImmediate(Cid, Pid);
+			_beamableApiRequester.Token = _requester.Token;
 			_requester.Language = "en"; // TODO: Put somewhere, like in configuration
 
 			await InitStep_SaveToken();
@@ -577,9 +583,9 @@ namespace Beamable
 		/// <param name="playerCode">A named code that represents a player slot on the device. The <see cref="Default"/> context uses an empty string. </param>
 		/// <returns></returns>
 		public static BeamContext Instantiate(
-			BeamableBehaviour beamable=null,
-			string playerCode=null,
-			IDependencyBuilder dependencyBuilder=null
+			BeamableBehaviour beamable = null,
+			string playerCode = null,
+			IDependencyBuilder dependencyBuilder = null
 			)
 		{
 			dependencyBuilder = dependencyBuilder ?? Beam.DependencyBuilder;
@@ -623,12 +629,21 @@ namespace Beamable
 		/// <summary>
 		/// Finds or creates the first <see cref="BeamContext"/> that matches the given <see cref="BeamContext.PlayerCode"/> value
 		/// </summary>
-		public static BeamContext ForPlayer(string playerCode="") => Instantiate(playerCode: playerCode);
+		public static BeamContext ForPlayer(string playerCode = "") => Instantiate(playerCode: playerCode);
 
 		/// <summary>
 		/// Finds all <see cref="BeamContext"/>s that have been created. This may include disposed contexts.
 		/// </summary>
 		public static IEnumerable<BeamContext> All => _playerCodeToContext.Values;
+
+#if UNITY_2019_3_OR_NEWER
+		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+		private static async void HandleDomainReset()
+		{
+			// tear down all instances, and let them reboot normally.
+			await Beam.StopAllContexts();
+		}
+#endif
 
 		/// <summary>
 		/// After a context has been Stopped with the <see cref="Stop"/> method, this method can restart the instance.
@@ -700,8 +715,12 @@ namespace Beamable
 
 		public Promise OnDispose()
 		{
-			// delete the gameObject.
-			UnityEngine.Object.Destroy(GameObject);
+			if (GameObject)
+			{
+				UnityEngine.Object.Destroy(GameObject);
+			}
+
+
 			return Promise.Success;
 		}
 	}

@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Beamable.Api.Analytics.Batch {
+namespace Beamable.Api.Analytics.Batch
+{
 
 	/// <summary>
 	/// Batch Container Interface
 	/// Batch containers encapsulate the data of a batch
 	/// </summary>
-	public interface IBatchContainer<T> {
+	public interface IBatchContainer<T>
+	{
 
 		/// <summary>
 		/// Occurs when the batch expires.
@@ -18,7 +20,8 @@ namespace Beamable.Api.Analytics.Batch {
 		/// Gets a value indicating whether this batch is expired.
 		/// </summary>
 		/// <value><c>true</c> if this instance is expired; otherwise, <c>false</c>.</value>
-		bool IsExpired {
+		bool IsExpired
+		{
 			get;
 		}
 
@@ -26,7 +29,8 @@ namespace Beamable.Api.Analytics.Batch {
 		/// Gets the expires (unix) timestamp.
 		/// </summary>
 		/// <value>The expires timestamp.</value>
-		long ExpiresTimestamp {
+		long ExpiresTimestamp
+		{
 			get;
 		}
 
@@ -34,7 +38,8 @@ namespace Beamable.Api.Analytics.Batch {
 		/// Gets the batch's max capacity before expiration.
 		/// </summary>
 		/// <value>The capacity.</value>
-		int Capacity {
+		int Capacity
+		{
 			get;
 		}
 
@@ -42,7 +47,8 @@ namespace Beamable.Api.Analytics.Batch {
 		/// Gets the count of elements in the batch.
 		/// </summary>
 		/// <value>The count.</value>
-		int Count {
+		int Count
+		{
 			get;
 		}
 
@@ -50,11 +56,11 @@ namespace Beamable.Api.Analytics.Batch {
 		/// Add the specified item to the batch.
 		/// </summary>
 		/// <param name="item">Item.</param>
-		void Add (T item);
+		void Add(T item);
 
 		/// <summary>
 		/// Expire this batch.
 		/// </summary>
-		void Expire ();
+		void Expire();
 	}
 }
