@@ -1,10 +1,12 @@
 ﻿using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
+using System;
 using System.Threading.Tasks;
 
 namespace Beamable.Editor.UI.Model
 {
-	public class MongoStorageBuilder : ServiceBuilderBase
+    [Serializable]
+    public class MongoStorageBuilder : ServiceBuilderBase
 	{
 		public void ForwardEventsTo(MongoStorageBuilder oldBuilder)
 		{
