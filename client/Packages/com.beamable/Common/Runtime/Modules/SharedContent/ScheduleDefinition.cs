@@ -1,5 +1,6 @@
 using Beamable.Common.Content.Validation;
 using Beamable.Content;
+using Beamable.Content.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,7 +34,7 @@ namespace Beamable.Common.Content
 		public string description;
 
 		[MustBeDateString]
-		public string activeFrom;
+		public string activeFrom = DateTime.UtcNow.ToString(DateUtility.ISO_FORMAT);
 
 		[MustBeDateString]
 		public OptionalString activeTo = new OptionalString();
@@ -57,6 +58,9 @@ namespace Beamable.Common.Content
 	{
 		[IgnoreContentField]
 		public Action<ScheduleDefinition> OnCronRawSaveButtonPressed;
+
+		[IgnoreContentField]
+		public Action<Schedule> OnScheduleModified;
 
 		[HideInInspector]
 		[IgnoreContentField]

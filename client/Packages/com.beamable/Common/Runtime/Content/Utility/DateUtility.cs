@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Globalization;
 using UnityEngine;
 
-namespace Beamable.Editor
+namespace Beamable.Content.Utility
 {
 	public static class DateUtility
 	{

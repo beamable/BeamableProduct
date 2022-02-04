@@ -5,6 +5,7 @@ using Beamable.Content;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -67,7 +68,7 @@ namespace Beamable.Common.Content
 		[Tooltip(ContentObject.TooltipStartDate1 + ContentObject.TooltipStartDate2)]
 		[FormerlySerializedAs("start_date")]
 		[ContentField("start_date")]
-		[MustBeDateString]
+		[MustBeDateString(nameof(OnScheduleModified))]
 		public string startDate;
 
 		[Tooltip(ContentObject.TooltipPartitionSize1)]
@@ -132,8 +133,21 @@ namespace Beamable.Common.Content
 
 			legacyPhases = null;
 		}
-	}
+		private void OnScheduleModified()
+		{
+			if (!schedule.HasValue || schedule.Value.definitions.Count == 0)
+				return;
 
+			var date = startDate.ParseEventStartDate(out var _);
+			schedule.Value.definitions.ToList().ForEach(scheduleDefinition =>
+			{
+				scheduleDefinition.second = new List<string> { date.Second.ToString() };
+				scheduleDefinition.minute = new List<string> { date.Minute.ToString() };
+				scheduleDefinition.hour = new List<string> { date.Hour.ToString() };
+				scheduleDefinition.OnScheduleModified?.Invoke(schedule.Value);
+			});
+		}
+	}
 
 	[System.Serializable]
 	public class PhaseList : DisplayableList<EventPhase>

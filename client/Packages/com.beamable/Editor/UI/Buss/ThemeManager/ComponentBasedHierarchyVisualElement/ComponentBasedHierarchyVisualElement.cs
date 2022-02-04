@@ -2,6 +2,7 @@
 using Beamable.Editor.UI.Common;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -23,6 +24,8 @@ namespace Beamable.Editor.UI.Components
 		private readonly List<IndentedLabelVisualElement> _spawnedLabels = new List<IndentedLabelVisualElement>();
 		private ScrollView _hierarchyContainer;
 		private IndentedLabelVisualElement _selectedLabel;
+
+		public IEnumerable<T> Components => _spawnedLabels.Select(l => l.RelatedGameObject.GetComponent<T>());
 
 		public T SelectedComponent
 		{

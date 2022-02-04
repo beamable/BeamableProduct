@@ -109,6 +109,9 @@ namespace Beamable.Editor.UI.Buss
 			_navigationWindow.HierarchyChanged -= RefreshStyleSheets;
 			_navigationWindow.HierarchyChanged += RefreshStyleSheets;
 
+			_navigationWindow.BussStyleSheetChange -= RefreshStyleSheets;
+			_navigationWindow.BussStyleSheetChange += RefreshStyleSheets;
+
 			_navigationWindow.SelectionChanged -= FilterCards;
 			_navigationWindow.SelectionChanged += FilterCards;
 
@@ -353,6 +356,7 @@ namespace Beamable.Editor.UI.Buss
 			_filterToggle.OnValueChanged -= OnFilterToggleClicked;
 
 			_navigationWindow.HierarchyChanged -= RefreshStyleSheets;
+			_navigationWindow.BussStyleSheetChange -= RefreshStyleSheets;
 			_navigationWindow.SelectionChanged -= FilterCards;
 
 			_navigationWindow.Destroy();

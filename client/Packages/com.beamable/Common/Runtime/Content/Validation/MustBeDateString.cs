@@ -1,3 +1,4 @@
+using Beamable.Content.Utility;
 using System;
 using System.Globalization;
 using System.Reflection;
@@ -17,6 +18,20 @@ namespace Beamable.Common.Content.Validation
 	/// </summary>
 	public class MustBeDateString : ValidationAttribute
 	{
+		private bool IsUsingCallbackMethod => !string.IsNullOrWhiteSpace(callbackMethodName);
+
+		public readonly string callbackMethodName;
+		public readonly BindingFlags bindingFlags;
+		public MustBeDateString() { }
+		public MustBeDateString(string callbackMethodNameNoArgumentsCallback, BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+		{
+			if (string.IsNullOrWhiteSpace(callbackMethodNameNoArgumentsCallback))
+				throw new ArgumentException("Callback method name cannot be an empty string");
+
+			callbackMethodName = callbackMethodNameNoArgumentsCallback;
+			this.bindingFlags = bindingFlags;
+		}
+
 		public override void Validate(ContentValidationArgs args)
 		{
 			var validationField = args.ValidationField;
@@ -31,6 +46,9 @@ namespace Beamable.Common.Content.Validation
 					ValidateString(optional.Value, validationField, obj, ctx);
 				}
 
+				if (IsUsingCallbackMethod)
+					validationField.Target.TryInvokeCallback(callbackMethodName, bindingFlags);
+
 				return;
 			}
 
@@ -38,6 +56,10 @@ namespace Beamable.Common.Content.Validation
 			{
 				var strValue = validationField.GetValue<string>();
 				ValidateString(strValue, validationField, obj, ctx);
+
+				if (IsUsingCallbackMethod)
+					validationField.Target.TryInvokeCallback(callbackMethodName, bindingFlags);
+
 				return;
 			}
 
@@ -48,15 +70,14 @@ namespace Beamable.Common.Content.Validation
 		{
 			if (string.IsNullOrEmpty(strValue))
 			{
-				throw new ContentValidationException(obj, validationField, "date cannot be an empty string. yyyy-MM-ddTHH:mm:ssZ");
+				throw new ContentValidationException(obj, validationField, $"date cannot be an empty string. {DateUtility.ISO_FORMAT}");
 			}
 
-			if (!DateTime.TryParseExact(strValue, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture,
+			if (!DateTime.TryParseExact(strValue, DateUtility.ISO_FORMAT, CultureInfo.InvariantCulture,
 			   DateTimeStyles.None, out _))
 			{
 				throw new ContentValidationException(obj, validationField, "date is not in 8601 iso format. yyyy-MM-ddTHH:mm:ssZ");
 			}
 		}
 	}
-
 }
