@@ -63,8 +63,6 @@ namespace Beamable.Server
 		{
 			if (BsonClassMap.IsClassMapRegistered(typeof(T))) return;
 
-			Debug.LogError($"RegisterClass : {typeof(T).ToString()}");
-
 			var classMap =  BsonClassMap.RegisterClassMap<T>(cm => {
 
 				cm.AutoMap();
