@@ -186,8 +186,8 @@ namespace Beamable.Tests.Runtime.Dependencies
 
 			// fork a new one, but over-write the singleton instance
 			var sub2 = provider.Fork(b =>
-				                         b.RemoveIfExists<B>()
-				                          .AddSingleton<B>());
+										 b.RemoveIfExists<B>()
+										  .AddSingleton<B>());
 
 			Assert.AreNotEqual(provider.GetService<B>().A, sub2.GetService<B>().A);
 			Assert.AreEqual(2, B.instanceCount);

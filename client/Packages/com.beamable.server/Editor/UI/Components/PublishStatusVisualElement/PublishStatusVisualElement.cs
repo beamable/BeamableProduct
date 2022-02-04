@@ -1,8 +1,8 @@
 ﻿using Beamable.Editor.Microservice.UI.Components;
-using System;
 using Beamable.Editor.UI.Buss;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.UI.Components;
+using System;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -18,15 +18,15 @@ namespace Beamable.Editor.UI.Components
 	public class PublishStatusVisualElement : MicroserviceComponent
 	{
 		public new class UxmlFactory : UxmlFactory<PublishStatusVisualElement, UxmlTraits>
-		{}
+		{ }
 
 		public PublishStatusVisualElement() : base(nameof(PublishStatusVisualElement))
-		{}
+		{ }
 
 		private const int MILISECOND_PER_UPDATE = 250;
 		private readonly string[] topMessageUpdateTexts =
 			{"Deploying   ", "Deploying.  ", "Deploying.. ", "Deploying..."};
-		
+
 		Label _label;
 		int _topMessageCounter = 0;
 		private DateTime _lastUpdateTime;
@@ -37,17 +37,20 @@ namespace Beamable.Editor.UI.Components
 			base.Refresh();
 			_lastUpdateTime = DateTime.Now;
 			_label = Root.Q<Label>("value");
-			Microservices.OnDeploySuccess -= HandleDeploySuccess;
-			Microservices.OnDeploySuccess += HandleDeploySuccess;
-			Microservices.OnServiceDeployStatusChanged -= HandleServiceDeployStatusChanged;
-			Microservices.OnServiceDeployStatusChanged += HandleServiceDeployStatusChanged;
+
+			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+
+			serviceRegistry.OnDeploySuccess -= HandleDeploySuccess;
+			serviceRegistry.OnDeploySuccess += HandleDeploySuccess;
+			serviceRegistry.OnServiceDeployStatusChanged -= HandleServiceDeployStatusChanged;
+			serviceRegistry.OnServiceDeployStatusChanged += HandleServiceDeployStatusChanged;
 			HandleServiceDeployStatusChanged(null, ServicePublishState.Unpublished);
 		}
-		
+
 		public void HandleSubmitClicked()
 		{
 			_label.text = topMessageUpdateTexts[0];
-			if(!_topMessageUpdating)
+			if (!_topMessageUpdating)
 			{
 				EditorApplication.update -= UpdateTopMessageText;
 				EditorApplication.update += UpdateTopMessageText;
@@ -72,10 +75,10 @@ namespace Beamable.Editor.UI.Components
 
 		private void UpdateTopMessageText()
 		{
-			if (!_topMessageUpdating) 
+			if (!_topMessageUpdating)
 				return;
 			var currentTime = DateTime.Now;
-			if(_lastUpdateTime.AddMilliseconds(MILISECOND_PER_UPDATE) > currentTime)
+			if (_lastUpdateTime.AddMilliseconds(MILISECOND_PER_UPDATE) > currentTime)
 				return;
 			_lastUpdateTime = currentTime;
 			_topMessageCounter++;

@@ -1,5 +1,9 @@
 #cardHeader {
-    color: rgb(256, 256, 256);
+    color: rgb(255, 255, 255);
+}
+
+#selectorLabelParent > BussSelectorLabelVisualElement > #root > TextElement {
+    color: rgba(255, 255, 255, 1);
 }
 
 #colorBlock {
@@ -49,4 +53,20 @@
 
 .add {
     background-color: rgb(89,89,89);
+    background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/addNewLight.png");
+}
+.edit {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/edit.png");
+}
+
+.wizard {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/wizard.png");
+}
+
+.undo {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/undo.png");
+}
+
+.cleanAll {
+    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/cleanAll.png");
 }

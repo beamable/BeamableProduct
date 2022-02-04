@@ -6,33 +6,26 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 #endif
 using UnityEngine;
-using UnityEngine.Serialization;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
+
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 #endif
 
-namespace Beamable.UI.Buss
+namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's namespace
 {
 	public class BussConfiguration : ModuleConfigurationObject
 	{
-#pragma warning disable CS0649
-		// TODO: add release date to track name change timestamp
-		[FormerlySerializedAs("globalStyleSheet")] [SerializeField] private BussStyleSheet _globalStyleSheet = null;
-#pragma warning restore CS0649
-
-		private readonly List<BussElement> _rootBussElements = new List<BussElement>();
 
 		private static BussConfiguration Instance => Get<BussConfiguration>();
-
-		private static Optional<BussConfiguration> OptionalInstance
+		public static Optional<BussConfiguration> OptionalInstance
 		{
 			get
 			{
 				try
 				{
-					return new Optional<BussConfiguration> {Value = Instance, HasValue = true};
+					return new Optional<BussConfiguration> { Value = Instance, HasValue = true };
 				}
 				catch (ModuleConfigurationNotReadyException)
 				{
@@ -41,17 +34,23 @@ namespace Beamable.UI.Buss
 			}
 		}
 
+		private static Dictionary<string, SelectorWeight> _weights = new Dictionary<string, SelectorWeight>();
+
 		public static void UseConfig(Action<BussConfiguration> callback)
 		{
 			OptionalInstance.DoIfExists(callback);
 		}
+
+		[SerializeField] private BussStyleSheet globalStyleSheet = null;
+
+		private List<BussElement> _rootBussElements = new List<BussElement>();
 
 #if UNITY_EDITOR
 		static BussConfiguration()
 		{
 			// temporary solution to refresh the list of BussElements on scene change
 			EditorSceneManager.sceneOpened += (scene, mode) => UseConfig(config => config.RefreshBussElements());
-			EditorSceneManager.sceneClosed += scene => UseConfig(config => config.RefreshBussElements());
+			EditorSceneManager.sceneClosed += scene =>  UseConfig(config => config.RefreshBussElements());
 		}
 
 		void RefreshBussElements()
@@ -86,7 +85,7 @@ namespace Beamable.UI.Buss
 		{
 			// this should happen only in editor
 			if (styleSheet == null) return;
-			if (styleSheet == _globalStyleSheet)
+			if (styleSheet == globalStyleSheet)
 			{
 				foreach (var bussElement in _rootBussElements)
 				{
@@ -120,17 +119,17 @@ namespace Beamable.UI.Buss
 
 		private void OnDestroy()
 		{
-			if (_globalStyleSheet != null)
+			if (globalStyleSheet != null)
 			{
-				_globalStyleSheet.Change -= OnGlobalStyleChanged;
+				globalStyleSheet.Change -= OnGlobalStyleChanged;
 			}
 		}
 
 		private void OnDisable()
 		{
-			if (_globalStyleSheet != null)
+			if (globalStyleSheet != null)
 			{
-				_globalStyleSheet.Change -= OnGlobalStyleChanged;
+				globalStyleSheet.Change -= OnGlobalStyleChanged;
 			}
 		}
 
@@ -148,12 +147,13 @@ namespace Beamable.UI.Buss
 
 		public void RecalculateStyle(BussElement element)
 		{
+			_weights.Clear();
 			element.Style.Clear();
 			element.PseudoStyles.Clear();
 
-			if (_globalStyleSheet != null)
+			if (globalStyleSheet != null)
 			{
-				ApplyStyleSheet(element, _globalStyleSheet);
+				ApplyStyleSheet(element, globalStyleSheet);
 			}
 
 			foreach (var styleSheet in element.AllStyleSheets)
@@ -164,7 +164,7 @@ namespace Beamable.UI.Buss
 				}
 			}
 
-			ApplyDescriptor(element, element.InlineStyle);
+			ApplyDescriptor(element, element.InlineStyle, SelectorWeight.Max);
 
 			element.ApplyStyle();
 		}
@@ -176,35 +176,46 @@ namespace Beamable.UI.Buss
 			{
 				if (descriptor.Selector?.CheckMatch(element) ?? false)
 				{
+					var weight = descriptor.Selector.GetWeight();
 					if (descriptor.Selector.TryGetPseudoClass(out var pseudoClass))
 					{
-						ApplyDescriptorWithPseudoClass(element, pseudoClass, descriptor);
+						ApplyDescriptorWithPseudoClass(element, pseudoClass, descriptor, weight);
 					}
 					else
 					{
-						ApplyDescriptor(element, descriptor);
+						ApplyDescriptor(element, descriptor, weight);
 					}
 				}
 			}
 		}
 
-		private static void ApplyDescriptor(BussElement element, BussStyleDescription descriptor)
+		private static void ApplyDescriptor(BussElement element, BussStyleDescription descriptor, SelectorWeight weight)
 		{
 			if (element == null || descriptor == null) return;
 			foreach (var property in descriptor.Properties)
 			{
-				element.Style[property.Key] = property.GetProperty();
+				if (!_weights.TryGetValue(property.Key, out var currentWeight) || weight.CompareTo(currentWeight) >= 0)
+				{
+					element.Style[property.Key] = property.GetProperty();
+					_weights[property.Key] = weight;
+				}
 			}
 		}
 
 		private static void ApplyDescriptorWithPseudoClass(BussElement element,
-		                                                   string pseudoClass,
-		                                                   BussStyleDescription descriptor)
+														  string pseudoClass,
+														  BussStyleDescription descriptor,
+														  SelectorWeight weight)
 		{
 			if (element == null || descriptor == null) return;
 			foreach (var property in descriptor.Properties)
 			{
-				element.Style[pseudoClass, property.Key] = property.GetProperty();
+				var weightKey = pseudoClass + property.Key;
+				if (!_weights.TryGetValue(weightKey, out var currentWeight) || weight.CompareTo(currentWeight) >= 0)
+				{
+					element.Style[pseudoClass, property.Key] = property.GetProperty();
+					_weights[weightKey] = weight;
+				}
 			}
 		}
 

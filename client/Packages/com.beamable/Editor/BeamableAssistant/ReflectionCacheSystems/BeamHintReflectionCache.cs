@@ -29,7 +29,9 @@ namespace Beamable.Editor.Reflection
 	/// </description></item>
 	/// </list>
 	/// </summary>
-	[CreateAssetMenu(fileName = "BeamHintDetailsReflectionCache", menuName = "Beamable/Reflection/Assistant/Hint Details Cache", order = 0)]
+#if BEAMABLE_DEVELOPER
+	[CreateAssetMenu(fileName = "BeamHintDetailsReflectionCache", menuName = "Beamable/Reflection/Beam Hints Cache", order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
+#endif
 	public class BeamHintReflectionCache : ReflectionSystemObject
 	{
 		[NonSerialized] private Registry _cache;
@@ -65,15 +67,15 @@ namespace Beamable.Editor.Reflection
 			{
 				BEAM_HINT_SYSTEM_TYPE = new BaseTypeOfInterest(typeof(IBeamHintSystem));
 				BEAM_HINT_DETAIL_CONVERTER_PROVIDER_TYPE = new BaseTypeOfInterest(typeof(BeamHintDetailConverterProvider), true);
-				BEAM_HINT_DETAIL_CONVERTER_ATTRIBUTE = new AttributeOfInterest(typeof(BeamHintDetailConverterAttribute), new Type[] { }, new[] {typeof(BeamHintDetailConverterProvider)});
+				BEAM_HINT_DETAIL_CONVERTER_ATTRIBUTE = new AttributeOfInterest(typeof(BeamHintDetailConverterAttribute), new Type[] { }, new[] { typeof(BeamHintDetailConverterProvider) });
 
 				BEAM_HINT_SYSTEM_ATTRIBUTE = new AttributeOfInterest(typeof(BeamHintSystemAttribute), new Type[] { }, new Type[] { });
 
-				BEAM_HINT_DOMAIN_PROVIDER_ATTRIBUTE = new AttributeOfInterest(typeof(BeamHintDomainAttribute), new Type[] { }, new[] {typeof(BeamHintDomainProvider)});
-				BEAM_HINT_ID_PROVIDER_ATTRIBUTE = new AttributeOfInterest(typeof(BeamHintIdAttribute), new Type[] { }, new Type[] {typeof(BeamHintIdProvider)});
+				BEAM_HINT_DOMAIN_PROVIDER_ATTRIBUTE = new AttributeOfInterest(typeof(BeamHintDomainAttribute), new Type[] { }, new[] { typeof(BeamHintDomainProvider) });
+				BEAM_HINT_ID_PROVIDER_ATTRIBUTE = new AttributeOfInterest(typeof(BeamHintIdAttribute), new Type[] { }, new Type[] { typeof(BeamHintIdProvider) });
 
-				BASE_TYPES_OF_INTEREST = new List<BaseTypeOfInterest>() {BEAM_HINT_DETAIL_CONVERTER_PROVIDER_TYPE, BEAM_HINT_SYSTEM_TYPE};
-				ATTRIBUTES_OF_INTEREST = new List<AttributeOfInterest>() {BEAM_HINT_DOMAIN_PROVIDER_ATTRIBUTE, BEAM_HINT_ID_PROVIDER_ATTRIBUTE, BEAM_HINT_DETAIL_CONVERTER_ATTRIBUTE,};
+				BASE_TYPES_OF_INTEREST = new List<BaseTypeOfInterest>() { BEAM_HINT_DETAIL_CONVERTER_PROVIDER_TYPE, BEAM_HINT_SYSTEM_TYPE };
+				ATTRIBUTES_OF_INTEREST = new List<AttributeOfInterest>() { BEAM_HINT_DOMAIN_PROVIDER_ATTRIBUTE, BEAM_HINT_ID_PROVIDER_ATTRIBUTE, BEAM_HINT_DETAIL_CONVERTER_ATTRIBUTE, };
 			}
 
 			public List<BaseTypeOfInterest> BaseTypesOfInterest => BASE_TYPES_OF_INTEREST;
@@ -119,9 +121,11 @@ namespace Beamable.Editor.Reflection
 			/// </summary>
 			public void ReloadHintTextMapScriptableObjects(List<string> hintConfigPaths)
 			{
+				_loadedTextMaps.Clear();
+
 				var beamHintTextMapGuids = AssetDatabase.FindAssets($"t:{nameof(BeamHintTextMap)}", hintConfigPaths
-				                                                                                    .Where(Directory.Exists)
-				                                                                                    .ToArray());
+																									.Where(Directory.Exists)
+																									.ToArray());
 
 				// Reload Detail Config Scriptable Objects
 				foreach (string beamHintTextMapGuid in beamHintTextMapGuids)
@@ -136,7 +140,7 @@ namespace Beamable.Editor.Reflection
 				{
 					var converterData = _defaultConverterDelegates[i];
 					_defaultConverterDelegates[i] = BuildConverterData(converterData.Matcher.MatchType, converterData.Matcher.DomainSubstring, converterData.Matcher.IdRegex,
-					                                                   converterData.UserOverrideHintConfigDetailsConfigId, converterData.HintConfigDetailsConfigId, converterData.ConverterCall);
+																	   converterData.UserOverrideHintConfigDetailsConfigId, converterData.HintConfigDetailsConfigId, converterData.ConverterCall);
 				}
 			}
 
@@ -146,9 +150,11 @@ namespace Beamable.Editor.Reflection
 			/// </summary>
 			public void ReloadHintDetailConfigScriptableObjects(List<string> hintConfigPaths)
 			{
+				_loadedConfigs.Clear();
+
 				var beamHintDetailsConfigsGuids = AssetDatabase.FindAssets($"t:{nameof(BeamHintDetailsConfig)}", hintConfigPaths
-				                                                                                                 .Where(Directory.Exists)
-				                                                                                                 .ToArray());
+																												 .Where(Directory.Exists)
+																												 .ToArray());
 
 				// Reload Detail Config Scriptable Objects
 				foreach (string beamHintDetailConfigGuid in beamHintDetailsConfigsGuids)
@@ -163,7 +169,7 @@ namespace Beamable.Editor.Reflection
 				{
 					var converterData = _defaultConverterDelegates[i];
 					_defaultConverterDelegates[i] = BuildConverterData(converterData.Matcher.MatchType, converterData.Matcher.DomainSubstring, converterData.Matcher.IdRegex,
-					                                                   converterData.UserOverrideHintConfigDetailsConfigId, converterData.HintConfigDetailsConfigId, converterData.ConverterCall);
+																	   converterData.UserOverrideHintConfigDetailsConfigId, converterData.HintConfigDetailsConfigId, converterData.ConverterCall);
 				}
 			}
 
@@ -233,7 +239,8 @@ namespace Beamable.Editor.Reflection
 			}
 
 			public void OnReflectionCacheBuilt(PerBaseTypeCache perBaseTypeCache,
-			                                   PerAttributeCache perAttributeCache) { }
+											   PerAttributeCache perAttributeCache)
+			{ }
 
 			public void OnBaseTypeOfInterestFound(BaseTypeOfInterest baseType, IReadOnlyList<MemberInfo> cachedSubTypes)
 			{
@@ -241,10 +248,10 @@ namespace Beamable.Editor.Reflection
 				if (baseType.Equals(BEAM_HINT_SYSTEM_TYPE))
 				{
 					var attributes = cachedSubTypes.GetAndValidateAttributeExistence(BEAM_HINT_SYSTEM_ATTRIBUTE,
-					                                                                 info => new AttributeValidationResult(null,
-					                                                                                                       info,
-					                                                                                                       ReflectionCache.ValidationResultType.Warning,
-					                                                                                                       "No Attribute Detected! Assuming it is not a BeamContext system!"));
+																					 info => new AttributeValidationResult(null,
+																														   info,
+																														   ReflectionCache.ValidationResultType.Warning,
+																														   "No Attribute Detected! Assuming it is not a BeamContext system!"));
 
 					attributes.SplitValidationResults(out var valid, out var warning, out var errors);
 
@@ -255,35 +262,35 @@ namespace Beamable.Editor.Reflection
 
 					// Get the types of hints based on whether or not they have the attribute (if not, we assume it is a Globally Accessible System
 					var splitByTypeOfHintSystems = valid.Union(warning)
-					                                    .GroupBy(pair =>
-					                                    {
-						                                    var isGloballyAccessibleHintSystem = pair.Pair.Attribute == null || !pair.Pair.AttrAs<BeamHintSystemAttribute>().IsBeamContextSystem;
-						                                    return isGloballyAccessibleHintSystem;
-					                                    });
+														.GroupBy(pair =>
+														{
+															var isGloballyAccessibleHintSystem = pair.Pair.Attribute == null || !pair.Pair.AttrAs<BeamHintSystemAttribute>().IsBeamContextSystem;
+															return isGloballyAccessibleHintSystem;
+														});
 
 					// Handle globally accessible hint systems
 					{
 						var globallyAccessibleSystemTypes = splitByTypeOfHintSystems
-						                                    .Where(g => g.Key)
-						                                    .SelectMany(g => g)
-						                                    .ToList();
+															.Where(g => g.Key)
+															.SelectMany(g => g)
+															.ToList();
 
 						var constructors = globallyAccessibleSystemTypes.Select(pair => pair.Pair.Info)
-						                                                .Cast<Type>()
-						                                                .Select(cachedSubType => cachedSubType
-							                                                        .GetConstructor(new Type[] { }))
-						                                                .GroupBy(constructor => constructor != null)
-						                                                .ToList();
+																		.Cast<Type>()
+																		.Select(cachedSubType => cachedSubType
+																					.GetConstructor(new Type[] { }))
+																		.GroupBy(constructor => constructor != null)
+																		.ToList();
 
 						var validConstructors = constructors
-						                        .Where(group => group.Key)
-						                        .SelectMany(g => g)
-						                        .ToList();
+												.Where(group => group.Key)
+												.SelectMany(g => g)
+												.ToList();
 
 						var hintSystems = validConstructors
-						                  .Select(constructor => constructor.Invoke(null))
-						                  .Cast<IBeamHintSystem>();
-						
+										  .Select(constructor => constructor.Invoke(null))
+										  .Cast<IBeamHintSystem>();
+
 						_globallyAccessibleHintSystems.Clear();
 						_globallyAccessibleHintSystems.AddRange(hintSystems);
 					}
@@ -291,9 +298,9 @@ namespace Beamable.Editor.Reflection
 					// Handle BeamContext injected hint systems
 					{
 						var beamContextSystemTypes = splitByTypeOfHintSystems
-						                         .Where(g => !g.Key)
-						                         .SelectMany(g => g)
-						                         .ToList();
+												 .Where(g => !g.Key)
+												 .SelectMany(g => g)
+												 .ToList();
 
 						// For each type, finds a parameterless constructor --- this is by design. These dependency-less classes that have one or two pure functions (or at least that
 						// only depend on internal state).
@@ -371,7 +378,7 @@ namespace Beamable.Editor.Reflection
 						{
 							var cachedDelegate = Delegate.CreateDelegate(attribute.DelegateType, methodInfo) as DefaultConverter;
 							_defaultConverterDelegates.Add(BuildConverterData<DefaultConverter>(attribute.MatchType, attribute.DomainSubstring, attribute.IdRegex,
-							                                                                    attribute.UserOverrideToHintDetailConfigId, attribute.HintDetailConfigId, cachedDelegate));
+																								attribute.UserOverrideToHintDetailConfigId, attribute.HintDetailConfigId, cachedDelegate));
 						}
 					}
 				}

@@ -88,21 +88,7 @@
     background-color: rgb(162,162,162); 
 }
 
-.edit {
-    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/edit.png");
-}
 
-.wizard {
-    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/wizard.png");
-}
-
-.undo {
-    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/undo.png");
-}
-
-.cleanAll {
-    background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/cleanAll.png");
-}
 
 .remove {
     background-image: resource("Packages/com.beamable/Editor/UI/Buss/ThemeManager/Assets/remove.png"); 
@@ -112,7 +98,6 @@
 .add {
     margin-left: 0;
     background-color: rgb(89,89,89);
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Add new L.png");
 }
 
 .hidden {
@@ -132,6 +117,7 @@
     width: 16px;
     height: 16px;
 }
+
 BussStylePropertyVisualElement.doesntExists, BussStylePropertyVisualElement.doesntExists #globalVariable {
     display: none;
     visibility: hidden;
@@ -141,3 +127,8 @@ BussStylePropertyVisualElement.doesntExists, BussStylePropertyVisualElement.does
     display: flex;
     visibility: visible;
 }
+
+.hidden .showAllProperties BussStylePropertyVisualElement.doesntExists, .hidden BussStylePropertyVisualElement.exists {
+     display: none;
+     visibility: hidden;
+ }

@@ -46,9 +46,9 @@ namespace Beamable.Player
 				_ctx = ctx;
 			}
 			public ChatService ChatService => _ctx.ServiceProvider.GetService<ChatService>();
-			public GameRelayService GameRelayService  => _ctx.ServiceProvider.GetService<GameRelayService>();
-			public MatchmakingService MatchmakingService  => _ctx.ServiceProvider.GetService<MatchmakingService>();
-			public SocialService SocialService  => _ctx.ServiceProvider.GetService<SocialService>();
+			public GameRelayService GameRelayService => _ctx.ServiceProvider.GetService<GameRelayService>();
+			public MatchmakingService MatchmakingService => _ctx.ServiceProvider.GetService<MatchmakingService>();
+			public SocialService SocialService => _ctx.ServiceProvider.GetService<SocialService>();
 			public CalendarsService CalendarService => _ctx.ServiceProvider.GetService<CalendarsService>();
 		}
 
@@ -68,11 +68,11 @@ namespace Beamable.Player
 		public IAuthService AuthService => _ctx.ServiceProvider.GetService<IAuthService>();
 
 		public CloudSavingService CloudSavingService => _ctx.ServiceProvider.GetService<CloudSavingService>();
-		public ContentService ContentService=> _ctx.ServiceProvider.GetService<ContentService>();
+		public ContentService ContentService => _ctx.ServiceProvider.GetService<ContentService>();
 		public InventoryService InventoryService => _ctx.ServiceProvider.GetService<InventoryService>();
 		public LeaderboardService LeaderboardService => _ctx.ServiceProvider.GetService<LeaderboardService>();
 		public IBeamableRequester Requester => _ctx.ServiceProvider.GetService<IBeamableRequester>();
-		public StatsService StatsService=> _ctx.ServiceProvider.GetService<StatsService>();
+		public StatsService StatsService => _ctx.ServiceProvider.GetService<StatsService>();
 		public StatsService Stats => _ctx.ServiceProvider.GetService<StatsService>();
 		public SessionService SessionService => _ctx.ServiceProvider.GetService<SessionService>();
 		public IAnalyticsTracker AnalyticsTracker => _ctx.ServiceProvider.GetService<IAnalyticsTracker>();
@@ -103,14 +103,14 @@ namespace Beamable.Player
 		{
 			var storage = _ctx.ServiceProvider.GetService<AccessTokenStorage>();
 			var promises = Array.ConvertAll(storage.RetrieveDeviceRefreshTokens(Cid, Pid),
-			                                token => AuthService.GetUser(token).Map(user => new UserBundle
-			                                {
-				                                User = user,
-				                                Token = token
-			                                }));
+											token => AuthService.GetUser(token).Map(user => new UserBundle
+											{
+												User = user,
+												Token = token
+											}));
 
 			return Promise.Sequence(promises)
-			              .Map(userBundles => (new HashSet<UserBundle>(userBundles) as ISet<UserBundle>));
+						  .Map(userBundles => (new HashSet<UserBundle>(userBundles) as ISet<UserBundle>));
 		}
 
 		public void RemoveDeviceUser(TokenResponse token)

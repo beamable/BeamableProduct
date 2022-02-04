@@ -8,7 +8,7 @@ namespace Beamable.Player
 	[System.Serializable]
 	public class ObservableUser : Observable<User>
 	{
-		public static implicit operator ObservableUser(User data) => new ObservableUser{ Value = data };
+		public static implicit operator ObservableUser(User data) => new ObservableUser { Value = data };
 
 	}
 }

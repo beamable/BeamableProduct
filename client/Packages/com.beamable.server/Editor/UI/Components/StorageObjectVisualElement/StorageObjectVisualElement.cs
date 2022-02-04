@@ -28,39 +28,44 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private MongoStorageModel _mongoStorageModel;
 
+		protected override void OnDestroy()
+		{
+			base.OnDestroy();
+
+			if (_mongoStorageModel == null) return;
+
+			_mongoStorageModel.OnRemoteReferenceEnriched -= OnServiceReferenceChanged;
+			_mongoStorageModel.ServiceBuilder.OnBuildingFinished -= OnBuildingFinished;
+			_mongoStorageModel.ServiceBuilder.OnIsRunningChanged -= OnIsRunningChanged;
+		}
+
 		protected override void UpdateVisualElements()
 		{
 			base.UpdateVisualElements();
 			_mongoStorageModel.OnRemoteReferenceEnriched -= OnServiceReferenceChanged;
 			_mongoStorageModel.OnRemoteReferenceEnriched += OnServiceReferenceChanged;
+			_mongoStorageModel.ServiceBuilder.OnBuildingFinished -= OnBuildingFinished;
+			_mongoStorageModel.ServiceBuilder.OnBuildingFinished += OnBuildingFinished;
+			_mongoStorageModel.ServiceBuilder.OnIsRunningChanged -= OnIsRunningChanged;
+			_mongoStorageModel.ServiceBuilder.OnIsRunningChanged += OnIsRunningChanged;
 		}
 
-		protected override void UpdateStatusIcon()
+		protected override void UpdateLocalStatus()
 		{
-			_statusIcon.ClearClassList();
+			base.UpdateLocalStatus();
+			UpdateLocalStatusIcon(_mongoStorageModel.IsRunning, false);
+		}
 
-			string statusClassName;
-			string statusText;
+		private void OnIsRunningChanged(bool isRunning)
+		{
+			UpdateRemoteStatusIcon();
+			UpdateLocalStatus();
+		}
 
-			var status = _mongoStorageModel.IsRunning ? "localRunning" : "localStopped";
-			switch (status)
-			{
-				case "localRunning":
-					statusClassName = "localRunning";
-					statusText = "Local Running";
-					break;
-				case "localStopped":
-					statusClassName = "localStopped";
-					statusText = "Local Stopped";
-					break;
-				default:
-					statusClassName = "different";
-					statusText = "Different";
-					break;
-			}
-
-			_statusIcon.tooltip = _statusLabel.text = statusText;
-			_statusIcon.AddToClassList(statusClassName);
+		private void OnBuildingFinished(bool isFinished)
+		{
+			UpdateRemoteStatusIcon();
+			UpdateLocalStatus();
 		}
 
 		private void OnServiceReferenceChanged(ServiceStorageReference serviceReference)

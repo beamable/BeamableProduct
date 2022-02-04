@@ -58,7 +58,7 @@ namespace Beamable.Server.Editor
 		{
 			if (!MicroserviceConfiguration.Instance.AutoBuildCommonAssembly) return;
 
-			// AssetDatabase.StartAssetEditing();
+			AssetDatabase.StartAssetEditing();
 			try
 			{
 				Directory.CreateDirectory(GetCommonPath());
@@ -74,8 +74,7 @@ namespace Beamable.Server.Editor
 						{
 							"Unity.Beamable.Runtime.Common", "Unity.Beamable.Server.Runtime.Shared",
 						},
-						AutoReferenced = true,
-						DllReferences = AssemblyDefinitionHelper.MongoLibraries
+						AutoReferenced = true
 					});
 
 					// make sure there is at least 1 script in that folder. Otherwise; we'll get a warning from Unity saying it won't compile it.
@@ -85,12 +84,13 @@ namespace Beamable.Server.Editor
 
 
 				var toAdd = new List<string> { GetCommonAsmDefName() };
-				Microservices.Descriptors.ForEach(d => d.AddAndRemoveReferences(toAdd, null));
+				var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+				serviceRegistry.Descriptors.ForEach(d => d.AddAndRemoveReferences(toAdd, null));
 
 			}
 			finally
 			{
-				// AssetDatabase.StopAssetEditing();
+				AssetDatabase.StopAssetEditing();
 			}
 		}
 	}

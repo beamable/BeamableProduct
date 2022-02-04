@@ -11,45 +11,7 @@ on:
       - 'microservice/**'
 
 jobs:
-  dotnet-format:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0 # otherwise, there would be errors pushing refs to the destination repository.
-      - name: Get branch name
-        id: branch-name
-        uses: tj-actions/branch-names@v5.1
-      - name: "Install dotnet-format"
-        run: dotnet tool install --global --version 5.1.250801 dotnet-format
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v11.7
-        with:
-          files: |
-            .cs$
-      - name: Format files
-        if: contains(steps.changed-files.outputs.all_modified_files, '.cs')
-        id: format
-        run: |
-          dotnet-format -f --include ${{ steps.changed-files.outputs.all_modified_files }}
-      - name: Format results
-        if: contains(steps.changed-files.outputs.all_modified_files, '.cs')
-        run: echo ::set-output name=any::$(if [ -n "$(git status --porcelain)" ]; then echo "true"; else echo "false"; fi)
-        id: format-changes
-      - name: Commit files
-        if: steps.format-changes.outputs.any == 'true'
-        run: |
-          git config --local user.name "github-actions[bot]"
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -a -m 'Autoformat code'
-      - name: Push changes
-        if: steps.format-changes.outputs.any == 'true'
-        run: |
-          git push "https://$GITHUB_ACTOR:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY.git" HEAD:${{ steps.branch-name.outputs.current_branch }}
   testMicroserviceBaseImage:
-    needs: dotnet-format
     timeout-minutes: 10
     runs-on: ubuntu-latest
     concurrency:
@@ -79,7 +41,6 @@ jobs:
         run: dotnet test --configuration Release --no-restore microservice/microserviceTests
 
   testAllModes:
-    needs: dotnet-format
     timeout-minutes: 30
     name: Tests ${{ matrix.unityVersion }} ${{ matrix.testMode }}
     runs-on: ubuntu-latest
@@ -95,7 +56,6 @@ jobs:
           - playmode
           - editmode
         unityVersion:
-          - 2018.4.18f1
           - 2019.4.30f1
           - 2020.3.19f1
     steps:
@@ -134,7 +94,7 @@ jobs:
         shell: bash
       - uses: game-ci/unity-test-runner@v2
         id: tests
-        timeout-minutes: 20
+        timeout-minutes: 30
         env:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
@@ -161,7 +121,6 @@ jobs:
         shell: bash
 
   build:
-    needs: dotnet-format
     name: Build for ${{ matrix.targetPlatform }}
     runs-on: ubuntu-latest
     timeout-minutes: 60

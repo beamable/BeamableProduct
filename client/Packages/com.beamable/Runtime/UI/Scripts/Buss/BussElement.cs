@@ -1,6 +1,8 @@
 ﻿using Beamable.Editor.UI.Buss;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Beamable.UI.Buss
 {
@@ -21,6 +23,8 @@ namespace Beamable.UI.Buss
 
 		public List<BussStyleSheet> AllStyleSheets { get; } = new List<BussStyleSheet>();
 		public BussStyle Style { get; } = new BussStyle();
+
+		public event Action StyleSheetsChanged;
 
 		public string Id
 		{
@@ -96,6 +100,8 @@ namespace Beamable.UI.Buss
 
 		private void OnValidate()
 		{
+			if (!gameObject || !gameObject.scene.IsValid()) return; // OnValidate runs on prefabs, which we absolutely don't want.
+
 			CheckParent();
 			OnStyleChanged();
 		}
@@ -188,8 +194,27 @@ namespace Beamable.UI.Buss
 
 		public void RecalculateStyleSheets()
 		{
+			var hash = GetStyleSheetHash();
 			AllStyleSheets.Clear();
 			AddParentStyleSheets(this);
+			if (hash != GetStyleSheetHash())
+			{
+				StyleSheetsChanged?.Invoke();
+			}
+		}
+
+		private int GetStyleSheetHash()
+		{
+			unchecked
+			{
+				var hash = 0;
+				foreach (BussStyleSheet sheet in AllStyleSheets)
+				{
+					hash = (hash << 3) + sheet.GetHashCode();
+				}
+
+				return hash;
+			}
 		}
 
 		private void AddParentStyleSheets(BussElement element)

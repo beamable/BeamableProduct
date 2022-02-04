@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using System.Linq;
 #if UNITY_2018
 using UnityEditor.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER
@@ -15,10 +15,10 @@ namespace Beamable.Server.Editor.UI
 		/// <summary>
 		/// Checks if disabling process is still in use.
 		/// </summary>
-		private static bool InUse { get; set; } 
-		
+		private static bool InUse { get; set; }
+
 		private static EditorApplication.CallbackFunction _changeWindowEnableStateCallback;
-		
+
 		/// <summary>
 		/// Disables all active editor windows (even if you close and reopen) 
 		/// </summary>
@@ -27,13 +27,13 @@ namespace Beamable.Server.Editor.UI
 		{
 			if (InUse)
 				return;
-			
+
 			InUse = true;
 			_changeWindowEnableStateCallback = ChangeWindowEnableStates(ignoredWindowNames);
 			EditorApplication.update -= _changeWindowEnableStateCallback;
 			EditorApplication.update += _changeWindowEnableStateCallback;
 		}
-		
+
 		/// <summary>
 		/// Enables all disabled editor windows
 		/// </summary>
@@ -42,14 +42,14 @@ namespace Beamable.Server.Editor.UI
 			if (!InUse)
 				return;
 			InUse = false;
-			
+
 			EditorApplication.update -= _changeWindowEnableStateCallback;
 			Resources.FindObjectsOfTypeAll<EditorWindow>().ToList().ForEach(window =>
 			{
 				window.GetRootVisualContainer()?.SetEnabled(true);
 			});
 		}
-		
+
 		private static EditorApplication.CallbackFunction ChangeWindowEnableStates(IEnumerable<string> ignoredWindowNames)
 		{
 			return () => Resources.FindObjectsOfTypeAll<EditorWindow>().ToList().ForEach(window =>
