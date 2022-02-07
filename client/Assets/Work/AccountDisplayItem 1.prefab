@@ -2105,18 +2105,18 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   imageType: 0
-  mode: 0
+  mode: 1
   colorRect:
-    BottomLeftColor: {r: 0.9882353, g: 0.79607844, b: 0.33333334, a: 1}
-    BottomRightColor: {r: 0.9882353, g: 0.79607844, b: 0.33333334, a: 1}
-    TopLeftColor: {r: 0.9882353, g: 0.79607844, b: 0.33333334, a: 1}
-    TopRightColor: {r: 0.9882353, g: 0.79607844, b: 0.33333334, a: 1}
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
     _drawerMode: 1
   threshold: 0
-  rounding: 5
+  rounding: 0
   backgroundSprite: {fileID: 0}
   backgroundMode: 0
-  meshFrame: 2
+  meshFrame: 0
   outlineWidth: 0
   outlineColor:
     BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
@@ -2125,14 +2125,14 @@ MonoBehaviour:
     TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
+    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
-  shadowOffset: {x: 0, y: -2}
+  shadowOffset: {x: 0, y: 0}
   shadowThreshold: 0
-  shadowSoftness: 4
+  shadowSoftness: 0
   shadowMode: 0
 --- !u!114 &3589877178589439890
 MonoBehaviour:
@@ -2146,8 +2146,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b664d96326cd41a5b3f333aac566f578, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _id: card
-  _classes: []
+  _id: 
+  _classes:
+  - card
   _inlineStyle:
     _properties: []
   _styleSheet: {fileID: 0}
