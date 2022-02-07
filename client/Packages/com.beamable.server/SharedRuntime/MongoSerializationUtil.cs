@@ -63,18 +63,35 @@ namespace Beamable.Server
 		{
 			if (BsonClassMap.IsClassMapRegistered(typeof(T))) return;
 
+			if (!BsonClassMap.IsClassMapRegistered(typeof(StorageDocument)))
+			{
+				// Map base StorageDocument class
+
+				var baseClassMap = BsonClassMap.RegisterClassMap<StorageDocument>(cm =>
+				{
+					cm.AutoMap();
+
+					// Need to be set again because for RegisterClassMap<T> it will be lost
+
+					cm.MapIdField("_id").SetSerializer(new StringSerializer(BsonType.ObjectId)).SetIgnoreIfDefault(true); 
+				});
+			}
+
 			var classMap =  BsonClassMap.RegisterClassMap<T>(cm => {
 
 				cm.AutoMap();
 
-				// Unmap properties
+				// Iterate throght properites and unmap them
 
 				PropertyInfo[] props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
 
 				if (props.Length > 0)
 				{
 					foreach (PropertyInfo propertyInfo in props)
+					{
+						Debug.LogError($"UnmapProperty {propertyInfo.Name}");
 						cm.UnmapProperty(propertyInfo.Name);
+					}
 				}
 
 				MemberInfo[] members = typeof(T).GetMembers(BindingFlags.Public | BindingFlags.NonPublic |  BindingFlags.Instance | BindingFlags.DeclaredOnly);
@@ -92,7 +109,10 @@ namespace Beamable.Server
 								if (memberInfo.GetCustomAttribute(typeof(SerializeField)) != null)
 									cm.MapField(memberInfo.Name);
 								else if (!((FieldInfo)memberInfo).IsPublic)
+								{
+									Debug.LogError($"UnmapField {memberInfo.Name}");
 									cm.UnmapField(memberInfo.Name);
+								}
 
 							}
 
