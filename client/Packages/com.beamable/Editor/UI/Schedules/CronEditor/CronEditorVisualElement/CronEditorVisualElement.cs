@@ -19,8 +19,8 @@ namespace Beamable.Editor.Content
 		private Label _humanFormatPreview;
 		private TextField _rawFormatInput;
 		private PrimaryButtonVisualElement _confirmButton;
-		
-		public CronEditorVisualElement(string cronRawFormat, Action<string> result) : 
+
+		public CronEditorVisualElement(string cronRawFormat, Action<string> result) :
 			base($"{BeamableComponentsConstants.SCHEDULES_PATH}/CronEditor/{nameof(CronEditorVisualElement)}/{nameof(CronEditorVisualElement)}")
 		{
 			_cronRawFormat = cronRawFormat;
@@ -36,9 +36,9 @@ namespace Beamable.Editor.Content
 			_confirmButton.Button.clickable.clicked += HandleConfirmButton;
 
 			Root.Q<GenericButtonVisualElement>("cancelButton").OnClick += HandleCloseButton;
-		
+
 			_humanFormatPreview = Root.Q<Label>("humanFormatPreview");
-			
+
 			_rawFormatInput = Root.Q<TextField>("rawFormatInput");
 			_rawFormatInput.RegisterCallback<ChangeEvent<string>>(HandleValueChange);
 			_rawFormatInput.value = _cronRawFormat;
@@ -76,11 +76,11 @@ namespace Beamable.Editor.Content
 			}
 
 			var closeWindow = EditorUtility.DisplayDialog(
-			"Confirmation", 
+			"Confirmation",
 			"Are you sure you want to discard the changes and close the window?",
 			"Discard",
 			"Cancel");
-			
+
 			if (closeWindow)
 				CronEditorWindow.CloseWindow();
 		}
