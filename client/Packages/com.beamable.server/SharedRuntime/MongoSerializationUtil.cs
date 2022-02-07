@@ -88,10 +88,7 @@ namespace Beamable.Server
 				if (props.Length > 0)
 				{
 					foreach (PropertyInfo propertyInfo in props)
-					{
-						Debug.LogError($"UnmapProperty {propertyInfo.Name}");
 						cm.UnmapProperty(propertyInfo.Name);
-					}
 				}
 
 				MemberInfo[] members = typeof(T).GetMembers(BindingFlags.Public | BindingFlags.NonPublic |  BindingFlags.Instance | BindingFlags.DeclaredOnly);
@@ -109,10 +106,7 @@ namespace Beamable.Server
 								if (memberInfo.GetCustomAttribute(typeof(SerializeField)) != null)
 									cm.MapField(memberInfo.Name);
 								else if (!((FieldInfo)memberInfo).IsPublic)
-								{
-									Debug.LogError($"UnmapField {memberInfo.Name}");
 									cm.UnmapField(memberInfo.Name);
-								}
 							}
 
 							// Set new member name if has FormerlySerializedAsAttribute
