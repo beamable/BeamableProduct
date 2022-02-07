@@ -31,13 +31,12 @@ namespace Beamable.Editor.Content
 				var definition = ContentRefPropertyDrawer.GetTargetObjectOfProperty(property) as ScheduleDefinition;
 				HandleEditRawCronButton(definition);
 			}
-
-
 		}
 
 		private void HandleEditRawCronButton(ScheduleDefinition definition)
 		{
-			CronEditorWindow.ShowWindow(definition.cronRawFormat, result =>
+			var window = CronEditorWindow.ShowWindow();
+			window?.Init(definition.cronRawFormat, result =>
 			{
 				definition.cronRawFormat = result;
 				definition.OnCronRawSaveButtonPressed?.Invoke(definition);
