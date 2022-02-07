@@ -71,7 +71,7 @@ namespace Beamable.Server
 				{
 					cm.AutoMap();
 
-					// Need to be set again because for RegisterClassMap<T> it will be lost
+					// Need to be set again because for RegisterClassMap<T> will be lost
 
 					cm.MapIdField("_id").SetSerializer(new StringSerializer(BsonType.ObjectId)).SetIgnoreIfDefault(true); 
 				});
@@ -113,7 +113,6 @@ namespace Beamable.Server
 									Debug.LogError($"UnmapField {memberInfo.Name}");
 									cm.UnmapField(memberInfo.Name);
 								}
-
 							}
 
 							// Set new member name if has FormerlySerializedAsAttribute
