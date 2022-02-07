@@ -94,13 +94,13 @@ namespace microserviceTests.MongoSerializationTests
 
             public string property { get; set; }
             
+            public int X;
+            
             [FormerlySerializedAs("info")]
             [SerializeField]
             private string field1;
             
             private string field2;
-            
-            public int X;
 
             public void SetFields(string str1, string str2)
             {
@@ -126,9 +126,19 @@ namespace microserviceTests.MongoSerializationTests
             
             public int X;
             
-            public string info;
+            private string info;
             
-            public string field2;
+            private string field2;
+            
+            public string GetInfo()
+            {
+                return this.info;
+            }
+            
+            public string GetField2()
+            {
+                return this.field2;
+            }
         }
         
         [Test]
@@ -143,16 +153,23 @@ namespace microserviceTests.MongoSerializationTests
             
             data.SetFields("fieldRaw1", "fieldRaw2");
             
+            // Map input class
             MongoSerializationService.RegisterClass<UnityClassSupport>();
             var bson = data.ToBson();
             
+            // Map output to raw mongo db class
+            BsonClassMap.RegisterClassMap<UnityRawClassOutput>(cm => {
+                cm.AutoMap();
+                cm.MapField("info");
+                cm.MapField("field2");
+            });
             var output = BsonSerializer.Deserialize<UnityRawClassOutput>(bson);
             
             Assert.AreEqual(data.X, output.X);
             Assert.AreNotEqual(data.property, output.property);
             Assert.AreEqual(data.message, output.text);
-            Assert.AreEqual(data.GetField1(), output.info);
-            Assert.AreNotEqual(data.GetField2(), output.field2);
+            Assert.AreEqual(data.GetField1(), output.GetInfo());
+            Assert.AreNotEqual(data.GetField2(), output.GetField2());
         }
     }
 }
