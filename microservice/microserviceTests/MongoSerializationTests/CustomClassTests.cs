@@ -86,7 +86,6 @@ namespace microserviceTests.MongoSerializationTests
             public List<Vector2> Vectors;
         }
         
-        
         [Serializable]
         public class UnityClassSupport : StorageDocument
         {
@@ -105,7 +104,6 @@ namespace microserviceTests.MongoSerializationTests
             
             public int X;
         }
-        
         
         [Test]
         public void DataUnity()
