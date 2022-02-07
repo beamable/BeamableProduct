@@ -168,7 +168,7 @@ MonoBehaviour:
         type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":2.0}'
-    _selector: '#mainFrame'
+    _selector: .mainFrame
     _editMode: 0
     _showAllMode: 0
   - _properties:
@@ -217,7 +217,7 @@ MonoBehaviour:
         type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":3.0}'
-    _selector: '#frameHeader'
+    _selector: .frameHeader
     _editMode: 0
     _showAllMode: 0
   - _properties:
@@ -261,7 +261,7 @@ MonoBehaviour:
         type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":22.0}'
-    _selector: '#frameHeaderLabel'
+    _selector: .frameHeaderLabel
     _editMode: 0
     _showAllMode: 0
   _assetReferences:
