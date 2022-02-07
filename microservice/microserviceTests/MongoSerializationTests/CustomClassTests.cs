@@ -6,6 +6,7 @@ using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace microserviceTests.MongoSerializationTests
 {
@@ -83,6 +84,46 @@ namespace microserviceTests.MongoSerializationTests
             public Color Color;
 
             public List<Vector2> Vectors;
+        }
+        
+        
+        [Serializable]
+        public class UnityClassSupport : StorageDocument
+        {
+            [FormerlySerializedAsAttribute("text")]
+            public string message;
+
+            public string property { get; set; }
+            
+            public int X;
+        }
+        
+        public class UnityRawClassOutput : StorageDocument
+        {
+            public string text;
+            public string property { get; set; }
+            
+            public int X;
+        }
+        
+        
+        [Test]
+        public void DataUnity()
+        {
+            var data = new UnityClassSupport
+            {
+                X = 1,
+                property = "Test",
+                message = "Msg"
+            };
+            
+            MongoSerializationService.RegisterClass<UnityClassSupport>();
+            var bson = data.ToBson();
+            var output = BsonSerializer.Deserialize<UnityRawClassOutput>(bson);
+            
+            Assert.AreEqual(data.X, output.X);
+            Assert.AreNotEqual(data.property, output.property);
+            Assert.AreEqual(data.message, output.text);
         }
     }
 }
