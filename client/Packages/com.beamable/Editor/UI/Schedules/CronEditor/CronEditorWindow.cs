@@ -8,7 +8,7 @@ namespace Beamable.Editor.Content
 	{
 		private string _cronRawFormat;
 		private Action<string> _result;
-		
+
 		public void Init(string cronRawFormat, Action<string> result)
 		{
 			_cronRawFormat = cronRawFormat;
@@ -19,7 +19,7 @@ namespace Beamable.Editor.Content
 
 			Refresh();
 		}
-		
+
 		protected override CronEditorVisualElement GetVisualElement() => new CronEditorVisualElement(_cronRawFormat, _result);
 	}
 }
