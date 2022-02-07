@@ -69,12 +69,14 @@ namespace Beamable.UI.Scripts
 		void SetStyle(bool valid)
 		{
 			if (ValidStyle == null) return;
+			if (InvalidStyle == null) return;
 			if (ValidStyle.StyledImages == null) return;
 
 			foreach (var image in ValidStyle.StyledImages.Components)
 			{
 				image.gameObject.SetActive(true);
 			}
+			
 			ValidStyle.enabled = valid;
 			InvalidStyle.enabled = !valid;
 		}
