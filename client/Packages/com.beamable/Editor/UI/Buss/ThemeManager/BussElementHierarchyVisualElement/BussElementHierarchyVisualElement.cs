@@ -79,6 +79,12 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			List<BussStyleSheet> selectedComponentAllStyleSheets = SelectedComponent.AllStyleSheets;
+
+			if (selectedComponentAllStyleSheets.Count == 0)
+			{
+				return;
+			}
+
 			BussStyleSheet firstStyle = selectedComponentAllStyleSheets[selectedComponentAllStyleSheets.Count - 1];
 
 			StyleSheets.Remove(firstStyle);
