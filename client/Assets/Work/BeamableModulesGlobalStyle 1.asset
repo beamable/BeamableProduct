@@ -48,7 +48,7 @@ MonoBehaviour:
         type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":3.0}'
-    _selector: '#navButtonBackground'
+    _selector: .navButtonBackground
     _editMode: 0
     _showAllMode: 0
   - _properties:
@@ -77,7 +77,7 @@ MonoBehaviour:
         type: Beamable.UI.Buss.BorderModeBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"Enum":1}'
-    _selector: '#navButton'
+    _selector: .navButton
     _editMode: 0
     _showAllMode: 0
   - _properties:
@@ -91,7 +91,7 @@ MonoBehaviour:
         type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"AssetSerializationKey":0}'
-    _selector: '#backButton'
+    _selector: .back
     _editMode: 0
     _showAllMode: 0
   - _properties:
@@ -105,7 +105,7 @@ MonoBehaviour:
         type: Beamable.UI.Buss.SpriteBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"AssetSerializationKey":1}'
-    _selector: '#topButton'
+    _selector: .top
     _editMode: 0
     _showAllMode: 0
   - _properties:
