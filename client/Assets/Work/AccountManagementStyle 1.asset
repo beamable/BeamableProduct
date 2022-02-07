@@ -81,7 +81,7 @@ MonoBehaviour:
         type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":0.0,"g":0.0,"b":0.0,"a":1.0}}'
-    _selector: .apple
+    _selector: .black
     _editMode: 0
     _showAllMode: 0
   - _properties:
