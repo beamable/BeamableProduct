@@ -15,8 +15,7 @@ namespace Beamable.Editor.Content
 			_result = result;
 
 			titleContent = new GUIContent("Cron Editor");
-			minSize = maxSize = new Vector2(400f, 300f);
-			maxSize = minSize;
+			minSize = new Vector2(400f, 300f);
 
 			Refresh();
 		}
