@@ -238,7 +238,7 @@ namespace Beamable.Editor.UI.Buss
 
 		private void OnFocus()
 		{
-			_navigationWindow.ForceRebuild();
+			_navigationWindow?.ForceRebuild();
 			CheckEnableState();
 		}
 
