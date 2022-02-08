@@ -3144,7 +3144,7 @@ MonoBehaviour:
   ValidationBehaviours:
   - {fileID: 7544740996148228918}
   - {fileID: 2474756845806763975}
-  _styledText: {fileID: 0}
+  _styledText: {fileID: 2263527124197460833}
   ErrorColor:
     Name: error
   RegularColor:
@@ -3359,6 +3359,7 @@ GameObject:
   - component: {fileID: 571459669028241401}
   - component: {fileID: 2891988081909168897}
   - component: {fileID: 6052755862143787072}
+  - component: {fileID: 2263527124197460833}
   m_Layer: 5
   m_Name: MessageText
   m_TagString: Untagged
@@ -3538,6 +3539,62 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
+--- !u!114 &2263527124197460833
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 571459669028241403}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 731d0cea6d89742ffb51155c213fde02, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StyledImages:
+    Components: []
+    ColorBinding:
+      Name: 
+    ImageBinding:
+      Name: 
+  StyledTexts:
+    Components: []
+    TextBinding:
+      Name: 
+    ColorBinding:
+      Name: 
+  StyledGradients:
+    Components: []
+    GradientBinding:
+      Name: 
+  StyledLayouts:
+    Components: []
+    LayoutBinding:
+      Name: 
+  StyledSelectables:
+    Components: []
+    SelectableBinding:
+      Name: 
+  StyledButtons:
+    Components: []
+    Button:
+      Name: 
+  StyledTransforms:
+    Components: []
+    Transform:
+      Name: 
+  StyledWindow:
+    Components: []
+    Window:
+      Name: 
+  StyledSounds:
+    Components: []
+    Sound:
+      Name: 
+  StyledStrings:
+    Components: []
+    Binding:
+      Name: 
 --- !u!1 &571459669158524704
 GameObject:
   m_ObjectHideFlags: 0
@@ -4099,8 +4156,8 @@ MonoBehaviour:
   InputReference: {fileID: 787102141902352054}
   InheritValidationTypeFromReference: 1
   ValidationType: 0
-  InvalidStyle: {fileID: 0}
-  ValidStyle: {fileID: 0}
+  InvalidStyle: {fileID: 6264844265385318683}
+  ValidStyle: {fileID: 9157267623449850098}
   CheckOnEnable: 0
 --- !u!114 &806680285688359373
 MonoBehaviour:
@@ -7504,8 +7561,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 2}
-  m_SizeDelta: {x: -8, y: -8}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: -8, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1220113581096702805
 CanvasRenderer:
@@ -8776,6 +8833,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1171707259764316611}
+  - component: {fileID: 2467456826543235757}
   m_Layer: 5
   m_Name: InvalidStyle
   m_TagString: Untagged
@@ -8802,6 +8860,63 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &2467456826543235757
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1390833516899157201}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 731d0cea6d89742ffb51155c213fde02, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StyledImages:
+    Components:
+    - {fileID: 8328050701960835445}
+    ColorBinding:
+      Name: primary
+    ImageBinding:
+      Name: icon error
+  StyledTexts:
+    Components: []
+    TextBinding:
+      Name: 
+    ColorBinding:
+      Name: 
+  StyledGradients:
+    Components: []
+    GradientBinding:
+      Name: 
+  StyledLayouts:
+    Components: []
+    LayoutBinding:
+      Name: 
+  StyledSelectables:
+    Components: []
+    SelectableBinding:
+      Name: 
+  StyledButtons:
+    Components: []
+    Button:
+      Name: 
+  StyledTransforms:
+    Components: []
+    Transform:
+      Name: 
+  StyledWindow:
+    Components: []
+    Window:
+      Name: 
+  StyledSounds:
+    Components: []
+    Sound:
+      Name: 
+  StyledStrings:
+    Components: []
+    Binding:
+      Name: 
 --- !u!1 &1407771778351771884
 GameObject:
   m_ObjectHideFlags: 0
@@ -9534,8 +9649,8 @@ MonoBehaviour:
   InputReference: {fileID: 1807818796047886034}
   InheritValidationTypeFromReference: 0
   ValidationType: 0
-  InvalidStyle: {fileID: 0}
-  ValidStyle: {fileID: 0}
+  InvalidStyle: {fileID: 7020875560533533632}
+  ValidStyle: {fileID: 7529320108581356989}
   CheckOnEnable: 0
 --- !u!114 &383761827526312469
 MonoBehaviour:
@@ -9823,6 +9938,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8110578550311411569}
+  - component: {fileID: 6143366797603759900}
   m_Layer: 5
   m_Name: ValidStyle
   m_TagString: Untagged
@@ -9849,6 +9965,63 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &6143366797603759900
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1474162904427992883}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 731d0cea6d89742ffb51155c213fde02, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StyledImages:
+    Components:
+    - {fileID: 3765894763141968814}
+    ColorBinding:
+      Name: primary
+    ImageBinding:
+      Name: icon check
+  StyledTexts:
+    Components: []
+    TextBinding:
+      Name: 
+    ColorBinding:
+      Name: 
+  StyledGradients:
+    Components: []
+    GradientBinding:
+      Name: 
+  StyledLayouts:
+    Components: []
+    LayoutBinding:
+      Name: 
+  StyledSelectables:
+    Components: []
+    SelectableBinding:
+      Name: 
+  StyledButtons:
+    Components: []
+    Button:
+      Name: 
+  StyledTransforms:
+    Components: []
+    Transform:
+      Name: 
+  StyledWindow:
+    Components: []
+    Window:
+      Name: 
+  StyledSounds:
+    Components: []
+    Sound:
+      Name: 
+  StyledStrings:
+    Components: []
+    Binding:
+      Name: 
 --- !u!1 &1497607838995748266
 GameObject:
   m_ObjectHideFlags: 0
@@ -13864,7 +14037,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: -25.02}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2477373085272201138
 CanvasRenderer:
@@ -14104,10 +14277,10 @@ RectTransform:
   m_Father: {fileID: 8777537905883142673}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 178.91469, y: -20}
-  m_SizeDelta: {x: 357.82938, y: 40}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 40}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5074499835875559842
 CanvasRenderer:
@@ -15332,6 +15505,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4837867549444381689}
+  - component: {fileID: 9157267623449850098}
   m_Layer: 5
   m_Name: ValidStyle
   m_TagString: Untagged
@@ -15358,6 +15532,63 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &9157267623449850098
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2871143198104638395}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 731d0cea6d89742ffb51155c213fde02, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StyledImages:
+    Components:
+    - {fileID: 571459669158524710}
+    ColorBinding:
+      Name: primary
+    ImageBinding:
+      Name: icon check
+  StyledTexts:
+    Components: []
+    TextBinding:
+      Name: 
+    ColorBinding:
+      Name: 
+  StyledGradients:
+    Components: []
+    GradientBinding:
+      Name: 
+  StyledLayouts:
+    Components: []
+    LayoutBinding:
+      Name: 
+  StyledSelectables:
+    Components: []
+    SelectableBinding:
+      Name: 
+  StyledButtons:
+    Components: []
+    Button:
+      Name: 
+  StyledTransforms:
+    Components: []
+    Transform:
+      Name: 
+  StyledWindow:
+    Components: []
+    Window:
+      Name: 
+  StyledSounds:
+    Components: []
+    Sound:
+      Name: 
+  StyledStrings:
+    Components: []
+    Binding:
+      Name: 
 --- !u!1 &2876496965948880051
 GameObject:
   m_ObjectHideFlags: 0
@@ -17911,6 +18142,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3374317861919249249}
+  - component: {fileID: 4935279029616282569}
   m_Layer: 5
   m_Name: InvalidStyle
   m_TagString: Untagged
@@ -17937,6 +18169,63 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &4935279029616282569
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3304650410697363059}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 731d0cea6d89742ffb51155c213fde02, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StyledImages:
+    Components:
+    - {fileID: 5549116719615523799}
+    ColorBinding:
+      Name: primary
+    ImageBinding:
+      Name: icon error
+  StyledTexts:
+    Components: []
+    TextBinding:
+      Name: 
+    ColorBinding:
+      Name: 
+  StyledGradients:
+    Components: []
+    GradientBinding:
+      Name: 
+  StyledLayouts:
+    Components: []
+    LayoutBinding:
+      Name: 
+  StyledSelectables:
+    Components: []
+    SelectableBinding:
+      Name: 
+  StyledButtons:
+    Components: []
+    Button:
+      Name: 
+  StyledTransforms:
+    Components: []
+    Transform:
+      Name: 
+  StyledWindow:
+    Components: []
+    Window:
+      Name: 
+  StyledSounds:
+    Components: []
+    Sound:
+      Name: 
+  StyledStrings:
+    Components: []
+    Binding:
+      Name: 
 --- !u!1 &3412121903587667419
 GameObject:
   m_ObjectHideFlags: 0
@@ -19617,6 +19906,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5825826409640694685}
+  - component: {fileID: 7529320108581356989}
   m_Layer: 5
   m_Name: ValidStyle
   m_TagString: Untagged
@@ -19643,6 +19933,63 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &7529320108581356989
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3756751000005958623}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 731d0cea6d89742ffb51155c213fde02, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StyledImages:
+    Components:
+    - {fileID: 1447004774982188866}
+    ColorBinding:
+      Name: primary
+    ImageBinding:
+      Name: icon check
+  StyledTexts:
+    Components: []
+    TextBinding:
+      Name: 
+    ColorBinding:
+      Name: 
+  StyledGradients:
+    Components: []
+    GradientBinding:
+      Name: 
+  StyledLayouts:
+    Components: []
+    LayoutBinding:
+      Name: 
+  StyledSelectables:
+    Components: []
+    SelectableBinding:
+      Name: 
+  StyledButtons:
+    Components: []
+    Button:
+      Name: 
+  StyledTransforms:
+    Components: []
+    Transform:
+      Name: 
+  StyledWindow:
+    Components: []
+    Window:
+      Name: 
+  StyledSounds:
+    Components: []
+    Sound:
+      Name: 
+  StyledStrings:
+    Components: []
+    Binding:
+      Name: 
 --- !u!1 &3763175523077218067
 GameObject:
   m_ObjectHideFlags: 0
@@ -20224,8 +20571,8 @@ MonoBehaviour:
   InputReference: {fileID: 4125657784253065790}
   InheritValidationTypeFromReference: 1
   ValidationType: 0
-  InvalidStyle: {fileID: 0}
-  ValidStyle: {fileID: 0}
+  InvalidStyle: {fileID: 6737368954383881401}
+  ValidStyle: {fileID: 6143366797603759900}
   CheckOnEnable: 0
 --- !u!114 &656656457689036927
 MonoBehaviour:
@@ -21811,6 +22158,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4280801652757789300}
+  - component: {fileID: 2728289222765754873}
   m_Layer: 5
   m_Name: InvalidStyle
   m_TagString: Untagged
@@ -21837,6 +22185,63 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &2728289222765754873
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4064481422227580774}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 731d0cea6d89742ffb51155c213fde02, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StyledImages:
+    Components:
+    - {fileID: 6393394145601688258}
+    ColorBinding:
+      Name: primary
+    ImageBinding:
+      Name: icon error
+  StyledTexts:
+    Components: []
+    TextBinding:
+      Name: 
+    ColorBinding:
+      Name: 
+  StyledGradients:
+    Components: []
+    GradientBinding:
+      Name: 
+  StyledLayouts:
+    Components: []
+    LayoutBinding:
+      Name: 
+  StyledSelectables:
+    Components: []
+    SelectableBinding:
+      Name: 
+  StyledButtons:
+    Components: []
+    Button:
+      Name: 
+  StyledTransforms:
+    Components: []
+    Transform:
+      Name: 
+  StyledWindow:
+    Components: []
+    Window:
+      Name: 
+  StyledSounds:
+    Components: []
+    Sound:
+      Name: 
+  StyledStrings:
+    Components: []
+    Binding:
+      Name: 
 --- !u!1 &4109480765991471436
 GameObject:
   m_ObjectHideFlags: 0
@@ -28622,8 +29027,8 @@ MonoBehaviour:
   InputReference: {fileID: 4611702447959908935}
   InheritValidationTypeFromReference: 1
   ValidationType: 0
-  InvalidStyle: {fileID: 0}
-  ValidStyle: {fileID: 0}
+  InvalidStyle: {fileID: 4935279029616282569}
+  ValidStyle: {fileID: 3029691626000263167}
   CheckOnEnable: 0
 --- !u!114 &8096804200845733894
 MonoBehaviour:
@@ -35221,6 +35626,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3989794067183771050}
+  - component: {fileID: 472034937018343429}
   m_Layer: 5
   m_Name: ValidStyle
   m_TagString: Untagged
@@ -35247,6 +35653,63 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &472034937018343429
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6027311573083149800}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 731d0cea6d89742ffb51155c213fde02, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StyledImages:
+    Components:
+    - {fileID: 8328050701960835445}
+    ColorBinding:
+      Name: primary
+    ImageBinding:
+      Name: icon check
+  StyledTexts:
+    Components: []
+    TextBinding:
+      Name: 
+    ColorBinding:
+      Name: 
+  StyledGradients:
+    Components: []
+    GradientBinding:
+      Name: 
+  StyledLayouts:
+    Components: []
+    LayoutBinding:
+      Name: 
+  StyledSelectables:
+    Components: []
+    SelectableBinding:
+      Name: 
+  StyledButtons:
+    Components: []
+    Button:
+      Name: 
+  StyledTransforms:
+    Components: []
+    Transform:
+      Name: 
+  StyledWindow:
+    Components: []
+    Window:
+      Name: 
+  StyledSounds:
+    Components: []
+    Sound:
+      Name: 
+  StyledStrings:
+    Components: []
+    Binding:
+      Name: 
 --- !u!1 &6062201428007695533
 GameObject:
   m_ObjectHideFlags: 0
@@ -36042,6 +36505,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6310305192071551768}
+  - component: {fileID: 6737368954383881401}
   m_Layer: 5
   m_Name: InvalidStyle
   m_TagString: Untagged
@@ -36068,6 +36532,63 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &6737368954383881401
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6097085674593093130}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 731d0cea6d89742ffb51155c213fde02, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StyledImages:
+    Components:
+    - {fileID: 3765894763141968814}
+    ColorBinding:
+      Name: primary
+    ImageBinding:
+      Name: icon error
+  StyledTexts:
+    Components: []
+    TextBinding:
+      Name: 
+    ColorBinding:
+      Name: 
+  StyledGradients:
+    Components: []
+    GradientBinding:
+      Name: 
+  StyledLayouts:
+    Components: []
+    LayoutBinding:
+      Name: 
+  StyledSelectables:
+    Components: []
+    SelectableBinding:
+      Name: 
+  StyledButtons:
+    Components: []
+    Button:
+      Name: 
+  StyledTransforms:
+    Components: []
+    Transform:
+      Name: 
+  StyledWindow:
+    Components: []
+    Window:
+      Name: 
+  StyledSounds:
+    Components: []
+    Sound:
+      Name: 
+  StyledStrings:
+    Components: []
+    Binding:
+      Name: 
 --- !u!1 &6103841539512037172
 GameObject:
   m_ObjectHideFlags: 0
@@ -37740,8 +38261,8 @@ MonoBehaviour:
   InputReference: {fileID: 6177677182904077138}
   InheritValidationTypeFromReference: 1
   ValidationType: 0
-  InvalidStyle: {fileID: 0}
-  ValidStyle: {fileID: 0}
+  InvalidStyle: {fileID: 2728289222765754873}
+  ValidStyle: {fileID: 5613996021735428300}
   CheckOnEnable: 1
 --- !u!114 &8310168638208403062
 MonoBehaviour:
@@ -41729,6 +42250,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7223681429107449744}
+  - component: {fileID: 6264844265385318683}
   m_Layer: 5
   m_Name: InvalidStyle
   m_TagString: Untagged
@@ -41755,6 +42277,63 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &6264844265385318683
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7435493292580389506}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 731d0cea6d89742ffb51155c213fde02, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StyledImages:
+    Components:
+    - {fileID: 571459669158524710}
+    ColorBinding:
+      Name: primary
+    ImageBinding:
+      Name: icon error
+  StyledTexts:
+    Components: []
+    TextBinding:
+      Name: 
+    ColorBinding:
+      Name: 
+  StyledGradients:
+    Components: []
+    GradientBinding:
+      Name: 
+  StyledLayouts:
+    Components: []
+    LayoutBinding:
+      Name: 
+  StyledSelectables:
+    Components: []
+    SelectableBinding:
+      Name: 
+  StyledButtons:
+    Components: []
+    Button:
+      Name: 
+  StyledTransforms:
+    Components: []
+    Transform:
+      Name: 
+  StyledWindow:
+    Components: []
+    Window:
+      Name: 
+  StyledSounds:
+    Components: []
+    Sound:
+      Name: 
+  StyledStrings:
+    Components: []
+    Binding:
+      Name: 
 --- !u!1 &7486541019160890594
 GameObject:
   m_ObjectHideFlags: 0
@@ -43630,6 +44209,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 707022451359307528}
+  - component: {fileID: 3029691626000263167}
   m_Layer: 5
   m_Name: ValidStyle
   m_TagString: Untagged
@@ -43656,6 +44236,63 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &3029691626000263167
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7868930176157261642}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 731d0cea6d89742ffb51155c213fde02, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StyledImages:
+    Components:
+    - {fileID: 5549116719615523799}
+    ColorBinding:
+      Name: primary
+    ImageBinding:
+      Name: icon check
+  StyledTexts:
+    Components: []
+    TextBinding:
+      Name: 
+    ColorBinding:
+      Name: 
+  StyledGradients:
+    Components: []
+    GradientBinding:
+      Name: 
+  StyledLayouts:
+    Components: []
+    LayoutBinding:
+      Name: 
+  StyledSelectables:
+    Components: []
+    SelectableBinding:
+      Name: 
+  StyledButtons:
+    Components: []
+    Button:
+      Name: 
+  StyledTransforms:
+    Components: []
+    Transform:
+      Name: 
+  StyledWindow:
+    Components: []
+    Window:
+      Name: 
+  StyledSounds:
+    Components: []
+    Sound:
+      Name: 
+  StyledStrings:
+    Components: []
+    Binding:
+      Name: 
 --- !u!1 &7875910746720790954
 GameObject:
   m_ObjectHideFlags: 0
@@ -45277,8 +45914,8 @@ MonoBehaviour:
   InputReference: {fileID: 9120157915024419045}
   InheritValidationTypeFromReference: 0
   ValidationType: 4
-  InvalidStyle: {fileID: 0}
-  ValidStyle: {fileID: 0}
+  InvalidStyle: {fileID: 2467456826543235757}
+  ValidStyle: {fileID: 472034937018343429}
   CheckOnEnable: 0
 --- !u!114 &302254592809876908
 MonoBehaviour:
@@ -46034,6 +46671,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8630404707429750772}
+  - component: {fileID: 7020875560533533632}
   m_Layer: 5
   m_Name: InvalidStyle
   m_TagString: Untagged
@@ -46060,6 +46698,63 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &7020875560533533632
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8415782286077807334}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 731d0cea6d89742ffb51155c213fde02, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StyledImages:
+    Components:
+    - {fileID: 1447004774982188866}
+    ColorBinding:
+      Name: primary
+    ImageBinding:
+      Name: icon error
+  StyledTexts:
+    Components: []
+    TextBinding:
+      Name: 
+    ColorBinding:
+      Name: 
+  StyledGradients:
+    Components: []
+    GradientBinding:
+      Name: 
+  StyledLayouts:
+    Components: []
+    LayoutBinding:
+      Name: 
+  StyledSelectables:
+    Components: []
+    SelectableBinding:
+      Name: 
+  StyledButtons:
+    Components: []
+    Button:
+      Name: 
+  StyledTransforms:
+    Components: []
+    Transform:
+      Name: 
+  StyledWindow:
+    Components: []
+    Window:
+      Name: 
+  StyledSounds:
+    Components: []
+    Sound:
+      Name: 
+  StyledStrings:
+    Components: []
+    Binding:
+      Name: 
 --- !u!1 &8416978474277434125
 GameObject:
   m_ObjectHideFlags: 0
@@ -46916,6 +47611,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2050355504836050461}
+  - component: {fileID: 5613996021735428300}
   m_Layer: 5
   m_Name: ValidStyle
   m_TagString: Untagged
@@ -46942,6 +47638,63 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &5613996021735428300
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8687307437525382751}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 731d0cea6d89742ffb51155c213fde02, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  StyledImages:
+    Components:
+    - {fileID: 6393394145601688258}
+    ColorBinding:
+      Name: primary
+    ImageBinding:
+      Name: icon check
+  StyledTexts:
+    Components: []
+    TextBinding:
+      Name: 
+    ColorBinding:
+      Name: 
+  StyledGradients:
+    Components: []
+    GradientBinding:
+      Name: 
+  StyledLayouts:
+    Components: []
+    LayoutBinding:
+      Name: 
+  StyledSelectables:
+    Components: []
+    SelectableBinding:
+      Name: 
+  StyledButtons:
+    Components: []
+    Button:
+      Name: 
+  StyledTransforms:
+    Components: []
+    Transform:
+      Name: 
+  StyledWindow:
+    Components: []
+    Window:
+      Name: 
+  StyledSounds:
+    Components: []
+    Sound:
+      Name: 
+  StyledStrings:
+    Components: []
+    Binding:
+      Name: 
 --- !u!1 &8715147793475931410
 GameObject:
   m_ObjectHideFlags: 0
