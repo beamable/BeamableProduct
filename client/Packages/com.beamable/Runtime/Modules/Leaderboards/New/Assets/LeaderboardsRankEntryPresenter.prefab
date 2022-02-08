@@ -75,7 +75,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   imageType: 0
-  mode: 0
+  mode: 1
   colorRect:
     BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
     BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
@@ -117,13 +117,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _id: scoreBox
-  _classes: []
+  _classes:
+  - background
   _inlineStyle:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
-  _children: []
+  _parent: {fileID: 1017928557439707338}
+  _children:
+  - {fileID: 0}
 --- !u!1 &3582717132388966613
 GameObject:
   m_ObjectHideFlags: 0
@@ -345,14 +347,14 @@ MonoBehaviour:
       m_Calls: []
   m_text: 6,000,000
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8731414c3f69f42c78336ca4aaa22544, type: 2}
-  m_sharedMaterial: {fileID: 0}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4291162618
+    rgba: 4294967295
   m_fontColor: {r: 0.98039216, g: 0.94509804, b: 0.77254903, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -371,14 +373,14 @@ MonoBehaviour:
   m_outlineColor:
     serializedVersion: 2
     rgba: 4278190080
-  m_fontSize: 16
+  m_fontSize: 17.7
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
   m_fontSizeMin: 12
   m_fontSizeMax: 18
   m_fontStyle: 1
-  m_textAlignment: 4098
+  m_textAlignment: 514
   m_characterSpacing: 0
   m_wordSpacing: 0
   m_lineSpacing: 0
@@ -447,13 +449,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e24f0ff68ce64de482a88d4ffd47a396, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _id: scoreValueLabel
-  _classes: []
+  _id: scoreBox
+  _classes:
+  - value
   _inlineStyle:
     _properties: []
   _styleSheet: {fileID: 11400000, guid: 91a3568a398db974f80567be5e77fb91, type: 2}
   _assetReferences: []
-  _parent: {fileID: 0}
+  _parent: {fileID: 3166263609133970248}
   _children: []
 --- !u!1 &3685001263599696860
 GameObject:
@@ -531,8 +534,6 @@ GameObject:
   m_Component:
   - component: {fileID: 3685001263858537106}
   - component: {fileID: 3685001263858537103}
-  - component: {fileID: 4884130311118730118}
-  - component: {fileID: 4184909259248668515}
   - component: {fileID: 7161470595712652984}
   m_Layer: 5
   m_Name: Score
@@ -569,136 +570,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3685001263858537107}
   m_CullTransparentMesh: 1
---- !u!114 &4884130311118730118
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3685001263858537107}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_text: 
-  m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
-  m_fontMaterial: {fileID: 0}
-  m_fontMaterials: []
-  m_fontColor32:
-    serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
-  m_enableVertexGradient: 0
-  m_colorMode: 3
-  m_fontColorGradient:
-    topLeft: {r: 1, g: 1, b: 1, a: 1}
-    topRight: {r: 1, g: 1, b: 1, a: 1}
-    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
-    bottomRight: {r: 1, g: 1, b: 1, a: 1}
-  m_fontColorGradientPreset: {fileID: 0}
-  m_spriteAsset: {fileID: 0}
-  m_tintAllSprites: 0
-  m_overrideHtmlColors: 0
-  m_faceColor:
-    serializedVersion: 2
-    rgba: 4294967295
-  m_outlineColor:
-    serializedVersion: 2
-    rgba: 4278190080
-  m_fontSize: 18
-  m_fontSizeBase: 18
-  m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
-  m_fontStyle: 0
-  m_textAlignment: 257
-  m_characterSpacing: 0
-  m_wordSpacing: 0
-  m_lineSpacing: 0
-  m_lineSpacingMax: 0
-  m_paragraphSpacing: 0
-  m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 1
-  m_wordWrappingRatios: 0.4
-  m_overflowMode: 0
-  m_firstOverflowCharacterIndex: -1
-  m_linkedTextComponent: {fileID: 0}
-  m_isLinkedTextComponent: 0
-  m_isTextTruncated: 0
-  m_enableKerning: 1
-  m_enableExtraPadding: 0
-  checkPaddingRequired: 0
-  m_isRichText: 1
-  m_parseCtrlCharacters: 1
-  m_isOrthographic: 1
-  m_isCullingEnabled: 0
-  m_ignoreRectMaskCulling: 0
-  m_ignoreCulling: 1
-  m_horizontalMapping: 0
-  m_verticalMapping: 0
-  m_uvLineOffset: 0
-  m_geometrySortingOrder: 0
-  m_VertexBufferAutoSizeReduction: 1
-  m_firstVisibleCharacter: 0
-  m_useMaxVisibleDescender: 1
-  m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: 0}
-  m_textInfo:
-    textComponent: {fileID: 4884130311118730118}
-    characterCount: 0
-    spriteCount: 0
-    spaceCount: 0
-    wordCount: 0
-    linkCount: 0
-    lineCount: 0
-    pageCount: 0
-    materialCount: 1
-  m_isUsingLegacyAnimationComponent: 0
-  m_isVolumetricText: 0
-  m_spriteAnimator: {fileID: 0}
-  m_hasFontAssetChanged: 0
-  m_subTextObjects:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  m_baseMaterial: {fileID: 0}
-  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!114 &4184909259248668515
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3685001263858537107}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e24f0ff68ce64de482a88d4ffd47a396, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _id: 
-  _classes: []
-  _inlineStyle:
-    _properties: []
-  _styleSheet: {fileID: 0}
-  _assetReferences: []
-  _parent: {fileID: 0}
-  _children: []
 --- !u!114 &7161470595712652984
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -785,8 +656,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 1
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 4806300b5aa03495ba88747550dc64ef, type: 2}
-  m_sharedMaterial: {fileID: 0}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -887,13 +758,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e24f0ff68ce64de482a88d4ffd47a396, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _id: rankValueLabel
-  _classes: []
+  _id: rankBox
+  _classes:
+  - value
   _inlineStyle:
     _properties: []
   _styleSheet: {fileID: 11400000, guid: 91a3568a398db974f80567be5e77fb91, type: 2}
   _assetReferences: []
-  _parent: {fileID: 0}
+  _parent: {fileID: 7802791704110869821}
   _children: []
 --- !u!1 &3685001265025933710
 GameObject:
@@ -976,7 +848,7 @@ GameObject:
   - component: {fileID: 1017928557439707338}
   - component: {fileID: 4597893704053466711}
   m_Layer: 5
-  m_Name: CurrentUserRankEntry
+  m_Name: LeaderboardsRankEntryPresenter
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1059,18 +931,18 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   imageType: 0
-  mode: 0
+  mode: 1
   colorRect:
-    BottomLeftColor: {r: 0.9882353, g: 0.79607844, b: 0.33333334, a: 1}
-    BottomRightColor: {r: 0.9882353, g: 0.79607844, b: 0.33333334, a: 1}
-    TopLeftColor: {r: 0.9882353, g: 0.79607844, b: 0.33333334, a: 1}
-    TopRightColor: {r: 0.9882353, g: 0.79607844, b: 0.33333334, a: 1}
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
     _drawerMode: 1
   threshold: 0
-  rounding: 5
+  rounding: 0
   backgroundSprite: {fileID: 0}
   backgroundMode: 0
-  meshFrame: 2
+  meshFrame: 0
   outlineWidth: 0
   outlineColor:
     BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
@@ -1079,14 +951,14 @@ MonoBehaviour:
     TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 1}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 1}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 1}
+    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
+    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
+    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
     _drawerMode: 1
-  shadowOffset: {x: 0, y: -2}
+  shadowOffset: {x: 0, y: 0}
   shadowThreshold: 0
-  shadowSoftness: 4
+  shadowSoftness: 0
   shadowMode: 0
 --- !u!114 &1017928557439707338
 MonoBehaviour:
@@ -1100,14 +972,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b664d96326cd41a5b3f333aac566f578, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _id: card
-  _classes: []
+  _id: 
+  _classes:
+  - card
   _inlineStyle:
     _properties: []
   _styleSheet: {fileID: 11400000, guid: 91a3568a398db974f80567be5e77fb91, type: 2}
   _assetReferences: []
   _parent: {fileID: 0}
-  _children: []
+  _children:
+  - {fileID: 7802791704110869821}
+  - {fileID: 5720414895681550330}
+  - {fileID: 1325342809279582850}
+  - {fileID: 3166263609133970248}
 --- !u!114 &4597893704053466711
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1261,15 +1138,15 @@ MonoBehaviour:
       m_Calls: []
   m_text: Player name
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8731414c3f69f42c78336ca4aaa22544, type: 2}
-  m_sharedMaterial: {fileID: 0}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278198871
-  m_fontColor: {r: 0.34117648, g: 0.13333334, b: 0, a: 1}
+    rgba: 4294967295
+  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -1294,7 +1171,7 @@ MonoBehaviour:
   m_fontSizeMin: 6
   m_fontSizeMax: 18
   m_fontStyle: 0
-  m_textAlignment: 4097
+  m_textAlignment: 257
   m_characterSpacing: 0
   m_wordSpacing: 0
   m_lineSpacing: 0
@@ -1363,13 +1240,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e24f0ff68ce64de482a88d4ffd47a396, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _id: playerNameLabel
-  _classes: []
+  _id: player
+  _classes:
+  - name
   _inlineStyle:
     _properties: []
   _styleSheet: {fileID: 11400000, guid: 91a3568a398db974f80567be5e77fb91, type: 2}
   _assetReferences: []
-  _parent: {fileID: 0}
+  _parent: {fileID: 1017928557439707338}
   _children: []
 --- !u!1 &4631209477082663764
 GameObject:
@@ -1518,15 +1396,15 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   imageType: 0
-  mode: 0
+  mode: 1
   colorRect:
-    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
-    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 0}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 0}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 0}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 0}
     _drawerMode: 1
   threshold: 0
-  rounding: 0
+  rounding: 5
   backgroundSprite: {fileID: 0}
   backgroundMode: 0
   meshFrame: 0
@@ -1560,13 +1438,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _id: rankBox
-  _classes: []
+  _classes:
+  - background
   _inlineStyle:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
-  _children: []
+  _parent: {fileID: 1017928557439707338}
+  _children:
+  - {fileID: 0}
+  - {fileID: 6447171304743088359}
 --- !u!1 &8052374626108078532
 GameObject:
   m_ObjectHideFlags: 0
@@ -1641,7 +1522,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   imageType: 0
-  mode: 0
+  mode: 1
   colorRect:
     BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
     BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
@@ -1682,13 +1563,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b664d96326cd41a5b3f333aac566f578, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _id: avatarFrame
-  _classes: []
+  _id: avatar
+  _classes:
+  - frame
   _inlineStyle:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 0}
+  _parent: {fileID: 1017928557439707338}
   _children: []
 --- !u!1 &8974061327264491212
 GameObject:

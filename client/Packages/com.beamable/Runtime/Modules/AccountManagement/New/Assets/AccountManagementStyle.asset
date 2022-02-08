@@ -48,7 +48,7 @@ MonoBehaviour:
         type: Beamable.UI.Buss.VertexColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_colorRect":{"BottomLeftColor":{"r":0.7058823704719544,"g":0.8745098114013672,"b":0.3137255012989044,"a":1.0},"BottomRightColor":{"r":0.21960784494876862,"g":0.5607843399047852,"b":0.05098039284348488,"a":1.0},"TopLeftColor":{"r":0.7058823704719544,"g":0.8745098114013672,"b":0.3137255012989044,"a":1.0},"TopRightColor":{"r":0.21960784494876862,"g":0.5607843399047852,"b":0.05098039284348488,"a":1.0},"_drawerMode":2}}'
-    _selector: '#email'
+    _selector: .primary
     _editMode: 0
     _showAllMode: 0
   - _properties:
@@ -72,7 +72,7 @@ MonoBehaviour:
         type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_floatValue":5.0}'
-    _selector: .signInButton
+    _selector: .button
     _editMode: 0
     _showAllMode: 0
   - _properties:
@@ -81,7 +81,7 @@ MonoBehaviour:
         type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":0.0,"g":0.0,"b":0.0,"a":1.0}}'
-    _selector: '#apple'
+    _selector: .black
     _editMode: 0
     _showAllMode: 0
   - _properties:
@@ -90,7 +90,22 @@ MonoBehaviour:
         type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":0.25882354378700259,"g":0.4078431725502014,"b":0.6980392336845398,"a":1.0}}'
-    _selector: '#facebook'
+    _selector: .facebook
+    _editMode: 0
+    _showAllMode: 0
+  - _properties:
+    - key: roundCorners
+      property:
+        type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_floatValue":1.5}'
+    - key: backgroundColor
+      property:
+        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
+          Culture=neutral, PublicKeyToken=null
+        json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":0.7490196228027344}}'
+    _selector: '#dividerLine'
     _editMode: 0
     _showAllMode: 0
   _assetReferences: []
+  _isReadOnly: 0
