@@ -17,14 +17,18 @@ namespace Beamable.Server
 		/// You can save time by using the <see cref="GetCollection{TStorage,TCollection}()"/> or <see cref="GetCollection{TStorage,TCollection}(string)"/> methods.
 		/// </para>
 		/// </summary>
+		/// <param name="useCache">By default, the database connection is cached. If you pass `false` here, the database connection will be forced to reconnect.</param>
 		/// <typeparam name="TStorage"></typeparam>
 		/// <returns></returns>
 		Promise<IMongoDatabase> GetDatabase<TStorage>(bool useCache=true) where TStorage : MongoStorageObject;
 
 		/// <summary>
-		/// Get a MongoDB connection by the storageName from <see cref="StorageObjectAttribute"/> that decorates a <see cref="StorageObject"/> class
+		/// Get a MongoDB connection by the storageName from <see cref="StorageObjectAttribute"/> that decorates a <see cref="StorageObject"/> class.
+		/// This will never use the cached version.
+		/// <b> This method is deprecated. You should be using the <see cref="GetDatabase{TStorage}"/> method instead </b>
 		/// </summary>
 		/// <param name="name"></param>
+		[Obsolete("please use " + nameof(GetDatabase) + " instead")]
 		Promise<IMongoDatabase> this[string name] { get; }
 
 		/// <summary>
@@ -95,7 +99,7 @@ namespace Beamable.Server
 
 				return GetDatabaseByStorageName(storageName);
 			});
-			
+
 			return db;
 		}
 
