@@ -4,7 +4,7 @@
     "Unity.Beamable.Server.Runtime.Shared"
   ],
   "name":"Unity.Beamable.Customer.Common",
-  "autoReferenced":false,
+  "autoReferenced":true,
   "precompiledReferences":[
      "DnsClient.dll",
     "MongoDB.Bson.dll",
