@@ -298,8 +298,14 @@ namespace Beamable.UI.Buss
 
 		private void CheckRelations(IEnumerable<BussElement> elements)
 		{
-			foreach (BussElement element in elements.ToArray())
+			BussElement[] bussElements = elements.ToArray();
+			foreach (BussElement element in bussElements)
 			{
+				if (element == null)
+				{
+					continue;
+				}
+				
 				if (element != this)
 				{
 					element.CheckParent();

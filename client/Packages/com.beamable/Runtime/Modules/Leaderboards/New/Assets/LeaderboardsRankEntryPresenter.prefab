@@ -77,33 +77,33 @@ MonoBehaviour:
   imageType: 0
   mode: 1
   colorRect:
-    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
-    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomLeftColor: {r: 0.8901961, g: 0.5254902, b: 0.12941177, a: 1}
+    BottomRightColor: {r: 0.8901961, g: 0.5254902, b: 0.12941177, a: 1}
+    TopLeftColor: {r: 0.8901961, g: 0.5254902, b: 0.12941177, a: 1}
+    TopRightColor: {r: 0.8901961, g: 0.5254902, b: 0.12941177, a: 1}
     _drawerMode: 1
   threshold: 0
-  rounding: 0
+  rounding: 4
   backgroundSprite: {fileID: 0}
   backgroundMode: 0
-  meshFrame: 0
-  outlineWidth: 0
+  meshFrame: 4
+  outlineWidth: 1
   outlineColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 0}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 0}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 0}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 0}
     _drawerMode: 1
   shadowColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0.80784315}
+    BottomRightColor: {r: 0, g: 0, b: 0, a: 0.80784315}
+    TopLeftColor: {r: 0, g: 0, b: 0, a: 0.80784315}
+    TopRightColor: {r: 0, g: 0, b: 0, a: 0.80784315}
     _drawerMode: 1
-  shadowOffset: {x: 0, y: 0}
+  shadowOffset: {x: -2, y: 3}
   shadowThreshold: 0
-  shadowSoftness: 0
-  shadowMode: 0
+  shadowSoftness: 8
+  shadowMode: 1
 --- !u!114 &3166263609133970248
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -123,7 +123,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 1017928557439707338}
+  _parent: {fileID: 2206453481717988211}
   _children:
   - {fileID: 0}
 --- !u!1 &3582717132388966613
@@ -354,7 +354,7 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
+    rgba: 4291162618
   m_fontColor: {r: 0.98039216, g: 0.94509804, b: 0.77254903, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
@@ -844,9 +844,9 @@ GameObject:
   - component: {fileID: 3685001265027600193}
   - component: {fileID: 3685001265027600062}
   - component: {fileID: 3685001265027600192}
-  - component: {fileID: 3672495823198352920}
-  - component: {fileID: 1017928557439707338}
   - component: {fileID: 4597893704053466711}
+  - component: {fileID: 8403963372030740933}
+  - component: {fileID: 2206453481717988211}
   m_Layer: 5
   m_Name: LeaderboardsRankEntryPresenter
   m_TagString: Untagged
@@ -901,9 +901,29 @@ MonoBehaviour:
   _name: {fileID: 3685001265304109742}
   _score: {fileID: 3685001263304495784}
   _avatar: {fileID: 1483618232771341044}
-  _mainBussElement: {fileID: 1017928557439707338}
+  _mainBussElement: {fileID: 2206453481717988211}
   _rankBussElement: {fileID: 7802791704110869821}
---- !u!114 &3672495823198352920
+--- !u!114 &4597893704053466711
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3685001265027600194}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 1679637790, guid: f70555f144d8491a825f0804e09c671c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_IgnoreLayout: 0
+  m_MinWidth: -1
+  m_MinHeight: 50
+  m_PreferredWidth: -1
+  m_PreferredHeight: 50
+  m_FlexibleWidth: -1
+  m_FlexibleHeight: -1
+  m_LayoutPriority: 1
+--- !u!114 &8403963372030740933
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -960,7 +980,7 @@ MonoBehaviour:
   shadowThreshold: 0
   shadowSoftness: 0
   shadowMode: 0
---- !u!114 &1017928557439707338
+--- !u!114 &2206453481717988211
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -981,30 +1001,10 @@ MonoBehaviour:
   _assetReferences: []
   _parent: {fileID: 0}
   _children:
-  - {fileID: 7802791704110869821}
-  - {fileID: 5720414895681550330}
   - {fileID: 1325342809279582850}
   - {fileID: 3166263609133970248}
---- !u!114 &4597893704053466711
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3685001265027600194}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 1679637790, guid: f70555f144d8491a825f0804e09c671c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_IgnoreLayout: 0
-  m_MinWidth: -1
-  m_MinHeight: 50
-  m_PreferredWidth: -1
-  m_PreferredHeight: 50
-  m_FlexibleWidth: -1
-  m_FlexibleHeight: -1
-  m_LayoutPriority: 1
+  - {fileID: 7802791704110869821}
+  - {fileID: 7889081726835447771}
 --- !u!1 &3685001265045479042
 GameObject:
   m_ObjectHideFlags: 0
@@ -1145,8 +1145,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4278198871
+  m_fontColor: {r: 0.34117648, g: 0.13333334, b: 0, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -1171,7 +1171,7 @@ MonoBehaviour:
   m_fontSizeMin: 6
   m_fontSizeMax: 18
   m_fontStyle: 0
-  m_textAlignment: 257
+  m_textAlignment: 513
   m_characterSpacing: 0
   m_wordSpacing: 0
   m_lineSpacing: 0
@@ -1247,7 +1247,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 11400000, guid: 91a3568a398db974f80567be5e77fb91, type: 2}
   _assetReferences: []
-  _parent: {fileID: 1017928557439707338}
+  _parent: {fileID: 2206453481717988211}
   _children: []
 --- !u!1 &4631209477082663764
 GameObject:
@@ -1444,7 +1444,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 1017928557439707338}
+  _parent: {fileID: 2206453481717988211}
   _children:
   - {fileID: 0}
   - {fileID: 6447171304743088359}
@@ -1458,8 +1458,8 @@ GameObject:
   m_Component:
   - component: {fileID: 4905497462303638278}
   - component: {fileID: 4957136308834049908}
-  - component: {fileID: 8697201521382137252}
-  - component: {fileID: 5720414895681550330}
+  - component: {fileID: 8001945279374815411}
+  - component: {fileID: 7889081726835447771}
   m_Layer: 5
   m_Name: AvatarFrame
   m_TagString: Untagged
@@ -1494,7 +1494,7 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8052374626108078532}
   m_CullTransparentMesh: 1
---- !u!114 &8697201521382137252
+--- !u!114 &8001945279374815411
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1524,22 +1524,22 @@ MonoBehaviour:
   imageType: 0
   mode: 1
   colorRect:
-    BottomLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    BottomRightColor: {r: 1, g: 1, b: 1, a: 1}
-    TopLeftColor: {r: 1, g: 1, b: 1, a: 1}
-    TopRightColor: {r: 1, g: 1, b: 1, a: 1}
+    BottomLeftColor: {r: 1, g: 1, b: 1, a: 0}
+    BottomRightColor: {r: 1, g: 1, b: 1, a: 0}
+    TopLeftColor: {r: 1, g: 1, b: 1, a: 0}
+    TopRightColor: {r: 1, g: 1, b: 1, a: 0}
     _drawerMode: 1
   threshold: 0
-  rounding: 0
+  rounding: 2
   backgroundSprite: {fileID: 0}
   backgroundMode: 0
-  meshFrame: 0
-  outlineWidth: 0
+  meshFrame: 2
+  outlineWidth: 2
   outlineColor:
-    BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    BottomRightColor: {r: 0, g: 0, b: 0, a: 0}
-    TopLeftColor: {r: 0, g: 0, b: 0, a: 0}
-    TopRightColor: {r: 0, g: 0, b: 0, a: 0}
+    BottomLeftColor: {r: 0.6627451, g: 0.30588236, b: 0, a: 1}
+    BottomRightColor: {r: 0.6627451, g: 0.30588236, b: 0, a: 1}
+    TopLeftColor: {r: 0.6627451, g: 0.30588236, b: 0, a: 1}
+    TopRightColor: {r: 0.6627451, g: 0.30588236, b: 0, a: 1}
     _drawerMode: 1
   shadowColor:
     BottomLeftColor: {r: 0, g: 0, b: 0, a: 0}
@@ -1551,7 +1551,7 @@ MonoBehaviour:
   shadowThreshold: 0
   shadowSoftness: 0
   shadowMode: 0
---- !u!114 &5720414895681550330
+--- !u!114 &7889081726835447771
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1570,7 +1570,7 @@ MonoBehaviour:
     _properties: []
   _styleSheet: {fileID: 0}
   _assetReferences: []
-  _parent: {fileID: 1017928557439707338}
+  _parent: {fileID: 2206453481717988211}
   _children: []
 --- !u!1 &8974061327264491212
 GameObject:

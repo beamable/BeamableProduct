@@ -18,35 +18,6 @@ MonoBehaviour:
       property:
         type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-        json: '{"_color":{"r":0.9882352948188782,"g":0.7960784435272217,"b":0.3333333432674408,"a":1.0}}'
-    - key: roundCorners
-      property:
-        type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
-        json: '{"_floatValue":5.0}'
-    - key: shadowOffset
-      property:
-        type: Beamable.UI.Buss.Vector2BussProperty, Unity.Beamable, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
-        json: '{"_vector2Value":{"x":0.0,"y":-2.0}}'
-    - key: shadowColor
-      property:
-        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
-        json: '{"_color":{"r":0.0,"g":0.0,"b":0.0,"a":1.0}}'
-    - key: shadowSoftness
-      property:
-        type: Beamable.UI.Buss.FloatBussProperty, Unity.Beamable, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
-        json: '{"_floatValue":4.0}'
-    _selector: '#rankEntry'
-    _editMode: 0
-    _showAllMode: 0
-  - _properties:
-    - key: backgroundColor
-      property:
-        type: Beamable.UI.Buss.SingleColorBussProperty, Unity.Beamable, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
         json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":0.0}}'
     - key: roundCorners
       property:
@@ -303,4 +274,4 @@ MonoBehaviour:
     _showAllMode: 0
   _assetReferences:
   - {fileID: 21300000, guid: f3caa2bbb88564e85b2811d16acd4c9e, type: 3}
-  _isReadOnly: 0
+  _isReadOnly: 1

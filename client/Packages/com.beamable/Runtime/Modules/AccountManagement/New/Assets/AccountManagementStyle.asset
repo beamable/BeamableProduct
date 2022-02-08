@@ -108,4 +108,4 @@ MonoBehaviour:
     _editMode: 0
     _showAllMode: 0
   _assetReferences: []
-  _isReadOnly: 0
+  _isReadOnly: 1

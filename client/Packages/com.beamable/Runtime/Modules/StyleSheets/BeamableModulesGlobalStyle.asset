@@ -267,4 +267,4 @@ MonoBehaviour:
   _assetReferences:
   - {fileID: 21300000, guid: 1b68f40c46e4a44679281a7a5a9c142c, type: 3}
   - {fileID: 21300000, guid: 847db4468a5744b659edd02f10023968, type: 3}
-  _isReadOnly: 0
+  _isReadOnly: 1
