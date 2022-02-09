@@ -42,7 +42,6 @@ CronEditorVisualElement > TemplateContainer {
 #rawFormatInput {
     min-height: 36px;
     white-space: normal;
-    word-wrap: true;
     padding-top: 2px;
     padding-bottom: 2px;
     padding-right: 2px;
