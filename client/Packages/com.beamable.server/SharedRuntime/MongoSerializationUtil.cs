@@ -84,7 +84,8 @@ namespace Beamable.Server
 
 				cm.AutoMap();
 
-				// order this part of code is important because base class coud be frozeen and no futher changes are allowed
+				// set bsonID attribute for T if it's needed
+
 				if (bsonIDField != null && bsonIDField.DeclaringType == typeof(T))
 					cm.MapIdField(bsonIDField.Name).SetSerializer(new StringSerializer(BsonType.ObjectId)).SetIgnoreIfDefault(true);
 
@@ -98,28 +99,25 @@ namespace Beamable.Server
 						cm.UnmapProperty(propertyInfo.Name);
 				}
 
-				MemberInfo[] members = typeof(T).GetMembers(BindingFlags.Public | BindingFlags.NonPublic |  BindingFlags.Instance | BindingFlags.DeclaredOnly);
+				FieldInfo[] fields = typeof(T).GetFields(BindingFlags.Public | BindingFlags.NonPublic |  BindingFlags.Instance | BindingFlags.DeclaredOnly);
 
-				if (members.Length > 0)
+				if (fields.Length > 0)
 				{
-					foreach (MemberInfo memberInfo in members)
+					foreach (FieldInfo fieldInfo in fields)
 					{
-						if (!memberInfo.IsDefined(typeof(CompilerGeneratedAttribute), false)) // we don't want to k__backingfield
+						if (!fieldInfo.IsDefined(typeof(CompilerGeneratedAttribute), false)) // we don't want to k__backingfield
 						{
-							if (memberInfo.MemberType == MemberTypes.Field)
-							{
-								// Set field as serializable if has SerializableAttribute
+							// Set field as serializable if has SerializableAttribute
 
-								if (memberInfo.GetCustomAttribute(typeof(SerializeField)) != null)
-									cm.MapField(memberInfo.Name);
-								else if (!((FieldInfo)memberInfo).IsPublic)
-									cm.UnmapField(memberInfo.Name);
-							}
+							if (fieldInfo.GetCustomAttribute(typeof(SerializeField)) != null)
+								cm.MapField(fieldInfo.Name);
+							else if (!((FieldInfo)fieldInfo).IsPublic)
+								cm.UnmapField(fieldInfo.Name);
 
 							// Set new member name if has FormerlySerializedAsAttribute
 
-							if (memberInfo.GetCustomAttribute(typeof(FormerlySerializedAsAttribute)) is FormerlySerializedAsAttribute formerlySerializedAttr)
-								cm.GetMemberMap(memberInfo.Name).SetElementName(formerlySerializedAttr.oldName);
+							if (fieldInfo.GetCustomAttribute(typeof(FormerlySerializedAsAttribute)) is FormerlySerializedAsAttribute formerlySerializedAttr)
+								cm.GetMemberMap(fieldInfo.Name).SetElementName(formerlySerializedAttr.oldName);
 						}
 					}
 				}
