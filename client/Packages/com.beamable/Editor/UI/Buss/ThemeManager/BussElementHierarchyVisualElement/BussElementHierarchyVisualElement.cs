@@ -16,7 +16,7 @@ namespace Beamable.Editor.UI.Components
 	public class BussElementHierarchyVisualElement : ComponentBasedHierarchyVisualElement<BussElement>
 	{
 		private bool _hasDelayedChangeCallback;
-		
+
 		public event Action BussStyleSheetChange;
 
 		public List<BussStyleSheet> StyleSheets
@@ -74,7 +74,7 @@ namespace Beamable.Editor.UI.Components
 			foreach (BussElement component in Components)
 			{
 				var styleSheet = component.StyleSheet;
-				
+
 				if (styleSheet == null) continue;
 
 				if (!StyleSheets.Contains(styleSheet))

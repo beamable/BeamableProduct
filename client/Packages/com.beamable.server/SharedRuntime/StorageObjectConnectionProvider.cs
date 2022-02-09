@@ -20,7 +20,7 @@ namespace Beamable.Server
 		/// <param name="useCache">By default, the database connection is cached. If you pass `false` here, the database connection will be forced to reconnect.</param>
 		/// <typeparam name="TStorage"></typeparam>
 		/// <returns></returns>
-		Promise<IMongoDatabase> GetDatabase<TStorage>(bool useCache=true) where TStorage : MongoStorageObject;
+		Promise<IMongoDatabase> GetDatabase<TStorage>(bool useCache = true) where TStorage : MongoStorageObject;
 
 		/// <summary>
 		/// Get a MongoDB connection by the storageName from <see cref="StorageObjectAttribute"/> that decorates a <see cref="StorageObject"/> class.
@@ -71,34 +71,34 @@ namespace Beamable.Server
 		}
 
 
-		public async Promise<IMongoDatabase> GetDatabase<TStorage>(bool useCache=true) where TStorage : MongoStorageObject
+		public async Promise<IMongoDatabase> GetDatabase<TStorage>(bool useCache = true) where TStorage : MongoStorageObject
 		{
 			if (!useCache)
 			{
 				_databaseCache.TryRemove(typeof(TStorage), out _);
 			}
 
-			var db = await _databaseCache.GetOrAdd(typeof(TStorage),  (type) =>
-			{
-				string storageName = string.Empty;
-				var attributes = type.GetCustomAttributes(true);
-				foreach (var attribute in attributes)
-				{
-					if (attribute is StorageObjectAttribute storageAttr)
-					{
-						storageName = storageAttr.StorageName;
-						break;
-					}
-				}
+			var db = await _databaseCache.GetOrAdd(typeof(TStorage), (type) =>
+		   {
+			   string storageName = string.Empty;
+			   var attributes = type.GetCustomAttributes(true);
+			   foreach (var attribute in attributes)
+			   {
+				   if (attribute is StorageObjectAttribute storageAttr)
+				   {
+					   storageName = storageAttr.StorageName;
+					   break;
+				   }
+			   }
 
-				if (string.IsNullOrEmpty(storageName))
-				{
-					BeamableLogger.LogError($"Cannot find storage name for type {type} ");
-					return null;
-				}
+			   if (string.IsNullOrEmpty(storageName))
+			   {
+				   BeamableLogger.LogError($"Cannot find storage name for type {type} ");
+				   return null;
+			   }
 
-				return GetDatabaseByStorageName(storageName);
-			});
+			   return GetDatabaseByStorageName(storageName);
+		   });
 
 			return db;
 		}
