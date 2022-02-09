@@ -232,7 +232,7 @@ namespace Beamable.Editor.UI.Buss
 				}
 
 				AddStyleWindow window = AddStyleWindow.ShowWindow();
-				window?.Init(_ => RefreshStyleSheets(), _activeStyleSheets);
+				window?.Init(_ => RefreshStyleSheets(), _activeStyleSheets.ToList());
 			}
 		}
 
@@ -250,7 +250,7 @@ namespace Beamable.Editor.UI.Buss
 			_activeStyleSheets.Clear();
 
 #if BEAMABLE_DEVELOPER
-			_activeStyleSheets = new List<BussStyleSheet>(_navigationWindow.StyleSheets);
+			_activeStyleSheets.AddRange(_navigationWindow.StyleSheets);
 #else
 			_activeStyleSheets.AddRange(_navigationWindow.StyleSheets.Where(bussStyleSheet => !bussStyleSheet.IsReadOnly));
 #endif
@@ -321,7 +321,7 @@ namespace Beamable.Editor.UI.Buss
 			{
 				_variableDatabase.ReconsiderAllStyleSheets();
 
-				if (_variableDatabase.CrushingChangeMarker || // if we did complex change and we need to refresh all styles
+				if (_variableDatabase.ForceRefreshAll || // if we did complex change and we need to refresh all styles
 					_variableDatabase.DirtyProperties.Count == 0) // or if we did no changes (the source of change is unknown)
 				{
 					RefreshStyleCards();
