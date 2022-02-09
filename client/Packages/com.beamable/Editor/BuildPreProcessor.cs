@@ -12,13 +12,22 @@ namespace Beamable.Editor
 		public int callbackOrder { get; }
 
 #if !UNITY_STANDALONE
-		public void OnPreprocessBuild(BuildReport report) { }
+		public void OnPreprocessBuild(BuildReport report) {
+			if (CoreConfiguration.Instance.PreventCodeStripping)
+            {
+				BeamableLinker.GenerateLinkFile();
+            }
+ }
 #else
         public async void OnPreprocessBuild(BuildReport report)
         {
             if (ContentConfiguration.Instance.BakeContentOnBuild)
             {
-                await ContentIO.BakeContent();    
+                await ContentIO.BakeContent();
+            }
+			if (CoreConfiguration.Instance.PreventCodeStripping)
+            {
+				BeamableLinker.GenerateLinkFile();
             }
         }
 #endif

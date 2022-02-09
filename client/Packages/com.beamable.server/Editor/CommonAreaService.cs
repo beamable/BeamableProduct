@@ -73,8 +73,8 @@ namespace Beamable.Server.Editor
 						References = new[]
 						{
 							"Unity.Beamable.Runtime.Common",
-							"Unity.Beamable.Server.Runtime.Shared",
-							"Beamable.SmallerJSON",
+							"Unity.Beamable.Server.Runtime.Common",
+							"Unity.Beamable.Server.Runtime.Mocks",							"Beamable.SmallerJSON",
 						},
 						AutoReferenced = true
 					});

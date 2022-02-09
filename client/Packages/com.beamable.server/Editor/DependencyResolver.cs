@@ -6,6 +6,7 @@ using Beamable.Platform.SDK;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Server.Editor;
+using MongoDB.Bson;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -339,6 +340,9 @@ namespace Beamable.Server
                 assemblies.Find<PlatformRequester>(), // Beamable.Platform
                 assemblies.Find<ArrayDict>(), // SmallerJson
                 assemblies.Find<API>(), // Beamable
+                assemblies.Find<StorageDocument>(), // Server Common Runtime
+                assemblies.Find<BsonType>(), // Server Mocks
+
             };
 
 			if (assemblyName.Equals("Unity.Addressables"))

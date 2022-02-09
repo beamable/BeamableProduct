@@ -1,0 +1,6 @@
+{
+  "name": "Unity.Beamable.Server.Runtime.Common",
+  "references": [
+    "Unity.Beamable.Server.Runtime.Mocks"
+  ]
+}

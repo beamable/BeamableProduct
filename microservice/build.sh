@@ -5,6 +5,7 @@ export lib_path="./microservice/lib"
 # on windows, this won't work. We need a separate script for windows.
 /usr/local/share/dotnet/dotnet publish ../client/Packages/com.beamable/Common -c release -o $lib_path
 /usr/local/share/dotnet/dotnet publish ../client/Packages/com.beamable.server/SharedRuntime -c release -o $lib_path
+/usr/local/share/dotnet/dotnet publish ../client/Packages/com.beamable.server/Runtime/Common -c release -o $lib_path
 /usr/local/share/dotnet/dotnet publish ./unityEngineStubs -c release -o $lib_path
 
 # optionally uncomment to run tests on build

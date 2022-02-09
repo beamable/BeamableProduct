@@ -493,6 +493,12 @@ namespace Beamable.Common.Dependencies
 			// Gets all constructors
 			var constructors = type.GetConstructors();
 
+			if (constructors.Length == 0)
+			{
+				throw new Exception(
+					$"Cannot create {type.Name} via automatic reflection with Dependency Injection. No constructors exist for the type. Likely, the file has been code-stripped from the assembly.");
+			}
+
 			// TODO: XXX: This only works for the largest constructor (the one with the most dependencies); really it should scan for the constructor it can match with the most dependencies
 			// Currently, we just get the constructor with the most parameters
 			var cons = constructors.Aggregate((c1, c2) => c1.GetParameters().Length.CompareTo(c2.GetParameters().Length) > 0 ? c1 : c2);
