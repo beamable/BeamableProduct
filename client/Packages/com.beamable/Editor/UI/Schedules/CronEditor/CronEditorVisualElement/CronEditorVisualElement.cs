@@ -43,6 +43,7 @@ namespace Beamable.Editor.Content
 			_rawFormatInput = Root.Q<TextField>("rawFormatInput");
 			_rawFormatInput.RegisterCallback<ChangeEvent<string>>(HandleValueChange);
 			_rawFormatInput.value = _cronRawFormat;
+			_rawFormatInput.AddTextWrapStyle();
 		}
 
 		private void HandleValueChange(ChangeEvent<string> evt)
