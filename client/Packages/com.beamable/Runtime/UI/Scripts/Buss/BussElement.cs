@@ -229,6 +229,7 @@ namespace Beamable.UI.Buss
 
 			if (element.StyleSheet != null)
 			{
+				AllStyleSheets.Remove(element.StyleSheet);
 				AllStyleSheets.Add(element.StyleSheet);
 			}
 		}
@@ -255,12 +256,7 @@ namespace Beamable.UI.Buss
 			var foundParent = (transform == null || transform.parent == null)
 				? null
 				: transform.parent.GetComponentInParent<BussElement>();
-
-			if (foundParent == Parent)
-			{
-				return;
-			}
-
+			
 			if (Parent != null)
 			{
 				Parent._children.Remove(this);

@@ -9,7 +9,7 @@ namespace Beamable.UI.Buss
 		private List<BussStyleSheet> _styleSheets = new List<BussStyleSheet>();
 		private Dictionary<string, VariableData> _variables = new Dictionary<string, VariableData>();
 
-		public bool CrushingChangeMarker { get; private set; }
+		public bool ForceRefreshAll { get; private set; }
 		public HashSet<PropertyReference> DirtyProperties { get; } = new HashSet<PropertyReference>();
 
 		public VariableData GetVariableData(string key)
@@ -91,7 +91,7 @@ namespace Beamable.UI.Buss
 			}
 		}
 
-		public void SetCrushingChange() => CrushingChangeMarker = true;
+		public void SetCrushingChange() => ForceRefreshAll = true;
 
 		public void SetPropertyDirty(BussStyleSheet styleSheet,
 									 BussStyleRule styleRule,
@@ -116,7 +116,7 @@ namespace Beamable.UI.Buss
 
 		public void FlushDirtyMarkers()
 		{
-			CrushingChangeMarker = false;
+			ForceRefreshAll = false;
 			DirtyProperties.Clear();
 		}
 
