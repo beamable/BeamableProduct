@@ -4,6 +4,7 @@ using Beamable.Common;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.Serializers;
 using System;
 using System.Collections.Generic;
@@ -61,25 +62,31 @@ namespace Beamable.Server
 
 		public static void RegisterClass<T>() where T : class
 		{
-			if (BsonClassMap.IsClassMapRegistered(typeof(T))) return;
+			if (BsonClassMap.IsClassMapRegistered(typeof(T)))
+				return;
 
-			if (!BsonClassMap.IsClassMapRegistered(typeof(StorageDocument)))
+			// find and set bsonID attribute manually
+
+			FieldInfo bsonIDField = FindBsonIdField(typeof(T));
+
+			if (bsonIDField != null)
 			{
-				// Map base StorageDocument class
-
-				var baseClassMap = BsonClassMap.RegisterClassMap<StorageDocument>(cm =>
+				if (bsonIDField.DeclaringType != typeof(T) && !BsonClassMap.IsClassMapRegistered(bsonIDField.DeclaringType))
 				{
-					cm.AutoMap();
-
-					// Need to be set again because for RegisterClassMap<T> will be lost
-
-					cm.MapIdField("_id").SetSerializer(new StringSerializer(BsonType.ObjectId)).SetIgnoreIfDefault(true); 
-				});
+					var cm_base = new BsonClassMap(bsonIDField.DeclaringType);
+					cm_base.AutoMap();
+					cm_base.MapIdField(bsonIDField.Name).SetSerializer(new StringSerializer(BsonType.ObjectId)).SetIgnoreIfDefault(true);
+					BsonClassMap.RegisterClassMap(cm_base);
+				}
 			}
 
 			var classMap =  BsonClassMap.RegisterClassMap<T>(cm => {
 
 				cm.AutoMap();
+
+				// order this part of code is important because base class coud be frozeen and no futher changes are allowed
+				if (bsonIDField != null && bsonIDField.DeclaringType == typeof(T))
+					cm.MapIdField(bsonIDField.Name).SetSerializer(new StringSerializer(BsonType.ObjectId)).SetIgnoreIfDefault(true);
 
 				// Iterate throght properites and unmap them
 
@@ -122,7 +129,23 @@ namespace Beamable.Server
 
 			BsonSerializer.RegisterSerializer(typeof(T), new StructSerializer<T>(new BsonClassMapSerializer<T>(classMap)));
 		}
-}
+
+		private static FieldInfo FindBsonIdField(Type t)
+		{
+			var flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+
+			foreach (var field in t.GetFields(flags))
+			{
+				if (field.GetCustomAttribute(typeof(BsonIdAttribute)) != null)
+					return field;
+			}
+
+			if (t.BaseType != null)
+				return FindBsonIdField(t.BaseType);
+
+			return null;
+		}
+	}
 
 	public class StructSerializer<T> : IBsonSerializer<T>
 	{
