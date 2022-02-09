@@ -72,7 +72,9 @@ namespace Beamable.Server.Editor
 						Name = GetCommonAsmDefName(),
 						References = new[]
 						{
-							"Unity.Beamable.Runtime.Common", "Unity.Beamable.Server.Runtime.Shared",
+							"Unity.Beamable.Runtime.Common",
+							"Unity.Beamable.Server.Runtime.Shared",
+							"Beamable.SmallerJSON",
 						},
 						AutoReferenced = true
 					});
