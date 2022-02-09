@@ -38,6 +38,7 @@ namespace Beamable.Editor.Content
 			Root.Q<GenericButtonVisualElement>("cancelButton").OnClick += HandleCloseButton;
 
 			_humanFormatPreview = Root.Q<Label>("humanFormatPreview");
+			_humanFormatPreview.AddTextWrapStyle();
 
 			_rawFormatInput = Root.Q<TextField>("rawFormatInput");
 			_rawFormatInput.RegisterCallback<ChangeEvent<string>>(HandleValueChange);
