@@ -5,6 +5,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "microservice", "microservic
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.server", "..\client\Packages\com.beamable.server\SharedRuntime\beamable.server.csproj", "{591F0840-3B6E-43C6-BD8E-3DDAED9F966B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.server.common", "..\client\Packages\com.beamable.server\Runtime\Common\beamable.server.common.csproj", "{591F0840-3B6E-43C6-BD8E-3DDAED9F966B}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "beamable.common", "..\client\Packages\com.beamable\Common\beamable.common.csproj", "{6C78B915-96F3-4D5E-B5F7-5FC8309724D8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "unityenginestubs", "unityEngineStubs\unityenginestubs.csproj", "{DE912FD3-7463-49FD-84E7-C870275262C9}"
