@@ -34,6 +34,12 @@ namespace Beamable
 
 		public enum OfflineStrategy { Optimistic, Disable }
 
+		[Tooltip("By default, Beamable won't let Beamable assemblies be code stripped from your project. When this setting is enabled, " +
+		         "anytime the project is built, a link.xml file will be generated in the Assets/Beamable/Resources folder that protects " +
+		         "the Beamable assemblies. If you disable this setting, the link file won't be generated. However, any existing link file " +
+		         "will not be deleted.")]
+		public bool PreventCodeStripping = true;
+
 		public static CoreConfiguration Instance => Get<CoreConfiguration>();
 
 		public enum EventHandlerConfig { Guarantee, Replace, Add, }
