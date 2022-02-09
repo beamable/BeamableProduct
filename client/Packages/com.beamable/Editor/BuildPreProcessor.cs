@@ -13,7 +13,12 @@ namespace Beamable.Editor
         {
             if (ContentConfiguration.Instance.BakeContentOnBuild)
             {
-                await ContentIO.BakeContent();    
+                await ContentIO.BakeContent();
+            }
+
+            if (CoreConfiguration.Instance.PreventCodeStripping)
+            {
+				BeamableLinker.GenerateLinkFile();
             }
         }
     }

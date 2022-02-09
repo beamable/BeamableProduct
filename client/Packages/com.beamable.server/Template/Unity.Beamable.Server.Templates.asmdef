@@ -3,7 +3,9 @@
     "rootNamespace": "",
     "references": [
         "Unity.Beamable.Runtime.Common",
-        "Unity.Beamable.Server.Runtime.Shared"
+        "Unity.Beamable.Server.Runtime.Shared",
+        "Unity.Beamable.Server.Runtime.Common",
+        "Unity.Beamable.Server.Runtime.Mocks"
     ],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],
