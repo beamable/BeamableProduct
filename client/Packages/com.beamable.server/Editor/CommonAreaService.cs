@@ -74,7 +74,8 @@ namespace Beamable.Server.Editor
 						{
 							"Unity.Beamable.Runtime.Common",
 							"Unity.Beamable.Server.Runtime.Common",
-							"Unity.Beamable.Server.Runtime.Mocks",							"Beamable.SmallerJSON",
+							"Unity.Beamable.Server.Runtime.Mocks",
+							"Beamable.SmallerJSON",
 						},
 						AutoReferenced = true
 					});
