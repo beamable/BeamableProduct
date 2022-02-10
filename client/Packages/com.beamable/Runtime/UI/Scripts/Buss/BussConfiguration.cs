@@ -33,7 +33,7 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 				}
 			}
 		}
-		
+
 		private static Dictionary<string, SelectorWeight> _weights = new Dictionary<string, SelectorWeight>();
 
 		public static void UseConfig(Action<BussConfiguration> callback)
@@ -44,6 +44,8 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 		[SerializeField] private BussStyleSheet globalStyleSheet = null;
 
 		private List<BussElement> _rootBussElements = new List<BussElement>();
+
+		public List<BussElement> RootBussElements => _rootBussElements;
 
 #if UNITY_EDITOR
 		static BussConfiguration()

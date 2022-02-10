@@ -100,6 +100,10 @@ namespace Beamable.Server.Editor.CodeGen
 			extensionClass = new CodeTypeDeclaration(TargetExtensionClassName);
 			extensionClass.IsClass = true;
 			extensionClass.TypeAttributes = TypeAttributes.NotPublic;
+			extensionClass.CustomAttributes = new CodeAttributeDeclarationCollection
+			{
+				new CodeAttributeDeclaration(new CodeTypeReference(typeof(BeamContextSystemAttribute)))
+			};
 
 
 			var registrationMethod = new CodeMemberMethod

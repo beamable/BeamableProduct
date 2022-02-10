@@ -153,7 +153,9 @@ namespace Beamable.Server.Editor
 					"Unity.Beamable.Server.Runtime",
 					"Unity.Beamable.Server.Runtime.Shared",
 					"Unity.Beamable",
-					"Beamable.SmallerJSON"
+					"Beamable.SmallerJSON",
+					"Unity.Beamable.Server.Runtime.Common",
+					"Unity.Beamable.Server.Runtime.Mocks",
 				};
 				if (MicroserviceConfiguration.Instance.AutoBuildCommonAssembly)
 				{

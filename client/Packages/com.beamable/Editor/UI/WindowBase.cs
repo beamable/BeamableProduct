@@ -8,13 +8,13 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
-namespace Beamable.Editor.UI.Buss
+namespace Beamable.Editor.UI
 {
-	public abstract class BussWindowBase<TWindow, TVisualElement> : EditorWindow
-		where TWindow : BussWindowBase<TWindow, TVisualElement>
+	public abstract class WindowBase<TWindow, TVisualElement> : EditorWindow
+		where TWindow : WindowBase<TWindow, TVisualElement>
 		where TVisualElement : BeamableVisualElement
 	{
-		private static BussWindowBase<TWindow, TVisualElement> Instance { get; set; }
+		private static WindowBase<TWindow, TVisualElement> Instance { get; set; }
 
 		private static bool IsAlreadyOpened => Instance != null;
 

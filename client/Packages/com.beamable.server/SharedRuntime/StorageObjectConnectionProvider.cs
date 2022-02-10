@@ -1,7 +1,9 @@
 using Beamable.Common;
 using Beamable.Common.Api;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using System;
+using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -15,14 +17,18 @@ namespace Beamable.Server
 		/// You can save time by using the <see cref="GetCollection{TStorage,TCollection}()"/> or <see cref="GetCollection{TStorage,TCollection}(string)"/> methods.
 		/// </para>
 		/// </summary>
+		/// <param name="useCache">By default, the database connection is cached. If you pass `false` here, the database connection will be forced to reconnect.</param>
 		/// <typeparam name="TStorage"></typeparam>
 		/// <returns></returns>
-		Promise<IMongoDatabase> GetDatabase<TStorage>() where TStorage : MongoStorageObject;
+		Promise<IMongoDatabase> GetDatabase<TStorage>(bool useCache = true) where TStorage : MongoStorageObject;
 
 		/// <summary>
-		/// Get a MongoDB connection by the storageName from <see cref="StorageObjectAttribute"/> that decorates a <see cref="StorageObject"/> class
+		/// Get a MongoDB connection by the storageName from <see cref="StorageObjectAttribute"/> that decorates a <see cref="StorageObject"/> class.
+		/// This will never use the cached version.
+		/// <b> This method is deprecated. You should be using the <see cref="GetDatabase{TStorage}"/> method instead </b>
 		/// </summary>
 		/// <param name="name"></param>
+		[Obsolete("please use " + nameof(GetDatabase) + " instead")]
 		Promise<IMongoDatabase> this[string name] { get; }
 
 		/// <summary>
@@ -55,32 +61,46 @@ namespace Beamable.Server
 		private readonly IBeamableRequester _requester;
 		private const string CONNSTR_VAR_NAME_FORMAT = "STORAGE_CONNSTR_{0}";
 
+		private ConcurrentDictionary<Type, Promise<IMongoDatabase>> _databaseCache =
+			new ConcurrentDictionary<Type, Promise<IMongoDatabase>>();
+
 		public StorageObjectConnectionProvider(IRealmInfo realmInfo, IBeamableRequester requester)
 		{
 			_realmInfo = realmInfo;
 			_requester = requester;
 		}
 
-		public async Promise<IMongoDatabase> GetDatabase<TStorage>() where TStorage : MongoStorageObject
+
+		public async Promise<IMongoDatabase> GetDatabase<TStorage>(bool useCache = true) where TStorage : MongoStorageObject
 		{
-			string storageName = string.Empty;
-			var attributes = typeof(TStorage).GetCustomAttributes(true);
-			foreach (var attribute in attributes)
+			if (!useCache)
 			{
-				if (attribute is StorageObjectAttribute storageAttr)
-				{
-					storageName = storageAttr.StorageName;
-					break;
-				}
+				_databaseCache.TryRemove(typeof(TStorage), out _);
 			}
 
-			if (string.IsNullOrEmpty(storageName))
-			{
-				BeamableLogger.LogError($"Cannot find storage name for type {typeof(TStorage)} ");
-				return null;
-			}
+			var db = await _databaseCache.GetOrAdd(typeof(TStorage), (type) =>
+		   {
+			   string storageName = string.Empty;
+			   var attributes = type.GetCustomAttributes(true);
+			   foreach (var attribute in attributes)
+			   {
+				   if (attribute is StorageObjectAttribute storageAttr)
+				   {
+					   storageName = storageAttr.StorageName;
+					   break;
+				   }
+			   }
 
-			return await GetDatabaseByStorageName(storageName);
+			   if (string.IsNullOrEmpty(storageName))
+			   {
+				   BeamableLogger.LogError($"Cannot find storage name for type {type} ");
+				   return null;
+			   }
+
+			   return GetDatabaseByStorageName(storageName);
+		   });
+
+			return db;
 		}
 
 		public Promise<IMongoCollection<TCollection>> GetCollection<TStorage, TCollection>()

@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Beamable.Editor.UI.Buss
 {
-	public class NewVariableWindow : BussWindowBase<NewVariableWindow, NewVariableVisualElement>
+	public class NewVariableWindow : WindowBase<NewVariableWindow, NewVariableVisualElement>
 	{
 		private Action<string, IBussProperty> _onPropertyCreated;
 		private BussStyleRule _styleRule;

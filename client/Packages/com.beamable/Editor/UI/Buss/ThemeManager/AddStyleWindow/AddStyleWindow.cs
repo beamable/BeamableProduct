@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Beamable.Editor.UI.Buss
 {
-	public class AddStyleWindow : BussWindowBase<AddStyleWindow, AddPropertiesVisualElement>
+	public class AddStyleWindow : WindowBase<AddStyleWindow, AddPropertiesVisualElement>
 	{
 		private Action<BussStyleRule> _onSelectorAdded;
 		private List<BussStyleSheet> _styleSheets;

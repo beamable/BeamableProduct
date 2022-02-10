@@ -62,8 +62,7 @@ namespace Beamable.Server.Editor.CodeGen
 
 			var text = $@"<Project Sdk=""Microsoft.NET.Sdk"">
             <PropertyGroup>
-               <DefineConstants>DB_MICROSERVICE</DefineConstants>
-               <DefineConstants>BEAMABLE_MICROSERVICE</DefineConstants>
+               <DefineConstants>DB_MICROSERVICE;BEAMABLE_MICROSERVICE;BEAMABLE_IGNORE_MONGO_MOCKS</DefineConstants>
                <OutputType>Exe</OutputType>
                <TargetFramework>net6.0</TargetFramework>
             </PropertyGroup>
@@ -85,6 +84,10 @@ namespace Beamable.Server.Editor.CodeGen
                </Reference>
                <Reference Include=""Beamable.Server"">
                   <HintPath>/src/lib/Beamable.Server.dll</HintPath>
+<SpecificVersion>False</SpecificVersion>
+               </Reference>
+               <Reference Include=""Beamable.Server.Common"">
+                  <HintPath>/src/lib/Beamable.Server.Common.dll</HintPath>
 <SpecificVersion>False</SpecificVersion>
                </Reference>
                <Reference Include=""UnityEngine"">

@@ -2,7 +2,8 @@
     "name": "Unity.Beamable.Server.Runtime.Shared",
     "rootNamespace": "",
     "references": [
-        "Unity.Beamable.Runtime.Common"
+        "Unity.Beamable.Runtime.Common",
+        "Unity.Beamable.Server.Runtime.Common"
     ],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],
@@ -14,7 +15,8 @@
         "System.Runtime.CompilerServices.Unsafe.dll"
     ],
     "autoReferenced": true,
-    "defineConstraints": [],
+    "defineConstraints": [
+    ],
     "versionDefines": [],
     "noEngineReferences": false
 }

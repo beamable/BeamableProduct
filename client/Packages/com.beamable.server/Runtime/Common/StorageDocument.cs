@@ -1,4 +1,3 @@
-
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System;
@@ -6,10 +5,6 @@ using UnityEngine;
 
 namespace Beamable.Server
 {
-	/// <summary>
-	/// This should be the base class of the types you wish to store in MongoDB.
-	/// It will automatically assign IDs to your documents with the <see cref="Id"/> property.
-	/// </summary>
 	[Serializable]
 	public class StorageDocument
 	{
@@ -24,5 +19,4 @@ namespace Beamable.Server
 		[BsonIgnore]
 		public string Id => _id;
 	}
-
 }
