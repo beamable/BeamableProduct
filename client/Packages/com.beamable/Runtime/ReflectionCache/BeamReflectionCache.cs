@@ -113,7 +113,7 @@ namespace Beamable.Reflection
 					try
 					{
 						var method = registerBeamableDependencyFunction.InfoAs<MethodInfo>();
-						method.Invoke(null, new object[] {builderToConfigure});
+						method.Invoke(null, new object[] { builderToConfigure });
 					}
 					catch (Exception ex)
 					{

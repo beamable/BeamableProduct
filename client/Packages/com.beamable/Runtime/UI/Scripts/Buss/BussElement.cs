@@ -256,7 +256,7 @@ namespace Beamable.UI.Buss
 			var foundParent = (transform == null || transform.parent == null)
 				? null
 				: transform.parent.GetComponentInParent<BussElement>();
-			
+
 			if (Parent != null)
 			{
 				Parent._children.Remove(this);
