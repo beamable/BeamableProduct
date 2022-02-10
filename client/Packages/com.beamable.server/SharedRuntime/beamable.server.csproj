@@ -8,12 +8,16 @@
 
         <TargetFramework>net6.0</TargetFramework>
         <AssemblyName>Beamable.Server</AssemblyName>
+        <DefineConstants>
+            BEAMABLE_IGNORE_MONGO_MOCKS
+        </DefineConstants>
 
     </PropertyGroup>
 
     <ItemGroup>
 <!--        ../client/Packages/com.disruptorbeam.engine/Common/beamable.common.csproj-->
-      <ProjectReference Include="..\..\com.beamable\Common\beamable.common.csproj" />
+        <ProjectReference Include="..\..\com.beamable\Common\beamable.common.csproj" />
+        <ProjectReference Include="..\Runtime\Common\beamable.server.common.csproj" />
     </ItemGroup>
 
     <ItemGroup>

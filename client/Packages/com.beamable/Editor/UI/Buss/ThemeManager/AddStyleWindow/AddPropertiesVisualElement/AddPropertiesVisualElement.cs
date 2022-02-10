@@ -95,6 +95,7 @@ namespace Beamable.Editor.UI.Buss
 
 			BussStyleRule selector = BussStyleRule.Create(_selectorName.Value, rules);
 			_currentSelectedStyleSheet.Styles.Add(selector);
+			_currentSelectedStyleSheet.TriggerChange();
 			_onSelectorAdded?.Invoke(selector);
 			AssetDatabase.SaveAssets();
 			AddStyleWindow.CloseWindow();

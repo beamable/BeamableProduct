@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Baked content meta file warning should not appear anymore
 - Immutable prefabs are no longer dirtied by the legacy skinning system
 - The Reset command works on unsaved scenes
+- `EventContent.StartDate` is kept in sync with schedule definition
 
 ## [0.18.2]
 ### Changed

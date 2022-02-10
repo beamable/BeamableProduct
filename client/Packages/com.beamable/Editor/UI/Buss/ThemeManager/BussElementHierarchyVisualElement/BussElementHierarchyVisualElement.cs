@@ -1,7 +1,8 @@
-﻿using System;
-using Beamable.Editor.UI.Buss;
+﻿using Beamable.Editor.UI.Buss;
 using Beamable.UI.Buss;
+using System;
 using System.Collections.Generic;
+using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -14,8 +15,10 @@ namespace Beamable.Editor.UI.Components
 {
 	public class BussElementHierarchyVisualElement : ComponentBasedHierarchyVisualElement<BussElement>
 	{
+		private bool _hasDelayedChangeCallback;
+
 		public event Action BussStyleSheetChange;
-		
+
 		public List<BussStyleSheet> StyleSheets
 		{
 			get;
@@ -53,7 +56,32 @@ namespace Beamable.Editor.UI.Components
 
 		private void OnBussStyleSheetChange()
 		{
-			BussStyleSheetChange?.Invoke();
+			if (!_hasDelayedChangeCallback)
+			{
+				_hasDelayedChangeCallback = true;
+				EditorApplication.delayCall += () =>
+				{
+					RefreshStyleSheets();
+					_hasDelayedChangeCallback = false;
+					BussStyleSheetChange?.Invoke();
+				};
+			}
+		}
+
+		private void RefreshStyleSheets()
+		{
+			StyleSheets.Clear();
+			foreach (BussElement component in Components)
+			{
+				var styleSheet = component.StyleSheet;
+
+				if (styleSheet == null) continue;
+
+				if (!StyleSheets.Contains(styleSheet))
+				{
+					StyleSheets.Add(styleSheet);
+				}
+			}
 		}
 
 		protected override void OnObjectRegistered(BussElement registeredObject)
@@ -79,6 +107,12 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			List<BussStyleSheet> selectedComponentAllStyleSheets = SelectedComponent.AllStyleSheets;
+
+			if (selectedComponentAllStyleSheets.Count == 0)
+			{
+				return;
+			}
+
 			BussStyleSheet firstStyle = selectedComponentAllStyleSheets[selectedComponentAllStyleSheets.Count - 1];
 
 			StyleSheets.Remove(firstStyle);

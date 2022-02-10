@@ -1,6 +1,7 @@
-﻿using System;
-using Beamable.Editor.UI.Buss;
+﻿using Beamable.Editor.UI.Buss;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -89,6 +90,7 @@ namespace Beamable.UI.Buss
 		private void OnEnable()
 		{
 			CheckParent();
+			CheckRelationToSiblings();
 			OnStyleChanged();
 		}
 
@@ -109,6 +111,7 @@ namespace Beamable.UI.Buss
 		private void OnTransformParentChanged()
 		{
 			CheckParent();
+			CheckRelationToSiblings();
 			OnStyleChanged();
 		}
 
@@ -226,6 +229,7 @@ namespace Beamable.UI.Buss
 
 			if (element.StyleSheet != null)
 			{
+				AllStyleSheets.Remove(element.StyleSheet);
 				AllStyleSheets.Add(element.StyleSheet);
 			}
 		}
@@ -252,6 +256,7 @@ namespace Beamable.UI.Buss
 			var foundParent = (transform == null || transform.parent == null)
 				? null
 				: transform.parent.GetComponentInParent<BussElement>();
+
 			if (Parent != null)
 			{
 				Parent._children.Remove(this);
@@ -271,6 +276,29 @@ namespace Beamable.UI.Buss
 				if (!Parent._children.Contains(this))
 				{
 					Parent._children.Add(this);
+				}
+			}
+		}
+
+		private void CheckRelationToSiblings()
+		{
+			if (Parent == null)
+			{
+				BussConfiguration.UseConfig(c => CheckRelations(c.RootBussElements));
+			}
+			else
+			{
+				CheckRelations(Parent.Children);
+			}
+		}
+
+		private void CheckRelations(IEnumerable<BussElement> elements)
+		{
+			foreach (BussElement element in elements.ToArray())
+			{
+				if (element != this)
+				{
+					element.CheckParent();
 				}
 			}
 		}
