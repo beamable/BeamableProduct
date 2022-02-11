@@ -8,10 +8,13 @@ using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Windows;
+#if UNITY_2019_4_OR_NEWER
+using UnityEditor.PackageManager;
+using UnityEditor.PackageManager.Requests;
+#endif
 
 namespace Beamable.Editor.ToolbarExtender
 {
-	[InitializeOnLoad]
 	public static class BeamableToolbarExtender
 	{
 		private static int _toolCount;
@@ -29,6 +32,11 @@ namespace Beamable.Editor.ToolbarExtender
 		private static Texture _hintsTexture;
 		private static Texture _validationTexture;
 
+#if UNITY_2019_4_OR_NEWER
+		private static ListRequest _packageListRequest;
+		private static bool _hasPreviewPackages = false;
+#endif
+		
 		private static Action _repaint;
 
 		public static void Repaint() => _repaint();
@@ -121,6 +129,10 @@ namespace Beamable.Editor.ToolbarExtender
 				_noHintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info.png");
 				_hintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info hit.png");
 				_validationTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info valu.png");
+
+				#if UNITY_2019_4_OR_NEWER
+				_packageListRequest = Client.List(true);
+				#endif
 			});
 		}
 
@@ -152,6 +164,15 @@ namespace Beamable.Editor.ToolbarExtender
 		public const float versionControlWidth = 100;
 #else
 		public const float versionControlWidth = 78;
+#endif
+		
+	
+#if UNITY_2020_1_OR_NEWER
+		public const float previewPackagesWarningWidth = 175;
+#elif UNITY_2019_4_OR_NEWER
+		public const float previewPackagesWarningWidth = 0;
+#else
+		public const float previewPackagesWarningWidth = 0;
 #endif
 
 		static void OnGUI()
@@ -203,6 +224,18 @@ namespace Beamable.Editor.ToolbarExtender
 			rightRect.xMax -= buttonWidth; // Cloud
 			rightRect.xMax -= space; // Spacing between cloud and collab
 			rightRect.xMax -= versionControlWidth; // Colab/PlasticSCM button
+#if UNITY_2019_4_OR_NEWER // Handling of preview packages
+			if (_hasPreviewPackages || _packageListRequest.IsCompleted)
+			{
+				// Parse package list only if we haven't detected that there are preview packages.
+				_hasPreviewPackages = _hasPreviewPackages || _packageListRequest.Result.Any(pck => pck.version.ToLower().Contains("preview"));
+				if (_hasPreviewPackages)
+				{
+					rightRect.xMax -= space;
+					rightRect.xMax -= previewPackagesWarningWidth;
+				}
+			}
+#endif
 			var beamableAssistantEnd = rightRect.xMax -= space; // Space between collab and Beamable Assistant
 			var beamableAssistantStart = rightRect.xMax -= beamableAssistantWidth; // Beamable Assistant Button
 
@@ -224,6 +257,7 @@ namespace Beamable.Editor.ToolbarExtender
 			rightRect.y = 5;
 			rightRect.height = 24;
 #endif
+
 
 			var beamableAssistantButtonRect = new Rect(beamableAssistantStart, rightRect.y + 2, beamableAssistantEnd - beamableAssistantStart, dropdownHeight);
 			var btnTexture = _noHintsTexture;
