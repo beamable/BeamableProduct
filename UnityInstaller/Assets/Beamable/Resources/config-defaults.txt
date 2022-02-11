@@ -1,7 +1,0 @@
-{
-    "cid": "",
-    "alias": "",
-    "pid": "",
-    "platform": "https://api.beamable.com",
-    "socket": "https://api.beamable.com"
-}

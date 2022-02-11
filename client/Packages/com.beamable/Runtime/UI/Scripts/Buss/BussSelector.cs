@@ -25,6 +25,8 @@ namespace Beamable.UI.Buss
 	/// </summary>
 	public struct SelectorWeight : IComparable<SelectorWeight>
 	{
+		public static readonly SelectorWeight Max = new SelectorWeight(int.MaxValue, int.MaxValue, int.MaxValue);
+
 		public int IdCount { get; }
 		public int ClassCount { get; }
 		public int ElementCount { get; }
@@ -364,7 +366,7 @@ namespace Beamable.UI.Buss
 
 			BussSelector result = null;
 
-			var separation = input.Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries);
+			var separation = input.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 			var selectors = new List<BussSelector>();
 			foreach (var part in separation)
 			{
@@ -391,7 +393,7 @@ namespace Beamable.UI.Buss
 
 		private static BussSelector TryParseSingle(string input)
 		{
-			var separation = input.Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
+			var separation = input.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 			BussSelector parent = null;
 			bool onlyDirectParenting = false;
 			for (int i = 0; i < separation.Length; i++)

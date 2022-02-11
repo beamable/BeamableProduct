@@ -1,9 +1,0 @@
-﻿#container {
-    height: 20px;
-    justify-content: center;
-}
-
-#label {
-    -unity-font-style: bold;
-    font-size: 12px;
-}

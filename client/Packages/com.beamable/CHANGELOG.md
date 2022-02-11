@@ -1,15 +1,39 @@
 
 
 
+
 # Changelog
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0]
+### Added
+- `BeamContext` classes and new player centric SDK types like `PlayerInventory`
+- Beamable Assistant window
+- BUSS Theme Manager window
+
+### Changed
+- All Beamable Portal interactions use the new Beta Portal 
+- Consolidated internal assembly type scanning into `ReflectionCache` system. This improves editor time performance by an order of magnitude.
+- `ServiceManager` no longer provides Beamable types. Use `BeamContext` instead.
+- `Beamable.API.Instance` now returns `BeamContext.Default.Api` after waiting for the context initialization
+
+### Fixed
+- Deleting all items from an inventory subscription notifies client
+- Immediately failed promises throw uncaught errors on access
+- Disabling multiple content namespaces setting will disable both Publish button dropdown and content namespace dropdown
+- Content baking will process correct number of objects regardless of local changes
+- Baked content meta file warning should not appear anymore
+- Immutable prefabs are no longer dirtied by the legacy skinning system
+- The Reset command works on unsaved scenes
+- `EventContent.StartDate` is kept in sync with schedule definition
+
 ## [0.18.2]
 ### Changed
 - Improved baked content performance by keeping data in a single file and limiting number of IO operations.
+
 
 ## [0.18.1]
 ### Fixed

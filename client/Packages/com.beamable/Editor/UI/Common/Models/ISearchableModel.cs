@@ -6,16 +6,16 @@ using UnityEngine;
 
 namespace Beamable.Editor.UI.Common.Models
 {
-    public interface ISearchableModel
-    {
-        event Action<List<ISearchableElement>> OnAvailableElementsChanged;
-        event Action<ISearchableElement> OnElementChanged;
+	public interface ISearchableModel
+	{
+		event Action<List<ISearchableElement>> OnAvailableElementsChanged;
+		event Action<ISearchableElement> OnElementChanged;
 
-        ISearchableElement Default { get; set; }
-        ISearchableElement Current { get; set; }
-        List<ISearchableElement> Elements { get; set; }
+		ISearchableElement Default { get; set; }
+		ISearchableElement Current { get; set; }
+		List<ISearchableElement> Elements { get; set; }
 
-        void Initialize();
-        Promise<List<ISearchableElement>> RefreshAvailable();
-    }
+		void Initialize();
+		Promise<List<ISearchableElement>> RefreshAvailable();
+	}
 }

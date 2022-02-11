@@ -1,17 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using Beamable.Editor.UI.Buss;
+﻿using Beamable.Editor.UI.Buss;
 using Beamable.UI.Sdf.Styles;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 using Object = UnityEngine.Object;
 
 namespace Beamable.UI.Buss
 {
-	[CreateAssetMenu(fileName = "BUSSStyleConfig", menuName = "Beamable/Buss/Create BUSS Style", order = 0)]
+	[CreateAssetMenu(fileName = "BUSSStyleConfig", menuName = "Beamable/BUSS Style", order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
 	public class BussStyleSheet : ScriptableObject, ISerializationCallbackReceiver
 	{
-		public event Action OnChange;
+		public event Action Change;
 
 #pragma warning disable CS0649
 		[SerializeField] private List<BussStyleRule> _styles = new List<BussStyleRule>();
@@ -20,27 +20,61 @@ namespace Beamable.UI.Buss
 
 		public List<BussStyleRule> Styles => _styles;
 
+#pragma warning disable CS0649
+		[SerializeField] private bool _isReadOnly;
+#pragma warning restore CS0649
+
+		public bool IsReadOnly => _isReadOnly;
+
+		private bool IsWritable
+		{
+			get
+			{
+#if BEAMABLE_DEVELOPER
+				return true;
+#else
+				return !IsReadOnly;
+#endif
+			}
+		}
+
 		private void OnValidate()
 		{
+			TriggerChange();
+		}
+
+		public void TriggerChange()
+		{
+			if (!IsWritable) return;
+
 			BussConfiguration.UseConfig(conf => conf.UpdateStyleSheet(this));
-			OnChange?.Invoke();
+			Change?.Invoke();
+#if UNITY_EDITOR
+			UnityEditor.EditorUtility.SetDirty(this);
+#endif
 		}
 
-		public void AssignAssetReferencesFromReferenceList()
+		public void RemoveStyle(BussStyleRule styleRule)
 		{
-			foreach (BussStyleRule style in Styles)
+			if (_styles.Remove(styleRule))
 			{
-				style.AssignAssetReferencesFromReferenceList(_assetReferences);
+				TriggerChange();
 			}
 		}
 
-		public void PutAssetReferencesInReferenceList()
+		public void RemoveStyleProperty(IBussProperty property, string selectorString)
 		{
-			_assetReferences.Clear();
-			foreach (BussStyleRule style in Styles)
+			BussStyleRule bussStyleRule = _styles.Find(style => style.SelectorString == selectorString);
+			if (bussStyleRule.RemoveProperty(property))
 			{
-				style.PutAssetReferencesInReferenceList(_assetReferences);
+				TriggerChange();
 			}
+		}
+
+		public void RemoveAllProperties(BussStyleRule styleRule)
+		{
+			styleRule.Properties.Clear();
+			TriggerChange();
 		}
 
 		public void OnBeforeSerialize()
@@ -52,23 +86,68 @@ namespace Beamable.UI.Buss
 		{
 			AssignAssetReferencesFromReferenceList();
 		}
+
+		private void AssignAssetReferencesFromReferenceList()
+		{
+			foreach (BussStyleRule style in Styles)
+			{
+				style.AssignAssetReferencesFromReferenceList(_assetReferences);
+			}
+		}
+
+		private void PutAssetReferencesInReferenceList()
+		{
+			_assetReferences.Clear();
+			foreach (BussStyleRule style in Styles)
+			{
+				style.PutAssetReferencesInReferenceList(_assetReferences);
+			}
+		}
 	}
 
 	[Serializable]
 	public class BussStyleRule : BussStyleDescription
 	{
 #pragma warning disable CS0649
-		[FormerlySerializedAs("_name")] [SerializeField]
+		// TODO: can we remove that FormerlySerializedAs attribute before release??
+		[FormerlySerializedAs("_name")]
+		[SerializeField]
 		private string _selector;
+
+		[HideInInspector] [SerializeField] private bool _editMode;
+		[HideInInspector] [SerializeField] private bool _showAllMode;
 #pragma warning restore CS0649
 
 		public BussSelector Selector => BussSelectorParser.Parse(_selector);
-		public string SelectorString => _selector;
 
-	    public static BussStyleRule Create(string selector, List<BussPropertyProvider> properties)
-	    {
-		    return new BussStyleRule() {_selector = selector, _properties = properties};
-	    }
+		public string SelectorString
+		{
+			get => _selector;
+			set => _selector = value;
+		}
+
+		public bool EditMode
+		{
+			get => _editMode;
+			set => _editMode = value;
+		}
+
+		public bool ShowAllMode
+		{
+			get => _showAllMode;
+			set => _showAllMode = value;
+		}
+
+		public static BussStyleRule Create(string selector, List<BussPropertyProvider> properties)
+		{
+			return new BussStyleRule { _selector = selector, _properties = properties };
+		}
+
+		public bool RemoveProperty(IBussProperty bussProperty)
+		{
+			BussPropertyProvider provider = _properties.Find(property => property.GetProperty() == bussProperty);
+			return _properties.Remove(provider);
+		}
 	}
 
 	[Serializable]
@@ -84,27 +163,32 @@ namespace Beamable.UI.Buss
 	public class BussPropertyProvider
 	{
 #pragma warning disable CS0649
-		[SerializeField]
-		private string key;
+		[SerializeField] private string key;
 
 		[SerializeField, SerializableValueImplements(typeof(IBussProperty))]
 		private SerializableValueObject property;
 #pragma warning restore CS0649
 
-		public string Key {
-			get => key;
-		}
+		public string Key => key;
 
-	    public static BussPropertyProvider Create(string key, IBussProperty property)
-	    {
-		    var propertyProvider = new SerializableValueObject();
-		    propertyProvider.Set(property);
-		    return new BussPropertyProvider() {key = key, property = propertyProvider};
-	    }
+		public bool IsVariable => BussStyleSheetUtility.IsValidVariableName(Key);
+		public bool HasVariableReference => GetProperty() is VariableProperty;
+
+		public static BussPropertyProvider Create(string key, IBussProperty property)
+		{
+			var propertyProvider = new SerializableValueObject();
+			propertyProvider.Set(property);
+			return new BussPropertyProvider() { key = key, property = propertyProvider };
+		}
 
 		public IBussProperty GetProperty()
 		{
 			return property.Get<IBussProperty>();
+		}
+
+		public void SetProperty(IBussProperty bussProperty)
+		{
+			property.Set(bussProperty);
 		}
 	}
 }

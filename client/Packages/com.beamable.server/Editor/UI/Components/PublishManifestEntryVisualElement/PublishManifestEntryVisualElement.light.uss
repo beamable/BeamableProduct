@@ -1,4 +1,4 @@
-﻿.manifestRow.oddRow {
+﻿.oddRow {
     background-color: #B4B4B4;
 }
 

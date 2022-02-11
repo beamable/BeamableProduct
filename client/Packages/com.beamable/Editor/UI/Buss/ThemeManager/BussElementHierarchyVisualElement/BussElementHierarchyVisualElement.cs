@@ -1,6 +1,8 @@
 ﻿using Beamable.Editor.UI.Buss;
 using Beamable.UI.Buss;
-using UnityEngine.UI;
+using System;
+using System.Collections.Generic;
+using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -11,18 +13,119 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class BussElementHierarchyVisualElement : ComponentBasedHierarchyVisualElement<BussElement>	
+	public class BussElementHierarchyVisualElement : ComponentBasedHierarchyVisualElement<BussElement>
 	{
-		public new class UxmlFactory : UxmlFactory<BussElementHierarchyVisualElement, UxmlTraits>
-		{
-		}
+		private bool _hasDelayedChangeCallback;
 
-		public BussElementHierarchyVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussElementHierarchyVisualElement)}/{nameof(BussElementHierarchyVisualElement)}") { }
+		public event Action BussStyleSheetChange;
+
+		public List<BussStyleSheet> StyleSheets
+		{
+			get;
+		} = new List<BussStyleSheet>();
+
+		public void ForceRebuild()
+		{
+			StyleSheets.Clear();
+			RefreshTree();
+		}
 
 		protected override string GetLabel(BussElement component)
 		{
-			return string.IsNullOrWhiteSpace(component.Id) ? component.name : component.Id;
+			string label = string.IsNullOrWhiteSpace(component.Id) ? component.name : BussNameUtility.AsIdSelector(component.Id);
+
+			foreach (string className in component.Classes)
+			{
+				label += " " + BussNameUtility.AsClassSelector(className);
+			}
+
+			return label;
+		}
+
+		protected override void OnHierarchyChanged()
+		{
+			StyleSheets.Clear();
+			base.OnHierarchyChanged();
+		}
+
+		protected override void OnSelectionChanged()
+		{
+			base.OnSelectionChanged();
+			SortStyleSheets();
+		}
+
+		private void OnBussStyleSheetChange()
+		{
+			if (!_hasDelayedChangeCallback)
+			{
+				_hasDelayedChangeCallback = true;
+				EditorApplication.delayCall += () =>
+				{
+					RefreshStyleSheets();
+					_hasDelayedChangeCallback = false;
+					BussStyleSheetChange?.Invoke();
+				};
+			}
+		}
+
+		private void RefreshStyleSheets()
+		{
+			StyleSheets.Clear();
+			foreach (BussElement component in Components)
+			{
+				var styleSheet = component.StyleSheet;
+
+				if (styleSheet == null) continue;
+
+				if (!StyleSheets.Contains(styleSheet))
+				{
+					StyleSheets.Add(styleSheet);
+				}
+			}
+		}
+
+		protected override void OnObjectRegistered(BussElement registeredObject)
+		{
+			BussStyleSheet styleSheet = registeredObject.StyleSheet;
+
+			if (styleSheet == null) return;
+
+			if (!StyleSheets.Contains(styleSheet))
+			{
+				StyleSheets.Add(styleSheet);
+			}
+
+			registeredObject.StyleSheetsChanged -= OnBussStyleSheetChange;
+			registeredObject.StyleSheetsChanged += OnBussStyleSheetChange;
+		}
+
+		private void SortStyleSheets()
+		{
+			if (SelectedComponent == null)
+			{
+				return;
+			}
+
+			List<BussStyleSheet> selectedComponentAllStyleSheets = SelectedComponent.AllStyleSheets;
+
+			if (selectedComponentAllStyleSheets.Count == 0)
+			{
+				return;
+			}
+
+			BussStyleSheet firstStyle = selectedComponentAllStyleSheets[selectedComponentAllStyleSheets.Count - 1];
+
+			StyleSheets.Remove(firstStyle);
+			StyleSheets.Insert(0, firstStyle);
+		}
+
+		protected override void OnDestroy()
+		{
+			base.OnDestroy();
+			foreach (var bussElement in Components)
+			{
+				bussElement.StyleSheetsChanged -= OnBussStyleSheetChange;
+			}
 		}
 	}
 }

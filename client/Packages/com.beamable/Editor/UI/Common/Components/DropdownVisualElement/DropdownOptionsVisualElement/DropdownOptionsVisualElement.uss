@@ -1,6 +1,11 @@
-﻿#mainVisualElement {
-    -unity-text-align: middle-center;
-    justify-content: center;
-    /*width: auto;*/
+﻿.container {
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-radius: 3px;
 }
 
+DropdownSingleOptionVisualElement:hover {
+    background-color: #828292;
+}

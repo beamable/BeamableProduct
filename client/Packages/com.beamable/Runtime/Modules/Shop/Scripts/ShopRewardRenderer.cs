@@ -1,27 +1,27 @@
-using Beamable.UI.Scripts;
 using Beamable.Api.Payments;
 using Beamable.Signals;
+using Beamable.UI.Scripts;
 using UnityEngine;
 
 namespace Beamable.Shop
 {
-   public class ShopRewardRenderer : MenuBase
-   {
-      public ObtainRenderer ObtainRenderer;
-      public GameObject Frame;
+	public class ShopRewardRenderer : MenuBase
+	{
+		public ObtainRenderer ObtainRenderer;
+		public GameObject Frame;
 
-      public PlayerListingView Listing;
+		public PlayerListingView Listing;
 
-      void Start()
-      {
-         Frame.SetActive(false);
-      }
+		void Start()
+		{
+			Frame.SetActive(false);
+		}
 
-      public override void OnOpened()
-      {
-         Frame.SetActive(true);
+		public override void OnOpened()
+		{
+			Frame.SetActive(true);
 
-         ObtainRenderer.RenderObtain(Listing);
-      }
-   }
+			ObtainRenderer.RenderObtain(Listing);
+		}
+	}
 }

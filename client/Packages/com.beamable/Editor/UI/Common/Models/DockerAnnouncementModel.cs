@@ -1,7 +1,6 @@
-﻿using System;
-using Beamable.Editor.Toolbox.Components;
-using Beamable.Editor.UI.Buss;
-using UnityEngine;
+﻿using Beamable.Editor.Toolbox.Components;
+using Beamable.Editor.UI.Components;
+using System;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -15,20 +14,20 @@ namespace Beamable.Editor.Toolbox.Models
 	public class DockerAnnouncementModel : AnnouncementModelBase
 	{
 		public bool IsDockerInstalled = false;
-		public string TitleLabelText => IsDockerInstalled ? "DOCKER HUB IS NOT RUNNING" : "DOCKER IS NOT INSTALLED";
+		public string TitleLabelText => IsDockerInstalled ? "DOCKER DESKTOP IS NOT RUNNING" : "DOCKER IS NOT INSTALLED";
 
 		public string DescriptionLabelText =>
 			IsDockerInstalled
-				? "Start Docker Hub first and try again"
+				? "Start Docker Desktop first and try again"
 				: "You need to install Docker to use the Beamable C# Microservices Feature";
 
-		public string InstallButtonText => IsDockerInstalled ? "Check now" : "Install";
+		public string InstallButtonText => "Details";
 
 		public Action OnInstall;
 
 		public override BeamableVisualElement CreateVisualElement()
 		{
-			return new DockerAnnouncementVisualElement() {DockerAnnouncementModel = this};
+			return new DockerAnnouncementVisualElement() { DockerAnnouncementModel = this };
 		}
 	}
 }

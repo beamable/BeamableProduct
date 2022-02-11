@@ -3,11 +3,9 @@
     flex-direction: row;
     align-content: stretch;
     justify-content: space-between;
-    padding-left: 10px;
-    padding-right: 10px;
 }
 
-.manifestRow.oddRow {
+.oddRow {
     background-color: #545454;
 }
 
@@ -21,41 +19,21 @@
     flex-direction: column;
 }
 
-#CommentsC {
-    width: 130px;
-}
-
-#depsList {
-    margin-right: 10px;
-}
-
 #SizeC {
     flex-direction: row;
-    width: 140px;
 }
 
-#sizeDropdown {
-    width: 140px;
-}
-
-#commentsText {
-    width: 90px;
-}
 
 #commentsText {
     height: 25px;
 }
 
 #enabledC {
-    width: 100px;
     height: 20px;
     flex-direction: row;
     justify-content: center;
 }
 
-#CheckC {
-    margin-right: 20px;
-}
 
 #nameMS {
     -unity-font-style: bold;
@@ -67,8 +45,6 @@
 }
 
 #typeC {
-    width: 80px;
-    margin-left: 10px;
     align-self: flex-start;
 }
 
@@ -99,7 +75,23 @@
     width: 30px;
     height: 30px;
 }
+.published #mainContainer> LoadingBarElement {
+    height: 0px;
+    visibility: hidden;
+}
 
-.published {
+.published #checkImage {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Checked.png");
+}
+
+.unpublished {}
+
+.publish-inProgress #checkImage, .publish-failed #checkImage  {
+     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Checked_Dark.png");
+}
+
+#mainContainer > LoadingBarElement {
+    margin-left: 75px;
+    margin-right: 75px;
+    margin-bottom: 1px;
 }

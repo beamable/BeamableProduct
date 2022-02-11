@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Leaderboards;
+using Beamable.Common.Dependencies;
 using Beamable.Server.Api;
 using Beamable.Server.Api.Announcements;
 using Beamable.Server.Api.Calendars;
@@ -28,6 +29,7 @@ using Core.Server.Common;
 using microservice;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using ContentService = Beamable.Server.Content.ContentService;
+using ServiceDescriptor = Microsoft.Extensions.DependencyInjection.ServiceDescriptor;
 #if DB_MICROSERVICE
 using System;
 using System.Collections.Concurrent;
@@ -125,6 +127,7 @@ namespace Beamable.Server
       public bool HasInitialized { get; private set; }
 
       private IMicroserviceArgs _args;
+      private MongoSerializationService _mongoSerializationService;
       private string Host => _args.Host;
       public ServiceCollection ServiceCollection;
       private int[] _retryIntervalsInSeconds = new[]
@@ -191,7 +194,7 @@ namespace Beamable.Server
 
          _socketRequesterContext = new SocketRequesterContext(GetWebsocketPromise);
          _requester = new MicroserviceRequester(_args, null, _socketRequesterContext);
-
+         _mongoSerializationService = new MongoSerializationService();
          _contentService = new ContentService(_requester, _socketRequesterContext, _contentResolver);
          ContentApi.Instance.CompleteSuccess(_contentService);
          InitServices();
@@ -298,10 +301,10 @@ namespace Beamable.Server
          try
          {
             await _requester.Authenticate();
-            
+
             // Custom Initialization hook for C#MS --- will terminate MS user-code throws
             await ResolveCustomInitializationHook();
-            
+
             await ProvideService(QualifiedName);
 
             HasInitialized = true;
@@ -334,7 +337,7 @@ namespace Beamable.Server
                return (method, attr);
             })
             .ToList();
-            
+
          // Sorts them by an user-defined order. By default (and tie-breaking), is sorted in file declaration order.
          // TODO: Add reflection utility that sorts (MemberInfo, ISortableByType<>) tuples to ReflectionCache and replace this usage.
          serviceInitialization.Sort(delegate((MethodInfo method, InitializeServicesAttribute attr) t1, (MethodInfo method, InitializeServicesAttribute attr) t2)
@@ -343,7 +346,7 @@ namespace Beamable.Server
             var (_, attr2) = t2;
             return attr1.ExecutionOrder.CompareTo(attr2.ExecutionOrder);
          });
-            
+
          // Invokes each Service Initialization Method --- skips any that do not match the void(IServiceInitializer) signature.
          var serviceInitializers = new DefaultServiceInitializer(ServiceCollection, _args);
          foreach (var (initializationMethod, _) in serviceInitialization)
@@ -353,10 +356,10 @@ namespace Beamable.Server
             if (parameters.Length != 1 || parameters[0].ParameterType != typeof(IServiceInitializer))
             {
                BeamableLogger.LogWarning($"Skipping method with [{nameof(InitializeServicesAttribute)}] since it does not take a single [{nameof(IServiceInitializer)}] parameter.");
-               continue; 
-               
-            } 
-            
+               continue;
+
+            }
+
             var resultType = initializationMethod.ReturnType;
             Promise<Unit> promise;
             if (resultType == typeof(void))
@@ -397,15 +400,15 @@ namespace Beamable.Server
                BeamableLogger.LogError($"Custom service initializer [{initializationMethod.DeclaringType?.FullName}.{initializationMethod.Name}] failed.\n" +
                                        $"{ex.Message}\n" +
                                        $"{{stacktrace}}", ex.StackTrace);
-                     
+
                BeamableLogger.LogException(ex);
                Environment.Exit(EXIT_CODE_FAILED_CUSTOM_INITIALIZATION_HOOK);
             }
          }
-         
+
       }
 
-      
+
 
       public Promise<IConnection> GetWebsocketPromise()
       {
@@ -519,6 +522,7 @@ namespace Beamable.Server
             ServiceCollection = new ServiceCollection();
             ServiceCollection
                .AddScoped(_microserviceType)
+               .AddSingleton<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
                .AddSingleton(_args)
                .AddSingleton<IRealmInfo>(_args)
                .AddSingleton<SocketRequesterContext>(_ => _socketRequesterContext)
@@ -540,16 +544,17 @@ namespace Beamable.Server
                .AddTransient<IMicroserviceCloudDataApi, MicroserviceCloudDataApi>()
                .AddTransient<IMicroserviceRealmConfigService, RealmConfigService>()
                .AddTransient<IMicroserviceCommerceApi, MicroserviceCommerceApi>()
-               .AddTransient<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>()
+               .AddSingleton<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>()
+               .AddSingleton<IMongoSerializationService>(_mongoSerializationService)
 
                .AddTransient<UserDataCache<Dictionary<string, string>>.FactoryFunction>(provider => StatsCacheFactory)
                .AddTransient<UserDataCache<RankEntry>.FactoryFunction>(provider => LeaderboardRankEntryFactory)
                .AddScoped<IBeamableServices>(ExtractSdks)
                ;
 
+            _mongoSerializationService.Init();
             Log.Debug(LogConstants.REGISTERING_CUSTOM_SERVICES);
             var builder = new DefaultServiceBuilder(ServiceCollection);
-
 
             // Gets Service Configuration Methods
             var configurationMethods = _microserviceType
@@ -561,7 +566,7 @@ namespace Beamable.Server
                   return (method, attr);
                })
                .ToList();
-            
+
             // Sorts them by an user-defined order. By default (and tie-breaking), is sorted in file declaration order.
             configurationMethods.Sort(delegate((MethodInfo method, ConfigureServicesAttribute attr) t1, (MethodInfo method, ConfigureServicesAttribute attr) t2)
             {
@@ -569,7 +574,7 @@ namespace Beamable.Server
                var (_, attr2) = t2;
                return attr1.ExecutionOrder.CompareTo(attr2.ExecutionOrder);
             });
-            
+
             // Invokes each Service Configuration Method --- skips any that do not match the void(IServiceBuilder) signature.
             foreach (var (configurationMethod, _) in configurationMethods)
             {
@@ -758,14 +763,14 @@ namespace Beamable.Server
 
       private IBeamableServices GenerateSdks(IBeamableRequester requester, RequestContext ctx)
       {
-         var stats = new MicroserviceStatsApi(requester, ctx, StatsCacheFactory);
+         var stats = new MicroserviceStatsApi(requester, ctx, null, StatsCacheFactory);
          var services = new BeamableServices
          {
             Auth = new ServerAuthApi(requester, ctx),
             Stats = stats,
             Content = _contentService,
             Inventory = new MicroserviceInventoryApi(requester, ctx),
-            Leaderboards = new MicroserviceLeaderboardApi(requester, ctx, LeaderboardRankEntryFactory),
+            Leaderboards = new MicroserviceLeaderboardApi(requester, ctx, null, LeaderboardRankEntryFactory),
             Announcements = new MicroserviceAnnouncementsApi(requester, ctx),
             Calendars = new MicroserviceCalendarsApi(requester, ctx),
             Events = new MicroserviceEventsApi(requester, ctx),
@@ -782,7 +787,7 @@ namespace Beamable.Server
       }
 
       private UserDataCache<RankEntry> _singleRankyEntryCache;
-      private UserDataCache<RankEntry> LeaderboardRankEntryFactory(string name, long ttlms, UserDataCache<RankEntry>.CacheResolver resolver)
+      private UserDataCache<RankEntry> LeaderboardRankEntryFactory(string name, long ttlms, UserDataCache<RankEntry>.CacheResolver resolver, IDependencyProvider provider)
       {
          return new EphemeralUserDataCache<RankEntry>(name, resolver);
       }
@@ -790,7 +795,7 @@ namespace Beamable.Server
       private UserDataCache<Dictionary<string, string>> _singleStatsCache;
       private Type _microserviceType;
 
-      private UserDataCache<Dictionary<string, string>> StatsCacheFactory(string name, long ttlms, UserDataCache<Dictionary<string, string>>.CacheResolver resolver)
+      private UserDataCache<Dictionary<string, string>> StatsCacheFactory(string name, long ttlms, UserDataCache<Dictionary<string, string>>.CacheResolver resolver, IDependencyProvider provider)
       {
          return new EphemeralUserDataCache<Dictionary<string, string>>(name, resolver);
       }
