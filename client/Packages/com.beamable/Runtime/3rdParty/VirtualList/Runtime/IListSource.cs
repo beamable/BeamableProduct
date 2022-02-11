@@ -25,26 +25,26 @@ using UnityEngine;
 
 namespace VirtualList
 {
-   // Interface describing the list of items displayed by a virtual list
-   public interface IListSource
-   {
-      // Number of items
-      int Count
-      {
-         get;
-      }
+	// Interface describing the list of items displayed by a virtual list
+	public interface IListSource
+	{
+		// Number of items
+		int Count
+		{
+			get;
+		}
 
-      // Set up the view to display the item at the given index
-      //
-      // The view may be reused multiple times
-      void SetItem(GameObject view, int index);
-   }
+		// Set up the view to display the item at the given index
+		//
+		// The view may be reused multiple times
+		void SetItem(GameObject view, int index);
+	}
 
-   // optional interface for specifying prefabs
-   public interface IPrefabSource
-   {
-      // Return prefab to use or null
-      // If null is used, it will use the default
-      GameObject PrefabAt(int index);
-   }
+	// optional interface for specifying prefabs
+	public interface IPrefabSource
+	{
+		// Return prefab to use or null
+		// If null is used, it will use the default
+		GameObject PrefabAt(int index);
+	}
 }

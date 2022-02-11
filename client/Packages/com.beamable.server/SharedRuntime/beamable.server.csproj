@@ -6,22 +6,31 @@
         <Authors>Beamable Team</Authors>
         <Company>Beamable</Company>
 
-        <TargetFramework>net5.0</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
         <AssemblyName>Beamable.Server</AssemblyName>
+        <DefineConstants>
+            BEAMABLE_IGNORE_MONGO_MOCKS
+        </DefineConstants>
 
     </PropertyGroup>
 
     <ItemGroup>
 <!--        ../client/Packages/com.disruptorbeam.engine/Common/beamable.common.csproj-->
-      <ProjectReference Include="..\..\com.beamable\Common\beamable.common.csproj" />
+        <ProjectReference Include="..\..\com.beamable\Common\beamable.common.csproj" />
+        <ProjectReference Include="..\Runtime\Common\beamable.server.common.csproj" />
     </ItemGroup>
 
     <ItemGroup>
 
         <Reference Include="MongoDB.Driver">
-
             <HintPath>..\Editor\ThirdParty\Mongo\MongoDB.Driver.dll</HintPath>
+        </Reference>
 
+        <Reference Include="MongoDB.Bson">
+            <HintPath>..\Editor\ThirdParty\Mongo\MongoDB.Bson.dll</HintPath>
+        </Reference>
+        <Reference Include="System.Runtime.CompilerServices.Unsafe">
+            <HintPath>..\Editor\ThirdParty\Mongo\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
         </Reference>
 
     </ItemGroup>

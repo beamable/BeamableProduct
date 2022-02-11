@@ -1,6 +1,6 @@
-﻿using UnityEngine;
+﻿using System;
 using UnityEditor;
-using System;
+using UnityEngine;
 
 namespace Beamable.Samples.SampleProjectBase
 {
@@ -32,7 +32,7 @@ namespace Beamable.Samples.SampleProjectBase
 			}
 			else
 			{
-				//Debug.LogError("SelectReadme() No results found for Readme.");
+				Debug.LogError("SelectReadme() No results found for Readme.");
 			}
 
 			return null;
@@ -41,16 +41,16 @@ namespace Beamable.Samples.SampleProjectBase
 
 		private static Readme SelectReadme(string pathToReadme)
 		{
-			if (string.IsNullOrEmpty (pathToReadme))
-         {
+			if (string.IsNullOrEmpty(pathToReadme))
+			{
 				return null;
-         }
+			}
 			var readmeObject = AssetDatabase.LoadMainAssetAtPath(pathToReadme);
 
 			if (readmeObject == null)
-         {
+			{
 				return null;
-         }
+			}
 
 			var editorAsm = typeof(UnityEditor.Editor).Assembly;
 			var inspWndType = editorAsm.GetType("UnityEditor.InspectorWindow");
@@ -76,7 +76,7 @@ namespace Beamable.Samples.SampleProjectBase
 			GUILayout.EndHorizontal();
 		}
 
-      public override void OnInspectorGUI()
+		public override void OnInspectorGUI()
 		{
 
 			var readme = (Readme)target;

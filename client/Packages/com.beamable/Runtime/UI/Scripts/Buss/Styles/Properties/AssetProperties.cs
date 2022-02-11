@@ -5,7 +5,7 @@ using Object = UnityEngine.Object;
 
 namespace Beamable.UI.Buss
 {
-	public abstract class BaseAssetProperty
+	public abstract class BaseAssetProperty : IBussProperty
 	{
 		public int AssetSerializationKey = -1;
 
@@ -16,6 +16,7 @@ namespace Beamable.UI.Buss
 		}
 
 		public abstract Type GetAssetType();
+		public abstract IBussProperty CopyProperty();
 	}
 
 	public abstract class BaseAssetProperty<T> : BaseAssetProperty where T : Object
@@ -49,7 +50,7 @@ namespace Beamable.UI.Buss
 			Asset = sprite;
 		}
 
-		public IBussProperty CopyProperty()
+		public override IBussProperty CopyProperty()
 		{
 			return new SpriteBussProperty(Asset);
 		}
@@ -67,7 +68,7 @@ namespace Beamable.UI.Buss
 			Asset = asset;
 		}
 
-		public IBussProperty CopyProperty()
+		public override IBussProperty CopyProperty()
 		{
 			return new FontBussAssetProperty(Asset);
 		}

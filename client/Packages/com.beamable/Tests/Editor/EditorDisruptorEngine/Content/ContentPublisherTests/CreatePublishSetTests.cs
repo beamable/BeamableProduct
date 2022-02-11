@@ -1,6 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Content;
@@ -10,6 +7,9 @@ using Beamable.Platform.SDK;
 using Beamable.Platform.Tests;
 using Beamable.Tests;
 using NUnit.Framework;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.TestTools;
 using Manifest = Beamable.Editor.Content.Manifest;
 

@@ -18,9 +18,10 @@ namespace Beamable.Editor.UI.Components
 		public new class UxmlTraits : VisualElement.UxmlTraits
 		{
 			readonly UxmlStringAttributeDescription _label = new UxmlStringAttributeDescription
-				{name = "label", defaultValue = "Label"};
+			{ name = "label", defaultValue = "Label" };
 
-			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription {
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
 				get { yield break; }
 			}
 
@@ -36,13 +37,14 @@ namespace Beamable.Editor.UI.Components
 
 		private SpritePickerVisualElement _spritePicker;
 		private Label _label;
-		
+
 		public string Label { get; set; }
 
 		public Sprite SelectedSprite => _spritePicker.SelectedSprite;
 
 		public LabeledSpritePickerVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledSpritePickerVisualElement)}/{nameof(LabeledSpritePickerVisualElement)}") { }
+			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledSpritePickerVisualElement)}/{nameof(LabeledSpritePickerVisualElement)}")
+		{ }
 
 		public override void Refresh()
 		{

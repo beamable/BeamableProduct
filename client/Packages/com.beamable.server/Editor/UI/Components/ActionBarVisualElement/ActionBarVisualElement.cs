@@ -1,21 +1,7 @@
-using Beamable.Editor.Content.Models;
-using Beamable.Editor.Content;
-using UnityEngine;
-using Beamable.Editor.UI.Buss.Components;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Beamable.Common;
-using Beamable.Editor.Config;
-using Beamable.Editor.Content.Components;
-using Beamable.Editor.Environment;
-using Beamable.Editor.Modules.Theme;
-using Beamable.Editor.Toolbox.Models;
-using Beamable.Editor.Toolbox.UI.Components;
-using Beamable.Editor.UI.Components;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
-using UnityEditor;
+using System;
+using System.Collections.Generic;
 using Debug = UnityEngine.Debug;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -27,117 +13,116 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
-    public class ActionBarVisualElement : MicroserviceComponent
-    {
-        public new class UxmlFactory : UxmlFactory<ActionBarVisualElement, UxmlTraits>
-        {
-        }
+	public class ActionBarVisualElement : MicroserviceComponent
+	{
+		public new class UxmlFactory : UxmlFactory<ActionBarVisualElement, UxmlTraits>
+		{
+		}
 
-        public new class UxmlTraits : VisualElement.UxmlTraits
-        {
-            UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
-                {name = "custom-text", defaultValue = "nada"};
+		public new class UxmlTraits : VisualElement.UxmlTraits
+		{
+			UxmlStringAttributeDescription customText = new UxmlStringAttributeDescription
+			{ name = "custom-text", defaultValue = "nada" };
 
-            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
-            {
-                get { yield break; }
-            }
+			public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+			{
+				get { yield break; }
+			}
 
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                var self = ve as ActionBarVisualElement;
+			public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+			{
+				base.Init(ve, bag, cc);
+				var self = ve as ActionBarVisualElement;
 
-            }
-        }
-        
-        public ActionBarVisualElement() : base(nameof(ActionBarVisualElement))
-        {
-        }
+			}
+		}
 
-        public event Action OnStartAllClicked;
-        public event Action OnBuildAllClicked;
-        public event Action OnPublishClicked;
-        public event Action OnRefreshButtonClicked;
-        public event Action<ServiceType> OnCreateNewClicked;
-        private Button _refreshButton;
-        private Button _createNew;
-        private Button _startAll;
-        private Button _infoButton;
-        private Button _publish;
-        private Button _buildAll;
-        
-        public event Action OnInfoButtonClicked;
+		public ActionBarVisualElement() : base(nameof(ActionBarVisualElement))
+		{
+		}
 
-        public override void Refresh()
-        {
-            base.Refresh();
-            bool storagePreviewEnabled = MicroserviceConfiguration.Instance.EnableStoragePreview;
-            
-            _refreshButton = Root.Q<Button>("refreshButton");
-            _refreshButton.clickable.clicked += () => { OnRefreshButtonClicked?.Invoke(); };
-            _refreshButton.tooltip = "Refresh Window";
-            _createNew = Root.Q<Button>("createNew");
-            if (storagePreviewEnabled)
-            {
-                var manipulator = new ContextualMenuManipulator(PopulateCreateMenu);
-                manipulator.activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
-                _createNew.clickable.activators.Clear();
-                _createNew.AddManipulator(manipulator);
-            }
-            else
-            {
-                _createNew.AddToClassList("disabledStorage");
-                _createNew.clickable.clicked += () => OnCreateNewClicked?.Invoke(ServiceType.MicroService);
-            }
-            _createNew.SetEnabled(!DockerCommand.DockerNotInstalled);
-            
-            _startAll = Root.Q<Button>("startAll");
-            _startAll.clickable.clicked += () => { OnStartAllClicked?.Invoke(); };
-            _startAll.SetEnabled(!DockerCommand.DockerNotInstalled);
-            
-            _buildAll = Root.Q<Button>("buildAll");
-            _buildAll.tooltip =
-                "Build services, if service is already running, it will rebuild it and run again";
-            _buildAll.clickable.clicked += () => { OnBuildAllClicked?.Invoke(); };
-            _buildAll.SetEnabled(!DockerCommand.DockerNotInstalled);
-            
-            _publish = Root.Q<Button>("publish");
-            _publish.clickable.clicked += () => { OnPublishClicked?.Invoke(); };
-            _publish.SetEnabled(!(DockerCommand.DockerNotInstalled || storagePreviewEnabled));
-            
-            _infoButton = Root.Q<Button>("infoButton");
-            _infoButton.clickable.clicked += () => { OnInfoButtonClicked?.Invoke(); };
-            _infoButton.tooltip = "Open Documentation";
-            UpdateTextButtonTexts(false);
-        }
+		public event Action OnStartAllClicked;
+		public event Action OnBuildAllClicked;
+		public event Action OnPublishClicked;
+		public event Action OnRefreshButtonClicked;
+		public event Action<ServiceType> OnCreateNewClicked;
+		private Button _refreshButton;
+		private Button _createNew;
+		private Button _startAll;
+		private Button _infoButton;
+		private Button _publish;
+		private Button _buildAll;
 
-        private void PopulateCreateMenu(ContextualMenuPopulateEvent evt)
-        {
-            evt.menu.BeamableAppendAction("Microservice", pos => OnCreateNewClicked?.Invoke(ServiceType.MicroService));
-            evt.menu.BeamableAppendAction("Storage", pos => OnCreateNewClicked?.Invoke(ServiceType.StorageObject));
-        }
+		public event Action OnInfoButtonClicked;
 
-        public void UpdateTextButtonTexts(bool allServicesSelected)
-        {
-            var startLabel = _startAll.Q<Label>();
-            startLabel.text = allServicesSelected ? "Play all" : "Play selected";
-            var buildLabel = _buildAll.Q<Label>();
-            buildLabel.text = allServicesSelected ? "Build all" : "Build selected";
-        }
+		public override void Refresh()
+		{
+			base.Refresh();
+			_refreshButton = Root.Q<Button>("refreshButton");
+			_refreshButton.clickable.clicked += () => { OnRefreshButtonClicked?.Invoke(); };
+			_refreshButton.tooltip = "Refresh Window";
+			_createNew = Root.Q<Button>("createNew");
 
-        public void HandleNoMicroservicesScenario()
-        {
-            _startAll.SetEnabled(false);
-            _buildAll.SetEnabled(false);
-            _publish.SetEnabled(false);
-        }
+			var manipulator = new ContextualMenuManipulator(PopulateCreateMenu);
+			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
+			_createNew.clickable.activators.Clear();
+			_createNew.AddManipulator(manipulator);
 
-        public void SetPublishButtonState(bool isEnabled)
-        {
-            _publish.SetEnabled(isEnabled);
-        }
-    }
+			_createNew.SetEnabled(!DockerCommand.DockerNotInstalled);
 
-    
+			_startAll = Root.Q<Button>("startAll");
+			_startAll.clickable.clicked += () => { OnStartAllClicked?.Invoke(); };
+			_startAll.SetEnabled(!DockerCommand.DockerNotInstalled);
+
+			_buildAll = Root.Q<Button>("buildAll");
+			_buildAll.tooltip =
+				"Build services, if service is already running, it will rebuild it and run again";
+			_buildAll.clickable.clicked += () => { OnBuildAllClicked?.Invoke(); };
+			_buildAll.SetEnabled(!DockerCommand.DockerNotInstalled);
+
+			const string cannotPublishText = "Cannot open Publish Window, fix compilation errors first!";
+			_publish = Root.Q<Button>("publish");
+			_publish.clickable.clicked += () =>
+			{
+				if (!NoErrorsValidator.LastCompilationSucceded)
+				{
+					Debug.LogError(cannotPublishText);
+					return;
+				}
+				OnPublishClicked?.Invoke();
+			};
+			if (!NoErrorsValidator.LastCompilationSucceded)
+				_publish.tooltip = cannotPublishText;
+			_publish.SetEnabled(!(DockerCommand.DockerNotInstalled));
+
+			_infoButton = Root.Q<Button>("infoButton");
+			_infoButton.clickable.clicked += () => { OnInfoButtonClicked?.Invoke(); };
+			_infoButton.tooltip = "Open Documentation";
+		}
+
+		public void UpdateButtonsState(int selectedServicesAmount, int servicesAmount)
+		{
+			bool anyModelSelected = selectedServicesAmount > 0;
+			UpdateTextButtonTexts(selectedServicesAmount == servicesAmount);
+			_startAll.SetEnabled(anyModelSelected);
+			_buildAll.SetEnabled(anyModelSelected);
+			_publish.SetEnabled(servicesAmount > 0);
+		}
+
+		private void PopulateCreateMenu(ContextualMenuPopulateEvent evt)
+		{
+			evt.menu.BeamableAppendAction("Microservice", pos => OnCreateNewClicked?.Invoke(ServiceType.MicroService));
+			evt.menu.BeamableAppendAction("Storage", pos => OnCreateNewClicked?.Invoke(ServiceType.StorageObject));
+		}
+
+		private void UpdateTextButtonTexts(bool allServicesSelected)
+		{
+			var startLabel = _startAll.Q<Label>();
+			startLabel.text = allServicesSelected ? "Play all" : "Play selected";
+			var buildLabel = _buildAll.Q<Label>();
+			buildLabel.text = allServicesSelected ? "Build all" : "Build selected";
+		}
+	}
+
+
 }

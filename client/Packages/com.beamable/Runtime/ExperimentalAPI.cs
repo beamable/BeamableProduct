@@ -1,74 +1,48 @@
 using Beamable.Api;
-using Beamable.Experimental.Api.Social;
+using Beamable.Experimental.Api.Calendars;
 using Beamable.Experimental.Api.Chat;
 using Beamable.Experimental.Api.Matchmaking;
 using Beamable.Experimental.Api.Sim;
-using Beamable.Experimental.Api.Calendars;
+using Beamable.Experimental.Api.Social;
 
 namespace Beamable.Experimental
 {
-   /// <summary>
-   /// This type defines the %Client main entry point for the %experimental features.
-   ///
-   /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-   ///
-   /// #### Related Links
-   /// - See Beamable.API script reference
-   ///
-   /// ![img beamable-logo]
-   ///
-   /// </summary>
-   public interface IExperimentalAPI
-   {
-      /// <summary>
-      /// Entry point for the <a target="_blank" href="https://docs.beamable.com/docs/chat-feature">Chat</a> feature.
-      /// </summary>
-      ChatService ChatService { get; }
-      
-      /// <summary>
-      /// Entry point for the <a target="_blank" href="https://docs.beamable.com/docs/multiplayer-feature">Multiplayer</a> feature.
-      /// </summary>
-      GameRelayService GameRelayService { get; }
-      
-      /// <summary>
-      /// Entry point for the <a target="_blank" href="https://docs.beamable.com/docs/multiplayer-feature">Multiplayer</a> feature.
-      /// </summary>
-      MatchmakingService MatchmakingService { get; }
-      
-      /// <summary>
-      /// Entry point for the <a target="_blank" href="https://docs.beamable.com/docs/friends-feature">Friends</a> feature.
-      /// </summary>
-      SocialService SocialService { get; }
-      
-      /// <summary>
-      /// Entry point for the <a target="_blank" href="https://docs.beamable.com/docs/calendars-feature">Calendars</a> feature.
-      /// </summary>
-      CalendarsService CalendarService { get; }
-   }
+	/// <summary>
+	/// This type defines the %Client main entry point for the %experimental features.
+	///
+	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
+	///
+	/// #### Related Links
+	/// - See Beamable.API script reference
+	///
+	/// ![img beamable-logo]
+	///
+	/// </summary>
+	public interface IExperimentalAPI
+	{
+		/// <summary>
+		/// Entry point for the <a target="_blank" href="https://docs.beamable.com/docs/chat-feature">Chat</a> feature.
+		/// </summary>
+		ChatService ChatService { get; }
 
-   /// <summary>
-   /// This type defines the %Client main entry point for the %experimental features.
-   ///
-   /// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-   ///
-   /// #### Related Links
-   /// - See Beamable.API script reference
-   ///
-   /// ![img beamable-logo]
-   ///
-   /// </summary>
-   public class ExperimentalAPI : IExperimentalAPI
-   {
-      private readonly PlatformService _platform;
-      public ChatService ChatService => _platform.Chat;
-      public GameRelayService GameRelayService => _platform.GameRelay;
-      public MatchmakingService MatchmakingService => _platform.Matchmaking;
-      public SocialService SocialService => _platform.Social;
-      public CalendarsService CalendarService => _platform.Calendars;
+		/// <summary>
+		/// Entry point for the <a target="_blank" href="https://docs.beamable.com/docs/multiplayer-feature">Multiplayer</a> feature.
+		/// </summary>
+		GameRelayService GameRelayService { get; }
 
-      public ExperimentalAPI(PlatformService platform)
-      {
-         _platform = platform;
-      }
-   }
+		/// <summary>
+		/// Entry point for the <a target="_blank" href="https://docs.beamable.com/docs/multiplayer-feature">Multiplayer</a> feature.
+		/// </summary>
+		MatchmakingService MatchmakingService { get; }
+
+		/// <summary>
+		/// Entry point for the <a target="_blank" href="https://docs.beamable.com/docs/friends-feature">Friends</a> feature.
+		/// </summary>
+		SocialService SocialService { get; }
+
+		/// <summary>
+		/// Entry point for the <a target="_blank" href="https://docs.beamable.com/docs/calendars-feature">Calendars</a> feature.
+		/// </summary>
+		CalendarsService CalendarService { get; }
+	}
 }

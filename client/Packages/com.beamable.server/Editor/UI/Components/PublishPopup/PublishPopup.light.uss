@@ -1,8 +1,6 @@
-#cancelBtn{
-    background-color: #A7A7A7;
-    border-color: #6C6C6C;
-}
-
-#warningMessage {
+#topMessage {
     color: #111111;
+}
+.bottomContainer LogVisualElement {
+    border-color: #9b9b9b;
 }

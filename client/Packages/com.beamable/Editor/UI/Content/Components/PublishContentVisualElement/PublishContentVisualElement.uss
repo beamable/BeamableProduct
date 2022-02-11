@@ -68,9 +68,6 @@ PublishContentVisualElement > TemplateContainer
     margin-bottom: 5px;
 }
 
-#publishPreviewContainer .unity-foldout-content {
-    left: 12px;
-}
 #publishBtn{
     width: 100px;
     height: 28px;
@@ -87,6 +84,7 @@ PublishContentVisualElement > TemplateContainer
 #publishPreviewContainer .unity-foldout__content, /* 2019 has the .unity-foldout__content class. */
 #publishPreviewContainer .unity-foldout-content /* 2018 has the .unity-foldout-content class. */ {
     padding-left: 12px;
+    margin-left: 12px;
 }
 
 PublishContentVisualElement ScrollView  #ContentView {

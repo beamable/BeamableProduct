@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Beamable.Common.Dependencies;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
@@ -22,6 +23,11 @@ namespace Beamable.Service
 		private static bool _testingServices;
 		private const bool RegisterEditorResolversByDefault = true;
 		private static bool _registerEditorResolvers = RegisterEditorResolversByDefault;
+
+		private static IDependencyProvider _legacyProvider;
+
+		// public static IDependencyProvider LegacyDependencyProvider =>
+		// 	_legacyProvider ?? (_legacyProvider = new LegacyProvider());
 
 #if UNITY_2019_1_OR_NEWER
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -64,7 +70,7 @@ namespace Beamable.Service
 		public static void RuntimeOnlyDontDestroyOnLoad(GameObject go)
 		{
 #if !UNITY_EDITOR
-		Object.DontDestroyOnLoad(go);
+			Object.DontDestroyOnLoad(go);
 #endif
 		}
 
@@ -93,6 +99,12 @@ namespace Beamable.Service
 			where T : class
 		{
 			Provide(new ServiceContainer<T>(service), overrideExisting);
+		}
+
+		public static void Provide<T>(IDependencyProvider provider, bool overrideExisting = true)
+			where T : class
+		{
+			Provide(new ServiceContainer<T>(provider.GetService<T>()));
 		}
 
 		public static void Remove<T>(IServiceResolver<T> resolver = null)
@@ -137,6 +149,7 @@ namespace Beamable.Service
 			return resolver != null && resolver.Exists();
 		}
 
+		// [Obsolete("The service manager will be replaced by the BeamContext.Default.ServiceProvider")]
 		public static T Resolve<T>()
 			where T : class
 		{
@@ -151,6 +164,26 @@ namespace Beamable.Service
 			}
 			throw new InvalidOperationException("No service found of type " + typeof(T).Name);
 		}
+
+		public static T Resolve<T>(IDependencyProvider provider) where T : class
+		{
+			return provider.GetService<T>();
+		}
+
+		public static T ResolveWithProvider<T>(IDependencyProvider provider)
+			where T : class
+		{
+			try
+			{
+				return provider.GetService<T>();
+			}
+			catch
+			{
+				throw new InvalidOperationException("No service found of type " + typeof(T).Name);
+			}
+		}
+
+
 
 		/// <summary>
 		/// Convenience function for resolving a service only if it is available

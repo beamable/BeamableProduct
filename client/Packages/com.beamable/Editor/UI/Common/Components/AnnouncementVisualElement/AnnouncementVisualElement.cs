@@ -1,7 +1,5 @@
 using Beamable.Editor.Toolbox.Models;
-using Beamable.Editor.Toolbox.UI.Components;
-using Beamable.Editor.UI.Buss;
-using UnityEngine;
+using Beamable.Editor.UI.Components;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -11,52 +9,52 @@ using UnityEditor.UIElements;
 #endif
 namespace Beamable.Editor.Toolbox.Components
 {
-   public class AnnouncementVisualElement : BeamableVisualElement
-   {
-      public AnnouncementModel AnnouncementModel { get; set; }
-      public AnnouncementVisualElement() : base(
-         $"{BeamableComponentsConstants.COMP_PATH}/{nameof(AnnouncementVisualElement)}/{nameof(AnnouncementVisualElement)}")
-      {
-      }
+	public class AnnouncementVisualElement : BeamableVisualElement
+	{
+		public AnnouncementModel AnnouncementModel { get; set; }
+		public AnnouncementVisualElement() : base(
+		   $"{BeamableComponentsConstants.COMP_PATH}/{nameof(AnnouncementVisualElement)}/{nameof(AnnouncementVisualElement)}")
+		{
+		}
 
-      public override void Refresh()
-      {
-         base.Refresh();
+		public override void Refresh()
+		{
+			base.Refresh();
 
-         var titleLabel = Root.Q<VisualElement>("title");
-         var descLabel = Root.Q<VisualElement>("desc");
-         var actionButton = Root.Q<Button>();
+			var titleLabel = Root.Q<VisualElement>("title");
+			var descLabel = Root.Q<VisualElement>("desc");
+			var actionButton = Root.Q<Button>();
 
-         titleLabel.Add(AnnouncementModel.TitleElement);
-         descLabel.Add(AnnouncementModel.DescriptionElement);
+			titleLabel.Add(AnnouncementModel.TitleElement);
+			descLabel.Add(AnnouncementModel.DescriptionElement);
 
-         actionButton.text = AnnouncementModel.ActionText;
-         actionButton.clickable.clicked += OnActionClicked;
+			actionButton.text = AnnouncementModel.ActionText;
+			actionButton.clickable.clicked += OnActionClicked;
 
-         if (AnnouncementModel.CustomIcon != null)
-         {
-            var icon = Root.Q<VisualElement>("icon");
-            icon.style.backgroundImage = AnnouncementModel.CustomIcon;
-         }
+			if (AnnouncementModel.CustomIcon != null)
+			{
+				var icon = Root.Q<VisualElement>("icon");
+				icon.style.backgroundImage = AnnouncementModel.CustomIcon;
+			}
 
-         switch (AnnouncementModel.Status)
-         {
-            case ToolboxAnnouncementStatus.INFO:
-               AddToClassList("info");
-               break;
-            case ToolboxAnnouncementStatus.WARNING:
-               AddToClassList("warning");
-               break;
-            case ToolboxAnnouncementStatus.DANGER:
-               AddToClassList("danger");
-               break;
-         }
-      }
+			switch (AnnouncementModel.Status)
+			{
+				case ToolboxAnnouncementStatus.INFO:
+					AddToClassList("info");
+					break;
+				case ToolboxAnnouncementStatus.WARNING:
+					AddToClassList("warning");
+					break;
+				case ToolboxAnnouncementStatus.DANGER:
+					AddToClassList("danger");
+					break;
+			}
+		}
 
-      private void OnActionClicked()
-      {
-         // TODO: maybe do something flashy?
-         AnnouncementModel?.Action?.Invoke();
-      }
-   }
+		private void OnActionClicked()
+		{
+			// TODO: maybe do something flashy?
+			AnnouncementModel?.Action?.Invoke();
+		}
+	}
 }

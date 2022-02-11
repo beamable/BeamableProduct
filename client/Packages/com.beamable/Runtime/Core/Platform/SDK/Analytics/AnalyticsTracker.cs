@@ -1,39 +1,39 @@
-using System.Collections.Generic;
 using Beamable.Api.Analytics.Batch;
 using Beamable.Coroutines;
 using Beamable.Serialization;
 using Beamable.Spew;
+using System.Collections.Generic;
 
 namespace Beamable.Api.Analytics
 {
 	/// <summary>
 	/// This type defines the %Client main entry point for the %Analytics feature.
-	/// 
+	///
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-	/// 
+	///
 	/// #### Related Links
 	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/analytics-feature">Analytics</a> feature documentation
 	/// - See Beamable.API script reference
-	/// 
+	///
 	/// ![img beamable-logo]
-	/// 
+	///
 	/// </summary>
-   public interface IAnalyticsTracker
-   {
-      void TrackEvent(IAnalyticsEvent analyticsEvent, bool sendImmediately);
-   }
+	public interface IAnalyticsTracker
+	{
+		void TrackEvent(IAnalyticsEvent analyticsEvent, bool sendImmediately);
+	}
 
 	/// <summary>
 	/// This type defines the %Client main entry point for the %Analytics feature.
-	/// 
+	///
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
-	/// 
+	///
 	/// #### Related Links
 	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/analytics-feature">Analytics</a> feature documentation
 	/// - See Beamable.API script reference
-	/// 
+	///
 	/// ![img beamable-logo]
-	/// 
+	///
 	/// </summary>
 	public class AnalyticsTracker : IAnalyticsTracker
 	{
@@ -53,7 +53,7 @@ namespace Beamable.Api.Analytics
 		private const double _defaultBatchTimeout = 60f;
 
 		private List<AnalyticsEventRequest> _earlyRequests = new List<AnalyticsEventRequest>();
-		private PlatformService _platform;
+		private IPlatformService _platform;
 		private AnalyticsService service;
 
 		/// <summary>
@@ -84,10 +84,10 @@ namespace Beamable.Api.Analytics
 		/// </summary>
 		/// <param name="batchTimeoutSeconds">Batch timeout seconds before expiration.</param>
 		/// <param name="batchMaxSize">Batch max size before expiration.</param>
-		public AnalyticsTracker (PlatformService platform, PlatformRequester requester,  CoroutineService coroutineService, int batchTimeoutSeconds, int batchMaxSize)
+		public AnalyticsTracker(IPlatformService platform, PlatformRequester requester, CoroutineService coroutineService, int batchTimeoutSeconds, int batchMaxSize)
 		{
 			_platform = platform;
-			batchManager = new PersistentBatchManager<AnalyticsEventRequest> (coroutineService, _storageKey, _defaultBatchCapacity, _defaultBatchTimeout);
+			batchManager = new PersistentBatchManager<AnalyticsEventRequest>(coroutineService, _storageKey, _defaultBatchCapacity, _defaultBatchTimeout);
 
 			this.service = new AnalyticsService(platform, requester);
 
@@ -97,7 +97,7 @@ namespace Beamable.Api.Analytics
 			_defaultBatchSettings.MaxSize = batchMaxSize;
 
 			batchManager.OnBatchExpired += OnBatchExpired;
-			if(usingDefaultSettings)
+			if (usingDefaultSettings)
 				UpdateBatchSettings(_defaultBatchSettings);
 
 			// Add Saved events into batch now that we have a proper gamertag to assign them to.
@@ -110,8 +110,8 @@ namespace Beamable.Api.Analytics
 			_earlyRequests.Clear();
 
 
-			batchManager.Flush ();
-			batchManager.Start ();
+			batchManager.Flush();
+			batchManager.Start();
 		}
 
 		/// <summary>
@@ -119,9 +119,9 @@ namespace Beamable.Api.Analytics
 		/// </summary>
 		/// <param name="analyticsEvent">Analytics event.</param>
 		/// <param name="sendImmediately">If set to <c>true</c> send immediately.</param>
-		public void TrackEvent (IAnalyticsEvent analyticsEvent, bool sendImmediately = false)
+		public void TrackEvent(IAnalyticsEvent analyticsEvent, bool sendImmediately = false)
 		{
-		   var analyticsEventRequest = BuildRequest(analyticsEvent);
+			var analyticsEventRequest = BuildRequest(analyticsEvent);
 
 			if (sendImmediately)
 			{
@@ -160,14 +160,15 @@ namespace Beamable.Api.Analytics
 
 		private AnalyticsEventRequest BuildRequest(IAnalyticsEvent analyticsEvent)
 		{
-		    using (var jsonSaveStream = JsonSerializable.JsonSaveStream.Spawn())
+			using (var jsonSaveStream = JsonSerializable.JsonSaveStream.Spawn())
 			{
 				// Start as Object and Serialize Directly, so that we can inject shard
 				jsonSaveStream.Init(JsonSerializable.JsonSaveStream.JsonType.Object);
 				analyticsEvent.Serialize(jsonSaveStream);
-				string shard = _platform.Shard;
-				if(shard != null)
-					jsonSaveStream.Serialize("shard", ref shard);
+				// TODO: Double check that we don't support shards anymore.
+				// string shard = _platform.Shard;
+				// if(shard != null)
+				// 	jsonSaveStream.Serialize("shard", ref shard);
 				jsonSaveStream.Conclude();
 				return new AnalyticsEventRequest(jsonSaveStream.ToString());
 			}
@@ -177,10 +178,10 @@ namespace Beamable.Api.Analytics
 		/// Raises the batch expired event.
 		/// </summary>
 		/// <param name="batchList">Batch list.</param>
-		private void OnBatchExpired (List<AnalyticsEventRequest> batchList)
+		private void OnBatchExpired(List<AnalyticsEventRequest> batchList)
 		{
-			AnalyticsLogger.LogFormat ("AnalyticsTracker.OnBatchExpired: Sending {0} events.", batchList.Count);
-			service.SendAnalyticsEventBatch (batchList);
+			AnalyticsLogger.LogFormat("AnalyticsTracker.OnBatchExpired: Sending {0} events.", batchList.Count);
+			service.SendAnalyticsEventBatch(batchList);
 		}
 	}
 }

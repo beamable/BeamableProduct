@@ -1,0 +1,16 @@
+{
+    "name": "Unity.Beamable.Customer.Common",
+    "references": [
+        "Unity.Beamable.Runtime.Common",
+        "Unity.Beamable.Server.Runtime",
+        "Unity.Beamable.Server.Runtime.Common",
+        "Unity.Beamable.Server.Runtime.Mocks"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "autoReferenced": true,
+    "defineConstraints": []
+}

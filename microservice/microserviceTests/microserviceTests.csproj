@@ -7,9 +7,9 @@
         <Company>Beamable</Company>
 
         <DefineConstants>DB_MICROSERVICE;DISABLE_BEAMABLE_ASYNCMETHODBUILDER</DefineConstants>
-        <TargetFramework>net5.0</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
         <AssemblyName>BeamableMicroserviceBaseTests</AssemblyName>
-        <LangVersion>8</LangVersion>
+        <LangVersion>10</LangVersion>
         <OutputType>Library</OutputType>
     </PropertyGroup>
 
@@ -30,6 +30,7 @@
 <!--        </PackageReference>-->
 <!--    </ItemGroup>-->
     <ItemGroup>
+        <PackageReference Include="MongoDB.Driver" Version="2.14.1" />
         <PackageReference Include="NUnit" Version="3.13.1" />
         <PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
@@ -42,7 +43,8 @@
 <!--    </ItemGroup>-->
 
 <ItemGroup>
-  <ProjectReference Include="..\..\client\Packages\com.beamable.server\SharedRuntime\beamable.server.csproj" />
+    <ProjectReference Include="..\..\client\Packages\com.beamable.server\SharedRuntime\beamable.server.csproj" />
+    <ProjectReference Include="..\..\client\Packages\com.beamable.server\Runtime\Common\beamable.server.common.csproj" />
   <ProjectReference Include="..\..\client\Packages\com.beamable\Common\beamable.common.csproj" />
   <ProjectReference Include="..\microservice\microservice.csproj" />
   <ProjectReference Include="..\unityEngineStubs\unityenginestubs.csproj" />
