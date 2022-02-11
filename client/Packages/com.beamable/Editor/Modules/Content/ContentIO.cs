@@ -738,6 +738,7 @@ namespace Beamable.Editor.Content
 
 			if (!assetPathExists)
 			{
+				// we need to check that content with the same id is in local manifest to avoid name duplication -> for content file that was deleted but not published
 				if (localContentManifest != null && !localContentManifest.Content.ContainsKey(id))
 					return assetPath;
 			}
@@ -755,6 +756,8 @@ namespace Beamable.Editor.Content
 				var extension = Path.GetExtension(assetPath);
 				var newPath = Path.Combine(directoryName, newName) + extension;
 				var exists = File.Exists(newPath);
+
+				// we need to check that content with inremented id is in local manifest to avoid name duplication -> for content file that was deleted but not published
 				if (!exists && (localContentManifest != null && !localContentManifest.Content.ContainsKey(newID)))
 				{
 					return newPath;
