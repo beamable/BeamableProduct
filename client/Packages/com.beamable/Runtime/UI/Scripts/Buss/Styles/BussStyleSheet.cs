@@ -32,8 +32,9 @@ namespace Beamable.UI.Buss
 			{
 #if BEAMABLE_DEVELOPER
 				return true;
-#endif
+#else
 				return !IsReadOnly;
+#endif
 			}
 		}
 
