@@ -559,7 +559,7 @@ namespace Beamable
 			await InitStep_StartNewSession();
 
 			// Register for notifications
-			_notification.RegisterForNotifications();
+			// _notification.RegisterForNotifications();
 			_heartbeatService.Start();
 
 			// Check if we should initialize the purchaser
