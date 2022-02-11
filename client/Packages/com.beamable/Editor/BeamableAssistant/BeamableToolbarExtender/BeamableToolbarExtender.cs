@@ -121,8 +121,6 @@ namespace Beamable.Editor.ToolbarExtender
 				_noHintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info.png");
 				_hintsTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info hit.png");
 				_validationTexture = AssetDatabase.LoadAssetAtPath<Texture>("Packages/com.beamable/Editor/UI/BeamableAssistant/Icons/info valu.png");
-
-				AssetDatabase.Refresh();
 			});
 		}
 
