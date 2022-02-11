@@ -26,6 +26,17 @@ namespace Beamable.UI.Buss
 
 		public bool IsReadOnly => _isReadOnly;
 
+		private bool IsWritable
+		{
+			get
+			{
+#if BEAMABLE_DEVELOPER
+				return true;
+#endif
+				return !IsReadOnly;
+			}
+		}
+
 		private void OnValidate()
 		{
 			TriggerChange();
@@ -33,6 +44,8 @@ namespace Beamable.UI.Buss
 
 		public void TriggerChange()
 		{
+			if (!IsWritable) return;
+
 			BussConfiguration.UseConfig(conf => conf.UpdateStyleSheet(this));
 			Change?.Invoke();
 #if UNITY_EDITOR
