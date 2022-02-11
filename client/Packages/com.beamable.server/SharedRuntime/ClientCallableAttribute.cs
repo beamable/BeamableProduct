@@ -73,18 +73,18 @@ namespace Beamable.Server
 		{
 			var methodInfo = (MethodInfo)member;
 
-			// Check for void signatures to send out warning.
-			if (methodInfo.IsAsyncMethodOfType(typeof(void)))
-			{
-				var message = $"";
-				return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Warning, message);
-			}
-
 			// Check for any unsupported parameter types.
 			if (UNSUPPORTED_PARAMETER_TYPES.MatchAnyParametersOfMethod(methodInfo, out var detectedUnsupportedTypes))
 			{
 				var message = $"The unsupported parameters are: {string.Join(", ", detectedUnsupportedTypes.Select(p => $"{p.ParameterType.Name} {p.Name}"))}";
 				return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Error, message);
+			}
+			
+			// Check for void signatures to send out warning.
+			if (methodInfo.IsAsyncMethodOfType(typeof(void)))
+			{
+				var message = $"";
+				return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Warning, message);
 			}
 
 			return new AttributeValidationResult(this, member, ReflectionCache.ValidationResultType.Valid, $"");

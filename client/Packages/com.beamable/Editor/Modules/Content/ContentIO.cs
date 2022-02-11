@@ -731,13 +731,15 @@ namespace Beamable.Editor.Content
 			CommitAssetDatabase();
 		}
 
-		public string GetAvailableFileName(string assetPath)
+		public string GetAvailableFileName(string assetPath, string id, LocalContentManifest localContentManifest)
 		{
 			//Exit early if the file doesn't exist and don't create a numbered copy.
 			var assetPathExists = File.Exists(assetPath);
+
 			if (!assetPathExists)
 			{
-				return assetPath;
+				if (localContentManifest != null && !localContentManifest.Content.ContainsKey(id))
+					return assetPath;
 			}
 
 			var testName = Path.GetFileNameWithoutExtension(assetPath);
@@ -748,18 +750,19 @@ namespace Beamable.Editor.Content
 			{
 				i++;
 				var newName = testName.Substring(0, testName.Length - result.Length) + i;
+				var newID = id.Substring(0, id.Length - result.Length) + i;
 				var directoryName = Path.GetDirectoryName(assetPath);
 				var extension = Path.GetExtension(assetPath);
 				var newPath = Path.Combine(directoryName, newName) + extension;
 				var exists = File.Exists(newPath);
-				if (!exists)
+				if (!exists && (localContentManifest != null && !localContentManifest.Content.ContainsKey(newID)))
 				{
 					return newPath;
 				}
 			}
 		}
 
-		public void Create<TContent>(TContent content, string assetPath = null, bool replace = true)
+		public void Create<TContent>(TContent content, string assetPath = null, bool replace = true, LocalContentManifest localContentManifest = null)
 			where TContent : ContentObject, new()
 		{
 			if (string.IsNullOrEmpty(assetPath))
@@ -767,9 +770,8 @@ namespace Beamable.Editor.Content
 				var newNameAsPath = content.Id.Replace('.', Path.DirectorySeparatorChar);
 				assetPath = $"{BeamableConstants.DATA_DIR}/{newNameAsPath}.asset";
 			}
-
 			//Check if we are replacing the local content, or if we should create a numbered copy
-			var modifiedAssetPath = replace ? assetPath : GetAvailableFileName(assetPath);
+			var modifiedAssetPath = replace ? assetPath : GetAvailableFileName(assetPath, content.Id, localContentManifest);
 
 			content.name = ""; // force the SO name to be empty. Maintaining two names is too hard.
 			var directory = Path.GetDirectoryName(modifiedAssetPath);

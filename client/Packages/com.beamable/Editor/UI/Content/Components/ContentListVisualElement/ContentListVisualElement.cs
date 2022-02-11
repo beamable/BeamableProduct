@@ -341,7 +341,7 @@ namespace Beamable.Editor.Content.Components
 
 			evt.menu.BeamableAppendAction("Duplicate item", (Action<Vector2>)((pos) =>
 		   {
-			   var nextPath = Model.ContentIO.GetAvailableFileName(selectedItem.AssetPath);
+			   var nextPath = Model.ContentIO.GetAvailableFileName(selectedItem.AssetPath, selectedItem.Id, Model.LocalManifest);
 			   var didCopy = AssetDatabase.CopyAsset(selectedItem.AssetPath, nextPath);
 			   if (didCopy)
 			   {

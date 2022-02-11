@@ -115,7 +115,7 @@ namespace Beamable.Editor.Content.Models
 
 		public void CreateItem(ContentObject content)
 		{
-			ContentIO.Create(content, null, false);
+			ContentIO.Create(content, null, false, LocalManifest);
 		}
 
 		public void DeleteItem(ContentItemDescriptor contentItemDescriptor)
