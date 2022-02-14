@@ -106,6 +106,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
 			_actionPrompt.Refresh();
+			var command = new GetDockerLocalStatus();
+			command.Start();
 		}
 
 		private void HandleSelectionChanged(bool _)
