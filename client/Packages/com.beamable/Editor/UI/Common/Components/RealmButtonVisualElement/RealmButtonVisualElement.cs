@@ -42,6 +42,12 @@ namespace Beamable.Editor.UI.Components
 		{
 		}
 
+		public override void OnDetach()
+		{
+			Model.OnElementChanged -= HandleRealmChanged;
+			base.OnDetach();
+		}
+
 		public override void Refresh()
 		{
 			base.Refresh();
