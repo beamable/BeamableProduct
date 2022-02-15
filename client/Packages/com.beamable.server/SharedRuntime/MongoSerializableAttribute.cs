@@ -13,15 +13,8 @@ namespace Beamable.Server
 	[AttributeUsage(AttributeTargets.Class)]
 	public class MongoSerializableAttribute : Attribute, IBsonClassMapAttribute
 	{
-		private static bool enableMapping = true;
-
 		public void Apply(BsonClassMap cm)
 		{
-			if (!enableMapping) // beacuse automap trigger attribute Apply again
-				return;
-
-			enableMapping = false;
-
 			FieldInfo bsonIDField = FindBsonIdField(cm.ClassType);
 
 			if (bsonIDField != null)
@@ -35,8 +28,6 @@ namespace Beamable.Server
 					cm_base.Freeze();
 				}
 			}
-
-			cm.AutoMap();
 
 			// set bsonID attribute for DeclaringType if it's needed
 
@@ -77,9 +68,7 @@ namespace Beamable.Server
 			}
 
 			cm.Freeze();
-			enableMapping = true;
 		}
-
 
 		private FieldInfo FindBsonIdField(Type t)
 		{
