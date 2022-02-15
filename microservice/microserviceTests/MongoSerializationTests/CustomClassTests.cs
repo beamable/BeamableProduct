@@ -119,29 +119,6 @@ namespace microserviceTests.MongoSerializationTests
             }
         }
         
-        [Serializable]
-        public class MongoRawClassOutput
-        {
-            public string text;
-            public string property { get; set; }
-            
-            public int X;
-            
-            private string info;
-            
-            private string field2;
-            
-            public string GetInfo()
-            {
-                return this.info;
-            }
-            
-            public string GetField2()
-            {
-                return this.field2;
-            }
-        }
-        
         [Test]
         public void DataUnity()
         {
@@ -154,9 +131,7 @@ namespace microserviceTests.MongoSerializationTests
             
             data.SetFields("fieldRaw1", "fieldRaw2");
             
-            // Map input class
             var bson = data.ToBson();
-            
             var output = BsonSerializer.Deserialize<UnityClassSupport>(bson);
             
             Assert.AreEqual(data.X, output.X);
