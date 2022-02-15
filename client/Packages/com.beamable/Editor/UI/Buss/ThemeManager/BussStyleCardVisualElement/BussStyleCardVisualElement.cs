@@ -38,11 +38,15 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleRule _styleRule;
 		private BussElementHierarchyVisualElement _navigationWindow;
 
-		private Action _onUndoRequest;
 		private readonly List<BussStylePropertyVisualElement> _properties = new List<BussStylePropertyVisualElement>();
+		private Action _onUndoRequest;
 		private BussThemeManager _themeManager;
+		private bool _sorted;
+		private bool _showAllMode;
+		private bool _editMode;
 
 		public BussStyleRule StyleRule => _styleRule;
+		public bool EditMode => _editMode;
 
 		public BussStyleCardVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}")
@@ -72,7 +76,7 @@ namespace Beamable.Editor.UI.Components
 			_navigationWindow.SelectionChanged -= OnSelectionChanged;
 			_navigationWindow.SelectionChanged += OnSelectionChanged;
 
-			_removeButton.SetHidden(!StyleRule.EditMode);
+			_removeButton.SetHidden(!_editMode);
 
 			RegisterButtonActions();
 			CreateSelectorLabel();
@@ -244,14 +248,14 @@ namespace Beamable.Editor.UI.Components
 
 		private void EditButtonClicked(MouseDownEvent evt)
 		{
-			SetEditMode(!StyleRule.EditMode);
+			SetEditMode(!_editMode);
 		}
 
 		public void SetEditMode(bool value)
 		{
-			StyleRule.EditMode = value;
+			_editMode = value;
 
-			if (!StyleRule.EditMode)
+			if (!_editMode)
 			{
 				_themeManager.CloseConfirmationPopup();
 			}
@@ -265,7 +269,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void ShowAllButtonClicked(MouseDownEvent evt)
 		{
-			StyleRule.ShowAllMode = !StyleRule.ShowAllMode;
+			_showAllMode = !_showAllMode;
 			UpdateShowAllStatus();
 			RefreshProperties();
 		}
@@ -273,8 +277,8 @@ namespace Beamable.Editor.UI.Components
 		private void UpdateShowAllStatus()
 		{
 			const string showAllProperty = "showAllProperties";
-			EnableInClassList(showAllProperty, StyleRule.ShowAllMode);
-			_showAllButtonText.text = StyleRule.ShowAllMode ? "Hide All" : "Show All";
+			EnableInClassList(showAllProperty, _showAllMode);
+			_showAllButtonText.text = _showAllMode ? "Hide All" : "Show All";
 		}
 
 		private void CreateSelectorLabel()
@@ -283,7 +287,7 @@ namespace Beamable.Editor.UI.Components
 			_selectorLabelParent.Clear();
 
 			_selectorLabelComponent = new BussSelectorLabelVisualElement();
-			_selectorLabelComponent.Setup(StyleRule, _styleSheet);
+			_selectorLabelComponent.Setup(StyleRule, _styleSheet, _editMode);
 			_selectorLabelParent.Add(_selectorLabelComponent);
 
 			_selectorLabelComponent.OnChangeSubmit += () => SetEditMode(false);
@@ -293,14 +297,14 @@ namespace Beamable.Editor.UI.Components
 		{
 			foreach (BussStylePropertyVisualElement element in _properties.ToArray())
 			{
-				bool remove = false;
+				bool remove;
 				if (element.PropertyIsInStyle)
 				{
 					remove = !_styleRule.Properties.Contains(element.PropertyProvider);
 				}
 				else
 				{
-					remove = !_styleRule.ShowAllMode ||
+					remove = !_showAllMode ||
 							 _styleRule.Properties.Any(p => p.Key == element.PropertyKey);
 				}
 
@@ -322,15 +326,16 @@ namespace Beamable.Editor.UI.Components
 				}
 
 				var element = new BussStylePropertyVisualElement();
-				element.Setup(_styleSheet, _styleRule, property, _variableDatabase);
+				element.Setup(_styleSheet, _styleRule, property, _variableDatabase, _editMode);
 				(property.IsVariable ? _variables : _propertiesParent).Add(element);
 				_properties.Add(element);
 			}
 
-			if (_styleRule.ShowAllMode)
+			if (_showAllMode)
 			{
 				var restPropertyKeys =
-					BussStyle.Keys.Where(s => StyleRule.Properties.All(provider => provider.Key != s));
+					BussStyle.Keys.Where(s => StyleRule.Properties.All(provider => provider.Key != s)).OrderBy(k=>k);
+				
 				foreach (var key in restPropertyKeys)
 				{
 					var existingProperty = _properties.FirstOrDefault(p => p.PropertyProvider.Key == key);
@@ -343,7 +348,7 @@ namespace Beamable.Editor.UI.Components
 					var propertyProvider =
 						BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
 					BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
-					element.Setup(_styleSheet, StyleRule, propertyProvider, _variableDatabase);
+					element.Setup(_styleSheet, StyleRule, propertyProvider, _variableDatabase, _editMode);
 					_propertiesParent.Add(element);
 					_properties.Add(element);
 				}
