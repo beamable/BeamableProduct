@@ -14,6 +14,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
+using static Beamable.Common.Constants.BeamableConstants.Features.ContentManager;
 
 namespace Beamable.Editor.Content
 {
@@ -86,7 +87,7 @@ namespace Beamable.Editor.Content
 		public IContentObject AddItem(ContentTypeDescriptor typeDescriptor)
 		{
 			var itemType = typeDescriptor.ContentType;
-			var itemName = ContentManagerConstants.GetNameForNewContentFileByType(itemType);
+			var itemName = GET_NAME_FOR_NEW_CONTENT_FILE_BY_TYPE(itemType);
 			ContentObject content = ScriptableObject.CreateInstance(itemType) as ContentObject;
 			content.SetContentName(itemName);
 
@@ -156,7 +157,7 @@ namespace Beamable.Editor.Content
 
 		public void ShowDocs()
 		{
-			Application.OpenURL(BeamableConstants.URL_TOOL_WINDOW_CONTENT_MANAGER);
+			Application.OpenURL(BeamableConstantsOLD.URL_TOOL_WINDOW_CONTENT_MANAGER);
 		}
 
 		private void ContentIO_OnContentDeleted(IContentObject content)

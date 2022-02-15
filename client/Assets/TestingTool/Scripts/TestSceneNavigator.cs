@@ -3,6 +3,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using static Beamable.Common.Constants.BeamableConstants.Features.TestingTool;
+
 #pragma warning disable CS0649
 
 namespace TestingTool.Scripts
@@ -17,7 +19,7 @@ namespace TestingTool.Scripts
 
         private void Awake()
         {
-            _testScenarios = Resources.Load<TestScenariosRuntime>(ConstantsHelper.TEST_SCENARIOS_RUNTIME_FILENAME);
+            _testScenarios = Resources.Load<TestScenariosRuntime>(FileNames.TEST_SCENARIOS_RUNTIME);
             Init();
         }
         private void Init()
@@ -53,7 +55,7 @@ namespace TestingTool.Scripts
         }
         public void BackToMainMenu()
         {
-            LoadScene(ConstantsHelper.MAIN_TESTING_SCENE_NAME);
+            LoadScene(FileNames.MAIN_TEST_SCENE);
         }
 
         private void SetupScene(bool isNextScene)

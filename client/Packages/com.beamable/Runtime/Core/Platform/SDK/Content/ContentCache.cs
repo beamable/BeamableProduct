@@ -15,6 +15,7 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.Networking;
 using Debug = UnityEngine.Debug;
+using static Beamable.Common.Constants.BeamableConstants.Features.Content;
 
 namespace Beamable.Content
 {
@@ -169,7 +170,7 @@ namespace Beamable.Content
 
 		private bool ExtractContent()
 		{
-			var bakedFile = Resources.Load<TextAsset>(ContentConstants.BakedFileResourcePath);
+			var bakedFile = Resources.Load<TextAsset>(BAKED_FILE_RESOURCE_PATH);
 
 			if (bakedFile == null)
 			{

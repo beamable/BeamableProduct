@@ -194,7 +194,7 @@ namespace Beamable.Editor.Config
 
 		public void ShowDocs()
 		{
-			Application.OpenURL(BeamableConstants.URL_TOOL_WINDOW_CONFIG_MANAGER);
+			Application.OpenURL(BeamableConstantsOLD.URL_TOOL_WINDOW_CONFIG_MANAGER);
 		}
 
 		public void ToggleModuleFilter(string module, bool shouldFilterOn)

@@ -10,6 +10,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants.Features.ContentManager;
 
 namespace Beamable.Editor.Content.Components
 {
@@ -66,7 +67,7 @@ namespace Beamable.Editor.Content.Components
 			Button createItemButton = new Button();
 			createItemButton.AddToClassList("addItemButton");
 			createItemButton.SetEnabled(true);
-			createItemButton.text = string.Format(ContentManagerConstants.CreateNewPopupAddButtonEnabledText,
+			createItemButton.text = string.Format(CREATE_NEW_POPUP_ADD_BUTTON_ENABLED_TEXT,
 			   typeDescriptor.TypeName);
 			createItemButton.clickable.clicked += () =>
 			{

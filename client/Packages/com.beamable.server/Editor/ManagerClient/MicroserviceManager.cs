@@ -1,11 +1,13 @@
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Constants;
 using Beamable.Serialization;
 using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using static Beamable.Common.Constants.BeamableConstants.Features.Services;
 
 namespace Beamable.Server.Editor.ManagerClient
 {
@@ -29,7 +31,7 @@ namespace Beamable.Server.Editor.ManagerClient
 			   .RecoverFrom404(ex => new ServiceManifest());
 		}
 
-		[Obsolete(Constants.OBSOLETE_WILL_BE_REMOVED)]
+		[Obsolete(BeamableConstants.Commons.OBSOLETE_WILL_BE_REMOVED)]
 		public Promise<GetLogsResponse> GetLogs(MicroserviceDescriptor service, string filter = null)
 		{
 			return Requester.RequestJson<GetLogsResponse>(Method.POST, $"{SERVICE}/logs", new GetLogsRequest
@@ -39,7 +41,7 @@ namespace Beamable.Server.Editor.ManagerClient
 			});
 		}
 
-		[Obsolete(Constants.OBSOLETE_WILL_BE_REMOVED)]
+		[Obsolete(BeamableConstants.Commons.OBSOLETE_WILL_BE_REMOVED)]
 		public Promise<ServiceManifest> GetManifest(long id)
 		{
 			return Requester.Request<GetManifestResponse>(Method.GET, $"{SERVICE}/manifest?id={id}")
@@ -115,7 +117,7 @@ namespace Beamable.Server.Editor.ManagerClient
 		public string templateId;
 		public string comments;
 		public List<ServiceDependency> dependencies;
-		public long containerHealthCheckPort = SharedConstants.HEALTH_PORT;
+		public long containerHealthCheckPort = HEALTH_PORT;
 	}
 
 

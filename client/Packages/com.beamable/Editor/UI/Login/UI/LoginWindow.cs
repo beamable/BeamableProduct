@@ -1,4 +1,3 @@
-
 using Beamable.Editor.Config;
 using Beamable.Editor.Login.UI.Components;
 using Beamable.Editor.Login.UI.Model;
@@ -14,6 +13,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants.Features.LoginBase;
 
 namespace Beamable.Editor.Login.UI
 {
@@ -36,10 +36,10 @@ namespace Beamable.Editor.Login.UI
 
 #if BEAMABLE_DEVELOPER
         [MenuItem(
-            BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER + "/" +
-            BeamableConstants.OPEN + " " +
-            BeamableConstants.LOGIN,
-            priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_2
+            BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER + "/" +
+            BeamableConstantsOLD.OPEN + " " +
+            BeamableConstantsOLD.LOGIN,
+            priority = BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_PRIORITY_2
         )]
 #endif
 		public static LoginWindow Init()
@@ -73,13 +73,13 @@ namespace Beamable.Editor.Login.UI
 			// Create Beamable ContentManagerWindow and dock it next to Unity Hierarchy Window
 			var loginWindow = dockLocations.Length == 0
 				? ScriptableObject.CreateInstance<LoginWindow>()
-				: GetWindow<LoginWindow>(BeamableConstants.LOGIN, true, dockLocations);
+				: GetWindow<LoginWindow>(BeamableConstantsOLD.LOGIN, true, dockLocations);
 
 			loginWindow.minSize = new Vector2(400, 590);
 
 			if (dockLocations.Length == 0)
 			{
-				loginWindow.titleContent = new GUIContent(BeamableConstants.LOGIN);
+				loginWindow.titleContent = new GUIContent(BeamableConstantsOLD.LOGIN);
 				loginWindow.ShowUtility();
 				loginWindow.GetRootVisualContainer().AddToClassList("loginRoot");
 			}
@@ -122,9 +122,9 @@ namespace Beamable.Editor.Login.UI
 			var root = this.GetRootVisualContainer();
 			root.Clear();
 			var uiAsset =
-				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{LoginBaseConstants.BASE_PATH}/LoginWindow.uxml");
+				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{BASE_PATH}/LoginWindow.uxml");
 			_windowRoot = uiAsset.CloneTree();
-			root.AddStyleSheet($"{LoginBaseConstants.BASE_PATH}/LoginWindow.uss");
+			root.AddStyleSheet($"{BASE_PATH}/LoginWindow.uss");
 			_windowRoot.name = nameof(_windowRoot);
 
 			_welcomeMessage = _windowRoot.Q<Label>("welcomeText");

@@ -17,10 +17,10 @@ namespace Beamable.Editor.Config
 	{
 
 		[MenuItem(
-		   BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
-		   BeamableConstants.OPEN + " " +
-		   BeamableConstants.CONFIG_MANAGER,
-		   priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_2
+		   BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
+		   BeamableConstantsOLD.OPEN + " " +
+		   BeamableConstantsOLD.CONFIG_MANAGER,
+		   priority = BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_PRIORITY_2
 		)]
 		public static void Open()
 		{

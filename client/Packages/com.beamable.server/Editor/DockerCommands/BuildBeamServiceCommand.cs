@@ -7,7 +7,7 @@ namespace Beamable.Server.Editor.DockerCommands
    public class BuildBeamServiceCommand : DockerCommand
    {
 #if BEAMABLE_DEVELOPER
-       [MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/Build Beam Service")]
+       [MenuItem(BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/Build Beam Service")]
        public static void Run()
        {
            var command = new BuildBeamServiceCommand();

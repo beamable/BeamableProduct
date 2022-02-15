@@ -10,6 +10,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
+using static Beamable.Common.Constants.BeamableConstants.Features.Assistant;
 
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -27,13 +28,13 @@ namespace Beamable.Editor.Assistant
 	/// </summary>
 	public class BeamableAssistantWindow : EditorWindow, ISerializationCallbackReceiver
 	{
-		[MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
-				  BeamableConstants.OPEN + " " +
-				  BeamableConstants.BEAMABLE_ASSISTANT,
-				  priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_2)]
+		[MenuItem(BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
+				  BeamableConstantsOLD.OPEN + " " +
+				  BeamableConstantsOLD.BEAMABLE_ASSISTANT,
+				  priority = BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_PRIORITY_2)]
 		public static BeamableAssistantWindow ShowWindow()
 		{
-			var window = GetWindow<BeamableAssistantWindow>(BeamableConstants.BEAMABLE_ASSISTANT, true, typeof(SceneView));
+			var window = GetWindow<BeamableAssistantWindow>(BeamableConstantsOLD.BEAMABLE_ASSISTANT, true, typeof(SceneView));
 			window.Show();
 
 			return window;
@@ -123,10 +124,9 @@ namespace Beamable.Editor.Assistant
 
 			var root = this.GetRootVisualContainer();
 			root.Clear();
-
-			var uiAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{BeamableAssistantConstants.BASE_PATH}/BeamableAssistantWindow.uxml");
+			var uiAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{BASE_PATH}/BeamableAssistantWindow.uxml");
 			_windowRoot = uiAsset.CloneTree();
-			_windowRoot.AddStyleSheet($"{BeamableAssistantConstants.BASE_PATH}/BeamableAssistantWindow.uss");
+			_windowRoot.AddStyleSheet($"{BASE_PATH}/BeamableAssistantWindow.uss");
 			_windowRoot.name = nameof(_windowRoot);
 
 			root.Add(_windowRoot);

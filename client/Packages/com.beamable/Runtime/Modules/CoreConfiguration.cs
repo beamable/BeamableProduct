@@ -11,7 +11,7 @@ namespace Beamable
 #if BEAMABLE_DEVELOPER
 	[CreateAssetMenu(
 		fileName = "CoreConfiguration",
-		menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
+		menuName = BeamableConstantsOLD.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
 				   "Core Configuration")]
 #endif
 	public class CoreConfiguration : ModuleConfigurationObject

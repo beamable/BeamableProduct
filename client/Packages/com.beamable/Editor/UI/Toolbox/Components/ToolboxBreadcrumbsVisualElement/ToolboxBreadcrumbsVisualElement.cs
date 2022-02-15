@@ -51,7 +51,7 @@ namespace Beamable.Editor.Toolbox.Components
 			_realmButton.Refresh();
 
 			var portalButton = Root.Q<Button>("openPortalButton");
-			portalButton.text = (BeamableConstants.OPEN + " " + BeamableConstants.PORTAL).ToUpper();
+			portalButton.text = (BeamableConstantsOLD.OPEN + " " + BeamableConstantsOLD.PORTAL).ToUpper();
 			portalButton.clickable.clicked += () => GetPortalUrl.Then(Application.OpenURL);
 			var m = new ContextualMenuManipulator(rightClickEvt =>
 			{

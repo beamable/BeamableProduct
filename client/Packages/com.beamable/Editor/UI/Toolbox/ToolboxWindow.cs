@@ -12,16 +12,17 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants.Features.Toolbox;
 
 namespace Beamable.Editor.Toolbox.UI
 {
 	public class ToolboxWindow : EditorWindow
 	{
 		[MenuItem(
-			BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
-			BeamableConstants.OPEN + " " +
-			BeamableConstants.TOOLBOX,
-			priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_1
+			BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
+			BeamableConstantsOLD.OPEN + " " +
+			BeamableConstantsOLD.TOOLBOX,
+			priority = BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_PRIORITY_1
 		)]
 		public static async void Init()
 		{
@@ -41,7 +42,7 @@ namespace Beamable.Editor.Toolbox.UI
 			}
 
 			// Create Beamable ContentManagerWindow and dock it next to Unity Hierarchy Window
-			var contentManagerWindow = GetWindow<ToolboxWindow>(BeamableConstants.TOOLBOX, true, typeof(SceneView));
+			var contentManagerWindow = GetWindow<ToolboxWindow>(BeamableConstantsOLD.TOOLBOX, true, typeof(SceneView));
 
 			contentManagerWindow.Show(true);
 		}
@@ -127,9 +128,9 @@ namespace Beamable.Editor.Toolbox.UI
 			var root = this.GetRootVisualContainer();
 			root.Clear();
 			var uiAsset =
-				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{ToolboxConstants.BASE_PATH}/ToolboxWindow.uxml");
+				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{BASE_PATH}/ToolboxWindow.uxml");
 			_windowRoot = uiAsset.CloneTree();
-			_windowRoot.AddStyleSheet($"{ToolboxConstants.BASE_PATH}/ToolboxWindow.uss");
+			_windowRoot.AddStyleSheet($"{BASE_PATH}/ToolboxWindow.uss");
 			_windowRoot.name = nameof(_windowRoot);
 
 			root.Add(_windowRoot);
@@ -152,7 +153,7 @@ namespace Beamable.Editor.Toolbox.UI
 
 			_actionBarVisualElement.OnInfoButtonClicked += () =>
 			{
-				Application.OpenURL(BeamableConstants.URL_TOOL_WINDOW_TOOLBOX);
+				Application.OpenURL(BeamableConstantsOLD.URL_TOOL_WINDOW_TOOLBOX);
 			};
 
 			CheckForDeps();

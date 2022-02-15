@@ -12,6 +12,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants.Features.ContentManager;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -152,7 +153,7 @@ namespace Beamable.Editor.UI.Components
 		public static BeamablePopupWindow ShowConfirmationUtility(string title, ConfirmationPopupVisualElement element,
 			EditorWindow parent, Action<BeamablePopupWindow> onDomainReload = null)
 		{
-			var window = ShowUtility(title, element, parent, ContentManagerConstants.ConfirmationPopupSize,
+			var window = ShowUtility(title, element, parent, ConfirmationPopupSize,
 				onDomainReload).FitToContent();
 
 			return window;

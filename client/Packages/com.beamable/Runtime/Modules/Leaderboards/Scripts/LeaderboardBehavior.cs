@@ -8,7 +8,7 @@ namespace Beamable.Leaderboards
 {
 
 
-	[HelpURL(BeamableConstants.URL_FEATURE_LEADERBOARD_FLOW)]
+	[HelpURL(BeamableConstantsOLD.URL_FEATURE_LEADERBOARD_FLOW)]
 	public class LeaderboardBehavior : MonoBehaviour
 	{
 

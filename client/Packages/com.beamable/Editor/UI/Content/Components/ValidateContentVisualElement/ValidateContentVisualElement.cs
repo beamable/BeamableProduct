@@ -1,4 +1,3 @@
-
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
@@ -18,6 +17,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants.Features.ContentManager.Validate;
 
 namespace Beamable.Editor.Content.Components
 {
@@ -59,14 +59,14 @@ namespace Beamable.Editor.Content.Components
 			_progressBar.RunWithoutUpdater = true;
 
 			_messageLbl = Root.Q<Label>("message");
-			_messageLbl.text = ContentManagerConstants.ValidateStartMessage;
+			_messageLbl.text = VALIDATE_START_MESSAGE;
 
 			_invalidContentCountVisualElement = Root.Q<CountVisualElement>("errorObjectCount");
 			_totalErrorCountVisualElement = Root.Q<CountVisualElement>("errorCount");
 			UpdateErrorCount();
 
 			_okayButton = Root.Q<PrimaryButtonVisualElement>("okayBtn");
-			_okayButton.Button.text = ContentManagerConstants.ValidateButtonStartText;
+			_okayButton.Button.text = VALIDATE_START_MESSAGE;
 			_okayButton.Button.clickable.clicked += OkayButton_OnClicked;
 			_okayButton.Disable();
 			_okayButton.Load(_completePromise);
@@ -163,7 +163,7 @@ namespace Beamable.Editor.Content.Components
 			{
 				if (processed < total)
 				{
-					_messageLbl.text = $"{ContentManagerConstants.ValidateProgressMessage} {processed}/{total}";
+					_messageLbl.text = $"{VALIDATE_PROGRESS_MESSAGE} {processed}/{total}";
 				}
 			};
 			if (!_progressBar.Failed)
@@ -209,10 +209,10 @@ namespace Beamable.Editor.Content.Components
 			var areErrors = _listSource.Count > 0;
 			if (areErrors)
 			{
-				_messageLbl.text = ContentManagerConstants.ValidationFailureMessage;
+				_messageLbl.text = VALIDATION_FAILURE_MESSAGE;
 				_messageLbl.AddToClassList("failed");
 				_okayButton.SetAsFailure();
-				_okayButton.SetText(ContentManagerConstants.ValidateButtonDoneWithErrorsText);
+				_okayButton.SetText(VALIDATE_BUTTON_DONE_WITH_ERRORS_TEXT);
 
 
 				foreach (var elem in _listSource)
@@ -235,8 +235,8 @@ namespace Beamable.Editor.Content.Components
 			}
 			else
 			{
-				_messageLbl.text = ContentManagerConstants.ValidationCompleteMessage;
-				_okayButton.Button.text = ContentManagerConstants.ValidateButtonDoneWithoutErrorsText;
+				_messageLbl.text = VALIDATION_COMPLETE_MESSAGE;
+				_okayButton.Button.text = VALIDATE_BUTTON_DONE_WITHOUT_ERRORS_TEXT;
 			}
 
 

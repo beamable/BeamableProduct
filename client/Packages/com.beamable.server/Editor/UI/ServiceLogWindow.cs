@@ -1,3 +1,4 @@
+using Beamable.Common.Constants;
 using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.UI.Components;
@@ -107,9 +108,9 @@ namespace Beamable.Editor.Microservice.UI
 			var root = this.GetRootVisualContainer();
 			root.Clear();
 			var uiAsset =
-			   AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{Constants.SERVER_UI}/ServiceLogWindow.uxml");
+			   AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{BeamableConstants.Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/ServiceLogWindow.uxml");
 			_windowRoot = uiAsset.CloneTree();
-			_windowRoot.AddStyleSheet($"{Constants.SERVER_UI}/ServiceLogWindow.uss");
+			_windowRoot.AddStyleSheet($"{BeamableConstants.Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/ServiceLogWindow.uss");
 			_windowRoot.name = nameof(_windowRoot);
 
 			root.Add(_windowRoot);

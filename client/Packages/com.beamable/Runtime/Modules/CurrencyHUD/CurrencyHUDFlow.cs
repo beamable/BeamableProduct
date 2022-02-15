@@ -9,7 +9,7 @@ using UnityEngine.UI;
 namespace Beamable.CurrencyHUD
 
 {
-	[HelpURL(BeamableConstants.URL_FEATURE_CURRENCY_HUD)]
+	[HelpURL(BeamableConstantsOLD.URL_FEATURE_CURRENCY_HUD)]
 	public class CurrencyHUDFlow : MonoBehaviour
 	{
 		public CurrencyRef content;

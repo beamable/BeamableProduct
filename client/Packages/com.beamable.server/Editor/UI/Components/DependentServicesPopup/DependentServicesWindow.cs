@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants.BeamableConstants.Features.Services;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -30,7 +31,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			var wnd = CreateInstance<DependentServicesWindow>();
 
-			wnd.titleContent = new GUIContent(Constants.DEPENDENT_SERVICES_WINDOW_TITLE);
+			wnd.titleContent = new GUIContent(DEPENDENT_SERVICES_WINDOW_TITLE);
 			wnd.ShowUtility();
 			wnd.minSize = new Vector2(620, 400);
 			wnd.position = new Rect((Screen.width + wnd.minSize.x) * 0.5f, Screen.width * 0.5f, wnd.minSize.x, wnd.minSize.y);

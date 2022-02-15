@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Beamable.Inventory.Scripts
 {
-	[HelpURL(BeamableConstants.URL_FEATURE_INVENTORY_FLOW)]
+	[HelpURL(BeamableConstantsOLD.URL_FEATURE_INVENTORY_FLOW)]
 	public class InventoryMenuBehaviour : MonoBehaviour
 	{
 		public MenuManagementBehaviour MenuManager;

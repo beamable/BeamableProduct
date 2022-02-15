@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants.BeamableConstants.Features.Services;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -32,8 +33,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public static PublishWindow ShowPublishWindow(EditorWindow parent)
 		{
 			var wnd = CreateInstance<PublishWindow>();
-			wnd.name = Constants.Publish;
-			wnd.titleContent = new GUIContent(Constants.Publish);
+			wnd.name = PUBLISH;
+			wnd.titleContent = new GUIContent(PUBLISH);
 			wnd.ShowUtility();
 			wnd._model = new ManifestModel();
 
@@ -98,7 +99,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				 * upload each image that is different than whats in the manifest...
 				 * upload the manifest file...
 				 */
-				WindowStateUtility.DisableAllWindows(new[] { Constants.Publish });
+				WindowStateUtility.DisableAllWindows(new[] { PUBLISH });
 				_element.PrepareForPublish();
 				var microservicesRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 				await microservicesRegistry.Deploy(model, this, _tokenSource.Token, _element.HandleServiceDeployed, logger);

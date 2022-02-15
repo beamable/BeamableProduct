@@ -30,7 +30,7 @@ namespace Beamable.Announcements
 
 	}
 
-	[HelpURL(BeamableConstants.URL_FEATURE_ANNOUNCEMENTS_FLOW)]
+	[HelpURL(BeamableConstantsOLD.URL_FEATURE_ANNOUNCEMENTS_FLOW)]
 	public class AnnouncementSignals : DeSignalTower
 
 	{

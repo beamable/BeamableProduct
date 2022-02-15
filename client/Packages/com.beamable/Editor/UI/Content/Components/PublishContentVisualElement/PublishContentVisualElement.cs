@@ -17,6 +17,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants.Features.ContentManager.Publish;
 
 namespace Beamable.Editor.Content.Components
 {
@@ -82,7 +83,7 @@ namespace Beamable.Editor.Content.Components
 			var manifestDocsLink = Root.Q<Label>("manifestDocsLink");
 			manifestDocsLink.RegisterCallback<MouseDownEvent>(evt =>
 			{
-				Application.OpenURL(BeamableConstants.URL_TOOL_WINDOW_CONTENT_NAMESPACES);
+				Application.OpenURL(BeamableConstantsOLD.URL_TOOL_WINDOW_CONTENT_NAMESPACES);
 			});
 
 			if (CreateNewManifest)
@@ -174,7 +175,7 @@ namespace Beamable.Editor.Content.Components
 				_publishBtn.Button.clickable.clicked += PublishButton_OnClicked;
 
 				var noPublishLabel = Root.Q<Label>("noPublishLabel");
-				noPublishLabel.text = ContentManagerConstants.PublishNoDataText;
+				noPublishLabel.text = PUBLISH_NO_DATA_TEXT;
 				noPublishLabel.AddTextWrapStyle();
 				if (publishSet.totalOpsCount > 0)
 				{
@@ -262,7 +263,7 @@ namespace Beamable.Editor.Content.Components
 
 			});
 
-			loadingBlocker.SetPromise(promise, mainContent).SetText(ContentManagerConstants.PublishMessageLoading);
+			loadingBlocker.SetPromise(promise, mainContent).SetText(PUBLISH_MESSAGE_LOADING);
 		}
 
 		private void DetailButton_OnClicked()
@@ -310,7 +311,7 @@ namespace Beamable.Editor.Content.Components
 					promise.Then(_ =>
 					{
 						_completed = true;
-						_messageLabel.text = ContentManagerConstants.PublishCompleteMessage;
+						_messageLabel.text = PUBLISH_COMPLETE_MESSAGE;
 						_publishBtn.SetText("Okay");
 						_loadingBar.RunWithoutUpdater = false;
 						MarkChecked();
@@ -422,7 +423,7 @@ namespace Beamable.Editor.Content.Components
 			{
 				_messageLabel.visible = true;
 				_messageLabel.AddTextWrapStyle();
-				_messageLabel.text = string.Format(ContentManagerConstants.PublishMessagePreview,
+				_messageLabel.text = string.Format(PUBLISH_MESSAGE_PREVIEW,
 					api.Realm.DisplayName, ContentConfiguration.Instance.EditorManifestID);
 			});
 		}

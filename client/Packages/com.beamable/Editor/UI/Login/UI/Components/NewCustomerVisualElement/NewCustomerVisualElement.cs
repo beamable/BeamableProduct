@@ -11,6 +11,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants.Features.LoginBase;
 
 namespace Beamable.Editor.Login.UI.Components
 {
@@ -41,26 +42,26 @@ namespace Beamable.Editor.Login.UI.Components
 			base.Refresh();
 
 			_cidTextField = Root.Q<TextField>("organizationID");
-			_cidTextField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_ALIAS_FIELD);
+			_cidTextField.AddPlaceholder(PLACEHOLDER_ALIAS_FIELD);
 			var isAlias = _cidTextField.AddErrorLabel("Alias", PrimaryButtonVisualElement.AliasErrorHandler);
 
 			_gameNameField = Root.Q<TextField>("projectID");
-			_gameNameField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_GAMENAME_FIELD);
+			_gameNameField.AddPlaceholder(PLACEHOLDER_GAMENAME_FIELD);
 			var isGame = _gameNameField.AddErrorLabel("Game", PrimaryButtonVisualElement.GameNameErrorHandler);
 
 			_emailField = Root.Q<TextField>("account");
-			_emailField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_EMAIL_FIELD);
+			_emailField.AddPlaceholder(PLACEHOLDER_EMAIL_FIELD);
 			var isEmail = _emailField.AddErrorLabel("Email", PrimaryButtonVisualElement.EmailErrorHandler);
 
 			_passwordField = Root.Q<TextField>("password");
-			_passwordField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_PASSWORD_FIELD);
+			_passwordField.AddPlaceholder(PLACEHOLDER_PASSWORD_FIELD);
 			_passwordField.isPasswordField = true;
 			var isPasswordValid = _passwordField.AddErrorLabel("Password", m => PrimaryButtonVisualElement.IsPassword(m)
 			   ? null
 			   : "A valid password must be at least 4 characters long");
 
 			_passwordConfField = Root.Q<TextField>("confirmPassword");
-			_passwordConfField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_PASSWORD_CONFIRM_FIELD);
+			_passwordConfField.AddPlaceholder(PLACEHOLDER_PASSWORD_CONFIRM_FIELD);
 			_passwordConfField.isPasswordField = true;
 			var doPasswordsMatch = _passwordConfField.AddErrorLabel("Password Match", m => m != _passwordField.value
 																								  ? "Passwords don't match"
@@ -71,7 +72,7 @@ namespace Beamable.Editor.Login.UI.Components
 			var isLegal = _legalCheckbox.AddErrorLabel("Legal", PrimaryButtonVisualElement.LegalErrorHandler);
 
 			_legalButton = Root.Q<GenericButtonVisualElement>("legalButton");
-			_legalButton.OnClick += () => { Application.OpenURL(BeamableConstants.BEAMABLE_LEGAL_WEBSITE); };
+			_legalButton.OnClick += () => { Application.OpenURL(BeamableConstantsOLD.BEAMABLE_LEGAL_WEBSITE); };
 
 			_continueButton = Root.Q<PrimaryButtonVisualElement>();
 			_continueButton.Button.clickable.clicked += CreateCustomer_OnClicked;

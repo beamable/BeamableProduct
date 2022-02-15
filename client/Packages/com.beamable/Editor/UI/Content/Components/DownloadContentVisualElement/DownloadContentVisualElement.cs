@@ -11,6 +11,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants.Features.ContentManager.Download;
 
 namespace Beamable.Editor.Content.Components
 {
@@ -62,7 +63,7 @@ namespace Beamable.Editor.Content.Components
 				_loadingBar.Refresh();
 
 				var noDownloadLabel = Root.Q<Label>("noDownloadLbl");
-				noDownloadLabel.text = ContentManagerConstants.DownloadNoDataText;
+				noDownloadLabel.text = DOWNLOAD_NO_DATA_TEXT;
 				noDownloadLabel.AddTextWrapStyle();
 
 				// TODO show preview of download content.
@@ -139,7 +140,7 @@ namespace Beamable.Editor.Content.Components
 					removeLabel.parent.Remove(removeLabel);
 				}
 			});
-			loadingBlocker.SetPromise(promise, mainElement).SetText(ContentManagerConstants.DownloadLoadText);
+			loadingBlocker.SetPromise(promise, mainElement).SetText(DOWNLOAD_LOAD_TEXT);
 		}
 
 		private void SetFold(Foldout foldout, List<ContentDownloadEntryDescriptor> entries, List<ContentDownloadEntryDescriptor> source, ListView listView)
@@ -174,13 +175,13 @@ namespace Beamable.Editor.Content.Components
 		protected virtual void SetMessageLabel()
 		{
 			_messageLabel = Root.Q<Label>("message");
-			_messageLabel.text = ContentManagerConstants.DownloadMessageText;
+			_messageLabel.text = DOWNLOAD_MESSAGE_TEXT;
 			_messageLabel.AddTextWrapStyle();
 		}
 
 		protected virtual void SetDownloadSuccessMessageLabel()
 		{
-			_messageLabel.text = ContentManagerConstants.DownloadCompleteText;
+			_messageLabel.text = DOWNLOAD_COMPLETE_TEXT;
 		}
 
 		protected virtual void OnDownloadSuccess()

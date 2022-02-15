@@ -8,6 +8,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants.Features.LoginBase;
 
 namespace Beamable.Editor.Login.UI.Components
 {
@@ -23,7 +24,7 @@ namespace Beamable.Editor.Login.UI.Components
 
 		public virtual bool ShowHeader => true;
 
-		public LoginBaseComponent(string name) : base($"{LoginBaseConstants.COMP_PATH}/{name}/{name}")
+		public LoginBaseComponent(string name) : base($"{COMPONENTS_PATH}/{name}/{name}")
 		{
 
 		}

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Beamable.Common.Constants;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -108,9 +109,9 @@ namespace Beamable.Pooling
    {
       public static Dictionary<System.Type, int> totalAllocated = new Dictionary<System.Type, int>();
 
-      [UnityEditor.MenuItem(PoolingConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES  +
+      [UnityEditor.MenuItem(BeamableConstants.MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES  +
          "/Show ClassPool Stats in Console",
-         priority = PoolingConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
+         priority = BeamableConstants.MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
       public static void PrintStats()
       {
          string s = "";

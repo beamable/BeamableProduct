@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Beamable.AccountManagement
 {
-	[HelpURL(BeamableConstants.URL_FEATURE_LOGIN_FLOW)]
+	[HelpURL(BeamableConstantsOLD.URL_FEATURE_LOGIN_FLOW)]
 	public class AccountManagementBehaviour : MonoBehaviour
 	{
 		public MenuManagementBehaviour MenuManager;

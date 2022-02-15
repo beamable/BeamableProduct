@@ -21,6 +21,7 @@ using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
 using UnityEditor.AddressableAssets.Settings.GroupSchemas;
 using UnityEngine;
+using static Beamable.Common.Constants.BeamableConstants.Features.Content;
 
 namespace Beamable.Editor.Content
 {
@@ -63,7 +64,7 @@ namespace Beamable.Editor.Content
 					BindingFlags.NonPublic | BindingFlags.Static);
 				var genMethod = method.MakeGenericMethod(asset.GetType());
 
-				var rootPath = $"{BeamableConstants.DATA_DIR}/{asset.ContentType}/";
+				var rootPath = $"{BeamableConstantsOLD.DATA_DIR}/{asset.ContentType}/";
 				var subPath = path.Substring(rootPath.Length);
 				var qualifiedName = Path.GetFileNameWithoutExtension(subPath.Replace(Path.DirectorySeparatorChar, '.'));
 
@@ -251,7 +252,7 @@ namespace Beamable.Editor.Content
 		{
 			if (string.IsNullOrWhiteSpace(manifestID))
 			{
-				manifestID = BeamableConstants.DEFAULT_MANIFEST_ID;
+				manifestID = BeamableConstantsOLD.DEFAULT_MANIFEST_ID;
 			}
 
 			if (string.IsNullOrEmpty(_requester?.AccessToken?.Token))
@@ -328,9 +329,9 @@ namespace Beamable.Editor.Content
 				var archivedManifests = source.manifests.Where(m => m.archived).ToList();
 				source.manifests.RemoveAll(m => m.archived);
 				if (source.manifests.Count == 0 ||
-					source.manifests.All(m => m.id != BeamableConstants.DEFAULT_MANIFEST_ID))
+					source.manifests.All(m => m.id != BeamableConstantsOLD.DEFAULT_MANIFEST_ID))
 				{
-					source.manifests.Insert(0, AvailableManifestModel.CreateId(BeamableConstants.DEFAULT_MANIFEST_ID));
+					source.manifests.Insert(0, AvailableManifestModel.CreateId(BeamableConstantsOLD.DEFAULT_MANIFEST_ID));
 				}
 
 				OnManifestsListFetched?.Invoke(source);
@@ -354,7 +355,7 @@ namespace Beamable.Editor.Content
 			}
 
 			if (!ContentConfiguration.Instance.EnableMultipleContentNamespaces &&
-				manifestID != BeamableConstants.DEFAULT_MANIFEST_ID)
+				manifestID != BeamableConstantsOLD.DEFAULT_MANIFEST_ID)
 			{
 				Debug.LogWarning("You are switching manifest while manifest namespaces feature is disabled!");
 			}
@@ -430,7 +431,7 @@ namespace Beamable.Editor.Content
 		{
 			var assetGuids = AssetDatabase.FindAssets(
 				$"t:{content.GetType().Name}",
-				new[] { BeamableConstants.DATA_DIR }
+				new[] { BeamableConstantsOLD.DATA_DIR }
 			);
 			foreach (var guid in assetGuids)
 			{
@@ -447,15 +448,15 @@ namespace Beamable.Editor.Content
 			where TContent : ContentObject, new()
 		{
 			if (query == null) query = ContentQuery.Unit;
-			if (!AssetDatabase.IsValidFolder(BeamableConstants.DATA_DIR))
+			if (!AssetDatabase.IsValidFolder(BeamableConstantsOLD.DATA_DIR))
 			{
-				Directory.CreateDirectory(BeamableConstants.DATA_DIR);
+				Directory.CreateDirectory(BeamableConstantsOLD.DATA_DIR);
 				yield break; // there is no folder, therefore, no content. Nothing to search for.
 			}
 
 			var assetGuids = AssetDatabase.FindAssets(
 				$"t:{typeof(TContent).Name}",
-				new[] { BeamableConstants.DATA_DIR }
+				new[] { BeamableConstantsOLD.DATA_DIR }
 			);
 			var contentType = ContentRegistry.TypeToName(typeof(TContent));
 
@@ -481,7 +482,7 @@ namespace Beamable.Editor.Content
 			return FindAllSubtypes<TContent>().Select(contentType =>
 			{
 				string contentTypeName = ContentObject.GetContentTypeName(contentType);
-				var dir = $"{BeamableConstants.DATA_DIR}/{contentTypeName}";
+				var dir = $"{BeamableConstantsOLD.DATA_DIR}/{contentTypeName}";
 				return dir;
 			}).ToArray();
 		}
@@ -516,7 +517,7 @@ namespace Beamable.Editor.Content
 			var localManifest = new LocalContentManifest();
 			ValidationContext.AllContent.Clear();
 
-			if (!Directory.Exists(BeamableConstants.DATA_DIR))
+			if (!Directory.Exists(BeamableConstantsOLD.DATA_DIR))
 			{
 				// If the directory is not here, there is no local content and that is fine.
 				return localManifest;
@@ -526,7 +527,7 @@ namespace Beamable.Editor.Content
 			{
 				var assetGuids = AssetDatabase.FindAssets(
 					$"t:{contentType.Name}",
-					new[] { BeamableConstants.DATA_DIR }
+					new[] { BeamableConstantsOLD.DATA_DIR }
 				);
 				var typeName = ContentRegistry.TypeToName(contentType);
 
@@ -608,12 +609,12 @@ namespace Beamable.Editor.Content
 		public void EnsureDefaultContent<TContent>() where TContent : ContentObject
 		{
 			string typeName = ContentObject.GetContentType<TContent>();
-			var dir = $"{BeamableConstants.DATA_DIR}/{typeName}";
+			var dir = $"{BeamableConstantsOLD.DATA_DIR}/{typeName}";
 			EnsureDefaultAssets<TContent>();
 			if (!Directory.Exists(dir))
 			{
 				Directory.CreateDirectory(dir);
-				var defaultDir = $"{BeamableConstants.DEFAULT_DATA_DIR}/{typeName}";
+				var defaultDir = $"{BeamableConstantsOLD.DEFAULT_DATA_DIR}/{typeName}";
 				if (Directory.Exists(defaultDir))
 				{
 					string[] files = Directory.GetFiles(defaultDir);
@@ -638,7 +639,7 @@ namespace Beamable.Editor.Content
 			{
 				var assetGuids = AssetDatabase.FindAssets(
 					$"t:{nextContentType.Name}",
-					new[] { BeamableConstants.DATA_DIR }
+					new[] { BeamableConstantsOLD.DATA_DIR }
 				);
 
 				foreach (var assetGuid in assetGuids)
@@ -670,8 +671,8 @@ namespace Beamable.Editor.Content
 		public void EnsureDefaultAssets<TContent>() where TContent : ContentObject
 		{
 			string contentType = ContentObject.GetContentType<TContent>();
-			var assetDir = $"{BeamableConstants.ASSET_DIR}/{contentType}";
-			var defaultDir = $"{BeamableConstants.DEFAULT_ASSET_DIR}/{contentType}";
+			var assetDir = $"{BeamableConstantsOLD.ASSET_DIR}/{contentType}";
+			var defaultDir = $"{BeamableConstantsOLD.DEFAULT_ASSET_DIR}/{contentType}";
 			if (Directory.Exists(assetDir) || !Directory.Exists(defaultDir))
 			{
 				return;
@@ -706,11 +707,11 @@ namespace Beamable.Editor.Content
 			// mark all files as addressable after copy completes...
 			CommitAssetDatabase();
 
-			var addressablesGroup = addressableAssetSettings.FindGroup(BeamableConstants.BEAMABLE_ASSET_GROUP);
+			var addressablesGroup = addressableAssetSettings.FindGroup(BeamableConstantsOLD.BEAMABLE_ASSET_GROUP);
 			if (addressablesGroup == null)
 			{
 				addressablesGroup = addressableAssetSettings.CreateGroup(
-					BeamableConstants.BEAMABLE_ASSET_GROUP,
+					BeamableConstantsOLD.BEAMABLE_ASSET_GROUP,
 					setAsDefaultGroup: false,
 					readOnly: false,
 					postEvent: true,
@@ -768,7 +769,7 @@ namespace Beamable.Editor.Content
 			if (string.IsNullOrEmpty(assetPath))
 			{
 				var newNameAsPath = content.Id.Replace('.', Path.DirectorySeparatorChar);
-				assetPath = $"{BeamableConstants.DATA_DIR}/{newNameAsPath}.asset";
+				assetPath = $"{BeamableConstantsOLD.DATA_DIR}/{newNameAsPath}.asset";
 			}
 			//Check if we are replacing the local content, or if we should create a numbered copy
 			var modifiedAssetPath = replace ? assetPath : GetAvailableFileName(assetPath, content.Id, localContentManifest);
@@ -810,7 +811,7 @@ namespace Beamable.Editor.Content
 			if (string.IsNullOrEmpty(path))
 			{
 				var newNameAsPath = contentName.Replace('.', Path.DirectorySeparatorChar);
-				path = $"{BeamableConstants.DATA_DIR}/{content.ContentType}/{newNameAsPath}.asset";
+				path = $"{BeamableConstantsOLD.DATA_DIR}/{content.ContentType}/{newNameAsPath}.asset";
 			}
 
 			NotifyDeleted(content);
@@ -942,7 +943,7 @@ namespace Beamable.Editor.Content
 		/// Writes all content objects to streaming assets in either compressed or uncompressed form
 		/// based on setting in Content Configuration.
 		/// </summary>
-		[MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Bake Content")]
+		[MenuItem(BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Bake Content")]
 		public static async Task BakeContent()
 		{
 			void BakeLog(string message) => Debug.Log($"[Bake Content] {message}");
@@ -994,7 +995,7 @@ namespace Beamable.Editor.Content
 
 			if (Bake(objectsToBake, serverManifest, compress, out int objectsBaked))
 			{
-				BakeLog($"Baked {objectsBaked} content objects to '{ContentConstants.BakedContentFilePath + ".bytes"}'");
+				BakeLog($"Baked {objectsBaked} content objects to '{BAKED_CONTENT_FILE_PATH + ".bytes"}'");
 				AssetDatabase.Refresh();
 			}
 			else
@@ -1005,7 +1006,7 @@ namespace Beamable.Editor.Content
 
 		private static bool Bake(List<ContentObject> contentList, Manifest serverManifest, bool compress, out int objectsBaked)
 		{
-			Directory.CreateDirectory(ContentConstants.BeamableResourcesPath);
+			Directory.CreateDirectory(BEAMABLE_RESOURCES_PATH);
 
 			objectsBaked = contentList.Count;
 			ContentDataInfo[] contentData = new ContentDataInfo[contentList.Count];
@@ -1028,7 +1029,7 @@ namespace Beamable.Editor.Content
 			try
 			{
 				string json = JsonUtility.ToJson(fileData);
-				string path = ContentConstants.BakedContentFilePath + ".bytes";
+				string path = BAKED_CONTENT_FILE_PATH + ".bytes";
 				if (compress)
 				{
 					var compressed = Gzip.Compress(json);
@@ -1042,7 +1043,7 @@ namespace Beamable.Editor.Content
 			catch (Exception e)
 			{
 				Debug.LogError(
-					$"Failed to write baked file to '{ContentConstants.BakedContentFilePath}': {e.Message}");
+					$"Failed to write baked file to '{BAKED_CONTENT_FILE_PATH}': {e.Message}");
 				return false;
 			}
 

@@ -1,3 +1,4 @@
+using Beamable.Common.Constants;
 using Beamable.Editor.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
@@ -14,6 +15,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Buss
 {
@@ -35,14 +37,14 @@ namespace Beamable.Editor.UI.Buss
 		private List<BussStyleSheet> _activeStyleSheets = new List<BussStyleSheet>();
 
 		[MenuItem(
-			BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
-			BeamableConstants.OPEN + " " +
-			BeamableConstants.THEME_MANAGER,
-			priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_2 + 5)]
+			BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
+			BeamableConstantsOLD.OPEN + " " +
+			BeamableConstantsOLD.THEME_MANAGER,
+			priority = BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_PRIORITY_2 + 5)]
 		public static void Init()
 		{
 			Type inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
-			BussThemeManager themeManagerWindow = GetWindow<BussThemeManager>(BeamableConstants.THEME_MANAGER, true, inspector);
+			BussThemeManager themeManagerWindow = GetWindow<BussThemeManager>(BeamableConstantsOLD.THEME_MANAGER, true, inspector);
 			themeManagerWindow.Show(true);
 		}
 
@@ -63,7 +65,7 @@ namespace Beamable.Editor.UI.Buss
 
 		private void OnEnable()
 		{
-			minSize = BussConstants.ThemeManagerWindowSize;
+			minSize = THEME_MANAGER_WINDOW_SIZE;
 			Refresh();
 		}
 
@@ -257,7 +259,7 @@ namespace Beamable.Editor.UI.Buss
 
 			if (_activeStyleSheets.Count == 0)
 			{
-				_addStyleButton.tooltip = BussConstants.NoBussStyleSheetAvailable;
+				_addStyleButton.tooltip = NO_BUSS_STYLE_SHEET_AVAILABLE;
 				_addStyleButton.SetInactive(true);
 			}
 			else

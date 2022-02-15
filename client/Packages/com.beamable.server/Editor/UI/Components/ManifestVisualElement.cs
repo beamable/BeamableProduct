@@ -1,3 +1,4 @@
+using Beamable.Common.Constants;
 using Beamable.Editor.UI.Components;
 using Beamable.Server.Editor.ManagerClient;
 using System;
@@ -19,7 +20,7 @@ namespace Beamable.Server.Editor.UI.Components
 
 		public ManifestModel Model { get; }
 
-		public const string COMMON = Constants.SERVER_UI + "/Components/manifestVisualElement";
+		public const string COMMON = BeamableConstants.Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI + "/Components/manifestVisualElement";
 
 		public ManifestVisualElement(ManifestModel model) : base(COMMON)
 		{

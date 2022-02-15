@@ -11,7 +11,7 @@ namespace Beamable.Editor.Environment
 		public static bool IsBlogSpotAvailable(string version)
 		{
 			version = version.Replace(".", "-");
-			var url = $"{BeamableConstants.URL_BEAMABLE_BLOG_RELEASES_UNITY_SDK}-{version}";
+			var url = $"{BeamableConstantsOLD.URL_BEAMABLE_BLOG_RELEASES_UNITY_SDK}-{version}";
 			BlogSpotUrl = string.Empty;
 
 			if (string.IsNullOrEmpty(url))

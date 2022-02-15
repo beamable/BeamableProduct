@@ -39,9 +39,9 @@ namespace Beamable.Stats
 
 	[CreateAssetMenu(
 	   fileName = "Stat",
-	   menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE + "/" +
+	   menuName = BeamableConstantsOLD.MENU_ITEM_PATH_ASSETS_BEAMABLE + "/" +
 	   "Stat",
-	   order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_3)]
+	   order = BeamableConstantsOLD.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_3)]
 	[System.Serializable]
 	public class StatObject : ScriptableObject
 	{

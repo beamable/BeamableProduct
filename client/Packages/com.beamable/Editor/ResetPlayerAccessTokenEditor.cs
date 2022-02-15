@@ -10,7 +10,7 @@ namespace Beamable.Editor
 {
 	public static class ResetPlayerAccessTokenEditor
 	{
-		[MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Clear Access Token")]
+		[MenuItem(BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Clear Access Token")]
 		public static void ResetPlayerAccessTokens()
 		{
 			var wnd = ScriptableObject.CreateInstance<ResetTokenWindow>();

@@ -12,6 +12,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants.Features.ContentManager.Reset;
 
 namespace Beamable.Editor.Content.Components
 {
@@ -54,14 +55,14 @@ namespace Beamable.Editor.Content.Components
 			EditorAPI.Instance.Then(api =>
 			{
 				_messageLabel = Root.Q<Label>("message");
-				_messageLabel.text = ContentManagerConstants.ResetContentMessagePreview;
+				_messageLabel.text = RESET_CONTENT_MESSAGE_PREVIEW;
 				_messageLabel.AddTextWrapStyle();
 			});
 		}
 
 		protected override void SetDownloadSuccessMessageLabel()
 		{
-			_messageLabel.text = ContentManagerConstants.ResetContentCompleteMessage;
+			_messageLabel.text = RESET_CONTENT_COMPLETE_MESSAGE;
 		}
 
 		protected override void OnDownloadSuccess()

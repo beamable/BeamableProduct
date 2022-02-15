@@ -1,3 +1,4 @@
+using static Beamable.Common.Constants.BeamableConstants.Features.Content;
 // unset
 
 namespace Beamable.Common.Content.Validation
@@ -25,11 +26,11 @@ namespace Beamable.Common.Content.Validation
 			}
 
 
-			if (route.Service.EndsWith(ContentConstants.MISSING_SUFFIX))
+			if (route.Service.EndsWith(MISSING_SUFFIX))
 			{
 				throw new ContentValidationException(obj, field, $"Microservice must exist");
 			}
-			if (route.Endpoint.EndsWith(ContentConstants.MISSING_SUFFIX))
+			if (route.Endpoint.EndsWith(MISSING_SUFFIX))
 			{
 				throw new ContentValidationException(obj, field, $"Method must exist");
 			}

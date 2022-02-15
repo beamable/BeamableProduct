@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using static Beamable.Common.Constants.BeamableConstants.Features.Toolbox;
 
 namespace Beamable.Editor.Toolbox.Models
 {
@@ -53,7 +54,7 @@ namespace Beamable.Editor.Toolbox.Models
 
 		public void UseDefaultWidgetSource()
 		{
-			WidgetSource = AssetDatabase.LoadAssetAtPath<WidgetSource>($"{ToolboxConstants.BASE_PATH}/Models/toolboxData.asset");
+			WidgetSource = AssetDatabase.LoadAssetAtPath<WidgetSource>($"{BASE_PATH}/Models/toolboxData.asset");
 			OnWidgetSourceChanged?.Invoke(WidgetSource);
 		}
 

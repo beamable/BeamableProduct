@@ -17,7 +17,7 @@ namespace Beamable.Editor
 			"UnityUIExtensions"
 		};
 
-		[MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Generate Link File")]
+		[MenuItem(BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Generate Link File")]
 		public static void GenerateLinkFile()
 		{
 			var linkPath = "Assets/Beamable/Resources/link.xml";

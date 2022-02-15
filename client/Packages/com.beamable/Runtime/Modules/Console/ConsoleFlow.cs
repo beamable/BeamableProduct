@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 namespace Beamable.Console
 {
-	[HelpURL(BeamableConstants.URL_FEATURE_ADMIN_FLOW)]
+	[HelpURL(BeamableConstantsOLD.URL_FEATURE_ADMIN_FLOW)]
 	public class ConsoleFlow : MonoBehaviour
 	{
 		public static ConsoleFlow Instance;

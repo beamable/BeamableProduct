@@ -18,7 +18,7 @@ using Button = UnityEngine.UI.Button;
 
 namespace Beamable.Shop
 {
-	[HelpURL(BeamableConstants.URL_FEATURE_STORE_FLOW)]
+	[HelpURL(BeamableConstantsOLD.URL_FEATURE_STORE_FLOW)]
 	public class ShopFlow : MonoBehaviour
 	{
 		public MenuManagementBehaviour MenuManager;

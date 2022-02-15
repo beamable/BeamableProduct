@@ -13,9 +13,9 @@ namespace Beamable.AccountManagement
 #if BEAMABLE_DEVELOPER
 	[CreateAssetMenu(
 	   fileName = "Account Management Configuration",
-	   menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
+	   menuName = BeamableConstantsOLD.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
 	   "Account Management Configuration",
-	   order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
+	   order = BeamableConstantsOLD.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 #endif
 	public class AccountManagementConfiguration : ModuleConfigurationObject, IAuthSettings
 	{

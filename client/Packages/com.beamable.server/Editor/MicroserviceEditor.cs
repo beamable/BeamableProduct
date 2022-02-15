@@ -23,9 +23,9 @@ namespace Beamable.Server.Editor
 #endif
 
 		private const string MENU_TOGGLE_AUTORUN =
-			BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_MICROSERVICES + "/Auto Run Local Microservices";
+			BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_MICROSERVICES + "/Auto Run Local Microservices";
 
-		private const int MENU_TOGGLE_PRIORITY = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3;
+		private const int MENU_TOGGLE_PRIORITY = BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_PRIORITY_3;
 
 		public const string CONFIG_AUTO_RUN = "auto_run_local_microservices";
 		public const string TEMPLATE_DIRECTORY = "Packages/com.beamable.server/Template";

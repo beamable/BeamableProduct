@@ -59,7 +59,7 @@ namespace Beamable.Editor.Environment
 		public string CreatedAtUTC;
 		public List<string> ScriptingDefineSymbols;
 
-		[MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_HELP_DIAGNOSTIC_DATA)]
+		[MenuItem(BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_BEAMABLE_HELP_DIAGNOSTIC_DATA)]
 		public static void WriteDebugData()
 		{
 			Create().Then(data =>

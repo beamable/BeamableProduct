@@ -1,6 +1,7 @@
 ﻿using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
+using Beamable.Common.Constants;
 using Beamable.Coroutines;
 //using Beamable.Common.Api.Auth;
 using Beamable.Signals;
@@ -125,7 +126,7 @@ namespace Beamable.AccountManagement
 		public List<UserBundle> OtherUsers;
 	}
 
-	[HelpURL(BeamableConstants.URL_FEATURE_ACCOUNT_HUD)]
+	[HelpURL(BeamableConstants.URLs.Documentations.ACCOUNT_HUD)]
 	public class AccountManagementSignals : DeSignalTower
 	{
 		[Header("Flow Events")]

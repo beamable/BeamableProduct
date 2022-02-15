@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 namespace Beamable.Experimental.Calendars
 {
-	[HelpURL(BeamableConstants.URL_FEATURE_CALENDAR_FLOW)]
+	[HelpURL(BeamableConstantsOLD.URL_FEATURE_CALENDAR_FLOW)]
 	public class CalendarBehaviour : MonoBehaviour
 	{
 		public MenuManagementBehaviour MenuManager;

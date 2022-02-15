@@ -12,6 +12,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants.Features.ContentManager;
 
 namespace Beamable.Editor.Content.Components
 {
@@ -33,12 +34,12 @@ namespace Beamable.Editor.Content.Components
 		public static BeamablePopupWindow OpenAsUtilityWindow(EditorWindow parent, out ArchiveManifestsVisualElement content)
 		{
 			content = new ArchiveManifestsVisualElement();
-			var window = BeamablePopupWindow.ShowUtility(ContentManagerConstants.ArchiveManifests, content, parent, ContentManagerConstants.WindowSizeMinimum, (callbackWindow) =>
+			var window = BeamablePopupWindow.ShowUtility(ActionNames.ARCHIVE_MANIFESTS, content, parent, WindowSizeMinimum, (callbackWindow) =>
 			{
 				callbackWindow?.Close();
 				OpenAsUtilityWindow();
 			});
-			window.minSize = ContentManagerConstants.WindowSizeMinimum;
+			window.minSize = WindowSizeMinimum;
 			content.OnCompleted += window.Close;
 			content.OnCancelled += window.Close;
 			return window;
@@ -60,7 +61,7 @@ namespace Beamable.Editor.Content.Components
 				}
 				foreach (var manifest in manifests.manifests.OrderBy(x => x.id))
 				{
-					if (manifest.id == BeamableConstants.DEFAULT_MANIFEST_ID) continue;
+					if (manifest.id == BeamableConstantsOLD.DEFAULT_MANIFEST_ID) continue;
 					var enabled = manifest.id != _model.Current?.DisplayName;
 					_entries.Add(new Entry(manifest, _listRoot, enabled, UpdateArchiveButtonInteractivity));
 				}

@@ -35,8 +35,8 @@ namespace Beamable.Samples.SampleProjectBase
 		}
 
 		[MenuItem(
-		   BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_HELP + "/Readme",
-		   priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_4)]
+		   BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_BEAMABLE_HELP + "/Readme",
+		   priority = BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_PRIORITY_4)]
 		private static Readme SelectSpecificReadmeMenuItem()
 		{
 			return BeamableReadmeEditor.SelectReadme(FindAssetsFilter, FindAssetsFolders);

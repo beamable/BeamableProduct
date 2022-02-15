@@ -13,7 +13,7 @@ using FontStyle = UnityEngine.FontStyle;
 
 namespace Beamable.Editor.Modules.Theme
 {
-	[Obsolete(BeamableConstants.OBSOLETE_BUSS_INTRODUCED)]
+	[Obsolete(BeamableConstantsOLD.OBSOLETE_BUSS_INTRODUCED)]
 	public class ThemeWindow : EditorWindow
 	{
 		// [MenuItem(
@@ -24,7 +24,7 @@ namespace Beamable.Editor.Modules.Theme
 		public static void Init()
 		{
 			var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
-			GetWindow<ThemeWindow>(BeamableConstants.THEME_MANAGER, true, inspector);
+			GetWindow<ThemeWindow>(BeamableConstantsOLD.THEME_MANAGER, true, inspector);
 		}
 
 		private GameObject _lastRawSelection;

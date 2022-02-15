@@ -12,9 +12,9 @@ namespace Beamable.Samples.SampleProjectBase
 #if BEAMABLE_DEVELOPER
 	[CreateAssetMenu(
 		fileName = "ReadMe",
-		menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_SAMPLES + "/" +
+		menuName = BeamableConstantsOLD.MENU_ITEM_PATH_ASSETS_BEAMABLE_SAMPLES + "/" +
 		"ReadMe",
-		order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
+		order = BeamableConstantsOLD.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 #endif
 	public class Readme : ScriptableObject
 	{

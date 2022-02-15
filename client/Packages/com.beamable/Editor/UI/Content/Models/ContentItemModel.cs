@@ -214,7 +214,7 @@ namespace Beamable.Editor.Content.Models
 		public string AssetPathShort =>
 		   string.IsNullOrEmpty(AssetPath)
 			  ? ""
-			  : Path.GetDirectoryName(AssetPath)?.Substring(BeamableConstants.DATA_DIR.Length + 1) ?? "";
+			  : Path.GetDirectoryName(AssetPath)?.Substring(BeamableConstantsOLD.DATA_DIR.Length + 1) ?? "";
 
 
 		public HashSet<string> AllTags => new HashSet<string>(GetAllTags().Select(x => x.Tag)); // TODO: This could be cached.

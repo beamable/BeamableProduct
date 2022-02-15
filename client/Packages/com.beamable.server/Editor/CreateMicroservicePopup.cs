@@ -21,9 +21,9 @@ namespace Beamable.Server.Editor
 		}
 
 		[MenuItem(
-		   BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_MICROSERVICES + "/" +
+		   BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_MICROSERVICES + "/" +
 		   "<Create New...>",
-		   priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
+		   priority = BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
 		static void Init()
 		{
 			Show(new Vector2(Screen.width, Screen.height) / 2);

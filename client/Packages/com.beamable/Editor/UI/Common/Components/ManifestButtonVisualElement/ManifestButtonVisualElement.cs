@@ -71,7 +71,7 @@ namespace Beamable.Editor.UI.Components
 		private void HandleAvailableManifestsChanged(List<ISearchableElement> ids)
 		{
 			_manyManifests = ids?.Count > 1;
-			_nonDefaultManifest = ids?.Count == 1 && ids[0].DisplayName != BeamableConstants.DEFAULT_MANIFEST_ID;
+			_nonDefaultManifest = ids?.Count == 1 && ids[0].DisplayName != BeamableConstantsOLD.DEFAULT_MANIFEST_ID;
 
 			RefreshButtonVisibility();
 		}
@@ -79,7 +79,7 @@ namespace Beamable.Editor.UI.Components
 		public void RefreshButtonVisibility()
 		{
 			visible = (_manyManifests && ContentConfiguration.Instance.EnableMultipleContentNamespaces) || _nonDefaultManifest;
-			ContentConfiguration.Instance.multipleContentNamespacesSettingLocked = ContentConfiguration.Instance.EditorManifestID != BeamableConstants.DEFAULT_MANIFEST_ID;
+			ContentConfiguration.Instance.multipleContentNamespacesSettingLocked = ContentConfiguration.Instance.EditorManifestID != BeamableConstantsOLD.DEFAULT_MANIFEST_ID;
 		}
 
 		private void HandleManifestChanged(ISearchableElement manifest)
