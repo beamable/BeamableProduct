@@ -177,9 +177,10 @@ namespace Beamable.Editor.UI.Components
 				keys.Add(propertyProvider.Key);
 			}
 
+			var sorted = BussStyle.Keys.OrderBy(k=>k);
 			var context = new GenericMenu();
-
-			foreach (string key in BussStyle.Keys)
+			
+			foreach (string key in sorted)
 			{
 				if (keys.Contains(key)) continue;
 				var baseType = BussStyle.GetBaseType(key);
