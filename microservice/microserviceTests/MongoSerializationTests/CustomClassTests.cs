@@ -86,7 +86,7 @@ namespace microserviceTests.MongoSerializationTests
             public List<Vector2> Vectors;
         }
         
-        [Serializable]
+        [MongoSerializable]
         public class UnityClassSupport : StorageDocument
         {
             [FormerlySerializedAsAttribute("text")]
@@ -119,7 +119,8 @@ namespace microserviceTests.MongoSerializationTests
             }
         }
         
-        public class UnityRawClassOutput : StorageDocument
+        [Serializable]
+        public class MongoRawClassOutput
         {
             public string text;
             public string property { get; set; }
@@ -154,21 +155,14 @@ namespace microserviceTests.MongoSerializationTests
             data.SetFields("fieldRaw1", "fieldRaw2");
             
             // Map input class
-            MongoSerializationService.RegisterClass<UnityClassSupport>();
             var bson = data.ToBson();
             
-            // Map output to raw mongo db class
-            BsonClassMap.RegisterClassMap<UnityRawClassOutput>(cm => {
-                cm.AutoMap();
-                cm.MapField("info");
-                cm.MapField("field2");
-            });
-            var output = BsonSerializer.Deserialize<UnityRawClassOutput>(bson);
+            var output = BsonSerializer.Deserialize<UnityClassSupport>(bson);
             
             Assert.AreEqual(data.X, output.X);
             Assert.AreNotEqual(data.property, output.property);
-            Assert.AreEqual(data.message, output.text);
-            Assert.AreEqual(data.GetField1(), output.GetInfo());
+            Assert.AreEqual(data.message, output.message);
+            Assert.AreEqual(data.GetField1(), output.GetField1());
             Assert.AreNotEqual(data.GetField2(), output.GetField2());
         }
     }
