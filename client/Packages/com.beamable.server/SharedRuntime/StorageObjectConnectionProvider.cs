@@ -93,8 +93,6 @@ namespace Beamable.Server
 			where TStorage : MongoStorageObject
 			where TCollection : StorageDocument
 		{
-			MongoSerializationService.RegisterClass<TCollection>();
-
 			var db = await GetDatabase<TStorage>();
 			return db.GetCollection<TCollection>(collectionName);
 		}
