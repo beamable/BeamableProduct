@@ -8,6 +8,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Beamable.Server.Api.Content;
 using microservice.Common;
+using static Beamable.Common.Constants.BeamableConstants.Features.Content;
 
 namespace Beamable.Server.Content
 {
@@ -30,8 +31,8 @@ namespace Beamable.Server.Content
       public string visibility;
       public string[] tags;
 
-      public bool IsPublic => string.Equals(ContentConstants.PUBLIC, visibility);
-      public bool IsPrivate => string.Equals(ContentConstants.PRIVATE, visibility);
+      public bool IsPublic => string.Equals(PUBLIC, visibility);
+      public bool IsPrivate => string.Equals(PRIVATE, visibility);
    }
 
    public struct ContentKey

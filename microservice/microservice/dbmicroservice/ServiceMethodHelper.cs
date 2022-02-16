@@ -10,6 +10,7 @@ using LoxSmoke.DocXml;
 using microservice.Extensions;
 using Newtonsoft.Json;
 using Serilog;
+using static Beamable.Common.Constants.BeamableConstants.Features.Services;
 
 namespace Beamable.Server
 {
@@ -37,7 +38,7 @@ namespace Beamable.Server
          var type = provider.instanceType;
          var output = new List<ServiceMethod>();
 
-         Log.Debug(LogConstants.SCANNING_CLIENT_PREFIX + type.Name);
+         Log.Debug(Logs.SCANNING_CLIENT_PREFIX + type.Name);
 
          var allMethods = type.GetMethods(BindingFlags.Instance | BindingFlags.Public);
          foreach (var method in allMethods)

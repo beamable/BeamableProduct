@@ -139,7 +139,7 @@ namespace Beamable.Editor.Content.Components
 			{
 				makeItem = CreateListViewElement,
 				bindItem = BindListViewElement,
-				selectionType = CONTENT_LIST_SELECTION_TYPE,
+				selectionType = SelectionType.Multiple,
 				itemHeight = ListViewItemHeight,
 				itemsSource = Model.FilteredContents
 			};

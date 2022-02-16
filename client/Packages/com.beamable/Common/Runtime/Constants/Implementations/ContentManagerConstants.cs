@@ -19,10 +19,6 @@ namespace Beamable.Common.Constants
 				public const string COMPONENTS_PATH = BASE_PATH + "/Components";
 
 				public const string DEFAULT_MANIFEST_ID = "global";
-				
-				// Configuration
-				public const SelectionType CONTENT_LIST_SELECTION_TYPE = SelectionType.Multiple;
-				public const SelectionType CONTENT_TYPE_VIEW_SELECTION_TYPE = SelectionType.Single;
 
 				public static Vector2 ConfirmationPopupSize = new Vector2(300, 120);
 				public static Vector2 WindowSizeMinimum = new Vector2(400, 300);

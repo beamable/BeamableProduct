@@ -5,6 +5,7 @@ using EmbedIO;
 using EmbedIO.Actions;
 using Swan;
 using Swan.Logging;
+using static Beamable.Common.Constants.BeamableConstants.Features.Services;
 
 namespace Beamable.Server {
     public class LocalDebugService {
@@ -13,7 +14,7 @@ namespace Beamable.Server {
         public LocalDebugService(BeamableMicroService beamableService) {
             _beamableService = beamableService;
             Swan.Logging.ConsoleLogger.Instance.LogLevel = LogLevel.Error;
-            var server = new WebServer(SharedConstants.HEALTH_PORT)
+            var server = new WebServer(HEALTH_PORT)
                 .WithModule(new ActionModule("/health", HttpVerbs.Any, HealthCheck));
             server.RunAsync();
         }

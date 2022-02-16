@@ -78,7 +78,7 @@ namespace Beamable.Editor.Content.Components
 			_treeViewState = new TreeViewState();
 
 			TreeViewIMGUI treeViewIMGUI = new TreeViewIMGUI(_treeViewState);
-			treeViewIMGUI.SelectionType = CONTENT_TYPE_VIEW_SELECTION_TYPE;
+			treeViewIMGUI.SelectionType = SelectionType.Single;
 			treeViewIMGUI.TreeViewItemRoot = new TreeViewItem { id = 0, depth = -1, displayName = "Root" };
 
 			//
