@@ -38,6 +38,7 @@ MonoBehaviour:
     - AttributeValidation-StorageObjectAttributeMissing
     - AttributeNameCollision-StorageObjectNameCollision
     - InstallDockerProcess
+    - DockerOverlappingPorts
     values:
     - ClientCallable has unsupported parameters
     - '"async void" ClientCallable exists'
@@ -50,6 +51,7 @@ MonoBehaviour:
     - Missing StorageObject Attributes
     - StorageObject Name Collision
     - Docker is not installed
+    - Docker port is already in use
   HintIdToHintIntroText:
     keys:
     - AttributeValidation-ClientCallableUnsupportedParameters
@@ -63,6 +65,7 @@ MonoBehaviour:
     - AttributeValidation-StorageObjectAttributeMissing
     - AttributeNameCollision-StorageObjectNameCollision
     - InstallDockerProcess
+    - DockerOverlappingPorts
     values:
     - "The ClientCallables below have unsupported parameters. We don't support client
       callables with Delegate, Task or Promise parameters. \n\nWe don't support it
@@ -139,3 +142,5 @@ MonoBehaviour:
       Manager => Microservices Configuration => Docker Command and write the command
       to run docker.\r\n\r\nIf you don't have docker installed, click on the button
       and follow the instructions to install it.\r\n"
+    - "We noticed that one of the ports specified for one of the services is already
+      in use. Please check your Docker configuration and adjust it.\r\n"
