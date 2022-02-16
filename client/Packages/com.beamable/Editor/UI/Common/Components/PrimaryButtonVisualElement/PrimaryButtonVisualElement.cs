@@ -32,7 +32,7 @@ namespace Beamable.Editor.UI.Components
 
 		public Button Button { get; private set; }
 
-		public PrimaryButtonVisualElement() : base($"{Directories.COMMON_COMPONENTS_PATH}/Common/Components/{nameof(PrimaryButtonVisualElement)}/{nameof(PrimaryButtonVisualElement)}")
+		public PrimaryButtonVisualElement() : base($"{Directories.COMMON_COMPONENTS_PATH}/{nameof(PrimaryButtonVisualElement)}/{nameof(PrimaryButtonVisualElement)}")
 		{
 		}
 
