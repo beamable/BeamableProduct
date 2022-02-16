@@ -28,11 +28,7 @@ namespace Beamable.Editor.UI.Components
 		public BussPropertyProvider PropertyProvider => _propertyProvider;
 		public string PropertyKey => PropertyProvider.Key;
 
-		public bool PropertyIsInStyle
-		{
-			get;
-			private set;
-		}
+		public bool PropertyIsInStyle => _styleRule.Properties.Contains(_propertyProvider);
 
 		public BussStylePropertyVisualElement() : base(
 			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStylePropertyVisualElement/BussStylePropertyVisualElement.uss")
@@ -88,7 +84,6 @@ namespace Beamable.Editor.UI.Components
 			_styleSheet = styleSheet;
 			_styleRule = styleRule;
 			_propertyProvider = property;
-			PropertyIsInStyle = _styleRule.Properties.Contains(_propertyProvider);
 
 			Init();
 		}
