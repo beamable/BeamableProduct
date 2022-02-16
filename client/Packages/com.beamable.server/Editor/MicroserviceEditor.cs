@@ -92,6 +92,7 @@ namespace Beamable.Server.Editor
 					enabled = EditorPrefs.GetBool(CONFIG_AUTO_RUN, false);
 
 				setAutoRun(enabled);
+				AssemblyDefinitionHelper.LoadAssemblyDefinitionInfos();
 
 				IsInitialized = true;
 			}

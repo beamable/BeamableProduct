@@ -78,6 +78,9 @@ namespace Beamable.Editor.Assistant
 		/// </summary>
 		public bool RefreshDisplayingHints()
 		{
+			// Checking for this here due to callback ordering in cases of reimport with BeamableAssistantWindow opened
+			if (_hintPreferencesManager == null) return false;
+			
 			var hints = _hintGlobalStorages.SelectMany(storage => storage).ToList();
 			RefreshDomainsFromHints(hints);
 

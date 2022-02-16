@@ -2,6 +2,7 @@ using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
 
@@ -80,6 +81,14 @@ namespace Beamable.Editor.UI.Model
 			{
 				await command.Start(null);
 				await TryToGetLastImageId();
+				
+				// Update the config with the code handle identifying the version of the code this is building with (see BeamServicesCodeWatcher).
+				// Check for any local code changes to C#MS or it's dependent Storage/Common assemblies and update the hint state.
+				var codeWatcher = default(BeamServicesCodeWatcher);
+				BeamEditor.GetBeamHintSystem(ref codeWatcher);
+				codeWatcher.UpdateBuiltImageCodeHandles(Descriptor.Name);
+				codeWatcher.CheckForLocalChangesNotYetDeployed();
+
 				return true;
 			}
 			catch (Exception e)

@@ -91,7 +91,7 @@ namespace Beamable.Editor.Assistant
 		private void Update()
 		{
 			// If there are any new notifications, we refresh to get the new data rendered.
-			if (_beamHintsDataModel.RefreshDisplayingHints() || _hintNotificationManager != null && _hintNotificationManager.AllPendingNotifications.Any())
+			if ((_hintNotificationManager != null && _hintNotificationManager.AllPendingNotifications.Any()) || _beamHintsDataModel.RefreshDisplayingHints())
 			{
 				FillTreeViewFromDomains(_treeViewIMGUI, _beamHintsDataModel.SortedDomainsInStorage, _beamHintsDataModel.SelectedDomains);
 				FillDisplayingBeamHints(_hintsContainer, _beamHintsDataModel.DisplayingHints);

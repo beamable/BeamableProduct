@@ -291,6 +291,18 @@ namespace Beamable.Server.Editor
 			}
 		}
 
+		public static IReadOnlyList<AssemblyDefinitionInfo> AssemblyDefinitionInfos;
+		public static IReadOnlyList<AssemblyDefinitionInfo> NonUnityAsmDefs;
+		public static IReadOnlyList<AssemblyDefinitionInfo> BeamableAsmDefs;
+
+		public static void LoadAssemblyDefinitionInfos()
+		{
+			var list = EnumerateAssemblyDefinitionInfos().ToList();
+			AssemblyDefinitionInfos = list;
+			NonUnityAsmDefs = list.Where(asm => !asm.Name.Contains("Unity")).ToList();
+			BeamableAsmDefs = list.Where(asm => asm.Name.Contains("Beamable")).ToList();
+		}
+
 		public static IEnumerable<AssemblyDefinitionInfo> EnumerateAssemblyDefinitionInfos()
 		{
 			foreach (var asm in EnumerateAssemblyDefinitionAssets())
