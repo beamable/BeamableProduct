@@ -11,6 +11,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 using static Beamable.Common.Constants.BeamableConstants;
+using static Beamable.Common.Constants.BeamableConstants.Features.Config;
 
 namespace Beamable.Editor.Config
 {
@@ -66,7 +67,7 @@ namespace Beamable.Editor.Config
 							var options = ConfigManager.GenerateOptions();
 
 							var scroller = new ScrollView();
-							rootElement.AddStyleSheet($"{ConfigWindowConstants.BASE_PATH}/ConfigWindow.uss");
+							rootElement.AddStyleSheet($"{BASE_PATH}/ConfigWindow.uss");
 							rootElement.Add(scroller);
 
 							ConfigWindow.CreateFields(scroller, null, options, true);
@@ -105,7 +106,7 @@ namespace Beamable.Editor.Config
 					{
 						options = ConfigManager.GenerateOptions(config);
 						var scroller = new ScrollView();
-						rootElement.AddStyleSheet($"{ConfigWindowConstants.BASE_PATH}/ConfigWindow.uss");
+						rootElement.AddStyleSheet($"{BASE_PATH}/ConfigWindow.uss");
 						rootElement.Add(scroller);
 						ConfigWindow.CreateFields(scroller, null, options, false);
 					},

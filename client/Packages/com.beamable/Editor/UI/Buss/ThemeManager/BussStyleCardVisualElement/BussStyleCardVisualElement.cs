@@ -50,7 +50,7 @@ namespace Beamable.Editor.UI.Components
 		public bool EditMode => _editMode;
 
 		public BussStyleCardVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}")
+			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}")
 		{ }
 
 		public override void Refresh()

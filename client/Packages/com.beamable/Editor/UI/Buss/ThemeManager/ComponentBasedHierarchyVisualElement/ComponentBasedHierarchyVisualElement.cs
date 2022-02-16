@@ -13,6 +13,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -53,7 +54,7 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		protected ComponentBasedHierarchyVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement.uss")
+			$"{BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement.uss")
 		{ }
 
 		public override void Init()

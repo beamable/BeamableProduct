@@ -10,8 +10,8 @@ using UnityEngine.Experimental.UIElements.StyleEnums;
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
-
 #endif
+using static Beamable.Common.Constants.BeamableConstants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -37,7 +37,7 @@ namespace Beamable.Editor.UI.Components
 		public bool IsConnected => _propertyProvider.GetProperty() is VariableProperty;
 
 		public VariableConnectionVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStylePropertyVisualElement)}/" +
+			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStylePropertyVisualElement)}/" +
 			$"{nameof(VariableConnectionVisualElement)}/{nameof(VariableConnectionVisualElement)}")
 		{ }
 

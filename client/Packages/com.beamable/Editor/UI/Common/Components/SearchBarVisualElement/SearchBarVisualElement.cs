@@ -12,7 +12,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
-
+using static Beamable.Common.Constants.BeamableConstants;
 namespace Beamable.Editor.UI.Components
 {
 	public class SearchBarVisualElement : BeamableVisualElement
@@ -43,7 +43,7 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
-		public SearchBarVisualElement() : base($"{BeamableComponentsConstants.UI_PACKAGE_PATH}/Common/Components/{nameof(SearchBarVisualElement)}/{nameof(SearchBarVisualElement)}")
+		public SearchBarVisualElement() : base($"{Directories.COMMON_COMPONENTS_PATH}/{nameof(SearchBarVisualElement)}/{nameof(SearchBarVisualElement)}")
 		{
 			Refresh();
 			RegisterCallback<AttachToPanelEvent>(evt =>

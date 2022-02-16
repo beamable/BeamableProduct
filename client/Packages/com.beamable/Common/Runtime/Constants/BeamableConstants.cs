@@ -25,10 +25,17 @@
 			public const string BEAMABLE_SERVER_PACKAGE_EDITOR = BEAMABLE_SERVER_PACKAGE + "/Editor";
 			public const string BEAMABLE_SERVER_PACKAGE_EDITOR_UI = BEAMABLE_SERVER_PACKAGE_EDITOR + "/UI";
 			
+			public const string COMMON_COMPONENTS_PATH = BEAMABLE_PACKAGE_EDITOR_UI + "/Common/Components";
+			
 			public const string ASSET_DIR = BEAMABLE_ASSETS + "/DefaultAssets";
 			public const string DATA_DIR = BEAMABLE_ASSETS + "/Editor/content";
 			public const string DEFAULT_DATA_DIR = BEAMABLE_PACKAGE_EDITOR + "/Modules/Content/DefaultContent";
 			public const string DEFAULT_ASSET_DIR = BEAMABLE_PACKAGE_EDITOR + "/Modules/Content/DefaultAssets~";
+		}
+
+		public static class Files
+		{
+			public const string COMMON_USS_FILE = Directories.BEAMABLE_PACKAGE_EDITOR_UI + "/Common/Common.uss";
 		}
 		public static class URLs
 		{

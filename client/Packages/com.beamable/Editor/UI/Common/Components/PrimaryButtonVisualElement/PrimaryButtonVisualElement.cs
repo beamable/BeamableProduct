@@ -17,6 +17,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants;
 namespace Beamable.Editor.UI.Components
 {
 	public class PrimaryButtonVisualElement : BeamableVisualElement
@@ -31,7 +32,7 @@ namespace Beamable.Editor.UI.Components
 
 		public Button Button { get; private set; }
 
-		public PrimaryButtonVisualElement() : base($"{BeamableComponentsConstants.UI_PACKAGE_PATH}/Common/Components/{nameof(PrimaryButtonVisualElement)}/{nameof(PrimaryButtonVisualElement)}")
+		public PrimaryButtonVisualElement() : base($"{Directories.COMMON_COMPONENTS_PATH}/Common/Components/{nameof(PrimaryButtonVisualElement)}/{nameof(PrimaryButtonVisualElement)}")
 		{
 		}
 

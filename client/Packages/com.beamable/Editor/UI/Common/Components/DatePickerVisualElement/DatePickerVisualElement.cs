@@ -11,6 +11,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -27,7 +28,7 @@ namespace Beamable.Editor.UI.Components
 		public LabeledNumberPicker DayPicker { get; private set; }
 
 		public DatePickerVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(DatePickerVisualElement)}/{nameof(DatePickerVisualElement)}")
+			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(DatePickerVisualElement)}/{nameof(DatePickerVisualElement)}")
 		{
 		}
 

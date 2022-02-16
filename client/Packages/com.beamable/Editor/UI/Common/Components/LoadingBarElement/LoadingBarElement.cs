@@ -12,6 +12,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -42,7 +43,7 @@ namespace Beamable.Editor.UI.Components
 
 		private static Texture _animationTexture;
 
-		public LoadingBarElement() : base($"{BeamableComponentsConstants.UI_PACKAGE_PATH}/Common/Components/{nameof(LoadingBarElement)}/{nameof(LoadingBarElement)}") { }
+		public LoadingBarElement() : base($"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LoadingBarElement)}/{nameof(LoadingBarElement)}") { }
 
 		private VisualElement _fillElement;
 		private Label _label;

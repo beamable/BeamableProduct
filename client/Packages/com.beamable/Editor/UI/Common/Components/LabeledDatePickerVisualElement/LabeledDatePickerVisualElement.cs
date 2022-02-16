@@ -10,6 +10,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -47,7 +48,7 @@ namespace Beamable.Editor.UI.Components
 		public string SelectedDate => DatePicker.GetIsoDate();
 
 		public LabeledDatePickerVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledDatePickerVisualElement)}/{nameof(LabeledDatePickerVisualElement)}")
+			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LabeledDatePickerVisualElement)}/{nameof(LabeledDatePickerVisualElement)}")
 		{
 		}
 

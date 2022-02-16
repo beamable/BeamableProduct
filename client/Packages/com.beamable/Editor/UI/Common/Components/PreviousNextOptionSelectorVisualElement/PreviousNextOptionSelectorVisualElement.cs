@@ -10,7 +10,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
-
+using static Beamable.Common.Constants.BeamableConstants;
 namespace Beamable.Editor.UI.Components
 {
 	public class PreviousNextOptionSelectorVisualElement : BeamableVisualElement
@@ -20,7 +20,7 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public PreviousNextOptionSelectorVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(PreviousNextOptionSelectorVisualElement)}/{nameof(PreviousNextOptionSelectorVisualElement)}")
+			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(PreviousNextOptionSelectorVisualElement)}/{nameof(PreviousNextOptionSelectorVisualElement)}")
 		{
 		}
 

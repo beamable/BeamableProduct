@@ -10,6 +10,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants;
 using static Beamable.Common.Constants.BeamableConstants.Features.ContentManager;
 
 namespace Beamable.Editor.UI.Components
@@ -40,7 +41,7 @@ namespace Beamable.Editor.UI.Components
 		private bool _nonDefaultManifest;
 
 		public ManifestButtonVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(ManifestButtonVisualElement)}/{nameof(ManifestButtonVisualElement)}")
+			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(ManifestButtonVisualElement)}/{nameof(ManifestButtonVisualElement)}")
 		{
 
 		}

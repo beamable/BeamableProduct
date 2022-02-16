@@ -7,13 +7,15 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants;
+
 namespace Beamable.Editor.Toolbox.Components
 {
 	public class DockerAnnouncementVisualElement : BeamableVisualElement
 	{
 		public DockerAnnouncementModel DockerAnnouncementModel { get; set; }
 		public DockerAnnouncementVisualElement() : base(
-		   $"{BeamableComponentsConstants.COMP_PATH}/{nameof(DockerAnnouncementVisualElement)}/{nameof(DockerAnnouncementVisualElement)}")
+		   $"{Directories.COMMON_COMPONENTS_PATH}/{nameof(DockerAnnouncementVisualElement)}/{nameof(DockerAnnouncementVisualElement)}")
 		{
 		}
 

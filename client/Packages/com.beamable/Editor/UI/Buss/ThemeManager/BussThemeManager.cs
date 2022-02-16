@@ -81,7 +81,7 @@ namespace Beamable.Editor.UI.Buss
 			mainVisualElement.name = "themeManagerContainer";
 
 			mainVisualElement.AddStyleSheet(
-				$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
+				$"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
 
 			ScrollView scrollView = new ScrollView();
 			scrollView.name = "themeManagerContainerScrollView";

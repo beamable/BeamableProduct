@@ -10,6 +10,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -32,7 +33,7 @@ namespace Beamable.Editor.UI.Components
 		private DayToggleVisualElement _sundayToggle;
 
 		public DaysPickerVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(DaysPickerVisualElement)}/{nameof(DaysPickerVisualElement)}")
+			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(DaysPickerVisualElement)}/{nameof(DaysPickerVisualElement)}")
 		{
 		}
 

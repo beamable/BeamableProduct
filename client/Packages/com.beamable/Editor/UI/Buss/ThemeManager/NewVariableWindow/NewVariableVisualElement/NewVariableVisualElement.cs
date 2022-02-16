@@ -11,6 +11,8 @@ using UnityEngine.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants.Features.Buss.ThemeManager;
+
 namespace Beamable.Editor.UI.Buss
 {
 	public class NewVariableVisualElement : BeamableVisualElement
@@ -33,7 +35,7 @@ namespace Beamable.Editor.UI.Buss
 		private const string VARIABLE_NAME_REGEX = "^\\A(-{2}|[a-zA-Z])*$";
 
 		public NewVariableVisualElement(BussStyleRule styleRule, Action<string, IBussProperty> onPropertyCreated) : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/NewVariableWindow/{nameof(NewVariableVisualElement)}/{nameof(NewVariableVisualElement)}")
+			$"{BUSS_THEME_MANAGER_PATH}/NewVariableWindow/{nameof(NewVariableVisualElement)}/{nameof(NewVariableVisualElement)}")
 		{
 			_styleRule = styleRule;
 			_onPropertyCreated = onPropertyCreated;

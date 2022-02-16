@@ -8,6 +8,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -43,7 +44,7 @@ namespace Beamable.Editor.UI.Components
 		public string Label { get; set; }
 
 		public LabeledDaysPickerVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledDaysPickerVisualElement)}/{nameof(LabeledDaysPickerVisualElement)}")
+			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LabeledDaysPickerVisualElement)}/{nameof(LabeledDaysPickerVisualElement)}")
 		{
 		}
 

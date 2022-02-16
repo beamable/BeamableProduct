@@ -7,6 +7,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -27,7 +28,7 @@ namespace Beamable.Editor.UI.Components
 		public string Value { get; private set; }
 
 		public DayToggleVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(DayToggleVisualElement)}/{nameof(DayToggleVisualElement)}")
+			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(DayToggleVisualElement)}/{nameof(DayToggleVisualElement)}")
 		{
 		}
 

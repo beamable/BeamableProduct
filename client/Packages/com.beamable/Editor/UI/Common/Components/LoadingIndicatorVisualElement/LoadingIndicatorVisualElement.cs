@@ -11,6 +11,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -22,7 +23,7 @@ namespace Beamable.Editor.UI.Components
 
 		private PromiseBase _promise;
 
-		public LoadingIndicatorVisualElement() : base($"{BeamableComponentsConstants.UI_PACKAGE_PATH}/Common/Components/{nameof(LoadingIndicatorVisualElement)}/{nameof(LoadingIndicatorVisualElement)}")
+		public LoadingIndicatorVisualElement() : base($"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LoadingIndicatorVisualElement)}/{nameof(LoadingIndicatorVisualElement)}")
 		{
 		}
 

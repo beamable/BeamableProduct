@@ -12,6 +12,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants;
 using static Beamable.Common.Constants.BeamableConstants.Features.ContentManager;
 
 namespace Beamable.Editor.UI.Components
@@ -175,10 +176,10 @@ namespace Beamable.Editor.UI.Components
 		{
 			VisualElement root = this.GetRootVisualContainer();
 			var uiAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(
-				$"{BeamableComponentsConstants.COMP_PATH}/BeamablePopupWindow/beamablePopupWindow.uxml");
+				$"{Directories.COMMON_COMPONENTS_PATH}/BeamablePopupWindow/beamablePopupWindow.uxml");
 			_windowRoot = uiAsset.CloneTree();
 			this.GetRootVisualContainer()
-				.AddStyleSheet($"{BeamableComponentsConstants.COMP_PATH}/BeamablePopupWindow/beamablePopupWindow.uss");
+				.AddStyleSheet($"{Directories.COMMON_COMPONENTS_PATH}/BeamablePopupWindow/beamablePopupWindow.uss");
 			_windowRoot.name = nameof(_windowRoot);
 
 			root.Add(_windowRoot);

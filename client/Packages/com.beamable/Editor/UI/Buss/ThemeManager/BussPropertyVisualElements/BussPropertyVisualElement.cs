@@ -8,6 +8,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -22,7 +23,7 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		protected BussPropertyVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussPropertyVisualElements/BussPropertyVisualElement.uss")
+			$"{BUSS_THEME_MANAGER_PATH}/BussPropertyVisualElements/BussPropertyVisualElement.uss")
 		{ }
 
 		protected void AddBussPropertyFieldClass(VisualElement ve)

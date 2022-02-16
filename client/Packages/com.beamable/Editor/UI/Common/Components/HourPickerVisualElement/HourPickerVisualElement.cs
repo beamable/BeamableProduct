@@ -11,6 +11,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -34,7 +35,7 @@ namespace Beamable.Editor.UI.Components
 		public string Second => _secondPicker?.Value;
 
 		public HourPickerVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(HourPickerVisualElement)}/{nameof(HourPickerVisualElement)}")
+			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(HourPickerVisualElement)}/{nameof(HourPickerVisualElement)}")
 		{
 		}
 

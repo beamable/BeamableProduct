@@ -13,12 +13,12 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
-
+using static Beamable.Common.Constants.BeamableConstants;
 namespace Beamable.Editor.UI.Components
 {
 	public class SearchabledDropdownVisualElement : BeamableVisualElement
 	{
-		public static readonly string ComponentPath = $"{BeamableComponentsConstants.COMP_PATH}/{nameof(SearchabledDropdownVisualElement)}/{nameof(SearchabledDropdownVisualElement)}";
+		public static readonly string ComponentPath = $"{Directories.COMMON_COMPONENTS_PATH}/{nameof(SearchabledDropdownVisualElement)}/{nameof(SearchabledDropdownVisualElement)}";
 
 		private string _switchText;
 
