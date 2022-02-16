@@ -5,6 +5,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.PackageManager;
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
+using static Beamable.Common.Constants.BeamableConstants.Features.Toolbox.EditorPrefsKeys;
 
 namespace Beamable.Editor.Environment
 {
@@ -25,8 +26,8 @@ namespace Beamable.Editor.Environment
 		public static string CurrentVersionNumber { get; set; }
 		public static string CurrentServerVersionNumber { get; set; }
 
-		public static string NewestVersionNumber => EditorPrefs.GetString(BeamableEditorPrefsConstants.NEWEST_VERSION_NUMBER);
-		public static string NewestServerVersionNumber => EditorPrefs.GetString(BeamableEditorPrefsConstants.NEWEST_SERVER_VERSION_NUMBER);
+		public static string NewestVersionNumber => EditorPrefs.GetString(NEWEST_VERSION_NUMBER);
+		public static string NewestServerVersionNumber => EditorPrefs.GetString(NEWEST_SERVER_VERSION_NUMBER);
 
 		public static void SetCurrentVersionNumber(string versionNumber, bool skipEvent = false)
 		{
@@ -36,14 +37,14 @@ namespace Beamable.Editor.Environment
 		}
 		public static void SetNewestVersionNumber(string versionNumber)
 		{
-			EditorPrefs.SetString(BeamableEditorPrefsConstants.NEWEST_VERSION_NUMBER, versionNumber);
+			EditorPrefs.SetString(NEWEST_VERSION_NUMBER, versionNumber);
 			IsInstallationIgnored = false;
 			IsBlogVisited = false;
 			IsBlogSiteAvailable = BeamableWebRequester.IsBlogSpotAvailable(versionNumber);
 		}
 		public static void SetNewestServerVersionNumber(string versionNumber)
 		{
-			EditorPrefs.SetString(BeamableEditorPrefsConstants.NEWEST_SERVER_VERSION_NUMBER, versionNumber);
+			EditorPrefs.SetString(NEWEST_SERVER_VERSION_NUMBER, versionNumber);
 		}
 	}
 
@@ -338,7 +339,7 @@ namespace Beamable.Editor.Environment
 				if (package.version.Contains("PREVIEW"))
 				{
 					BeamablePackageUpdateMeta.IsInstallationIgnored = true;
-					EditorPrefs.SetBool(BeamableEditorPrefsConstants.IS_PACKAGE_UPDATE_IGNORED, true);
+					EditorPrefs.SetBool(IS_PACKAGE_UPDATE_IGNORED, true);
 					promise.CompleteSuccess(true);
 					return;
 				}
@@ -354,9 +355,9 @@ namespace Beamable.Editor.Environment
 						BeamablePackageUpdateMeta.SetCurrentVersionNumber(package.version);
 					}
 
-					if (!EditorPrefs.HasKey(BeamableEditorPrefsConstants.IS_PACKAGE_UPDATE_IGNORED))
+					if (!EditorPrefs.HasKey(IS_PACKAGE_UPDATE_IGNORED))
 					{
-						EditorPrefs.SetBool(BeamableEditorPrefsConstants.IS_PACKAGE_UPDATE_IGNORED, false);
+						EditorPrefs.SetBool(IS_PACKAGE_UPDATE_IGNORED, false);
 					}
 				}
 
@@ -364,7 +365,7 @@ namespace Beamable.Editor.Environment
 				if (BeamablePackageUpdateMeta.NewestVersionNumber != latestCompatibleVersion)
 				{
 					BeamablePackageUpdateMeta.SetNewestVersionNumber(latestCompatibleVersion);
-					EditorPrefs.SetBool(BeamableEditorPrefsConstants.IS_PACKAGE_UPDATE_IGNORED, false);
+					EditorPrefs.SetBool(IS_PACKAGE_UPDATE_IGNORED, false);
 				}
 
 				promise.CompleteSuccess(BeamablePackageUpdateMeta.CurrentVersionNumber == BeamablePackageUpdateMeta.NewestVersionNumber);

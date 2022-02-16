@@ -14,6 +14,7 @@ using UnityEditor.UIElements;
 #endif
 using static Beamable.Common.Constants.BeamableConstants;
 using static Beamable.Common.Constants.BeamableConstants.Features.Toolbox;
+using static Beamable.Common.Constants.BeamableConstants.Features.Toolbox.EditorPrefsKeys;
 
 namespace Beamable.Editor.Toolbox.UI
 {
@@ -90,7 +91,7 @@ namespace Beamable.Editor.Toolbox.UI
 			{
 				if (isUpdated && BeamablePackageUpdateMeta.IsBlogSiteAvailable &&
 					!BeamablePackageUpdateMeta.IsBlogVisited &&
-					!EditorPrefs.GetBool(BeamableEditorPrefsConstants.IS_PACKAGE_WHATSNEW_ANNOUNCEMENT_IGNORED, true))
+					!EditorPrefs.GetBool(IS_PACKAGE_WHATSNEW_ANNOUNCEMENT_IGNORED, true))
 				{
 					ShowWhatsNewAnnouncement();
 				}
@@ -231,7 +232,7 @@ namespace Beamable.Editor.Toolbox.UI
 				{
 					return;
 				}
-				if (EditorPrefs.GetBool(BeamableEditorPrefsConstants.IS_PACKAGE_UPDATE_IGNORED))
+				if (EditorPrefs.GetBool(IS_PACKAGE_UPDATE_IGNORED))
 				{
 					BeamablePackageUpdateMeta.IsInstallationIgnored = true;
 					return;
@@ -263,7 +264,7 @@ namespace Beamable.Editor.Toolbox.UI
 				updateAvailableAnnouncement.OnIgnore = () =>
 				{
 					BeamablePackageUpdateMeta.IsInstallationIgnored = true;
-					EditorPrefs.SetBool(BeamableEditorPrefsConstants.IS_PACKAGE_UPDATE_IGNORED, true);
+					EditorPrefs.SetBool(IS_PACKAGE_UPDATE_IGNORED, true);
 					_model.RemoveAnnouncement(updateAvailableAnnouncement);
 				};
 
@@ -296,7 +297,7 @@ namespace Beamable.Editor.Toolbox.UI
 			};
 			whatsNewAnnouncement.OnIgnore = () =>
 			{
-				EditorPrefs.SetBool(BeamableEditorPrefsConstants.IS_PACKAGE_WHATSNEW_ANNOUNCEMENT_IGNORED, true);
+				EditorPrefs.SetBool(IS_PACKAGE_WHATSNEW_ANNOUNCEMENT_IGNORED, true);
 				_model.RemoveAnnouncement(whatsNewAnnouncement);
 			};
 			_model.AddAnnouncement(whatsNewAnnouncement);
