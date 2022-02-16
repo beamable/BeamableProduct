@@ -84,7 +84,7 @@ namespace Beamable.Server.Editor.DockerCommands
 					_status.usedPorts.Add(usedPort);
 					var modelWithSamePort =
 						_storages.FirstOrDefault(model => model.Config.LocalDataPort == usedPort ||
-						                                  model.Config.LocalUIPort == usedPort);
+														  model.Config.LocalUIPort == usedPort);
 					_overlapingPorts |= modelWithSamePort != null;
 				}
 			}
@@ -95,12 +95,12 @@ namespace Beamable.Server.Editor.DockerCommands
 			var globalHintStorage = BeamEditor.HintGlobalStorage;
 			if (!DockerNotInstalled && _overlapingPorts)
 				globalHintStorage.AddOrReplaceHint(BeamHintType.Validation,
-				                                   BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
-				                                   BeamHintIds.ID_DOCKER_OVERLAPPING_PORTS);
+												   BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
+												   BeamHintIds.ID_DOCKER_OVERLAPPING_PORTS);
 			else
 				globalHintStorage.RemoveHint(new BeamHintHeader(BeamHintType.Validation,
-				                                                BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
-				                                                BeamHintIds.ID_DOCKER_OVERLAPPING_PORTS));
+																BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
+																BeamHintIds.ID_DOCKER_OVERLAPPING_PORTS));
 			Promise.CompleteSuccess(_status);
 		}
 	}

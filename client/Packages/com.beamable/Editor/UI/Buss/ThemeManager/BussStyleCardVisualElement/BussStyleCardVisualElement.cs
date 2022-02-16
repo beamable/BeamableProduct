@@ -334,8 +334,8 @@ namespace Beamable.Editor.UI.Components
 			if (_showAllMode)
 			{
 				var restPropertyKeys =
-					BussStyle.Keys.Where(s => StyleRule.Properties.All(provider => provider.Key != s)).OrderBy(k=>k);
-				
+					BussStyle.Keys.Where(s => StyleRule.Properties.All(provider => provider.Key != s)).OrderBy(k => k);
+
 				foreach (var key in restPropertyKeys)
 				{
 					var existingProperty = _properties.FirstOrDefault(p => p.PropertyProvider.Key == key);
