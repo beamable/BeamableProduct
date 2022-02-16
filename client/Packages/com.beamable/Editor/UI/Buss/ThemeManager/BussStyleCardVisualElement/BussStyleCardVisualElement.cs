@@ -382,10 +382,7 @@ namespace Beamable.Editor.UI.Components
 						return 0;
 					}
 
-					var value = 0;
-					if (p1.PropertyIsInStyle) value--;
-					if (p2.PropertyIsInStyle) value++;
-					if (value == 0)
+					if (p1.PropertyIsInStyle == p2.PropertyIsInStyle)
 					{
 						if (p1.PropertyIsInStyle)
 						{
@@ -398,7 +395,7 @@ namespace Beamable.Editor.UI.Components
 						       Array.IndexOf(keys, p2.PropertyProvider.Key);
 					}
 
-					return value;
+					return p2.PropertyIsInStyle ? 1 : -1;
 				});
 			}
 			else
@@ -410,15 +407,12 @@ namespace Beamable.Editor.UI.Components
 						return 0;
 					}
 
-					var value = 0;
-					if (p1.PropertyIsInStyle) value--;
-					if (p2.PropertyIsInStyle) value++;
-					if (value == 0)
+					if (p1.PropertyIsInStyle == p2.PropertyIsInStyle)
 					{
 						return String.Compare(p1.PropertyKey, p2.PropertyKey, StringComparison.Ordinal);
 					}
 
-					return value;
+					return p2.PropertyIsInStyle ? 1 : -1;
 				});
 			}
 		}
