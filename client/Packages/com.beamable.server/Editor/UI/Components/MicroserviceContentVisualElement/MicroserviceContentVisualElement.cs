@@ -9,10 +9,7 @@ using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -106,6 +103,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
 			_actionPrompt.Refresh();
+			EditorApplication.delayCall +=
+				() =>
+				{
+					var command = new GetDockerLocalStatus();
+					command.Start();
+				};
 		}
 
 		private void HandleSelectionChanged(bool _)
