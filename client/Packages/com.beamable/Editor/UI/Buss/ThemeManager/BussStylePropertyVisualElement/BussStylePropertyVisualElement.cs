@@ -24,6 +24,7 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleRule _styleRule;
 		private BussPropertyProvider _propertyProvider;
 		private BussStyleSheet _externalVariableSource;
+		private bool _editMode;
 
 		public BussPropertyProvider PropertyProvider => _propertyProvider;
 		public string PropertyKey => PropertyProvider.Key;
@@ -47,7 +48,7 @@ namespace Beamable.Editor.UI.Components
 			Root.Add(buttonContainer);
 
 			_removeButton.RegisterCallback<MouseDownEvent>(OnRemoveButtonClicked);
-			buttonContainer.SetHidden(!_styleRule.EditMode);
+			buttonContainer.SetHidden(!_editMode);
 
 			_labelComponent = new TextElement();
 			_labelComponent.name = "propertyLabel";
@@ -78,8 +79,10 @@ namespace Beamable.Editor.UI.Components
 		public void Setup(BussStyleSheet styleSheet,
 						  BussStyleRule styleRule,
 						  BussPropertyProvider property,
-						  VariableDatabase variableDatabase)
+						  VariableDatabase variableDatabase,
+						  bool editMode)
 		{
+			_editMode = editMode;
 			_variableDatabase = variableDatabase;
 			_styleSheet = styleSheet;
 			_styleRule = styleRule;
