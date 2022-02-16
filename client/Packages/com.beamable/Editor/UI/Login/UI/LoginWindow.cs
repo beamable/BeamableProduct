@@ -14,6 +14,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 using static Beamable.Common.Constants.BeamableConstants.Features.LoginBase;
+using static Beamable.Common.Constants.BeamableConstants;
 
 namespace Beamable.Editor.Login.UI
 {
@@ -36,10 +37,10 @@ namespace Beamable.Editor.Login.UI
 
 #if BEAMABLE_DEVELOPER
         [MenuItem(
-            BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER + "/" +
-            BeamableConstantsOLD.OPEN + " " +
-            BeamableConstantsOLD.LOGIN,
-            priority = BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_PRIORITY_2
+	        MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER + "/" +
+	        Commons.OPEN + " " +
+	        MenuItems.Windows.Names.LOGIN,
+            priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2
         )]
 #endif
 		public static LoginWindow Init()
@@ -73,13 +74,13 @@ namespace Beamable.Editor.Login.UI
 			// Create Beamable ContentManagerWindow and dock it next to Unity Hierarchy Window
 			var loginWindow = dockLocations.Length == 0
 				? ScriptableObject.CreateInstance<LoginWindow>()
-				: GetWindow<LoginWindow>(BeamableConstantsOLD.LOGIN, true, dockLocations);
+				: GetWindow<LoginWindow>(MenuItems.Windows.Names.LOGIN, true, dockLocations);
 
 			loginWindow.minSize = new Vector2(400, 590);
 
 			if (dockLocations.Length == 0)
 			{
-				loginWindow.titleContent = new GUIContent(BeamableConstantsOLD.LOGIN);
+				loginWindow.titleContent = new GUIContent(MenuItems.Windows.Names.LOGIN);
 				loginWindow.ShowUtility();
 				loginWindow.GetRootVisualContainer().AddToClassList("loginRoot");
 			}

@@ -20,6 +20,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants;
 
 namespace Beamable.Editor.Assistant
 {
@@ -28,13 +29,13 @@ namespace Beamable.Editor.Assistant
 	/// </summary>
 	public class BeamableAssistantWindow : EditorWindow, ISerializationCallbackReceiver
 	{
-		[MenuItem(BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
-				  BeamableConstantsOLD.OPEN + " " +
-				  BeamableConstantsOLD.BEAMABLE_ASSISTANT,
-				  priority = BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_PRIORITY_2)]
+		[MenuItem(MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
+		          Commons.OPEN + " " +
+		          MenuItems.Windows.Names.BEAMABLE_ASSISTANT,
+		          priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2)]
 		public static BeamableAssistantWindow ShowWindow()
 		{
-			var window = GetWindow<BeamableAssistantWindow>(BeamableConstantsOLD.BEAMABLE_ASSISTANT, true, typeof(SceneView));
+			var window = GetWindow<BeamableAssistantWindow>(MenuItems.Windows.Names.BEAMABLE_ASSISTANT, true, typeof(SceneView));
 			window.Show();
 
 			return window;

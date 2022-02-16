@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using Debug = System.Diagnostics.Debug;
+using static Beamable.Common.Constants.BeamableConstants.MenuItems.Assets;
 
 namespace Beamable.Reflection
 {
@@ -20,7 +21,7 @@ namespace Beamable.Reflection
 	/// <see cref="BeamContext"/>s.
 	/// </summary>
 #if BEAMABLE_DEVELOPER
-	[CreateAssetMenu(fileName = "BeamReflectionCache", menuName = "Beamable/Reflection/Beam Initialization Cache", order = BeamableConstantsOLD.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
+	[CreateAssetMenu(fileName = "BeamReflectionCache", menuName = "Beamable/Reflection/Beam Initialization Cache", order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 #endif
 	public class BeamReflectionCache : ReflectionSystemObject
 	{

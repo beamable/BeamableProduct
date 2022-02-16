@@ -5,10 +5,11 @@ using Beamable.Tournaments;
 using Beamable.UI.Scripts;
 using UnityEngine;
 using UnityEngine.UI;
+using static Beamable.Common.Constants.BeamableConstants.URLs;
 
 namespace Beamable.Experimental.Calendars
 {
-	[HelpURL(BeamableConstantsOLD.URL_FEATURE_CALENDAR_FLOW)]
+	[HelpURL(Documentations.URL_DOC_CALENDAR_FLOW)]
 	public class CalendarBehaviour : MonoBehaviour
 	{
 		public MenuManagementBehaviour MenuManager;

@@ -10,6 +10,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants;
 
 namespace Beamable.Editor.Config
 {
@@ -17,10 +18,10 @@ namespace Beamable.Editor.Config
 	{
 
 		[MenuItem(
-		   BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
-		   BeamableConstantsOLD.OPEN + " " +
-		   BeamableConstantsOLD.CONFIG_MANAGER,
-		   priority = BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_PRIORITY_2
+		   MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
+		   Commons.OPEN + " " +
+		   MenuItems.Windows.Names.CONFIG_MANAGER,
+		   priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2
 		)]
 		public static void Open()
 		{

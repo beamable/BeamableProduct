@@ -17,6 +17,7 @@ using UnityEditor.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants;
 using static Beamable.Common.Constants.BeamableConstants.Features.ContentManager;
 
 namespace Beamable.Editor.Content
@@ -24,10 +25,10 @@ namespace Beamable.Editor.Content
 	public class ContentManagerWindow : EditorWindow, ISerializationCallbackReceiver
 	{
 		[MenuItem(
-		BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
-		BeamableConstantsOLD.OPEN + " " +
-		BeamableConstantsOLD.CONTENT_MANAGER,
-		priority = BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_PRIORITY_2
+		MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
+		Commons.OPEN + " " +
+		MenuItems.Windows.Names.CONTENT_MANAGER,
+		priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2
 		)]
 		public static async Task Init()
 		{
@@ -46,7 +47,7 @@ namespace Beamable.Editor.Content
 			{
 				if (_instance == null)
 				{
-					_instance = GetWindow<ContentManagerWindow>(BeamableConstantsOLD.CONTENT_MANAGER, true, typeof(ContentManagerWindow), typeof(SceneView));
+					_instance = GetWindow<ContentManagerWindow>(MenuItems.Windows.Names.CONTENT_MANAGER, true, typeof(ContentManagerWindow), typeof(SceneView));
 				}
 				return _instance;
 			}
@@ -533,7 +534,7 @@ namespace Beamable.Editor.Content
 			_instance = this;
 		}
 
-		[MenuItem(BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Reset Content")]
+		[MenuItem(MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Reset Content")]
 		private static async Task ResetContent()
 		{
 

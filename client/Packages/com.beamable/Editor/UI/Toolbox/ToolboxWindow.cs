@@ -12,6 +12,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants;
 using static Beamable.Common.Constants.BeamableConstants.Features.Toolbox;
 
 namespace Beamable.Editor.Toolbox.UI
@@ -19,10 +20,10 @@ namespace Beamable.Editor.Toolbox.UI
 	public class ToolboxWindow : EditorWindow
 	{
 		[MenuItem(
-			BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
-			BeamableConstantsOLD.OPEN + " " +
-			BeamableConstantsOLD.TOOLBOX,
-			priority = BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_PRIORITY_1
+			MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
+			Commons.OPEN + " " +
+			MenuItems.Windows.Names.TOOLBOX,
+			priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_1
 		)]
 		public static async void Init()
 		{
@@ -42,7 +43,7 @@ namespace Beamable.Editor.Toolbox.UI
 			}
 
 			// Create Beamable ContentManagerWindow and dock it next to Unity Hierarchy Window
-			var contentManagerWindow = GetWindow<ToolboxWindow>(BeamableConstantsOLD.TOOLBOX, true, typeof(SceneView));
+			var contentManagerWindow = GetWindow<ToolboxWindow>(MenuItems.Windows.Names.TOOLBOX, true, typeof(SceneView));
 
 			contentManagerWindow.Show(true);
 		}
@@ -153,7 +154,7 @@ namespace Beamable.Editor.Toolbox.UI
 
 			_actionBarVisualElement.OnInfoButtonClicked += () =>
 			{
-				Application.OpenURL(BeamableConstantsOLD.URL_TOOL_WINDOW_TOOLBOX);
+				Application.OpenURL(URLs.Documentations.URL_DOC_WINDOW_TOOLBOX);
 			};
 
 			CheckForDeps();

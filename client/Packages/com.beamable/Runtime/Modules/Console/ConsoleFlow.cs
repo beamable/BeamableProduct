@@ -8,10 +8,11 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
+using static Beamable.Common.Constants.BeamableConstants.URLs;
 
 namespace Beamable.Console
 {
-	[HelpURL(BeamableConstantsOLD.URL_FEATURE_ADMIN_FLOW)]
+	[HelpURL(Documentations.URL_DOC_ADMIN_FLOW)]
 	public class ConsoleFlow : MonoBehaviour
 	{
 		public static ConsoleFlow Instance;

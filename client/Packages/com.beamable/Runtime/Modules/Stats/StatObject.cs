@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using UnityEngine;
+using static Beamable.Common.Constants.BeamableConstants.MenuItems.Assets;
 
 namespace Beamable.Stats
 {
@@ -39,9 +40,9 @@ namespace Beamable.Stats
 
 	[CreateAssetMenu(
 	   fileName = "Stat",
-	   menuName = BeamableConstantsOLD.MENU_ITEM_PATH_ASSETS_BEAMABLE + "/" +
+	   menuName = Paths.MENU_ITEM_PATH_ASSETS_BEAMABLE + "/" +
 	   "Stat",
-	   order = BeamableConstantsOLD.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_3)]
+	   order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_3)]
 	[System.Serializable]
 	public class StatObject : ScriptableObject
 	{

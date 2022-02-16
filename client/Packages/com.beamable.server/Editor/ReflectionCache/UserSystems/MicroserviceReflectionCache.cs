@@ -23,12 +23,13 @@ using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
 using LogMessage = Beamable.Editor.UI.Model.LogMessage;
+using static Beamable.Common.Constants.BeamableConstants.MenuItems.Assets.Orders;
 using static Beamable.Common.Constants.BeamableConstants.Features.Services;
 
 namespace Beamable.Server.Editor
 {
 #if BEAMABLE_DEVELOPER
-	[CreateAssetMenu(fileName = "MicroserviceReflectionCache", menuName = "Beamable/Reflection/Microservices Cache", order = BeamableConstantsOLD.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
+	[CreateAssetMenu(fileName = "MicroserviceReflectionCache", menuName = "Beamable/Reflection/Microservices Cache", order = MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
 #endif
 	public class MicroserviceReflectionCache : ReflectionSystemObject
 	{

@@ -14,6 +14,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants.BeamableConstants;
 
 namespace Beamable.Editor.Config
 {
@@ -194,7 +195,7 @@ namespace Beamable.Editor.Config
 
 		public void ShowDocs()
 		{
-			Application.OpenURL(BeamableConstantsOLD.URL_TOOL_WINDOW_CONFIG_MANAGER);
+			Application.OpenURL(URLs.Documentations.URL_DOC_WINDOW_CONFIG_MANAGER);
 		}
 
 		public void ToggleModuleFilter(string module, bool shouldFilterOn)

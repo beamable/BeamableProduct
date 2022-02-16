@@ -7,15 +7,16 @@ using Beamable.Stats;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using static Beamable.Common.Constants.BeamableConstants.MenuItems.Assets;
 
 namespace Beamable.AccountManagement
 {
 #if BEAMABLE_DEVELOPER
 	[CreateAssetMenu(
 	   fileName = "Account Management Configuration",
-	   menuName = BeamableConstantsOLD.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
+	   menuName = Paths.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
 	   "Account Management Configuration",
-	   order = BeamableConstantsOLD.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
+	   order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 #endif
 	public class AccountManagementConfiguration : ModuleConfigurationObject, IAuthSettings
 	{

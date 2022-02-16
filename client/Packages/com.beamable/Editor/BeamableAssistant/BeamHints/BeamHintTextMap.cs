@@ -3,6 +3,7 @@ using Beamable.Common.Content;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using static Beamable.Common.Constants.BeamableConstants.MenuItems.Assets.Orders;
 
 namespace Beamable.Editor.Assistant
 {
@@ -11,7 +12,7 @@ namespace Beamable.Editor.Assistant
 	/// A quick and dirty way of mapping Domains, Sub-Domains and HintIds to specific blobs of text.
 	/// TODO: Replace with in-editor localization system 
 	/// </summary>
-	[CreateAssetMenu(fileName = "BeamHintTextMap", menuName = "Beamable/Assistant/Hint Text Map", order = BeamableConstantsOLD.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
+	[CreateAssetMenu(fileName = "BeamHintTextMap", menuName = "Beamable/Assistant/Hint Text Map", order = MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
 	public class BeamHintTextMap : ScriptableObject
 	{
 		public SerializedStringToTextDictionary HintDomainToTitle = new SerializedStringToTextDictionary();

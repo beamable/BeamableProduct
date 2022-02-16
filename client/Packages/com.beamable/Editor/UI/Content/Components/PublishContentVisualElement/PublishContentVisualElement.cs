@@ -17,6 +17,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants;
 using static Beamable.Common.Constants.BeamableConstants.Features.ContentManager.Publish;
 
 namespace Beamable.Editor.Content.Components
@@ -83,7 +84,7 @@ namespace Beamable.Editor.Content.Components
 			var manifestDocsLink = Root.Q<Label>("manifestDocsLink");
 			manifestDocsLink.RegisterCallback<MouseDownEvent>(evt =>
 			{
-				Application.OpenURL(BeamableConstantsOLD.URL_TOOL_WINDOW_CONTENT_NAMESPACES);
+				Application.OpenURL(URLs.Documentations.URL_DOC_WINDOW_CONTENT_NAMESPACES);
 			});
 
 			if (CreateNewManifest)

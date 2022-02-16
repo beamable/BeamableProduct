@@ -10,10 +10,11 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using FontStyle = UnityEngine.FontStyle;
+using static Beamable.Common.Constants.BeamableConstants;
 
 namespace Beamable.Editor.Modules.Theme
 {
-	[Obsolete(BeamableConstantsOLD.OBSOLETE_BUSS_INTRODUCED)]
+	[Obsolete(Commons.OBSOLETE_BUSS_INTRODUCED)]
 	public class ThemeWindow : EditorWindow
 	{
 		// [MenuItem(
@@ -24,7 +25,7 @@ namespace Beamable.Editor.Modules.Theme
 		public static void Init()
 		{
 			var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
-			GetWindow<ThemeWindow>(BeamableConstantsOLD.THEME_MANAGER, true, inspector);
+			GetWindow<ThemeWindow>(MenuItems.Windows.Names.THEME_MANAGER, true, inspector);
 		}
 
 		private GameObject _lastRawSelection;

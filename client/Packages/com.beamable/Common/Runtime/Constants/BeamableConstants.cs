@@ -2,9 +2,16 @@
 {
 	public static partial class BeamableConstants
 	{
+		public const string REALM_PREFERENCE = "BeamableSelectedRealms";
+		public const string BEAMABLE_MAIN_WEBSITE = "beamable.com";
+		public const string BEAMABLE_DOCS_WEBSITE = "docs.beamable.com";
+		public const string BEAMABLE_ASSET_GROUP = "Beamable Assets";
+		
 		public static class Commons
 		{
 			public const string OBSOLETE_WILL_BE_REMOVED = "This is no longer supported, and will be removed in the future.";
+			public const string OBSOLETE_BUSS_INTRODUCED = "Not used after introducing BUSS system";
+			public const string OPEN = "Open";
 		}
 		public static class Directories
 		{
@@ -25,28 +32,28 @@
 		}
 		public static class URLs
 		{
-			public const string BEAMABLE_MAIN_WEBSITE = "https://www.beamable.com";
-			public const string BEAMABLE_DOCS_WEBSITE = "https://docs.beamable.com";
-			public const string BEAMABLE_BLOG_RELEASES_UNITY_SDK = "https://www.beamable.com/blog/beamable-release-unity-sdk";
-			public const string BEAMABLE_LEGAL_WEBSITE = "https://app.termly.io/document/terms-of-use-for-website/c44e18e4-675f-4eeb-8fa4-a9a5267ec2c5";
+			public const string URL_BEAMABLE_MAIN_WEBSITE = "https://www.beamable.com";
+			public const string URL_BEAMABLE_DOCS_WEBSITE = "https://docs.beamable.com";
+			public const string URL_BEAMABLE_BLOG_RELEASES_UNITY_SDK = "https://www.beamable.com/blog/beamable-release-unity-sdk";
+			public const string URL_BEAMABLE_LEGAL_WEBSITE = "https://app.termly.io/document/terms-of-use-for-website/c44e18e4-675f-4eeb-8fa4-a9a5267ec2c5";
 
 			public static class Documentations
 			{
-				public const string ACCOUNT_HUD = BEAMABLE_DOCS_WEBSITE + "/account-hud";
-				public const string ADMIN_FLOW = BEAMABLE_DOCS_WEBSITE + "/admin-flow";
-				public const string ANNOUNCEMENTS_FLOW = BEAMABLE_DOCS_WEBSITE + "announcements-flow";
-				public const string CALENDAR_FLOW = BEAMABLE_DOCS_WEBSITE + "/calendar-flow";
-				public const string CURRENCY_HUD = BEAMABLE_DOCS_WEBSITE + "/currency-hud";
-				public const string LEADERBOARD_FLOW = BEAMABLE_DOCS_WEBSITE + "/leaderboard-flow";
-				public const string LOGIN_FLOW = BEAMABLE_DOCS_WEBSITE + "/login-flow";
-				public const string INVENTORY_FLOW = BEAMABLE_DOCS_WEBSITE + "/inventory-flow";
-				public const string STORE_FLOW = BEAMABLE_DOCS_WEBSITE + "/store-flow";
-				public const string MICROSERVICES = BEAMABLE_DOCS_WEBSITE + "/microservices-feature";
+				public const string URL_DOC_ACCOUNT_HUD = URL_BEAMABLE_DOCS_WEBSITE + "/account-hud";
+				public const string URL_DOC_ADMIN_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "/admin-flow";
+				public const string URL_DOC_ANNOUNCEMENTS_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "announcements-flow";
+				public const string URL_DOC_CALENDAR_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "/calendar-flow";
+				public const string URL_DOC_CURRENCY_HUD = URL_BEAMABLE_DOCS_WEBSITE + "/currency-hud";
+				public const string URL_DOC_LEADERBOARD_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "/leaderboard-flow";
+				public const string URL_DOC_LOGIN_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "/login-flow";
+				public const string URL_DOC_INVENTORY_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "/inventory-flow";
+				public const string URL_DOC_STORE_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "/store-flow";
+				public const string URL_DOC_MICROSERVICES = URL_BEAMABLE_DOCS_WEBSITE + "/microservices-feature";
 			
-				public const string WINDOW_CONTENT_MANAGER = BEAMABLE_DOCS_WEBSITE + "/content-manager";
-				public const string WINDOW_CONTENT_NAMESPACES = BEAMABLE_DOCS_WEBSITE + "/content-manager#namespaces";
-				public const string WINDOW_CONFIG_MANAGER = BEAMABLE_DOCS_WEBSITE + "/content-manager";
-				public const string WINDOW_TOOLBOX = BEAMABLE_DOCS_WEBSITE + "/toolbox";
+				public const string URL_DOC_WINDOW_CONTENT_MANAGER = URL_BEAMABLE_DOCS_WEBSITE + "/content-manager";
+				public const string URL_DOC_WINDOW_CONTENT_NAMESPACES = URL_BEAMABLE_DOCS_WEBSITE + "/content-manager#namespaces";
+				public const string URL_DOC_WINDOW_CONFIG_MANAGER = URL_BEAMABLE_DOCS_WEBSITE + "/content-manager";
+				public const string URL_DOC_WINDOW_TOOLBOX = URL_BEAMABLE_DOCS_WEBSITE + "/toolbox";
 			}
 		}
 		public static class MenuItems

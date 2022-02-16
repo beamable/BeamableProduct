@@ -11,7 +11,8 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
-
+using static Beamable.Common.Constants.BeamableConstants;
+using static Beamable.Common.Constants.BeamableConstants.MenuItems.Windows;
 
 namespace Beamable.Editor.Toolbox.Components
 {
@@ -51,7 +52,7 @@ namespace Beamable.Editor.Toolbox.Components
 			_realmButton.Refresh();
 
 			var portalButton = Root.Q<Button>("openPortalButton");
-			portalButton.text = (BeamableConstantsOLD.OPEN + " " + BeamableConstantsOLD.PORTAL).ToUpper();
+			portalButton.text = (Commons.OPEN + " " + Names.PORTAL).ToUpper();
 			portalButton.clickable.clicked += () => GetPortalUrl.Then(Application.OpenURL);
 			var m = new ContextualMenuManipulator(rightClickEvt =>
 			{

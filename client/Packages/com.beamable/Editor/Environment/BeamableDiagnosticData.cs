@@ -3,11 +3,11 @@ using Beamable.Editor.Config;
 using Beamable.Editor.Modules.Account;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants.BeamableConstants.MenuItems.Windows.Paths;
 
 namespace Beamable.Editor.Environment
 {
@@ -59,7 +59,7 @@ namespace Beamable.Editor.Environment
 		public string CreatedAtUTC;
 		public List<string> ScriptingDefineSymbols;
 
-		[MenuItem(BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_BEAMABLE_HELP_DIAGNOSTIC_DATA)]
+		[MenuItem(MENU_ITEM_PATH_WINDOW_BEAMABLE_HELP_DIAGNOSTIC_DATA)]
 		public static void WriteDebugData()
 		{
 			Create().Then(data =>

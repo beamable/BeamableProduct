@@ -3,10 +3,11 @@ using Beamable.Common;
 using Beamable.Common.Api.Inventory;
 using Beamable.UI.Scripts;
 using UnityEngine;
+using static Beamable.Common.Constants.BeamableConstants.URLs;
 
 namespace Beamable.Inventory.Scripts
 {
-	[HelpURL(BeamableConstantsOLD.URL_FEATURE_INVENTORY_FLOW)]
+	[HelpURL(Documentations.URL_DOC_INVENTORY_FLOW)]
 	public class InventoryMenuBehaviour : MonoBehaviour
 	{
 		public MenuManagementBehaviour MenuManager;

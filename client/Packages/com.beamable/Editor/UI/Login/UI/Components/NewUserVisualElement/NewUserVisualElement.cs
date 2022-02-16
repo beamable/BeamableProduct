@@ -9,6 +9,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.BeamableConstants.URLs;
 using static Beamable.Common.Constants.BeamableConstants.Features.LoginBase;
 
 namespace Beamable.Editor.Login.UI.Components
@@ -72,7 +73,7 @@ namespace Beamable.Editor.Login.UI.Components
 			_continueButton.AddGateKeeper(isAlias, isEmail, isLegal, isPasswordValid, doPasswordsMatch);
 
 			_legalButton = Root.Q<GenericButtonVisualElement>("legalButton");
-			_legalButton.OnClick += () => { Application.OpenURL(BeamableConstantsOLD.BEAMABLE_LEGAL_WEBSITE); };
+			_legalButton.OnClick += () => { Application.OpenURL(URL_BEAMABLE_LEGAL_WEBSITE); };
 
 			_existingAccountButton = Root.Q<GenericButtonVisualElement>("existingAccount");
 			_existingAccountButton.OnClick += Manager.GotoExistingCustomer;

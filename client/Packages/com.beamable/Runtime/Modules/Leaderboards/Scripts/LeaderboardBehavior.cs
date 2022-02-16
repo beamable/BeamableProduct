@@ -1,14 +1,13 @@
 ﻿using Beamable.Common.Leaderboards;
-using Beamable.Content;
 using Beamable.UI.Scripts;
-using System.Collections;
 using UnityEngine;
+using static Beamable.Common.Constants.BeamableConstants.URLs;
 
 namespace Beamable.Leaderboards
 {
 
 
-	[HelpURL(BeamableConstantsOLD.URL_FEATURE_LEADERBOARD_FLOW)]
+	[HelpURL(Documentations.URL_DOC_LEADERBOARD_FLOW)]
 	public class LeaderboardBehavior : MonoBehaviour
 	{
 

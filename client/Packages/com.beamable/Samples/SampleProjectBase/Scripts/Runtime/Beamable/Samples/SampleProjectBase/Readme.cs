@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using static Beamable.Common.Constants.BeamableConstants.MenuItems.Assets;
 
 namespace Beamable.Samples.SampleProjectBase
 {
@@ -12,9 +13,9 @@ namespace Beamable.Samples.SampleProjectBase
 #if BEAMABLE_DEVELOPER
 	[CreateAssetMenu(
 		fileName = "ReadMe",
-		menuName = BeamableConstantsOLD.MENU_ITEM_PATH_ASSETS_BEAMABLE_SAMPLES + "/" +
+		menuName = Paths.MENU_ITEM_PATH_ASSETS_BEAMABLE_SAMPLES + "/" +
 		"ReadMe",
-		order = BeamableConstantsOLD.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
+		order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 #endif
 	public class Readme : ScriptableObject
 	{

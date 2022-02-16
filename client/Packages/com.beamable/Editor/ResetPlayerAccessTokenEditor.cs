@@ -1,16 +1,13 @@
-// unset
-
 using Beamable.Api;
-using Beamable.UI.Scripts;
-using System;
 using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants.BeamableConstants.MenuItems.Windows;
 
 namespace Beamable.Editor
 {
 	public static class ResetPlayerAccessTokenEditor
 	{
-		[MenuItem(BeamableConstantsOLD.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Clear Access Token")]
+		[MenuItem(Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Clear Access Token")]
 		public static void ResetPlayerAccessTokens()
 		{
 			var wnd = ScriptableObject.CreateInstance<ResetTokenWindow>();

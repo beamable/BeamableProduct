@@ -1,15 +1,16 @@
 using Beamable.Pooling;
 using System;
 using UnityEngine;
+using static Beamable.Common.Constants.BeamableConstants.MenuItems.Assets;
 
 namespace Beamable.Sound
 {
 #if BEAMABLE_DEVELOPER
 	[CreateAssetMenu(
 	   fileName = "Sound Configuration",
-	   menuName = BeamableConstantsOLD.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
+	   menuName = Paths.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
 	   "Sound Configuration",
-	   order = BeamableConstantsOLD.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
+	   order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 #endif
 	public class SoundConfiguration : ModuleConfigurationObject
 	{
