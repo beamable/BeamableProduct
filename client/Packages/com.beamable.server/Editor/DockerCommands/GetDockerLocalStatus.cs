@@ -60,7 +60,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			}
 
 			serviceIndex = _storages.FindIndex(Match);
-			if (serviceIndex >= 0)
+			if (serviceIndex >= 0 && _storages[serviceIndex]?.Config != null)
 			{
 				_status.runningServices.Add(_storages[serviceIndex].Name);
 				_status.usedPorts.Add(_storages[serviceIndex].Config.LocalDataPort);
