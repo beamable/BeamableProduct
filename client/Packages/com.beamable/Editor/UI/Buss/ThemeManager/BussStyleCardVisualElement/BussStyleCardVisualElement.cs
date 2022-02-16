@@ -20,7 +20,7 @@ namespace Beamable.Editor.UI.Components
 
 		private BussSelectorLabelVisualElement _selectorLabelComponent;
 		private VisualElement _selectorLabelParent;
-		private VisualElement _variables;
+		private VisualElement _variablesParent;
 		private VisualElement _propertiesParent;
 		private VisualElement _colorBlock;
 		private VisualElement _removeButton;
@@ -31,6 +31,7 @@ namespace Beamable.Editor.UI.Components
 		private VisualElement _addVariableButton;
 		private VisualElement _addRuleButton;
 		private VisualElement _showAllButton;
+		private VisualElement _sortButton;
 		private TextElement _showAllButtonText;
 
 		private VariableDatabase _variableDatabase;
@@ -38,15 +39,18 @@ namespace Beamable.Editor.UI.Components
 		private BussStyleRule _styleRule;
 		private BussElementHierarchyVisualElement _navigationWindow;
 
-		private Action _onUndoRequest;
 		private readonly List<BussStylePropertyVisualElement> _properties = new List<BussStylePropertyVisualElement>();
+		private Action _onUndoRequest;
 		private BussThemeManager _themeManager;
+		private bool _sorted;
+		private bool _showAllMode;
+		private bool _editMode;
 
 		public BussStyleRule StyleRule => _styleRule;
+		public bool EditMode => _editMode;
 
 		public BussStyleCardVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}")
-		{ }
+			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}") { }
 
 		public override void Refresh()
 		{
@@ -55,7 +59,7 @@ namespace Beamable.Editor.UI.Components
 			_properties.Clear();
 
 			_selectorLabelParent = Root.Q<VisualElement>("selectorLabelParent");
-			_variables = Root.Q<VisualElement>("variables");
+			_variablesParent = Root.Q<VisualElement>("variables");
 			_propertiesParent = Root.Q<VisualElement>("properties");
 			_colorBlock = Root.Q<VisualElement>("colorBlock");
 
@@ -67,12 +71,14 @@ namespace Beamable.Editor.UI.Components
 			_addVariableButton = Root.Q<VisualElement>("addVariableButton");
 			_addRuleButton = Root.Q<VisualElement>("addRuleButton");
 			_showAllButton = Root.Q<VisualElement>("showAllButton");
+			_sortButton = Root.Q<VisualElement>("sortButton");
+
 			_showAllButtonText = Root.Q<TextElement>("showAllButtonText");
 
 			_navigationWindow.SelectionChanged -= OnSelectionChanged;
 			_navigationWindow.SelectionChanged += OnSelectionChanged;
 
-			_removeButton.SetHidden(!StyleRule.EditMode);
+			_removeButton.SetHidden(!_editMode);
 
 			RegisterButtonActions();
 			CreateSelectorLabel();
@@ -96,11 +102,11 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void Setup(BussThemeManager themeManager,
-						  BussStyleSheet styleSheet,
-						  BussStyleRule styleRule,
-						  VariableDatabase variableDatabase,
-						  BussElementHierarchyVisualElement navigationWindow,
-						  Action onUndoRequest)
+		                  BussStyleSheet styleSheet,
+		                  BussStyleRule styleRule,
+		                  VariableDatabase variableDatabase,
+		                  BussElementHierarchyVisualElement navigationWindow,
+		                  Action onUndoRequest)
 		{
 			_themeManager = themeManager;
 			_styleSheet = styleSheet;
@@ -134,6 +140,7 @@ namespace Beamable.Editor.UI.Components
 			_addVariableButton?.RegisterCallback<MouseDownEvent>(AddVariableButtonClicked);
 			_addRuleButton?.RegisterCallback<MouseDownEvent>(AddRuleButtonClicked);
 			_showAllButton?.RegisterCallback<MouseDownEvent>(ShowAllButtonClicked);
+			_sortButton?.RegisterCallback<MouseDownEvent>(SortButtonClicked);
 		}
 
 		private void ClearButtonActions()
@@ -146,6 +153,7 @@ namespace Beamable.Editor.UI.Components
 			_addVariableButton?.UnregisterCallback<MouseDownEvent>(AddVariableButtonClicked);
 			_addRuleButton?.UnregisterCallback<MouseDownEvent>(AddRuleButtonClicked);
 			_showAllButton?.UnregisterCallback<MouseDownEvent>(ShowAllButtonClicked);
+			_sortButton?.UnregisterCallback<MouseDownEvent>(SortButtonClicked);
 		}
 
 		private void RemoveButtonClicked(MouseDownEvent evt)
@@ -177,14 +185,16 @@ namespace Beamable.Editor.UI.Components
 				keys.Add(propertyProvider.Key);
 			}
 
+			var sorted = BussStyle.Keys.OrderBy(k => k);
 			var context = new GenericMenu();
 
-			foreach (string key in BussStyle.Keys)
+			foreach (string key in sorted)
 			{
 				if (keys.Contains(key)) continue;
 				var baseType = BussStyle.GetBaseType(key);
 				var data = SerializableValueImplementationHelper.Get(baseType);
-				var types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract && t != typeof(FractionFloatBussProperty));
+				var types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
+				                                     t != typeof(FractionFloatBussProperty));
 				foreach (Type type in types)
 				{
 					var label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
@@ -244,14 +254,14 @@ namespace Beamable.Editor.UI.Components
 
 		private void EditButtonClicked(MouseDownEvent evt)
 		{
-			SetEditMode(!StyleRule.EditMode);
+			SetEditMode(!_editMode);
 		}
 
 		public void SetEditMode(bool value)
 		{
-			StyleRule.EditMode = value;
+			_editMode = value;
 
-			if (!StyleRule.EditMode)
+			if (!_editMode)
 			{
 				_themeManager.CloseConfirmationPopup();
 			}
@@ -265,16 +275,22 @@ namespace Beamable.Editor.UI.Components
 
 		private void ShowAllButtonClicked(MouseDownEvent evt)
 		{
-			StyleRule.ShowAllMode = !StyleRule.ShowAllMode;
+			_showAllMode = !_showAllMode;
 			UpdateShowAllStatus();
 			RefreshProperties();
+		}
+
+		private void SortButtonClicked(MouseDownEvent evt)
+		{
+			_sorted = !_sorted;
+			SortProperties();
 		}
 
 		private void UpdateShowAllStatus()
 		{
 			const string showAllProperty = "showAllProperties";
-			EnableInClassList(showAllProperty, StyleRule.ShowAllMode);
-			_showAllButtonText.text = StyleRule.ShowAllMode ? "Hide All" : "Show All";
+			EnableInClassList(showAllProperty, _showAllMode);
+			_showAllButtonText.text = _showAllMode ? "Hide All" : "Show All";
 		}
 
 		private void CreateSelectorLabel()
@@ -283,7 +299,7 @@ namespace Beamable.Editor.UI.Components
 			_selectorLabelParent.Clear();
 
 			_selectorLabelComponent = new BussSelectorLabelVisualElement();
-			_selectorLabelComponent.Setup(StyleRule, _styleSheet);
+			_selectorLabelComponent.Setup(StyleRule, _styleSheet, _editMode);
 			_selectorLabelParent.Add(_selectorLabelComponent);
 
 			_selectorLabelComponent.OnChangeSubmit += () => SetEditMode(false);
@@ -293,14 +309,16 @@ namespace Beamable.Editor.UI.Components
 		{
 			foreach (BussStylePropertyVisualElement element in _properties.ToArray())
 			{
-				bool remove = false;
+				bool remove;
+
 				if (element.PropertyIsInStyle)
 				{
 					remove = !_styleRule.Properties.Contains(element.PropertyProvider);
 				}
 				else
 				{
-					remove = !_styleRule.ShowAllMode ||
+
+					remove = !_showAllMode ||
 							 _styleRule.Properties.Any(p => p.Key == element.PropertyKey);
 				}
 
@@ -322,15 +340,16 @@ namespace Beamable.Editor.UI.Components
 				}
 
 				var element = new BussStylePropertyVisualElement();
-				element.Setup(_styleSheet, _styleRule, property, _variableDatabase);
-				(property.IsVariable ? _variables : _propertiesParent).Add(element);
+				element.Setup(_styleSheet, _styleRule, property, _variableDatabase, _editMode);
+				(property.IsVariable ? _variablesParent : _propertiesParent).Add(element);
 				_properties.Add(element);
 			}
 
-			if (_styleRule.ShowAllMode)
+			if (_showAllMode)
 			{
 				var restPropertyKeys =
-					BussStyle.Keys.Where(s => StyleRule.Properties.All(provider => provider.Key != s));
+					BussStyle.Keys.Where(s => StyleRule.Properties.All(provider => provider.Key != s)).OrderBy(k => k);
+
 				foreach (var key in restPropertyKeys)
 				{
 					var existingProperty = _properties.FirstOrDefault(p => p.PropertyProvider.Key == key);
@@ -343,34 +362,59 @@ namespace Beamable.Editor.UI.Components
 					var propertyProvider =
 						BussPropertyProvider.Create(key, BussStyle.GetDefaultValue(key).CopyProperty());
 					BussStylePropertyVisualElement element = new BussStylePropertyVisualElement();
-					element.Setup(_styleSheet, StyleRule, propertyProvider, _variableDatabase);
+					element.Setup(_styleSheet, StyleRule, propertyProvider, _variableDatabase, _editMode);
 					_propertiesParent.Add(element);
 					_properties.Add(element);
 				}
 			}
 
-			_propertiesParent.Sort((a, b) =>
+			SortProperties();
+		}
+
+		private void SortProperties()
+		{
+			if (!_sorted)
 			{
-				if (!(a is BussStylePropertyVisualElement p1) || !(b is BussStylePropertyVisualElement p2)) return 0;
-				var value = 0;
-				if (p1.PropertyIsInStyle) value--;
-				if (p2.PropertyIsInStyle) value++;
-				if (value == 0)
+				_propertiesParent.Sort((a, b) =>
 				{
-					if (p1.PropertyIsInStyle)
+					if (!(a is BussStylePropertyVisualElement p1) || !(b is BussStylePropertyVisualElement p2))
 					{
-						var properties = _styleRule.Properties;
-						return properties.IndexOf(p1.PropertyProvider) - properties.IndexOf(p2.PropertyProvider);
+						return 0;
 					}
-					else
+
+					if (p1.PropertyIsInStyle == p2.PropertyIsInStyle)
 					{
+						if (p1.PropertyIsInStyle)
+						{
+							var properties = _styleRule.Properties;
+							return properties.IndexOf(p1.PropertyProvider) - properties.IndexOf(p2.PropertyProvider);
+						}
+
 						var keys = BussStyle.Keys.ToArray();
 						return Array.IndexOf(keys, p1.PropertyProvider.Key) -
-							   Array.IndexOf(keys, p2.PropertyProvider.Key);
+						       Array.IndexOf(keys, p2.PropertyProvider.Key);
 					}
-				}
-				return value;
-			});
+
+					return p2.PropertyIsInStyle ? 1 : -1;
+				});
+			}
+			else
+			{
+				_propertiesParent.Sort((a, b) =>
+				{
+					if (!(a is BussStylePropertyVisualElement p1) || !(b is BussStylePropertyVisualElement p2))
+					{
+						return 0;
+					}
+
+					if (p1.PropertyIsInStyle == p2.PropertyIsInStyle)
+					{
+						return String.Compare(p1.PropertyKey, p2.PropertyKey, StringComparison.Ordinal);
+					}
+
+					return p2.PropertyIsInStyle ? 1 : -1;
+				});
+			}
 		}
 
 		public void RefreshPropertyByReference(VariableDatabase.PropertyReference reference)

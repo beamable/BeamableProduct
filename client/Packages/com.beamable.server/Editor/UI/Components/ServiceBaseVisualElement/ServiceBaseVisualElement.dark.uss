@@ -76,7 +76,7 @@ LogVisualElement > TemplateContainer > #mainVisualElement {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Stopped L.png");
 }
 
-.remoteRunning {
+.remoteEnabled {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Running L.png");
 }
 
