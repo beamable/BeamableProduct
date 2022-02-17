@@ -5,7 +5,7 @@ using EmbedIO;
 using EmbedIO.Actions;
 using Swan;
 using Swan.Logging;
-using static Beamable.Common.Constants.BeamableConstants.Features.Services;
+using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server {
     public class LocalDebugService {

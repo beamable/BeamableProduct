@@ -8,7 +8,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Beamable.Server.Api.Content;
 using microservice.Common;
-using static Beamable.Common.Constants.BeamableConstants.Features.Content;
+using static Beamable.Common.Constants.Features.Content;
 
 namespace Beamable.Server.Content
 {

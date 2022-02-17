@@ -10,7 +10,7 @@ using LoxSmoke.DocXml;
 using microservice.Extensions;
 using Newtonsoft.Json;
 using Serilog;
-using static Beamable.Common.Constants.BeamableConstants.Features.Services;
+using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server
 {

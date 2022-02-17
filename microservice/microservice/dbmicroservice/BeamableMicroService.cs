@@ -46,7 +46,7 @@ using Newtonsoft.Json;
 using Serilog;
 
 using Microsoft.Extensions.DependencyInjection;
-using static Beamable.Common.Constants.BeamableConstants.Features.Services;
+using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server
 {
