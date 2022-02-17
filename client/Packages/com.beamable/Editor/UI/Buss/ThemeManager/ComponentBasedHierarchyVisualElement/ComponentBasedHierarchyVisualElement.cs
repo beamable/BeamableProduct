@@ -158,7 +158,7 @@ namespace Beamable.Editor.UI.Components
 			if (foundComponent != null)
 			{
 				IndentedLabelVisualElement label = new IndentedLabelVisualElement();
-				label.Setup(foundComponent.gameObject, (str)=> GetLabel(foundComponent), OnMouseClicked,
+				label.Setup(foundComponent.gameObject, (str) => GetLabel(foundComponent), OnMouseClicked,
 							currentLevel, IndentedLabelVisualElement.DEFAULT_SINGLE_INDENT_WIDTH);
 				label.Init();
 				_spawnedLabels.Add(label);
