@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using System.IO;
 using UnityEngine;
+using static Beamable.Common.Constants.MenuItems.Assets;
 
 namespace Beamable.Avatars
 {
@@ -14,9 +14,9 @@ namespace Beamable.Avatars
 #if BEAMABLE_DEVELOPER
 	[CreateAssetMenu(
 	   fileName = "Avatar Configuration",
-	   menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
+	   menuName = Paths.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
 	   "Avatar Configuration",
-	   order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
+	   order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 #endif
 	public class AvatarConfiguration : ModuleConfigurationObject
 	{

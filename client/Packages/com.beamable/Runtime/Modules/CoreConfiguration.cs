@@ -5,13 +5,14 @@ using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor.Compilation;
 #endif
+using static Beamable.Common.Constants.MenuItems.Assets;
 
 namespace Beamable
 {
 #if BEAMABLE_DEVELOPER
 	[CreateAssetMenu(
 		fileName = "CoreConfiguration",
-		menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
+		menuName = Paths.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
 				   "Core Configuration")]
 #endif
 	public class CoreConfiguration : ModuleConfigurationObject

@@ -1,19 +1,15 @@
 using Beamable.Common;
-using Beamable.Common.Api.Auth;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
-using Beamable.Content;
-using Beamable.Editor;
-using Beamable.Editor.Content;
 using Beamable.Editor.Content.Models;
 using Beamable.Editor.Modules.Account;
-using Beamable.Platform.SDK;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
+using static Beamable.Common.Constants;
+using static Beamable.Common.Constants.Features.ContentManager;
 
 namespace Beamable.Editor.Content
 {
@@ -86,7 +82,7 @@ namespace Beamable.Editor.Content
 		public IContentObject AddItem(ContentTypeDescriptor typeDescriptor)
 		{
 			var itemType = typeDescriptor.ContentType;
-			var itemName = ContentManagerConstants.GetNameForNewContentFileByType(itemType);
+			var itemName = GET_NAME_FOR_NEW_CONTENT_FILE_BY_TYPE(itemType);
 			ContentObject content = ScriptableObject.CreateInstance(itemType) as ContentObject;
 			content.SetContentName(itemName);
 
@@ -156,7 +152,7 @@ namespace Beamable.Editor.Content
 
 		public void ShowDocs()
 		{
-			Application.OpenURL(BeamableConstants.URL_TOOL_WINDOW_CONTENT_MANAGER);
+			Application.OpenURL(URLs.Documentations.URL_DOC_WINDOW_CONTENT_MANAGER);
 		}
 
 		private void ContentIO_OnContentDeleted(IContentObject content)

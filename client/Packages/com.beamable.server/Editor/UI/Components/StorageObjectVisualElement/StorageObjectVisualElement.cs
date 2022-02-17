@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Services;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements.StyleSheets;
@@ -81,12 +82,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 			if (_mongoStorageModel.RemoteReference?.enabled ?? false)
 			{
 				statusClassName = "remoteEnabled";
-				_remoteStatusLabel.text = Constants.REMOTE_ENABLED;
+				_remoteStatusLabel.text = REMOTE_ENABLED;
 			}
 			else
 			{
 				statusClassName = "remoteDisabled";
-				_remoteStatusLabel.text = Constants.REMOTE_NOT_ENABLED;
+				_remoteStatusLabel.text = REMOTE_NOT_ENABLED;
 			}
 
 			_remoteStatusIcon.tooltip = _remoteStatusLabel.text;

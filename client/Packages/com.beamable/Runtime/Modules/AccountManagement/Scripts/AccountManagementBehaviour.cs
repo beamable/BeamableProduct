@@ -3,10 +3,11 @@ using Beamable.Coroutines;
 using Beamable.UI.Scripts;
 using System.Collections;
 using UnityEngine;
+using static Beamable.Common.Constants.URLs;
 
 namespace Beamable.AccountManagement
 {
-	[HelpURL(BeamableConstants.URL_FEATURE_LOGIN_FLOW)]
+	[HelpURL(Documentations.URL_DOC_LOGIN_FLOW)]
 	public class AccountManagementBehaviour : MonoBehaviour
 	{
 		public MenuManagementBehaviour MenuManager;

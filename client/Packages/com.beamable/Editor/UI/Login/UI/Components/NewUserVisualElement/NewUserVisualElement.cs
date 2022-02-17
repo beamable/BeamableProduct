@@ -9,6 +9,8 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.URLs;
+using static Beamable.Common.Constants.Features.LoginBase;
 
 namespace Beamable.Editor.Login.UI.Components
 {
@@ -40,22 +42,22 @@ namespace Beamable.Editor.Login.UI.Components
 			base.Refresh();
 
 			_cidOrAliasTextField = Root.Q<TextField>("organizationID");
-			_cidOrAliasTextField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_CID_FIELD);
+			_cidOrAliasTextField.AddPlaceholder(PLACEHOLDER_CID_FIELD);
 			_cidOrAliasTextField.SetValueWithoutNotify(Model.Customer.CidOrAlias);
 			var isAlias = _cidOrAliasTextField.AddErrorLabel("Alias", PrimaryButtonVisualElement.AliasErrorHandler);
 
 			_emailTextField = Root.Q<TextField>("account");
-			_emailTextField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_EMAIL_FIELD);
+			_emailTextField.AddPlaceholder(PLACEHOLDER_EMAIL_FIELD);
 			var isEmail = _emailTextField.AddErrorLabel("Email", PrimaryButtonVisualElement.EmailErrorHandler);
 
 			_passwordTextField = Root.Q<TextField>("password");
-			_passwordTextField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_PASSWORD_FIELD);
+			_passwordTextField.AddPlaceholder(PLACEHOLDER_PASSWORD_FIELD);
 			_passwordTextField.isPasswordField = true;
 			var isPasswordValid = _passwordTextField.AddErrorLabel("Password", PrimaryButtonVisualElement.PasswordErrorHandler);
 
 
 			_passwordConfirmTextField = Root.Q<TextField>("confirmPassword");
-			_passwordConfirmTextField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_PASSWORD_CONFIRM_FIELD);
+			_passwordConfirmTextField.AddPlaceholder(PLACEHOLDER_PASSWORD_CONFIRM_FIELD);
 			_passwordConfirmTextField.isPasswordField = true;
 			var doPasswordsMatch = _passwordConfirmTextField.AddErrorLabel("Password Match", m => m != _passwordTextField.value
 			   ? "Passwords don't match"
@@ -71,7 +73,7 @@ namespace Beamable.Editor.Login.UI.Components
 			_continueButton.AddGateKeeper(isAlias, isEmail, isLegal, isPasswordValid, doPasswordsMatch);
 
 			_legalButton = Root.Q<GenericButtonVisualElement>("legalButton");
-			_legalButton.OnClick += () => { Application.OpenURL(BeamableConstants.BEAMABLE_LEGAL_WEBSITE); };
+			_legalButton.OnClick += () => { Application.OpenURL(URL_BEAMABLE_LEGAL_WEBSITE); };
 
 			_existingAccountButton = Root.Q<GenericButtonVisualElement>("existingAccount");
 			_existingAccountButton.OnClick += Manager.GotoExistingCustomer;

@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Cron;
 
 namespace Beamable.CronExpression
 {
@@ -71,11 +72,11 @@ namespace Beamable.CronExpression
 			_expressionParts = new string[7];
 			_parsed = false;
 
-			_localizationDatabase = AssetDatabase.LoadAssetAtPath<CronLocalizationDatabase>(Constants.CRON_LOCALIZATION_DATABASE_PATH);
+			_localizationDatabase = AssetDatabase.LoadAssetAtPath<CronLocalizationDatabase>(CRON_LOCALIZATION_DATABASE_ASSET);
 			if (_localizationDatabase == null)
 			{
 				_localizationDatabase = ScriptableObject.CreateInstance<CronLocalizationDatabase>();
-				AssetDatabase.CreateAsset(_localizationDatabase, Constants.CRON_LOCALIZATION_DATABASE_PATH);
+				AssetDatabase.CreateAsset(_localizationDatabase, CRON_LOCALIZATION_DATABASE_ASSET);
 			}
 
 			if (_options.Locale == null)

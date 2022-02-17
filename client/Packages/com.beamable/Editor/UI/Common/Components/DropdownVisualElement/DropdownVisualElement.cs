@@ -9,6 +9,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -39,7 +40,7 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public DropdownVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(DropdownVisualElement)}/{nameof(DropdownVisualElement)}")
+			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(DropdownVisualElement)}/{nameof(DropdownVisualElement)}")
 		{
 			Value = String.Empty;
 			_optionModels = new List<DropdownSingleOption>();

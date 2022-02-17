@@ -13,6 +13,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.Features.ContentManager;
 
 namespace Beamable.Editor.Content.Components
 {
@@ -46,7 +47,7 @@ namespace Beamable.Editor.Content.Components
 			_mainVisualElement = Root.Q<VisualElement>("mainVisualElement");
 
 			_headerVisualElement = Root.Q<HeaderVisualElement>("headerVisualElement");
-			_headerVisualElement.Headers = new[] { ContentManagerConstants.ContentTypeViewHeaderText };
+			_headerVisualElement.Headers = new[] { CONTENT_TYPE_VIEW_HEADER_TEXT };
 			_headerVisualElement.Refresh();
 
 			//Create IMGUI, The VisualElement Wrapper, and add to the parent
@@ -77,7 +78,7 @@ namespace Beamable.Editor.Content.Components
 			_treeViewState = new TreeViewState();
 
 			TreeViewIMGUI treeViewIMGUI = new TreeViewIMGUI(_treeViewState);
-			treeViewIMGUI.SelectionType = ContentManagerConstants.ContentTypeViewSelectionType;
+			treeViewIMGUI.SelectionType = SelectionType.Single;
 			treeViewIMGUI.TreeViewItemRoot = new TreeViewItem { id = 0, depth = -1, displayName = "Root" };
 
 			//
@@ -166,7 +167,7 @@ namespace Beamable.Editor.Content.Components
 				return;
 			}
 
-			string actionTitle = string.Format(ContentManagerConstants.CreateNewPopupAddButtonEnabledText,
+			string actionTitle = string.Format(CREATE_NEW_POPUP_ADD_BUTTON_ENABLED_TEXT,
 			   selectedContentTypeTreeViewItem.TypeDescriptor.ContentType.Name);
 
 			evt.menu.BeamableAppendAction(actionTitle, (pos) =>
