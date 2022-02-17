@@ -3,13 +3,14 @@ using Beamable.Editor.Assistant;
 using Beamable.Editor.Content;
 using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants.MenuItems.Assets.Orders;
 
 namespace Beamable.Editor.ToolbarExtender
 {
 	/// <summary>
 	/// A sample button that can be used as a reference to understand how to extend the Unity editor's toolbar.  
 	/// </summary>
-	[CreateAssetMenu(menuName = "Beamable/Assistant/Sample Toolbar Button", fileName = "SampleBeamableButton", order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_LAST)]
+	[CreateAssetMenu(menuName = "Beamable/Assistant/Sample Toolbar Button", fileName = "SampleBeamableButton", order = MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_LAST)]
 	public class SampleBeamableButton : BeamableToolbarButton
 	{
 		public override bool ShouldDisplayButton(EditorAPI editorAPI) => editorAPI.HasCustomer;

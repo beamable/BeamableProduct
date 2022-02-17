@@ -16,6 +16,8 @@ using UnityEditor.AddressableAssets;
 using UnityEditor.VersionControl;
 using UnityEngine;
 using Task = System.Threading.Tasks.Task;
+using static Beamable.Common.Constants;
+using static Beamable.Common.Constants.MenuItems.Windows;
 
 namespace Beamable.Editor
 {
@@ -198,7 +200,7 @@ namespace Beamable.Editor
 
 			// we need to remember the last realm the user was on in this game.
 			var hadSelectedPid = EditorPrefHelper
-			   .GetMap(BeamableConstants.REALM_PREFERENCE)
+			   .GetMap(REALM_PREFERENCE)
 			   .TryGetValue($"{CustomerView.Cid}.{game.Pid}", out var existingPid);
 			if (!hadSelectedPid)
 			{
@@ -317,7 +319,7 @@ namespace Beamable.Editor
 		}
 
 #if BEAMABLE_DEVELOPER
-      [MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER + "/Force Refresh Content")]
+      [MenuItem(Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER + "/Force Refresh Content")]
       public static void ForceRefreshContent()
       {
          // Do these in parallel to simulate startup behavior.
@@ -375,7 +377,7 @@ namespace Beamable.Editor
 			var realms = await RealmService.GetRealms(game);
 
 			var set = EditorPrefHelper
-			   .GetMap(BeamableConstants.REALM_PREFERENCE)
+			   .GetMap(REALM_PREFERENCE)
 			   .Set($"{game.Cid}.{game.Pid}", pid)
 			   .Save();
 
