@@ -9,8 +9,8 @@ using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using FontStyle = UnityEngine.FontStyle;
 using static Beamable.Common.Constants;
+using FontStyle = UnityEngine.FontStyle;
 
 namespace Beamable.Editor.Modules.Theme
 {

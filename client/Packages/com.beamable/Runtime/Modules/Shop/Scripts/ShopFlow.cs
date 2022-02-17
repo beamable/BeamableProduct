@@ -14,8 +14,8 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
-using Button = UnityEngine.UI.Button;
 using static Beamable.Common.Constants.URLs;
+using Button = UnityEngine.UI.Button;
 
 namespace Beamable.Shop
 {

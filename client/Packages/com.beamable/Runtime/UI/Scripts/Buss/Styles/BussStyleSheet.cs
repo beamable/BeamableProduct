@@ -4,8 +4,8 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
-using Object = UnityEngine.Object;
 using static Beamable.Common.Constants.MenuItems.Assets;
+using Object = UnityEngine.Object;
 
 namespace Beamable.UI.Buss
 {
