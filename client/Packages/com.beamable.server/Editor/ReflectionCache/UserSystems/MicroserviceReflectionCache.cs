@@ -22,9 +22,9 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
-using LogMessage = Beamable.Editor.UI.Model.LogMessage;
-using static Beamable.Common.Constants.MenuItems.Assets.Orders;
 using static Beamable.Common.Constants.Features.Services;
+using static Beamable.Common.Constants.MenuItems.Assets.Orders;
+using LogMessage = Beamable.Editor.UI.Model.LogMessage;
 
 namespace Beamable.Server.Editor
 {

@@ -11,7 +11,7 @@ namespace Beamable.Common
 			{
 				public const string PUBLIC = "public";
 				public const string PRIVATE = "private";
-				
+
 				public const string MISSING_SUFFIX = " (missing)";
 
 				public static readonly string BEAMABLE_RESOURCES_PATH = Path.Combine(Application.dataPath, "Beamable/Resources");
