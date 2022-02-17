@@ -42,7 +42,7 @@ namespace Beamable.Editor.UI.Components
 			this._switchText = switchText;
 		}
 
-		public override void OnDetach()
+		protected override void OnDetach()
 		{
 			Model.OnAvailableElementsChanged -= OnUpdated;
 			Model.OnElementChanged -= OnActiveChanged;

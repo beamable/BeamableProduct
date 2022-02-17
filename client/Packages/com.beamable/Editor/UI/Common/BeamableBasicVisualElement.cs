@@ -14,22 +14,14 @@ namespace Beamable.Editor.UI.Common
 {
 	public class BeamableBasicVisualElement : VisualElement
 	{
-		protected VisualElement Root
-		{
-			get;
-			set;
-		}
+		protected VisualElement Root { get; set; }
+		protected string UssPath { get; }
 
-		protected string USSPath
-		{
-			get;
-		}
-
-		public BeamableBasicVisualElement(string ussPath)
+		protected BeamableBasicVisualElement(string ussPath)
 		{
 			Assert.IsTrue(File.Exists(ussPath), $"Cannot find {ussPath}");
 
-			USSPath = ussPath;
+			UssPath = ussPath;
 
 			RegisterCallback<DetachFromPanelEvent>(evt =>
 			{
@@ -37,31 +29,11 @@ namespace Beamable.Editor.UI.Common
 			});
 		}
 
-		public virtual void OnDetach()
-		{
-			// Do any sort of cleanup
-		}
-
-		public void Destroy()
-		{
-			// call OnDestroy on all child elements.
-			foreach (var child in Children())
-			{
-				if (child is BeamableVisualElement beamableChild)
-				{
-					beamableChild.Destroy();
-				}
-
-				if (child is BeamableBasicVisualElement beamableBasicChild)
-				{
-					beamableBasicChild.Destroy();
-				}
-			}
-
-			OnDestroy();
-		}
+		public virtual void Refresh() { }
 
 		protected virtual void OnDestroy() { }
+
+		protected virtual void OnDetach() { }
 
 		public virtual void Init()
 		{
@@ -81,6 +53,22 @@ namespace Beamable.Editor.UI.Common
 			});
 		}
 
-		public virtual void Refresh() { }
+		public void Destroy()
+		{
+			foreach (var child in Children())
+			{
+				if (child is BeamableVisualElement beamableChild)
+				{
+					beamableChild.Destroy();
+				}
+
+				if (child is BeamableBasicVisualElement beamableBasicChild)
+				{
+					beamableBasicChild.Destroy();
+				}
+			}
+
+			OnDestroy();
+		}
 	}
 }

@@ -84,10 +84,6 @@ namespace Beamable.Editor.UI.Components
 			Flip = isFlipped;
 		}
 
-		public LabeledCheckboxVisualElement(string uxmlPath, string ussPath) : base(uxmlPath, ussPath)
-		{
-		}
-
 		public override void Refresh()
 		{
 			base.Refresh();

@@ -51,7 +51,7 @@ namespace Beamable.Editor.Content.Components
 
 		public ContentVisualElement() : base(nameof(ContentVisualElement)) { }
 
-		public override void OnDetach()
+		protected override void OnDetach()
 		{
 			ContentItemDescriptor = null; // trigger the cleanup.
 		}
