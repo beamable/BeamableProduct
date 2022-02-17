@@ -4,6 +4,7 @@
 
 using Beamable.Common.Runtime.Collections;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -738,7 +739,8 @@ namespace Beamable.Common
 		/// <param name="stopWhen"></param>
 		/// <typeparam name="T"></typeparam>
 		/// <returns></returns>
-		public static SequencePromise<T> ExecuteRolling<T>(int maxProcessSize, List<Func<Promise<T>>> generators, Func<bool> stopWhen = null)
+		[Obsolete("This method isn't safe to use one devices with low callstack limits like Javascript, or Android. Use " + nameof(ExecuteInBatchSequence) + " instead.")]
+		public static SequencePromise<T> ExecuteRolling<T>(int maxProcessSize, List<Func<Promise<T>>> generators,Func<bool> stopWhen = null)
 		{
 			var current = new AtomicInt();
 			var running = new AtomicInt();
@@ -748,9 +750,9 @@ namespace Beamable.Common
 			object locker = generators;
 
 			void ProcessUpToLimit()
-			{
-				lock (locker)
 				{
+				lock (locker)
+					{
 					var runningCount = running.Value;
 					var currentCount = current.Value;
 
@@ -759,7 +761,7 @@ namespace Beamable.Common
 						if (stopWhen != null && stopWhen())
 						{
 							break;
-						}
+					}
 
 						var index = currentCount;
 						var generator = generators[index];
@@ -787,7 +789,7 @@ namespace Beamable.Common
 						currentCount = current.Value;
 					}
 				}
-			}
+				}
 
 			ProcessUpToLimit();
 			return completePromise;
@@ -825,6 +827,43 @@ namespace Beamable.Common
 			var batchRunners = batches.Select(batch => new Func<Promise<List<T>>>(() => ProcessBatch(batch))).ToList();
 
 			return ExecuteSerially(batchRunners);
+		}
+
+		public static SequencePromise<T> ExecuteInBatchSequence<T>(int maxBatchSize, List<Func<Promise<T>>> generators)
+		{
+			var batches = new List<List<Func<Promise<T>>>>();
+
+			var seq = new SequencePromise<T>(generators.Count);
+			var current = new AtomicInt();
+			// create batches...
+			for (var i = 0; i < generators.Count; i += maxBatchSize)
+			{
+				var start = i;
+				var minBatchSize = generators.Count - start;
+				var count = minBatchSize < maxBatchSize ? minBatchSize : maxBatchSize; // min()
+				var batch = generators.GetRange(start, count);
+				batches.Add(batch);
+			}
+
+			Promise<List<T>> ProcessBatch(List<Func<Promise<T>>> batch)
+			{
+				// start all generators in batch...
+				return Promise.Sequence(batch.Select(generator =>
+				{
+					var promise = generator();
+					var index = current.Value;
+					current.Increment();
+					promise.Then(res => seq.ReportEntrySuccess(index, res))
+					       .Error(err => seq.ReportEntryError(index, err));
+					return promise;
+				}).ToList());
+			}
+
+			// run each batch, serially...
+			var batchRunners = batches.Select(batch => new Func<Promise<List<T>>>(() => ProcessBatch(batch))).ToList();
+
+			ExecuteSerially(batchRunners);
+			return seq;
 		}
 	}
 
