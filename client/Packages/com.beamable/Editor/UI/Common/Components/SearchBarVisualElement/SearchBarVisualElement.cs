@@ -52,7 +52,7 @@ namespace Beamable.Editor.UI.Components
 			});
 		}
 
-		public override void OnDetach()
+		protected override void OnDetach()
 		{
 			base.OnDetach();
 			EditorApplication.update -= OnEditorUpdate;
