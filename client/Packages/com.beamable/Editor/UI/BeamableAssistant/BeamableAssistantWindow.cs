@@ -30,9 +30,9 @@ namespace Beamable.Editor.Assistant
 	public class BeamableAssistantWindow : EditorWindow, ISerializationCallbackReceiver
 	{
 		[MenuItem(MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
-		          Commons.OPEN + " " +
-		          MenuItems.Windows.Names.BEAMABLE_ASSISTANT,
-		          priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2)]
+				  Commons.OPEN + " " +
+				  MenuItems.Windows.Names.BEAMABLE_ASSISTANT,
+				  priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2)]
 		public static BeamableAssistantWindow ShowWindow()
 		{
 			var window = GetWindow<BeamableAssistantWindow>(MenuItems.Windows.Names.BEAMABLE_ASSISTANT, true, typeof(SceneView));

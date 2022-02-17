@@ -102,11 +102,11 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void Setup(BussThemeManager themeManager,
-		                  BussStyleSheet styleSheet,
-		                  BussStyleRule styleRule,
-		                  VariableDatabase variableDatabase,
-		                  BussElementHierarchyVisualElement navigationWindow,
-		                  Action onUndoRequest)
+						  BussStyleSheet styleSheet,
+						  BussStyleRule styleRule,
+						  VariableDatabase variableDatabase,
+						  BussElementHierarchyVisualElement navigationWindow,
+						  Action onUndoRequest)
 		{
 			_themeManager = themeManager;
 			_styleSheet = styleSheet;
@@ -194,7 +194,7 @@ namespace Beamable.Editor.UI.Components
 				var baseType = BussStyle.GetBaseType(key);
 				var data = SerializableValueImplementationHelper.Get(baseType);
 				var types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
-				                                     t != typeof(FractionFloatBussProperty));
+													 t != typeof(FractionFloatBussProperty));
 				foreach (Type type in types)
 				{
 					var label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
@@ -392,7 +392,7 @@ namespace Beamable.Editor.UI.Components
 
 						var keys = BussStyle.Keys.ToArray();
 						return Array.IndexOf(keys, p1.PropertyProvider.Key) -
-						       Array.IndexOf(keys, p2.PropertyProvider.Key);
+							   Array.IndexOf(keys, p2.PropertyProvider.Key);
 					}
 
 					return p2.PropertyIsInStyle ? 1 : -1;

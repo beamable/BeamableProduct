@@ -2,8 +2,8 @@
 using System;
 using System.Linq;
 using UnityEngine;
-using static Beamable.Common.Constants.MenuItems.Assets;
 using static Beamable.Common.Constants.Features.ContentManager;
+using static Beamable.Common.Constants.MenuItems.Assets;
 
 namespace Beamable.Content
 {
