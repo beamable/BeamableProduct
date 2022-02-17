@@ -41,7 +41,7 @@ namespace Beamable.Editor.UI.Common
 			Clear();
 
 			this.AddStyleSheet(Files.COMMON_USS_FILE);
-			this.AddStyleSheet(USSPath);
+			this.AddStyleSheet(UssPath);
 
 			Root = new VisualElement();
 			Root.name = "root";
