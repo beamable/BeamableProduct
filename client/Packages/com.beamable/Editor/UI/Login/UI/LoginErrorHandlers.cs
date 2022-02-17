@@ -2,7 +2,7 @@ using Beamable.Api;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static Beamable.Common.Constants.BeamableConstants.Features.LoginBase;
+using static Beamable.Common.Constants.Features.LoginBase;
 
 namespace Beamable.Editor.Login.UI
 {

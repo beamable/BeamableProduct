@@ -3,7 +3,7 @@
 
 using System;
 using System.Diagnostics;
-using static Beamable.Common.Constants.BeamableConstants.Features.Spew;
+using static Beamable.Common.Constants.Features.Spew;
 
 #if PREPEND_SPEW_METADATA
 using UnityEngine;

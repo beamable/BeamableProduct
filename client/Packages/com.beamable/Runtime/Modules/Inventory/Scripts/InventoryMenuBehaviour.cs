@@ -3,7 +3,7 @@ using Beamable.Common;
 using Beamable.Common.Api.Inventory;
 using Beamable.UI.Scripts;
 using UnityEngine;
-using static Beamable.Common.Constants.BeamableConstants.URLs;
+using static Beamable.Common.Constants.URLs;
 
 namespace Beamable.Inventory.Scripts
 {

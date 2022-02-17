@@ -3,7 +3,7 @@ using Beamable.Editor.Assistant;
 using Beamable.Editor.Content;
 using UnityEditor;
 using UnityEngine;
-using static Beamable.Common.Constants.BeamableConstants.MenuItems.Assets.Orders;
+using static Beamable.Common.Constants.MenuItems.Assets.Orders;
 
 namespace Beamable.Editor.ToolbarExtender
 {

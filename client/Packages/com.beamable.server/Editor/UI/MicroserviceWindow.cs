@@ -1,4 +1,4 @@
-using Beamable.Common.Constants;
+using Beamable.Common;
 using Beamable.Editor.Login.UI;
 using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.UI.Components;
@@ -18,7 +18,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
-using static Beamable.Common.Constants.BeamableConstants;
+using static Beamable.Common.Constants;
 
 
 namespace Beamable.Editor.Microservice.UI
@@ -116,9 +116,9 @@ namespace Beamable.Editor.Microservice.UI
 			if (_windowRoot == null)
 			{
 				var uiAsset =
-					AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{BeamableConstants.Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uxml");
+					AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{Constants.Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uxml");
 				_windowRoot = uiAsset.CloneTree();
-				_windowRoot.AddStyleSheet($"{BeamableConstants.Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uss");
+				_windowRoot.AddStyleSheet($"{Constants.Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uss");
 				_windowRoot.name = nameof(_windowRoot);
 
 				root.Add(_windowRoot);

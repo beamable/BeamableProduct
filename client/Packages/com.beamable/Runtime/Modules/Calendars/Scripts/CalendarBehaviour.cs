@@ -5,7 +5,7 @@ using Beamable.Tournaments;
 using Beamable.UI.Scripts;
 using UnityEngine;
 using UnityEngine.UI;
-using static Beamable.Common.Constants.BeamableConstants.URLs;
+using static Beamable.Common.Constants.URLs;
 
 namespace Beamable.Experimental.Calendars
 {

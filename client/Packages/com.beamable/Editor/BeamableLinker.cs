@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEditor;
-using static Beamable.Common.Constants.BeamableConstants.MenuItems.Windows;
+using static Beamable.Common.Constants.MenuItems.Windows;
 
 namespace Beamable.Editor
 {

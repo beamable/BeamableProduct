@@ -5,7 +5,7 @@ using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor.Compilation;
 #endif
-using static Beamable.Common.Constants.BeamableConstants.MenuItems.Assets;
+using static Beamable.Common.Constants.MenuItems.Assets;
 
 namespace Beamable
 {

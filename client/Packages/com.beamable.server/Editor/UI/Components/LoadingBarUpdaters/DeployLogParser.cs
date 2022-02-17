@@ -4,7 +4,7 @@ using Beamable.Server.Editor.UI.Components;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using static Beamable.Common.Constants.BeamableConstants.Features.Services;
+using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {

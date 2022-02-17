@@ -17,8 +17,8 @@ using UnityEditor.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 #endif
-using static Beamable.Common.Constants.BeamableConstants;
-using static Beamable.Common.Constants.BeamableConstants.Features.ContentManager;
+using static Beamable.Common.Constants;
+using static Beamable.Common.Constants.Features.ContentManager;
 
 namespace Beamable.Editor.Content
 {

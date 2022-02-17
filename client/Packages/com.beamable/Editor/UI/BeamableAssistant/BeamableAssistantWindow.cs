@@ -10,7 +10,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
-using static Beamable.Common.Constants.BeamableConstants.Features.Assistant;
+using static Beamable.Common.Constants.Features.Assistant;
 
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -20,7 +20,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
-using static Beamable.Common.Constants.BeamableConstants;
+using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.Assistant
 {

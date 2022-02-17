@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using static Beamable.Common.Constants.BeamableConstants.Features.TestingTool;
+using static Beamable.Common.Constants.Features.TestingTool;
 
 #pragma warning disable CS0649
 

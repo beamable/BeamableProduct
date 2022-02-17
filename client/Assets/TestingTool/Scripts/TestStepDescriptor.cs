@@ -4,7 +4,7 @@ using TestingTool.Scripts.Helpers;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using static Beamable.Common.Constants.BeamableConstants.Features.TestingTool;
+using static Beamable.Common.Constants.Features.TestingTool;
 
 #pragma warning disable CS0649
 

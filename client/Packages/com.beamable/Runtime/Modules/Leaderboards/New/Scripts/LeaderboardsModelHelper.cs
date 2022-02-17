@@ -2,7 +2,7 @@
 using Beamable.Common.Api.Leaderboards;
 using System.Collections.Generic;
 using UnityEngine;
-using static Beamable.Common.Constants.BeamableConstants.Features.Leaderboards;
+using static Beamable.Common.Constants.Features.Leaderboards;
 
 namespace Beamable.Modules.Leaderboards
 {

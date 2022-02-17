@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
-using static Beamable.Common.Constants.BeamableConstants.Directories;
+using static Beamable.Common.Constants.Directories;
 
 namespace Beamable.Editor.Content.Models
 {

@@ -12,9 +12,9 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
-using static Beamable.Common.Constants.BeamableConstants;
-using static Beamable.Common.Constants.BeamableConstants.Features.Toolbox;
-using static Beamable.Common.Constants.BeamableConstants.Features.Toolbox.EditorPrefsKeys;
+using static Beamable.Common.Constants;
+using static Beamable.Common.Constants.Features.Toolbox;
+using static Beamable.Common.Constants.Features.Toolbox.EditorPrefsKeys;
 
 namespace Beamable.Editor.Toolbox.UI
 {

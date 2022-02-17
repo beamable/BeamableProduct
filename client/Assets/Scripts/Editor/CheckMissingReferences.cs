@@ -5,7 +5,7 @@ using UnityEditor.SceneManagement;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using static Beamable.Common.Constants.BeamableConstants.MenuItems.Windows;
+using static Beamable.Common.Constants.MenuItems.Windows;
 
 namespace Beamable.Assets.Editor
 {

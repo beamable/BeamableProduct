@@ -1,7 +1,7 @@
 ﻿using Beamable.Common.Leaderboards;
 using Beamable.UI.Scripts;
 using UnityEngine;
-using static Beamable.Common.Constants.BeamableConstants.URLs;
+using static Beamable.Common.Constants.URLs;
 
 namespace Beamable.Leaderboards
 {

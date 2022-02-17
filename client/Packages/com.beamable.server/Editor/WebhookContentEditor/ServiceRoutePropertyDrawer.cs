@@ -2,7 +2,7 @@ using Beamable.Common.Content;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using static Beamable.Common.Constants.BeamableConstants.Features.Content;
+using static Beamable.Common.Constants.Features.Content;
 
 namespace Beamable.Server.Editor
 {

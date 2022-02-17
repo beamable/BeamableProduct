@@ -5,7 +5,7 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using static Beamable.Common.Constants.BeamableConstants.URLs;
+using static Beamable.Common.Constants.URLs;
 
 namespace Beamable.CurrencyHUD
 

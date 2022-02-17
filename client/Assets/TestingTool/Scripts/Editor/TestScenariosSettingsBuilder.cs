@@ -6,7 +6,7 @@ using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
-using static Beamable.Common.Constants.BeamableConstants.Features.TestingTool;
+using static Beamable.Common.Constants.Features.TestingTool;
 
 namespace TestingTool.Scripts.Editor
 {

@@ -15,7 +15,7 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using Button = UnityEngine.UI.Button;
-using static Beamable.Common.Constants.BeamableConstants.URLs;
+using static Beamable.Common.Constants.URLs;
 
 namespace Beamable.Shop
 {

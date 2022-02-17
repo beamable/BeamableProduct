@@ -1,4 +1,4 @@
-using Beamable.Common.Constants;
+using Beamable.Common;
 using Beamable.Editor.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
@@ -15,8 +15,8 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
-using static Beamable.Common.Constants.BeamableConstants;
-using static Beamable.Common.Constants.BeamableConstants.Features.Buss.ThemeManager;
+using static Beamable.Common.Constants;
+using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Buss
 {

@@ -1,13 +1,12 @@
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api;
-using Beamable.Common.Constants;
 using Beamable.Serialization;
 using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using static Beamable.Common.Constants.BeamableConstants.Features.Services;
+using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server.Editor.ManagerClient
 {
@@ -31,7 +30,7 @@ namespace Beamable.Server.Editor.ManagerClient
 			   .RecoverFrom404(ex => new ServiceManifest());
 		}
 
-		[Obsolete(BeamableConstants.Commons.OBSOLETE_WILL_BE_REMOVED)]
+		[Obsolete(Constants.Commons.OBSOLETE_WILL_BE_REMOVED)]
 		public Promise<GetLogsResponse> GetLogs(MicroserviceDescriptor service, string filter = null)
 		{
 			return Requester.RequestJson<GetLogsResponse>(Method.POST, $"{SERVICE}/logs", new GetLogsRequest
@@ -41,7 +40,7 @@ namespace Beamable.Server.Editor.ManagerClient
 			});
 		}
 
-		[Obsolete(BeamableConstants.Commons.OBSOLETE_WILL_BE_REMOVED)]
+		[Obsolete(Constants.Commons.OBSOLETE_WILL_BE_REMOVED)]
 		public Promise<ServiceManifest> GetManifest(long id)
 		{
 			return Requester.Request<GetManifestResponse>(Method.GET, $"{SERVICE}/manifest?id={id}")

@@ -21,9 +21,9 @@ using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
 using UnityEditor.AddressableAssets.Settings.GroupSchemas;
 using UnityEngine;
-using static Beamable.Common.Constants.BeamableConstants;
-using static Beamable.Common.Constants.BeamableConstants.Features.Content;
-using static Beamable.Common.Constants.BeamableConstants.Features.ContentManager;
+using static Beamable.Common.Constants;
+using static Beamable.Common.Constants.Features.Content;
+using static Beamable.Common.Constants.Features.ContentManager;
 
 namespace Beamable.Editor.Content
 {

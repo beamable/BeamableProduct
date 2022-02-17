@@ -5,7 +5,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.PackageManager;
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
-using static Beamable.Common.Constants.BeamableConstants.Features.Toolbox.EditorPrefsKeys;
+using static Beamable.Common.Constants.Features.Toolbox.EditorPrefsKeys;
 
 namespace Beamable.Editor.Environment
 {

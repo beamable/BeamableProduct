@@ -12,7 +12,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
-using static Beamable.Common.Constants.BeamableConstants.Features.ContentManager.ContentList;
+using static Beamable.Common.Constants.Features.ContentManager.ContentList;
 
 namespace Beamable.Editor.Content.Components
 {

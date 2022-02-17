@@ -7,7 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
-using static Beamable.Common.Constants.BeamableConstants.Features.Cron;
+using static Beamable.Common.Constants.Features.Cron;
 
 namespace Beamable.CronExpression
 {

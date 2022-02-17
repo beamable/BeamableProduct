@@ -1,7 +1,7 @@
 ﻿using Beamable.Signals;
 using System;
 using UnityEngine;
-using static Beamable.Common.Constants.BeamableConstants.URLs;
+using static Beamable.Common.Constants.URLs;
 
 namespace Beamable.Announcements
 {

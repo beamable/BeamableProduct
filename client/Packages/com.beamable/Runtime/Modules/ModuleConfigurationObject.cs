@@ -5,7 +5,7 @@ using System.IO;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
-using static Beamable.Common.Constants.BeamableConstants.Features.Config;
+using static Beamable.Common.Constants.Features.Config;
 
 namespace Beamable
 {

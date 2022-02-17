@@ -10,7 +10,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using FontStyle = UnityEngine.FontStyle;
-using static Beamable.Common.Constants.BeamableConstants;
+using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.Modules.Theme
 {

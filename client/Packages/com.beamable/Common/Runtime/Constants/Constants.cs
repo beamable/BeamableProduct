@@ -1,6 +1,6 @@
-﻿namespace Beamable.Common.Constants
+﻿namespace Beamable.Common
 {
-	public static partial class BeamableConstants
+	public static partial class Constants
 	{
 		public const string REALM_PREFERENCE = "BeamableSelectedRealms";
 		public const string BEAMABLE_MAIN_WEBSITE = "beamable.com";

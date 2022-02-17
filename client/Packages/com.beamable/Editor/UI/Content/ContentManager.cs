@@ -8,8 +8,8 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
-using static Beamable.Common.Constants.BeamableConstants;
-using static Beamable.Common.Constants.BeamableConstants.Features.ContentManager;
+using static Beamable.Common.Constants;
+using static Beamable.Common.Constants.Features.ContentManager;
 
 namespace Beamable.Editor.Content
 {

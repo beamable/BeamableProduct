@@ -3,7 +3,7 @@ using Beamable.Coroutines;
 using Beamable.UI.Scripts;
 using System.Collections;
 using UnityEngine;
-using static Beamable.Common.Constants.BeamableConstants.URLs;
+using static Beamable.Common.Constants.URLs;
 
 namespace Beamable.AccountManagement
 {

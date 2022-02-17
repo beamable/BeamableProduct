@@ -8,7 +8,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using Debug = System.Diagnostics.Debug;
-using static Beamable.Common.Constants.BeamableConstants.MenuItems.Assets;
+using static Beamable.Common.Constants.MenuItems.Assets;
 
 namespace Beamable.Reflection
 {

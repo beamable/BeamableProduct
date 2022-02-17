@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 using Object = UnityEngine.Object;
-using static Beamable.Common.Constants.BeamableConstants.MenuItems.Assets;
+using static Beamable.Common.Constants.MenuItems.Assets;
 
 namespace Beamable.UI.Buss
 {

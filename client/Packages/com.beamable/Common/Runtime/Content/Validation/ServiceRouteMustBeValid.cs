@@ -1,4 +1,4 @@
-using static Beamable.Common.Constants.BeamableConstants.Features.Content;
+using static Beamable.Common.Constants.Features.Content;
 // unset
 
 namespace Beamable.Common.Content.Validation

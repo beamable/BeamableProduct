@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using static Beamable.Common.Constants.BeamableConstants.MenuItems.Windows.Paths;
+using static Beamable.Common.Constants.MenuItems.Windows.Paths;
 
 namespace Beamable.Editor.Environment
 {

@@ -10,7 +10,7 @@ using System.Globalization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using static Beamable.Common.Constants.BeamableConstants.Features.Leaderboards;
+using static Beamable.Common.Constants.Features.Leaderboards;
 
 namespace Beamable.Modules.Leaderboards
 {

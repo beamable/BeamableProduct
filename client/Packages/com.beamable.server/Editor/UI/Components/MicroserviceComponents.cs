@@ -1,6 +1,6 @@
 using Beamable.Editor.UI.Components;
 using Beamable.Server.Editor.UI.Components;
-using static Beamable.Common.Constants.BeamableConstants.Features.Services;
+using static Beamable.Common.Constants.Features.Services;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;

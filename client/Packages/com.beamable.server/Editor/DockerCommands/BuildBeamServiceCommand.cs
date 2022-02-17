@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using UnityEditor;
-using static Beamable.Common.Constants.BeamableConstants.MenuItems.Windows.Paths;
+using static Beamable.Common.Constants.MenuItems.Windows.Paths;
 
 #if BEAMABLE_DEVELOPER
 namespace Beamable.Server.Editor.DockerCommands

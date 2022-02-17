@@ -15,7 +15,7 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.Networking;
 using Debug = UnityEngine.Debug;
-using static Beamable.Common.Constants.BeamableConstants.Features.Content;
+using static Beamable.Common.Constants.Features.Content;
 
 namespace Beamable.Content
 {

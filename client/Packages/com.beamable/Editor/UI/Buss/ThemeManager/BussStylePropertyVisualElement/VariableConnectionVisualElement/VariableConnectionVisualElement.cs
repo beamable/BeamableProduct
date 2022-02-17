@@ -11,7 +11,7 @@ using UnityEngine.Experimental.UIElements.StyleEnums;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
-using static Beamable.Common.Constants.BeamableConstants.Features.Buss.ThemeManager;
+using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {

@@ -14,7 +14,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
-using static Beamable.Common.Constants.BeamableConstants;
+using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.Config
 {

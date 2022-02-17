@@ -1,7 +1,7 @@
 using Beamable.Common.Inventory;
 using System.Collections.Generic;
 using UnityEngine;
-using static Beamable.Common.Constants.BeamableConstants.MenuItems.Assets;
+using static Beamable.Common.Constants.MenuItems.Assets;
 
 namespace Beamable.Inventory.Scripts
 {

@@ -3,7 +3,7 @@ using Beamable.Common.Content;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using static Beamable.Common.Constants.BeamableConstants.MenuItems.Assets.Orders;
+using static Beamable.Common.Constants.MenuItems.Assets.Orders;
 
 namespace Beamable.Editor.Assistant
 {

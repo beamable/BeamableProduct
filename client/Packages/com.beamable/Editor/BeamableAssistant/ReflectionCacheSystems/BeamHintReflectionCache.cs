@@ -11,7 +11,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
-using static Beamable.Common.Constants.BeamableConstants.MenuItems.Assets.Orders;
+using static Beamable.Common.Constants.MenuItems.Assets.Orders;
 
 namespace Beamable.Editor.Reflection
 {

@@ -2,7 +2,7 @@ using Beamable.Editor.Environment;
 using System;
 using System.IO;
 using System.Linq;
-using static Beamable.Common.Constants.BeamableConstants.Features.Services;
+using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server.Editor.CodeGen
 {

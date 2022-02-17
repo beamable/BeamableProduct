@@ -1,9 +1,9 @@
 ﻿using System.IO;
 using UnityEngine;
 
-namespace Beamable.Common.Constants
+namespace Beamable.Common
 {
-	public static partial class BeamableConstants
+	public static partial class Constants
 	{
 		public static partial class Features
 		{

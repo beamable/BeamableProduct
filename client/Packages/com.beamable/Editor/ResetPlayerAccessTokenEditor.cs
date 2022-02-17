@@ -1,7 +1,7 @@
 using Beamable.Api;
 using UnityEditor;
 using UnityEngine;
-using static Beamable.Common.Constants.BeamableConstants.MenuItems.Windows;
+using static Beamable.Common.Constants.MenuItems.Windows;
 
 namespace Beamable.Editor
 {

@@ -2,7 +2,7 @@
 using Beamable.Editor.UI.Model;
 using System.Linq;
 using UnityEngine;
-using static Beamable.Common.Constants.BeamableConstants.Features.Services;
+using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {

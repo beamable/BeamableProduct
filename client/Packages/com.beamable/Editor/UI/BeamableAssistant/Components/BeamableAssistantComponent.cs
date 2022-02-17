@@ -1,5 +1,5 @@
 using Beamable.Editor.UI.Components;
-using static Beamable.Common.Constants.BeamableConstants.Features.Assistant;
+using static Beamable.Common.Constants.Features.Assistant;
 
 namespace Beamable.Editor.Assistant
 {
