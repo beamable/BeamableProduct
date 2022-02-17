@@ -1,6 +1,12 @@
 {
     "name": "Beamable.UnityUIExtensions",
+    "references": [],
     "optionalUnityReferences": [],
+    "includePlatforms": [],
     "excludePlatforms": [],
-    "allowUnsafeCode": false
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": []
 }
