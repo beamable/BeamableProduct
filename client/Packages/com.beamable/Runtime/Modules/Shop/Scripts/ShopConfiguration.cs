@@ -1,16 +1,16 @@
 using Beamable.Common.Shop;
-using Beamable.Content;
 using System.Collections.Generic;
 using UnityEngine;
+using static Beamable.Common.Constants.MenuItems.Assets;
 
 namespace Beamable.Shop
 {
 #if BEAMABLE_DEVELOPER
 	[CreateAssetMenu(
 	   fileName = "Shop Configuration",
-	   menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
+	   menuName = Paths.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
 	   "Shop Configuration",
-	   order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
+	   order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 #endif
 	public class ShopConfiguration : ModuleConfigurationObject
 	{

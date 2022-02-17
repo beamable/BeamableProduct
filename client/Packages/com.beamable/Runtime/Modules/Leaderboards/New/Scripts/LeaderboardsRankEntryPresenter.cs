@@ -1,7 +1,6 @@
 ﻿using Beamable.AccountManagement;
 using Beamable.Avatars;
 using Beamable.Common.Api.Leaderboards;
-using Beamable.Constats;
 using Beamable.Modules.Generics;
 using Beamable.Stats;
 using Beamable.UI.Buss;
@@ -11,6 +10,7 @@ using System.Globalization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using static Beamable.Common.Constants.Features.Leaderboards;
 
 namespace Beamable.Modules.Leaderboards
 {
@@ -52,19 +52,19 @@ namespace Beamable.Modules.Leaderboards
 
 			if (_currentPlayerRank == Data.rank)
 			{
-				_mainBussElement?.AddClass(LeaderboardsConstants.BUSS_CLASS_CURRENT_PLAYER);
+				_mainBussElement?.AddClass(BUSS_CLASS_CURRENT_PLAYER);
 			}
 
 			switch (Data.rank)
 			{
 				case 1:
-					_rankBussElement?.AddClass(LeaderboardsConstants.BUSS_CLASS_FIRST_PLACE);
+					_rankBussElement?.AddClass(BUSS_CLASS_FIRST_PLACE);
 					break;
 				case 2:
-					_rankBussElement?.AddClass(LeaderboardsConstants.BUSS_CLASS_SECOND_PLACE);
+					_rankBussElement?.AddClass(BUSS_CLASS_SECOND_PLACE);
 					break;
 				case 3:
-					_rankBussElement?.AddClass(LeaderboardsConstants.BUSS_CLASS_THIRD_PLACE);
+					_rankBussElement?.AddClass(BUSS_CLASS_THIRD_PLACE);
 					break;
 			}
 		}

@@ -12,16 +12,19 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
+using static Beamable.Common.Constants.Features.Toolbox;
+using static Beamable.Common.Constants.Features.Toolbox.EditorPrefsKeys;
 
 namespace Beamable.Editor.Toolbox.UI
 {
 	public class ToolboxWindow : EditorWindow
 	{
 		[MenuItem(
-			BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
-			BeamableConstants.OPEN + " " +
-			BeamableConstants.TOOLBOX,
-			priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_1
+			MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
+			Commons.OPEN + " " +
+			MenuItems.Windows.Names.TOOLBOX,
+			priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_1
 		)]
 		public static async void Init()
 		{
@@ -41,7 +44,7 @@ namespace Beamable.Editor.Toolbox.UI
 			}
 
 			// Create Beamable ContentManagerWindow and dock it next to Unity Hierarchy Window
-			var contentManagerWindow = GetWindow<ToolboxWindow>(BeamableConstants.TOOLBOX, true, typeof(SceneView));
+			var contentManagerWindow = GetWindow<ToolboxWindow>(MenuItems.Windows.Names.TOOLBOX, true, typeof(SceneView));
 
 			contentManagerWindow.Show(true);
 		}
@@ -88,7 +91,7 @@ namespace Beamable.Editor.Toolbox.UI
 			{
 				if (isUpdated && BeamablePackageUpdateMeta.IsBlogSiteAvailable &&
 					!BeamablePackageUpdateMeta.IsBlogVisited &&
-					!EditorPrefs.GetBool(BeamableEditorPrefsConstants.IS_PACKAGE_WHATSNEW_ANNOUNCEMENT_IGNORED, true))
+					!EditorPrefs.GetBool(IS_PACKAGE_WHATSNEW_ANNOUNCEMENT_IGNORED, true))
 				{
 					ShowWhatsNewAnnouncement();
 				}
@@ -127,9 +130,9 @@ namespace Beamable.Editor.Toolbox.UI
 			var root = this.GetRootVisualContainer();
 			root.Clear();
 			var uiAsset =
-				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{ToolboxConstants.BASE_PATH}/ToolboxWindow.uxml");
+				AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{BASE_PATH}/ToolboxWindow.uxml");
 			_windowRoot = uiAsset.CloneTree();
-			_windowRoot.AddStyleSheet($"{ToolboxConstants.BASE_PATH}/ToolboxWindow.uss");
+			_windowRoot.AddStyleSheet($"{BASE_PATH}/ToolboxWindow.uss");
 			_windowRoot.name = nameof(_windowRoot);
 
 			root.Add(_windowRoot);
@@ -152,7 +155,7 @@ namespace Beamable.Editor.Toolbox.UI
 
 			_actionBarVisualElement.OnInfoButtonClicked += () =>
 			{
-				Application.OpenURL(BeamableConstants.URL_TOOL_WINDOW_TOOLBOX);
+				Application.OpenURL(URLs.Documentations.URL_DOC_WINDOW_TOOLBOX);
 			};
 
 			CheckForDeps();
@@ -229,7 +232,7 @@ namespace Beamable.Editor.Toolbox.UI
 				{
 					return;
 				}
-				if (EditorPrefs.GetBool(BeamableEditorPrefsConstants.IS_PACKAGE_UPDATE_IGNORED))
+				if (EditorPrefs.GetBool(IS_PACKAGE_UPDATE_IGNORED))
 				{
 					BeamablePackageUpdateMeta.IsInstallationIgnored = true;
 					return;
@@ -261,7 +264,7 @@ namespace Beamable.Editor.Toolbox.UI
 				updateAvailableAnnouncement.OnIgnore = () =>
 				{
 					BeamablePackageUpdateMeta.IsInstallationIgnored = true;
-					EditorPrefs.SetBool(BeamableEditorPrefsConstants.IS_PACKAGE_UPDATE_IGNORED, true);
+					EditorPrefs.SetBool(IS_PACKAGE_UPDATE_IGNORED, true);
 					_model.RemoveAnnouncement(updateAvailableAnnouncement);
 				};
 
@@ -294,7 +297,7 @@ namespace Beamable.Editor.Toolbox.UI
 			};
 			whatsNewAnnouncement.OnIgnore = () =>
 			{
-				EditorPrefs.SetBool(BeamableEditorPrefsConstants.IS_PACKAGE_WHATSNEW_ANNOUNCEMENT_IGNORED, true);
+				EditorPrefs.SetBool(IS_PACKAGE_WHATSNEW_ANNOUNCEMENT_IGNORED, true);
 				_model.RemoveAnnouncement(whatsNewAnnouncement);
 			};
 			_model.AddAnnouncement(whatsNewAnnouncement);

@@ -7,13 +7,14 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
 namespace Beamable.Editor.Toolbox.Components
 {
 	public class WhatsNewAnnouncementVisualElement : BeamableVisualElement
 	{
 		public WhatsNewAnnouncementModel WhatsNewAnnouncementModel { get; set; }
 		public WhatsNewAnnouncementVisualElement() : base(
-		   $"{BeamableComponentsConstants.COMP_PATH}/{nameof(WhatsNewAnnouncementVisualElement)}/{nameof(WhatsNewAnnouncementVisualElement)}")
+		   $"{Directories.COMMON_COMPONENTS_PATH}/{nameof(WhatsNewAnnouncementVisualElement)}/{nameof(WhatsNewAnnouncementVisualElement)}")
 		{
 		}
 

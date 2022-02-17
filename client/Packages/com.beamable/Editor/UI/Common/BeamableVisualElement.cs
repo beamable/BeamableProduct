@@ -9,6 +9,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -40,7 +41,7 @@ namespace Beamable.Editor.UI.Components
 
 			Root = TreeAsset.CloneTree();
 
-			this.AddStyleSheet(BeamableComponentsConstants.COMMON_USS_PATH);
+			this.AddStyleSheet(Files.COMMON_USS_FILE);
 			this.AddStyleSheet(UssPath);
 
 			Add(Root);

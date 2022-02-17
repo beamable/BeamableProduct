@@ -11,12 +11,13 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
 	public class LabeledCheckboxVisualElement : BeamableVisualElement
 	{
-		public static readonly string ComponentPath = $"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledCheckboxVisualElement)}/{nameof(LabeledCheckboxVisualElement)}";
+		public static readonly string ComponentPath = $"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LabeledCheckboxVisualElement)}/{nameof(LabeledCheckboxVisualElement)}";
 
 		public new class UxmlFactory : UxmlFactory<LabeledCheckboxVisualElement, UxmlTraits>
 		{

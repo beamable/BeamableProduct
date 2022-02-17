@@ -2,6 +2,7 @@ using Beamable.Api;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using static Beamable.Common.Constants.Features.LoginBase;
 
 namespace Beamable.Editor.Login.UI
 {
@@ -50,7 +51,7 @@ namespace Beamable.Editor.Login.UI
 				message = errorMessage;
 			}
 
-			return message ?? LoginBaseConstants.UNKNOWN_ERROR;
+			return message ?? UNKNOWN_ERROR;
 		}
 	}
 }

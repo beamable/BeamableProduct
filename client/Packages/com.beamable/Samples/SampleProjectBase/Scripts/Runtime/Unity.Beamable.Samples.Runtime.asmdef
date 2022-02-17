@@ -2,7 +2,8 @@
     "name": "Unity.Beamable.Samples.Runtime",
     "references": [
         "Unity.Beamable",
-        "Unity.Beamable.Editor"
+        "Unity.Beamable.Editor",
+        "Unity.Beamable.Runtime.Common"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
