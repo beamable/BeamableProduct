@@ -10,6 +10,7 @@ using UnityEngine.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Buss
 {
@@ -29,7 +30,7 @@ namespace Beamable.Editor.UI.Buss
 
 		public AddPropertiesVisualElement(Action<BussStyleRule> onSelectorAdded, List<BussStyleSheet> styleSheets) :
 			base(
-				$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/AddStyleWindow/{nameof(AddPropertiesVisualElement)}/{nameof(AddPropertiesVisualElement)}")
+				$"{BUSS_THEME_MANAGER_PATH}/AddStyleWindow/{nameof(AddPropertiesVisualElement)}/{nameof(AddPropertiesVisualElement)}")
 		{
 			_onSelectorAdded = onSelectorAdded;
 			_styleSheets = styleSheets;

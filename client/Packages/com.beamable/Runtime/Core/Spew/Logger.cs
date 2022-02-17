@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using static Beamable.Common.Constants.Features.Spew;
 
 #if PREPEND_SPEW_METADATA
 using UnityEngine;
@@ -80,13 +81,13 @@ namespace Beamable.Spew
 	[SpewLogger]
 	public static class NotificationLogger
 	{
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_NOTIFICATION)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_NOTIFICATION)]
 		public static void Log(object msg)
 		{
 			Logger.DoSpew(msg);
 		}
 
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_NOTIFICATION)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_NOTIFICATION)]
 		public static void LogFormat(string msg, params object[] args)
 		{
 			Logger.DoSpew(msg, args);
@@ -96,13 +97,13 @@ namespace Beamable.Spew
 	[SpewLogger]
 	public static class ChatLogger
 	{
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_CHAT)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_CHAT)]
 		public static void Log(object msg)
 		{
 			Logger.DoSpew(msg);
 		}
 
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_CHAT)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_CHAT)]
 		public static void LogFormat(string msg, params object[] args)
 		{
 			Logger.DoSpew(msg, args);
@@ -112,14 +113,14 @@ namespace Beamable.Spew
 	[SpewLogger]
 	public static class PubnubSubscriptionLogger
 	{
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_PUBNUB_SUBSCRIPTION)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_PUBNUB_SUBSCRIPTION)]
 		public static void Log(object msg)
 		{
 			Logger.DoSpew(msg);
 		}
 
-		[Conditional(SpewConstants.SPEW_ALL)]
-		[Conditional(SpewConstants.SPEW_PUBNUB_SUBSCRIPTION)]
+		[Conditional(SPEW_ALL)]
+		[Conditional(SPEW_PUBNUB_SUBSCRIPTION)]
 		public static void LogFormat(string msg, params object[] args)
 		{
 			Logger.DoSpew(msg, args);
@@ -129,13 +130,13 @@ namespace Beamable.Spew
 	[SpewLogger]
 	public static class TutorialLogger
 	{
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_TUTORIAL)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_TUTORIAL)]
 		public static void Log(object msg)
 		{
 			Logger.DoSpew(msg);
 		}
 
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_TUTORIAL)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_TUTORIAL)]
 		public static void LogFormat(string msg, params object[] args)
 		{
 			Logger.DoSpew(msg, args);
@@ -145,14 +146,14 @@ namespace Beamable.Spew
 	[SpewLogger]
 	public static class UIMaterialFillLogger
 	{
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_UI_MATERIAL_FILL)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_UI_MATERIAL_FILL)]
 		public static void Log(object msg)
 		{
 			Logger.DoSpew(msg);
 		}
 
-		[Conditional(SpewConstants.SPEW_ALL)]
-		[Conditional(SpewConstants.SPEW_UI_MATERIAL_FILL)]
+		[Conditional(SPEW_ALL)]
+		[Conditional(SPEW_UI_MATERIAL_FILL)]
 		public static void LogFormat(string msg, params object[] args)
 		{
 			Logger.DoSpew(msg, args);
@@ -162,14 +163,14 @@ namespace Beamable.Spew
 	[SpewLogger]
 	public static class TouchLogger
 	{
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_TOUCH)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_TOUCH)]
 		public static void Log(object msg)
 		{
 			Logger.DoSpew(msg);
 		}
 
-		[Conditional(SpewConstants.SPEW_ALL)]
-		[Conditional(SpewConstants.SPEW_TOUCH)]
+		[Conditional(SPEW_ALL)]
+		[Conditional(SPEW_TOUCH)]
 		public static void LogFormat(string msg, params object[] args)
 		{
 			Logger.DoSpew(msg, args);
@@ -179,13 +180,13 @@ namespace Beamable.Spew
 	[SpewLogger]
 	public static class GraphicsLogger
 	{
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_GRAPHICS)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_GRAPHICS)]
 		public static void Log(object msg)
 		{
 			Logger.DoSpew(msg);
 		}
 
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_GRAPHICS)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_GRAPHICS)]
 		public static void LogFormat(string msg, params object[] args)
 		{
 			Logger.DoSpew(msg, args);
@@ -195,13 +196,13 @@ namespace Beamable.Spew
 	[SpewLogger]
 	public static class AssetBundleLogger
 	{
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_ASSETBUNDLE)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_ASSETBUNDLE)]
 		public static void Log(object msg)
 		{
 			Logger.DoSpew(msg);
 		}
 
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_ASSETBUNDLE)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_ASSETBUNDLE)]
 		public static void LogFormat(string msg, params object[] args)
 		{
 			Logger.DoSpew(msg, args);
@@ -211,20 +212,20 @@ namespace Beamable.Spew
 	[SpewLogger]
 	public static class BuildLogger
 	{
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_BUILD)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_BUILD)]
 		public static void Log(object msg) { Logger.DoSpew(msg); }
 	}
 
 	[SpewLogger]
 	public static class ServerStateLogger
 	{
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_SERVERSTATE)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_SERVERSTATE)]
 		public static void Log(object msg)
 		{
 			Logger.DoSpew(msg);
 		}
 
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_SERVERSTATE)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_SERVERSTATE)]
 		public static void LogFormat(string msg, params object[] args)
 		{
 			Logger.DoSpew(msg, args);
@@ -234,13 +235,13 @@ namespace Beamable.Spew
 	[SpewLogger]
 	public static class InAppPurchaseLogger
 	{
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_IAP)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_IAP)]
 		public static void Log(object msg)
 		{
 			Logger.DoSpew(msg);
 		}
 
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_IAP)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_IAP)]
 		public static void LogFormat(string msg, params object[] args)
 		{
 			Logger.DoSpew(msg, args);
@@ -250,7 +251,7 @@ namespace Beamable.Spew
 	[SpewLogger]
 	public static class MailLogger
 	{
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_MAIL)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_MAIL)]
 		public static void Log(object msg)
 		{
 			Logger.DoSpew(msg);
@@ -260,13 +261,13 @@ namespace Beamable.Spew
 	[SpewLogger]
 	public static class CloudOnceLogger
 	{
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_CLOUDONCE)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_CLOUDONCE)]
 		public static void Log(object msg)
 		{
 			Logger.DoSpew(msg);
 		}
 
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_CLOUDONCE)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_CLOUDONCE)]
 		public static void LogFormat(string msg, params object[] args)
 		{
 			Logger.DoSpew(msg, args);
@@ -276,13 +277,13 @@ namespace Beamable.Spew
 	[SpewLogger]
 	public static class ApptentiveLogger
 	{
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_APPTENTIVE)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_APPTENTIVE)]
 		public static void Log(object msg)
 		{
 			Logger.DoSpew(msg);
 		}
 
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_APPTENTIVE)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_APPTENTIVE)]
 		public static void LogFormat(string msg, params object[] args)
 		{
 			Logger.DoSpew(msg, args);
@@ -292,13 +293,13 @@ namespace Beamable.Spew
 	[SpewLogger]
 	public static class AnalyticsLogger
 	{
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_ANALYTICS)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_ANALYTICS)]
 		public static void Log(object msg)
 		{
 			Logger.DoSpew(msg);
 		}
 
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_ANALYTICS)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_ANALYTICS)]
 		public static void LogFormat(string msg, params object[] args)
 		{
 			Logger.DoSpew(msg, args);
@@ -308,13 +309,13 @@ namespace Beamable.Spew
 	[SpewLogger]
 	public static class NetMsgLogger
 	{
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_NETMSG)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_NETMSG)]
 		public static void Log(object msg)
 		{
 			Logger.DoSpew(msg);
 		}
 
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_NETMSG)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_NETMSG)]
 		public static void LogFormat(string msg, params object[] args)
 		{
 			Logger.DoSpew(msg, args);
@@ -324,13 +325,13 @@ namespace Beamable.Spew
 	[SpewLogger]
 	public static class PlatformLogger
 	{
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_PLATFORM)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_PLATFORM)]
 		public static void Log(object msg)
 		{
 			Logger.DoSpew(msg);
 		}
 
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_PLATFORM)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_PLATFORM)]
 		public static void LogFormat(string msg, params object[] args)
 		{
 			Logger.DoSpew(msg, args);
@@ -340,13 +341,13 @@ namespace Beamable.Spew
 	[SpewLogger]
 	public static class ResourcesLogger
 	{
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_RESOURCES)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_RESOURCES)]
 		public static void Log(object msg)
 		{
 			Logger.DoSpew(msg);
 		}
 
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_RESOURCES)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_RESOURCES)]
 		public static void LogFormat(string msg, params object[] args)
 		{
 			Logger.DoSpew(msg, args);
@@ -356,13 +357,13 @@ namespace Beamable.Spew
 	[SpewLogger]
 	public static class AppLifetimeLogger
 	{
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_APP_LIFETIME)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_APP_LIFETIME)]
 		public static void Log(object msg)
 		{
 			Logger.DoSpew(msg);
 		}
 
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_APP_LIFETIME)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_APP_LIFETIME)]
 		public static void LogFormat(string msg, params object[] args)
 		{
 			Logger.DoSpew(msg, args);
@@ -372,13 +373,13 @@ namespace Beamable.Spew
 	[SpewLogger]
 	public static class SVGLogger
 	{
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_SVG)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_SVG)]
 		public static void Log(object msg)
 		{
 			Logger.DoSpew(msg);
 		}
 
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_SVG)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_SVG)]
 		public static void LogFormat(string msg, params object[] args)
 		{
 			Logger.DoSpew(msg, args);
@@ -388,13 +389,13 @@ namespace Beamable.Spew
 	[SpewLogger]
 	public static class ServicesLogger
 	{
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_SERVICES)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_SERVICES)]
 		public static void Log(object msg)
 		{
 			Logger.DoSpew(msg);
 		}
 
-		[Conditional(SpewConstants.SPEW_ALL), Conditional(SpewConstants.SPEW_SERVICES)]
+		[Conditional(SPEW_ALL), Conditional(SPEW_SERVICES)]
 		public static void LogFormat(string msg, params object[] args)
 		{
 			Logger.DoSpew(msg, args);

@@ -1,4 +1,5 @@
 ﻿using UnityEditor;
+using static Beamable.Common.Constants.MenuItems.Windows;
 
 namespace Beamable.Samples.SampleProjectBase
 {
@@ -35,8 +36,8 @@ namespace Beamable.Samples.SampleProjectBase
 		}
 
 		[MenuItem(
-		   BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_HELP + "/Readme",
-		   priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_4)]
+		   Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE_HELP + "/Readme",
+		   priority = Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_4)]
 		private static Readme SelectSpecificReadmeMenuItem()
 		{
 			return BeamableReadmeEditor.SelectReadme(FindAssetsFilter, FindAssetsFolders);

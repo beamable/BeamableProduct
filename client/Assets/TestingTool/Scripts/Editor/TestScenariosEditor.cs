@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using TestingTool.Scripts.Helpers;
 using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.TestingTool;
 
 namespace TestingTool.Scripts.Editor
 {
@@ -138,7 +138,7 @@ namespace TestingTool.Scripts.Editor
         private void CreateNewTest()
         {
             var parsedSceneNumbers = new List<int>();
-            var scenes = Directory.GetFiles(ConstantsHelper.TEST_SCENES_PATH).Where(x => x.EndsWith(".unity")).ToList();
+            var scenes = Directory.GetFiles(Directories.TEST_TOOL_SCENES_PATH).Where(x => x.EndsWith(".unity")).ToList();
 
             foreach (var scene in scenes)
             {
@@ -162,16 +162,16 @@ namespace TestingTool.Scripts.Editor
                 fileNumber += 1;
             }
 
-            var newFileName = $"{fileNumber:000} - {ConstantsHelper.NEW_SCENE_NAME}";
+            var newFileName = $"{fileNumber:000} - {FileNames.NEW_SCENE}";
             if (!AssetDatabase.CopyAsset(
-                ConstantsHelper.TEST_SCENE_TEMPLATE_PATH,
-                ConstantsHelper.TEST_SCENE_DATA_PATH(newFileName)))
+	                Directories.TEMPLATE_SCENE_PATH,
+	                Directories.TEST_SCENE_DATA_PATH(newFileName)))
             {
                 Debug.LogError("Failed while copying a file.");
                 return;
             }
             
-            var sceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(ConstantsHelper.TEST_SCENE_DATA_PATH(newFileName));
+            var sceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(Directories.TEST_SCENE_DATA_PATH(newFileName));
             CreateTest(sceneAsset);
         }
         private void CreateEmptyTest()

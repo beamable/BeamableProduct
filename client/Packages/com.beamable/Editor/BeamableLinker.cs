@@ -3,8 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEditor;
-using UnityEditorInternal;
-using UnityEngine;
+using static Beamable.Common.Constants.MenuItems.Windows;
 
 namespace Beamable.Editor
 {
@@ -17,7 +16,7 @@ namespace Beamable.Editor
 			"UnityUIExtensions"
 		};
 
-		[MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Generate Link File")]
+		[MenuItem(Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES + "/Generate Link File")]
 		public static void GenerateLinkFile()
 		{
 			var linkPath = "Assets/Beamable/Resources/link.xml";

@@ -5,10 +5,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 using Object = UnityEngine.Object;
+using static Beamable.Common.Constants.MenuItems.Assets;
 
 namespace Beamable.UI.Buss
 {
-	[CreateAssetMenu(fileName = "BUSSStyleConfig", menuName = "Beamable/BUSS Style", order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
+	[CreateAssetMenu(fileName = "BUSSStyleConfig", menuName = "Beamable/BUSS Style", order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
 	public class BussStyleSheet : ScriptableObject, ISerializationCallbackReceiver
 	{
 		public event Action Change;
