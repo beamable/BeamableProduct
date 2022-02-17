@@ -41,7 +41,6 @@ namespace Beamable.Assets.Editor
 			{
 				CheckMissingReferences.FixKnownReferences();
 			}
-
 			if (GUILayout.Button("Packages"))
 			{
 
