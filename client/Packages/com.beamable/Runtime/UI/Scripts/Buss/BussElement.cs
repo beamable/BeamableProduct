@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.AI;
 using Object = UnityEngine.Object;
 
 namespace Beamable.UI.Buss
@@ -15,42 +16,37 @@ namespace Beamable.UI.Buss
 		[SerializeField, BussClass] private List<string> _classes = new List<string>();
 		[SerializeField] private BussStyleDescription _inlineStyle;
 		[SerializeField] private BussStyleSheet _styleSheet;
-		private List<string> _pseudoClasses = new List<string>();
 		[SerializeField, HideInInspector] private List<Object> _assetReferences = new List<Object>();
-
 		[SerializeField, HideInInspector] private BussElement _parent;
 		[SerializeField, HideInInspector] private List<BussElement> _children = new List<BussElement>();
 #pragma warning restore CS0649
 
+		private readonly List<string> _pseudoClasses = new List<string>();
 		public List<BussStyleSheet> AllStyleSheets { get; } = new List<BussStyleSheet>();
 		public BussStyle Style { get; } = new BussStyle();
 
 		public event Action StyleSheetsChanged;
-
+		public event Action Validate;
+		
 		public string Id
 		{
-			get
-			{
-				return _id;
-			}
+			get => _id;
 			set
 			{
 				_id = value;
 				OnStyleChanged();
 			}
 		}
+
 		public IEnumerable<string> Classes => _classes;
 		public IEnumerable<string> PseudoClasses => _pseudoClasses;
 		public string TypeName => GetType().Name;
 		public Dictionary<string, BussStyle> PseudoStyles { get; } = new Dictionary<string, BussStyle>();
-
 		public BussStyleDescription InlineStyle => _inlineStyle;
+
 		public BussStyleSheet StyleSheet
 		{
-			get
-			{
-				return _styleSheet;
-			}
+			get => _styleSheet;
 			set
 			{
 				_styleSheet = value;
@@ -102,10 +98,14 @@ namespace Beamable.UI.Buss
 
 		private void OnValidate()
 		{
-			if (!gameObject || !gameObject.scene.IsValid()) return; // OnValidate runs on prefabs, which we absolutely don't want.
+			if (!gameObject || !gameObject.scene.IsValid())
+			{
+				return; // OnValidate runs on prefabs, which we absolutely don't want to.
+			}
 
 			CheckParent();
 			OnStyleChanged();
+			Validate?.Invoke();
 		}
 
 		private void OnTransformParentChanged()
