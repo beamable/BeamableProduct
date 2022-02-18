@@ -232,28 +232,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				microservice.IsSelected = selected;
 			}
 		}
-
-		public void BuildAllMicroservices(ILoadingBar loadingBar)
-		{
-			var children = new List<LoadingBarUpdater>();
-
-			foreach (var microservice in Model.Services)
-			{
-				if (!microservice.IsSelected)
-					continue;
-				if (microservice.IsRunning)
-					microservice.BuildAndRestart();
-				else
-					microservice.Build();
-
-				var element = _modelToVisual[microservice];
-				var subLoader = element.Q<LoadingBarElement>();
-				children.Add(subLoader.Updater);
-			}
-
-			var _ = new GroupLoadingBarUpdater("Building Microservices", loadingBar, false, children.ToArray());
-		}
-
+		
 		public void BuildAndStartAllMicroservices(ILoadingBar loadingBar)
 		{
 			var children = new List<LoadingBarUpdater>();
