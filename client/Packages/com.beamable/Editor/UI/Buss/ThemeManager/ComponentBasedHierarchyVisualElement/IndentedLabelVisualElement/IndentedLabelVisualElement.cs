@@ -38,14 +38,14 @@ namespace Beamable.Editor.UI.Components
 		{ }
 
 		public void Setup(GameObject relatedGameObject,
-		                  Func<BussElement, string> getLabelAction,
+						  Func<BussElement, string> getLabelAction,
 						  Action<IndentedLabelVisualElement> onMouseClicked,
 						  int level,
 						  float width)
 		{
 			RelatedGameObject = relatedGameObject;
 			_relatedBussElement = RelatedGameObject.GetComponent<BussElement>();
-			
+
 			_onMouseClicked = onMouseClicked;
 			_getLabelAction = getLabelAction;
 
@@ -79,7 +79,7 @@ namespace Beamable.Editor.UI.Components
 			_container.RegisterCallback<MouseDownEvent>(OnMouseClicked);
 			_container.RegisterCallback<MouseOverEvent>(OnMouseOver);
 			_container.RegisterCallback<MouseOutEvent>(OnMouseOut);
-			
+
 			_relatedBussElement.Validate += RefreshLabel;
 		}
 

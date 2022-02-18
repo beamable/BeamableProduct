@@ -26,7 +26,7 @@ namespace Beamable.UI.Buss
 
 		public event Action StyleSheetsChanged;
 		public event Action Validate;
-		
+
 		public string Id
 		{
 			get => _id;
