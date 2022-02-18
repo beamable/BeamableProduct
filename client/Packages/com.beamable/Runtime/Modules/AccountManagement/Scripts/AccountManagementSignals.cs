@@ -2,7 +2,6 @@
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using Beamable.Coroutines;
-//using Beamable.Common.Api.Auth;
 using Beamable.Signals;
 using Beamable.UI.Scripts;
 using System;

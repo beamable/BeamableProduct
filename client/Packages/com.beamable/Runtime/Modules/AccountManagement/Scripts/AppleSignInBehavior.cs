@@ -1,8 +1,5 @@
 using Beamable.Api;
 using Beamable.Common.Api.Auth;
-using Beamable.Platform.SDK;
-using Beamable.Platform.SDK.Auth;
-using Beamable.Spew;
 using UnityEngine;
 
 namespace Beamable.AccountManagement

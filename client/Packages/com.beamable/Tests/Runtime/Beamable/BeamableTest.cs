@@ -1,5 +1,4 @@
 using Beamable.Api;
-using Beamable.Api.Stats;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using Beamable.Platform.Tests;
