@@ -11,7 +11,7 @@ namespace Beamable.Editor.Style
 	{
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
 		{
-			var guids = AssetDatabase.FindAssets($"t:{typeof(MediaQueryObject)}");
+			var guids = BeamableAssetDatabase.FindAssets<MediaQueryObject>();
 			var names = new string[guids.Length + 1];
 			names[0] = "<none>";
 

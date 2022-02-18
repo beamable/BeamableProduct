@@ -431,8 +431,8 @@ namespace Beamable.Editor.Content
 
 		private ContentObject Find(ContentObject content)
 		{
-			var assetGuids = AssetDatabase.FindAssets(
-				$"t:{content.GetType().Name}",
+			var assetGuids = BeamableAssetDatabase.FindAssets(
+				content.GetType(),
 				new[] { Directories.DATA_DIR }
 			);
 			foreach (var guid in assetGuids)
@@ -456,8 +456,7 @@ namespace Beamable.Editor.Content
 				yield break; // there is no folder, therefore, no content. Nothing to search for.
 			}
 
-			var assetGuids = AssetDatabase.FindAssets(
-				$"t:{typeof(TContent).Name}",
+			var assetGuids = BeamableAssetDatabase.FindAssets<TContent>(
 				new[] { Directories.DATA_DIR }
 			);
 			var contentType = ContentRegistry.TypeToName(typeof(TContent));
@@ -527,8 +526,8 @@ namespace Beamable.Editor.Content
 
 			foreach (var contentType in ContentRegistry.GetContentTypes()) // TODO check hierarchy types.
 			{
-				var assetGuids = AssetDatabase.FindAssets(
-					$"t:{contentType.Name}",
+				var assetGuids = BeamableAssetDatabase.FindAssets(
+					contentType,
 					new[] { Directories.DATA_DIR }
 				);
 				var typeName = ContentRegistry.TypeToName(contentType);
@@ -639,8 +638,8 @@ namespace Beamable.Editor.Content
 		{
 			foreach (var nextContentType in ContentRegistry.GetContentTypes()) // TODO check heirarchy types.
 			{
-				var assetGuids = AssetDatabase.FindAssets(
-					$"t:{nextContentType.Name}",
+				var assetGuids = BeamableAssetDatabase.FindAssets(
+					nextContentType,
 					new[] { Directories.DATA_DIR }
 				);
 

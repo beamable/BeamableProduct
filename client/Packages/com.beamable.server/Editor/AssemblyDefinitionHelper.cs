@@ -1,4 +1,5 @@
 using Beamable.Common;
+using Beamable.Editor;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Server.Editor.DockerCommands;
 using System;
@@ -282,7 +283,7 @@ namespace Beamable.Server.Editor
 		public static IEnumerable<AssemblyDefinitionAsset> EnumerateAssemblyDefinitionAssets()
 		{
 			// TODO: We could add a static cache here, because by definition, a recompile will be executed anytime a new ASMDEF shows up.
-			var assemblyDefGuids = AssetDatabase.FindAssets($"t:{nameof(AssemblyDefinitionAsset)}");
+			var assemblyDefGuids = BeamableAssetDatabase.FindAssets<AssemblyDefinitionAsset>();
 			foreach (var assemblyDefGuid in assemblyDefGuids)
 			{
 				var assemblyDefPath = AssetDatabase.GUIDToAssetPath(assemblyDefGuid);
