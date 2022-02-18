@@ -16,6 +16,12 @@
             <engine:VisualElement class="rightArea" name="rightArea">
                 <engine:VisualElement name="remoteStatusIcon"/>
                 <engine:VisualElement name="statusIcon"/>
+                <engine:Button name="cancelBtn" text="Cancel" class="confirmBtn"/>
+                <engine:Button name="stopBtn" text="Stop" class="confirmBtn"/>
+                <engine:Button name="buildDropDown" class="confirmBtn">
+                    <engine:Label text="Build" name="buildLabel"/>
+                    <engine:Image name="dropDown"/>
+                </engine:Button>
                 <engine:Button name="moreBtn"/>
             </engine:VisualElement>
         </engine:VisualElement>
@@ -31,14 +37,6 @@
         <engine:VisualElement name="buttonsContainer">
             <engine:VisualElement name="dependentServicesContainer">
                 <engine:Button name="dependentServicesBtn" text="Dependent services" class="noMarginNoPaddingNoBorder"/>
-            </engine:VisualElement>
-            <engine:VisualElement name="buttonRow">
-                <engine:Button name="cancelBtn" text="Cancel" class="confirmBtn"/>
-                <engine:Button name="stopBtn" text="Stop" class="confirmBtn"/>
-                <engine:Button name="buildDropDown" class="confirmBtn">
-                    <engine:Label text="Build" name="buildLabel"/>
-                    <engine:Image name="dropDown"/>
-                </engine:Button>
             </engine:VisualElement>
         </engine:VisualElement>
 

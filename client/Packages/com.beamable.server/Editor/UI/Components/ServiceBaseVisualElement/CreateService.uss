@@ -20,3 +20,10 @@ CreateMicroserviceVisualElement > TemplateContainer > #mainVisualElement {
     top: -14px;
     left: 4px;
 }
+
+#moreBtn {
+    visibility: hidden;
+    height: 0px;
+    width: 0px;
+    display: none;
+}
