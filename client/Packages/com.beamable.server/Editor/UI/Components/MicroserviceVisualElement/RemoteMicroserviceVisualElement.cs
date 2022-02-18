@@ -37,7 +37,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void UpdateVisualElements()
 		{
 			Root.Q<Button>("buildDropDown").RemoveFromHierarchy();
-			Root.Q<VisualElement>("buttonRow").RemoveFromHierarchy();
 			Root.Q<VisualElement>("logContainer").RemoveFromHierarchy();
 			Root.Q<VisualElement>("dependentServicesContainer").RemoveFromHierarchy();
 			Root.Q("collapseContainer")?.RemoveFromHierarchy();
