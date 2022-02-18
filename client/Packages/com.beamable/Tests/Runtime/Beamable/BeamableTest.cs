@@ -5,7 +5,6 @@ using Beamable.Common.Api.Auth;
 using Beamable.Platform.Tests;
 using NUnit.Framework;
 using Packages.Beamable.Runtime.Tests.Beamable;
-using System.Collections.Generic;
 
 namespace Beamable.Tests.Runtime
 {

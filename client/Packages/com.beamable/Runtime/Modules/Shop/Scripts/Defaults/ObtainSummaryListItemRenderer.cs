@@ -1,7 +1,5 @@
 using Beamable.Api.Payments;
 using Beamable.Common.Inventory;
-using Beamable.Content;
-using Beamable.Inventory;
 using Beamable.UI.Scripts;
 using TMPro;
 using UnityEngine;
