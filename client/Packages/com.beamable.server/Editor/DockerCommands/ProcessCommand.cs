@@ -1,12 +1,9 @@
 using Beamable.Common;
 using Beamable.Common.Assistant;
 using Beamable.Editor.Microservice.UI;
-using Beamable.Editor.ToolbarExtender;
-using Beamable.Platform.SDK;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;

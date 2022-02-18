@@ -1,8 +1,6 @@
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Content;
-using Beamable.Content;
-using Beamable.Platform.SDK;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Server.Editor;
