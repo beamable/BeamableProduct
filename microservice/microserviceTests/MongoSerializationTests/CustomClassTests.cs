@@ -6,6 +6,7 @@ using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace microserviceTests.MongoSerializationTests
 {
@@ -83,6 +84,61 @@ namespace microserviceTests.MongoSerializationTests
             public Color Color;
 
             public List<Vector2> Vectors;
+        }
+        
+        [MongoSerializable]
+        public class UnityClassSupport : StorageDocument
+        {
+            [FormerlySerializedAsAttribute("text")]
+            public string message;
+
+            public string property { get; set; }
+            
+            public int X;
+            
+            [FormerlySerializedAs("info")]
+            [SerializeField]
+            private string field1;
+            
+            private string field2;
+
+            public void SetFields(string str1, string str2)
+            {
+                field1 = str1;
+                field2 = str2;  
+            }
+            
+            public string GetField1()
+            {
+                return this.field1;
+            }
+            
+            public string GetField2()
+            {
+                return this.field2;
+            }
+        }
+        
+        [Test]
+        public void DataUnity()
+        {
+            var data = new UnityClassSupport
+            {
+                message = "Msg",
+                property = "Test",
+                X = 1,
+            };
+            
+            data.SetFields("fieldRaw1", "fieldRaw2");
+            
+            var bson = data.ToBson();
+            var output = BsonSerializer.Deserialize<UnityClassSupport>(bson);
+            
+            Assert.AreEqual(data.X, output.X);
+            Assert.AreNotEqual(data.property, output.property);
+            Assert.AreEqual(data.message, output.message);
+            Assert.AreEqual(data.GetField1(), output.GetField1());
+            Assert.AreNotEqual(data.GetField2(), output.GetField2());
         }
     }
 }
