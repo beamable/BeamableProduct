@@ -39,8 +39,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected Button _stopButton;
 		protected LoadingBarElement _loadingBar;
 		protected VisualElement _statusIcon;
-		protected Label _statusLabel;
-		protected Label _remoteStatusLabel;
 		protected VisualElement _remoteStatusIcon;
 		protected LabeledCheckboxVisualElement _checkbox;
 		protected Button _moreBtn;
@@ -92,8 +90,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_moreBtn = Root.Q<Button>("moreBtn");
 			_checkbox = Root.Q<LabeledCheckboxVisualElement>("checkbox");
 			_logContainerElement = Root.Q<VisualElement>("logContainer");
-			_statusLabel = Root.Q<Label>("statusTitle");
-			_remoteStatusLabel = Root.Q<Label>("remoteStatusTitle");
 			_statusIcon = Root.Q<VisualElement>("statusIcon");
 			_remoteStatusIcon = Root.Q<VisualElement>("remoteStatusIcon");
 			_header = Root.Q("logHeader");
@@ -205,7 +201,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 					break;
 			}
 
-			_statusIcon.tooltip = _statusLabel.text = statusText;
+			_statusIcon.tooltip = statusText;
 			_statusIcon.AddToClassList(statusClassName);
 		}
 		private void OnDrag(float value)

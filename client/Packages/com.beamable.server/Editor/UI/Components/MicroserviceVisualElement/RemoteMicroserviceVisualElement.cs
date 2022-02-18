@@ -49,7 +49,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 #endif
 
 			_statusIcon.RemoveFromHierarchy();
-			_statusLabel.RemoveFromHierarchy();
 
 			var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
 			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
@@ -100,8 +99,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			_remoteStatusIcon.ClearClassList();
 			string statusClassName = "remoteEnabled";
-			_remoteStatusLabel.text = REMOTE_ONLY;
-			_remoteStatusIcon.tooltip = _remoteStatusLabel.text;
+			_remoteStatusIcon.tooltip = REMOTE_ONLY;
 			_remoteStatusIcon.AddToClassList(statusClassName);
 		}
 

@@ -101,20 +101,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void UpdateRemoteStatusIcon()
 		{
 			_remoteStatusIcon.ClearClassList();
-			string statusClassName;
-
-			if (_microserviceModel.RemoteReference?.enabled ?? false)
-			{
-				statusClassName = "remoteEnabled";
-				_remoteStatusLabel.text = REMOTE_ENABLED;
-			}
-			else
-			{
-				statusClassName = "remoteDisabled";
-				_remoteStatusLabel.text = REMOTE_NOT_ENABLED;
-			}
-
-			_remoteStatusIcon.tooltip = _remoteStatusLabel.text;
+			bool remoteEnabled = _microserviceModel.RemoteReference?.enabled ?? false;
+			string statusClassName = remoteEnabled ? "remoteEnabled" : "remoteDisabled";
+			_remoteStatusIcon.tooltip = remoteEnabled ? REMOTE_ENABLED : REMOTE_NOT_ENABLED;
 			_remoteStatusIcon.AddToClassList(statusClassName);
 		}
 		protected override void UpdateLocalStatus()
