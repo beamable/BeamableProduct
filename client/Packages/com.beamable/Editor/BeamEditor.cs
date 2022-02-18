@@ -113,8 +113,8 @@ namespace Beamable
 			// It doubles as a no-code way for users to inject their own IReflectionSystem into our pipeline.
 			var reflectionCacheSystemGuids = BeamableAssetDatabase.FindAssets<ReflectionSystemObject>(
 				coreConfiguration.ReflectionSystemPaths
-				                 .Where(Directory.Exists)
-				                 .ToArray());
+								 .Where(Directory.Exists)
+								 .ToArray());
 
 			// Get ReflectionSystemObjects and sort them
 			var reflectionSystemObjects = reflectionCacheSystemGuids.Select(reflectionCacheSystemGuid =>
