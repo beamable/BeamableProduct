@@ -61,44 +61,31 @@ namespace Beamable.Server.Editor
 
 			LatestCodeHandles = new List<BeamServiceCodeHandle>(64);
 
-			Debug.Log("Initialized BeamServices CODE WATCHER!!!!");
-
 			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-
-			var beamableRelatedAsmDefs = AssemblyDefinitionHelper.BeamableAsmDefs;
-
-			// TODO: Refactor this to support multiple SharedAssemblies
-			var commonAssembly = default(AssemblyDefinitionInfo);
-			var commonAreaName = CommonAreaService.GetCommonAsmDefName();
-			foreach (var assemblyDefinitionInfo in beamableRelatedAsmDefs)
-			{
-				if (assemblyDefinitionInfo.Location.Contains(commonAreaName))
-				{
-					commonAssembly = assemblyDefinitionInfo;
-					break;
-				}
-			} 
-
-			var commonCodeHandles = new List<BeamServiceCodeHandle>()
-			{
-				new BeamServiceCodeHandle()
-				{
-					ServiceName = "CommonAreaService", CodeClass = BeamCodeClass.SharedAssembly, AsmDefInfo = commonAssembly, CodeDirectory = Path.GetDirectoryName(commonAssembly?.Location),
-				}
-			};
-
 			var msCodeHandles = registry.Descriptors.Select(desc => new BeamServiceCodeHandle()
 			{
 				ServiceName = desc.Name, CodeClass = BeamCodeClass.Microservice, AsmDefInfo = desc.ConvertToInfo(), CodeDirectory = Path.GetDirectoryName(desc.ConvertToInfo().Location),
-			});
+			}).ToList();
 
 			var storageCodeHandles = registry.StorageDescriptors.Select(desc => new BeamServiceCodeHandle()
 			{
 				ServiceName = desc.Name, CodeClass = BeamCodeClass.StorageObject, AsmDefInfo = desc.ConvertToInfo(), CodeDirectory = Path.GetDirectoryName(desc.ConvertToInfo().Location),
-			});
+			}).ToList();
+
+			var sharedAssemblyHandles = registry.Descriptors
+			                                    .Select(DependencyResolver.GetDependencies)
+			                                    .SelectMany(deps => deps.Assemblies.ToCopy)
+			                                    .Distinct()
+			                                    .Except(msCodeHandles.Select(h => h.AsmDefInfo))
+			                                    .Except(storageCodeHandles.Select(h => h.AsmDefInfo))
+			                                    .Select(asm => new BeamServiceCodeHandle
+			                                    {
+				                                    ServiceName = asm.Name, CodeDirectory = Path.GetDirectoryName(asm.Location), CodeClass = BeamCodeClass.SharedAssembly, AsmDefInfo = asm,
+			                                    })
+			                                    .ToList();
 
 			LatestCodeHandles.Clear();
-			LatestCodeHandles.AddRange(commonCodeHandles);
+			LatestCodeHandles.AddRange(sharedAssemblyHandles);
 			LatestCodeHandles.AddRange(msCodeHandles);
 			LatestCodeHandles.AddRange(storageCodeHandles);
 			LatestCodeHandles.Sort((h1, h2) => string.Compare(h1.ServiceName, h2.ServiceName, StringComparison.Ordinal));
@@ -114,7 +101,6 @@ namespace Beamable.Server.Editor
 				var checksum = md5.ComputeHash(filesBytes);
 				beamServiceCodeHandle.Checksum = BitConverter.ToString(checksum).Replace("-", string.Empty);
 				LatestCodeHandles[index] = beamServiceCodeHandle;
-				Debug.Log($"{LatestCodeHandles[index].ServiceName} => CheckSum = {LatestCodeHandles[index].Checksum}");
 			})));
 			CheckSumCalculation = Task.WhenAll(tasks);
 		}
@@ -154,7 +140,7 @@ namespace Beamable.Server.Editor
 			{
 				var serializedCommonCodeHandle = microserviceConfiguration.LastBuiltDockerImagesCodeHandles
 				                                                          .FirstOrDefault((a) => a.CodeClass == BeamCodeClass.SharedAssembly);
-				
+
 				// If it changes, we need to inform that all services that depend on it must be rebuilt.
 				if (latestCommonCodeHandle.CodeClass != BeamCodeClass.Invalid && serializedCommonCodeHandle.CodeClass != BeamCodeClass.Invalid &&
 				    !latestCommonCodeHandle.Equals(serializedCommonCodeHandle.Checksum))
