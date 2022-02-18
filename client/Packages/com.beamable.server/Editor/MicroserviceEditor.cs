@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants.MenuItems.Windows;
 
 namespace Beamable.Server.Editor
 {
@@ -23,9 +24,9 @@ namespace Beamable.Server.Editor
 #endif
 
 		private const string MENU_TOGGLE_AUTORUN =
-			BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_MICROSERVICES + "/Auto Run Local Microservices";
+			Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_MICROSERVICES + "/Auto Run Local Microservices";
 
-		private const int MENU_TOGGLE_PRIORITY = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3;
+		private const int MENU_TOGGLE_PRIORITY = Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_3;
 
 		public const string CONFIG_AUTO_RUN = "auto_run_local_microservices";
 		public const string TEMPLATE_DIRECTORY = "Packages/com.beamable.server/Template";
@@ -153,7 +154,9 @@ namespace Beamable.Server.Editor
 					"Unity.Beamable.Server.Runtime",
 					"Unity.Beamable.Server.Runtime.Shared",
 					"Unity.Beamable",
-					"Beamable.SmallerJSON"
+					"Beamable.SmallerJSON",
+					"Unity.Beamable.Server.Runtime.Common",
+					"Unity.Beamable.Server.Runtime.Mocks",
 				};
 				if (MicroserviceConfiguration.Instance.AutoBuildCommonAssembly)
 				{

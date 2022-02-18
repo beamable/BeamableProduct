@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Common.Assistant;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
@@ -6,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
+using static Beamable.Common.Constants.MenuItems.Assets;
 using Debug = System.Diagnostics.Debug;
 
 namespace Beamable.Reflection
@@ -19,7 +21,7 @@ namespace Beamable.Reflection
 	/// <see cref="BeamContext"/>s.
 	/// </summary>
 #if BEAMABLE_DEVELOPER
-	[CreateAssetMenu(fileName = "BeamReflectionCache", menuName = "Beamable/Reflection/Beam Initialization Cache", order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
+	[CreateAssetMenu(fileName = "BeamReflectionCache", menuName = "Beamable/Reflection/Beam Initialization Cache", order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 #endif
 	public class BeamReflectionCache : ReflectionSystemObject
 	{
@@ -74,7 +76,7 @@ namespace Beamable.Reflection
 				Debug.Assert(attributeType.Equals(REGISTER_BEAMABLE_DEPENDENCIES_ATTRIBUTE),
 							 "This should never fail. If it does, there's a bug in the ReflectionCache parsing code!");
 
-				// Initialize valid members local variable so we can easily #ifdef away the editor only validation. 
+				// Initialize valid members local variable so we can easily #ifdef away the editor only validation.
 				var validMembers = cachedMemberAttributes;
 
 				// Run the validation and add hints if in editor.
@@ -82,7 +84,7 @@ namespace Beamable.Reflection
 				var validationResults = cachedMemberAttributes.Validate();
 				validationResults.SplitValidationResults(out var valid, out var warning, out var error);
 
-				if (error.Count > 0) 
+				if (error.Count > 0)
 					_hintGlobalStorage.AddOrReplaceHint(BeamHintType.Validation, BeamHintDomains.BEAM_INIT, BeamHintIds.ID_UNSUPPORTED_REGISTER_BEAMABLE_DEPENDENCY_SIGNATURE, error);
 
 				validMembers = valid.Select(v => v.Pair).ToList();
@@ -109,8 +111,16 @@ namespace Beamable.Reflection
 			{
 				foreach (var registerBeamableDependencyFunction in _registerBeamableDependencyFunctions)
 				{
-					var method = registerBeamableDependencyFunction.InfoAs<MethodInfo>();
-					method.Invoke(null, new object[] { builderToConfigure });
+					try
+					{
+						var method = registerBeamableDependencyFunction.InfoAs<MethodInfo>();
+						method.Invoke(null, new object[] { builderToConfigure });
+					}
+					catch (Exception ex)
+					{
+						var method = registerBeamableDependencyFunction.InfoAs<MethodInfo>();
+						UnityEngine.Debug.LogError($"Failed to create instance of {method.GetBaseDefinition().Name}.\n{ex.GetType()}\n{ex.Message}\n{ex.StackTrace}");
+					}
 				}
 			}
 		}

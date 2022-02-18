@@ -4,11 +4,12 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
+using static Beamable.Common.Constants.MenuItems.Assets;
 using Object = UnityEngine.Object;
 
 namespace Beamable.UI.Buss
 {
-	[CreateAssetMenu(fileName = "BUSSStyleConfig", menuName = "Beamable/BUSS Style", order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
+	[CreateAssetMenu(fileName = "BUSSStyleConfig", menuName = "Beamable/BUSS Style", order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
 	public class BussStyleSheet : ScriptableObject, ISerializationCallbackReceiver
 	{
 		public event Action Change;
@@ -26,6 +27,18 @@ namespace Beamable.UI.Buss
 
 		public bool IsReadOnly => _isReadOnly;
 
+		private bool IsWritable
+		{
+			get
+			{
+#if BEAMABLE_DEVELOPER
+				return true;
+#else
+				return !IsReadOnly;
+#endif
+			}
+		}
+
 		private void OnValidate()
 		{
 			TriggerChange();
@@ -33,6 +46,8 @@ namespace Beamable.UI.Buss
 
 		public void TriggerChange()
 		{
+			if (!IsWritable) return;
+
 			BussConfiguration.UseConfig(conf => conf.UpdateStyleSheet(this));
 			Change?.Invoke();
 #if UNITY_EDITOR
@@ -99,9 +114,6 @@ namespace Beamable.UI.Buss
 		[FormerlySerializedAs("_name")]
 		[SerializeField]
 		private string _selector;
-
-		[HideInInspector] [SerializeField] private bool _editMode;
-		[HideInInspector] [SerializeField] private bool _showAllMode;
 #pragma warning restore CS0649
 
 		public BussSelector Selector => BussSelectorParser.Parse(_selector);
@@ -110,18 +122,6 @@ namespace Beamable.UI.Buss
 		{
 			get => _selector;
 			set => _selector = value;
-		}
-
-		public bool EditMode
-		{
-			get => _editMode;
-			set => _editMode = value;
-		}
-
-		public bool ShowAllMode
-		{
-			get => _showAllMode;
-			set => _showAllMode = value;
 		}
 
 		public static BussStyleRule Create(string selector, List<BussPropertyProvider> properties)

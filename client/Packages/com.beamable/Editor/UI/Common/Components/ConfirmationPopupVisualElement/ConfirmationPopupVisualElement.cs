@@ -7,6 +7,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -22,7 +23,7 @@ namespace Beamable.Editor.UI.Components
 		private readonly bool _showCancelButton;
 
 		public ConfirmationPopupVisualElement(string contentText, Action onConfirm, Action onClose, bool showCancelButton = true) : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(ConfirmationPopupVisualElement)}/{nameof(ConfirmationPopupVisualElement)}")
+			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(ConfirmationPopupVisualElement)}/{nameof(ConfirmationPopupVisualElement)}")
 		{
 			_contentText = contentText;
 			_onConfirm = onConfirm;

@@ -1,4 +1,3 @@
-using Beamable.Common;
 using Beamable.Common.Assistant;
 using Beamable.Common.Reflection;
 using Beamable.Editor.Assistant;
@@ -12,6 +11,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants.MenuItems.Assets.Orders;
 
 namespace Beamable.Editor.Reflection
 {
@@ -30,7 +30,7 @@ namespace Beamable.Editor.Reflection
 	/// </list>
 	/// </summary>
 #if BEAMABLE_DEVELOPER
-	[CreateAssetMenu(fileName = "BeamHintDetailsReflectionCache", menuName = "Beamable/Reflection/Beam Hints Cache", order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
+	[CreateAssetMenu(fileName = "BeamHintDetailsReflectionCache", menuName = "Beamable/Reflection/Beam Hints Cache", order = MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 #endif
 	public class BeamHintReflectionCache : ReflectionSystemObject
 	{

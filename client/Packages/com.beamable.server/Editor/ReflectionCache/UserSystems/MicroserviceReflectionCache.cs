@@ -22,12 +22,14 @@ using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.Callbacks;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Services;
+using static Beamable.Common.Constants.MenuItems.Assets.Orders;
 using LogMessage = Beamable.Editor.UI.Model.LogMessage;
 
 namespace Beamable.Server.Editor
 {
 #if BEAMABLE_DEVELOPER
-	[CreateAssetMenu(fileName = "MicroserviceReflectionCache", menuName = "Beamable/Reflection/Microservices Cache", order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
+	[CreateAssetMenu(fileName = "MicroserviceReflectionCache", menuName = "Beamable/Reflection/Microservices Cache", order = MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_2)]
 #endif
 	public class MicroserviceReflectionCache : ReflectionSystemObject
 	{
@@ -398,7 +400,7 @@ namespace Beamable.Server.Editor
 							{
 								Level = LogLevel.INFO,
 								Timestamp = LogMessage.GetTimeDisplay(DateTime.Now),
-								Message = string.Format(BeamableLogConstants.ContainerAlreadyUploadedMessage, descriptor.Name)
+								Message = string.Format(CONTAINER_ALREADY_UPLOADED_MESSAGE, descriptor.Name)
 							});
 
 							onServiceDeployed?.Invoke(descriptor);
@@ -427,13 +429,13 @@ namespace Beamable.Server.Editor
 					});
 					await uploader.UploadContainer(descriptor, token, () =>
 												   {
-													   Debug.Log(string.Format(BeamableLogConstants.UploadedContainerMessage, descriptor.Name));
+													   Debug.Log(string.Format(UPLOAD_CONTAINER_MESSAGE, descriptor.Name));
 													   onServiceDeployed?.Invoke(descriptor);
 													   UpdateServiceDeployStatus(descriptor, ServicePublishState.Published);
 												   },
 												   () =>
 												   {
-													   Debug.LogError(string.Format(BeamableLogConstants.CantUploadContainerMessage, descriptor.Name));
+													   Debug.LogError(string.Format(CANT_UPLOAD_CONTAINER_MESSAGE, descriptor.Name));
 													   if (token.IsCancellationRequested)
 													   {
 														   OnDeployFailed?.Invoke(model, $"Cancellation requested during upload of {descriptor.Name}.");

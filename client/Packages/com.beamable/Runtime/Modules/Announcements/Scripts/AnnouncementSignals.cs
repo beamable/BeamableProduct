@@ -1,83 +1,39 @@
-﻿using Beamable.Coroutines;
-using Beamable.Platform.SDK;
-using Beamable.Platform.SDK.Auth;
-using Beamable.Signals;
-using Beamable.UI;
-using Beamable.UI.Scripts;
+﻿using Beamable.Signals;
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Security.Authentication;
-using TMPro;
 using UnityEngine;
-using UnityEngine.Events;
-
-
+using static Beamable.Common.Constants.URLs;
 
 namespace Beamable.Announcements
-
 {
+	[Serializable]
+	public class ToggleEvent : DeSignal<bool> { }
 
-	[System.Serializable]
-
-	public class ToggleEvent : DeSignal<bool>
-
-	{
-
-
-
-	}
-
-	[HelpURL(BeamableConstants.URL_FEATURE_ANNOUNCEMENTS_FLOW)]
+	[HelpURL(Documentations.URL_DOC_ANNOUNCEMENTS_FLOW)]
 	public class AnnouncementSignals : DeSignalTower
-
 	{
-
-		[Header("Flow Events")]
-
-		public ToggleEvent OnToggleAnnouncement;
-
+		[Header("Flow Events")] public ToggleEvent OnToggleAnnouncement;
 
 		private static bool _toggleState;
 
-
 		public static bool ToggleState => _toggleState;
 
-
 		private void Broadcast<TArg>(TArg arg, Func<AnnouncementSignals, DeSignal<TArg>> getter)
-
 		{
-
 			this.BroadcastSignal(arg, getter);
-
 		}
 
-
 		public void ToggleAnnouncement()
-
 		{
-
 			_toggleState = !_toggleState;
-
 			Broadcast(_toggleState, s => s.OnToggleAnnouncement);
-
 		}
 
 		public void ToggleAnnouncement(bool desiredState)
-
 		{
-
-			if (desiredState == ToggleState) return;
-
-
-
+			if (desiredState == ToggleState)
+				return;
 			_toggleState = desiredState;
-
 			Broadcast(_toggleState, s => s.OnToggleAnnouncement);
-
 		}
 	}
 }
-

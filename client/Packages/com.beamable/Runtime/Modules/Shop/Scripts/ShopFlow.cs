@@ -14,11 +14,12 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using static Beamable.Common.Constants.URLs;
 using Button = UnityEngine.UI.Button;
 
 namespace Beamable.Shop
 {
-	[HelpURL(BeamableConstants.URL_FEATURE_STORE_FLOW)]
+	[HelpURL(Documentations.URL_DOC_STORE_FLOW)]
 	public class ShopFlow : MonoBehaviour
 	{
 		public MenuManagementBehaviour MenuManager;

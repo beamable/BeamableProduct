@@ -2,6 +2,7 @@
 using Beamable.Editor.UI.Model;
 using System.Linq;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
@@ -12,10 +13,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private static readonly string[] globalSuccessLogs =
 		{
-			BeamableLogConstants.UploadedContainerMessage, BeamableLogConstants.ContainerAlreadyUploadedMessage
+			UPLOAD_CONTAINER_MESSAGE,
+			CONTAINER_ALREADY_UPLOADED_MESSAGE
 		};
 
-		private static readonly string[] globalFailureLogs = { BeamableLogConstants.CantUploadContainerMessage };
+		private static readonly string[] globalFailureLogs = { CANT_UPLOAD_CONTAINER_MESSAGE };
 
 		private readonly string[] successLogs, failureLogs;
 

@@ -9,12 +9,10 @@ using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Services;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -106,6 +104,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
 			_actionPrompt.Refresh();
+			EditorApplication.delayCall +=
+				() =>
+				{
+					var command = new GetDockerLocalStatus();
+					command.Start();
+				};
 		}
 
 		private void HandleSelectionChanged(bool _)
@@ -207,12 +211,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void MicroserviceStartFailed()
 		{
-			_actionPrompt.SetVisible(Constants.PROMPT_STARTED_FAILURE, true, false);
+			_actionPrompt.SetVisible(PROMPT_STARTED_FAILURE, true, false);
 		}
 
 		private void MicroserviceStopFailed()
 		{
-			_actionPrompt.SetVisible(Constants.PROMPT_STOPPED_FAILURE, true, false);
+			_actionPrompt.SetVisible(PROMPT_STOPPED_FAILURE, true, false);
 		}
 
 		public void DisplayCreatingNewService(ServiceType serviceType)

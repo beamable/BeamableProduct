@@ -46,6 +46,7 @@ using Newtonsoft.Json;
 using Serilog;
 
 using Microsoft.Extensions.DependencyInjection;
+using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server
 {
@@ -172,7 +173,7 @@ namespace Beamable.Server
          }
 
          _args = args.Copy();
-         Log.Debug(LogConstants.STARTING_PREFIX + " {host} {prefix} {cid} {pid} {sdkVersionExecution} {sdkVersionBuild}", args.Host, args.NamePrefix, args.CustomerID, args.ProjectName, args.SdkVersionExecution, args.SdkVersionBaseBuild);
+         Log.Debug(Logs.STARTING_PREFIX + " {host} {prefix} {cid} {pid} {sdkVersionExecution} {sdkVersionBuild}", args.Host, args.NamePrefix, args.CustomerID, args.ProjectName, args.SdkVersionExecution, args.SdkVersionBaseBuild);
 
 
 
@@ -308,7 +309,7 @@ namespace Beamable.Server
             await ProvideService(QualifiedName);
 
             HasInitialized = true;
-            Log.Information(LogConstants.READY_FOR_TRAFFIC_PREFIX + "baseVersion={baseVersion} executionVersion={executionVersion}", _args.SdkVersionBaseBuild, _args.SdkVersionExecution);
+            Log.Information(Logs.READY_FOR_TRAFFIC_PREFIX + "baseVersion={baseVersion} executionVersion={executionVersion}", _args.SdkVersionBaseBuild, _args.SdkVersionExecution);
             _serviceInitialized.CompleteSuccess(PromiseBase.Unit);
          }
          catch (Exception ex)
@@ -516,7 +517,7 @@ namespace Beamable.Server
 
       void InitServices()
       {
-         Log.Debug(LogConstants.REGISTERING_STANDARD_SERVICES);
+         Log.Debug(Logs.REGISTERING_STANDARD_SERVICES);
          try
          {
             ServiceCollection = new ServiceCollection();
@@ -544,7 +545,7 @@ namespace Beamable.Server
                .AddTransient<IMicroserviceCloudDataApi, MicroserviceCloudDataApi>()
                .AddTransient<IMicroserviceRealmConfigService, RealmConfigService>()
                .AddTransient<IMicroserviceCommerceApi, MicroserviceCommerceApi>()
-               .AddTransient<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>()
+               .AddSingleton<IStorageObjectConnectionProvider, StorageObjectConnectionProvider>()
                .AddSingleton<IMongoSerializationService>(_mongoSerializationService)
 
                .AddTransient<UserDataCache<Dictionary<string, string>>.FactoryFunction>(provider => StatsCacheFactory)
@@ -553,7 +554,7 @@ namespace Beamable.Server
                ;
 
             _mongoSerializationService.Init();
-            Log.Debug(LogConstants.REGISTERING_CUSTOM_SERVICES);
+            Log.Debug(Logs.REGISTERING_CUSTOM_SERVICES);
             var builder = new DefaultServiceBuilder(ServiceCollection);
 
             // Gets Service Configuration Methods
@@ -827,11 +828,11 @@ namespace Beamable.Server
          };
          var serviceProvider = _requester.Request<MicroserviceProviderResponse>(Method.POST, "gateway/provider", req).Then(res =>
          {
-            Log.Debug(LogConstants.SERVICE_PROVIDER_INITIALIZED);
+            Log.Debug(Logs.SERVICE_PROVIDER_INITIALIZED);
          }).ToUnit();
          var eventProvider = _requester.InitializeSubscription().Then(res =>
          {
-            Log.Debug(LogConstants.EVENT_PROVIDER_INITIALIZED);
+            Log.Debug(Logs.EVENT_PROVIDER_INITIALIZED);
          }).ToUnit();
          return Promise.Sequence(serviceProvider, eventProvider).ToUnit();
       }

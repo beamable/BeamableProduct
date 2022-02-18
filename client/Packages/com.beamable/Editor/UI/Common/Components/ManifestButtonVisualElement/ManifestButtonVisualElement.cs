@@ -10,6 +10,8 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
+using static Beamable.Common.Constants.Features.ContentManager;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -39,7 +41,7 @@ namespace Beamable.Editor.UI.Components
 		private bool _nonDefaultManifest;
 
 		public ManifestButtonVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(ManifestButtonVisualElement)}/{nameof(ManifestButtonVisualElement)}")
+			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(ManifestButtonVisualElement)}/{nameof(ManifestButtonVisualElement)}")
 		{
 
 		}
@@ -71,7 +73,7 @@ namespace Beamable.Editor.UI.Components
 		private void HandleAvailableManifestsChanged(List<ISearchableElement> ids)
 		{
 			_manyManifests = ids?.Count > 1;
-			_nonDefaultManifest = ids?.Count == 1 && ids[0].DisplayName != BeamableConstants.DEFAULT_MANIFEST_ID;
+			_nonDefaultManifest = ids?.Count == 1 && ids[0].DisplayName != DEFAULT_MANIFEST_ID;
 
 			RefreshButtonVisibility();
 		}
@@ -79,7 +81,7 @@ namespace Beamable.Editor.UI.Components
 		public void RefreshButtonVisibility()
 		{
 			visible = (_manyManifests && ContentConfiguration.Instance.EnableMultipleContentNamespaces) || _nonDefaultManifest;
-			ContentConfiguration.Instance.multipleContentNamespacesSettingLocked = ContentConfiguration.Instance.EditorManifestID != BeamableConstants.DEFAULT_MANIFEST_ID;
+			ContentConfiguration.Instance.multipleContentNamespacesSettingLocked = ContentConfiguration.Instance.EditorManifestID != DEFAULT_MANIFEST_ID;
 		}
 
 		private void HandleManifestChanged(ISearchableElement manifest)

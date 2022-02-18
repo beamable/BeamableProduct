@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using UnityEditor;
+using static Beamable.Common.Constants.MenuItems.Windows.Paths;
 
 #if BEAMABLE_DEVELOPER
 namespace Beamable.Server.Editor.DockerCommands
@@ -7,7 +8,7 @@ namespace Beamable.Server.Editor.DockerCommands
    public class BuildBeamServiceCommand : DockerCommand
    {
 #if BEAMABLE_DEVELOPER
-       [MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/Build Beam Service")]
+       [MenuItem(MENU_ITEM_PATH_WINDOW_BEAMABLE + "/Build Beam Service")]
        public static void Run()
        {
            var command = new BuildBeamServiceCommand();

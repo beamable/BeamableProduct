@@ -9,6 +9,7 @@ using UnityEngine.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -21,17 +22,17 @@ namespace Beamable.Editor.UI.Components
 		public event Action OnChangeSubmit;
 
 		public BussSelectorLabelVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/BussStyleCardVisualElement/BussSelectorLabelVisualElement/BussSelectorLabelVisualElement.uss")
+			$"{BUSS_THEME_MANAGER_PATH}/BussStyleCardVisualElement/BussSelectorLabelVisualElement/BussSelectorLabelVisualElement.uss")
 		{ }
 
-		public void Setup(BussStyleRule styleRule, BussStyleSheet styleSheet)
+		public void Setup(BussStyleRule styleRule, BussStyleSheet styleSheet, bool editMode)
 		{
 			base.Init();
 
 			_styleRule = styleRule;
 			_styleSheet = styleSheet;
 
-			if (!_styleRule.EditMode)
+			if (!editMode)
 			{
 				TextElement textLabel = new TextElement();
 				textLabel.name = "styleId";

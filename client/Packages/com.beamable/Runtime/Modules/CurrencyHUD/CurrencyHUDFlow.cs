@@ -5,11 +5,12 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using static Beamable.Common.Constants.URLs;
 
 namespace Beamable.CurrencyHUD
 
 {
-	[HelpURL(BeamableConstants.URL_FEATURE_CURRENCY_HUD)]
+	[HelpURL(Documentations.URL_DOC_CURRENCY_HUD)]
 	public class CurrencyHUDFlow : MonoBehaviour
 	{
 		public CurrencyRef content;

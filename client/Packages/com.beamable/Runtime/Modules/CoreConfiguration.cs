@@ -5,13 +5,14 @@ using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor.Compilation;
 #endif
+using static Beamable.Common.Constants.MenuItems.Assets;
 
 namespace Beamable
 {
 #if BEAMABLE_DEVELOPER
 	[CreateAssetMenu(
 		fileName = "CoreConfiguration",
-		menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
+		menuName = Paths.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
 				   "Core Configuration")]
 #endif
 	public class CoreConfiguration : ModuleConfigurationObject
@@ -33,6 +34,12 @@ namespace Beamable
 		public const string BEAMABLE_SERVER_ASSISTANT_BEAM_HINTS_DETAILS_CONFIG_PATH = "Packages/com.beamable.server/Editor/BeamableAssistant/BeamHints/BeamHintDetailConfigs";
 
 		public enum OfflineStrategy { Optimistic, Disable }
+
+		[Tooltip("By default, Beamable won't let Beamable assemblies be code stripped from your project. When this setting is enabled, " +
+				 "anytime the project is built, a link.xml file will be generated in the Assets/Beamable/Resources folder that protects " +
+				 "the Beamable assemblies. If you disable this setting, the link file won't be generated. However, any existing link file " +
+				 "will not be deleted.")]
+		public bool PreventCodeStripping = true;
 
 		public static CoreConfiguration Instance => Get<CoreConfiguration>();
 
