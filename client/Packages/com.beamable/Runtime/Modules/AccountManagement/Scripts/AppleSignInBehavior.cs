@@ -1,7 +1,10 @@
+using Beamable.Api;
+using Beamable.Common.Api.Auth;
 using UnityEngine;
 #if UNITY_IOS
 using Beamable.Api;
 using Beamable.Common.Api.Auth;
+using Beamable.Platform.SDK.Auth;
 #endif
 
 namespace Beamable.AccountManagement

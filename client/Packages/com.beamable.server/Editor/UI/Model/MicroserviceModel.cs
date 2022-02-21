@@ -6,6 +6,7 @@ using Beamable.Server.Editor.ManagerClient;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
@@ -19,7 +20,7 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Model
 {
-	[System.Serializable]
+	[Serializable]
 	public class MicroserviceModel : ServiceModelBase, IBeamableMicroservice
 	{
 		[SerializeField]
