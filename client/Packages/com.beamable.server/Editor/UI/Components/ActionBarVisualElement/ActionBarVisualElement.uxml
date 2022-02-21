@@ -10,7 +10,7 @@
 
             <engine:Button class="boundedButton" name="startAll">
                 <engine:Image name="startIcon"/>
-                <engine:Label text="Start All" class="buttonText"/>
+                <engine:Label text="Play All" class="buttonText"/>
             </engine:Button>
 
             <engine:Button class="boundedButton" name="createNew">
