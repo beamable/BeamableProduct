@@ -1,16 +1,10 @@
-﻿using Beamable.Common;
-using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Components;
+﻿using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
-using Beamable.Server.Editor.ManagerClient;
-using Beamable.Server.Editor.UI.Components;
-using Beamable.Server.Editor.UI.Components.DockerLoginWindow;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Services;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements.StyleSheets;
@@ -107,7 +101,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void InjectStyleSheets()
 		{
 			if (string.IsNullOrWhiteSpace(ScriptName)) return;
-			_rootVisualElement.AddStyleSheet($"{Constants.COMP_PATH}/{ScriptName}/{ScriptName}.uss");
+			_rootVisualElement.AddStyleSheet($"{COMPONENTS_PATH}/{ScriptName}/{ScriptName}.uss");
 		}
 		protected virtual void UpdateVisualElements()
 		{
@@ -162,7 +156,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected abstract void UpdateRemoteStatusIcon();
 		protected virtual void UpdateButtons()
 		{
-			_stopButton.text = Model.IsRunning ? Constants.STOP : Constants.START;
+			_stopButton.text = Model.IsRunning ? STOP : START;
 		}
 		protected virtual void UpdateLocalStatus()
 		{

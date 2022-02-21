@@ -1,6 +1,6 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using UnityEngine;
+using static Beamable.Common.Constants.URLs;
 
 namespace Beamable.Editor.Environment
 {
@@ -11,7 +11,7 @@ namespace Beamable.Editor.Environment
 		public static bool IsBlogSpotAvailable(string version)
 		{
 			version = version.Replace(".", "-");
-			var url = $"{BeamableConstants.URL_BEAMABLE_BLOG_RELEASES_UNITY_SDK}-{version}";
+			var url = $"{URL_BEAMABLE_BLOG_RELEASES_UNITY_SDK}-{version}";
 			BlogSpotUrl = string.Empty;
 
 			if (string.IsNullOrEmpty(url))

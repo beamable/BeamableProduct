@@ -1,15 +1,11 @@
 using Beamable.Common;
-using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
-using Beamable.Server.Editor;
 using Beamable.Server.Editor.ManagerClient;
-using Beamable.Server.Editor.UI.Components;
 using Beamable.Server.Editor.UI.Components.DockerLoginWindow;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using UnityEngine;
+using static Beamable.Common.Constants.Features.Services;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements.StyleSheets;
@@ -105,12 +101,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 			if (_microserviceModel.RemoteReference?.enabled ?? false)
 			{
 				statusClassName = "remoteEnabled";
-				_remoteStatusLabel.text = Constants.REMOTE_ENABLED;
+				_remoteStatusLabel.text = REMOTE_ENABLED;
 			}
 			else
 			{
 				statusClassName = "remoteDisabled";
-				_remoteStatusLabel.text = Constants.REMOTE_NOT_ENABLED;
+				_remoteStatusLabel.text = REMOTE_NOT_ENABLED;
 			}
 
 			_remoteStatusIcon.tooltip = _remoteStatusLabel.text;
@@ -146,8 +142,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				evt.menu.BeamableAppendAction("Build", pos => _microserviceModel.Build());
 				evt.menu.BeamableAppendAction(_microserviceModel.IncludeDebugTools
-					? Constants.BUILD_DISABLE_DEBUG
-					: Constants.BUILD_ENABLE_DEBUG, pos =>
+					? BUILD_DISABLE_DEBUG
+					: BUILD_ENABLE_DEBUG, pos =>
 				{
 					_microserviceModel.IncludeDebugTools = !_microserviceModel.IncludeDebugTools;
 					UpdateLocalStatus();
@@ -162,8 +158,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			base.UpdateButtons();
 			_stopButton.visible = Model.IsRunning;
-			_buildDefaultLabel.text = Constants.GetBuildButtonString(_microserviceModel.IncludeDebugTools,
-				_microserviceModel.IsRunning ? Constants.BUILD_RESET : Constants.BUILD_START);
+			_buildDefaultLabel.text = GetBuildButtonString(_microserviceModel.IncludeDebugTools,
+				_microserviceModel.IsRunning ? BUILD_RESET : BUILD_START);
 
 			if (_microserviceModel.IsRunning)
 			{

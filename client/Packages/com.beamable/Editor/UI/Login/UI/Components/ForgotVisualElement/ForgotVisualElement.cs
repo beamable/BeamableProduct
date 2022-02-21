@@ -1,6 +1,4 @@
-using Beamable.Editor.Login.UI.Components;
 using Beamable.Editor.UI.Components;
-using System;
 using System.Collections.Generic;
 using UnityEditor;
 #if UNITY_2018
@@ -10,6 +8,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.Features.LoginBase;
 
 namespace Beamable.Editor.Login.UI.Components
 {
@@ -40,27 +39,27 @@ namespace Beamable.Editor.Login.UI.Components
 			base.Refresh();
 
 			_cidTextField = Root.Q<TextField>("organizationID");
-			_cidTextField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_CID_FIELD);
+			_cidTextField.AddPlaceholder(PLACEHOLDER_CID_FIELD);
 			_cidTextField.SetValueWithoutNotify(Model.Customer.CidOrAlias);
 			var isAlias = _cidTextField.AddErrorLabel("Alias", PrimaryButtonVisualElement.AliasOrCidErrorHandler);
 
 
 			_emailField = Root.Q<TextField>("account");
-			_emailField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_EMAIL_FIELD);
+			_emailField.AddPlaceholder(PLACEHOLDER_EMAIL_FIELD);
 			_emailField.SetValueWithoutNotify(Model.Customer.Email);
 			var isEmail = _emailField.AddErrorLabel("Email", PrimaryButtonVisualElement.EmailErrorHandler);
 
 			_codeField = Root.Q<TextField>("code");
-			_codeField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_CODE_FIELD);
+			_codeField.AddPlaceholder(PLACEHOLDER_CODE_FIELD);
 			var isCode = _codeField.AddErrorLabel("Code", m => string.IsNullOrEmpty(m) ? "Code is required" : null);
 
 			_passwordField = Root.Q<TextField>("password");
-			_passwordField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_PASSWORD_FIELD);
+			_passwordField.AddPlaceholder(PLACEHOLDER_PASSWORD_FIELD);
 			_passwordField.isPasswordField = true;
 			var isPasswordValid = _passwordField.AddErrorLabel("Password", PrimaryButtonVisualElement.PasswordErrorHandler);
 
 			_passwordConfField = Root.Q<TextField>("confirmPassword");
-			_passwordConfField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_PASSWORD_CONFIRM_FIELD);
+			_passwordConfField.AddPlaceholder(PLACEHOLDER_PASSWORD_CONFIRM_FIELD);
 			_passwordConfField.isPasswordField = true;
 			var doPasswordsMatch = _passwordConfField.AddErrorLabel("Password Match", m => m != _passwordField.value
 			  ? "Passwords don't match"

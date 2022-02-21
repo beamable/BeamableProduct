@@ -1,5 +1,4 @@
-﻿using Beamable.Editor.UI.Buss;
-using System;
+﻿using System;
 using System.Collections.Generic;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -8,6 +7,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -54,7 +54,7 @@ namespace Beamable.Editor.UI.Components
 		private int MaxValue { get; set; }
 		private string Label { get; set; }
 
-		public LabeledNumberPicker() : base($"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledNumberPicker)}/{nameof(LabeledNumberPicker)}")
+		public LabeledNumberPicker() : base($"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LabeledNumberPicker)}/{nameof(LabeledNumberPicker)}")
 		{
 			_options = new List<string>();
 		}

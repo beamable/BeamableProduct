@@ -1,5 +1,4 @@
-﻿using Beamable.Editor;
-using Beamable.UI.Buss;
+﻿using Beamable.UI.Buss;
 using UnityEditor;
 using UnityEngine;
 

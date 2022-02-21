@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Text;
 using static System.Diagnostics.Debug;
 
@@ -105,6 +104,7 @@ namespace Beamable.Common.Assistant
 		[BeamHintId] public static readonly string ID_DOCKER_PROCESS_NOT_RUNNING = GenerateHintId("DockerProcessNotRunning");
 		[BeamHintId] public static readonly string ID_DOCKER_OVERLAPPING_PORTS = GenerateHintId("DockerOverlappingPorts");
 
+		[BeamHintId] public static readonly string ID_CHANGES_NOT_DEPLOYED_TO_LOCAL_DOCKER = GenerateHintId("ChangesNotDeployedToLocalDocker");
 
 	}
 }

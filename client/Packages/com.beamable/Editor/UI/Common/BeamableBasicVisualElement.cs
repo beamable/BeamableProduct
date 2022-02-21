@@ -8,27 +8,20 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Common
 {
 	public class BeamableBasicVisualElement : VisualElement
 	{
-		protected VisualElement Root
-		{
-			get;
-			set;
-		}
+		protected VisualElement Root { get; set; }
+		protected string UssPath { get; }
 
-		protected string USSPath
-		{
-			get;
-		}
-
-		public BeamableBasicVisualElement(string ussPath)
+		protected BeamableBasicVisualElement(string ussPath)
 		{
 			Assert.IsTrue(File.Exists(ussPath), $"Cannot find {ussPath}");
 
-			USSPath = ussPath;
+			UssPath = ussPath;
 
 			RegisterCallback<DetachFromPanelEvent>(evt =>
 			{
@@ -36,14 +29,32 @@ namespace Beamable.Editor.UI.Common
 			});
 		}
 
-		public virtual void OnDetach()
+		public virtual void Refresh() { }
+
+		protected virtual void OnDestroy() { }
+
+		protected virtual void OnDetach() { }
+
+		public virtual void Init()
 		{
-			// Do any sort of cleanup
+			Destroy();
+			Clear();
+
+			this.AddStyleSheet(Files.COMMON_USS_FILE);
+			this.AddStyleSheet(UssPath);
+
+			Root = new VisualElement();
+			Root.name = "root";
+			Add(Root);
+
+			this?.Query<VisualElement>(className: "--image-scale-to-fit").ForEach(elem =>
+			{
+				elem?.SetBackgroundScaleModeToFit();
+			});
 		}
 
 		public void Destroy()
 		{
-			// call OnDestroy on all child elements.
 			foreach (var child in Children())
 			{
 				if (child is BeamableVisualElement beamableChild)
@@ -59,27 +70,5 @@ namespace Beamable.Editor.UI.Common
 
 			OnDestroy();
 		}
-
-		protected virtual void OnDestroy() { }
-
-		public virtual void Init()
-		{
-			Destroy();
-			Clear();
-
-			this.AddStyleSheet(BeamableComponentsConstants.COMMON_USS_PATH);
-			this.AddStyleSheet(USSPath);
-
-			Root = new VisualElement();
-			Root.name = "root";
-			Add(Root);
-
-			this?.Query<VisualElement>(className: "--image-scale-to-fit").ForEach(elem =>
-			{
-				elem?.SetBackgroundScaleModeToFit();
-			});
-		}
-
-		public virtual void Refresh() { }
 	}
 }

@@ -1,7 +1,6 @@
 ﻿using Beamable.Common.Content;
 using Beamable.Common.Shop;
 using Beamable.Editor.Models.Schedules;
-using Beamable.Editor.Schedules;
 using Beamable.Editor.UI.Validation;
 using System;
 using System.Collections.Generic;
@@ -14,6 +13,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.Features.Schedules;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -62,7 +62,7 @@ namespace Beamable.Editor.UI.Components
 		#endregion
 
 		public ListingScheduleWindow() : base(
-			$"{BeamableComponentsConstants.SCHEDULES_PATH}/{nameof(ListingScheduleWindow)}")
+			$"{SCHEDULES_PATH}/{nameof(ListingScheduleWindow)}")
 		{
 		}
 

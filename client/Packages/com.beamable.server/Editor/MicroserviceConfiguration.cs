@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants;
 
 namespace Beamable.Server.Editor
 {
@@ -19,7 +20,7 @@ namespace Beamable.Server.Editor
 			// TODO: make this work for multiple config types
 			//       but for now, there is just the one...
 
-			return "Packages/com.beamable.server/Editor/microserviceConfiguration.asset";
+			return $"{Directories.BEAMABLE_SERVER_PACKAGE_EDITOR}/microserviceConfiguration.asset";
 
 		}
 	}
@@ -37,6 +38,16 @@ namespace Beamable.Server.Editor
 		public List<MicroserviceConfigurationEntry> Microservices;
 
 		public List<StorageConfigurationEntry> StorageObjects;
+
+#if !BEAMABLE_DEVELOPER
+		[HideInInspector]
+#endif
+		public List<BeamServiceCodeHandle> ServiceCodeHandlesOnLastDomainReload;
+
+#if !BEAMABLE_DEVELOPER
+		[HideInInspector]
+#endif
+		public List<BeamServiceCodeHandle> LastBuiltDockerImagesCodeHandles;
 
 		[Tooltip("When you run a microservice in the Editor, the prefix controls the flow of traffic. By default, the prefix is your MAC address. If two developers use the same prefix, their microservices will share traffic. The prefix is ignored for games running outside of the Editor."), Delayed]
 		public string CustomContainerPrefix;
@@ -150,6 +161,8 @@ namespace Beamable.Server.Editor
 
 		private void OnValidate()
 		{
+			ServiceCodeHandlesOnLastDomainReload = ServiceCodeHandlesOnLastDomainReload ?? new List<BeamServiceCodeHandle>();
+
 			if (CustomContainerPrefix != _cachedContainerPrefix)
 			{
 				_cachedContainerPrefix = CustomContainerPrefix;
@@ -290,6 +303,8 @@ namespace Beamable.Server.Editor
 		public bool IncludeDebugTools;
 
 		public MicroserviceConfigurationDebugEntry DebugData;
+
+		[HideInInspector] public string LastBuiltCheckSum;
 	}
 
 	[Serializable]

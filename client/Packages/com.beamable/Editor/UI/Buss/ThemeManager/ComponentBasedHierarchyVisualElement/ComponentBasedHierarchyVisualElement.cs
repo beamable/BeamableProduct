@@ -1,5 +1,4 @@
-﻿using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Common;
+﻿using Beamable.Editor.UI.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +12,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -25,7 +25,7 @@ namespace Beamable.Editor.UI.Components
 		private ScrollView _hierarchyContainer;
 		private IndentedLabelVisualElement _selectedLabel;
 
-		public IEnumerable<T> Components => _spawnedLabels.Select(l => l.RelatedGameObject.GetComponent<T>());
+		protected IEnumerable<T> Components => _spawnedLabels.Select(l => l.RelatedGameObject.GetComponent<T>());
 
 		public T SelectedComponent
 		{
@@ -53,7 +53,7 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		protected ComponentBasedHierarchyVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement.uss")
+			$"{BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement.uss")
 		{ }
 
 		public override void Init()
@@ -157,7 +157,7 @@ namespace Beamable.Editor.UI.Components
 			if (foundComponent != null)
 			{
 				IndentedLabelVisualElement label = new IndentedLabelVisualElement();
-				label.Setup(foundComponent.gameObject, GetLabel(foundComponent), OnMouseClicked,
+				label.Setup(foundComponent.gameObject, (str) => GetLabel(foundComponent), OnMouseClicked,
 							currentLevel, IndentedLabelVisualElement.DEFAULT_SINGLE_INDENT_WIDTH);
 				label.Init();
 				_spawnedLabels.Add(label);

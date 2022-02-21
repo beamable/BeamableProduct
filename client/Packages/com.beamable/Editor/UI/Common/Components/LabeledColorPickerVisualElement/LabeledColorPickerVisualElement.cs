@@ -1,5 +1,4 @@
-﻿using Beamable.Editor.UI.Buss;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -8,6 +7,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -48,7 +48,7 @@ namespace Beamable.Editor.UI.Components
 		public Color SelectedColor => _colorPicker.SelectedColor;
 
 		public LabeledColorPickerVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledColorPickerVisualElement)}/{nameof(LabeledColorPickerVisualElement)}")
+			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LabeledColorPickerVisualElement)}/{nameof(LabeledColorPickerVisualElement)}")
 		{ }
 
 		public override void Refresh()

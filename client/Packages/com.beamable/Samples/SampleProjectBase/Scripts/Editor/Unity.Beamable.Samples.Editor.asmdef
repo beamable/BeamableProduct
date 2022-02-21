@@ -3,7 +3,8 @@
     "references": [
         "Unity.Beamable",
         "Unity.Beamable.Editor",
-        "Unity.Beamable.Samples.Runtime"
+        "Unity.Beamable.Samples.Runtime",
+        "Unity.Beamable.Runtime.Common"
     ],
      "includePlatforms": [
         "Editor"

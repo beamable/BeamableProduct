@@ -1,5 +1,3 @@
-// unset
-
 using Beamable.Api;
 using Beamable.Api.Connectivity;
 using Beamable.Api.Inventory;
@@ -15,7 +13,6 @@ using Beamable.Coroutines;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Beamable.Player

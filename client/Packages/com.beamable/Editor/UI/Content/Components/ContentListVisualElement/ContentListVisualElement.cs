@@ -16,6 +16,7 @@ using UnityEngine.Experimental.UIElements.StyleSheets;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.Features.ContentManager;
 
 namespace Beamable.Editor.Content.Components
 {
@@ -138,7 +139,7 @@ namespace Beamable.Editor.Content.Components
 			{
 				makeItem = CreateListViewElement,
 				bindItem = BindListViewElement,
-				selectionType = ContentManagerConstants.ContentListSelectionType,
+				selectionType = SelectionType.Multiple,
 				itemHeight = ListViewItemHeight,
 				itemsSource = Model.FilteredContents
 			};
@@ -311,7 +312,7 @@ namespace Beamable.Editor.Content.Components
 				currentCategoryName = selectedType.displayName;
 
 				evt.menu.BeamableAppendAction(
-					$"{ContentManagerConstants.ContentListCreateItem} {selectedType.displayName}",
+					$"{ContentList.CONTENT_LIST_CREATE_ITEM} {selectedType.displayName}",
 					(Action<Vector2>)((pos) => { OnItemAdd?.Invoke(selectedType.TypeDescriptor); }));
 			}
 
@@ -362,25 +363,25 @@ namespace Beamable.Editor.Content.Components
 
 			if (item.LocalStatus == HostStatus.AVAILABLE) // cannot rename something that we don't have locally...
 			{
-				evt.menu.BeamableAppendAction(ContentManagerConstants.ContentListDeleteItem,
-					(Action<Vector2>)((pos) => { ContentVisualElement_OnItemDelete((ContentItemDescriptor)item); }));
-				evt.menu.BeamableAppendAction(ContentManagerConstants.ContentListRenameItem,
-					(Action<Vector2>)((pos) =>
-				   {
-					   ContentVisualElement_OnItemRenameGestureBegin((ContentItemDescriptor)item);
-				   }));
+				evt.menu.BeamableAppendAction(ContentList.CONTENT_LIST_DELETE_ITEM,
+											  (Action<Vector2>)((pos) => { ContentVisualElement_OnItemDelete((ContentItemDescriptor)item); }));
+				evt.menu.BeamableAppendAction(ContentList.CONTENT_LIST_RENAME_ITEM,
+											  (Action<Vector2>)((pos) =>
+											  {
+												  ContentVisualElement_OnItemRenameGestureBegin((ContentItemDescriptor)item);
+											  }));
 
 				if (item.Status == ContentModificationStatus.MODIFIED)
 				{
-					evt.menu.BeamableAppendAction(ContentManagerConstants.ContentListRevertItem,
-						(Action<Vector2>)((pos) => { ContentVisualElement_OnDownloadSingle(item); }));
+					evt.menu.BeamableAppendAction(ContentList.CONTENT_LIST_REVERT_ITEM,
+												  (Action<Vector2>)((pos) => { ContentVisualElement_OnDownloadSingle(item); }));
 				}
 			}
 
 			if (item.LocalStatus == HostStatus.NOT_AVAILABLE && item.ServerStatus == HostStatus.AVAILABLE)
 			{
-				evt.menu.BeamableAppendAction(ContentManagerConstants.ContentListDownloadItem,
-					(Action<Vector2>)((pos) => { ContentVisualElement_OnDownloadSingle(item); }));
+				evt.menu.BeamableAppendAction(ContentList.CONTENT_LIST_DOWNLOAD_ITEM,
+											  (Action<Vector2>)((pos) => { ContentVisualElement_OnDownloadSingle(item); }));
 			}
 		}
 
@@ -389,7 +390,7 @@ namespace Beamable.Editor.Content.Components
 			var allLocal = items.All(i => i.LocalStatus == HostStatus.AVAILABLE);
 			if (allLocal)
 			{
-				evt.menu.BeamableAppendAction($"{ContentManagerConstants.ContentListDeleteItems} ({items.Count})",
+				evt.menu.BeamableAppendAction($"{ContentList.CONTENT_LIST_DELETE_ITEMS} ({items.Count})",
 					(Action<Vector2>)((pos) => { ContentVisualElement_OnItemDelete(items.ToArray()); }));
 			}
 
@@ -398,7 +399,7 @@ namespace Beamable.Editor.Content.Components
 			if (modifiedOrServerOnly.Count > 0)
 			{
 				evt.menu.BeamableAppendAction(
-					$"{ContentManagerConstants.ContentListDownloadItems} ({modifiedOrServerOnly.Count})",
+					$"{ContentList.CONTENT_LIST_DOWNLOAD_ITEMS} ({modifiedOrServerOnly.Count})",
 					(Action<Vector2>)((pos) => { ContentVisualElement_OnDownloadMany(modifiedOrServerOnly); }));
 			}
 		}
@@ -427,13 +428,13 @@ namespace Beamable.Editor.Content.Components
 		{
 			ContentManagerWindow.Instance.CloseCurrentWindow();
 
-			ConfirmationPopupVisualElement confirmationPopup = new ConfirmationPopupVisualElement(ContentManagerConstants.ConfirmItemDeletion,
+			ConfirmationPopupVisualElement confirmationPopup = new ConfirmationPopupVisualElement(CONFIRM_ITEM_DELETION,
 				() => contentItemDescriptors.ToList().ForEach(e => OnItemDelete?.Invoke(e)),
 				ContentManagerWindow.Instance.CloseCurrentWindow
 			);
 
 			BeamablePopupWindow window = BeamablePopupWindow.ShowConfirmationUtility(
-				ContentManagerConstants.ConfirmWindowHeader,
+				CONFIRM_WINDOW_HEADER,
 				confirmationPopup, ContentManagerWindow.Instance);
 
 			ContentManagerWindow.Instance.SetCurrentWindow(window);

@@ -1,5 +1,3 @@
-
-using Beamable.Editor.UI.Buss;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -10,6 +8,8 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
+
 namespace Beamable.Editor.UI.Components
 {
 	public class LoadingSpinnerVisualElement : BeamableVisualElement
@@ -17,7 +17,7 @@ namespace Beamable.Editor.UI.Components
 		public float Size { get; private set; }
 		public float HalfSize => Size * .5f;
 
-		public LoadingSpinnerVisualElement() : base($"{BeamableComponentsConstants.UI_PACKAGE_PATH}/Common/Components/{nameof(LoadingSpinnerVisualElement)}/{nameof(LoadingSpinnerVisualElement)}")
+		public LoadingSpinnerVisualElement() : base($"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LoadingSpinnerVisualElement)}/{nameof(LoadingSpinnerVisualElement)}")
 		{
 		}
 

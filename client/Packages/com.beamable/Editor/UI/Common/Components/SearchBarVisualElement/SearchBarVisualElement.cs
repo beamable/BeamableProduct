@@ -1,10 +1,6 @@
-using Beamable.Common.Content;
-using Beamable.Editor.Content.Models;
-using Beamable.Editor.UI.Buss;
 using System;
 using System.Collections.Generic;
 using UnityEditor;
-using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -12,6 +8,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -43,7 +40,7 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
-		public SearchBarVisualElement() : base($"{BeamableComponentsConstants.UI_PACKAGE_PATH}/Common/Components/{nameof(SearchBarVisualElement)}/{nameof(SearchBarVisualElement)}")
+		public SearchBarVisualElement() : base($"{Directories.COMMON_COMPONENTS_PATH}/{nameof(SearchBarVisualElement)}/{nameof(SearchBarVisualElement)}")
 		{
 			Refresh();
 			RegisterCallback<AttachToPanelEvent>(evt =>
@@ -52,7 +49,7 @@ namespace Beamable.Editor.UI.Components
 			});
 		}
 
-		public override void OnDetach()
+		protected override void OnDetach()
 		{
 			base.OnDetach();
 			EditorApplication.update -= OnEditorUpdate;

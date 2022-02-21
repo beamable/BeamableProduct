@@ -7,13 +7,15 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
+
 namespace Beamable.Editor.Toolbox.Components
 {
 	public class SurveyAnnouncementVisualElement : BeamableVisualElement
 	{
 		public SurveyAnnouncementModel SurveyAnnouncementModel { get; set; }
 		public SurveyAnnouncementVisualElement() : base(
-		   $"{BeamableComponentsConstants.COMP_PATH}/{nameof(SurveyAnnouncementVisualElement)}/{nameof(SurveyAnnouncementVisualElement)}")
+		   $"{Directories.COMMON_COMPONENTS_PATH}/{nameof(SurveyAnnouncementVisualElement)}/{nameof(SurveyAnnouncementVisualElement)}")
 		{
 		}
 

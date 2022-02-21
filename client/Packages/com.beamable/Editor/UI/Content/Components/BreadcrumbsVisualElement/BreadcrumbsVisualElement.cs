@@ -1,6 +1,4 @@
-using Beamable.Common;
 using Beamable.Editor.Content.Models;
-using Beamable.Editor.UI.Buss;
 using Beamable.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
@@ -13,6 +11,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.Features.ContentManager;
 
 namespace Beamable.Editor.Content.Components
 {
@@ -94,7 +93,7 @@ namespace Beamable.Editor.Content.Components
 			List<Breadcrumb> breadCrumbs = new List<Breadcrumb>();
 
 			// Add the master token
-			breadCrumbs.Add(new Breadcrumb(ContentManagerConstants.BreadcrumbsAllContentText, BreadcrumbType.AllContents));
+			breadCrumbs.Add(new Breadcrumb(BREADCRUMBS_ALL_CONTENT_TEXT, BreadcrumbType.AllContents));
 
 			// Add on the types
 			foreach (ContentTypeTreeViewItem contentTypeTreeViewItem in _selectedContentTypeBranch)
@@ -125,14 +124,14 @@ namespace Beamable.Editor.Content.Components
 				if (i < breadCrumbs.Count - 1)
 				{
 					// Add an arrow  token
-					_tokenListVisualElement.Add(CreateNewToken(ContentManagerConstants.BreadcrumbTokenArrow, true));
+					_tokenListVisualElement.Add(CreateNewToken(BREADCRUMB_TOKEN_ARROW, true));
 				}
 			}
 
 
 			int min = Model.GetFilteredContents().Count();
 			int max = Model.GetAllContents().Count();
-			var counterText = string.Format(ContentManagerConstants.BreadcrumbsCountText, min, max);
+			var counterText = string.Format(BREADCRUMBS_COUNT_TEXT, min, max);
 			_counterLabel.text = counterText;
 
 		}

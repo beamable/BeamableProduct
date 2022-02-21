@@ -1,19 +1,12 @@
-using Beamable.AccountManagement;
 using Beamable.Avatars;
-using Beamable.Console;
 using Beamable.Editor.Config.Model;
-using Beamable.Editor.Environment;
-using Beamable.Inventory.Scripts;
-using Beamable.Shop;
-using Beamable.Sound;
-using Beamable.Theme;
-using Beamable.Tournaments;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.Config
 {
@@ -194,7 +187,7 @@ namespace Beamable.Editor.Config
 
 		public void ShowDocs()
 		{
-			Application.OpenURL(BeamableConstants.URL_TOOL_WINDOW_CONFIG_MANAGER);
+			Application.OpenURL(URLs.Documentations.URL_DOC_WINDOW_CONFIG_MANAGER);
 		}
 
 		public void ToggleModuleFilter(string module, bool shouldFilterOn)

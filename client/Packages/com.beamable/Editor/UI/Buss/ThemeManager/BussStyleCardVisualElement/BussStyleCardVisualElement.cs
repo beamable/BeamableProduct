@@ -11,6 +11,7 @@ using UnityEngine.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -49,8 +50,7 @@ namespace Beamable.Editor.UI.Components
 		public BussStyleRule StyleRule => _styleRule;
 		public bool EditMode => _editMode;
 
-		public BussStyleCardVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}") { }
+		public BussStyleCardVisualElement() : base($"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}") { }
 
 		public override void Refresh()
 		{
@@ -102,11 +102,11 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void Setup(BussThemeManager themeManager,
-		                  BussStyleSheet styleSheet,
-		                  BussStyleRule styleRule,
-		                  VariableDatabase variableDatabase,
-		                  BussElementHierarchyVisualElement navigationWindow,
-		                  Action onUndoRequest)
+						  BussStyleSheet styleSheet,
+						  BussStyleRule styleRule,
+						  VariableDatabase variableDatabase,
+						  BussElementHierarchyVisualElement navigationWindow,
+						  Action onUndoRequest)
 		{
 			_themeManager = themeManager;
 			_styleSheet = styleSheet;
@@ -161,7 +161,7 @@ namespace Beamable.Editor.UI.Components
 			_themeManager.CloseConfirmationPopup();
 
 			ConfirmationPopupVisualElement confirmationPopup = new ConfirmationPopupVisualElement(
-				BussConstants.DeleteStyleMessage,
+				DELETE_STYLE_MESSAGE,
 				() =>
 				{
 					_styleSheet.RemoveStyle(StyleRule);
@@ -171,7 +171,7 @@ namespace Beamable.Editor.UI.Components
 			);
 
 			BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowConfirmationUtility(
-				BussConstants.DeleteStyleHeader,
+				DELETE_STYLE_HEADER,
 				confirmationPopup, _themeManager);
 
 			_themeManager.SetConfirmationPopup(popupWindow);
@@ -194,7 +194,7 @@ namespace Beamable.Editor.UI.Components
 				var baseType = BussStyle.GetBaseType(key);
 				var data = SerializableValueImplementationHelper.Get(baseType);
 				var types = data.subTypes.Where(t => t != null && t.IsClass && !t.IsAbstract &&
-				                                     t != typeof(FractionFloatBussProperty));
+													 t != typeof(FractionFloatBussProperty));
 				foreach (Type type in types)
 				{
 					var label = new GUIContent(types.Count() > 1 ? key + "/" + type.Name : key);
@@ -227,7 +227,7 @@ namespace Beamable.Editor.UI.Components
 			_themeManager.CloseConfirmationPopup();
 
 			ConfirmationPopupVisualElement confirmationPopup = new ConfirmationPopupVisualElement(
-				BussConstants.ClearAllPropertiesMessage,
+				CLEAR_ALL_PROPERTIES_MESSAGE,
 				() =>
 				{
 					_styleSheet.RemoveAllProperties(StyleRule);
@@ -236,7 +236,7 @@ namespace Beamable.Editor.UI.Components
 			);
 
 			BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowConfirmationUtility(
-				BussConstants.ClearAllPropertiesHeader,
+				CLEAR_ALL_PROPERTIES_HEADER,
 				confirmationPopup, _themeManager);
 
 			_themeManager.SetConfirmationPopup(popupWindow);
@@ -392,7 +392,7 @@ namespace Beamable.Editor.UI.Components
 
 						var keys = BussStyle.Keys.ToArray();
 						return Array.IndexOf(keys, p1.PropertyProvider.Key) -
-						       Array.IndexOf(keys, p2.PropertyProvider.Key);
+							   Array.IndexOf(keys, p2.PropertyProvider.Key);
 					}
 
 					return p2.PropertyIsInStyle ? 1 : -1;

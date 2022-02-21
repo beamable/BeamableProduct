@@ -1,6 +1,5 @@
 using Beamable.AccountManagement;
 using Beamable.Avatars;
-using Beamable.Common;
 using Beamable.Common.Assistant;
 using Beamable.Common.Dependencies;
 using Beamable.Common.Reflection;
@@ -20,11 +19,9 @@ using Beamable.Sound;
 using Beamable.Theme;
 using Beamable.Tournaments;
 using Beamable.UI.Buss;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2019_3_OR_NEWER
@@ -107,13 +104,17 @@ namespace Beamable
 			// Initialize Editor instances of Reflection and Assistant services
 			EditorReflectionCache = new ReflectionCache();
 			HintGlobalStorage = new BeamHintGlobalStorage();
-			HintPreferencesManager = new BeamHintPreferencesManager();
+			HintPreferencesManager = new BeamHintPreferencesManager(new List<BeamHintHeader>()
+			{
+				new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER, BeamHintIds.ID_CHANGES_NOT_DEPLOYED_TO_LOCAL_DOCKER),
+			});
 
 			// Load up all Asset-based IReflectionSystem (injected via ReflectionSystemObject instances). This was made to solve a cross-package injection problem.
 			// It doubles as a no-code way for users to inject their own IReflectionSystem into our pipeline.
-			var reflectionCacheSystemGuids = AssetDatabase.FindAssets($"t:{nameof(ReflectionSystemObject)}", coreConfiguration.ReflectionSystemPaths
-																															  .Where(Directory.Exists)
-																															  .ToArray());
+			var reflectionCacheSystemGuids = BeamableAssetDatabase.FindAssets<ReflectionSystemObject>(
+				coreConfiguration.ReflectionSystemPaths
+								 .Where(Directory.Exists)
+								 .ToArray());
 
 			// Get ReflectionSystemObjects and sort them
 			var reflectionSystemObjects = reflectionCacheSystemGuids.Select(reflectionCacheSystemGuid =>

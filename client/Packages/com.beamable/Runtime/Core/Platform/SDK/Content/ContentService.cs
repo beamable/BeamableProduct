@@ -5,8 +5,6 @@ using Beamable.Common.Api.Content;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Coroutines;
-using Beamable.Service;
-using Core.Platform.SDK;
 using System;
 using System.Collections.Generic;
 using System.IO;

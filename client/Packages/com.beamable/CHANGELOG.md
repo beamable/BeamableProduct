@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `Promise.ExecuteRolling` function has been deprecated in favor of `Promise.ExecuteInBatchSequence`
 - The startup sequence runs startup requests at the same time for speed improvements 
 
+### Fixed 
+- Beamable assets are loaded with their full name so asset types won't collide
+
 ## [1.0.0]
 ### Added
 - `BeamContext` classes and new player centric SDK types like `PlayerInventory`

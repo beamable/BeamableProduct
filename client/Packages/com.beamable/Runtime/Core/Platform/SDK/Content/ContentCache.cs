@@ -1,19 +1,16 @@
 using Beamable.Common;
 using Beamable.Common.Api;
-using Beamable.Common.Api.Content;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Coroutines;
-using Beamable.Service;
 using Beamable.Spew;
 using Core.Platform.SDK;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using UnityEngine;
-using UnityEngine.Networking;
+using static Beamable.Common.Constants.Features.Content;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Content
@@ -169,7 +166,7 @@ namespace Beamable.Content
 
 		private bool ExtractContent()
 		{
-			var bakedFile = Resources.Load<TextAsset>(ContentConstants.BakedFileResourcePath);
+			var bakedFile = Resources.Load<TextAsset>(BAKED_FILE_RESOURCE_PATH);
 
 			if (bakedFile == null)
 			{

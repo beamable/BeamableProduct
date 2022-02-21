@@ -1,7 +1,6 @@
 using Beamable.Theme;
 using Beamable.Theme.Appliers;
 using Beamable.Theme.Palettes;
-using Beamable.UnityEngineClone.UI.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,11 +8,12 @@ using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using static Beamable.Common.Constants;
 using FontStyle = UnityEngine.FontStyle;
 
 namespace Beamable.Editor.Modules.Theme
 {
-	[Obsolete(BeamableConstants.OBSOLETE_BUSS_INTRODUCED)]
+	[Obsolete(Commons.OBSOLETE_BUSS_INTRODUCED)]
 	public class ThemeWindow : EditorWindow
 	{
 		// [MenuItem(
@@ -24,7 +24,7 @@ namespace Beamable.Editor.Modules.Theme
 		public static void Init()
 		{
 			var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
-			GetWindow<ThemeWindow>(BeamableConstants.THEME_MANAGER, true, inspector);
+			GetWindow<ThemeWindow>(MenuItems.Windows.Names.THEME_MANAGER, true, inspector);
 		}
 
 		private GameObject _lastRawSelection;

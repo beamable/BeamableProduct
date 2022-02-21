@@ -2,7 +2,6 @@ using Beamable.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
-using Beamable.Server.Editor.DockerCommands;
 using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
@@ -73,7 +72,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public void PrepareParent()
 		{
 			parent.name = "PublishWindowContainer";
-			parent.AddStyleSheet(USSPath);
+			parent.AddStyleSheet(UssPath);
 		}
 
 		public override void Refresh()
