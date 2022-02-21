@@ -1,6 +1,8 @@
+using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using Debug = UnityEngine.Debug;
 #if UNITY_2018
@@ -42,7 +44,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 
 		public event Action OnStartAllClicked;
-		public event Action OnBuildAllClicked;
 		public event Action OnPublishClicked;
 		public event Action OnRefreshButtonClicked;
 		public event Action<ServiceType> OnCreateNewClicked;
@@ -51,7 +52,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Button _startAll;
 		private Button _infoButton;
 		private Button _publish;
-		private Button _buildAll;
 
 		public event Action OnInfoButtonClicked;
 
@@ -74,12 +74,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_startAll.clickable.clicked += () => { OnStartAllClicked?.Invoke(); };
 			_startAll.SetEnabled(!DockerCommand.DockerNotInstalled);
 
-			_buildAll = Root.Q<Button>("buildAll");
-			_buildAll.tooltip =
-				"Build services, if service is already running, it will rebuild it and run again";
-			_buildAll.clickable.clicked += () => { OnBuildAllClicked?.Invoke(); };
-			_buildAll.SetEnabled(!DockerCommand.DockerNotInstalled);
-
 			const string cannotPublishText = "Cannot open Publish Window, fix compilation errors first!";
 			_publish = Root.Q<Button>("publish");
 			_publish.clickable.clicked += () =>
@@ -98,6 +92,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_infoButton = Root.Q<Button>("infoButton");
 			_infoButton.clickable.clicked += () => { OnInfoButtonClicked?.Invoke(); };
 			_infoButton.tooltip = "Open Documentation";
+			
+			
+			bool localServicesAvailable = MicroservicesDataModel.Instance?.AllLocalServices != null;
+			int localServicesAmount = localServicesAvailable ? MicroservicesDataModel.Instance.AllLocalServices.Count : 0;
+			int selectedServicesAmount = localServicesAvailable
+				? MicroservicesDataModel.Instance.AllLocalServices.Count(beamService => beamService.IsSelected)
+				: 0;
+			UpdateButtonsState(selectedServicesAmount, localServicesAmount);
 		}
 
 		public void UpdateButtonsState(int selectedServicesAmount, int servicesAmount)
@@ -105,7 +107,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			bool anyModelSelected = selectedServicesAmount > 0;
 			UpdateTextButtonTexts(selectedServicesAmount == servicesAmount);
 			_startAll.SetEnabled(anyModelSelected);
-			_buildAll.SetEnabled(anyModelSelected);
 			_publish.SetEnabled(servicesAmount > 0);
 		}
 
@@ -119,8 +120,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			var startLabel = _startAll.Q<Label>();
 			startLabel.text = allServicesSelected ? "Play all" : "Play selected";
-			var buildLabel = _buildAll.Q<Label>();
-			buildLabel.text = allServicesSelected ? "Build all" : "Build selected";
 		}
 	}
 

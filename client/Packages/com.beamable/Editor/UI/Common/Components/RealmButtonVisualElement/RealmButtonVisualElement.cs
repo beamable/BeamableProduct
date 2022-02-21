@@ -42,6 +42,15 @@ namespace Beamable.Editor.UI.Components
 		{
 		}
 
+		protected override void OnDestroy()
+		{
+			base.OnDestroy();
+
+			if (Model == null) return;
+
+			Model.OnElementChanged -= HandleRealmChanged;
+		}
+
 		public override void Refresh()
 		{
 			base.Refresh();
