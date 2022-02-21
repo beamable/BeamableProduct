@@ -24,8 +24,8 @@ namespace Beamable.Editor.Reflection
 			var assetExtensions = movedAssets.Union(deletedAssets).Select(s => Path.HasExtension(s) ? Path.GetExtension(s) : string.Empty).ToList();
 			if (assetExtensions.Contains(".cs") || assetExtensions.Contains(".asmdef"))
 				return;
-			
-			
+
+
 			var reflectionCacheRelatedAssets = importedAssets.Union(movedAssets)
 															 .Select(path => (path, type: AssetDatabase.GetMainAssetTypeAtPath(path)))
 															 .Where(t => typeof(ReflectionSystemObject).IsAssignableFrom(t.type))

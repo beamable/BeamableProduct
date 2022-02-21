@@ -14,7 +14,7 @@ namespace Beamable.Editor
 		/// <returns>
 		///   <para>Array of matching asset. Note that GUIDs will be returned.</para>
 		/// </returns>
-		public static string[] FindAssets(Type t, string[] searchInFolders=null)
+		public static string[] FindAssets(Type t, string[] searchInFolders = null)
 		{
 			Assert.IsNotNull(t, "Cannot find assets for null type");
 			var fullName = t.FullName;
@@ -22,6 +22,6 @@ namespace Beamable.Editor
 		}
 
 		/// <inheritdoc cref="FindAssets"/>
-		public static string[] FindAssets<T>(string[] searchInFolders=null) => FindAssets(typeof(T), searchInFolders);
+		public static string[] FindAssets<T>(string[] searchInFolders = null) => FindAssets(typeof(T), searchInFolders);
 	}
 }
