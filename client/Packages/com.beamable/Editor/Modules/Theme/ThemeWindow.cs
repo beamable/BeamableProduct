@@ -1,7 +1,6 @@
 using Beamable.Theme;
 using Beamable.Theme.Appliers;
 using Beamable.Theme.Palettes;
-using Beamable.UnityEngineClone.UI.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;

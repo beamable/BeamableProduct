@@ -1,4 +1,3 @@
-using Beamable.Editor.Login.UI.Components;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;

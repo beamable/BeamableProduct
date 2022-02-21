@@ -13,7 +13,6 @@ using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
-using Beamable.Common.Player;
 using Beamable.Config;
 using Beamable.Content.Utility;
 using Beamable.Coroutines;
@@ -22,7 +21,6 @@ using Core.Platform.SDK;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using Random = UnityEngine.Random;
 

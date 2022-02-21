@@ -1,5 +1,4 @@
-﻿using Beamable.Content;
-using Beamable.Experimental.Common.Api.Calendars;
+﻿using Beamable.Experimental.Common.Api.Calendars;
 using Beamable.Experimental.Common.Calendars;
 using Beamable.Tournaments;
 using Beamable.UI.Scripts;

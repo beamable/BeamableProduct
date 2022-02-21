@@ -1,8 +1,6 @@
 using Beamable.AccountManagement;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
-using Beamable.Platform.SDK;
-using Beamable.Platform.SDK.Auth;
 using NUnit.Framework;
 using Packages.Beamable.Runtime.Tests.Beamable;
 using System;

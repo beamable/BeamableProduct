@@ -1,7 +1,6 @@
 ﻿using Beamable.Common.Content;
 using Beamable.Common.Shop;
 using Beamable.Editor.Models.Schedules;
-using Beamable.Editor.Schedules;
 using Beamable.Editor.UI.Validation;
 using System;
 using System.Collections.Generic;

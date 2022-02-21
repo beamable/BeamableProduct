@@ -1,19 +1,15 @@
 using Beamable.Common;
 using Beamable.Common.Api;
-using Beamable.Common.Api.Content;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Coroutines;
-using Beamable.Service;
 using Beamable.Spew;
 using Core.Platform.SDK;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using UnityEngine;
-using UnityEngine.Networking;
 using static Beamable.Common.Constants.Features.Content;
 using Debug = UnityEngine.Debug;
 

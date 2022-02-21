@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace Beamable.Theme.Objects
 {
-	[System.Serializable]
+	[Serializable]
 	public class ImageStyleObject : StyleObject<Image>
 	{
 		public Color Color = Color.white;
