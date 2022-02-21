@@ -123,7 +123,7 @@ namespace Beamable.Editor.Reflection
 			{
 				_loadedTextMaps.Clear();
 
-				var beamHintTextMapGuids = AssetDatabase.FindAssets($"t:{nameof(BeamHintTextMap)}", hintConfigPaths
+				var beamHintTextMapGuids = BeamableAssetDatabase.FindAssets<BeamHintTextMap>(hintConfigPaths
 																									.Where(Directory.Exists)
 																									.ToArray());
 
@@ -152,7 +152,7 @@ namespace Beamable.Editor.Reflection
 			{
 				_loadedConfigs.Clear();
 
-				var beamHintDetailsConfigsGuids = AssetDatabase.FindAssets($"t:{nameof(BeamHintDetailsConfig)}", hintConfigPaths
+				var beamHintDetailsConfigsGuids = BeamableAssetDatabase.FindAssets<BeamHintDetailsConfig>(hintConfigPaths
 																												 .Where(Directory.Exists)
 																												 .ToArray());
 
@@ -325,7 +325,7 @@ namespace Beamable.Editor.Reflection
 				// Handle Beam Hint Domain providers
 				if (attributeType.Equals(BEAM_HINT_DOMAIN_PROVIDER_ATTRIBUTE))
 				{
-					// TODO: Store domains in whatever way makes it easier for users to get the list of domains they are interested in. 
+					// TODO: Store domains in whatever way makes it easier for users to get the list of domains they are interested in.
 					foreach (var domainFields in cachedMemberAttributes.Select(result => result.Info).Cast<FieldInfo>())
 					{
 						var providerName = domainFields.DeclaringType?.FullName ?? string.Empty;
@@ -342,7 +342,7 @@ namespace Beamable.Editor.Reflection
 				// Handle Beam Hint Id providers
 				if (attributeType.Equals(BEAM_HINT_ID_PROVIDER_ATTRIBUTE))
 				{
-					// TODO: Store domains in whatever way makes it easier for users to get the list of domains they are interested in. 
+					// TODO: Store domains in whatever way makes it easier for users to get the list of domains they are interested in.
 					foreach (var idField in cachedMemberAttributes.Select(result => result.Info).Cast<FieldInfo>())
 					{
 						var providerName = idField.DeclaringType?.FullName ?? string.Empty;
@@ -373,7 +373,7 @@ namespace Beamable.Editor.Reflection
 						var attribute = (BeamHintDetailConverterAttribute)cachedMemberAttribute.Attribute;
 						var methodInfo = (MethodInfo)cachedMemberAttribute.Info;
 
-						// Cache a built delegate to be called as a converter. 
+						// Cache a built delegate to be called as a converter.
 						if (attribute.DelegateType == typeof(DefaultConverter))
 						{
 							var cachedDelegate = Delegate.CreateDelegate(attribute.DelegateType, methodInfo) as DefaultConverter;
@@ -385,7 +385,7 @@ namespace Beamable.Editor.Reflection
 			}
 
 			/// <summary>
-			/// Generates a <see cref="ConverterData{T}"/> tying together all references mapped by a <see cref="BeamHintDetailConverterAttribute"/>. 
+			/// Generates a <see cref="ConverterData{T}"/> tying together all references mapped by a <see cref="BeamHintDetailConverterAttribute"/>.
 			/// </summary>
 			private ConverterData<T> BuildConverterData<T>(BeamHintType type, string domain, string idRegex, string userOverrideHintDetailConfigId, string hintDetailConfigId, T cachedDelegate)
 				where T : Delegate

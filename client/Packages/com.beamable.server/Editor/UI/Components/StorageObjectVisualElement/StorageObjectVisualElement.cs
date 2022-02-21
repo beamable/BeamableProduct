@@ -1,4 +1,4 @@
-﻿using Beamable.Editor.UI.Model;
+using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.ManagerClient;
 using System.Threading.Tasks;
 using static Beamable.Common.Constants.Features.Services;
