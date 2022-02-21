@@ -39,6 +39,7 @@ MonoBehaviour:
     - AttributeNameCollision-StorageObjectNameCollision
     - InstallDockerProcess
     - DockerOverlappingPorts
+    - ChangesNotDeployedToLocalDocker
     values:
     - ClientCallable has unsupported parameters
     - '"async void" ClientCallable exists'
@@ -52,6 +53,7 @@ MonoBehaviour:
     - StorageObject Name Collision
     - Docker is not installed
     - Docker port is already in use
+    - Changes to C#MS are not deployed to local Docker instance
   HintIdToHintIntroText:
     keys:
     - AttributeValidation-ClientCallableUnsupportedParameters
@@ -66,6 +68,7 @@ MonoBehaviour:
     - AttributeNameCollision-StorageObjectNameCollision
     - InstallDockerProcess
     - DockerOverlappingPorts
+    - ChangesNotDeployedToLocalDocker
     values:
     - "The ClientCallables below have unsupported parameters. We don't support client
       callables with Delegate, Task or Promise parameters. \n\nWe don't support it
@@ -144,3 +147,8 @@ MonoBehaviour:
       and follow the instructions to install it.\r\n"
     - "We noticed that one of the ports specified for one of the services is already
       in use. Please check your Docker configuration and adjust it.\r\n"
+    - "When you build/play Microservice, we generate a Docker image with all the non-unity
+      DLLs that exist in that C#MS's Assembly Definition file. If code in any of those
+      Assemblies changes, you must re-run your local Microservice if you wish it to
+      see any of the changes.\r\n\r\nWe detected that these systems must be rebuilt
+      due to one or more files in their Assemblies having changed.\r\n"

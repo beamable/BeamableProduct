@@ -39,6 +39,16 @@ namespace Beamable.Server.Editor
 
 		public List<StorageConfigurationEntry> StorageObjects;
 
+#if !BEAMABLE_DEVELOPER
+		[HideInInspector]
+#endif
+		public List<BeamServiceCodeHandle> ServiceCodeHandlesOnLastDomainReload;
+		
+#if !BEAMABLE_DEVELOPER
+		[HideInInspector]
+#endif
+		public List<BeamServiceCodeHandle> LastBuiltDockerImagesCodeHandles;
+
 		[Tooltip("When you run a microservice in the Editor, the prefix controls the flow of traffic. By default, the prefix is your MAC address. If two developers use the same prefix, their microservices will share traffic. The prefix is ignored for games running outside of the Editor."), Delayed]
 		public string CustomContainerPrefix;
 
@@ -151,6 +161,8 @@ namespace Beamable.Server.Editor
 
 		private void OnValidate()
 		{
+			ServiceCodeHandlesOnLastDomainReload = ServiceCodeHandlesOnLastDomainReload ?? new List<BeamServiceCodeHandle>();
+			
 			if (CustomContainerPrefix != _cachedContainerPrefix)
 			{
 				_cachedContainerPrefix = CustomContainerPrefix;
@@ -291,6 +303,8 @@ namespace Beamable.Server.Editor
 		public bool IncludeDebugTools;
 
 		public MicroserviceConfigurationDebugEntry DebugData;
+
+		[HideInInspector] public string LastBuiltCheckSum;
 	}
 
 	[Serializable]

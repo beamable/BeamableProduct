@@ -107,7 +107,10 @@ namespace Beamable
 			// Initialize Editor instances of Reflection and Assistant services
 			EditorReflectionCache = new ReflectionCache();
 			HintGlobalStorage = new BeamHintGlobalStorage();
-			HintPreferencesManager = new BeamHintPreferencesManager();
+			HintPreferencesManager = new BeamHintPreferencesManager(new List<BeamHintHeader>()
+			{
+				new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER, BeamHintIds.ID_CHANGES_NOT_DEPLOYED_TO_LOCAL_DOCKER),
+			});
 
 			// Load up all Asset-based IReflectionSystem (injected via ReflectionSystemObject instances). This was made to solve a cross-package injection problem.
 			// It doubles as a no-code way for users to inject their own IReflectionSystem into our pipeline.

@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0]
+### Added
+
+- `BeamServicesCodeWatcher` detects any change that makes it necessary to rebuild C#MS images as well as cleaning up Auto-Generated files whenever a C#MS AsmDef is deleted. This makes the easiest way to delete a C#MS's code from your project simply to delete it's folder. 
+- Beam hint that warn users entering play-mode that there are stale services that must be rebuilt. Avoids wasting time when making quick changes to microservices and forgetting to regenerate the local image during development.
+- Added `AddAsChild(VisualElement, string, params string[])` to `BeamHintVisualsInjectionBag` to allow `BeamHintDetailConverter` functions to build and inject dynamically created `VisualElements` into Hint Details.
+
+### Changed
+
+
+
+### Fixed
+- Fixed issue that caused the `ReflectionCache` to run an extra unnecessary time when a `.cs` or `.asmdef` file were changed.
+- Fixed issue on Re-Import All with `BeamableAssistantWindow` opened that required reopening the window for it to work.
+
 ## [1.0.0]
 ### Added
 - `StorageDocument` base class for storage data classes that automatically handle document ID assignment.

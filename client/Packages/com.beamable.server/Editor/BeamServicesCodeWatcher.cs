@@ -1,0 +1,292 @@
+using Beamable.Common.Assistant;
+using Beamable.Server.Editor.CodeGen;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using UnityEditor;
+using UnityEditor.Callbacks;
+using UnityEngine;
+using UnityEngine.Assertions;
+
+namespace Beamable.Server.Editor
+{
+	[Serializable]
+	public struct BeamServiceCodeHandle : IEquatable<BeamServiceCodeHandle>, IEquatable<string>
+	{
+		public string ServiceName;
+		public BeamCodeClass CodeClass;
+		public string CodeDirectory;
+		public AssemblyDefinitionInfo AsmDefInfo;
+		public string Checksum;
+
+		public override string ToString()
+		{
+			return $"{nameof(ServiceName)}: {ServiceName}, {nameof(CodeClass)}: {CodeClass}, {nameof(CodeDirectory)}: {CodeDirectory}, {nameof(AsmDefInfo)}: {AsmDefInfo}";
+		}
+
+		public bool Equals(BeamServiceCodeHandle other) => ServiceName == other.ServiceName;
+		public bool Equals(string other) => Checksum == other;
+
+		public override int GetHashCode() => (ServiceName != null ? ServiceName.GetHashCode() : 0);
+	}
+
+	public enum BeamCodeClass
+	{
+		Invalid,
+		Microservice,
+		StorageObject,
+		SharedAssembly,
+	}
+
+	// ReSharper disable once ClassNeverInstantiated.Global
+	public class BeamServicesCodeWatcher : IBeamHintSystem
+	{
+		private IBeamHintPreferencesManager PreferencesManager;
+		private IBeamHintGlobalStorage GlobalStorage;
+
+		private List<BeamServiceCodeHandle> LatestCodeHandles;
+		private Task CheckSumCalculation;
+
+		public void OnInitialized()
+		{
+			if (!MicroserviceEditor.IsInitialized)
+			{
+				EditorApplication.delayCall += OnInitialized;
+				return;
+			}
+
+			LatestCodeHandles = new List<BeamServiceCodeHandle>(64);
+
+			var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			var msCodeHandles = registry.Descriptors.Select(desc => new BeamServiceCodeHandle()
+			{
+				ServiceName = desc.Name, CodeClass = BeamCodeClass.Microservice, AsmDefInfo = desc.ConvertToInfo(), CodeDirectory = Path.GetDirectoryName(desc.ConvertToInfo().Location),
+			}).ToList();
+
+			var storageCodeHandles = registry.StorageDescriptors.Select(desc => new BeamServiceCodeHandle()
+			{
+				ServiceName = desc.Name, CodeClass = BeamCodeClass.StorageObject, AsmDefInfo = desc.ConvertToInfo(), CodeDirectory = Path.GetDirectoryName(desc.ConvertToInfo().Location),
+			}).ToList();
+
+			var sharedAssemblyHandles = registry.Descriptors
+			                                    .Select(DependencyResolver.GetDependencies)
+			                                    .SelectMany(deps => deps.Assemblies.ToCopy)
+			                                    .Distinct()
+			                                    .Except(msCodeHandles.Select(h => h.AsmDefInfo))
+			                                    .Except(storageCodeHandles.Select(h => h.AsmDefInfo))
+			                                    .Select(asm => new BeamServiceCodeHandle
+			                                    {
+				                                    ServiceName = asm.Name, CodeDirectory = Path.GetDirectoryName(asm.Location), CodeClass = BeamCodeClass.SharedAssembly, AsmDefInfo = asm,
+			                                    })
+			                                    .ToList();
+
+			LatestCodeHandles.Clear();
+			LatestCodeHandles.AddRange(sharedAssemblyHandles);
+			LatestCodeHandles.AddRange(msCodeHandles);
+			LatestCodeHandles.AddRange(storageCodeHandles);
+			LatestCodeHandles.Sort((h1, h2) => string.Compare(h1.ServiceName, h2.ServiceName, StringComparison.Ordinal));
+
+			var tasks = new List<Task>(LatestCodeHandles.Count);
+			tasks.AddRange(LatestCodeHandles.Select((beamServiceCodeHandle, index) => Task.Factory.StartNew(() =>
+			{
+				var path = beamServiceCodeHandle.CodeDirectory;
+				var files = Directory.GetFiles(path);
+
+				var filesBytes = files.SelectMany(File.ReadAllBytes).ToArray();
+				var md5 = MD5.Create();
+				var checksum = md5.ComputeHash(filesBytes);
+				beamServiceCodeHandle.Checksum = BitConverter.ToString(checksum).Replace("-", string.Empty);
+				LatestCodeHandles[index] = beamServiceCodeHandle;
+			})));
+			CheckSumCalculation = Task.WhenAll(tasks);
+		}
+
+		public void SetPreferencesManager(IBeamHintPreferencesManager preferencesManager) => PreferencesManager = preferencesManager;
+		public void SetStorage(IBeamHintGlobalStorage hintGlobalStorage) => GlobalStorage = hintGlobalStorage;
+
+		public void UpdateBuiltImageCodeHandles(string serviceName)
+		{
+			var config = MicroserviceConfiguration.Instance;
+			var currCodeHandles = config.ServiceCodeHandlesOnLastDomainReload;
+			var serviceToUpdate = currCodeHandles.First(h => h.ServiceName == serviceName);
+
+			var builtCodeHandles = serviceToUpdate.AsmDefInfo.References
+			                                      .Select(asmName => currCodeHandles.FirstOrDefault(c => c.AsmDefInfo.Name == asmName))
+			                                      .Where(handle => handle.CodeClass != BeamCodeClass.Invalid)
+			                                      .ToList();
+
+			config.LastBuiltDockerImagesCodeHandles.Remove(serviceToUpdate);
+			config.LastBuiltDockerImagesCodeHandles.RemoveAll(h => builtCodeHandles.Contains(h));
+
+			config.LastBuiltDockerImagesCodeHandles.Add(serviceToUpdate);
+			config.LastBuiltDockerImagesCodeHandles.AddRange(builtCodeHandles);
+		}
+
+		public void CheckForLocalChangesNotYetDeployed()
+		{
+			var microserviceConfiguration = MicroserviceConfiguration.Instance;
+			var servicesInNeedOfImageRebuild = new List<BeamServiceCodeHandle>();
+
+			// Get the list of detected Code-based services (see OnInitialized for how these are detected)
+			var latestMSHandles = LatestCodeHandles.Where(h => h.CodeClass == BeamCodeClass.Microservice).ToList();
+			var latestStorageHandles = LatestCodeHandles.Where(h => h.CodeClass == BeamCodeClass.StorageObject).ToList();
+			var latestCommonCodeHandle = LatestCodeHandles.FirstOrDefault((a) => a.CodeClass == BeamCodeClass.SharedAssembly);
+
+			// Check and resolve changes to the common assembly.
+			{
+				var serializedCommonCodeHandle = microserviceConfiguration.LastBuiltDockerImagesCodeHandles
+				                                                          .FirstOrDefault((a) => a.CodeClass == BeamCodeClass.SharedAssembly);
+
+				// If it changes, we need to inform that all services that depend on it must be rebuilt.
+				if (latestCommonCodeHandle.CodeClass != BeamCodeClass.Invalid && serializedCommonCodeHandle.CodeClass != BeamCodeClass.Invalid &&
+				    !latestCommonCodeHandle.Equals(serializedCommonCodeHandle.Checksum))
+				{
+					servicesInNeedOfImageRebuild
+						.AddRange(
+							LatestCodeHandles.Where(handle => handle.AsmDefInfo.References.Contains(latestCommonCodeHandle.AsmDefInfo.Name))
+						);
+					//Debug.Log($"CHANGED IMAGE REBUILD - COMMON => {string.Join(", ", servicesInNeedOfImageRebuild)}");
+				}
+			}
+
+			// Check and resolve changes to the C#MS assemblies.
+			{
+				// For each C#MS that DOES exist, we see if they have never been built or have changes in them that haven't been built.
+				var changedFromBuild = latestMSHandles.Where(h => DetectChangesInCodeHandle(h, microserviceConfiguration.LastBuiltDockerImagesCodeHandles)).ToList();
+				// Add changed or new handle to the list of services in need of a rebuild
+				servicesInNeedOfImageRebuild.AddRange(changedFromBuild);
+				//Debug.Log($"CHANGED IMAGE REBUILD - C#MS => {string.Join(", ", servicesInNeedOfImageRebuild)}");
+			}
+
+			// Check and resolve changes to the StorageObject Assemblies
+			{
+				// For each C#MS that DOES exist, we see if they are new or if there are were changes made to files in their Assembly.
+				var changedOrNewStorages = latestStorageHandles.Where((h) => DetectChangesInCodeHandle(h, microserviceConfiguration.LastBuiltDockerImagesCodeHandles)).ToList();
+
+				// Find the C#MS that depend on this storage
+				var msThatDependOnChangedStorages = latestMSHandles.Where(msHandle =>
+					                                                          msHandle.AsmDefInfo.References.Any(asmName =>
+						                                                                                             changedOrNewStorages.Select(h => h.AsmDefInfo.Name).Contains(asmName)));
+
+				// Add changed or new handle to the list of services in need of a rebuild
+				servicesInNeedOfImageRebuild.AddRange(msThatDependOnChangedStorages);
+				//Debug.Log($"CHANGED IMAGE REBUILD - Storages => {string.Join(", ", servicesInNeedOfImageRebuild)}");
+			}
+
+			// Handle notification of services in need of rebuilds
+			{
+				servicesInNeedOfImageRebuild = servicesInNeedOfImageRebuild.Distinct().ToList();
+				if (servicesInNeedOfImageRebuild.Count > 0)
+				{
+					GlobalStorage.AddOrReplaceHint(BeamHintType.Validation,
+					                               BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER,
+					                               BeamHintIds.ID_CHANGES_NOT_DEPLOYED_TO_LOCAL_DOCKER,
+					                               servicesInNeedOfImageRebuild);
+				}
+				else
+				{
+					GlobalStorage.RemoveAllHints(idRegex: BeamHintIds.ID_CHANGES_NOT_DEPLOYED_TO_LOCAL_DOCKER);
+				}
+			}
+		}
+
+		[DidReloadScripts]
+		private static void WatchMicroserviceFiles()
+		{
+			// If we are not initialized, delay the call until we are.
+			if (!BeamEditor.IsInitialized || !MicroserviceEditor.IsInitialized)
+			{
+				EditorApplication.delayCall += WatchMicroserviceFiles;
+				return;
+			}
+
+			var codeWatcher = default(BeamServicesCodeWatcher);
+			BeamEditor.GetBeamHintSystem(ref codeWatcher);
+
+			// If we are not initialized, delay the call until we are.
+			if (codeWatcher == null || !codeWatcher.CheckSumCalculation.IsCompleted)
+			{
+				EditorApplication.delayCall += WatchMicroserviceFiles;
+				return;
+			}
+
+			// Check for the hint regarding local changes that are not deployed to your local docker environment
+			codeWatcher.CheckForLocalChangesNotYetDeployed();
+
+			// Handle the client code generation for C#MSs.
+			try
+			{
+				AssetDatabase.StartAssetEditing();
+				var registry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+				var microserviceConfiguration = MicroserviceConfiguration.Instance;
+
+				// Gets the list of currently detected code handles.
+				var latestMSHandles = codeWatcher.LatestCodeHandles.Where(h => h.CodeClass == BeamCodeClass.Microservice).ToList();
+
+				// Gets the sub-list of C#MS that were serialized but are no longer detected --- meaning they were deleted
+				var msHandlesOnPreviousDomainReload = microserviceConfiguration.ServiceCodeHandlesOnLastDomainReload.Where(h => h.CodeClass == BeamCodeClass.Microservice).ToList();
+				var deletedMicroservices = msHandlesOnPreviousDomainReload.Except(latestMSHandles).ToList();
+
+				// For each of those that were deleted, remove the AutoGenerated client code for the C#MS.
+				foreach (var msCodeHandle in deletedMicroservices)
+				{
+					var serviceName = msCodeHandle.ServiceName;
+					var generatedFilePath = $"Assets/Beamable/AutoGenerated/Microservices/{serviceName}Client.cs";
+					Debug.Log($"Deleting => {generatedFilePath}");
+					AssetDatabase.DeleteAsset(generatedFilePath);
+
+					MicroserviceConfiguration.Instance.Microservices.RemoveAll(s => s.ServiceName == serviceName);
+				}
+
+				// For each C#MS that DOES exist, we see if they are new or if there are were changes made to files in their Assembly.
+				var changedOrNewMSCode = latestMSHandles.Where(h => DetectChangesInCodeHandle(h, msHandlesOnPreviousDomainReload)).ToList();
+
+				// For each changed or new handle, gets the descriptor for the C#MS and [re]-generates the client source code.
+				var changedOrNewMsDescriptors = changedOrNewMSCode.Select(h => registry.Descriptors.FirstOrDefault(d => d.Type.Name == h.ServiceName));
+				foreach (var descriptor in changedOrNewMsDescriptors)
+				{
+					Assert.IsTrue(descriptor != null, $"You should never see this! The final substring of the Assembly Name must be the same as the ServiceName.");
+					GenerateClientSourceCode(descriptor);
+				}
+
+				// Update the serialized ServiceCodeHandles so that the next time we go through this code we can accurately detect the changes to C#MSs and other services.
+				microserviceConfiguration.ServiceCodeHandlesOnLastDomainReload = codeWatcher.LatestCodeHandles;
+			}
+			finally
+			{
+				AssetDatabase.StopAssetEditing();
+				AssetDatabase.Refresh();
+			}
+		}
+
+		private static bool DetectChangesInCodeHandle(BeamServiceCodeHandle handle, List<BeamServiceCodeHandle> handlesToCheckAgainst)
+		{
+			// Check to see if the C#MS already existed.
+			var indexIntoSerializedCodeHandles = handlesToCheckAgainst.IndexOf(handle);
+			var alreadyExisted = indexIntoSerializedCodeHandles != -1;
+
+			// If it did exist, check to see if the checksum of the files in their Assembly are different.
+			var serializedCodeHandle = alreadyExisted ? handlesToCheckAgainst[indexIntoSerializedCodeHandles] : default;
+			var checksumDiffers = !handle.Equals(serializedCodeHandle.Checksum);
+
+			return (!alreadyExisted || checksumDiffers);
+		}
+
+		private static void GenerateClientSourceCode(MicroserviceDescriptor service)
+		{
+			var serviceName = service.Name;
+			Directory.CreateDirectory("Assets/Beamable/AutoGenerated/Microservices");
+			var targetFile = $"Assets/Beamable/Autogenerated/Microservices/{serviceName}Client.cs";
+			var tempFile = Path.Combine("Temp", $"{serviceName}Client.cs");
+
+			var generator = new ClientCodeGenerator(service);
+			generator.GenerateCSharpCode(tempFile);
+
+			File.Copy(tempFile, targetFile, true);
+		}
+	}
+}

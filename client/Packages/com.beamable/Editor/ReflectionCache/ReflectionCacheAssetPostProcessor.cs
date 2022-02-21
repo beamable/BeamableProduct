@@ -21,6 +21,14 @@ namespace Beamable.Editor.Reflection
 			if (!BeamEditor.IsInitialized)
 				return;
 
+			// Check to see if any files will trigger a recompile anyway. If they do, we skip rebuilding if we deleted any C# files, since:
+			//  - This runs before the domain reload caused by deleting a C# file.
+			//  - We don't need to run this if we domain reload, since we'll run it again when the domain reloads.
+			var assetExtensions = movedAssets.Union(deletedAssets).Select(s => Path.HasExtension(s) ? Path.GetExtension(s) : string.Empty).ToList();
+			if (assetExtensions.Contains(".cs") || assetExtensions.Contains(".asmdef"))
+				return;
+			
+			
 			var reflectionCacheRelatedAssets = importedAssets.Union(movedAssets)
 															 .Select(path => (path, type: AssetDatabase.GetMainAssetTypeAtPath(path)))
 															 .Where(t => typeof(ReflectionSystemObject).IsAssignableFrom(t.type))
@@ -59,6 +67,7 @@ namespace Beamable.Editor.Reflection
 
 			if (deletedAssets.Length > 0)
 			{
+				//UnityEditor.MonoScript
 				BeamEditor.EditorReflectionCache.RebuildReflectionUserSystems();
 				BeamEditor.EditorReflectionCache.SetStorage(BeamEditor.HintGlobalStorage);
 
