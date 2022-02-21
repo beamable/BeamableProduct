@@ -1,6 +1,7 @@
 ﻿using UnityEditor;
 
 #if !UNITY_UNIFIED_IAP && !UNITY_PURCHASING
+using System.Linq;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 #endif
