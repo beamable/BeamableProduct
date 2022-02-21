@@ -1,15 +1,15 @@
 using System;
+using UnityEngine.Events;
+#if UNITY_DEVELOPER
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Events;
+#endif
 
 namespace Beamable.Signals
 {
-
-	[System.Serializable]
+	[Serializable]
 	public class DeSignal<T> : UnityEvent<T>
 	{
-
 		public void InvokeWithTrace<TSource>(TSource sourceTower, TSource currentTower, T arg)
 		   where TSource : DeSignalTower
 		{
@@ -27,12 +27,10 @@ namespace Beamable.Signals
 #endif
 			Invoke(arg);
 		}
-
 	}
 
 	public static class GameObjectExtensions
 	{
-
 		public static void BroadcastSignal<T, TArg>(this T self, TArg arg, DeSignal<TArg> signal)
 		   where T : DeSignalTower
 		{

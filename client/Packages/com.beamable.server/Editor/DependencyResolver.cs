@@ -1,8 +1,6 @@
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Content;
-using Beamable.Content;
-using Beamable.Platform.SDK;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
 using Beamable.Server.Editor;
@@ -12,13 +10,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
-using System.Text;
 using UnityEditor;
-using UnityEditorInternal;
 using UnityEngine;
-using UnityEngine.AddressableAssets;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Server

@@ -1,6 +1,4 @@
-using Beamable.Editor.Content;
 using Beamable.Editor.Content.Models;
-using System.Linq;
 
 namespace Beamable.Editor.Content.Extensions
 {

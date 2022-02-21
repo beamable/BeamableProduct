@@ -1,4 +1,3 @@
-using Beamable.Common;
 using Beamable.Common.Assistant;
 using Beamable.Editor.Content.Components;
 using Beamable.Editor.Reflection;
@@ -15,7 +14,6 @@ using static Beamable.Common.Constants.Features.Assistant;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
-
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
