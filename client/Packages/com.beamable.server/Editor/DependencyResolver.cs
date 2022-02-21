@@ -24,7 +24,7 @@ using Debug = UnityEngine.Debug;
 namespace Beamable.Server
 {
 
-	public class AssemblyDefinitionInfo
+	public class AssemblyDefinitionInfo : IEquatable<AssemblyDefinitionInfo>
 	{
 		public string Name;
 		public string[] References = new string[] { };
@@ -33,6 +33,46 @@ namespace Beamable.Server
 
 		public string[] IncludePlatforms = new string[] { };
 		public bool AutoReferenced = false;
+
+		public bool Equals(AssemblyDefinitionInfo other)
+		{
+			if (ReferenceEquals(null, other))
+			{
+				return false;
+			}
+
+			if (ReferenceEquals(this, other))
+			{
+				return true;
+			}
+
+			return Name == other.Name;
+		}
+
+		public override bool Equals(object obj)
+		{
+			if (ReferenceEquals(null, obj))
+			{
+				return false;
+			}
+
+			if (ReferenceEquals(this, obj))
+			{
+				return true;
+			}
+
+			if (obj.GetType() != this.GetType())
+			{
+				return false;
+			}
+
+			return Equals((AssemblyDefinitionInfo) obj);
+		}
+
+		public override int GetHashCode()
+		{
+			return (Name != null ? Name.GetHashCode() : 0);
+		}
 	}
 
 	public class AssemblyDefinitionInfoGroup
@@ -401,7 +441,7 @@ namespace Beamable.Server
 			return dllImporters;
 		}
 
-		private static AssemblyDefinitionInfoGroup GatherAssemblyDependencies(MicroserviceDescriptor descriptor)
+		public static AssemblyDefinitionInfoGroup GatherAssemblyDependencies(MicroserviceDescriptor descriptor)
 		{
 			/*
             * We can crawl the assembly definition itself...
