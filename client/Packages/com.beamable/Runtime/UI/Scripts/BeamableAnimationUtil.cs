@@ -1,7 +1,5 @@
 using Beamable.Common;
 using Beamable.Coroutines;
-using Beamable.Platform.SDK;
-using Beamable.Service;
 using System;
 using System.Collections;
 using UnityEngine;
