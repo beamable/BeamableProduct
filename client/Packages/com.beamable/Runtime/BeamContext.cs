@@ -275,15 +275,12 @@ namespace Beamable
 			return ctx;
 		}
 
-		private Stopwatch _sw = new Stopwatch();
-
 		protected void Init(string cid,
 							string pid,
 							string playerCode,
 							BeamableBehaviour behaviour,
 							IDependencyBuilder builder)
 		{
-			_sw.Start();
 			PlayerCode = playerCode;
 			_isStopped = false;
 
@@ -319,7 +316,6 @@ namespace Beamable
 			InitServices(cid, pid);
 			_behaviour.Initialize(this);
 
-			Debug.Log($"BEAMCONTEXT_INIT_SW_ -stage 0- {_sw.ElapsedMilliseconds}");
 			_initPromise = new Promise();
 			IEnumerator Try()
 			{
@@ -328,14 +324,10 @@ namespace Beamable
 				var attemptDurations = new int[] { 2, 2, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10 };
 				while (!success)
 				{
-					Debug.Log($"BEAMCONTEXT_INIT_SW_ -stage 1- {attempt} - {_sw.ElapsedMilliseconds}");
-
 					yield return InitializeUser()
 						.Error(Debug.LogException)
 						.Then(__ =>
 						{
-							Debug.Log($"BEAMCONTEXT_INIT_SW_ -stage 9- {_sw.ElapsedMilliseconds}");
-
 							success = true;
 							_initPromise.CompleteSuccess();
 						}).ToYielder();
@@ -508,11 +500,7 @@ namespace Beamable
 			};
 			try
 			{
-				Debug.Log($"BEAMCONTEXT_INIT_SW_ -getUser 1- {_sw.ElapsedMilliseconds}");
 				user = await _authService.GetUser();
-				Debug.Log($"BEAMCONTEXT_INIT_SW_ -getUser 2- {_sw.ElapsedMilliseconds}");
-
-
 			}
 			catch (NoConnectivityException)
 			{
@@ -562,27 +550,15 @@ namespace Beamable
 			_requester.Language = "en"; // TODO: Put somewhere, like in configuration
 
 			await InitStep_SaveToken();
-			Debug.Log($"BEAMCONTEXT_INIT_SW_ -stage 3- {_sw.ElapsedMilliseconds}");
-
 			await InitStep_GetUser();
-			Debug.Log($"BEAMCONTEXT_INIT_SW_ -stage 4- {_sw.ElapsedMilliseconds}");
-
 			var pubnub = InitStep_StartPubnub();
-			Debug.Log($"BEAMCONTEXT_INIT_SW_ -stage 5- {_sw.ElapsedMilliseconds}");
-
 			// Start Session
 			var session = InitStep_StartNewSession();
-			Debug.Log($"BEAMCONTEXT_INIT_SW_ -stage 6- {_sw.ElapsedMilliseconds}");
-
 			_heartbeatService.Start();
 
 			// Check if we should initialize the purchaser
 			var purchase = InitStep_StartPurchaser();
-			Debug.Log($"BEAMCONTEXT_INIT_SW_ -stage 7- {_sw.ElapsedMilliseconds}");
-
 			await Promise.Sequence(pubnub, session, purchase);
-
-			Debug.Log($"BEAMCONTEXT_INIT_SW_ -stage 8- {_sw.ElapsedMilliseconds}");
 
 			OnReloadUser?.Invoke();
 

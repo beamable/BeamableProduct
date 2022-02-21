@@ -132,8 +132,8 @@ MonoBehaviour:
         json: '{"_floatValue":4.0}'
     - key: textAlignment
       property:
-        type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
+        type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
+          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
         json: '{"Enum":4098}'
     - key: fontColor
       property:

@@ -216,8 +216,8 @@ MonoBehaviour:
         json: '{"_color":{"r":0.34117648005485537,"g":0.13333334028720857,"b":0.0,"a":1.0}}'
     - key: textAlignment
       property:
-        type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
+        type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
+          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
         json: '{"Enum":4097}'
     - key: fontColor
       property:
@@ -258,8 +258,8 @@ MonoBehaviour:
         json: '{"_color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}'
     - key: textAlignment
       property:
-        type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
+        type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
+          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
         json: '{"Enum":4098}'
     _selector: '#rankValueLabel'
   - _properties:
@@ -280,8 +280,8 @@ MonoBehaviour:
         json: '{"_color":{"r":0.9803921580314636,"g":0.9450980424880981,"b":0.772549033164978,"a":1.0}}'
     - key: textAlignment
       property:
-        type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable, Version=0.0.0.0,
-          Culture=neutral, PublicKeyToken=null
+        type: Beamable.UI.Buss.TextAlignmentOptionsBussProperty, Unity.Beamable,
+          Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
         json: '{"Enum":4098}'
     - key: fontColor
       property:

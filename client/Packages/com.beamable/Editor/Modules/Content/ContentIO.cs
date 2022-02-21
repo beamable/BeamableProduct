@@ -1011,7 +1011,7 @@ namespace Beamable.Editor.Content
 			if (Bake(objectsToBake, clientManifest, compress, out int objectsBaked))
 			{
 				BakeLog(
-					$"Baked {objectsBaked} content objects to '{ContentConstants.BakedContentFilePath + ".bytes"}'");
+					$"Baked {objectsBaked} content objects to '{BAKED_CONTENT_FILE_PATH + ".bytes"}'");
 				AssetDatabase.Refresh();
 			}
 			else

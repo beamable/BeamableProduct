@@ -5,11 +5,13 @@ using Beamable.Common.Api.Content;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Coroutines;
+using Core.Platform.SDK;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Content;
 
 namespace Beamable.Content
 {
@@ -188,7 +190,7 @@ namespace Beamable.Content
 			}
 			else
 			{
-				var bakedFile = Resources.Load<TextAsset>(ContentConstants.BakedFileResourcePath);
+				var bakedFile = Resources.Load<TextAsset>(BAKED_FILE_RESOURCE_PATH);
 
 				if (bakedFile == null)
 				{
