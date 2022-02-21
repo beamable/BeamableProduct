@@ -333,7 +333,7 @@ namespace Beamable.Api.CloudSaving
 			  {
 				  if (downloadRequest.Count > 0)
 				  {
-					  return Promise.ExecuteRolling(10, _ProcessFilesPromiseList).Map(_ => PromiseBase.Unit).FlatMap(downloads =>
+					  return Promise.ExecuteInBatchSequence(10, _ProcessFilesPromiseList).Map(_ => PromiseBase.Unit).FlatMap(downloads =>
 				   {
 					   _ProcessFilesPromiseList.Clear();
 					   return WriteManifestToDisk(manifestResponse).FlatMap(manifest =>

@@ -148,13 +148,14 @@ namespace Beamable.Common.Content
 	{
 		public static SequencePromise<IContentObject> ResolveAll(this IEnumerable<IContentRef> refs, int batchSize = 50)
 		{
-			var seqPromise = new SequencePromise<IContentObject>(refs.Count());
+			var theRefs = refs.ToList();
+			var seqPromise = new SequencePromise<IContentObject>(theRefs.Count);
 
 			var x = ContentApi.Instance.FlatMap<SequencePromise<IContentObject>, IList<IContentObject>>(api =>
 			{
 				var promiseGenerators =
-				refs.Select(r => new Func<Promise<IContentObject>>(() => api.GetContent(r))).ToList();
-				var seq = Promise.ExecuteRolling(batchSize, promiseGenerators, () => !Application.isPlaying);
+					theRefs.Select(r => new Func<Promise<IContentObject>>(() => api.GetContent(r))).ToList();
+				var seq = Promise.ExecuteInBatchSequence(batchSize, promiseGenerators);
 				seq.OnElementSuccess(seqPromise.ReportEntrySuccess);
 				seq.OnElementError(seqPromise.ReportEntryError);
 
