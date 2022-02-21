@@ -39,7 +39,7 @@ namespace Beamable.Stats
 	[CreateAssetMenu(
 		fileName = "Stat",
 		menuName = Paths.MENU_ITEM_PATH_ASSETS_BEAMABLE + "/" +
-		           "Stat",
+				   "Stat",
 		order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_3)]
 	[Serializable]
 	public class StatObject : ScriptableObject
@@ -66,7 +66,7 @@ namespace Beamable.Stats
 				if (ProfanityChecked)
 				{
 					profanityPromise = de.Experimental.ChatService.ProfanityAssert(value)
-					                     .Map(empty => PromiseBase.Unit);
+										 .Map(empty => PromiseBase.Unit);
 				}
 				else
 				{
@@ -76,9 +76,9 @@ namespace Beamable.Stats
 				return profanityPromise.FlatMap(unit =>
 				{
 					Promise<EmptyResponse> writeOperation =
-						de.StatsService.SetStats(Access.GetString(), new Dictionary<string, string> {{StatKey, value}});
+						de.StatsService.SetStats(Access.GetString(), new Dictionary<string, string> { { StatKey, value } });
 
-					var changeEvent = new StatObjectChangeEvent {UserId = de.User.id, NewValue = value, Stat = this};
+					var changeEvent = new StatObjectChangeEvent { UserId = de.User.id, NewValue = value, Stat = this };
 
 					writeOperation.Then(_ =>
 					{

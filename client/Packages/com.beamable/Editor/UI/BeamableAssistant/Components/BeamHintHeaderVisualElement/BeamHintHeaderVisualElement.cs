@@ -384,7 +384,7 @@ namespace Beamable.Editor.Assistant
 					throw new ArgumentException($"Unsupported Injection! The system doesn't know how inject object of type {typeof(T).Name} into a {nameof(Button)}.");
 			}
 		}
-		
+
 		/// <summary>
 		/// Resolve supported injections for <see cref="Button"/> <see cref="VisualElement"/>s.
 		/// </summary>
@@ -540,7 +540,7 @@ namespace Beamable.Editor.Assistant
 				return GetEnumerator();
 			}
 		}
-		
+
 		public void SetButtonLabel(string buttonLabel, string name, params string[] classes)
 		{
 			_textInjections.Add(new Injection<string>(new VisualElementsQuery(typeof(Button), name, classes), buttonLabel));
