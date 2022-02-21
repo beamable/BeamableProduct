@@ -59,7 +59,7 @@ namespace Beamable.Server
 				return false;
 			}
 
-			return Equals((AssemblyDefinitionInfo) obj);
+			return Equals((AssemblyDefinitionInfo)obj);
 		}
 
 		public override int GetHashCode()

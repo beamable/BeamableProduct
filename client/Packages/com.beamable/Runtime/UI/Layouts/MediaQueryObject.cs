@@ -109,7 +109,7 @@ namespace Beamable.UI.Layouts
 			var T = Type.GetType("UnityEditor.GameView,UnityEditor");
 			MethodInfo GetSizeOfMainGameView =
 				T.GetMethod("GetSizeOfMainGameView",
-				            BindingFlags.NonPublic | BindingFlags.Static);
+							BindingFlags.NonPublic | BindingFlags.Static);
 
 			object Res = GetSizeOfMainGameView.Invoke(null, null);
 			return (Vector2)Res;

@@ -43,7 +43,7 @@ namespace Beamable.Server.Editor
 		[HideInInspector]
 #endif
 		public List<BeamServiceCodeHandle> ServiceCodeHandlesOnLastDomainReload;
-		
+
 #if !BEAMABLE_DEVELOPER
 		[HideInInspector]
 #endif
@@ -162,7 +162,7 @@ namespace Beamable.Server.Editor
 		private void OnValidate()
 		{
 			ServiceCodeHandlesOnLastDomainReload = ServiceCodeHandlesOnLastDomainReload ?? new List<BeamServiceCodeHandle>();
-			
+
 			if (CustomContainerPrefix != _cachedContainerPrefix)
 			{
 				_cachedContainerPrefix = CustomContainerPrefix;
