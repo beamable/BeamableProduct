@@ -1,7 +1,7 @@
 using Beamable.Serialization.SmallerJSON;
 using NUnit.Framework;
 
-namespace Beamable.Editor.Tests.SmallerJson
+namespace BeamableEditor.Tests.SmallerJson
 {
 	public class JsonPathTests
 	{

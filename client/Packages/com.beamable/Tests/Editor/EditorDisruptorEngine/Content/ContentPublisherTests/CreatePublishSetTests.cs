@@ -1,15 +1,16 @@
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Editor.Content;
-using Beamable.Editor.Tests.Beamable.Content.ContentIOTests;
+using Beamable.Editor.Tests.Beamable.Content;
 using Beamable.Platform.Tests;
+using BeamableEditor.Tests.Mockups;
 using NUnit.Framework;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.TestTools;
 
-namespace Beamable.Editor.Tests.Beamable.Content.ContentPublisherTests
+namespace BeamableEditor.Tests.Content
 {
 	public class CreatePublishSetTests
 	{
@@ -26,7 +27,7 @@ namespace Beamable.Editor.Tests.Beamable.Content.ContentPublisherTests
 			_requester = new MockPlatformRequester();
 			_serverContent = new List<ContentManifestReference>();
 			_mockContentIo = new MockContentIO();
-			_mockContentIo.FetchManifestResult = () => Promise<Editor.Content.Manifest>.Successful(new Editor.Content.Manifest(_serverContent));
+			_mockContentIo.FetchManifestResult = () => Promise<Beamable.Editor.Content.Manifest>.Successful(new Beamable.Editor.Content.Manifest(_serverContent));
 			_mockContentIo.FindAllResult = () => _content;
 
 			_publisher = new ContentPublisher(_requester, _mockContentIo);

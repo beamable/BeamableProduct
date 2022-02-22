@@ -1,13 +1,16 @@
+using Beamable;
 using Beamable.Common;
 using Beamable.Platform.Tests;
+using BeamableEditor.Tests.Mockups;
 using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.TestTools;
+using PromiseExtensions = Beamable.PromiseExtensions;
 
-namespace Beamable.Editor.Tests.PromiseTests
+namespace BeamableEditor.Tests.Promises
 {
 	public class ErrorTests
 	{
@@ -341,7 +344,6 @@ namespace Beamable.Editor.Tests.PromiseTests
 		[UnityTest]
 		public IEnumerator FlatMapAfterAFailedPromise_WithHandler_ShouldNotLog()
 		{
-
 			var mockLogger = new MockLogProvider();
 			BeamableLogProvider.Provider = mockLogger;
 

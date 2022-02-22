@@ -5,16 +5,16 @@ using System;
 using System.Collections.Generic;
 using Manifest = Beamable.Editor.Content.Manifest;
 
-namespace Beamable.Editor.Tests.Beamable.Content.ContentIOTests
+namespace BeamableEditor.Tests.Mockups
 {
 	public class MockContentIO : IContentIO
 	{
-		public Func<Promise<Editor.Content.Manifest>> FetchManifestResult = () => null;
+		public Func<Promise<Manifest>> FetchManifestResult = () => null;
 		public Func<IEnumerable<ContentObject>> FindAllResult = () => null;
 		public Func<IContentObject, string> ChecksumResult = c => "";
 
 
-		public Promise<Editor.Content.Manifest> FetchManifest()
+		public Promise<Manifest> FetchManifest()
 		{
 			return FetchManifestResult();
 		}

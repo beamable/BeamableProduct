@@ -4,7 +4,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 
-namespace Beamable.Editor.Tests.Beamable.Content.ContentQueryTests
+namespace BeamableEditor.Tests.Content
 {
 	public class AcceptTypeTests
 	{

@@ -2,12 +2,12 @@ using Beamable.Common.Content;
 using Beamable.Common.Inventory;
 using NUnit.Framework;
 
-namespace Beamable.Editor.Tests.Beamable.Content.ContentQueryTests
+namespace BeamableEditor.Tests.Content
 {
-	public class ParseTests
+	public partial class ParseTests
 	{
 		[SetUp]
-		public void Setup()
+		public void SetupInternal()
 		{
 			ContentRegistry.LoadRuntimeTypeData();
 		}

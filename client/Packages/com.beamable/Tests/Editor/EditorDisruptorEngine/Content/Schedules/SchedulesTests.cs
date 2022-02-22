@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
-namespace Beamable.Editor.Tests.Content
+namespace BeamableEditor.Tests.Schedules
 {
 	public class SchedulesTests
 	{

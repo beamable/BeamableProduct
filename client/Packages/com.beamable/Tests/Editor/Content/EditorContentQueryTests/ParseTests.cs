@@ -4,9 +4,9 @@ using Beamable.Editor.Content;
 using Beamable.Editor.Content.Models;
 using NUnit.Framework;
 
-namespace Beamable.Editor.Tests.Content.EditorContentQueryTests
+namespace BeamableEditor.Tests.Content
 {
-	public class ParseTests
+	public partial class ParseTests
 	{
 		[SetUp]
 		public void Setup()

@@ -8,11 +8,10 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
-namespace Beamable.Editor.Tests.UI.Content.Components.CountVisualElementTests
+namespace BeamableEditor.Tests.Components
 {
-	public class BehaviourTests
+	public class ComponentsTests
 	{
-
 		[Test]
 		public void ShowsValueInLabel()
 		{

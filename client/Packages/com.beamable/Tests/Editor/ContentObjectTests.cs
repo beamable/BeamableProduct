@@ -2,7 +2,7 @@
 using Beamable.Common.Content.Validation;
 using NUnit.Framework;
 
-namespace Beamable.Editor.Tests
+namespace BeamableEditor.Tests.Content
 {
 	public class ContentObjectTests
 	{

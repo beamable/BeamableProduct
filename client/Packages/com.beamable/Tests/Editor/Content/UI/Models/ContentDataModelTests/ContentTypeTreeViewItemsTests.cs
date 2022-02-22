@@ -4,7 +4,7 @@ using Beamable.Editor.Content.Models;
 using NUnit.Framework;
 using System.Collections.Generic;
 
-namespace Beamable.Editor.Tests.Content.UI.Models.ContentDataModelTests
+namespace BeamableEditor.Tests.Content
 {
 	public class ContentTypeTreeViewItemsTests
 	{

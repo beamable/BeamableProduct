@@ -1,7 +1,7 @@
 ﻿using Beamable.Editor.Content;
 using NUnit.Framework;
 
-namespace Beamable.Editor.Tests.Content
+namespace BeamableEditor.Tests.Content
 {
 	public class AreTagsEqualTests
 	{

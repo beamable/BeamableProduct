@@ -2,9 +2,9 @@ using Beamable.Editor.Content;
 using Beamable.Editor.Content.Models;
 using NUnit.Framework;
 
-namespace Beamable.Editor.Tests.Content.EditorContentQueryTests
+namespace BeamableEditor.Tests.Content
 {
-	public class ToStringTests
+	public partial class ToStringTests
 	{
 		[Test]
 		public void SerializeValid()

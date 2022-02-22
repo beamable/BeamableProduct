@@ -1,12 +1,13 @@
 using Beamable.Common.Content;
 using Beamable.Editor.Content;
 using Beamable.Editor.Content.SaveRequest;
-using Beamable.Editor.Tests.Beamable.Content.ContentIOTests;
+using Beamable.Editor.Tests.Beamable.Content;
 using Beamable.Platform.Tests;
+using BeamableEditor.Tests.Mockups;
 using NUnit.Framework;
 using System.Collections.Generic;
 
-namespace Beamable.Editor.Tests.Beamable.Content.ContentPublisherTests
+namespace BeamableEditor.Tests.Content
 {
 	public class PublishTests
 	{

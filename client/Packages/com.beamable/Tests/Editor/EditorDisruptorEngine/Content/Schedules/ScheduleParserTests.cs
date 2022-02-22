@@ -4,7 +4,7 @@ using NUnit.Framework;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Beamable.Editor.Tests.Content
+namespace BeamableEditor.Tests.Schedules
 {
 	public class ScheduleParserTests : ScheduleParser
 	{

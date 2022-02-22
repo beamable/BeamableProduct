@@ -1,8 +1,9 @@
 using Beamable.Common.Content;
+using Beamable.Editor.Tests.Beamable.Content;
 using NUnit.Framework;
 using System.Collections.Generic;
 
-namespace Beamable.Editor.Tests.Beamable.Content.ContentQueryTests
+namespace BeamableEditor.Tests.Content
 {
 	public class AcceptTagTests
 	{

@@ -1,7 +1,7 @@
 using Beamable.Common;
 using System;
 
-namespace Beamable.Editor.Tests
+namespace BeamableEditor.Tests.Mockups
 {
 	public class MockLogProvider : BeamableLogProvider
 	{
