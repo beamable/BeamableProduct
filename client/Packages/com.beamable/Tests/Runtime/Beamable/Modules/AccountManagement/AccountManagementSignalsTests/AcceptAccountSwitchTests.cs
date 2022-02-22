@@ -4,7 +4,7 @@ using Beamable.Common.Api.Auth;
 using Beamable.Platform.SDK;
 using Beamable.Platform.SDK.Auth;
 using NUnit.Framework;
-using Packages.Beamable.Runtime.Tests.Beamable;
+using Beamable.Tests.Runtime.Api;
 using System;
 using System.Collections;
 using System.Collections.Generic;
