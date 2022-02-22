@@ -1,6 +1,5 @@
 ﻿using Beamable.UI.Buss;
-using Beamable.UI.Sdf.MaterialManagement;
-using Beamable.UI.Sdf.Styles;
+using Beamable.UI.Sdf;
 using UnityEngine;
 using UnityEngine.Sprites;
 using UnityEngine.UI;

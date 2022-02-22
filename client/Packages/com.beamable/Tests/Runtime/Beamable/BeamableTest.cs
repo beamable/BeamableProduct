@@ -3,7 +3,7 @@ using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using Beamable.Platform.Tests;
 using NUnit.Framework;
-using Packages.Beamable.Runtime.Tests.Beamable;
+using Beamable.Tests.Runtime.Api;
 
 namespace Beamable.Tests.Runtime
 {

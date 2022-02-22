@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace Beamable.UI.Sdf.Styles
+namespace Beamable.UI.Sdf
 {
 	[Serializable]
 	public struct ColorRect
