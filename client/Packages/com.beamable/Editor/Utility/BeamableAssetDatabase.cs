@@ -20,7 +20,6 @@ namespace Beamable.Editor
 			Assert.IsFalse(t.FullName != null && t.FullName.Contains(nameof(UnityEditorInternal)), 
 			               $"Type {t.FullName} is part of `UnityEditorInternal`- these assets should be found using just nameof, not full type name");
 			var fullName = t.FullName;
-			
 
 			return AssetDatabase.FindAssets($"t:{fullName}", searchInFolders);
 		}
