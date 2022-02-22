@@ -17,7 +17,11 @@ namespace Beamable.Editor
 		public static string[] FindAssets(Type t, string[] searchInFolders = null)
 		{
 			Assert.IsNotNull(t, "Cannot find assets for null type");
+			Assert.IsFalse(t.FullName != null && t.FullName.Contains(nameof(UnityEditorInternal)), 
+			               $"Type {t.FullName} is part of `UnityEditorInternal`- these assets should be found using just nameof, not full type name");
 			var fullName = t.FullName;
+			
+
 			return AssetDatabase.FindAssets($"t:{fullName}", searchInFolders);
 		}
 
