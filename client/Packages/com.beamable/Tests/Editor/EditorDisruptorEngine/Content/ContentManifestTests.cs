@@ -3,7 +3,7 @@ using NUnit.Framework;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Beamable.Editor.Tests.Beamable.Content
+namespace BeamableEditor.Tests.Content
 {
 	public class ContentManifestTests
 	{

@@ -5,7 +5,7 @@ using System.Linq;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Beamable.Tests.Buss
+namespace BeamableEditor.Tests.Buss
 {
 	public class BussCascadeTest
 	{

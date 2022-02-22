@@ -1,6 +1,6 @@
 using Beamable.Common.Content;
 
-namespace Beamable.Editor.Tests.Beamable.Content
+namespace BeamableEditor.Tests.Content
 {
 	[ContentType("example")]
 	public class ExampleContent : ContentObject

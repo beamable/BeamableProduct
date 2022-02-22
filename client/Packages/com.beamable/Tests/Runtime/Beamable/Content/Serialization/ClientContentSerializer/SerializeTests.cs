@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 
-namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
+namespace BeamableEditor.Tests.Content
 {
 	public class SerializeTests
 	{
@@ -24,7 +24,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 				l = 101,
 				u = 7,
 				c = '#',
-				by = 2
+				@by = 2
 			};
 			var expected = @"{
    ""id"": ""test.nothing"",
@@ -64,7 +64,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 				bb = true,
 				u = 7,
 				c = '#',
-				by = 2
+				@by = 2
 			};
 			var expected = @"{
    ""id"": ""test.nothing"",
@@ -148,7 +148,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 				l = 101,
 				u = 7,
 				c = '#',
-				by = 2
+				@by = 2
 			};
 			var expected = @"{
    ""id"": ""test.nothing"",
@@ -188,7 +188,7 @@ namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
 					l = 101,
 					u = 7,
 					c = '#',
-					by = 2
+					@by = 2
 				}
 			};
 			var expected = @"{

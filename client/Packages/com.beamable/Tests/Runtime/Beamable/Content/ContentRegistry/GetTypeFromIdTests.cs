@@ -4,7 +4,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 
-namespace Beamable.Tests.Content.ContentRegistryTests
+namespace BeamableEditor.Tests.Content
 {
 	public class GetTypeFromIdTests
 	{

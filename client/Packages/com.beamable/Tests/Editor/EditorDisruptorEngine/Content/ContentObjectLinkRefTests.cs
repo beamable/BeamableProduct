@@ -8,7 +8,7 @@ using Beamable.Common.Tournaments;
 using Beamable.Experimental.Common.Calendars;
 using NUnit.Framework;
 
-namespace Beamable.Editor.Tests.Beamable.Content
+namespace BeamableEditor.Tests.Content
 {
 	public class ContentObjectLinkRefTests
 	{

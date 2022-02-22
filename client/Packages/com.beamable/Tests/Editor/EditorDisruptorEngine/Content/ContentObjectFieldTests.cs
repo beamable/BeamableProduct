@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
-namespace Beamable.Editor.Tests.Beamable.Content
+namespace BeamableEditor.Tests.Content
 {
 	public class ContentObjectFieldTests
 	{

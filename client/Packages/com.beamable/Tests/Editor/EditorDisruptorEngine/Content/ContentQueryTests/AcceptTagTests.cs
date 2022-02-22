@@ -1,5 +1,4 @@
 using Beamable.Common.Content;
-using Beamable.Editor.Tests.Beamable.Content;
 using NUnit.Framework;
 using System.Collections.Generic;
 
