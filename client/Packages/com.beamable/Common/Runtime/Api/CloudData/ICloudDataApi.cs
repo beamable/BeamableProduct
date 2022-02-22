@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace Beamable.Common.Api.CloudData
 {
 	/// <summary>

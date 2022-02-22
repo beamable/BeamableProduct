@@ -1,6 +1,4 @@
 using Beamable.Common;
-using Beamable.Platform.Tests;
-using Beamable.Tests.Runtime.Api;
 
 namespace Beamable.Server.Tests.Runtime
 {

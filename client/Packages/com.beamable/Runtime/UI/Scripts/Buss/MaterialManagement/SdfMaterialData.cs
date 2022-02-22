@@ -1,4 +1,4 @@
-﻿namespace Beamable.UI.Sdf
+namespace Beamable.UI.Sdf
 {
 	public struct SdfMaterialData
 	{

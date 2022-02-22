@@ -2,6 +2,7 @@
 using Beamable.Common.Inventory;
 using UnityEngine;
 
+
 public class ContentSubscriptionTest : MonoBehaviour
 {
     public CurrencyRef CurrencyRef;
