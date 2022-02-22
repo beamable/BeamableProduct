@@ -2,7 +2,7 @@ using Beamable.AccountManagement;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using NUnit.Framework;
-using Packages.Beamable.Runtime.Tests.Beamable;
+using Beamable.Tests.Runtime.Api;
 using System;
 using System.Collections;
 using System.Collections.Generic;
