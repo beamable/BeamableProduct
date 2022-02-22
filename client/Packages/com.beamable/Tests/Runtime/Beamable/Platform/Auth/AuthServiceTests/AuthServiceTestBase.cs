@@ -2,7 +2,7 @@ using Beamable.Api.Auth;
 using Beamable.Common.Api.Auth;
 using NUnit.Framework;
 
-namespace Beamable.Platform.Tests.Auth.AuthServiceTests
+namespace BeamableEditor.Tests.Platform.Auth.AuthServiceTests
 {
 	public class AuthServiceTestBase
 	{

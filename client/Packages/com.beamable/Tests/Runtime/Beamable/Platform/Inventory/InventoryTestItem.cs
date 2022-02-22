@@ -1,7 +1,7 @@
 using Beamable.Common.Content;
 using Beamable.Common.Inventory;
 
-namespace Beamable.Platform.Tests.Inventory
+namespace BeamableEditor.Tests.Platform.Inventory
 {
 	[ContentType(InventoryTestItem.CONTENT)]
 	public class InventoryTestItem : ItemContent

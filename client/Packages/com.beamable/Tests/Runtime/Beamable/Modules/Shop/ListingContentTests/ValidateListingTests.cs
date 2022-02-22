@@ -4,7 +4,7 @@ using Beamable.Common.Shop;
 using NUnit.Framework;
 using UnityEngine;
 
-namespace Beamable.Tests.Modules.Shop.ListingContentTests
+namespace BeamableEditor.Tests.Modules
 {
 	public class ValidateListingTests
 	{

@@ -2,7 +2,7 @@ using Beamable.Common.Api.Inventory;
 using NUnit.Framework;
 using System.Collections.Generic;
 
-namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
+namespace BeamableEditor.Tests.Platform.Inventory.InventoryUpdateBuilderTests
 {
 	public class SerializationTests
 	{

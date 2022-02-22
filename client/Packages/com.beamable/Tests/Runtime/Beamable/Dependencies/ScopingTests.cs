@@ -1,7 +1,7 @@
 using Beamable.Common.Dependencies;
 using NUnit.Framework;
 
-namespace Beamable.Tests.Runtime.Dependencies
+namespace BeamableEditor.Tests.Runtime.Dependencies
 {
 	public class ScopingTests
 	{

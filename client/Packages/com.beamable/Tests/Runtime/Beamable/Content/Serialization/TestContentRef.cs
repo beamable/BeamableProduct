@@ -2,7 +2,7 @@ using Beamable.Common;
 using Beamable.Common.Content;
 using System;
 
-namespace Beamable.Tests.Content.Serialization.Support
+namespace BeamableEditor.Tests.Content.Serialization
 {
 
 	public class TestSerializer : ContentSerializer<TestContentObject>

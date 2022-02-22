@@ -3,7 +3,7 @@ using Beamable.UI;
 using NUnit.Framework;
 using UnityEngine;
 
-namespace Beamable.Tests.Modules.Tournaments.TournamentScoreUtilTests
+namespace BeamableEditor.Tests.Modules
 {
 	public class GetShortScoreTests
 	{

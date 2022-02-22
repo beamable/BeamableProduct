@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using AuthService = Beamable.Api.Auth.AuthService;
 
-namespace Beamable.Platform.Tests
+namespace BeamableEditor.Tests.Platform
 {
 	public class MockPlatformRequester : IBeamableRequester
 	{

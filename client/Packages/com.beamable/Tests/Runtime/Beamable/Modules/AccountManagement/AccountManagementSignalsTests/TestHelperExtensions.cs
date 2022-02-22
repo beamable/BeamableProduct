@@ -5,7 +5,7 @@ using System;
 using UnityEngine;
 using UnityEngine.Events;
 
-namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
+namespace BeamableEditor.Tests.Modules
 {
 	public static class TestHelperExtensions
 	{

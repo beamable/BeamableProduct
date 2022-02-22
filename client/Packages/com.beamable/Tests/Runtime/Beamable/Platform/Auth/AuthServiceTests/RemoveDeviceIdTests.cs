@@ -5,7 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.TestTools;
 
-namespace Beamable.Platform.Tests.Auth.AuthServiceTests
+namespace BeamableEditor.Tests.Platform.Auth.AuthServiceTests
 {
 	public class RemoveDeviceIdTests : AuthServiceTestBase
 	{

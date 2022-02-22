@@ -1,8 +1,9 @@
+using Beamable;
 using Beamable.AccountManagement;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using NUnit.Framework;
-using Beamable.Tests.Runtime.Api;
+using BeamableEditor.Tests.Runtime.Api;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ using UnityEngine;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
 
-namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
+namespace BeamableEditor.Tests.Modules
 {
 	public class AcceptAccountSwitchTests
 	{

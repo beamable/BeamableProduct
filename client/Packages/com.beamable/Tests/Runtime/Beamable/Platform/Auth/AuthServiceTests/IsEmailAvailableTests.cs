@@ -4,7 +4,7 @@ using NUnit.Framework;
 using System.Collections;
 using UnityEngine.TestTools;
 
-namespace Beamable.Platform.Tests.Auth.AuthServiceTests
+namespace BeamableEditor.Tests.Platform.Auth.AuthServiceTests
 {
 	public class IsEmailAvailableTests : AuthServiceTestBase
 	{

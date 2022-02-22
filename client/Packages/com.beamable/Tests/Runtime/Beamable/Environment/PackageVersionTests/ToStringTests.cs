@@ -1,7 +1,7 @@
 using Beamable.Common;
 using NUnit.Framework;
 
-namespace Beamable.Tests.Runtime.Environment.PackageVersionTests
+namespace BeamableEditor.Tests.Runtime.Environment.PackageVersionTests
 {
 	public class ToStringTests
 	{

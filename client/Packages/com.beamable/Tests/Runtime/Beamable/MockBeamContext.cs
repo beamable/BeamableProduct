@@ -1,12 +1,13 @@
+using Beamable;
 using Beamable.Api;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Dependencies;
-using Beamable.Platform.Tests;
+using BeamableEditor.Tests.Platform;
 using Core.Platform.SDK;
 using System;
 
-namespace Beamable.Tests.Runtime
+namespace BeamableEditor.Tests.Runtime
 {
 	public class MockBeamContext : BeamContext
 	{

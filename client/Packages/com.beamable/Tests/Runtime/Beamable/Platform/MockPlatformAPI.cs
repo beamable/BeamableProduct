@@ -12,7 +12,7 @@ using UnityEngine;
 using UnityEngine.Networking;
 using AccessToken = Beamable.Api.AccessToken;
 
-namespace Beamable.Platform.Tests
+namespace BeamableEditor.Tests.Platform
 {
 	public class MockAccessToken : IAccessToken
 	{

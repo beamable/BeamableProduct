@@ -1,15 +1,16 @@
+using Beamable;
 using Beamable.AccountManagement;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
-using Beamable.Platform.Tests;
+using BeamableEditor.Tests.Platform;
 using NUnit.Framework;
-using Beamable.Tests.Runtime.Api;
+using BeamableEditor.Tests.Runtime.Api;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.TestTools;
 
-namespace Beamable.Tests.Modules.AccountManagement.AccountManagementSignalsTests
+namespace BeamableEditor.Tests.Modules
 {
 	public class LoginTests
 	{

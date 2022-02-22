@@ -2,7 +2,7 @@ using Beamable.Api.Connectivity;
 using Beamable.Common;
 using System;
 
-namespace Beamable.Platform.Tests.Connectivity
+namespace BeamableEditor.Tests.Platform.Connectivity
 {
 	public class MockConnectivityService : IConnectivityService
 	{

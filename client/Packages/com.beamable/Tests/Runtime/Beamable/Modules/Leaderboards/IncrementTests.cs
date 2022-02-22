@@ -1,16 +1,17 @@
+using Beamable;
 using Beamable.Api;
 using Beamable.Api.Leaderboard;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Leaderboards;
 using Beamable.Serialization.SmallerJSON;
-using Beamable.Tests.Runtime;
+using BeamableEditor.Tests.Runtime;
 using NUnit.Framework;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.TestTools;
 
-namespace Beamable.Tests.Modules.Leaderboards
+namespace BeamableEditor.Tests.Modules
 {
 	public class IncrementTests : BeamableTest
 	{

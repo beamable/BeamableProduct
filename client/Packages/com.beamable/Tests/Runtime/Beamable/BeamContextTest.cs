@@ -1,7 +1,7 @@
 using Beamable.Common.Dependencies;
 using NUnit.Framework;
 
-namespace Beamable.Tests.Runtime
+namespace BeamableEditor.Tests.Runtime
 {
 	public class BeamContextTest
 	{

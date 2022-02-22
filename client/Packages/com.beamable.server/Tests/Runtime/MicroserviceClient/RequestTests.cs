@@ -1,12 +1,13 @@
+using Beamable;
 using Beamable.Common.Api;
-using Beamable.Tests.Runtime;
+using BeamableEditor.Tests.Runtime;
 using NUnit.Framework;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.TestTools;
 
-namespace Beamable.Server.Tests.Runtime
+namespace BeamableEditor.Server.Tests
 {
 	public class RequestTests : BeamableTest
 	{

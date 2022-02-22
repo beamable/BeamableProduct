@@ -1,8 +1,9 @@
+using Beamable;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace Beamable.Tests.Runtime
+namespace BeamableEditor.Tests.Runtime
 {
 	public static class MockConfigurationHelper
 	{

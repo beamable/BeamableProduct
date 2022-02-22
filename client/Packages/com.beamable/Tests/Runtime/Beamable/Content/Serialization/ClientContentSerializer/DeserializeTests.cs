@@ -1,5 +1,5 @@
 using Beamable.Common.Content;
-using Beamable.Tests.Content.Serialization.Support;
+using BeamableEditor.Tests.Content.Serialization;
 using NUnit.Framework;
 using System;
 using System.Collections;
@@ -9,7 +9,7 @@ using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.TestTools;
 
-namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
+namespace BeamableEditor.Tests.Content.Serialization
 {
 	public class DeserializeTests
 	{

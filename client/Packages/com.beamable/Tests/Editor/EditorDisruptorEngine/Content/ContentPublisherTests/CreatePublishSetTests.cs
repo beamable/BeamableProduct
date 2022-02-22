@@ -1,7 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Editor.Content;
-using Beamable.Platform.Tests;
+using BeamableEditor.Tests.Platform;
 using BeamableEditor.Tests.Mockups;
 using NUnit.Framework;
 using System.Collections;

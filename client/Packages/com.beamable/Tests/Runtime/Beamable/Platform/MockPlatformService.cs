@@ -6,10 +6,10 @@ using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Notifications;
 using Beamable.Coroutines;
-using Beamable.Platform.Tests.Connectivity;
+using BeamableEditor.Tests.Platform.Connectivity;
 using System;
 
-namespace Beamable.Platform.Tests
+namespace BeamableEditor.Tests.Platform
 {
 	public class MockPlatformService : IPlatformService
 	{

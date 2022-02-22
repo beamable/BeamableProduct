@@ -6,7 +6,7 @@ using System.Threading;
 using UnityEngine;
 using UnityEngine.TestTools;
 
-namespace Beamable.Tests.Runtime.Pooling.StringBuilderPoolTests
+namespace BeamableEditor.Tests.Runtime.Pooling.StringBuilderPoolTests
 {
 
 	public class SpawnTests

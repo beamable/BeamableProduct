@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.TestTools;
 
-namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
+namespace BeamableEditor.Tests.Platform.Inventory.InventoryServiceTests
 {
 	public class GetItemTests : InventoryServiceTestBase
 	{

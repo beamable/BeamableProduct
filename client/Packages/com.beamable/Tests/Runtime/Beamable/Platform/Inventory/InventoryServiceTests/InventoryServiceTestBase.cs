@@ -2,11 +2,11 @@ using Beamable.Api.Inventory;
 using Beamable.Api.Payments;
 using Beamable.Common;
 using Beamable.Common.Api.Content;
-using Beamable.Platform.Tests.Content;
-using Beamable.Tests.Runtime;
+using BeamableEditor.Tests.Platform.Content;
+using BeamableEditor.Tests.Runtime;
 using NUnit.Framework;
 
-namespace Beamable.Platform.Tests.Inventory.InventoryServiceTests
+namespace BeamableEditor.Tests.Platform.Inventory.InventoryServiceTests
 {
 	public class InventoryServiceTestBase
 	{

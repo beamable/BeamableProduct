@@ -3,7 +3,7 @@ using Beamable.Common.Inventory;
 using NUnit.Framework;
 using System.Collections.Generic;
 
-namespace Beamable.Tests.Content.Serialization.VipContentSerialization
+namespace BeamableEditor.Tests.Content.Serialization
 {
 	public class VipContentSerializationTests
 	{

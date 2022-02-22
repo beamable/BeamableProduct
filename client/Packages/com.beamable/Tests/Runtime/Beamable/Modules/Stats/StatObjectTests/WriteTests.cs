@@ -3,12 +3,12 @@ using Beamable.Api.Stats;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Stats;
 using Beamable.Stats;
-using Beamable.Tests.Runtime;
+using BeamableEditor.Tests.Runtime;
 using NUnit.Framework;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Beamable.Tests.Modules.Stats.StatObjectTests
+namespace BeamableEditor.Tests.Modules
 {
 	public class WriteTests : BeamableTest
 	{

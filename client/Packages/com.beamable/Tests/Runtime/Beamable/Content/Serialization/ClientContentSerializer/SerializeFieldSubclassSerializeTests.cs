@@ -1,13 +1,14 @@
+using Beamable;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Common.Inventory;
-using Beamable.Tests.Content.Serialization.Support;
+using BeamableEditor.Tests.Content.Serialization;
 using NUnit.Framework;
 using System;
 using System.Reflection;
 using UnityEngine;
 
-namespace Beamable.Tests.Content.Serialization.ClientContentSerializationTests
+namespace BeamableEditor.Tests.Content.Serialization
 {
 	public class SerializeFieldSubclassSerializeTests
 	{

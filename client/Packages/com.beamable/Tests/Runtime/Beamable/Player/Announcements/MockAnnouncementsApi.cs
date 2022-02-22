@@ -3,7 +3,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Announcements;
 using System.Collections.Generic;
 
-namespace Beamable.Tests.Runtime.Player.Announcements
+namespace BeamableEditor.Tests.Runtime.Player.Announcements
 {
 	public class MockAnnouncementsApi : IAnnouncementsApi
 	{

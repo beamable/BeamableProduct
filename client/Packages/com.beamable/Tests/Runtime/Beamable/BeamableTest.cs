@@ -1,11 +1,12 @@
+using Beamable;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
-using Beamable.Platform.Tests;
+using BeamableEditor.Tests.Platform;
 using NUnit.Framework;
-using Beamable.Tests.Runtime.Api;
+using BeamableEditor.Tests.Runtime.Api;
 
-namespace Beamable.Tests.Runtime
+namespace BeamableEditor.Tests.Runtime
 {
 	/// <summary>
 	/// A base class for Beamable Tests that go through the boilerplate of setting up the mock beamable instance, requester, and user.

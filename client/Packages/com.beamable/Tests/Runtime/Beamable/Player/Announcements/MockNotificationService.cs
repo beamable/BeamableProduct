@@ -2,7 +2,7 @@ using Beamable.Common.Api.Notifications;
 using System;
 using System.Collections.Generic;
 
-namespace Beamable.Tests.Runtime.Player.Notifications
+namespace BeamableEditor.Tests.Runtime.Player.Notifications
 {
 	public class MockNotificationService : INotificationService
 	{

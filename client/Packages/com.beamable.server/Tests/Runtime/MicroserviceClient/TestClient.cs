@@ -1,6 +1,7 @@
 using Beamable.Common;
+using Beamable.Server;
 
-namespace Beamable.Server.Tests.Runtime
+namespace BeamableEditor.Server.Tests
 {
 	public class TestClient : MicroserviceClient
 	{

@@ -4,7 +4,7 @@ using Beamable.Common.Content;
 using System;
 using System.Collections.Generic;
 
-namespace Beamable.Platform.Tests.Content
+namespace BeamableEditor.Tests.Platform.Content
 {
 	public class MockContentService : IContentApi
 	{

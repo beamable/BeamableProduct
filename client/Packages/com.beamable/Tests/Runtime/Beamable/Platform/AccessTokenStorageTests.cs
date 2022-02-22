@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace Beamable.Platform.Tests
+namespace BeamableEditor.Tests.Platform
 {
 	public class AccessTokenStorageTests
 	{

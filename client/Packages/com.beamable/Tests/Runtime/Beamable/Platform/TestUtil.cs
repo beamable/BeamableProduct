@@ -6,7 +6,7 @@ using System.Text;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
-namespace Beamable.Platform.Tests
+namespace BeamableEditor.Tests.Platform
 {
 	public static class TestUtil
 	{
