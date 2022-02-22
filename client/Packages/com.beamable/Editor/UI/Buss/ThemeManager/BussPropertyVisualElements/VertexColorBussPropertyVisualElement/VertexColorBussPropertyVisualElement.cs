@@ -1,5 +1,5 @@
 ﻿using Beamable.UI.Buss;
-using Beamable.UI.Sdf.Styles;
+using Beamable.UI.Sdf;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;

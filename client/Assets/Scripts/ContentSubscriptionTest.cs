@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using Beamable;
+﻿using Beamable;
 using Beamable.Common.Inventory;
 using UnityEngine;
 

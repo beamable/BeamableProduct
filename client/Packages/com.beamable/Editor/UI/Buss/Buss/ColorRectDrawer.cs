@@ -1,5 +1,4 @@
-﻿using Beamable.UI.Sdf.Styles;
-using System;
+﻿using Beamable.UI.Sdf;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
