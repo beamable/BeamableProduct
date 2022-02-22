@@ -1,4 +1,5 @@
 using Beamable.Api;
+using Beamable.Api.Connectivity;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Content;
@@ -123,6 +124,7 @@ namespace Beamable.Content
 		public Action<string> OnManifestChanged;
 
 		private IPlatformService Platform => _provider.GetService<IPlatformService>();
+		private IConnectivityService _connectivityService;
 		private readonly Dictionary<Type, ContentCache> _contentCaches = new Dictionary<Type, ContentCache>();
 		private static bool _testScopeEnabled;
 
@@ -153,6 +155,7 @@ namespace Beamable.Content
 			_provider = provider;
 			CurrentDefaultManifestID = config.manifestID;
 			FilesystemAccessor = filesystemAccessor;
+			_connectivityService = _provider.GetService<IConnectivityService>();
 
 			Subscribable = new ManifestSubscription(_provider, CurrentDefaultManifestID);
 			Subscribable.Subscribe(cb =>
@@ -160,14 +163,14 @@ namespace Beamable.Content
 				// pay attention, server...
 			});
 
-			// if (!InitializeBakedFile())
-			{
-				Subscribables = new Dictionary<string, ManifestSubscription>();
-				AddSubscriber(CurrentDefaultManifestID);	
-			}
+
+			InitializeBakedFile();
+			
+			Subscribables = new Dictionary<string, ManifestSubscription>();
+			AddSubscriber(CurrentDefaultManifestID);
 		}
 		
-		private bool InitializeBakedFile()
+		private void InitializeBakedFile()
 		{
 			string path = FilesystemAccessor.GetPersistentDataPathWithoutTrailingSlash() + "/content/content.json";
 
@@ -185,7 +188,7 @@ namespace Beamable.Content
 				catch (Exception e)
 				{
 					Debug.LogError($"[EXTRACT] Failed to write baked data to disk: {e.Message}");
-					return false;
+					return;
 				}
 			}
 			else
@@ -194,7 +197,7 @@ namespace Beamable.Content
 
 				if (bakedFile == null)
 				{
-					return false;
+					return;
 				}
 
 				string json = bakedFile.text;
@@ -211,7 +214,7 @@ namespace Beamable.Content
 			
 			if (ContentDataInfo == null)
 			{
-				return false;
+				return;
 			}
 			
 			var manifestData = ContentDataInfo.contentManifestData;
@@ -219,8 +222,6 @@ namespace Beamable.Content
 			{
 				bakedManifest = JsonUtility.FromJson<ClientManifest>(manifestData);
 			}
-		    
-			return bakedManifest != null;
 		}
 
 #if UNITY_EDITOR
@@ -282,14 +283,20 @@ namespace Beamable.Content
 			var determinedManifestID = DetermineManifestID(manifestID);
 			return GetManifestWithID(determinedManifestID).FlatMap(manifest =>
 			{
+				if (!_connectivityService.HasConnectivity)
+				{
+					var content = manifest.entries.Find(i => i.contentId == contentId);
+					return rawCache.GetContentObject(content);
+				}
+				
 				var subscribable = GetSubscription(determinedManifestID);
-
+				
 				if (subscribable == null)
 					AddSubscriber(determinedManifestID);
-
+				
 				if (!subscribable.TryGetContentId(contentId, out var info))
 					return Promise<IContentObject>.Failed(new ContentNotFoundException(contentId));
-
+				
 				info.manifestID = determinedManifestID;
 				return rawCache.GetContentObject(info);
 			});
@@ -321,16 +328,34 @@ namespace Beamable.Content
 
 		public Promise<ClientManifest> GetManifestWithID(string manifestID = "")
 		{
+			if (!_connectivityService.HasConnectivity && bakedManifest != null)
+			{
+				Debug.LogWarning("No internet connection. Using baked content manifest");
+				return Promise<ClientManifest>.Successful(bakedManifest);
+			}
+			
 			return GetSubscription(DetermineManifestID(manifestID))?.GetManifest();
 		}
 
 		public Promise<ClientManifest> GetManifest(string filter = "", string manifestID = "")
 		{
+			if (!_connectivityService.HasConnectivity && bakedManifest != null)
+			{
+				Debug.LogWarning("No internet connection. Using baked content manifest");
+				return Promise<ClientManifest>.Successful(bakedManifest);
+			}
+			
 			return GetSubscription(DetermineManifestID(manifestID))?.GetManifest(filter);
 		}
 
 		public Promise<ClientManifest> GetManifest(ContentQuery query, string manifestID = "")
 		{
+			if (!_connectivityService.HasConnectivity && bakedManifest != null)
+			{
+				Debug.LogWarning("No internet connection. Using baked content manifest");
+				return Promise<ClientManifest>.Successful(bakedManifest);
+			}
+			
 			return GetSubscription(DetermineManifestID(manifestID))?.GetManifest(query);
 		}
 

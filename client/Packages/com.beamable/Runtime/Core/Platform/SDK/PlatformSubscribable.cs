@@ -261,6 +261,11 @@ namespace Beamable.Api
 			var scope = string.Join(",", nextRefreshScopes);
 			nextRefreshScopes.Clear();
 
+			if (!connectivityService.HasConnectivity)
+			{
+				yield break;
+			}
+			
 			ExecuteRequest(requester, CreateRefreshUrl(scope)).Error(err =>
 			{
 				var delay = SubscribableConsts.RETRY_DELAYS[Math.Min(retry, SubscribableConsts.RETRY_DELAYS.Length - 1)];
