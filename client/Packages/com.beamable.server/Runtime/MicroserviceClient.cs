@@ -142,7 +142,8 @@ namespace Beamable.Server
 
 			if (type == typeof(string))
 			{
-				return (T)(object)json;
+				return (T)(object)Json.Deserialize(json);
+
 			}
 
 			switch (defaultInstance)
