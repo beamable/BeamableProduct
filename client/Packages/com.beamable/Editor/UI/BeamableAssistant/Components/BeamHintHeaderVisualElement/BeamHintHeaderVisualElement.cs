@@ -1,4 +1,3 @@
-using Beamable.Common;
 using Beamable.Common.Assistant;
 using Beamable.Editor.Reflection;
 using System;
@@ -14,7 +13,6 @@ using UnityEngine.Assertions;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
-
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -278,6 +276,7 @@ namespace Beamable.Editor.Assistant
 				// Resolve all supported injections.
 				ResolveInjections(injectionBag.TextInjections, _detailsBox);
 				ResolveInjections(injectionBag.ParameterlessActionInjections, _detailsBox);
+				ResolveInjections(injectionBag.DynamicVisualElementInjections, _detailsBox);
 			}
 		}
 
@@ -331,6 +330,11 @@ namespace Beamable.Editor.Assistant
 					ResolveLabelInjection(toInject, label);
 					break;
 				}
+				case VisualElement container:
+				{
+					ResolveContainerInjection(toInject, container);
+					break;
+				}
 				default:
 					throw new ArgumentException($"Unsupported Injection! The system doesn't know how inject into a VisualElement of type {matchedElement.GetType().Name}.");
 			}
@@ -374,6 +378,28 @@ namespace Beamable.Editor.Assistant
 				case string label:
 				{
 					button.text = label;
+					break;
+				}
+				default:
+					throw new ArgumentException($"Unsupported Injection! The system doesn't know how inject object of type {typeof(T).Name} into a {nameof(Button)}.");
+			}
+		}
+
+		/// <summary>
+		/// Resolve supported injections for <see cref="Button"/> <see cref="VisualElement"/>s.
+		/// </summary>
+		private static void ResolveContainerInjection<T>(BeamHintVisualsInjectionBag.Injection<T> toInject, VisualElement container)
+		{
+			switch (toInject.ObjectToInject)
+			{
+				case string label:
+				{
+					container.Add(new Label(label));
+					break;
+				}
+				case VisualElement dynamicElement:
+				{
+					container.Add(dynamicElement);
 					break;
 				}
 				default:
@@ -426,16 +452,21 @@ namespace Beamable.Editor.Assistant
 	{
 		public readonly IEnumerable<Injection<string>> TextInjections;
 		public readonly IEnumerable<Injection<Action>> ParameterlessActionInjections;
+		public readonly IEnumerable<Injection<VisualElement>> DynamicVisualElementInjections;
 
 		private readonly List<Injection<string>> _textInjections;
 		private readonly List<Injection<Action>> _parameterlessActionInjections;
+		private readonly List<Injection<VisualElement>> _dynamicVisualElementInjections;
+
 
 		public BeamHintVisualsInjectionBag()
 		{
 			_textInjections = new List<Injection<string>>();
 			_parameterlessActionInjections = new List<Injection<Action>>();
+			_dynamicVisualElementInjections = new List<Injection<VisualElement>>();
 			TextInjections = new TextIterator(this);
 			ParameterlessActionInjections = new ParameterlessActionIterator(this);
+			DynamicVisualElementInjections = new DynamicVisualElementIterator(this);
 		}
 
 		public readonly struct Injection<T>
@@ -490,6 +521,26 @@ namespace Beamable.Editor.Assistant
 			}
 		}
 
+		public class DynamicVisualElementIterator : IEnumerable<Injection<VisualElement>>
+		{
+			public readonly BeamHintVisualsInjectionBag bag;
+
+			public DynamicVisualElementIterator(BeamHintVisualsInjectionBag beamHintVisualsInjectionBag)
+			{
+				bag = beamHintVisualsInjectionBag;
+			}
+
+			public IEnumerator<Injection<VisualElement>> GetEnumerator()
+			{
+				return bag._dynamicVisualElementInjections.GetEnumerator();
+			}
+
+			IEnumerator IEnumerable.GetEnumerator()
+			{
+				return GetEnumerator();
+			}
+		}
+
 		public void SetButtonLabel(string buttonLabel, string name, params string[] classes)
 		{
 			_textInjections.Add(new Injection<string>(new VisualElementsQuery(typeof(Button), name, classes), buttonLabel));
@@ -508,6 +559,11 @@ namespace Beamable.Editor.Assistant
 		public void SetLabelClicked(Action buttonAction, string name, params string[] classes)
 		{
 			_parameterlessActionInjections.Add(new Injection<Action>(new VisualElementsQuery(typeof(Label), name, classes), buttonAction));
+		}
+
+		public void AddAsChild(VisualElement element, string containerName, params string[] containerClasses)
+		{
+			_dynamicVisualElementInjections.Add(new Injection<VisualElement>(new VisualElementsQuery(typeof(VisualElement), containerName, containerClasses), element));
 		}
 	}
 }
