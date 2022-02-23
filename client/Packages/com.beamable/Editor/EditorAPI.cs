@@ -90,7 +90,7 @@ namespace Beamable.Editor
 
 		private Promise<EditorAPI> Initialize()
 		{
-			// Apply the defined configuration for how users want to uncaught promises (with no .Error callback attached) in Beamable promises. 
+			// Apply the defined configuration for how users want to uncaught promises (with no .Error callback attached) in Beamable promises.
 			if (!Application.isPlaying)
 			{
 				var promiseHandlerConfig = CoreConfiguration.Instance.DefaultUncaughtPromiseHandlerConfiguration;
@@ -155,7 +155,7 @@ namespace Beamable.Editor
 			ApplyConfig(alias, cid, pid, platform);
 			BeamableFacebookImporter.SetFlag();
 
-			return _accessTokenStorage.LoadTokenForCustomer(CidOrAlias).FlatMap(token =>
+			return _accessTokenStorage.LoadTokenForCustomer(Cid).FlatMap(token =>
 			{
 				if (token == null)
 				{
