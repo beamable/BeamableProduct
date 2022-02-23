@@ -1,9 +1,7 @@
-﻿using Beamable.UI.Sdf.Styles;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 #if !UNITY_2019_1_OR_NEWER
 using UnityEngine.Experimental.UI;
-
 #endif
 
 namespace Beamable.UI.Sdf

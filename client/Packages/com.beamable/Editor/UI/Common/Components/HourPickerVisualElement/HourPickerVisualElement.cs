@@ -1,9 +1,6 @@
-﻿using Beamable.Common.Content;
-using Beamable.Editor.UI.Buss;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -11,6 +8,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+
 using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components

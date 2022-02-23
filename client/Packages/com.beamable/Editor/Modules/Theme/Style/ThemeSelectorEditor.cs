@@ -19,7 +19,7 @@ namespace Beamable.Editor.Style
 		{
 			if (_configuration == null) return;
 
-			string[] guids = AssetDatabase.FindAssets($"t:{typeof(ThemeObject)}");
+			string[] guids = BeamableAssetDatabase.FindAssets<ThemeObject>();
 			string[] names = new string[guids.Length + 1];
 			names[guids.Length] = "New...";
 			ThemeObject[] styles = new ThemeObject[guids.Length];

@@ -1,5 +1,3 @@
-// unset
-
 using Beamable.AccountManagement;
 using Beamable.Api;
 using Beamable.Api.Analytics;
@@ -49,7 +47,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
@@ -133,6 +130,7 @@ namespace Beamable
 			DependencyBuilder.AddSingleton(BeamableEnvironment.Data);
 			DependencyBuilder.AddSingleton<IUserContext>(provider => provider.GetService<IPlatformService>());
 			DependencyBuilder.AddSingleton<IConnectivityService, ConnectivityService>();
+			DependencyBuilder.AddSingleton<IDeviceIdResolver, DefaultDeviceIdResolver>();
 			DependencyBuilder.AddSingleton<IAuthService, AuthService>();
 			DependencyBuilder.AddScoped<IInventoryApi, InventoryService>(
 				provider => provider.GetService<InventoryService>());

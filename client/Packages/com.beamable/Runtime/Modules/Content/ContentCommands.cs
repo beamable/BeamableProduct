@@ -1,5 +1,4 @@
-﻿using Beamable;
-using Beamable.Console;
+﻿using Beamable.Console;
 using Beamable.ConsoleCommands;
 using System;
 using System.Text;

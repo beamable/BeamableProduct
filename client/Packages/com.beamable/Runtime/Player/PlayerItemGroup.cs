@@ -1,5 +1,3 @@
-// unset
-
 using Beamable.Api;
 using Beamable.Api.Inventory;
 using Beamable.Common;

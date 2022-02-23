@@ -9,8 +9,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed 
+- Beamable assets are loaded with their full name so asset types won't collide
+
+### Added
+- `IDeviceIdResolver` is now a dependency of the `AuthService`, and can be overriden to produce different device ids other than `SystemInfo.deviceUniqueIdentifier`
+
 ### Changed
 - All Beamable Assembly Definitions use the `OverrideReferences` flag so they don't automatically reference project DLLs
+
 
 ## [1.0.0]
 ### Added
