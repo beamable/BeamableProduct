@@ -405,6 +405,13 @@ namespace Beamable.Server.Editor
 
 							onServiceDeployed?.Invoke(descriptor);
 							UpdateServiceDeployStatus(descriptor, ServicePublishState.Published);
+
+							foreach (var storage in descriptor.GetStorageReferences())
+							{
+								if (!enabledServices.Contains(storage.Name))
+									enabledServices.Add(storage.Name);
+							}
+
 							continue;
 						}
 					}
