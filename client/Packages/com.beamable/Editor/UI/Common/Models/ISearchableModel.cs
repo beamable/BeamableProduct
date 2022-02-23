@@ -1,8 +1,6 @@
 ﻿using Beamable.Common;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Beamable.Editor.UI.Common.Models
 {

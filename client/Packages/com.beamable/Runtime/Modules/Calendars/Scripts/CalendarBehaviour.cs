@@ -1,14 +1,14 @@
-﻿using Beamable.Content;
-using Beamable.Experimental.Common.Api.Calendars;
+﻿using Beamable.Experimental.Common.Api.Calendars;
 using Beamable.Experimental.Common.Calendars;
 using Beamable.Tournaments;
 using Beamable.UI.Scripts;
 using UnityEngine;
 using UnityEngine.UI;
+using static Beamable.Common.Constants.URLs;
 
 namespace Beamable.Experimental.Calendars
 {
-	[HelpURL(BeamableConstants.URL_FEATURE_CALENDAR_FLOW)]
+	[HelpURL(Documentations.URL_DOC_CALENDAR_FLOW)]
 	public class CalendarBehaviour : MonoBehaviour
 	{
 		public MenuManagementBehaviour MenuManager;

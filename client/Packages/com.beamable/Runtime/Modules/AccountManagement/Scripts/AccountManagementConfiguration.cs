@@ -1,21 +1,19 @@
-using Beamable;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
-using Beamable.Platform.SDK;
-using Beamable.Platform.SDK.Auth;
 using Beamable.Stats;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using static Beamable.Common.Constants.MenuItems.Assets;
 
 namespace Beamable.AccountManagement
 {
 #if BEAMABLE_DEVELOPER
 	[CreateAssetMenu(
 	   fileName = "Account Management Configuration",
-	   menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
+	   menuName = Paths.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
 	   "Account Management Configuration",
-	   order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
+	   order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 #endif
 	public class AccountManagementConfiguration : ModuleConfigurationObject, IAuthSettings
 	{

@@ -8,6 +8,7 @@ using UnityEngine.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.Features.Schedules;
 
 namespace Beamable.Editor.Content
 {
@@ -21,7 +22,7 @@ namespace Beamable.Editor.Content
 		private PrimaryButtonVisualElement _confirmButton;
 
 		public CronEditorVisualElement(string cronRawFormat, Action<string> result) :
-			base($"{BeamableComponentsConstants.SCHEDULES_PATH}/CronEditor/{nameof(CronEditorVisualElement)}/{nameof(CronEditorVisualElement)}")
+			base($"{SCHEDULES_PATH}/CronEditor/{nameof(CronEditorVisualElement)}/{nameof(CronEditorVisualElement)}")
 		{
 			_cronRawFormat = cronRawFormat;
 			_result = result;

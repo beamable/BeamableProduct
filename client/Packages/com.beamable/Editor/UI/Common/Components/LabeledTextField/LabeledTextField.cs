@@ -8,6 +8,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -61,7 +62,7 @@ namespace Beamable.Editor.UI.Components
 		private string Label { get; set; }
 
 		public LabeledTextField() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledTextField)}/{nameof(LabeledTextField)}")
+			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LabeledTextField)}/{nameof(LabeledTextField)}")
 		{
 		}
 

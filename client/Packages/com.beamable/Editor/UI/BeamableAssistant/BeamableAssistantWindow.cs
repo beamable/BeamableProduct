@@ -1,4 +1,3 @@
-using Beamable.Common;
 using Beamable.Common.Assistant;
 using Beamable.Editor.Content.Components;
 using Beamable.Editor.Reflection;
@@ -10,15 +9,16 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Assistant;
 
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
-
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.Assistant
 {
@@ -27,13 +27,13 @@ namespace Beamable.Editor.Assistant
 	/// </summary>
 	public class BeamableAssistantWindow : EditorWindow, ISerializationCallbackReceiver
 	{
-		[MenuItem(BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
-				  BeamableConstants.OPEN + " " +
-				  BeamableConstants.BEAMABLE_ASSISTANT,
-				  priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_2)]
+		[MenuItem(MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
+				  Commons.OPEN + " " +
+				  MenuItems.Windows.Names.BEAMABLE_ASSISTANT,
+				  priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2)]
 		public static BeamableAssistantWindow ShowWindow()
 		{
-			var window = GetWindow<BeamableAssistantWindow>(BeamableConstants.BEAMABLE_ASSISTANT, true, typeof(SceneView));
+			var window = GetWindow<BeamableAssistantWindow>(MenuItems.Windows.Names.BEAMABLE_ASSISTANT, true, typeof(SceneView));
 			window.Show();
 
 			return window;
@@ -91,7 +91,7 @@ namespace Beamable.Editor.Assistant
 		private void Update()
 		{
 			// If there are any new notifications, we refresh to get the new data rendered.
-			if (_beamHintsDataModel.RefreshDisplayingHints() || _hintNotificationManager != null && _hintNotificationManager.AllPendingNotifications.Any())
+			if ((_hintNotificationManager != null && _hintNotificationManager.AllPendingNotifications.Any()) || _beamHintsDataModel.RefreshDisplayingHints())
 			{
 				FillTreeViewFromDomains(_treeViewIMGUI, _beamHintsDataModel.SortedDomainsInStorage, _beamHintsDataModel.SelectedDomains);
 				FillDisplayingBeamHints(_hintsContainer, _beamHintsDataModel.DisplayingHints);
@@ -123,10 +123,9 @@ namespace Beamable.Editor.Assistant
 
 			var root = this.GetRootVisualContainer();
 			root.Clear();
-
-			var uiAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{BeamableAssistantConstants.BASE_PATH}/BeamableAssistantWindow.uxml");
+			var uiAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{BASE_PATH}/BeamableAssistantWindow.uxml");
 			_windowRoot = uiAsset.CloneTree();
-			_windowRoot.AddStyleSheet($"{BeamableAssistantConstants.BASE_PATH}/BeamableAssistantWindow.uss");
+			_windowRoot.AddStyleSheet($"{BASE_PATH}/BeamableAssistantWindow.uss");
 			_windowRoot.name = nameof(_windowRoot);
 
 			root.Add(_windowRoot);

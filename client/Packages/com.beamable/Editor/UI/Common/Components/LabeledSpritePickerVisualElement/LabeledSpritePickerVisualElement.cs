@@ -1,5 +1,4 @@
-﻿using Beamable.Editor.UI.Buss;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -8,6 +7,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -43,7 +43,7 @@ namespace Beamable.Editor.UI.Components
 		public Sprite SelectedSprite => _spritePicker.SelectedSprite;
 
 		public LabeledSpritePickerVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(LabeledSpritePickerVisualElement)}/{nameof(LabeledSpritePickerVisualElement)}")
+			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LabeledSpritePickerVisualElement)}/{nameof(LabeledSpritePickerVisualElement)}")
 		{ }
 
 		public override void Refresh()

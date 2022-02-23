@@ -17,7 +17,7 @@ namespace Beamable.Editor.Modules.Theme
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
 		{
 			var rect = new Rect(position.x + 5, position.y, position.width - 5, position.height);
-			string[] guids = AssetDatabase.FindAssets($"t:{typeof(ThemeObject)}");
+			string[] guids = BeamableAssetDatabase.FindAssets<ThemeObject>();
 			string[] names = new string[guids.Length + 1];
 			names[guids.Length] = "New...";
 			ThemeObject[] styles = new ThemeObject[guids.Length];

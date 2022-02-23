@@ -1,8 +1,6 @@
 ﻿using Beamable.Common.Content;
-using Beamable.Editor.UI.Buss;
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -10,6 +8,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -20,7 +19,7 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public CalendarVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(CalendarVisualElement)}/{nameof(CalendarVisualElement)}")
+			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(CalendarVisualElement)}/{nameof(CalendarVisualElement)}")
 		{
 		}
 
@@ -95,7 +94,7 @@ namespace Beamable.Editor.UI.Components
 				{
 					DayToggleVisualElement toggle = new DayToggleVisualElement();
 					string path =
-						$"{BeamableComponentsConstants.COMP_PATH}/{nameof(DayToggleVisualElement)}/{nameof(DayToggleVisualElement)}.uss";
+						$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(DayToggleVisualElement)}/{nameof(DayToggleVisualElement)}.uss";
 					toggle.AddStyleSheet(path);
 					toggle.AddToClassList("--margin5px");
 					currentRow.Add(toggle);

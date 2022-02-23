@@ -1,7 +1,5 @@
 using Beamable.Common.Content;
 using Beamable.Common.Inventory;
-using Beamable.Content;
-using Beamable.Inventory;
 
 #if BEAMABLE_DEVELOPER
 namespace Beamable.Editor.Content.Models

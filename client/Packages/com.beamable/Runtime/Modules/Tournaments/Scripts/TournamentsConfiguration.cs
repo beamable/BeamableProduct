@@ -1,25 +1,25 @@
-﻿using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using static Beamable.Common.Constants.MenuItems.Assets;
 
 namespace Beamable.Tournaments
 {
 #if BEAMABLE_DEVELOPER
 	[CreateAssetMenu(
 		fileName = "Tournament Configuration",
-		menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
+		menuName = Paths.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
 				  "Tournament Configuration",
-		order = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
+		order = Orders.MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_1)]
 #endif
 	public class TournamentsConfiguration : ModuleConfigurationObject
 	{
 		public static TournamentsConfiguration Instance => Get<TournamentsConfiguration>();
-
 		public List<TournamentInfoPageSection> Info;
 
 	}
 
-	[System.Serializable]
+	[Serializable]
 	public class TournamentInfoPageSection
 	{
 		public string Title;
@@ -28,6 +28,4 @@ namespace Beamable.Tournaments
 		public string DetailTitle;
 		public TournamentInfoDetailBehaviour DetailPrefab;
 	}
-
-
 }

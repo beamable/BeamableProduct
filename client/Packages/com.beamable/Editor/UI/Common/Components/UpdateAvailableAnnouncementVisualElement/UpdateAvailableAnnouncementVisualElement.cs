@@ -8,13 +8,15 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
+
 namespace Beamable.Editor.Toolbox.Components
 {
 	public class UpdateAvailableAnnouncementVisualElement : BeamableVisualElement
 	{
 		public UpdateAvailableAnnouncementModel UpdateAvailableAnnouncementModel { get; set; }
 		public UpdateAvailableAnnouncementVisualElement() : base(
-		   $"{BeamableComponentsConstants.COMP_PATH}/{nameof(UpdateAvailableAnnouncementVisualElement)}/{nameof(UpdateAvailableAnnouncementVisualElement)}")
+		   $"{Directories.COMMON_COMPONENTS_PATH}/{nameof(UpdateAvailableAnnouncementVisualElement)}/{nameof(UpdateAvailableAnnouncementVisualElement)}")
 		{
 		}
 

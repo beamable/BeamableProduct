@@ -1,8 +1,6 @@
-using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Dependencies;
-using Beamable.Service;
 using Beamable.Spew;
 using System;
 using System.Collections.Generic;

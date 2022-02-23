@@ -1,14 +1,12 @@
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
-using Beamable.Content;
-using Beamable.Editor.Content;
 using Beamable.Editor.Content.SaveRequest;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEditor;
+using static Beamable.Common.Constants.Directories;
 
 namespace Beamable.Editor.Content.Models
 {
@@ -214,7 +212,7 @@ namespace Beamable.Editor.Content.Models
 		public string AssetPathShort =>
 		   string.IsNullOrEmpty(AssetPath)
 			  ? ""
-			  : Path.GetDirectoryName(AssetPath)?.Substring(BeamableConstants.DATA_DIR.Length + 1) ?? "";
+			  : Path.GetDirectoryName(AssetPath)?.Substring(DATA_DIR.Length + 1) ?? "";
 
 
 		public HashSet<string> AllTags => new HashSet<string>(GetAllTags().Select(x => x.Tag)); // TODO: This could be cached.

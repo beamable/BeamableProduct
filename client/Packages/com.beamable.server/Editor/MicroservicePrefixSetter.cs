@@ -1,7 +1,7 @@
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.DockerCommands;
 using UnityEditor;
-using UnityEngine;
+using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server.Editor
 {
@@ -36,7 +36,7 @@ namespace Beamable.Server.Editor
 					{
 						if (state == PlayModeStateChange.EnteredPlayMode)
 						{
-							MicroserviceLogHelper.HandleLog(service, LogLevel.INFO, BeamableLogConstants.UsingRemoteServiceMessage,
+							MicroserviceLogHelper.HandleLog(service, LogLevel.INFO, USING_REMOTE_SERVICE_MESSAGE,
 								MicroserviceConfiguration.Instance.LogWarningLabelColor, true, "remote_icon");
 						}
 

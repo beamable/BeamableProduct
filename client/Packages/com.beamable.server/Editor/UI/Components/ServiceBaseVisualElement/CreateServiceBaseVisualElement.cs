@@ -2,14 +2,12 @@
 using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
-using Beamable.Server.Editor;
-using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Services;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -82,8 +80,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private void InjectStyleSheets()
 		{
 			if (string.IsNullOrWhiteSpace(ScriptName)) return;
-			_rootVisualElement.AddStyleSheet($"{Constants.COMP_PATH}/{ScriptName}/{ScriptName}.uss");
-			_rootVisualElement.AddStyleSheet($"{Constants.COMP_PATH}/ServiceBaseVisualElement/CreateService.uss");
+			_rootVisualElement.AddStyleSheet($"{COMPONENTS_PATH}/{ScriptName}/{ScriptName}.uss");
+			_rootVisualElement.AddStyleSheet($"{COMPONENTS_PATH}/ServiceBaseVisualElement/CreateService.uss");
 		}
 		protected virtual void UpdateVisualElements()
 		{

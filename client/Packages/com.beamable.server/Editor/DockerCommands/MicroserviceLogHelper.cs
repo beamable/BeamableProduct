@@ -1,4 +1,3 @@
-﻿using Beamable.Common;
 using Beamable.Editor.UI.Model;
 using Beamable.Serialization.SmallerJSON;
 using System;
@@ -8,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server.Editor.DockerCommands
 {
@@ -23,12 +23,12 @@ namespace Beamable.Server.Editor.DockerCommands
 			"exception"
 		};
 		private static readonly string[] ExpectedRunLogs = {
-			LogConstants.STARTING_PREFIX,
-			LogConstants.SCANNING_CLIENT_PREFIX,
-			LogConstants.REGISTERING_STANDARD_SERVICES,
-			LogConstants.REGISTERING_CUSTOM_SERVICES,
-			LogConstants.SERVICE_PROVIDER_INITIALIZED,
-			LogConstants.EVENT_PROVIDER_INITIALIZED
+			Logs.STARTING_PREFIX,
+			Logs.SCANNING_CLIENT_PREFIX,
+			Logs.REGISTERING_STANDARD_SERVICES,
+			Logs.REGISTERING_CUSTOM_SERVICES,
+			Logs.SERVICE_PROVIDER_INITIALIZED,
+			Logs.EVENT_PROVIDER_INITIALIZED
 		};
 
 		public static bool HandleMongoLog(StorageObjectDescriptor storage, string data,
@@ -281,7 +281,8 @@ namespace Beamable.Server.Editor.DockerCommands
 					builder.OnStartingProgress?.Invoke(i + 1, RunLogsSteps);
 				}
 			}
-			if (message.Contains(LogConstants.READY_FOR_TRAFFIC_PREFIX) || message.Contains(LogConstants.STORAGE_READY))
+			if (message.Contains(Logs.READY_FOR_TRAFFIC_PREFIX) ||
+				message.Contains(Logs.STORAGE_READY))
 			{
 				builder.OnStartingFinished?.Invoke(true);
 				builder.IsRunning = true;
