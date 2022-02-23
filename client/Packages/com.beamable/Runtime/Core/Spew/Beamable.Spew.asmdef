@@ -1,14 +1,14 @@
-﻿{
-	"name": "Beamable.Spew",
-	"references": [
-		"Unity.Beamable.Runtime.Common"
-	],
-	"optionalUnityReferences": [],
-	"includePlatforms": [],
-	"excludePlatforms": [],
-	"allowUnsafeCode": false,
-	"overrideReferences": false,
-	"precompiledReferences": [],
-	"autoReferenced": true,
-	"defineConstraints": []
+{
+    "name": "Beamable.Spew",
+    "references": [
+        "Unity.Beamable.Runtime.Common"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": []
 }
