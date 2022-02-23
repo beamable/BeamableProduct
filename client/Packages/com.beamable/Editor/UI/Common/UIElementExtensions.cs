@@ -2,6 +2,7 @@ using Beamable.Editor.UI.Common;
 using System;
 using System.IO;
 using System.Reflection;
+using Beamable.Common;
 using Beamable.Editor.UI.Components;
 using UnityEditor;
 #if UNITY_2018
@@ -292,10 +293,19 @@ namespace Beamable.Editor
 
 				foreach (FieldInfo fieldInfo in fields)
 				{
-					if (!typeof(VisualElement).IsAssignableFrom(fieldInfo.FieldType)) continue;
-				
 					var autoReferenceAttribute = fieldInfo.GetCustomAttribute<UIRefAttribute>();
-					autoReferenceAttribute?.AssignRef(element, fieldInfo);
+
+					if (autoReferenceAttribute == null)
+					{
+						continue;
+					}
+					
+					if (!typeof(VisualElement).IsAssignableFrom(fieldInfo.FieldType))
+					{
+						BeamableLogger.LogError($"UIRefAttribute can only be used for fields of type that inherit from BeamableBasicVisualElement!");
+						continue;
+					}
+					autoReferenceAttribute.AssignRef(element, fieldInfo);
 				}
 
 				type = type.BaseType;

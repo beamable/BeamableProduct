@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Beamable.Common;
 using Beamable.Editor.UI.Common;
 using UnityEngine.UIElements;
 
@@ -32,7 +33,15 @@ namespace Beamable.Editor.UI.Components
 		public void AssignRef(BeamableBasicVisualElement element, FieldInfo field)
 		{
 			var id = GetId(field.Name);
-			field.SetValue(element, element.Q(id, _classes));
+			var found = element.Q(id, _classes);
+			if (found == null)
+			{
+				BeamableLogger.LogWarning($"No visual element found for UIRef (ID: {id}).");
+			}
+			else
+			{
+				field.SetValue(element, found);
+			}
 		}
 	}
 }
