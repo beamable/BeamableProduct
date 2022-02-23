@@ -26,7 +26,7 @@ namespace Beamable.Server
 	///  - Currently, there is an issue that causes Singleton services to be disposed before they should be. The workaround is shown in the sample below.   /// 
 	/// </summary>
 	[Microservice("CacheDependentMS")]
-	public class CacheDependentMS : Microservice
+	public partial class CacheDependentMS : Microservice
 	{
 
 		/// <summary>
