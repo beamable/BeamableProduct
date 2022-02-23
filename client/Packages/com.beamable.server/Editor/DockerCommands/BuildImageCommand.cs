@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Assertions;
 using Debug = UnityEngine.Debug;
 
 namespace Beamable.Server.Editor.DockerCommands
@@ -104,8 +105,18 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		private void CleanBuildDirectory(MicroserviceDescriptor descriptor)
 		{
+			var dirExists = Directory.Exists(descriptor.BuildPath);
+#if UNITY_EDITOR_WIN
+			var longestPathLength = dirExists ? Directory
+			                                    .GetFiles(descriptor.BuildPath, "*", SearchOption.AllDirectories)
+			                                    .OrderByDescending(p => p.Length)
+			                                    .FirstOrDefault().Length : descriptor.BuildPath.Length;
+			Assert.IsFalse(longestPathLength + Directory.GetCurrentDirectory().Length >= 260, 
+			               "Project path is too long and can cause issues during building on Windows machine. " +
+			               "Consider moving project to other folder so the project path would be shorter.");
+#endif
 			// remove everything in the hidden folder...
-			if (Directory.Exists(descriptor.BuildPath))
+			if (dirExists)
 			{
 				Directory.Delete(descriptor.BuildPath, true);
 			}
