@@ -26,7 +26,7 @@ namespace Beamable.Server.Editor
 		public string SourcePath => Path.GetDirectoryName(AttributePath);
 		public string HidePath => $"./Assets/~/beamservicehide/{Name}";
 
-		public string BuildPath => $"./Assets/../Temp/beamservicebuild/{Name}";
+		public string BuildPath => $"./Temp/beam/{Name}";
 		public string ContainerName => $"{Name}_container";
 		public string ImageName => Name.ToLower();
 		public ServiceType ServiceType => ServiceType.MicroService;
