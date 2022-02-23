@@ -1,6 +1,7 @@
 ﻿using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
+using Beamable.Common;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -47,7 +48,7 @@ namespace Beamable.Editor.UI.Components
 			}
 			catch (Exception e)
 			{
-				Debug.LogException(e);
+				BeamableLogger.LogException(e);
 			}
 			IsTriggeringStyleSheetChange = false;
 		}
