@@ -4,7 +4,6 @@ using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using BeamableEditor.Tests.Platform;
 using NUnit.Framework;
-using BeamableEditor.Tests.Runtime.Api;
 
 namespace BeamableEditor.Tests.Runtime
 {
