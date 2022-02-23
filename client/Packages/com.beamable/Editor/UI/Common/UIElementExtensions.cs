@@ -1,6 +1,8 @@
 using Beamable.Editor.UI.Common;
 using System;
 using System.IO;
+using System.Reflection;
+using Beamable.Editor.UI.Components;
 using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -275,6 +277,29 @@ namespace Beamable.Editor
 				lbl.RemoveFromClassList("hidden");
 				Center();
 			};
+		}
+		
+		public static void AssignUIRefs(this BeamableBasicVisualElement element)
+		{
+			var type = element.GetType();
+			while (type != typeof(BeamableBasicVisualElement))
+			{
+				var fields = type.GetFields(
+					BindingFlags.Instance |
+					BindingFlags.NonPublic |
+					BindingFlags.Public |
+					BindingFlags.DeclaredOnly);
+
+				foreach (FieldInfo fieldInfo in fields)
+				{
+					if (!typeof(VisualElement).IsAssignableFrom(fieldInfo.FieldType)) continue;
+				
+					var autoReferenceAttribute = fieldInfo.GetCustomAttribute<UIRefAttribute>();
+					autoReferenceAttribute?.AssignRef(element, fieldInfo);
+				}
+
+				type = type.BaseType;
+			}
 		}
 	}
 }
