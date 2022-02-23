@@ -33,13 +33,16 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private const int MAX_NAME_LENGTH = 28;
 
+		private static readonly string[] ElementsToRemove = {
+			"dependentServicesContainer", "collapseContainer", "statusIcon", "remoteStatusIcon", "moreBtn"
+		};
+
 		private TextField _nameTextField;
 		private Button _cancelBtn;
 		private Button _buildDropDownBtn;
 		private LabeledCheckboxVisualElement _checkbox;
 		private PrimaryButtonVisualElement _createBtn;
 		private VisualElement _logContainerElement;
-		private List<string> _servicesNames;
 		private VisualElement _rootVisualElement;
 
 
@@ -55,9 +58,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		protected virtual void QueryVisualElements()
 		{
+			foreach (string element in ElementsToRemove)
+				Root.Q(element)?.RemoveFromHierarchy();
+
 			_rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
-			Root.Q("dependentServicesContainer")?.RemoveFromHierarchy();
-			Root.Q("collapseContainer")?.RemoveFromHierarchy();
 			_cancelBtn = Root.Q<Button>("cancelBtn");
 
 			var stopButton = Root.Q<Button>("stopBtn");
@@ -85,8 +89,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		protected virtual void UpdateVisualElements()
 		{
-			_servicesNames = MicroservicesDataModel.Instance.AllLocalServices.Select(x => x.Descriptor.Name).ToList();
-
 			ShowServiceCreateDependentService();
 			_nameTextField.maxLength = MAX_NAME_LENGTH;
 			_nameTextField.RegisterCallback<FocusEvent>(HandleNameLabelFocus, TrickleDown.TrickleDown);
