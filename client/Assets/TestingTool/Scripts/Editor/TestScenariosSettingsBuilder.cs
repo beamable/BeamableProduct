@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using TestingTool.Scripts.Helpers;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.TestingTool;
 
 namespace TestingTool.Scripts.Editor
 {
@@ -24,7 +24,7 @@ namespace TestingTool.Scripts.Editor
                 return;
             }
 
-            _testScenarios = AssetDatabase.LoadAssetAtPath<TestScenarios>(ConstantsHelper.TEST_SCENARIOS_CREATOR_PATH);
+            _testScenarios = AssetDatabase.LoadAssetAtPath<TestScenarios>(Directories.TEST_SCENARIOS_CREATOR_ASSET_PATH);
             Validate();
             SetupScenesInBuildSettings();
             SetupRuntimeTestScenarios();
@@ -36,7 +36,7 @@ namespace TestingTool.Scripts.Editor
             {
                 EditorUtility.DisplayDialog("Error",
                     "Test scenarios are not set up correctly. Check console for more info.", "Ok");
-                throw new NullReferenceException($"Not found scriptable object \"TestScenarios.asset\" at path {ConstantsHelper.TEST_SCENARIOS_CREATOR_PATH}. Make sure the file exists in the given path.");
+                throw new NullReferenceException($"Not found scriptable object \"TestScenarios.asset\" at path {Directories.TEST_SCENARIOS_CREATOR_ASSET_PATH}. Make sure the file exists in the given path.");
             }
             _testScenarios.Refresh();
             if (!IsEverySceneAssetUnique())
@@ -54,20 +54,20 @@ namespace TestingTool.Scripts.Editor
         }
         private static void SetupScenesInBuildSettings()
         {
-            var editorBuildSettingsScenes = new List<EditorBuildSettingsScene> { TryGetScene(ConstantsHelper.MAIN_MENU_PATH) };
+            var editorBuildSettingsScenes = new List<EditorBuildSettingsScene> { TryGetScene(Directories.MAIN_MENU_SCENE_PATH) };
             foreach (var scenario in _testScenarios.Scenarios)
             {
-                editorBuildSettingsScenes.Add(TryGetScene(ConstantsHelper.TEST_SCENE_DATA_PATH(scenario.Name)));
+                editorBuildSettingsScenes.Add(TryGetScene(Directories.TEST_SCENE_DATA_PATH(scenario.Name)));
             }
             EditorBuildSettings.scenes = editorBuildSettingsScenes.ToArray();
         }
         private static void SetupRuntimeTestScenarios()
         {
-            var testScenariosRuntime = Resources.Load<TestScenariosRuntime>(ConstantsHelper.TEST_SCENARIOS_RUNTIME_FILENAME);
+            var testScenariosRuntime = Resources.Load<TestScenariosRuntime>(FileNames.TEST_SCENARIOS_RUNTIME);
             if (testScenariosRuntime == null)
             {
                 testScenariosRuntime = ScriptableObject.CreateInstance<TestScenariosRuntime>();
-                AssetDatabase.CreateAsset(testScenariosRuntime, ConstantsHelper.TEST_SCENARIOS_RUNTIME_PATH);
+                AssetDatabase.CreateAsset(testScenariosRuntime, FileNames.TEST_SCENARIOS_RUNTIME);
             }
 
             testScenariosRuntime.CurrentScenario = null;
@@ -115,11 +115,11 @@ namespace TestingTool.Scripts.Editor
         }
         public static TestingToolConfig GetConfig()
         {
-            var config = AssetDatabase.LoadAssetAtPath<TestingToolConfig>($"{ConstantsHelper.TEST_TOOL_DIRECTORY}/{ConstantsHelper.TEST_CONFIG_FILENAME}.asset");
+	        var config = AssetDatabase.LoadAssetAtPath<TestingToolConfig>(Directories.CONFIG_ASSET_PATH);
             if (config == null)
             {
                 var asset = ScriptableObject.CreateInstance<TestingToolConfig>();
-                AssetDatabase.CreateAsset(asset, $"{ConstantsHelper.TEST_TOOL_DIRECTORY}/{ConstantsHelper.TEST_CONFIG_FILENAME}.asset");
+                AssetDatabase.CreateAsset(asset, Directories.CONFIG_ASSET_PATH);
                 AssetDatabase.SaveAssets();
                 config = asset;
             }
@@ -139,7 +139,7 @@ namespace TestingTool.Scripts.Editor
             _config = TestScenariosSettingsBuilder.GetConfig();
             if (_config == null || !_config.IsTestingToolEnabled)
                 return;
-            _testScenariosRuntime = Resources.Load<TestScenariosRuntime>(ConstantsHelper.TEST_SCENARIOS_RUNTIME_FILENAME);
+            _testScenariosRuntime = Resources.Load<TestScenariosRuntime>(Directories.TEST_SCENARIOS_RUNTIME_ASSET_PATH);
             Validate();
             _testScenariosRuntime.ResetForBuild();
         }
@@ -147,7 +147,7 @@ namespace TestingTool.Scripts.Editor
         {
             if (_testScenariosRuntime == null)
             {
-                throw new BuildFailedException($"\"{ConstantsHelper.TEST_SCENARIOS_RUNTIME_FILENAME}.asset\" not found! Check if file was created correctly");
+                throw new BuildFailedException($"\"{FileNames.TEST_SCENARIOS_RUNTIME}.asset\" not found! Check if file was created correctly");
             }
             if (!HasAnyScenarios())
             {
@@ -155,7 +155,7 @@ namespace TestingTool.Scripts.Editor
             }
             if (IsAnySceneCorrupted(out var corruptedSceneName))
             {
-                throw new BuildFailedException($"Scene \"{corruptedSceneName}\" is corrupted in \"{ConstantsHelper.TEST_SCENARIOS_RUNTIME_FILENAME}.asset\". Set up new {ConstantsHelper.TEST_SCENARIOS_RUNTIME_FILENAME}.asset from the creator \"{ConstantsHelper.TEST_CREATOR_FILENAME}.asset\"");
+                throw new BuildFailedException($"Scene \"{corruptedSceneName}\" is corrupted in \"{FileNames.TEST_SCENARIOS_RUNTIME}.asset\". Set up new {FileNames.TEST_SCENARIOS_RUNTIME}.asset from the creator \"{FileNames.TEST_CREATOR}.asset\"");
             }
         }
         private bool HasAnyScenarios()
