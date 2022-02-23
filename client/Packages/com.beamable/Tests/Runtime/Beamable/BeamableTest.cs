@@ -2,9 +2,9 @@ using Beamable;
 using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
+using Beamable.Tests.Runtime;
 using BeamableEditor.Tests.Platform;
 using NUnit.Framework;
-using Beamable.Tests.Runtime.Api;
 
 namespace BeamableEditor.Tests.Runtime
 {

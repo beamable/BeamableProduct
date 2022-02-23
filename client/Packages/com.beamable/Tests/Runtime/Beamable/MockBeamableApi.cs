@@ -29,7 +29,7 @@ using Beamable.Player;
 using System;
 using System.Collections.Generic;
 
-namespace Beamable.Tests.Runtime.Api
+namespace Beamable.Tests.Runtime
 {
 	public class MockBeamableApi : IBeamableAPI
 	{
