@@ -50,7 +50,7 @@ namespace Beamable.UI.Sdf
 			);
 		}
 
-		#if UNITY_EDITOR
+#if UNITY_EDITOR
 		public static class EditorHelper
 		{
 			public static ColorRect WithDrawerMode(ColorRect rect, int value)
@@ -64,6 +64,6 @@ namespace Beamable.UI.Sdf
 				return rect._drawerMode;
 			}
 		}
-		#endif
+#endif
 	}
 }

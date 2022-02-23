@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Beamable.UI.Buss;
+using Beamable.UI.Sdf;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Beamable.UI.Buss;
-using Beamable.UI.Sdf;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
@@ -31,7 +31,7 @@ namespace Beamable.Editor.UI.Components
 
 		private Mode DrawerMode
 		{
-			get => (Mode) ColorRect.EditorHelper.GetDrawerMode(Property.ColorRect);
+			get => (Mode)ColorRect.EditorHelper.GetDrawerMode(Property.ColorRect);
 			set
 			{
 				Property.ColorRect = ColorRect.EditorHelper.WithDrawerMode(Property.ColorRect, (int)value);
@@ -59,7 +59,7 @@ namespace Beamable.Editor.UI.Components
 			Root.style.SetFlexDirection(FlexDirection.Column);
 
 			CreateDropdown();
-			
+
 			_topRow = CreateRowContainer();
 			_bottomRow = CreateRowContainer();
 
@@ -197,14 +197,14 @@ namespace Beamable.Editor.UI.Components
 			if (IsTriggeringStyleSheetChange) return;
 
 			_doNotUpdateMode = true;
-			_drawerModeDropdown.Set((int) DrawerMode);
+			_drawerModeDropdown.Set((int)DrawerMode);
 			_doNotUpdateMode = false;
-			
+
 			var colorRect = Property.ColorRect;
-			Color blColor = colorRect.BottomLeftColor, 
-			      brColor = colorRect.BottomRightColor, 
-			      tlColor = colorRect.TopLeftColor, 
-			      trColor = colorRect.TopRightColor;
+			Color blColor = colorRect.BottomLeftColor,
+				  brColor = colorRect.BottomRightColor,
+				  tlColor = colorRect.TopLeftColor,
+				  trColor = colorRect.TopRightColor;
 
 			switch (DrawerMode)
 			{
@@ -219,7 +219,7 @@ namespace Beamable.Editor.UI.Components
 					blColor = colorRect.TopRightColor;
 					break;
 			}
-			
+
 			_bottomLeftColor.SetValueWithoutNotify(blColor);
 			_bottomRightColor.SetValueWithoutNotify(brColor);
 			_topLeftColor.SetValueWithoutNotify(tlColor);

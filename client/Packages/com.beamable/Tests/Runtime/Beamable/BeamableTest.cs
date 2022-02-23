@@ -2,8 +2,8 @@ using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using Beamable.Platform.Tests;
-using NUnit.Framework;
 using Beamable.Tests.Runtime.Api;
+using NUnit.Framework;
 
 namespace Beamable.Tests.Runtime
 {

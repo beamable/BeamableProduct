@@ -39,7 +39,8 @@ namespace Beamable.Editor.UI.Components
 		protected void TriggerStyleSheetChange()
 		{
 			IsTriggeringStyleSheetChange = true;
-			try { 
+			try
+			{
 				OnValueChanged?.Invoke();
 				if (UpdatedStyleSheet != null)
 				{
