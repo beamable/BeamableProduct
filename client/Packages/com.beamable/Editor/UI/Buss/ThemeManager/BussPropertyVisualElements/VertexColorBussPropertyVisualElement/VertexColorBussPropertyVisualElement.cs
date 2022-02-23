@@ -34,7 +34,7 @@ namespace Beamable.Editor.UI.Components
 			get => (Mode) ColorRect.EditorHelper.GetDrawerMode(Property.ColorRect);
 			set
 			{
-				Property.ColorRect = ColorRect.EditorHelper.SetDrawerMode(Property.ColorRect, (int)value);
+				Property.ColorRect = ColorRect.EditorHelper.WithDrawerMode(Property.ColorRect, (int)value);
 				TriggerStyleSheetChange();
 			}
 		}
@@ -187,7 +187,7 @@ namespace Beamable.Editor.UI.Components
 				tlColor,
 				trColor);
 			DrawerMode = mode;
-			rect = ColorRect.EditorHelper.SetDrawerMode(rect, (int)DrawerMode);
+			rect = ColorRect.EditorHelper.WithDrawerMode(rect, (int)DrawerMode);
 			Property.ColorRect = rect;
 			TriggerStyleSheetChange();
 		}
