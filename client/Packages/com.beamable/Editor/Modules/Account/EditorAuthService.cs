@@ -12,7 +12,7 @@ namespace Beamable.Editor.Modules.Account
 
 	public class EditorAuthService : AuthService, IEditorAuthApi
 	{
-		public EditorAuthService(IBeamableRequester requester) : base(requester, new DefaultAuthSettings
+		public EditorAuthService(IBeamableRequester requester) : base(requester, new DefaultDeviceIdResolver(), new DefaultAuthSettings
 		{
 			PasswordResetCodeType = CodeType.PIN
 		})
