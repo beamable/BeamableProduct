@@ -364,11 +364,12 @@ namespace Beamable.Content
 
 		public Promise<ClientManifest> GetManifest(ContentQuery query) => GetSubscription(CurrentDefaultManifestID)?.GetManifest(query);
 
+		private bool IsGlobalManifest(string manifestID) => string.IsNullOrEmpty(manifestID) || manifestID == "global";
+
 		public Promise<ClientManifest> GetManifestWithID(string manifestID = "")
 		{
-			if (!_connectivityService.HasConnectivity && bakedManifest != null)
+			if (!_connectivityService.HasConnectivity && IsGlobalManifest(manifestID) && bakedManifest != null)
 			{
-				Debug.LogWarning("No internet connection. Using baked content manifest");
 				return Promise<ClientManifest>.Successful(bakedManifest);
 			}
 			
@@ -377,9 +378,8 @@ namespace Beamable.Content
 
 		public Promise<ClientManifest> GetManifest(string filter = "", string manifestID = "")
 		{
-			if (!_connectivityService.HasConnectivity && bakedManifest != null)
+			if (!_connectivityService.HasConnectivity && IsGlobalManifest(manifestID) && bakedManifest != null)
 			{
-				Debug.LogWarning("No internet connection. Using baked content manifest");
 				return Promise<ClientManifest>.Successful(bakedManifest);
 			}
 			
@@ -388,9 +388,8 @@ namespace Beamable.Content
 
 		public Promise<ClientManifest> GetManifest(ContentQuery query, string manifestID = "")
 		{
-			if (!_connectivityService.HasConnectivity && bakedManifest != null)
+			if (!_connectivityService.HasConnectivity && IsGlobalManifest(manifestID) && bakedManifest != null)
 			{
-				Debug.LogWarning("No internet connection. Using baked content manifest");
 				return Promise<ClientManifest>.Successful(bakedManifest);
 			}
 			
