@@ -1,9 +1,6 @@
 using Beamable.Common;
-using Beamable.Common.Api;
 using Beamable.Common.Api.Leaderboards;
 using Beamable.Common.Leaderboards;
-using Beamable.Server;
-using Beamable.Server.Api.Groups;
 using Beamable.Server.Api.Leaderboards;
 using System;
 using System.Threading.Tasks;
@@ -171,16 +168,5 @@ namespace Beamable.Server
 		{
 
 		}
-
-		/// <summary>
-		/// Just a trivial example of a ClientCallable that access the cached data. 
-		/// </summary>
-		/// <returns></returns>
-		[ClientCallable]
-		public void TestUnsupportedParameters2(Task testTask, Promise testPromise)
-		{
-
-		}
-
 	}
 }
