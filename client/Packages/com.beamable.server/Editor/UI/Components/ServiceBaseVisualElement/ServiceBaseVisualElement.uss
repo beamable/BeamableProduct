@@ -107,6 +107,7 @@
     height: 23px;
     cursor: pan;
     background-image: none;
+    align-self: center;
 }
 
 #start {
