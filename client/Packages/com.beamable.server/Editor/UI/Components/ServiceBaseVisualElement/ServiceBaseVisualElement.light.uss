@@ -50,6 +50,10 @@
     border-color: rgba(141, 141, 141, 0);
 }
 
+#stopImage {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/StopAllLight.png");
+}
+
 .localBuilding {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/local Building D.png");
 }

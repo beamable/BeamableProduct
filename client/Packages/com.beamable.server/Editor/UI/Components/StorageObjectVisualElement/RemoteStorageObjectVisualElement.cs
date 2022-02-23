@@ -23,7 +23,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		protected override void UpdateVisualElements()
 		{
-			Root.Q<VisualElement>("buttonRow").RemoveFromHierarchy();
 			Root.Q<VisualElement>("logContainer").RemoveFromHierarchy();
 			Root.Q<VisualElement>("dependentServicesContainer").RemoveFromHierarchy();
 			Root.Q("collapseContainer")?.RemoveFromHierarchy();
@@ -45,6 +44,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_checkbox.Refresh();
 			_checkbox.SetText(Model.Name);
 			_checkbox.SetWithoutNotify(Model.IsSelected);
+			_checkbox.SetEnabled(false);
+			_stopButton.RemoveFromHierarchy();
 			Model.OnSelectionChanged += _checkbox.SetWithoutNotify;
 			_checkbox.OnValueChanged += b => Model.IsSelected = b;
 

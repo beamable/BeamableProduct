@@ -152,7 +152,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected abstract void UpdateRemoteStatusIcon();
 		protected virtual void UpdateButtons()
 		{
-			_stopButton.text = Model.IsRunning ? STOP : START;
 		}
 		protected virtual void UpdateLocalStatus()
 		{

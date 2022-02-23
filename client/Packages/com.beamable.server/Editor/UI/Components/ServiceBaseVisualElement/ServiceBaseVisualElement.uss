@@ -48,17 +48,13 @@
     
 }
 
-#statusIcon{
+#statusIcon, #remoteStatusIcon{
     /*background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Running L.png");*/
-    width: 25px;
-    height: 25px;
+    width: 26px;
+    height: 26px;
     align-self: center;
-
-}
-#remoteStatusIcon{
-    width: 25px;
-    height: 25px;
-    align-self: center;
+    margin-left: 10px;
+    margin-right: 5px;
 }
 
 
@@ -94,7 +90,7 @@
     justify-content: center;
     align-self: center;
     width: 30px;
-    height: 28px;
+    height: 23px;
     /*right: 3px;*/
     -unity-text-align: middle-center;
 }
@@ -108,7 +104,7 @@
     border-right-width: 1px;
     margin-right: 0px;
     background-image: none;
-    height: 28px;
+    height: 23px;
     cursor: pan;
     background-image: none;
 }
@@ -204,4 +200,15 @@ LabeledCheckboxVisualElement{
     align-self: center;
 }
 
+.rightArea Button.confirmButton {
+    margin-top: 0px;
+    margin-left: 0px;
+    margin-right: 0px;
+    margin-bottom: 0px;
+}
 
+#stopImage {
+    align-self: center;
+    width: 18px;
+    height: 18px;
+}

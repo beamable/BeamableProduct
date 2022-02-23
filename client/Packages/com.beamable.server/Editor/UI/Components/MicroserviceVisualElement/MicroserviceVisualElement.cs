@@ -4,6 +4,7 @@ using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.ManagerClient;
 using Beamable.Server.Editor.UI.Components.DockerLoginWindow;
 using System;
+using System.Globalization;
 using System.Threading.Tasks;
 using static Beamable.Common.Constants.Features.Services;
 #if UNITY_2018
@@ -148,7 +149,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			base.UpdateButtons();
 			_stopButton.visible = Model.IsRunning;
 			_buildDefaultLabel.text = GetBuildButtonString(_microserviceModel.IncludeDebugTools,
-				_microserviceModel.IsRunning ? BUILD_RESET : BUILD_START);
+				_microserviceModel.IsRunning ? BUILD_RESET : BUILD_START).ToUpper(CultureInfo.InvariantCulture);
 
 			if (_microserviceModel.IsRunning)
 			{

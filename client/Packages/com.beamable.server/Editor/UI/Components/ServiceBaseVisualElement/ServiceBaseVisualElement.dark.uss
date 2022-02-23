@@ -100,6 +100,10 @@ LogVisualElement > TemplateContainer > #mainVisualElement {
     border-color: #FFFFFF;
 }
 
+#stopImage {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/StopAllDark.png");
+}
+
 /* TODO - Add light icons*/
 .foldIcon {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/fold.png");
