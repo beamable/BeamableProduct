@@ -201,11 +201,9 @@ namespace Beamable.Content
 				}
 
 				string json = bakedFile.text;
-				try
-				{
-					ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
-				}
-				catch
+				ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
+				
+				if (ContentDataInfo == null)
 				{
 					json = Gzip.Decompress(bakedFile.bytes);
 					ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
