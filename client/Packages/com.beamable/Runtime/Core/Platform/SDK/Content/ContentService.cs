@@ -32,7 +32,8 @@ namespace Beamable.Content
 		public string ManifestID { get; } = "global";
 
 		private ClientManifest _latestManifiest;
-
+		private Action<ClientManifest> _onManifestUpdated;
+		
 		private readonly Promise<Unit> _manifestPromise = new Promise<Unit>();
 
 		private readonly Dictionary<string, ClientContentInfo> _contentIdTable =
@@ -41,9 +42,10 @@ namespace Beamable.Content
 		public Dictionary<Type, ContentCache> _contentCaches = new Dictionary<Type, ContentCache>();
 
 		public ManifestSubscription(IDependencyProvider provider,
-			string manifestID) : base(provider, "content")
+			string manifestID, Action<ClientManifest> onManifestUpdated) : base(provider, "content")
 		{
 			ManifestID = manifestID;
+			_onManifestUpdated = onManifestUpdated;
 		}
 
 		public bool TryGetContentId(string contentId, out ClientContentInfo clientInfo)
@@ -97,6 +99,7 @@ namespace Beamable.Content
 
 			Notify(data);
 
+			_onManifestUpdated?.Invoke(_latestManifiest);
 			_manifestPromise.CompleteSuccess(new Unit());
 		}
 	}
@@ -157,7 +160,7 @@ namespace Beamable.Content
 			FilesystemAccessor = filesystemAccessor;
 			_connectivityService = _provider.GetService<IConnectivityService>();
 
-			Subscribable = new ManifestSubscription(_provider, CurrentDefaultManifestID);
+			Subscribable = new ManifestSubscription(_provider, CurrentDefaultManifestID, UpdateContentManifest);
 			Subscribable.Subscribe(cb =>
 			{
 				// pay attention, server...
@@ -179,17 +182,6 @@ namespace Beamable.Content
 			{
 				var json = File.ReadAllText(path);
 				ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
-				
-				// save baked data to disk
-				try
-				{
-					Directory.CreateDirectory(Path.GetDirectoryName(path));
-					File.WriteAllText(path, json);
-				}
-				catch (Exception e)
-				{
-					Debug.LogError($"[EXTRACT] Failed to write baked data to disk: {e.Message}");
-				}
 			}
 			else
 			{
@@ -208,25 +200,66 @@ namespace Beamable.Content
 					json = Gzip.Decompress(bakedFile.bytes);
 					ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
 				}
+				
+				// save baked data to disk
+				try
+				{
+					Directory.CreateDirectory(Path.GetDirectoryName(path));
+					File.WriteAllText(path, json);
+				}
+				catch (Exception e)
+				{
+					Debug.LogError($"[EXTRACT] Failed to write baked data to disk: {e.Message}");
+				}
 			}
 		}
 
 		private void InitializeBakedManifest()
 		{
-			var manifestAsset = Resources.Load<TextAsset>(BAKED_MANIFEST_RESOURCE_PATH);
-
-			if (manifestAsset == null)
-			{
-				return;
-			}
-
-			string json = manifestAsset.text;
-			bakedManifest = JsonUtility.FromJson<ClientManifest>(json);
+			string path = FilesystemAccessor.GetPersistentDataPathWithoutTrailingSlash() + "/content/contentManifest.json";
 			
-			if (bakedManifest == null)
+			if (File.Exists(path))
 			{
-				json = Gzip.Decompress(manifestAsset.bytes);
-				bakedManifest = JsonUtility.FromJson<ClientManifest>(json);	
+				var json = File.ReadAllText(path);
+				bakedManifest = JsonUtility.FromJson<ClientManifest>(json);
+			}
+			else
+			{
+				var manifestAsset = Resources.Load<TextAsset>(BAKED_MANIFEST_RESOURCE_PATH);
+
+				if (manifestAsset == null)
+				{
+					return;
+				}
+
+				string json = manifestAsset.text;
+				bakedManifest = JsonUtility.FromJson<ClientManifest>(json);
+			
+				if (bakedManifest == null)
+				{
+					json = Gzip.Decompress(manifestAsset.bytes);
+					bakedManifest = JsonUtility.FromJson<ClientManifest>(json);	
+				}
+				
+				UpdateContentManifest(bakedManifest);
+			}
+		}
+
+		private void UpdateContentManifest(ClientManifest manifest)
+		{
+			bakedManifest = manifest;
+			
+			string path = FilesystemAccessor.GetPersistentDataPathWithoutTrailingSlash() + "/content/contentManifest.json";
+
+			// save baked data to disk
+			try
+			{
+				Directory.CreateDirectory(Path.GetDirectoryName(path));
+				File.WriteAllText(path, JsonUtility.ToJson(bakedManifest));
+			}
+			catch (Exception e)
+			{
+				Debug.LogError($"Failed to write baked manifest data to disk: {e.Message}");
 			}
 		}
 
@@ -243,7 +276,7 @@ namespace Beamable.Content
 			if (Subscribables.ContainsKey(manifestID))
 				return;
 
-			Subscribables.Add(manifestID, new ManifestSubscription(_provider, manifestID));
+			Subscribables.Add(manifestID, new ManifestSubscription(_provider, manifestID, UpdateContentManifest));
 			Subscribables[manifestID].Subscribe(cb => { });
 		}
 
@@ -307,7 +340,6 @@ namespace Beamable.Content
 				return rawCache.GetContentObject(info);
 			});
 		}
-
 
 		public Promise<IContentObject> GetContent(IContentRef reference, string manifestID = "")
 		{
