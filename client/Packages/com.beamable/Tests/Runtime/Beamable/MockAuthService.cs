@@ -4,7 +4,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using System;
 
-namespace BeamableEditor.Tests.Runtime
+namespace Beamable.Tests.Runtime.Api
 {
 	public class MockAuthService : IAuthService
 	{

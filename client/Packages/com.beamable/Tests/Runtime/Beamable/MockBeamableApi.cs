@@ -1,4 +1,3 @@
-using Beamable;
 using Beamable.Api;
 using Beamable.Api.Analytics;
 using Beamable.Api.Announcements;
@@ -30,7 +29,7 @@ using Beamable.Player;
 using System;
 using System.Collections.Generic;
 
-namespace BeamableEditor.Tests.Runtime
+namespace Beamable.Tests.Runtime.Api
 {
 	public class MockBeamableApi : IBeamableAPI
 	{

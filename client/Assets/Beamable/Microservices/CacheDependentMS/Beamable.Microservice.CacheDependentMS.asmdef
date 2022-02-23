@@ -6,8 +6,7 @@
     "Unity.Beamable.Server.Runtime.Shared",
     "Unity.Beamable",
     "Beamable.SmallerJSON",
-    "Unity.Beamable.Customer.Common",
-    "Beamable.Storage.NewStorageObject"
+    "Unity.Beamable.Customer.Common"
   ],
   "optionalUnityReferences":[
      
