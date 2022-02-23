@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed 
 - Beamable assets are loaded with their full name so asset types won't collide
 
+### Added
+- `IDeviceIdResolver` is now a dependency of the `AuthService`, and can be overriden to produce different device ids other than `SystemInfo.deviceUniqueIdentifier`
+
+
 ## [1.0.0]
 ### Added
 - `BeamContext` classes and new player centric SDK types like `PlayerInventory`
