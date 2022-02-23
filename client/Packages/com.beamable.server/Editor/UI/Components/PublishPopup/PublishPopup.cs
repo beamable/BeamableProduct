@@ -73,7 +73,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		public void PrepareParent()
 		{
 			parent.name = "PublishWindowContainer";
-			parent.AddStyleSheet(USSPath);
+			parent.AddStyleSheet(UssPath);
 		}
 
 		public override void Refresh()
