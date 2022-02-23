@@ -164,13 +164,14 @@ namespace Beamable.Content
 			});
 
 
-			InitializeBakedFile();
+			InitializeBakedContent();
+			InitializeBakedManifest();
 			
 			Subscribables = new Dictionary<string, ManifestSubscription>();
 			AddSubscriber(CurrentDefaultManifestID);
 		}
 		
-		private void InitializeBakedFile()
+		private void InitializeBakedContent()
 		{
 			string path = FilesystemAccessor.GetPersistentDataPathWithoutTrailingSlash() + "/content/content.json";
 
@@ -188,7 +189,6 @@ namespace Beamable.Content
 				catch (Exception e)
 				{
 					Debug.LogError($"[EXTRACT] Failed to write baked data to disk: {e.Message}");
-					return;
 				}
 			}
 			else
@@ -211,16 +211,24 @@ namespace Beamable.Content
 					ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
 				}
 			}
-			
-			if (ContentDataInfo == null)
+		}
+
+		private void InitializeBakedManifest()
+		{
+			var manifestAsset = Resources.Load<TextAsset>(BAKED_MANIFEST_RESOURCE_PATH);
+
+			if (manifestAsset == null)
 			{
 				return;
 			}
+
+			string json = manifestAsset.text;
+			bakedManifest = JsonUtility.FromJson<ClientManifest>(json);
 			
-			var manifestData = ContentDataInfo.contentManifestData;
-			if (!string.IsNullOrEmpty(manifestData))
+			if (bakedManifest == null)
 			{
-				bakedManifest = JsonUtility.FromJson<ClientManifest>(manifestData);
+				json = Gzip.Decompress(manifestAsset.bytes);
+				bakedManifest = JsonUtility.FromJson<ClientManifest>(json);	
 			}
 		}
 

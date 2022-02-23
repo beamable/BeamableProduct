@@ -1044,23 +1044,23 @@ namespace Beamable.Editor.Content
 				contentData[i] = new ContentDataInfo {contentId = content.Id, data = content.ToJson()};
 			}
 
-			ContentDataInfoWrapper fileData = new ContentDataInfoWrapper
-			{
-				contentManifestData = JsonUtility.ToJson(clientManifest), content = contentData.ToList()
-			};
+			ContentDataInfoWrapper fileData = new ContentDataInfoWrapper { content = contentData.ToList() };
 
 			try
 			{
-				string json = JsonUtility.ToJson(fileData);
-				string path = BAKED_CONTENT_FILE_PATH + ".bytes";
+				string contentJson = JsonUtility.ToJson(fileData);
+				string contentPath = BAKED_CONTENT_FILE_PATH + ".bytes";
+				string manifestJson = JsonUtility.ToJson(clientManifest);
+				string manifestPath = BAKED_MANIFEST_FILE_PATH + ".bytes";
 				if (compress)
 				{
-					var compressed = Gzip.Compress(json);
-					File.WriteAllBytes(path, compressed);
+					File.WriteAllBytes(contentPath, Gzip.Compress(contentJson));
+					File.WriteAllBytes(manifestPath, Gzip.Compress(manifestJson));
 				}
 				else
 				{
-					File.WriteAllText(path, json);
+					File.WriteAllText(contentPath, contentJson);
+					File.WriteAllText(manifestPath, manifestJson);
 				}
 			}
 			catch (Exception e)
