@@ -11,6 +11,8 @@ namespace Beamable.Server
 		[SerializeField]
 		[BsonRepresentation(BsonType.ObjectId)]
 		[BsonId]
+		[BsonIgnoreIfDefault]
+		[BsonIgnoreIfNull]
 		private string _id = null; // MongoDb driver will auto-set this.
 
 		/// <summary>
