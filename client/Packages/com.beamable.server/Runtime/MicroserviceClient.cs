@@ -138,8 +138,10 @@ namespace Beamable.Server
 
 			if (type == typeof(string))
 			{
-				return (T)(object)Json.Deserialize(json);
-
+				if (json.StartsWith("\"") && json.EndsWith("\""))
+					return (T)(object)Json.Deserialize(json);
+				
+				return (T)(object)json;
 			}
 
 			switch (defaultInstance)
