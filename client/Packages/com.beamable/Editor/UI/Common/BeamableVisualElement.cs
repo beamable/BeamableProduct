@@ -19,7 +19,7 @@ namespace Beamable.Editor.UI.Components
 
 		protected string UXMLPath { get; private set; }
 
-		protected string USSPath { get; private set; }
+		protected string UssPath { get; private set; }
 
 		public BeamableVisualElement(string commonPath) : this(commonPath + ".uxml", commonPath + ".uss") { }
 
@@ -28,7 +28,7 @@ namespace Beamable.Editor.UI.Components
 			Assert.IsTrue(File.Exists(uxmlPath), $"Cannot find {uxmlPath}");
 			Assert.IsTrue(File.Exists(ussPath), $"Cannot find {ussPath}");
 			UXMLPath = uxmlPath;
-			USSPath = ussPath;
+			UssPath = ussPath;
 			TreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UXMLPath);
 
 			RegisterCallback<DetachFromPanelEvent>(evt =>
