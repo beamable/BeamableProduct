@@ -1,4 +1,4 @@
-﻿{
+{
     "name": "Unity.Beamable.Tests",
     "references": [
         "Unity.Beamable",
@@ -14,11 +14,10 @@
     "optionalUnityReferences": [
         "TestAssemblies"
     ],
-    "includePlatforms": [
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
-    "overrideReferences": false,
+    "overrideReferences": true,
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": []
