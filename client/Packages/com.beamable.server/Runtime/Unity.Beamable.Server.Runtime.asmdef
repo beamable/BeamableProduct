@@ -1,6 +1,6 @@
 {
-	"name": "Unity.Beamable.Server.Runtime",
-     "references": [
+    "name": "Unity.Beamable.Server.Runtime",
+    "references": [
         "Beamable.Config",
         "Beamable.JsonSerializable",
         "Beamable.SmallerJSON",
@@ -9,14 +9,13 @@
         "Unity.Beamable.Server.Runtime.Shared",
         "Unity.Beamable.Server.Runtime.Common",
         "Unity.Beamable"
-     ],
-     "optionalUnityReferences": [],
-     "includePlatforms": [],
-     "excludePlatforms": [],
-     "allowUnsafeCode": false,
-     "overrideReferences": false,
-     "precompiledReferences": [],
-     "noEngineReferences": false,
-     "autoReferenced": true,
-     "defineConstraints": []
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": []
 }

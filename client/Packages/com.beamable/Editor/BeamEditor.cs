@@ -111,9 +111,10 @@ namespace Beamable
 
 			// Load up all Asset-based IReflectionSystem (injected via ReflectionSystemObject instances). This was made to solve a cross-package injection problem.
 			// It doubles as a no-code way for users to inject their own IReflectionSystem into our pipeline.
-			var reflectionCacheSystemGuids = AssetDatabase.FindAssets($"t:{nameof(ReflectionSystemObject)}", coreConfiguration.ReflectionSystemPaths
-																															  .Where(Directory.Exists)
-																															  .ToArray());
+			var reflectionCacheSystemGuids = BeamableAssetDatabase.FindAssets<ReflectionSystemObject>(
+				coreConfiguration.ReflectionSystemPaths
+				                 .Where(Directory.Exists)
+				                 .ToArray());
 
 			// Get ReflectionSystemObjects and sort them
 			var reflectionSystemObjects = reflectionCacheSystemGuids.Select(reflectionCacheSystemGuid =>

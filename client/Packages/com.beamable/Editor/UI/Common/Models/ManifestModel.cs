@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.ContentManager;
 
 namespace Beamable.Editor.UI.Common.Models
 {
@@ -25,7 +26,7 @@ namespace Beamable.Editor.UI.Common.Models
 
 		public void Initialize()
 		{
-			Default = new AvailableManifestModel() { id = BeamableConstants.DEFAULT_MANIFEST_ID };
+			Default = new AvailableManifestModel() { id = DEFAULT_MANIFEST_ID };
 			RefreshAvailable();
 
 			EditorAPI.Instance.Then(api =>
@@ -92,13 +93,13 @@ namespace Beamable.Editor.UI.Common.Models
 			{
 				Debug.LogException(e);
 			}
-			if (ContentConfiguration.Instance.EditorManifestID != BeamableConstants.DEFAULT_MANIFEST_ID &&
+			if (ContentConfiguration.Instance.EditorManifestID != DEFAULT_MANIFEST_ID &&
 				manifests.manifests.All(m => m.id != ContentConfiguration.Instance.EditorManifestID))
 			{
 				EditorUtility.DisplayDialog("No manifest id!",
 					$"There is no manifest named '{ContentConfiguration.Instance.EditorManifestID}' in current realm. Switching into 'global' manifest.",
 					"OK");
-				EditorAPI.Instance.Then(api => api.ContentIO.SwitchManifest(BeamableConstants.DEFAULT_MANIFEST_ID));
+				EditorAPI.Instance.Then(api => api.ContentIO.SwitchManifest(DEFAULT_MANIFEST_ID));
 			}
 		}
 

@@ -57,6 +57,16 @@ namespace Beamable.Api.Caches
 			_instance.Merge(key + token?.RefreshToken, data);
 		}
 
+		public static bool Exists(string key, IAccessToken token, bool includeAuthHeader)
+		{
+			string actualKey = _instance.GetHash(GetKey(key, token, includeAuthHeader));
+			bool existsInCache =
+				_instance._offlineCacheData.ContainsKey(actualKey);
+			bool existsOnDisk = File.Exists(_instance.GetFullPathForKey(actualKey));
+			
+			return existsInCache || existsOnDisk;
+		}
+
 		public static Promise<Dictionary<long, Dictionary<TKey, TValue>>> RecoverDictionary<TKey, TValue>(Exception ex, string key,
 			IAccessToken token,
 			List<long> gamerTags)

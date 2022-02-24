@@ -15,6 +15,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Services;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -207,12 +208,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void MicroserviceStartFailed()
 		{
-			_actionPrompt.SetVisible(Constants.PROMPT_STARTED_FAILURE, true, false);
+			_actionPrompt.SetVisible(PROMPT_STARTED_FAILURE, true, false);
 		}
 
 		private void MicroserviceStopFailed()
 		{
-			_actionPrompt.SetVisible(Constants.PROMPT_STOPPED_FAILURE, true, false);
+			_actionPrompt.SetVisible(PROMPT_STOPPED_FAILURE, true, false);
 		}
 
 		public void DisplayCreatingNewService(ServiceType serviceType)

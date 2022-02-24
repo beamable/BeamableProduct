@@ -62,7 +62,7 @@
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Stopped D.png");
 }
 
-.remoteRunning{
+.remoteEnabled{
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Running D.png");
 }
 .remoteStopped{

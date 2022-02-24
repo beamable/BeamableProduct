@@ -11,6 +11,7 @@ using UnityEngine.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -44,9 +45,7 @@ namespace Beamable.Editor.UI.Components
 
 		public BussStyleRule StyleRule => _styleRule;
 
-		public BussStyleCardVisualElement() : base(
-			$"{BeamableComponentsConstants.BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}")
-		{ }
+		public BussStyleCardVisualElement() : base($"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleCardVisualElement)}/{nameof(BussStyleCardVisualElement)}") { }
 
 		public override void Refresh()
 		{
@@ -153,7 +152,7 @@ namespace Beamable.Editor.UI.Components
 			_themeManager.CloseConfirmationPopup();
 
 			ConfirmationPopupVisualElement confirmationPopup = new ConfirmationPopupVisualElement(
-				BussConstants.DeleteStyleMessage,
+				DELETE_STYLE_MESSAGE,
 				() =>
 				{
 					_styleSheet.RemoveStyle(StyleRule);
@@ -163,7 +162,7 @@ namespace Beamable.Editor.UI.Components
 			);
 
 			BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowConfirmationUtility(
-				BussConstants.DeleteStyleHeader,
+				DELETE_STYLE_HEADER,
 				confirmationPopup, _themeManager);
 
 			_themeManager.SetConfirmationPopup(popupWindow);
@@ -217,7 +216,7 @@ namespace Beamable.Editor.UI.Components
 			_themeManager.CloseConfirmationPopup();
 
 			ConfirmationPopupVisualElement confirmationPopup = new ConfirmationPopupVisualElement(
-				BussConstants.ClearAllPropertiesMessage,
+				CLEAR_ALL_PROPERTIES_MESSAGE,
 				() =>
 				{
 					_styleSheet.RemoveAllProperties(StyleRule);
@@ -226,7 +225,7 @@ namespace Beamable.Editor.UI.Components
 			);
 
 			BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowConfirmationUtility(
-				BussConstants.ClearAllPropertiesHeader,
+				CLEAR_ALL_PROPERTIES_HEADER,
 				confirmationPopup, _themeManager);
 
 			_themeManager.SetConfirmationPopup(popupWindow);

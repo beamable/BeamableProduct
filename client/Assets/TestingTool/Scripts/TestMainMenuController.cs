@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
-using TestingTool.Scripts.Helpers;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using static Beamable.Common.Constants.Features.TestingTool;
+
 #pragma warning disable CS0649
 
 namespace TestingTool.Scripts
@@ -17,7 +18,7 @@ namespace TestingTool.Scripts
 
         private void Awake()
         {
-            testScenarios = Resources.Load<TestScenariosRuntime>(ConstantsHelper.TEST_SCENARIOS_RUNTIME_FILENAME);
+            testScenarios = Resources.Load<TestScenariosRuntime>(FileNames.TEST_SCENARIOS_RUNTIME);
             Init();
         }
         private void OnEnable()

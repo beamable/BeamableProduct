@@ -1,8 +1,8 @@
 ﻿using Beamable.Common;
 using Beamable.Common.Api.Leaderboards;
-using Beamable.Constats;
 using System.Collections.Generic;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Leaderboards;
 
 namespace Beamable.Modules.Leaderboards
 {
@@ -14,9 +14,9 @@ namespace Beamable.Modules.Leaderboards
 
 			return new RankEntry
 			{
-				gt = (long)Random.Range(0, LeaderboardsConstants.TEST_DATA_MAX_GAMER_TAG),
+				gt = (long)Random.Range(0, TEST_DATA_MAX_GAMER_TAG),
 				rank = 1,
-				score = (long)Random.Range(0, LeaderboardsConstants.TEST_DATA_MAX_SCORE),
+				score = (long)Random.Range(0, TEST_DATA_MAX_SCORE),
 				stats = stats
 			};
 		}
@@ -62,7 +62,7 @@ namespace Beamable.Modules.Leaderboards
 					entries.Add(new RankEntry
 					{
 						rank = currentRank,
-						score = (long)Random.Range(0, LeaderboardsConstants.TEST_DATA_MAX_SCORE),
+						score = (long)Random.Range(0, TEST_DATA_MAX_SCORE),
 						stats = stats
 					});
 				}
