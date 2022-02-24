@@ -260,11 +260,6 @@ namespace Beamable.Api
 			var sentScopes = nextRefreshScopes.ToArray();
 			var scope = string.Join(",", nextRefreshScopes);
 			nextRefreshScopes.Clear();
-
-			if (!connectivityService.HasConnectivity)
-			{
-				yield break;
-			}
 			
 			ExecuteRequest(requester, CreateRefreshUrl(scope)).Error(err =>
 			{
