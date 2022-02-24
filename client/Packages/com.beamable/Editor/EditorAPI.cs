@@ -215,17 +215,17 @@ namespace Beamable.Editor
 		{
 			return AuthService.Login(email, password, customerScoped: true).FlatMap(tokenRes =>
 			{
-				var token = new AccessToken(_accessTokenStorage, CidOrAlias, null, tokenRes.access_token, tokenRes.refresh_token, tokenRes.expires_in);
+				var token = new AccessToken(_accessTokenStorage, Cid, null, tokenRes.access_token, tokenRes.refresh_token, tokenRes.expires_in);
 
 				// use this token.
 				return ApplyToken(token);
 			});
 		}
 
-		public Promise<Unit> LoginCustomer(string cid, string email, string password)
+		public Promise<Unit> LoginCustomer(string aliasOrCid, string email, string password)
 		{
 			// Set the config defaults to reflect the new Customer.
-			SaveConfig(cid, null, BeamableEnvironment.ApiUrl);
+			SaveConfig(aliasOrCid, null, BeamableEnvironment.ApiUrl, Cid);
 
 			// Attempt to get an access token.
 			return Login(email, password);
