@@ -33,7 +33,6 @@ namespace Beamable.Content
 		public string ManifestID { get; } = "global";
 
 		private ClientManifest _latestManifiest;
-		private Action<ClientManifest> _onManifestUpdated;
 		
 		private readonly Promise<Unit> _manifestPromise = new Promise<Unit>();
 
@@ -43,10 +42,9 @@ namespace Beamable.Content
 		public Dictionary<Type, ContentCache> _contentCaches = new Dictionary<Type, ContentCache>();
 
 		public ManifestSubscription(IDependencyProvider provider,
-			string manifestID, Action<ClientManifest> onManifestUpdated) : base(provider, "content")
+			string manifestID) : base(provider, "content")
 		{
 			ManifestID = manifestID;
-			_onManifestUpdated = onManifestUpdated;
 		}
 
 		public bool TryGetContentId(string contentId, out ClientContentInfo clientInfo)
@@ -100,7 +98,6 @@ namespace Beamable.Content
 
 			Notify(data);
 
-			_onManifestUpdated?.Invoke(_latestManifiest);
 			_manifestPromise.CompleteSuccess(new Unit());
 		}
 	}
@@ -144,6 +141,12 @@ namespace Beamable.Content
 			set
 			{
 				bakedManifest = value;
+
+				if (bakedManifest == null)
+				{
+					return;
+				}
+				
 				foreach (var info in bakedManifest.entries)
 				{
 					bakedManifestInfo[info.contentId] = info;
@@ -178,7 +181,7 @@ namespace Beamable.Content
 			FilesystemAccessor = filesystemAccessor;
 			_connectivityService = _provider.GetService<IConnectivityService>();
 
-			Subscribable = new ManifestSubscription(_provider, CurrentDefaultManifestID, UpdateContentManifest);
+			Subscribable = new ManifestSubscription(_provider, CurrentDefaultManifestID);
 			Subscribable.Subscribe(cb =>
 			{
 				// pay attention, server...
@@ -234,50 +237,20 @@ namespace Beamable.Content
 
 		private void InitializeBakedManifest()
 		{
-			string path = FilesystemAccessor.GetPersistentDataPathWithoutTrailingSlash() + "/content/contentManifest.json";
-			
-			if (File.Exists(path))
+			var manifestAsset = Resources.Load<TextAsset>(BAKED_MANIFEST_RESOURCE_PATH);
+
+			if (manifestAsset == null)
 			{
-				var json = File.ReadAllText(path);
-				BakedManifest = JsonUtility.FromJson<ClientManifest>(json);
+				return;
 			}
-			else
-			{
-				var manifestAsset = Resources.Load<TextAsset>(BAKED_MANIFEST_RESOURCE_PATH);
 
-				if (manifestAsset == null)
-				{
-					return;
-				}
-
-				string json = manifestAsset.text;
-				BakedManifest = JsonUtility.FromJson<ClientManifest>(json);
+			string json = manifestAsset.text;
+			BakedManifest = JsonUtility.FromJson<ClientManifest>(json);
 			
-				if (BakedManifest == null)
-				{
-					json = Gzip.Decompress(manifestAsset.bytes);
-					BakedManifest = JsonUtility.FromJson<ClientManifest>(json);	
-				}
-				
-				UpdateContentManifest(BakedManifest);
-			}
-		}
-
-		private void UpdateContentManifest(ClientManifest manifest)
-		{
-			BakedManifest = manifest;
-			
-			string path = FilesystemAccessor.GetPersistentDataPathWithoutTrailingSlash() + "/content/contentManifest.json";
-
-			// save baked data to disk
-			try
+			if (BakedManifest == null)
 			{
-				Directory.CreateDirectory(Path.GetDirectoryName(path));
-				File.WriteAllText(path, JsonUtility.ToJson(BakedManifest));
-			}
-			catch (Exception e)
-			{
-				Debug.LogError($"Failed to write baked manifest data to disk: {e.Message}");
+				json = Gzip.Decompress(manifestAsset.bytes);
+				BakedManifest = JsonUtility.FromJson<ClientManifest>(json);	
 			}
 		}
 
@@ -294,7 +267,7 @@ namespace Beamable.Content
 			if (Subscribables.ContainsKey(manifestID))
 				return;
 
-			Subscribables.Add(manifestID, new ManifestSubscription(_provider, manifestID, UpdateContentManifest));
+			Subscribables.Add(manifestID, new ManifestSubscription(_provider, manifestID));
 			Subscribables[manifestID].Subscribe(cb => { });
 		}
 
