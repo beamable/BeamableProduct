@@ -195,7 +195,7 @@ namespace Beamable.Content
 			Subscribables = new Dictionary<string, ManifestSubscription>();
 			AddSubscriber(CurrentDefaultManifestID);
 		}
-		
+
 		private void InitializeBakedContent()
 		{
 			string path = FilesystemAccessor.GetPersistentDataPathWithoutTrailingSlash() + "/content/content.json";
