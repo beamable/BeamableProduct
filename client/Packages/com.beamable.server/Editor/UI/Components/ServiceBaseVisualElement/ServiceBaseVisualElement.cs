@@ -41,11 +41,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private VisualElement _header;
 		private VisualElement _rootVisualElement;
 		private Button _dependentServicesBtn;
-		private Label _nameTextField;
-		private VisualElement _dependentServicesContainer;
-		private Button _collapseButton;
-		private Image _collapseBtnIcon;
 		private VisualElement _mainParent;
+		private VisualElement _serviceCard;
+		private Button _foldButton;
+		private VisualElement _foldIcon;
 
 		public Action OnServiceStartFailed { get; set; }
 		public Action OnServiceStopFailed { get; set; }
@@ -78,7 +77,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Root.Q<Button>("cancelBtn").RemoveFromHierarchy();
 			Root.Q("microserviceNewTitle")?.RemoveFromHierarchy();
 			_dependentServicesBtn = Root.Q<Button>("dependentServicesBtn");
-			_nameTextField = Root.Q<Label>("microserviceTitle");
 			_stopButton = Root.Q<Button>("stopBtn");
 			_moreBtn = Root.Q<Button>("moreBtn");
 			_checkbox = Root.Q<LabeledCheckboxVisualElement>("checkbox");
@@ -87,11 +85,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_remoteStatusIcon = Root.Q<VisualElement>("remoteStatusIcon");
 			_header = Root.Q("logHeader");
 			_separator = Root.Q<MicroserviceVisualElementSeparator>("separator");
+			_serviceCard = Root.Q("serviceCard");
 			_loadingBar = new LoadingBarElement();
-			_rootVisualElement.Add(_loadingBar);
-			_dependentServicesContainer = Root.Q("dependentServicesContainer");
-			_collapseButton = Root.Q<Button>("collapseBtn");
-			_collapseBtnIcon = Root.Q<Image>("collapseBtnIcon");
+			_serviceCard.Add(_loadingBar);
+			_foldButton = Root.Q<Button>("foldButton");
+			_foldIcon = Root.Q("foldIcon");
 			_mainParent = _rootVisualElement.parent.parent;
 		}
 		private void InjectStyleSheets()
@@ -138,9 +136,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_separator.Setup(OnDrag);
 			_separator.Refresh();
 
-			_collapseButton.clickable.clicked += HandleCollapseButton;
-			_mainParent.AddToClassList("collapsedMain");
-			_rootVisualElement.AddToClassList("collapsedMain");
+			_foldButton.clickable.clicked += HandleCollapseButton;
+			_mainParent.AddToClassList("folded");
+			_rootVisualElement.AddToClassList("folded");
 
 			CreateLogSection(Model.AreLogsAttached);
 			UpdateLocalStatus();
@@ -289,10 +287,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			_logContainerElement.EnableInClassList("--positionHidden", Model.IsCollapsed);
 			_separator.EnableInClassList("--positionHidden", Model.IsCollapsed);
-			_collapseBtnIcon.EnableInClassList("foldIcon", !Model.IsCollapsed);
-			_collapseBtnIcon.EnableInClassList("unfoldIcon", Model.IsCollapsed);
-			_rootVisualElement.EnableInClassList("collapsedMain", Model.IsCollapsed);
-			_mainParent.EnableInClassList("collapsedMain", Model.IsCollapsed);
+			_foldIcon.EnableInClassList("foldIcon", Model.IsCollapsed);
+			_foldIcon.EnableInClassList("unfoldIcon", !Model.IsCollapsed);
+			_rootVisualElement.EnableInClassList("folded", Model.IsCollapsed);
+			_mainParent.EnableInClassList("folded", Model.IsCollapsed);
 			_dependentServicesBtn.visible = !Model.IsCollapsed;
 		}
 	}

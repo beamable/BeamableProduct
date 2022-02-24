@@ -44,6 +44,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 #elif UNITY_2018
             Root.Q<VisualElement>("mainVisualElement").style.height = StyleValue<float>.Create(DEFAULT_HEADER_HEIGHT);
 #endif
+			Root.Q("foldContainer").visible = false;
 
 			_statusIcon.RemoveFromHierarchy();
 

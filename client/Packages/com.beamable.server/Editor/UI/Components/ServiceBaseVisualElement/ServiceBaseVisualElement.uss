@@ -1,3 +1,34 @@
+MicroserviceVisualElement > TemplateContainer > #mainVisualElement,
+StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
+    margin-bottom: 20px;
+}
+
+#mainVisualElement {
+    flex-direction: row;
+}
+
+#serviceCard {
+    flex-grow: 1;
+}
+
+#foldContainer {
+    width: 30px;
+    height: 50px;
+}
+
+#foldButton {
+    height: 30px;
+    background-image: none;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+#foldIcon {
+    width: 10px;
+    height: 10px;
+}
+
 #serviceIcon {
     align-self: center;
     margin-left: 4px;
@@ -171,34 +202,8 @@ LabeledCheckboxVisualElement{
     left: 999999px;
 }
 
-.collapsedMain {
-    max-height: 120px;
-}
-
-#collapseContainer {
-    width: 200px;
-    align-self: center;
-    margin-bottom: 20px;
-}
-
-#collapseBtn {
-    height: 20px;
-    flex-direction: row;
-    justify-content: space-between;
-    background-color: rgba(0,0,0,0);
-    background-image: none;
-}
-
-#leftDashLine, #rightDashLine {
-    flex-grow: 1;
-    height: 1px;
-    align-self: center;
-}
-
-#collapseBtnIcon {
-    width: 35px;
-    height: 35px;
-    align-self: center;
+.folded {
+    max-height: 50px;
 }
 
 .rightArea Button.confirmButton {
@@ -212,4 +217,12 @@ LabeledCheckboxVisualElement{
     align-self: center;
     width: 18px;
     height: 18px;
+}
+
+.foldIcon {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/fold_light_dark.png");
+}
+
+.unfoldIcon {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/unfold_light_dark.png");
 }

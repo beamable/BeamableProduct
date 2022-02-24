@@ -6,9 +6,6 @@
     background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/ms_header_green.png");
 }
 
-LogVisualElement > TemplateContainer > #mainVisualElement {
-}
-
 .squareBtn {
     border-color: #383838;
 }
@@ -104,15 +101,6 @@ LogVisualElement > TemplateContainer > #mainVisualElement {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/StopAllDark.png");
 }
 
-/* TODO - Add light icons*/
-.foldIcon {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/fold.png");
-}
-
-.unfoldIcon {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/unfold.png");
-}
 #leftDashLine, #rightDashLine {
     background-color: #4A4A4A;
 }
-/* END TODO*/
