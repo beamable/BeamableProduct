@@ -9,7 +9,7 @@ on:
       #- 'production'
     #paths:
       #- 'client/**'
-      #- 'microservice/**'
+       #- 'microservice/**'
 
 jobs:
   start-runner:
