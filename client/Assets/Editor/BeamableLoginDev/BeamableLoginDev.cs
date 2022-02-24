@@ -11,7 +11,7 @@ public class BeamableLoginDev
 {
 	private const string PATH_TO_LOGIN_DATA = "Assets/Editor/BeamableLoginDev/login_data.json";
 
-	[MenuItem("Beamable/Login with dev credits", false, priority = 0)]
+	[MenuItem("Beamable/Login with dev credentials", false, priority = 0)]
 	public static async void Login()
 	{
 		var editorAPI = await EditorAPI.Instance;
