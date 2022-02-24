@@ -10,7 +10,6 @@ using TMPro;
 using UnityEngine;
 using static Beamable.Common.Constants.URLs;
 using Button = UnityEngine.UI.Button;
-using static Beamable.Common.Constants.URLs;
 
 namespace Beamable.Shop
 {

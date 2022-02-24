@@ -10,8 +10,6 @@ using UnityEditor.UIElements;
 #endif
 using static Beamable.Common.Constants;
 
-using static Beamable.Common.Constants;
-
 namespace Beamable.Editor.UI.Components
 {
 	public class HourPickerVisualElement : BeamableVisualElement
