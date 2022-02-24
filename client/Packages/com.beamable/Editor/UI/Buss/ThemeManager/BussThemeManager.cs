@@ -117,8 +117,8 @@ namespace Beamable.Editor.UI.Buss
 			_navigationWindow.BussStyleSheetChange -= RefreshStyleSheets;
 			_navigationWindow.BussStyleSheetChange += RefreshStyleSheets;
 
-			_navigationWindow.SelectionChanged -= FilterCards;
-			_navigationWindow.SelectionChanged += FilterCards;
+			_navigationWindow.SelectionChanged -= OnSelectionChange;
+			_navigationWindow.SelectionChanged += OnSelectionChange;
 
 			RefreshStyleSheets();
 			AddSelectorButton(scrollView);
@@ -130,7 +130,17 @@ namespace Beamable.Editor.UI.Buss
 			FilterCards();
 		}
 
-		private void FilterCards(GameObject _ = null)
+		private void OnSelectionChange(GameObject gameObject)
+		{
+			var element = gameObject.GetComponent<BussElement>();
+			foreach (var styleCard in _styleCardsVisualElements)
+			{
+				styleCard.OnBussElementSelected(element);
+			}
+			FilterCards();
+		}
+
+		private void FilterCards()
 		{
 			Profiler.BeginSample("BUSS - filtering style cards");
 			if (_navigationWindow.SelectedComponent == null)
@@ -242,7 +252,7 @@ namespace Beamable.Editor.UI.Buss
 		private void AddStyleCard(BussStyleSheet styleSheet, BussStyleRule styleRule, Action callback)
 		{
 			BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-			styleCard.Setup(this, styleSheet, styleRule, _variableDatabase, _navigationWindow, callback);
+			styleCard.Setup(this, styleSheet, styleRule, _variableDatabase, callback);
 			_styleCardsVisualElements.Add(styleCard);
 			_stylesGroup.Add(styleCard);
 
@@ -323,7 +333,7 @@ namespace Beamable.Editor.UI.Buss
 
 			_navigationWindow.HierarchyChanged -= RefreshStyleSheets;
 			_navigationWindow.BussStyleSheetChange -= RefreshStyleSheets;
-			_navigationWindow.SelectionChanged -= FilterCards;
+			_navigationWindow.SelectionChanged -= OnSelectionChange;
 
 			_navigationWindow.Destroy();
 			UndoSystem<BussStyleRule>.DeleteAllRecords();

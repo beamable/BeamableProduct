@@ -38,7 +38,6 @@ namespace Beamable.Editor.UI.Components
 		private VariableDatabase _variableDatabase;
 		private BussStyleSheet _styleSheet;
 		private BussStyleRule _styleRule;
-		private BussElementHierarchyVisualElement _navigationWindow;
 
 		private readonly List<BussStylePropertyVisualElement> _properties = new List<BussStylePropertyVisualElement>();
 		private Action _onUndoRequest;
@@ -75,9 +74,6 @@ namespace Beamable.Editor.UI.Components
 
 			_showAllButtonText = Root.Q<TextElement>("showAllButtonText");
 
-			_navigationWindow.SelectionChanged -= OnSelectionChanged;
-			_navigationWindow.SelectionChanged += OnSelectionChanged;
-
 			_removeButton.SetHidden(!_editMode);
 
 			RegisterButtonActions();
@@ -105,14 +101,12 @@ namespace Beamable.Editor.UI.Components
 						  BussStyleSheet styleSheet,
 						  BussStyleRule styleRule,
 						  VariableDatabase variableDatabase,
-						  BussElementHierarchyVisualElement navigationWindow,
 						  Action onUndoRequest)
 		{
 			_themeManager = themeManager;
 			_styleSheet = styleSheet;
 			_styleRule = styleRule;
 			_variableDatabase = variableDatabase;
-			_navigationWindow = navigationWindow;
 			_onUndoRequest = onUndoRequest;
 
 			Refresh();
@@ -121,11 +115,6 @@ namespace Beamable.Editor.UI.Components
 		protected override void OnDestroy()
 		{
 			ClearButtonActions();
-
-			if (_navigationWindow != null)
-			{
-				_navigationWindow.SelectionChanged -= OnSelectionChanged;
-			}
 		}
 
 		private void RegisterButtonActions()
@@ -432,16 +421,14 @@ namespace Beamable.Editor.UI.Components
 			return property != null && property.PropertyIsInStyle;
 		}
 
-		// TODO: change this, card should be setup/refreshed by it's parent
-		private void OnSelectionChanged(GameObject gameObject)
+		public void OnBussElementSelected(BussElement element)
 		{
-			if (_colorBlock == null || gameObject == null) return;
-
+			if (_colorBlock == null) return;
+			
 			bool active = false;
-			var bussElement = gameObject.GetComponent<BussElement>();
-			if (bussElement != null && StyleRule.Selector != null)
+			if (element != null && StyleRule.Selector != null)
 			{
-				active = StyleRule.Selector.CheckMatch(bussElement);
+				active = StyleRule.Selector.CheckMatch(element);
 			}
 
 			_colorBlock.EnableInClassList("active", active);
