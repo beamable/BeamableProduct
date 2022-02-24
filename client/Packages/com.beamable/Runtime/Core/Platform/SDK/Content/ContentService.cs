@@ -132,8 +132,25 @@ namespace Beamable.Content
 		private static bool _testScopeEnabled;
 
 		public ContentDataInfoWrapper ContentDataInfo;
-		
+
+		private Dictionary<string, ClientContentInfo> bakedManifestInfo =
+			new Dictionary<string, ClientContentInfo>();
+
 		private ClientManifest bakedManifest;
+		private ClientManifest BakedManifest
+		{
+			get => bakedManifest;
+			set
+			{
+				bakedManifest = value;
+				foreach (var info in bakedManifest.entries)
+				{
+					bakedManifestInfo[info.contentId] = info;
+				}
+			}
+		}
+		
+		
 
 #if UNITY_EDITOR
 
@@ -221,7 +238,7 @@ namespace Beamable.Content
 			if (File.Exists(path))
 			{
 				var json = File.ReadAllText(path);
-				bakedManifest = JsonUtility.FromJson<ClientManifest>(json);
+				BakedManifest = JsonUtility.FromJson<ClientManifest>(json);
 			}
 			else
 			{
@@ -233,21 +250,21 @@ namespace Beamable.Content
 				}
 
 				string json = manifestAsset.text;
-				bakedManifest = JsonUtility.FromJson<ClientManifest>(json);
+				BakedManifest = JsonUtility.FromJson<ClientManifest>(json);
 			
-				if (bakedManifest == null)
+				if (BakedManifest == null)
 				{
 					json = Gzip.Decompress(manifestAsset.bytes);
-					bakedManifest = JsonUtility.FromJson<ClientManifest>(json);	
+					BakedManifest = JsonUtility.FromJson<ClientManifest>(json);	
 				}
 				
-				UpdateContentManifest(bakedManifest);
+				UpdateContentManifest(BakedManifest);
 			}
 		}
 
 		private void UpdateContentManifest(ClientManifest manifest)
 		{
-			bakedManifest = manifest;
+			BakedManifest = manifest;
 			
 			string path = FilesystemAccessor.GetPersistentDataPathWithoutTrailingSlash() + "/content/contentManifest.json";
 
@@ -255,7 +272,7 @@ namespace Beamable.Content
 			try
 			{
 				Directory.CreateDirectory(Path.GetDirectoryName(path));
-				File.WriteAllText(path, JsonUtility.ToJson(bakedManifest));
+				File.WriteAllText(path, JsonUtility.ToJson(BakedManifest));
 			}
 			catch (Exception e)
 			{
@@ -322,10 +339,9 @@ namespace Beamable.Content
 			var determinedManifestID = DetermineManifestID(manifestID);
 			return GetManifestWithID(determinedManifestID).FlatMap(manifest =>
 			{
-				if (!_connectivityService.HasConnectivity)
+				if (!_connectivityService.HasConnectivity && bakedManifestInfo.TryGetValue(contentId, out var contentInfo))
 				{
-					var content = manifest.entries.Find(i => i.contentId == contentId);
-					return rawCache.GetContentObject(content);
+					return rawCache.GetContentObject(contentInfo);
 				}
 				
 				var subscribable = GetSubscription(determinedManifestID);
@@ -368,9 +384,9 @@ namespace Beamable.Content
 
 		public Promise<ClientManifest> GetManifestWithID(string manifestID = "")
 		{
-			if (!_connectivityService.HasConnectivity && IsGlobalManifest(manifestID) && bakedManifest != null)
+			if (!_connectivityService.HasConnectivity && IsGlobalManifest(manifestID) && BakedManifest != null)
 			{
-				return Promise<ClientManifest>.Successful(bakedManifest);
+				return Promise<ClientManifest>.Successful(BakedManifest);
 			}
 			
 			return GetSubscription(DetermineManifestID(manifestID))?.GetManifest();
@@ -378,9 +394,9 @@ namespace Beamable.Content
 
 		public Promise<ClientManifest> GetManifest(string filter = "", string manifestID = "")
 		{
-			if (!_connectivityService.HasConnectivity && IsGlobalManifest(manifestID) && bakedManifest != null)
+			if (!_connectivityService.HasConnectivity && IsGlobalManifest(manifestID) && BakedManifest != null)
 			{
-				return Promise<ClientManifest>.Successful(bakedManifest);
+				return Promise<ClientManifest>.Successful(BakedManifest);
 			}
 			
 			return GetSubscription(DetermineManifestID(manifestID))?.GetManifest(filter);
@@ -388,9 +404,9 @@ namespace Beamable.Content
 
 		public Promise<ClientManifest> GetManifest(ContentQuery query, string manifestID = "")
 		{
-			if (!_connectivityService.HasConnectivity && IsGlobalManifest(manifestID) && bakedManifest != null)
+			if (!_connectivityService.HasConnectivity && IsGlobalManifest(manifestID) && BakedManifest != null)
 			{
-				return Promise<ClientManifest>.Successful(bakedManifest);
+				return Promise<ClientManifest>.Successful(BakedManifest);
 			}
 			
 			return GetSubscription(DetermineManifestID(manifestID))?.GetManifest(query);
