@@ -18,7 +18,6 @@ using UnityEngine;
 using static Beamable.Common.Constants;
 using static Beamable.Common.Constants.MenuItems.Windows;
 using Task = System.Threading.Tasks.Task;
-
 namespace Beamable.Editor
 {
 
