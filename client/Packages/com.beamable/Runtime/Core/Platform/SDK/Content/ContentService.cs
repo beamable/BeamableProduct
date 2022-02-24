@@ -7,6 +7,7 @@ using Beamable.Common.Api.Content;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Coroutines;
+using Beamable.Serialization.SmallerJSON;
 using Core.Platform.SDK;
 using System;
 using System.Collections.Generic;
@@ -214,9 +215,11 @@ namespace Beamable.Content
 				}
 
 				string json = bakedFile.text;
-				ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
-
-				if (ContentDataInfo == null)
+				var isValidJson = Json.IsValidJson(json);
+				if (isValidJson)
+				{
+					ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
+				} else
 				{
 					json = Gzip.Decompress(bakedFile.bytes);
 					ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
@@ -245,9 +248,11 @@ namespace Beamable.Content
 			}
 
 			string json = manifestAsset.text;
-			BakedManifest = JsonUtility.FromJson<ClientManifest>(json);
-
-			if (BakedManifest == null)
+			var isValidJson = Json.IsValidJson(json);
+			if (isValidJson)
+			{
+				BakedManifest = JsonUtility.FromJson<ClientManifest>(json);
+			} else
 			{
 				json = Gzip.Decompress(manifestAsset.bytes);
 				BakedManifest = JsonUtility.FromJson<ClientManifest>(json);
