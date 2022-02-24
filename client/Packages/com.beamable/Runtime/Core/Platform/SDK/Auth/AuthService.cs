@@ -42,29 +42,34 @@ namespace Beamable.Api.Auth
 	/// </summary>
 	public class AuthService : AuthApi, IAuthService
 	{
+		private readonly IDeviceIdResolver _deviceIdResolver;
 		const string DEVICE_ID_URI = ACCOUNT_URL + "/me";
 		const string DEVICE_DELETE_URI = ACCOUNT_URL + "/me/device";
 
-		public AuthService(IBeamableRequester requester, IAuthSettings settings = null) : base(requester, settings)
+		public AuthService(IBeamableRequester requester, IDeviceIdResolver deviceIdResolver=null, IAuthSettings settings = null) : base(requester, settings)
 		{
+			_deviceIdResolver = deviceIdResolver ?? new DefaultDeviceIdResolver();
 		}
 
-		public Promise<bool> IsThisDeviceIdAvailable()
+		public async Promise<bool> IsThisDeviceIdAvailable()
 		{
-			var encodedDeviceId = Requester.EscapeURL(SystemInfo.deviceUniqueIdentifier);
-			return Requester.Request<AvailabilityResponse>(Method.GET,
+			var deviceId = await _deviceIdResolver.GetDeviceId();
+			var encodedDeviceId = Requester.EscapeURL(deviceId);
+			return await Requester.Request<AvailabilityResponse>(Method.GET,
 					$"{ACCOUNT_URL}/available/device-id?deviceId={encodedDeviceId}", null, false)
 				.Map(resp => resp.available);
 		}
 
-		public Promise<TokenResponse> LoginDeviceId()
+		public async Promise<TokenResponse> LoginDeviceId()
 		{
+			var deviceId = await _deviceIdResolver.GetDeviceId();
+
 			var req = new LoginDeviceIdRequest
 			{
 				grant_type = "device",
-				device_id = SystemInfo.deviceUniqueIdentifier
+				device_id = deviceId
 			};
-			return Requester.Request<TokenResponse>(Method.POST, TOKEN_URL, req);
+			return await Requester.Request<TokenResponse>(Method.POST, TOKEN_URL, req);
 		}
 
 		public class LoginDeviceIdRequest
@@ -73,9 +78,14 @@ namespace Beamable.Api.Auth
 			public string device_id;
 		}
 
-		public Promise<User> RegisterDeviceId()
+		public async Promise<User> RegisterDeviceId()
 		{
-			return UpdateDeviceId(RegisterDeviceIdRequest.Create());
+			var deviceId = await _deviceIdResolver.GetDeviceId();
+
+			return await UpdateDeviceId(new RegisterDeviceIdRequest
+			{
+				deviceId = deviceId
+			});
 		}
 
 		private Promise<User> UpdateDeviceId(RegisterDeviceIdRequest requestBody)
@@ -83,10 +93,12 @@ namespace Beamable.Api.Auth
 			return Requester.Request<User>(Method.PUT, DEVICE_ID_URI, requestBody);
 		}
 
-		public Promise<User> RemoveDeviceId()
+		public async Promise<User> RemoveDeviceId()
 		{
-			var ids = new string[] { SystemInfo.deviceUniqueIdentifier };
-			return RemoveDeviceIds(ids);
+			var deviceId = await _deviceIdResolver.GetDeviceId();
+
+			var ids = new string[] { deviceId };
+			return await RemoveDeviceIds(ids);
 		}
 
 		public Promise<User> RemoveAllDeviceIds()
@@ -108,15 +120,6 @@ namespace Beamable.Api.Auth
 		private class RegisterDeviceIdRequest
 		{
 			public string deviceId;
-
-			public static RegisterDeviceIdRequest Create()
-			{
-				var req = new RegisterDeviceIdRequest
-				{
-					deviceId = SystemInfo.deviceUniqueIdentifier
-				};
-				return req;
-			}
 		}
 
 		[Serializable]

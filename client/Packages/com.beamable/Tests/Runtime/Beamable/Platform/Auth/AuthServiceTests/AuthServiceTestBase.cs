@@ -12,13 +12,20 @@ namespace Beamable.Platform.Tests.Auth.AuthServiceTests
 		protected MockPlatformAPI _requester;
 		protected AuthService _service;
 		protected User _sampleUser;
+		protected IDeviceIdResolver _deviceIdResolver;
 
 		[SetUp]
 		public void Init()
 		{
 			_requester = new MockPlatformAPI();
 			_sampleUser = new User();
-			_service = new AuthService(_requester);
+			_deviceIdResolver = CreateDeviceIdResolver();
+			_service = new AuthService(_requester, _deviceIdResolver);
+		}
+
+		protected virtual IDeviceIdResolver CreateDeviceIdResolver()
+		{
+			return new DefaultDeviceIdResolver();
 		}
 
 		[TearDown]

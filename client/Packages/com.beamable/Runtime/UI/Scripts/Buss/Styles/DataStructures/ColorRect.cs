@@ -49,5 +49,21 @@ namespace Beamable.UI.Sdf
 				Color.Lerp(a.TopRightColor, b.TopRightColor, value)
 			);
 		}
+
+#if UNITY_EDITOR
+		public static class EditorHelper
+		{
+			public static ColorRect WithDrawerMode(ColorRect rect, int value)
+			{
+				rect._drawerMode = value;
+				return rect;
+			}
+
+			public static int GetDrawerMode(ColorRect rect)
+			{
+				return rect._drawerMode;
+			}
+		}
+#endif
 	}
 }

@@ -1,12 +1,13 @@
 {
-    "name": "Beamable.ConsoleCommands",
+    "name": "Beamable.Pooling.Editor",
     "references": [
         "Beamable.Service",
-        "Beamable.Coroutines",
-        "Unity.Beamable.Runtime.Common"
+        "Beamable.Pooling"
     ],
     "optionalUnityReferences": [],
-    "includePlatforms": [],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
