@@ -12,6 +12,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.Features.LoginBase;
 
 namespace Beamable.Editor.Login.UI
 {
@@ -124,9 +125,9 @@ namespace Beamable.Editor.Login.UI
 			{
 				var issue = b.SendPasswordResetCode(model.Customer.Code, model.Customer.Password);
 				return UseCommonErrorHandling(model, issue, new LoginErrorHandlers()
-				   .OnNotFound(LoginBaseConstants.NO_ACCOUNT_FOUND_ERROR)
-				   .OnBadRequest(LoginBaseConstants.EXCEPTION_TYPE_BADCODE, LoginBaseConstants.BAD_CODE_ERROR)
-				   .OnBadRequest(LoginBaseConstants.NO_ALIAS_FOUND_ERROR),
+				   .OnNotFound(NO_ACCOUNT_FOUND_ERROR)
+				   .OnBadRequest(EXCEPTION_TYPE_BADCODE, BAD_CODE_ERROR)
+				   .OnBadRequest(NO_ALIAS_FOUND_ERROR),
 				false
 				).Then(res =>
 			 {
@@ -142,8 +143,8 @@ namespace Beamable.Editor.Login.UI
 			{
 				var issue = b.SendPasswordReset(model.Customer.CidOrAlias, model.Customer.Email);
 				return UseCommonErrorHandling(model, issue, new LoginErrorHandlers()
-				.OnNotFound(LoginBaseConstants.NO_ACCOUNT_FOUND_ERROR)
-				.OnBadRequest(LoginBaseConstants.NO_ALIAS_FOUND_ERROR),
+				.OnNotFound(NO_ACCOUNT_FOUND_ERROR)
+				.OnBadRequest(NO_ALIAS_FOUND_ERROR),
 				false);
 			});
 		}
@@ -165,10 +166,10 @@ namespace Beamable.Editor.Login.UI
 				var newCustomer = b.CreateCustomer(model.Customer.CidOrAlias, model.Customer.Pid, model.Customer.Email,
 				model.Customer.Password);
 				return UseCommonErrorHandling(model, newCustomer, new LoginErrorHandlers()
-				.OnUnknown(LoginBaseConstants.CUSTOMER_CREATION_UNKNOWN_ERROR)
-				.OnBadRequest(LoginBaseConstants.EXCEPTION_TYPE_BAD_ALIAS, LoginBaseConstants.BAD_ALIAS_ERROR)
-				.OnBadRequest(LoginBaseConstants.EXCEPTION_TYPE_BAD_GAME_NAME, LoginBaseConstants.BAD_GAME_NAME_ERROR)
-				.On(err => err.Status == 500 && err.Error.message == model.Customer.CidOrAlias, LoginBaseConstants.CID_TAKEN_ERROR)
+				.OnUnknown(CUSTOMER_CREATION_UNKNOWN_ERROR)
+				.OnBadRequest(EXCEPTION_TYPE_BAD_ALIAS, BAD_ALIAS_ERROR)
+				.OnBadRequest(EXCEPTION_TYPE_BAD_GAME_NAME, BAD_GAME_NAME_ERROR)
+				.On(err => err.Status == 500 && err.Error.message == model.Customer.CidOrAlias, CID_TAKEN_ERROR)
 			 );
 
 			});
@@ -182,8 +183,8 @@ namespace Beamable.Editor.Login.UI
 
 				var createUser = b.CreateUser(model.Customer.CidOrAlias, model.Customer.Email, model.Customer.Password);
 				return UseCommonErrorHandling(model, createUser, new LoginErrorHandlers()
-				.OnBadRequest(LoginBaseConstants.EXCEPTION_TYPE_NOCID, LoginBaseConstants.NO_ALIAS_FOUND_ERROR)
-				.OnBadRequest(LoginBaseConstants.EXCEPTION_TYPE_EMAIL_TAKEN, LoginBaseConstants.EMAIL_TAKEN_ERROR)
+				.OnBadRequest(EXCEPTION_TYPE_NOCID, NO_ALIAS_FOUND_ERROR)
+				.OnBadRequest(EXCEPTION_TYPE_EMAIL_TAKEN, EMAIL_TAKEN_ERROR)
 			 );
 
 			});
@@ -195,10 +196,10 @@ namespace Beamable.Editor.Login.UI
 			{
 				var login = b.LoginCustomer(model.Customer.CidOrAlias, model.Customer.Email, model.Customer.Password);
 				return UseCommonErrorHandling(model, login, new LoginErrorHandlers()
-				.OnUnauthorized(LoginBaseConstants.INVALID_CREDENTIALS_ERROR)
-				.OnBadRequest(LoginBaseConstants.NO_ALIAS_FOUND_ERROR)
-				.OnBadRequest(LoginBaseConstants.EXCEPTION_TYPE_INVALID_SCOPE, LoginBaseConstants.NO_ALIAS_FOUND_ERROR)
-				.OnNotFound(LoginBaseConstants.INVALID_CREDENTIALS_ERROR)
+				.OnUnauthorized(INVALID_CREDENTIALS_ERROR)
+				.OnBadRequest(NO_ALIAS_FOUND_ERROR)
+				.OnBadRequest(EXCEPTION_TYPE_INVALID_SCOPE, NO_ALIAS_FOUND_ERROR)
+				.OnNotFound(INVALID_CREDENTIALS_ERROR)
 			 );
 			});
 

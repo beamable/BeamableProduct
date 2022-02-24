@@ -5,6 +5,7 @@ using System.IO;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Config;
 
 namespace Beamable
 {
@@ -16,12 +17,10 @@ namespace Beamable
 
 	public class BeamableConfigurationConstants : IConfigurationConstants
 	{
-		private const string PACKAGE_EDITOR_DIR = "Packages/com.beamable/Editor/Config";
-
 		public string GetSourcePath(Type type)
 		{
 			var name = type.Name;
-			var sourcePath = $"{PACKAGE_EDITOR_DIR}/{name}.asset";
+			var sourcePath = $"{BASE_PATH}/{name}.asset";
 			return sourcePath;
 		}
 	}

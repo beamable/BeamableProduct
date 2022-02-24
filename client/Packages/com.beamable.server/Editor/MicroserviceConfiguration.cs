@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants;
 
 namespace Beamable.Server.Editor
 {
@@ -19,7 +20,7 @@ namespace Beamable.Server.Editor
 			// TODO: make this work for multiple config types
 			//       but for now, there is just the one...
 
-			return "Packages/com.beamable.server/Editor/microserviceConfiguration.asset";
+			return $"{Directories.BEAMABLE_SERVER_PACKAGE_EDITOR}/microserviceConfiguration.asset";
 
 		}
 	}

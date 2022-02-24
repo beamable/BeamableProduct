@@ -2,15 +2,15 @@
     "name": "Unity.Beamable.Samples.Runtime",
     "references": [
         "Unity.Beamable",
-        "Unity.Beamable.Editor"
+        "Unity.Beamable.Editor",
+        "Unity.Beamable.Runtime.Common"
     ],
+    "optionalUnityReferences": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
-    "overrideReferences": false,
+    "overrideReferences": true,
     "precompiledReferences": [],
     "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
+    "defineConstraints": []
 }

@@ -12,6 +12,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.Features.ContentManager.ContentList;
 
 namespace Beamable.Editor.Content.Components
 {
@@ -186,7 +187,7 @@ namespace Beamable.Editor.Content.Components
 				String menuPathName = $"{splitPath[0]}";
 				for (int i = 1; i < splitPath.Length; ++i)
 					menuPathName += $"/{splitPath[i]}";
-				menuPathName += $"/{ContentManagerConstants.ContentListCreateItem} {splitPath[splitPath.Length - 1]}";
+				menuPathName += $"/{CONTENT_LIST_CREATE_ITEM} {splitPath[splitPath.Length - 1]}";
 
 				evt.menu.BeamableAppendAction(menuPathName, (Action<Vector2>)((pos) =>
 				{

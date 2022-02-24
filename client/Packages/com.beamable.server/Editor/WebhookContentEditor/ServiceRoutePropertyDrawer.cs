@@ -2,6 +2,7 @@ using Beamable.Common.Content;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Content;
 
 namespace Beamable.Server.Editor
 {
@@ -53,9 +54,9 @@ namespace Beamable.Server.Editor
 				{
 					serviceGuiContents.Insert(0, new GUIContent(serviceProperty.stringValue));
 					originalServiceIndex = 0;
-					if (!serviceProperty.stringValue.EndsWith(ContentConstants.MISSING_SUFFIX))
+					if (!serviceProperty.stringValue.EndsWith(MISSING_SUFFIX))
 					{
-						serviceProperty.stringValue += ContentConstants.MISSING_SUFFIX;
+						serviceProperty.stringValue += MISSING_SUFFIX;
 					}
 				}
 			}
@@ -89,10 +90,10 @@ namespace Beamable.Server.Editor
 			var forceRoute = false;
 			if (originalRouteIndex == -1)
 			{
-				var hasSuffix = routeProperty.stringValue.EndsWith(ContentConstants.MISSING_SUFFIX);
+				var hasSuffix = routeProperty.stringValue.EndsWith(MISSING_SUFFIX);
 				var withoutSuffix = hasSuffix
 					? routeProperty.stringValue.Substring(
-						0, routeProperty.stringValue.Length - ContentConstants.MISSING_SUFFIX.Length)
+						0, routeProperty.stringValue.Length - MISSING_SUFFIX.Length)
 					: routeProperty.stringValue;
 				var existing = clientCallableGuis.ToList().FindIndex(m => m.text.Equals(withoutSuffix));
 
@@ -115,9 +116,9 @@ namespace Beamable.Server.Editor
 				{
 					clientCallableGuis.Insert(0, new GUIContent(routeProperty.stringValue));
 					originalRouteIndex = 0;
-					if (!routeProperty.stringValue.EndsWith(ContentConstants.MISSING_SUFFIX))
+					if (!routeProperty.stringValue.EndsWith(MISSING_SUFFIX))
 					{
-						routeProperty.stringValue += ContentConstants.MISSING_SUFFIX;
+						routeProperty.stringValue += MISSING_SUFFIX;
 					}
 				}
 			}

@@ -6,6 +6,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
@@ -38,7 +39,7 @@ namespace Beamable.Editor.UI.Components
 		private Button _button;
 
 		public BeamableCheckboxVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(BeamableCheckboxVisualElement)}/{nameof(BeamableCheckboxVisualElement)}")
+			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(BeamableCheckboxVisualElement)}/{nameof(BeamableCheckboxVisualElement)}")
 		{
 		}
 

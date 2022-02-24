@@ -4,6 +4,7 @@ using Beamable.Server.Editor.UI.Components;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
@@ -97,9 +98,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 				this.stateDict = new Dictionary<string, MicroserviceRecord.MicroserviceRecordState>()
 				{
-					{ string.Format(BeamableLogConstants.UploadedContainerMessage, name), MicroserviceRecord.MicroserviceRecordState.Deployed },
-					{ string.Format(BeamableLogConstants.ContainerAlreadyUploadedMessage, name), MicroserviceRecord.MicroserviceRecordState.Deployed },
-					{ string.Format(BeamableLogConstants.CantUploadContainerMessage, name), MicroserviceRecord.MicroserviceRecordState.Failure },
+					{ string.Format(UPLOAD_CONTAINER_MESSAGE, name), MicroserviceRecord.MicroserviceRecordState.Deployed },
+					{ string.Format(CONTAINER_ALREADY_UPLOADED_MESSAGE, name), MicroserviceRecord.MicroserviceRecordState.Deployed },
+					{ string.Format(CANT_UPLOAD_CONTAINER_MESSAGE, name), MicroserviceRecord.MicroserviceRecordState.Failure },
 				};
 			}
 

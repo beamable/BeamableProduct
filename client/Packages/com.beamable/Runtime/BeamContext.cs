@@ -24,6 +24,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 using Random = UnityEngine.Random;
 
 namespace Beamable
@@ -502,7 +503,6 @@ namespace Beamable
 			try
 			{
 				user = await _authService.GetUser();
-
 			}
 			catch (NoConnectivityException)
 			{
@@ -553,17 +553,14 @@ namespace Beamable
 
 			await InitStep_SaveToken();
 			await InitStep_GetUser();
-			await InitStep_StartPubnub();
-
+			var pubnub = InitStep_StartPubnub();
 			// Start Session
-			await InitStep_StartNewSession();
-
-			// Register for notifications
-			// _notification.RegisterForNotifications();
+			var session = InitStep_StartNewSession();
 			_heartbeatService.Start();
 
 			// Check if we should initialize the purchaser
-			await InitStep_StartPurchaser();
+			var purchase = InitStep_StartPurchaser();
+			await Promise.Sequence(pubnub, session, purchase);
 
 			OnReloadUser?.Invoke();
 

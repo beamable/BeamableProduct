@@ -7,7 +7,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
-
+using static Beamable.Common.Constants;
 namespace Beamable.Editor.UI.Components
 {
 	public class SpritePickerVisualElement : BeamableVisualElement
@@ -15,7 +15,7 @@ namespace Beamable.Editor.UI.Components
 		public new class UxmlFactory : UxmlFactory<SpritePickerVisualElement, UxmlTraits> { }
 
 		public SpritePickerVisualElement() : base(
-			$"{BeamableComponentsConstants.COMP_PATH}/{nameof(SpritePickerVisualElement)}/{nameof(SpritePickerVisualElement)}")
+			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(SpritePickerVisualElement)}/{nameof(SpritePickerVisualElement)}")
 		{ }
 
 		public Sprite SelectedSprite { get; private set; }

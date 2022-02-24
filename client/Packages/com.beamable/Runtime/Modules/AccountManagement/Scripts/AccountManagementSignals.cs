@@ -125,7 +125,7 @@ namespace Beamable.AccountManagement
 		public List<UserBundle> OtherUsers;
 	}
 
-	[HelpURL(BeamableConstants.URL_FEATURE_ACCOUNT_HUD)]
+	[HelpURL(Constants.URLs.Documentations.URL_DOC_ACCOUNT_HUD)]
 	public class AccountManagementSignals : DeSignalTower
 	{
 		[Header("Flow Events")]
