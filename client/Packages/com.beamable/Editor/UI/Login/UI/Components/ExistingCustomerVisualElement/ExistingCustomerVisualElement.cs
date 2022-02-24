@@ -12,6 +12,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.Features.LoginBase;
 
 namespace Beamable.Editor.Login.UI.Components
 {
@@ -59,16 +60,16 @@ namespace Beamable.Editor.Login.UI.Components
 			_continueButton.tooltip = "Enter all Data";
 
 			_cidTextField = Root.Q<TextField>("organizationID");
-			_cidTextField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_CID_FIELD);
+			_cidTextField.AddPlaceholder(PLACEHOLDER_CID_FIELD);
 			var isAlias = _cidTextField.AddErrorLabel("Alias", PrimaryButtonVisualElement.AliasOrCidErrorHandler);
 
 			_emailTextField = Root.Q<TextField>("account");
-			_emailTextField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_EMAIL_FIELD);
+			_emailTextField.AddPlaceholder(PLACEHOLDER_EMAIL_FIELD);
 			var isEmail = _emailTextField.AddErrorLabel("Email", PrimaryButtonVisualElement.EmailErrorHandler);
 
 
 			_passwordTextField = Root.Q<TextField>("password");
-			_passwordTextField.AddPlaceholder(LoginBaseConstants.PLACEHOLDER_PASSWORD_FIELD);
+			_passwordTextField.AddPlaceholder(PLACEHOLDER_PASSWORD_FIELD);
 			_passwordTextField.isPasswordField = true;
 			var isPassword = _passwordTextField.AddErrorLabel("Password", m => { return null; });
 

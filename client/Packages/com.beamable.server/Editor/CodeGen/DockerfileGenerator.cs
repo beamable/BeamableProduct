@@ -2,6 +2,7 @@ using Beamable.Editor.Environment;
 using System;
 using System.IO;
 using System.Linq;
+using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server.Editor.CodeGen
 {
@@ -138,7 +139,7 @@ FROM {(DebuggingEnabled
 
 WORKDIR /subapp
 
-EXPOSE {SharedConstants.HEALTH_PORT}
+EXPOSE {HEALTH_PORT}
 COPY --from=build-env /subapp .
 COPY --from=build-env /app/baseImageDocs.xml .
 ENV BEAMABLE_SDK_VERSION_EXECUTION={BeamableEnvironment.SdkVersion}

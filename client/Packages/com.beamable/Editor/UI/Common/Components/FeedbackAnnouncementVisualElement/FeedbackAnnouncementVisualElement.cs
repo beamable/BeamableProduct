@@ -7,13 +7,15 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
+
 namespace Beamable.Editor.Toolbox.Components
 {
 	public class FeedbackAnnouncementVisualElement : BeamableVisualElement
 	{
 		public FeedbackAnnouncementModel FeedbackAnnouncementModel { get; set; }
 		public FeedbackAnnouncementVisualElement() : base(
-		   $"{BeamableComponentsConstants.COMP_PATH}/{nameof(FeedbackAnnouncementVisualElement)}/{nameof(FeedbackAnnouncementVisualElement)}")
+		   $"{Directories.COMMON_COMPONENTS_PATH}/{nameof(FeedbackAnnouncementVisualElement)}/{nameof(FeedbackAnnouncementVisualElement)}")
 		{
 		}
 

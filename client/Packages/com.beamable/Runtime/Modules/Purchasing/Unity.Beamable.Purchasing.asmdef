@@ -14,8 +14,10 @@
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Stores.dll"
+    ],
     "autoReferenced": true,
     "defineConstraints": [
         "BEAMABLE_PURCHASING"

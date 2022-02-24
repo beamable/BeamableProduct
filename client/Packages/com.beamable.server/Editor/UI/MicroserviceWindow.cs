@@ -1,5 +1,4 @@
-// using ActionBarVisualElement = Beamable.Editor.Microservice.UI.Components.ActionBarVisualElement;
-// using MicroserviceBreadcrumbsVisualElement = Beamable.Editor.Microservice.UI.Components.MicroserviceBreadcrumbsVisualElement;
+using Beamable.Common;
 using Beamable.Editor.Login.UI;
 using Beamable.Editor.Microservice.UI.Components;
 using Beamable.Editor.UI.Components;
@@ -19,6 +18,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
 
 
 namespace Beamable.Editor.Microservice.UI
@@ -26,10 +26,10 @@ namespace Beamable.Editor.Microservice.UI
 	public class MicroserviceWindow : CommandRunnerWindow, ISerializationCallbackReceiver
 	{
 		[MenuItem(
-			BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
-			BeamableConstants.OPEN + " " +
-			BeamableConstants.MICROSERVICES_MANAGER,
-			priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_2
+			MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
+			Commons.OPEN + " " +
+			MenuItems.Windows.Names.MICROSERVICES_MANAGER,
+			priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2
 		)]
 		public static async void Init()
 		{
@@ -64,7 +64,7 @@ namespace Beamable.Editor.Microservice.UI
 				if (_instance == null)
 				{
 					var inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
-					_instance = GetWindow<MicroserviceWindow>(BeamableConstants.MICROSERVICES_MANAGER, false, inspector);
+					_instance = GetWindow<MicroserviceWindow>(MenuItems.Windows.Names.MICROSERVICES_MANAGER, false, inspector);
 					_instance.Show(true);
 				}
 				return _instance;
@@ -116,9 +116,9 @@ namespace Beamable.Editor.Microservice.UI
 			if (_windowRoot == null)
 			{
 				var uiAsset =
-					AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{Constants.SERVER_UI}/MicroserviceWindow.uxml");
+					AssetDatabase.LoadAssetAtPath<VisualTreeAsset>($"{Constants.Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uxml");
 				_windowRoot = uiAsset.CloneTree();
-				_windowRoot.AddStyleSheet($"{Constants.SERVER_UI}/MicroserviceWindow.uss");
+				_windowRoot.AddStyleSheet($"{Constants.Directories.BEAMABLE_SERVER_PACKAGE_EDITOR_UI}/MicroserviceWindow.uss");
 				_windowRoot.name = nameof(_windowRoot);
 
 				root.Add(_windowRoot);
@@ -168,7 +168,7 @@ namespace Beamable.Editor.Microservice.UI
 
 			_actionBarVisualElement.OnInfoButtonClicked += () =>
 			{
-				Application.OpenURL(BeamableConstants.URL_FEATURE_MICROSERVICES);
+				Application.OpenURL(URLs.Documentations.URL_DOC_MICROSERVICES);
 			};
 
 			_actionBarVisualElement.OnCreateNewClicked += _microserviceContentVisualElement

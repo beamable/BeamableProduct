@@ -1,6 +1,7 @@
 using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
 using System;
+using System.IO;
 using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -9,6 +10,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
 
 namespace Beamable.Editor
 {
@@ -78,9 +80,9 @@ namespace Beamable.Editor
 			var errorLabel = new Label();
 			errorLabel.AddToClassList("beamableErrorHidden");
 			errorLabel.AddToClassList("beamableErrorLabel");
-			errorLabel.AddStyleSheet(BeamableComponentsConstants.COMMON_USS_PATH);
+			errorLabel.AddStyleSheet(Files.COMMON_USS_FILE);
 
-			self.AddStyleSheet(BeamableComponentsConstants.COMMON_USS_PATH);
+			self.AddStyleSheet(Files.COMMON_USS_FILE);
 			self.AddToClassList("beamableErrorToggleField");
 
 			var selfIndex = self.parent.IndexOf(self);
@@ -121,10 +123,10 @@ namespace Beamable.Editor
 			var errorLabel = new Label();
 			errorLabel.AddToClassList("beamableErrorHidden");
 			errorLabel.AddToClassList("beamableErrorLabel");
-			errorLabel.AddStyleSheet(BeamableComponentsConstants.COMMON_USS_PATH);
+			errorLabel.AddStyleSheet(Files.COMMON_USS_FILE);
 			errorLabel.AddTextWrapStyle();
 
-			self.AddStyleSheet(BeamableComponentsConstants.COMMON_USS_PATH);
+			self.AddStyleSheet(Files.COMMON_USS_FILE);
 			self.AddToClassList("beamableErrorTextField");
 
 			var selfIndex = self.parent.IndexOf(self);
@@ -224,7 +226,7 @@ namespace Beamable.Editor
 			container = self.Q("unity-text-input");
 #endif
 
-			container.AddStyleSheet(BeamableComponentsConstants.COMMON_USS_PATH);
+			container.AddStyleSheet(Files.COMMON_USS_FILE);
 			var lbl = new Label(text);
 			lbl.AddToClassList("beamablePlaceholder");
 

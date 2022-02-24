@@ -5,6 +5,7 @@ using UnityEditor.SceneManagement;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using static Beamable.Common.Constants.MenuItems.Windows;
 
 namespace Beamable.Assets.Editor
 {
@@ -15,9 +16,9 @@ namespace Beamable.Assets.Editor
 		public static int missingCount = -1;
 
 		[MenuItem(
-			BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER + "/" +
+			Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE_UTILITIES_BEAMABLE_DEVELOPER + "/" +
 			"Check Missing References",
-			priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
+			priority = Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_3)]
 		public static void FindMissingScripts()
 		{
 			EditorWindow.GetWindow(typeof(CheckMissingReferencesWindow));

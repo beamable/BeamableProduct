@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1]
+### Fixed
+- `StorageDocument` types are assigned ID values during replace operations
+- UI glitches in the Microservice Manager window
+
 ## [1.0.0]
 ### Added
 - `StorageDocument` base class for storage data classes that automatically handle document ID assignment.

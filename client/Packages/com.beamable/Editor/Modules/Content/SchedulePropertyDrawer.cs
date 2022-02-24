@@ -14,6 +14,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants.Features.Schedules;
 
 namespace Beamable.Editor.Content
 {
@@ -121,7 +122,7 @@ namespace Beamable.Editor.Content
 			_window = new TWindow();
 			BeamablePopupWindow popupWindow =
 				(Resources.FindObjectsOfTypeAll(typeof(BeamablePopupWindow)) as BeamablePopupWindow[]).FirstOrDefault(
-					w => w.titleContent.text == BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER);
+					w => w.titleContent.text == SCHEDULES_WINDOW_HEADER);
 			if (popupWindow != null)
 			{
 				var oldElement = popupWindow.GetRootVisualContainer().Q<TWindow>();
@@ -133,8 +134,8 @@ namespace Beamable.Editor.Content
 			}
 			else
 			{
-				popupWindow = BeamablePopupWindow.ShowUtility(BeamableComponentsConstants.SCHEDULES_WINDOW_HEADER,
-														  _window, null, BeamableComponentsConstants.SchedulesWindowSize);
+				popupWindow = BeamablePopupWindow.ShowUtility(SCHEDULES_WINDOW_HEADER,
+														  _window, null, SCHEDULES_WINDOW_SIZE);
 			}
 
 			_window.Set(schedule, data);

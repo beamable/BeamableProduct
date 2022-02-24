@@ -1,3 +1,5 @@
+using static Beamable.Common.Constants.Features.Content;
+
 namespace Beamable.Common.Content
 {
 	public enum ContentVisibility
@@ -11,8 +13,8 @@ namespace Beamable.Common.Content
 		{
 			switch (str?.ToLower())
 			{
-				case ContentConstants.PUBLIC: return ContentVisibility.Public;
-				case ContentConstants.PRIVATE: return ContentVisibility.Private;
+				case PUBLIC: return ContentVisibility.Public;
+				case PRIVATE: return ContentVisibility.Private;
 				default: return ContentVisibility.Public;
 			}
 		}

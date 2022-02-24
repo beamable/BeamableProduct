@@ -1,13 +1,15 @@
 {
     "name": "Unity.Beamable.Server.Templates",
-    "rootNamespace": "",
     "references": [
         "Unity.Beamable.Runtime.Common",
         "Unity.Beamable.Server.Runtime.Shared",
         "Unity.Beamable.Server.Runtime.Common",
         "Unity.Beamable.Server.Runtime.Mocks"
     ],
-    "includePlatforms": ["Editor"],
+    "optionalUnityReferences": [],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
@@ -17,7 +19,5 @@
         "System.Runtime.CompilerServices.Unsafe.dll"
     ],
     "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
+    "defineConstraints": []
 }
