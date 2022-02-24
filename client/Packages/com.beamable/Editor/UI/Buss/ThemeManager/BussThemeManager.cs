@@ -51,21 +51,6 @@ namespace Beamable.Editor.UI.Buss
 			themeManagerWindow.Show(true);
 		}
 
-		public void CloseConfirmationPopup()
-		{
-			if (_confirmationPopup != null)
-			{
-				_confirmationPopup.Close();
-			}
-
-			_confirmationPopup = null;
-		}
-
-		public void SetConfirmationPopup(BeamablePopupWindow popupWindow)
-		{
-			_confirmationPopup = popupWindow;
-		}
-
 		private void OnEnable()
 		{
 			minSize = THEME_MANAGER_WINDOW_SIZE;
@@ -252,7 +237,7 @@ namespace Beamable.Editor.UI.Buss
 		private void AddStyleCard(BussStyleSheet styleSheet, BussStyleRule styleRule, Action callback)
 		{
 			BussStyleCardVisualElement styleCard = new BussStyleCardVisualElement();
-			styleCard.Setup(this, styleSheet, styleRule, _variableDatabase, callback);
+			styleCard.Setup(styleSheet, styleRule, _variableDatabase, callback);
 			_styleCardsVisualElements.Add(styleCard);
 			_stylesGroup.Add(styleCard);
 

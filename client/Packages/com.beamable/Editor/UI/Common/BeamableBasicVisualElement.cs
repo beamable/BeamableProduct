@@ -1,5 +1,8 @@
-﻿using Beamable.Editor.UI.Components;
+﻿using System;
+using Beamable.Editor.UI.Components;
 using System.IO;
+using System.Reflection;
+using UnityEditor;
 using UnityEngine.Assertions;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -69,6 +72,19 @@ namespace Beamable.Editor.UI.Common
 			}
 
 			OnDestroy();
+		}
+
+		public EditorWindow TryGetEditorWindow()
+		{
+			try { 
+				var ownerProperty = panel.GetType().GetProperty("ownerObject");
+				var owner = ownerProperty.GetValue(panel);
+				var window = owner.GetType().BaseType.GetProperty("actualView", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(owner);
+				return (EditorWindow)window;}
+			catch (Exception)
+			{
+				return null;
+			}
 		}
 	}
 }

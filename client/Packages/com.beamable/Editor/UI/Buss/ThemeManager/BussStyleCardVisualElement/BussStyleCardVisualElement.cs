@@ -3,6 +3,7 @@ using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -41,10 +42,11 @@ namespace Beamable.Editor.UI.Components
 
 		private readonly List<BussStylePropertyVisualElement> _properties = new List<BussStylePropertyVisualElement>();
 		private Action _onUndoRequest;
-		private BussThemeManager _themeManager;
 		private bool _sorted;
 		private bool _showAllMode;
 		private bool _editMode;
+
+		private static BeamablePopupWindow _popupWindow;
 
 		public BussStyleRule StyleRule => _styleRule;
 		public bool EditMode => _editMode;
@@ -97,13 +99,11 @@ namespace Beamable.Editor.UI.Components
 			_showAllButton.SetEnabled(enabled);
 		}
 
-		public void Setup(BussThemeManager themeManager,
-						  BussStyleSheet styleSheet,
-						  BussStyleRule styleRule,
-						  VariableDatabase variableDatabase,
-						  Action onUndoRequest)
+		public void Setup(BussStyleSheet styleSheet,
+		                  BussStyleRule styleRule,
+		                  VariableDatabase variableDatabase,
+		                  Action onUndoRequest)
 		{
-			_themeManager = themeManager;
 			_styleSheet = styleSheet;
 			_styleRule = styleRule;
 			_variableDatabase = variableDatabase;
@@ -147,7 +147,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void RemoveButtonClicked(MouseDownEvent evt)
 		{
-			_themeManager.CloseConfirmationPopup();
+			ClosePopup();
 
 			ConfirmationPopupVisualElement confirmationPopup = new ConfirmationPopupVisualElement(
 				DELETE_STYLE_MESSAGE,
@@ -156,14 +156,14 @@ namespace Beamable.Editor.UI.Components
 					_styleSheet.RemoveStyle(StyleRule);
 					AssetDatabase.SaveAssets();
 				},
-				_themeManager.CloseConfirmationPopup
+				ClosePopup
 			);
 
 			BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowConfirmationUtility(
 				DELETE_STYLE_HEADER,
-				confirmationPopup, _themeManager);
+				confirmationPopup, TryGetEditorWindow());
 
-			_themeManager.SetConfirmationPopup(popupWindow);
+			SetPopup(popupWindow);
 		}
 
 		private void AddRuleButtonClicked(MouseDownEvent evt)
@@ -213,7 +213,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void ClearAllButtonClicked(MouseDownEvent evt)
 		{
-			_themeManager.CloseConfirmationPopup();
+			ClosePopup();
 
 			ConfirmationPopupVisualElement confirmationPopup = new ConfirmationPopupVisualElement(
 				CLEAR_ALL_PROPERTIES_MESSAGE,
@@ -221,14 +221,14 @@ namespace Beamable.Editor.UI.Components
 				{
 					_styleSheet.RemoveAllProperties(StyleRule);
 				},
-				_themeManager.CloseConfirmationPopup
+				ClosePopup
 			);
-
+			
 			BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowConfirmationUtility(
 				CLEAR_ALL_PROPERTIES_HEADER,
-				confirmationPopup, _themeManager);
-
-			_themeManager.SetConfirmationPopup(popupWindow);
+				confirmationPopup, TryGetEditorWindow());
+			
+			SetPopup(popupWindow);
 		}
 
 		private void UndoButtonClicked(MouseDownEvent evt)
@@ -252,7 +252,7 @@ namespace Beamable.Editor.UI.Components
 
 			if (!_editMode)
 			{
-				_themeManager.CloseConfirmationPopup();
+				ClosePopup();
 			}
 
 			Refresh();
@@ -432,6 +432,21 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			_colorBlock.EnableInClassList("active", active);
+		}
+
+		private static void SetPopup(BeamablePopupWindow popup)
+		{
+			ClosePopup();
+			_popupWindow = popup;
+		}
+
+		private static void ClosePopup()
+		{
+			if (_popupWindow != null)
+			{
+				_popupWindow.Close();
+				_popupWindow = null;
+			}
 		}
 	}
 }
