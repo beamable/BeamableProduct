@@ -1,7 +1,6 @@
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
 using System;
-using System.Globalization;
 using UnityEngine;
 
 namespace Beamable.Api
@@ -38,10 +37,8 @@ namespace Beamable.Api
 			string accessToken = PlayerPrefs.GetString($"{_prefix}{cid}.{pid}.access_token");
 			string refreshToken = PlayerPrefs.GetString($"{_prefix}{cid}.{pid}.refresh_token");
 			string expires = PlayerPrefs.GetString($"{_prefix}{cid}.{pid}.expires");
-
 			if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken) || string.IsNullOrEmpty(expires))
 				return null;
-
 			return new AccessToken(this, cid, pid, accessToken, refreshToken, expires);
 		}
 
@@ -56,7 +53,7 @@ namespace Beamable.Api
 			PlayerPrefs.SetString($"{_prefix}{cid}.refresh_token", token.RefreshToken);
 			PlayerPrefs.SetString(
 			   $"{_prefix}{cid}.expires",
-			   token.ExpiresAt.ToString("O", CultureInfo.InvariantCulture)
+			   token.ExpiresAt.ToFileTimeUtc().ToString()
 			);
 			StoreDeviceRefreshToken(cid, null, token);
 			PlayerPrefs.Save();
@@ -69,7 +66,7 @@ namespace Beamable.Api
 			PlayerPrefs.SetString($"{_prefix}{cid}.{pid}.refresh_token", token.RefreshToken);
 			PlayerPrefs.SetString(
 			   $"{_prefix}{cid}.{pid}.expires",
-			   token.ExpiresAt.ToString("O", CultureInfo.InvariantCulture)
+			   token.ExpiresAt.ToFileTimeUtc().ToString()
 			);
 			StoreDeviceRefreshToken(cid, pid, token);
 			PlayerPrefs.Save();

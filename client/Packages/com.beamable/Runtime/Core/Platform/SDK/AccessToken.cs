@@ -55,7 +55,14 @@ namespace Beamable.Api
 			Pid = pid;
 			Token = token;
 			RefreshToken = refreshToken;
-			ExpiresAt = DateTime.Parse(expiresAtISO, CultureInfo.InvariantCulture);
+			if (long.TryParse(expiresAtISO, out var fileTimeUtc))
+			{
+				ExpiresAt = DateTime.FromFileTimeUtc(fileTimeUtc);
+			}
+			else
+			{
+				ExpiresAt = DateTime.Parse(expiresAtISO, CultureInfo.InvariantCulture);
+			}
 		}
 
 		// Saves to disk
