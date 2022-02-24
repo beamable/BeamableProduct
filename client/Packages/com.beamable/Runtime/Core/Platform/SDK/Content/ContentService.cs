@@ -33,7 +33,7 @@ namespace Beamable.Content
 		public string ManifestID { get; } = "global";
 
 		private ClientManifest _latestManifiest;
-		
+
 		private readonly Promise<Unit> _manifestPromise = new Promise<Unit>();
 
 		private readonly Dictionary<string, ClientContentInfo> _contentIdTable =
@@ -146,15 +146,15 @@ namespace Beamable.Content
 				{
 					return;
 				}
-				
+
 				foreach (var info in bakedManifest.entries)
 				{
 					bakedManifestInfo[info.contentId] = info;
 				}
 			}
 		}
-		
-		
+
+
 
 #if UNITY_EDITOR
 
@@ -174,7 +174,7 @@ namespace Beamable.Content
 #endif
 
 		public ContentService(IDependencyProvider provider,
-		                      IBeamableFilesystemAccessor filesystemAccessor, ContentParameterProvider config)
+							  IBeamableFilesystemAccessor filesystemAccessor, ContentParameterProvider config)
 		{
 			_provider = provider;
 			CurrentDefaultManifestID = config.manifestID;
@@ -190,11 +190,11 @@ namespace Beamable.Content
 
 			InitializeBakedContent();
 			InitializeBakedManifest();
-			
+
 			Subscribables = new Dictionary<string, ManifestSubscription>();
 			AddSubscriber(CurrentDefaultManifestID);
 		}
-		
+
 		private void InitializeBakedContent()
 		{
 			string path = FilesystemAccessor.GetPersistentDataPathWithoutTrailingSlash() + "/content/content.json";
@@ -215,13 +215,13 @@ namespace Beamable.Content
 
 				string json = bakedFile.text;
 				ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
-				
+
 				if (ContentDataInfo == null)
 				{
 					json = Gzip.Decompress(bakedFile.bytes);
 					ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
 				}
-				
+
 				// save baked data to disk
 				try
 				{
@@ -246,11 +246,11 @@ namespace Beamable.Content
 
 			string json = manifestAsset.text;
 			BakedManifest = JsonUtility.FromJson<ClientManifest>(json);
-			
+
 			if (BakedManifest == null)
 			{
 				json = Gzip.Decompress(manifestAsset.bytes);
-				BakedManifest = JsonUtility.FromJson<ClientManifest>(json);	
+				BakedManifest = JsonUtility.FromJson<ClientManifest>(json);
 			}
 		}
 
@@ -317,15 +317,15 @@ namespace Beamable.Content
 				{
 					return rawCache.GetContentObject(contentInfo);
 				}
-				
+
 				var subscribable = GetSubscription(determinedManifestID);
-				
+
 				if (subscribable == null)
 					AddSubscriber(determinedManifestID);
-				
+
 				if (!subscribable.TryGetContentId(contentId, out var info))
 					return Promise<IContentObject>.Failed(new ContentNotFoundException(contentId));
-				
+
 				info.manifestID = determinedManifestID;
 				return rawCache.GetContentObject(info);
 			});
@@ -357,36 +357,36 @@ namespace Beamable.Content
 		public Promise<ClientManifest> GetManifestWithID(string manifestID = "")
 		{
 			string determinedManifestID = DetermineManifestID(manifestID);
-			
+
 			if (TryGetCachedManifest(determinedManifestID, out var promise))
 			{
 				return promise;
 			}
-			
+
 			return GetSubscription(DetermineManifestID(manifestID))?.GetManifest();
 		}
 
 		public Promise<ClientManifest> GetManifest(string filter = "", string manifestID = "")
 		{
 			string determinedManifestID = DetermineManifestID(manifestID);
-			
+
 			if (TryGetCachedManifest(determinedManifestID, out var promise))
 			{
 				return promise;
 			}
-			
+
 			return GetSubscription(determinedManifestID)?.GetManifest(filter);
 		}
 
 		public Promise<ClientManifest> GetManifest(ContentQuery query, string manifestID = "")
 		{
 			string determinedManifestID = DetermineManifestID(manifestID);
-			
+
 			if (TryGetCachedManifest(determinedManifestID, out var promise))
 			{
 				return promise;
 			}
-			
+
 			return GetSubscription(determinedManifestID)?.GetManifest(query);
 		}
 
@@ -400,7 +400,7 @@ namespace Beamable.Content
 					promise = OfflineCache.Get<ClientManifest>(key, Requester.AccessToken, true);
 					return true;
 				}
-				
+
 				if (manifestID.Equals("global") && BakedManifest != null)
 				{
 					promise = Promise<ClientManifest>.Successful(BakedManifest);
