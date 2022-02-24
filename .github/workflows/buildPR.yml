@@ -33,7 +33,7 @@ jobs:
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           ec2-image-id: ami-0001a7ef912bc2687
           ec2-instance-type: t3.large
-          subnet-id: subnet-0258b793c7291932b
+          subnet-id: subnet-0c788721cbfee4398
           security-group-id: sg-05d57d25289cd8aa0
           aws-resource-tags: > # optional, requires additional permissions
             [
