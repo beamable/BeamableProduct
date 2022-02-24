@@ -665,7 +665,7 @@ namespace Beamable.Common
 		/// <param name="generators"></param>
 		/// <typeparam name="T"></typeparam>
 		/// <returns>A single promise of Unit to represent the completion of the processing. Any other side effects need to be handled separately</returns>
-		public static Promise<Unit> ExecuteSerially<T>(List<Func<Promise<T>>> generators)
+		public static Promise<Unit> ExecuteSerially<T>(List<Func<Promise<T>>> generators, Func<bool> stopWhen = null)
 		{
 #if DISABLE_THREADING // unity doesn't supporting System.Threading
          // use a tail recursion approach. It'll stink for massive lists, but at least it works for small ones
@@ -681,6 +681,11 @@ namespace Beamable.Common
 			{
 				for (var i = 0; i < generators.Count; i++)
 				{
+					if (stopWhen != null && stopWhen())
+					{
+						break;
+					}
+					
 					var generator = generators[i];
 					var promise = generator();
 					await promise;
@@ -740,59 +745,9 @@ namespace Beamable.Common
 		/// <typeparam name="T"></typeparam>
 		/// <returns></returns>
 		[Obsolete("This method isn't safe to use one devices with low callstack limits like Javascript, or Android. Use " + nameof(ExecuteInBatchSequence) + " instead.")]
-		public static SequencePromise<T> ExecuteRolling<T>(int maxProcessSize, List<Func<Promise<T>>> generators,Func<bool> stopWhen = null)
+		public static SequencePromise<T> ExecuteRolling<T>(int maxProcessSize, List<Func<Promise<T>>> generators, Func<bool> stopWhen = null)
 		{
-			var current = new AtomicInt();
-			var running = new AtomicInt();
-
-			var completePromise = new SequencePromise<T>(generators.Count);
-
-			object locker = generators;
-
-			void ProcessUpToLimit()
-				{
-				lock (locker)
-					{
-					var runningCount = running.Value;
-					var currentCount = current.Value;
-
-					while (runningCount < maxProcessSize && currentCount < generators.Count)
-					{
-						if (stopWhen != null && stopWhen())
-						{
-							break;
-					}
-
-						var index = currentCount;
-						var generator = generators[index];
-
-						current.Increment();
-						running.Increment();
-						var promise = generator();
-
-
-						promise.Then(result =>
-						{
-							running.Decrement();
-							completePromise.ReportEntrySuccess(index, result);
-							ProcessUpToLimit();
-						});
-
-						promise.Error(err =>
-						{
-							running.Decrement();
-							completePromise.ReportEntryError(index, err);
-							ProcessUpToLimit();
-						});
-
-						runningCount = running.Value;
-						currentCount = current.Value;
-					}
-				}
-				}
-
-			ProcessUpToLimit();
-			return completePromise;
+			return ExecuteInBatchSequence(maxProcessSize, generators, stopWhen);
 		}
 
 		/// <summary>
@@ -829,7 +784,7 @@ namespace Beamable.Common
 			return ExecuteSerially(batchRunners);
 		}
 
-		public static SequencePromise<T> ExecuteInBatchSequence<T>(int maxBatchSize, List<Func<Promise<T>>> generators)
+		public static SequencePromise<T> ExecuteInBatchSequence<T>(int maxBatchSize, List<Func<Promise<T>>> generators, Func<bool> stopWhen = null)
 		{
 			var batches = new List<List<Func<Promise<T>>>>();
 
@@ -862,7 +817,7 @@ namespace Beamable.Common
 			// run each batch, serially...
 			var batchRunners = batches.Select(batch => new Func<Promise<List<T>>>(() => ProcessBatch(batch))).ToList();
 
-			ExecuteSerially(batchRunners);
+			ExecuteSerially(batchRunners, stopWhen);
 			return seq;
 		}
 	}
