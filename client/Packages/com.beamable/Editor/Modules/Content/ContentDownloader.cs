@@ -50,7 +50,7 @@ namespace Beamable.Editor.Content
 			}).ToList();
 
 			var downloadPromises = new Promise<Unit>();
-			Promise.ExecuteRolling(10, downloadPromiseGenerators).Map(assetsToBeWritten =>
+			Promise.ExecuteInBatchSequence(10, downloadPromiseGenerators).Map(assetsToBeWritten =>
 			{
 				try
 				{

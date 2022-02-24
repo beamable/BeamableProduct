@@ -42,10 +42,8 @@ namespace Beamable.Content
 		[Tooltip("Create zip archive of content upon baking. Makes first content resolve call longer due to decompression.")]
 		public bool EnableBakedContentCompression = true;
 
-#if UNITY_STANDALONE
         [Tooltip("Re-bake content on each build. This option is available only on Standalone build target.")]
         public bool BakeContentOnBuild = true;
-#endif
 
 		public ContentParameterProvider ParameterProvider
 		{

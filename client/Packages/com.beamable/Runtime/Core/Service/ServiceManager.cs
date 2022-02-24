@@ -67,7 +67,7 @@ namespace Beamable.Service
 		public static void RuntimeOnlyDontDestroyOnLoad(GameObject go)
 		{
 #if !UNITY_EDITOR
-			Object.DontDestroyOnLoad(go);
+			GameObject.DontDestroyOnLoad(go);
 #endif
 		}
 
