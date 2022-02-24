@@ -24,11 +24,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override string ScriptName => nameof(MicroserviceVisualElement);
 
 		private Action _defaultBuildAction;
-		private bool _mouseOverBuildDropdown;
 
-		private Label _buildDefaultLabel;
-		private Button _buildDropDown;
-		private Image _buildDropDownIcon;
+		private VisualElement _buildDefaultLabel;
+		private Button _buildBtn;
 		private MicroserviceModel _microserviceModel;
 
 		protected override void OnDestroy()
@@ -47,21 +45,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void QueryVisualElements()
 		{
 			base.QueryVisualElements();
-			_buildDropDown = Root.Q<Button>("buildDropDown");
-			_buildDefaultLabel = _buildDropDown.Q<Label>();
-			_buildDropDownIcon = _buildDropDown.Q<Image>();
+			_buildBtn = Root.Q<Button>("buildBtn");
+			_buildDefaultLabel = Root.Q<VisualElement>("buildImage");
 			_microserviceModel = (MicroserviceModel)Model;
 		}
 		protected override void UpdateVisualElements()
 		{
 			base.UpdateVisualElements();
-			_buildDropDownIcon.RegisterCallback<MouseEnterEvent>(evt => _mouseOverBuildDropdown = true);
-			_buildDropDownIcon.RegisterCallback<MouseLeaveEvent>(evt => _mouseOverBuildDropdown = false);
-			var buildBtnManipulator = new ContextualMenuManipulator(HandleBuildButtonClicked);
-			buildBtnManipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
-			_buildDropDown.clickable.activators.Clear();
-			_buildDropDown.AddManipulator(buildBtnManipulator);
-
+			_buildBtn.clickable.clicked -= HandleBuildButtonClicked;
+			_buildBtn.clickable.clicked += HandleBuildButtonClicked;
 			_microserviceModel.OnBuildAndStart -= SetupProgressBarForBuildAndStart;
 			_microserviceModel.OnBuildAndStart += SetupProgressBarForBuildAndStart;
 			_microserviceModel.OnBuildAndRestart -= SetupProgressBarForBuildAndRestart;
@@ -126,30 +118,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			new StepLogParser(_loadingBar, Model, task);
 		}
-		private void HandleBuildButtonClicked(ContextualMenuPopulateEvent evt)
-		{
-			if (_mouseOverBuildDropdown)
-			{
-				evt.menu.BeamableAppendAction("Build", pos => _microserviceModel.Build());
-				evt.menu.BeamableAppendAction(_microserviceModel.IncludeDebugTools
-					? BUILD_DISABLE_DEBUG
-					: BUILD_ENABLE_DEBUG, pos =>
-				{
-					_microserviceModel.IncludeDebugTools = !_microserviceModel.IncludeDebugTools;
-					UpdateLocalStatus();
-				});
-			}
-			else
-			{
-				_defaultBuildAction?.Invoke();
-			}
-		}
+		private void HandleBuildButtonClicked() => _defaultBuildAction?.Invoke();
+
 		protected override void UpdateButtons()
 		{
 			base.UpdateButtons();
 			_stopButton.visible = Model.IsRunning;
-			_buildDefaultLabel.text = GetBuildButtonString(_microserviceModel.IncludeDebugTools,
-				_microserviceModel.IsRunning ? BUILD_RESET : BUILD_START).ToUpper(CultureInfo.InvariantCulture);
+			_buildBtn.tooltip = GetBuildButtonString(_microserviceModel.IncludeDebugTools,
+			                                         _microserviceModel.IsRunning ? BUILD_RESET : BUILD_START);
+			_buildDefaultLabel.EnableInClassList("running", _microserviceModel.IsRunning);
 
 			if (_microserviceModel.IsRunning)
 			{
@@ -160,7 +137,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				_defaultBuildAction = () => _microserviceModel.BuildAndStart();
 			}
 			_stopButton.SetEnabled(_microserviceModel.ServiceBuilder.HasImage && !_microserviceModel.IsBuilding);
-			_buildDropDown.SetEnabled(!_microserviceModel.IsBuilding);
+			_buildBtn.SetEnabled(!_microserviceModel.IsBuilding);
 		}
 	}
 }

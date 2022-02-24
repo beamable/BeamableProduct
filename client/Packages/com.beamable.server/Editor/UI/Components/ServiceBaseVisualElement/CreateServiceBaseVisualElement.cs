@@ -34,12 +34,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private const int MAX_NAME_LENGTH = 28;
 
 		private static readonly string[] ElementsToRemove = {
-			"dependentServicesContainer", "collapseContainer", "statusIcon", "remoteStatusIcon", "moreBtn"
+			"dependentServicesContainer", "collapseContainer", "statusIcon", "remoteStatusIcon", "moreBtn", "buildBtn"
 		};
 
 		private TextField _nameTextField;
 		private Button _cancelBtn;
-		private Button _buildDropDownBtn;
 		private LabeledCheckboxVisualElement _checkbox;
 		private PrimaryButtonVisualElement _createBtn;
 		private VisualElement _logContainerElement;
@@ -70,7 +69,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_cancelBtn.parent.Add(_createBtn);
 			_createBtn.Refresh();
 
-			_buildDropDownBtn = Root.Q<Button>("buildDropDown");
 			_checkbox = Root.Q<LabeledCheckboxVisualElement>("checkbox");
 			_logContainerElement = Root.Q<VisualElement>("logContainer");
 			_nameTextField = Root.Q<TextField>("microserviceNewTitle");
@@ -100,7 +98,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_createBtn.SetText("Create");
 			_createBtn.Button.clickable.clicked += HandleContinueButtonClicked;
 
-			_buildDropDownBtn.RemoveFromHierarchy();
 
 			_checkbox.Refresh();
 			_checkbox.SetWithoutNotify(false);

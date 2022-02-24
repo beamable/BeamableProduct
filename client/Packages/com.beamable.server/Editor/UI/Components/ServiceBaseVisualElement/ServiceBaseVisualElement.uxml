@@ -8,7 +8,7 @@
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
     
     <engine:VisualElement name="mainVisualElement">
-        
+
         <engine:VisualElement name="foldContainer">
             <engine:Button name="foldButton" class="noMarginNoPaddingNoBorder">
                 <engine:VisualElement name="foldIcon" class="foldIcon unfoldIcon"/>
