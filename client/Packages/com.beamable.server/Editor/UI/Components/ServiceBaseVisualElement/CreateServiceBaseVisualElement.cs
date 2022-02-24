@@ -78,6 +78,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_isNameSizedRight = _nameTextField.AddErrorLabel(
 				"Length", txt => PrimaryButtonVisualElement.IsBetweenCharLength(txt, MAX_NAME_LENGTH));
 			_createBtn.AddGateKeeper(_isNameValid);
+
+			Root.Q("foldContainer").visible = false;
 		}
 		private void InjectStyleSheets()
 		{
