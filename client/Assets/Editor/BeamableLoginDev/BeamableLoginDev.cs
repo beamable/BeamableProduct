@@ -1,6 +1,4 @@
-﻿#if BEAMABLE_DEVELOPER
-
-using Beamable.Editor;
+﻿using Beamable.Editor;
 using System;
 using System.IO;
 using System.Text;
@@ -49,5 +47,3 @@ public class BeamableDevLoginData
 	public string email;
 	public string password;
 }
-
-#endif
