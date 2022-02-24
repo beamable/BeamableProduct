@@ -80,7 +80,7 @@
 					public const string BUSS = BEAMABLE + " Styles";
 					public const string BUSS_SHEET_EDITOR = "Sheet Inspector";
 					public const string BUSS_WIZARD = "Theme Wizard";
-					public const string LOGIN = "Beamble Login";
+					public const string LOGIN = "Beamable Login";
 					public const string SDF_GENERATOR = "SDF Generator";
 				}
 				public static class Paths
