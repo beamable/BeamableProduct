@@ -74,7 +74,8 @@
 #buildDropDown{
     flex-direction: row;
     justify-content: space-around;
-    padding-right: 0px;
+    padding-left: 6px;
+    padding-right: 6px;
     padding-top: 0px;
     padding-bottom: 0px;
     border-right-width: 0px;
@@ -83,16 +84,6 @@
 
 #buildLabel {
     align-self: center;
-}
-
-#dropDown{
-    align-content: center;
-    justify-content: center;
-    align-self: center;
-    width: 30px;
-    height: 23px;
-    /*right: 3px;*/
-    -unity-text-align: middle-center;
 }
 
 .confirmBtn{
@@ -208,7 +199,7 @@ LabeledCheckboxVisualElement{
     margin-bottom: 0px;
 }
 
-#stopImage {
+#stopImage, #buildImage {
     align-self: center;
     width: 18px;
     height: 18px;

@@ -54,6 +54,15 @@
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/StopAllLight.png");
 }
 
+#buildImage {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all D.png");
+}
+
+#buildImage.running {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Refresh-dark.png");
+}
+
+
 .localBuilding {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/local Building D.png");
 }

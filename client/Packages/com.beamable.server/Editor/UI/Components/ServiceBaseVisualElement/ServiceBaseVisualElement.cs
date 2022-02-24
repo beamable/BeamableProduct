@@ -110,6 +110,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Model.OnStop -= SetupProgressBarForStop;
 			Model.OnStop += SetupProgressBarForStop;
 
+			_stopButton.tooltip = "Stop";
 			_stopButton.clickable.clicked += HandleStopButtonClicked;
 			var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
 			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });

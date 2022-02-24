@@ -18,9 +18,8 @@
                 <engine:Button name="stopBtn" class="confirmBtn">
                     <engine:VisualElement name="stopImage"/>
                 </engine:Button>
-                <engine:Button name="buildDropDown" class="confirmBtn">
-                    <engine:Label text="Build" name="buildLabel"/>
-                    <engine:Image name="dropDown"/>
+                <engine:Button name="buildBtn" class="confirmBtn">
+                    <engine:VisualElement name="buildImage"/>
                 </engine:Button>
                 <engine:VisualElement name="remoteStatusIcon"/>
                 <engine:VisualElement name="statusIcon"/>
