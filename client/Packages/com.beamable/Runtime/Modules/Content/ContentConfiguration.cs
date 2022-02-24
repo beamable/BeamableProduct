@@ -2,13 +2,15 @@
 using System;
 using System.Linq;
 using UnityEngine;
+using static Beamable.Common.Constants.MenuItems.Assets;
+using static Beamable.Common.Constants.Features.ContentManager;
 
 namespace Beamable.Content
 {
 #if BEAMABLE_DEVELOPER
 	[CreateAssetMenu(
 		fileName = "Content Configuration",
-		menuName = BeamableConstants.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
+		menuName = Paths.MENU_ITEM_PATH_ASSETS_BEAMABLE_CONFIGURATIONS + "/" +
 				  "Content Configuration")]
 #endif
 	public class ContentConfiguration : ModuleConfigurationObject
@@ -24,12 +26,12 @@ namespace Beamable.Content
 
 #if UNITY_EDITOR
         [HideInInspector]
-        public string EditorManifestID = BeamableConstants.DEFAULT_MANIFEST_ID;
+        public string EditorManifestID = DEFAULT_MANIFEST_ID;
 #endif
 
 		[Tooltip("This is the starting manifest ID that will be used when the game starts up. If you change it here, the Beamable API will initialize with content from this namespace. You can also update the setting at runtime.")]
 		[SerializeField, ReadonlyIf(nameof(EnableMultipleContentNamespaces), negate = true, specialDrawer = ReadonlyIfAttribute.SpecialDrawer.DelayedString)]
-		private string _runtimeManifestID = BeamableConstants.DEFAULT_MANIFEST_ID;
+		private string _runtimeManifestID = DEFAULT_MANIFEST_ID;
 		public string RuntimeManifestID
 		{
 			get => ValidateManifestID(_runtimeManifestID);
@@ -40,17 +42,15 @@ namespace Beamable.Content
 		[Tooltip("Create zip archive of content upon baking. Makes first content resolve call longer due to decompression.")]
 		public bool EnableBakedContentCompression = true;
 
-#if UNITY_STANDALONE
         [Tooltip("Re-bake content on each build. This option is available only on Standalone build target.")]
         public bool BakeContentOnBuild = true;
-#endif
 
 		public ContentParameterProvider ParameterProvider
 		{
 			get
 			{
 				var manifestID = RuntimeManifestID;
-				if (!EnableMultipleContentNamespaces && manifestID != BeamableConstants.DEFAULT_MANIFEST_ID)
+				if (!EnableMultipleContentNamespaces && manifestID != DEFAULT_MANIFEST_ID)
 				{
 					Debug.LogWarning($"Beamable API is using manifest with id '{manifestID}' while manifest namespaces feature is disabled!");
 				}
@@ -67,18 +67,18 @@ namespace Beamable.Content
             if (!IsValidManifestID(EditorManifestID, out var message))
             {
                 Debug.LogWarning($"Invalid manifest ID: {message}");
-                EditorManifestID = BeamableConstants.DEFAULT_MANIFEST_ID;
+                EditorManifestID = DEFAULT_MANIFEST_ID;
             }
 #endif
 
 			if (!EnableMultipleContentNamespaces)
 			{
-				_runtimeManifestID = BeamableConstants.DEFAULT_MANIFEST_ID;
+				_runtimeManifestID = DEFAULT_MANIFEST_ID;
 			}
 			else if (!IsValidManifestID(_runtimeManifestID, out var runtimeMessage))
 			{
 				Debug.LogWarning($"Invalid runtime manifest ID: {runtimeMessage}");
-				_runtimeManifestID = BeamableConstants.DEFAULT_MANIFEST_ID;
+				_runtimeManifestID = DEFAULT_MANIFEST_ID;
 			}
 		}
 		public static bool IsValidManifestID(string name, out string message)
@@ -115,7 +115,7 @@ namespace Beamable.Content
 		{
 			return IsValidManifestID(id, out var _)
 				? id
-				: BeamableConstants.DEFAULT_MANIFEST_ID;
+				: DEFAULT_MANIFEST_ID;
 		}
 	}
 }

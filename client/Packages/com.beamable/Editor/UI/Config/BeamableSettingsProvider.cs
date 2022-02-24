@@ -10,6 +10,8 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+using static Beamable.Common.Constants;
+using static Beamable.Common.Constants.Features.Config;
 
 namespace Beamable.Editor.Config
 {
@@ -17,10 +19,10 @@ namespace Beamable.Editor.Config
 	{
 
 		[MenuItem(
-		   BeamableConstants.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
-		   BeamableConstants.OPEN + " " +
-		   BeamableConstants.CONFIG_MANAGER,
-		   priority = BeamableConstants.MENU_ITEM_PATH_WINDOW_PRIORITY_2
+		   MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
+		   Commons.OPEN + " " +
+		   MenuItems.Windows.Names.CONFIG_MANAGER,
+		   priority = MenuItems.Windows.Orders.MENU_ITEM_PATH_WINDOW_PRIORITY_2
 		)]
 		public static void Open()
 		{
@@ -65,7 +67,7 @@ namespace Beamable.Editor.Config
 							var options = ConfigManager.GenerateOptions();
 
 							var scroller = new ScrollView();
-							rootElement.AddStyleSheet($"{ConfigWindowConstants.BASE_PATH}/ConfigWindow.uss");
+							rootElement.AddStyleSheet($"{BASE_UI_PATH}/ConfigWindow.uss");
 							rootElement.Add(scroller);
 
 							ConfigWindow.CreateFields(scroller, null, options, true);
@@ -104,7 +106,7 @@ namespace Beamable.Editor.Config
 					{
 						options = ConfigManager.GenerateOptions(config);
 						var scroller = new ScrollView();
-						rootElement.AddStyleSheet($"{ConfigWindowConstants.BASE_PATH}/ConfigWindow.uss");
+						rootElement.AddStyleSheet($"{BASE_UI_PATH}/ConfigWindow.uss");
 						rootElement.Add(scroller);
 						ConfigWindow.CreateFields(scroller, null, options, false);
 					},

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Buss
 {
@@ -15,8 +16,8 @@ namespace Beamable.Editor.UI.Buss
 			_onSelectorAdded = onSelectorAdded;
 			_styleSheets = activeStyleSheets;
 
-			titleContent = new GUIContent(BussConstants.AddStyleWindowHeader);
-			minSize = maxSize = BussConstants.AddStyleWindowSize;
+			titleContent = new GUIContent(ADD_STYLE_WINDOW_HEADER);
+			minSize = maxSize = ADD_STYLE_WINDOW_SIZE;
 			position = new Rect((Screen.width + minSize.x) * 0.5f, Screen.width * 0.5f, minSize.x, minSize.y);
 
 			Refresh();

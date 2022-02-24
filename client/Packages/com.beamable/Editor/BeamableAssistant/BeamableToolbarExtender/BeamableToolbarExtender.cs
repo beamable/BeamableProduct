@@ -85,7 +85,7 @@ namespace Beamable.Editor.ToolbarExtender
 
 				// Load and inject Beamable Menu Items (necessary due to multiple package split of SDK) --- sort them by specified order, and alphabetically when tied.
 				var menuItemsSearchInFolders = BeamEditor.CoreConfiguration.BeamableAssistantMenuItemsPath.Where(Directory.Exists).ToArray();
-				var menuItemsGuids = AssetDatabase.FindAssets($"t:{nameof(BeamableAssistantMenuItem)}", menuItemsSearchInFolders);
+				var menuItemsGuids = BeamableAssetDatabase.FindAssets<BeamableAssistantMenuItem>(menuItemsSearchInFolders);
 				_assistantMenuItems = menuItemsGuids.Select(guid => AssetDatabase.LoadAssetAtPath<BeamableAssistantMenuItem>(AssetDatabase.GUIDToAssetPath(guid))).ToList();
 				_assistantMenuItems.Sort((mi1, mi2) =>
 				{
@@ -96,7 +96,7 @@ namespace Beamable.Editor.ToolbarExtender
 				});
 
 				var toolbarButtonsSearchInFolders = BeamEditor.CoreConfiguration.BeamableAssistantToolbarButtonsPaths.Where(Directory.Exists).ToArray();
-				var toolbarButtonsGuids = AssetDatabase.FindAssets($"t:{nameof(BeamableToolbarButton)}", toolbarButtonsSearchInFolders);
+				var toolbarButtonsGuids = BeamableAssetDatabase.FindAssets<BeamableToolbarButton>(toolbarButtonsSearchInFolders);
 				var toolbarButtons = toolbarButtonsGuids.Select(guid => AssetDatabase.LoadAssetAtPath<BeamableToolbarButton>(AssetDatabase.GUIDToAssetPath(guid))).ToList();
 
 				var groupedBySide = toolbarButtons.GroupBy(btn => btn.GetButtonSide(api)).ToList();

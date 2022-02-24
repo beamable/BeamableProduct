@@ -3,17 +3,17 @@
     "references": [
         "Unity.Beamable",
         "Unity.Beamable.Editor",
-        "Unity.Beamable.Samples.Runtime"
+        "Unity.Beamable.Samples.Runtime",
+        "Unity.Beamable.Runtime.Common"
     ],
-     "includePlatforms": [
+    "optionalUnityReferences": [],
+    "includePlatforms": [
         "Editor"
-     ],
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
-    "overrideReferences": false,
+    "overrideReferences": true,
     "precompiledReferences": [],
     "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
+    "defineConstraints": []
 }
