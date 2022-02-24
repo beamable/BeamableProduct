@@ -7,6 +7,7 @@ using Beamable.Common.Api.Content;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Coroutines;
+using Beamable.Serialization.SmallerJSON;
 using Core.Platform.SDK;
 using System;
 using System.Collections.Generic;
@@ -251,6 +252,69 @@ namespace Beamable.Content
 			{
 				json = Gzip.Decompress(manifestAsset.bytes);
 				BakedManifest = JsonUtility.FromJson<ClientManifest>(json);	
+			}
+		}
+
+		private void InitializeBakedContent()
+		{
+			string path = FilesystemAccessor.GetPersistentDataPathWithoutTrailingSlash() + "/content/content.json";
+
+			if (File.Exists(path))
+			{
+				var json = File.ReadAllText(path);
+				ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
+			}
+			else
+			{
+				var bakedFile = Resources.Load<TextAsset>(BAKED_FILE_RESOURCE_PATH);
+
+				if (bakedFile == null)
+				{
+					return;
+				}
+
+				string json = bakedFile.text;
+				var isValidJson = Json.IsValidJson(json);
+				if (isValidJson)
+				{
+					ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
+				} else
+				{
+					json = Gzip.Decompress(bakedFile.bytes);
+					ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
+				}
+
+				// save baked data to disk
+				try
+				{
+					Directory.CreateDirectory(Path.GetDirectoryName(path));
+					File.WriteAllText(path, json);
+				}
+				catch (Exception e)
+				{
+					Debug.LogError($"[EXTRACT] Failed to write baked data to disk: {e.Message}");
+				}
+			}
+		}
+
+		private void InitializeBakedManifest()
+		{
+			var manifestAsset = Resources.Load<TextAsset>(BAKED_MANIFEST_RESOURCE_PATH);
+
+			if (manifestAsset == null)
+			{
+				return;
+			}
+
+			string json = manifestAsset.text;
+			var isValidJson = Json.IsValidJson(json);
+			if (isValidJson)
+			{
+				BakedManifest = JsonUtility.FromJson<ClientManifest>(json);
+			} else
+			{
+				json = Gzip.Decompress(manifestAsset.bytes);
+				BakedManifest = JsonUtility.FromJson<ClientManifest>(json);
 			}
 		}
 

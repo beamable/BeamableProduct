@@ -6,6 +6,7 @@ using UnityEditor;
 using UnityEditor.PackageManager;
 using static Beamable.Common.Constants.Features.Toolbox.EditorPrefsKeys;
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
+using static Beamable.Common.Constants.Features.Toolbox.EditorPrefsKeys;
 
 namespace Beamable.Editor.Environment
 {
