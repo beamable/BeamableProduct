@@ -938,6 +938,20 @@ namespace Beamable.Editor.Content
 			OnContentDeleted?.Invoke(content);
 		}
 
+		private static Promise<ClientManifest> RequestClientManifest(IBeamableRequester requester)
+		{
+			string url = $"/basic/content/manifest/public?id={ContentConfiguration.Instance.RuntimeManifestID}";
+			return requester.Request(Method.GET, url, null, true, ClientManifest.ParseCSV, true).Recover(ex =>
+			{
+				if (ex is PlatformRequesterException err && err.Status == 404)
+				{
+					return new ClientManifest {entries = new List<ClientContentInfo>()};
+				}
+
+				throw ex;
+			});
+		}
+
 		/// <summary>
 		/// Checks if local content has changes. If no changes then it proceeds to baking.
 		/// If there are local changes then displays a warning.
@@ -979,9 +993,9 @@ namespace Beamable.Editor.Content
 			if (objectsToBake.Count != contentList.Count)
 			{
 				bool continueBaking = EditorUtility.DisplayDialog("Local changes",
-															 "You have local changes in your content. " +
-															 "Do you want to proceed with baking using only the unchanged data?",
-															 "Yes", "No");
+				                                                  "You have local changes in your content. " +
+				                                                  "Do you want to proceed with baking using only the unchanged data?",
+				                                                  "Yes", "No");
 				if (!continueBaking)
 				{
 					return;
@@ -990,13 +1004,14 @@ namespace Beamable.Editor.Content
 
 			BakeLog($"Baking {objectsToBake.Count} items");
 
-			var serverManifest = await api.ContentIO.FetchManifest();
+			var clientManifest = await RequestClientManifest(api.Requester);
 
 			bool compress = ContentConfiguration.Instance.EnableBakedContentCompression;
 
-			if (Bake(objectsToBake, serverManifest, compress, out int objectsBaked))
+			if (Bake(objectsToBake, clientManifest, compress, out int objectsBaked))
 			{
-				BakeLog($"Baked {objectsBaked} content objects to '{BAKED_CONTENT_FILE_PATH + ".bytes"}'");
+				BakeLog(
+					$"Baked {objectsBaked} content objects to '{BAKED_CONTENT_FILE_PATH + ".bytes"}'");
 				AssetDatabase.Refresh();
 			}
 			else
@@ -1005,7 +1020,10 @@ namespace Beamable.Editor.Content
 			}
 		}
 
-		private static bool Bake(List<ContentObject> contentList, Manifest serverManifest, bool compress, out int objectsBaked)
+		private static bool Bake(List<ContentObject> contentList,
+		                         ClientManifest clientManifest,
+		                         bool compress,
+		                         out int objectsBaked)
 		{
 			Directory.CreateDirectory(BEAMABLE_RESOURCES_PATH);
 
@@ -1014,31 +1032,35 @@ namespace Beamable.Editor.Content
 			for (int i = 0; i < contentList.Count; i++)
 			{
 				var content = contentList[i];
-				var serverReference = serverManifest.References.Find(reference => reference.Id == content.Id);
+				var serverReference = clientManifest.entries.Find(reference => reference.contentId == content.Id);
 				if (serverReference == null)
 				{
 					throw new Exception($"Content object with ID {content.Id} is missing in a remote manifest." +
-										"Reset your content and try again.");
+					                    "Reset your content and try again.");
 				}
-				var version = serverReference.Version;
+
+				var version = serverReference.version;
 				content.SetIdAndVersion(content.Id, version);
-				contentData[i] = new ContentDataInfo { contentId = content.Id, data = content.ToJson() };
+				contentData[i] = new ContentDataInfo {contentId = content.Id, data = content.ToJson()};
 			}
 
 			ContentDataInfoWrapper fileData = new ContentDataInfoWrapper { content = contentData.ToList() };
 
 			try
 			{
-				string json = JsonUtility.ToJson(fileData);
-				string path = BAKED_CONTENT_FILE_PATH + ".bytes";
+				string contentJson = JsonUtility.ToJson(fileData);
+				string contentPath = BAKED_CONTENT_FILE_PATH + ".bytes";
+				string manifestJson = JsonUtility.ToJson(clientManifest);
+				string manifestPath = BAKED_MANIFEST_FILE_PATH + ".bytes";
 				if (compress)
 				{
-					var compressed = Gzip.Compress(json);
-					File.WriteAllBytes(path, compressed);
+					File.WriteAllBytes(contentPath, Gzip.Compress(contentJson));
+					File.WriteAllBytes(manifestPath, Gzip.Compress(manifestJson));
 				}
 				else
 				{
-					File.WriteAllText(path, json);
+					File.WriteAllText(contentPath, contentJson);
+					File.WriteAllText(manifestPath, manifestJson);
 				}
 			}
 			catch (Exception e)
