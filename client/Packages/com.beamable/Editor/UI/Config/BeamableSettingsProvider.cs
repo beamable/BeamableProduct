@@ -67,7 +67,7 @@ namespace Beamable.Editor.Config
 							var options = ConfigManager.GenerateOptions();
 
 							var scroller = new ScrollView();
-							rootElement.AddStyleSheet($"{BASE_PATH}/ConfigWindow.uss");
+							rootElement.AddStyleSheet($"{BASE_UI_PATH}/ConfigWindow.uss");
 							rootElement.Add(scroller);
 
 							ConfigWindow.CreateFields(scroller, null, options, true);
@@ -106,7 +106,7 @@ namespace Beamable.Editor.Config
 					{
 						options = ConfigManager.GenerateOptions(config);
 						var scroller = new ScrollView();
-						rootElement.AddStyleSheet($"{BASE_PATH}/ConfigWindow.uss");
+						rootElement.AddStyleSheet($"{BASE_UI_PATH}/ConfigWindow.uss");
 						rootElement.Add(scroller);
 						ConfigWindow.CreateFields(scroller, null, options, false);
 					},

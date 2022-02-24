@@ -9,21 +9,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed 
+- Constant "Invalid token, trying again" errors in the Editor after 10 days.
+
+## [1.0.1]
+### Added
+- `IDeviceIdResolver` is now a dependency of the `AuthService`, and can be overriden to produce different device ids other than `SystemInfo.deviceUniqueIdentifier`
+- Content Baking feature now also bakes content manifest which is used when there is no Internet connection
+
 ### Changed
 - The `Promise.ExecuteRolling` function has been deprecated in favor of `Promise.ExecuteInBatchSequence`
 - The startup sequence runs startup requests at the same time for speed improvements 
-
-### Fixed 
-- Constant "Invalid token, trying again" errors in the Editor after 10 days.
-- Beamable assets are loaded with their full name so asset types won't collide
-
-### Added
-- `IDeviceIdResolver` is now a dependency of the `AuthService`, and can be overriden to produce different device ids other than `SystemInfo.deviceUniqueIdentifier`
-- Baking feature now also bakes content manifest which is used when there is no Internet connection
-
-### Changed
 - All Beamable Assembly Definitions use the `OverrideReferences` flag so they don't automatically reference project DLLs
 
+### Fixed 
+- The `ResolveAll` content function no longer exceeds stack frame size limits
+- Beamable assets are loaded with their full name so asset types won't collide
+- Null references associated with Realm dropdown in Editor 
 
 ## [1.0.0]
 ### Added

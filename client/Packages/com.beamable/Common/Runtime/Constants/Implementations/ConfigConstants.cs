@@ -6,7 +6,8 @@
 		{
 			public static partial class Config
 			{
-				public const string BASE_PATH = Directories.BEAMABLE_PACKAGE_EDITOR_UI + "/Config";
+				public const string BASE_PATH = Directories.BEAMABLE_PACKAGE_EDITOR + "/Config";
+				public const string BASE_UI_PATH = Directories.BEAMABLE_PACKAGE_EDITOR_UI + "/Config";
 			}
 		}
 	}
