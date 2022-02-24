@@ -1,4 +1,5 @@
 using Beamable.Api;
+using Beamable.Api.Caches;
 using Beamable.Api.Connectivity;
 using Beamable.Common;
 using Beamable.Common.Api;
@@ -380,13 +381,13 @@ namespace Beamable.Content
 
 		public Promise<ClientManifest> GetManifest(ContentQuery query) => GetSubscription(CurrentDefaultManifestID)?.GetManifest(query);
 
-		private bool IsGlobalManifest(string manifestID) => string.IsNullOrEmpty(manifestID) || manifestID == "global";
-
 		public Promise<ClientManifest> GetManifestWithID(string manifestID = "")
 		{
-			if (!_connectivityService.HasConnectivity && IsGlobalManifest(manifestID) && BakedManifest != null)
+			string determinedManifestID = DetermineManifestID(manifestID);
+			
+			if (TryGetCachedManifest(determinedManifestID, out var promise))
 			{
-				return Promise<ClientManifest>.Successful(BakedManifest);
+				return promise;
 			}
 			
 			return GetSubscription(DetermineManifestID(manifestID))?.GetManifest();
@@ -394,24 +395,49 @@ namespace Beamable.Content
 
 		public Promise<ClientManifest> GetManifest(string filter = "", string manifestID = "")
 		{
-			if (!_connectivityService.HasConnectivity && IsGlobalManifest(manifestID) && BakedManifest != null)
+			string determinedManifestID = DetermineManifestID(manifestID);
+			
+			if (TryGetCachedManifest(determinedManifestID, out var promise))
 			{
-				return Promise<ClientManifest>.Successful(BakedManifest);
+				return promise;
 			}
 			
-			return GetSubscription(DetermineManifestID(manifestID))?.GetManifest(filter);
+			return GetSubscription(determinedManifestID)?.GetManifest(filter);
 		}
 
 		public Promise<ClientManifest> GetManifest(ContentQuery query, string manifestID = "")
 		{
-			if (!_connectivityService.HasConnectivity && IsGlobalManifest(manifestID) && BakedManifest != null)
+			string determinedManifestID = DetermineManifestID(manifestID);
+			
+			if (TryGetCachedManifest(determinedManifestID, out var promise))
 			{
-				return Promise<ClientManifest>.Successful(BakedManifest);
+				return promise;
 			}
 			
-			return GetSubscription(DetermineManifestID(manifestID))?.GetManifest(query);
+			return GetSubscription(determinedManifestID)?.GetManifest(query);
 		}
 
+		private bool TryGetCachedManifest(string manifestID, out Promise<ClientManifest> promise)
+		{
+			if (!_connectivityService.HasConnectivity)
+			{
+				string key = $"/basic/content/manifest/public?id={manifestID}";
+				if (OfflineCache.Exists(key, Requester.AccessToken, true))
+				{
+					promise = OfflineCache.Get<ClientManifest>(key, Requester.AccessToken, true);
+					return true;
+				}
+				
+				if (manifestID.Equals("global") && BakedManifest != null)
+				{
+					promise = Promise<ClientManifest>.Successful(BakedManifest);
+					return true;
+				}
+			}
+
+			promise = null;
+			return false;
+		}
 
 		public Promise<ClientManifest> GetCurrent(string scope = "")
 		{
