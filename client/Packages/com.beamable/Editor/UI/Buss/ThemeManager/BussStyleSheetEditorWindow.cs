@@ -31,6 +31,12 @@ namespace Beamable.Editor.UI.Buss
 			this.GetRootVisualContainer().Add(_styleList);
 		}
 
+		private void OnDisable()
+		{
+			_styleList.Destroy();
+			_styleList = null;
+		}
+
 		public void SetStyleSheet(BussStyleSheet styleSheet)
 		{
 			_styleList.StyleSheets = new[] {styleSheet};

@@ -6,6 +6,7 @@ using Beamable.Editor.Common;
 using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
+using UnityEditor;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Buss
@@ -38,6 +39,7 @@ namespace Beamable.Editor.UI.Buss
 			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleListVisualElement)}/{nameof(BussStyleListVisualElement)}.uss")
 		{
 			Init();
+			Selection.selectionChanged += OnSelectionChange;
 		}
 
 		private void RefreshStyleSheets()
@@ -175,6 +177,27 @@ namespace Beamable.Editor.UI.Buss
 			}
 
 			_inStyleSheetChangedLoop = false;
+		}
+
+		private void OnSelectionChange()
+		{
+			BussElement element = null;
+			var gameObject = Selection.activeGameObject;
+			if (gameObject != null && gameObject.TryGetComponent<BussElement>(out var el))
+			{
+				element = el;
+			}
+			
+			foreach (var styleCard in _styleCardsVisualElements)
+			{
+				styleCard.OnBussElementSelected(element);
+			}
+			FilterCards();
+		}
+
+		protected override void OnDestroy()
+		{
+			Selection.selectionChanged -= OnSelectionChange;
 		}
 	}
 }
