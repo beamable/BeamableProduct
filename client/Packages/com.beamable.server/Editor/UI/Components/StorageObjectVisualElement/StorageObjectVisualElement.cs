@@ -87,7 +87,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void QueryVisualElements()
 		{
 			base.QueryVisualElements();
-			Root.Q("buildDropDown")?.RemoveFromHierarchy();
+			Root.Q("buildBtn")?.RemoveFromHierarchy();
 			_mongoStorageModel = (MongoStorageModel)Model;
 		}
 	}
