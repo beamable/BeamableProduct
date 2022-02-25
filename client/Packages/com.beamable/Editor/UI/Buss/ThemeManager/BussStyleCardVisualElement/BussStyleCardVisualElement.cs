@@ -48,6 +48,7 @@ namespace Beamable.Editor.UI.Components
 
 		private static BeamablePopupWindow _popupWindow;
 
+		public BussStyleSheet StyleSheet => _styleSheet;
 		public BussStyleRule StyleRule => _styleRule;
 		public bool EditMode => _editMode;
 
@@ -161,7 +162,7 @@ namespace Beamable.Editor.UI.Components
 
 			BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowConfirmationUtility(
 				DELETE_STYLE_HEADER,
-				confirmationPopup, TryGetEditorWindow());
+				confirmationPopup, this.GetEditorWindowWithReflection());
 
 			SetPopup(popupWindow);
 		}
@@ -226,7 +227,7 @@ namespace Beamable.Editor.UI.Components
 			
 			BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowConfirmationUtility(
 				CLEAR_ALL_PROPERTIES_HEADER,
-				confirmationPopup, TryGetEditorWindow());
+				confirmationPopup, this.GetEditorWindowWithReflection());
 			
 			SetPopup(popupWindow);
 		}

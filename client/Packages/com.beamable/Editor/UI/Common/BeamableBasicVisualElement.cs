@@ -19,6 +19,7 @@ namespace Beamable.Editor.UI.Common
 	{
 		protected VisualElement Root { get; set; }
 		protected string UssPath { get; }
+		protected virtual bool CreateRoot => true; // This can be overriden if we do not want to create Root visual element.
 
 		protected BeamableBasicVisualElement(string ussPath)
 		{
@@ -46,9 +47,16 @@ namespace Beamable.Editor.UI.Common
 			this.AddStyleSheet(Files.COMMON_USS_FILE);
 			this.AddStyleSheet(UssPath);
 
-			Root = new VisualElement();
-			Root.name = "root";
-			Add(Root);
+			if (CreateRoot)
+			{
+				Root = new VisualElement();
+				Root.name = "root";
+				Add(Root);
+			}
+			else
+			{
+				Root = this;
+			}
 
 			this?.Query<VisualElement>(className: "--image-scale-to-fit").ForEach(elem =>
 			{
@@ -72,19 +80,6 @@ namespace Beamable.Editor.UI.Common
 			}
 
 			OnDestroy();
-		}
-
-		public EditorWindow TryGetEditorWindow()
-		{
-			try { 
-				var ownerProperty = panel.GetType().GetProperty("ownerObject");
-				var owner = ownerProperty.GetValue(panel);
-				var window = owner.GetType().BaseType.GetProperty("actualView", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(owner);
-				return (EditorWindow)window;}
-			catch (Exception)
-			{
-				return null;
-			}
 		}
 	}
 }
