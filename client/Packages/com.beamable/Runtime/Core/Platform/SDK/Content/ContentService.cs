@@ -175,7 +175,7 @@ namespace Beamable.Content
 #endif
 
 		public ContentService(IDependencyProvider provider,
-		                      IBeamableFilesystemAccessor filesystemAccessor, ContentParameterProvider config)
+							  IBeamableFilesystemAccessor filesystemAccessor, ContentParameterProvider config)
 		{
 			_provider = provider;
 			CurrentDefaultManifestID = config.manifestID;
@@ -219,7 +219,8 @@ namespace Beamable.Content
 				if (isValidJson)
 				{
 					ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
-				} else
+				}
+				else
 				{
 					json = Gzip.Decompress(bakedFile.bytes);
 					ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
@@ -252,7 +253,8 @@ namespace Beamable.Content
 			if (isValidJson)
 			{
 				BakedManifest = JsonUtility.FromJson<ClientManifest>(json);
-			} else
+			}
+			else
 			{
 				json = Gzip.Decompress(manifestAsset.bytes);
 				BakedManifest = JsonUtility.FromJson<ClientManifest>(json);
