@@ -36,7 +36,7 @@ namespace Beamable.Tests.Runtime
 			requester = requester ?? new MockPlatformAPI();
 			// var cid = requester.AccessToken.Cid;
 			// var pid = requester.AccessToken.Pid;
-			var cid = "testCid";
+			var cid = "123";
 			var pid = "testPid";
 
 			new AccessTokenStorage(playerCode).DeleteTokenForRealm(cid, pid);
