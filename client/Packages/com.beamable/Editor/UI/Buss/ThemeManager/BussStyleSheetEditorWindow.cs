@@ -1,6 +1,13 @@
 ﻿using System;
 using Beamable.UI.Buss;
 using UnityEditor;
+#if UNITY_2018
+using UnityEngine.Experimental.UIElements;
+using UnityEditor.Experimental.UIElements;
+#elif UNITY_2019_1_OR_NEWER
+using UnityEngine.UIElements;
+using UnityEditor.UIElements;
+#endif
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Buss
@@ -21,7 +28,7 @@ namespace Beamable.Editor.UI.Buss
 		private void OnEnable()
 		{
 			_styleList = new BussStyleListVisualElement();
-			rootVisualElement.Add(_styleList);
+			this.GetRootVisualContainer().Add(_styleList);
 		}
 
 		public void SetStyleSheet(BussStyleSheet styleSheet)
