@@ -9,6 +9,7 @@ using Beamable.Server.Api.Groups;
 using Beamable.Server.Api.Inventory;
 using Beamable.Server.Api.Leaderboards;
 using Beamable.Server.Api.Mail;
+using Beamable.Server.Api.Notifications;
 using Beamable.Server.Api.RealmConfig;
 using Beamable.Server.Api.Social;
 using Beamable.Server.Api.Stats;
@@ -108,6 +109,11 @@ namespace Beamable.Server
 		/// </summary>
 		IMicroserviceMailApi Mail { get; }
 
+		/// <summary>
+		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/notifications-feature">Mail</a> feature
+		/// </summary>
+		IMicroserviceNotificationsApi Notifications { get; }
+		
 		/// <summary>
 		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/realm-configuration-feature">Realm Configuration</a> feature
 		/// </summary>
