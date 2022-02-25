@@ -49,34 +49,4 @@ namespace Beamable.Server.Api.Notifications
         Promise<EmptyResponse> NotifyPlayer<T>(List<long> dbids, string context, T messagePayload);
     }
 
-
-    /// <summary>
-    /// Notification request format. 
-    /// </summary>
-    [Serializable]
-    public class PlayerNotificationRequest
-    {
-        public long dbid;
-        public PlayerNotificationPayload payload;
-    }
-
-    /// <summary>
-    /// Format of the Notification request when notifying multiple players. 
-    /// </summary>
-    [Serializable]
-    public class PlayerBatchNotificationRequest
-    {
-        public List<long> dbids;
-        public PlayerNotificationPayload payload;
-    }
-
-    /// <summary>
-    /// Structure representing the expected format for the notification we are sending.
-    /// </summary>
-    [Serializable]
-    public class PlayerNotificationPayload
-    {
-        public string messageFull;
-        public string context;
-    }
 }

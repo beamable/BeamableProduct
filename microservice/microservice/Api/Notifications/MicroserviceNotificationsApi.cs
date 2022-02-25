@@ -1,48 +1,79 @@
+using System;
 using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api;
-using Beamable.Serialization.SmallerJSON;
 using Newtonsoft.Json;
 
-namespace Beamable.Server.Api.Notifications;
-
-
-public class MicroserviceNotificationApi : IMicroserviceNotificationsApi
+namespace Beamable.Server.Api.Notifications
 {
-    public IBeamableRequester Requester { get; }
-    public RequestContext Context { get; }
-
-    public MicroserviceNotificationApi(IBeamableRequester requester, RequestContext context)
+    public class MicroserviceNotificationApi : IMicroserviceNotificationsApi
     {
-        Requester = requester;
-        Context = context;
+        public IBeamableRequester Requester { get; }
+        public RequestContext Context { get; }
+
+        public MicroserviceNotificationApi(IBeamableRequester requester, RequestContext context)
+        {
+            Requester = requester;
+            Context = context;
+        }
+
+        public Promise<EmptyResponse> NotifyPlayer(long dbid, string subscriptionId, string messagePayload)
+        {
+            var notifyRequest = Requester.Request<EmptyResponse>(Method.POST, "/basic/notification/player",
+                new PlayerNotificationRequest { dbid = dbid, payload = new PlayerNotificationPayload { context = subscriptionId, messageFull = messagePayload } });
+
+            return notifyRequest;
+        }
+
+        public Promise<EmptyResponse> NotifyPlayer(List<long> dbids, string subscriptionId, string messagePayload)
+        {
+            var notifyRequest = Requester.Request<EmptyResponse>(Method.POST, "/basic/notification/player",
+                new PlayerBatchNotificationRequest() { dbids = dbids, payload = new PlayerNotificationPayload { context = subscriptionId, messageFull = messagePayload } });
+
+            return notifyRequest;
+        }
+
+        public Promise<EmptyResponse> NotifyPlayer<T>(long dbid, string subscriptionId, T messagePayload)
+        {
+            var jsonSerializedPayload = JsonConvert.SerializeObject(messagePayload, Formatting.None);
+            return NotifyPlayer(dbid, subscriptionId, jsonSerializedPayload);
+        }
+
+        public Promise<EmptyResponse> NotifyPlayer<T>(List<long> dbids, string subscriptionId, T messagePayload)
+        {
+            var jsonSerializedPayload = JsonConvert.SerializeObject(messagePayload, Formatting.None);
+            return NotifyPlayer(dbids, subscriptionId, jsonSerializedPayload);
+        }
     }
 
-    public Promise<EmptyResponse> NotifyPlayer(long dbid, string subscriptionId, string messagePayload)
-    {
-        var notifyRequest = Requester.Request<EmptyResponse>(Method.POST, "/basic/notification/player",
-            new PlayerNotification { dbid = dbid, payload = new PlayerNotificationPayload { context = subscriptionId, messageFull = messagePayload } });
 
-        return notifyRequest;
+    /// <summary>
+    /// Notification request format. 
+    /// </summary>
+    [Serializable]
+    public class PlayerNotificationRequest
+    {
+        public long dbid;
+        public PlayerNotificationPayload payload;
     }
 
-    public Promise<EmptyResponse> NotifyPlayer(List<long> dbids, string subscriptionId, string messagePayload)
+    /// <summary>
+    /// Format of the Notification request when notifying multiple players. 
+    /// </summary>
+    [Serializable]
+    public class PlayerBatchNotificationRequest
     {
-        var notifyRequest = Requester.Request<EmptyResponse>(Method.POST, "/basic/notification/player",
-            new PlayerBatchNotification() { dbids = dbids, payload = new PlayerNotificationPayload { context = subscriptionId, messageFull = messagePayload } });
-
-        return notifyRequest;
+        public List<long> dbids;
+        public PlayerNotificationPayload payload;
     }
 
-    public Promise<EmptyResponse> NotifyPlayer<T>(long dbid, string subscriptionId, T messagePayload)
+    /// <summary>
+    /// Structure representing the expected format for the notification we are sending.
+    /// </summary>
+    [Serializable]
+    public class PlayerNotificationPayload
     {
-        var jsonSerializedPayload = JsonConvert.SerializeObject(messagePayload, Formatting.None);
-        return NotifyPlayer(dbid, subscriptionId, jsonSerializedPayload);
-    }
-
-    public Promise<EmptyResponse> NotifyPlayer<T>(List<long> dbids, string subscriptionId, T messagePayload)
-    {
-        var jsonSerializedPayload = JsonConvert.SerializeObject(messagePayload, Formatting.None);
-        return NotifyPlayer(dbids, subscriptionId, jsonSerializedPayload);
+        public string messageFull;
+        public string context;
     }
 }
