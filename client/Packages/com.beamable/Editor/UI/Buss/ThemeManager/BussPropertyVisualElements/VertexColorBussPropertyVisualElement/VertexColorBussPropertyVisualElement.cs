@@ -85,16 +85,20 @@ namespace Beamable.Editor.UI.Components
 
 		private void OnDrawerModeSelected(int index)
 		{
-			if (_topRow != null)
+			if (_doNotUpdateMode)
 			{
-				SetColorFieldVisibility();
+				if (_topRow != null)
+				{
+					SetColorFieldVisibility();
+				}
+				return;
 			}
-			if (_doNotUpdateMode) return;
 			var mode = (Mode)index;
 			DrawerMode = mode;
 			if (_topRow != null)
 			{
 				OnValueChange(null);
+				SetColorFieldVisibility();
 			}
 		}
 
