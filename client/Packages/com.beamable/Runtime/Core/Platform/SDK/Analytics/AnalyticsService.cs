@@ -1,7 +1,7 @@
 using Beamable.Common.Api;
 using Beamable.Pooling;
 using Beamable.Serialization;
-using Beamable.Spew;
+using Beamable.Common.Spew;
 using System;
 using System.Collections.Generic;
 using System.Text;

@@ -1,7 +1,7 @@
 using Beamable.Api.Analytics.Batch;
 using Beamable.Coroutines;
 using Beamable.Serialization;
-using Beamable.Spew;
+using Beamable.Common.Spew;
 using System.Collections.Generic;
 
 namespace Beamable.Api.Analytics

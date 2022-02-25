@@ -4,12 +4,11 @@ using Beamable.Common;
 using Beamable.Common.Dependencies;
 using Beamable.Coroutines;
 using Beamable.Service;
-using Beamable.Spew;
+using Beamable.Common.Spew;
 using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Purchasing;
-
 
 namespace Beamable.Purchasing
 {

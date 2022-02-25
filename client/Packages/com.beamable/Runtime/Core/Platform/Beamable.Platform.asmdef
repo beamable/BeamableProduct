@@ -7,7 +7,6 @@
         "Beamable.JsonSerializable",
         "Beamable.Pooling",
         "Beamable.Service",
-        "Beamable.Spew",
         "Beamable.SmallerJSON",
         "Beamable.ConsoleCommands",
         "Unity.Beamable.Runtime.Common"
