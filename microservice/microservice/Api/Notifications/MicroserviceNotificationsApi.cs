@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Server.Common;
 using Newtonsoft.Json;
 
 namespace Beamable.Server.Api.Notifications
@@ -35,13 +36,13 @@ namespace Beamable.Server.Api.Notifications
 
         public Promise<EmptyResponse> NotifyPlayer<T>(long dbid, string subscriptionId, T messagePayload)
         {
-            var jsonSerializedPayload = JsonConvert.SerializeObject(messagePayload, Formatting.None);
+            var jsonSerializedPayload = JsonConvert.SerializeObject(messagePayload, Formatting.None, UnitySerializationSettings.Instance);
             return NotifyPlayer(dbid, subscriptionId, jsonSerializedPayload);
         }
 
         public Promise<EmptyResponse> NotifyPlayer<T>(List<long> dbids, string subscriptionId, T messagePayload)
         {
-            var jsonSerializedPayload = JsonConvert.SerializeObject(messagePayload, Formatting.None);
+            var jsonSerializedPayload = JsonConvert.SerializeObject(messagePayload, Formatting.None, UnitySerializationSettings.Instance);
             return NotifyPlayer(dbids, subscriptionId, jsonSerializedPayload);
         }
     }
