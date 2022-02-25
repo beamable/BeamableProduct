@@ -2,39 +2,81 @@ using System;
 using System.Collections.Generic;
 using Beamable.Common;
 using Beamable.Common.Api;
+using Beamable.Common.Api.Notifications;
 using Beamable.Common.Dependencies;
 
 namespace Beamable.Server.Api.Notifications
 {
+    /// <summary>
+    /// Microservice API for sending Notifications to clients.  
+    /// </summary>
+    public interface IMicroserviceNotificationsApi
+    {
+        /// <summary>
+        /// Notifies the player with the given <paramref name="dbid"/> at the given <paramref name="context"/>. The <paramref name="context"/> is the one you should subscribe to in
+        /// your <see cref="INotificationService.Subscribe"/> calls in the client-code. 
+        /// </summary>
+        /// <param name="dbid">The DBID for the player you wish to notify.</param>
+        /// <param name="context">The context that player's client must be subscribed too to see the notification.</param>
+        /// <param name="messagePayload">The non-JSON string data to send along with the notification.</param>
+        Promise<EmptyResponse> NotifyPlayer(long dbid, string context, string messagePayload);
 
-	public interface IMicroserviceNotificationsApi
-	{
-		Promise<EmptyResponse> NotifyPlayer(long dbid, string subscriptionId, string messagePayload);
-		Promise<EmptyResponse> NotifyPlayer(List<long> dbids, string subscriptionId, string messagePayload);
+        /// <summary>
+        /// Notifies the players identified by the given <paramref name="dbids"/> at the given <paramref name="context"/>. The <paramref name="context"/> is the one you should subscribe to in
+        /// your <see cref="INotificationService.Subscribe"/> calls in the client-code. 
+        /// </summary>
+        /// <param name="dbids">The list of DBID for the players you wish to notify.</param>
+        /// <param name="context">The context that player's client must be subscribed too to see the notification.</param>
+        /// <param name="messagePayload">The non-JSON string data to send along with the notification.</param>
+        Promise<EmptyResponse> NotifyPlayer(List<long> dbids, string context, string messagePayload);
 
-		Promise<EmptyResponse> NotifyPlayer<T>(long dbid, string subscriptionId, T messagePayload);
-		Promise<EmptyResponse> NotifyPlayer<T>(List<long> dbids, string subscriptionId, T messagePayload);
-	}
+        /// <summary>
+        /// Notifies the player with the given <paramref name="dbids"/> at the given <paramref name="context"/>. The <paramref name="context"/> is the one you should subscribe to in
+        /// your <see cref="INotificationService.Subscribe"/> calls in the client-code. 
+        /// </summary>
+        /// <param name="dbid">The DBID for the player you wish to notify.</param>
+        /// <param name="context">The context that player's client must be subscribed too to see the notification.</param>
+        /// <param name="messagePayload">The data to send along with the notification. Must be a JSON-serializable type.</param>
+        Promise<EmptyResponse> NotifyPlayer<T>(long dbid, string context, T messagePayload);
+
+        /// <summary>
+        /// Notifies the players identified by the given <paramref name="dbids"/> at the given <paramref name="context"/>. The <paramref name="context"/> is the one you should subscribe to in
+        /// your <see cref="INotificationService.Subscribe"/> calls in the client-code. 
+        /// </summary>
+        /// <param name="dbids">The list of DBID for the players you wish to notify.</param>
+        /// <param name="context">The context that player's client must be subscribed too to see the notification.</param>
+        /// <param name="messagePayload">The data to send along with the notification. Must be a JSON-serializable type.</param>
+        Promise<EmptyResponse> NotifyPlayer<T>(List<long> dbids, string context, T messagePayload);
+    }
 
 
-	[Serializable]
-	public class PlayerNotification
-	{
-		public long dbid;
-		public PlayerNotificationPayload payload;
-	}
+    /// <summary>
+    /// Notification request format. 
+    /// </summary>
+    [Serializable]
+    public class PlayerNotificationRequest
+    {
+        public long dbid;
+        public PlayerNotificationPayload payload;
+    }
 
-	[Serializable]
-	public class PlayerBatchNotification
-	{
-		public List<long> dbids;
-		public PlayerNotificationPayload payload;
-	}
+    /// <summary>
+    /// Format of the Notification request when notifying multiple players. 
+    /// </summary>
+    [Serializable]
+    public class PlayerBatchNotificationRequest
+    {
+        public List<long> dbids;
+        public PlayerNotificationPayload payload;
+    }
 
-	[Serializable]
-	public class PlayerNotificationPayload
-	{
-		public string messageFull;
-		public string context;
-	}
+    /// <summary>
+    /// Structure representing the expected format for the notification we are sending.
+    /// </summary>
+    [Serializable]
+    public class PlayerNotificationPayload
+    {
+        public string messageFull;
+        public string context;
+    }
 }
