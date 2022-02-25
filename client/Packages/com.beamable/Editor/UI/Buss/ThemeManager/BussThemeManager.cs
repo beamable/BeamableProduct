@@ -22,7 +22,7 @@ namespace Beamable.Editor.UI.Buss
 {
 	public class BussThemeManager : EditorWindow
 	{
-		private VisualElement _stylesGroup;
+		private BussStyleListVisualElement _stylesGroup;
 		private BussElementHierarchyVisualElement _navigationWindow;
 		private LabeledCheckboxVisualElement _filterToggle;
 
@@ -90,8 +90,9 @@ namespace Beamable.Editor.UI.Buss
 			_filterToggle.SetWithoutNotify(_filterMode);
 			scrollView.Add(_filterToggle);
 
-			_stylesGroup = new VisualElement();
+			_stylesGroup = new BussStyleListVisualElement();
 			_stylesGroup.name = "stylesGroup";
+			_stylesGroup.Filter = CardFilter;
 			scrollView.Add(_stylesGroup);
 
 			root.Add(mainVisualElement);
@@ -102,9 +103,6 @@ namespace Beamable.Editor.UI.Buss
 			_navigationWindow.BussStyleSheetChange -= RefreshStyleSheets;
 			_navigationWindow.BussStyleSheetChange += RefreshStyleSheets;
 
-			_navigationWindow.SelectionChanged -= OnSelectionChange;
-			_navigationWindow.SelectionChanged += OnSelectionChange;
-
 			RefreshStyleSheets();
 			AddSelectorButton(scrollView);
 		}
@@ -112,102 +110,26 @@ namespace Beamable.Editor.UI.Buss
 		private void OnFilterToggleClicked(bool value)
 		{
 			_filterMode = value;
-			FilterCards();
+			_stylesGroup.FilterCards();
 		}
 
-		private void OnSelectionChange(GameObject gameObject)
+		private bool CardFilter(BussStyleSheet styleSheet, BussStyleRule styleRule)
 		{
-			var element = gameObject.GetComponent<BussElement>();
-			foreach (var styleCard in _styleCardsVisualElements)
+			var selected = Selection.activeGameObject;
+			BussElement selectedElement = null;
+			if (selected != null)
 			{
-				styleCard.OnBussElementSelected(element);
+				selectedElement = selected.GetComponent<BussElement>();
 			}
-			FilterCards();
-		}
+			
+			if (selectedElement == null || !_filterMode) return true;
 
-		private void FilterCards()
-		{
-			Profiler.BeginSample("BUSS - filtering style cards");
-			if (_navigationWindow.SelectedComponent == null)
-			{
-				foreach (BussStyleCardVisualElement styleCardVisualElement in _styleCardsVisualElements)
-				{
-					styleCardVisualElement.SetHidden(false);
-				}
-
-				return;
-			}
-
-			foreach (BussStyleCardVisualElement styleCardVisualElement in _styleCardsVisualElements)
-			{
-				bool isMatch =
-					styleCardVisualElement.StyleRule.Selector?.CheckMatch(_navigationWindow.SelectedComponent) ?? false;
-				styleCardVisualElement.SetHidden(_filterMode && !isMatch && !styleCardVisualElement.EditMode);
-			}
-			Profiler.EndSample();
+			return (styleRule.Selector?.CheckMatch(_navigationWindow.SelectedComponent) ?? false);
 		}
 
 		private void RefreshStyleSheets()
 		{
-			Profiler.BeginSample("BUSS - refreshing style sheets");
-
-			ClearCurrentStyleSheet();
-
-			_variableDatabase.RemoveAllStyleSheets();
-
-			foreach (BussStyleSheet styleSheet in _navigationWindow.StyleSheets)
-			{
-				_variableDatabase.AddStyleSheet(styleSheet);
-				styleSheet.Change += OnStyleSheetExternallyChanged;
-			}
-
-			Profiler.EndSample();
-
-			RefreshStyleCards();
-		}
-
-		private void RefreshStyleCards()
-		{
-			Profiler.BeginSample("BUSS - refreshing style cards");
-
-			UndoSystem<BussStyleRule>.Update();
-
-			BussStyleRule[] rulesToDraw = _navigationWindow.StyleSheets.SelectMany(ss => ss.Styles).ToArray();
-
-			BussStyleCardVisualElement[] cardsToRemove = _styleCardsVisualElements.Where(card => !rulesToDraw.Contains(card.StyleRule))
-														 .ToArray();
-
-			foreach (BussStyleCardVisualElement card in cardsToRemove)
-			{
-				RemoveStyleCard(card);
-			}
-
-			foreach (BussStyleSheet styleSheet in _navigationWindow.StyleSheets)
-			{
-				foreach (BussStyleRule rule in styleSheet.Styles)
-				{
-					BussStyleCardVisualElement spawned = _styleCardsVisualElements.FirstOrDefault(c => c.StyleRule == rule);
-					if (spawned != null)
-					{
-						spawned.RefreshProperties();
-						spawned.RefreshButtons();
-					}
-					else
-					{
-						string undoKey = $"{styleSheet.name}-{rule.SelectorString}";
-						UndoSystem<BussStyleRule>.AddRecord(rule, undoKey);
-						AddStyleCard(styleSheet, rule, () =>
-						{
-							UndoSystem<BussStyleRule>.Undo(undoKey);
-							RefreshStyleCards();
-						});
-					}
-				}
-			}
-
-			Profiler.EndSample();
-
-			FilterCards();
+			_stylesGroup.StyleSheets = _navigationWindow.StyleSheets;
 		}
 
 		private void AddSelectorButton(VisualElement parent)
@@ -223,6 +145,32 @@ namespace Beamable.Editor.UI.Buss
 			_navigationWindow?.ForceRebuild();
 			_addStyleButton.CheckEnableState();
 		}
+
+		private void OnDestroy()
+		{
+			_filterToggle.OnValueChanged -= OnFilterToggleClicked;
+
+			_navigationWindow.HierarchyChanged -= RefreshStyleSheets;
+			_navigationWindow.BussStyleSheetChange -= RefreshStyleSheets;
+
+			_navigationWindow.Destroy();
+			UndoSystem<BussStyleRule>.DeleteAllRecords();
+		}
+		
+		private void AddSelectorButton(VisualElement parent)
+		{
+			_addStyleButton = new AddStyleButton();
+			_addStyleButton.Setup(this, _navigationWindow, _ => RefreshStyleSheets());
+			_addStyleButton.CheckEnableState();
+			parent.Insert(2, _addStyleButton);
+		}
+
+		private void OnFocus()
+		{
+			_navigationWindow?.ForceRebuild();
+			_addStyleButton.CheckEnableState();
+		}
+
 
 		private void ClearCurrentStyleSheet()
 		{
@@ -241,36 +189,58 @@ namespace Beamable.Editor.UI.Buss
 			_styleCardsVisualElements.Add(styleCard);
 			_stylesGroup.Add(styleCard);
 
+			void OpenAddSelectorWindow()
 			styleCard.EnterEditMode += () =>
 			{
+				if (_addStyleButton.ClassListContains(UIElementExtensions.PROPERTY_INACTIVE))
 				foreach (BussStyleCardVisualElement other in _styleCardsVisualElements)
 				{
+					return;
 					if (other != styleCard && other.EditMode)
 					{
 						other.SetEditMode(false);
 					}
 				}
+
+				AddStyleWindow window = AddStyleWindow.ShowWindow();
+				window?.Init(_ => RefreshStyleSheets(), _activeStyleSheets.ToList());
+			}
 				FilterCards();
 			};
 		}
 
+		private void OnFocus()
 		private void RemoveStyleCard(BussStyleCardVisualElement card)
 		{
+			_navigationWindow?.ForceRebuild();
+			CheckEnableState();
 			_styleCardsVisualElements.Remove(card);
 			card.RemoveFromHierarchy();
 			card.Destroy();
 		}
 
+		private void CheckEnableState()
 		private void OnStyleSheetExternallyChanged()
 		{
+			if (_addStyleButton == null) return;
 			Profiler.BeginSample("BUSS - callback on style sheet change");
 
+			_addStyleButton.tooltip = string.Empty;
+			_activeStyleSheets.Clear();
 			if (_inStyleSheetChangedLoop) return;
 
+#if BEAMABLE_DEVELOPER
+			_activeStyleSheets.AddRange(_navigationWindow.StyleSheets);
+#else
+			_activeStyleSheets.AddRange(_navigationWindow.StyleSheets.Where(bussStyleSheet => !bussStyleSheet.IsReadOnly));
+#endif
 			_inStyleSheetChangedLoop = true;
 
+			if (_activeStyleSheets.Count == 0)
 			try
 			{
+				_addStyleButton.tooltip = NO_BUSS_STYLE_SHEET_AVAILABLE;
+				_addStyleButton.SetInactive(true);
 				_variableDatabase.ReconsiderAllStyleSheets();
 
 				if (_variableDatabase.ForceRefreshAll || // if we did complex change and we need to refresh all styles
@@ -300,28 +270,17 @@ namespace Beamable.Editor.UI.Buss
 				}
 				_variableDatabase.FlushDirtyMarkers();
 			}
+			else
 			catch (Exception e)
 			{
+				_addStyleButton.tooltip = String.Empty;
+				_addStyleButton.SetInactive(false);
 				Debug.LogException(e);
 			}
 
 			_inStyleSheetChangedLoop = false;
 
 			Profiler.EndSample();
-		}
-
-		private void OnDestroy()
-		{
-			ClearCurrentStyleSheet();
-
-			_filterToggle.OnValueChanged -= OnFilterToggleClicked;
-
-			_navigationWindow.HierarchyChanged -= RefreshStyleSheets;
-			_navigationWindow.BussStyleSheetChange -= RefreshStyleSheets;
-			_navigationWindow.SelectionChanged -= OnSelectionChange;
-
-			_navigationWindow.Destroy();
-			UndoSystem<BussStyleRule>.DeleteAllRecords();
 		}
 	}
 }

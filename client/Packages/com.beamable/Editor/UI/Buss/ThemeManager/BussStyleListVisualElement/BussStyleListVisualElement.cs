@@ -68,7 +68,7 @@ namespace Beamable.Editor.UI.Buss
 			}
 		}
 
-		private void RefreshStyleCards()
+		public void RefreshStyleCards()
 		{
 			UndoSystem<BussStyleRule>.Update();
 
@@ -108,7 +108,7 @@ namespace Beamable.Editor.UI.Buss
 			FilterCards();
 		}
 
-		private void FilterCards()
+		public void FilterCards()
 		{
 			foreach (BussStyleCardVisualElement styleCardVisualElement in _styleCardsVisualElements)
 			{
