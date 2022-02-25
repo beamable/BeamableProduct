@@ -15,6 +15,7 @@ using Beamable.Server.Api.Tournament;
 using Beamable.Server.Api.CloudData;
 using Beamable.Server.Api.RealmConfig;
 using Beamable.Server.Api.Commerce;
+using Beamable.Server.Api.Notifications;
 
 namespace Beamable.Server
 {
@@ -30,6 +31,7 @@ namespace Beamable.Server
       public IMicroserviceEventsApi Events { get; set; }
       public IMicroserviceGroupsApi Groups { get; set; }
       public IMicroserviceMailApi Mail { get; set; }
+      public IMicroserviceNotificationsApi Notifications { get; set; }
       public IMicroserviceSocialApi Social { get; set; }
       public IMicroserviceTournamentApi Tournament { get; set; }
       public IMicroserviceCloudDataApi TrialData { get; set; }
