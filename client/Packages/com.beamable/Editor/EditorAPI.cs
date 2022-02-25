@@ -92,7 +92,7 @@ namespace Beamable.Editor
 
 		public bool HasConfiguration { get; private set; }
 		public bool HasToken => Token != null;
-		public bool HasCustomer => !string.IsNullOrEmpty(Alias);
+		public bool HasCustomer => !string.IsNullOrEmpty(Cid);
 		public bool HasRealm => !string.IsNullOrEmpty(Pid);
 
 		private Promise<EditorAPI> Initialize()
@@ -153,9 +153,9 @@ namespace Beamable.Editor
 			var cid = ConfigDatabase.GetString("cid");
 			var pid = ConfigDatabase.GetString("pid");
 			var platform = ConfigDatabase.GetString("platform");
-			Alias = alias ?? cid;
+			Alias = alias;
 
-			if (string.IsNullOrEmpty(Alias)) // with no cid, we cannot be logged in.
+			if (string.IsNullOrEmpty(cid)) // with no cid, we cannot be logged in.
 			{
 				return Reset();
 			}

@@ -1,14 +1,22 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Content;
-using Beamable.Serialization.SmallerJSON;
 using System;
-using UnityEngine;
 
 namespace Beamable.Editor.Alias
 {
 	public interface IAliasService
 	{
+		/// <summary>
+		/// Given a string that could represent an Alias or a Cid, this method will analyze the string,
+		/// and resolve it through Beamable to fetch other data.
+		/// <para>
+		/// If the input is a CID, then the result structure will only include the cid, since that is all that is required to use Beamable.
+		/// If the input is an ALIAS, then the result structure will include the given alias, and the customer CID.
+		/// </para>
+		/// </summary>
+		/// <param name="cidOrAlias">A string that is either a CID or an ALIAS</param>
+		/// <returns>A structure that has an optional Alias and an optional Cid</returns>
 		Promise<AliasResolve> Resolve(string cidOrAlias);
 	}
 
@@ -16,9 +24,6 @@ namespace Beamable.Editor.Alias
 	{
 		public OptionalString Alias = new OptionalString();
 		public OptionalString Cid = new OptionalString();
-		public bool HasCid => Cid.HasValue;
-		public bool HasAlias => Alias.HasValue;
-
 	}
 
 	public class AliasService : IAliasService
