@@ -305,6 +305,9 @@ namespace Beamable.Server.Editor
 		public MicroserviceConfigurationDebugEntry DebugData;
 
 		[HideInInspector] public string LastBuiltCheckSum;
+
+		[HideInInspector]
+		public string RobotId;
 	}
 
 	[Serializable]

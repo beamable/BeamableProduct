@@ -74,7 +74,7 @@ namespace Beamable.Editor.UI.Model
 			if (IsBuilding) return true;
 
 			IsBuilding = true;
-			var command = new BuildImageCommand((MicroserviceDescriptor)Descriptor, includeDebuggingTools);
+			var command = new BuildImageCommand((MicroserviceDescriptor)Descriptor, includeDebuggingTools, true);
 			command.OnStandardOut += message => MicroserviceLogHelper.HandleBuildCommandOutput(this, message);
 			command.OnStandardErr += message => MicroserviceLogHelper.HandleBuildCommandOutput(this, message);
 			try

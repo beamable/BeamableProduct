@@ -8,6 +8,7 @@ namespace Beamable.Server.Editor.CodeGen
 	public class DockerfileGenerator
 	{
 		public MicroserviceDescriptor Descriptor { get; }
+		public bool Watch { get; }
 		public MicroserviceConfigurationEntry Config { get; }
 
 		private bool DebuggingEnabled = true;
@@ -23,10 +24,11 @@ namespace Beamable.Server.Editor.CodeGen
 		public string BASE_TAG = BeamableEnvironment.BeamServiceTag;
 #endif
 
-		public DockerfileGenerator(MicroserviceDescriptor descriptor, bool includeDebugTools)
+		public DockerfileGenerator(MicroserviceDescriptor descriptor, bool includeDebugTools, bool watch)
 		{
 			DebuggingEnabled = includeDebugTools;
 			Descriptor = descriptor;
+			Watch = watch;
 			Config = MicroserviceConfiguration.Instance.GetEntry(descriptor.Name);
 		}
 
@@ -116,8 +118,35 @@ EXPOSE 80 2222
 			return DebuggingEnabled ? "debug" : "release";
 		}
 
+		private string GetWatchDockerFile()
+		{
+			var text = $@"
+FROM beamservice:latest AS build-env
+RUN dotnet --version
+WORKDIR /subapp
+
+COPY {Descriptor.ImageName}.csproj .
+RUN ls /src
+RUN cp /src/baseImageDocs.xml .
+
+RUN echo $BEAMABLE_SDK_VERSION > /subapp/.beamablesdkversion
+
+EXPOSE {HEALTH_PORT}
+ENV BEAMABLE_SDK_VERSION_EXECUTION={BeamableEnvironment.SdkVersion}
+ENV DOTNET_WATCH_RESTART_ON_RUDE_EDIT=1
+ENTRYPOINT [""dotnet"", ""watch""]
+";
+			return text;
+		}
+
 		public string GetString()
 		{
+
+			if (Watch)
+			{
+				return GetWatchDockerFile();
+			}
+
 			var text = $@"
 # step 1. Build...
 FROM {BASE_IMAGE}:{BASE_TAG} AS build-env

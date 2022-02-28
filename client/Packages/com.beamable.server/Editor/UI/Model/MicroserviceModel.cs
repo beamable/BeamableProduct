@@ -150,6 +150,23 @@ namespace Beamable.Editor.UI.Model
 
 			evt.menu.BeamableAppendAction($"Run Snyk Tests{hasImageSuffix}", pos => RunSnykTests(), ServiceBuilder.HasImage);
 
+			evt.menu.BeamableAppendAction("Poke", pos => BuildUtils.UpdateBuildContextWithSource(_serviceDescriptor));
+			evt.menu.BeamableAppendAction("RebuildRoutes", pos =>
+			{
+				EditorAPI.Instance.Then(api =>
+				{
+					var adminClient = new MicroserviceAdminClient(_serviceDescriptor, api.Requester);
+					adminClient.RebuildRouteTable().Then(_ => Debug.Log("Routes rebuilt"));
+				});
+			});
+			evt.menu.BeamableAppendAction("GetToken", pos =>
+			{
+				EditorAPI.Instance.Then(api =>
+				{
+					var adminClient = new MicroserviceAdminClient(_serviceDescriptor, api.Requester);
+					adminClient.GetCurrentToken().Then(t => Debug.Log("TOKEN: " + t));
+				});
+			});
 			evt.menu.BeamableAppendAction($"{localCategory}/Open in CLI", pos => OpenInCli(), IsRunning);
 			evt.menu.BeamableAppendAction($"{localCategory}/View Documentation", pos => OpenLocalDocs(), IsRunning);
 

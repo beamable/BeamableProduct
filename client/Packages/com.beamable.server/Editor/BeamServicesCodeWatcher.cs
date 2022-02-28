@@ -1,3 +1,4 @@
+using Beamable.Api;
 using Beamable.Common.Assistant;
 using Beamable.Server.Editor.CodeGen;
 using System;
@@ -9,6 +10,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.Callbacks;
+using UnityEditor.Compilation;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -206,6 +208,17 @@ namespace Beamable.Server.Editor
 		[DidReloadScripts]
 		private static void WatchMicroserviceFiles()
 		{
+			Debug.Log("----------------- DID RELOAD SCRIPTS ---------");
+			CompilationPipeline.assemblyCompilationStarted += (assemblies) =>
+			{
+				Debug.Log("------------------ ASSEMBLY COMPILATION STARTING ------------------- " + assemblies);
+			};
+			CompilationPipeline.assemblyCompilationFinished += (assembly, messages) =>
+			{
+				Debug.Log("------------------ ASSEMBLY COMPILATION STARTING ------------------- " + assembly );
+			};
+
+
 			// If we are not initialized, delay the call until we are.
 			if (!BeamEditor.IsInitialized || !MicroserviceEditor.IsInitialized)
 			{
@@ -221,6 +234,18 @@ namespace Beamable.Server.Editor
 			{
 				EditorApplication.delayCall += WatchMicroserviceFiles;
 				return;
+			}
+
+			var derp = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			foreach (var service in derp.Descriptors)
+			{
+				BuildUtils.UpdateBuildContextWithSource(service);
+				var client = new MicroserviceAdminClient(service, new PlatformRequester("", null, null));
+				client.ReloadCode().Then(_ =>
+				{
+					Debug.Log("CODE HAS RELOADED FOR " + service.Name);
+				});
+
 			}
 
 			// Check for the hint regarding local changes that are not deployed to your local docker environment

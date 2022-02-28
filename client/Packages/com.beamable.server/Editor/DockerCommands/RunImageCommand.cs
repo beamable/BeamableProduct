@@ -3,6 +3,7 @@ using Beamable.Config;
 using Beamable.Editor.UI.Model;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace Beamable.Server.Editor.DockerCommands
@@ -119,6 +120,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 	public class RunServiceCommand : RunImageCommand
 	{
+		private readonly bool _watch;
 		public const string ENV_CID = "CID";
 		public const string ENV_PID = "PID";
 		public const string ENV_SECRET = "SECRET";
@@ -126,9 +128,12 @@ namespace Beamable.Server.Editor.DockerCommands
 		public const string ENV_LOG_LEVEL = "LOG_LEVEL";
 		public const string ENV_NAME_PREFIX = "NAME_PREFIX";
 
+		private string mountString;
+
 		public RunServiceCommand(MicroserviceDescriptor service, string cid, string secret,
-		   Dictionary<string, string> env) : base(service.ImageName, service.ContainerName, service)
+		   Dictionary<string, string> env, bool watch=true) : base(service.ImageName, service.ContainerName, service)
 		{
+			_watch = watch;
 			Environment = new Dictionary<string, string>()
 			{
 				[ENV_CID] = cid,
@@ -138,6 +143,17 @@ namespace Beamable.Server.Editor.DockerCommands
 				[ENV_LOG_LEVEL] = "Debug",
 				[ENV_NAME_PREFIX] = MicroserviceIndividualization.Prefix,
 			};
+
+			mountString = "";
+			if (_watch)
+			{
+				var buildPath = service.BuildPath;
+				var fullBuildPath = Path.GetFullPath(buildPath);
+				mountString =
+					$"--mount 'type=bind,source=\"{fullBuildPath}\",dst=/subapp/{service.ImageName}'";
+			}
+
+			UnityEngine.Debug.Log("MOUNT: " + mountString);
 
 			if (env != null)
 			{
@@ -155,6 +171,11 @@ namespace Beamable.Server.Editor.DockerCommands
 					[(uint)config.DebugData.SshPort] = 2222
 				};
 			}
+		}
+
+		protected override string GetCustomDockerFlags()
+		{
+			return mountString;
 		}
 	}
 
@@ -226,14 +247,20 @@ namespace Beamable.Server.Editor.DockerCommands
 			return volumeString;
 		}
 
+		protected virtual string GetCustomDockerFlags()
+		{
+			return "";
+		}
+
 		public override string GetCommandString()
 		{
 			var command = $"{DockerCmd} run --rm " +
-							 $"-P " +
-							 $"{GetNamedVolumeString()} " +
-							 $"{GetPortString()} " +
-							 $"{GetEnvironmentString()} " +
-							 $"--name {ContainerName} {ImageName}";
+			              $"-P " +
+			              $"{GetNamedVolumeString()} " +
+			              $"{GetPortString()} " +
+			              $"{GetEnvironmentString()} " +
+			              $"{GetCustomDockerFlags()} " +
+			              $"--name {ContainerName} {ImageName}";
 			return command;
 		}
 
