@@ -30,7 +30,7 @@ namespace Beamable.Announcements
 
 		public void ToggleAnnouncement(bool desiredState)
 		{
-			if (desiredState == ToggleState) 
+			if (desiredState == ToggleState)
 				return;
 			_toggleState = desiredState;
 			Broadcast(_toggleState, s => s.OnToggleAnnouncement);

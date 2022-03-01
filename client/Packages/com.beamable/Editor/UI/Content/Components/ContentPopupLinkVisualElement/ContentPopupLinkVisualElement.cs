@@ -1,5 +1,3 @@
-using Beamable.Editor.Content;
-using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;

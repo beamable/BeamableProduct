@@ -1,4 +1,3 @@
-using TMPro;
 using UnityEngine;
 
 namespace Beamable.UI.Scripts

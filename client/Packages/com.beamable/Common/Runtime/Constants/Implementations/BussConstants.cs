@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-
-namespace Beamable.Common
+﻿namespace Beamable.Common
 {
 	public static partial class Constants
 	{

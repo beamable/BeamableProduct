@@ -1,6 +1,5 @@
 using Beamable.AccountManagement;
 using Beamable.Stats;
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
