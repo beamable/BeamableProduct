@@ -23,7 +23,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			Start(null);
 		}
 
-		public Promise<T> Start(CommandRunnerWindow context)
+		public virtual Promise<T> Start(CommandRunnerWindow context)
 		{
 			if (DockerRequired && DockerNotInstalled)
 			{
