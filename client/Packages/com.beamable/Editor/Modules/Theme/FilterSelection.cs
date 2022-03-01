@@ -1,12 +1,9 @@
-using System;
-using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
 namespace Beamable.Editor.Modules.Theme
 {
-
 	public class FilterSelection
 	{
 		public const int FILTERMODE_ALL = 0;

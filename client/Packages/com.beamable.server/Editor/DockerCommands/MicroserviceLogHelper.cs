@@ -1,4 +1,3 @@
-﻿using Beamable.Common;
 using Beamable.Editor.UI.Model;
 using Beamable.Serialization.SmallerJSON;
 using System;
@@ -282,8 +281,8 @@ namespace Beamable.Server.Editor.DockerCommands
 					builder.OnStartingProgress?.Invoke(i + 1, RunLogsSteps);
 				}
 			}
-			if (message.Contains(Logs.READY_FOR_TRAFFIC_PREFIX) || 
-			    message.Contains(Logs.STORAGE_READY))
+			if (message.Contains(Logs.READY_FOR_TRAFFIC_PREFIX) ||
+				message.Contains(Logs.STORAGE_READY))
 			{
 				builder.OnStartingFinished?.Invoke(true);
 				builder.IsRunning = true;

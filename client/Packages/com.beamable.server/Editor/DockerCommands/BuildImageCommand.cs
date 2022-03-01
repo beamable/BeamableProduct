@@ -1,5 +1,4 @@
 using Beamable.Common;
-using Beamable.Platform.SDK;
 using Beamable.Server.Editor.CodeGen;
 using System;
 using System.Collections.Generic;
@@ -7,7 +6,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using UnityEditor;
-using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.Assertions;
 using Debug = UnityEngine.Debug;

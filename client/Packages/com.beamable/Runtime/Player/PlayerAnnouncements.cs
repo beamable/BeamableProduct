@@ -6,12 +6,9 @@ using Beamable.Common.Dependencies;
 using Beamable.Common.Player;
 using System;
 using System.Linq;
-using UnityEngine;
 
 namespace Beamable.Player
 {
-
-
 	[Serializable]
 	public class Announcement
 	{

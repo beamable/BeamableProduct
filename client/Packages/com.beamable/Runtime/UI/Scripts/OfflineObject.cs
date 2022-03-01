@@ -1,7 +1,4 @@
 ﻿using Beamable;
-using Beamable.UI.Scripts;
-using System;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -9,7 +6,7 @@ using UnityEngine.UI;
 
 public class OfflineObject : MonoBehaviour
 {
-	private Beamable.IBeamableAPI _engineInstance;
+	private IBeamableAPI _engineInstance;
 
 	public UIBehaviour Component;
 
