@@ -21,6 +21,8 @@ namespace Beamable.Server.Editor.DockerCommands
 		public string BuildPath { get; set; }
 		public Promise<Unit> ReadyForExecution { get; private set; }
 
+		private Exception _constructorEx;
+
 		public static bool WasEverBuildLocally(IDescriptor descriptor)
 		{
 			return EditorPrefs.GetBool(string.Format(BUILD_PREF, descriptor.Name), false);
@@ -64,7 +66,18 @@ namespace Beamable.Server.Editor.DockerCommands
 			catch (Exception ex)
 			{
 				Debug.LogException(ex);
+				_constructorEx = ex;
 			}
+		}
+
+		public override Promise<Unit> Start(CommandRunnerWindow context)
+		{
+			if (_constructorEx != null)
+			{
+				throw _constructorEx;
+			}
+
+			return base.Start(context);
 		}
 
 		private void CopyDlls(MicroserviceDescriptor descriptor, MicroserviceDependencies dependencies)
@@ -107,13 +120,16 @@ namespace Beamable.Server.Editor.DockerCommands
 		{
 			var dirExists = Directory.Exists(descriptor.BuildPath);
 #if UNITY_EDITOR_WIN
-			var longestPathLength = dirExists ? Directory
-			                                    .GetFiles(descriptor.BuildPath, "*", SearchOption.AllDirectories)
-			                                    .OrderByDescending(p => p.Length)
-			                                    .FirstOrDefault().Length : descriptor.BuildPath.Length;
-			Assert.IsFalse(longestPathLength + Directory.GetCurrentDirectory().Length >= 260, 
-			               "Project path is too long and can cause issues during building on Windows machine. " +
-			               "Consider moving project to other folder so the project path would be shorter.");
+		var longestPathLength = dirExists
+			? Directory
+			  .GetFiles(descriptor.BuildPath, "*", SearchOption.AllDirectories)
+			  .OrderByDescending(p => p.Length)
+			  .FirstOrDefault()?.Length ?? 0
+			: descriptor.BuildPath.Length;
+
+		Assert.IsFalse(longestPathLength + Directory.GetCurrentDirectory().Length >= 260,
+		               "Project path is too long and can cause issues during building on Windows machine. " +
+		               "Consider moving project to other folder so the project path would be shorter.");
 #endif
 			// remove everything in the hidden folder...
 			if (dirExists)
