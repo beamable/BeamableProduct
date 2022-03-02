@@ -28,15 +28,12 @@ namespace Beamable.Server.Editor
 
 		public string BuildPath => $"./Temp/beam/{Name}";
 		public string ContainerName => $"{Name}_container";
+		public string ClientGeneratorContainerName => $"{Name}_container_generator";
 		public string ImageName => Name.ToLower();
 		public ServiceType ServiceType => ServiceType.MicroService;
 		public bool HasValidationError { get; set; }
 		public bool HasValidationWarning { get; set; }
 
-		public bool IsPublishFeatureDisabled()
-		{
-			return this.GetStorageReferences()?.Count() > 0 || this.HasMongoLibraries();
-		}
 	}
 
 	[Serializable]

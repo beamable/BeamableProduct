@@ -159,6 +159,11 @@ namespace Beamable.Editor.UI.Model
 					adminClient.RebuildRouteTable().Then(_ => Debug.Log("Routes rebuilt"));
 				});
 			});
+			evt.menu.BeamableAppendAction("BuildClient", pos =>
+			{
+				var comm = new RunClientGenerationCommand(_serviceDescriptor);
+				comm.Start();
+			});
 			evt.menu.BeamableAppendAction("GetToken", pos =>
 			{
 				EditorAPI.Instance.Then(api =>

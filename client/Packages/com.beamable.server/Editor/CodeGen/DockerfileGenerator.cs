@@ -126,11 +126,11 @@ RUN dotnet --version
 WORKDIR /subapp
 
 COPY {Descriptor.ImageName}.csproj .
-RUN ls /src
 RUN cp /src/baseImageDocs.xml .
 
 RUN echo $BEAMABLE_SDK_VERSION > /subapp/.beamablesdkversion
-
+RUN mkdir /client-output
+RUN chmod -R a=rw /client-output
 EXPOSE {HEALTH_PORT}
 ENV BEAMABLE_SDK_VERSION_EXECUTION={BeamableEnvironment.SdkVersion}
 ENV DOTNET_WATCH_RESTART_ON_RUDE_EDIT=1
