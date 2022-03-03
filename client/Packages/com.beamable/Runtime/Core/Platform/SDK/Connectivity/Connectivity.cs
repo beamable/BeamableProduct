@@ -142,30 +142,32 @@ namespace Beamable.Api.Connectivity
 				yield return _delay; // don't spam the internet checking...
 				_pingStartDateTime = Time.time;
 
-				_request = BuildWebRequest();
-				if (Application.internetReachability == NetworkReachability.NotReachable)
+				using (_request = BuildWebRequest())
 				{
-					yield return new PromiseYieldInstruction(SetHasInternet(false));
-					continue;
-				}
+					if (Application.internetReachability == NetworkReachability.NotReachable)
+					{
+						yield return new PromiseYieldInstruction(SetHasInternet(false));
+						continue;
+					}
 
-				_request.SendWebRequest();
+					_request.SendWebRequest();
 
-				var isTimeout = false;
-				while (!_request.isDone && !isTimeout)
-				{
-					isTimeout = Time.time - _pingStartDateTime > _secondsBeforeTimeout;
-					yield return null;
-				}
+					var isTimeout = false;
+					while (!_request.isDone && !isTimeout)
+					{
+						isTimeout = Time.time - _pingStartDateTime > _secondsBeforeTimeout;
+						yield return null;
+					}
 
 
-				if (isTimeout || _request.IsNetworkError())
-				{
-					yield return new PromiseYieldInstruction(SetHasInternet(false));
-				}
-				else
-				{
-					yield return new PromiseYieldInstruction(SetHasInternet(true));
+					if (isTimeout || _request.IsNetworkError())
+					{
+						yield return new PromiseYieldInstruction(SetHasInternet(false));
+					}
+					else
+					{
+						yield return new PromiseYieldInstruction(SetHasInternet(true));
+					}
 				}
 			}
 		}
