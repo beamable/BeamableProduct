@@ -1,5 +1,4 @@
 using Beamable.Common;
-using Beamable.Editor.Content;
 using System;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;

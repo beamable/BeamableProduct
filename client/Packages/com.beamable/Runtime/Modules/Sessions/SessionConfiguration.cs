@@ -1,5 +1,4 @@
 using Beamable.Api.Sessions;
-using System;
 using UnityEngine;
 
 namespace Beamable.Sessions

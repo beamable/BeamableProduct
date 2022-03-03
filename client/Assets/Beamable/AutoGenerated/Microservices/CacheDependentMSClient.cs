@@ -109,6 +109,7 @@ namespace Beamable.Server.Clients
         }
     }
     
+    [BeamContextSystemAttribute()]
     internal static class ExtensionsForCacheDependentMSClient
     {
         

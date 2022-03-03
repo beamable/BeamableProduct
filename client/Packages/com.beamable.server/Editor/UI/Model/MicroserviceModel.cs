@@ -1,5 +1,4 @@
 using Beamable.Common;
-using Beamable.Editor.Environment;
 using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
@@ -21,7 +20,7 @@ using UnityEditor.UIElements;
 
 namespace Beamable.Editor.UI.Model
 {
-	[System.Serializable]
+	[Serializable]
 	public class MicroserviceModel : ServiceModelBase, IBeamableMicroservice
 	{
 		[SerializeField]

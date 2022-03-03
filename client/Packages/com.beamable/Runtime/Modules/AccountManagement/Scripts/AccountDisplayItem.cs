@@ -1,13 +1,8 @@
-using Beamable;
-using Beamable.Api;
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
-using Beamable.Platform.SDK;
-using Beamable.Platform.SDK.Auth;
 using Beamable.Stats;
 using Beamable.Theme;
 using Beamable.UI.Scripts;
-using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
