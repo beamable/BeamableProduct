@@ -1,6 +1,5 @@
 ﻿using Beamable.Common;
 using Beamable.ConsoleCommands;
-using Beamable.Editor.Environment;
 using UnityEngine;
 
 namespace Beamable.Editor.Modules.Account
