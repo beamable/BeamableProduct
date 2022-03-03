@@ -10,7 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.3]
 ### Fixed 
+- All `IBeamableRequester` implementations dispose `UnityWebRequest` after usage
 - Beamable.Platform assembly definition references Facebook.Unity dll if it exists
+
 
 ## [1.0.1]
 ### Added
