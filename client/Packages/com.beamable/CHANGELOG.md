@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Beamable.Platform assembly definition references Facebook.Unity dll if it exists
 
 
+## [1.0.2]
+### Fixed
+- Windows Microservices first time build issue regarding empty build directories
+
+
 ## [1.0.1]
 ### Added
 - `IDeviceIdResolver` is now a dependency of the `AuthService`, and can be overriden to produce different device ids other than `SystemInfo.deviceUniqueIdentifier`
