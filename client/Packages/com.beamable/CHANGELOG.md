@@ -11,7 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Fixed 
 - Constant "Invalid token, trying again" errors in the Editor after 10 days.
+- All `IBeamableRequester` implementations dispose `UnityWebRequest` after usage
 - Beamable.Platform assembly definition references Facebook.Unity dll if it exists
+
 
 ## [1.0.1]
 ### Added
