@@ -106,9 +106,11 @@ namespace Core.Platform.SDK
 		  bool includeAuthHeader)
 		{
 			var result = new Promise<T>();
-			var request = BuildWebRequest(method, uri, body, includeAuthHeader);
-			var op = request.SendWebRequest();
-			op.completed += _ => HandleResponse(result, request);
+			using (var request = BuildWebRequest(method, uri, body, includeAuthHeader))
+			{
+				var op = request.SendWebRequest();
+				op.completed += _ => HandleResponse(result, request);
+			}
 			return result;
 		}
 

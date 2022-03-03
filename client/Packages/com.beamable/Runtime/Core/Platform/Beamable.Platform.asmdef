@@ -17,7 +17,9 @@
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
-    "precompiledReferences": [],
+    "precompiledReferences": [
+        "Facebook.Unity.dll"
+    ],
     "autoReferenced": true,
     "defineConstraints": []
 }
