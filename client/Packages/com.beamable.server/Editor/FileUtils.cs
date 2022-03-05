@@ -45,10 +45,23 @@ namespace Beamable.Server.Editor
 			}
 		}
 
-		public static void CopyAssemblies(MicroserviceDescriptor descriptor, MicroserviceDependencies dependencies)
+
+		public static string GetFullSourcePath(AssemblyDefinitionInfo assemblyDependency)
 		{
 			string rootPath = Application.dataPath.Substring(0, Application.dataPath.Length - "Assets".Length);
+			var sourceDirectory = Path.GetDirectoryName(assemblyDependency.Location);
+			var fullSource = Path.Combine(rootPath, sourceDirectory);
 
+			return fullSource;
+		}
+
+		public static string GetBuildContextPath(AssemblyDefinitionInfo assemblyDependency)
+		{
+			return assemblyDependency.Name;
+		}
+
+		public static void CopyAssemblies(MicroserviceDescriptor descriptor, MicroserviceDependencies dependencies)
+		{
 			// copy over the assembly definition folders...
 			if (dependencies.Assemblies.Invalid.Any())
 			{
@@ -57,12 +70,11 @@ namespace Beamable.Server.Editor
 
 			foreach (var assemblyDependency in dependencies.Assemblies.ToCopy)
 			{
-				var sourceDirectory = Path.GetDirectoryName(assemblyDependency.Location);
-				var fullSource = Path.Combine(rootPath, sourceDirectory);
+				var fullSource = GetFullSourcePath(assemblyDependency);
 				MicroserviceLogHelper.HandleLog(descriptor, "Build", "Copying assembly from " + fullSource);
 
 				// TODO: better folder namespacing?
-				CopyFolderToBuildDirectory(fullSource, assemblyDependency.Name, descriptor);
+				CopyFolderToBuildDirectory(fullSource, GetBuildContextPath(assemblyDependency), descriptor);
 			}
 		}
 

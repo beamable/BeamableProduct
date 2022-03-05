@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEngine;
 
 namespace Beamable.Server.Editor.DockerCommands
 {
@@ -162,8 +163,9 @@ namespace Beamable.Server.Editor.DockerCommands
 		public const string ENV_HOST = "HOST";
 		public const string ENV_LOG_LEVEL = "LOG_LEVEL";
 		public const string ENV_NAME_PREFIX = "NAME_PREFIX";
+		public const string ENV_WATCH_TOKEN = "WATCH_TOKEN";
 
-		private string mountString;
+		// private string mountString;
 
 		public RunServiceCommand(MicroserviceDescriptor service, string cid, string secret,
 		   Dictionary<string, string> env, bool watch=true) : base(service.ImageName, service.ContainerName, service)
@@ -177,18 +179,43 @@ namespace Beamable.Server.Editor.DockerCommands
 				[ENV_HOST] = BeamableEnvironment.SocketUrl,
 				[ENV_LOG_LEVEL] = "Debug",
 				[ENV_NAME_PREFIX] = MicroserviceIndividualization.Prefix,
+				[ENV_WATCH_TOKEN] = "true"
 			};
 
-			mountString = "";
+			// mountString = "";
 			if (_watch)
 			{
+				var dependencies = DependencyResolver.GetDependencies(service);
+				BindMounts = new List<BindMount>();
 				var buildPath = service.BuildPath;
 				var fullBuildPath = Path.GetFullPath(buildPath);
-				mountString =
-					$"--mount 'readonly,type=bind,source=\"{fullBuildPath}\",dst=/subapp/{service.ImageName}'";
-			}
+				BindMounts.Add(
+					new BindMount {isReadOnly = true, dst = $"/subapp/{service.ImageName}", src = fullBuildPath}
+				);
+				foreach (var assemblyToCopy in dependencies.Assemblies.ToCopy)
+				{
+					// Debug.Log("ABOUT TO REFERENCE: " + assemblyToCopy.Location);
+					var mount = new BindMount
+					{
+						isReadOnly = true,
+						dst = $"/subapp/{service.ImageName}/{FileUtils.GetBuildContextPath(assemblyToCopy)}",
+						src = FileUtils.GetFullSourcePath(assemblyToCopy)
+					};
+					BindMounts.Add(mount);
+				}
 
-			UnityEngine.Debug.Log("MOUNT: " + mountString);
+				// BindMounts = new List<BindMount>
+				// {
+				// 	new BindMount
+				// 	{
+				// 		isReadOnly = true,
+				// 		dst = $"/subapp/{service.ImageName}",
+				// 		src = fullBuildPath
+				// 	}
+				// };
+				// mountString =
+				// 	$"--mount 'readonly,type=bind,source=\"{fullBuildPath}\",dst=/subapp/{service.ImageName}'";
+			}
 
 			if (env != null)
 			{
@@ -206,16 +233,30 @@ namespace Beamable.Server.Editor.DockerCommands
 					[(uint)config.DebugData.SshPort] = 2222
 				};
 			}
+
+			Debug.Log("Starting run command");
 		}
 
-		protected override string GetCustomDockerFlags()
-		{
-			return mountString;
-		}
+		// protected override string GetCustomDockerFlags()
+		// {
+		// 	return mountString;
+		// }
 	}
 
 	public class RunImageCommand : DockerCommand
 	{
+
+		public struct BindMount
+		{
+			public bool isReadOnly;
+			public string src;
+			public string dst;
+
+			public string ToArgString()
+			{
+				return $"--mount '{(isReadOnly ? "readonly," : "")}type=bind,source=\"{src}\",dst=\"{dst}\"'";
+			}
+		}
 
 		private readonly IDescriptor _descriptor;
 		public string ImageName { get; set; }
@@ -226,6 +267,8 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		public Dictionary<string, string> NamedVolumes { get; protected set; }
 
+		public List<BindMount> BindMounts { get; protected set; }
+
 		public Action<string> OnStandardOut;
 		public Action<string> OnStandardErr;
 
@@ -233,7 +276,8 @@ namespace Beamable.Server.Editor.DockerCommands
 		   IDescriptor descriptor = null,
 		   Dictionary<string, string> env = null,
 		   Dictionary<uint, uint> ports = null,
-		   Dictionary<string, string> namedVolumes = null)
+		   Dictionary<string, string> namedVolumes = null,
+		   List<BindMount> bindMounts = null)
 		{
 			_descriptor = descriptor;
 			ImageName = imageName;
@@ -242,6 +286,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			Environment = env ?? new Dictionary<string, string>();
 			Ports = ports ?? new Dictionary<uint, uint>();
 			NamedVolumes = namedVolumes ?? new Dictionary<string, string>();
+			BindMounts = bindMounts ?? new List<BindMount>();
 		}
 
 		protected override void HandleStandardOut(string data)
@@ -275,6 +320,11 @@ namespace Beamable.Server.Editor.DockerCommands
 			return portString;
 		}
 
+		string GetBindMountsString()
+		{
+			return string.Join(" ", BindMounts.Select(b => b.ToArgString()));
+		}
+
 		string GetNamedVolumeString()
 		{
 			var volumes = NamedVolumes.Select(kvp => $"-v {kvp.Key}:{kvp.Value}");
@@ -300,6 +350,7 @@ namespace Beamable.Server.Editor.DockerCommands
 			              $"{GetPortString()} " +
 			              $"{GetEnvironmentString()} " +
 			              $"{GetCustomDockerFlags()} " +
+			              $"{GetBindMountsString()} " +
 			              $"--name {ContainerName} {ImageName} " +
 			              $"{GetArgString()}";
 			return command;

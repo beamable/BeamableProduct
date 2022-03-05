@@ -34,58 +34,7 @@ namespace Beamable.Server.Editor
 			var token = await _httpRequester.ManualRequest<string>(Method.GET, addr + "/token", parser: x=> x);
 			return token;
 		}
-
-		public Promise ReloadCode()
-		{
-
-			// while something is not true; keep going...
-			async Promise<bool> Ping()
-			{
-				var addr = await GetAddress();
-				if (string.IsNullOrEmpty(addr))
-				{
-					throw new Exception("Not running");
-				}
-
-				var token = await GetCurrentToken();
-				var entry = MicroserviceConfiguration.Instance.GetEntry(_descriptor.Name);
-				var tokenMatch = string.Equals(entry.RobotId, token);
-				UnityEngine.Debug.Log($"{_descriptor.Name} / {entry.RobotId} / {token}");
-				return tokenMatch;
-			}
-
-			var p = new Promise();
-			var nextTime = 0.0;
-			void Tick()
-			{
-				if (EditorApplication.timeSinceStartup > nextTime)
-				{
-					EditorApplication.update -= Tick;
-					Ping().Then(res =>
-					{
-						if (res)
-						{
-							UnityEngine.Debug.Log($"{_descriptor.Name} / match");
-
-							p.CompleteSuccess();
-						}
-						else
-						{
-							nextTime = EditorApplication.timeSinceStartup + .15;
-							EditorApplication.update += Tick;
-						}
-					}).Error(_ =>
-					{
-						UnityEngine.Debug.Log($"{_descriptor.Name} / not running");
-
-						p.CompleteSuccess();
-					});
-				}
-			}
-			EditorApplication.update += Tick;
-			return p;
-		}
-
+		
 		public async Promise<bool> RebuildRouteTable()
 		{
 			var addr = await GetAddress();

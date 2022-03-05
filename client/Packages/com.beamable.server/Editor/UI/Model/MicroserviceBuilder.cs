@@ -1,3 +1,4 @@
+using Beamable.Server;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using System;
@@ -5,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
+using UnityEngine;
 
 namespace Beamable.Editor.UI.Model
 {

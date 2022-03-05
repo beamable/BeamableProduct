@@ -71,6 +71,12 @@ namespace Beamable.Server
             }
 
             var _ = beamableService.Start<TMicroService>(args);
+
+            if (args.WatchToken)
+            {
+                TokenService.WatchTokenChange(beamableService);
+            }
+
             beamableService.RunForever();
         }
     }
