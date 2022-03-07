@@ -169,7 +169,7 @@ namespace Beamable.Server.Editor
 				ConfigDatabase.SetString("containerPrefix", _cachedContainerPrefix, true, true);
 				EditorApplication.delayCall += () => // using delayCall to avoid Unity warning about sending messages from OnValidate()
 				   EditorAPI.Instance.Then(api => api.SaveConfig(
-					  api.CidOrAlias, api.Pid, api.Host, api.Cid, CustomContainerPrefix));
+					  api.Alias, api.Pid, api.Host, api.Cid, CustomContainerPrefix));
 			}
 
 			if (_dockerCommandCached != DockerCommand || _dockerCheckCached != DockerDesktopCheckInMicroservicesWindow)
