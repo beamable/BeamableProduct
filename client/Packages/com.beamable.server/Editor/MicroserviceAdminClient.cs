@@ -34,7 +34,7 @@ namespace Beamable.Server.Editor
 			var token = await _httpRequester.ManualRequest<string>(Method.GET, addr + "/token", parser: x=> x);
 			return token;
 		}
-		
+
 		public async Promise<bool> RebuildRouteTable()
 		{
 			var addr = await GetAddress();

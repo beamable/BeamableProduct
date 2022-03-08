@@ -30,7 +30,7 @@ public class TokenService
 			{
 				while (!service.IsShuttingDown)
 				{
-					await Task.Delay(250);
+					await Task.Delay(1000);
 					var token = GetToken(service);
 					if (!string.Equals(token, lastToken))
 					{

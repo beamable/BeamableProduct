@@ -59,7 +59,7 @@ user=root
 loglevel=error
 
 [program:${Descriptor.Name}]
-command=/usr/bin/dotnet {GetProgramDll()}
+command={ (Watch ? "dotnet watch" : $"/usr/bin/dotnet {GetProgramDll()}")}
 stdout_logfile=/dev/stdout
 stdout_logfile_maxbytes=0
 
@@ -107,6 +107,10 @@ EXPOSE 80 2222
 			{
 				return @"ENTRYPOINT [""/usr/bin/supervisord"", ""-c"", ""/etc/supervisor/conf.d/supervisord.conf""]";
 			}
+			else if (Watch)
+			{
+				return $@"ENTRYPOINT [""dotnet"", ""watch""]";
+			}
 			else
 			{
 				return $@"ENTRYPOINT [""dotnet"", ""{GetProgramDll()}""]";
@@ -131,10 +135,13 @@ RUN cp /src/baseImageDocs.xml .
 RUN echo $BEAMABLE_SDK_VERSION > /subapp/.beamablesdkversion
 RUN mkdir /client-output
 RUN chmod -R a=rw /client-output
+
+{GetDebugLayer()}
+
 EXPOSE {HEALTH_PORT}
 ENV BEAMABLE_SDK_VERSION_EXECUTION={BeamableEnvironment.SdkVersion}
 ENV DOTNET_WATCH_RESTART_ON_RUDE_EDIT=1
-ENTRYPOINT [""dotnet"", ""watch""]
+{GetEntryPoint()}
 ";
 			return text;
 		}
