@@ -30,8 +30,8 @@ namespace Beamable.Platform.Tests.Auth.AuthServiceTests
 			Assert.AreEqual(deviceId, getDeviceId.GetResult());
 
 			var mockReq = _requester.MockRequest<TokenResponse>(Method.POST, $"{TOKEN_URL}")
-			                        .WithJsonFieldMatch("grant_type", "device")
-			                        .WithJsonFieldMatch("device_id", deviceId);
+									.WithJsonFieldMatch("grant_type", "device")
+									.WithJsonFieldMatch("device_id", deviceId);
 
 			var req = _service.LoginDeviceId();
 			yield return req.AsYield();
