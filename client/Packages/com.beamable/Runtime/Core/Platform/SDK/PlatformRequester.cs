@@ -89,41 +89,43 @@ namespace Beamable.Api
 			}
 
 			var result = new Promise<T>();
-			using (var request = BuildWebRequest(method, url, contentType, bodyBytes))
-			{
+			var request = BuildWebRequest(method, url, contentType, bodyBytes);
 
-				if (headers != null)
+			if (headers != null)
+			{
+				foreach (var header in headers)
 				{
-					foreach (var header in headers)
+					request.SetRequestHeader(header.Key, header.Value);
+				}
+			}
+
+			var op = request.SendWebRequest();
+			op.completed += _ =>
+			{
+				try
+				{
+					var responsePayload = request.downloadHandler.text;
+					if (request.responseCode >= 300 || request.IsNetworkError())
 					{
-						request.SetRequestHeader(header.Key, header.Value);
+						result.CompleteError(new HttpRequesterException(responsePayload));
+					}
+					else
+					{
+						T parsedResult = parser == null
+							? JsonUtility.FromJson<T>(responsePayload)
+							: parser(responsePayload);
+						result.CompleteSuccess(parsedResult);
 					}
 				}
-
-				var op = request.SendWebRequest();
-				op.completed += _ =>
+				catch (Exception ex)
 				{
-					try
-					{
-						var responsePayload = request.downloadHandler.text;
-						if (request.responseCode >= 300 || request.IsNetworkError())
-						{
-							result.CompleteError(new HttpRequesterException(responsePayload));
-						}
-						else
-						{
-							T parsedResult = parser == null
-								? JsonUtility.FromJson<T>(responsePayload)
-								: parser(responsePayload);
-							result.CompleteSuccess(parsedResult);
-						}
-					}
-					catch (Exception ex)
-					{
-						result.CompleteError(ex);
-					}
-				};
-			}
+					result.CompleteError(ex);
+				}
+				finally
+				{
+					request?.Dispose();
+				}
+			};
 			return result;
 		}
 
@@ -185,8 +187,6 @@ namespace Beamable.Api
 
 		public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null, bool useCache = false)
 		{
-
-
 			string contentType = null;
 			byte[] bodyBytes = null;
 
@@ -361,40 +361,45 @@ namespace Beamable.Api
 				return;
 			}
 
-			var responsePayload = request.downloadHandler.text;
-
-			if (request.responseCode >= 300 || request.IsNetworkError())
+			try
 			{
-				// Handle errors
-				PlatformError platformError = null;
-				try
-				{
-					platformError = JsonUtility.FromJson<PlatformError>(responsePayload);
-				}
-				catch (Exception)
-				{
-					// Swallow the exception and let the error be null
-				}
+				var responsePayload = request.downloadHandler.text;
 
-				promise.CompleteError(new PlatformRequesterException(platformError, request, responsePayload));
+				if (request.responseCode >= 300 || request.IsNetworkError())
+				{
+					// Handle errors
+					PlatformError platformError = null;
+					try
+					{
+						platformError = JsonUtility.FromJson<PlatformError>(responsePayload);
+					}
+					catch (Exception)
+					{
+						// Swallow the exception and let the error be null
+					}
 
+					promise.CompleteError(new PlatformRequesterException(platformError, request, responsePayload));
+
+				}
+				else
+				{
+					// Parse JSON object and resolve promise
+					PlatformLogger.Log($"PLATFORM RESPONSE: {responsePayload}");
+
+					try
+					{
+						T result = parser == null ? JsonUtility.FromJson<T>(responsePayload) : parser(responsePayload);
+						promise.CompleteSuccess(result);
+					}
+					catch (Exception ex)
+					{
+						promise.CompleteError(ex);
+					}
+				}
 			}
-			else
+			finally
 			{
-				// Parse JSON object and resolve promise
-				PlatformLogger.Log($"PLATFORM RESPONSE: {responsePayload}");
-
-				try
-				{
-					T result = parser == null ?
-					   JsonUtility.FromJson<T>(responsePayload) :
-					   parser(responsePayload);
-					promise.CompleteSuccess(result);
-				}
-				catch (Exception ex)
-				{
-					promise.CompleteError(ex);
-				}
+				request?.Dispose();
 			}
 		}
 
