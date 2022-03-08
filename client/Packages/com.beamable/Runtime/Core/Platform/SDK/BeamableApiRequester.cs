@@ -106,11 +106,9 @@ namespace Core.Platform.SDK
 		  bool includeAuthHeader)
 		{
 			var result = new Promise<T>();
-			using (var request = BuildWebRequest(method, uri, body, includeAuthHeader))
-			{
-				var op = request.SendWebRequest();
-				op.completed += _ => HandleResponse(result, request);
-			}
+			var request = BuildWebRequest(method, uri, body, includeAuthHeader);
+			var op = request.SendWebRequest();
+			op.completed += _ => HandleResponse(result, request);
 			return result;
 		}
 
@@ -123,38 +121,45 @@ namespace Core.Platform.SDK
 				return;
 			}
 
-			if (request.responseCode >= 300 || request.IsNetworkError())
+			try
 			{
-				// Handle errors
-				var payload = request.downloadHandler.text;
-
-				PlatformError platformError = null;
-				try
+				if (request.responseCode >= 300 || request.IsNetworkError())
 				{
-					platformError = JsonUtility.FromJson<PlatformError>(payload);
+					// Handle errors
+					var payload = request.downloadHandler.text;
+
+					PlatformError platformError = null;
+					try
+					{
+						platformError = JsonUtility.FromJson<PlatformError>(payload);
+					}
+					catch (Exception)
+					{
+						// Swallow the exception and let the error be null
+					}
+
+					promise.CompleteError(new PlatformRequesterException(platformError, request, payload));
+
 				}
-				catch (Exception)
+				else
 				{
-					// Swallow the exception and let the error be null
+					// Parse JSON object and resolve promise
+					PlatformLogger.Log($"BeamableAPI RESPONSE: {request.downloadHandler.text}");
+
+					try
+					{
+						var result = JsonUtility.FromJson<T>(request.downloadHandler.text);
+						promise.CompleteSuccess(result);
+					}
+					catch (Exception ex)
+					{
+						promise.CompleteError(ex);
+					}
 				}
-
-				promise.CompleteError(new PlatformRequesterException(platformError, request, payload));
-
 			}
-			else
+			finally
 			{
-				// Parse JSON object and resolve promise
-				PlatformLogger.Log($"BeamableAPI RESPONSE: {request.downloadHandler.text}");
-
-				try
-				{
-					var result = JsonUtility.FromJson<T>(request.downloadHandler.text);
-					promise.CompleteSuccess(result);
-				}
-				catch (Exception ex)
-				{
-					promise.CompleteError(ex);
-				}
+				request.Dispose();
 			}
 		}
 
