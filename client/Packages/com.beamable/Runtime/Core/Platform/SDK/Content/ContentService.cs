@@ -199,8 +199,8 @@ namespace Beamable.Content
 		private void InitializeBakedContent()
 		{
 			// remove content in old format
-			string contentDirectory = FilesystemAccessor.GetPersistentDataPathWithoutTrailingSlash() + "/content";
-			string contentFileName = "content.json";
+			string contentDirectory = Path.Combine(FilesystemAccessor.GetPersistentDataPathWithoutTrailingSlash(), "content");
+			const string contentFileName = "content.json";
 			if (Directory.Exists(contentDirectory))
 			{
 				DirectoryInfo info = new DirectoryInfo(contentDirectory);
