@@ -123,7 +123,7 @@ namespace Beamable.Api
 				}
 				finally
 				{
-					request?.Dispose();
+					request.Dispose();
 				}
 			};
 			return result;
