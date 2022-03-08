@@ -44,7 +44,7 @@
 }
 
 #CommentsC {
-    width: 220px;
+    width: 160px;
     justify-content: flex-end;
 }
 #CommentsC.column {
@@ -80,7 +80,7 @@
 }
 
 #CheckC {
-    width: 20px;
+    width: 80px;
     margin-right: 20px;
 }
 

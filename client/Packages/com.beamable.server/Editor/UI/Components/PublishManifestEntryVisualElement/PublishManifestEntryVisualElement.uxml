@@ -34,6 +34,7 @@
     
             <engine:VisualElement name="CheckC" class="column">
                 <engine:Image name="checkImage"/>
+                <engine:Label name="stateLabel"/>
             </engine:VisualElement>
             
         </engine:VisualElement>

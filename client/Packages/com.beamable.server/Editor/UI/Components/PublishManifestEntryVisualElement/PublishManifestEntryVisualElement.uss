@@ -95,3 +95,14 @@
     margin-right: 75px;
     margin-bottom: 1px;
 }
+
+#CheckC {
+    margin-left: 15px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#stateLabel {
+    margin-top: 10px;
+}

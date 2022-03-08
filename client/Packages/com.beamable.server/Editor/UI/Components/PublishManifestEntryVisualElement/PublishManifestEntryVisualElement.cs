@@ -61,6 +61,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private BeamableCheckboxVisualElement _checkbox;
 		private DropdownVisualElement _sizeDropdown;
 		private TextField _commentField;
+		private Label _stateLabel;
 
 		public PublishManifestEntryVisualElement(IEntryModel model,
 												 bool argWasPublished,
@@ -97,6 +98,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_commentField = Root.Q<TextField>("commentsText");
 			_commentField.value = Model.Comment;
 			_commentField.RegisterValueChangedCallback(ce => Model.Comment = ce.newValue);
+
+			_stateLabel = Root.Q<Label>("stateLabel");
 
 			var icon = Root.Q<Image>("typeImage");
 			_checkImage = Root.Q<Image>("checkImage");
@@ -136,14 +139,38 @@ namespace Beamable.Editor.Microservice.UI.Components
 			if (state == PublishState)
 				return;
 			PublishState = state;
+
+			switch (state)
+			{
+				case ServicePublishState.Failed:
+				{
+					_loadingBar.UpdateProgress(0, failed: true);
+					_stateLabel.text = "FAILED";
+					return;
+				}
+
+				case ServicePublishState.Published:
+				{
+					_stateLabel.text = "DONE";
+					break;
+				}
+
+				case ServicePublishState.InProgress:
+				{
+					_stateLabel.text = "PUBLISHING";
+					break;
+				}
+
+				default:
+				{
+					_stateLabel.text = "";
+					break;
+				}
+			}
+			
 			if (state != ServicePublishState.Unpublished)
 			{
 				_checkImage.tooltip = state.ToString();
-			}
-			if (state == ServicePublishState.Failed)
-			{
-				_loadingBar.UpdateProgress(0, failed: true);
-				return;
 			}
 
 			RemoveFromClassList(_currentPublishState);
