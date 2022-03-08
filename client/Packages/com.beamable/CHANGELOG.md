@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Fixed 
 - Constant "Invalid token, trying again" errors in the Editor after 10 days.
+- Compilation error when using new `com.unity.inputsystem`
 
 
 ## [1.0.3]
