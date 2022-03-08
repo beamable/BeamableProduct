@@ -217,14 +217,16 @@ namespace Beamable.Editor.UI.Buss
 			_addStyleButton = new VisualElement { name = "addStyleButton" };
 			_addStyleButton.AddToClassList("button");
 			_addStyleButton.Add(new Label("Add Style"));
+			
 			_addStyleButton.UnregisterCallback<MouseDownEvent>(_ => OpenAddSelectorWindow());
 			_addStyleButton.RegisterCallback<MouseDownEvent>(_ => OpenAddSelectorWindow());
 
 			_addStyleButton.UnregisterCallback<MouseEnterEvent>(_ => CheckEnableState());
 			_addStyleButton.RegisterCallback<MouseEnterEvent>(_ => CheckEnableState());
+			
 			CheckEnableState();
 
-			_stylesGroup.Add(_addStyleButton);
+			_stylesGroup.Insert(0, _addStyleButton);
 
 			void OpenAddSelectorWindow()
 			{
