@@ -8,10 +8,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4]
+### Fixed
+- `IBeamableRequester` implementations no longer dispose `UnityWebRequest` too soon
+
 ## [1.0.3]
 ### Fixed 
 - All `IBeamableRequester` implementations dispose `UnityWebRequest` after usage
 - Beamable.Platform assembly definition references Facebook.Unity dll if it exists
+
+## [1.0.2]
+### Fixed
+- Windows Microservices first time build issue regarding empty build directories
 
 ## [1.0.1]
 ### Added
