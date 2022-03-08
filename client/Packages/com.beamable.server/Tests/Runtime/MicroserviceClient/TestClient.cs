@@ -23,7 +23,7 @@ namespace Beamable.Server.Tests.Runtime
 			return CreateUrl(cid, pid, _serviceName, endpoint);
 		}
 	}
-	
+
 	public class TestJSON
 	{
 		public int a;
