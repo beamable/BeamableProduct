@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Constant "Invalid token, trying again" errors in the Editor after 10 days.
 - Compilation error when using new `com.unity.inputsystem`
 
+### Changed
+- Application will check if there are redundant files in content disk cache on each start. All files but the one needed will be deleted to free disk space.
 
 ## [1.0.3]
 ### Fixed 
