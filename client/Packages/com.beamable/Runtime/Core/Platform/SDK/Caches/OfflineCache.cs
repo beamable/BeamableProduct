@@ -122,7 +122,7 @@ namespace Beamable.Api.Caches
 			else
 			{
 				throw ex;
-			};
+			}
 		}
 
 		private void Merge<TKey, TValue>(string key, Dictionary<long, Dictionary<TKey, TValue>> nextData)
