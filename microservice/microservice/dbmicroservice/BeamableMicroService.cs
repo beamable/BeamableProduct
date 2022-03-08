@@ -41,6 +41,7 @@ using System.Threading.Tasks;
 using Beamable.Common.Api.Content;
 using Beamable.Common.Api.Stats;
 using Beamable.Server.Api.Content;
+using Beamable.Server.Api.Notifications;
 using microservice.Common;
 using Newtonsoft.Json;
 using Serilog;
@@ -541,6 +542,7 @@ namespace Beamable.Server
                .AddTransient<IMicroserviceCalendarsApi, MicroserviceCalendarsApi>()
                .AddTransient<IMicroserviceEventsApi, MicroserviceEventsApi>()
                .AddTransient<IMicroserviceMailApi, MicroserviceMailApi>()
+               .AddTransient<IMicroserviceNotificationsApi, MicroserviceNotificationApi>()
                .AddTransient<IMicroserviceSocialApi, MicroserviceSocialApi>()
                .AddTransient<IMicroserviceCloudDataApi, MicroserviceCloudDataApi>()
                .AddTransient<IMicroserviceRealmConfigService, RealmConfigService>()
@@ -753,6 +755,7 @@ namespace Beamable.Server
             Events = provider.GetRequiredService<IMicroserviceEventsApi>(),
             Groups = provider.GetRequiredService<IMicroserviceGroupsApi>(),
             Mail = provider.GetRequiredService<IMicroserviceMailApi>(),
+            Notifications = provider.GetRequiredService<IMicroserviceNotificationsApi>(),
             Social = provider.GetRequiredService<IMicroserviceSocialApi>(),
             Tournament = provider.GetRequiredService<IMicroserviceTournamentApi>(),
             TrialData = provider.GetRequiredService<IMicroserviceCloudDataApi>(),
@@ -777,6 +780,7 @@ namespace Beamable.Server
             Events = new MicroserviceEventsApi(requester, ctx),
             Groups = new MicroserviceGroupsApi(requester, ctx),
             Mail = new MicroserviceMailApi(requester, ctx),
+            Notifications = new MicroserviceNotificationApi(requester, ctx),
             Social = new MicroserviceSocialApi(requester, ctx),
             Tournament = new MicroserviceTournamentApi(stats, requester, ctx),
             TrialData = new MicroserviceCloudDataApi(requester, ctx),

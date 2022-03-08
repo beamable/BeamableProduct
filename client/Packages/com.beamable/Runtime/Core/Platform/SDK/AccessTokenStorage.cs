@@ -1,7 +1,7 @@
 using Beamable.Common;
+using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using System;
-using System.Globalization;
 using UnityEngine;
 
 namespace Beamable.Api
@@ -14,7 +14,11 @@ namespace Beamable.Api
 		private const char DeviceTokenSeparator = '|';
 		private const string DeviceTokenDelimiterStr = ",";
 
-		private string GetDeviceTokenKey(string cid, string pid) => $"{_prefix}device-tokens{cid}{pid ?? ""}";
+		private string GetDeviceTokenKey(string cid, string pid)
+		{
+			AliasHelper.ValidateCid(cid);
+			return $"{_prefix}device-tokens{cid}{pid ?? ""}";
+		}
 
 		public AccessTokenStorage(string prefix = "")
 		{
@@ -23,6 +27,7 @@ namespace Beamable.Api
 
 		public Promise<AccessToken> LoadTokenForCustomer(string cid)
 		{
+			AliasHelper.ValidateCid(cid);
 			string accessToken = PlayerPrefs.GetString($"{_prefix}{cid}.access_token");
 			string refreshToken = PlayerPrefs.GetString($"{_prefix}{cid}.refresh_token");
 			string expires = PlayerPrefs.GetString($"{_prefix}{cid}.expires");
@@ -35,28 +40,29 @@ namespace Beamable.Api
 
 		public AccessToken LoadTokenForRealmImmediate(string cid, string pid)
 		{
+			AliasHelper.ValidateCid(cid);
 			string accessToken = PlayerPrefs.GetString($"{_prefix}{cid}.{pid}.access_token");
 			string refreshToken = PlayerPrefs.GetString($"{_prefix}{cid}.{pid}.refresh_token");
 			string expires = PlayerPrefs.GetString($"{_prefix}{cid}.{pid}.expires");
-
 			if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken) || string.IsNullOrEmpty(expires))
 				return null;
-
 			return new AccessToken(this, cid, pid, accessToken, refreshToken, expires);
 		}
 
 		public Promise<AccessToken> LoadTokenForRealm(string cid, string pid)
 		{
+			AliasHelper.ValidateCid(cid);
 			return Promise<AccessToken>.Successful(LoadTokenForRealmImmediate(cid, pid));
 		}
 
 		public Promise<Unit> SaveTokenForCustomer(string cid, AccessToken token)
 		{
+			AliasHelper.ValidateCid(cid);
 			PlayerPrefs.SetString($"{_prefix}{cid}.access_token", token.Token);
 			PlayerPrefs.SetString($"{_prefix}{cid}.refresh_token", token.RefreshToken);
 			PlayerPrefs.SetString(
 			   $"{_prefix}{cid}.expires",
-			   token.ExpiresAt.ToString("O", CultureInfo.InvariantCulture)
+			   token.ExpiresAt.ToFileTimeUtc().ToString()
 			);
 			StoreDeviceRefreshToken(cid, null, token);
 			PlayerPrefs.Save();
@@ -65,11 +71,12 @@ namespace Beamable.Api
 
 		public Promise<Unit> SaveTokenForRealm(string cid, string pid, AccessToken token)
 		{
+			AliasHelper.ValidateCid(cid);
 			PlayerPrefs.SetString($"{_prefix}{cid}.{pid}.access_token", token.Token);
 			PlayerPrefs.SetString($"{_prefix}{cid}.{pid}.refresh_token", token.RefreshToken);
 			PlayerPrefs.SetString(
 			   $"{_prefix}{cid}.{pid}.expires",
-			   token.ExpiresAt.ToString("O", CultureInfo.InvariantCulture)
+			   token.ExpiresAt.ToFileTimeUtc().ToString()
 			);
 			StoreDeviceRefreshToken(cid, pid, token);
 			PlayerPrefs.Save();
@@ -78,6 +85,7 @@ namespace Beamable.Api
 
 		public Promise<Unit> DeleteTokenForCustomer(string cid)
 		{
+			AliasHelper.ValidateCid(cid);
 			PlayerPrefs.DeleteKey($"{_prefix}{cid}.access_token");
 			PlayerPrefs.DeleteKey($"{_prefix}{cid}.refresh_token");
 			PlayerPrefs.DeleteKey($"{_prefix}{cid}.expires");
@@ -87,6 +95,7 @@ namespace Beamable.Api
 
 		public Promise<Unit> DeleteTokenForRealm(string cid, string pid)
 		{
+			AliasHelper.ValidateCid(cid);
 			PlayerPrefs.DeleteKey($"{_prefix}{cid}.{pid}.access_token");
 			PlayerPrefs.DeleteKey($"{_prefix}{cid}.{pid}.refresh_token");
 			PlayerPrefs.DeleteKey($"{_prefix}{cid}.{pid}.expires");
@@ -96,6 +105,7 @@ namespace Beamable.Api
 
 		public void StoreDeviceRefreshToken(string cid, string pid, AccessToken token)
 		{
+			AliasHelper.ValidateCid(cid);
 			string key = GetDeviceTokenKey(cid, pid);
 			var compressedTokens = PlayerPrefs.GetString(key, "");
 			PlayerPrefs.SetString(key, NextCompressedTokens(compressedTokens, token));
@@ -131,6 +141,7 @@ namespace Beamable.Api
 
 		public void RemoveDeviceRefreshToken(string cid, string pid, TokenResponse token)
 		{
+			AliasHelper.ValidateCid(cid);
 			string key = GetDeviceTokenKey(cid, pid);
 			var compressedTokens = PlayerPrefs.GetString(key, "");
 			var set = compressedTokens.Split(Constants.DelimiterSplit, StringSplitOptions.RemoveEmptyEntries);
@@ -142,11 +153,13 @@ namespace Beamable.Api
 
 		public void ClearDeviceRefreshTokens(string cid, string pid)
 		{
+			AliasHelper.ValidateCid(cid);
 			PlayerPrefs.DeleteKey(GetDeviceTokenKey(cid, pid));
 		}
 
 		public TokenResponse[] RetrieveDeviceRefreshTokens(string cid, string pid)
 		{
+			AliasHelper.ValidateCid(cid);
 			var compressedTokens = PlayerPrefs.GetString(GetDeviceTokenKey(cid, pid), "");
 			var refreshTokens = compressedTokens.Split(Constants.DelimiterSplit, StringSplitOptions.RemoveEmptyEntries);
 			return Array.ConvertAll(refreshTokens, Convert);

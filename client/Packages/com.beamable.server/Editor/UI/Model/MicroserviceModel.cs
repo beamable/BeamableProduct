@@ -121,7 +121,7 @@ namespace Beamable.Editor.UI.Model
 			EditorAPI.Instance.Then(de =>
 			{
 				var url =
-					$"{BeamableEnvironment.PortalUrl}/{de.CidOrAlias}/games/{de.ProductionRealm.Pid}/realms/{de.Pid}/microservices/{ServiceDescriptor.Name}/docs?prefix={MicroserviceIndividualization.Prefix}&refresh_token={de.Token.RefreshToken}";
+					$"{BeamableEnvironment.PortalUrl}/{de.Alias}/games/{de.ProductionRealm.Pid}/realms/{de.Pid}/microservices/{ServiceDescriptor.Name}/docs?prefix={MicroserviceIndividualization.Prefix}&refresh_token={de.Token.RefreshToken}";
 				Application.OpenURL(url);
 			});
 		}
@@ -244,7 +244,7 @@ $@"{{
 			EditorAPI.Instance.Then(api =>
 			{
 				var path =
-					$"{BeamableEnvironment.PortalUrl}/{api.CidOrAlias}/" +
+					$"{BeamableEnvironment.PortalUrl}/{api.Alias}/" +
 					$"games/{api.ProductionRealm.Pid}/realms/{api.Pid}/" +
 					$"microservices/{ServiceDescriptor.Name}/{relativePath}?refresh_token={api.Token.RefreshToken}";
 				Application.OpenURL(path);

@@ -217,7 +217,7 @@ namespace Beamable.Server.Editor
 			BeamEditor.GetBeamHintSystem(ref codeWatcher);
 
 			// If we are not initialized, delay the call until we are.
-			if (codeWatcher == null || !codeWatcher.CheckSumCalculation.IsCompleted)
+			if (codeWatcher == null || codeWatcher.CheckSumCalculation == null || !codeWatcher.CheckSumCalculation.IsCompleted)
 			{
 				EditorApplication.delayCall += WatchMicroserviceFiles;
 				return;

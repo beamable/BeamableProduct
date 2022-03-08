@@ -17,6 +17,8 @@ namespace Beamable.Common
 				public static readonly string BEAMABLE_RESOURCES_PATH = Path.Combine(Application.dataPath, "Beamable/Resources");
 				public static readonly string BAKED_FILE_RESOURCE_PATH = "bakedContent";
 				public static readonly string BAKED_CONTENT_FILE_PATH = Path.Combine(BEAMABLE_RESOURCES_PATH, BAKED_FILE_RESOURCE_PATH);
+				public static readonly string BAKED_MANIFEST_RESOURCE_PATH = "bakedManifest";
+				public static readonly string BAKED_MANIFEST_FILE_PATH = Path.Combine(BEAMABLE_RESOURCES_PATH, BAKED_MANIFEST_RESOURCE_PATH);
 			}
 		}
 	}
