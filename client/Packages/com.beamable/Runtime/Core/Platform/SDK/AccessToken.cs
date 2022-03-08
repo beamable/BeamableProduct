@@ -34,6 +34,7 @@ namespace Beamable.Api
 		public AccessToken(AccessTokenStorage storage, string cid, string pid, string token, string refreshToken, long expiresAt)
 		{
 			_storage = storage;
+			AliasHelper.ValidateCid(cid);
 			Cid = cid;
 			Pid = pid;
 			Token = token;
@@ -50,6 +51,7 @@ namespace Beamable.Api
 
 		public AccessToken(AccessTokenStorage storage, string cid, string pid, string token, string refreshToken, string expiresAtISO)
 		{
+			AliasHelper.ValidateCid(cid);
 			_storage = storage;
 			Cid = cid;
 			Pid = pid;

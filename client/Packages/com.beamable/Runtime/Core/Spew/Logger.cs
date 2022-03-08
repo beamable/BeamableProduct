@@ -1,7 +1,6 @@
 //#define PREPEND_SPEW_METADATA
 // With PREPEND_SPEW_METADATA defined, all spew logs will have frame # and time prepended.
 
-using System;
 using System.Diagnostics;
 using static Beamable.Common.Constants.Features.Spew;
 

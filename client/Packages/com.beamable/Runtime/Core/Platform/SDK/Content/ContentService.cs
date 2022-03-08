@@ -198,11 +198,28 @@ namespace Beamable.Content
 
 		private void InitializeBakedContent()
 		{
-			string path = FilesystemAccessor.GetPersistentDataPathWithoutTrailingSlash() + "/content/content.json";
-
-			if (File.Exists(path))
+			// remove content in old format
+			string contentDirectory = Path.Combine(FilesystemAccessor.GetPersistentDataPathWithoutTrailingSlash(), "content");
+			const string contentFileName = "content.json";
+			if (Directory.Exists(contentDirectory))
 			{
-				var json = File.ReadAllText(path);
+				DirectoryInfo info = new DirectoryInfo(contentDirectory);
+				foreach (var file in info.EnumerateFiles())
+				{
+					if (file.Name.Equals(contentFileName))
+					{
+						continue;
+					}
+					
+					file.Delete();
+				}
+			}
+			
+			string contentPath = Path.Combine(contentDirectory, contentFileName);
+
+			if (File.Exists(contentPath))
+			{
+				var json = File.ReadAllText(contentPath);
 				ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
 			}
 			else
@@ -228,8 +245,8 @@ namespace Beamable.Content
 				// save baked data to disk
 				try
 				{
-					Directory.CreateDirectory(Path.GetDirectoryName(path));
-					File.WriteAllText(path, json);
+					Directory.CreateDirectory(Path.GetDirectoryName(contentPath));
+					File.WriteAllText(contentPath, json);
 				}
 				catch (Exception e)
 				{

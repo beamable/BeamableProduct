@@ -5,7 +5,7 @@ using UnityEngine.Events;
 
 namespace Beamable.UI.Scripts
 {
-	[System.Serializable]
+	[Serializable]
 	public abstract class MenuBase : MonoBehaviour
 	{
 		public StringBinding Title;

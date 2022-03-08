@@ -145,7 +145,7 @@ namespace Beamable.Editor.UI.Buss
 			{
 				bool isMatch =
 					styleCardVisualElement.StyleRule.Selector?.CheckMatch(_navigationWindow.SelectedComponent) ?? false;
-				styleCardVisualElement.SetHidden(_filterMode && !isMatch && !styleCardVisualElement.StyleRule.EditMode);
+				styleCardVisualElement.SetHidden(_filterMode && !isMatch && !styleCardVisualElement.EditMode);
 			}
 			Profiler.EndSample();
 		}
@@ -296,7 +296,7 @@ namespace Beamable.Editor.UI.Buss
 			{
 				foreach (BussStyleCardVisualElement other in _styleCardsVisualElements)
 				{
-					if (other != styleCard && other.StyleRule.EditMode)
+					if (other != styleCard && other.EditMode)
 					{
 						other.SetEditMode(false);
 					}

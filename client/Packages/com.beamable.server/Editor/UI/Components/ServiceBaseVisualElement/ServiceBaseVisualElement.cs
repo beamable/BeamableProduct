@@ -1,15 +1,8 @@
-﻿using Beamable.Common;
-using Beamable.Editor.UI.Buss;
-using Beamable.Editor.UI.Components;
+﻿using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
-using Beamable.Server.Editor.ManagerClient;
-using Beamable.Server.Editor.UI.Components;
-using Beamable.Server.Editor.UI.Components.DockerLoginWindow;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using UnityEditor;
 using UnityEngine;
 using static Beamable.Common.Constants.Features.Services;
 #if UNITY_2018

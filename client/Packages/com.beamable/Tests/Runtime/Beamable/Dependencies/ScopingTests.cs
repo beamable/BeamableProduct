@@ -1,5 +1,3 @@
-// unset
-
 using Beamable.Common.Dependencies;
 using NUnit.Framework;
 

@@ -3,8 +3,6 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using Beamable.Experimental.Common.Api.Calendars;
-using System;
-using System.Collections.Generic;
 
 namespace Beamable.Experimental.Api.Calendars
 {
