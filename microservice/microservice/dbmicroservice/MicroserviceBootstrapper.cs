@@ -74,7 +74,7 @@ namespace Beamable.Server
 
             if (args.WatchToken)
             {
-                TokenService.WatchTokenChange(beamableService);
+                HotReloadMetadataUpdateHandler.ServicesToRebuild.Add(beamableService);
             }
 
             beamableService.RunForever();

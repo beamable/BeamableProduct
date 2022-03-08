@@ -28,7 +28,6 @@ namespace Beamable.Server.Editor
 
 		public string BuildPath => $"./Temp/beam/{Name}";
 		public string ContainerName => $"{Name}_container";
-		public string ClientGeneratorContainerName => $"{Name}_container_generator";
 		public string ImageName => Name.ToLower();
 		public ServiceType ServiceType => ServiceType.MicroService;
 		public bool HasValidationError { get; set; }

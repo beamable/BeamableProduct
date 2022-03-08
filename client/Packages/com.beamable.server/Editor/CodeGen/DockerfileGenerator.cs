@@ -109,7 +109,7 @@ EXPOSE 80 2222
 			}
 			else if (Watch)
 			{
-				return $@"ENTRYPOINT [""dotnet"", ""watch""]";
+				return $@"ENTRYPOINT [""dotnet"", ""watch"", ""run""]";
 			}
 			else
 			{

@@ -1,50 +1,27 @@
+
 using System;
+using System.Collections.Generic;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Threading.Tasks;
-using Beamable.Common;
+using Beamable.Server;
 using Serilog;
+[assembly: MetadataUpdateHandler(typeof(HotReloadMetadataUpdateHandler))]
 
 namespace Beamable.Server;
 
-public class TokenService
+public static class HotReloadMetadataUpdateHandler
 {
-	public static string GetToken(BeamableMicroService service)
+	public static int ReloadCount { get; private set; }
+
+	public static List<BeamableMicroService> ServicesToRebuild = new List<BeamableMicroService>();
+
+	public static void UpdateApplication(Type[]? updatedTypes)
 	{
-		var typeName = service.MicroserviceType.AssemblyQualifiedName.Replace(
-			service.MicroserviceType.Name, "Beamable__Change_Token_Class");
-		var type = Type.GetType(typeName, true);
-
-		var method = type.GetMethod("GetToken", BindingFlags.Static | BindingFlags.Public);
-		var value = method.Invoke(null, new object[] { });
-		var token = value?.ToString() ?? throw new Exception("Invalid token" + value);
-		return token;
-	}
-
-	public static void WatchTokenChange(BeamableMicroService service)
-	{
-		Log.Debug("Watching internal token");
-		try
+		ReloadCount++;
+		foreach (var service in ServicesToRebuild)
 		{
-			string lastToken = GetToken(service);
-			Task.Run(async () =>
-			{
-				while (!service.IsShuttingDown)
-				{
-					await Task.Delay(1000);
-					var token = GetToken(service);
-					if (!string.Equals(token, lastToken))
-					{
-						service.RebuildRouteTable();
-					}
-
-					lastToken = token;
-				}
-			});
-		}
-		catch (Exception ex)
-		{
-			Log.Fatal("Failed watching internal token");
-			Log.Fatal(ex.Message);
+			service.RebuildRouteTable();
 		}
 	}
 }
