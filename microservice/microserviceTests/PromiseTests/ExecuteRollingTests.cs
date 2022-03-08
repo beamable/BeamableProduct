@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Beamable.Common;
 using NUnit.Framework;
@@ -10,9 +11,10 @@ namespace microserviceTests.PromiseTests
    public class ExecuteRollingTests
    {
       [Test]
+      [Timeout(8 * 1000)]
       public async Task AllSucceed()
       {
-         const int promiseCount = 10000;
+         const int promiseCount = 100000;
 
          var promiseGenerators = new List<Func<Promise<int>>>();
          var promises = new List<Promise<int>>();
@@ -24,8 +26,11 @@ namespace microserviceTests.PromiseTests
             promiseGenerators.Add(() => promise);
          }
 
-         var serialPromise = Promise.ExecuteRolling(100, promiseGenerators);
+         // var sw = new Stopwatch();
+         // sw.Start();
+         var serialPromise = Promise.ExecuteInBatchSequence(100, promiseGenerators);
 
+         // Console.WriteLine(sw.ElapsedMilliseconds);
          var tasks = new List<Task>();
          for (var i = 0; i < promiseCount; i++)
          {

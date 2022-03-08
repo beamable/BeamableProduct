@@ -89,40 +89,41 @@ namespace Beamable.Api
 			}
 
 			var result = new Promise<T>();
-			var request = BuildWebRequest(method, url, contentType, bodyBytes);
-
-			if (headers != null)
+			using (var request = BuildWebRequest(method, url, contentType, bodyBytes))
 			{
-				foreach (var header in headers)
+
+				if (headers != null)
 				{
-					request.SetRequestHeader(header.Key, header.Value);
+					foreach (var header in headers)
+					{
+						request.SetRequestHeader(header.Key, header.Value);
+					}
 				}
+
+				var op = request.SendWebRequest();
+				op.completed += _ =>
+				{
+					try
+					{
+						var responsePayload = request.downloadHandler.text;
+						if (request.responseCode >= 300 || request.IsNetworkError())
+						{
+							result.CompleteError(new HttpRequesterException(responsePayload));
+						}
+						else
+						{
+							T parsedResult = parser == null
+								? JsonUtility.FromJson<T>(responsePayload)
+								: parser(responsePayload);
+							result.CompleteSuccess(parsedResult);
+						}
+					}
+					catch (Exception ex)
+					{
+						result.CompleteError(ex);
+					}
+				};
 			}
-
-			var op = request.SendWebRequest();
-			op.completed += _ =>
-			{
-				try
-				{
-					var responsePayload = request.downloadHandler.text;
-					if (request.responseCode >= 300 || request.IsNetworkError())
-					{
-						result.CompleteError(new HttpRequesterException(responsePayload));
-					}
-					else
-					{
-						T parsedResult = parser == null
-						? JsonUtility.FromJson<T>(responsePayload)
-						: parser(responsePayload);
-						result.CompleteSuccess(parsedResult);
-					}
-				}
-				catch (Exception ex)
-				{
-					result.CompleteError(ex);
-				}
-			};
-
 			return result;
 		}
 
