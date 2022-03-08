@@ -182,8 +182,15 @@ namespace Beamable.Microservice.Tests.Socket
                             }
                             else
                             {
-                                var payload = JsonConvert.DeserializeObject<T>(tmpJson);
-                                return matcher(payload);
+                               // var payload = JsonConvert.DeserializeObject<T>(tmpJson);
+                               if (json is T x)
+                               {
+                                   return matcher(x);
+                               }
+                               else
+                               {
+                                   return false;
+                               }
                             }
                         }
                     case JObject payloadJObject when payloadJObject.TryGetValue("payload", out var payloadToken):
@@ -420,6 +427,22 @@ namespace Beamable.Microservice.Tests.Socket
                 body = new
                 {
                     payload = args
+                },
+                from = dbid,
+                method = "post"
+            };
+        }
+
+
+        public static WebsocketRequest ClientCallablePayloadArgs(string serviceName, string methodName, int reqId, int dbid, string payloadArgs)
+        {
+            return new WebsocketRequest
+            {
+                id = reqId,
+                path = $"{serviceName}/{methodName}",
+                body = new
+                {
+                    payload = payloadArgs
                 },
                 from = dbid,
                 method = "post"
