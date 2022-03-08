@@ -1,9 +1,6 @@
-using Beamable;
 using Beamable.Api;
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Inventory;
-using Beamable.Content;
-using Beamable.Inventory.Scripts;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;

@@ -1,10 +1,10 @@
 using Beamable.Theme.Palettes;
 using Beamable.UI.Scripts;
-using UnityEngine;
+using System;
 
 namespace Beamable.Theme.Appliers
 {
-	[System.Serializable]
+	[Serializable]
 	public class TransformStyleApplier : StyleApplier<TransformOffsetBehaviour>
 	{
 		public TransformBinding Transform;

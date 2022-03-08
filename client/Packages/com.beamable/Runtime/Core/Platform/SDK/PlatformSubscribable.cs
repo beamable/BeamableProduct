@@ -1,5 +1,3 @@
-//#define PLATFORM_SUBSCRIBABLE_RETRIES_TEST
-
 using Beamable.Api;
 using Beamable.Api.Connectivity;
 using Beamable.Common;
@@ -7,7 +5,6 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Dependencies;
 using Beamable.Coroutines;
-using Beamable.Service;
 using Beamable.Spew;
 using System;
 using System.Collections;

@@ -42,7 +42,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 
 		public event Action OnStartAllClicked;
-		public event Action OnBuildAllClicked;
 		public event Action OnPublishClicked;
 		public event Action OnRefreshButtonClicked;
 		public event Action<ServiceType> OnCreateNewClicked;
@@ -51,7 +50,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Button _startAll;
 		private Button _infoButton;
 		private Button _publish;
-		private Button _buildAll;
 
 		public event Action OnInfoButtonClicked;
 
@@ -73,12 +71,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_startAll = Root.Q<Button>("startAll");
 			_startAll.clickable.clicked += () => { OnStartAllClicked?.Invoke(); };
 			_startAll.SetEnabled(!DockerCommand.DockerNotInstalled);
-
-			_buildAll = Root.Q<Button>("buildAll");
-			_buildAll.tooltip =
-				"Build services, if service is already running, it will rebuild it and run again";
-			_buildAll.clickable.clicked += () => { OnBuildAllClicked?.Invoke(); };
-			_buildAll.SetEnabled(!DockerCommand.DockerNotInstalled);
 
 			const string cannotPublishText = "Cannot open Publish Window, fix compilation errors first!";
 			_publish = Root.Q<Button>("publish");
@@ -105,7 +97,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			bool anyModelSelected = selectedServicesAmount > 0;
 			UpdateTextButtonTexts(selectedServicesAmount == servicesAmount);
 			_startAll.SetEnabled(anyModelSelected);
-			_buildAll.SetEnabled(anyModelSelected);
 			_publish.SetEnabled(servicesAmount > 0);
 		}
 
@@ -119,8 +110,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			var startLabel = _startAll.Q<Label>();
 			startLabel.text = allServicesSelected ? "Play all" : "Play selected";
-			var buildLabel = _buildAll.Q<Label>();
-			buildLabel.text = allServicesSelected ? "Build all" : "Build selected";
 		}
 	}
 

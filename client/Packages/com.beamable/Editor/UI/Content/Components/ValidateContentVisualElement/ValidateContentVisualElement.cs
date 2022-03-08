@@ -186,7 +186,7 @@ namespace Beamable.Editor.Content.Components
 			_listView.Refresh();
 		}
 
-		public override void OnDetach()
+		protected override void OnDetach()
 		{
 			base.OnDetach();
 			foreach (var elem in _listSource)

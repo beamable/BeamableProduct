@@ -13,11 +13,6 @@
                 <engine:Label text="Start All" class="buttonText"/>
             </engine:Button>
 
-            <engine:Button class="boundedButton" name="buildAll">
-                <engine:Image name="buildIcon"/>
-                <engine:Label text="Build All" class="buttonText"/>
-            </engine:Button>
-
             <engine:Button class="boundedButton" name="createNew">
                 <engine:VisualElement class="mainPart">
                     <engine:Image name="createNewIcon"/>

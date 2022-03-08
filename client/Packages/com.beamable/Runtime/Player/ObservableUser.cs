@@ -1,5 +1,3 @@
-// unset
-
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Player;
 

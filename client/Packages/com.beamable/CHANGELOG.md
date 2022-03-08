@@ -8,6 +8,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Fixed 
+- Constant "Invalid token, trying again" errors in the Editor after 10 days.
+- Compilation error when using new `com.unity.inputsystem`
+
+### Changed
+- Application will check if there are redundant files in content disk cache on each start. All files but the one needed will be deleted to free disk space.
+
 ## [1.0.4]
 ### Fixed
 - `IBeamableRequester` implementations no longer dispose `UnityWebRequest` too soon

@@ -1,11 +1,9 @@
 using Beamable.Common;
 using Beamable.Config;
-using Beamable.Editor.Environment;
 using Beamable.Editor.UI.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace Beamable.Server.Editor.DockerCommands
 {

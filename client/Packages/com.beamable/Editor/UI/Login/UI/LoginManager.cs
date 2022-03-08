@@ -1,4 +1,3 @@
-using Beamable.Api;
 using Beamable.Common;
 using Beamable.Editor.Login.UI.Components;
 using Beamable.Editor.Login.UI.Model;
@@ -185,7 +184,7 @@ namespace Beamable.Editor.Login.UI
 				return UseCommonErrorHandling(model, createUser, new LoginErrorHandlers()
 				.OnBadRequest(EXCEPTION_TYPE_NOCID, NO_ALIAS_FOUND_ERROR)
 				.OnBadRequest(EXCEPTION_TYPE_EMAIL_TAKEN, EMAIL_TAKEN_ERROR)
-			 );
+			);
 
 			});
 		}
@@ -193,14 +192,14 @@ namespace Beamable.Editor.Login.UI
 		public Promise<LoginManagerResult> AttemptLoginExistingCustomer(LoginModel model)
 		{
 			return EditorAPI.Instance.FlatMap(b =>
-			{
+		{
 				var login = b.LoginCustomer(model.Customer.CidOrAlias, model.Customer.Email, model.Customer.Password);
 				return UseCommonErrorHandling(model, login, new LoginErrorHandlers()
-				.OnUnauthorized(INVALID_CREDENTIALS_ERROR)
-				.OnBadRequest(NO_ALIAS_FOUND_ERROR)
+			                                                  .OnUnauthorized(INVALID_CREDENTIALS_ERROR)
+			                                                  .OnBadRequest(NO_ALIAS_FOUND_ERROR)
 				.OnBadRequest(EXCEPTION_TYPE_INVALID_SCOPE, NO_ALIAS_FOUND_ERROR)
-				.OnNotFound(INVALID_CREDENTIALS_ERROR)
-			 );
+			                                                  .OnNotFound(INVALID_CREDENTIALS_ERROR)
+			);
 			});
 
 		}

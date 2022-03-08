@@ -1,6 +1,4 @@
 ﻿using Beamable.Common.Api;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Core.Platform.SDK
