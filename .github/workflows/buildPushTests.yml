@@ -158,7 +158,6 @@ jobs:
       - start-runner # required to get output from the start-runner job
       - testMicroserviceBaseImage
       - testAllModes
-      - build
     runs-on: ubuntu-latest
     if: ${{ always() }} # required to stop the runner even if the error happened in the previous jobs
     steps:
