@@ -20,16 +20,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Application will check if there are redundant files in content disk cache on each start. All files but the one needed will be deleted to free disk space.
 
+## [1.0.4]
+### Fixed
+- `IBeamableRequester` implementations no longer dispose `UnityWebRequest` too soon
+
 ## [1.0.3]
 ### Fixed 
 - All `IBeamableRequester` implementations dispose `UnityWebRequest` after usage
 - Beamable.Platform assembly definition references Facebook.Unity dll if it exists
 
-
 ## [1.0.2]
 ### Fixed
 - Windows Microservices first time build issue regarding empty build directories
-
 
 ## [1.0.1]
 ### Added
