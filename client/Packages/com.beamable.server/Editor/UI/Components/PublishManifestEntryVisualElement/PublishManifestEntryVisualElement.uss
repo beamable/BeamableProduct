@@ -84,15 +84,9 @@
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Checked.png");
 }
 
-.unpublished {}
-
-.publish-inProgress #checkImage, .publish-failed #checkImage  {
-     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/Checked_Dark.png");
-}
-
 #mainContainer > LoadingBarElement {
-    margin-left: 75px;
-    margin-right: 75px;
+    margin-left: 100px;
+    margin-right: 100px;
     margin-bottom: 1px;
 }
 

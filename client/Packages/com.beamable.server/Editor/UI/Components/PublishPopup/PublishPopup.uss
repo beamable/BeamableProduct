@@ -24,7 +24,11 @@
 
 #nameC, #depsC {
     flex-direction: row;
-    flex: 1;
+    flex: auto;
+}
+
+#depsC {
+    
 }
 
 #depsColumn > * {
@@ -153,7 +157,7 @@
     font-size: 14px;
     -unity-font-style: bold;
     color: #FFFFFF;
-    margin-left: 8px;
+    margin-left: 10px;
 }
 
 .HeaderSeparatorImage {

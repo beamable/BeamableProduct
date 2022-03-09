@@ -171,9 +171,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 				}
 			}
 			
-			if (state == PublishState)
-				return;
-			
 			PublishState = state;
 
 			RemoveFromClassList(_currentPublishState);
