@@ -56,7 +56,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		public override string GetCommandString()
 		{
-			return $"{DockerCmd} build -t {ImageName} \"{BuildPath}\"";
+			return $"{DockerCmd} build --label \"beamable-service-name={_descriptor.Name}\" -t {ImageName} \"{BuildPath}\"";
 		}
 
 		protected override void HandleStandardOut(string data)

@@ -106,7 +106,7 @@ namespace Beamable
 			HintGlobalStorage = new BeamHintGlobalStorage();
 			HintPreferencesManager = new BeamHintPreferencesManager(new List<BeamHintHeader>()
 			{
-				new BeamHintHeader(BeamHintType.Validation, BeamHintDomains.BEAM_CSHARP_MICROSERVICES_DOCKER, BeamHintIds.ID_CHANGES_NOT_DEPLOYED_TO_LOCAL_DOCKER),
+				// insert hints that should auto-block, here. At the moment, there are none!
 			});
 
 			// Load up all Asset-based IReflectionSystem (injected via ReflectionSystemObject instances). This was made to solve a cross-package injection problem.

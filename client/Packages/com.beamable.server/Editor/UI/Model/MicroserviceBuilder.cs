@@ -67,8 +67,9 @@ namespace Beamable.Editor.UI.Model
 			var cid = beamable.CustomerView.Cid;
 			// check to see if the storage descriptor is running.
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
+			var isWatch = MicroserviceConfiguration.Instance.EnableHotModuleReload;
 			var connectionStrings = await serviceRegistry.GetConnectionStringEnvironmentVariables((MicroserviceDescriptor)Descriptor);
-			return new RunServiceCommand((MicroserviceDescriptor)Descriptor, cid, secret, connectionStrings);
+			return new RunServiceCommand((MicroserviceDescriptor)Descriptor, cid, secret, connectionStrings, isWatch);
 		}
 
 		public async Task<bool> TryToBuild(bool includeDebuggingTools)
@@ -76,7 +77,8 @@ namespace Beamable.Editor.UI.Model
 			if (IsBuilding) return true;
 
 			IsBuilding = true;
-			var command = new BuildImageCommand((MicroserviceDescriptor)Descriptor, includeDebuggingTools, true);
+			var isWatch = MicroserviceConfiguration.Instance.EnableHotModuleReload;
+			var command = new BuildImageCommand((MicroserviceDescriptor)Descriptor, includeDebuggingTools, isWatch);
 			command.OnStandardOut += message => MicroserviceLogHelper.HandleBuildCommandOutput(this, message);
 			command.OnStandardErr += message => MicroserviceLogHelper.HandleBuildCommandOutput(this, message);
 			try

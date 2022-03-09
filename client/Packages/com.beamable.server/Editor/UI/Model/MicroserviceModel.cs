@@ -149,9 +149,7 @@ namespace Beamable.Editor.UI.Model
 			}, ServiceBuilder.HasBuildDirectory);
 
 			evt.menu.BeamableAppendAction($"Run Snyk Tests{hasImageSuffix}", pos => RunSnykTests(), ServiceBuilder.HasImage);
-
-			evt.menu.BeamableAppendAction("Poke", pos => BuildUtils.UpdateBuildContextWithSource(_serviceDescriptor));
-			evt.menu.BeamableAppendAction("RebuildRoutes", pos =>
+			evt.menu.BeamableAppendAction($"{localCategory}/Regenerate routes", pos =>
 			{
 				EditorAPI.Instance.Then(api =>
 				{
@@ -159,18 +157,9 @@ namespace Beamable.Editor.UI.Model
 					adminClient.RebuildRouteTable().Then(_ => Debug.Log("Routes rebuilt"));
 				});
 			});
-			evt.menu.BeamableAppendAction("BuildClient", pos =>
+			evt.menu.BeamableAppendAction($"{localCategory}/Regenerate {_serviceDescriptor.Name}Client.cs", pos =>
 			{
-				var comm = new RunClientGenerationCommand(_serviceDescriptor);
-				comm.Start();
-			});
-			evt.menu.BeamableAppendAction("GetToken", pos =>
-			{
-				EditorAPI.Instance.Then(api =>
-				{
-					var adminClient = new MicroserviceAdminClient(_serviceDescriptor, api.Requester);
-					adminClient.GetCurrentToken().Then(t => Debug.Log("TOKEN: " + t));
-				});
+				BeamServicesCodeWatcher.GenerateClientSourceCode(_serviceDescriptor, true);
 			});
 			evt.menu.BeamableAppendAction($"{localCategory}/Open in CLI", pos => OpenInCli(), IsRunning);
 			evt.menu.BeamableAppendAction($"{localCategory}/View Documentation", pos => OpenLocalDocs(), IsRunning);

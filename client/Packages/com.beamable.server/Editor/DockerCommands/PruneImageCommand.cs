@@ -1,0 +1,30 @@
+using UnityEngine;
+
+namespace Beamable.Server.Editor.DockerCommands
+{
+	public class PruneImageCommand : DockerCommandReturnable<bool>
+	{
+		private readonly MicroserviceDescriptor _descriptor;
+		private readonly bool _all;
+
+		public PruneImageCommand(MicroserviceDescriptor descriptor, bool all=true)
+		{
+			_descriptor = descriptor;
+			_all = all;
+			WriteLogToUnity = true;
+		}
+
+		public override string GetCommandString()
+		{
+			var cmd = $"{DockerCmd} image prune --filter \"label=beamable-service-name={_descriptor.Name}\" -f {(_all ? "-a":"")}";
+
+			Debug.Log("RUNNING PRUNE: " + cmd);
+			return cmd;
+		}
+
+		protected override void Resolve()
+		{
+			Promise.CompleteSuccess(true);
+		}
+	}
+}

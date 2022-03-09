@@ -49,6 +49,11 @@ namespace Beamable.Server.Editor
 #endif
 		public List<BeamServiceCodeHandle> LastBuiltDockerImagesCodeHandles;
 
+#if !BEAMABLE_DEVELOPER
+		[HideInInspector]
+#endif
+		public List<ServiceDependencyChecksum> ServiceDependencyChecksums = new List<ServiceDependencyChecksum>();
+
 		[Tooltip("When you run a microservice in the Editor, the prefix controls the flow of traffic. By default, the prefix is your MAC address. If two developers use the same prefix, their microservices will share traffic. The prefix is ignored for games running outside of the Editor."), Delayed]
 		public string CustomContainerPrefix;
 
@@ -71,6 +76,12 @@ namespace Beamable.Server.Editor
 
 		[FilePathSelector(true, DialogTitle = "Path to Docker Desktop", FileExtension = "exe", OnlyFiles = true)]
 		public string DockerDesktopPath;
+
+		[Tooltip("When you run a microservice, automatically reload code changes. This will not change how services are deployed to the realm.")]
+		public bool EnableHotModuleReload = true;
+
+		[Tooltip("When enabled, after you start a service, this will automatically prune unused and dangling docker images related to that service.")]
+		public bool EnableAutoPrune = true;
 
 		public string DockerCommand = DOCKER_LOCATION;
 		private string _dockerCommandCached = DOCKER_LOCATION;

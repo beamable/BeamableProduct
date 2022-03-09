@@ -10,14 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.1.0]
 ### Added
-
 - `BeamServicesCodeWatcher` detects any change that makes it necessary to rebuild C#MS images as well as cleaning up Auto-Generated files whenever a C#MS AsmDef is deleted. This makes the easiest way to delete a C#MS's code from your project simply to delete it's folder. 
 - Beam hint that warn users entering play-mode that there are stale services that must be rebuilt. Avoids wasting time when making quick changes to microservices and forgetting to regenerate the local image during development.
 - Added `AddAsChild(VisualElement, string, params string[])` to `BeamHintVisualsInjectionBag` to allow `BeamHintDetailConverter` functions to build and inject dynamically created `VisualElements` into Hint Details.
+- `EnableAutoPrune` configuration setting that will remove old unused docker image layers. This should limit the disk space requirements of Beamable Microservices on developer machines.
+- `EnableHotModuleReload` configuration setting that will enable dotnet 6 hot module reloading for all Microservices.
 
 ### Changed
-
-
+- When exiting Unity, all related Microservices and Microstorage containers are closed
 
 ### Fixed
 - Fixed issue that caused the `ReflectionCache` to run an extra unnecessary time when a `.cs` or `.asmdef` file were changed.
