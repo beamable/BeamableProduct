@@ -52,6 +52,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Button _startAll;
 		private Button _infoButton;
 		private Button _publish;
+		private Button _dependencies;
 
 		public event Action OnInfoButtonClicked;
 
@@ -73,6 +74,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_startAll = Root.Q<Button>("startAll");
 			_startAll.clickable.clicked += () => { OnStartAllClicked?.Invoke(); };
 			_startAll.SetEnabled(!DockerCommand.DockerNotInstalled);
+
+			var dependenciesState = MicroserviceConfiguration.Instance.Microservices.Count > 0 &&
+			                                MicroserviceConfiguration.Instance.StorageObjects.Count > 0;
+			
+			_dependencies = Root.Q<Button>("dependencies");
+			_dependencies.clickable.clicked += () => DependentServicesWindow.ShowWindow();
+			_dependencies.SetEnabled(dependenciesState);
 
 			const string cannotPublishText = "Cannot open Publish Window, fix compilation errors first!";
 			_publish = Root.Q<Button>("publish");
@@ -122,6 +130,4 @@ namespace Beamable.Editor.Microservice.UI.Components
 			startLabel.text = allServicesSelected ? "Play all" : "Play selected";
 		}
 	}
-
-
 }
