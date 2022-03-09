@@ -138,6 +138,21 @@
     align-self: center;
     height: 15px;
     width: 8px;
-
 }
+
+#startAll {
+    width: 72px;
+}
+
+#dependencies {
+    width: 80px;
+}
+
+#dependenciesIcon{
+    top: 2px;
+    width: 18px;
+    height: 18px;
+    align-self: center;
+}
+
 
