@@ -36,6 +36,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private const string MICROSERVICE_IMAGE_CLASS = "microserviceImage";
 		private const string STORAGE_IMAGE_CLASS = "storageImage";
+		private const string CHECKBOX_TOOLTIP = "Enable/disable the service";
 
 		public IEntryModel Model { get; }
 		public int Index => _index;
@@ -87,6 +88,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_checkbox.Refresh();
 			_checkbox.SetWithoutNotify(!IsRemoteOnly && Model.Enabled);
 			_checkbox.OnValueChanged += b => Model.Enabled = b;
+			_checkbox.tooltip = CHECKBOX_TOOLTIP;
 
 			_sizeDropdown = Root.Q<DropdownVisualElement>("sizeDropdown");
 			_sizeDropdown.Setup(TemplateSizes.ToList(), null);
@@ -123,6 +125,11 @@ namespace Beamable.Editor.Microservice.UI.Components
 			}
 
 			SetEnabled(!IsRemoteOnly);
+
+			if (!IsRemoteOnly)
+			{
+				UpdateStatus(ServicePublishState.Unpublished);
+			}
 		}
 
 		public void HandlePublishStarted()
@@ -136,10 +143,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		public void UpdateStatus(ServicePublishState state)
 		{
-			if (state == PublishState)
-				return;
-			PublishState = state;
-
 			switch (state)
 			{
 				case ServicePublishState.Failed:
@@ -163,15 +166,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 				default:
 				{
-					_stateLabel.text = "";
+					_stateLabel.text = "READY";
 					break;
 				}
 			}
 			
-			if (state != ServicePublishState.Unpublished)
-			{
-				_checkImage.tooltip = state.ToString();
-			}
+			if (state == PublishState)
+				return;
+			
+			PublishState = state;
 
 			RemoveFromClassList(_currentPublishState);
 			_currentPublishState = CheckImageClasses[state];

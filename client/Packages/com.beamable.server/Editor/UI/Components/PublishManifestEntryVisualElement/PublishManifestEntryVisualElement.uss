@@ -31,7 +31,7 @@
 #enabledC {
     height: 20px;
     flex-direction: row;
-    justify-content: center;
+    justify-content: flex-end;
 }
 
 

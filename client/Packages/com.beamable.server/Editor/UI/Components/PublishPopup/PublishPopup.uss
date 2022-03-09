@@ -26,6 +26,7 @@
     flex-direction: row;
     flex: 1;
 }
+
 #depsColumn > * {
     padding-right: 20px;
 }
@@ -36,11 +37,11 @@
 }
 
 #enabledC {
-    width: 70px;
     justify-content: flex-start;
 }
+
 #enabledC.column {
-    width: 70px;
+    width: 50px;
 }
 
 #CommentsC {
@@ -151,6 +152,14 @@
 .SubTitleText{
     font-size: 14px;
     -unity-font-style: bold;
+    color: #FFFFFF;
+    margin-left: 8px;
+}
+
+.HeaderSeparatorImage {
+    height: 20px;
+    width: 4px;
+    background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/VerticalLine.png");
 }
 
 #manifestsContainer{
@@ -176,7 +185,8 @@ LoadingBarElement {
     margin-bottom: 5px;
 }
 #header .column {
-    justify-content: center;
+    justify-content: flex-start;
+    -unity-text-align: middle-center;
 }
 #header {
     border-color: rgba(0,0,0,.1);
