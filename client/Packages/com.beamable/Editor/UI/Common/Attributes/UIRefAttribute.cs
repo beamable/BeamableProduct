@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Beamable.Common;
+using Beamable.Editor.UI.Common;
+using System;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using Beamable.Common;
-using Beamable.Editor.UI.Common;
 using UnityEngine.UIElements;
 
 namespace Beamable.Editor.UI.Components
