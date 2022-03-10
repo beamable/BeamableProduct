@@ -193,14 +193,14 @@ namespace Beamable.Editor.Login.UI
 		{
 			return EditorAPI.Instance.FlatMap(b =>
 		{
-				var login = b.LoginCustomer(model.Customer.CidOrAlias, model.Customer.Email, model.Customer.Password);
-				return UseCommonErrorHandling(model, login, new LoginErrorHandlers()
-			                                                  .OnUnauthorized(INVALID_CREDENTIALS_ERROR)
-			                                                  .OnBadRequest(NO_ALIAS_FOUND_ERROR)
-				.OnBadRequest(EXCEPTION_TYPE_INVALID_SCOPE, NO_ALIAS_FOUND_ERROR)
-			                                                  .OnNotFound(INVALID_CREDENTIALS_ERROR)
-			);
-			});
+			var login = b.LoginCustomer(model.Customer.CidOrAlias, model.Customer.Email, model.Customer.Password);
+			return UseCommonErrorHandling(model, login, new LoginErrorHandlers()
+														  .OnUnauthorized(INVALID_CREDENTIALS_ERROR)
+														  .OnBadRequest(NO_ALIAS_FOUND_ERROR)
+			.OnBadRequest(EXCEPTION_TYPE_INVALID_SCOPE, NO_ALIAS_FOUND_ERROR)
+														  .OnNotFound(INVALID_CREDENTIALS_ERROR)
+		);
+		});
 
 		}
 

@@ -225,22 +225,23 @@ namespace Beamable.Server.Tests.Runtime
 			yield return req.ToYielder();
 			Assert.AreEqual("hello world", req.GetResult());
 		}
-		
+
 		[UnityTest]
 		public IEnumerator CanDeserializeJSONString()
 		{
-			TestJSON jsonObj = new TestJSON {
+			TestJSON jsonObj = new TestJSON
+			{
 				a = 10,
 				b = 20
 			};
 
 			string serialized = JsonUtility.ToJson(jsonObj);
-			
+
 			var client = new TestClient(ROUTE);
 
 			MockRequester.MockRequest<string>(Method.POST,
-			                                  client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
-			             .WithRawResponse(serialized);
+											  client.GetMockPath(MockApi.Token.Cid, MockApi.Token.Pid, ROUTE))
+						 .WithRawResponse(serialized);
 
 			var req = client.Request<string>(ROUTE, new string[] { });
 

@@ -260,7 +260,7 @@ namespace Beamable.Api
 			var sentScopes = nextRefreshScopes.ToArray();
 			var scope = string.Join(",", nextRefreshScopes);
 			nextRefreshScopes.Clear();
-			
+
 			ExecuteRequest(requester, CreateRefreshUrl(scope)).Error(err =>
 			{
 				var delay = SubscribableConsts.RETRY_DELAYS[Math.Min(retry, SubscribableConsts.RETRY_DELAYS.Length - 1)];

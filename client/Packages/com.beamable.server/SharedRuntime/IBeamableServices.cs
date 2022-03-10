@@ -113,7 +113,7 @@ namespace Beamable.Server
 		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/notifications-feature">Mail</a> feature
 		/// </summary>
 		IMicroserviceNotificationsApi Notifications { get; }
-		
+
 		/// <summary>
 		/// %Microservice entry point for the <a target="_blank" href="https://docs.beamable.com/docs/realm-configuration-feature">Realm Configuration</a> feature
 		/// </summary>

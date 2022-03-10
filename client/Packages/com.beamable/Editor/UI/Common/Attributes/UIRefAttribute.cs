@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Beamable.Common;
+using Beamable.Editor.UI.Common;
+using System;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using Beamable.Common;
-using Beamable.Editor.UI.Common;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 #elif UNITY_2019_1_OR_NEWER

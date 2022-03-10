@@ -279,7 +279,7 @@ namespace Beamable.Editor
 				Center();
 			};
 		}
-		
+
 		public static void AssignUIRefs(this BeamableBasicVisualElement element)
 		{
 			var type = element.GetType();
@@ -299,7 +299,7 @@ namespace Beamable.Editor
 					{
 						continue;
 					}
-					
+
 					if (!typeof(VisualElement).IsAssignableFrom(fieldInfo.FieldType))
 					{
 						BeamableLogger.LogError($"UIRefAttribute can only be used for fields of type that inherit from BeamableBasicVisualElement!");

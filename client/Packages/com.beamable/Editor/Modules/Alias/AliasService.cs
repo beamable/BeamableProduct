@@ -39,7 +39,7 @@ namespace Beamable.Editor.Alias
 		{
 			if (AliasHelper.IsCid(cidOrAlias))
 			{
-				return new AliasResolve {Alias = new OptionalString(), Cid = new OptionalString(cidOrAlias)};
+				return new AliasResolve { Alias = new OptionalString(), Cid = new OptionalString(cidOrAlias) };
 			}
 
 			var resolve = await MapAliasToCid(cidOrAlias);
@@ -51,7 +51,8 @@ namespace Beamable.Editor.Alias
 
 			return new AliasResolve
 			{
-				Alias = new OptionalString(resolve.alias), Cid = new OptionalString(resolve.cid.ToString())
+				Alias = new OptionalString(resolve.alias),
+				Cid = new OptionalString(resolve.cid.ToString())
 			};
 		}
 
