@@ -40,6 +40,7 @@ namespace Beamable.Editor.UI.Components
 			Clear();
 
 			Root = TreeAsset.CloneTree();
+			this.AssignUIRefs();
 
 			this.AddStyleSheet(Files.COMMON_USS_FILE);
 			this.AddStyleSheet(UssPath);
