@@ -140,7 +140,7 @@ namespace Beamable.Server
 			{
 				if (json.StartsWith("\"") && json.EndsWith("\""))
 					return (T)(object)Json.Deserialize(json);
-				
+
 				return (T)(object)json;
 			}
 
