@@ -35,6 +35,18 @@ namespace Beamable.Editor.UI.Buss
 			}
 		}
 
+		public IEnumerable<BussStyleSheet> WritableStyleSheets
+		{
+			get
+			{
+#if BEAMABLE_DEVELOPER
+				return _styleSheets;
+#else
+				return _styleSheets.Where(s => !s.IsReadOnly);
+#endif
+			}
+		}
+
 		public BussStyleListVisualElement() : base(
 			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleListVisualElement)}/{nameof(BussStyleListVisualElement)}.uss")
 		{

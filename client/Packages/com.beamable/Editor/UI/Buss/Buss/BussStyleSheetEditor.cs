@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Beamable.Editor.UI.Components;
+using System;
 using Beamable.UI.Buss;
 using UnityEditor;
 using UnityEngine;
@@ -20,11 +21,26 @@ namespace Beamable.Editor.UI.Buss
 		
 		public override VisualElement CreateInspectorGUI()
 		{
+			var styleSheet = (BussStyleSheet)target;
 			var root = new VisualElement();
 			_list = new BussStyleListVisualElement();
-			_list.StyleSheets = new[] {(BussStyleSheet)target};
+			_list.StyleSheets = new[] {styleSheet};
+			
+			if (!styleSheet.IsReadOnly)
+			{
+				AddSelectorButton(root, _list);
+			}
+			
 			root.Add(_list);
 			return root;
+		}
+
+		private void AddSelectorButton(VisualElement parent, BussStyleListVisualElement list)
+		{
+			var button = new AddStyleButton();
+			button.Setup(list, _ => list.RefreshStyleCards());
+			button.CheckEnableState();
+			parent.Add(button);
 		}
 
 		private void OnDestroy()

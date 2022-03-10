@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Beamable.Editor.UI.Components;
+using System;
 using Beamable.UI.Buss;
 using UnityEditor;
 #if UNITY_2018
@@ -15,7 +16,8 @@ namespace Beamable.Editor.UI.Buss
 	public class BussStyleSheetEditorWindow : EditorWindow
 	{
 		private BussStyleListVisualElement _styleList;
-		
+		private AddStyleButton _addStyleButton;
+
 		public static void Open(BussStyleSheet styleSheet)
 		{
 			Type inspector = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.InspectorWindow");
@@ -28,6 +30,9 @@ namespace Beamable.Editor.UI.Buss
 		private void OnEnable()
 		{
 			_styleList = new BussStyleListVisualElement();
+			
+			AddSelectorButton(this.GetRootVisualContainer(), _styleList);
+			
 			this.GetRootVisualContainer().Add(_styleList);
 		}
 
@@ -40,6 +45,15 @@ namespace Beamable.Editor.UI.Buss
 		public void SetStyleSheet(BussStyleSheet styleSheet)
 		{
 			_styleList.StyleSheets = new[] {styleSheet};
+			_addStyleButton.CheckEnableState();
+		}
+
+		private void AddSelectorButton(VisualElement parent, BussStyleListVisualElement list)
+		{
+			_addStyleButton = new AddStyleButton();
+			_addStyleButton.Setup(list, _ => list.RefreshStyleCards());
+			_addStyleButton.CheckEnableState();
+			parent.Add(_addStyleButton);
 		}
 	}
 }
