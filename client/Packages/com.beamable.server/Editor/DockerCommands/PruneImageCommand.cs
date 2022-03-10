@@ -11,14 +11,11 @@ namespace Beamable.Server.Editor.DockerCommands
 		{
 			_descriptor = descriptor;
 			_all = all;
-			WriteLogToUnity = true;
 		}
 
 		public override string GetCommandString()
 		{
 			var cmd = $"{DockerCmd} image prune --filter \"label=beamable-service-name={_descriptor.Name}\" -f {(_all ? "-a":"")}";
-
-			Debug.Log("RUNNING PRUNE: " + cmd);
 			return cmd;
 		}
 

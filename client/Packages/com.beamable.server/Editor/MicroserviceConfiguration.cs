@@ -83,6 +83,9 @@ namespace Beamable.Server.Editor
 		[Tooltip("When enabled, after you start a service, this will automatically prune unused and dangling docker images related to that service.")]
 		public bool EnableAutoPrune = true;
 
+		[Tooltip("When you enable debugging support for a microservice, if you are using Rider IDE, you can pre-install the debug tools. However, you'll need to specify some details about the version of Rider you are using.")]
+		public OptionalMicroserviceRiderDebugTools RiderDebugTools;
+
 		public string DockerCommand = DOCKER_LOCATION;
 		private string _dockerCommandCached = DOCKER_LOCATION;
 		private bool _dockerCheckCached = true;
@@ -297,6 +300,23 @@ namespace Beamable.Server.Editor
 		public string LocalInitUser = "beamable";
 		[Tooltip("When running locally, The MONGO_INITDB_ROOT_PASSWORD env var for Mongo")]
 		public string LocalInitPass = "beamable";
+	}
+
+	[Serializable]
+	[HelpURL("https://www.jetbrains.com/help/rider/2021.3/SSH_Remote_Debugging.html#deployment-remote-debug-tools")]
+	public class MicroserviceRiderDebugTools
+	{
+		[Tooltip("The version of Rider you use on your machine that you will be using to debug the Beamable Microservice. This should be in the format of MAJOR.MINOR.PATCH, like 2021.3.3 ")]
+		public string RiderVersion = "2021.3.3";
+
+		[Tooltip("The download link for the Rider debug tools. This may not always match the given Rider version itself.")]
+		public string RiderToolsDownloadUrl = "https://download.jetbrains.com/resharper/dotUltimate.2021.3.2/JetBrains.Rider.RemoteDebuggerUploads.linux-x64.2021.3.2.zip";
+	}
+
+	[Serializable]
+	public class OptionalMicroserviceRiderDebugTools : Optional<MicroserviceRiderDebugTools>
+	{
+
 	}
 
 	[Serializable]

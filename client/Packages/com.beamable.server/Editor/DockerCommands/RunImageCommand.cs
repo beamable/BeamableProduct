@@ -235,11 +235,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 			Task.Run(async () =>
 			{
-				Debug.Log("STARTING PRUNE");
-
 				await Task.Delay(500);
-				Debug.Log("FINISHED WAITING PRUNE");
-
 				EditorApplication.delayCall += () =>
 				{
 					var prune = new PruneImageCommand(_service);

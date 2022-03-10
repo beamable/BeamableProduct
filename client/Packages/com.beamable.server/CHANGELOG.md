@@ -12,9 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `EnableAutoPrune` configuration setting that will remove old unused docker image layers. This should limit the disk space requirements of Beamable Microservices on developer machines.
 - `EnableHotModuleReload` configuration setting that will enable dotnet 6 hot module reloading for all Microservices.
 - Added `IMicroserviceNotificationApi` to list of services accessible from `ClientCallable` and `AdminOnlyCallable` methods of Microservices. These can be used for server-to-client communication.
+- `RiderDebugTools` configuration setting to preload Rider debugging tools onto Microservice development images
 
 ### Changed
 - When exiting Unity, all related Microservices and Microstorage containers are closed
+- Microservice client code is generated in a dockerized dotnet runtime instead of Unity
 
 ### Fixed
 - Fixed issue that caused the `ReflectionCache` to run an extra unnecessary time when a `.cs` or `.asmdef` file were changed.

@@ -78,11 +78,25 @@ command=/usr/sbin/sshd -D
 		{
 			if (!DebuggingEnabled) return "";
 
+			//RUN curl -sSL -o /riderdbg https://download.jetbrains.com/rider/ssh-remote-debugging/linux-arm64/jetbrains_debugger_agent_20210604.19.0
+
+			var riderTools = "";
+			MicroserviceConfiguration.Instance.RiderDebugTools.DoIfExists(tools =>
+			{
+				riderTools = $@"
+RUN curl -sSL {tools.RiderToolsDownloadUrl} -o ridertemp.zip
+RUN mkdir -p /root/.local/share/JetBrains/RiderRemoteDebugger/{tools.RiderVersion}
+RUN unzip -q -o ridertemp.zip -d /root/.local/share/JetBrains/RiderRemoteDebugger/{tools.RiderVersion}
+";
+			}) ;
+
 			return $@"
 #inject the debugging tools
 RUN apt update && \
     apt install -y unzip curl supervisor openssh-server && \
     curl -sSL https://aka.ms/getvsdbgsh | /bin/sh /dev/stdin -v latest -l /vsdbg
+
+{riderTools}
 
 RUN mkdir -p /var/log/supervisor /run/sshd
 
@@ -109,7 +123,7 @@ EXPOSE 80 2222
 			}
 			else if (Watch)
 			{
-				return $@"ENTRYPOINT [""dotnet"", ""watch"", ""run""]";
+				return $@"ENTRYPOINT [""dotnet"", ""watch""]";
 			}
 			else
 			{

@@ -16,7 +16,6 @@ namespace Beamable.Server.Editor.DockerCommands
 	{
 		private const string BUILD_PREF = "{0}BuildAtLeastOnce";
 		private MicroserviceDescriptor _descriptor;
-		private readonly string _imageSuffix;
 		public bool IncludeDebugTools { get; }
 		public string ImageName { get; set; }
 		public string BuildPath { get; set; }
@@ -34,12 +33,11 @@ namespace Beamable.Server.Editor.DockerCommands
 			EditorPrefs.SetBool(string.Format(BUILD_PREF, descriptor.Name), build);
 		}
 
-		public BuildImageCommand(MicroserviceDescriptor descriptor, bool includeDebugTools, bool watch, string imageSuffix="")
+		public BuildImageCommand(MicroserviceDescriptor descriptor, bool includeDebugTools, bool watch)
 		{
 			_descriptor = descriptor;
-			_imageSuffix = imageSuffix;
 			IncludeDebugTools = includeDebugTools;
-			ImageName = descriptor.ImageName + _imageSuffix;
+			ImageName = descriptor.ImageName;
 			BuildPath = descriptor.BuildPath;
 			UnityLogLabel = "[BUILD]";
 			ReadyForExecution = new Promise<Unit>();
