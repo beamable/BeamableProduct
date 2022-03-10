@@ -121,7 +121,7 @@ namespace Beamable.Editor.UI.Buss
 			_navigationWindow.SelectionChanged += FilterCards;
 
 			RefreshStyleSheets();
-			AddSelectorButton(scrollView);
+			AddSelectorButton(mainVisualElement);
 		}
 
 		private void OnFilterToggleClicked(bool value)
