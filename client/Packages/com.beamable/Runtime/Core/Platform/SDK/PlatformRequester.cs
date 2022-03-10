@@ -5,7 +5,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Pooling;
 using Beamable.Serialization;
-using Beamable.Spew;
+using Beamable.Common.Spew;
 using Core.Platform.SDK;
 using System;
 using System.Collections.Generic;

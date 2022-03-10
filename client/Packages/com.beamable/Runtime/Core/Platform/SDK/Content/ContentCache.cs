@@ -3,7 +3,7 @@ using Beamable.Common.Api;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Coroutines;
-using Beamable.Spew;
+using Beamable.Common.Spew;
 using Core.Platform.SDK;
 using System;
 using System.Collections;

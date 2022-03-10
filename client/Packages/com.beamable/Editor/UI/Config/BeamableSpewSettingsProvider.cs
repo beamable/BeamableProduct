@@ -1,10 +1,12 @@
-﻿using System;
+﻿using Beamable.Common.Spew;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
+using Logger = UnityEngine.Logger;
 
 namespace Beamable.Spew
 {

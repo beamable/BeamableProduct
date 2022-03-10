@@ -24,10 +24,10 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using Logger = Beamable.Common.Spew.Logger;
 #if UNITY_2019_3_OR_NEWER
 using UnityEditor.Compilation;
 #endif
-
 
 namespace Beamable
 {
@@ -94,7 +94,7 @@ namespace Beamable
 			{
 				if (e.FileName == ConfigDatabase.GetConfigFileName())
 				{
-					Spew.Logger.DoSpew("Config File not found during initialization dodged!");
+					Logger.DoSpew("Config File not found during initialization dodged!");
 					EditorApplication.delayCall += Initialize;
 					return;
 				}

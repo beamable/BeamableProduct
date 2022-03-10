@@ -3,7 +3,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
 using Beamable.Serialization.SmallerJSON;
-using Beamable.Spew;
+using Beamable.Common.Spew;
 using PubNubMessaging.Core;
 using System;
 using System.Collections.Generic;
