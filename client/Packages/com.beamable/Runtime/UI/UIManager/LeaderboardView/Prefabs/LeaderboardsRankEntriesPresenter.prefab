@@ -127,7 +127,7 @@ GameObject:
   - component: {fileID: 8976332508244487836}
   - component: {fileID: 1593187839825552388}
   m_Layer: 5
-  m_Name: LeaderboardsRankEntriesPresenter 1
+  m_Name: LeaderboardsRankEntriesPresenter
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

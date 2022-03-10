@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 4022917797834729771}
   - component: {fileID: 1183811506}
   m_Layer: 0
-  m_Name: View
+  m_Name: Sample_NoUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -44,9 +44,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ce54dcb5bb84ac894a18c2ebb63b625, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  CurrentLeaderboardSystemConfig: {fileID: 11400000, guid: 8a604dd19b6d2c34c804143220ee6dd7,
+  FeatureConfig: {fileID: 11400000, guid: 8a604dd19b6d2c34c804143220ee6dd7, type: 2}
+  BackUpFeatureConfig: {fileID: 11400000, guid: 39a644f98298bb946926d1e567e491f7,
     type: 2}
-  BackUpConfig: {fileID: 11400000, guid: 39a644f98298bb946926d1e567e491f7, type: 2}
   BackButton: {fileID: 0}
   TopButton: {fileID: 0}
   RankEntries: {fileID: 0}
@@ -68,3 +68,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   AllPlayerContexts: []
   AllPlayerCodes: []
+  RebuildOnEnable: 1

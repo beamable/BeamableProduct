@@ -10,10 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 713b5e0f72954a8cb1126c84d1a2c818, type: 3}
-  m_Name: BasicBeamableLeaderboardSystemConfig
+  m_Name: LeaderboardViewFeatureConfig2
   m_EditorClassIdentifier: 
-  Configuration:
-    LeaderboardRef:
-      Id: leaderboards.default
-    EntriesAmount: 27
-    TestMode: 1
+  LeaderboardRef:
+    Id: leaderboards.default
+  EntriesAmount: 10
+  TestMode: 0
