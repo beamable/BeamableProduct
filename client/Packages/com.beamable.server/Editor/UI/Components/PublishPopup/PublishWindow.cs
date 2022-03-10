@@ -25,7 +25,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 	{
 		protected const float DEFAULT_ROW_HEIGHT = 47.0f;
 		protected const int MAX_ROW = 6;
-		private static readonly Vector2 MIN_SIZE = new Vector2(860, 330);
+		private static readonly Vector2 MIN_SIZE = new Vector2(900, 330);
 
 		[SerializeField] private bool isSet;
 		private CancellationTokenSource _tokenSource;

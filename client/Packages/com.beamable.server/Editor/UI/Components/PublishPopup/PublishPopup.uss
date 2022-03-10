@@ -20,6 +20,7 @@
 #nameMS {
     align-self: center;
     margin-left: 3px;
+    flex: auto;
 }
 
 #nameC, #depsC {
@@ -49,7 +50,7 @@
 }
 
 #CommentsC {
-    width: 160px;
+    width: 180px;
     justify-content: flex-end;
 }
 #CommentsC.column {
@@ -57,14 +58,16 @@
 }
 #row #CommentsC > * {
     flex-grow: 1;
+    margin-left: 45px
 }
 
 #SizeC {
-    width: 120px;
+    width: 160px;
 }
 #SizeC DropdownVisualElement {
     flex-direction: row;
     flex-grow: 1;
+    margin-left: 45px;
 }
 #SizeC #mainContainer {
     min-width: 70px;

@@ -3,6 +3,7 @@ using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -63,6 +64,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private DropdownVisualElement _sizeDropdown;
 		private TextField _commentField;
 		private Label _stateLabel;
+		private Label _nameLabel;
 
 		public PublishManifestEntryVisualElement(IEntryModel model,
 												 bool argWasPublished,
@@ -94,8 +96,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_sizeDropdown.Setup(TemplateSizes.ToList(), null);
 			_sizeDropdown.Refresh();
 
-			var nameLabel = Root.Q<Label>("nameMS");
-			nameLabel.text = Model.Name;
+			_nameLabel = Root.Q<Label>("nameMS");
+			_nameLabel.text = Model.Name;
+			_nameLabel.RegisterCallback<GeometryChangedEvent>(OnLabelSizeChanged);
 
 			_commentField = Root.Q<TextField>("commentsText");
 			_commentField.value = Model.Comment;
@@ -130,6 +133,19 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				UpdateStatus(ServicePublishState.Unpublished);
 			}
+		}
+		
+		private void OnLabelSizeChanged(GeometryChangedEvent evt)
+		{
+			float width = evt.newRect.width;
+			int maxCharacters = Mathf.CeilToInt(width / 10);
+			if (Model.Name.TryEllipseText(maxCharacters, out string labelText))
+			{
+				_nameLabel.text = labelText;
+				return;
+			}
+			
+			_nameLabel.text = Model.Name;
 		}
 
 		public void HandlePublishStarted()
