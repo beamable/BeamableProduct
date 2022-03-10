@@ -285,14 +285,23 @@ namespace Beamable.Editor.UI.Buss
 				}
 				else
 				{
+					var cardsToReloads = new List<BussStyleCardVisualElement>();
 					foreach (VariableDatabase.PropertyReference reference in _variableDatabase.DirtyProperties)
 					{
 						var card = _styleCardsVisualElements.FirstOrDefault(c => c.StyleRule == reference.styleRule);
 						if (card != null)
 						{
-							card.RefreshPropertyByReference(reference);
+							if (card.CheckPropertyIsInStyle(reference))
+								card.RefreshPropertyByReference(reference);
+							else if (!cardsToReloads.Contains(card))
+								cardsToReloads.Add(card);
 						}
 					}
+					
+					foreach (var card in cardsToReloads)
+						card.Refresh();
+
+					cardsToReloads.Clear();
 				}
 				_variableDatabase.FlushDirtyMarkers();
 			}
