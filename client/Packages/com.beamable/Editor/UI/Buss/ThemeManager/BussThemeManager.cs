@@ -25,6 +25,7 @@ namespace Beamable.Editor.UI.Buss
 		private VisualElement _stylesGroup;
 		private BussElementHierarchyVisualElement _navigationWindow;
 		private LabeledCheckboxVisualElement _filterToggle;
+		private ScrollView _scrollView; 
 
 		private bool _inStyleSheetChangedLoop;
 		private readonly VariableDatabase _variableDatabase = new VariableDatabase();
@@ -101,13 +102,13 @@ namespace Beamable.Editor.UI.Buss
 			_filterToggle.SetWithoutNotify(_filterMode);
 			mainVisualElement.Add(_filterToggle);
 			
-			ScrollView scrollView = new ScrollView();
-			scrollView.name = "themeManagerContainerScrollView";
-			mainVisualElement.Add(scrollView);
+			_scrollView = new ScrollView();
+			_scrollView.name = "themeManagerContainerScrollView";
+			mainVisualElement.Add(_scrollView);
 
 			_stylesGroup = new VisualElement();
 			_stylesGroup.name = "stylesGroup";
-			scrollView.Add(_stylesGroup);
+			_scrollView.Add(_stylesGroup);
 
 			root.Add(mainVisualElement);
 
@@ -143,12 +144,27 @@ namespace Beamable.Editor.UI.Buss
 				return;
 			}
 
-			foreach (BussStyleCardVisualElement styleCardVisualElement in _styleCardsVisualElements)
+			int selectedIndex = -1;
+			float selectedHeight = 0;
+
+			for (int i = 0; i < _styleCardsVisualElements.Count; i++)
 			{
 				bool isMatch =
-					styleCardVisualElement.StyleRule.Selector?.CheckMatch(_navigationWindow.SelectedComponent) ?? false;
-				styleCardVisualElement.SetHidden(_filterMode && !isMatch && !styleCardVisualElement.EditMode);
+					_styleCardsVisualElements[i].StyleRule.Selector?.CheckMatch(_navigationWindow.SelectedComponent) ?? false;
+				_styleCardsVisualElements[i].SetHidden(_filterMode && !isMatch && !_styleCardsVisualElements[i].EditMode);
+
+				if (selectedIndex != -1)
+					continue;
+
+				if (isMatch)
+					selectedIndex = i;
+				else
+					selectedHeight += _styleCardsVisualElements[i].contentRect.height;
 			}
+
+			if (!_filterMode && selectedIndex != -1)
+				UpdateScroll(selectedHeight);
+
 			Profiler.EndSample();
 		}
 
@@ -227,6 +243,15 @@ namespace Beamable.Editor.UI.Buss
 		{
 			_navigationWindow?.ForceRebuild();
 			_addStyleButton.CheckEnableState();
+		}
+		
+		private void UpdateScroll(float scrollValue)
+		{
+			EditorApplication.delayCall += () =>
+			{
+				_scrollView.verticalScroller.value = scrollValue;
+				_scrollView.MarkDirtyRepaint();
+			};
 		}
 
 		private void ClearCurrentStyleSheet()
