@@ -46,8 +46,6 @@ namespace Beamable.Editor.UI.Components
 		private bool _showAllMode;
 		private bool _editMode;
 
-		private static BeamablePopupWindow _popupWindow;
-
 		public BussStyleSheet StyleSheet => _styleSheet;
 		public BussStyleRule StyleRule => _styleRule;
 		public bool EditMode => _editMode;
@@ -148,7 +146,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void RemoveButtonClicked(MouseDownEvent evt)
 		{
-			ClosePopup();
+			BeamablePopupWindow.CloseConfirmationWindow();
 
 			ConfirmationPopupVisualElement confirmationPopup = new ConfirmationPopupVisualElement(
 				DELETE_STYLE_MESSAGE,
@@ -157,14 +155,12 @@ namespace Beamable.Editor.UI.Components
 					_styleSheet.RemoveStyle(StyleRule);
 					AssetDatabase.SaveAssets();
 				},
-				ClosePopup
+				BeamablePopupWindow.CloseConfirmationWindow
 			);
 
 			BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowConfirmationUtility(
 				DELETE_STYLE_HEADER,
 				confirmationPopup, this.GetEditorWindowWithReflection());
-
-			SetPopup(popupWindow);
 		}
 
 		private void AddRuleButtonClicked(MouseDownEvent evt)
@@ -214,7 +210,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void ClearAllButtonClicked(MouseDownEvent evt)
 		{
-			ClosePopup();
+			BeamablePopupWindow.CloseConfirmationWindow();
 
 			ConfirmationPopupVisualElement confirmationPopup = new ConfirmationPopupVisualElement(
 				CLEAR_ALL_PROPERTIES_MESSAGE,
@@ -222,14 +218,12 @@ namespace Beamable.Editor.UI.Components
 				{
 					_styleSheet.RemoveAllProperties(StyleRule);
 				},
-				ClosePopup
+				BeamablePopupWindow.CloseConfirmationWindow
 			);
 			
 			BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowConfirmationUtility(
 				CLEAR_ALL_PROPERTIES_HEADER,
 				confirmationPopup, this.GetEditorWindowWithReflection());
-			
-			SetPopup(popupWindow);
 		}
 
 		private void UndoButtonClicked(MouseDownEvent evt)
@@ -253,7 +247,7 @@ namespace Beamable.Editor.UI.Components
 
 			if (!_editMode)
 			{
-				ClosePopup();
+				BeamablePopupWindow.CloseConfirmationWindow();
 			}
 
 			Refresh();
@@ -433,21 +427,6 @@ namespace Beamable.Editor.UI.Components
 			}
 
 			_colorBlock.EnableInClassList("active", active);
-		}
-
-		private static void SetPopup(BeamablePopupWindow popup)
-		{
-			ClosePopup();
-			_popupWindow = popup;
-		}
-
-		private static void ClosePopup()
-		{
-			if (_popupWindow != null)
-			{
-				_popupWindow.Close();
-				_popupWindow = null;
-			}
 		}
 	}
 }

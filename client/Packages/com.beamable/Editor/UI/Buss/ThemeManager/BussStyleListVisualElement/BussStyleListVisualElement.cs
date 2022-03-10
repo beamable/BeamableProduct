@@ -13,8 +13,6 @@ namespace Beamable.Editor.UI.Buss
 {
 	public class BussStyleListVisualElement : BeamableBasicVisualElement
 	{
-		protected override bool CreateRoot => false;
-
 		public Func<BussStyleSheet, BussStyleRule, bool> Filter;
 		
 		private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements =
@@ -48,7 +46,7 @@ namespace Beamable.Editor.UI.Buss
 		}
 
 		public BussStyleListVisualElement() : base(
-			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleListVisualElement)}/{nameof(BussStyleListVisualElement)}.uss")
+			$"{BUSS_THEME_MANAGER_PATH}/{nameof(BussStyleListVisualElement)}/{nameof(BussStyleListVisualElement)}.uss", false)
 		{
 			Init();
 			Selection.selectionChanged += OnSelectionChange;

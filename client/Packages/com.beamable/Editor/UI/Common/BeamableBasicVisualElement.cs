@@ -19,13 +19,14 @@ namespace Beamable.Editor.UI.Common
 	{
 		protected VisualElement Root { get; set; }
 		protected string UssPath { get; }
-		protected virtual bool CreateRoot => true; // This can be overriden if we do not want to create Root visual element.
+		private bool _createRoot;
 
-		protected BeamableBasicVisualElement(string ussPath)
+		protected BeamableBasicVisualElement(string ussPath, bool createRoot = true)
 		{
 			Assert.IsTrue(File.Exists(ussPath), $"Cannot find {ussPath}");
 
 			UssPath = ussPath;
+			_createRoot = createRoot;
 
 			RegisterCallback<DetachFromPanelEvent>(evt =>
 			{
@@ -47,7 +48,7 @@ namespace Beamable.Editor.UI.Common
 			this.AddStyleSheet(Files.COMMON_USS_FILE);
 			this.AddStyleSheet(UssPath);
 
-			if (CreateRoot)
+			if (_createRoot)
 			{
 				Root = new VisualElement();
 				Root.name = "root";
