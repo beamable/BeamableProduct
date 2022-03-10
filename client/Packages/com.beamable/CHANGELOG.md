@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Changed behaviour of Add Style button in Buss Theme Manager
 - Add Style button moved above Buss Style Cards in Buss Theme Manager
+- Buss Element selection improvement in Buss Theme Manager   
 
 ### Fixed 
 - Constant "Invalid token, trying again" errors in the Editor after 10 days.
