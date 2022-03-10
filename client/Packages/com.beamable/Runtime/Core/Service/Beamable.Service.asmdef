@@ -2,7 +2,6 @@
     "name": "Beamable.Service",
     "references": [
         "Beamable.Extensions",
-        "Beamable.Spew",
         "Unity.Beamable.Runtime.Common"
     ],
     "optionalUnityReferences": [],

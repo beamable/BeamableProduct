@@ -1,5 +1,5 @@
 ﻿using Beamable.Service;
-using Beamable.Spew;
+using Beamable.Common.Spew;
 using System.Collections.Generic;
 
 namespace Beamable.Serialization

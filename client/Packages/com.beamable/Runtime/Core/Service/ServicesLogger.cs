@@ -1,4 +1,4 @@
-using Beamable.Spew;
+using Beamable.Common.Spew;
 using System.Diagnostics;
 
 namespace Beamable.Service

@@ -5,7 +5,7 @@ using Beamable.Coroutines;
 using Beamable.Pooling;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
-using Beamable.Spew;
+using Beamable.Common.Spew;
 using System;
 using System.Collections;
 using System.Collections.Generic;
