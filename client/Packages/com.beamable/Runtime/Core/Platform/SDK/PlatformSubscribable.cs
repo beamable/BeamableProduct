@@ -4,8 +4,8 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Notifications;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Spew;
 using Beamable.Coroutines;
-using Beamable.Spew;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -260,7 +260,7 @@ namespace Beamable.Api
 			var sentScopes = nextRefreshScopes.ToArray();
 			var scope = string.Join(",", nextRefreshScopes);
 			nextRefreshScopes.Clear();
-			
+
 			ExecuteRequest(requester, CreateRefreshUrl(scope)).Error(err =>
 			{
 				var delay = SubscribableConsts.RETRY_DELAYS[Math.Min(retry, SubscribableConsts.RETRY_DELAYS.Length - 1)];

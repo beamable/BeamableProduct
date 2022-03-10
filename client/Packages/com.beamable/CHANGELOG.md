@@ -10,20 +10,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
-- The `Promise.ExecuteRolling` function has been deprecated in favor of `Promise.ExecuteInBatchSequence`
-- The startup sequence runs startup requests at the same time for speed improvements 
+- Changed behaviour of Add Style button in Buss Theme Manager
+- Add Style button moved above Buss Style Cards in Buss Theme Manager
 
 ### Fixed 
 - Constant "Invalid token, trying again" errors in the Editor after 10 days.
-- Beamable assets are loaded with their full name so asset types won't collide
-
-### Added
-- `IDeviceIdResolver` is now a dependency of the `AuthService`, and can be overriden to produce different device ids other than `SystemInfo.deviceUniqueIdentifier`
-- Baking feature now also bakes content manifest which is used when there is no Internet connection
+- Compilation error when using new `com.unity.inputsystem`
 
 ### Changed
+- Application will check if there are redundant files in content disk cache on each start. All files but the one needed will be deleted to free disk space.
+
+## [1.0.4]
+### Fixed
+- `IBeamableRequester` implementations no longer dispose `UnityWebRequest` too soon
+
+## [1.0.3]
+### Fixed 
+- All `IBeamableRequester` implementations dispose `UnityWebRequest` after usage
+- Beamable.Platform assembly definition references Facebook.Unity dll if it exists
+
+## [1.0.2]
+### Fixed
+- Windows Microservices first time build issue regarding empty build directories
+
+## [1.0.1]
+### Added
+- `IDeviceIdResolver` is now a dependency of the `AuthService`, and can be overriden to produce different device ids other than `SystemInfo.deviceUniqueIdentifier`
+- Content Baking feature now also bakes content manifest which is used when there is no Internet connection
+
+### Changed
+- The `Promise.ExecuteRolling` function has been deprecated in favor of `Promise.ExecuteInBatchSequence`
+- The startup sequence runs startup requests at the same time for speed improvements 
 - All Beamable Assembly Definitions use the `OverrideReferences` flag so they don't automatically reference project DLLs
 
+### Fixed 
+- The `ResolveAll` content function no longer exceeds stack frame size limits
+- Beamable assets are loaded with their full name so asset types won't collide
+- Null references associated with Realm dropdown in Editor 
 
 ## [1.0.0]
 ### Added

@@ -4,8 +4,8 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Common.Pooling;
+using Beamable.Common.Spew;
 using Beamable.Serialization;
-using Beamable.Spew;
 using Core.Platform.SDK;
 using System;
 using System.Collections.Generic;
@@ -112,8 +112,8 @@ namespace Beamable.Api
 					else
 					{
 						T parsedResult = parser == null
-						? JsonUtility.FromJson<T>(responsePayload)
-						: parser(responsePayload);
+							? JsonUtility.FromJson<T>(responsePayload)
+							: parser(responsePayload);
 						result.CompleteSuccess(parsedResult);
 					}
 				}
@@ -121,8 +121,11 @@ namespace Beamable.Api
 				{
 					result.CompleteError(ex);
 				}
+				finally
+				{
+					request.Dispose();
+				}
 			};
-
 			return result;
 		}
 
@@ -184,8 +187,6 @@ namespace Beamable.Api
 
 		public Promise<T> Request<T>(Method method, string uri, object body = null, bool includeAuthHeader = true, Func<string, T> parser = null, bool useCache = false)
 		{
-
-
 			string contentType = null;
 			byte[] bodyBytes = null;
 
@@ -360,40 +361,45 @@ namespace Beamable.Api
 				return;
 			}
 
-			var responsePayload = request.downloadHandler.text;
-
-			if (request.responseCode >= 300 || request.IsNetworkError())
+			try
 			{
-				// Handle errors
-				PlatformError platformError = null;
-				try
-				{
-					platformError = JsonUtility.FromJson<PlatformError>(responsePayload);
-				}
-				catch (Exception)
-				{
-					// Swallow the exception and let the error be null
-				}
+				var responsePayload = request.downloadHandler.text;
 
-				promise.CompleteError(new PlatformRequesterException(platformError, request, responsePayload));
+				if (request.responseCode >= 300 || request.IsNetworkError())
+				{
+					// Handle errors
+					PlatformError platformError = null;
+					try
+					{
+						platformError = JsonUtility.FromJson<PlatformError>(responsePayload);
+					}
+					catch (Exception)
+					{
+						// Swallow the exception and let the error be null
+					}
 
+					promise.CompleteError(new PlatformRequesterException(platformError, request, responsePayload));
+
+				}
+				else
+				{
+					// Parse JSON object and resolve promise
+					PlatformLogger.Log($"PLATFORM RESPONSE: {responsePayload}");
+
+					try
+					{
+						T result = parser == null ? JsonUtility.FromJson<T>(responsePayload) : parser(responsePayload);
+						promise.CompleteSuccess(result);
+					}
+					catch (Exception ex)
+					{
+						promise.CompleteError(ex);
+					}
+				}
 			}
-			else
+			finally
 			{
-				// Parse JSON object and resolve promise
-				PlatformLogger.Log($"PLATFORM RESPONSE: {responsePayload}");
-
-				try
-				{
-					T result = parser == null ?
-					   JsonUtility.FromJson<T>(responsePayload) :
-					   parser(responsePayload);
-					promise.CompleteSuccess(result);
-				}
-				catch (Exception ex)
-				{
-					promise.CompleteError(ex);
-				}
+				request?.Dispose();
 			}
 		}
 

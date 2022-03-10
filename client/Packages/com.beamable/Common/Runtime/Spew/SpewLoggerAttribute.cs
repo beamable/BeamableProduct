@@ -1,7 +1,7 @@
 using System;
 using System.Diagnostics;
 
-namespace Beamable.Spew
+namespace Beamable.Common.Spew
 {
 	/// <summary>
 	/// Conditional attribute to add Spew.

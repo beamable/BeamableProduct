@@ -8,7 +8,7 @@ using static Beamable.Common.Constants.Features.Spew;
 using UnityEngine;
 #endif
 
-namespace Beamable.Spew
+namespace Beamable.Common.Spew
 {
 	public class Logger
 	{

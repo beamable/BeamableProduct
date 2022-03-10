@@ -51,7 +51,8 @@ namespace Beamable.Editor.Alias
 
 			return new AliasResolve
 			{
-				Alias = new OptionalString(resolve.alias), Cid = new OptionalString(resolve.cid.ToString())
+				Alias = new OptionalString(resolve.alias),
+				Cid = new OptionalString(resolve.cid.ToString())
 			};
 		}
 

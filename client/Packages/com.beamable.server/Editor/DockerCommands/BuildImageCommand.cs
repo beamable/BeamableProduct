@@ -22,6 +22,8 @@ namespace Beamable.Server.Editor.DockerCommands
 		public string BuildPath { get; set; }
 		public Promise<Unit> ReadyForExecution { get; private set; }
 
+		private Exception _constructorEx;
+
 		public static bool WasEverBuildLocally(IDescriptor descriptor)
 		{
 			return EditorPrefs.GetBool(string.Format(BUILD_PREF, descriptor.Name), false);

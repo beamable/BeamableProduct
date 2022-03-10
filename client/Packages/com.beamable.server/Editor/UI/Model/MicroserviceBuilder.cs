@@ -97,7 +97,19 @@ namespace Beamable.Editor.UI.Model
 			}
 			catch (Exception e)
 			{
-				MicroserviceLogHelper.HandleBuildCommandOutput(this, e.Message);
+				EditorApplication.delayCall += () =>
+				{
+					MicroservicesDataModel.Instance.AddLogMessage(
+						Descriptor,
+						new LogMessage
+						{
+							Level = LogLevel.ERROR,
+							Message = e.Message,
+							ParameterText = e.StackTrace,
+							Timestamp = LogMessage.GetTimeDisplay(DateTime.Now)
+						});
+				};
+				MicroserviceLogHelper.HandleBuildCommandOutput(this, "Error");
 			}
 			finally
 			{

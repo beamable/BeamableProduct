@@ -7,7 +7,6 @@
         "Beamable.JsonSerializable",
         "Beamable.Pooling",
         "Beamable.Service",
-        "Beamable.Spew",
         "Beamable.SmallerJSON",
         "Beamable.ConsoleCommands",
         "Unity.Beamable.Runtime.Common"
@@ -17,7 +16,9 @@
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
-    "precompiledReferences": [],
+    "precompiledReferences": [
+        "Facebook.Unity.dll"
+    ],
     "autoReferenced": true,
     "defineConstraints": []
 }

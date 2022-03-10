@@ -1,7 +1,7 @@
 using Beamable.Common.Api;
+using Beamable.Common.Spew;
 using Beamable.Pooling;
 using Beamable.Serialization;
-using Beamable.Spew;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -86,8 +86,10 @@ namespace Beamable.Api.Analytics
 			byte[] batchPayload = Encoding.UTF8.GetBytes(batchJson);
 			AnalyticsLogger.LogFormat("AnalyticsService.AnalyticsEventBatchRequest: Sending batch of {0} to uri: {1}", eventBatch.Count, uri);
 
-			var request = _requester.BuildWebRequest(Method.POST, uri, "application/json", batchPayload);
-			request.SendWebRequest();
+			using (var request = _requester.BuildWebRequest(Method.POST, uri, "application/json", batchPayload))
+			{
+				request.SendWebRequest();
+			}
 		}
 	}
 

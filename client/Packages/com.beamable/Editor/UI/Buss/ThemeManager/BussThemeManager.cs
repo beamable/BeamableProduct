@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Editor.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
@@ -31,10 +32,12 @@ namespace Beamable.Editor.UI.Buss
 		private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements =
 			new List<BussStyleCardVisualElement>();
 
-		private VisualElement _addStyleButton;
+		private AddStyleButton _addStyleButton;
 		private bool _filterMode;
 		private BeamablePopupWindow _confirmationPopup;
-		private List<BussStyleSheet> _activeStyleSheets = new List<BussStyleSheet>();
+		private readonly List<BussStyleSheet> _activeStyleSheets = new List<BussStyleSheet>();
+
+		public List<BussStyleSheet> ActiveStyleSheets => _activeStyleSheets;
 
 		[MenuItem(
 			MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
@@ -118,7 +121,7 @@ namespace Beamable.Editor.UI.Buss
 			_navigationWindow.SelectionChanged += FilterCards;
 
 			RefreshStyleSheets();
-			AddSelectorButton();
+			AddSelectorButton(scrollView);
 		}
 
 		private void OnFilterToggleClicked(bool value)
@@ -212,61 +215,18 @@ namespace Beamable.Editor.UI.Buss
 			FilterCards();
 		}
 
-		private void AddSelectorButton()
+		private void AddSelectorButton(VisualElement parent)
 		{
-			_addStyleButton = new VisualElement { name = "addStyleButton" };
-			_addStyleButton.AddToClassList("button");
-			_addStyleButton.Add(new Label("Add Style"));
-			_addStyleButton.UnregisterCallback<MouseDownEvent>(_ => OpenAddSelectorWindow());
-			_addStyleButton.RegisterCallback<MouseDownEvent>(_ => OpenAddSelectorWindow());
-
-			_addStyleButton.UnregisterCallback<MouseEnterEvent>(_ => CheckEnableState());
-			_addStyleButton.RegisterCallback<MouseEnterEvent>(_ => CheckEnableState());
-			CheckEnableState();
-
-			_stylesGroup.Add(_addStyleButton);
-
-			void OpenAddSelectorWindow()
-			{
-				if (_addStyleButton.ClassListContains(UIElementExtensions.PROPERTY_INACTIVE))
-				{
-					return;
-				}
-
-				AddStyleWindow window = AddStyleWindow.ShowWindow();
-				window?.Init(_ => RefreshStyleSheets(), _activeStyleSheets.ToList());
-			}
+			_addStyleButton = new AddStyleButton();
+			_addStyleButton.Setup(this, _navigationWindow, _ => RefreshStyleSheets());
+			_addStyleButton.CheckEnableState();
+			parent.Insert(2, _addStyleButton);
 		}
 
 		private void OnFocus()
 		{
 			_navigationWindow?.ForceRebuild();
-			CheckEnableState();
-		}
-
-		private void CheckEnableState()
-		{
-			if (_addStyleButton == null) return;
-
-			_addStyleButton.tooltip = string.Empty;
-			_activeStyleSheets.Clear();
-
-#if BEAMABLE_DEVELOPER
-			_activeStyleSheets.AddRange(_navigationWindow.StyleSheets);
-#else
-			_activeStyleSheets.AddRange(_navigationWindow.StyleSheets.Where(bussStyleSheet => !bussStyleSheet.IsReadOnly));
-#endif
-
-			if (_activeStyleSheets.Count == 0)
-			{
-				_addStyleButton.tooltip = NO_BUSS_STYLE_SHEET_AVAILABLE;
-				_addStyleButton.SetInactive(true);
-			}
-			else
-			{
-				_addStyleButton.tooltip = String.Empty;
-				_addStyleButton.SetInactive(false);
-			}
+			_addStyleButton.CheckEnableState();
 		}
 
 		private void ClearCurrentStyleSheet()
@@ -285,11 +245,6 @@ namespace Beamable.Editor.UI.Buss
 			styleCard.Setup(this, styleSheet, styleRule, _variableDatabase, _navigationWindow, callback);
 			_styleCardsVisualElements.Add(styleCard);
 			_stylesGroup.Add(styleCard);
-
-			if (_addStyleButton != null)
-			{
-				_addStyleButton.PlaceInFront(styleCard);
-			}
 
 			styleCard.EnterEditMode += () =>
 			{

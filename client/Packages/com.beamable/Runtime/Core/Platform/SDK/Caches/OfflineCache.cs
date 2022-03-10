@@ -63,7 +63,7 @@ namespace Beamable.Api.Caches
 			bool existsInCache =
 				_instance._offlineCacheData.ContainsKey(actualKey);
 			bool existsOnDisk = File.Exists(_instance.GetFullPathForKey(actualKey));
-			
+
 			return existsInCache || existsOnDisk;
 		}
 
@@ -122,7 +122,7 @@ namespace Beamable.Api.Caches
 			else
 			{
 				throw ex;
-			};
+			}
 		}
 
 		private void Merge<TKey, TValue>(string key, Dictionary<long, Dictionary<TKey, TValue>> nextData)

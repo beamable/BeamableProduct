@@ -7,6 +7,7 @@ using Beamable.Common.Api.Content;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.Coroutines;
+using Beamable.Serialization.SmallerJSON;
 using Core.Platform.SDK;
 using System;
 using System.Collections.Generic;
@@ -33,7 +34,7 @@ namespace Beamable.Content
 		public string ManifestID { get; } = "global";
 
 		private ClientManifest _latestManifiest;
-		
+
 		private readonly Promise<Unit> _manifestPromise = new Promise<Unit>();
 
 		private readonly Dictionary<string, ClientContentInfo> _contentIdTable =
@@ -146,15 +147,15 @@ namespace Beamable.Content
 				{
 					return;
 				}
-				
+
 				foreach (var info in bakedManifest.entries)
 				{
 					bakedManifestInfo[info.contentId] = info;
 				}
 			}
 		}
-		
-		
+
+
 
 #if UNITY_EDITOR
 
@@ -174,7 +175,7 @@ namespace Beamable.Content
 #endif
 
 		public ContentService(IDependencyProvider provider,
-		                      IBeamableFilesystemAccessor filesystemAccessor, ContentParameterProvider config)
+							  IBeamableFilesystemAccessor filesystemAccessor, ContentParameterProvider config)
 		{
 			_provider = provider;
 			CurrentDefaultManifestID = config.manifestID;
@@ -190,18 +191,35 @@ namespace Beamable.Content
 
 			InitializeBakedContent();
 			InitializeBakedManifest();
-			
+
 			Subscribables = new Dictionary<string, ManifestSubscription>();
 			AddSubscriber(CurrentDefaultManifestID);
 		}
-		
+
 		private void InitializeBakedContent()
 		{
-			string path = FilesystemAccessor.GetPersistentDataPathWithoutTrailingSlash() + "/content/content.json";
-
-			if (File.Exists(path))
+			// remove content in old format
+			string contentDirectory = Path.Combine(FilesystemAccessor.GetPersistentDataPathWithoutTrailingSlash(), "content");
+			const string contentFileName = "content.json";
+			if (Directory.Exists(contentDirectory))
 			{
-				var json = File.ReadAllText(path);
+				DirectoryInfo info = new DirectoryInfo(contentDirectory);
+				foreach (var file in info.EnumerateFiles())
+				{
+					if (file.Name.Equals(contentFileName))
+					{
+						continue;
+					}
+
+					file.Delete();
+				}
+			}
+
+			string contentPath = Path.Combine(contentDirectory, contentFileName);
+
+			if (File.Exists(contentPath))
+			{
+				var json = File.ReadAllText(contentPath);
 				ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
 			}
 			else
@@ -214,19 +232,22 @@ namespace Beamable.Content
 				}
 
 				string json = bakedFile.text;
-				ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
-				
-				if (ContentDataInfo == null)
+				var isValidJson = Json.IsValidJson(json);
+				if (isValidJson)
+				{
+					ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
+				}
+				else
 				{
 					json = Gzip.Decompress(bakedFile.bytes);
 					ContentDataInfo = JsonUtility.FromJson<ContentDataInfoWrapper>(json);
 				}
-				
+
 				// save baked data to disk
 				try
 				{
-					Directory.CreateDirectory(Path.GetDirectoryName(path));
-					File.WriteAllText(path, json);
+					Directory.CreateDirectory(Path.GetDirectoryName(contentPath));
+					File.WriteAllText(contentPath, json);
 				}
 				catch (Exception e)
 				{
@@ -245,12 +266,15 @@ namespace Beamable.Content
 			}
 
 			string json = manifestAsset.text;
-			BakedManifest = JsonUtility.FromJson<ClientManifest>(json);
-			
-			if (BakedManifest == null)
+			var isValidJson = Json.IsValidJson(json);
+			if (isValidJson)
+			{
+				BakedManifest = JsonUtility.FromJson<ClientManifest>(json);
+			}
+			else
 			{
 				json = Gzip.Decompress(manifestAsset.bytes);
-				BakedManifest = JsonUtility.FromJson<ClientManifest>(json);	
+				BakedManifest = JsonUtility.FromJson<ClientManifest>(json);
 			}
 		}
 
@@ -317,15 +341,15 @@ namespace Beamable.Content
 				{
 					return rawCache.GetContentObject(contentInfo);
 				}
-				
+
 				var subscribable = GetSubscription(determinedManifestID);
-				
+
 				if (subscribable == null)
 					AddSubscriber(determinedManifestID);
-				
+
 				if (!subscribable.TryGetContentId(contentId, out var info))
 					return Promise<IContentObject>.Failed(new ContentNotFoundException(contentId));
-				
+
 				info.manifestID = determinedManifestID;
 				return rawCache.GetContentObject(info);
 			});
@@ -357,36 +381,36 @@ namespace Beamable.Content
 		public Promise<ClientManifest> GetManifestWithID(string manifestID = "")
 		{
 			string determinedManifestID = DetermineManifestID(manifestID);
-			
+
 			if (TryGetCachedManifest(determinedManifestID, out var promise))
 			{
 				return promise;
 			}
-			
+
 			return GetSubscription(DetermineManifestID(manifestID))?.GetManifest();
 		}
 
 		public Promise<ClientManifest> GetManifest(string filter = "", string manifestID = "")
 		{
 			string determinedManifestID = DetermineManifestID(manifestID);
-			
+
 			if (TryGetCachedManifest(determinedManifestID, out var promise))
 			{
 				return promise;
 			}
-			
+
 			return GetSubscription(determinedManifestID)?.GetManifest(filter);
 		}
 
 		public Promise<ClientManifest> GetManifest(ContentQuery query, string manifestID = "")
 		{
 			string determinedManifestID = DetermineManifestID(manifestID);
-			
+
 			if (TryGetCachedManifest(determinedManifestID, out var promise))
 			{
 				return promise;
 			}
-			
+
 			return GetSubscription(determinedManifestID)?.GetManifest(query);
 		}
 
@@ -400,7 +424,7 @@ namespace Beamable.Content
 					promise = OfflineCache.Get<ClientManifest>(key, Requester.AccessToken, true);
 					return true;
 				}
-				
+
 				if (manifestID.Equals("global") && BakedManifest != null)
 				{
 					promise = Promise<ClientManifest>.Successful(BakedManifest);
