@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Changed behaviour of Add Style button in Buss Theme Manager
 - Add Style button moved above Buss Style Cards in Buss Theme Manager
+- Updated C#MS Publish window UI/UX
 
 ### Fixed 
 - Constant "Invalid token, trying again" errors in the Editor after 10 days.
