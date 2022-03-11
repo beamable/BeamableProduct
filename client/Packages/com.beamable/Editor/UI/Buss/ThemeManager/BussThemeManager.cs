@@ -297,7 +297,7 @@ namespace Beamable.Editor.UI.Buss
 								cardsToReloads.Add(card);
 						}
 					}
-					
+
 					foreach (var card in cardsToReloads)
 						card.Refresh();
 
