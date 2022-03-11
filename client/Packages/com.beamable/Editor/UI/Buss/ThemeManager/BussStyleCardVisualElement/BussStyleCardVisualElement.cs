@@ -426,6 +426,12 @@ namespace Beamable.Editor.UI.Components
 			}
 		}
 
+		public bool CheckPropertyIsInStyle(VariableDatabase.PropertyReference reference)
+		{
+			var property = _properties.FirstOrDefault(p => p.PropertyProvider == reference.propertyProvider);
+			return property != null && property.PropertyIsInStyle;
+		}
+
 		// TODO: change this, card should be setup/refreshed by it's parent
 		private void OnSelectionChanged(GameObject gameObject)
 		{
