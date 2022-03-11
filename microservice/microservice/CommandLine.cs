@@ -61,12 +61,8 @@ namespace Beamable.Server
 
 			outputDirectory = Path.GetFullPath(outputDirectory);
 			var filePath = Path.Combine(outputDirectory, $"{descriptor.Name}Client.cs");
-			Console.WriteLine("GENERATING: " + filePath);
 			Directory.CreateDirectory(outputDirectory);
 			generator.GenerateCSharpCode(filePath);
-
-			// var source = generator.GetCSharpCodeString();
-			// Console.WriteLine(source);
 		}
 	}
 }

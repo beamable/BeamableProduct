@@ -1,13 +1,12 @@
-using UnityEngine;
 
 namespace Beamable.Server.Editor.DockerCommands
 {
 	public class PruneImageCommand : DockerCommandReturnable<bool>
 	{
-		private readonly MicroserviceDescriptor _descriptor;
+		private readonly IDescriptor _descriptor;
 		private readonly bool _all;
 
-		public PruneImageCommand(MicroserviceDescriptor descriptor, bool all=true)
+		public PruneImageCommand(IDescriptor descriptor, bool all=true)
 		{
 			_descriptor = descriptor;
 			_all = all;

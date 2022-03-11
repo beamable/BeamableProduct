@@ -225,27 +225,6 @@ namespace Beamable.Server.Editor.DockerCommands
 			}
 		}
 
-		public override void Start()
-		{
-			base.Start();
-			if (!MicroserviceConfiguration.Instance.EnableAutoPrune)
-			{
-				return;
-			}
-
-			Task.Run(async () =>
-			{
-				await Task.Delay(500);
-				EditorApplication.delayCall += () =>
-				{
-					var prune = new PruneImageCommand(_service);
-					var _ = prune.Start(null).Then(__ =>
-					{
-						Debug.Log("PRUNE FINISHED");
-					});
-				};
-			});
-		}
 	}
 
 	public class RunImageCommand : DockerCommand
@@ -359,6 +338,29 @@ namespace Beamable.Server.Editor.DockerCommands
 			              $"--name {ContainerName} {ImageName} " +
 			              $"{GetArgString()}";
 			return command;
+		}
+
+
+		public override void Start()
+		{
+			base.Start();
+			if (!MicroserviceConfiguration.Instance.EnableAutoPrune)
+			{
+				return;
+			}
+
+			Task.Run(async () =>
+			{
+				await Task.Delay(500);
+				EditorApplication.delayCall += () =>
+				{
+					var prune = new PruneImageCommand(_descriptor);
+					var _ = prune.Start(null).Then(__ =>
+					{
+
+					});
+				};
+			});
 		}
 
 	}

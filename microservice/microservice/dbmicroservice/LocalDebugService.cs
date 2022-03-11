@@ -20,24 +20,8 @@ namespace Beamable.Server {
             Swan.Logging.ConsoleLogger.Instance.LogLevel = LogLevel.Error;
             var server = new WebServer(HEALTH_PORT)
                 .WithModule(new ActionModule("/health", HttpVerbs.Any, HealthCheck))
-                .WithAction("/routes/scan", HttpVerbs.Post, RebuildRoutes)
                 ;
             server.RunAsync();
-        }
-
-        private async Task RebuildRoutes(IHttpContext context)
-        {
-            try
-            {
-                _beamableService.RebuildRouteTable();
-                context.SetHandled();
-                await context.SendStringAsync("Rebuilt", "text", Encoding.Default);
-            }
-            catch (Exception ex)
-            {
-                context.Response.StatusCode = 500;
-                await context.SendStringAsync(ex.Message + "\n\n" + ex.StackTrace, "text", Encoding.Default);
-            }
         }
 
         private async Task HealthCheck(IHttpContext context) {

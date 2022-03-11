@@ -149,21 +149,13 @@ namespace Beamable.Editor.UI.Model
 			}, ServiceBuilder.HasBuildDirectory);
 
 			evt.menu.BeamableAppendAction($"Run Snyk Tests{hasImageSuffix}", pos => RunSnykTests(), ServiceBuilder.HasImage);
-			evt.menu.BeamableAppendAction($"{localCategory}/Regenerate routes", pos =>
-			{
-				EditorAPI.Instance.Then(api =>
-				{
-					var adminClient = new MicroserviceAdminClient(_serviceDescriptor, api.Requester);
-					adminClient.RebuildRouteTable().Then(_ => Debug.Log("Routes rebuilt"));
-				});
-			});
+
+			evt.menu.BeamableAppendAction($"{localCategory}/Open in CLI", pos => OpenInCli(), IsRunning);
+			evt.menu.BeamableAppendAction($"{localCategory}/View Documentation", pos => OpenLocalDocs(), IsRunning);
 			evt.menu.BeamableAppendAction($"{localCategory}/Regenerate {_serviceDescriptor.Name}Client.cs", pos =>
 			{
 				BeamServicesCodeWatcher.GenerateClientSourceCode(_serviceDescriptor, true);
 			});
-			evt.menu.BeamableAppendAction($"{localCategory}/Open in CLI", pos => OpenInCli(), IsRunning);
-			evt.menu.BeamableAppendAction($"{localCategory}/View Documentation", pos => OpenLocalDocs(), IsRunning);
-
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Documentation", pos => { OpenOnRemote("docs/"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Metrics", pos => { OpenOnRemote("metrics"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => { OpenOnRemote("logs"); }, existsOnRemote);
