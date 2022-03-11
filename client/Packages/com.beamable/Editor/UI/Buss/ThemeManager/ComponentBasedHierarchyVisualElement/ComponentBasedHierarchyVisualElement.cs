@@ -12,6 +12,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
 namespace Beamable.Editor.UI.Components
@@ -53,8 +54,7 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		protected ComponentBasedHierarchyVisualElement() : base(
-			$"{BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement.uss")
-		{ }
+			$"{BUSS_THEME_MANAGER_PATH}/ComponentBasedHierarchyVisualElement/ComponentBasedHierarchyVisualElement.uss") { }
 
 		public override void Init()
 		{
@@ -142,7 +142,7 @@ namespace Beamable.Editor.UI.Components
 			if (!setInHierarchy) return;
 
 			Selection.SetActiveObjectWithContext(SelectedLabel?.RelatedGameObject,
-												 SelectedLabel?.RelatedGameObject);
+			                                     SelectedLabel?.RelatedGameObject);
 		}
 
 		private void OnMouseClicked(IndentedLabelVisualElement newLabel)
@@ -158,7 +158,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				IndentedLabelVisualElement label = new IndentedLabelVisualElement();
 				label.Setup(foundComponent.gameObject, (str) => GetLabel(foundComponent), OnMouseClicked,
-							currentLevel, IndentedLabelVisualElement.DEFAULT_SINGLE_INDENT_WIDTH);
+				            currentLevel, IndentedLabelVisualElement.DEFAULT_SINGLE_INDENT_WIDTH);
 				label.Init();
 				_spawnedLabels.Add(label);
 				_hierarchyContainer.Add(label);

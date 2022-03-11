@@ -1,4 +1,3 @@
-using Beamable.Common;
 using Beamable.Editor.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
@@ -25,6 +24,7 @@ namespace Beamable.Editor.UI.Buss
 		private VisualElement _stylesGroup;
 		private BussElementHierarchyVisualElement _navigationWindow;
 		private LabeledCheckboxVisualElement _filterToggle;
+		private SelectedBussElementVisualElement _selectedBussElement;
 
 		private bool _inStyleSheetChangedLoop;
 		private readonly VariableDatabase _variableDatabase = new VariableDatabase();
@@ -35,9 +35,8 @@ namespace Beamable.Editor.UI.Buss
 		private AddStyleButton _addStyleButton;
 		private bool _filterMode;
 		private BeamablePopupWindow _confirmationPopup;
-		private readonly List<BussStyleSheet> _activeStyleSheets = new List<BussStyleSheet>();
 
-		public List<BussStyleSheet> ActiveStyleSheets => _activeStyleSheets;
+		public List<BussStyleSheet> ActiveStyleSheets { get; } = new List<BussStyleSheet>();
 
 		[MenuItem(
 			MenuItems.Windows.Paths.MENU_ITEM_PATH_WINDOW_BEAMABLE + "/" +
@@ -96,7 +95,11 @@ namespace Beamable.Editor.UI.Buss
 			_navigationWindow = new BussElementHierarchyVisualElement();
 			_navigationWindow.Init();
 			navigationGroup.Add(_navigationWindow);
-
+			
+			_selectedBussElement = new SelectedBussElementVisualElement();
+			_selectedBussElement.Setup(_navigationWindow);
+			scrollView.Add(_selectedBussElement);
+			
 			_filterToggle = new LabeledCheckboxVisualElement("Filter by selected element");
 			_filterToggle.name = "filterToggle";
 			_filterToggle.OnValueChanged -= OnFilterToggleClicked;
@@ -220,7 +223,7 @@ namespace Beamable.Editor.UI.Buss
 			_addStyleButton = new AddStyleButton();
 			_addStyleButton.Setup(this, _navigationWindow, _ => RefreshStyleSheets());
 			_addStyleButton.CheckEnableState();
-			parent.Insert(2, _addStyleButton);
+			parent.Insert(3, _addStyleButton);
 		}
 
 		private void OnFocus()
