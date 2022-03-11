@@ -11,7 +11,7 @@ namespace Beamable.Server.Api.Stats
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	///
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/stats-feature">Stats</a> feature documentation
+	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/stats-feature-overview">Stats</a> feature documentation
 	/// - See Beamable.Server.IBeamableServices script reference
 	///
 	/// ![img beamable-logo]

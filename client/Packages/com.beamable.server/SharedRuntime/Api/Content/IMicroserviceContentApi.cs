@@ -10,7 +10,7 @@ namespace Beamable.Server.Api.Content
 	/// [img beamable-logo]: https://landen.imgix.net/7udgo2lvquge/assets/xgh89bz1.png?w=400 "Beamable Logo"
 	/// 
 	/// #### Related Links
-	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-feature">Content</a> feature documentation
+	/// - See the <a target="_blank" href="https://docs.beamable.com/docs/content-feature-overview">Content</a> feature documentation
 	/// - See Beamable.Server.IBeamableServices script reference
 	/// 
 	/// ![img beamable-logo]
