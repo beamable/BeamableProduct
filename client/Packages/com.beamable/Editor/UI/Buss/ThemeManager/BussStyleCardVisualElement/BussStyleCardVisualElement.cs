@@ -409,7 +409,7 @@ namespace Beamable.Editor.UI.Components
 				property.Refresh();
 			}
 		}
-		
+
 		public bool CheckPropertyIsInStyle(VariableDatabase.PropertyReference reference)
 		{
 			var property = _properties.FirstOrDefault(p => p.PropertyProvider == reference.propertyProvider);
