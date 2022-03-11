@@ -21,7 +21,6 @@ namespace Beamable.UI.Buss
 					changeFunction(property);
 				}
 				BussConfiguration.UseConfig(c => c.RecalculateInlineStyle(element));
-				element.ApplyStyle();
 			}
 		}
 
