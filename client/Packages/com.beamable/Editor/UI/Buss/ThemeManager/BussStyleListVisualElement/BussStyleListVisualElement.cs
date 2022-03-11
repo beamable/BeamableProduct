@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Beamable.Common;
+﻿using Beamable.Common;
 using Beamable.Editor.Common;
 using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
@@ -14,12 +14,12 @@ namespace Beamable.Editor.UI.Buss
 	public class BussStyleListVisualElement : BeamableBasicVisualElement
 	{
 		public Func<BussStyleSheet, BussStyleRule, bool> Filter;
-		
+
 		private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements =
 			new List<BussStyleCardVisualElement>();
 		private readonly VariableDatabase _variableDatabase = new VariableDatabase();
 		private bool _inStyleSheetChangedLoop;
-		
+
 		private IEnumerable<BussStyleSheet> _styleSheets;
 
 		public IEnumerable<BussStyleSheet> StyleSheets
@@ -61,7 +61,7 @@ namespace Beamable.Editor.UI.Buss
 				_variableDatabase.AddStyleSheet(styleSheet);
 				styleSheet.Change += OnStyleSheetChanged;
 			}
-			
+
 			RefreshStyleCards();
 		}
 
@@ -85,7 +85,7 @@ namespace Beamable.Editor.UI.Buss
 			BussStyleRule[] rulesToDraw = StyleSheets.SelectMany(ss => ss.Styles).ToArray();
 
 			BussStyleCardVisualElement[] cardsToRemove = _styleCardsVisualElements.Where(card => !rulesToDraw.Contains(card.StyleRule))
-			                                                                      .ToArray();
+																				  .ToArray();
 
 			foreach (BussStyleCardVisualElement card in cardsToRemove)
 			{
@@ -114,7 +114,7 @@ namespace Beamable.Editor.UI.Buss
 					}
 				}
 			}
-			
+
 			FilterCards();
 		}
 
@@ -155,7 +155,8 @@ namespace Beamable.Editor.UI.Buss
 		}
 
 		private void OnStyleSheetChanged()
-		{if (_inStyleSheetChangedLoop) return;
+		{
+			if (_inStyleSheetChangedLoop) return;
 
 			_inStyleSheetChangedLoop = true;
 
@@ -164,7 +165,7 @@ namespace Beamable.Editor.UI.Buss
 				_variableDatabase.ReconsiderAllStyleSheets();
 
 				if (_variableDatabase.ForceRefreshAll || // if we did complex change and we need to refresh all styles
-				    _variableDatabase.DirtyProperties.Count == 0) // or if we did no changes (the source of change is unknown)
+					_variableDatabase.DirtyProperties.Count == 0) // or if we did no changes (the source of change is unknown)
 				{
 					RefreshStyleCards();
 				}
@@ -197,7 +198,7 @@ namespace Beamable.Editor.UI.Buss
 			{
 				element = el;
 			}
-			
+
 			foreach (var styleCard in _styleCardsVisualElements)
 			{
 				styleCard.OnBussElementSelected(element);
