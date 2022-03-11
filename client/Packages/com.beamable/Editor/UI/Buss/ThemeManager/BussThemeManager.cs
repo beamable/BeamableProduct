@@ -25,8 +25,9 @@ namespace Beamable.Editor.UI.Buss
 		private BussStyleListVisualElement _stylesGroup;
 		private BussElementHierarchyVisualElement _navigationWindow;
 		private LabeledCheckboxVisualElement _filterToggle;
+        private ScrollView _scrollView;
 
-		private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements =
+        private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements =
 			new List<BussStyleCardVisualElement>();
 
 		private AddStyleButton _addStyleButton;
@@ -63,13 +64,10 @@ namespace Beamable.Editor.UI.Buss
 			mainVisualElement.AddStyleSheet(
 				$"{BUSS_THEME_MANAGER_PATH}/BussThemeManager.uss");
 
-			ScrollView scrollView = new ScrollView();
-			scrollView.name = "themeManagerContainerScrollView";
-			mainVisualElement.Add(scrollView);
 
 			VisualElement navigationGroup = new VisualElement();
 			navigationGroup.name = "navigationGroup";
-			scrollView.Add(navigationGroup);
+            mainVisualElement.Add(navigationGroup);
 
 			_navigationWindow = new BussElementHierarchyVisualElement();
 			_navigationWindow.Init();
@@ -81,9 +79,13 @@ namespace Beamable.Editor.UI.Buss
 			_filterToggle.OnValueChanged += OnFilterToggleClicked;
 			_filterToggle.Refresh();
 			_filterToggle.SetWithoutNotify(_filterMode);
-			scrollView.Add(_filterToggle);
+            mainVisualElement.Add(_filterToggle);
 
-			_stylesGroup = new BussStyleListVisualElement();
+            ScrollView scrollView = new ScrollView();
+            scrollView.name = "themeManagerContainerScrollView";
+            mainVisualElement.Add(scrollView);
+
+            _stylesGroup = new BussStyleListVisualElement();
 			_stylesGroup.name = "stylesGroup";
 			_stylesGroup.Filter = CardFilter;
 			scrollView.Add(_stylesGroup);
