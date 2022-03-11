@@ -13,3 +13,8 @@
     border-right-width: 1px;
     border-color: #000000;
 }
+
+#addStyleButton > Label {
+    -unity-font-style: bold;
+    align-self: center;
+}

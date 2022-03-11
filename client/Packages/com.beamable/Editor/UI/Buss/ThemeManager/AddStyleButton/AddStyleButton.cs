@@ -21,15 +21,13 @@ namespace Beamable.Editor.UI.Components
 	public class AddStyleButton : BeamableBasicVisualElement
 	{
 		private VisualElement _addStyleButton;
-		private BussThemeManager _manager;
-		private BussElementHierarchyVisualElement _navigationWindow;
+		private BussStyleListVisualElement _styleList;
 		private Action<BussStyleRule> _onSelectorAdded;
 		public AddStyleButton() : base($"{BUSS_THEME_MANAGER_PATH}/AddStyleButton/AddStyleButton.uss") { }
 
-		public void Setup(BussThemeManager manager, BussElementHierarchyVisualElement navigationWindow, Action<BussStyleRule> onSelectorAdded)
+		public void Setup(BussStyleListVisualElement styleList, Action<BussStyleRule> onSelectorAdded)
 		{
-			_manager = manager;
-			_navigationWindow = navigationWindow;
+			_styleList = styleList;
 			_onSelectorAdded = onSelectorAdded;
 
 			Init();
@@ -39,7 +37,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			base.Init();
 
-			_addStyleButton = new VisualElement { name = "addStyleButton" };
+			_addStyleButton = new VisualElement {name = "addStyleButton"};
 			_addStyleButton.AddToClassList("button");
 			_addStyleButton.Add(new Label("Add Style"));
 
@@ -57,15 +55,10 @@ namespace Beamable.Editor.UI.Components
 			if (_addStyleButton == null) return;
 
 			_addStyleButton.tooltip = string.Empty;
-			_manager.ActiveStyleSheets.Clear();
 
-#if BEAMABLE_DEVELOPER
-			_manager.ActiveStyleSheets.AddRange(_navigationWindow.StyleSheets);
-#else
-			_manager.ActiveStyleSheets.AddRange(_navigationWindow.StyleSheets.Where(bussStyleSheet => !bussStyleSheet.IsReadOnly));
-#endif
-
-			if (_manager.ActiveStyleSheets.Count == 0)
+			var styleSheetCount = _styleList.WritableStyleSheets.Count();
+			
+			if (styleSheetCount == 0)
 			{
 				_addStyleButton.tooltip = NO_BUSS_STYLE_SHEET_AVAILABLE;
 				_addStyleButton.SetInactive(true);
@@ -75,31 +68,31 @@ namespace Beamable.Editor.UI.Components
 				_addStyleButton.tooltip = String.Empty;
 				_addStyleButton.SetInactive(false);
 
-				if (_manager.ActiveStyleSheets.Count == 1) { }
-				else if (_manager.ActiveStyleSheets.Count > 1) { }
+				if (styleSheetCount == 1) { }
+				else if (styleSheetCount > 1) { }
 			}
 		}
 
 		private void OnClick()
 		{
-			List<BussStyleSheet> bussStyleSheets = _manager.ActiveStyleSheets.ToList();
-
-			if (bussStyleSheets.Count == 0)
+			var styleSheetCount = _styleList.WritableStyleSheets.Count();
+			
+			if (styleSheetCount == 0)
 			{
 				return;
 			}
 
-			if (bussStyleSheets.Count == 1)
+			if (styleSheetCount == 1)
 			{
-				CreateEmptyStyle(bussStyleSheets[0]);
+				CreateEmptyStyle(_styleList.WritableStyleSheets.First());
 			}
-			else if (bussStyleSheets.Count > 1)
+			else if (styleSheetCount > 1)
 			{
-				OpenMenu(bussStyleSheets);
+				OpenMenu(_styleList.WritableStyleSheets);
 			}
 		}
 
-		private void OpenMenu(List<BussStyleSheet> bussStyleSheets)
+		private void OpenMenu(IEnumerable<BussStyleSheet> bussStyleSheets)
 		{
 			GenericMenu context = new GenericMenu();
 
@@ -110,7 +103,7 @@ namespace Beamable.Editor.UI.Components
 					CreateEmptyStyle(styleSheet);
 				});
 			}
-
+			
 			context.ShowAsContext();
 		}
 
