@@ -36,7 +36,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			Root.Q<Button>("buildBtn").RemoveFromHierarchy();
 			Root.Q<VisualElement>("logContainer").RemoveFromHierarchy();
-			Root.Q<VisualElement>("dependentServicesContainer").RemoveFromHierarchy();
 			Root.Q("collapseContainer")?.RemoveFromHierarchy();
 
 #if UNITY_2019_1_OR_NEWER

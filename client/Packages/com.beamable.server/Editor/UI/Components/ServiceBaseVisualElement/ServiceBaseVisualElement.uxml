@@ -43,12 +43,6 @@
             <engine:VisualElement name="logContainer" class="--positionHidden"/>
             <beamableMS:MicroserviceVisualElementSeparator name="separator" class="--positionHidden"/>
 
-            <engine:VisualElement name="buttonsContainer">
-                <engine:VisualElement name="dependentServicesContainer">
-                    <engine:Button name="dependentServicesBtn" text="Dependent services" class="noMarginNoPaddingNoBorder"/>
-                </engine:VisualElement>
-            </engine:VisualElement>
-            
         </engine:VisualElement>
 
     </engine:VisualElement>
