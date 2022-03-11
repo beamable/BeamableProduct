@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Beamable.Common;
+﻿using Beamable.Common;
 using Beamable.Editor.Common;
 using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
@@ -14,13 +14,12 @@ namespace Beamable.Editor.UI.Buss
 	public class BussStyleListVisualElement : BeamableBasicVisualElement
 	{
 		public Func<BussStyleSheet, BussStyleRule, bool> Filter;
-		
+
 		private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements =
 			new List<BussStyleCardVisualElement>();
 		private readonly VariableDatabase _variableDatabase = new VariableDatabase();
 		private bool _inStyleSheetChangedLoop;
-		private BussElement _currentSelected;
-		
+
 		private IEnumerable<BussStyleSheet> _styleSheets;
 
 		public IEnumerable<BussStyleSheet> StyleSheets
@@ -62,7 +61,7 @@ namespace Beamable.Editor.UI.Buss
 				_variableDatabase.AddStyleSheet(styleSheet);
 				styleSheet.Change += OnStyleSheetChanged;
 			}
-			
+
 			RefreshStyleCards();
 		}
 
@@ -86,7 +85,7 @@ namespace Beamable.Editor.UI.Buss
 			BussStyleRule[] rulesToDraw = StyleSheets.SelectMany(ss => ss.Styles).ToArray();
 
 			BussStyleCardVisualElement[] cardsToRemove = _styleCardsVisualElements.Where(card => !rulesToDraw.Contains(card.StyleRule))
-			                                                                      .ToArray();
+																				  .ToArray();
 
 			foreach (BussStyleCardVisualElement card in cardsToRemove)
 			{
@@ -115,7 +114,7 @@ namespace Beamable.Editor.UI.Buss
 					}
 				}
 			}
-			
+
 			FilterCards();
 		}
 
@@ -127,30 +126,6 @@ namespace Beamable.Editor.UI.Buss
 					Filter?.Invoke(styleCardVisualElement.StyleSheet, styleCardVisualElement.StyleRule) ?? true;
 				styleCardVisualElement.SetHidden(!visible);
 			}
-		}
-		
-		public float GetSelectedElementPosInScroll()
-		{
-			if (_currentSelected == null)
-				return 0;
-			
-			int selectedIndex = -1;
-			float selectedHeight = 0;
-
-			for (int i = 0; i < _styleCardsVisualElements.Count; i++)
-			{
-				bool isMatch = _styleCardsVisualElements[i].StyleRule.Selector?.CheckMatch(_currentSelected) ?? false;
-
-				if (selectedIndex != -1)
-					continue;
-
-				if (isMatch)
-					selectedIndex = i;
-				else
-					selectedHeight += _styleCardsVisualElements[i].contentRect.height;
-			}
-
-			return selectedHeight;
 		}
 
 		private void AddStyleCard(BussStyleSheet styleSheet, BussStyleRule styleRule, Action callback)
@@ -180,7 +155,8 @@ namespace Beamable.Editor.UI.Buss
 		}
 
 		private void OnStyleSheetChanged()
-		{if (_inStyleSheetChangedLoop) return;
+		{
+			if (_inStyleSheetChangedLoop) return;
 
 			_inStyleSheetChangedLoop = true;
 
@@ -189,7 +165,7 @@ namespace Beamable.Editor.UI.Buss
 				_variableDatabase.ReconsiderAllStyleSheets();
 
 				if (_variableDatabase.ForceRefreshAll || // if we did complex change and we need to refresh all styles
-				    _variableDatabase.DirtyProperties.Count == 0) // or if we did no changes (the source of change is unknown)
+					_variableDatabase.DirtyProperties.Count == 0) // or if we did no changes (the source of change is unknown)
 				{
 					RefreshStyleCards();
 				}
@@ -216,20 +192,16 @@ namespace Beamable.Editor.UI.Buss
 
 		private void OnSelectionChange()
 		{
-			_currentSelected = null;
+			BussElement element = null;
 			var gameObject = Selection.activeGameObject;
-			if (gameObject != null)
+			if (gameObject != null && gameObject.TryGetComponent<BussElement>(out var el))
 			{
-				var el = gameObject.GetComponent<BussElement>();
-				if (el != null)
-				{
-					_currentSelected = el;
-				}
+				element = el;
 			}
-			
+
 			foreach (var styleCard in _styleCardsVisualElements)
 			{
-				styleCard.OnBussElementSelected(_currentSelected);
+				styleCard.OnBussElementSelected(element);
 			}
 			FilterCards();
 		}

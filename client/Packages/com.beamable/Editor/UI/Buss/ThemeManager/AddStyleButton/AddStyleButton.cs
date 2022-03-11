@@ -37,7 +37,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			base.Init();
 
-			_addStyleButton = new VisualElement {name = "addStyleButton"};
+			_addStyleButton = new VisualElement { name = "addStyleButton" };
 			_addStyleButton.AddToClassList("button");
 			_addStyleButton.Add(new Label("Add Style"));
 
@@ -57,7 +57,7 @@ namespace Beamable.Editor.UI.Components
 			_addStyleButton.tooltip = string.Empty;
 
 			var styleSheetCount = _styleList.WritableStyleSheets.Count();
-			
+
 			if (styleSheetCount == 0)
 			{
 				_addStyleButton.tooltip = NO_BUSS_STYLE_SHEET_AVAILABLE;
@@ -76,7 +76,7 @@ namespace Beamable.Editor.UI.Components
 		private void OnClick()
 		{
 			var styleSheetCount = _styleList.WritableStyleSheets.Count();
-			
+
 			if (styleSheetCount == 0)
 			{
 				return;
@@ -103,7 +103,7 @@ namespace Beamable.Editor.UI.Components
 					CreateEmptyStyle(styleSheet);
 				});
 			}
-			
+
 			context.ShowAsContext();
 		}
 

@@ -119,7 +119,7 @@ namespace Beamable.Editor.UI.Buss
 			{
 				selectedElement = selected.GetComponent<BussElement>();
 			}
-			
+
 			if (selectedElement == null || !_filterMode) return true;
 
 			return (styleRule.Selector?.CheckMatch(_navigationWindow.SelectedComponent) ?? false);

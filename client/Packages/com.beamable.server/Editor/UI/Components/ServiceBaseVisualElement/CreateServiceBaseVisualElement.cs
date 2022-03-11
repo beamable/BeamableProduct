@@ -34,7 +34,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private const int MAX_NAME_LENGTH = 28;
 
 		private static readonly string[] ElementsToRemove = {
-			"dependentServicesContainer", "collapseContainer", "statusIcon", "remoteStatusIcon", "moreBtn", "buildBtn"
+			"collapseContainer", "statusIcon", "remoteStatusIcon", "moreBtn", "buildBtn"
 		};
 
 		private TextField _nameTextField;

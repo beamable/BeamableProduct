@@ -1,6 +1,6 @@
 ﻿using Beamable.Editor.UI.Components;
-using System;
 using Beamable.UI.Buss;
+using System;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
