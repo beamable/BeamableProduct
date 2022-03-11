@@ -170,6 +170,12 @@ namespace Beamable.UI.Buss // TODO: rename it to Beamable.UI.BUSS - new system's
 			element.ApplyStyle();
 		}
 
+		public void RecalculateInlineStyle(BussElement element)
+		{
+			ApplyDescriptor(element, element.InlineStyle, SelectorWeight.Max);
+			element.ApplyStyle();
+		}
+
 		private static void ApplyStyleSheet(BussElement element, BussStyleSheet sheet)
 		{
 			if (element == null || sheet == null) return;

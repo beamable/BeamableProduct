@@ -11,11 +11,29 @@ namespace Beamable.UI.Buss
 										  IBussProperty property,
 										  out BussPropertyProvider propertyProvider)
 		{
-			var isKeyValid = BussStyle.IsKeyValid(key) || IsValidVariableName(key);
-			if (isKeyValid && !target.HasProperty(key) &&
-				BussStyle.GetBaseType(key).IsAssignableFrom(property.GetType()))
+			var areKeyAndTypeValid = BussStyle.IsKeyValid(key) &&
+			                         BussStyle.GetBaseType(key).IsInstanceOfType(property);
+			if (areKeyAndTypeValid || IsValidVariableName(key))
 			{
-				propertyProvider = BussPropertyProvider.Create(key, property.CopyProperty());
+				if (target.TryAddPropertyProvider(key, out propertyProvider))
+				{
+					propertyProvider.SetProperty(property);
+					return true;
+				}
+			}
+
+			propertyProvider = null;
+			return false;
+		}
+
+		public static bool TryAddPropertyProvider(this BussStyleDescription target,
+		                                          string key,
+		                                          out BussPropertyProvider propertyProvider)
+		{
+			var isKeyValid = BussStyle.IsKeyValid(key) || IsValidVariableName(key);
+			if (isKeyValid && !target.HasProperty(key))
+			{
+				propertyProvider = BussPropertyProvider.Create(key);
 				target.Properties.Add(propertyProvider);
 				return true;
 			}
@@ -37,6 +55,17 @@ namespace Beamable.UI.Buss
 		public static IBussProperty GetProperty(this BussStyleDescription target, string key)
 		{
 			return target.GetPropertyProvider(key)?.GetProperty();
+		}
+
+		public static BussPropertyProvider GetOrCreatePropertyProvider(this BussStyleDescription target, string key)
+		{
+			var propertyProvider = GetPropertyProvider(target, key);
+			if (propertyProvider == null)
+			{
+				target.TryAddPropertyProvider(key, out propertyProvider);
+			}
+
+			return propertyProvider;
 		}
 
 		public static bool IsValidVariableName(string name) => name?.StartsWith("--") ?? false;
