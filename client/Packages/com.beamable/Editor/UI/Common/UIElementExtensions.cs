@@ -282,17 +282,19 @@ namespace Beamable.Editor
 
 		public static EditorWindow GetEditorWindowWithReflection(this BeamableBasicVisualElement element)
 		{
-			try { 
+			try
+			{
 				var ownerProperty = element.panel.GetType().GetProperty("ownerObject");
 				var owner = ownerProperty.GetValue(element.panel);
 				var window = owner.GetType().BaseType.GetProperty("actualView", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(owner);
-				return (EditorWindow)window;}
+				return (EditorWindow)window;
+			}
 			catch (Exception)
 			{
 				return null;
 			}
 		}
-		
+
 		public static void AssignUIRefs(this BeamableBasicVisualElement element)
 		{
 			var type = element.GetType();
