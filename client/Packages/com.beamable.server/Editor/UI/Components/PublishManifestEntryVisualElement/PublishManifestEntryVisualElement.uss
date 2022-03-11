@@ -11,7 +11,7 @@
 
 #nameColumn, #depsColumn {
     flex-direction: row;
-    align-self: flex-start;
+    align-self: center;
     flex: 1;
 }
 
@@ -19,8 +19,9 @@
     flex-direction: column;
 }
 
-#SizeC {
+#SizeC, #CommentsC {
     flex-direction: row;
+    align-self: center;
 }
 
 
@@ -32,12 +33,12 @@
     height: 20px;
     flex-direction: row;
     justify-content: flex-end;
+    align-self: center;
 }
 
 
 #nameMS {
     -unity-font-style: bold;
-    margin-top: 6px;
 }
 
 #typeImage {
