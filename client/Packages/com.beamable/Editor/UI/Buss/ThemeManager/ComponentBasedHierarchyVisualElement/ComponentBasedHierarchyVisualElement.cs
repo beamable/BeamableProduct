@@ -131,6 +131,11 @@ namespace Beamable.Editor.UI.Components
 					ChangeSelectedLabel(indentedLabelVisualElement, false);
 				}
 			}
+			else
+			{
+				SelectedComponent = null;
+				ChangeSelectedLabel(null, false);
+			}
 		}
 
 		private void ChangeSelectedLabel(IndentedLabelVisualElement newLabel, bool setInHierarchy = true)
