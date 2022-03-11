@@ -161,11 +161,11 @@ namespace Beamable.Editor.UI.Model
 			evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());
 			evt.menu.BeamableAppendAction("Build", pos => Build());
 			evt.menu.BeamableAppendAction(IncludeDebugTools
-				                              ? BUILD_DISABLE_DEBUG
-				                              : BUILD_ENABLE_DEBUG, pos =>
-			                              {
-				                              IncludeDebugTools = !IncludeDebugTools;
-			                              });
+											  ? BUILD_DISABLE_DEBUG
+											  : BUILD_ENABLE_DEBUG, pos =>
+										  {
+											  IncludeDebugTools = !IncludeDebugTools;
+										  });
 			if (MicroserviceConfiguration.Instance.Microservices.Count > 1)
 			{
 				evt.menu.BeamableAppendAction($"Order/Move Up", pos =>

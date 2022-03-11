@@ -125,7 +125,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			base.UpdateButtons();
 			_stopButton.visible = Model.IsRunning;
 			_buildBtn.tooltip = GetBuildButtonString(_microserviceModel.IncludeDebugTools,
-			                                         _microserviceModel.IsRunning ? BUILD_RESET : BUILD_START);
+													 _microserviceModel.IsRunning ? BUILD_RESET : BUILD_START);
 			_buildDefaultLabel.EnableInClassList("running", _microserviceModel.IsRunning);
 
 			if (_microserviceModel.IsRunning)

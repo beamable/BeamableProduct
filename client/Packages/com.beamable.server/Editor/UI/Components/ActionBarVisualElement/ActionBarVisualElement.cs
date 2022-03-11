@@ -2,8 +2,8 @@ using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using Debug = UnityEngine.Debug;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -76,8 +76,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_startAll.SetEnabled(!DockerCommand.DockerNotInstalled);
 
 			var dependenciesState = MicroserviceConfiguration.Instance.Microservices.Count > 0 &&
-			                                MicroserviceConfiguration.Instance.StorageObjects.Count > 0;
-			
+											MicroserviceConfiguration.Instance.StorageObjects.Count > 0;
+
 			_dependencies = Root.Q<Button>("dependencies");
 			_dependencies.clickable.clicked += () => DependentServicesWindow.ShowWindow();
 			_dependencies.SetEnabled(dependenciesState);
@@ -100,8 +100,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_infoButton = Root.Q<Button>("infoButton");
 			_infoButton.clickable.clicked += () => { OnInfoButtonClicked?.Invoke(); };
 			_infoButton.tooltip = "Open Documentation";
-			
-			
+
+
 			bool localServicesAvailable = MicroservicesDataModel.Instance?.AllLocalServices != null;
 			int localServicesAmount = localServicesAvailable ? MicroservicesDataModel.Instance.AllLocalServices.Count : 0;
 			int selectedServicesAmount = localServicesAvailable
