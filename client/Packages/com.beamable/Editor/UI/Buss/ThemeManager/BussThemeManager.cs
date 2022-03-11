@@ -81,14 +81,14 @@ namespace Beamable.Editor.UI.Buss
 			_filterToggle.SetWithoutNotify(_filterMode);
             mainVisualElement.Add(_filterToggle);
 
-            ScrollView scrollView = new ScrollView();
-            scrollView.name = "themeManagerContainerScrollView";
-            mainVisualElement.Add(scrollView);
+            _scrollView = new ScrollView();
+            _scrollView.name = "themeManagerContainerScrollView";
+            mainVisualElement.Add(_scrollView);
 
             _stylesGroup = new BussStyleListVisualElement();
 			_stylesGroup.name = "stylesGroup";
 			_stylesGroup.Filter = CardFilter;
-			scrollView.Add(_stylesGroup);
+			_scrollView.Add(_stylesGroup);
 
 			root.Add(mainVisualElement);
 
@@ -97,9 +97,12 @@ namespace Beamable.Editor.UI.Buss
 
 			_navigationWindow.BussStyleSheetChange -= RefreshStyleSheets;
 			_navigationWindow.BussStyleSheetChange += RefreshStyleSheets;
+			
+			_navigationWindow.SelectionChanged -= SetScroll;
+			_navigationWindow.SelectionChanged += SetScroll;
 
 			RefreshStyleSheets();
-			AddSelectorButton(scrollView);
+			AddSelectorButton(mainVisualElement);
 		}
 
 		private void OnFilterToggleClicked(bool value)
@@ -134,6 +137,24 @@ namespace Beamable.Editor.UI.Buss
 			_addStyleButton.CheckEnableState();
 			parent.Insert(2, _addStyleButton);
 		}
+		
+		private void SetScroll(GameObject _ = null)
+		{
+			if (!_filterMode)
+			{
+				EditorApplication.delayCall += () => UpdateScroll(_stylesGroup.GetSelectedElementPosInScroll());
+			}
+		}
+		
+		private void UpdateScroll(float scrollValue)
+		{
+			EditorApplication.delayCall += () =>
+			{
+				_scrollView.verticalScroller.value = scrollValue;
+				_scrollView.MarkDirtyRepaint();
+			};
+		}
+
 
 		private void OnFocus()
 		{
@@ -147,6 +168,7 @@ namespace Beamable.Editor.UI.Buss
 
 			_navigationWindow.HierarchyChanged -= RefreshStyleSheets;
 			_navigationWindow.BussStyleSheetChange -= RefreshStyleSheets;
+			_navigationWindow.SelectionChanged -= SetScroll;
 
 			_navigationWindow.Destroy();
 			UndoSystem<BussStyleRule>.DeleteAllRecords();
