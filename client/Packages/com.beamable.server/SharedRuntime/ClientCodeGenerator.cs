@@ -321,7 +321,6 @@ namespace Beamable.Server.Generator
 			options.BracingStyle = "C";
 			var sb = new StringBuilder();
 			using (var sourceWriter = new StringWriter(sb))
-				// using (StreamWriter sourceWriter = new StreamWriter(fileName))
 			{
 				provider.GenerateCodeFromCompileUnit(
 					targetUnit, sourceWriter, options);
