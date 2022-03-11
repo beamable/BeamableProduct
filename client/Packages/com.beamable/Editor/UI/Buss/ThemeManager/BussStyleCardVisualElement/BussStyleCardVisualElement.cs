@@ -99,9 +99,9 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		public void Setup(BussStyleSheet styleSheet,
-		                  BussStyleRule styleRule,
-		                  VariableDatabase variableDatabase,
-		                  Action onUndoRequest)
+						  BussStyleRule styleRule,
+						  VariableDatabase variableDatabase,
+						  Action onUndoRequest)
 		{
 			_styleSheet = styleSheet;
 			_styleRule = styleRule;
@@ -220,7 +220,7 @@ namespace Beamable.Editor.UI.Components
 				},
 				BeamablePopupWindow.CloseConfirmationWindow
 			);
-			
+
 			BeamablePopupWindow popupWindow = BeamablePopupWindow.ShowConfirmationUtility(
 				CLEAR_ALL_PROPERTIES_HEADER,
 				confirmationPopup, this.GetEditorWindowWithReflection());
@@ -419,7 +419,7 @@ namespace Beamable.Editor.UI.Components
 		public void OnBussElementSelected(BussElement element)
 		{
 			if (_colorBlock == null) return;
-			
+
 			bool active = false;
 			if (element != null && StyleRule.Selector != null)
 			{
