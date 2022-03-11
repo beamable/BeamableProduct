@@ -1,6 +1,7 @@
 #mainVisualElement {
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarlight.png");
 }
+
 .boundedButton {
     border-color: #b4b4b4;
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarlight.png");
@@ -27,4 +28,8 @@
 
 #refreshIcon{
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Refresh-dark.png");
+}
+
+#dependenciesIcon {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/dependencies_dark.png");
 }

@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
+using static Beamable.Common.Constants.Features.Services;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -158,6 +159,13 @@ namespace Beamable.Editor.UI.Model
 			evt.menu.BeamableAppendAction($"{remoteCategory}/View Logs", pos => { OpenOnRemote("logs"); }, existsOnRemote);
 			evt.menu.BeamableAppendAction($"Visual Studio Code/Copy Debug Configuration{debugToolsSuffix}", pos => { CopyVSCodeDebugTool(); }, IncludeDebugTools);
 			evt.menu.BeamableAppendAction($"Open C# Code", _ => OpenCode());
+			evt.menu.BeamableAppendAction("Build", pos => Build());
+			evt.menu.BeamableAppendAction(IncludeDebugTools
+				                              ? BUILD_DISABLE_DEBUG
+				                              : BUILD_ENABLE_DEBUG, pos =>
+			                              {
+				                              IncludeDebugTools = !IncludeDebugTools;
+			                              });
 			if (MicroserviceConfiguration.Instance.Microservices.Count > 1)
 			{
 				evt.menu.BeamableAppendAction($"Order/Move Up", pos =>

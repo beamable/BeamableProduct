@@ -33,3 +33,7 @@
 #dropDownImg{
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown_Line_light.png")
 }
+
+#dependenciesIcon {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/dependencies_light.png");
+}

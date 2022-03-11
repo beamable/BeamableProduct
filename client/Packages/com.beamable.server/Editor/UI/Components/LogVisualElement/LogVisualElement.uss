@@ -318,7 +318,7 @@ LogVisualElement .splitWrapper > VisualElement {
 
 }
 
-#buildDropDown {
+#buildBtn {
     flex-direction: row;
     justify-content: space-around;
 }

@@ -8,31 +8,36 @@
     <engine:VisualElement name="mainVisualElement">
         <engine:VisualElement name="leftContentVisualElement">
 
-            <engine:Button class="boundedButton" name="startAll">
+            <engine:Button name="startAll" class="boundedButton">
                 <engine:Image name="startIcon"/>
-                <engine:Label text="Start All" class="buttonText"/>
+                <engine:Label class="buttonText" text="Play All"/>
             </engine:Button>
 
-            <engine:Button class="boundedButton" name="createNew">
+            <engine:Button name="dependencies" class="boundedButton">
+                <engine:Image name="dependenciesIcon"/>
+                <engine:Label class="buttonText" text="Dependencies"/>
+            </engine:Button>
+
+            <engine:Button name="createNew" class="boundedButton">
                 <engine:VisualElement class="mainPart">
                     <engine:Image name="createNewIcon"/>
-                    <engine:Label text="Create New" class="buttonText"/>
+                    <engine:Label class="buttonText" text="Create New" />
                 </engine:VisualElement>
                 <engine:Image name="dropDownImg" class="--image-scale-to-fit">
                 </engine:Image>
             </engine:Button>
 
-            <engine:Button  class="boundedButton" name="publish">
+            <engine:Button name="publish" class="boundedButton">
                 <engine:Image name="publishIcon"/>
-                <engine:Label text="Publish" class="buttonText"/>
+                <engine:Label class="buttonText" text="Publish"/>
             </engine:Button>
         </engine:VisualElement>
 
         <engine:VisualElement name="rightContentVisualElement">
-            <engine:Button class="unboundedButton" name="refreshButton">
+            <engine:Button name="refreshButton" class="unboundedButton">
                 <engine:Image name="refreshIcon"/>
             </engine:Button>
-            <engine:Button class="unboundedButton" name="infoButton">
+            <engine:Button name="infoButton" class="unboundedButton">
                 <engine:Image name="infoIcon"/>
             </engine:Button>
         </engine:VisualElement>
