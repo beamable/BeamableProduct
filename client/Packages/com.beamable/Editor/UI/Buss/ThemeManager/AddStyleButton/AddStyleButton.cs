@@ -56,7 +56,7 @@ namespace Beamable.Editor.UI.Components
 
 			_addStyleButton.tooltip = string.Empty;
 
-			var styleSheetCount = _styleList.WritableStyleSheets.Count();
+			var styleSheetCount = _styleList.WritableStyleSheets?.Count() ?? 0;
 
 			if (styleSheetCount == 0)
 			{
