@@ -74,7 +74,7 @@ namespace Beamable.Editor.UI.Components
 			removeButton.AddToClassList("button");
 			removeButton.RegisterCallback<MouseDownEvent>(RemoveClassButtonClicked);
 			buttonsContainer.Add(removeButton);
-			
+
 			VisualElement addButton = new VisualElement {name = "addButton"};
 			addButton.AddToClassList("button");
 			addButton.RegisterCallback<MouseDownEvent>(AddClassButtonClicked);
@@ -89,7 +89,7 @@ namespace Beamable.Editor.UI.Components
 			{
 				return;
 			}
-			
+
 			_currentBussElement.AddClass("");
 			RefreshClassesList();
 			RefreshHeight();
@@ -102,8 +102,8 @@ namespace Beamable.Editor.UI.Components
 			{
 				return;
 			}
-			
-			_currentBussElement.RemoveClass((string) _classesList.itemsSource[(int) _selectedClassListIndex]);
+
+			_currentBussElement.RemoveClass((string)_classesList.itemsSource[(int)_selectedClassListIndex]);
 			RefreshClassesList();
 			RefreshHeight();
 			_navigationWindow.RefreshSelectedLabel();
@@ -125,16 +125,24 @@ namespace Beamable.Editor.UI.Components
 
 		private void RefreshHeight()
 		{
+#if UNITY_2018
 			_classesList.SetHeight(0.0f);
-			
+#elif UNITY_2019_1_OR_NEWER
+			_classesList.style.SetHeight(0.0f);
+#endif
+
 			float height = 130.0f;
 
 			if (_currentBussElement != null)
 			{
 				float allClassesHeight = 24 * _currentBussElement.Classes.Count();
 				height += allClassesHeight;
-				
-				_classesList.SetHeight(allClassesHeight);
+
+#if UNITY_2018
+			_classesList.SetHeight(allClassesHeight);
+#elif UNITY_2019_1_OR_NEWER
+				_classesList.style.SetHeight(allClassesHeight);
+#endif
 			}
 
 			Root.style.SetHeight(height);
@@ -148,7 +156,7 @@ namespace Beamable.Editor.UI.Components
 				bindItem = BindListViewElement,
 				selectionType = SelectionType.Single,
 				itemHeight = 24,
-				itemsSource = _currentBussElement? _currentBussElement.Classes.ToList() : new List<string>()
+				itemsSource = _currentBussElement ? _currentBussElement.Classes.ToList() : new List<string>()
 			};
 			view.name = "classesList";
 			view.onSelectionChanged += SelectionChanged;
@@ -179,13 +187,17 @@ namespace Beamable.Editor.UI.Components
 		{
 			TextField textField = (TextField)element.Children().ToList()[0];
 			textField.value = _classesList.itemsSource[index] as string;
-			
+
+#if UNITY_2018
 			textField.OnValueChanged(ClassValueChanged);
+#elif UNITY_2019_1_OR_NEWER
+			textField.RegisterValueChangedCallback(ClassValueChanged);
+#endif
 
 			void ClassValueChanged(ChangeEvent<string> evt)
 			{
 				_classesList.itemsSource[index] = evt.newValue;
-				_currentBussElement.UpdateClasses((List<string>) _classesList.itemsSource);
+				_currentBussElement.UpdateClasses((List<string>)_classesList.itemsSource);
 				_navigationWindow.RefreshSelectedLabel();
 			}
 		}
