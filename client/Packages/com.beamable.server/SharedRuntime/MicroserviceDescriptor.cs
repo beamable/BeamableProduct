@@ -33,10 +33,6 @@ namespace Beamable.Server.Editor
 		public bool HasValidationError { get; set; }
 		public bool HasValidationWarning { get; set; }
 
-		public bool IsPublishFeatureDisabled()
-		{
-			return this.GetStorageReferences()?.Count() > 0 || this.HasMongoLibraries();
-		}
 	}
 
 	[Serializable]

@@ -1,5 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Dependencies;
+using Beamable.Server.Editor;
+using Beamable.Server;
 using System;
 using System.CodeDom;
 using System.CodeDom.Compiler;
@@ -11,10 +13,13 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Beamable.Server.Editor.CodeGen
+namespace Beamable.Server.Generator
 {
 	public class ClientCodeGenerator
 	{
+		private const string MicroserviceClients_TypeName = "MicroserviceClients";
+		private const string MicroserviceClient_TypeName = "MicroserviceClient";
+
 		public MicroserviceDescriptor Descriptor { get; }
 
 		/// <summary>
@@ -45,9 +50,9 @@ namespace Beamable.Server.Editor.CodeGen
 		private string ExtensionClassToReplace => $"internal static class {TargetExtensionClassName}";
 
 		private string ExtensionMethodToFind =>
-			$"public static {TargetClassName} {Descriptor.Name}(Beamable.Server.{nameof(MicroserviceClients)}";
+			$"public static {TargetClassName} {Descriptor.Name}(Beamable.Server.{MicroserviceClients_TypeName}";
 		private string ExtensionMethodToReplace =>
-			$"public static {TargetClassName} {Descriptor.Name}(this Beamable.Server.{nameof(MicroserviceClients)}";
+			$"public static {TargetClassName} {Descriptor.Name}(this Beamable.Server.{MicroserviceClients_TypeName}";
 
 		public static string GetTargetParameterClassName(MicroserviceDescriptor descriptor) =>
 			$"MicroserviceParameters{descriptor.Name}Client";
@@ -80,12 +85,12 @@ namespace Beamable.Server.Editor.CodeGen
 			targetClass.IsClass = true;
 			targetClass.TypeAttributes =
 				TypeAttributes.Public | TypeAttributes.Sealed;
-			targetClass.BaseTypes.Add(new CodeTypeReference(typeof(MicroserviceClient)));
+			targetClass.BaseTypes.Add(new CodeTypeReference(MicroserviceClient_TypeName));
 
 			targetClass.Members.Add(new CodeConstructor()
 			{
 				Attributes = MemberAttributes.Public,
-				Parameters = { new CodeParameterDeclarationExpression(new CodeTypeReference(typeof(BeamContext)), "context = null") },
+				Parameters = { new CodeParameterDeclarationExpression(new CodeTypeReference("BeamContext"), "context = null") },
 				BaseConstructorArgs = { new CodeArgumentReferenceExpression("context") }
 			});
 
@@ -129,12 +134,12 @@ namespace Beamable.Server.Editor.CodeGen
 			};
 			extensionMethod.Name = Descriptor.Name;
 			extensionMethod.Parameters.Add(
-				new CodeParameterDeclarationExpression(typeof(MicroserviceClients), "clients"));
+				new CodeParameterDeclarationExpression(MicroserviceClients_TypeName, "clients"));
 			extensionMethod.Statements.Add(new CodeMethodReturnStatement(new CodeMethodInvokeExpression
 			{
 				Method = new CodeMethodReferenceExpression(
 					new CodeArgumentReferenceExpression("clients"),
-					nameof(MicroserviceClients.GetClient),
+					"GetClient",
 					new CodeTypeReference[] {
 					  new CodeTypeReference(TargetClassName)
 					})
@@ -185,7 +190,7 @@ namespace Beamable.Server.Editor.CodeGen
 				new CodeAttributeDeclaration(new CodeTypeReference(typeof(SerializableAttribute))));
 			wrapper.TypeAttributes = TypeAttributes.NotPublic | TypeAttributes.Sealed | TypeAttributes.Serializable;
 			wrapper.BaseTypes.Add(
-				new CodeTypeReference(typeof(MicroserviceClientDataWrapper<>).MakeGenericType(parameterType)));
+				new CodeTypeReference("MicroserviceClientDataWrapper", new CodeTypeReference(parameterType)));
 
 			parameterClass.Members.Add(wrapper);
 		}
@@ -309,14 +314,13 @@ namespace Beamable.Server.Editor.CodeGen
 			targetClass.Members.Add(genMethod);
 		}
 
-		public void GenerateCSharpCode(string fileName)
+		public string GetCSharpCodeString()
 		{
 			CodeDomProvider provider = CodeDomProvider.CreateProvider("CSharp");
 			CodeGeneratorOptions options = new CodeGeneratorOptions();
 			options.BracingStyle = "C";
 			var sb = new StringBuilder();
 			using (var sourceWriter = new StringWriter(sb))
-			// using (StreamWriter sourceWriter = new StreamWriter(fileName))
 			{
 				provider.GenerateCodeFromCompileUnit(
 					targetUnit, sourceWriter, options);
@@ -324,10 +328,13 @@ namespace Beamable.Server.Editor.CodeGen
 				var source = sb.ToString();
 				source = source.Replace(ExtensionClassToFind, ExtensionClassToReplace);
 				source = source.Replace(ExtensionMethodToFind, ExtensionMethodToReplace);
-
-				File.WriteAllText(fileName, source)
-					;
+				return source;
 			}
+		}
+
+		public void GenerateCSharpCode(string fileName)
+		{
+			File.WriteAllText(fileName, GetCSharpCodeString());
 		}
 
 		public class CallableMethodInfo

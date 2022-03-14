@@ -22,6 +22,11 @@ namespace Beamable.Server.Editor.DockerCommands
 			"Exception",
 			"exception"
 		};
+
+		private static readonly HashSet<string> ErrorExclusions = new HashSet<string>
+		{
+			"\" >> /etc/supervisor/conf.d/supervisord.conf && echo \"loglevel=error"
+		};
 		private static readonly string[] ExpectedRunLogs = {
 			Logs.STARTING_PREFIX,
 			Logs.SCANNING_CLIENT_PREFIX,
@@ -263,10 +268,22 @@ namespace Beamable.Server.Editor.DockerCommands
 			{
 				builder.OnBuildingFinished?.Invoke(true);
 			}
-			else if (ErrorElements.Any(message.Contains))
+			else if (IsErrorMatch(message))
 			{
 				builder.OnBuildingFinished?.Invoke(false);
 			}
+		}
+
+		private static bool IsErrorMatch(string message)
+		{
+			//" >> /etc/supervisor/conf.d/supervisord.conf && echo "loglevel=error
+			var simpleMatch = ErrorElements.Any(message.Contains);
+			if (simpleMatch)
+			{
+				var isExclusion = ErrorExclusions.Contains(message);
+				return !isExclusion;
+			}
+			return false;
 		}
 
 		public static void HandleRunCommandOutput(IBeamableBuilder builder, string message)

@@ -11,8 +11,13 @@ namespace Beamable.Server.Editor
 		string ContainerName { get; }
 		string ImageName { get; }
 		ServiceType ServiceType { get; }
-		bool IsPublishFeatureDisabled();
 		bool HasValidationError { get; }
 		bool HasValidationWarning { get; }
+	}
+
+	public enum ServiceType
+	{
+		MicroService,
+		StorageObject
 	}
 }

@@ -348,7 +348,7 @@ namespace Beamable.Server.Editor
 						Message = $"Building service=[{descriptor.Name}]"
 					});
 
-					var buildCommand = new BuildImageCommand(descriptor, false);
+					var buildCommand = new BuildImageCommand(descriptor, false, false);
 					try
 					{
 						await buildCommand.Start(context);

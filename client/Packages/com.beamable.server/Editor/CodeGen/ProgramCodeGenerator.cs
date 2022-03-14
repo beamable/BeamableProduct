@@ -27,21 +27,28 @@ namespace Beamable.Server.Editor.CodeGen
 			targetClass.IsClass = true;
 			targetClass.TypeAttributes = TypeAttributes.Public;
 
-			var mainmethod = new CodeEntryPointMethod();
+			var mainmethod = new CodeMemberMethod
+			{
+				Attributes = MemberAttributes.Public | MemberAttributes.Static
+			};
+			mainmethod.Name = "Main";
+			mainmethod.Parameters.Add(
+				new CodeParameterDeclarationExpression(typeof(string[]), "args"));
+			mainmethod.ReturnType = new CodeTypeReference(typeof(int));
 
+			var baseType = new CodeTypeReference("global::Beamable.Server.CommandLine", new CodeTypeReference(descriptor.Type));
+			//var commandLineType = new CodeTypeReferenceExpression("global::Beamable.Server.CommandLine");
 
 			var invokeExpr = new CodeMethodInvokeExpression(
 			   new CodeMethodReferenceExpression(
-				  new CodeTypeReferenceExpression("global::Beamable.Server.MicroserviceBootstrapper"), // XXX: This is super brittle...
-				  "Start",
-				  new CodeTypeReference[]
-				  {
-				  new CodeTypeReference(descriptor.Type),
-				  }),
+				  new CodeTypeReferenceExpression(baseType), // XXX: This is super brittle...
+				  "Main"),
 			   new CodeExpression[]
 			   {
+				   new CodeArgumentReferenceExpression("args")
 			   });
-			mainmethod.Statements.Add(invokeExpr);
+			var returnExpr = new CodeMethodReturnStatement(invokeExpr);
+			mainmethod.Statements.Add(returnExpr);
 
 			targetClass.Members.Add(mainmethod);
 
