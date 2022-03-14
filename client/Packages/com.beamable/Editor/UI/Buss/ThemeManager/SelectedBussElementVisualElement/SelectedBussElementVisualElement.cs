@@ -139,7 +139,7 @@ namespace Beamable.Editor.UI.Components
 				height += allClassesHeight;
 
 #if UNITY_2018
-			_classesList.SetHeight(allClassesHeight);
+				_classesList.SetHeight(allClassesHeight);
 #elif UNITY_2019_1_OR_NEWER
 				_classesList.style.SetHeight(allClassesHeight);
 #endif
@@ -159,16 +159,30 @@ namespace Beamable.Editor.UI.Components
 				itemsSource = _currentBussElement ? _currentBussElement.Classes.ToList() : new List<string>()
 			};
 			view.name = "classesList";
+
+#if UNITY_2020_1_OR_NEWER
+			view.onSelectionChange += SelectionChanged;
+#else
 			view.onSelectionChanged += SelectionChanged;
+#endif
 
 			return view;
 		}
 
+#if UNITY_2020_1_OR_NEWER
+		private void SelectionChanged(IEnumerable<object> obj)
+		{
+			List<string> list = (List<string>)_classesList.itemsSource;
+			List<object> objects = obj.ToList();
+			_selectedClassListIndex = list.FindIndex(el => el == (string)objects[0]);
+		}
+#else
 		private void SelectionChanged(List<object> obj)
 		{
 			List<string> list = (List<string>)_classesList.itemsSource;
 			_selectedClassListIndex = list.FindIndex(el => el == (string)obj[0]);
 		}
+#endif
 
 		private void RefreshClassesList()
 		{
