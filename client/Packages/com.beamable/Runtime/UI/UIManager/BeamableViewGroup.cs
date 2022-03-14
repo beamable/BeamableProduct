@@ -79,9 +79,9 @@ public interface IAsyncBeamableView : IBeamableView
     /// This version is called once per <see cref="BeamableViewGroup.AllPlayerContexts"/> when the <see cref="SupportedMode"/> is set to <see cref="BeamableViewGroup.PlayerCountMode.MultiplayerUI"/>.
     /// If you don't explicitly support <see cref="BeamableViewGroup.PlayerCountMode.MultiplayerUI"/>, throw a <see cref="NotSupportedException"/> from this implementation.
     /// </summary>
-    /// <param name="currentContext">The <see cref="BeamContext"/> at the current <paramref name="playerIndex"/>.</param>
-    /// <param name="playerIndex">The index for this <see cref="BeamContext"/> in <see cref="BeamableViewGroup.AllPlayerContexts"/>.</param>
-    Promise EnrichWithContext(BeamContext currentContext, int playerIndex);
+    /// <param name="managedPlayers">The <see cref="BeamContext"/> at the current <paramref name="mainPlayerIndex"/>.</param>
+    /// <param name="mainPlayerIndex">The index for this <see cref="BeamContext"/> in <see cref="BeamableViewGroup.AllPlayerContexts"/>.</param>
+    Promise EnrichWithContext(List<BeamContext> managedPlayers, int mainPlayerIndex);
 }
 
 /// <summary>
@@ -258,8 +258,7 @@ public class BeamableViewGroup : MonoBehaviour
                         }
                         case IAsyncBeamableView asyncBeamableView:
                         {
-                            for (var i = 0; i < AllPlayerContexts.Count; i++)
-                                await asyncBeamableView.EnrichWithContext(AllPlayerContexts[i], i);
+                            await asyncBeamableView.EnrichWithContext(AllPlayerContexts, MainPlayerIdx);
                             break;
                         }
                     }

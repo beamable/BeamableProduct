@@ -52,10 +52,10 @@ public class LeaderboardView : MonoBehaviour, IAsyncBeamableView
     
     [Header("Exposed Events"), Space] public UnityEvent BackButtonAction;
 
-    public BeamableViewGroup.PlayerCountMode SupportedMode => BeamableViewGroup.PlayerCountMode.SinglePlayerUI;
+    public virtual BeamableViewGroup.PlayerCountMode SupportedMode => BeamableViewGroup.PlayerCountMode.SinglePlayerUI;
     public int GetEnrichOrder() => EnrichOrder;
 
-    public async Promise EnrichWithContext(BeamContext currentContext)
+    public virtual async Promise EnrichWithContext(BeamContext currentContext)
     {
         if (BackButton != null)
         {
@@ -105,7 +105,7 @@ public class LeaderboardView : MonoBehaviour, IAsyncBeamableView
         }
     }
 
-    public Promise EnrichWithContext(BeamContext currentContext, int playerIndex)
+    public virtual Promise EnrichWithContext(List<BeamContext> managedPlayers, int mainPlayerIndex)
     {
         throw new NotSupportedException($"This UI does not know how to render multiple players. You can know that by looking at {SupportedMode}.");
     }

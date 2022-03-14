@@ -82,10 +82,12 @@ public class UserProfileHackySystem2 : UserProfileView.IHeaderDeps, UserProfileV
     }
 
     private readonly BeamableDefaultLeaderboardSystem _leaderboardSystem;
+    private readonly IUserContext _loggedUser;
 
-    public UserProfileHackySystem2(BeamableDefaultLeaderboardSystem system)
+    public UserProfileHackySystem2(BeamableDefaultLeaderboardSystem system, IUserContext ctx)
     {
         _leaderboardSystem = system;
+        _loggedUser = ctx;
     }
 
     public bool TestMode
@@ -110,7 +112,7 @@ public class UserProfileHackySystem2 : UserProfileView.IHeaderDeps, UserProfileV
     public async Promise UpdateState(LeaderboardRef _leaderboardRef, int firstEntryId, int entriesAmount, Action<LeaderboardView.ILeaderboardDeps> onComplete = null)
     {
         await _leaderboardSystem.UpdateState(_leaderboardRef, firstEntryId, entriesAmount, onComplete);
-        Aliases = Aliases.Select(a => $"{a} - Potato").ToList();
+        Aliases = Aliases.Select(a => $"{a} - {_loggedUser.UserId}").ToList();
     }
 
     public string GetUserAlias() => CurrentUserIndexInLeaderboard < 0 ? "No Player" : Aliases[CurrentUserIndexInLeaderboard];

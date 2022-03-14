@@ -33,7 +33,8 @@ public class ViewTransitionCoordinator : MonoBehaviour
 
     public delegate IEnumerator TransitionCoroutineSignature(GameObject controlledGameObject, CoroutineTransitionProfile runningProfile);
 
-    public class LegacyAnimationTransitionProfile
+    [Serializable]
+    public struct LegacyAnimationTransitionProfile
     {
         public AnimationClip AnimationToPlay;
         public float AnimationDelay;
@@ -41,7 +42,7 @@ public class ViewTransitionCoordinator : MonoBehaviour
     }
 
     [Serializable]
-    public class CoroutineTransitionProfile
+    public struct CoroutineTransitionProfile
     {
         // Built via ReflectionCache systems looking into IBeamableUIView types
         public string CoroutineToRun;
