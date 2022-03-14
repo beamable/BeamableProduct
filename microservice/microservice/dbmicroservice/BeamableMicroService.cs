@@ -166,8 +166,8 @@ namespace Beamable.Server
       {
          if (HasInitialized) return;
 
-         _microserviceType = typeof(TMicroService);
-         _serviceAttribute = _microserviceType.GetCustomAttribute<MicroserviceAttribute>();
+         MicroserviceType = typeof(TMicroService);
+         _serviceAttribute = MicroserviceType.GetCustomAttribute<MicroserviceAttribute>();
          if (_serviceAttribute == null)
          {
             throw new Exception($"Cannot create service. Missing [{typeof(MicroserviceAttribute).Name}].");
@@ -179,20 +179,9 @@ namespace Beamable.Server
 
 
          XmlDocsHelper.ProvideXmlForBaseImage(typeof(AdminRoutes));
-         XmlDocsHelper.ProvideXmlForService(_microserviceType);
+         XmlDocsHelper.ProvideXmlForService(MicroserviceType);
 
-         ServiceMethods = ServiceMethodHelper.Scan(_serviceAttribute, new ServiceMethodProvider
-            {
-               instanceType = typeof(AdminRoutes),
-               factory = BuildAdminInstance,
-               pathPrefix = "admin/"
-            },
-            new ServiceMethodProvider
-            {
-               instanceType = _microserviceType,
-               factory = BuildServiceInstance,
-               pathPrefix = ""
-            });
+         RebuildRouteTable();
 
          _socketRequesterContext = new SocketRequesterContext(GetWebsocketPromise);
          _requester = new MicroserviceRequester(_args, null, _socketRequesterContext);
@@ -283,6 +272,23 @@ namespace Beamable.Server
 
       }
 
+      public void RebuildRouteTable()
+      {
+         ServiceMethods = ServiceMethodHelper.Scan(_serviceAttribute, new ServiceMethodProvider
+            {
+               instanceType = typeof(AdminRoutes),
+               factory = BuildAdminInstance,
+               pathPrefix = "admin/"
+            },
+            new ServiceMethodProvider
+            {
+               instanceType = MicroserviceType,
+               factory = BuildServiceInstance,
+               pathPrefix = ""
+            });
+         SwaggerGenerator.InvalidateSwagger(this);
+      }
+
       async Task SetupWebsocket(IConnection socket)
       {
          _connection = socket;
@@ -330,7 +336,7 @@ namespace Beamable.Server
       private async Task ResolveCustomInitializationHook()
       {
          // Gets Service Initialization Methods
-         var serviceInitialization = _microserviceType
+         var serviceInitialization = MicroserviceType
             .GetMethods(BindingFlags.Static | BindingFlags.Public)
             .Where(method => method.GetCustomAttribute<InitializeServicesAttribute>() != null)
             .Select(method =>
@@ -523,7 +529,7 @@ namespace Beamable.Server
          {
             ServiceCollection = new ServiceCollection();
             ServiceCollection
-               .AddScoped(_microserviceType)
+               .AddScoped(MicroserviceType)
                .AddSingleton<IDependencyProvider>(provider => new MicrosoftServiceProviderWrapper(provider))
                .AddSingleton(_args)
                .AddSingleton<IRealmInfo>(_args)
@@ -560,7 +566,7 @@ namespace Beamable.Server
             var builder = new DefaultServiceBuilder(ServiceCollection);
 
             // Gets Service Configuration Methods
-            var configurationMethods = _microserviceType
+            var configurationMethods = MicroserviceType
                .GetMethods(BindingFlags.Static | BindingFlags.Public)
                .Where(method => method.GetCustomAttribute<ConfigureServicesAttribute>() != null)
                .Select(method =>
@@ -622,7 +628,7 @@ namespace Beamable.Server
          }
 
          var scope = Create(ctx);
-         var service = scope.GetRequiredService(_microserviceType) as Microservice;
+         var service = scope.GetRequiredService(MicroserviceType) as Microservice;
          service.ProvideDefaultServices(scope, Create);
          return service;
       }
@@ -798,7 +804,7 @@ namespace Beamable.Server
       }
 
       private UserDataCache<Dictionary<string, string>> _singleStatsCache;
-      private Type _microserviceType;
+      public Type MicroserviceType { get; private set; }
 
       private UserDataCache<Dictionary<string, string>> StatsCacheFactory(string name, long ttlms, UserDataCache<Dictionary<string, string>>.CacheResolver resolver, IDependencyProvider provider)
       {
