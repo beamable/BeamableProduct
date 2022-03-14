@@ -41,19 +41,15 @@
 #buttonsContainer {
     margin-left: 20px;
     margin-right: 20px;
-    /*flex-grow: 1;*/
-    flex-direction: row;
-    /*align-items: flex-end;*/
+    flex-direction: row-reverse;
 }
 
 #addButton {
-    /*align-self: flex-end;*/
     width: 30px;
     height:30px;
 }
 
 #removeButton {
-    align-self: flex-end;
     width: 30px;
     height:30px;
 }

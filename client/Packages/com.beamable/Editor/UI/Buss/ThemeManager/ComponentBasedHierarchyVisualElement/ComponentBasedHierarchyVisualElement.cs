@@ -34,7 +34,7 @@ namespace Beamable.Editor.UI.Components
 			private set;
 		}
 
-		private IndentedLabelVisualElement SelectedLabel
+		protected IndentedLabelVisualElement SelectedLabel
 		{
 			get => _selectedLabel;
 			set

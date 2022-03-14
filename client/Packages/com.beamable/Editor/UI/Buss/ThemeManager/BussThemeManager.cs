@@ -26,15 +26,16 @@ namespace Beamable.Editor.UI.Buss
 		private LabeledCheckboxVisualElement _filterToggle;
 		private SelectedBussElementVisualElement _selectedBussElement;
 
-		private bool _inStyleSheetChangedLoop;
 		private readonly VariableDatabase _variableDatabase = new VariableDatabase();
 
 		private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements =
 			new List<BussStyleCardVisualElement>();
 
-		private AddStyleButton _addStyleButton;
-		private bool _filterMode;
 		private BeamablePopupWindow _confirmationPopup;
+		private AddStyleButton _addStyleButton;
+		private GameObject _selectedGameObject;
+		private bool _inStyleSheetChangedLoop;
+		private bool _filterMode;
 
 		public List<BussStyleSheet> ActiveStyleSheets { get; } = new List<BussStyleSheet>();
 
@@ -123,8 +124,16 @@ namespace Beamable.Editor.UI.Buss
 			_navigationWindow.SelectionChanged -= FilterCards;
 			_navigationWindow.SelectionChanged += FilterCards;
 
+			_navigationWindow.SelectionChanged -= CacheSelectedGameObject;
+			_navigationWindow.SelectionChanged += CacheSelectedGameObject;
+
 			RefreshStyleSheets();
 			AddSelectorButton(scrollView);
+		}
+
+		private void CacheSelectedGameObject(GameObject go)
+		{
+			_selectedGameObject = go;
 		}
 
 		private void OnFilterToggleClicked(bool value)
@@ -228,7 +237,7 @@ namespace Beamable.Editor.UI.Buss
 
 		private void OnFocus()
 		{
-			_navigationWindow?.ForceRebuild();
+			_navigationWindow?.ForceRebuild(_selectedGameObject);
 			_addStyleButton.CheckEnableState();
 		}
 

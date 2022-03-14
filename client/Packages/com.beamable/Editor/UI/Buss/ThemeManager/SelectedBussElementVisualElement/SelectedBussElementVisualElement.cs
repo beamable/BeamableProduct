@@ -24,7 +24,7 @@ namespace Beamable.Editor.UI.Components
 		private Foldout _foldout;
 		private BussElementHierarchyVisualElement _navigationWindow;
 		private BussElement _currentBussElement;
-		private List<string> _classes = new List<string>();
+		private int? _selectedClassListIndex;
 
 		public SelectedBussElementVisualElement() : base(
 			$"{BUSS_THEME_MANAGER_PATH}/SelectedBussElementVisualElement/SelectedBussElementVisualElement.uss") { }
@@ -70,24 +70,51 @@ namespace Beamable.Editor.UI.Components
 		{
 			VisualElement buttonsContainer = new VisualElement {name = "buttonsContainer"};
 
-			Button addButton = new Button {name = "addButton"};
-			buttonsContainer.Add(addButton);
-			
-			Button removeButton = new Button {name = "removeButton"};
+			VisualElement removeButton = new VisualElement {name = "removeButton"};
+			removeButton.RegisterCallback<MouseDownEvent>(RemoveClassButtonClicked);
 			buttonsContainer.Add(removeButton);
+			
+			VisualElement addButton = new VisualElement {name = "addButton"};
+			addButton.RegisterCallback<MouseDownEvent>(AddClassButtonClicked);
+			buttonsContainer.Add(addButton);
 
 			Root.Add(buttonsContainer);
+		}
+
+		private void AddClassButtonClicked(MouseDownEvent evt)
+		{
+			if (_currentBussElement == null)
+			{
+				return;
+			}
+			
+			_currentBussElement.AddClass("");
+			RefreshClassesList();
+			RefreshHeight();
+			_navigationWindow.RefreshSelectedLabel();
+		}
+
+		private void RemoveClassButtonClicked(MouseDownEvent evt)
+		{
+			if (_selectedClassListIndex == null || _currentBussElement == null)
+			{
+				return;
+			}
+			
+			_currentBussElement.RemoveClass((string) _classesList.itemsSource[(int) _selectedClassListIndex]);
+			RefreshClassesList();
+			RefreshHeight();
+			_navigationWindow.RefreshSelectedLabel();
 		}
 
 		private void OnSelectionChanged(GameObject current)
 		{
 			_currentBussElement = current.GetComponent<BussElement>();
-			_classes.Clear();
+			_selectedClassListIndex = null;
 
 			if (_currentBussElement != null)
 			{
 				_idField.Value = _currentBussElement.Id;
-				_classes = _currentBussElement.Classes.ToList();
 			}
 
 			RefreshClassesList();
@@ -119,16 +146,23 @@ namespace Beamable.Editor.UI.Components
 				bindItem = BindListViewElement,
 				selectionType = SelectionType.Single,
 				itemHeight = 24,
-				itemsSource = _classes
+				itemsSource = _currentBussElement? _currentBussElement.Classes.ToList() : new List<string>()
 			};
 			view.name = "classesList";
+			view.onSelectionChanged += SelectionChanged;
 
 			return view;
 		}
 
+		private void SelectionChanged(List<object> obj)
+		{
+			List<string> list = (List<string>)_classesList.itemsSource;
+			_selectedClassListIndex = list.FindIndex(el => el == (string)obj[0]);
+		}
+
 		private void RefreshClassesList()
 		{
-			_classesList.itemsSource = _classes;
+			_classesList.itemsSource = _currentBussElement ? _currentBussElement.Classes.ToList() : new List<string>();
 			_classesList.Refresh();
 		}
 
@@ -143,19 +177,21 @@ namespace Beamable.Editor.UI.Components
 		{
 			TextField textField = (TextField)element.Children().ToList()[0];
 			textField.value = _classesList.itemsSource[index] as string;
+			
+			textField.OnValueChanged(ClassValueChanged);
 
-			// consoleLogVisualElement.SetNewModel(_listView.itemsSource[index] as LogMessage);
-			// if (index % 2 == 0)
-			// {
-			// 	consoleLogVisualElement.RemoveFromClassList("oddRow");
-			// }
-			// else
-			// {
-			// 	consoleLogVisualElement.AddToClassList("oddRow");
-			// }
-			// consoleLogVisualElement.MarkDirtyRepaint();
+			void ClassValueChanged(ChangeEvent<string> evt)
+			{
+				_classesList.itemsSource[index] = evt.newValue;
+				_currentBussElement.UpdateClasses((List<string>) _classesList.itemsSource);
+				_navigationWindow.RefreshSelectedLabel();
+			}
 		}
 
-		private void OnValueChanged() { }
+		private void OnValueChanged()
+		{
+			_currentBussElement.Id = _idField.Value;
+			_navigationWindow.RefreshSelectedLabel();
+		}
 	}
 }
