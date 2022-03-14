@@ -25,3 +25,7 @@
 #removeButton {
     background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/removeLight.png");
 }
+
+LabeledTextField #label {
+    color: #ffffff;
+}

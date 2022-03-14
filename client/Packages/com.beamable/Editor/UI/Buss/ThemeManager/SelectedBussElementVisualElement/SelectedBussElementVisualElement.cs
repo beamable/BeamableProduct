@@ -71,10 +71,12 @@ namespace Beamable.Editor.UI.Components
 			VisualElement buttonsContainer = new VisualElement {name = "buttonsContainer"};
 
 			VisualElement removeButton = new VisualElement {name = "removeButton"};
+			removeButton.AddToClassList("button");
 			removeButton.RegisterCallback<MouseDownEvent>(RemoveClassButtonClicked);
 			buttonsContainer.Add(removeButton);
 			
 			VisualElement addButton = new VisualElement {name = "addButton"};
+			addButton.AddToClassList("button");
 			addButton.RegisterCallback<MouseDownEvent>(AddClassButtonClicked);
 			buttonsContainer.Add(addButton);
 
