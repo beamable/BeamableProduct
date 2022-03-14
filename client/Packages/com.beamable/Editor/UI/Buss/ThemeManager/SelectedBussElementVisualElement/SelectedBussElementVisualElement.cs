@@ -18,10 +18,8 @@ namespace Beamable.Editor.UI.Components
 {
 	public class SelectedBussElementVisualElement : BeamableBasicVisualElement
 	{
-		private VisualElement _mainContainer;
 		private LabeledTextField _idField;
 		private ListView _classesList;
-		private Foldout _foldout;
 		private BussElementHierarchyVisualElement _navigationWindow;
 		private BussElement _currentBussElement;
 		private int? _selectedClassListIndex;
