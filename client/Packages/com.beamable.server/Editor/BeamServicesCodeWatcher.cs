@@ -127,7 +127,7 @@ namespace Beamable.Server.Editor
 			{
 				var path = beamServiceCodeHandle.CodeDirectory;
 				var files = Directory.GetFiles(path)
-				                     .Where(file => !file.EndsWith(".meta"));
+									 .Where(file => !file.EndsWith(".meta"));
 				if (MicroserviceConfiguration.Instance.EnableHotModuleReload)
 				{
 					files = files.Where(file => !file.EndsWith(".cs")).ToArray();
@@ -238,7 +238,8 @@ namespace Beamable.Server.Editor
 				{
 					var _ = RebootContainer(service);
 				}
-			} else
+			}
+			else
 			{
 				if (servicesInNeedOfImageRebuild.Count > 0)
 				{
@@ -378,7 +379,7 @@ namespace Beamable.Server.Editor
 			}
 		}
 
-		public static void GenerateClientSourceCode(MicroserviceDescriptor service, bool force=false)
+		public static void GenerateClientSourceCode(MicroserviceDescriptor service, bool force = false)
 		{
 			// create silly descriptor
 			var generatorDesc = new MicroserviceDescriptor
