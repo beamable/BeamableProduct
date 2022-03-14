@@ -69,6 +69,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Reset command works on unsaved scenes
 - `EventContent.StartDate` is kept in sync with schedule definition
 
+## [0.18.5]
+### Fixed
+- Deferred retry of failed uploads to the poll coroutine, to eliminate an infinite loop that could crash the app.
+
+
 ## [0.18.2]
 ### Changed
 - Improved baked content performance by keeping data in a single file and limiting number of IO operations.
