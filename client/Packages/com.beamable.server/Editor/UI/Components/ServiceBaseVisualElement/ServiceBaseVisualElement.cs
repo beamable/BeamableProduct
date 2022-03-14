@@ -40,7 +40,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private LogVisualElement _logElement;
 		private VisualElement _header;
 		private VisualElement _rootVisualElement;
-		private Button _dependentServicesBtn;
 		private VisualElement _mainParent;
 		private VisualElement _serviceCard;
 		private Button _foldButton;
@@ -76,7 +75,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
 			Root.Q<Button>("cancelBtn").RemoveFromHierarchy();
 			Root.Q("microserviceNewTitle")?.RemoveFromHierarchy();
-			_dependentServicesBtn = Root.Q<Button>("dependentServicesBtn");
 			_stopButton = Root.Q<Button>("stopBtn");
 			_moreBtn = Root.Q<Button>("moreBtn");
 			_checkbox = Root.Q<LabeledCheckboxVisualElement>("checkbox");
@@ -115,12 +113,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_moreBtn.clickable.activators.Clear();
 			_moreBtn.AddManipulator(manipulator);
 			_moreBtn.tooltip = "More...";
-
-			var dependentServicesBtnState = MicroserviceConfiguration.Instance.Microservices.Count > 0 &&
-										   MicroserviceConfiguration.Instance.StorageObjects.Count > 0;
-
-			_dependentServicesBtn.clickable.clicked += () => DependentServicesWindow.ShowWindow();
-			_dependentServicesBtn.SetEnabled(dependentServicesBtnState);
 
 			_checkbox.Refresh();
 			_checkbox.SetText(Model.Name);
@@ -292,7 +284,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_foldIcon.EnableInClassList("unfoldIcon", !Model.IsCollapsed);
 			_rootVisualElement.EnableInClassList("folded", Model.IsCollapsed);
 			_mainParent.EnableInClassList("folded", Model.IsCollapsed);
-			_dependentServicesBtn.visible = !Model.IsCollapsed;
 		}
 	}
 }
