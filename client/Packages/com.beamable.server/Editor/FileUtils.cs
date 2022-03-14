@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using System.Linq;
+using UnityEngine.Assertions;
 
 namespace Beamable.Server.Editor
 {
