@@ -194,9 +194,9 @@ namespace Beamable.Editor.UI.Buss
 		{
 			BussElement element = null;
 			var gameObject = Selection.activeGameObject;
-			if (gameObject != null && gameObject.TryGetComponent<BussElement>(out var el))
+			if (gameObject != null)
 			{
-				element = el;
+				element = gameObject.GetComponent<BussElement>();
 			}
 
 			foreach (var styleCard in _styleCardsVisualElements)
