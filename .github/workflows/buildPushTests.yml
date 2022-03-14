@@ -1,4 +1,4 @@
-name: Push Build
+name: Push Build Tests
 
 on:
   push:
@@ -174,70 +174,3 @@ jobs:
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
           label: ${{ needs.start-runner.outputs.label }}
           ec2-instance-id: ${{ needs.start-runner.outputs.ec2-instance-id }}
-
-  ios:
-    name: Build iOS .ipa and upload to Testflight
-    runs-on: macos-latest
-    timeout-minutes: 30
-    needs: build
-    env:
-      # The USYM_UPLOAD_AUTH_TOKEN environment variable is set to bypass Unity cloud checks
-      USYM_UPLOAD_AUTH_TOKEN: foo
-
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
-        with:
-          name: Build-iOS
-      - name: Make build scripts executable and change directory to the location of the xcode project
-        run: chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/process_symbols.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/MapFileParser.sh && chmod +x /Users/runner/work/BeamableProduct/BeamableProduct/iOS/usymtool && cd iOS/
-      - name: Edit the plist to automatically manage encryption notice in Testflight.
-        run:  /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" /Users/runner/work/BeamableProduct/BeamableProduct/iOS/Info.plist || echo "Could not set encryption exception, this means it already exists"
-      - name: Download p12
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp s3://beamable-certificates/beamable.p12 /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/beamable.p12
-      - name: Download cer
-        run: AWS_ACCESS_KEY_ID=${{secrets.AWS_KEY_ID}} AWS_SECRET_ACCESS_KEY=${{secrets.AWS_SECRET_ACCESS_KEY}} AWS_REGION=us-west-2 aws s3 cp s3://beamable-certificates/ios_distribution.cer /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/ios_distribution.cer
-      - uses: yukiarrr/ios-build-action@v1.4.0
-        if: ${{ github.ref == 'refs/heads/main' }}
-        with:
-          update-targets: Unity-iPhone
-          project-path: ${{ secrets.XCODEPROJ_PATH }}
-          p12-key-path: ${{ secrets.P12_KEY_PATH }}
-          p12-cer-path: ${{ secrets.P12_CER_PATH }}
-          certificate-password: ${{ secrets.P12_PASSWORD }}
-          mobileprovision-path: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/BeamableProductDev.mobileprovision
-          code-signing-identity: 'iPhone Distribution: Beamable, Inc (A6C4565DLF)'
-          team-id: A6C4565DLF
-      - uses: yukiarrr/ios-build-action@v1.4.0
-        if: ${{ github.ref == 'refs/heads/staging' }}
-        with:
-          update-targets: Unity-iPhone
-          project-path: ${{ secrets.XCODEPROJ_PATH }}
-          p12-key-path: ${{ secrets.P12_KEY_PATH }}
-          p12-cer-path: ${{ secrets.P12_CER_PATH }}
-          certificate-password: ${{ secrets.P12_PASSWORD }}
-          mobileprovision-path: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/BeamableProductStaging.mobileprovision
-          code-signing-identity: 'iPhone Distribution: Beamable, Inc (A6C4565DLF)'
-          team-id: A6C4565DLF
-      - uses: yukiarrr/ios-build-action@v1.4.0
-        if: ${{ github.ref == 'refs/heads/production' }}
-        with:
-          update-targets: Unity-iPhone
-          project-path: ${{ secrets.XCODEPROJ_PATH }}
-          p12-key-path: ${{ secrets.P12_KEY_PATH }}
-          p12-cer-path: ${{ secrets.P12_CER_PATH }}
-          certificate-password: ${{ secrets.P12_PASSWORD }}
-          mobileprovision-path: /Users/runner/work/BeamableProduct/BeamableProduct/build/ios/BeamableProductProd.mobileprovision
-          code-signing-identity: 'iPhone Distribution: Beamable, Inc (A6C4565DLF)'
-          team-id: A6C4565DLF
-      - uses: actions/upload-artifact@v2
-        with:
-          name: beamableproduct.ipa
-          path: '/Users/runner/work/BeamableProduct/BeamableProduct/output.ipa'
-          retention-days: 3
-      - uses: apple-actions/upload-testflight-build@v1
-        with:
-          app-path: '/Users/runner/work/BeamableProduct/BeamableProduct/output.ipa'
-          issuer-id: 931b0669-dac0-496b-9964-8cba71e07ffc
-          api-key-id: LL66F96439
-          api-private-key: ${{ secrets.APPLE_API_KEY }}
