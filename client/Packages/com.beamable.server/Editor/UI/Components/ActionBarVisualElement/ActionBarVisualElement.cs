@@ -1,7 +1,9 @@
+using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Debug = UnityEngine.Debug;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -50,6 +52,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private Button _startAll;
 		private Button _infoButton;
 		private Button _publish;
+		private Button _dependencies;
 
 		public event Action OnInfoButtonClicked;
 
@@ -72,6 +75,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_startAll.clickable.clicked += () => { OnStartAllClicked?.Invoke(); };
 			_startAll.SetEnabled(!DockerCommand.DockerNotInstalled);
 
+			var dependenciesState = MicroserviceConfiguration.Instance.Microservices.Count > 0 &&
+											MicroserviceConfiguration.Instance.StorageObjects.Count > 0;
+
+			_dependencies = Root.Q<Button>("dependencies");
+			_dependencies.clickable.clicked += () => DependentServicesWindow.ShowWindow();
+			_dependencies.SetEnabled(dependenciesState);
+
 			const string cannotPublishText = "Cannot open Publish Window, fix compilation errors first!";
 			_publish = Root.Q<Button>("publish");
 			_publish.clickable.clicked += () =>
@@ -90,6 +100,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_infoButton = Root.Q<Button>("infoButton");
 			_infoButton.clickable.clicked += () => { OnInfoButtonClicked?.Invoke(); };
 			_infoButton.tooltip = "Open Documentation";
+
+
+			bool localServicesAvailable = MicroservicesDataModel.Instance?.AllLocalServices != null;
+			int localServicesAmount = localServicesAvailable ? MicroservicesDataModel.Instance.AllLocalServices.Count : 0;
+			int selectedServicesAmount = localServicesAvailable
+				? MicroservicesDataModel.Instance.AllLocalServices.Count(beamService => beamService.IsSelected)
+				: 0;
+			UpdateButtonsState(selectedServicesAmount, localServicesAmount);
 		}
 
 		public void UpdateButtonsState(int selectedServicesAmount, int servicesAmount)
@@ -112,6 +130,4 @@ namespace Beamable.Editor.Microservice.UI.Components
 			startLabel.text = allServicesSelected ? "Play all" : "Play selected";
 		}
 	}
-
-
 }

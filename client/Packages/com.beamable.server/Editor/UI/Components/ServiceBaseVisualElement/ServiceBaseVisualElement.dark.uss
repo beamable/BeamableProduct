@@ -6,9 +6,6 @@
     background-image: resource("Packages/com.beamable/Editor/UI/Common/Icons/ms_header_green.png");
 }
 
-LogVisualElement > TemplateContainer > #mainVisualElement {
-}
-
 .squareBtn {
     border-color: #383838;
 }
@@ -96,19 +93,26 @@ LogVisualElement > TemplateContainer > #mainVisualElement {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Disable L.png");
 }
 
-#dependentServicesBtn {
-    border-color: #FFFFFF;
+#stopImage {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/StopAllDark.png");
 }
 
-/* TODO - Add light icons*/
+#buildImage {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all L.png");
+}
+
+#buildImage.running {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Refresh.png");
+}
+
 .foldIcon {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/fold.png");
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/fold_light_dark.png");
 }
 
 .unfoldIcon {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/unfold.png");
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/unfold_light_dark.png");
 }
+
 #leftDashLine, #rightDashLine {
     background-color: #4A4A4A;
 }
-/* END TODO*/
