@@ -36,7 +36,7 @@ namespace Beamable.Api.CloudSaving
 		private WaitForSecondsRealtime _delay;
 		private CoroutineService _coroutineService;
 		private ConcurrentDictionary<string, string> _pendingUploads = new ConcurrentDictionary<string, string>();
-		private ConcurrentDictionary<string, string> _previouslyDownloaded = new ConcurrentDictionary<string, string>();
+		private ConcurrentDictionary<string, string> _previouslyProcessedFiles = new ConcurrentDictionary<string, string>();
 		private IEnumerator _fileWatchingRoutine;
 		private IEnumerator _fileWebRequestRoutine;
 		private ConnectivityService _connectivityService;
@@ -103,7 +103,7 @@ namespace Beamable.Api.CloudSaving
 		{
 			_pendingUploads.Clear();
 			_localManifest = null;
-			_previouslyDownloaded.Clear();
+			_previouslyProcessedFiles.Clear();
 			return Promise<Unit>.Successful(PromiseBase.Unit);
 		}
 
@@ -218,7 +218,7 @@ namespace Beamable.Api.CloudSaving
 				foreach (var entry in _localManifest.manifest)
 				{
 					var localFilePath = Path.Combine(LocalCloudDataFullPath, entry.key);
-					_previouslyDownloaded[localFilePath] = entry.eTag;
+					_previouslyProcessedFiles[localFilePath] = entry.eTag;
 				}
 			}
 			return Promise<Unit>.Successful(PromiseBase.Unit);
@@ -238,8 +238,17 @@ namespace Beamable.Api.CloudSaving
 				   Method.PUT,
 				   "/data/uploadURL"
 				).FlatMap(_ => CommitManifest(response.Item1))
-				.RecoverWith(_ => UploadUserData())
-				.Error(ProvideErrorCallback(nameof(UploadUserData)));
+				.Error(_ =>
+				{
+					//Clear local known state so we reprocess these files
+					foreach (var filename in fileNameToChecksum)
+					{
+						//Clear the known checksum
+						_previouslyProcessedFiles[filename.Key] = null;
+					}
+					ProvideErrorCallback(nameof(UploadUserData));
+				}
+			   );
 			});
 		}
 
@@ -273,7 +282,7 @@ namespace Beamable.Api.CloudSaving
 				   null,
 				   _platform.User.id,
 				   lastModified);
-					_previouslyDownloaded[fullPathToFile] = checksum;
+					_previouslyProcessedFiles[fullPathToFile] = checksum;
 					uploadRequest.Add(uploadObjectRequest);
 				});
 			}
@@ -376,7 +385,7 @@ namespace Beamable.Api.CloudSaving
 				foreach (var s3Object in _localManifest.manifest)
 				{
 					var fullPathToFile = Path.Combine(LocalCloudDataFullPath, s3Object.key);
-					_previouslyDownloaded[fullPathToFile] = s3Object.eTag;
+					_previouslyProcessedFiles[fullPathToFile] = s3Object.eTag;
 				}
 
 				foreach (var s3Object in response.manifest)
@@ -384,8 +393,8 @@ namespace Beamable.Api.CloudSaving
 					var fullPathToFile = Path.Combine(LocalCloudDataFullPath, s3Object.key);
 
 					string hash;
-					var hasBeenDownloaded = _previouslyDownloaded.TryGetValue(fullPathToFile, out hash);
-					var localContentMatchesServer = s3Object.eTag.Equals(hash);
+					var hasBeenDownloaded = _previouslyProcessedFiles.TryGetValue(fullPathToFile, out hash);
+					var localContentMatchesServer = !String.IsNullOrEmpty(hash) && s3Object.eTag.Equals(hash);
 
 					if (!hasBeenDownloaded || !localContentMatchesServer)
 					{
@@ -683,8 +692,8 @@ namespace Beamable.Api.CloudSaving
 			return GenerateChecksum(filePath).FlatMap(checksum =>
 			{
 
-				var checksumEqual = _previouslyDownloaded.ContainsKey(filePath) && _previouslyDownloaded[filePath].Equals(checksum);
-				var missingKey = !_previouslyDownloaded.ContainsKey(filePath);
+				var checksumEqual = _previouslyProcessedFiles.ContainsKey(filePath) && !String.IsNullOrEmpty(_previouslyProcessedFiles[filePath]) && _previouslyProcessedFiles[filePath].Equals(checksum);
+				var missingKey = !_previouslyProcessedFiles.ContainsKey(filePath) || String.IsNullOrEmpty(_previouslyProcessedFiles[filePath]);
 				var fileLengthNotZero = new FileInfo(filePath).Length > 0;
 				if ((!checksumEqual || missingKey) && fileLengthNotZero)
 				{
