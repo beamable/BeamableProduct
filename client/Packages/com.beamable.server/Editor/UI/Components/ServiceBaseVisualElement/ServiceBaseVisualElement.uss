@@ -47,6 +47,16 @@ StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
     flex-grow: 1;
 }
 
+#startBtn {
+    position: absolute;
+    left: 50%;
+    width: 36px;
+    margin-left: -18px;
+    margin-right: 0px;
+    margin-top: 1px;
+    margin-bottom: 1px;
+}
+
 #logHeader > .rightArea{
     padding-right: 5px;
     flex-direction: row;
