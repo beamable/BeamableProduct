@@ -1,9 +1,7 @@
-﻿using Beamable.Editor.UI.Buss;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -82,10 +80,6 @@ namespace Beamable.Editor.UI.Components
 		{
 			_labelText = labelText;
 			Flip = isFlipped;
-		}
-
-		public LabeledCheckboxVisualElement(string uxmlPath, string ussPath) : base(uxmlPath, ussPath)
-		{
 		}
 
 		public override void Refresh()

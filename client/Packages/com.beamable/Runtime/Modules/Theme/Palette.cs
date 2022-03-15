@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
-using UnityEngine;
 
 namespace Beamable.Theme
 {
-	[System.Serializable]
+	[Serializable]
 	public abstract class GeneralPaletteBinding
 	{
 		public const string NAME_NONE = "<none>";
@@ -32,7 +30,7 @@ namespace Beamable.Theme
 	}
 
 
-	[System.Serializable]
+	[Serializable]
 	public abstract class PaletteBase
 	{
 		public abstract string[] StyleNames { get; }
@@ -56,7 +54,7 @@ namespace Beamable.Theme
 	}
 
 
-	[System.Serializable]
+	[Serializable]
 	public abstract class Palette<T> : PaletteBase where T : PaletteStyle
 	{
 		public List<T> Styles;
@@ -83,7 +81,7 @@ namespace Beamable.Theme
 			return typeof(PaletteBinding);
 		}
 
-		[System.Serializable]
+		[Serializable]
 		public class PaletteBinding : GeneralPaletteBinding
 		{
 			public T Resolve()

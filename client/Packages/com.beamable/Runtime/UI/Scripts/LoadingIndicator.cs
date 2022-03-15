@@ -1,9 +1,7 @@
 ﻿using Beamable;
 using Beamable.AccountManagement;
 using Beamable.Coroutines;
-using Beamable.Service;
 using Beamable.UI.Scripts;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
