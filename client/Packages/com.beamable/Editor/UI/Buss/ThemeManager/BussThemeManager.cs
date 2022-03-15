@@ -3,6 +3,7 @@ using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
@@ -144,7 +145,7 @@ namespace Beamable.Editor.UI.Buss
 			_addStyleButton = new AddStyleButton();
 			_addStyleButton.Setup(_stylesGroup, _ => RefreshStyleSheets());
 			_addStyleButton.CheckEnableState();
-			parent.Insert(3, _addStyleButton);
+			parent.Insert(parent.Children().Count() - 1, _addStyleButton);
 		}
 
 		private void OnFocus()

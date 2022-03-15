@@ -3,6 +3,7 @@ using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements.StyleSheets;
@@ -31,7 +32,8 @@ namespace Beamable.Editor.UI.Components
 		{
 			_navigationWindow = navigationWindow;
 			_navigationWindow.SelectionChanged += OnSelectionChanged;
-
+			
+			EditorApplication.hierarchyChanged += OnHierarchyChanged;
 			Init();
 		}
 
@@ -105,6 +107,17 @@ namespace Beamable.Editor.UI.Components
 			RefreshClassesList();
 			RefreshHeight();
 			_navigationWindow.RefreshSelectedLabel();
+		}
+
+		private void OnHierarchyChanged()
+		{
+			_currentBussElement = null;
+			_selectedClassListIndex = null;
+
+			_idField.Value = string.Empty;
+			
+			RefreshClassesList();
+			RefreshHeight();
 		}
 
 		private void OnSelectionChanged(GameObject current)
@@ -216,8 +229,23 @@ namespace Beamable.Editor.UI.Components
 
 		private void OnValueChanged()
 		{
+			if (_currentBussElement == null)
+			{
+				return;
+			}
+			
 			_currentBussElement.Id = _idField.Value;
 			_navigationWindow.RefreshSelectedLabel();
+		}
+
+		protected override void OnDestroy()
+		{
+			if (_navigationWindow != null)
+			{
+				_navigationWindow.SelectionChanged -= OnSelectionChanged;
+			}
+
+			EditorApplication.hierarchyChanged -= OnHierarchyChanged;
 		}
 	}
 }
