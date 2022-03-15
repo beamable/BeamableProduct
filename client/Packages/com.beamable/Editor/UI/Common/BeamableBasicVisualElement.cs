@@ -42,7 +42,6 @@ namespace Beamable.Editor.UI.Common
 
 		public virtual void Init()
 		{
-			Destroy();
 			Clear();
 
 			this.AddStyleSheet(Files.COMMON_USS_FILE);
