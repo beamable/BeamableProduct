@@ -2,8 +2,8 @@ using Beamable.Server.Editor.DockerCommands;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using UnityEngine;
 using System.Linq;
+using UnityEngine;
 
 namespace Beamable.Server.Editor
 {
@@ -17,9 +17,9 @@ namespace Beamable.Server.Editor
 			                                    .GetFiles(descriptor.BuildPath, "*", SearchOption.AllDirectories)
 			                                    .OrderByDescending(p => p.Length)
 			                                    .FirstOrDefault().Length : descriptor.BuildPath.Length;
-			Assert.IsFalse(longestPathLength + Directory.GetCurrentDirectory().Length >= 260,
-			               "Project path is too long and can cause issues during building on Windows machine. " +
-			               "Consider moving project to other folder so the project path would be shorter.");
+			UnityEngine.Assertions.Assert.IsFalse(longestPathLength + Directory.GetCurrentDirectory().Length >= 260,
+			                                     "Project path is too long and can cause issues during building on Windows machine. " +
+			                                     "Consider moving project to other folder so the project path would be shorter.");
 #endif
 			// remove everything in the hidden folder...
 			if (dirExists)

@@ -96,7 +96,7 @@ namespace Beamable.Common.Api
 		   => RecoverFromStatus(self, 404, recovery);
 
 		public static Promise<T> RecoverFrom40x<T>(this Promise<T> self, System.Func<RequesterException, T> recovery)
-			=> RecoverFromStatus(self, new long []{401, 403, 404}, recovery);
+			=> RecoverFromStatus(self, new long[] { 401, 403, 404 }, recovery);
 
 		public static Promise<T> RecoverFromStatus<T>(this Promise<T> self, long[] status, System.Func<RequesterException, T> recovery)
 		{
