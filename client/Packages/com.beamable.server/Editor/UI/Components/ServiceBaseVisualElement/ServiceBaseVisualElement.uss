@@ -55,6 +55,7 @@ StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
     margin-right: 10px;
     min-width: 130px;
     max-width: 200px;
+    flex-grow: 1;
 }
 
 #logHeader > .rightArea{

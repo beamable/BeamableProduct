@@ -97,7 +97,7 @@
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all L.png");
 }
 
-#buildImage.running {
+.running #buildImage {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/StopAllDark.png");
 }
 

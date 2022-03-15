@@ -34,6 +34,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected VisualElement _remoteStatusIcon;
 		protected LabeledCheckboxVisualElement _checkbox;
 		protected Button _moreBtn;
+		protected Button _startButton;
 		protected MicroserviceVisualElementSeparator _separator;
 		private VisualElement _logContainerElement;
 		private LogVisualElement _logElement;
@@ -75,6 +76,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Root.Q<Button>("cancelBtn").RemoveFromHierarchy();
 			Root.Q("microserviceNewTitle")?.RemoveFromHierarchy();
 			_moreBtn = Root.Q<Button>("moreBtn");
+			_startButton = Root.Q<Button>("startBtn");
 			_checkbox = Root.Q<LabeledCheckboxVisualElement>("checkbox");
 			_logContainerElement = Root.Q<VisualElement>("logContainer");
 			_statusIcon = Root.Q<VisualElement>("statusIcon");
@@ -182,6 +184,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_statusIcon.tooltip = statusText;
 			_statusIcon.AddToClassList(statusClassName);
+			_startButton.EnableInClassList("running", !isBuilding && isRunning);
 		}
 		private void OnDrag(float value)
 		{

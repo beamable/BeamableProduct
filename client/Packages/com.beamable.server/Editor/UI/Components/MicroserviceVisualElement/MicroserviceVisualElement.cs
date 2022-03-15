@@ -23,8 +23,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{ }
 		protected override string ScriptName => nameof(MicroserviceVisualElement);
 
-		private VisualElement _buildDefaultLabel;
-		private Button _startButton;
 		private MicroserviceModel _microserviceModel;
 
 		protected override void OnDestroy()
@@ -43,8 +41,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void QueryVisualElements()
 		{
 			base.QueryVisualElements();
-			_startButton = Root.Q<Button>("startBtn");
-			_buildDefaultLabel = Root.Q<VisualElement>("buildImage");
 			_microserviceModel = (MicroserviceModel)Model;
 		}
 		protected override void UpdateVisualElements()
@@ -134,10 +130,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			base.UpdateButtons();
 			_startButton.tooltip = GetBuildButtonString(_microserviceModel.IncludeDebugTools,
 													 _microserviceModel.IsRunning ? STOP : BUILD_START);
-			_buildDefaultLabel.EnableInClassList("running", _microserviceModel.IsRunning);
-
 			_startButton.SetEnabled(!_microserviceModel.IsBuilding);
-			_startButton.EnableInClassList("running", !_microserviceModel.IsBuilding && _microserviceModel.IsRunning);
 		}
 	}
 }
