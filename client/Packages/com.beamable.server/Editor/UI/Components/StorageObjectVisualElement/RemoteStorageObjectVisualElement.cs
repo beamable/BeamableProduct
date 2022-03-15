@@ -25,6 +25,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			Root.Q<VisualElement>("logContainer").RemoveFromHierarchy();
 			Root.Q("collapseContainer")?.RemoveFromHierarchy();
+			Root.Q("startBtn")?.RemoveFromHierarchy();
 
 #if UNITY_2019_1_OR_NEWER
 			Root.Q<VisualElement>("mainVisualElement").style.height = new StyleLength(DEFAULT_HEADER_HEIGHT);
@@ -33,6 +34,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 #endif
 
 			_statusIcon.RemoveFromHierarchy();
+			Root.Q("foldContainer").visible = false;
 
 			var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
 			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
@@ -44,7 +46,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_checkbox.SetText(Model.Name);
 			_checkbox.SetWithoutNotify(Model.IsSelected);
 			_checkbox.SetEnabled(false);
-			_stopButton.RemoveFromHierarchy();
 			Model.OnSelectionChanged += _checkbox.SetWithoutNotify;
 			_checkbox.OnValueChanged += b => Model.IsSelected = b;
 
