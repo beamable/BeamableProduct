@@ -62,9 +62,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
 			_cancelBtn = Root.Q<Button>("cancelBtn");
-
-			var stopButton = Root.Q<Button>("stopBtn");
-			stopButton.parent.Remove(stopButton);
 			_createBtn = new PrimaryButtonVisualElement();
 			_cancelBtn.parent.Add(_createBtn);
 			_createBtn.Refresh();

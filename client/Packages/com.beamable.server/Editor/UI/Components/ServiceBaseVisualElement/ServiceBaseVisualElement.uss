@@ -48,19 +48,21 @@ StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
     flex-grow: 1;
 }
 
-#logHeader > LabeledCheckboxVisualElement,#logHeader > .rightArea {
+StorageObjectVisualElement #logHeader > LabeledCheckboxVisualElement,
+StorageObjectVisualElement #logHeader > .rightArea,
+MicroserviceVisualElement #logHeader > LabeledCheckboxVisualElement,
+MicroserviceVisualElement #logHeader > .rightArea {
     padding-left: 0px;
     padding-right: 0px;
     margin-left: 10px;
     margin-right: 10px;
-    min-width: 130px;
-    max-width: 200px;
-    flex-grow: 1;
+    width: 200px;
 }
 
 #logHeader > .rightArea{
     flex-direction: row;
     align-content: flex-end;
+    align-self: stretch;
     justify-content: flex-end;
 }
 #startBtn {
@@ -182,12 +184,6 @@ StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
     margin-left: 0px;
     margin-bottom: 0px;
     margin-top: 0px;
-}
-
-LabeledCheckboxVisualElement{
-    margin-left: 10px;
-	align-self: center;
-    justify-content: flex-start;
 }
 
 .hide {
