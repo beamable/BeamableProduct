@@ -23,10 +23,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{ }
 		protected override string ScriptName => nameof(MicroserviceVisualElement);
 
-		private Action _defaultBuildAction;
-
 		private VisualElement _buildDefaultLabel;
-		private Button _buildBtn;
+		private Button _startButton;
 		private MicroserviceModel _microserviceModel;
 
 		protected override void OnDestroy()
@@ -45,15 +43,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void QueryVisualElements()
 		{
 			base.QueryVisualElements();
-			_buildBtn = Root.Q<Button>("buildBtn");
+			_startButton = Root.Q<Button>("startBtn");
 			_buildDefaultLabel = Root.Q<VisualElement>("buildImage");
 			_microserviceModel = (MicroserviceModel)Model;
 		}
 		protected override void UpdateVisualElements()
 		{
 			base.UpdateVisualElements();
-			_buildBtn.clickable.clicked -= HandleBuildButtonClicked;
-			_buildBtn.clickable.clicked += HandleBuildButtonClicked;
+			_startButton.clickable.clicked -= HandleStartButtonClicked;
+			_startButton.clickable.clicked += HandleStartButtonClicked;
 			_microserviceModel.OnBuildAndStart -= SetupProgressBarForBuildAndStart;
 			_microserviceModel.OnBuildAndStart += SetupProgressBarForBuildAndStart;
 			_microserviceModel.OnBuildAndRestart -= SetupProgressBarForBuildAndRestart;
@@ -118,26 +116,27 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			new StepLogParser(_loadingBar, Model, task);
 		}
-		private void HandleBuildButtonClicked() => _defaultBuildAction?.Invoke();
+		private void HandleStartButtonClicked()
+		{
+			if (_microserviceModel.IsRunning)
+			{
+				_microserviceModel.Stop();
+			}
+			else
+			{
+				_microserviceModel.BuildAndStart();
+			}
+		}
 
 		protected override void UpdateButtons()
 		{
 			base.UpdateButtons();
-			_stopButton.visible = Model.IsRunning;
-			_buildBtn.tooltip = GetBuildButtonString(_microserviceModel.IncludeDebugTools,
-													 _microserviceModel.IsRunning ? BUILD_RESET : BUILD_START);
+			_startButton.tooltip = GetBuildButtonString(_microserviceModel.IncludeDebugTools,
+													 _microserviceModel.IsRunning ? STOP : BUILD_START);
 			_buildDefaultLabel.EnableInClassList("running", _microserviceModel.IsRunning);
 
-			if (_microserviceModel.IsRunning)
-			{
-				_defaultBuildAction = () => _microserviceModel.BuildAndRestart();
-			}
-			else
-			{
-				_defaultBuildAction = () => _microserviceModel.BuildAndStart();
-			}
-			_stopButton.SetEnabled(_microserviceModel.ServiceBuilder.HasImage && !_microserviceModel.IsBuilding);
-			_buildBtn.SetEnabled(!_microserviceModel.IsBuilding);
+			_startButton.SetEnabled(!_microserviceModel.IsBuilding);
+			_startButton.EnableInClassList("running", !_microserviceModel.IsBuilding && _microserviceModel.IsRunning);
 		}
 	}
 }

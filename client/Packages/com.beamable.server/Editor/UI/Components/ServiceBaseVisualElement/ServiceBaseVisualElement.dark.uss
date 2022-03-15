@@ -93,16 +93,12 @@
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Remote Disable L.png");
 }
 
-#stopImage {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/StopAllDark.png");
-}
-
 #buildImage {
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all L.png");
 }
 
 #buildImage.running {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Refresh.png");
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/StopAllDark.png");
 }
 
 .foldIcon {
