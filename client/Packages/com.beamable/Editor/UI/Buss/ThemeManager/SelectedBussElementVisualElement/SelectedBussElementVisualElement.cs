@@ -158,7 +158,7 @@ namespace Beamable.Editor.UI.Components
 				bindItem = BindListViewElement,
 				selectionType = SelectionType.Single,
 				itemHeight = 24,
-				itemsSource = _currentBussElement ? _currentBussElement.Classes.ToList() : new List<string>()
+				itemsSource = _currentBussElement != null ? _currentBussElement.Classes.ToList() : new List<string>()
 			};
 			view.name = "classesList";
 
