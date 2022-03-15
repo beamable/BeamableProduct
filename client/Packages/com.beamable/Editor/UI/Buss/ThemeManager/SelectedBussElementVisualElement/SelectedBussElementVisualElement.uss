@@ -4,20 +4,20 @@
     padding-bottom: 10px;
 }
 
-#header {
+.header {
     padding-left: 20px;
     padding-right: 20px;
     height: 30px;
     justify-content: center;
 }
 
-#headerLabel {
+.headerLabel {
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-font-style: bold;
     font-size: 12px;
 }
 
-#classesLabel {
+.classesLabel {
     -unity-font: url("project:///Packages/com.beamable/Editor/UI/Font/Lato-Semibold.ttf");
     -unity-font-style: bold;
     font-size: 12px;

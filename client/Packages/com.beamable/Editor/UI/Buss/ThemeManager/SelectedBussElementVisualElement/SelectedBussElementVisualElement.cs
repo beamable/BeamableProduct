@@ -31,8 +31,7 @@ namespace Beamable.Editor.UI.Components
 		public void Setup(BussElementHierarchyVisualElement navigationWindow)
 		{
 			_navigationWindow = navigationWindow;
-			_navigationWindow.SelectionChanged += OnSelectionChanged;
-			
+			_navigationWindow.SelectionChanged += OnBussElementChanged;
 			EditorApplication.hierarchyChanged += OnHierarchyChanged;
 			Init();
 		}
@@ -42,9 +41,9 @@ namespace Beamable.Editor.UI.Components
 			base.Init();
 
 			VisualElement header = new VisualElement();
-			header.name = "header";
+			header.AddToClassList("header");
 			TextElement label = new TextElement();
-			label.name = "headerLabel";
+			label.AddToClassList("headerLabel");
 			label.text = "Selected Buss Element";
 			header.Add(label);
 			Root.Add(header);
@@ -55,7 +54,7 @@ namespace Beamable.Editor.UI.Components
 			Root.Add(_idField);
 
 			Label classesLabel = new Label("Classes");
-			classesLabel.name = "classesLabel";
+			classesLabel.AddToClassList("classesLabel");
 			Root.Add(classesLabel);
 
 			_classesList = CreateClassesList();
@@ -120,7 +119,7 @@ namespace Beamable.Editor.UI.Components
 			RefreshHeight();
 		}
 
-		private void OnSelectionChanged(GameObject current)
+		private void OnBussElementChanged(GameObject current)
 		{
 			_currentBussElement = current.GetComponent<BussElement>();
 			_selectedClassListIndex = null;
@@ -242,7 +241,7 @@ namespace Beamable.Editor.UI.Components
 		{
 			if (_navigationWindow != null)
 			{
-				_navigationWindow.SelectionChanged -= OnSelectionChanged;
+				_navigationWindow.SelectionChanged -= OnBussElementChanged;
 			}
 
 			EditorApplication.hierarchyChanged -= OnHierarchyChanged;

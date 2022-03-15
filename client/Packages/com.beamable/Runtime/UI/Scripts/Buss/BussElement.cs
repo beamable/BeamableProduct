@@ -130,7 +130,7 @@ namespace Beamable.UI.Buss
 
 		#region Changing Classes
 
-		public void UpdateClasses(List<string> newClasses)
+		public void UpdateClasses(IEnumerable<string> newClasses)
 		{
 			_classes.Clear();
 			_classes = new List<string>(newClasses);
