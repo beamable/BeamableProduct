@@ -228,16 +228,19 @@ namespace Beamable.Api.CloudSaving
 		{
 			return GenerateUploadObjectRequestWithMapping().FlatMap(response =>
 			{
-				if (response.Item1.request.Count <= 0)
+				var uploadManifestRequest = response.Item1;
+				var fileNameToChecksum = response.Item2;
+
+				if (uploadManifestRequest.request.Count <= 0)
 				{
 					return Promise<ManifestResponse>.Failed(new Exception("Upload is empty"));
 				}
 
-				return HandleRequest(response.Item1,
-				   response.Item2,
+				return HandleRequest(uploadManifestRequest,
+				   fileNameToChecksum,
 				   Method.PUT,
 				   "/data/uploadURL"
-				).FlatMap(_ => CommitManifest(response.Item1))
+				).FlatMap(_ => CommitManifest(uploadManifestRequest))
 				.Error(_ =>
 				{
 					//Clear local known state so we reprocess these files
