@@ -1,12 +1,11 @@
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Dependencies;
+using Beamable.Common.Spew;
 using Beamable.Coroutines;
 using Beamable.Pooling;
 using Beamable.Serialization;
 using Beamable.Serialization.SmallerJSON;
-using Beamable.Service;
-using Beamable.Spew;
 using System;
 using System.Collections;
 using System.Collections.Generic;

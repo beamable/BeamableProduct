@@ -1,3 +1,4 @@
+using Beamable.InputManagerIntegration;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -9,9 +10,7 @@ namespace Beamable
 		{
 			if (EventSystem.current == null && Application.isPlaying)
 			{
-				var eventSystem = new GameObject("EventSystem");
-				eventSystem.AddComponent<EventSystem>();
-				eventSystem.AddComponent<StandaloneInputModule>();
+				BeamableInput.AddInputSystem();
 			}
 		}
 	}

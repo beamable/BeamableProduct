@@ -8,7 +8,6 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
-
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 #endif

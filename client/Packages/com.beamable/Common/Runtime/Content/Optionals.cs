@@ -56,6 +56,19 @@ namespace Beamable.Common.Content
 			return typeof(T);
 		}
 
+		public T GetOrThrow()
+		{
+			if (!HasValue) throw new ArgumentException("Optional value does not exist, but it was forced.");
+			return Value;
+		}
+		public T GetOrElse(T otherwise) => GetOrElse(() => otherwise);
+
+		public T GetOrElse(Func<T> otherwise)
+		{
+			if (HasValue) return Value;
+			return otherwise();
+		}
+
 		public Optional<T> DoIfExists(Action<T> callback)
 		{
 			if (HasValue) callback(Value);
@@ -119,7 +132,19 @@ namespace Beamable.Common.Content
 
 	[System.Serializable]
 	[Agnostic]
-	public class OptionalString : Optional<string> { }
+	public class OptionalString : Optional<string>
+	{
+		public OptionalString()
+		{
+
+		}
+
+		public OptionalString(string value)
+		{
+			Value = value;
+			HasValue = true;
+		}
+	}
 
 	[System.Serializable]
 	public abstract class DisplayableList<T> : DisplayableList

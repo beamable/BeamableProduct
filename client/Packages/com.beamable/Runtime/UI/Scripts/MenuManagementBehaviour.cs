@@ -1,3 +1,4 @@
+using Beamable.InputManagerIntegration;
 using System;
 using System.Collections.Generic;
 using TMPro;
@@ -249,7 +250,7 @@ namespace Beamable.UI.Scripts
 
 		private void Update()
 		{
-			if (Input.GetKeyDown(KeyCode.Escape))
+			if (BeamableInput.IsEscapeKeyDown())
 			{
 				GoBack();
 			}

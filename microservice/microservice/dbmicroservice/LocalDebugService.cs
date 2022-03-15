@@ -1,4 +1,6 @@
-﻿using System.Net.WebSockets;
+﻿using System;
+using System.Net.WebSockets;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using EmbedIO;
@@ -11,11 +13,14 @@ namespace Beamable.Server {
     public class LocalDebugService {
         private readonly BeamableMicroService _beamableService;
 
+        private string _lastToken;
+
         public LocalDebugService(BeamableMicroService beamableService) {
             _beamableService = beamableService;
             Swan.Logging.ConsoleLogger.Instance.LogLevel = LogLevel.Error;
             var server = new WebServer(HEALTH_PORT)
-                .WithModule(new ActionModule("/health", HttpVerbs.Any, HealthCheck));
+                .WithModule(new ActionModule("/health", HttpVerbs.Any, HealthCheck))
+                ;
             server.RunAsync();
         }
 

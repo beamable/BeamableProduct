@@ -1,4 +1,5 @@
 ﻿using Beamable.Editor.UI.Common;
+using Beamable.UI.Buss;
 using System;
 using UnityEngine;
 #if UNITY_2018
@@ -19,11 +20,12 @@ namespace Beamable.Editor.UI.Components
 
 		private float _singleIndentWidth;
 		private float _level;
-		private string _label;
 		private Action<IndentedLabelVisualElement> _onMouseClicked;
 
 		private VisualElement _container;
 		private TextElement _labelComponent;
+		private BussElement _relatedBussElement;
+		private Func<BussElement, string> _getLabelAction;
 
 		public GameObject RelatedGameObject
 		{
@@ -36,15 +38,17 @@ namespace Beamable.Editor.UI.Components
 		{ }
 
 		public void Setup(GameObject relatedGameObject,
-						  string label,
+						  Func<BussElement, string> getLabelAction,
 						  Action<IndentedLabelVisualElement> onMouseClicked,
 						  int level,
 						  float width)
 		{
-			_onMouseClicked = onMouseClicked;
-
 			RelatedGameObject = relatedGameObject;
-			_label = label;
+			_relatedBussElement = RelatedGameObject.GetComponent<BussElement>();
+
+			_onMouseClicked = onMouseClicked;
+			_getLabelAction = getLabelAction;
+
 			_level = level;
 			_singleIndentWidth = width;
 		}
@@ -58,7 +62,7 @@ namespace Beamable.Editor.UI.Components
 
 			_labelComponent = new TextElement();
 			_labelComponent.name = "indentedLabel";
-			_labelComponent.text = _label;
+			_labelComponent.text = _getLabelAction.Invoke(_relatedBussElement);
 
 			float width = (_singleIndentWidth * _level) + _singleIndentWidth;
 
@@ -75,6 +79,8 @@ namespace Beamable.Editor.UI.Components
 			_container.RegisterCallback<MouseDownEvent>(OnMouseClicked);
 			_container.RegisterCallback<MouseOverEvent>(OnMouseOver);
 			_container.RegisterCallback<MouseOutEvent>(OnMouseOut);
+
+			_relatedBussElement.Validate += RefreshLabel;
 		}
 
 		protected override void OnDestroy()
@@ -82,6 +88,8 @@ namespace Beamable.Editor.UI.Components
 			_container?.UnregisterCallback<MouseDownEvent>(OnMouseClicked);
 			_container?.UnregisterCallback<MouseOverEvent>(OnMouseOver);
 			_container?.UnregisterCallback<MouseOutEvent>(OnMouseOut);
+
+			_relatedBussElement.Validate -= RefreshLabel;
 		}
 
 		public void Select()
@@ -92,6 +100,12 @@ namespace Beamable.Editor.UI.Components
 		public void Deselect()
 		{
 			_container.SetSelected(false);
+		}
+
+		public void RefreshLabel()
+		{
+			_labelComponent.text = _getLabelAction.Invoke(_relatedBussElement);
+			_labelComponent.MarkDirtyRepaint();
 		}
 
 		private void OnMouseOver(MouseOverEvent evt)

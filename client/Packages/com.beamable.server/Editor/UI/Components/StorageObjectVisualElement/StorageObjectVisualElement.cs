@@ -1,19 +1,10 @@
-﻿using Beamable.Common;
-using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
-using Beamable.Server.Editor;
 using Beamable.Server.Editor.ManagerClient;
-using Beamable.Server.Editor.UI.Components;
-using Beamable.Server.Editor.UI.Components.DockerLoginWindow;
-using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using UnityEngine;
 using static Beamable.Common.Constants.Features.Services;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements.StyleSheets;
-
 #elif UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -43,12 +34,27 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void UpdateVisualElements()
 		{
 			base.UpdateVisualElements();
+			Root.Q("leftArea")?.RemoveFromHierarchy();
+			_startButton.clickable.clicked -= HandleStartClicked;
+			_startButton.clickable.clicked += HandleStartClicked;
 			_mongoStorageModel.OnRemoteReferenceEnriched -= OnServiceReferenceChanged;
 			_mongoStorageModel.OnRemoteReferenceEnriched += OnServiceReferenceChanged;
 			_mongoStorageModel.ServiceBuilder.OnBuildingFinished -= OnBuildingFinished;
 			_mongoStorageModel.ServiceBuilder.OnBuildingFinished += OnBuildingFinished;
 			_mongoStorageModel.ServiceBuilder.OnIsRunningChanged -= OnIsRunningChanged;
 			_mongoStorageModel.ServiceBuilder.OnIsRunningChanged += OnIsRunningChanged;
+		}
+
+		private void HandleStartClicked()
+		{
+			if (_mongoStorageModel.IsRunning)
+			{
+				_mongoStorageModel.Stop();
+			}
+			else
+			{
+				_mongoStorageModel.Start();
+			}
 		}
 
 		protected override void UpdateLocalStatus()
@@ -77,20 +83,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void UpdateRemoteStatusIcon()
 		{
 			_remoteStatusIcon.ClearClassList();
-			string statusClassName;
-
-			if (_mongoStorageModel.RemoteReference?.enabled ?? false)
-			{
-				statusClassName = "remoteEnabled";
-				_remoteStatusLabel.text = REMOTE_ENABLED;
-			}
-			else
-			{
-				statusClassName = "remoteDisabled";
-				_remoteStatusLabel.text = REMOTE_NOT_ENABLED;
-			}
-
-			_remoteStatusIcon.tooltip = _remoteStatusLabel.text;
+			bool remoteEnabled = _mongoStorageModel.RemoteReference?.enabled ?? false;
+			string statusClassName = remoteEnabled ? "remoteEnabled" : "remoteDisabled";
+			_remoteStatusIcon.tooltip = remoteEnabled ? REMOTE_ENABLED : REMOTE_NOT_ENABLED;
 			_remoteStatusIcon.AddToClassList(statusClassName);
 		}
 
@@ -107,7 +102,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void QueryVisualElements()
 		{
 			base.QueryVisualElements();
-			Root.Q("buildDropDown")?.RemoveFromHierarchy();
 			_mongoStorageModel = (MongoStorageModel)Model;
 		}
 	}

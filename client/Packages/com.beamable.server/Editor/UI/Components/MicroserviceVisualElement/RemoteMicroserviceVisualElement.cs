@@ -1,9 +1,7 @@
 ﻿using Beamable.Common;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.ManagerClient;
-using Beamable.Server.Editor.UI.Components;
 using Beamable.Server.Editor.UI.Components.DockerLoginWindow;
-using UnityEngine;
 using static Beamable.Common.Constants.Features.Services;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -36,10 +34,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		protected override void UpdateVisualElements()
 		{
-			Root.Q<Button>("buildDropDown").RemoveFromHierarchy();
-			Root.Q<VisualElement>("buttonRow").RemoveFromHierarchy();
+			Root.Q<Button>("startBtn").RemoveFromHierarchy();
 			Root.Q<VisualElement>("logContainer").RemoveFromHierarchy();
-			Root.Q<VisualElement>("dependentServicesContainer").RemoveFromHierarchy();
 			Root.Q("collapseContainer")?.RemoveFromHierarchy();
 
 #if UNITY_2019_1_OR_NEWER
@@ -47,9 +43,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 #elif UNITY_2018
             Root.Q<VisualElement>("mainVisualElement").style.height = StyleValue<float>.Create(DEFAULT_HEADER_HEIGHT);
 #endif
+			Root.Q("foldContainer").visible = false;
 
 			_statusIcon.RemoveFromHierarchy();
-			_statusLabel.RemoveFromHierarchy();
 
 			var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
 			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
@@ -100,8 +96,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			_remoteStatusIcon.ClearClassList();
 			string statusClassName = "remoteEnabled";
-			_remoteStatusLabel.text = REMOTE_ONLY;
-			_remoteStatusIcon.tooltip = _remoteStatusLabel.text;
+			_remoteStatusIcon.tooltip = REMOTE_ONLY;
 			_remoteStatusIcon.AddToClassList(statusClassName);
 		}
 

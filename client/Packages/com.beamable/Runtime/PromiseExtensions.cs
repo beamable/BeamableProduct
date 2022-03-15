@@ -1,12 +1,9 @@
 using Beamable.Common;
 using Beamable.Coroutines;
-using Beamable.Platform.SDK;
-using Beamable.Service;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using UnityEngine;
 
