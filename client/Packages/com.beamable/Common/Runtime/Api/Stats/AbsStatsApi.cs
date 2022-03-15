@@ -141,15 +141,43 @@ namespace Beamable.Common.Api.Stats
 	[Serializable]
 	public class StatsSearchResponse
 	{
-		public int[] ids;
+		public long[] ids;
 	}
 
+	/// <summary>
+	/// A definition of a comparison (<see cref="Rel"/>) to be run against the specified <see cref="Stat"/>.  
+	/// </summary>
 	public class Criteria
 	{
+		/// <summary>
+		/// The stat to compare against (LHS of the comparison).
+		/// </summary>
 		public string Stat { get; }
+		
+		/// <summary>
+		/// A string representing the comparision to be executed.
+		/// <list type="bullet">
+		/// <item>Equality: "equal" OR "eq".</item>
+		/// <item>Non-Equality: "notequal" OR "neq".</item>
+		/// <item>Less Than: "lessthan" OR "lt".</item>
+		/// <item>Less Than or Equal: "lessthanequal" OR "lte".</item>
+		/// <item>Greater Than: "greaterthan" OR "gt".</item>
+		/// <item>Greater Than or Equal: "greaterthanequal" OR "gte".</item>
+		/// <item>In: "in".</item>
+		/// <item>Not In: "notin" OR "nin".</item>
+		/// </list>
+		/// </summary>
 		public string Rel { get; }
+		
+		/// <summary>
+		/// The RHS of the comparison.
+		/// </summary>
 		public string Value { get; }
 
+		
+		/// <param name="stat"><see cref="Stat"/></param>
+		/// <param name="rel"><see cref="Rel"/></param>
+		/// <param name="value"><see cref="Value"/></param>
 		public Criteria(string stat, string rel, string value)
 		{
 			Stat = stat;

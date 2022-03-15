@@ -17,10 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - When exiting Unity, all related Microservices and Microstorage containers are closed
 - Microservice client code is generated in a dockerized dotnet runtime instead of Unity
+- Added docstrings to `StatsService.SearchStats` to clarify correct usage of the `Criteria` parameter.
 
 ### Fixed
 - Fixed issue that caused the `ReflectionCache` to run an extra unnecessary time when a `.cs` or `.asmdef` file were changed.
 - Fixed issue on Re-Import All with `BeamableAssistantWindow` opened that required reopening the window for it to work.
+- Fixed issue that caused `StatsService.SearchStats` to fail whenever a match occurred.
 
 ## [1.0.2]
 ### Fixed
