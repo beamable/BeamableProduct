@@ -49,6 +49,11 @@ namespace Beamable.Server.Editor
 #endif
 		public List<BeamServiceCodeHandle> LastBuiltDockerImagesCodeHandles;
 
+#if !BEAMABLE_DEVELOPER
+		[HideInInspector]
+#endif
+		public List<ServiceDependencyChecksum> ServiceDependencyChecksums = new List<ServiceDependencyChecksum>();
+
 		[Tooltip("When you run a microservice in the Editor, the prefix controls the flow of traffic. By default, the prefix is your MAC address. If two developers use the same prefix, their microservices will share traffic. The prefix is ignored for games running outside of the Editor."), Delayed]
 		public string CustomContainerPrefix;
 
@@ -71,6 +76,15 @@ namespace Beamable.Server.Editor
 
 		[FilePathSelector(true, DialogTitle = "Path to Docker Desktop", FileExtension = "exe", OnlyFiles = true)]
 		public string DockerDesktopPath;
+
+		[Tooltip("When you run a microservice, automatically reload code changes. This will not change how services are deployed to the realm.")]
+		public bool EnableHotModuleReload = true;
+
+		[Tooltip("When enabled, after you start a service, this will automatically prune unused and dangling docker images related to that service.")]
+		public bool EnableAutoPrune = true;
+
+		[Tooltip("When you enable debugging support for a microservice, if you are using Rider IDE, you can pre-install the debug tools. However, you'll need to specify some details about the version of Rider you are using.")]
+		public OptionalMicroserviceRiderDebugTools RiderDebugTools;
 
 		public string DockerCommand = DOCKER_LOCATION;
 		private string _dockerCommandCached = DOCKER_LOCATION;
@@ -289,6 +303,23 @@ namespace Beamable.Server.Editor
 	}
 
 	[Serializable]
+	[HelpURL("https://www.jetbrains.com/help/rider/2021.3/SSH_Remote_Debugging.html#deployment-remote-debug-tools")]
+	public class MicroserviceRiderDebugTools
+	{
+		[Tooltip("The version of Rider you use on your machine that you will be using to debug the Beamable Microservice. This should be in the format of MAJOR.MINOR.PATCH, like 2021.3.3 ")]
+		public string RiderVersion = "2021.3.3";
+
+		[Tooltip("The download link for the Rider debug tools. This may not always match the given Rider version itself.")]
+		public string RiderToolsDownloadUrl = "https://download.jetbrains.com/resharper/dotUltimate.2021.3.2/JetBrains.Rider.RemoteDebuggerUploads.linux-x64.2021.3.2.zip";
+	}
+
+	[Serializable]
+	public class OptionalMicroserviceRiderDebugTools : Optional<MicroserviceRiderDebugTools>
+	{
+
+	}
+
+	[Serializable]
 	public class MicroserviceConfigurationEntry
 	{
 		public string ServiceName;
@@ -305,6 +336,9 @@ namespace Beamable.Server.Editor
 		public MicroserviceConfigurationDebugEntry DebugData;
 
 		[HideInInspector] public string LastBuiltCheckSum;
+
+		[HideInInspector]
+		public string RobotId;
 	}
 
 	[Serializable]
