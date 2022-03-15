@@ -34,12 +34,27 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void UpdateVisualElements()
 		{
 			base.UpdateVisualElements();
+			Root.Q("leftArea")?.RemoveFromHierarchy();
+			_startButton.clickable.clicked -= HandleStartClicked;
+			_startButton.clickable.clicked += HandleStartClicked;
 			_mongoStorageModel.OnRemoteReferenceEnriched -= OnServiceReferenceChanged;
 			_mongoStorageModel.OnRemoteReferenceEnriched += OnServiceReferenceChanged;
 			_mongoStorageModel.ServiceBuilder.OnBuildingFinished -= OnBuildingFinished;
 			_mongoStorageModel.ServiceBuilder.OnBuildingFinished += OnBuildingFinished;
 			_mongoStorageModel.ServiceBuilder.OnIsRunningChanged -= OnIsRunningChanged;
 			_mongoStorageModel.ServiceBuilder.OnIsRunningChanged += OnIsRunningChanged;
+		}
+
+		private void HandleStartClicked()
+		{
+			if (_mongoStorageModel.IsRunning)
+			{
+				_mongoStorageModel.Stop();
+			}
+			else
+			{
+				_mongoStorageModel.Start();
+			}
 		}
 
 		protected override void UpdateLocalStatus()
@@ -87,7 +102,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void QueryVisualElements()
 		{
 			base.QueryVisualElements();
-			Root.Q("buildBtn")?.RemoveFromHierarchy();
 			_mongoStorageModel = (MongoStorageModel)Model;
 		}
 	}
