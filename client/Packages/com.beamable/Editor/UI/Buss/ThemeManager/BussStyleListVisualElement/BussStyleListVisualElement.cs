@@ -38,9 +38,9 @@ namespace Beamable.Editor.UI.Buss
 			get
 			{
 #if BEAMABLE_DEVELOPER
-				return _styleSheets;
+				return _styleSheets ?? Enumerable.Empty<BussStyleSheet>();
 #else
-				return _styleSheets.Where(s => !s.IsReadOnly);
+				return _styleSheets?.Where(s => !s.IsReadOnly) ?? Enumerable.Empty<BussStyleSheet>();
 #endif
 			}
 		}
