@@ -40,22 +40,21 @@ StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
     height: 30px;
     flex-shrink: 0;
 }
-
 #logHeader > .leftArea{
     justify-content: center;
     padding-left: 5px;
     flex-direction: row;
     flex-grow: 1;
 }
+#logHeader > LabeledCheckboxVisualElement, #logHeader > .rightArea {
+    margin-left: 10px;
+    margin-right: 10px;
+}
 
 StorageObjectVisualElement #logHeader > LabeledCheckboxVisualElement,
 StorageObjectVisualElement #logHeader > .rightArea,
 MicroserviceVisualElement #logHeader > LabeledCheckboxVisualElement,
 MicroserviceVisualElement #logHeader > .rightArea {
-    padding-left: 0px;
-    padding-right: 0px;
-    margin-left: 10px;
-    margin-right: 10px;
     width: 200px;
 }
 
