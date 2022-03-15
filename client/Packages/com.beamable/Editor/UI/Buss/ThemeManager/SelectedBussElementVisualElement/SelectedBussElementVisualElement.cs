@@ -135,11 +135,7 @@ namespace Beamable.Editor.UI.Components
 
 		private void RefreshHeight()
 		{
-#if UNITY_2018
-			_classesList.SetHeight(0.0f);
-#elif UNITY_2019_1_OR_NEWER
 			_classesList.style.SetHeight(0.0f);
-#endif
 
 			float height = 130.0f;
 
@@ -148,11 +144,7 @@ namespace Beamable.Editor.UI.Components
 				float allClassesHeight = 24 * _currentBussElement.Classes.Count();
 				height += allClassesHeight;
 
-#if UNITY_2018
-				_classesList.SetHeight(allClassesHeight);
-#elif UNITY_2019_1_OR_NEWER
 				_classesList.style.SetHeight(allClassesHeight);
-#endif
 			}
 
 			Root.style.SetHeight(height);
