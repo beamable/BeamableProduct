@@ -34,6 +34,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void UpdateVisualElements()
 		{
 			base.UpdateVisualElements();
+			Root.Q("leftArea")?.RemoveFromHierarchy();
 			_mongoStorageModel.OnRemoteReferenceEnriched -= OnServiceReferenceChanged;
 			_mongoStorageModel.OnRemoteReferenceEnriched += OnServiceReferenceChanged;
 			_mongoStorageModel.ServiceBuilder.OnBuildingFinished -= OnBuildingFinished;

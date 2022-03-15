@@ -50,6 +50,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void UpdateVisualElements()
 		{
 			base.UpdateVisualElements();
+			Root.Q("leftArea")?.RemoveFromHierarchy();
 			_startButton.clickable.clicked -= HandleStartButtonClicked;
 			_startButton.clickable.clicked += HandleStartButtonClicked;
 			_microserviceModel.OnBuildAndStart -= SetupProgressBarForBuildAndStart;
