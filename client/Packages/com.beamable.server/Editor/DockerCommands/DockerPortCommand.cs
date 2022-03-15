@@ -30,7 +30,8 @@ namespace Beamable.Server.Editor.DockerCommands
 				{
 					ContainerExists = false
 				});
-			} else
+			}
+			else
 			{
 				UnityEngine.Debug.Log("OUT:" + StandardOutBuffer);
 				var addr = StandardOutBuffer.Trim();

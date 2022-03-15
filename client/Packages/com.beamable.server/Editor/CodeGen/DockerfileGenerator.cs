@@ -88,7 +88,7 @@ RUN curl -sSL {tools.RiderToolsDownloadUrl} -o ridertemp.zip
 RUN mkdir -p /root/.local/share/JetBrains/RiderRemoteDebugger/{tools.RiderVersion}
 RUN unzip -q -o ridertemp.zip -d /root/.local/share/JetBrains/RiderRemoteDebugger/{tools.RiderVersion}
 ";
-			}) ;
+			});
 
 			return $@"
 #inject the debugging tools

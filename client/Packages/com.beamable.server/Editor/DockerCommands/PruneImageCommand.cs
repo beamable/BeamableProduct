@@ -6,7 +6,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		private readonly IDescriptor _descriptor;
 		private readonly bool _all;
 
-		public PruneImageCommand(IDescriptor descriptor, bool all=true)
+		public PruneImageCommand(IDescriptor descriptor, bool all = true)
 		{
 			_descriptor = descriptor;
 			_all = all;
@@ -14,7 +14,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 		public override string GetCommandString()
 		{
-			var cmd = $"{DockerCmd} image prune --filter \"label=beamable-service-name={_descriptor.Name}\" -f {(_all ? "-a":"")}";
+			var cmd = $"{DockerCmd} image prune --filter \"label=beamable-service-name={_descriptor.Name}\" -f {(_all ? "-a" : "")}";
 			return cmd;
 		}
 

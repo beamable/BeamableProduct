@@ -12,7 +12,7 @@ namespace BeamableReflection
 	/// The reason we need to use a custom PreserveAttribute is so that we can don't need to reference UnityEngine
 	/// </summary>
 	[AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Constructor | AttributeTargets.Delegate | AttributeTargets.Enum | AttributeTargets.Event | AttributeTargets.Field | AttributeTargets.Interface | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Struct,
-	                Inherited = false)]
+					Inherited = false)]
 	public class PreserveAttribute : System.Attribute
 	{
 
