@@ -18,7 +18,7 @@ using Debug = UnityEngine.Debug;
 
 namespace Beamable.Server
 {
-
+	[Serializable]
 	public class AssemblyDefinitionInfo : IEquatable<AssemblyDefinitionInfo>
 	{
 		public string Name;
