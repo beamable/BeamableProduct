@@ -37,7 +37,8 @@ namespace Beamable.Editor.UI.Model
 		public string AssemblyQualifiedStorageTypeName => _assemblyQualifiedStorageTypeName;
 
 		public MongoStorageBuilder ServiceBuilder { get; protected set; }
-		public override IBeamableBuilder Builder => ServiceBuilder;
+		protected override IBeamableBuilder GetBuilder() => ServiceBuilder;
+
 		public override IDescriptor Descriptor => ServiceDescriptor;
 		public override bool IsRunning => ServiceBuilder?.IsRunning ?? false;
 		public StorageConfigurationEntry Config { get; protected set; }

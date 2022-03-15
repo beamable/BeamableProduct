@@ -38,7 +38,30 @@ namespace Beamable.Editor.UI.Model
 		}
 
 		public abstract IDescriptor Descriptor { get; }
-		public abstract IBeamableBuilder Builder { get; }
+		public IBeamableBuilder Builder => GetOrCreateBuilder();
+		protected abstract IBeamableBuilder GetBuilder();
+		private IBeamableBuilder GetOrCreateBuilder()
+		{
+			var builder = GetBuilder();
+			if (builder == null)
+			{
+				if (Descriptor == null)
+				{
+					throw new Exception(
+						"Cannot get builder, because the model hasn't been initialized with a descriptor.");
+				}
+				Refresh(Descriptor);
+			}
+
+			builder = GetBuilder();
+			if (builder == null)
+			{
+				throw new Exception("Could not create the builder. It is null after a call to Refresh");
+			}
+
+			return builder;
+		}
+
 		public ServiceType ServiceType => Descriptor.ServiceType;
 		public string Name => Descriptor.Name;
 		public bool IsSelected

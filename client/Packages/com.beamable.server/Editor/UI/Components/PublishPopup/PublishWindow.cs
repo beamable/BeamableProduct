@@ -148,7 +148,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			throw new NotImplementedException();
 		}
 
-		public override IBeamableBuilder Builder =>
+		protected override IBeamableBuilder GetBuilder() =>
 			throw new NotImplementedException("Accumulator doesn't have builder");
 	}
 }

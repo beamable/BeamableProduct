@@ -43,7 +43,7 @@ namespace Beamable.Editor.UI.Model
 		public string AssemblyQualifiedMicroserviceTypeName => _assemblyQualifiedMicroserviceTypeName;
 
 		public MicroserviceBuilder ServiceBuilder { get; protected set; }
-		public override IBeamableBuilder Builder => ServiceBuilder;
+		protected override IBeamableBuilder GetBuilder() => ServiceBuilder;
 		public override IDescriptor Descriptor => ServiceDescriptor;
 		public ServiceReference RemoteReference { get; protected set; }
 		public ServiceStatus RemoteStatus { get; protected set; }
