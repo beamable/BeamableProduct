@@ -534,7 +534,11 @@ namespace Beamable
 				{
 					var purchaser = ServiceProvider.GetService<IBeamablePurchaser>();
 					var promise = purchaser.Initialize(ServiceProvider);
-					await promise.Recover(err => PromiseBase.Unit);
+					await promise.Recover(err =>
+					{
+						Debug.LogError(err);
+						return PromiseBase.Unit;
+					});
 					ServiceProvider.GetService<Promise<IBeamablePurchaser>>().CompleteSuccess(purchaser);
 				}
 			}
