@@ -2,7 +2,6 @@ using Beamable.Common.Content.Serialization;
 using Beamable.Common.Inventory;
 using NUnit.Framework;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Beamable.Tests.Content.Serialization.VipContentSerialization
 {

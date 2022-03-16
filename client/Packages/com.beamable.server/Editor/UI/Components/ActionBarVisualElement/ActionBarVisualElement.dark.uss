@@ -10,10 +10,6 @@
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/actionBarBackground.png");
 }
 
-
-#buildIcon{
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/build all L.png");
-}
 #startIcon{
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all L.png");
 }
@@ -36,4 +32,8 @@
 
 #dropDownImg{
     background-image: resource("Packages/com.beamable/Editor/UI/Content/Icons/dropdown_Line_light.png")
+}
+
+#dependenciesIcon {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/dependencies_light.png");
 }

@@ -8,6 +8,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Changed
+- Changed behaviour of Add Style button in Buss Theme Manager
+- Add Style button moved above Buss Style Cards in Buss Theme Manager
+- Application will check if there are redundant files in content disk cache on each start. All files but the one needed will be deleted to free disk space.
+- All implementations of `[BeamContextSystem]` or `[RegisterBeamableDependencies]` will be preserved durring Unity code stripping
+
+### Fixed 
+- Constant "Invalid token, trying again" errors in the Editor after 10 days.
+- Compilation error when using new `com.unity.inputsystem`
+
 ## [1.0.5]
 ### Fixed
 - Unity IAP failure to initialize on device won't hang `BeamContext.Default.OnReady`

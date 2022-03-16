@@ -10,6 +10,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 using static Beamable.Common.Constants;
+
 namespace Beamable.Editor.UI.Components
 {
 	public class RealmButtonVisualElement : BeamableVisualElement
@@ -41,6 +42,7 @@ namespace Beamable.Editor.UI.Components
 			$"{Directories.COMMON_COMPONENTS_PATH}/{nameof(RealmButtonVisualElement)}/{nameof(RealmButtonVisualElement)}")
 		{
 		}
+
 
 		protected override void OnDestroy()
 		{

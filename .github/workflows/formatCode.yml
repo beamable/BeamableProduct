@@ -9,6 +9,10 @@ on:
       - 'client/**'
       - 'microservice/**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   dotnet-format:
     runs-on: ubuntu-latest
@@ -23,11 +27,20 @@ jobs:
       - name: Format results
         run: echo ::set-output name=any::$(if [ -n "$(git status --porcelain)" ]; then echo "true"; else echo "false"; fi)
         id: format-changes
+      - name: check headcommit message
+        id: commit
+        run: |
+          str="$(jq '.head_commit.message' $GITHUB_EVENT_PATH)"
+          echo ::set-output name=title::${str%%\\n*} | tr -d '"'
+          echo ::set-output name=body::${str##*\\n} | tr -d '"'
       - name: Create Pull Request
         if:  ${{ steps.format-changes.outputs.any == 'true' }}
         uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch-suffix: 'timestamp'
-          title: 'Formatting: ${{ github.event.head_commit.message }}'
+          title: 'Formatting: ${{ steps.commit.outputs.title }}'
+          commit-message: 'Formatting: ${{ steps.commit.outputs.title }}'
+          body: |
+            ${{ steps.commit.outputs.body}}
           labels: 'bot'
