@@ -212,6 +212,8 @@ namespace Beamable.Purchasing
 					InAppPurchaseLogger.Log("Unknown billing error: '{error}'");
 					break;
 			}
+			_initPromise.CompleteError(new BeamableIAPInitializationException(error));
+
 		}
 
 		/// <summary>
@@ -364,6 +366,15 @@ namespace Beamable.Purchasing
 		public static void Register(IDependencyBuilder builder)
 		{
 			builder.AddSingleton<IBeamablePurchaser, UnityBeamablePurchaser>();
+		}
+	}
+
+	public class BeamableIAPInitializationException : Exception
+	{
+		public BeamableIAPInitializationException(InitializationFailureReason reason) : base(
+			$"Beamable IAP failed due to: ")
+		{
+
 		}
 	}
 
