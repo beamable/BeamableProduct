@@ -371,10 +371,12 @@ namespace Beamable.Purchasing
 
 	public class BeamableIAPInitializationException : Exception
 	{
+		public InitializationFailureReason Reason { get; }
+
 		public BeamableIAPInitializationException(InitializationFailureReason reason) : base(
 			$"Beamable IAP failed due to: {reason}")
 		{
-
+			Reason = reason;
 		}
 	}
 
