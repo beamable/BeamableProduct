@@ -5,7 +5,6 @@ using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
-using Beamable.Server.Editor.UI;
 using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Linq;
@@ -183,8 +182,6 @@ namespace Beamable.Editor.Microservice.UI
 
 			_actionBarVisualElement.OnStartAllClicked += () =>
 				_microserviceContentVisualElement.BuildAndStartAllMicroservices(_loadingBar);
-			_actionBarVisualElement.OnBuildAllClicked += () =>
-				_microserviceContentVisualElement.BuildAllMicroservices(_loadingBar);
 
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			if (serviceRegistry != null)

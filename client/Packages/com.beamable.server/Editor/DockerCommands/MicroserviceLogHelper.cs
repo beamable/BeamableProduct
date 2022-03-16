@@ -1,4 +1,3 @@
-﻿using Beamable.Common;
 using Beamable.Editor.UI.Model;
 using Beamable.Serialization.SmallerJSON;
 using System;
@@ -22,6 +21,11 @@ namespace Beamable.Server.Editor.DockerCommands
 			"Error",
 			"Exception",
 			"exception"
+		};
+
+		private static readonly HashSet<string> ErrorExclusions = new HashSet<string>
+		{
+			"\" >> /etc/supervisor/conf.d/supervisord.conf && echo \"loglevel=error"
 		};
 		private static readonly string[] ExpectedRunLogs = {
 			Logs.STARTING_PREFIX,
@@ -264,10 +268,22 @@ namespace Beamable.Server.Editor.DockerCommands
 			{
 				builder.OnBuildingFinished?.Invoke(true);
 			}
-			else if (ErrorElements.Any(message.Contains))
+			else if (IsErrorMatch(message))
 			{
 				builder.OnBuildingFinished?.Invoke(false);
 			}
+		}
+
+		private static bool IsErrorMatch(string message)
+		{
+			//" >> /etc/supervisor/conf.d/supervisord.conf && echo "loglevel=error
+			var simpleMatch = ErrorElements.Any(message.Contains);
+			if (simpleMatch)
+			{
+				var isExclusion = ErrorExclusions.Contains(message);
+				return !isExclusion;
+			}
+			return false;
 		}
 
 		public static void HandleRunCommandOutput(IBeamableBuilder builder, string message)
@@ -282,8 +298,8 @@ namespace Beamable.Server.Editor.DockerCommands
 					builder.OnStartingProgress?.Invoke(i + 1, RunLogsSteps);
 				}
 			}
-			if (message.Contains(Logs.READY_FOR_TRAFFIC_PREFIX) || 
-			    message.Contains(Logs.STORAGE_READY))
+			if (message.Contains(Logs.READY_FOR_TRAFFIC_PREFIX) ||
+				message.Contains(Logs.STORAGE_READY))
 			{
 				builder.OnStartingFinished?.Invoke(true);
 				builder.IsRunning = true;

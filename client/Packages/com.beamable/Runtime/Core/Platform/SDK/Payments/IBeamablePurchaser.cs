@@ -1,7 +1,5 @@
 using Beamable.Common;
 using Beamable.Common.Dependencies;
-using System;
-using UnityEngine;
 
 namespace Beamable.Api.Payments
 {

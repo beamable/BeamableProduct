@@ -1,5 +1,8 @@
-﻿using Beamable.Editor.UI.Components;
+﻿using System;
+using Beamable.Editor.UI.Components;
 using System.IO;
+using System.Reflection;
+using UnityEditor;
 using UnityEngine.Assertions;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -14,22 +17,16 @@ namespace Beamable.Editor.UI.Common
 {
 	public class BeamableBasicVisualElement : VisualElement
 	{
-		protected VisualElement Root
-		{
-			get;
-			set;
-		}
+		protected VisualElement Root { get; set; }
+		protected string UssPath { get; }
+		private bool _createRoot;
 
-		protected string USSPath
-		{
-			get;
-		}
-
-		public BeamableBasicVisualElement(string ussPath)
+		protected BeamableBasicVisualElement(string ussPath, bool createRoot = true)
 		{
 			Assert.IsTrue(File.Exists(ussPath), $"Cannot find {ussPath}");
 
-			USSPath = ussPath;
+			UssPath = ussPath;
+			_createRoot = createRoot;
 
 			RegisterCallback<DetachFromPanelEvent>(evt =>
 			{
@@ -37,14 +34,38 @@ namespace Beamable.Editor.UI.Common
 			});
 		}
 
-		public virtual void OnDetach()
+		public virtual void Refresh() { }
+
+		protected virtual void OnDestroy() { }
+
+		protected virtual void OnDetach() { }
+
+		public virtual void Init()
 		{
-			// Do any sort of cleanup
+			Clear();
+
+			this.AddStyleSheet(Files.COMMON_USS_FILE);
+			this.AddStyleSheet(UssPath);
+
+			if (_createRoot)
+			{
+				Root = new VisualElement();
+				Root.name = "root";
+				Add(Root);
+			}
+			else
+			{
+				Root = this;
+			}
+
+			this?.Query<VisualElement>(className: "--image-scale-to-fit").ForEach(elem =>
+			{
+				elem?.SetBackgroundScaleModeToFit();
+			});
 		}
 
 		public void Destroy()
 		{
-			// call OnDestroy on all child elements.
 			foreach (var child in Children())
 			{
 				if (child is BeamableVisualElement beamableChild)
@@ -60,26 +81,5 @@ namespace Beamable.Editor.UI.Common
 
 			OnDestroy();
 		}
-
-		protected virtual void OnDestroy() { }
-
-		public virtual void Init()
-		{
-			Destroy();
-			Clear();
-
-			this.AddStyleSheet(Files.COMMON_USS_FILE);			this.AddStyleSheet(USSPath);
-
-			Root = new VisualElement();
-			Root.name = "root";
-			Add(Root);
-
-			this?.Query<VisualElement>(className: "--image-scale-to-fit").ForEach(elem =>
-			{
-				elem?.SetBackgroundScaleModeToFit();
-			});
-		}
-
-		public virtual void Refresh() { }
 	}
 }

@@ -33,6 +33,9 @@
                 <engine:VisualElement name="showAllButton" class="button mediumButton headerButton">
                     <engine:TextElement text="Show All" name="showAllButtonText"/>
                 </engine:VisualElement>
+                <engine:VisualElement name="sortButton" class="button mediumButton headerButton">
+                    <engine:TextElement text="Sort"/>
+                </engine:VisualElement>
                 <engine:VisualElement name="addRuleButton" class="button smallButton add"/>
             </engine:VisualElement>
         </engine:VisualElement>

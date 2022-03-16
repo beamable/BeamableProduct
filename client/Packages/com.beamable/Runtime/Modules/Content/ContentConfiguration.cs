@@ -2,8 +2,8 @@
 using System;
 using System.Linq;
 using UnityEngine;
-using static Beamable.Common.Constants.MenuItems.Assets;
 using static Beamable.Common.Constants.Features.ContentManager;
+using static Beamable.Common.Constants.MenuItems.Assets;
 
 namespace Beamable.Content
 {
@@ -42,8 +42,8 @@ namespace Beamable.Content
 		[Tooltip("Create zip archive of content upon baking. Makes first content resolve call longer due to decompression.")]
 		public bool EnableBakedContentCompression = true;
 
-        [Tooltip("Re-bake content on each build. This option is available only on Standalone build target.")]
-        public bool BakeContentOnBuild = true;
+		[Tooltip("Re-bake content on each build. This option is available only on Standalone build target.")]
+		public bool BakeContentOnBuild = true;
 
 		public ContentParameterProvider ParameterProvider
 		{

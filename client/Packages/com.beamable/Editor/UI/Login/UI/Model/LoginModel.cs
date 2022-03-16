@@ -111,7 +111,7 @@ namespace Beamable.Editor.Login.UI.Model
 				{
 					if (b.HasCustomer)
 					{
-						Customer.SetCidPid(b.CidOrAlias, b.Pid);
+						Customer.SetCidPid(b.Alias, b.Pid);
 					}
 					else
 					{
@@ -125,7 +125,7 @@ namespace Beamable.Editor.Login.UI.Model
 				b.OnRealmChange += SetRealm;
 				b.OnCustomerChange += SetCustomer;
 
-				if (!string.IsNullOrEmpty(b.CidOrAlias))
+				if (!string.IsNullOrEmpty(b.Alias))
 				{
 					b.RealmService.GetGames().Then(games =>
 					{

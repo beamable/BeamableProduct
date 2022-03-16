@@ -685,7 +685,7 @@ namespace Beamable.Common
 					{
 						break;
 					}
-					
+
 					var generator = generators[i];
 					var promise = generator();
 					await promise;
@@ -809,7 +809,7 @@ namespace Beamable.Common
 					var index = current.Value;
 					current.Increment();
 					promise.Then(res => seq.ReportEntrySuccess(index, res))
-					       .Error(err => seq.ReportEntryError(index, err));
+						   .Error(err => seq.ReportEntryError(index, err));
 					return promise;
 				}).ToList());
 			}

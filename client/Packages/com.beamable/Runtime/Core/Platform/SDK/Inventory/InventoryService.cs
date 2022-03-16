@@ -2,8 +2,6 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Inventory;
 using Beamable.Common.Dependencies;
-using Beamable.Serialization.SmallerJSON;
-using System.Collections.Generic;
 
 namespace Beamable.Api.Inventory
 {

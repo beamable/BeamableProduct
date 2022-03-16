@@ -1,6 +1,7 @@
 using Beamable.Common.Api.Auth;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Beamable.Common.Api
 {
@@ -94,16 +95,24 @@ namespace Beamable.Common.Api
 		public static Promise<T> RecoverFrom404<T>(this Promise<T> self, System.Func<RequesterException, T> recovery)
 		   => RecoverFromStatus(self, 404, recovery);
 
-		public static Promise<T> RecoverFromStatus<T>(this Promise<T> self, long status, System.Func<RequesterException, T> recovery)
+		public static Promise<T> RecoverFrom40x<T>(this Promise<T> self, System.Func<RequesterException, T> recovery)
+			=> RecoverFromStatus(self, new long[] { 401, 403, 404 }, recovery);
+
+		public static Promise<T> RecoverFromStatus<T>(this Promise<T> self, long[] status, System.Func<RequesterException, T> recovery)
 		{
 			return self.Recover(err =>
 			{
-				if (err is RequesterException platformErr && platformErr.Status == status)
+				if (err is RequesterException platformErr && status.Contains(platformErr.Status))
 				{
 					return recovery(platformErr);
 				}
 				throw err;
 			});
+		}
+
+		public static Promise<T> RecoverFromStatus<T>(this Promise<T> self, long status, System.Func<RequesterException, T> recovery)
+		{
+			return RecoverFromStatus(self, new long[status], recovery);
 		}
 	}
 }

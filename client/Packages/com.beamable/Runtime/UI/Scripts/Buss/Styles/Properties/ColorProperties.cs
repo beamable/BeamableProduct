@@ -1,11 +1,9 @@
-﻿using Beamable.UI.Sdf.Styles;
+﻿using Beamable.UI.Sdf;
 using System;
 using UnityEngine;
 
 namespace Beamable.UI.Buss
 {
-
-	// BUSS: color: #232323
 	[Serializable]
 	public class SingleColorBussProperty : IColorBussProperty, IVertexColorBussProperty
 	{
@@ -47,7 +45,6 @@ namespace Beamable.UI.Buss
 		}
 	}
 
-	// BUSS: color: #232323 #a3a3a3 #a3a3a3 #241321
 	[Serializable]
 	public class VertexColorBussProperty : IVertexColorBussProperty
 	{
