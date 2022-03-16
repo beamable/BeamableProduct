@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed 
 - Constant "Invalid token, trying again" errors in the Editor after 10 days.
 - Compilation error when using new `com.unity.inputsystem`
+- Deferred retry of failed uploads to the poll coroutine, to eliminate an infinite loop that could crash the app.
 
 
 ## [1.0.5]
