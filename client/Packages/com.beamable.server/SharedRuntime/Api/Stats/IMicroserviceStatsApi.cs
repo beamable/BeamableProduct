@@ -65,6 +65,14 @@ namespace Beamable.Server.Api.Stats
 		Promise<Dictionary<string, string>> GetStats(string domain, string access, string type, long userId,
 		   string[] stats);
 
+		/// <summary>
+		/// Queries the player base for matches against specific stats defined by the given <paramref name="criteria"/>.
+		/// </summary>
+		/// <param name="domain">"game" or "player".</param>
+		/// <param name="access">"public" or "private"</param>
+		/// <param name="type">Should always be "player" (exists for legacy reasons).</param>
+		/// <param name="criteria">List of all <see cref="Criteria"/> that must match.</param>
+		/// <returns>The list of DBIDs for all users that match ALL of the criteria provided.</returns>
 		Promise<StatsSearchResponse> SearchStats(string domain, string access, string type, List<Criteria> criteria);
 	}
 }
