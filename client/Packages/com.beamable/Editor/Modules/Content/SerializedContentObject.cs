@@ -1,5 +1,4 @@
 using Beamable.Common.Content;
-using Beamable.Content;
 using UnityEngine;
 
 namespace Beamable.Editor.Content

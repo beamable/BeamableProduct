@@ -1,8 +1,6 @@
 #if UNITY_WEBGL
 #define DISABLE_THREADING
 #endif
-
-using System;
 using System.Collections;
 using System.Collections.Generic;
 

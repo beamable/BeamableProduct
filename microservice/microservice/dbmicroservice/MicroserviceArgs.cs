@@ -10,6 +10,7 @@ namespace Beamable.Server
       string NamePrefix { get; }
       string SdkVersionBaseBuild { get; }
       string SdkVersionExecution { get; }
+      bool WatchToken { get; }
    }
 
    public class MicroserviceArgs : IMicroserviceArgs
@@ -21,6 +22,7 @@ namespace Beamable.Server
       public string NamePrefix { get; set; }
       public string SdkVersionBaseBuild { get; set; }
       public string SdkVersionExecution { get; set; }
+      public bool WatchToken { get; set; }
    }
 
    public static class MicroserviceArgsExtensions
@@ -35,7 +37,8 @@ namespace Beamable.Server
             Host = args.Host,
             NamePrefix = args.NamePrefix,
             SdkVersionBaseBuild = args.SdkVersionBaseBuild,
-            SdkVersionExecution = args.SdkVersionExecution
+            SdkVersionExecution = args.SdkVersionExecution,
+            WatchToken = args.WatchToken
          };
       }
    }
@@ -48,7 +51,7 @@ namespace Beamable.Server
       public string Secret => Environment.GetEnvironmentVariable("SECRET");
       public string NamePrefix => Environment.GetEnvironmentVariable("NAME_PREFIX") ?? "";
       public string SdkVersionExecution => Environment.GetEnvironmentVariable("BEAMABLE_SDK_VERSION_EXECUTION") ?? "";
-
+      public bool WatchToken => (Environment.GetEnvironmentVariable("WATCH_TOKEN") ?? "") == "true";
       public string SdkVersionBaseBuild => File.ReadAllText(".beamablesdkversion").Trim();
    }
 }
