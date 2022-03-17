@@ -156,7 +156,7 @@ jobs:
         if: ${{ matrix.targetPlatform != 'WebGL' }}
         with:
           name: Build-${{ matrix.targetPlatform }}
-          path: /github/workspace/dist/${{ matrix.targetPlatform }}
+          path: dist/${{ matrix.targetPlatform }}
           retention-days: 3
       - name: upload
         if: ${{ matrix.targetPlatform == 'WebGL' }}
