@@ -13,6 +13,8 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
+using static Beamable.Common.Constants;
+
 namespace Beamable.Editor.Microservice.UI.Components
 {
 	public abstract class ServiceBaseVisualElement : MicroserviceComponent
@@ -109,8 +111,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
 			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 			_moreBtn.clickable.activators.Clear();
+			_moreBtn.tooltip = Tooltips.Microservice.MORE;
 			_moreBtn.AddManipulator(manipulator);
-			_moreBtn.tooltip = "More...";
 
 			_checkbox.Refresh();
 			_checkbox.SetText(Model.Name);
@@ -165,20 +167,20 @@ namespace Beamable.Editor.Microservice.UI.Components
 			switch (status)
 			{
 				case "localRunning":
-					statusText = "Local Running";
+					statusText = Tooltips.Microservice.ICON_LOCAL_RUNNING;
 					statusClassName = "localRunning";
 					break;
 				case "localBuilding":
+					statusText = Tooltips.Microservice.ICON_LOCAL_BUILDING;
 					statusClassName = "localBuilding";
-					statusText = "Local Building";
 					break;
 				case "localStopped":
+					statusText = Tooltips.Microservice.ICON_LOCAL_STOPPING;
 					statusClassName = "localStopped";
-					statusText = "Local Stopped";
 					break;
 				default:
+					statusText =  Tooltips.Microservice.ICON_DIFFERENT;
 					statusClassName = "different";
-					statusText = "Different";
 					break;
 			}
 

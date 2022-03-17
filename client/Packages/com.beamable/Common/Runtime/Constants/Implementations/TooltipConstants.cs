@@ -1,0 +1,86 @@
+﻿namespace Beamable.Common
+{
+	public static partial class Constants
+	{
+		public static partial class Tooltips
+		{
+			public static partial class Microservice
+			{
+				public const string STORAGE_OBJECT = "Storage Object";
+				public const string MICROSERVICE = "Microservice";
+				public const string PUBLISH = "Deploy the current state of Microservices and Microstorages to the Beamable Cloud";
+				public const string DEPENDENCIES = "View and edit the dependencies between Microservices and Microstorages";
+				public const string ADD_NEW = "Add New";	
+				public const string REFRESH = "Refresh";	
+				public const string DOCUMENT = "Document";
+				
+				public const string PLAY = "Run the Microservice or Microstorage";
+				public const string MORE = "More";
+				
+				public const string UNCHECK = "Uncheck";
+				public const string CHECKED = "Checked";
+				
+				public const string ICON_REMOTE_RUNNING = "Remote Running";
+				public const string ICON_LOCAL_RUNNING = "Local Running";
+				public const string ICON_REMOTE_STOPPING = "Remote Stoppingg";
+				public const string ICON_LOCAL_STOPPING = "Local Stopping";
+				public const string ICON_REMOTE_DEPLOYING = "Remote Deploying";
+				public const string ICON_LOCAL_BUILDING = "Local Building";
+				public const string ICON_REMOTE_DISABLE = "Remote Disable";		
+				public const string ICON_DIFFERENT = "Different";		
+				public const string ICON_UP_TO_DATE = "Up to date";	
+			}
+
+			public static partial class Buss
+			{
+				public const string EDIT = "Editing";
+				public const string UNDO = "Undo";
+				public const string WIZARD_SYSTEM = "Wizard System";
+				public const string ERASE_ALL_STYLE = "Erase all style";
+				public const string REMOVE = "Remove";
+				public const string REFRESH = "Refresh";
+				public const string MORE = "More";
+			}
+
+			public static partial class Toolbox
+			{
+				public const string CONTENT = "Content";
+				public const string THEME_MANAGER = "Theme Manager";
+				public const string CONFIG = "Config";
+				public const string DOCUMENT = "Document";
+				public const string MICROSERVICE = "Microservice";
+				public const string TAG = "Tag";
+				public const string MY_ACCOUNT = "My Account";
+				public const string LAYOUT = "Layout";
+				public const string PORTRAIT_AND_LANDSCAPE = "Portrait & Landscape";
+				public const string PORTRAIT = "Portrait";
+				public const string LANDSCAPE = "Landscape";
+			}
+			public static partial class ContentManager
+			{
+				public const string STATUS = "Status";
+				public const string TYPE = "Type";
+				public const string TAG = "Tag";
+				public const string DOCUMENT = "Document";
+				public const string REFRESH = "Refresh";
+				public const string SYNCED = "Synced";
+				public const string NEW_ADD = "New Add";
+				public const string MODIFIED = "Modified";
+				public const string DELETED = "Deleted";
+				public const string UNCHECK = "Uncheck";
+				public const string CHECKED = "Checked";
+			}
+
+			public static partial class Logs
+			{
+				public const string ICON_INFO = "Info";
+				public const string ICON_ERROR = "Error";
+				public const string ICON_WARNING = "Warning";
+				public const string ICON_DEBUG = "Debug";
+				
+				public const string POP_OUT = "Pop out";	
+				public const string ATTACH = "Attach";	
+			}
+		}
+	}
+}

@@ -15,6 +15,8 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
+using static Beamable.Common.Constants;
+
 namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class MicroserviceVisualElement : ServiceBaseVisualElement
@@ -86,7 +88,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_remoteStatusIcon.ClearClassList();
 			bool remoteEnabled = _microserviceModel.RemoteReference?.enabled ?? false;
 			string statusClassName = remoteEnabled ? "remoteEnabled" : "remoteDisabled";
-			_remoteStatusIcon.tooltip = remoteEnabled ? REMOTE_ENABLED : REMOTE_NOT_ENABLED;
+			_remoteStatusIcon.tooltip = remoteEnabled ? Tooltips.Microservice.ICON_REMOTE_RUNNING : Tooltips.Microservice.ICON_REMOTE_DISABLE;
 			_remoteStatusIcon.AddToClassList(statusClassName);
 		}
 		protected override void UpdateLocalStatus()
@@ -129,7 +131,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			base.UpdateButtons();
 			_startButton.tooltip = GetBuildButtonString(_microserviceModel.IncludeDebugTools,
-													 _microserviceModel.IsRunning ? STOP : BUILD_START);
+													 _microserviceModel.IsRunning ? STOP : Constants.Tooltips.Microservice.PLAY);
 			_startButton.SetEnabled(!_microserviceModel.IsBuilding);
 		}
 	}
