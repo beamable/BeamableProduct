@@ -12,10 +12,10 @@
 				public const string DEPENDENCIES = "View and edit the dependencies between Microservices and Microstorages";
 				public const string ADD_NEW = "Add New";	
 				public const string REFRESH = "Refresh";	
-				public const string DOCUMENT = "Document";	
-				public const string POP_OUT = "Pop out";	
-				public const string ATTACH = "Attach";	
+				public const string DOCUMENT = "Document";
+				
 				public const string PLAY = "Run the Microservice or Microstorage";
+				public const string MORE = "More";
 				
 				public const string UNCHECK = "Uncheck";
 				public const string CHECKED = "Checked";
@@ -28,7 +28,7 @@
 				public const string ICON_LOCAL_BUILDING = "Local Building";
 				public const string ICON_REMOTE_DISABLE = "Remote Disable";		
 				public const string ICON_DIFFERENT = "Different";		
-				public const string ICON_UP_TO_DATE = "Different";	
+				public const string ICON_UP_TO_DATE = "Up to date";	
 			}
 
 			public static partial class Buss
@@ -77,6 +77,9 @@
 				public const string ICON_ERROR = "Error";
 				public const string ICON_WARNING = "Warning";
 				public const string ICON_DEBUG = "Debug";
+				
+				public const string POP_OUT = "Pop out";	
+				public const string ATTACH = "Attach";	
 			}
 		}
 	}

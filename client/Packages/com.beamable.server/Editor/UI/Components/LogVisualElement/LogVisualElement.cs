@@ -97,7 +97,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_popupBtn = Root.Q<Button>("popupBtn");
 			_popupBtn.clickable.clicked += OnPopoutButton_Clicked;
 			_popupBtn.AddToClassList(Model.AreLogsAttached ? "attached" : "detached");
-			_popupBtn.tooltip = Model.AreLogsAttached ? "Detach log container." : "Attach log container.";
+			_popupBtn.tooltip = Model.AreLogsAttached ? Tooltips.Logs.POP_OUT : Tooltips.Logs.ATTACH;
 
 			_infoCountLbl = Root.Q<Label>("infoCount");
 			_warningCountLbl = Root.Q<Label>("warningCount");
@@ -206,7 +206,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				Model.AttachLogs();
 			}
-			_popupBtn.tooltip = Model.AreLogsAttached ? "Detach log container." : "Attach log container.";
+			_popupBtn.tooltip = Model.AreLogsAttached ? Tooltips.Logs.POP_OUT : Tooltips.Logs.ATTACH;
 		}
 
 		private void LogsOnOnViewFilterChanged()

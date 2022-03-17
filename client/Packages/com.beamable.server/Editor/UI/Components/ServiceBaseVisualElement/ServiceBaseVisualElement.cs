@@ -111,8 +111,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
 			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 			_moreBtn.clickable.activators.Clear();
+			_moreBtn.tooltip = Tooltips.Microservice.MORE;
 			_moreBtn.AddManipulator(manipulator);
-			_moreBtn.tooltip = "More...";
 
 			_checkbox.Refresh();
 			_checkbox.SetText(Model.Name);
