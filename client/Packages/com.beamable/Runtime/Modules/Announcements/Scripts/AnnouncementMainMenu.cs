@@ -37,7 +37,7 @@ namespace Beamable.Announcements
 
 		private void OnDestroy()
 		{
-			Subscription.Unsubscribe();
+			Subscription?.Unsubscribe();
 		}
 
 		public async void OnReadAll()
