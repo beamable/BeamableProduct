@@ -63,7 +63,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			base.Refresh();
 			_refreshButton = Root.Q<Button>("refreshButton");
 			_refreshButton.clickable.clicked += () => { OnRefreshButtonClicked?.Invoke(); };
-			_refreshButton.tooltip = "Refresh Window";
+			_refreshButton.tooltip =  Tooltips.Microservice.REFRESH;
 			_createNew = Root.Q<Button>("createNew");
 
 			var manipulator = new ContextualMenuManipulator(PopulateCreateMenu);
@@ -103,7 +103,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_infoButton = Root.Q<Button>("infoButton");
 			_infoButton.clickable.clicked += () => { OnInfoButtonClicked?.Invoke(); };
-			_infoButton.tooltip = "Open Documentation";
+			_infoButton.tooltip =  Tooltips.Microservice.DOCUMENT;
 
 
 			bool localServicesAvailable = MicroservicesDataModel.Instance?.AllLocalServices != null;

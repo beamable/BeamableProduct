@@ -6,9 +6,18 @@
 		{
 			public static partial class Microservice
 			{
+				public const string STORAGE_OBJECT = "Storage Object";
+				public const string MICROSERVICE = "Microservice";
 				public const string PUBLISH = "Deploy the current state of Microservices and Microstorages to the Beamable Cloud";
-				public const string PLAY = "Run the Microservice or Microstorage";
 				public const string DEPENDENCIES = "View and edit the dependencies between Microservices and Microstorages";
+				public const string ADD_NEW = "Add New";	
+				public const string REFRESH = "Refresh";	
+				public const string DOCUMENT = "Document";	
+				public const string POP_OUT = "Pop out";	
+				public const string ATTACH = "Attach";	
+				public const string PLAY = "Run the Microservice or Microstorage";
+				
+				
 			}
 
 			public static partial class Buss
