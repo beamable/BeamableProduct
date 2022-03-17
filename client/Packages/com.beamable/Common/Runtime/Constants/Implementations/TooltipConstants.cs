@@ -16,8 +16,6 @@
 				public const string POP_OUT = "Pop out";	
 				public const string ATTACH = "Attach";	
 				public const string PLAY = "Run the Microservice or Microstorage";
-				
-				
 			}
 
 			public static partial class Buss
@@ -58,6 +56,14 @@
 				public const string DELETED = "Deleted";
 				public const string UNCHECK = "Uncheck";
 				public const string CHECKED = "Checked";
+			}
+
+			public static partial class Logs
+			{
+				public const string ICON_INFO = "Info";
+				public const string ICON_ERROR = "Error";
+				public const string ICON_WARNING = "Warning";
+				public const string ICON_DEBUG = "Debug";
 			}
 		}
 	}
