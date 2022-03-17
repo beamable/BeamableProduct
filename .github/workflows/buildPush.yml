@@ -31,7 +31,7 @@ jobs:
         with:
           mode: start
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
-          ec2-image-id: ami-0e337bd589a2d17e8
+          ec2-image-id: ami-03cf2f5116887d593
           ec2-instance-type: m5a.xlarge
           subnet-id: subnet-0c788721cbfee4398
           security-group-id: sg-05d57d25289cd8aa0
@@ -113,7 +113,7 @@ jobs:
           version: 1.2.0
           androidVersionCode: ${{ github.run_number }} 
           allowDirtyBuild: true
-          buildsPath: dist
+          buildsPath: /github/workspace/dist
           buildMethod: BuildSampleProject.Development
       - uses: game-ci/unity-builder@v2
         if: ${{ github.ref == 'refs/heads/staging' }}
@@ -131,7 +131,7 @@ jobs:
           version: 1.2.0
           androidVersionCode: ${{ github.run_number }}
           allowDirtyBuild: true
-          buildsPath: dist
+          buildsPath: /github/workspace/dist
           buildMethod: BuildSampleProject.Staging
       - uses: game-ci/unity-builder@v2
         if: ${{ github.ref == 'refs/heads/production' }}
@@ -149,14 +149,14 @@ jobs:
           version: 1.2.0
           androidVersionCode: ${{ github.run_number }}
           allowDirtyBuild: true
-          buildsPath: dist
+          buildsPath: /github/workspace/dist
           buildMethod: BuildSampleProject.Production
 
       - uses: actions/upload-artifact@v2
         if: ${{ matrix.targetPlatform != 'WebGL' }}
         with:
           name: Build-${{ matrix.targetPlatform }}
-          path: dist/${{ matrix.targetPlatform }}
+          path: /github/workspace/dist/${{ matrix.targetPlatform }}
           retention-days: 3
       - name: upload
         if: ${{ matrix.targetPlatform == 'WebGL' }}
