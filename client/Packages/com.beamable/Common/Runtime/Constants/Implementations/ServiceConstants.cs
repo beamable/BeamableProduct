@@ -11,19 +11,14 @@
 				public const string DEPENDENT_SERVICES_WINDOW_TITLE = "Dependent services";
 
 				public const string PUBLISH = "Publish";
-				public const string START = "Play";
 				public const string STOP = "Stop";
 				public const string BUILD_DEBUG_PREFIX = "[DEBUG]";
-				public const string BUILD_START = "Play";
 				public const string BUILD_ENABLE_DEBUG = "Enable Debug Tools";
 				public const string BUILD_DISABLE_DEBUG = "Disable Debug Tools";
-				public const string BUILD_RESET = "Replay";
 
 				public const string PROMPT_STARTED_FAILURE = "MICROSERVICE HASN'T STARTED...";
 				public const string PROMPT_STOPPED_FAILURE = "MICROSERVICE HASN'T STOPPED...";
-
-				public const string REMOTE_NOT_ENABLED = "Remote Disabled";
-				public const string REMOTE_ENABLED = "Remote Enabled";
+				
 				public const string REMOTE_ONLY = "Remote Only";
 
 				public const int HEALTH_PORT = 6565;
