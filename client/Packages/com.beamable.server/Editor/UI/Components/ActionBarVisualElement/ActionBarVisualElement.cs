@@ -13,6 +13,8 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
+using static Beamable.Common.Constants;
+
 namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class ActionBarVisualElement : MicroserviceComponent
@@ -81,7 +83,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_dependencies = Root.Q<Button>("dependencies");
 			_dependencies.clickable.clicked += () => DependentServicesWindow.ShowWindow();
 			_dependencies.SetEnabled(dependenciesState);
-
+			_dependencies.tooltip = Tooltips.Microservice.DEPENDENCIES;
+			
 			const string cannotPublishText = "Cannot open Publish Window, fix compilation errors first!";
 			_publish = Root.Q<Button>("publish");
 			_publish.clickable.clicked += () =>
@@ -93,6 +96,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 				}
 				OnPublishClicked?.Invoke();
 			};
+			_publish.tooltip = Tooltips.Microservice.PUBLISH;
 			if (!NoErrorsValidator.LastCompilationSucceded)
 				_publish.tooltip = cannotPublishText;
 			_publish.SetEnabled(!(DockerCommand.DockerNotInstalled));
