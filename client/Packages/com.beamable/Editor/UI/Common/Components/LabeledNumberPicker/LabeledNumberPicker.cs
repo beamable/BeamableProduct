@@ -82,12 +82,12 @@ namespace Beamable.Editor.UI.Components
 			ConfigureOptions();
 		}
 
-		public void Setup(Action onValueChanged, List<string> options, bool active = true, int maxVisibleOprions = -1)
+		public void Setup(Action onValueChanged, List<string> options, bool active = true, int maxVisibleOptions = 10)
 		{
 			_onValueChanged = onValueChanged;
 			SetEnabled(active);
 			_options = options;
-			_maxVisibleOptions = maxVisibleOprions;
+			_maxVisibleOptions = maxVisibleOptions;
 			_startPos = 0;
 		}
 
@@ -151,11 +151,10 @@ namespace Beamable.Editor.UI.Components
 					_cachedPos = pp;
 
 				// dropdown has a bug with position when we want to draw generic menu from generic menu for refresh, that workaround works ok
-
+				
 				menu.DropDown(
 					new Rect(
-						_cachedPos +
-						GUIUtility.ScreenToGUIPoint(new Vector2(_button.worldBound.xMin, _button.worldBound.yMin)),
+						GUIUtility.ScreenToGUIPoint(_cachedPos + new Vector2(_button.worldBound.xMin, _button.worldBound.yMin)),
 						Vector2.zero));
 			}
 			else
