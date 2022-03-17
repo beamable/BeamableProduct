@@ -63,12 +63,13 @@ namespace Beamable.Editor.Microservice.UI.Components
 			base.Refresh();
 			_refreshButton = Root.Q<Button>("refreshButton");
 			_refreshButton.clickable.clicked += () => { OnRefreshButtonClicked?.Invoke(); };
-			_refreshButton.tooltip =  Tooltips.Microservice.REFRESH;
+			_refreshButton.tooltip = Tooltips.Microservice.REFRESH;
 			_createNew = Root.Q<Button>("createNew");
 
 			var manipulator = new ContextualMenuManipulator(PopulateCreateMenu);
 			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 			_createNew.clickable.activators.Clear();
+			_createNew.tooltip = Tooltips.Microservice.ADD_NEW;
 			_createNew.AddManipulator(manipulator);
 
 			_createNew.SetEnabled(!DockerCommand.DockerNotInstalled);

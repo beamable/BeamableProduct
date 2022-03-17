@@ -120,7 +120,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 				_warningViewBtn = Root.Q<Button>("warning");
 				_warningViewBtn.clickable.clicked += Model.Logs.ToggleViewWarningEnabled;
-				_errorViewBtn.tooltip = Tooltips.Logs.ICON_WARNING;
+				_warningViewBtn.tooltip = Tooltips.Logs.ICON_WARNING;
 
 				_errorViewBtn = Root.Q<Button>("error");
 				_errorViewBtn.clickable.clicked += Model.Logs.ToggleViewErrorEnabled;
