@@ -75,11 +75,7 @@ namespace Beamable.Editor.UI.Buss
 			_navigationWindow = new BussElementHierarchyVisualElement();
 			_navigationWindow.Init();
 			navigationGroup.Add(_navigationWindow);
-			
-			_selectedBussElement = new SelectedBussElementVisualElement();
-			_selectedBussElement.Setup(_navigationWindow);
-			scrollView.Add(_selectedBussElement);
-			
+
 			_filterToggle = new LabeledCheckboxVisualElement("Filter by selected element");
 			_filterToggle.name = "filterToggle";
 			_filterToggle.OnValueChanged -= OnFilterToggleClicked;
@@ -87,6 +83,10 @@ namespace Beamable.Editor.UI.Buss
 			_filterToggle.Refresh();
 			_filterToggle.SetWithoutNotify(_filterMode);
             mainVisualElement.Add(_filterToggle);
+            
+            _selectedBussElement = new SelectedBussElementVisualElement();
+            _selectedBussElement.Setup(_navigationWindow);
+            mainVisualElement.Add(_selectedBussElement);
 
             _scrollView = new ScrollView();
             _scrollView.name = "themeManagerContainerScrollView";
