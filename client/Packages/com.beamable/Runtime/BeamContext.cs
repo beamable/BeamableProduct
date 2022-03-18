@@ -22,6 +22,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Player;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 using Random = UnityEngine.Random;
@@ -35,6 +36,7 @@ namespace Beamable
 	public interface IObservedPlayer : IUserContext
 	{
 		PlayerStats Stats { get; }
+		PlayerLobby Lobby { get; }
 	}
 
 	/// <summary>
@@ -136,6 +138,8 @@ namespace Beamable
 		[SerializeField]
 		private PlayerStats _playerStats;
 
+		[SerializeField] private PlayerLobby _playerLobby;
+
 		public PlayerAnnouncements Announcements =>
 			_announcements?.IsInitialized ?? false
 				? _announcements
@@ -151,6 +155,8 @@ namespace Beamable
 				? _playerStats
 				: (_playerStats = _serviceScope.GetService<PlayerStats>());
 
+		public PlayerLobby Lobby => _playerLobby ??= _serviceScope.GetService<PlayerLobby>();
+
 		/// <summary>
 		/// <para>
 		/// Access the player's inventory
@@ -164,8 +170,7 @@ namespace Beamable
 		/// <summary>
 		/// Access the <see cref="IContentApi"/> for this player.
 		/// </summary>
-		public IContentApi Content =>
-			_contentService ?? (_contentService = _serviceScope.GetService<IContentApi>());
+		public IContentApi Content => _contentService ??= _serviceScope.GetService<IContentApi>();
 
 		/// <summary>
 		/// Access the <see cref="IBeamableAPI"/> for this player.
