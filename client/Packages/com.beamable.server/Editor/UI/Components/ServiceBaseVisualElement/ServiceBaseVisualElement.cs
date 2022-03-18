@@ -13,6 +13,8 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
+using static Beamable.Common.Constants;
+
 namespace Beamable.Editor.Microservice.UI.Components
 {
 	public abstract class ServiceBaseVisualElement : MicroserviceComponent
@@ -29,12 +31,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private const float DETACHED_HEIGHT = 100.0f;
 		protected const float DEFAULT_HEADER_HEIGHT = 60.0f;
 
-		protected Button _stopButton;
 		protected LoadingBarElement _loadingBar;
 		protected VisualElement _statusIcon;
 		protected VisualElement _remoteStatusIcon;
 		protected LabeledCheckboxVisualElement _checkbox;
 		protected Button _moreBtn;
+		protected Button _startButton;
 		protected MicroserviceVisualElementSeparator _separator;
 		private VisualElement _logContainerElement;
 		private LogVisualElement _logElement;
@@ -75,8 +77,8 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
 			Root.Q<Button>("cancelBtn").RemoveFromHierarchy();
 			Root.Q("microserviceNewTitle")?.RemoveFromHierarchy();
-			_stopButton = Root.Q<Button>("stopBtn");
 			_moreBtn = Root.Q<Button>("moreBtn");
+			_startButton = Root.Q<Button>("startBtn");
 			_checkbox = Root.Q<LabeledCheckboxVisualElement>("checkbox");
 			_logContainerElement = Root.Q<VisualElement>("logContainer");
 			_statusIcon = Root.Q<VisualElement>("statusIcon");
@@ -105,14 +107,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Model.OnStart += SetupProgressBarForStart;
 			Model.OnStop -= SetupProgressBarForStop;
 			Model.OnStop += SetupProgressBarForStop;
-
-			_stopButton.tooltip = "Stop";
-			_stopButton.clickable.clicked += HandleStopButtonClicked;
+			
 			var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
 			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 			_moreBtn.clickable.activators.Clear();
+			_moreBtn.tooltip = Tooltips.Microservice.MORE;
 			_moreBtn.AddManipulator(manipulator);
-			_moreBtn.tooltip = "More...";
 
 			_checkbox.Refresh();
 			_checkbox.SetText(Model.Name);
@@ -167,25 +167,26 @@ namespace Beamable.Editor.Microservice.UI.Components
 			switch (status)
 			{
 				case "localRunning":
-					statusText = "Local Running";
+					statusText = Tooltips.Microservice.ICON_LOCAL_RUNNING;
 					statusClassName = "localRunning";
 					break;
 				case "localBuilding":
+					statusText = Tooltips.Microservice.ICON_LOCAL_BUILDING;
 					statusClassName = "localBuilding";
-					statusText = "Local Building";
 					break;
 				case "localStopped":
+					statusText = Tooltips.Microservice.ICON_LOCAL_STOPPING;
 					statusClassName = "localStopped";
-					statusText = "Local Stopped";
 					break;
 				default:
+					statusText =  Tooltips.Microservice.ICON_DIFFERENT;
 					statusClassName = "different";
-					statusText = "Different";
 					break;
 			}
 
 			_statusIcon.tooltip = statusText;
 			_statusIcon.AddToClassList(statusClassName);
+			_startButton.EnableInClassList("running", !isBuilding && isRunning);
 		}
 		private void OnDrag(float value)
 		{

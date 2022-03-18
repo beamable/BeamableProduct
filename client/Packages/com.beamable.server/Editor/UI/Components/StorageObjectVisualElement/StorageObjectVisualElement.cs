@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.ManagerClient;
 using System.Threading.Tasks;
@@ -9,6 +10,8 @@ using UnityEngine.Experimental.UIElements.StyleSheets;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+
+using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.Microservice.UI.Components
 {
@@ -34,12 +37,27 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void UpdateVisualElements()
 		{
 			base.UpdateVisualElements();
+			Root.Q("leftArea")?.RemoveFromHierarchy();
+			_startButton.clickable.clicked -= HandleStartClicked;
+			_startButton.clickable.clicked += HandleStartClicked;
 			_mongoStorageModel.OnRemoteReferenceEnriched -= OnServiceReferenceChanged;
 			_mongoStorageModel.OnRemoteReferenceEnriched += OnServiceReferenceChanged;
 			_mongoStorageModel.ServiceBuilder.OnBuildingFinished -= OnBuildingFinished;
 			_mongoStorageModel.ServiceBuilder.OnBuildingFinished += OnBuildingFinished;
 			_mongoStorageModel.ServiceBuilder.OnIsRunningChanged -= OnIsRunningChanged;
 			_mongoStorageModel.ServiceBuilder.OnIsRunningChanged += OnIsRunningChanged;
+		}
+
+		private void HandleStartClicked()
+		{
+			if (_mongoStorageModel.IsRunning)
+			{
+				_mongoStorageModel.Stop();
+			}
+			else
+			{
+				_mongoStorageModel.Start();
+			}
 		}
 
 		protected override void UpdateLocalStatus()
@@ -70,7 +88,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_remoteStatusIcon.ClearClassList();
 			bool remoteEnabled = _mongoStorageModel.RemoteReference?.enabled ?? false;
 			string statusClassName = remoteEnabled ? "remoteEnabled" : "remoteDisabled";
-			_remoteStatusIcon.tooltip = remoteEnabled ? REMOTE_ENABLED : REMOTE_NOT_ENABLED;
+			_remoteStatusIcon.tooltip = remoteEnabled ? Tooltips.Microservice.ICON_REMOTE_RUNNING : Tooltips.Microservice.ICON_REMOTE_DISABLE;
 			_remoteStatusIcon.AddToClassList(statusClassName);
 		}
 
@@ -87,7 +105,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected override void QueryVisualElements()
 		{
 			base.QueryVisualElements();
-			Root.Q("buildBtn")?.RemoveFromHierarchy();
 			_mongoStorageModel = (MongoStorageModel)Model;
 		}
 	}

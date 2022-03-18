@@ -1,7 +1,7 @@
 using Beamable.Common;
 using Beamable.Common.Dependencies;
-using Beamable.Server.Editor;
 using Beamable.Server;
+using Beamable.Server.Editor;
 using System;
 using System.CodeDom;
 using System.CodeDom.Compiler;
@@ -48,11 +48,6 @@ namespace Beamable.Server.Generator
 
 		private string ExtensionClassToFind => $"internal class {TargetExtensionClassName}";
 		private string ExtensionClassToReplace => $"internal static class {TargetExtensionClassName}";
-
-		private string ExtensionMethodToFind =>
-			$"public static {TargetClassName} {Descriptor.Name}(Beamable.Server.{MicroserviceClients_TypeName}";
-		private string ExtensionMethodToReplace =>
-			$"public static {TargetClassName} {Descriptor.Name}(this Beamable.Server.{MicroserviceClients_TypeName}";
 
 		public static string GetTargetParameterClassName(MicroserviceDescriptor descriptor) =>
 			$"MicroserviceParameters{descriptor.Name}Client";
@@ -134,7 +129,7 @@ namespace Beamable.Server.Generator
 			};
 			extensionMethod.Name = Descriptor.Name;
 			extensionMethod.Parameters.Add(
-				new CodeParameterDeclarationExpression(MicroserviceClients_TypeName, "clients"));
+				new CodeParameterDeclarationExpression($"this Beamable.Server.{MicroserviceClients_TypeName}", "clients"));
 			extensionMethod.Statements.Add(new CodeMethodReturnStatement(new CodeMethodInvokeExpression
 			{
 				Method = new CodeMethodReferenceExpression(
@@ -327,7 +322,6 @@ namespace Beamable.Server.Generator
 				sourceWriter.Flush();
 				var source = sb.ToString();
 				source = source.Replace(ExtensionClassToFind, ExtensionClassToReplace);
-				source = source.Replace(ExtensionMethodToFind, ExtensionMethodToReplace);
 				return source;
 			}
 		}

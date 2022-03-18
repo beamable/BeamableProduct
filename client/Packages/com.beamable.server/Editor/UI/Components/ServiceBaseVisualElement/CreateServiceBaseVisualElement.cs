@@ -34,7 +34,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		private const int MAX_NAME_LENGTH = 28;
 
 		private static readonly string[] ElementsToRemove = {
-			"collapseContainer", "statusIcon", "remoteStatusIcon", "moreBtn", "buildBtn"
+			"collapseContainer", "statusIcon", "remoteStatusIcon", "moreBtn", "startBtn"
 		};
 
 		private TextField _nameTextField;
@@ -62,9 +62,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
 			_cancelBtn = Root.Q<Button>("cancelBtn");
-
-			var stopButton = Root.Q<Button>("stopBtn");
-			stopButton.parent.Remove(stopButton);
 			_createBtn = new PrimaryButtonVisualElement();
 			_cancelBtn.parent.Add(_createBtn);
 			_createBtn.Refresh();

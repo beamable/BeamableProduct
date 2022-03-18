@@ -13,6 +13,7 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 using static Beamable.Common.Constants.Features.ContentManager.ContentList;
+using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.Content.Components
 {
@@ -94,19 +95,24 @@ namespace Beamable.Editor.Content.Components
 
 			_tagButton = Root.Q<Button>("tagButton");
 			_tagButton.clickable.clicked += () => { TagButton_OnClicked(_tagButton.worldBound); };
-
+			_tagButton.tooltip = Tooltips.ContentManager.TAG;
+			
 			_typeButton = Root.Q<Button>("typeButton");
 			_typeButton.clickable.clicked += () => { TypeButton_OnClicked(_typeButton.worldBound); };
-
+			_typeButton.tooltip = Tooltips.ContentManager.TYPE;
+			
 			_statusButton = Root.Q<Button>("statusButton");
 			_statusButton.clickable.clicked += () => { StatusButton_OnClicked(_statusButton.worldBound); };
+			_statusButton.tooltip = Tooltips.ContentManager.STATUS;
 
 			_refreshButton = Root.Q<Button>("refreshButton");
 			_refreshButton.clickable.clicked += () => { OnRefreshButtonClicked?.Invoke(); };
-
+			_refreshButton.tooltip = Tooltips.ContentManager.REFRESH;
 
 			_docsButton = Root.Q<Button>("docsButton");
 			_docsButton.clickable.clicked += () => { OnDocsButtonClicked?.Invoke(); };
+			_docsButton.tooltip = Tooltips.ContentManager.DOCUMENT;
+			
 			_searchBar = Root.Q<SearchBarVisualElement>();
 			Model.OnQueryUpdated += (query, force) =>
 			{

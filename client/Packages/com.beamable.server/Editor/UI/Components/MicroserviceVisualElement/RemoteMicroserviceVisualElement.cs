@@ -11,6 +11,8 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
+using static Beamable.Common.Constants;
+
 namespace Beamable.Editor.Microservice.UI.Components
 {
 	public class RemoteMicroserviceVisualElement : MicroserviceVisualElement
@@ -34,7 +36,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		protected override void UpdateVisualElements()
 		{
-			Root.Q<Button>("buildBtn").RemoveFromHierarchy();
+			Root.Q<Button>("startBtn").RemoveFromHierarchy();
 			Root.Q<VisualElement>("logContainer").RemoveFromHierarchy();
 			Root.Q("collapseContainer")?.RemoveFromHierarchy();
 
@@ -51,7 +53,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 			_moreBtn.clickable.activators.Clear();
 			_moreBtn.AddManipulator(manipulator);
-			_moreBtn.tooltip = "More...";
+			_moreBtn.tooltip = Tooltips.Microservice.MORE;
 
 			_checkbox.Refresh();
 			_checkbox.SetText(Model.Name);
@@ -96,7 +98,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			_remoteStatusIcon.ClearClassList();
 			string statusClassName = "remoteEnabled";
-			_remoteStatusIcon.tooltip = REMOTE_ONLY;
+			_remoteStatusIcon.tooltip =  Tooltips.Microservice.ICON_UP_TO_DATE;;
 			_remoteStatusIcon.AddToClassList(statusClassName);
 		}
 
