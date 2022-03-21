@@ -238,7 +238,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 			public string ToArgString()
 			{
-				return $"--mount {(isReadOnly ? "readonly," : "")}type=bind,source={src},dst={dst}";
+				return $"--mount {(isReadOnly ? "readonly," : "")}type=bind,source=\"{src}\",dst=\"{dst}\"";
 			}
 		}
 
