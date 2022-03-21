@@ -9,7 +9,7 @@ namespace Beamable
 {
 	public static class BeamableEnvironment
 	{
-		private const string FilePath = "Packages/com.beamable/Runtime/Environment/Resources/env-default.json";
+		public const string FilePath = "Packages/com.beamable/Runtime/Environment/Resources/env-default.json";
 		private const string ResourcesPath = "env-default";
 
 		private const string ENV_STAGING = "staging";
