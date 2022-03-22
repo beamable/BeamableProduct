@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - When exiting Unity, all related Microservices and Microstorage containers are closed
 - Microservice client code is generated in a dockerized dotnet runtime instead of Unity
 - Added docstrings to `StatsService.SearchStats` to clarify correct usage of the `Criteria` parameter.
+- `AssumeUser` takes an optional boolean parameter to disable the Admin access token check
 
 ### Fixed
 - Fixed issue that caused the `ReflectionCache` to run an extra unnecessary time when a `.cs` or `.asmdef` file were changed.
