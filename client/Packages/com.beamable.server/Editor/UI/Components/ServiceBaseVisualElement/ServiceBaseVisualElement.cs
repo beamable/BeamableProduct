@@ -158,6 +158,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected void UpdateLocalStatusIcon(bool isRunning, bool isBuilding)
 		{
 			_statusIcon.ClearClassList();
+			// _header.EnableInClassList("building", isBuilding);
 
 			string statusClassName;
 			string statusText;
@@ -186,7 +187,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_statusIcon.tooltip = statusText;
 			_statusIcon.AddToClassList(statusClassName);
-			_startButton.EnableInClassList("running", !isBuilding && isRunning);
+			_startButton.EnableInClassList("running", isBuilding || isRunning);
 		}
 		private void OnDrag(float value)
 		{

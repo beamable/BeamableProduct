@@ -69,6 +69,7 @@ MicroserviceVisualElement #logHeader > .rightArea {
     flex-basis: auto;
     margin-left: 10px;
     margin-right: 10px;
+    position: relative;
 }
 #logContainer {
     flex-grow: 1;
@@ -92,7 +93,7 @@ MicroserviceVisualElement #logHeader > .rightArea {
     padding-left: 0px;
     padding-top: 0px;
     padding-bottom: 0px;
-    
+
 }
 
 #statusIcon, #remoteStatusIcon{
@@ -203,8 +204,11 @@ MicroserviceVisualElement #logHeader > .rightArea {
 
 #stopImage, #buildImage {
     align-self: center;
-    width: 18px;
-    height: 18px;
+    position: absolute;
+    left: 0px;
+    right: 0px;
+    top: 0px;
+    bottom: 0px;
 }
 
 .foldIcon {
