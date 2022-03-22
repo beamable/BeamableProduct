@@ -17,9 +17,7 @@ namespace Beamable.Editor.UI.Components
 {
 	public class LabeledNumberPicker : BeamableVisualElement
 	{
-		private const char ARROW_DOWN = '\u25BC';
-		private const char ARROW_UP = '\u25B2';
-
+		
 		public new class UxmlFactory : UxmlFactory<LabeledNumberPicker, UxmlTraits>
 		{
 		}
@@ -118,7 +116,7 @@ namespace Beamable.Editor.UI.Components
 
 				if (pageStartPos > 0)
 				{
-					menu.AddItem(new GUIContent(ARROW_UP.ToString()), false, () =>
+					menu.AddItem(new GUIContent(MenuItems.Icons.ARROW_UP_UTF.ToString()), false, () =>
 					{
 						_startPos = Mathf.Clamp(_startPos - 1, 0, _options.Count);
 						menu = null;
@@ -137,7 +135,7 @@ namespace Beamable.Editor.UI.Components
 
 				if (pageStartPos < _options.Count - _maxVisibleOptions)
 				{
-					menu.AddItem(new GUIContent(ARROW_DOWN.ToString()), false, () =>
+					menu.AddItem(new GUIContent(MenuItems.Icons.ARROW_DOWN_UTF.ToString()), false, () =>
 					{
 						_startPos = Mathf.Clamp(_startPos + 1, 0, _options.Count);
 						menu = null;
