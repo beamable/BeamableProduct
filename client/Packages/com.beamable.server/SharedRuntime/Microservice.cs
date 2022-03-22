@@ -106,7 +106,7 @@ namespace Beamable.Server
 		/// <returns>
 		/// A <see cref="RequestHandlerData"/> object that contains a request context, and a collection of services to execute SDK calls against.
 		/// </returns>
-		protected RequestHandlerData AssumeUser(long userId, bool requireAdminUser=true)
+		protected RequestHandlerData AssumeUser(long userId, bool requireAdminUser = true)
 		{
 			// require admin privs.
 			if (requireAdminUser)
