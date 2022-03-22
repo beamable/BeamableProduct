@@ -97,8 +97,9 @@
     background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Start all L.png");
 }
 
-.running #buildImage {
-    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/StopAllDark.png");
+.building,
+.running{
+    background-color: rgba(35,74,108,255);
 }
 
 .foldIcon {

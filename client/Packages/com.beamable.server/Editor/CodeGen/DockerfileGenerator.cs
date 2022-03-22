@@ -139,7 +139,7 @@ EXPOSE 80 2222
 		private string GetWatchDockerFile()
 		{
 			var text = $@"
-FROM beamservice:latest AS build-env
+FROM {BASE_IMAGE}:{BASE_TAG} AS build-env
 RUN dotnet --version
 WORKDIR /subapp
 

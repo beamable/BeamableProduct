@@ -12,6 +12,8 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
+using static Beamable.Common.Constants;
+
 namespace Beamable.Editor.Content.Components
 {
 	public class ContentVisualElement : ContentManagerComponent
@@ -62,7 +64,6 @@ namespace Beamable.Editor.Content.Components
 
 			// _statusIconVisualElement = Root.Q<StatusIconVisualElement>("statusIconVisualElement");
 			_statusIcon = Root.Q<VisualElement>("statusIcon");
-			_statusIcon.tooltip = _statusClassName;
 			_nameTextField = Root.Q<TextField>("nameTextField");
 			_nameTextField.SetEnabled(false);
 
@@ -138,20 +139,24 @@ namespace Beamable.Editor.Content.Components
 			{
 				case ContentModificationStatus.MODIFIED:
 					_statusClassName = "modified";
+					_statusIcon.tooltip = Tooltips.ContentManager.MODIFIED;
 					break;
 				case ContentModificationStatus.LOCAL_ONLY:
 					_statusClassName = "localNew";
+					_statusIcon.tooltip = Tooltips.ContentManager.NEW_ADD;
 					break;
 				case ContentModificationStatus.SERVER_ONLY:
 					_statusClassName = "localDeleted";
-					// _pathLabel.text = "Deleted";
 					_pathLabel.AddToClassList("pathDeleted");
+					_statusIcon.tooltip = Tooltips.ContentManager.DELETED;
 					break;
 				case ContentModificationStatus.NOT_MODIFIED:
 					_statusClassName = "inSync";
+					_statusIcon.tooltip = Tooltips.ContentManager.SYNCED;
 					break;
 				default:
 					_statusClassName = "modified";
+					_statusIcon.tooltip = Tooltips.ContentManager.MODIFIED;
 					break;
 			}
 			_statusIcon.AddToClassList(_statusClassName);

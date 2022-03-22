@@ -133,6 +133,13 @@ namespace microserviceTests.microservice
       }
 
       [ClientCallable]
+      public async Task TestAssumeUser(long otherId, bool force)
+      {
+         var ctx = AssumeUser(otherId, force);
+         await ctx.Requester.Request<EmptyResponse>(Method.GET, "x");
+      }
+
+      [ClientCallable]
       public async Task<User> GetUserViaAccessToken(TokenResponse tokenResponse)
       {
          try

@@ -6,6 +6,8 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 
+using static Beamable.Common.Constants;
+
 namespace Beamable.Editor.Content.Components
 {
 	public class ContentPopupLinkVisualElement : ContentManagerComponent
@@ -25,6 +27,7 @@ namespace Beamable.Editor.Content.Components
 			nameLbl.text = Model.ContentId;
 
 			_checkIcon = Root.Q<VisualElement>("checkIcon");
+			_checkIcon.tooltip = Tooltips.ContentManager.UNCHECK;
 		}
 
 		// Content is downloaded.
@@ -32,6 +35,7 @@ namespace Beamable.Editor.Content.Components
 		{
 			_checkIcon.RemoveFromClassList("unchecked");
 			_checkIcon.AddToClassList("checked");
+			_checkIcon.tooltip = Tooltips.ContentManager.CHECKED;
 		}
 	}
 }

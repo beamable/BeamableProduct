@@ -1,5 +1,9 @@
-﻿using System;
+﻿using Beamable.Editor.UI.Buss;
+using System;
 using System.Collections.Generic;
+using System.Reflection;
+using UnityEditor;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -13,6 +17,7 @@ namespace Beamable.Editor.UI.Components
 {
 	public class LabeledNumberPicker : BeamableVisualElement
 	{
+
 		public new class UxmlFactory : UxmlFactory<LabeledNumberPicker, UxmlTraits>
 		{
 		}
@@ -45,9 +50,13 @@ namespace Beamable.Editor.UI.Components
 		}
 
 		private LabeledIntegerField _labeledIntegerFieldComponent;
+		private ContextualMenuManipulator _contextualMenuManipulator;
 		private Button _button;
 		private List<string> _options;
+		private int _maxVisibleOptions;
+		private int _startPos;
 		private Action _onValueChanged;
+		private Vector2 _cachedPos;
 
 		public string Value => _labeledIntegerFieldComponent.Value.ToString();
 		private int MinValue { get; set; }
@@ -71,11 +80,13 @@ namespace Beamable.Editor.UI.Components
 			ConfigureOptions();
 		}
 
-		public void Setup(Action onValueChanged, List<string> options, bool active = true)
+		public void Setup(Action onValueChanged, List<string> options, bool active = true, int maxVisibleOptions = 10)
 		{
 			_onValueChanged = onValueChanged;
 			SetEnabled(active);
 			_options = options;
+			_maxVisibleOptions = maxVisibleOptions;
+			_startPos = 0;
 		}
 
 		public void SetupMinMax(int min, int max)
@@ -86,25 +97,75 @@ namespace Beamable.Editor.UI.Components
 
 		private void ConfigureOptions()
 		{
-			ContextualMenuManipulator manipulator = new ContextualMenuManipulator(BuildOptions);
-			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
-			_button.clickable.activators.Clear();
-			_button.AddManipulator(manipulator);
+			_button.clickable.clicked += ShowContext;
 
 			if (_options != null && _options.Count > 0)
 			{
-				SetOption(_options[0]);
+				SetOption(_options[_startPos]);
 			}
 		}
 
-		private void BuildOptions(ContextualMenuPopulateEvent evt)
+		private void ShowContext()
 		{
-			foreach (string option in _options)
+			var menu = new GenericMenu();
+
+			if (_maxVisibleOptions > 0)
 			{
-				evt.menu.BeamableAppendAction(option, (pos) =>
+				int pageStartPos = _startPos;
+				int pageEndPos = Mathf.Clamp(pageStartPos + _maxVisibleOptions, 0, _options.Count);
+
+				if (pageStartPos > 0)
 				{
-					SetOption(option);
-				});
+					menu.AddItem(new GUIContent(MenuItems.Icons.ARROW_UP_UTF.ToString()), false, () =>
+					{
+						_startPos = Mathf.Clamp(_startPos - 1, 0, _options.Count);
+						menu = null;
+						EditorApplication.delayCall += () => ShowContext();
+					});
+				}
+
+				for (int i = pageStartPos; i < pageEndPos; i++)
+				{
+					int cachedIndexForCallback = i;
+					menu.AddItem(new GUIContent(_options[cachedIndexForCallback]), false, () =>
+					{
+						SetOption(_options[cachedIndexForCallback]);
+					});
+				}
+
+				if (pageStartPos < _options.Count - _maxVisibleOptions)
+				{
+					menu.AddItem(new GUIContent(MenuItems.Icons.ARROW_DOWN_UTF.ToString()), false, () =>
+					{
+						_startPos = Mathf.Clamp(_startPos + 1, 0, _options.Count);
+						menu = null;
+						EditorApplication.delayCall += () => ShowContext();
+					});
+				}
+
+				Vector2 pp = GUIUtility.GUIToScreenPoint(Vector2.zero);
+
+				if (pp != Vector2.zero)
+					_cachedPos = pp;
+
+				// dropdown has a bug with position when we want to draw generic menu from generic menu for refresh, that workaround works ok
+
+				menu.DropDown(
+					new Rect(
+						GUIUtility.ScreenToGUIPoint(_cachedPos + new Vector2(_button.worldBound.xMin, _button.worldBound.yMin)),
+						Vector2.zero));
+			}
+			else
+			{
+				foreach (var t in _options)
+				{
+					menu.AddItem(new GUIContent(t), false, () =>
+					{
+						SetOption(t);
+					});
+				}
+
+				menu.DropDown(_button.worldBound);
 			}
 		}
 
