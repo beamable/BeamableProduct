@@ -17,7 +17,7 @@ namespace Beamable.Editor.UI.Components
 {
 	public class LabeledNumberPicker : BeamableVisualElement
 	{
-		
+
 		public new class UxmlFactory : UxmlFactory<LabeledNumberPicker, UxmlTraits>
 		{
 		}
@@ -62,7 +62,7 @@ namespace Beamable.Editor.UI.Components
 		private int MinValue { get; set; }
 		private int MaxValue { get; set; }
 		private string Label { get; set; }
-		
+
 		public LabeledNumberPicker() : base($"{Directories.COMMON_COMPONENTS_PATH}/{nameof(LabeledNumberPicker)}/{nameof(LabeledNumberPicker)}")
 		{
 			_options = new List<string>();
@@ -98,17 +98,17 @@ namespace Beamable.Editor.UI.Components
 		private void ConfigureOptions()
 		{
 			_button.clickable.clicked += ShowContext;
-			
+
 			if (_options != null && _options.Count > 0)
 			{
 				SetOption(_options[_startPos]);
 			}
 		}
-		
+
 		private void ShowContext()
 		{
 			var menu = new GenericMenu();
-			
+
 			if (_maxVisibleOptions > 0)
 			{
 				int pageStartPos = _startPos;
@@ -149,7 +149,7 @@ namespace Beamable.Editor.UI.Components
 					_cachedPos = pp;
 
 				// dropdown has a bug with position when we want to draw generic menu from generic menu for refresh, that workaround works ok
-				
+
 				menu.DropDown(
 					new Rect(
 						GUIUtility.ScreenToGUIPoint(_cachedPos + new Vector2(_button.worldBound.xMin, _button.worldBound.yMin)),
@@ -168,7 +168,7 @@ namespace Beamable.Editor.UI.Components
 				menu.DropDown(_button.worldBound);
 			}
 		}
-		
+
 		private void SetOption(string value)
 		{
 			_labeledIntegerFieldComponent.Value = Int32.Parse(value);

@@ -1,9 +1,9 @@
 ﻿using Beamable;
 using Beamable.Common;
-using System.Collections;
-using System.Collections.Generic;
 using NUnit.Framework;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using UnityEngine;
@@ -18,7 +18,7 @@ namespace Beamable.Tests.Runtime.PromiseTests
 		{
 			var attemptCounter = 0;
 			var expectedExceptionReceived = false;
-			var retryAttemptFalloffTimers = new[] {.1f, .5f, 1, 2};
+			var retryAttemptFalloffTimers = new[] { .1f, .5f, 1, 2 };
 
 			// Ignoring this so the test has the opportunity to succeed ----> When we call CompleteError in our fake work promise, it will fail immediately,
 			// before the RecoverWith has the chance to attach any callbacks.
@@ -52,8 +52,8 @@ namespace Beamable.Tests.Runtime.PromiseTests
 			var attemptCounter = -1;
 			var attemptToSucceedAt = 2;
 			var successWasAchieved = false;
-			var retryAttemptFalloffTimers = new[] {.1f, .5f, 1, 2};
-			
+			var retryAttemptFalloffTimers = new[] { .1f, .5f, 1, 2 };
+
 			// Ignoring this so the test has the opportunity to succeed ----> When we call CompleteError in our fake work promise, it will fail immediately,
 			// before the RecoverWith has the chance to attach any callbacks.
 			PromiseBase.SetPotentialUncaughtErrorHandler((promise, err) => { });
@@ -82,13 +82,13 @@ namespace Beamable.Tests.Runtime.PromiseTests
 			Assert.IsTrue(successWasAchieved);
 			Assert.AreEqual(attemptToSucceedAt, attemptCounter);
 		}
-		
+
 		[UnityTest]
 		public IEnumerator RecoverWithFalloff_ShouldReuseFallOffValueThenThrow()
 		{
 			var attemptCounter = 0;
 			var expectedExceptionReceived = false;
-			var retryAttemptFalloffTimers = new[] {.1f, .5f, 1, 2};
+			var retryAttemptFalloffTimers = new[] { .1f, .5f, 1, 2 };
 
 			// Ignoring this so the test has the opportunity to succeed ----> When we call CompleteError in our fake work promise, it will fail immediately,
 			// before the RecoverWith has the chance to attach any callbacks.

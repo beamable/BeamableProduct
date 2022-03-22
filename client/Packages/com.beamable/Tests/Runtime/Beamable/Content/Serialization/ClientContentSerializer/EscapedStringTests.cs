@@ -97,7 +97,7 @@ namespace Beamable.Tests.Content.Serialization.EscapeTests
 		public void JsonStringField()
 		{
 			var innerJson = JsonUtility.ToJson(new Vector2(1, 2));
-			var content = new StringContent {Id = "test.nothing", s = innerJson};
+			var content = new StringContent { Id = "test.nothing", s = innerJson };
 			var s = new TestSerializer();
 
 			var serializedForm = s.Serialize(content);
