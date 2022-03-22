@@ -58,7 +58,7 @@ namespace Beamable
 
 			return result;
 		}
-		
+
 		public static Promise<T> WaitForSeconds<T>(this Promise<T> promise, float seconds, CoroutineService service)
 		{
 			var result = new Promise<T>();
@@ -100,12 +100,12 @@ namespace Beamable
 			maxRetries = maxRetries ?? falloffSeconds.Length;
 
 			promise.Then(value => result.CompleteSuccess(value))
-			       .Error(HandleError);
+				   .Error(HandleError);
 
 			void HandleError(Exception err)
 			{
 				attempt += 1;
-				if(attempt >= maxRetries)
+				if (attempt >= maxRetries)
 				{
 					result.CompleteError(err);
 					return;
@@ -116,8 +116,8 @@ namespace Beamable
 				var delay = falloffSeconds[idx];
 				var delayPromise = Promise.Success.WaitForSeconds(delay, service);
 				_ = delayPromise.FlatMap(_ => callback(err, attempt)
-				                              .Then(v => result.CompleteSuccess(v))
-				                              .Error(HandleError)
+											  .Then(v => result.CompleteSuccess(v))
+											  .Error(HandleError)
 										);
 			}
 
