@@ -242,16 +242,16 @@ namespace Beamable.Api
 			if (nextRefreshScopes.Count == 0)
 				return Promise<Unit>.Successful(PromiseBase.Unit);
 
-			
+
 			if (nextRefreshPromise == null)
 			{
 				nextRefreshPromise = new Promise<Unit>();
-				
+
 				// Need this null-check to cover errors that happen when leaving play-mode (where this method can run after Unity has already destroyed the CoroutineService's GameObject).
 #if UNITY_EDITOR
 				if(coroutineService != null) 
 #endif
-					coroutineService.StartCoroutine(ExecuteRefresh());
+				coroutineService.StartCoroutine(ExecuteRefresh());
 			}
 
 

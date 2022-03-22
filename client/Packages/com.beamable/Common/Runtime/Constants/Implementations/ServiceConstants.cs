@@ -18,7 +18,7 @@
 
 				public const string PROMPT_STARTED_FAILURE = "MICROSERVICE HASN'T STARTED...";
 				public const string PROMPT_STOPPED_FAILURE = "MICROSERVICE HASN'T STOPPED...";
-				
+
 				public const string REMOTE_ONLY = "Remote Only";
 
 				public const int HEALTH_PORT = 6565;

@@ -153,7 +153,7 @@ namespace Beamable.Common.Api.Stats
 		/// The stat to compare against (LHS of the comparison).
 		/// </summary>
 		public string Stat { get; }
-		
+
 		/// <summary>
 		/// A string representing the comparision to be executed.
 		/// <list type="bullet">
@@ -168,13 +168,13 @@ namespace Beamable.Common.Api.Stats
 		/// </list>
 		/// </summary>
 		public string Rel { get; }
-		
+
 		/// <summary>
 		/// The RHS of the comparison.
 		/// </summary>
 		public string Value { get; }
 
-		
+
 		/// <param name="stat"><see cref="Stat"/></param>
 		/// <param name="rel"><see cref="Rel"/></param>
 		/// <param name="value"><see cref="Value"/></param>

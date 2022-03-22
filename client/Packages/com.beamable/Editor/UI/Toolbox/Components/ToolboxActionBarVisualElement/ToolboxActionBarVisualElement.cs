@@ -65,7 +65,7 @@ namespace Beamable.Editor.Toolbox.Components
 			var contentButton = Root.Q<Button>("contentManager");
 			contentButton.clickable.clicked += async () => { await ContentManagerWindow.Init(); };
 			contentButton.tooltip = Tooltips.Toolbox.CONTENT;
-			
+
 			var skinningButton = Root.Q<Button>("skinning");
 			skinningButton.clickable.clicked += BussThemeManager.Init;
 			skinningButton.tooltip = Tooltips.Toolbox.THEME_MANAGER;
@@ -77,7 +77,7 @@ namespace Beamable.Editor.Toolbox.Components
 				//                ConfigWindow.Init();
 			};
 			globalConfigButton.tooltip = Tooltips.Toolbox.CONFIG;
-			
+
 			_microservicesButton = Root.Q<Button>("microservice");
 			_microservicesButton.clickable.clicked += () =>
 			{
@@ -92,15 +92,15 @@ namespace Beamable.Editor.Toolbox.Components
 			_typeButton = Root.Q<Button>("typeButton");
 			_typeButton.clickable.clicked += () => { TypeButton_OnClicked(_typeButton.worldBound); };
 			_typeButton.tooltip = Tooltips.Toolbox.LAYOUT;
-			
+
 			_categoryButton = Root.Q<Button>("CategoryButton");
 			_categoryButton.clickable.clicked += () => { CategoryButton_OnClicked(_categoryButton.worldBound); };
 			_categoryButton.tooltip = Tooltips.Toolbox.TAG;
-			
+
 			_infoButton = Root.Q<Button>("infoButton");
 			_infoButton.clickable.clicked += () => { OnInfoButtonClicked?.Invoke(); };
 			_infoButton.tooltip = Tooltips.Toolbox.DOCUMENT;
-			
+
 			_accountButton = Root.Q<Button>("accountButton");
 			_accountButton.clickable.clicked += () =>
 			{

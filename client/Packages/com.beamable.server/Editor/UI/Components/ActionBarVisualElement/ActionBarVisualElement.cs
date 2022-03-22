@@ -85,7 +85,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_dependencies.clickable.clicked += () => DependentServicesWindow.ShowWindow();
 			_dependencies.SetEnabled(dependenciesState);
 			_dependencies.tooltip = Tooltips.Microservice.DEPENDENCIES;
-			
+
 			const string cannotPublishText = "Cannot open Publish Window, fix compilation errors first!";
 			_publish = Root.Q<Button>("publish");
 			_publish.clickable.clicked += () =>
@@ -104,7 +104,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_infoButton = Root.Q<Button>("infoButton");
 			_infoButton.clickable.clicked += () => { OnInfoButtonClicked?.Invoke(); };
-			_infoButton.tooltip =  Tooltips.Microservice.DOCUMENT;
+			_infoButton.tooltip = Tooltips.Microservice.DOCUMENT;
 
 
 			bool localServicesAvailable = MicroservicesDataModel.Instance?.AllLocalServices != null;

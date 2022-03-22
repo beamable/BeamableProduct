@@ -130,7 +130,7 @@
 					public const int MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_LAST = int.MaxValue;
 				}
 			}
-			
+
 			public static class Icons
 			{
 				public const char ARROW_DOWN_UTF = '\u25BC';
