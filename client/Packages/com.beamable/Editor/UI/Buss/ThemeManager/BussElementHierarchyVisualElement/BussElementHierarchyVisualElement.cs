@@ -39,6 +39,8 @@ namespace Beamable.Editor.UI.Components
 
 		protected override string GetLabel(BussElement component)
 		{
+			if (!component) return ""; // if the component has been destroyed, we cannot reason about it.
+
 			string label = string.IsNullOrWhiteSpace(component.Id) ? component.name : BussNameUtility.AsIdSelector(component.Id);
 
 			foreach (string className in component.Classes)
