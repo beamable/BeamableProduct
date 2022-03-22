@@ -8,7 +8,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
 ## [Unreleased]
+### Added
+- Added `RecoverWith` extension method overloads to `Promise<T>` that allow for configuring  a promise to recover from failure over multiple attempts.
+
 ### Changed
 - Changed behaviour of Add Style button in Buss Theme Manager
 - Add Style button moved above Buss Style Cards in Buss Theme Manager
@@ -18,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed 
 - Constant "Invalid token, trying again" errors in the Editor after 10 days.
 - Compilation error when using new `com.unity.inputsystem`
+- Deferred retry of failed uploads to the poll coroutine, to eliminate an infinite loop that could crash the app.
+- Content string fields can contain escaped characters, and won't be double escaped after download
+
+## [1.0.5]
+### Fixed
+- Unity IAP failure to initialize on device won't hang `BeamContext.Default.OnReady`
 
 ## [1.0.4]
 ### Fixed
