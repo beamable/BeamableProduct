@@ -19,7 +19,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		public const string ENV_MONGO_INITDB_ROOT_PASSWORD = "MONGO_INITDB_ROOT_PASSWORD";
 
 		public RunStorageCommand(StorageObjectDescriptor storage)
-		   : base(storage.ImageName, storage.ContainerName)
+		   : base(storage.ImageName, storage.ContainerName, storage)
 		{
 			_storage = storage;
 			var config = MicroserviceConfiguration.Instance.GetStorageEntry(storage.Name);
@@ -78,7 +78,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		public Promise<bool> IsAvailable { get; private set; } = new Promise<bool>();
 
 		public RunStorageToolCommand(StorageObjectDescriptor storage)
-		: base(storage.ToolImageName, storage.LocalToolContainerName)
+		: base(storage.ToolImageName, storage.LocalToolContainerName, storage)
 		{
 			var config = MicroserviceConfiguration.Instance.GetStorageEntry(storage.Name);
 			Environment = new Dictionary<string, string>
@@ -238,7 +238,7 @@ namespace Beamable.Server.Editor.DockerCommands
 
 			public string ToArgString()
 			{
-				return $"--mount {(isReadOnly ? "readonly," : "")}type=bind,source={src},dst={dst}";
+				return $"--mount {(isReadOnly ? "readonly," : "")}type=bind,source=\"{src}\",dst=\"{dst}\"";
 			}
 		}
 
@@ -257,7 +257,7 @@ namespace Beamable.Server.Editor.DockerCommands
 		public Action<string> OnStandardErr;
 
 		public RunImageCommand(string imageName, string containerName,
-		   IDescriptor descriptor = null,
+		   IDescriptor descriptor,
 		   Dictionary<string, string> env = null,
 		   Dictionary<uint, uint> ports = null,
 		   Dictionary<string, string> namedVolumes = null,
@@ -349,6 +349,7 @@ namespace Beamable.Server.Editor.DockerCommands
 				return;
 			}
 
+			if (_descriptor == null) return;
 			Task.Run(async () =>
 			{
 				await Task.Delay(500);

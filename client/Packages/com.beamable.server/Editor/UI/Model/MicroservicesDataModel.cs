@@ -65,6 +65,7 @@ namespace Beamable.Editor.UI.Model
 
 		public Action<ServiceManifest> OnServerManifestUpdated;
 		public Action<GetStatusResponse> OnStatusUpdated;
+		public Guid InstanceId = Guid.NewGuid();
 
 		public void RefreshLocal()
 		{
@@ -174,6 +175,7 @@ namespace Beamable.Editor.UI.Model
 
 		public Dictionary<string, ServiceAvailability> GetAllServicesStatus()
 		{
+			RefreshLocal();
 			var getServiceStatus = new Func<bool, bool, ServiceAvailability>((isLocally, isRemotely) =>
 			{
 				if (isLocally && isRemotely)
@@ -298,6 +300,8 @@ namespace Beamable.Editor.UI.Model
 
 		public void OnAfterDeserialize()
 		{
+			_instance = this;
+			
 			void AddModels<T>(List<T> models, List<IBeamableService> listToPopulate) where T : ServiceModelBase
 			{
 				foreach (var service in models.ToArray())
@@ -341,6 +345,7 @@ namespace Beamable.Editor.UI.Model
 			}
 			AddModels(_localMicroserviceModels, AllLocalServices);
 			AddModels(_localStorageModels, AllLocalServices);
+			
 		}
 	}
 

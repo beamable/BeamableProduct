@@ -1,4 +1,3 @@
-using Beamable.Common;
 using Beamable.Editor.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.UI.Buss;
@@ -7,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.Profiling;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -15,6 +13,7 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
+
 using static Beamable.Common.Constants;
 using static Beamable.Common.Constants.Features.Buss.ThemeManager;
 
@@ -25,11 +24,15 @@ namespace Beamable.Editor.UI.Buss
 		private BussStyleListVisualElement _stylesGroup;
 		private BussElementHierarchyVisualElement _navigationWindow;
 		private LabeledCheckboxVisualElement _filterToggle;
+		private SelectedBussElementVisualElement _selectedBussElement;
 
 		private readonly List<BussStyleCardVisualElement> _styleCardsVisualElements =
 			new List<BussStyleCardVisualElement>();
 
+		private BeamablePopupWindow _confirmationPopup;
 		private AddStyleButton _addStyleButton;
+		private GameObject _selectedGameObject;
+		private bool _inStyleSheetChangedLoop;
 		private bool _filterMode;
 
 		[MenuItem(
@@ -74,7 +77,11 @@ namespace Beamable.Editor.UI.Buss
 			_navigationWindow = new BussElementHierarchyVisualElement();
 			_navigationWindow.Init();
 			navigationGroup.Add(_navigationWindow);
-
+			
+			_selectedBussElement = new SelectedBussElementVisualElement();
+			_selectedBussElement.Setup(_navigationWindow);
+			scrollView.Add(_selectedBussElement);
+			
 			_filterToggle = new LabeledCheckboxVisualElement("Filter by selected element");
 			_filterToggle.name = "filterToggle";
 			_filterToggle.OnValueChanged -= OnFilterToggleClicked;
@@ -96,8 +103,16 @@ namespace Beamable.Editor.UI.Buss
 			_navigationWindow.BussStyleSheetChange -= RefreshStyleSheets;
 			_navigationWindow.BussStyleSheetChange += RefreshStyleSheets;
 
+			_navigationWindow.SelectionChanged -= CacheSelectedGameObject;
+			_navigationWindow.SelectionChanged += CacheSelectedGameObject;
+
 			RefreshStyleSheets();
 			AddSelectorButton(scrollView);
+		}
+
+		private void CacheSelectedGameObject(GameObject go)
+		{
+			_selectedGameObject = go;
 		}
 
 		private void OnFilterToggleClicked(bool value)
@@ -130,12 +145,12 @@ namespace Beamable.Editor.UI.Buss
 			_addStyleButton = new AddStyleButton();
 			_addStyleButton.Setup(_stylesGroup, _ => RefreshStyleSheets());
 			_addStyleButton.CheckEnableState();
-			parent.Insert(2, _addStyleButton);
+			parent.Insert(parent.Children().Count() - 1, _addStyleButton);
 		}
 
 		private void OnFocus()
 		{
-			_navigationWindow?.ForceRebuild();
+			_navigationWindow?.ForceRebuild(_selectedGameObject);
 			_addStyleButton.CheckEnableState();
 		}
 
