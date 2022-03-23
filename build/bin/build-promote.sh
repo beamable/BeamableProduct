@@ -9,6 +9,9 @@ echo "Starting com.beamable.server package build"
 docker-compose --no-ansi -f docker/package.com.beamable.server/docker-compose.yml up --build --exit-code-from beamable_server
 docker-compose --no-ansi -f docker/package.com.beamable.server/docker-compose.yml down # TODO: Ensure that this down command executes
 
+echo "Pulling latest Dotnet LTS"
+docker pull mcr.microsoft.com/dotnet/sdk:6.0
+
 echo "Starting Microservice dependencies..."
 docker-compose --no-ansi -f docker/image.microservice/docker-compose.yml up --build --exit-code-from microservice
 docker-compose --no-ansi -f docker/image.microservice/docker-compose.yml down # TODO: Ensure that this down command executes
