@@ -25,6 +25,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed issue on Re-Import All with `BeamableAssistantWindow` opened that required reopening the window for it to work.
 - Fixed issue that caused `StatsService.SearchStats` to fail whenever a match occurred.
 
+## [1.0.6]
+no changes
+
+## [1.0.5]
+no changes
+
+## [1.0.4]
+no changes
+
+## [1.0.3]
+no changes
+
 ## [1.0.2]
 ### Fixed
 - Windows Microservices first time build issue regarding empty build directories
