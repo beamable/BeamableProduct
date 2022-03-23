@@ -190,7 +190,7 @@ namespace Beamable.Editor.UI.Model
 		}
 		// TODO === END
 
-		private void RunSnykTests(bool suppressOutput=false)
+		private void RunSnykTests(bool suppressOutput = false)
 		{
 			var snykCommand = new SnykTestCommand(ServiceDescriptor);
 			if (!suppressOutput)
