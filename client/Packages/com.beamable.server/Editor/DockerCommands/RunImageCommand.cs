@@ -238,7 +238,20 @@ namespace Beamable.Server.Editor.DockerCommands
 
 			public string ToArgString()
 			{
-				return $"--mount {(isReadOnly ? "readonly," : "")}type=bind,source=\"{src}\",dst=\"{dst}\"";
+				/*
+				 * The quotes around this command matter a lot.
+				 * On either platform we MUST have the quotes around the src directory, so that paths with spaces are supported.
+				 * On mac, that means we need to wrap the entire command in single quotes, or it'll mount the folder incorrectly.
+				 * On windows, the surrounding quotes aren't required, and in fact, cause it to fail.
+				 */
+
+				var includeOuterQuotes = true;
+#if UNITY_EDITOR_WIN
+				includeOuterQuotes = false;
+#endif
+				var quoteStr = includeOuterQuotes ? "'" : "";
+				var optionStr = $"{(isReadOnly ? "readonly," : "")}type=bind,source=\"{src}\",dst={dst}";
+				return $"--mount {quoteStr}{optionStr}{quoteStr}";
 			}
 		}
 

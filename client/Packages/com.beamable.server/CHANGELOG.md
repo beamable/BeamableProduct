@@ -24,6 +24,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed issue that caused the `ReflectionCache` to run an extra unnecessary time when a `.cs` or `.asmdef` file were changed.
 - Fixed issue on Re-Import All with `BeamableAssistantWindow` opened that required reopening the window for it to work.
 - Fixed issue that caused `StatsService.SearchStats` to fail whenever a match occurred.
+- Cannot create invalid service name before validation occurs
+
+## [1.0.6]
+no changes
+
+## [1.0.5]
+no changes
+
+## [1.0.4]
+no changes
+
+## [1.0.3]
+no changes
 
 ## [1.0.2]
 ### Fixed
