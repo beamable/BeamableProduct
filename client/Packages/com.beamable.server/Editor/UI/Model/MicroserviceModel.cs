@@ -190,15 +190,20 @@ namespace Beamable.Editor.UI.Model
 		}
 		// TODO === END
 
-		private void RunSnykTests()
+		private void RunSnykTests(bool suppressOutput=false)
 		{
 			var snykCommand = new SnykTestCommand(ServiceDescriptor);
+			if (!suppressOutput)
+			{
+				Debug.Log($"Starting Docker Snyk tests for {ServiceDescriptor.Name}. The test results will appear momentarily.");
+			}
+
 			snykCommand.Start(null).Then(res =>
 			{
 				if (res.RequiresLogin)
 				{
 					var onLogin = new Promise<Unit>();
-					onLogin.Then(_ => RunSnykTests()).Error(_ =>
+					onLogin.Then(_ => RunSnykTests(true)).Error(_ =>
 					{
 						Debug.LogError("Cannot run Snyk Tests without being logged into DockerHub");
 					});
@@ -207,6 +212,7 @@ namespace Beamable.Editor.UI.Model
 				}
 				else
 				{
+					Debug.Log("Docker Snyk tests complete");
 					Debug.Log(res.Output);
 					var date = DateTime.UtcNow.ToFileTimeUtc().ToString();
 					var filePath =
@@ -215,6 +221,9 @@ namespace Beamable.Editor.UI.Model
 					File.WriteAllText(filePath, res.Output);
 					EditorUtility.OpenWithDefaultApp(filePath);
 				}
+			}).Error(err =>
+			{
+				Debug.LogError($"Failed to run Docker Snyk tests for {ServiceDescriptor.Name}. Reason=[{err?.Message}]");
 			});
 		}
 		private void CopyVSCodeDebugTool()
