@@ -61,7 +61,19 @@ namespace Beamable.Server
 
 			outputDirectory = Path.GetFullPath(outputDirectory);
 			var filePath = Path.Combine(outputDirectory, $"{descriptor.Name}Client.cs");
-			Directory.CreateDirectory(outputDirectory);
+			if (!Directory.Exists(outputDirectory))
+			{
+				Console.WriteLine("Creating output directory");
+				Directory.CreateDirectory(outputDirectory);
+			}
+			Console.WriteLine($"Directory Exists [{Directory.Exists(outputDirectory)}]");
+			Console.WriteLine($"Writing client output to file=[{filePath}]");
+
+			foreach (var sub in Directory.GetDirectories("/"))
+			{
+				Console.WriteLine($"-sub folder=[{sub}]");
+			}
+
 			generator.GenerateCSharpCode(filePath);
 		}
 	}
