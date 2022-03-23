@@ -175,7 +175,6 @@ namespace Beamable.Editor.UI.Model
 
 		public Dictionary<string, ServiceAvailability> GetAllServicesStatus()
 		{
-			RefreshLocal();
 			var getServiceStatus = new Func<bool, bool, ServiceAvailability>((isLocally, isRemotely) =>
 			{
 				if (isLocally && isRemotely)
