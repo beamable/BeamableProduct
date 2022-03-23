@@ -58,10 +58,12 @@ namespace Beamable.Server
 			};
 
 			var generator = new ClientCodeGenerator(descriptor);
-
 			outputDirectory = Path.GetFullPath(outputDirectory);
 			var filePath = Path.Combine(outputDirectory, $"{descriptor.Name}Client.cs");
-			Directory.CreateDirectory(outputDirectory);
+			if (!Directory.Exists(outputDirectory))
+			{
+				Directory.CreateDirectory(outputDirectory);
+			}
 			generator.GenerateCSharpCode(filePath);
 		}
 	}

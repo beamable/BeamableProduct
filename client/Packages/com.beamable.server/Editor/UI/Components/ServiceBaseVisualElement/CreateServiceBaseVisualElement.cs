@@ -71,9 +71,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_nameTextField = Root.Q<TextField>("microserviceNewTitle");
 			_nameTextField.SetValueWithoutNotify(NewServiceName);
 
-			_isNameValid = _nameTextField.AddErrorLabel("Name", PrimaryButtonVisualElement.IsValidClassName);
+			_isNameValid = _nameTextField.AddErrorLabel("Name", PrimaryButtonVisualElement.IsValidClassName, .01);
 			_isNameSizedRight = _nameTextField.AddErrorLabel(
-				"Length", txt => PrimaryButtonVisualElement.IsBetweenCharLength(txt, MAX_NAME_LENGTH));
+				"Length", txt => PrimaryButtonVisualElement.IsBetweenCharLength(txt, MAX_NAME_LENGTH), .01);
 			_createBtn.AddGateKeeper(_isNameValid);
 
 			Root.Q("foldContainer").visible = false;
@@ -116,6 +116,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void HandleContinueButtonClicked()
 		{
+			if (!_createBtn.CheckGateKeepers())
+			{
+				return;
+			}
 			var additionalReferences = _serviceCreateDependentService?.GetReferences();
 			_createBtn.SetText("Creating...");
 			_createBtn.Load(new Promise()); // spin forever, because a re-compile will save us!

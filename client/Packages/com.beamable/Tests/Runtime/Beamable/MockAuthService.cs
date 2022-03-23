@@ -114,7 +114,7 @@ namespace Beamable.Tests.Runtime.Api
 			throw new NotImplementedException();
 		}
 
-		public Promise<TokenResponse> LoginDeviceId()
+		public Promise<TokenResponse> LoginDeviceId(bool mergeGamerTagToAccount)
 		{
 			throw new NotImplementedException();
 		}
