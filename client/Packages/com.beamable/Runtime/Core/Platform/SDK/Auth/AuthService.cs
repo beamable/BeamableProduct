@@ -24,7 +24,8 @@ namespace Beamable.Api.Auth
 		Promise<User> RemoveDeviceId();
 		Promise<User> RemoveDeviceIds(string[] deviceIds);
 		Promise<User> RemoveAllDeviceIds();
-		Promise<TokenResponse> LoginDeviceId(bool mergeGamerTagToAccount);
+		Promise<TokenResponse> LoginDeviceId(bool mergeGamerTagToAccount=true);
+
 	}
 
 	/// <summary>
