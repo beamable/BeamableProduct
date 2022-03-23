@@ -163,7 +163,7 @@ namespace Beamable.Editor
 			return Check;
 		}
 
-		public static FormConstraint AddErrorLabel(this TextField self, string name, FormErrorCheckWithInput checker, double debounceTime=.25)
+		public static FormConstraint AddErrorLabel(this TextField self, string name, FormErrorCheckWithInput checker, double debounceTime = .25)
 		{
 			var constraint = new FormConstraint
 			{
