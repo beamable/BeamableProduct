@@ -1,10 +1,13 @@
 using System;
 using Beamable.Common;
-using Beamable.Common.Api.Lobbies;
 using Beamable.Common.Content;
+using Beamable.Experimental.Api.Lobbies;
 
-namespace Player
+namespace Beamable.Player
 {
+  /// <summary>
+  /// Experimental API around managing a player's lobby state.
+  /// </summary>
   [Serializable]
   public class PlayerLobby
   {
@@ -19,9 +22,48 @@ namespace Player
 
     public bool IsInLobby => State != null;
 
-    public async Promise Create(SimGameTypeRef gameTypeRef)
+    public async Promise Create(
+      string name,
+      LobbyRestriction restriction,
+      SimGameTypeRef gameTypeRef = null,
+      string description = null)
     {
-      State = await _lobbyApi.CreateLobby();
+      State = await _lobbyApi.CreateLobby(name, restriction, gameTypeRef, description);
+      // TODO: Need to subscribe to lobby messages
+    }
+
+    public async Promise Join(string lobbyId)
+    {
+      State = await _lobbyApi.JoinLobby(lobbyId);
+      // TODO: Need to subscribe to lobby messages
+    }
+
+    // public async Promise JoinByPasscode(string passcode)
+    // {
+    //   State = await _lobbyApi.JoinLobbyByPasscode(passcode);
+    //   // TODO: Need to subscribe to lobby messages
+    // }
+
+    public async Promise Leave()
+    {
+      if (State == null)
+      {
+        return;
+      }
+
+      await _lobbyApi.LeaveLobby(State.lobbyId);
+      State = null;
+      // TODO: Need to unsubscribe from lobby messages
+    }
+
+    public async Promise Refresh()
+    {
+      if (State == null)
+      {
+        return;
+      }
+
+      State = await _lobbyApi.GetLobby(State.lobbyId);
     }
   }
 }
