@@ -147,8 +147,6 @@ COPY {Descriptor.ImageName}.csproj .
 RUN cp /src/baseImageDocs.xml .
 
 RUN echo $BEAMABLE_SDK_VERSION > /subapp/.beamablesdkversion
-#RUN mkdir /client-output
-#RUN chmod -R 777 /client-output
 
 {GetDebugLayer()}
 
