@@ -2,7 +2,6 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using System;
-using UnityEngine;
 
 namespace Beamable.Api.Auth
 {
@@ -25,7 +24,8 @@ namespace Beamable.Api.Auth
 		Promise<User> RemoveDeviceId();
 		Promise<User> RemoveDeviceIds(string[] deviceIds);
 		Promise<User> RemoveAllDeviceIds();
-		Promise<TokenResponse> LoginDeviceId();
+		Promise<TokenResponse> LoginDeviceId(bool mergeGamerTagToAccount=true);
+
 	}
 
 	/// <summary>
@@ -60,7 +60,7 @@ namespace Beamable.Api.Auth
 				.Map(resp => resp.available);
 		}
 
-		public async Promise<TokenResponse> LoginDeviceId()
+		public async Promise<TokenResponse> LoginDeviceId(bool mergeGamerTagToAccount = true)
 		{
 			var deviceId = await _deviceIdResolver.GetDeviceId();
 
@@ -69,7 +69,7 @@ namespace Beamable.Api.Auth
 				grant_type = "device",
 				device_id = deviceId
 			};
-			return await Requester.Request<TokenResponse>(Method.POST, TOKEN_URL, req);
+			return await Requester.Request<TokenResponse>(Method.POST, TOKEN_URL, req, includeAuthHeader: mergeGamerTagToAccount);
 		}
 
 		public class LoginDeviceIdRequest
