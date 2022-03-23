@@ -125,11 +125,11 @@ namespace Beamable.Editor
 			_accessTokenStorage = new AccessTokenStorage("editor.");
 			_requester = new PlatformRequester(BeamableEnvironment.ApiUrl, _accessTokenStorage, null);
 			_requester.RequestTimeoutMs = $"{30 * 1000}";
+			
 			AuthService = new EditorAuthService(_requester);
-			_requester.AuthService = AuthService;
 			ContentIO = new ContentIO(_requester);
 			ContentPublisher = new ContentPublisher(_requester, ContentIO);
-			RealmService = new RealmsService(_requester, this);
+			RealmService = new RealmsService(_requester);
 			AliasService = new AliasService(_requester);
 
 			HasConfiguration = ConfigDatabase.HasConfigFile(ConfigDatabase.GetConfigFileName());
