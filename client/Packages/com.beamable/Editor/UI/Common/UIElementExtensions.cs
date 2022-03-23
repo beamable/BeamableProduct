@@ -163,7 +163,7 @@ namespace Beamable.Editor
 			return Check;
 		}
 
-		public static FormConstraint AddErrorLabel(this TextField self, string name, FormErrorCheckWithInput checker)
+		public static FormConstraint AddErrorLabel(this TextField self, string name, FormErrorCheckWithInput checker, double debounceTime=.25)
 		{
 			var constraint = new FormConstraint
 			{
@@ -193,7 +193,7 @@ namespace Beamable.Editor
 			{
 				// wait up to .25 seconds.
 				var time = EditorApplication.timeSinceStartup;
-				nextCheckTime = time + .25;
+				nextCheckTime = time + debounceTime;
 				Debounce();
 			}
 

@@ -63,6 +63,16 @@ namespace Beamable.Editor.UI.Components
 			Button.text = text;
 		}
 
+		public bool CheckGateKeepers()
+		{
+			foreach (var constraint in _constraints)
+			{
+				constraint.Check(true);
+			}
+
+			return Button.enabledSelf;
+		}
+
 		public void AddGateKeeper(params FormConstraint[] constraints)
 		{
 			foreach (var constraint in constraints)
