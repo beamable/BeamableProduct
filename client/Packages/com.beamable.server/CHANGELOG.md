@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed issue that caused `StatsService.SearchStats` to fail whenever a match occurred.
 - Cannot create invalid service name before validation occurs
 
+## [1.0.7]
+no changes
+
 ## [1.0.6]
 no changes
 
