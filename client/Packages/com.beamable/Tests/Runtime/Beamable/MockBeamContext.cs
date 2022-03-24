@@ -127,18 +127,6 @@ namespace Beamable.Tests.Runtime
 					 .WithToken(ACCESS_TOKEN)
 					 ;
 
-			// Requester.MockRequest<TokenResponse>(Method.POST, "/basic/auth/token")
-			//          .WithNoAuthHeader()
-			//          .WithJsonFieldMatch("grant_type", "refresh_token")
-			//          .WithJsonFieldMatch("refresh_token", "test_refresh")
-			//
-			//          .WithResponse(new TokenResponse
-			//          {
-			// 	         access_token = "test_access2",
-			// 	         refresh_token = "test_refresh2",
-			// 	         expires_in = 10000,
-			// 	         token_type = "test_token2"
-			//          });
 			return this;
 		}
 	}
