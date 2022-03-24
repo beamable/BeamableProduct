@@ -323,11 +323,18 @@ namespace Beamable
 			{
 				var success = false;
 				var attempt = 0;
-				var attemptDurations = new int[] { 2, 2, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10 };
+				var coreConfig = ServiceProvider.GetService<CoreConfiguration>();
+				var attemptDurations = coreConfig.ContextRetryDelays;
+				var errors = new Exception[attemptDurations.Length];
 				while (!success)
 				{
+					var attemptIndex = attempt;
 					yield return InitializeUser()
-						.Error(Debug.LogException)
+						.Error(err =>
+						{
+							errors[attemptIndex] = err;
+							Debug.LogException(err);
+						})
 						.Then(__ =>
 						{
 							success = true;
@@ -335,10 +342,18 @@ namespace Beamable
 						}).ToYielder();
 
 					if (success) break;
+
+					if (attempt >= attemptDurations.Length - 1 && !coreConfig.EnableInfiniteContextRetries)
+					{
+						// we've failed, and we've been configured to exit early.
+						_initPromise.CompleteError(new BeamContextInitException(this, errors));
+						yield break;
+					}
+
 					var duration =
 						attemptDurations[attempt >= attemptDurations.Length ? attemptDurations.Length - 1 : attempt];
 					Debug.LogWarning($"Beamable couldn't start. playerCode=[{playerCode}] Will try again in {duration} seconds...");
-					yield return new WaitForSecondsRealtime(duration);
+					yield return new WaitForSecondsRealtime((float)duration);
 					attempt++;
 				}
 			}
@@ -723,6 +738,29 @@ namespace Beamable
 
 
 			return Promise.Success;
+		}
+	}
+
+	[Serializable]
+	public class BeamContextInitException : Exception
+	{
+		/// <summary>
+		/// The <see cref="BeamContext"/> that couldn't start.
+		/// </summary>
+		public BeamContext Ctx { get; }
+
+		/// <summary>
+		/// A set of exceptions that map to each failed initialization attempt.
+		/// There will be the same count of errors as there is in the <see cref="CoreConfiguration.ContextRetryDelays"/> array
+		/// </summary>
+		public Exception[] Exceptions { get; }
+
+		public BeamContextInitException(BeamContext ctx, Exception[] exceptions) : base($"Could not initialize " +
+		                                                                                $"BeamContext=[{ctx?.PlayerCode}]. " +
+		                                                                                $"Errors=[{string.Join("\n", exceptions.Where(e => e != null).Select(e => e.Message))}]")
+		{
+			Ctx = ctx;
+			Exceptions = exceptions;
 		}
 	}
 }
