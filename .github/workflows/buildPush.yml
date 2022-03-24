@@ -113,7 +113,7 @@ jobs:
           version: 1.2.0
           androidVersionCode: ${{ github.run_number }} 
           allowDirtyBuild: true
-          buildsPath: /github/workspace/dist
+          buildsPath: /dist
           buildMethod: BuildSampleProject.Development
       - uses: game-ci/unity-builder@v2
         if: ${{ github.ref == 'refs/heads/staging' }}
@@ -131,7 +131,7 @@ jobs:
           version: 1.2.0
           androidVersionCode: ${{ github.run_number }}
           allowDirtyBuild: true
-          buildsPath: /github/workspace/dist
+          buildsPath: /dist
           buildMethod: BuildSampleProject.Staging
       - uses: game-ci/unity-builder@v2
         if: ${{ github.ref == 'refs/heads/production' }}
@@ -149,11 +149,11 @@ jobs:
           version: 1.2.0
           androidVersionCode: ${{ github.run_number }}
           allowDirtyBuild: true
-          buildsPath: /github/workspace/dist
+          buildsPath: /dist
           buildMethod: BuildSampleProject.Production
       
       - name: Lets take a look at directories
-        run: pwd && ls -lrt && cd /github/workspace/dist/Android/ && ls
+        run: pwd && ls -lrt && cd build && ls -lrt
 
       - uses: actions/upload-artifact@v2
         if: ${{ matrix.targetPlatform != 'WebGL' }}
