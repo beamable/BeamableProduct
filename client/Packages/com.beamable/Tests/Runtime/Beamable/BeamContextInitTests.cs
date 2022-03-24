@@ -31,7 +31,7 @@ namespace Tests.Runtime.Beamable
 
 			MockPlatformRoute<User> failingMockRequest = null;
 			var config = ScriptableObject.CreateInstance<CoreConfiguration>();
-			config.ContextRetryDelays = new double[] {.1, .1, .1};
+			config.ContextRetryDelays = new double[] { .1, .1, .1 };
 			config.EnableInfiniteContextRetries = false;
 
 			TriggerContextInit(builder =>
@@ -44,29 +44,29 @@ namespace Tests.Runtime.Beamable
 			}, context =>
 			{
 				context.Requester.MockRequest<TokenResponse>(Method.POST, "/basic/auth/token")
-				         .WithNoAuthHeader()
-				         .WithJsonFieldMatch("grant_type", "guest")
-				         .WithResponse(new TokenResponse
-				         {
-					         access_token = MockBeamContext.ACCESS_TOKEN,
-					         refresh_token = "test_refresh",
-					         expires_in = 10000,
-					         token_type = "test_token"
-				         });
+						 .WithNoAuthHeader()
+						 .WithJsonFieldMatch("grant_type", "guest")
+						 .WithResponse(new TokenResponse
+						 {
+							 access_token = MockBeamContext.ACCESS_TOKEN,
+							 refresh_token = "test_refresh",
+							 expires_in = 10000,
+							 token_type = "test_token"
+						 });
 
 				context.Requester.MockRequest<TokenResponse>(Method.POST, "/basic/auth/token")
-				       .WithNoAuthHeader()
-				       .WithJsonFieldMatch("grant_type", "refresh_token")
-				       .WithResponse(new TokenResponse { access_token = MockBeamContext.ACCESS_TOKEN, refresh_token = "refresh_test"});
+					   .WithNoAuthHeader()
+					   .WithJsonFieldMatch("grant_type", "refresh_token")
+					   .WithResponse(new TokenResponse { access_token = MockBeamContext.ACCESS_TOKEN, refresh_token = "refresh_test" });
 
 				failingMockRequest = context.Requester.MockRequest<User>(Method.GET, "/basic/accounts/me")
-				                         .WithResponse(new RequesterException("", "GET", "url", 401, ""))
-				                         .WithToken(MockBeamContext.ACCESS_TOKEN)
+										 .WithResponse(new RequesterException("", "GET", "url", 401, ""))
+										 .WithToken(MockBeamContext.ACCESS_TOKEN)
 
 					;
 
 				context.AddPubnubRequests()
-				       .AddSessionRequests();
+					   .AddSessionRequests();
 			});
 
 			var errorWasTriggered = false;
