@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Added `RecoverWith` extension method overloads to `Promise<T>` that allow for configuring  a promise to recover from failure over multiple attempts.
+- `CoreConfiguration.EnableInfiniteContextRetries` and `CoreConfiguration.ContextRetryDelays` options to allow developers to override what happens when a BeamContext cannot initialize 
 
 ### Changed
 - Changed behaviour of Add Style button in Buss Theme Manager
