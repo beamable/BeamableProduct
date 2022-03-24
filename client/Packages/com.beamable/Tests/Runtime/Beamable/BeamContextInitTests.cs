@@ -91,8 +91,10 @@ namespace Tests.Runtime.Beamable
 
 			Assert.AreEqual(config.ContextRetryDelays.Length, failingMockRequest.CallCount);
 			Assert.AreEqual(config.ContextRetryDelays.Length, beamException.Exceptions.Length);
-			Assert.IsNotNull(beamException.Exceptions[0]);
-			Assert.IsNotNull(beamException.Exceptions[1]);
+			for (var i = 0; i < config.ContextRetryDelays.Length; i++)
+			{
+				Assert.IsNotNull(beamException.Exceptions[i]);
+			}
 			Assert.AreEqual(Context, beamException.Ctx);
 
 		}
