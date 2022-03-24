@@ -1,14 +1,4 @@
-﻿using Beamable.Common;
-using Beamable.Editor.UI.Components;
-using Beamable.Editor.UI.Model;
-using Beamable.Server.Editor;
-using Beamable.Server.Editor.ManagerClient;
-using Beamable.Server.Editor.UI.Components;
-using Beamable.Server.Editor.UI.Components.DockerLoginWindow;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using UnityEngine;
+﻿using Beamable.Editor.UI.Model;
 using static Beamable.Common.Constants.Features.Services;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -33,10 +23,9 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		protected override void UpdateVisualElements()
 		{
-			Root.Q<VisualElement>("buttonRow").RemoveFromHierarchy();
 			Root.Q<VisualElement>("logContainer").RemoveFromHierarchy();
-			Root.Q<VisualElement>("dependentServicesContainer").RemoveFromHierarchy();
 			Root.Q("collapseContainer")?.RemoveFromHierarchy();
+			Root.Q("startBtn")?.RemoveFromHierarchy();
 
 #if UNITY_2019_1_OR_NEWER
 			Root.Q<VisualElement>("mainVisualElement").style.height = new StyleLength(DEFAULT_HEADER_HEIGHT);
@@ -45,7 +34,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 #endif
 
 			_statusIcon.RemoveFromHierarchy();
-			_statusLabel.RemoveFromHierarchy();
+			Root.Q("foldContainer").visible = false;
 
 			var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
 			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
@@ -56,6 +45,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_checkbox.Refresh();
 			_checkbox.SetText(Model.Name);
 			_checkbox.SetWithoutNotify(Model.IsSelected);
+			_checkbox.SetEnabled(false);
 			Model.OnSelectionChanged += _checkbox.SetWithoutNotify;
 			_checkbox.OnValueChanged += b => Model.IsSelected = b;
 
@@ -77,8 +67,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		{
 			_remoteStatusIcon.ClearClassList();
 			string statusClassName = "remoteEnabled";
-			_remoteStatusLabel.text = REMOTE_ONLY;
-			_remoteStatusIcon.tooltip = _remoteStatusLabel.text;
+			_remoteStatusIcon.tooltip = REMOTE_ONLY;
 			_remoteStatusIcon.AddToClassList(statusClassName);
 		}
 

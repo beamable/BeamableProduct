@@ -1,5 +1,4 @@
 using Beamable.Api;
-using Beamable.Api.Auth;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
@@ -12,7 +11,6 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
 using AccessToken = Beamable.Api.AccessToken;
-using AuthService = Beamable.Api.Auth.AuthService;
 
 namespace Beamable.Platform.Tests
 {

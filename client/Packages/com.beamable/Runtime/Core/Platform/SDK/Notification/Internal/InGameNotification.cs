@@ -1,4 +1,4 @@
-using Beamable.Spew;
+using Beamable.Common.Spew;
 using System;
 
 namespace Beamable.Api.Notification.Internal

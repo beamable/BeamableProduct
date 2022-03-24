@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;

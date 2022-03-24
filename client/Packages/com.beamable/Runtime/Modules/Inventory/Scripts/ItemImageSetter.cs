@@ -1,6 +1,4 @@
-﻿
-using Beamable.Common;
-using Beamable.Common.Inventory;
+﻿using Beamable.Common.Inventory;
 using Beamable.Inventory.Scripts;
 using Beamable.UI.Scripts;
 using UnityEngine;

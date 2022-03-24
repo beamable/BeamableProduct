@@ -1,28 +1,76 @@
+MicroserviceVisualElement > TemplateContainer > #mainVisualElement,
+StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
+    margin-bottom: 20px;
+}
+
+#mainVisualElement {
+    flex-direction: row;
+}
+
+#serviceCard {
+    flex-grow: 1;
+}
+
+#foldContainer {
+    width: 30px;
+    height: 50px;
+}
+
+#foldButton {
+    height: 30px;
+    background-image: none;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+#foldIcon {
+    width: 10px;
+    height: 10px;
+}
+
 #serviceIcon {
     align-self: center;
     margin-left: 4px;
 }
 
 #logHeader{
+    justify-content: space-between;
     flex-direction: row;
     height: 30px;
     flex-shrink: 0;
 }
-
 #logHeader > .leftArea{
     justify-content: center;
     padding-left: 5px;
     flex-direction: row;
     flex-grow: 1;
 }
-
-#logHeader > .rightArea{
-    padding-right: 5px;
-    flex-direction: row;
-    align-content: flex-end;
-    justify-content: flex-end;
+#logHeader > LabeledCheckboxVisualElement, #logHeader > .rightArea {
+    margin-left: 10px;
+    margin-right: 10px;
 }
 
+StorageObjectVisualElement #logHeader > LabeledCheckboxVisualElement,
+StorageObjectVisualElement #logHeader > .rightArea,
+MicroserviceVisualElement #logHeader > LabeledCheckboxVisualElement,
+MicroserviceVisualElement #logHeader > .rightArea {
+    width: 200px;
+}
+
+#logHeader > .rightArea{
+    flex-direction: row;
+    align-content: flex-end;
+    align-self: stretch;
+    justify-content: flex-end;
+}
+#startBtn {
+    width: 28px;
+    flex-basis: auto;
+    margin-left: 10px;
+    margin-right: 10px;
+    position: relative;
+}
 #logContainer {
     flex-grow: 1;
 }
@@ -45,20 +93,16 @@
     padding-left: 0px;
     padding-top: 0px;
     padding-bottom: 0px;
-    
+
 }
 
-#statusIcon{
+#statusIcon, #remoteStatusIcon{
     /*background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/Local Running L.png");*/
-    width: 25px;
-    height: 25px;
+    width: 26px;
+    height: 26px;
     align-self: center;
-
-}
-#remoteStatusIcon{
-    width: 25px;
-    height: 25px;
-    align-self: center;
+    margin-left: 10px;
+    margin-right: 5px;
 }
 
 
@@ -78,7 +122,8 @@
 #buildDropDown{
     flex-direction: row;
     justify-content: space-around;
-    padding-right: 0px;
+    padding-left: 6px;
+    padding-right: 6px;
     padding-top: 0px;
     padding-bottom: 0px;
     border-right-width: 0px;
@@ -87,16 +132,6 @@
 
 #buildLabel {
     align-self: center;
-}
-
-#dropDown{
-    align-content: center;
-    justify-content: center;
-    align-self: center;
-    width: 30px;
-    height: 28px;
-    /*right: 3px;*/
-    -unity-text-align: middle-center;
 }
 
 .confirmBtn{
@@ -108,9 +143,10 @@
     border-right-width: 1px;
     margin-right: 0px;
     background-image: none;
-    height: 28px;
+    height: 23px;
     cursor: pan;
     background-image: none;
+    align-self: center;
 }
 
 #start {
@@ -150,58 +186,35 @@
     margin-top: 0px;
 }
 
-#buttonsContainer {
-    flex-direction: row;
-    justify-content: space-between;
-}
-
-#dependentServicesBtn {
-    font-size: 10px;
-    background-image: none;
-    background-color: rgba(0,0,0,0);
-    padding-top: 4px;
-    border-bottom-width: 1px;
-}
-
-LabeledCheckboxVisualElement{
-    margin-left: 10px;
-	align-self: center;
-    justify-content: flex-start;
-}
-
 .hide {
     position: absolute;
     left: 999999px;
 }
 
-.collapsedMain {
-    max-height: 120px;
+.folded {
+    max-height: 50px;
 }
 
-#collapseContainer {
-    width: 200px;
+.rightArea Button.confirmButton {
+    margin-top: 0px;
+    margin-left: 0px;
+    margin-right: 0px;
+    margin-bottom: 0px;
+}
+
+#stopImage, #buildImage {
     align-self: center;
-    margin-bottom: 20px;
+    position: absolute;
+    left: 0px;
+    right: 0px;
+    top: 0px;
+    bottom: 0px;
 }
 
-#collapseBtn {
-    height: 20px;
-    flex-direction: row;
-    justify-content: space-between;
-    background-color: rgba(0,0,0,0);
-    background-image: none;
+.foldIcon {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/fold_light_dark.png");
 }
 
-#leftDashLine, #rightDashLine {
-    flex-grow: 1;
-    height: 1px;
-    align-self: center;
+.unfoldIcon {
+    background-image: resource("Packages/com.beamable.server/Editor/UI/Icons/unfold_light_dark.png");
 }
-
-#collapseBtnIcon {
-    width: 35px;
-    height: 35px;
-    align-self: center;
-}
-
-

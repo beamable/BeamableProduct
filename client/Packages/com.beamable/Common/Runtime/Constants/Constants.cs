@@ -6,7 +6,7 @@
 		public const string BEAMABLE_MAIN_WEBSITE = "beamable.com";
 		public const string BEAMABLE_DOCS_WEBSITE = "docs.beamable.com";
 		public const string BEAMABLE_ASSET_GROUP = "Beamable Assets";
-		
+
 		public static class Commons
 		{
 			public const string OBSOLETE_WILL_BE_REMOVED = "This is no longer supported, and will be removed in the future.";
@@ -16,17 +16,17 @@
 		public static class Directories
 		{
 			public const string BEAMABLE_ASSETS = "Assets/Beamable";
-			
+
 			public const string BEAMABLE_PACKAGE = "Packages/com.beamable";
 			public const string BEAMABLE_PACKAGE_EDITOR = BEAMABLE_PACKAGE + "/Editor";
 			public const string BEAMABLE_PACKAGE_EDITOR_UI = BEAMABLE_PACKAGE_EDITOR + "/UI";
-			
+
 			public const string BEAMABLE_SERVER_PACKAGE = "Packages/com.beamable.server";
 			public const string BEAMABLE_SERVER_PACKAGE_EDITOR = BEAMABLE_SERVER_PACKAGE + "/Editor";
 			public const string BEAMABLE_SERVER_PACKAGE_EDITOR_UI = BEAMABLE_SERVER_PACKAGE_EDITOR + "/UI";
-			
+
 			public const string COMMON_COMPONENTS_PATH = BEAMABLE_PACKAGE_EDITOR_UI + "/Common/Components";
-			
+
 			public const string ASSET_DIR = BEAMABLE_ASSETS + "/DefaultAssets";
 			public const string DATA_DIR = BEAMABLE_ASSETS + "/Editor/content";
 			public const string DEFAULT_DATA_DIR = BEAMABLE_PACKAGE_EDITOR + "/Modules/Content/DefaultContent";
@@ -56,7 +56,7 @@
 				public const string URL_DOC_INVENTORY_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "/inventory-flow";
 				public const string URL_DOC_STORE_FLOW = URL_BEAMABLE_DOCS_WEBSITE + "/store-flow";
 				public const string URL_DOC_MICROSERVICES = URL_BEAMABLE_DOCS_WEBSITE + "/microservices-feature";
-			
+
 				public const string URL_DOC_WINDOW_CONTENT_MANAGER = URL_BEAMABLE_DOCS_WEBSITE + "/content-manager";
 				public const string URL_DOC_WINDOW_CONTENT_NAMESPACES = URL_BEAMABLE_DOCS_WEBSITE + "/content-manager#namespaces";
 				public const string URL_DOC_WINDOW_CONFIG_MANAGER = URL_BEAMABLE_DOCS_WEBSITE + "/content-manager";
@@ -80,13 +80,13 @@
 					public const string BUSS = BEAMABLE + " Styles";
 					public const string BUSS_SHEET_EDITOR = "Sheet Inspector";
 					public const string BUSS_WIZARD = "Theme Wizard";
-					public const string LOGIN = "Beamble Login";
+					public const string LOGIN = "Beamable Login";
 					public const string SDF_GENERATOR = "SDF Generator";
 				}
 				public static class Paths
 				{
 					private const string MENU_ITEM_PATH_WINDOW = "Window";
-					
+
 					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE = MENU_ITEM_PATH_WINDOW + "/Beamable";
 					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_SAMPLES = MENU_ITEM_PATH_WINDOW_BEAMABLE + "/Samples";
 					public const string MENU_ITEM_PATH_WINDOW_BEAMABLE_HELP = MENU_ITEM_PATH_WINDOW_BEAMABLE + "/Help";
@@ -129,6 +129,12 @@
 					public const int MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_3 = 100;
 					public const int MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_LAST = int.MaxValue;
 				}
+			}
+
+			public static class Icons
+			{
+				public const char ARROW_DOWN_UTF = '\u25BC';
+				public const char ARROW_UP_UTF = '\u25B2';
 			}
 		}
 	}

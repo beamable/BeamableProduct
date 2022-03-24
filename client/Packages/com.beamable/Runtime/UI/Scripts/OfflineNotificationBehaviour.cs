@@ -1,7 +1,5 @@
 ﻿using Beamable;
-using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class OfflineNotificationBehaviour : MonoBehaviour
@@ -10,7 +8,7 @@ public class OfflineNotificationBehaviour : MonoBehaviour
 	public GameObject message;
 	public GameObject wifiLostIcon;
 	public LayoutElement offlineObjectLayout;
-	private Beamable.IBeamableAPI _engineInstance;
+	private IBeamableAPI _engineInstance;
 
 	private async void Start()
 	{
