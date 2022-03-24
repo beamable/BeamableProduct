@@ -153,7 +153,7 @@ jobs:
           buildMethod: BuildSampleProject.Production
       
       - name: Lets take a look at directories
-        run: pwd && cd /github/workspace/dist/Android/ && ls
+        run: pwd && ls -lrt && cd /github/workspace/dist/Android/ && ls
 
       - uses: actions/upload-artifact@v2
         if: ${{ matrix.targetPlatform != 'WebGL' }}
