@@ -1,5 +1,3 @@
-
-
 using Beamable.Api.Sessions;
 using Beamable.Editor.Content;
 using UnityEditor;

@@ -1,21 +1,15 @@
-using Beamable.AccountManagement;
 using Beamable.Api;
 using Beamable.Api.Payments;
 using Beamable.Common;
 using Beamable.Common.Shop;
-using Beamable.Content;
-using Beamable.Platform.SDK;
 using Beamable.Shop.Defaults;
-using Beamable.Signals;
 using Beamable.UI.Layouts;
 using Beamable.UI.Scripts;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using TMPro;
 using UnityEngine;
-using Button = UnityEngine.UI.Button;
 using static Beamable.Common.Constants.URLs;
+using Button = UnityEngine.UI.Button;
 
 namespace Beamable.Shop
 {

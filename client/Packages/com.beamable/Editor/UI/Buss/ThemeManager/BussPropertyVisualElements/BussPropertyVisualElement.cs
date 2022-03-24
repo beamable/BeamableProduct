@@ -1,6 +1,8 @@
 ﻿using Beamable.Editor.UI.Common;
 using Beamable.UI.Buss;
 using System;
+using Beamable.Common;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -16,6 +18,7 @@ namespace Beamable.Editor.UI.Components
 	{
 		public Action OnValueChanged;
 		public BussStyleSheet UpdatedStyleSheet;
+		protected bool IsTriggeringStyleSheetChange { get; private set; }
 
 		public abstract IBussProperty BaseProperty
 		{
@@ -35,11 +38,20 @@ namespace Beamable.Editor.UI.Components
 
 		protected void TriggerStyleSheetChange()
 		{
-			OnValueChanged?.Invoke();
-			if (UpdatedStyleSheet != null)
+			IsTriggeringStyleSheetChange = true;
+			try
 			{
-				UpdatedStyleSheet.TriggerChange();
+				OnValueChanged?.Invoke();
+				if (UpdatedStyleSheet != null)
+				{
+					UpdatedStyleSheet.TriggerChange();
+				}
 			}
+			catch (Exception e)
+			{
+				BeamableLogger.LogException(e);
+			}
+			IsTriggeringStyleSheetChange = false;
 		}
 	}
 

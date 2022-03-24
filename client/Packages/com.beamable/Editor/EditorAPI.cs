@@ -3,6 +3,7 @@ using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
 using Beamable.Config;
+using Beamable.Editor.Alias;
 using Beamable.Editor.Config;
 using Beamable.Editor.Content;
 using Beamable.Editor.Modules.Account;
@@ -15,10 +16,9 @@ using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.VersionControl;
 using UnityEngine;
-using Task = System.Threading.Tasks.Task;
 using static Beamable.Common.Constants;
 using static Beamable.Common.Constants.MenuItems.Windows;
-
+using Task = System.Threading.Tasks.Task;
 namespace Beamable.Editor
 {
 
@@ -52,17 +52,23 @@ namespace Beamable.Editor
 		public ContentIO ContentIO;
 		public ContentPublisher ContentPublisher;
 		public RealmsService RealmService;
+		public IAliasService AliasService;
+
 		public event Action<EditorUser> OnUserChange;
 		public event Action<RealmView> OnRealmChange;
 
 		public event Action<CustomerView> OnCustomerChange;
 
 		// Info
-		private string _cidOrAlias;
-		public string CidOrAlias
+		private string _alias;
+		public string Alias
 		{
-			get => _cidOrAlias;
-			private set => _cidOrAlias = value;
+			get => _alias;
+			private set
+			{
+				AliasHelper.ValidateAlias(value);
+				_alias = value;
+			}
 		}
 
 		public string Cid => _requester.Cid;
@@ -85,12 +91,12 @@ namespace Beamable.Editor
 
 		public bool HasConfiguration { get; private set; }
 		public bool HasToken => Token != null;
-		public bool HasCustomer => !string.IsNullOrEmpty(CidOrAlias);
+		public bool HasCustomer => !string.IsNullOrEmpty(Cid);
 		public bool HasRealm => !string.IsNullOrEmpty(Pid);
 
 		private Promise<EditorAPI> Initialize()
 		{
-			// Apply the defined configuration for how users want to uncaught promises (with no .Error callback attached) in Beamable promises. 
+			// Apply the defined configuration for how users want to uncaught promises (with no .Error callback attached) in Beamable promises.
 			if (!Application.isPlaying)
 			{
 				var promiseHandlerConfig = CoreConfiguration.Instance.DefaultUncaughtPromiseHandlerConfiguration;
@@ -124,6 +130,7 @@ namespace Beamable.Editor
 			ContentIO = new ContentIO(_requester);
 			ContentPublisher = new ContentPublisher(_requester, ContentIO);
 			RealmService = new RealmsService(_requester, this);
+			AliasService = new AliasService(_requester);
 
 			HasConfiguration = ConfigDatabase.HasConfigFile(ConfigDatabase.GetConfigFileName());
 
@@ -145,9 +152,9 @@ namespace Beamable.Editor
 			var cid = ConfigDatabase.GetString("cid");
 			var pid = ConfigDatabase.GetString("pid");
 			var platform = ConfigDatabase.GetString("platform");
-			CidOrAlias = alias ?? cid;
+			Alias = alias;
 
-			if (string.IsNullOrEmpty(CidOrAlias)) // with no cid, we cannot be logged in.
+			if (string.IsNullOrEmpty(cid)) // with no cid, we cannot be logged in.
 			{
 				return Reset();
 			}
@@ -155,7 +162,7 @@ namespace Beamable.Editor
 			ApplyConfig(alias, cid, pid, platform);
 			BeamableFacebookImporter.SetFlag();
 
-			return _accessTokenStorage.LoadTokenForCustomer(CidOrAlias).FlatMap(token =>
+			return _accessTokenStorage.LoadTokenForCustomer(Cid).FlatMap(token =>
 			{
 				if (token == null)
 				{
@@ -215,28 +222,33 @@ namespace Beamable.Editor
 		{
 			return AuthService.Login(email, password, customerScoped: true).FlatMap(tokenRes =>
 			{
-				var token = new AccessToken(_accessTokenStorage, CidOrAlias, null, tokenRes.access_token, tokenRes.refresh_token, tokenRes.expires_in);
+				var token = new AccessToken(_accessTokenStorage, Cid, null, tokenRes.access_token, tokenRes.refresh_token, tokenRes.expires_in);
 
 				// use this token.
 				return ApplyToken(token);
 			});
 		}
 
-		public Promise<Unit> LoginCustomer(string cid, string email, string password)
+		public async Promise<Unit> LoginCustomer(string aliasOrCid, string email, string password)
 		{
+			var res = await AliasService.Resolve(aliasOrCid);
+			var alias = res.Alias.GetOrElse("");
+			var cid = res.Cid.GetOrThrow();
+
 			// Set the config defaults to reflect the new Customer.
-			SaveConfig(cid, null, BeamableEnvironment.ApiUrl);
+			SaveConfig(alias, null, BeamableEnvironment.ApiUrl, cid);
 
 			// Attempt to get an access token.
-			return Login(email, password);
+			return await Login(email, password);
 		}
 
 		public Promise<Unit> CreateCustomer(string alias, string gameName, string email, string password)
 		{
 
-			async Task HandleNewCustomerAndUser(TokenResponse token, string pid)
+			async Task HandleNewCustomerAndUser(TokenResponse token, string cid, string pid)
 			{
-				SaveConfig(alias, pid);
+				SaveConfig(alias, pid, null, cid);
+
 				await Login(token);
 				await DoSilentContentPublish(true);
 			}
@@ -245,7 +257,7 @@ namespace Beamable.Editor
 			SaveConfig(null, null);
 			return AuthService.RegisterCustomer(email, password, gameName, customerName, alias).FlatMap(res =>
 			{
-				var task = HandleNewCustomerAndUser(res.token, res.pid);
+				var task = HandleNewCustomerAndUser(res.token, res.cid.ToString(), res.pid);
 				var promise = new Promise<Unit>();
 				task.ContinueWith(_ =>
 				{
@@ -256,23 +268,31 @@ namespace Beamable.Editor
 			});
 		}
 
-		public Promise<Unit> CreateUser(string cid, string customerEmail, string customerPassword)
+		public async Promise<Unit> CreateUser(string aliasOrCid, string customerEmail, string customerPassword)
 		{
-			SaveConfig(cid, null, BeamableEnvironment.ApiUrl);
+			var res = await AliasService.Resolve(aliasOrCid);
+			var alias = res.Alias.GetOrElse("");
+			var cid = res.Cid.GetOrThrow();
 
-			return AuthService.CreateUser().FlatMap(newToken =>
+			SaveConfig(alias, null, BeamableEnvironment.ApiUrl, cid);
+
+			return await AuthService.CreateUser().FlatMap(newToken =>
 			{
-				var token = new AccessToken(_accessTokenStorage, CidOrAlias, Pid, newToken.access_token,
+				var token = new AccessToken(_accessTokenStorage, Alias, Pid, newToken.access_token,
 				newToken.refresh_token, newToken.expires_in);
 				_requester.Token = token;
 				return AuthService.RegisterDBCredentials(customerEmail, customerPassword).FlatMap(user => Login(token).ToUnit());
 			});
 		}
 
-		public Promise<Unit> SendPasswordReset(string cid, string email)
+		public async Promise<Unit> SendPasswordReset(string cidOrAlias, string email)
 		{
-			SaveConfig(cid, null, BeamableEnvironment.ApiUrl);
-			return AuthService.IssuePasswordUpdate(email).ToUnit();
+			var res = await AliasService.Resolve(cidOrAlias);
+			var alias = res.Alias.GetOrElse("");
+			var cid = res.Cid.GetOrThrow();
+
+			SaveConfig(alias, null, BeamableEnvironment.ApiUrl, cid);
+			return await AuthService.IssuePasswordUpdate(email).ToUnit();
 		}
 
 		public Promise<Unit> SendPasswordResetCode(string code, string newPassword)
@@ -371,7 +391,7 @@ namespace Beamable.Editor
 				throw new Exception("Cannot switch to a realm with a null pid");
 			}
 
-			SaveConfig(CidOrAlias, pid, cid: game.Cid);
+			SaveConfig(Alias, pid, cid: game.Cid);
 
 			await ContentIO.FetchManifest();
 			var realms = await RealmService.GetRealms(game);
@@ -395,8 +415,11 @@ namespace Beamable.Editor
 			return SwitchRealm(realm.FindRoot(), realm?.Pid);
 		}
 
-		public void SaveConfig(string alias, string pid, string host = null, string cid = null, string containerPrefix = null)
+		public void SaveConfig(string alias, string pid, string host = null, string cid = "", string containerPrefix = null)
 		{
+			AliasHelper.ValidateAlias(alias);
+			AliasHelper.ValidateCid(cid);
+
 			if (string.IsNullOrEmpty(host))
 			{
 				host = BeamableEnvironment.ApiUrl;
@@ -404,8 +427,8 @@ namespace Beamable.Editor
 
 			var config = new ConfigData()
 			{
-				cid = cid ?? alias,
-				alias = alias ?? cid,
+				cid = cid,
+				alias = alias,
 				pid = pid,
 				platform = host,
 				socket = host,
@@ -444,12 +467,12 @@ namespace Beamable.Editor
 			}
 
 			HasConfiguration = true;
-			ApplyConfig(alias ?? cid, cid ?? alias, pid, host);
+			ApplyConfig(alias, cid, pid, host);
 		}
 
 		public Promise<EditorAPI> Login(TokenResponse tokenResponse)
 		{
-			var token = new AccessToken(_accessTokenStorage, CidOrAlias, Pid, tokenResponse.access_token,
+			var token = new AccessToken(_accessTokenStorage, Cid, Pid, tokenResponse.access_token,
 			   tokenResponse.refresh_token, tokenResponse.expires_in);
 			return Login(token);
 		}
@@ -501,7 +524,9 @@ namespace Beamable.Editor
 
 		private void ApplyConfig(string alias, string cid, string pid, string host)
 		{
-			CidOrAlias = alias;
+			AliasHelper.ValidateAlias(alias);
+			AliasHelper.ValidateCid(cid);
+			Alias = alias;
 			Pid = pid;
 			_requester.Cid = cid;
 			_requester.Pid = pid;

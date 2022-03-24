@@ -2,12 +2,9 @@
 using Beamable.Editor.UI.Common;
 using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
-using Beamable.Server.Editor;
-using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 using static Beamable.Common.Constants.Features.Services;
@@ -36,13 +33,15 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private const int MAX_NAME_LENGTH = 28;
 
+		private static readonly string[] ElementsToRemove = {
+			"collapseContainer", "statusIcon", "remoteStatusIcon", "moreBtn", "startBtn"
+		};
+
 		private TextField _nameTextField;
 		private Button _cancelBtn;
-		private Button _buildDropDownBtn;
 		private LabeledCheckboxVisualElement _checkbox;
 		private PrimaryButtonVisualElement _createBtn;
 		private VisualElement _logContainerElement;
-		private List<string> _servicesNames;
 		private VisualElement _rootVisualElement;
 
 
@@ -58,27 +57,26 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		protected virtual void QueryVisualElements()
 		{
-			_rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
-			Root.Q("dependentServicesContainer")?.RemoveFromHierarchy();
-			Root.Q("collapseContainer")?.RemoveFromHierarchy();
-			_cancelBtn = Root.Q<Button>("cancelBtn");
+			foreach (string element in ElementsToRemove)
+				Root.Q(element)?.RemoveFromHierarchy();
 
-			var stopButton = Root.Q<Button>("stopBtn");
-			stopButton.parent.Remove(stopButton);
+			_rootVisualElement = Root.Q<VisualElement>("mainVisualElement");
+			_cancelBtn = Root.Q<Button>("cancelBtn");
 			_createBtn = new PrimaryButtonVisualElement();
 			_cancelBtn.parent.Add(_createBtn);
 			_createBtn.Refresh();
 
-			_buildDropDownBtn = Root.Q<Button>("buildDropDown");
 			_checkbox = Root.Q<LabeledCheckboxVisualElement>("checkbox");
 			_logContainerElement = Root.Q<VisualElement>("logContainer");
 			_nameTextField = Root.Q<TextField>("microserviceNewTitle");
 			_nameTextField.SetValueWithoutNotify(NewServiceName);
 
-			_isNameValid = _nameTextField.AddErrorLabel("Name", PrimaryButtonVisualElement.IsValidClassName);
+			_isNameValid = _nameTextField.AddErrorLabel("Name", PrimaryButtonVisualElement.IsValidClassName, .01);
 			_isNameSizedRight = _nameTextField.AddErrorLabel(
-				"Length", txt => PrimaryButtonVisualElement.IsBetweenCharLength(txt, MAX_NAME_LENGTH));
+				"Length", txt => PrimaryButtonVisualElement.IsBetweenCharLength(txt, MAX_NAME_LENGTH), .01);
 			_createBtn.AddGateKeeper(_isNameValid);
+
+			Root.Q("foldContainer").visible = false;
 		}
 		private void InjectStyleSheets()
 		{
@@ -88,8 +86,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		protected virtual void UpdateVisualElements()
 		{
-			_servicesNames = MicroservicesDataModel.Instance.AllLocalServices.Select(x => x.Descriptor.Name).ToList();
-
 			ShowServiceCreateDependentService();
 			_nameTextField.maxLength = MAX_NAME_LENGTH;
 			_nameTextField.RegisterCallback<FocusEvent>(HandleNameLabelFocus, TrickleDown.TrickleDown);
@@ -99,7 +95,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 			_createBtn.SetText("Create");
 			_createBtn.Button.clickable.clicked += HandleContinueButtonClicked;
 
-			_buildDropDownBtn.RemoveFromHierarchy();
 
 			_checkbox.Refresh();
 			_checkbox.SetWithoutNotify(false);
@@ -121,6 +116,10 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private void HandleContinueButtonClicked()
 		{
+			if (!_createBtn.CheckGateKeepers())
+			{
+				return;
+			}
 			var additionalReferences = _serviceCreateDependentService?.GetReferences();
 			_createBtn.SetText("Creating...");
 			_createBtn.Load(new Promise()); // spin forever, because a re-compile will save us!
