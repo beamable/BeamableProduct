@@ -288,6 +288,7 @@ namespace Beamable.Server.Editor
 			{
 				var assemblyDefPath = AssetDatabase.GUIDToAssetPath(assemblyDefGuid);
 				var assemblyDef = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(assemblyDefPath);
+				if (assemblyDef == null) continue;
 				yield return assemblyDef;
 			}
 		}

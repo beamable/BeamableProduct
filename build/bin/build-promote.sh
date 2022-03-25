@@ -10,7 +10,7 @@ docker-compose --no-ansi -f docker/package.com.beamable.server/docker-compose.ym
 docker-compose --no-ansi -f docker/package.com.beamable.server/docker-compose.yml down # TODO: Ensure that this down command executes
 
 echo "Starting Microservice dependencies..."
-docker-compose --no-ansi -f docker/image.microservice/docker-compose.yml up --build --exit-code-from microservice
+docker-compose --no-ansi -f docker/image.microservice/docker-compose.yml up --build --pull --exit-code-from microservice
 docker-compose --no-ansi -f docker/image.microservice/docker-compose.yml down # TODO: Ensure that this down command executes
 
 export BEAMSERVICE_TAG=${ENVIRONMENT}_${VERSION:-0.0.0}
