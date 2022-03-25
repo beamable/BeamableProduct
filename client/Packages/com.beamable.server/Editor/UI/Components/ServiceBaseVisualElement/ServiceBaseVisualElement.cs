@@ -107,7 +107,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 			Model.OnStart += SetupProgressBarForStart;
 			Model.OnStop -= SetupProgressBarForStop;
 			Model.OnStop += SetupProgressBarForStop;
-			
+
 			var manipulator = new ContextualMenuManipulator(Model.PopulateMoreDropdown);
 			manipulator.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
 			_moreBtn.clickable.activators.Clear();
@@ -158,6 +158,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 		protected void UpdateLocalStatusIcon(bool isRunning, bool isBuilding)
 		{
 			_statusIcon.ClearClassList();
+			// _header.EnableInClassList("building", isBuilding);
 
 			string statusClassName;
 			string statusText;
@@ -179,14 +180,14 @@ namespace Beamable.Editor.Microservice.UI.Components
 					statusClassName = "localStopped";
 					break;
 				default:
-					statusText =  Tooltips.Microservice.ICON_DIFFERENT;
+					statusText = Tooltips.Microservice.ICON_DIFFERENT;
 					statusClassName = "different";
 					break;
 			}
 
 			_statusIcon.tooltip = statusText;
 			_statusIcon.AddToClassList(statusClassName);
-			_startButton.EnableInClassList("running", !isBuilding && isRunning);
+			_startButton.EnableInClassList("running", isBuilding || isRunning);
 		}
 		private void OnDrag(float value)
 		{
@@ -266,7 +267,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		protected virtual void SetupProgressBarForStop(Task task)
 		{
-			new StopImageLogParser(_loadingBar, Model) { OnFailure = OnStopFailed };
+			var parser = new StopImageLogParser(_loadingBar, Model) { OnFailure = OnStopFailed };
+			task?.ContinueWith(_ =>
+			{
+				_loadingBar.Hidden = true;
+				parser.Kill();
+			});
 		}
 		private void OnStopFailed()
 		{
