@@ -19,49 +19,42 @@ namespace Beamable.Editor.Content
 
 		public void Initialize()
 		{
-			EditorAPI.Instance.Then(de =>
+			var de = BeamEditorContext.Default;
+			Model.ContentIO = de.ContentIO;
+
+			Model.UserCanPublish = de.CurrentUser?.CanPushContent ?? false;
+			de.OnUserChange -= HandleOnUserChanged;
+			de.OnUserChange += HandleOnUserChanged;
+
+			var localManifest = de.ContentIO.BuildLocalManifest();
+			Model.SetLocalContent(localManifest);
+			de.ContentIO.OnManifest.Then(manifest =>
 			{
-				Model.ContentIO = de.ContentIO;
-
-				Model.UserCanPublish = de.User?.CanPushContent ?? false;
-				EditorAPI.Instance.Then(b =>
-			 {
-				 b.OnUserChange -= HandleOnUserChanged;
-				 b.OnUserChange += HandleOnUserChanged;
-			 });
-
-				var localManifest = de.ContentIO.BuildLocalManifest();
-				Model.SetLocalContent(localManifest);
-				de.ContentIO.OnManifest.Then(manifest =>
-			 {
-				 Model.SetServerContent(manifest);
-			 });
-
-				Model.OnSoftReset += () =>
-			 {
-				 var nextLocalManifest = de.ContentIO.BuildLocalManifest();
-				 Model.SetLocalContent(nextLocalManifest);
-				 RefreshServer();
-			 };
-
-				Model.SetContentTypes(ContentRegistry.GetAll().ToList());
-
-				ValidateContent(null, null); // start a validation in the background.
-
-				ContentIO.OnContentCreated += ContentIO_OnContentCreated;
-				ContentIO.OnContentDeleted += ContentIO_OnContentDeleted;
-				ContentIO.OnContentRenamed += ContentIO_OnContentRenamed;
+				Model.SetServerContent(manifest);
 			});
+
+			Model.OnSoftReset += () =>
+			{
+				var nextLocalManifest = de.ContentIO.BuildLocalManifest();
+				Model.SetLocalContent(nextLocalManifest);
+				RefreshServer();
+			};
+
+			Model.SetContentTypes(ContentRegistry.GetAll().ToList());
+
+			ValidateContent(null, null); // start a validation in the background.
+
+			ContentIO.OnContentCreated += ContentIO_OnContentCreated;
+			ContentIO.OnContentDeleted += ContentIO_OnContentDeleted;
+			ContentIO.OnContentRenamed += ContentIO_OnContentRenamed;
 		}
 
 		public void RefreshServer()
 		{
-			EditorAPI.Instance.Then(de =>
+			var de = BeamEditorContext.Default;
+			de.ContentIO.FetchManifest().Then(manifest =>
 			{
-				de.ContentIO.FetchManifest().Then(manifest =>
-			 {
-				 Model.SetServerContent(manifest);
-			 });
+				Model.SetServerContent(manifest);
 			});
 		}
 
@@ -92,46 +85,40 @@ namespace Beamable.Editor.Content
 
 		public Promise<List<ContentExceptionCollection>> ValidateContent(HandleContentProgress progressHandler, HandleValidationErrors errorHandler)
 		{
-			return EditorAPI.Instance.FlatMap(de =>
-			{
-				var contentValidator = new ContentValidator(de.ContentIO);
-				var ctx = de.ContentIO.GetValidationContext();
-				ContentObject.ValidationContext = ctx;
-				var promise = contentValidator.Validate(ctx, Model.TotalContentCount, Model.GetAllContents(), progressHandler, errorHandler);
-				return promise;
-			});
+			var de = BeamEditorContext.Default;
+			var contentValidator = new ContentValidator(de.ContentIO);
+			var ctx = de.ContentIO.GetValidationContext();
+			ContentObject.ValidationContext = ctx;
+			var promise = contentValidator.Validate(ctx, Model.TotalContentCount, Model.GetAllContents(), progressHandler, errorHandler);
+			return promise;
 		}
 
 		public Promise<Unit> PublishContent(ContentPublishSet publishSet, HandleContentProgress progressHandler, HandleDownloadFinished finishedHandler)
 		{
-			return EditorAPI.Instance.FlatMap(de =>
+			var de = BeamEditorContext.Default;
+			var promise = de.ServiceScope.GetService<ContentPublisher>().Publish(publishSet, progress =>
 			{
-				var promise = de.ContentPublisher.Publish(publishSet, progress =>
-			 {
-				 progressHandler?.Invoke(progress.Progress, progress.CompletedOperations, progress.TotalOperations);
-			 });
-
-				finishedHandler?.Invoke(promise);
-				return promise.Map(_ =>
-			 {
-				 de.ContentIO.FetchManifest();
-				 return _;
-			 });
+				progressHandler?.Invoke(progress.Progress, progress.CompletedOperations, progress.TotalOperations);
 			});
-		}
 
+			finishedHandler?.Invoke(promise);
+			return promise.Map(_ =>
+			{
+				de.ContentIO.FetchManifest();
+				return _;
+			});
+			
+		}
 
 		public Promise<Unit> DownloadContent(DownloadSummary summary, HandleContentProgress progressHandler, HandleDownloadFinished finishedHandler)
 		{
-			return EditorAPI.Instance.FlatMap(de =>
-			{
-				var contentDownloader = new ContentDownloader(de.Requester, de.ContentIO);
-				//Disallow updating anything while importing / refreshing
-				var downloadPromise = contentDownloader.Download(summary, progressHandler);
+			var de = BeamEditorContext.Default;
+			var contentDownloader = new ContentDownloader(de.Requester, de.ContentIO);
+			//Disallow updating anything while importing / refreshing
+			var downloadPromise = contentDownloader.Download(summary, progressHandler);
 
-				finishedHandler?.Invoke(downloadPromise);
-				return downloadPromise;
-			});
+			finishedHandler?.Invoke(downloadPromise);
+			return downloadPromise;
 		}
 
 		/// <summary>
@@ -173,34 +160,29 @@ namespace Beamable.Editor.Content
 		public Promise<DownloadSummary> PrepareDownloadSummary(params ContentItemDescriptor[] filter)
 		{
 			// no matter what, we always want a fresh manifest locally and from the server.
-			return EditorAPI.Instance.FlatMap(de =>
+			var de = BeamEditorContext.Default;
+			return de.ContentIO.FetchManifest().Map(serverManifest =>
 			{
-				return de.ContentIO.FetchManifest().Map(serverManifest =>
-			 {
-				 var localManifest = de.ContentIO.BuildLocalManifest();
+				var localManifest = de.ContentIO.BuildLocalManifest();
 
-
-
-				 return new DownloadSummary(de.ContentIO, localManifest, serverManifest, filter.Select(x => x.Id).ToArray());
-			 });
+				return new DownloadSummary(de.ContentIO, localManifest, serverManifest, filter.Select(x => x.Id).ToArray());
 			});
 		}
 
 		public Promise<DownloadSummary> PrepareDownloadSummary(string[] ids)
 		{
-			return EditorAPI.Instance.FlatMap(de =>
+			var de = BeamEditorContext.Default;
+			return de.ContentIO.FetchManifest().Map(serverManifest =>
 			{
-				return de.ContentIO.FetchManifest().Map(serverManifest =>
-				{
-					var localManifest = de.ContentIO.BuildLocalManifest();
-					return new DownloadSummary(de.ContentIO, localManifest, serverManifest, ids);
-				});
+				var localManifest = de.ContentIO.BuildLocalManifest();
+				return new DownloadSummary(de.ContentIO, localManifest, serverManifest, ids);
 			});
 		}
 
 		public void Destroy()
 		{
-			EditorAPI.Instance.Then(b => b.OnUserChange -= HandleOnUserChanged);
+			var b = BeamEditorContext.Default;
+			b.OnUserChange -= HandleOnUserChanged;
 			ContentIO.OnContentCreated -= ContentIO_OnContentCreated;
 			ContentIO.OnContentDeleted -= ContentIO_OnContentDeleted;
 			ContentIO.OnContentRenamed -= ContentIO_OnContentRenamed;
@@ -214,10 +196,11 @@ namespace Beamable.Editor.Content
 		public Promise<ContentPublishSet> CreatePublishSet(bool newNamespace = false)
 		{
 			var manifestId = newNamespace
-			   ? Guid.NewGuid().ToString()
-			   : null;
-			return EditorAPI.Instance.FlatMap(de => de.ContentPublisher.CreatePublishSet(manifestId));
+				? Guid.NewGuid().ToString()
+				: null;
 
+			var de = BeamEditorContext.Default;
+			return de.ServiceScope.GetService<ContentPublisher>().CreatePublishSet(manifestId);
 		}
 	}
 }

@@ -95,7 +95,9 @@ namespace Beamable.Server.Editor.Uploader
 					tar.ExtractContents(folder);
 				}
 
-				var beamable = await EditorAPI.Instance;
+				var beamable = BeamEditorContext.Default; 
+				await beamable.InitializePromise;
+				
 				var uploader = new ContainerUploader(beamable, this, descriptor, imageId);
 				await uploader.Upload(folder, token);
 

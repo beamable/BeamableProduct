@@ -13,10 +13,10 @@ namespace Beamable.Editor.ToolbarExtender
 	[CreateAssetMenu(menuName = "Beamable/Assistant/Sample Toolbar Button", fileName = "SampleBeamableButton", order = MENU_ITEM_PATH_ASSETS_BEAMABLE_ORDER_LAST)]
 	public class SampleBeamableButton : BeamableToolbarButton
 	{
-		public override bool ShouldDisplayButton(EditorAPI editorAPI) => editorAPI.HasCustomer;
-		public override void OnButtonClicked(EditorAPI editorAPI) => BeamableLogger.Log($"I'm a working beamable button for customer: {editorAPI.User.email}");
+		public override bool ShouldDisplayButton(BeamEditorContext editorAPI) => editorAPI.HasCustomer;
+		public override void OnButtonClicked(BeamEditorContext editorAPI) => BeamableLogger.Log($"I'm a working beamable button for customer: {editorAPI.CurrentUser.email}");
 
-		public override GenericMenu GetDropdownOptions(EditorAPI editorAPI)
+		public override GenericMenu GetDropdownOptions(BeamEditorContext editorAPI)
 		{
 			GenericMenu menu = new GenericMenu();
 			menu.AddItem(new GUIContent("Open Beamable Assistant 😃"), false, () => BeamableAssistantWindow.ShowWindow());

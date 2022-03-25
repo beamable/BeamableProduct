@@ -1,3 +1,4 @@
+using Beamable.Api;
 using Beamable.Common.Content;
 using Beamable.Config;
 using Beamable.Editor;
@@ -181,9 +182,12 @@ namespace Beamable.Server.Editor
 			{
 				_cachedContainerPrefix = CustomContainerPrefix;
 				ConfigDatabase.SetString("containerPrefix", _cachedContainerPrefix, true, true);
-				EditorApplication.delayCall += () => // using delayCall to avoid Unity warning about sending messages from OnValidate()
-				   EditorAPI.Instance.Then(api => api.SaveConfig(
-					  api.Alias, api.Pid, api.Host, api.Cid, CustomContainerPrefix));
+				EditorApplication.delayCall += () =>
+				{
+					// using delayCall to avoid Unity warning about sending messages from OnValidate()
+					var api = BeamEditorContext.Default;
+					BeamEditorContext.Default.SaveConfig(api.CurrentCustomer.Alias, api.CurrentRealm.Pid, api.ServiceScope.GetService<PlatformRequester>().Host, api.CurrentCustomer.Cid, CustomContainerPrefix);
+				};
 			}
 
 			if (_dockerCommandCached != DockerCommand || _dockerCheckCached != DockerDesktopCheckInMicroservicesWindow)

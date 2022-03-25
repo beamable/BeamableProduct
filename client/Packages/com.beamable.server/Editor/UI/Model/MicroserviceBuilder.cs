@@ -62,9 +62,10 @@ namespace Beamable.Editor.UI.Model
 
 		protected override async Task<RunImageCommand> PrepareRunCommand()
 		{
-			var beamable = await EditorAPI.Instance;
+			var beamable = BeamEditorContext.Default; 
+			await beamable.InitializePromise;
 			var secret = await beamable.GetRealmSecret();
-			var cid = beamable.CustomerView.Cid;
+			var cid = beamable.CurrentCustomer.Cid;
 			// check to see if the storage descriptor is running.
 			var serviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
 			var isWatch = MicroserviceConfiguration.Instance.EnableHotModuleReload;

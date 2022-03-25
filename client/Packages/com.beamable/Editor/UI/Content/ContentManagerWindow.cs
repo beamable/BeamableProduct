@@ -87,12 +87,11 @@ namespace Beamable.Editor.Content
 		private void OnEnable()
 		{
 			// Refresh if/when the user logs-in or logs-out while this window is open
-			EditorAPI.Instance.Then(de =>
-			{
-				de.OnUserChange += HandleUserChange;
-				de.OnRealmChange += HandleRealmChange;
-				ContentIO.OnManifestChanged += OnManifestChanged;
-			});
+			var de = BeamEditorContext.Default;
+			de.OnUserChange += HandleUserChange;
+			de.OnRealmChange += HandleRealmChange;
+			ContentIO.OnManifestChanged += OnManifestChanged;
+			
 			minSize = new Vector2(560, 300);
 
 			// Force refresh to build the initial window
@@ -101,12 +100,10 @@ namespace Beamable.Editor.Content
 
 		private void OnDisable()
 		{
-			EditorAPI.Instance.Then(de =>
-			{
-				de.OnUserChange -= HandleUserChange;
-				de.OnRealmChange -= HandleRealmChange;
-				ContentIO.OnManifestChanged -= OnManifestChanged;
-			});
+			var de = BeamEditorContext.Default;
+			de.OnUserChange -= HandleUserChange;
+			de.OnRealmChange -= HandleRealmChange;
+			ContentIO.OnManifestChanged -= OnManifestChanged;
 		}
 
 		private void HandleRealmChange(RealmView realm)
@@ -126,14 +123,11 @@ namespace Beamable.Editor.Content
 
 		public void Refresh()
 		{
-			EditorAPI.Instance.Then(beamable =>
-			{
-				var isLoggedIn = beamable.HasToken;
-				if (!isLoggedIn)
-				{
-					Debug.LogWarning("You are accessing the Beamable Content Manager, but you are not logged in. You may see out of sync data.");
-				}
-			});
+			var beamable = BeamEditorContext.Default;
+			var isLoggedIn = beamable.HasToken;
+			if (!isLoggedIn) 
+				Debug.LogWarning("You are accessing the Beamable Content Manager, but you are not logged in. You may see out of sync data.");
+
 			SetForContent();
 		}
 
@@ -498,14 +492,13 @@ namespace Beamable.Editor.Content
 			{
 				if (createNewManifest)
 				{
-					EditorAPI.Instance.Then(api =>
+					var api = BeamEditorContext.Default;
+					api.ContentIO.SwitchManifest(publishPopup.ManifestName).Then(_ =>
 					{
-						api.ContentIO.SwitchManifest(publishPopup.ManifestName).Then(_ =>
-						{
-							set.ManifestId = publishPopup.ManifestName;
-							Instance._contentManager?.PublishContent(set, prog, finished).Then(__ => SoftReset());
-						});
+						set.ManifestId = publishPopup.ManifestName;
+						Instance._contentManager?.PublishContent(set, prog, finished).Then(__ => SoftReset());
 					});
+					
 				}
 				else
 				{

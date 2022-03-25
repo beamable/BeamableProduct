@@ -236,27 +236,21 @@ namespace Beamable.Editor.Microservice.UI
 
 		private void OnEnable()
 		{
-			// if BeamEditor is not initialized, schedule a delay call to try again.
-			if (!BeamEditor.IsInitialized || !MicroserviceEditor.IsInitialized)
+			void InitializeView()
 			{
-				EditorApplication.delayCall += () =>
+				if (!BeamEditor.IsInitialized || !MicroserviceEditor.IsInitialized)
 				{
-					EditorAPI.Instance.Then(api =>
-					{
-						SetMinSize();
-						CreateModel();
-						SetForContent();
-					});
-				};
-				return;
-			}
+					EditorApplication.delayCall += InitializeView;
+					return;
+				}
 
-			EditorAPI.Instance.Then(api =>
-			{
 				SetMinSize();
 				CreateModel();
 				SetForContent();
-			});
+			}
+			
+			// if BeamEditor is not initialized, schedule a delay call to try again.
+			InitializeView(); 
 		}
 
 		private void HandleDeploySuccess(ManifestModel _model, int _totalSteps)

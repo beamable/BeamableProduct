@@ -72,7 +72,9 @@ namespace Beamable.Editor.Toolbox.UI
 			minSize = new Vector2(560, 300);
 
 			// Refresh if/when the user logs-in or logs-out while this window is open
-			EditorAPI.Instance.Then(de => { de.OnUserChange += _ => Refresh(); });
+			var de = BeamEditorContext.Default;
+			de.OnUserChange += _ => Refresh();
+			
 			// Force refresh to build the initial window
 			Refresh();
 
@@ -107,8 +109,11 @@ namespace Beamable.Editor.Toolbox.UI
 			Instance._model = new ToolboxModel();
 			Instance._model.UseDefaultWidgetSource();
 			Instance._model.Initialize();
-			var de = await EditorAPI.Instance;
-			var isLoggedIn = de.User != null;
+
+			var de = BeamEditorContext.Default; 
+			await de.InitializePromise;
+			
+			var isLoggedIn = de.CurrentUser != null;
 			if (isLoggedIn)
 			{
 				SetForContent();
@@ -173,56 +178,52 @@ namespace Beamable.Editor.Toolbox.UI
 				return;
 			}
 
-			EditorAPI.Instance.Then(api =>
+			if (BeamEditorContext.HasDependencies() || _model.IsSpecificAnnouncementCurrentlyDisplaying(typeof(WelcomeAnnouncementModel)))
+				return;
+
+			var descriptionElement = new VisualElement();
+			descriptionElement.AddToClassList("announcement-descriptionSection");
+
+			var label = new Label("Welcome to Beamable! This package includes official Unity assets");
+			label.AddToClassList("noMarginNoPaddingNoBorder");
+			label.AddToClassList("announcement-text");
+			label.AddTextWrapStyle();
+			descriptionElement.Add(label);
+
+			var button = new Button(() => Application.OpenURL("https://docs.unity3d.com/Manual/com.unity.textmeshpro.html"));
+			button.text = "TextMeshPro";
+			button.AddToClassList("noMarginNoPaddingNoBorder");
+			button.AddToClassList("announcement-hiddenButton");
+			descriptionElement.Add(button);
+
+			label = new Label("and");
+			label.AddToClassList("noMarginNoPaddingNoBorder");
+			label.AddToClassList("announcement-text");
+			label.AddTextWrapStyle();
+			descriptionElement.Add(label);
+
+			button = new Button(() => Application.OpenURL("https://docs.unity3d.com/Manual/com.unity.addressables.html"));
+			button.text = "Addressables";
+			button.AddToClassList("noMarginNoPaddingNoBorder");
+			button.AddToClassList("announcement-hiddenButton");
+			descriptionElement.Add(button);
+
+			label = new Label("in order to provide UI prefabs you can easily drag & drop into your game. To complete the installation, we must add them to your project now.");
+			label.AddToClassList("noMarginNoPaddingNoBorder");
+			label.AddToClassList("announcement-text");
+			label.AddTextWrapStyle();
+			descriptionElement.Add(label);
+
+			var welcomeAnnouncement = new WelcomeAnnouncementModel();
+			welcomeAnnouncement.DescriptionElement = descriptionElement;
+
+			welcomeAnnouncement.OnImport = () =>
 			{
-				if (api.HasDependencies() ||
-					_model.IsSpecificAnnouncementCurrentlyDisplaying(typeof(WelcomeAnnouncementModel)))
-				{
-					return;
-				}
-
-				var descriptionElement = new VisualElement();
-				descriptionElement.AddToClassList("announcement-descriptionSection");
-
-				var label = new Label("Welcome to Beamable! This package includes official Unity assets");
-				label.AddToClassList("noMarginNoPaddingNoBorder");
-				label.AddToClassList("announcement-text");
-				label.AddTextWrapStyle();
-				descriptionElement.Add(label);
-
-				var button = new Button(() => Application.OpenURL("https://docs.unity3d.com/Manual/com.unity.textmeshpro.html"));
-				button.text = "TextMeshPro";
-				button.AddToClassList("noMarginNoPaddingNoBorder");
-				button.AddToClassList("announcement-hiddenButton");
-				descriptionElement.Add(button);
-
-				label = new Label("and");
-				label.AddToClassList("noMarginNoPaddingNoBorder");
-				label.AddToClassList("announcement-text");
-				label.AddTextWrapStyle();
-				descriptionElement.Add(label);
-
-				button = new Button(() => Application.OpenURL("https://docs.unity3d.com/Manual/com.unity.addressables.html"));
-				button.text = "Addressables";
-				button.AddToClassList("noMarginNoPaddingNoBorder");
-				button.AddToClassList("announcement-hiddenButton");
-				descriptionElement.Add(button);
-
-				label = new Label("in order to provide UI prefabs you can easily drag & drop into your game. To complete the installation, we must add them to your project now.");
-				label.AddToClassList("noMarginNoPaddingNoBorder");
-				label.AddToClassList("announcement-text");
-				label.AddTextWrapStyle();
-				descriptionElement.Add(label);
-
-				var welcomeAnnouncement = new WelcomeAnnouncementModel();
-				welcomeAnnouncement.DescriptionElement = descriptionElement;
-
-				welcomeAnnouncement.OnImport = () =>
-				{
-					api.CreateDependencies().Then(_ => { _model.RemoveAnnouncement(welcomeAnnouncement); });
-				};
-				_model.AddAnnouncement(welcomeAnnouncement);
-			});
+				var api = BeamEditorContext.Default;
+				api.CreateDependencies().Then(_ => { _model.RemoveAnnouncement(welcomeAnnouncement); });
+			};
+			_model.AddAnnouncement(welcomeAnnouncement);
+			
 		}
 		private void CheckForUpdate()
 		{
