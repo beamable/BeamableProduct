@@ -248,7 +248,7 @@ namespace Beamable.Api
 							   return Promise<T>.Failed(new NoConnectivityException(uri + " should not be cached and requires internet connectivity. Internet connection lost."));
 
 						   // if we get a 401 InvalidTokenError, let's refresh the token and retry the request.
-						   case PlatformRequesterException code when code?.Error?.error == "InvalidTokenError":
+						   case PlatformRequesterException code when code?.Error?.error == "InvalidTokenError" || code?.Error?.error == "ExpiredTokenError":
 							   Debug.LogError("Invalid token, trying again");
 							   return AuthService.LoginRefreshToken(Token.RefreshToken)
 							 .Map(rsp =>

@@ -46,9 +46,18 @@ StorageObjectVisualElement > TemplateContainer > #mainVisualElement {
     flex-direction: row;
     flex-grow: 1;
 }
-#logHeader > LabeledCheckboxVisualElement, #logHeader > .rightArea {
+#logHeader > .rightArea {
     margin-left: 10px;
     margin-right: 10px;
+}
+#logHeader > LabeledCheckboxVisualElement{
+    margin-right: 10px;
+    margin-left: 2px;
+}
+#logHeader > LabeledCheckboxVisualElement #icon {
+    margin-right: 6px;
+    width: 18px;
+    height: 18px;
 }
 
 StorageObjectVisualElement #logHeader > LabeledCheckboxVisualElement,
