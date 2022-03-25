@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.8]
+no changes
+
+## [1.0.7]
+This is a broken package. It includes changes from the 1.1.0 release. Please do not use this version.
+
 ## [1.0.6]
 no changes
 
