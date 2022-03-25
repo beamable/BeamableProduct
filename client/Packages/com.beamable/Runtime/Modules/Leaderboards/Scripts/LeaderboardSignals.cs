@@ -1,33 +1,82 @@
-﻿using Beamable.Signals;
+﻿using Beamable.Coroutines;
+using Beamable.Platform.SDK;
+using Beamable.Platform.SDK.Auth;
+using Beamable.Signals;
+using Beamable.UI;
+using Beamable.UI.Scripts;
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Security.Authentication;
+using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
+
+
 
 namespace Beamable.Leaderboards
+
 {
-	[Serializable] public class ToggleEvent : DeSignal<bool> { }
+
+	[System.Serializable]
+
+	public class ToggleEvent : DeSignal<bool>
+
+	{
+
+
+
+	}
 
 	public class LeaderboardSignals : DeSignalTower
+
 	{
-		[Header("Flow Events")] public ToggleEvent OnToggleLeaderboard;
-		public static bool ToggleState { get; private set; }
+
+		[Header("Flow Events")]
+
+		public ToggleEvent OnToggleLeaderboard;
+
+
+		private static bool _toggleState;
+
+
+		public static bool ToggleState => _toggleState;
+
 
 		private void Broadcast<TArg>(TArg arg, Func<LeaderboardSignals, DeSignal<TArg>> getter)
+
 		{
+
 			this.BroadcastSignal(arg, getter);
+
 		}
 
+
 		public void ToggleLeaderboard()
+
 		{
-			ToggleState = !ToggleState;
-			Broadcast(ToggleState, s => s.OnToggleLeaderboard);
+
+			_toggleState = !_toggleState;
+
+			Broadcast(_toggleState, s => s.OnToggleLeaderboard);
+
 		}
 
 		public void ToggleLeaderboard(bool desiredState)
-		{
-			if (desiredState == ToggleState) { return; }
 
-			ToggleState = desiredState;
-			Broadcast(ToggleState, s => s.OnToggleLeaderboard);
+		{
+
+			if (desiredState == ToggleState) return;
+
+
+
+			_toggleState = desiredState;
+
+			Broadcast(_toggleState, s => s.OnToggleLeaderboard);
+
 		}
 	}
 }
+

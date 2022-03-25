@@ -71,12 +71,6 @@ namespace Beamable.Server
             }
 
             var _ = beamableService.Start<TMicroService>(args);
-
-            if (args.WatchToken)
-            {
-                HotReloadMetadataUpdateHandler.ServicesToRebuild.Add(beamableService);
-            }
-
             beamableService.RunForever();
         }
     }

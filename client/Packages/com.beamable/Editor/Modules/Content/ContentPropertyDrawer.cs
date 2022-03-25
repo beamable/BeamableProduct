@@ -1,4 +1,6 @@
+
 using Beamable.Common.Content;
+using Beamable.Content;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,6 +8,7 @@ using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
+using Random = System.Random;
 
 namespace Beamable.Editor.Content
 {

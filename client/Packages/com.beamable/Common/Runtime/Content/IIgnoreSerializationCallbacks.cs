@@ -1,4 +1,6 @@
-﻿namespace Beamable.Content
+﻿using UnityEngine;
+
+namespace Beamable.Content
 {
 	public interface IIgnoreSerializationCallbacks { }
 }

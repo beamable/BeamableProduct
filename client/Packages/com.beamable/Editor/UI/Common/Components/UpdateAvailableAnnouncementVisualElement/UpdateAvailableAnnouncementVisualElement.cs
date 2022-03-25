@@ -9,7 +9,6 @@ using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
 using static Beamable.Common.Constants;
-
 namespace Beamable.Editor.Toolbox.Components
 {
 	public class UpdateAvailableAnnouncementVisualElement : BeamableVisualElement

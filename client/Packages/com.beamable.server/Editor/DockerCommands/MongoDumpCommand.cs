@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace Beamable.Server.Editor.DockerCommands
 {
 	public class MongoDumpCommand : DockerCommandReturnable<bool>

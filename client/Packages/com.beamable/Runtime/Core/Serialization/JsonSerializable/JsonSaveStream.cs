@@ -1,3 +1,4 @@
+using Beamable.Extensions;
 using Beamable.Pooling;
 using System;
 using System.Collections;

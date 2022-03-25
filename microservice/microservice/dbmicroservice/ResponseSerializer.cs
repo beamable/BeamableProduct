@@ -56,7 +56,7 @@ namespace Beamable.Server
                 };
 
 
-                if (result is string strResult)
+                if (result is string strResult && Json.IsValidJson(strResult))
                 {
                     response.body = new ClientResponse
                     {

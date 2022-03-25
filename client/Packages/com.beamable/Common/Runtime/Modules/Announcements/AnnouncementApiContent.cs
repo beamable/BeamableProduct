@@ -1,4 +1,5 @@
 using Beamable.Common.Content;
+using Beamable.Common.Content.Validation;
 using System;
 using System.Collections;
 using System.Collections.Generic;

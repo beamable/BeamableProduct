@@ -7,6 +7,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using UnityEngine;
 
 namespace Beamable.Common.Content
@@ -528,6 +530,26 @@ namespace Beamable.Common.Content
 
 				}
 			}
+
+			//         void Expand(object target, Type type)
+			//         {
+			//
+			//         }
+			//
+			//         foreach (var field in GetType().GetFields())
+			//         {
+			//            foreach (var attribute in field.GetCustomAttributes<ValidationAttribute>())
+			//            {
+			//               try
+			//               {
+			//                  attribute.Validate(field, this, ctx);
+			//               }
+			//               catch (ContentValidationException e)
+			//               {
+			//                  errors.Add(e);
+			//               }
+			//            }
+			//         }
 
 			return errors;
 		}

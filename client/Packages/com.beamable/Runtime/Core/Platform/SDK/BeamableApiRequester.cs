@@ -3,7 +3,7 @@ using Beamable.Api.Connectivity;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
-using Beamable.Common.Spew;
+using Beamable.Spew;
 using System;
 using System.Text;
 using UnityEngine;

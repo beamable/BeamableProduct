@@ -22,7 +22,7 @@ namespace Beamable.Platform.Tests
 		[SetUp]
 		public void Init()
 		{
-			_cid = "123";
+			_cid = "cid";
 			_pid = "pid";
 
 			_storage = new AccessTokenStorage(Prefix);

@@ -1,5 +1,6 @@
 using Beamable.Common.Content;
 using Beamable.Common.Inventory;
+using Beamable.Content;
 
 namespace Beamable.Platform.Tests.Inventory
 {

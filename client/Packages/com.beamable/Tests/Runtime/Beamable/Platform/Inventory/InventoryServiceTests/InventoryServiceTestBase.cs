@@ -1,8 +1,19 @@
+using Beamable.Api;
+using Beamable.Api.Connectivity;
 using Beamable.Api.Inventory;
 using Beamable.Api.Payments;
+using Beamable.Api.Sessions;
 using Beamable.Common;
+using Beamable.Common.Api;
+using Beamable.Common.Api.Auth;
 using Beamable.Common.Api.Content;
+using Beamable.Common.Api.Notifications;
+using Beamable.Common.Dependencies;
+using Beamable.Common.Inventory;
+using Beamable.Content;
+using Beamable.Coroutines;
 using Beamable.Platform.Tests.Content;
+using Beamable.Service;
 using Beamable.Tests.Runtime;
 using NUnit.Framework;
 

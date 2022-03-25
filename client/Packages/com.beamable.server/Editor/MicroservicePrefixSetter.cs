@@ -1,7 +1,7 @@
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor.DockerCommands;
-using System.Linq;
 using UnityEditor;
+using UnityEngine;
 using static Beamable.Common.Constants.Features.Services;
 
 namespace Beamable.Server.Editor
@@ -22,7 +22,7 @@ namespace Beamable.Server.Editor
 			try
 			{
 				var microserviceRegistry = BeamEditor.GetReflectionSystem<MicroserviceReflectionCache.Registry>();
-				foreach (var service in microserviceRegistry.Descriptors.ToList())
+				foreach (var service in microserviceRegistry.Descriptors)
 				{
 					var command = new CheckImageCommand(service)
 					{

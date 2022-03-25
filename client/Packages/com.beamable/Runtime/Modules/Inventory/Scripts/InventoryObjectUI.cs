@@ -1,3 +1,4 @@
+using Beamable.Api.Inventory;
 using Beamable.Common.Api.Inventory;
 using Beamable.UI.Scripts;
 using UnityEngine;

@@ -1,4 +1,6 @@
 using Beamable.Theme.Appliers;
+using Beamable.UI.Layouts;
+using System;
 using UnityEngine;
 
 namespace Beamable.Theme
@@ -65,5 +67,6 @@ namespace Beamable.Theme
          Refresh();
       }
 #endif
+
 	}
 }

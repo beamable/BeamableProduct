@@ -1,7 +1,12 @@
 using Beamable.Common;
 using Beamable.Common.Api.Auth;
+using Beamable.Platform.SDK;
+using Beamable.Platform.SDK.Auth;
+using Beamable.Service;
 using Beamable.UI.Scripts;
 using System;
+using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 namespace Beamable.Stats

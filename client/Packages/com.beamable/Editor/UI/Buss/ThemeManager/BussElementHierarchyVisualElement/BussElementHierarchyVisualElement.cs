@@ -3,7 +3,6 @@ using Beamable.UI.Buss;
 using System;
 using System.Collections.Generic;
 using UnityEditor;
-using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -25,16 +24,10 @@ namespace Beamable.Editor.UI.Components
 			get;
 		} = new List<BussStyleSheet>();
 
-		public void ForceRebuild(GameObject selectedGameObject = null)
+		public void ForceRebuild()
 		{
 			StyleSheets.Clear();
 			RefreshTree();
-
-			if (selectedGameObject != null)
-			{
-				Selection.activeGameObject = selectedGameObject;
-				OnSelectionChanged();
-			}
 		}
 
 		protected override string GetLabel(BussElement component)
@@ -133,11 +126,6 @@ namespace Beamable.Editor.UI.Components
 			{
 				bussElement.StyleSheetsChanged -= OnBussStyleSheetChange;
 			}
-		}
-
-		public void RefreshSelectedLabel()
-		{
-			SelectedLabel.RefreshLabel();
 		}
 	}
 }

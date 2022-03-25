@@ -1,9 +1,11 @@
-﻿using Beamable.Api.Inventory;
+﻿using Beamable.Api;
+using Beamable.Api.Inventory;
 using Beamable.Common;
 using Beamable.Common.Content;
 using Beamable.Common.Dependencies;
 using Beamable.ConsoleCommands;
 using Beamable.Content;
+using Beamable.Service;
 using System;
 using System.Collections.Generic;
 using System.Text;

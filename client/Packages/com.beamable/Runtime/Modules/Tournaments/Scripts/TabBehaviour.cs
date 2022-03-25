@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -7,7 +8,7 @@ using UnityEngine.UI;
 
 namespace Beamable.Tournaments
 {
-	[Serializable]
+	[System.Serializable]
 	public struct TabData
 	{
 		public Sprite Sprite;
@@ -16,7 +17,7 @@ namespace Beamable.Tournaments
 		public Material Material;
 	}
 
-	[Serializable]
+	[System.Serializable]
 	public struct TabCollection
 	{
 		public Image Image;
@@ -25,14 +26,14 @@ namespace Beamable.Tournaments
 		public TabData Active, Inactive;
 	}
 
-	[Serializable]
+	[System.Serializable]
 	public class TabChangeEventArgs
 	{
 		public TabCollection Tab;
 		public int index;
 	}
 
-	[Serializable]
+	[System.Serializable]
 	public class TabChangeEvent : UnityEvent<TabChangeEventArgs> { }
 
 	public class TabBehaviour : MonoBehaviour
@@ -56,6 +57,7 @@ namespace Beamable.Tournaments
 		private void OnEnable()
 		{
 			SetActiveTab(_activeTabIndex);
+
 		}
 
 
@@ -78,6 +80,8 @@ namespace Beamable.Tournaments
 				index = index
 			};
 			OnActive?.Invoke(arg);
+
+
 		}
 
 		public void Refresh()
@@ -93,5 +97,7 @@ namespace Beamable.Tournaments
 				tab.Text.color = data.TextColor;
 			}
 		}
+
+
 	}
 }

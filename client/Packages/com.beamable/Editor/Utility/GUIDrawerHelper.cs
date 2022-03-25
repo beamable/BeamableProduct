@@ -1,6 +1,6 @@
 ﻿using Beamable.Editor.UI.Buss;
 using Beamable.UI.Buss;
-using Beamable.UI.Sdf;
+using Beamable.UI.Sdf.Styles;
 using System;
 using System.Collections;
 using System.Collections.Generic;

@@ -2,7 +2,9 @@ using Beamable.Common.Api.Inventory;
 using Beamable.Common.Content;
 using NUnit.Framework;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.TestTools;
 
 namespace Beamable.Platform.Tests.Inventory.InventoryUpdateBuilderTests
 {

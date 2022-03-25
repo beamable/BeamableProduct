@@ -1,9 +1,9 @@
-using System;
+using UnityEngine;
 using UnityEngine.UI;
 
 namespace Beamable.Theme.Objects
 {
-	[Serializable]
+	[System.Serializable]
 	public class SelectableStyleObject : StyleObject<Selectable>
 	{
 		public ButtonStyleData Data;
@@ -27,7 +27,7 @@ namespace Beamable.Theme.Objects
 		}
 	}
 
-	[Serializable]
+	[System.Serializable]
 	public class ButtonStyleData
 	{
 		public Selectable.Transition Transition;

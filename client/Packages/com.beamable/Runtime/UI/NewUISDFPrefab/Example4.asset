@@ -1,0 +1,485 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d617e971cd67b419a98e3076e07f1fa6, type: 3}
+  m_Name: Example4
+  m_EditorClassIdentifier: 
+  Rules:
+  - Selector:
+      _selfString: button.disabled
+    Style:
+      Color:
+        Enabled: 1
+        Color:
+          HasValue: 1
+          VariableReference: 
+          Value: {r: 0.8018868, g: 0.060593262, b: 0, a: 1}
+      Background:
+        Enabled: 1
+        Color:
+          HasValue: 0
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 0}
+        Texture:
+          HasValue: 0
+          VariableReference: 
+          Value: {fileID: 0}
+        TextureColor:
+          HasValue: 0
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 0}
+        TextureScale:
+          HasValue: 0
+          VariableReference: 
+          Value: {x: 0, y: 0}
+        TextureOffset:
+          HasValue: 0
+          VariableReference: 
+          Value: {x: 0, y: 0}
+        Shape:
+          HasValue: 0
+          VariableReference: 
+          Value: {fileID: 0}
+        GradientAmount:
+          HasValue: 1
+          VariableReference: 
+          Value: 0.13793103
+        GradientScale:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+        GradientAngle:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+        GradientOffset:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+        GradientStartColor:
+          HasValue: 0
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 0}
+        GradientEndColor:
+          HasValue: 1
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 1}
+      Font:
+        Enabled: 0
+        Size:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+        FontAsset:
+          HasValue: 0
+          VariableReference: 
+          Value: {fileID: 0}
+        FontMaterial:
+          HasValue: 0
+          VariableReference: 
+          Value: {fileID: 0}
+        Style:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+      Text:
+        Enabled: 0
+        TextAlignment:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+      Vertical:
+        Enabled: 0
+        Alignment:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+      Border:
+        Enabled: 0
+        Width:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+        Color:
+          HasValue: 0
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 0}
+        Radius:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+      Scope:
+        Numbers:
+          _variableValues: []
+          _variableNames: []
+        Vectors:
+          _variableValues: []
+          _variableNames: []
+        Colors:
+          _variableValues: []
+          _variableNames: []
+        Textures:
+          _variableValues: []
+          _variableNames: []
+  - Selector:
+      _selfString: .outline
+    Style:
+      Color:
+        Enabled: 0
+        Color:
+          HasValue: 0
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 0}
+      Background:
+        Enabled: 0
+        Color:
+          HasValue: 0
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 0}
+        Texture:
+          HasValue: 0
+          VariableReference: 
+          Value: {fileID: 0}
+        TextureColor:
+          HasValue: 0
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 0}
+        TextureScale:
+          HasValue: 0
+          VariableReference: 
+          Value: {x: 0, y: 0}
+        TextureOffset:
+          HasValue: 0
+          VariableReference: 
+          Value: {x: 0, y: 0}
+        Shape:
+          HasValue: 0
+          VariableReference: 
+          Value: {fileID: 0}
+        GradientAmount:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+        GradientScale:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+        GradientAngle:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+        GradientOffset:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+        GradientStartColor:
+          HasValue: 0
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 0}
+        GradientEndColor:
+          HasValue: 0
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 0}
+      Font:
+        Enabled: 0
+        Size:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+        FontAsset:
+          HasValue: 0
+          VariableReference: 
+          Value: {fileID: 0}
+        FontMaterial:
+          HasValue: 0
+          VariableReference: 
+          Value: {fileID: 0}
+        Style:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+      Text:
+        Enabled: 0
+        TextAlignment:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+      Vertical:
+        Enabled: 0
+        Alignment:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+      Border:
+        Enabled: 1
+        Width:
+          HasValue: 1
+          VariableReference: 
+          Value: 0.48175183
+        Color:
+          HasValue: 0
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 0}
+        Radius:
+          HasValue: 1
+          VariableReference: 
+          Value: 0
+      Scope:
+        Numbers:
+          _variableValues: []
+          _variableNames: []
+        Vectors:
+          _variableValues: []
+          _variableNames: []
+        Colors:
+          _variableValues: []
+          _variableNames: []
+        Textures:
+          _variableValues: []
+          _variableNames: []
+  - Selector:
+      _selfString: :root
+    Style:
+      Color:
+        Enabled: 0
+        Color:
+          HasValue: 0
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 0}
+      Background:
+        Enabled: 1
+        Color:
+          HasValue: 0
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 0}
+        Texture:
+          HasValue: 0
+          VariableReference: 
+          Value: {fileID: 0}
+        TextureColor:
+          HasValue: 0
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 0}
+        TextureScale:
+          HasValue: 0
+          VariableReference: 
+          Value: {x: 0, y: 0}
+        TextureOffset:
+          HasValue: 0
+          VariableReference: 
+          Value: {x: 0, y: 0}
+        Shape:
+          HasValue: 1
+          VariableReference: 
+          Value: {fileID: 21300000, guid: a105bbeeb81c64ba39979c94c47d9d07, type: 3}
+        GradientAmount:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+        GradientScale:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+        GradientAngle:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+        GradientOffset:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+        GradientStartColor:
+          HasValue: 0
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 0}
+        GradientEndColor:
+          HasValue: 0
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 0}
+      Font:
+        Enabled: 0
+        Size:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+        FontAsset:
+          HasValue: 0
+          VariableReference: 
+          Value: {fileID: 0}
+        FontMaterial:
+          HasValue: 0
+          VariableReference: 
+          Value: {fileID: 0}
+        Style:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+      Text:
+        Enabled: 0
+        TextAlignment:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+      Vertical:
+        Enabled: 0
+        Alignment:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+      Border:
+        Enabled: 0
+        Width:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+        Color:
+          HasValue: 0
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 0}
+        Radius:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+      Scope:
+        Numbers:
+          _variableValues: []
+          _variableNames: []
+        Vectors:
+          _variableValues: []
+          _variableNames: []
+        Colors:
+          _variableValues:
+          - {r: 1, g: 0.025458645, b: 0, a: 1}
+          - {r: 0.6320754, g: 0.6320754, b: 0.6320754, a: 1}
+          _variableNames:
+          - secondary
+          - primary
+        Textures:
+          _variableValues:
+          - {fileID: 2800000, guid: 283f897e4925411ebbaa758b4cb13fc2, type: 3}
+          _variableNames:
+          - primary
+  - Selector:
+      _selfString: .primary
+    Style:
+      Color:
+        Enabled: 0
+        Color:
+          HasValue: 0
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 0}
+      Background:
+        Enabled: 1
+        Color:
+          HasValue: 0
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 0}
+        Texture:
+          HasValue: 0
+          VariableReference: 
+          Value: {fileID: 0}
+        TextureColor:
+          HasValue: 0
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 0}
+        TextureScale:
+          HasValue: 0
+          VariableReference: 
+          Value: {x: 0, y: 0}
+        TextureOffset:
+          HasValue: 0
+          VariableReference: 
+          Value: {x: 0, y: 0}
+        Shape:
+          HasValue: 0
+          VariableReference: 
+          Value: {fileID: 0}
+        GradientAmount:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+        GradientScale:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+        GradientAngle:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+        GradientOffset:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+        GradientStartColor:
+          HasValue: 0
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 0}
+        GradientEndColor:
+          HasValue: 0
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 0}
+      Font:
+        Enabled: 0
+        Size:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+        FontAsset:
+          HasValue: 0
+          VariableReference: 
+          Value: {fileID: 0}
+        FontMaterial:
+          HasValue: 0
+          VariableReference: 
+          Value: {fileID: 0}
+        Style:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+      Text:
+        Enabled: 0
+        TextAlignment:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+      Vertical:
+        Enabled: 0
+        Alignment:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+      Border:
+        Enabled: 0
+        Width:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+        Color:
+          HasValue: 0
+          VariableReference: 
+          Value: {r: 0, g: 0, b: 0, a: 0}
+        Radius:
+          HasValue: 0
+          VariableReference: 
+          Value: 0
+      Scope:
+        Numbers:
+          _variableValues: []
+          _variableNames: []
+        Vectors:
+          _variableValues: []
+          _variableNames: []
+        Colors:
+          _variableValues: []
+          _variableNames: []
+        Textures:
+          _variableValues: []
+          _variableNames: []

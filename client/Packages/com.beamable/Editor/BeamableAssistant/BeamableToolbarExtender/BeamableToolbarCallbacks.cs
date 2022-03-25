@@ -1,11 +1,14 @@
 #if !DISABLE_BEAMABLE_TOOLBAR_EXTENDER
 using System;
+using System.Linq;
 using UnityEngine;
 using UnityEditor;
 using System.Reflection;
+using Beamable.Editor.Assistant;
 
 #if UNITY_2019_1_OR_NEWER
 using UnityEngine.UIElements;
+
 #else
 using UnityEngine.Experimental.UIElements;
 #endif

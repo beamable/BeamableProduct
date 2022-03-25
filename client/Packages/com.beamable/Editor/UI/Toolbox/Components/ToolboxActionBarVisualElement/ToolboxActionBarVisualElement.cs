@@ -1,3 +1,4 @@
+using Beamable.Common;
 using Beamable.Editor.Config;
 using Beamable.Editor.Content;
 using Beamable.Editor.Environment;
@@ -17,8 +18,6 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
-
-using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.Toolbox.Components
 {
@@ -64,11 +63,9 @@ namespace Beamable.Editor.Toolbox.Components
 
 			var contentButton = Root.Q<Button>("contentManager");
 			contentButton.clickable.clicked += async () => { await ContentManagerWindow.Init(); };
-			contentButton.tooltip = Tooltips.Toolbox.CONTENT;
 
 			var skinningButton = Root.Q<Button>("skinning");
 			skinningButton.clickable.clicked += BussThemeManager.Init;
-			skinningButton.tooltip = Tooltips.Toolbox.THEME_MANAGER;
 
 			var globalConfigButton = Root.Q<Button>("globalConfig");
 			globalConfigButton.clickable.clicked += () =>
@@ -76,14 +73,12 @@ namespace Beamable.Editor.Toolbox.Components
 				BeamableSettingsProvider.Open();
 				//                ConfigWindow.Init();
 			};
-			globalConfigButton.tooltip = Tooltips.Toolbox.CONFIG;
 
 			_microservicesButton = Root.Q<Button>("microservice");
 			_microservicesButton.clickable.clicked += () =>
 			{
 				MicroservicesButton_OnClicked(_microservicesButton.worldBound);
 			};
-			_microservicesButton.tooltip = Tooltips.Toolbox.MICROSERVICE;
 
 			var filterBox = Root.Q<SearchBarVisualElement>();
 			filterBox.OnSearchChanged += FilterBox_OnTextChanged;
@@ -91,15 +86,12 @@ namespace Beamable.Editor.Toolbox.Components
 
 			_typeButton = Root.Q<Button>("typeButton");
 			_typeButton.clickable.clicked += () => { TypeButton_OnClicked(_typeButton.worldBound); };
-			_typeButton.tooltip = Tooltips.Toolbox.LAYOUT;
 
 			_categoryButton = Root.Q<Button>("CategoryButton");
 			_categoryButton.clickable.clicked += () => { CategoryButton_OnClicked(_categoryButton.worldBound); };
-			_categoryButton.tooltip = Tooltips.Toolbox.TAG;
 
 			_infoButton = Root.Q<Button>("infoButton");
 			_infoButton.clickable.clicked += () => { OnInfoButtonClicked?.Invoke(); };
-			_infoButton.tooltip = Tooltips.Toolbox.DOCUMENT;
 
 			_accountButton = Root.Q<Button>("accountButton");
 			_accountButton.clickable.clicked += () =>
@@ -109,7 +101,6 @@ namespace Beamable.Editor.Toolbox.Components
 				wnd.position = new Rect(popupWindowRect.x - wnd.minSize.x, popupWindowRect.y + 10, wnd.minSize.x,
 										wnd.minSize.y);
 			};
-			_accountButton.tooltip = Tooltips.Toolbox.MY_ACCOUNT;
 		}
 
 		private void FilterBox_OnTextChanged(string filter)

@@ -1,11 +1,12 @@
-﻿using System;
+﻿using Beamable.Tournaments;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace Beamable.Tournaments
 {
-	[Serializable]
+	[System.Serializable]
 	public struct TournamentStageGainDefinition
 	{
 		public int StageGain;
@@ -16,6 +17,13 @@ namespace Beamable.Tournaments
 	{
 		public List<Image> ChevronImages;
 		public Material GreyMaterial;
+
+
+		// Start is called before the first frame update
+		void Start()
+		{
+
+		}
 
 		public void SetEffect(bool useGrey)
 		{

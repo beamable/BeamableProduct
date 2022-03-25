@@ -3,7 +3,8 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.iOS;
-using Beamable.Common.Spew;
+using System.Runtime.InteropServices;
+using Beamable.Spew;
 
 namespace Beamable.Api.Notification.Internal
 {
@@ -17,7 +18,7 @@ namespace Beamable.Api.Notification.Internal
 
       public void CreateNotificationChannel(string id, string name, string description)
       {
-          NotificationLogger.LogFormat("Create Notification Channel not implemented on this platform.");
+          Beamable.Spew.NotificationLogger.LogFormat("Create Notification Channel not implemented on this platform.");
       }
 
       public void ScheduleNotification(string channel, string key, string title, string message, DateTime when, Dictionary<string, string> data)

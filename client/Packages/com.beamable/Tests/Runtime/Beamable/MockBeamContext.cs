@@ -1,3 +1,5 @@
+// unset
+
 using Beamable.Api;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;
@@ -36,7 +38,7 @@ namespace Beamable.Tests.Runtime
 			requester = requester ?? new MockPlatformAPI();
 			// var cid = requester.AccessToken.Cid;
 			// var pid = requester.AccessToken.Pid;
-			var cid = "123";
+			var cid = "testCid";
 			var pid = "testPid";
 
 			new AccessTokenStorage(playerCode).DeleteTokenForRealm(cid, pid);

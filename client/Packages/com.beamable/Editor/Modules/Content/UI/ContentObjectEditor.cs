@@ -1,6 +1,8 @@
+using Beamable.Common.Api.Content;
 using Beamable.Common.Content;
 using Beamable.Common.Content.Serialization;
 using Beamable.Common.Content.Validation;
+using Beamable.Content;
 using System;
 using System.Linq;
 using System.Reflection;

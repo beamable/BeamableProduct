@@ -13,7 +13,7 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 		private static readonly string[] globalSuccessLogs =
 		{
-			UPLOAD_CONTAINER_MESSAGE,
+			UPLOAD_CONTAINER_MESSAGE, 
 			CONTAINER_ALREADY_UPLOADED_MESSAGE
 		};
 

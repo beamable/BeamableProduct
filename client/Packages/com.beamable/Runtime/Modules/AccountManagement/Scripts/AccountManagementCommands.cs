@@ -1,5 +1,5 @@
-using Beamable.Common.Api.Auth;
 using Beamable.ConsoleCommands;
+using Beamable.Platform.SDK.Auth;
 using Beamable.Signals;
 using System.Linq;
 using UnityEngine;
@@ -11,13 +11,15 @@ namespace Beamable.AccountManagement
 	public class AccountManagementCommands
 	{
 		[Preserve]
-		public AccountManagementCommands() { }
+		public AccountManagementCommands()
+		{
+
+		}
 
 		[BeamableConsoleCommand("account_toggle", "emit an account management toggle event", "account_toggle")]
 		public string ToggleAccount(string[] args)
 		{
-			DeSignalTower.ForAll<AccountManagementSignals>(
-				s => s.OnToggleAccountManagement?.Invoke(!AccountManagementSignals.ToggleState));
+			DeSignalTower.ForAll<AccountManagementSignals>(s => s.OnToggleAccountManagement?.Invoke(!AccountManagementSignals.ToggleState));
 			return "okay";
 		}
 
@@ -27,15 +29,14 @@ namespace Beamable.AccountManagement
 			API.Instance.Then(de =>
 			{
 				de.GetDeviceUsers().Then(all =>
-				{
-					all.ToList().ForEach(bundle =>
-					{
-						User user = bundle.User;
-						string userType = user.id == de.User.id ? "CURRENT" : "DEVICE";
-						Debug.Log(
-							$"{userType} : EMAIL: [{user.email}] ID: [{user.id}] 3RD PARTIES: [{string.Join(",", user.thirdPartyAppAssociations)}]");
-					});
-				});
+			 {
+				 all.ToList().ForEach(bundle =>
+			  {
+				  var user = bundle.User;
+				  var userType = user.id == de.User.id ? "CURRENT" : "DEVICE";
+				  Debug.Log($"{userType} : EMAIL: [{user.email}] ID: [{user.id}] 3RD PARTIES: [{string.Join(",", user.thirdPartyAppAssociations)}]");
+			  });
+			 });
 			});
 			return "";
 		}

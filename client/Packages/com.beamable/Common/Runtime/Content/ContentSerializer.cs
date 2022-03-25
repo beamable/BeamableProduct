@@ -271,7 +271,7 @@ namespace Beamable.Common.Content
 					case string enumValue when typeof(Enum).IsAssignableFrom(type):
 						return Enum.Parse(type, enumValue);
 					case string _:
-						return preParsedValue;
+						return json.Substring(1, json.Length - 2);
 					case float _:
 						return Convert.ChangeType(float.Parse(json, CultureInfo.InvariantCulture), type);
 					case long _:

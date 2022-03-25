@@ -157,7 +157,7 @@ namespace Beamable.Editor.Environment
 			{
 				data.Cid = api.Cid;
 				data.Pid = api.Pid;
-				data.CidOrAlias = api.Alias;
+				data.CidOrAlias = api.CidOrAlias;
 				data.EditorUser = api.User;
 
 				return PromiseBase.Unit;

@@ -1,4 +1,6 @@
+using Beamable.Editor.Login.UI.Components;
 using Beamable.Editor.UI.Components;
+using System;
 using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;

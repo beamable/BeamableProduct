@@ -1,10 +1,13 @@
 ﻿using Beamable.Coroutines;
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
 namespace Beamable.Tournaments
 {
+
 	public class CountdownTextBehaviour : MonoBehaviour
 	{
 		public TextMeshProUGUI Text;
@@ -19,6 +22,7 @@ namespace Beamable.Tournaments
 			if (_schedule != null)
 			{
 				StopCoroutine(_schedule);
+
 			}
 			_schedule = StartCoroutine(UpdateSchedule());
 		}
@@ -31,6 +35,7 @@ namespace Beamable.Tournaments
 				var refreshSeconds = .3f / _debugSpeed;
 				yield return Yielders.Seconds(refreshSeconds);
 			}
+
 		}
 
 		public void SetSecondsLeft(long secondsLeft)
@@ -38,6 +43,7 @@ namespace Beamable.Tournaments
 			_endTime = Time.realtimeSinceStartup + secondsLeft;
 			Refresh();
 		}
+
 
 		public int SecondsLeft => Mathf.Max(0, Mathf.FloorToInt(_endTime - (Time.realtimeSinceStartup * _debugSpeed)));
 		public int MinutesLeft => SecondsLeft / 60;

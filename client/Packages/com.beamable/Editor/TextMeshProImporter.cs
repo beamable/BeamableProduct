@@ -1,4 +1,6 @@
 using Beamable.Common;
+using Beamable.Platform.SDK;
+using System;
 using System.IO;
 using TMPro;
 using UnityEditor;

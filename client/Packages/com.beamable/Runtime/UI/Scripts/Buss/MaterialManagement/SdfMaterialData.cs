@@ -1,4 +1,6 @@
-namespace Beamable.UI.Sdf
+﻿using UnityEngine;
+
+namespace Beamable.UI.Sdf.MaterialManagement
 {
 	public struct SdfMaterialData
 	{

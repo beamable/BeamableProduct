@@ -1,5 +1,6 @@
 ﻿using Beamable.Common;
 using Beamable.ConsoleCommands;
+using Beamable.Editor.Environment;
 using UnityEngine;
 
 namespace Beamable.Editor.Modules.Account
@@ -19,6 +20,6 @@ namespace Beamable.Editor.Modules.Account
 			return "Opening portal..";
 		}
 		private Promise<string> GetPortalUrl(string DBID) => EditorAPI.Instance.Map(api =>
-			$"{BeamableEnvironment.PortalUrl}/{api.Alias}/games/{api.ProductionRealm.Pid}/realms/{api.Pid}/players/{DBID}?refresh_token={api.Token.RefreshToken}");
+			$"{BeamableEnvironment.PortalUrl}/{api.CidOrAlias}/games/{api.ProductionRealm.Pid}/realms/{api.Pid}/players/{DBID}?refresh_token={api.Token.RefreshToken}");
 	}
 }

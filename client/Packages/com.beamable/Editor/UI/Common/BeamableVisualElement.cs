@@ -1,4 +1,3 @@
-using Beamable.Editor.UI.Common;
 using System.IO;
 using UnityEditor;
 using UnityEngine.Assertions;
@@ -13,34 +12,61 @@ using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.UI.Components
 {
-	public class BeamableVisualElement : BeamableBasicVisualElement
+	public class BeamableVisualElement : VisualElement
 	{
-		private VisualTreeAsset TreeAsset { get; }
+		protected VisualTreeAsset TreeAsset { get; private set; }
+		protected VisualElement Root { get; private set; }
 
-		private string UxmlPath { get; }
+		protected string UXMLPath { get; private set; }
 
-		protected BeamableVisualElement(string commonPath) : this(commonPath + ".uxml", commonPath + ".uss") { }
+		protected string UssPath { get; private set; }
 
-		private BeamableVisualElement(string uxmlPath, string ussPath) : base(ussPath)
+		public BeamableVisualElement(string commonPath) : this(commonPath + ".uxml", commonPath + ".uss") { }
+
+		public BeamableVisualElement(string uxmlPath, string ussPath)
 		{
 			Assert.IsTrue(File.Exists(uxmlPath), $"Cannot find {uxmlPath}");
-
-			UxmlPath = uxmlPath;
-			TreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UxmlPath);
+			Assert.IsTrue(File.Exists(ussPath), $"Cannot find {ussPath}");
+			UXMLPath = uxmlPath;
+			UssPath = ussPath;
+			TreeAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(UXMLPath);
 
 			RegisterCallback<DetachFromPanelEvent>(evt =>
 			{
 				OnDetach();
 			});
+
 		}
 
-		public override void Refresh()
+		public virtual void OnDetach()
+		{
+			// Do any sort of cleanup
+		}
+
+		public void Destroy()
+		{
+			// call OnDestroy on all child elements.
+			foreach (var child in Children())
+			{
+				if (child is BeamableVisualElement beamableChild)
+				{
+					beamableChild.Destroy();
+				}
+			}
+			OnDestroy();
+		}
+
+		protected virtual void OnDestroy()
+		{
+			// Unregister any events...
+		}
+
+		public virtual void Refresh()
 		{
 			Destroy();
 			Clear();
 
 			Root = TreeAsset.CloneTree();
-			this.AssignUIRefs();
 
 			this.AddStyleSheet(Files.COMMON_USS_FILE);
 			this.AddStyleSheet(UssPath);

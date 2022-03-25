@@ -1,4 +1,5 @@
 ﻿using Beamable.UI.Sdf;
+using Beamable.UI.Sdf.MaterialManagement;
 using Beamable.UI.Tweening;
 using System;
 using TMPro;

@@ -1,3 +1,4 @@
+using Beamable.Server;
 using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.IO;
@@ -27,28 +28,21 @@ namespace Beamable.Server.Editor.CodeGen
 			targetClass.IsClass = true;
 			targetClass.TypeAttributes = TypeAttributes.Public;
 
-			var mainmethod = new CodeMemberMethod
-			{
-				Attributes = MemberAttributes.Public | MemberAttributes.Static
-			};
-			mainmethod.Name = "Main";
-			mainmethod.Parameters.Add(
-				new CodeParameterDeclarationExpression(typeof(string[]), "args"));
-			mainmethod.ReturnType = new CodeTypeReference(typeof(int));
+			var mainmethod = new CodeEntryPointMethod();
 
-			var baseType = new CodeTypeReference("global::Beamable.Server.CommandLine", new CodeTypeReference(descriptor.Type));
-			//var commandLineType = new CodeTypeReferenceExpression("global::Beamable.Server.CommandLine");
 
 			var invokeExpr = new CodeMethodInvokeExpression(
 			   new CodeMethodReferenceExpression(
-				  new CodeTypeReferenceExpression(baseType), // XXX: This is super brittle...
-				  "Main"),
+				  new CodeTypeReferenceExpression("global::Beamable.Server.MicroserviceBootstrapper"), // XXX: This is super brittle...
+				  "Start",
+				  new CodeTypeReference[]
+				  {
+				  new CodeTypeReference(descriptor.Type),
+				  }),
 			   new CodeExpression[]
 			   {
-				   new CodeArgumentReferenceExpression("args")
 			   });
-			var returnExpr = new CodeMethodReturnStatement(invokeExpr);
-			mainmethod.Statements.Add(returnExpr);
+			mainmethod.Statements.Add(invokeExpr);
 
 			targetClass.Members.Add(mainmethod);
 

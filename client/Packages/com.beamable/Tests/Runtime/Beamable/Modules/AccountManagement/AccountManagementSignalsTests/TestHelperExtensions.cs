@@ -1,5 +1,6 @@
 using Beamable.AccountManagement;
 using Beamable.Common.Api.Auth;
+using Beamable.Platform.SDK.Auth;
 using NUnit.Framework;
 using System;
 using UnityEngine;

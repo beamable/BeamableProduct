@@ -1,6 +1,8 @@
 ﻿using Beamable.Editor.Content.Models;
 using System;
 using System.Collections.Generic;
+using UnityEditor.IMGUI.Controls;
+using UnityEngine;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;

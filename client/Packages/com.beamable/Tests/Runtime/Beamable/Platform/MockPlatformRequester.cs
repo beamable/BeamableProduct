@@ -1,3 +1,5 @@
+using Beamable.Api;
+using Beamable.Api.Auth;
 using Beamable.Common;
 using Beamable.Common.Api;
 using Beamable.Common.Api.Auth;

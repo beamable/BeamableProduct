@@ -28,10 +28,10 @@
 					public const string TEMPLATE_SCENE_PATH = TEST_TOOL_SCENES_TEMPLATE_PATH + "/" + FileNames.TEST_SCENE_TEMPLATE + ".unity";
 					public const string MAIN_MENU_SCENE_PATH = BASE_PATH + "/" + FileNames.MAIN_TEST_SCENE + ".unity";
 					public const string CONFIG_ASSET_PATH = BASE_PATH + "/" + FileNames.TEST_CONFIG + ".asset";
-
+					
 					public static string TEST_SCENE_DATA_PATH(string sceneName) => $"{TEST_TOOL_SCENES_PATH}/{sceneName}.unity";
 				}
-
+				
 			}
 		}
 	}

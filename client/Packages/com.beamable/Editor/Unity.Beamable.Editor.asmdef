@@ -12,7 +12,8 @@
         "Unity.Beamable",
         "Unity.Beamable.Runtime.Common",
         "Beamable.UnityUIExtensions",
-        "Beamable.ConsoleCommands"
+        "Beamable.ConsoleCommands",
+        "Beamable.Spew"
     ],
     "optionalUnityReferences": [],
     "includePlatforms": [

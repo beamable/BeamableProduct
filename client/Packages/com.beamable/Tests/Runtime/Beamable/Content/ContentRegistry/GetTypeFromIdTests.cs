@@ -1,8 +1,12 @@
 using Beamable.Common.Content;
+using Beamable.Content;
 using Beamable.Tests.Content.Serialization.Support;
+using Beamable.UI;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.AddressableAssets;
 
 namespace Beamable.Tests.Content.ContentRegistryTests
 {

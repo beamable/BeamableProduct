@@ -1,4 +1,4 @@
-﻿using System;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using static Beamable.Common.Constants.MenuItems.Assets;
@@ -15,11 +15,12 @@ namespace Beamable.Tournaments
 	public class TournamentsConfiguration : ModuleConfigurationObject
 	{
 		public static TournamentsConfiguration Instance => Get<TournamentsConfiguration>();
+
 		public List<TournamentInfoPageSection> Info;
 
 	}
 
-	[Serializable]
+	[System.Serializable]
 	public class TournamentInfoPageSection
 	{
 		public string Title;
@@ -28,4 +29,6 @@ namespace Beamable.Tournaments
 		public string DetailTitle;
 		public TournamentInfoDetailBehaviour DetailPrefab;
 	}
+
+
 }

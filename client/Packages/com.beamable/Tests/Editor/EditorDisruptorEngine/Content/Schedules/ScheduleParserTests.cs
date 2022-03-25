@@ -3,6 +3,7 @@ using Beamable.Editor.Models.Schedules;
 using NUnit.Framework;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Beamable.Editor.Tests.Content
 {

@@ -1,4 +1,6 @@
 using Beamable.Common;
+using Beamable.Platform.Tests;
+using Packages.Beamable.Runtime.Tests.Beamable;
 
 namespace Beamable.Server.Tests.Runtime
 {
@@ -22,11 +24,5 @@ namespace Beamable.Server.Tests.Runtime
 		{
 			return CreateUrl(cid, pid, _serviceName, endpoint);
 		}
-	}
-
-	public class TestJSON
-	{
-		public int a;
-		public int b;
 	}
 }

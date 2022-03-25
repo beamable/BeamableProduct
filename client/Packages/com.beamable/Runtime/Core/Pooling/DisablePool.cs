@@ -1,4 +1,5 @@
 ﻿using Beamable.Extensions;
+using Beamable.Service;
 using System.Collections.Generic;
 using UnityEngine;
 

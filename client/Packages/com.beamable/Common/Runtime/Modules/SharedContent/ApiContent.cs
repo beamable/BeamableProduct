@@ -1,4 +1,5 @@
 using Beamable.Common.Api;
+using Beamable.Common.Content;
 using Beamable.Common.Content.Validation;
 using Beamable.Content;
 using System;

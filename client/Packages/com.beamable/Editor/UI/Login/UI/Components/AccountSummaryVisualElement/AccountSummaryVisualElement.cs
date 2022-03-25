@@ -1,3 +1,5 @@
+
+using Beamable.Editor.Modules.Account;
 using Beamable.Editor.UI.Components;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;

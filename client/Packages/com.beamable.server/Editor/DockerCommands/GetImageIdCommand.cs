@@ -1,3 +1,8 @@
+using Beamable.Platform.SDK;
+using Beamable.Server.Editor.DockerCommands;
+using System;
+using UnityEngine;
+
 namespace Beamable.Server.Editor.DockerCommands
 {
 	public class GetImageIdCommand : DockerCommandReturnable<string>

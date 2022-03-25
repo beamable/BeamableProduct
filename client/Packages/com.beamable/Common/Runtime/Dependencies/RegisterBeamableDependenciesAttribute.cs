@@ -13,7 +13,7 @@ namespace Beamable.Common.Dependencies
 	/// Add whatever services you want to on the builder instance. Any service you register will exist for each BeamContext.
 	/// </summary>
 	[AttributeUsage(validOn: AttributeTargets.Method)]
-	public class RegisterBeamableDependenciesAttribute : BeamableReflection.PreserveAttribute, IReflectionAttribute
+	public class RegisterBeamableDependenciesAttribute : Attribute, IReflectionAttribute
 	{
 		/// <summary>
 		/// Valid signatures on top of which you can place <see cref="RegisterBeamableDependenciesAttribute"/>s.

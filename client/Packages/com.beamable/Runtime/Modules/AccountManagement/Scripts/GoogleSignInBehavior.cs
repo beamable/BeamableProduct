@@ -1,4 +1,5 @@
 using Beamable.Common.Api.Auth;
+using Beamable.Config;
 using Beamable.Platform.SDK.Auth;
 using UnityEngine;
 

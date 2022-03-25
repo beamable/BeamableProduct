@@ -1,3 +1,5 @@
+using Beamable.Editor.Content;
+using UnityEditor;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
 using UnityEditor.Experimental.UIElements;
@@ -5,8 +7,6 @@ using UnityEditor.Experimental.UIElements;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 #endif
-
-using static Beamable.Common.Constants;
 
 namespace Beamable.Editor.Content.Components
 {
@@ -27,7 +27,6 @@ namespace Beamable.Editor.Content.Components
 			nameLbl.text = Model.ContentId;
 
 			_checkIcon = Root.Q<VisualElement>("checkIcon");
-			_checkIcon.tooltip = Tooltips.ContentManager.UNCHECK;
 		}
 
 		// Content is downloaded.
@@ -35,7 +34,6 @@ namespace Beamable.Editor.Content.Components
 		{
 			_checkIcon.RemoveFromClassList("unchecked");
 			_checkIcon.AddToClassList("checked");
-			_checkIcon.tooltip = Tooltips.ContentManager.CHECKED;
 		}
 	}
 }

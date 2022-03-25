@@ -6,10 +6,15 @@ using Beamable.Editor.UI.Components;
 using Beamable.Editor.UI.Model;
 using Beamable.Server.Editor;
 using Beamable.Server.Editor.DockerCommands;
+using Beamable.Server.Editor.UI.Components;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using UnityEditor;
+using UnityEngine;
 using static Beamable.Common.Constants.Features.Services;
 #if UNITY_2018
 using UnityEngine.Experimental.UIElements;
@@ -102,12 +107,6 @@ namespace Beamable.Editor.Microservice.UI.Components
 
 			_actionPrompt = _mainVisualElement.Q<MicroserviceActionPrompt>("actionPrompt");
 			_actionPrompt.Refresh();
-			EditorApplication.delayCall +=
-				() =>
-				{
-					var command = new GetDockerLocalStatus();
-					command.Start();
-				};
 		}
 
 		private void HandleSelectionChanged(bool _)
@@ -229,6 +228,27 @@ namespace Beamable.Editor.Microservice.UI.Components
 			{
 				microservice.IsSelected = selected;
 			}
+		}
+
+		public void BuildAllMicroservices(ILoadingBar loadingBar)
+		{
+			var children = new List<LoadingBarUpdater>();
+
+			foreach (var microservice in Model.Services)
+			{
+				if (!microservice.IsSelected)
+					continue;
+				if (microservice.IsRunning)
+					microservice.BuildAndRestart();
+				else
+					microservice.Build();
+
+				var element = _modelToVisual[microservice];
+				var subLoader = element.Q<LoadingBarElement>();
+				children.Add(subLoader.Updater);
+			}
+
+			var _ = new GroupLoadingBarUpdater("Building Microservices", loadingBar, false, children.ToArray());
 		}
 
 		public void BuildAndStartAllMicroservices(ILoadingBar loadingBar)

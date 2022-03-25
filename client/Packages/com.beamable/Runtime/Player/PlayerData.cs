@@ -1,3 +1,6 @@
+
+using UnityEngine;
+
 namespace Beamable.Player
 {
 	[System.Serializable]

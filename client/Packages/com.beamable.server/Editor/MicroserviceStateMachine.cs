@@ -1,8 +1,10 @@
 using Beamable.Common;
 using Beamable.Editor;
+using Beamable.Platform.SDK;
 using Beamable.Server.Editor.DockerCommands;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Beamable.Server.Editor
 {
@@ -77,7 +79,7 @@ namespace Beamable.Server.Editor
 
 		Promise<MicroserviceState> StartBuilding()
 		{
-			StartProcess(new BuildImageCommand(ServiceDescriptor, IncludeDebugTools, true));
+			StartProcess(new BuildImageCommand(ServiceDescriptor, IncludeDebugTools));
 			return Promise<MicroserviceState>.Successful(MicroserviceState.BUILDING);
 		}
 
@@ -88,7 +90,7 @@ namespace Beamable.Server.Editor
 			switch (CurrentState)
 			{
 				case MicroserviceState.BUILDING:
-					StartProcess(new BuildImageCommand(ServiceDescriptor, IncludeDebugTools, true));
+					StartProcess(new BuildImageCommand(ServiceDescriptor, IncludeDebugTools));
 					break;
 				case MicroserviceState.RUNNING:
 					var cid = "";

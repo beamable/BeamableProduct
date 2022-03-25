@@ -1,5 +1,8 @@
 using Beamable.Common.Content;
 using Beamable.Common.Inventory;
+using Beamable.Content;
+using Beamable.Editor.Content;
+using Beamable.Inventory;
 using NUnit.Framework;
 
 namespace Beamable.Editor.Tests.Beamable.Content.ContentQueryTests

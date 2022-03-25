@@ -1,6 +1,10 @@
 using Beamable.Api.Auth;
 using Beamable.Common.Api.Auth;
+using Beamable.Platform.SDK.Auth;
 using NUnit.Framework;
+using System.Collections.Generic;
+using System.Reflection;
+using UnityEngine;
 
 namespace Beamable.Platform.Tests.Auth.AuthServiceTests
 {
