@@ -9,11 +9,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-
 ## [Unreleased]
 ### Added
 - Added `RecoverWith` extension method overloads to `Promise<T>` that allow for configuring  a promise to recover from failure over multiple attempts.
-- `CoreConfiguration.EnableInfiniteContextRetries` and `CoreConfiguration.ContextRetryDelays` options to allow developers to override what happens when a BeamContext cannot initialize 
 
 ### Changed
 - Changed behaviour of Add Style button in Buss Theme Manager
@@ -26,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Compilation error when using new `com.unity.inputsystem`
 - Deferred retry of failed uploads to the poll coroutine, to eliminate an infinite loop that could crash the app.
 - Content string fields can contain escaped characters, and won't be double escaped after download
+
+## [1.0.7]
+### Added
+- `CoreConfiguration.EnableInfiniteContextRetries` and `CoreConfiguration.ContextRetryDelays` options to allow developers to override what happens when a BeamContext cannot initialize 
 
 ## [1.0.6]
 ### Added

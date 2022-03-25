@@ -6,7 +6,7 @@
         xmlns:beamable="Beamable.Editor.UI.Components"
         xmlns:beamableMS="Beamable.Editor.Microservice.UI.Components"
         xsi:schemaLocation="UnityEngine.Experimental.UIElements ../UIElementsSchema/UnityEngine.Experimental.UIElements.xsd">
-    
+
     <engine:VisualElement name="mainVisualElement">
 
         <engine:VisualElement name="foldContainer">
@@ -14,10 +14,10 @@
                 <engine:VisualElement name="foldIcon" class="foldIcon unfoldIcon"/>
             </engine:Button>
         </engine:VisualElement>
-        
+
         <engine:VisualElement name="serviceCard">
             <engine:VisualElement name="logHeader">
-                <beamable:LabeledCheckboxVisualElement name="checkbox" flip ="True"/>
+                <beamable:LabeledCheckboxVisualElement name="checkbox" flip="True" flip-icon="True"/>
                 <engine:VisualElement class="leftArea" name="leftArea">
                     <engine:TextField name="microserviceNewTitle" class="title" text="ANGIE'S TEST"/>
                 </engine:VisualElement>

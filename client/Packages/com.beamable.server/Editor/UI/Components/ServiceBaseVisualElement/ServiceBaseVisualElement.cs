@@ -267,7 +267,12 @@ namespace Beamable.Editor.Microservice.UI.Components
 		}
 		protected virtual void SetupProgressBarForStop(Task task)
 		{
-			new StopImageLogParser(_loadingBar, Model) { OnFailure = OnStopFailed };
+			var parser = new StopImageLogParser(_loadingBar, Model) { OnFailure = OnStopFailed };
+			task?.ContinueWith(_ =>
+			{
+				_loadingBar.Hidden = true;
+				parser.Kill();
+			});
 		}
 		private void OnStopFailed()
 		{
